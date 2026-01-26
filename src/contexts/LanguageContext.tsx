@@ -27,9 +27,13 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.assistantDesc': 'Rédigez vos courriers administratifs',
     
     // Radio
-    'radio.title': 'Radio Égyptienne',
+    'radio.title': 'Radio',
     'radio.nowPlaying': 'En cours de lecture',
     'radio.selectStation': 'Sélectionnez une station',
+    'radio.searchPlaceholder': 'Rechercher une station...',
+    'radio.categoryEgypt': 'Radios Égyptiennes (Musique & News)',
+    'radio.categoryMaghreb': 'Radios Maghreb & France',
+    'radio.noResults': 'Aucune station trouvée',
     
     // Assistant
     'assistant.title': 'Assistant Administratif',
@@ -79,9 +83,13 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.assistantDesc': 'اكتب رسائلك الإدارية',
     
     // Radio
-    'radio.title': 'الراديو المصري',
+    'radio.title': 'الراديو',
     'radio.nowPlaying': 'يتم التشغيل الآن',
     'radio.selectStation': 'اختر محطة',
+    'radio.searchPlaceholder': 'ابحث عن محطة...',
+    'radio.categoryEgypt': 'إذاعات مصرية (موسيقى وأخبار)',
+    'radio.categoryMaghreb': 'إذاعات المغرب وفرنسا',
+    'radio.noResults': 'لم يتم العثور على محطة',
     
     // Assistant
     'assistant.title': 'المساعد الإداري',

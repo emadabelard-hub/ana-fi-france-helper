@@ -1,80 +1,117 @@
-import { useState } from 'react';
-import { Play, Pause, Volume2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Play, Pause, Volume2, Search, Radio } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useRadio, stations, Station } from '@/contexts/RadioContext';
 import { cn } from '@/lib/utils';
-
-interface Station {
-  id: string;
-  name: string;
-  nameAr: string;
-  streamUrl: string;
-  color: string;
-}
-
-const stations: Station[] = [
-  {
-    id: 'coran-karim',
-    name: 'Coran Karim',
-    nameAr: 'القرآن الكريم',
-    streamUrl: 'https://Qurango.net/radio/tarateel',
-    color: 'bg-emerald-500',
-  },
-  {
-    id: 'radio-orient',
-    name: 'Radio Orient',
-    nameAr: 'راديو أورينت',
-    streamUrl: 'https://radioorient.ice.infomaniak.ch/radioorient-high.mp3',
-    color: 'bg-amber-500',
-  },
-  {
-    id: 'mega-fm',
-    name: 'Mega FM',
-    nameAr: 'ميجا إف إم',
-    streamUrl: 'https://stream.zeno.fm/yn65fsaurfhvv',
-    color: 'bg-blue-500',
-  },
-  {
-    id: 'radio-masr',
-    name: 'Radio Masr',
-    nameAr: 'راديو مصر',
-    streamUrl: 'https://stream.zeno.fm/e3mps8psphruv',
-    color: 'bg-red-500',
-  },
-  {
-    id: 'nogoum-fm',
-    name: 'Nogoum FM (Music)',
-    nameAr: 'نجوم إف إم (موسيقى)',
-    streamUrl: 'https://stream.zeno.fm/55rmnf65fzzuv',
-    color: 'bg-purple-500',
-  },
-];
 
 const RadioPage = () => {
   const { t, isRTL, language } = useLanguage();
-  const [currentStation, setCurrentStation] = useState<Station | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState([75]);
-  const [audio] = useState(() => new Audio());
-
-  const playStation = (station: Station) => {
-    if (currentStation?.id === station.id && isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-    } else {
-      audio.src = station.streamUrl;
-      audio.volume = volume[0] / 100;
-      audio.play().catch(console.error);
-      setCurrentStation(station);
-      setIsPlaying(true);
-    }
-  };
+  const { currentStation, isPlaying, volume, playStation, setVolume } = useRadio();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleVolumeChange = (newVolume: number[]) => {
-    setVolume(newVolume);
-    audio.volume = newVolume[0] / 100;
+    setVolume(newVolume[0]);
+  };
+
+  // Filter stations by search query
+  const filteredStations = useMemo(() => {
+    if (!searchQuery.trim()) return stations;
+    const query = searchQuery.toLowerCase();
+    return stations.filter(station => 
+      station.name.toLowerCase().includes(query) || 
+      station.nameAr.includes(query)
+    );
+  }, [searchQuery]);
+
+  // Group stations by category
+  const egyptStations = useMemo(() => 
+    filteredStations.filter(s => s.category === 'egypt'), 
+    [filteredStations]
+  );
+  
+  const maghrebStations = useMemo(() => 
+    filteredStations.filter(s => s.category === 'maghreb'), 
+    [filteredStations]
+  );
+
+  const renderStationCard = (station: Station) => {
+    const isActive = currentStation?.id === station.id;
+    const isCurrentlyPlaying = isActive && isPlaying;
+
+    return (
+      <Card
+        key={station.id}
+        className={cn(
+          "cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02]",
+          isActive && "ring-2 ring-primary ring-offset-2 shadow-lg"
+        )}
+        onClick={() => playStation(station)}
+      >
+        <CardContent className={cn(
+          "flex items-center gap-4 p-4",
+          isRTL && "flex-row-reverse"
+        )}>
+          {/* Station Logo */}
+          <div className={cn(
+            "w-14 h-14 rounded-xl flex items-center justify-center shadow-md",
+            station.color
+          )}>
+            <Radio className="h-6 w-6 text-white" />
+          </div>
+
+          {/* Station Info */}
+          <div className={cn("flex-1 min-w-0", isRTL && "text-right")}>
+            <h3 className={cn(
+              "font-semibold text-foreground truncate",
+              isRTL && "font-cairo"
+            )}>
+              {language === 'ar' ? station.nameAr : station.name}
+            </h3>
+            <p className="text-xs text-muted-foreground truncate">
+              {language === 'ar' ? station.name : station.nameAr}
+            </p>
+          </div>
+
+          {/* Play Button */}
+          <Button
+            size="icon"
+            variant={isCurrentlyPlaying ? "default" : "secondary"}
+            className={cn(
+              "rounded-full shrink-0 transition-all duration-200",
+              isCurrentlyPlaying && "animate-pulse"
+            )}
+          >
+            {isCurrentlyPlaying ? (
+              <Pause className="h-4 w-4" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderCategorySection = (title: string, stationsList: Station[]) => {
+    if (stationsList.length === 0) return null;
+    
+    return (
+      <section className="space-y-3">
+        <h2 className={cn(
+          "text-lg font-semibold text-foreground border-b border-border pb-2",
+          isRTL && "text-right font-cairo"
+        )}>
+          {title}
+        </h2>
+        <div className="grid gap-3">
+          {stationsList.map(renderStationCard)}
+        </div>
+      </section>
+    );
   };
 
   return (
@@ -86,20 +123,36 @@ const RadioPage = () => {
         </h1>
       </section>
 
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className={cn(
+          "absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground",
+          isRTL ? "right-3" : "left-3"
+        )} />
+        <Input
+          type="text"
+          placeholder={t('radio.searchPlaceholder')}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className={cn(
+            "h-12 rounded-xl",
+            isRTL ? "pr-10 text-right font-cairo" : "pl-10"
+          )}
+        />
+      </div>
+
       {/* Now Playing */}
       {currentStation && (
-        <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-none">
+        <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-none shadow-lg">
           <CardContent className={cn(
             "p-6 flex flex-col items-center gap-4",
             isRTL && "font-cairo"
           )}>
             <div className={cn(
-              "w-20 h-20 rounded-2xl flex items-center justify-center",
+              "w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg",
               currentStation.color
             )}>
-              <span className="text-white text-2xl font-bold">
-                {currentStation.name.charAt(0)}
-              </span>
+              <Radio className="h-8 w-8 text-white" />
             </div>
             
             <div className="text-center">
@@ -117,7 +170,7 @@ const RadioPage = () => {
             )}>
               <Volume2 className="h-5 w-5 text-muted-foreground" />
               <Slider
-                value={volume}
+                value={[volume]}
                 onValueChange={handleVolumeChange}
                 max={100}
                 step={1}
@@ -128,68 +181,20 @@ const RadioPage = () => {
         </Card>
       )}
 
-      {/* Station List */}
-      <section className="space-y-3">
-        <h2 className={cn(
-          "text-lg font-semibold text-foreground",
-          isRTL && "text-right font-cairo"
+      {/* No Results Message */}
+      {filteredStations.length === 0 && searchQuery && (
+        <div className={cn(
+          "text-center py-8 text-muted-foreground",
+          isRTL && "font-cairo"
         )}>
-          {t('radio.selectStation')}
-        </h2>
-
-        <div className="grid gap-3">
-          {stations.map((station) => {
-            const isActive = currentStation?.id === station.id;
-            const isCurrentlyPlaying = isActive && isPlaying;
-
-            return (
-              <Card
-                key={station.id}
-                className={cn(
-                  "cursor-pointer transition-all duration-200",
-                  isActive && "ring-2 ring-primary ring-offset-2"
-                )}
-                onClick={() => playStation(station)}
-              >
-                <CardContent className={cn(
-                  "flex items-center gap-4 p-4",
-                  isRTL && "flex-row-reverse"
-                )}>
-                  <div className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center",
-                    station.color
-                  )}>
-                    <span className="text-white font-bold">
-                      {station.name.charAt(0)}
-                    </span>
-                  </div>
-
-                  <div className={cn("flex-1", isRTL && "text-right")}>
-                    <h3 className={cn(
-                      "font-medium text-foreground",
-                      isRTL && "font-cairo"
-                    )}>
-                      {language === 'ar' ? station.nameAr : station.name}
-                    </h3>
-                  </div>
-
-                  <Button
-                    size="icon"
-                    variant={isCurrentlyPlaying ? "default" : "secondary"}
-                    className="rounded-full"
-                  >
-                    {isCurrentlyPlaying ? (
-                      <Pause className="h-4 w-4" />
-                    ) : (
-                      <Play className="h-4 w-4" />
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+          <Radio className="h-12 w-12 mx-auto mb-3 opacity-50" />
+          <p>{t('radio.noResults')}</p>
         </div>
-      </section>
+      )}
+
+      {/* Station Categories */}
+      {renderCategorySection(t('radio.categoryEgypt'), egyptStations)}
+      {renderCategorySection(t('radio.categoryMaghreb'), maghrebStations)}
     </div>
   );
 };

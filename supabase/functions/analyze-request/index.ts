@@ -14,20 +14,89 @@ interface UserProfile {
   social_security?: string;
 }
 
+interface RequestBody {
+  userMessage: string;
+  profile?: UserProfile;
+}
+
+// Input validation constants
+const MAX_MESSAGE_LENGTH = 5000;
+const MAX_FIELD_LENGTH = 500;
+const ALLOWED_PROFILE_FIELDS = ['full_name', 'address', 'phone', 'caf_number', 'foreigner_number', 'social_security'];
+
+function validateInput(body: unknown): { valid: true; data: RequestBody } | { valid: false; error: string } {
+  if (!body || typeof body !== 'object') {
+    return { valid: false, error: 'Corps de requête invalide' };
+  }
+
+  const { userMessage, profile } = body as RequestBody;
+
+  // Validate userMessage
+  if (!userMessage || typeof userMessage !== 'string') {
+    return { valid: false, error: 'Message utilisateur requis' };
+  }
+
+  if (userMessage.trim().length === 0) {
+    return { valid: false, error: 'Message utilisateur ne peut pas être vide' };
+  }
+
+  if (userMessage.length > MAX_MESSAGE_LENGTH) {
+    return { valid: false, error: `Message trop long (max ${MAX_MESSAGE_LENGTH} caractères)` };
+  }
+
+  // Validate profile if provided
+  if (profile !== undefined && profile !== null) {
+    if (typeof profile !== 'object') {
+      return { valid: false, error: 'Données de profil invalides' };
+    }
+
+    for (const [key, value] of Object.entries(profile)) {
+      if (!ALLOWED_PROFILE_FIELDS.includes(key)) {
+        return { valid: false, error: `Champ de profil non autorisé: ${key}` };
+      }
+
+      if (value !== null && value !== undefined && typeof value !== 'string') {
+        return { valid: false, error: `Valeur invalide pour le champ: ${key}` };
+      }
+
+      if (typeof value === 'string' && value.length > MAX_FIELD_LENGTH) {
+        return { valid: false, error: `Champ ${key} trop long (max ${MAX_FIELD_LENGTH} caractères)` };
+      }
+    }
+  }
+
+  return { valid: true, data: { userMessage: userMessage.trim(), profile } };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { userMessage, profile } = await req.json();
+    const rawBody = await req.json();
+    
+    // Validate input
+    const validation = validateInput(rawBody);
+    if (!validation.valid) {
+      console.log("Validation error:", validation.error);
+      return new Response(JSON.stringify({ error: validation.error }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { userMessage, profile } = validation.data;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Build system prompt with PII minimization - use placeholders for sensitive data
     const systemPrompt = buildSystemPrompt(profile);
+    
+    console.log("Processing request with message length:", userMessage.length);
     
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -76,14 +145,17 @@ serve(async (req) => {
     // Parse the AI response into sections
     const result = parseAIResponse(content);
 
-    return new Response(JSON.stringify(result), {
+    // Post-process: Replace placeholders with actual user data (client-side replacement)
+    const processedResult = replacePlaceholders(result, profile);
+
+    return new Response(JSON.stringify(processedResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error) {
     console.error("Error in analyze-request:", error);
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : "Une erreur est survenue" 
+      error: "Une erreur est survenue lors du traitement de votre demande" 
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -91,15 +163,21 @@ serve(async (req) => {
   }
 });
 
-function buildSystemPrompt(profile: UserProfile): string {
-  const headerInfo = profile ? `
-Information de l'expéditeur à utiliser dans l'en-tête de la lettre:
-- Nom complet: ${profile.full_name || '[À compléter]'}
-- Adresse: ${profile.address || '[À compléter]'}
-- Téléphone: ${profile.phone || '[À compléter]'}
-${profile.caf_number ? `- Numéro CAF: ${profile.caf_number}` : ''}
-${profile.foreigner_number ? `- Numéro étranger: ${profile.foreigner_number}` : ''}
-${profile.social_security ? `- Numéro de Sécurité Sociale: ${profile.social_security}` : ''}
+function buildSystemPrompt(profile: UserProfile | undefined): string {
+  // PII Minimization: Only send placeholder markers to AI, not actual sensitive data
+  // The AI will generate templates with these placeholders that get replaced after
+  const hasProfile = profile && (profile.full_name || profile.address);
+  
+  const headerInstructions = hasProfile ? `
+Information de l'expéditeur à utiliser dans l'en-tête de la lettre (utilise ces MARQUEURS EXACTS):
+- Nom complet: [NOM_COMPLET] (ou "[À compléter]" si non fourni)
+- Adresse: [ADRESSE] (ou "[À compléter]" si non fourni)
+- Téléphone: [TELEPHONE] (ou "[À compléter]" si non fourni)
+- Numéro CAF: [NUMERO_CAF] (inclure seulement si pertinent pour la demande)
+- Numéro étranger: [NUMERO_ETRANGER] (inclure seulement si pertinent pour la demande)
+- Numéro de Sécurité Sociale: [NUMERO_SS] (inclure seulement si pertinent pour la demande)
+
+IMPORTANT: Utilise ces marqueurs entre crochets EXACTEMENT comme indiqué. Ils seront remplacés par les vraies données.
 ` : '';
 
   return `Tu es un assistant administratif expert spécialisé dans l'aide aux résidents étrangers en France. Tu maîtrises parfaitement le droit administratif français, notamment:
@@ -108,13 +186,13 @@ ${profile.social_security ? `- Numéro de Sécurité Sociale: ${profile.social_s
 - Le Code de l'action sociale et des familles
 - Les procédures de la CAF, Préfecture, et autres administrations françaises
 
-${headerInfo}
+${headerInstructions}
 
 Tu dois générer TROIS sections distinctes dans ta réponse, TOUJOURS dans ce format exact:
 
 ===LETTRE===
 [Rédige ici une lettre administrative formelle en français parfait. La lettre doit:
-- Avoir un en-tête professionnel avec les coordonnées de l'expéditeur
+- Avoir un en-tête professionnel avec les coordonnées de l'expéditeur (utilise les marqueurs fournis)
 - Être adressée à l'organisme approprié (Préfecture, CAF, etc.)
 - Contenir un objet clair
 - Citer les articles de loi pertinents (CESEDA, CSS, etc.)
@@ -155,5 +233,31 @@ function parseAIResponse(content: string): {
     formalLetter: letterMatch ? letterMatch[1].trim() : content,
     legalNote: legalMatch ? legalMatch[1].trim() : "Note juridique non disponible",
     actionPlan: actionMatch ? actionMatch[1].trim() : "خطة العمل غير متوفرة"
+  };
+}
+
+function replacePlaceholders(result: { formalLetter: string; legalNote: string; actionPlan: string }, profile: UserProfile | undefined): { formalLetter: string; legalNote: string; actionPlan: string } {
+  if (!profile) {
+    return result;
+  }
+
+  // Replace placeholders with actual user data
+  const replacements: Record<string, string> = {
+    '[NOM_COMPLET]': profile.full_name || '[À compléter]',
+    '[ADRESSE]': profile.address || '[À compléter]',
+    '[TELEPHONE]': profile.phone || '[À compléter]',
+    '[NUMERO_CAF]': profile.caf_number || '[À compléter]',
+    '[NUMERO_ETRANGER]': profile.foreigner_number || '[À compléter]',
+    '[NUMERO_SS]': profile.social_security || '[À compléter]',
+  };
+
+  let processedLetter = result.formalLetter;
+  for (const [placeholder, value] of Object.entries(replacements)) {
+    processedLetter = processedLetter.split(placeholder).join(value);
+  }
+
+  return {
+    ...result,
+    formalLetter: processedLetter
   };
 }

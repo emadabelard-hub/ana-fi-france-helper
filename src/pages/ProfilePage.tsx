@@ -1,45 +1,93 @@
-import { useState } from 'react';
-import { Save, User, MapPin, Phone, CreditCard, IdCard, Shield } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, LogOut, User, Loader2, MapPin, Phone, CreditCard, IdCard, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import AuthModal from '@/components/auth/AuthModal';
 
 const ProfilePage = () => {
   const { t, isRTL } = useLanguage();
-  const [profile, setProfile] = useState({
-    fullName: '',
+  const { user, signOut } = useAuth();
+  const { profile, isLoading, updateProfile } = useProfile();
+  
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: '',
     address: '',
     phone: '',
-    cafNumber: '',
-    foreignerNumber: '',
-    socialSecurity: '',
+    caf_number: '',
+    foreigner_number: '',
+    social_security: '',
   });
 
-  const handleInputChange = (field: string, value: string) => {
-    setProfile((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSave = () => {
-    // Save to localStorage for now - will be replaced with Supabase
-    localStorage.setItem('ana-fi-france-profile', JSON.stringify(profile));
-    toast.success(isRTL ? 'تم حفظ الملف الشخصي بنجاح' : 'Profil enregistré avec succès');
-  };
-
-  // Load saved profile on mount
-  useState(() => {
-    const saved = localStorage.getItem('ana-fi-france-profile');
-    if (saved) {
-      setProfile(JSON.parse(saved));
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        address: profile.address || '',
+        phone: profile.phone || '',
+        caf_number: profile.caf_number || '',
+        foreigner_number: profile.foreigner_number || '',
+        social_security: profile.social_security || '',
+      });
     }
-  });
+  }, [profile]);
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    await updateProfile(formData);
+    setIsSaving(false);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  if (!user) {
+    return (
+      <div className="py-6 space-y-6">
+        <section className={cn("text-center space-y-4", isRTL && "font-cairo")}>
+          <div className="w-20 h-20 mx-auto rounded-full bg-muted flex items-center justify-center">
+            <User className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">
+            {t('profile.title')}
+          </h1>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            {isRTL 
+              ? "سجل الدخول لحفظ معلوماتك الشخصية واستخدامها في الرسائل الإدارية"
+              : "Connectez-vous pour sauvegarder vos informations et les utiliser dans vos courriers administratifs"}
+          </p>
+          <Button onClick={() => setShowAuthModal(true)} className="mt-4">
+            {isRTL ? "تسجيل الدخول" : "Se connecter"}
+          </Button>
+        </section>
+        <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="py-6 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const formFields = [
     {
-      id: 'fullName',
+      id: 'full_name',
       label: t('profile.fullName'),
       icon: User,
       placeholder: isRTL ? 'أدخل اسمك الكامل' : 'Entrez votre nom complet',
@@ -60,21 +108,21 @@ const ProfilePage = () => {
       required: true,
     },
     {
-      id: 'cafNumber',
+      id: 'caf_number',
       label: t('profile.cafNumber'),
       icon: CreditCard,
       placeholder: isRTL ? 'رقم المستفيد من CAF' : 'Numéro d\'allocataire CAF',
       required: false,
     },
     {
-      id: 'foreignerNumber',
+      id: 'foreigner_number',
       label: t('profile.foreignerNumber'),
       icon: IdCard,
       placeholder: isRTL ? 'رقم بطاقة الإقامة' : 'Numéro de carte de séjour',
       required: false,
     },
     {
-      id: 'socialSecurity',
+      id: 'social_security',
       label: t('profile.socialSecurity'),
       icon: Shield,
       placeholder: isRTL ? 'رقم الضمان الاجتماعي' : 'Numéro de sécurité sociale',
@@ -89,6 +137,9 @@ const ProfilePage = () => {
         <h1 className="text-2xl font-bold text-foreground">
           {t('profile.title')}
         </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {user.email}
+        </p>
       </section>
 
       {/* Profile Form */}
@@ -115,8 +166,8 @@ const ProfilePage = () => {
                 </Label>
                 <Input
                   id={field.id}
-                  value={profile[field.id as keyof typeof profile]}
-                  onChange={(e) => handleInputChange(field.id, e.target.value)}
+                  value={formData[field.id as keyof typeof formData]}
+                  onChange={(e) => handleChange(field.id, e.target.value)}
                   placeholder={field.placeholder}
                   className={cn(
                     "h-11",
@@ -126,19 +177,33 @@ const ProfilePage = () => {
               </div>
             );
           })}
-
-          <Button
-            onClick={handleSave}
-            className={cn(
-              "w-full h-12 gap-2 text-base mt-4",
-              isRTL && "font-cairo"
-            )}
-          >
-            <Save className="h-5 w-5" />
-            {t('profile.save')}
-          </Button>
         </CardContent>
       </Card>
+
+      {/* Action Buttons */}
+      <div className="space-y-3">
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          className={cn("w-full gap-2 h-12", isRTL && "font-cairo")}
+        >
+          {isSaving ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Save className="h-5 w-5" />
+          )}
+          {t('profile.save')}
+        </Button>
+
+        <Button
+          variant="outline"
+          onClick={handleSignOut}
+          className={cn("w-full gap-2", isRTL && "font-cairo")}
+        >
+          <LogOut className="h-4 w-4" />
+          {isRTL ? "تسجيل الخروج" : "Se déconnecter"}
+        </Button>
+      </div>
 
       {/* Info Note */}
       <Card className="bg-accent/50 border-accent">

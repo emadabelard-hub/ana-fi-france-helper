@@ -17,6 +17,7 @@ interface RadioContextType {
   pauseStation: () => void;
   togglePlayPause: () => void;
   setVolume: (volume: number) => void;
+  stop: () => void;
 }
 
 const RadioContext = createContext<RadioContextType | undefined>(undefined);
@@ -182,6 +183,15 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  const stop = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+      setCurrentStation(null);
+      setIsPlaying(false);
+    }
+  };
+
   return (
     <RadioContext.Provider value={{
       currentStation,
@@ -191,6 +201,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       pauseStation,
       togglePlayPause,
       setVolume,
+      stop,
     }}>
       {children}
     </RadioContext.Provider>

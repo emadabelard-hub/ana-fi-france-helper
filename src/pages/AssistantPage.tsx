@@ -134,14 +134,14 @@ const AssistantPage = () => {
   };
 
   return (
-    <div className="py-6 space-y-6">
+    <div className="py-6 pb-28 space-y-6">
       {/* Title */}
       <section className={cn("text-center space-y-2", isRTL && "font-cairo")}>
         <h1 className="text-2xl font-bold text-foreground">
-          {t('assistant.title')}
+          {isRTL ? 'أريد حلاً' : 'Je veux une solution'}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {t('assistant.subtitle')}
+          {isRTL ? 'تحليل الأوراق وكتابة الخطابات' : 'Analyse de documents et rédaction de courriers'}
         </p>
       </section>
 

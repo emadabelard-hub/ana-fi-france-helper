@@ -26,12 +26,7 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
     setUploadedImage(null);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
+  // Enter key now creates new lines - send only via button
 
   const handleVoiceRecord = () => {
     setIsRecording(!isRecording);
@@ -108,7 +103,6 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
           placeholder={t('assistant.textPlaceholder')}
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
-          onKeyDown={handleKeyDown}
           className={cn(
             "min-h-[60px] max-h-[150px] resize-none flex-1",
             isRTL && "text-right font-cairo"

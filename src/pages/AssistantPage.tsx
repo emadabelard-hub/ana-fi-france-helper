@@ -33,11 +33,7 @@ const AssistantPage = () => {
   const handleAnalyze = async () => {
     if (!userInput.trim()) return;
 
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
-
+    // Allow anonymous/guest users - no auth check required
     setIsAnalyzing(true);
     try {
       const { data, error } = await supabase.functions.invoke('analyze-request', {

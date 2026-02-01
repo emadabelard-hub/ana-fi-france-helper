@@ -60,11 +60,7 @@ Dites-moi, qu'avez-vous besoin de faire aujourd'hui ?`
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
-
+    // Allow anonymous/guest users - no auth check required
     const userMessage = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);

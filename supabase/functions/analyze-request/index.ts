@@ -373,7 +373,7 @@ async function generateLetterWithFilledData(
     social_security: filledData.social_security || profile?.social_security,
   };
 
-  // Build letter generation prompt
+  // Build letter generation prompt with dispatch info extraction
   const letterPrompt = `أنت مساعد متخصص في كتابة الرسائل الإدارية الرسمية بالفرنسي.
 
 بناءً على المحادثة السابقة، اكتب الآن خطاب رسمي متكامل بالفرنسي.
@@ -443,15 +443,101 @@ async function generateLetterWithFilledData(
     throw new Error("No content in letter generation response");
   }
 
+  // Extract dispatch information from the filled data and context
+  const dispatchInfo = extractDispatchInfo(filledData, letterContent);
+
   return new Response(JSON.stringify({
     explanation: '',
     actionPlan: '',
     formalLetter: letterContent,
     legalNote: '',
     letterGenerated: true,
+    dispatchInfo: dispatchInfo,
   }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function extractDispatchInfo(filledData: FilledData, letterContent: string): {
+  recipientName?: string;
+  recipientAddress?: string;
+  referenceNumber?: string;
+  subjectLine?: string;
+} {
+  const dispatchInfo: {
+    recipientName?: string;
+    recipientAddress?: string;
+    referenceNumber?: string;
+    subjectLine?: string;
+  } = {};
+
+  // Get recipient name from filled data
+  if (filledData.recipient_name) {
+    dispatchInfo.recipientName = filledData.recipient_name;
+  }
+
+  // Get reference number from filled data
+  if (filledData.reference_number) {
+    dispatchInfo.referenceNumber = filledData.reference_number;
+  }
+
+  // Try to extract address from letter content
+  // Look for common French address patterns
+  const addressPatterns = [
+    // CAF addresses
+    /CAF\s+(?:de\s+)?([^,\n]+),?\s*(\d{5}\s+[A-Za-zÀ-ÿ\s-]+)/i,
+    // Prefecture addresses
+    /Préfecture\s+(?:de\s+)?([^,\n]+),?\s*(\d{5}\s+[A-Za-zÀ-ÿ\s-]+)/i,
+    // CPAM addresses
+    /CPAM\s+(?:de\s+)?([^,\n]+),?\s*(\d{5}\s+[A-Za-zÀ-ÿ\s-]+)/i,
+    // Generic address with postal code
+    /(\d+[,\s]+(?:rue|avenue|boulevard|place)[^,\n]+),?\s*(\d{5}\s+[A-Za-zÀ-ÿ\s-]+)/i,
+  ];
+
+  for (const pattern of addressPatterns) {
+    const match = letterContent.match(pattern);
+    if (match) {
+      dispatchInfo.recipientAddress = match[0].trim();
+      break;
+    }
+  }
+
+  // Known institution addresses (common CAF, Préfecture addresses)
+  const knownAddresses: Record<string, string> = {
+    'caf de paris': 'CAF de Paris\n21 rue Joubert\n75009 Paris',
+    'caf de la seine-saint-denis': 'CAF de la Seine-Saint-Denis\n1-9 rue du Chemin Vert\n93000 Bobigny',
+    'caf du val-de-marne': 'CAF du Val-de-Marne\n7 avenue du Général de Gaulle\n94000 Créteil',
+    'préfecture de police': 'Préfecture de Police\n12-14 quai de Gesvres\n75004 Paris',
+    'préfecture de paris': 'Préfecture de Paris\n5 rue Leblanc\n75015 Paris',
+    'cpam de paris': 'CPAM de Paris\n21 rue Georges Auric\n75948 Paris Cedex 19',
+  };
+
+  // Check if recipient matches known addresses
+  if (dispatchInfo.recipientName && !dispatchInfo.recipientAddress) {
+    const recipientLower = dispatchInfo.recipientName.toLowerCase();
+    for (const [key, address] of Object.entries(knownAddresses)) {
+      if (recipientLower.includes(key)) {
+        dispatchInfo.recipientAddress = address;
+        break;
+      }
+    }
+  }
+
+  // Determine subject line based on context
+  const letterLower = letterContent.toLowerCase();
+  if (letterLower.includes('réclamation')) {
+    dispatchInfo.subjectLine = 'Réclamation';
+  } else if (letterLower.includes('recours')) {
+    dispatchInfo.subjectLine = 'Recours gracieux';
+  } else if (letterLower.includes('demande')) {
+    dispatchInfo.subjectLine = 'Demande officielle';
+  } else if (letterLower.includes('contestation')) {
+    dispatchInfo.subjectLine = 'Contestation de décision';
+  } else {
+    dispatchInfo.subjectLine = 'Correspondance officielle';
+  }
+
+  return dispatchInfo;
 }
 
 function buildSystemPrompt(profile: UserProfile | undefined): string {

@@ -161,11 +161,11 @@ const AssistantPage = () => {
   const handleRetry = (retryData: { message: string; image?: string }) => {
     // Remove the error message first
     setMessages(prev => prev.filter(m => !m.isError));
-    // Retry the request
-    handleSend(retryData.message, retryData.image);
+    // Retry the request (mark as retry to avoid duplicating user message)
+    handleSend(retryData.message, retryData.image, true);
   };
 
-  const handleSend = async (userMessage: string, image?: string) => {
+  const handleSend = async (userMessage: string, image?: string, isRetry: boolean = false) => {
     if (!userMessage.trim() && !image) return;
 
     // Detect if this is an image analysis request
@@ -193,48 +193,230 @@ const AssistantPage = () => {
       content: hasImage ? `[صورة مرفقة]\n${userMessage || 'حلل الصورة دي'}` : userMessage,
     };
 
-    // Add user message to chat
-    setMessages(prev => [...prev, userMsg]);
+    // Add user message to chat (only if not a retry)
+    if (!isRetry) {
+      setMessages(prev => [...prev, userMsg]);
+    }
     setIsAnalyzing(true);
     if (hasImage) {
       setIsAnalyzingImage(true);
     }
 
-    try {
-      // Build conversation history for context
-      const conversationHistory = [...messages, userMsg].map(m => ({
-        role: m.role,
-        content: m.content,
-      }));
+    // Helper function to make the API call with optional retry
+    const makeRequest = async (attemptNumber: number = 1): Promise<void> => {
+      try {
+        // Build conversation history for context
+        const currentMessages = isRetry ? messages : [...messages, userMsg];
+        const conversationHistory = currentMessages.map(m => ({
+          role: m.role,
+          content: m.content,
+        }));
 
-      const { data, error } = await supabase.functions.invoke('analyze-request', {
-        body: { 
-          userMessage: userMessage || 'حلل الصورة دي وقولي إيه المكتوب فيها',
-          conversationHistory,
-          imageData: processedImage, // Pass the compressed base64 image data
-          profile: profile ? {
-            full_name: profile.full_name,
-            address: profile.address,
-            phone: profile.phone,
-            caf_number: profile.caf_number,
-            foreigner_number: profile.foreigner_number,
-            social_security: profile.social_security,
-          } : null
+        const { data, error } = await supabase.functions.invoke('analyze-request', {
+          body: { 
+            userMessage: userMessage || 'حلل الصورة دي وقولي إيه المكتوب فيها',
+            conversationHistory,
+            imageData: processedImage, // Pass the compressed base64 image data
+            profile: profile ? {
+              full_name: profile.full_name,
+              address: profile.address,
+              phone: profile.phone,
+              caf_number: profile.caf_number,
+              foreigner_number: profile.foreigner_number,
+              social_security: profile.social_security,
+            } : null
+          }
+        });
+
+        if (error) {
+          // Determine error type for better messaging
+          const status = (error as any)?.status || 500;
+          const isRetryableError = status === 500 || status === 504 || error.message?.includes('timeout');
+          
+          // Auto-retry once for timeout/server errors (only on first attempt)
+          if (isRetryableError && attemptNumber === 1) {
+            toast({
+              title: isRTL ? 'الشبكة ضعيفة، بحاول تاني...' : 'Connexion faible, nouvelle tentative...',
+              description: isRTL ? 'انتظر لحظة...' : 'Veuillez patienter...',
+            });
+            
+            // Wait 2 seconds before retry
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            return makeRequest(2);
+          }
+
+          let errorType: 'auth' | 'timeout' | 'generic' = 'generic';
+          let errorMessage = '';
+
+          if (status === 401 || status === 403) {
+            errorType = 'auth';
+            errorMessage = isRTL 
+              ? '⚠️ تأكد من إعدادات مفتاح الذكاء الاصطناعي (API Key).'
+              : '⚠️ Vérifiez la configuration de la clé API.';
+          } else if (isRetryableError) {
+            errorType = 'timeout';
+            errorMessage = isRTL 
+              ? '⏱️ الصورة كبيرة جداً أو حصل مشكلة في السيرفر. حاول مرة تانية أو استخدم صورة أصغر.'
+              : '⏱️ Image trop volumineuse ou problème serveur. Réessayez ou utilisez une image plus petite.';
+          } else {
+            errorMessage = isRTL 
+              ? '❌ حدث خطأ أثناء التحليل. حاول مرة تانية.'
+              : '❌ Une erreur est survenue. Veuillez réessayer.';
+          }
+
+          // Add error message with retry capability
+          const errorMsg: Message = {
+            id: `error-${Date.now()}`,
+            role: 'assistant',
+            content: errorMessage,
+            isError: true,
+            errorType,
+            retryData: { message: userMessage, image: processedImage },
+          };
+          setMessages(prev => [...prev, errorMsg]);
+          return;
         }
-      });
 
-      if (error) {
-        // Determine error type for better messaging
-        const status = (error as any)?.status || 500;
+        if (data.error) {
+          // Check if it's a specific error type from the edge function
+          const isRetryableDataError = data.error.includes('timeout') || data.error.includes('volumineuse') || data.error.includes('504') || data.error.includes('500');
+          
+          // Auto-retry once for timeout/server errors (only on first attempt)
+          if (isRetryableDataError && attemptNumber === 1) {
+            toast({
+              title: isRTL ? 'الشبكة ضعيفة، بحاول تاني...' : 'Connexion faible, nouvelle tentative...',
+              description: isRTL ? 'انتظر لحظة...' : 'Veuillez patienter...',
+            });
+            
+            // Wait 2 seconds before retry
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            return makeRequest(2);
+          }
+
+          let errorType: 'auth' | 'timeout' | 'generic' = 'generic';
+          let errorMessage = data.error;
+
+          if (data.error.includes('API') || data.error.includes('clé')) {
+            errorType = 'auth';
+            errorMessage = isRTL 
+              ? '⚠️ تأكد من إعدادات مفتاح الذكاء الاصطناعي (API Key).'
+              : '⚠️ Vérifiez la configuration de la clé API.';
+          } else if (isRetryableDataError) {
+            errorType = 'timeout';
+            errorMessage = isRTL 
+              ? '⏱️ الصورة كبيرة جداً. حاول مرة تانية بصورة أصغر أو جودة أقل.'
+              : '⏱️ Image trop volumineuse. Réessayez avec une image plus petite.';
+          }
+
+          const errorMsg: Message = {
+            id: `error-${Date.now()}`,
+            role: 'assistant',
+            content: errorMessage,
+            isError: true,
+            errorType,
+            retryData: { message: userMessage, image: processedImage },
+          };
+          setMessages(prev => [...prev, errorMsg]);
+          return;
+        }
+
+        // Check if we need to show missing info form
+        if (data.requiresMoreInfo && data.missingFields?.length > 0) {
+          // Build assistant response first
+          let assistantContent = '';
+          
+          if (data.explanation) {
+            assistantContent += `📋 **الشرح:**\n${data.explanation}\n\n`;
+          }
+          if (data.actionPlan) {
+            assistantContent += `✅ **خطة العمل:**\n${data.actionPlan}\n\n`;
+          }
+          if (data.legalNote) {
+            assistantContent += `⚖️ **ملاحظات قانونية:**\n${data.legalNote}\n\n`;
+          }
+          
+          assistantContent += `📝 **عشان أكتبلك جواب رسمي متكامل، محتاج منك بعض البيانات...**`;
+
+          const assistantMsgId = `assistant-${Date.now()}`;
+          const assistantMsg: Message = {
+            id: assistantMsgId,
+            role: 'assistant',
+            content: assistantContent.trim(),
+            showMissingInfoForm: true,
+            missingFields: data.missingFields,
+            letterContext: data.letterContext,
+          };
+
+          setMessages(prev => [...prev, assistantMsg]);
+          setPendingLetterMessage({
+            messageId: assistantMsgId,
+            missingFields: data.missingFields,
+            letterContext: data.letterContext || userMessage,
+          });
+        } else {
+          // Build regular assistant response
+          let assistantContent = '';
+          
+          if (data.explanation) {
+            assistantContent += `📋 **الشرح:**\n${data.explanation}\n\n`;
+          }
+          if (data.actionPlan) {
+            assistantContent += `✅ **خطة العمل:**\n${data.actionPlan}\n\n`;
+          }
+          if (data.formalLetter && data.formalLetter !== "لو عايز أكتبلك رد رسمي، قولي 'اكتبلي رد'") {
+            assistantContent += `📝 **الرسالة الرسمية:**\n${data.formalLetter}\n\n`;
+          } else if (data.formalLetter) {
+            assistantContent += `💡 ${data.formalLetter}\n\n`;
+          }
+          if (data.legalNote) {
+            assistantContent += `⚖️ **ملاحظات قانونية:**\n${data.legalNote}`;
+          }
+
+          // Fallback if nothing parsed
+          if (!assistantContent.trim()) {
+            assistantContent = data.rawContent || isRTL 
+              ? "تم استلام ردك. لو عندك أي سؤال تاني، اسألني!" 
+              : "Réponse reçue. Si vous avez d'autres questions, demandez-moi!";
+          }
+
+          // Add assistant message
+          const assistantMsg: Message = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: assistantContent.trim(),
+          };
+
+          setMessages(prev => [...prev, assistantMsg]);
+        }
+
+      } catch (error) {
+        console.error('Error analyzing:', error);
+        
+        const errorStr = String(error);
+        const isRetryableError = errorStr.includes('timeout') || errorStr.includes('500') || errorStr.includes('504') || errorStr.includes('network');
+        
+        // Auto-retry once for timeout/server errors (only on first attempt)
+        if (isRetryableError && attemptNumber === 1) {
+          toast({
+            title: isRTL ? 'الشبكة ضعيفة، بحاول تاني...' : 'Connexion faible, nouvelle tentative...',
+            description: isRTL ? 'انتظر لحظة...' : 'Veuillez patienter...',
+          });
+          
+          // Wait 2 seconds before retry
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          return makeRequest(2);
+        }
+        
+        // Determine error type
         let errorType: 'auth' | 'timeout' | 'generic' = 'generic';
         let errorMessage = '';
 
-        if (status === 401 || status === 403) {
+        if (errorStr.includes('401') || errorStr.includes('403') || errorStr.includes('API')) {
           errorType = 'auth';
           errorMessage = isRTL 
             ? '⚠️ تأكد من إعدادات مفتاح الذكاء الاصطناعي (API Key).'
             : '⚠️ Vérifiez la configuration de la clé API.';
-        } else if (status === 500 || status === 504 || error.message?.includes('timeout')) {
+        } else if (isRetryableError) {
           errorType = 'timeout';
           errorMessage = isRTL 
             ? '⏱️ الصورة كبيرة جداً أو حصل مشكلة في السيرفر. حاول مرة تانية أو استخدم صورة أصغر.'
@@ -245,7 +427,6 @@ const AssistantPage = () => {
             : '❌ Une erreur est survenue. Veuillez réessayer.';
         }
 
-        // Add error message with retry capability
         const errorMsg: Message = {
           id: `error-${Date.now()}`,
           role: 'assistant',
@@ -255,145 +436,16 @@ const AssistantPage = () => {
           retryData: { message: userMessage, image: processedImage },
         };
         setMessages(prev => [...prev, errorMsg]);
-        return;
       }
+    };
 
-      if (data.error) {
-        // Check if it's a specific error type from the edge function
-        let errorType: 'auth' | 'timeout' | 'generic' = 'generic';
-        let errorMessage = data.error;
-
-        if (data.error.includes('API') || data.error.includes('clé')) {
-          errorType = 'auth';
-          errorMessage = isRTL 
-            ? '⚠️ تأكد من إعدادات مفتاح الذكاء الاصطناعي (API Key).'
-            : '⚠️ Vérifiez la configuration de la clé API.';
-        } else if (data.error.includes('timeout') || data.error.includes('volumineuse')) {
-          errorType = 'timeout';
-          errorMessage = isRTL 
-            ? '⏱️ الصورة كبيرة جداً. حاول مرة تانية بصورة أصغر أو جودة أقل.'
-            : '⏱️ Image trop volumineuse. Réessayez avec une image plus petite.';
-        }
-
-        const errorMsg: Message = {
-          id: `error-${Date.now()}`,
-          role: 'assistant',
-          content: errorMessage,
-          isError: true,
-          errorType,
-          retryData: { message: userMessage, image: processedImage },
-        };
-        setMessages(prev => [...prev, errorMsg]);
-        return;
-      }
-
-      // Check if we need to show missing info form
-      if (data.requiresMoreInfo && data.missingFields?.length > 0) {
-        // Build assistant response first
-        let assistantContent = '';
-        
-        if (data.explanation) {
-          assistantContent += `📋 **الشرح:**\n${data.explanation}\n\n`;
-        }
-        if (data.actionPlan) {
-          assistantContent += `✅ **خطة العمل:**\n${data.actionPlan}\n\n`;
-        }
-        if (data.legalNote) {
-          assistantContent += `⚖️ **ملاحظات قانونية:**\n${data.legalNote}\n\n`;
-        }
-        
-        assistantContent += `📝 **عشان أكتبلك جواب رسمي متكامل، محتاج منك بعض البيانات...**`;
-
-        const assistantMsgId = `assistant-${Date.now()}`;
-        const assistantMsg: Message = {
-          id: assistantMsgId,
-          role: 'assistant',
-          content: assistantContent.trim(),
-          showMissingInfoForm: true,
-          missingFields: data.missingFields,
-          letterContext: data.letterContext,
-        };
-
-        setMessages(prev => [...prev, assistantMsg]);
-        setPendingLetterMessage({
-          messageId: assistantMsgId,
-          missingFields: data.missingFields,
-          letterContext: data.letterContext || userMessage,
-        });
-      } else {
-        // Build regular assistant response
-        let assistantContent = '';
-        
-        if (data.explanation) {
-          assistantContent += `📋 **الشرح:**\n${data.explanation}\n\n`;
-        }
-        if (data.actionPlan) {
-          assistantContent += `✅ **خطة العمل:**\n${data.actionPlan}\n\n`;
-        }
-        if (data.formalLetter && data.formalLetter !== "لو عايز أكتبلك رد رسمي، قولي 'اكتبلي رد'") {
-          assistantContent += `📝 **الرسالة الرسمية:**\n${data.formalLetter}\n\n`;
-        } else if (data.formalLetter) {
-          assistantContent += `💡 ${data.formalLetter}\n\n`;
-        }
-        if (data.legalNote) {
-          assistantContent += `⚖️ **ملاحظات قانونية:**\n${data.legalNote}`;
-        }
-
-        // Fallback if nothing parsed
-        if (!assistantContent.trim()) {
-          assistantContent = data.rawContent || isRTL 
-            ? "تم استلام ردك. لو عندك أي سؤال تاني، اسألني!" 
-            : "Réponse reçue. Si vous avez d'autres questions, demandez-moi!";
-        }
-
-        // Add assistant message
-        const assistantMsg: Message = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: assistantContent.trim(),
-        };
-
-        setMessages(prev => [...prev, assistantMsg]);
-      }
-
-    } catch (error) {
-      console.error('Error analyzing:', error);
-      
-      // Determine error type
-      let errorType: 'auth' | 'timeout' | 'generic' = 'generic';
-      let errorMessage = '';
-
-      const errorStr = String(error);
-      if (errorStr.includes('401') || errorStr.includes('403') || errorStr.includes('API')) {
-        errorType = 'auth';
-        errorMessage = isRTL 
-          ? '⚠️ تأكد من إعدادات مفتاح الذكاء الاصطناعي (API Key).'
-          : '⚠️ Vérifiez la configuration de la clé API.';
-      } else if (errorStr.includes('timeout') || errorStr.includes('500') || errorStr.includes('504')) {
-        errorType = 'timeout';
-        errorMessage = isRTL 
-          ? '⏱️ الصورة كبيرة جداً أو حصل مشكلة في السيرفر. حاول مرة تانية أو استخدم صورة أصغر.'
-          : '⏱️ Image trop volumineuse ou problème serveur. Réessayez ou utilisez une image plus petite.';
-      } else {
-        errorMessage = isRTL 
-          ? '❌ حدث خطأ أثناء التحليل. حاول مرة تانية.'
-          : '❌ Une erreur est survenue. Veuillez réessayer.';
-      }
-
-      const errorMsg: Message = {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: errorMessage,
-        isError: true,
-        errorType,
-        retryData: { message: userMessage, image: processedImage },
-      };
-      setMessages(prev => [...prev, errorMsg]);
-    } finally {
-      setIsAnalyzing(false);
-      setIsAnalyzingImage(false);
-    }
+    // Start the request with retry mechanism
+    await makeRequest(1);
+    
+    setIsAnalyzing(false);
+    setIsAnalyzingImage(false);
   };
+
 
   const handleFormSubmit = async (formData: Record<string, string>) => {
     if (!pendingLetterMessage) return;
@@ -741,8 +793,21 @@ const AssistantPage = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area - Fixed at bottom */}
-        <div className="flex-shrink-0 p-3 border-t bg-background">
+        {/* Input Area - Fixed at bottom with loading overlay */}
+        <div className="flex-shrink-0 p-3 border-t bg-background relative">
+          {/* Loading Overlay - Prevents double-clicks */}
+          {isAnalyzing && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+              <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>
+                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-primary font-medium">
+                  {isAnalyzingImage 
+                    ? (isRTL ? 'جاري تحليل الصورة...' : 'Analyse de l\'image...') 
+                    : (isRTL ? 'جاري التحليل...' : 'Analyse en cours...')}
+                </span>
+              </div>
+            </div>
+          )}
           <Card>
             <CardContent className="p-3">
               <ChatInput

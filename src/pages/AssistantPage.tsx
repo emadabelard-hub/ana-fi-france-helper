@@ -10,9 +10,16 @@ import ChatInput from '@/components/assistant/ChatInput';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 import DispatchGuide from '@/components/assistant/DispatchGuide';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, HelpCircle, Trash2 } from 'lucide-react';
+import { ChevronDown, HelpCircle, Trash2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 interface MissingField {
   key: string;
   label: string;
@@ -48,22 +55,39 @@ const AssistantPage = () => {
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [pendingLetterMessage, setPendingLetterMessage] = useState<{
     messageId: string;
     missingFields: MissingField[];
     letterContext: string;
   } | null>(null);
+  const [showSessionDialog, setShowSessionDialog] = useState(false);
+  const [showNewTopicConfirm, setShowNewTopicConfirm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load messages from localStorage on mount
+  // Load messages from localStorage on mount and show session dialog
   useEffect(() => {
     const savedMessages = localStorage.getItem(CHAT_STORAGE_KEY);
     if (savedMessages) {
       try {
         const parsed = JSON.parse(savedMessages);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Show session dialog to ask user if they want to continue
+          setShowSessionDialog(true);
+        }
+      } catch (e) {
+        console.error('Failed to parse saved messages:', e);
+      }
+    }
+  }, []);
+
+  const handleContinueSession = () => {
+    const savedMessages = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (savedMessages) {
+      try {
+        const parsed = JSON.parse(savedMessages);
         if (Array.isArray(parsed)) {
-          // Filter out any pending form states when loading
           const cleanedMessages = parsed.map((m: Message) => ({
             ...m,
             showMissingInfoForm: false,
@@ -74,7 +98,15 @@ const AssistantPage = () => {
         console.error('Failed to parse saved messages:', e);
       }
     }
-  }, []);
+    setShowSessionDialog(false);
+  };
+
+  const handleNewSession = () => {
+    localStorage.removeItem(CHAT_STORAGE_KEY);
+    setMessages([]);
+    setPendingLetterMessage(null);
+    setShowSessionDialog(false);
+  };
 
   // Save messages to localStorage whenever they change
   useEffect(() => {
@@ -103,19 +135,42 @@ const AssistantPage = () => {
     });
   };
 
+  const handleNewTopicClick = () => {
+    if (messages.length > 0) {
+      setShowNewTopicConfirm(true);
+    }
+  };
+
+  const confirmNewTopic = () => {
+    setMessages([]);
+    setPendingLetterMessage(null);
+    localStorage.removeItem(CHAT_STORAGE_KEY);
+    setShowNewTopicConfirm(false);
+    toast({
+      title: isRTL ? "تم بدء موضوع جديد" : "Nouvelle discussion commencée",
+      description: isRTL ? "يمكنك بدء محادثة جديدة" : "Vous pouvez commencer une nouvelle conversation",
+    });
+  };
+
   const handleSend = async (userMessage: string, image?: string) => {
     if (!userMessage.trim() && !image) return;
+
+    // Detect if this is an image analysis request
+    const hasImage = !!image;
 
     // Create user message
     const userMsg: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
-      content: image ? `[صورة مرفقة]\n${userMessage}` : userMessage,
+      content: hasImage ? `[صورة مرفقة]\n${userMessage || 'حلل الصورة دي'}` : userMessage,
     };
 
     // Add user message to chat
     setMessages(prev => [...prev, userMsg]);
     setIsAnalyzing(true);
+    if (hasImage) {
+      setIsAnalyzingImage(true);
+    }
 
     try {
       // Build conversation history for context
@@ -126,8 +181,9 @@ const AssistantPage = () => {
 
       const { data, error } = await supabase.functions.invoke('analyze-request', {
         body: { 
-          userMessage,
+          userMessage: userMessage || 'حلل الصورة دي وقولي إيه المكتوب فيها',
           conversationHistory,
+          imageData: image, // Pass the base64 image data
           profile: profile ? {
             full_name: profile.full_name,
             address: profile.address,
@@ -228,6 +284,7 @@ const AssistantPage = () => {
       });
     } finally {
       setIsAnalyzing(false);
+      setIsAnalyzingImage(false);
     }
   };
 
@@ -315,30 +372,84 @@ const AssistantPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] pb-20">
-      {/* Title with Clear Button */}
-      <section className={cn("text-center py-4 flex-shrink-0 relative", isRTL && "font-cairo")}>
-        <h1 className="text-2xl font-bold text-foreground">
-          {isRTL ? 'أريد حلاً' : 'Je veux une solution'}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {isRTL ? 'مساعدك الإداري المصري' : 'Votre assistant administratif'}
-        </p>
-        {messages.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearChat}
-            className={cn(
-              "absolute top-4 text-muted-foreground hover:text-destructive",
+    <>
+      {/* Session Continue Dialog */}
+      <Dialog open={showSessionDialog} onOpenChange={setShowSessionDialog}>
+        <DialogContent className={cn("sm:max-w-[400px]", isRTL && "font-cairo text-right")}>
+          <DialogHeader>
+            <DialogTitle className="text-lg">
+              {isRTL ? '🔄 نكمل الكلام في الموضوع القديم؟' : 'Continuer la discussion précédente?'}
+            </DialogTitle>
+            <DialogDescription className="text-base">
+              {isRTL 
+                ? 'لقيت محادثة قديمة محفوظة. عايز تكمل ولا تبدأ موضوع جديد؟'
+                : 'Une conversation précédente a été trouvée. Voulez-vous continuer ou commencer une nouvelle?'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+            <Button variant="outline" onClick={handleNewSession}>
+              {isRTL ? '🆕 موضوع جديد' : 'Nouveau sujet'}
+            </Button>
+            <Button onClick={handleContinueSession}>
+              {isRTL ? '✅ نكمل' : 'Continuer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Topic Confirmation Dialog */}
+      <Dialog open={showNewTopicConfirm} onOpenChange={setShowNewTopicConfirm}>
+        <DialogContent className={cn("sm:max-w-[400px]", isRTL && "font-cairo text-right")}>
+          <DialogHeader>
+            <DialogTitle className="text-lg">
+              {isRTL ? '⚠️ بدء موضوع جديد؟' : 'Commencer un nouveau sujet?'}
+            </DialogTitle>
+            <DialogDescription className="text-base">
+              {isRTL 
+                ? 'ده هيمسح المحادثة الحالية. متأكد؟'
+                : 'Cela effacera la conversation actuelle. Êtes-vous sûr?'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+            <Button variant="outline" onClick={() => setShowNewTopicConfirm(false)}>
+              {isRTL ? 'إلغاء' : 'Annuler'}
+            </Button>
+            <Button variant="destructive" onClick={confirmNewTopic}>
+              {isRTL ? '🗑️ امسح وابدأ جديد' : 'Effacer et commencer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex flex-col h-[calc(100vh-140px)] pb-20">
+        {/* Title with New Topic and Clear Buttons */}
+        <section className={cn("text-center py-4 flex-shrink-0 relative", isRTL && "font-cairo")}>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isRTL ? 'أريد حلاً' : 'Je veux une solution'}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {isRTL ? 'مساعدك الإداري المصري' : 'Votre assistant administratif'}
+          </p>
+          
+          {/* New Topic Button - Always visible when there are messages */}
+          {messages.length > 0 && (
+            <div className={cn(
+              "absolute top-4 flex items-center gap-1",
               isRTL ? "left-2" : "right-2"
-            )}
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            {isRTL ? "مسح" : "Effacer"}
-          </Button>
-        )}
-      </section>
+            )}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleNewTopicClick}
+                className="text-muted-foreground hover:text-primary"
+                title={isRTL ? "موضوع جديد" : "Nouveau sujet"}
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                {isRTL ? "جديد" : "Nouveau"}
+              </Button>
+            </div>
+          )}
+        </section>
 
       {/* How It Works Guide */}
       <div className="px-2 mb-3 flex-shrink-0">
@@ -470,38 +581,54 @@ const AssistantPage = () => {
           ))
         )}
         
-        {/* Loading indicator */}
-        {isAnalyzing && !pendingLetterMessage && (
-          <div className={cn(
-            "flex gap-3 p-4 rounded-xl bg-muted/50 mr-8",
-            isRTL && "flex-row-reverse"
-          )}>
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
-              <span className="animate-pulse">🤔</span>
+          {/* Loading indicator - Image Analysis */}
+          {isAnalyzingImage && (
+            <div className={cn(
+              "flex gap-3 p-4 rounded-xl bg-primary/10 mr-8",
+              isRTL && "flex-row-reverse"
+            )}>
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                <span className="animate-spin">🔍</span>
+              </div>
+              <div className={cn("text-sm text-primary font-medium", isRTL && "text-right font-cairo")}>
+                {isRTL ? '🖼️ جاري تحليل الصورة...' : 'Analyse de l\'image en cours...'}
+              </div>
             </div>
-            <div className={cn("text-sm text-muted-foreground", isRTL && "text-right font-cairo")}>
-              {isRTL ? 'جار التحليل...' : 'Analyse en cours...'}
+          )}
+          
+          {/* Loading indicator - Regular Analysis */}
+          {isAnalyzing && !pendingLetterMessage && !isAnalyzingImage && (
+            <div className={cn(
+              "flex gap-3 p-4 rounded-xl bg-muted/50 mr-8",
+              isRTL && "flex-row-reverse"
+            )}>
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
+                <span className="animate-pulse">🤔</span>
+              </div>
+              <div className={cn("text-sm text-muted-foreground", isRTL && "text-right font-cairo")}>
+                {isRTL ? 'جار التحليل...' : 'Analyse en cours...'}
+              </div>
             </div>
-          </div>
-        )}
-        
-        <div ref={messagesEndRef} />
-      </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
 
-      {/* Input Area - Fixed at bottom */}
-      <div className="flex-shrink-0 p-3 border-t bg-background">
-        <Card>
-          <CardContent className="p-3">
-            <ChatInput
-              onSend={handleSend}
-              isLoading={isAnalyzing}
-              isRTL={isRTL}
-              t={t}
-            />
-          </CardContent>
-        </Card>
+        {/* Input Area - Fixed at bottom */}
+        <div className="flex-shrink-0 p-3 border-t bg-background">
+          <Card>
+            <CardContent className="p-3">
+              <ChatInput
+                onSend={handleSend}
+                isLoading={isAnalyzing}
+                isRTL={isRTL}
+                t={t}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

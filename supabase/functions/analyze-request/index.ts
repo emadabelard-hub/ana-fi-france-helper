@@ -35,6 +35,7 @@ interface RequestBody {
   profile?: UserProfile;
   conversationHistory?: ConversationMessage[];
   generateLetterWithData?: FilledData;
+  imageData?: string; // Base64 image for vision analysis
 }
 
 // Input validation constants
@@ -163,7 +164,10 @@ function validateInput(body: unknown): { valid: true; data: RequestBody } | { va
       );
   }
 
-  return { valid: true, data: { userMessage: userMessage.trim(), profile, conversationHistory: validatedHistory, generateLetterWithData } };
+  // Extract imageData if present
+  const imageData = (body as any).imageData;
+  
+  return { valid: true, data: { userMessage: userMessage.trim(), profile, conversationHistory: validatedHistory, generateLetterWithData, imageData } };
 }
 
 serve(async (req) => {
@@ -184,7 +188,7 @@ serve(async (req) => {
       });
     }
 
-    const { userMessage, profile, conversationHistory, generateLetterWithData } = validation.data;
+    const { userMessage, profile, conversationHistory, generateLetterWithData, imageData } = validation.data;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -199,10 +203,10 @@ serve(async (req) => {
     // Build system prompt with PII minimization - use placeholders for sensitive data
     const systemPrompt = buildSystemPrompt(profile);
     
-    console.log("Processing request with message length:", userMessage.length, "history:", conversationHistory?.length || 0);
+    console.log("Processing request with message length:", userMessage.length, "history:", conversationHistory?.length || 0, "hasImage:", !!imageData);
     
     // Build messages array with conversation history
-    const aiMessages: Array<{ role: string; content: string }> = [
+    const aiMessages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }> = [
       { role: "system", content: systemPrompt }
     ];
     
@@ -213,8 +217,22 @@ serve(async (req) => {
       }
     }
     
-    // Add the current user message
-    aiMessages.push({ role: "user", content: userMessage });
+    // Add the current user message - with image if provided (Vision API)
+    if (imageData) {
+      // Use multimodal format for vision analysis
+      aiMessages.push({ 
+        role: "user", 
+        content: [
+          { type: "text", text: userMessage || "حلل الصورة دي وقولي إيه المكتوب فيها. لو ده جواب إداري، اشرحلي بالمصري إيه المطلوب مني." },
+          { type: "image_url", image_url: { url: imageData } }
+        ]
+      });
+    } else {
+      aiMessages.push({ role: "user", content: userMessage });
+    }
+    
+    // Use gemini-2.5-flash for vision (multimodal support) or gemini-3-flash-preview for text
+    const model = imageData ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
     
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -223,7 +241,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: model,
         messages: aiMessages,
         stream: false,
       }),

@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.invoice-mentor]
 verify_jwt = false
+
+[functions.pro-admin-assistant]
+verify_jwt = false

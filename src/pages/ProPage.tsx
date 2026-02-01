@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, PenLine, Lightbulb, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Briefcase, PenLine, Lightbulb, ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ProPage = () => {
@@ -13,12 +13,12 @@ const ProPage = () => {
 
   const features = [
     {
-      icon: FileText,
-      title: 'المساعد الإداري',
-      description: 'تحليل خطابات URSSAF والضرائب',
+      icon: Briefcase,
+      title: 'مساعد الارتيزان الذكي',
+      description: 'حلك لمشاكل الـ URSSAF، الضرايب، ومنازعات الشغل.',
       path: '/pro/admin-assistant',
       gradient: 'from-blue-500/20 to-blue-500/5',
-      available: false,
+      available: true,
     },
     {
       icon: PenLine,
@@ -31,7 +31,7 @@ const ProPage = () => {
     {
       icon: Lightbulb,
       title: 'دليلك المهني',
-      description: 'قوانين، تأمين عشري، ونصائح',
+      description: 'قوانين، تأمين عشري، ونصايح',
       path: '/pro/guide',
       gradient: 'from-amber-500/20 to-amber-500/5',
       available: false,

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Radio, Bot, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Music, HelpCircle, Briefcase, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -12,18 +12,25 @@ const Dashboard = () => {
 
   const quickAccessCards = [
     {
-      icon: Radio,
-      title: t('dashboard.radioCard'),
-      description: t('dashboard.radioDesc'),
+      icon: Music,
+      title: isRTL ? 'بوابة الترفيه' : 'Portail Divertissement',
+      description: isRTL ? 'قرآن، أجواء مصرية، ونكتة اليوم' : 'Quran, ambiances égyptiennes et blague du jour',
       path: '/radio',
       gradient: 'from-accent/20 to-accent/5',
     },
     {
-      icon: Bot,
-      title: t('dashboard.assistantCard'),
-      description: t('dashboard.assistantDesc'),
+      icon: HelpCircle,
+      title: isRTL ? 'أريد حلاً' : 'Je veux une solution',
+      description: isRTL ? 'تحليل الأوراق وكتابة الخطابات' : 'Analyse de documents et rédaction de courriers',
       path: '/assistant',
       gradient: 'from-primary/20 to-primary/5',
+    },
+    {
+      icon: Briefcase,
+      title: isRTL ? 'بوابة الأرتيزان والدوفي' : 'Espace Artisan & Devis',
+      description: isRTL ? 'فواتير، دوفيهات، ومساعدة للمحترفين' : 'Factures, devis et aide aux professionnels',
+      path: '/pro',
+      gradient: 'from-green-500/20 to-green-500/5',
     },
   ];
 

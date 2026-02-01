@@ -10,8 +10,9 @@ import ChatInput from '@/components/assistant/ChatInput';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 import DispatchGuide from '@/components/assistant/DispatchGuide';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, HelpCircle, Trash2, RefreshCw } from 'lucide-react';
+import { ChevronDown, HelpCircle, Trash2, RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { compressImage, isImageData, getFileSizeKB } from '@/lib/imageCompression';
+
 interface MissingField {
   key: string;
   label: string;
@@ -44,6 +47,9 @@ interface Message {
   showDispatchGuide?: boolean;
   dispatchInfo?: DispatchInfo;
   letterContent?: string;
+  isError?: boolean;
+  errorType?: 'auth' | 'timeout' | 'generic';
+  retryData?: { message: string; image?: string };
 }
 
 const CHAT_STORAGE_KEY = 'assistant_chat_messages';
@@ -152,11 +158,33 @@ const AssistantPage = () => {
     });
   };
 
+  const handleRetry = (retryData: { message: string; image?: string }) => {
+    // Remove the error message first
+    setMessages(prev => prev.filter(m => !m.isError));
+    // Retry the request
+    handleSend(retryData.message, retryData.image);
+  };
+
   const handleSend = async (userMessage: string, image?: string) => {
     if (!userMessage.trim() && !image) return;
 
     // Detect if this is an image analysis request
     const hasImage = !!image;
+    let processedImage = image;
+
+    // Compress image if present
+    if (hasImage && image && isImageData(image)) {
+      try {
+        const originalSize = getFileSizeKB(image);
+        console.log(`Original image size: ${originalSize}KB`);
+        processedImage = await compressImage(image);
+        const compressedSize = getFileSizeKB(processedImage);
+        console.log(`Compressed image size: ${compressedSize}KB (${Math.round((1 - compressedSize / originalSize) * 100)}% reduction)`);
+      } catch (compressionError) {
+        console.error('Image compression failed, using original:', compressionError);
+        // Continue with original image if compression fails
+      }
+    }
 
     // Create user message
     const userMsg: Message = {
@@ -183,7 +211,7 @@ const AssistantPage = () => {
         body: { 
           userMessage: userMessage || 'حلل الصورة دي وقولي إيه المكتوب فيها',
           conversationHistory,
-          imageData: image, // Pass the base64 image data
+          imageData: processedImage, // Pass the compressed base64 image data
           profile: profile ? {
             full_name: profile.full_name,
             address: profile.address,
@@ -195,14 +223,67 @@ const AssistantPage = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Determine error type for better messaging
+        const status = (error as any)?.status || 500;
+        let errorType: 'auth' | 'timeout' | 'generic' = 'generic';
+        let errorMessage = '';
+
+        if (status === 401 || status === 403) {
+          errorType = 'auth';
+          errorMessage = isRTL 
+            ? '⚠️ تأكد من إعدادات مفتاح الذكاء الاصطناعي (API Key).'
+            : '⚠️ Vérifiez la configuration de la clé API.';
+        } else if (status === 500 || status === 504 || error.message?.includes('timeout')) {
+          errorType = 'timeout';
+          errorMessage = isRTL 
+            ? '⏱️ الصورة كبيرة جداً أو حصل مشكلة في السيرفر. حاول مرة تانية أو استخدم صورة أصغر.'
+            : '⏱️ Image trop volumineuse ou problème serveur. Réessayez ou utilisez une image plus petite.';
+        } else {
+          errorMessage = isRTL 
+            ? '❌ حدث خطأ أثناء التحليل. حاول مرة تانية.'
+            : '❌ Une erreur est survenue. Veuillez réessayer.';
+        }
+
+        // Add error message with retry capability
+        const errorMsg: Message = {
+          id: `error-${Date.now()}`,
+          role: 'assistant',
+          content: errorMessage,
+          isError: true,
+          errorType,
+          retryData: { message: userMessage, image: processedImage },
+        };
+        setMessages(prev => [...prev, errorMsg]);
+        return;
+      }
 
       if (data.error) {
-        toast({
-          variant: "destructive",
-          title: isRTL ? "خطأ" : "Erreur",
-          description: data.error,
-        });
+        // Check if it's a specific error type from the edge function
+        let errorType: 'auth' | 'timeout' | 'generic' = 'generic';
+        let errorMessage = data.error;
+
+        if (data.error.includes('API') || data.error.includes('clé')) {
+          errorType = 'auth';
+          errorMessage = isRTL 
+            ? '⚠️ تأكد من إعدادات مفتاح الذكاء الاصطناعي (API Key).'
+            : '⚠️ Vérifiez la configuration de la clé API.';
+        } else if (data.error.includes('timeout') || data.error.includes('volumineuse')) {
+          errorType = 'timeout';
+          errorMessage = isRTL 
+            ? '⏱️ الصورة كبيرة جداً. حاول مرة تانية بصورة أصغر أو جودة أقل.'
+            : '⏱️ Image trop volumineuse. Réessayez avec une image plus petite.';
+        }
+
+        const errorMsg: Message = {
+          id: `error-${Date.now()}`,
+          role: 'assistant',
+          content: errorMessage,
+          isError: true,
+          errorType,
+          retryData: { message: userMessage, image: processedImage },
+        };
+        setMessages(prev => [...prev, errorMsg]);
         return;
       }
 
@@ -277,11 +358,37 @@ const AssistantPage = () => {
 
     } catch (error) {
       console.error('Error analyzing:', error);
-      toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "حدث خطأ أثناء التحليل" : "Une erreur est survenue lors de l'analyse.",
-      });
+      
+      // Determine error type
+      let errorType: 'auth' | 'timeout' | 'generic' = 'generic';
+      let errorMessage = '';
+
+      const errorStr = String(error);
+      if (errorStr.includes('401') || errorStr.includes('403') || errorStr.includes('API')) {
+        errorType = 'auth';
+        errorMessage = isRTL 
+          ? '⚠️ تأكد من إعدادات مفتاح الذكاء الاصطناعي (API Key).'
+          : '⚠️ Vérifiez la configuration de la clé API.';
+      } else if (errorStr.includes('timeout') || errorStr.includes('500') || errorStr.includes('504')) {
+        errorType = 'timeout';
+        errorMessage = isRTL 
+          ? '⏱️ الصورة كبيرة جداً أو حصل مشكلة في السيرفر. حاول مرة تانية أو استخدم صورة أصغر.'
+          : '⏱️ Image trop volumineuse ou problème serveur. Réessayez ou utilisez une image plus petite.';
+      } else {
+        errorMessage = isRTL 
+          ? '❌ حدث خطأ أثناء التحليل. حاول مرة تانية.'
+          : '❌ Une erreur est survenue. Veuillez réessayer.';
+      }
+
+      const errorMsg: Message = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: errorMessage,
+        isError: true,
+        errorType,
+        retryData: { message: userMessage, image: processedImage },
+      };
+      setMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsAnalyzing(false);
       setIsAnalyzingImage(false);
@@ -545,11 +652,31 @@ const AssistantPage = () => {
         ) : (
           messages.map((message) => (
             <React.Fragment key={message.id}>
-              <ChatMessage
-                role={message.role}
-                content={message.content}
-                isRTL={isRTL}
-              />
+              {/* Error message with retry button */}
+              {message.isError ? (
+                <Alert variant="destructive" className={cn("mr-8", isRTL && "ml-8 mr-0")}>
+                  <AlertDescription className={cn("flex items-center justify-between gap-2", isRTL && "flex-row-reverse font-cairo text-right")}>
+                    <span>{message.content}</span>
+                    {message.retryData && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRetry(message.retryData!)}
+                        className="shrink-0"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-1" />
+                        {isRTL ? 'حاول تاني' : 'Réessayer'}
+                      </Button>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <ChatMessage
+                  role={message.role}
+                  content={message.content}
+                  isRTL={isRTL}
+                />
+              )}
               {/* Show missing info form if needed */}
               {message.showMissingInfoForm && message.missingFields && pendingLetterMessage?.messageId === message.id && (
                 <div className="mt-3">

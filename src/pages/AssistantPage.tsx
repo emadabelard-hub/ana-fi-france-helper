@@ -7,12 +7,17 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import ChatInput from '@/components/assistant/ChatInput';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown, HelpCircle, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
 }
+
+const CHAT_STORAGE_KEY = 'assistant_chat_messages';
 
 const AssistantPage = () => {
   const { t, isRTL } = useLanguage();
@@ -21,12 +26,44 @@ const AssistantPage = () => {
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load messages from localStorage on mount
+  useEffect(() => {
+    const savedMessages = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (savedMessages) {
+      try {
+        const parsed = JSON.parse(savedMessages);
+        if (Array.isArray(parsed)) {
+          setMessages(parsed);
+        }
+      } catch (e) {
+        console.error('Failed to parse saved messages:', e);
+      }
+    }
+  }, []);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    }
+  }, [messages]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const clearChat = () => {
+    setMessages([]);
+    localStorage.removeItem(CHAT_STORAGE_KEY);
+    toast({
+      title: isRTL ? "تم مسح المحادثة" : "Conversation effacée",
+      description: isRTL ? "يمكنك بدء محادثة جديدة" : "Vous pouvez commencer une nouvelle conversation",
+    });
+  };
 
   const handleSend = async (userMessage: string, image?: string) => {
     if (!userMessage.trim() && !image) return;
@@ -123,15 +160,92 @@ const AssistantPage = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] pb-20">
-      {/* Title */}
-      <section className={cn("text-center py-4 flex-shrink-0", isRTL && "font-cairo")}>
+      {/* Title with Clear Button */}
+      <section className={cn("text-center py-4 flex-shrink-0 relative", isRTL && "font-cairo")}>
         <h1 className="text-2xl font-bold text-foreground">
           {isRTL ? 'أريد حلاً' : 'Je veux une solution'}
         </h1>
         <p className="text-sm text-muted-foreground">
           {isRTL ? 'مساعدك الإداري المصري' : 'Votre assistant administratif'}
         </p>
+        {messages.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearChat}
+            className={cn(
+              "absolute top-4 text-muted-foreground hover:text-destructive",
+              isRTL ? "left-2" : "right-2"
+            )}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            {isRTL ? "مسح" : "Effacer"}
+          </Button>
+        )}
       </section>
+
+      {/* How It Works Guide */}
+      <div className="px-2 mb-3 flex-shrink-0">
+        <Collapsible open={isGuideOpen} onOpenChange={setIsGuideOpen}>
+          <CollapsibleTrigger asChild>
+            <Button 
+              variant="outline" 
+              className={cn(
+                "w-full justify-between",
+                isRTL && "flex-row-reverse font-cairo"
+              )}
+            >
+              <span className="flex items-center gap-2">
+                <HelpCircle className="h-4 w-4" />
+                {isRTL ? 'ازاي تستخدم المساعد؟' : 'Comment utiliser l\'assistant?'}
+              </span>
+              <ChevronDown className={cn(
+                "h-4 w-4 transition-transform",
+                isGuideOpen && "rotate-180"
+              )} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <Card className="mt-2 bg-muted/50">
+              <CardContent className={cn("p-4 space-y-3", isRTL && "text-right font-cairo")}>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">📸</span>
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {isRTL ? 'صوّر الجواب' : 'Photographiez la lettre'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {isRTL ? 'ارفع صورة الخطاب اللي جالك أو اكتب مشكلتك.' : 'Téléchargez une photo de la lettre ou décrivez votre problème.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🔍</span>
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {isRTL ? 'التحليل' : 'L\'analyse'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {isRTL ? 'البرنامج هيشرحلك المكتوب ببساطة.' : 'L\'application vous expliquera le contenu simplement.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">✉️</span>
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {isRTL ? 'الحل' : 'La solution'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {isRTL ? 'لو محتاج، هنكتبلك الرد الرسمي بالفرنساوي عشان تبعته.' : 'Si nécessaire, nous rédigerons la réponse officielle en français.'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
 
       {/* Chat Messages Area */}
       <div className="flex-1 overflow-y-auto px-2 space-y-3">

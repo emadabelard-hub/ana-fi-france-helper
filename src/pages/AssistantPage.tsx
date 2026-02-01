@@ -397,6 +397,17 @@ const AssistantPage = () => {
                     </p>
                   </div>
                 </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🧠</span>
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {isRTL ? 'استشارة وشرح دقيق' : 'Consultation détaillée'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {isRTL ? 'ولو محتاج تفهم أي موضوع أو أي مشكلة، هشرحلك الوضع بصورة دقيقة وهتفهم إيه المطلوب منك وتعمل إيه.' : 'Si vous avez besoin de comprendre un sujet, je vous l\'expliquerai en détail.'}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </CollapsibleContent>

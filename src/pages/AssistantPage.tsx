@@ -7,14 +7,25 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import ChatInput from '@/components/assistant/ChatInput';
+import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, HelpCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+interface MissingField {
+  key: string;
+  label: string;
+  placeholder: string;
+  type?: string;
+}
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  showMissingInfoForm?: boolean;
+  missingFields?: MissingField[];
+  letterContext?: string;
 }
 
 const CHAT_STORAGE_KEY = 'assistant_chat_messages';
@@ -27,6 +38,11 @@ const AssistantPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [pendingLetterMessage, setPendingLetterMessage] = useState<{
+    messageId: string;
+    missingFields: MissingField[];
+    letterContext: string;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load messages from localStorage on mount
@@ -36,7 +52,12 @@ const AssistantPage = () => {
       try {
         const parsed = JSON.parse(savedMessages);
         if (Array.isArray(parsed)) {
-          setMessages(parsed);
+          // Filter out any pending form states when loading
+          const cleanedMessages = parsed.map((m: Message) => ({
+            ...m,
+            showMissingInfoForm: false,
+          }));
+          setMessages(cleanedMessages);
         }
       } catch (e) {
         console.error('Failed to parse saved messages:', e);
@@ -47,17 +68,23 @@ const AssistantPage = () => {
   // Save messages to localStorage whenever they change
   useEffect(() => {
     if (messages.length > 0) {
-      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+      // Don't save the form state
+      const messagesToSave = messages.map(m => ({
+        ...m,
+        showMissingInfoForm: false,
+      }));
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messagesToSave));
     }
   }, [messages]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, pendingLetterMessage]);
 
   const clearChat = () => {
     setMessages([]);
+    setPendingLetterMessage(null);
     localStorage.removeItem(CHAT_STORAGE_KEY);
     toast({
       title: isRTL ? "تم مسح المحادثة" : "Conversation effacée",
@@ -112,39 +139,74 @@ const AssistantPage = () => {
         return;
       }
 
-      // Build assistant response from the parsed sections
-      let assistantContent = '';
-      
-      if (data.explanation) {
-        assistantContent += `📋 **الشرح:**\n${data.explanation}\n\n`;
-      }
-      if (data.actionPlan) {
-        assistantContent += `✅ **خطة العمل:**\n${data.actionPlan}\n\n`;
-      }
-      if (data.formalLetter && data.formalLetter !== "لو عايز أكتبلك رد رسمي، قولي 'اكتبلي رد'") {
-        assistantContent += `📝 **الرسالة الرسمية:**\n${data.formalLetter}\n\n`;
-      } else if (data.formalLetter) {
-        assistantContent += `💡 ${data.formalLetter}\n\n`;
-      }
-      if (data.legalNote) {
-        assistantContent += `⚖️ **ملاحظات قانونية:**\n${data.legalNote}`;
-      }
+      // Check if we need to show missing info form
+      if (data.requiresMoreInfo && data.missingFields?.length > 0) {
+        // Build assistant response first
+        let assistantContent = '';
+        
+        if (data.explanation) {
+          assistantContent += `📋 **الشرح:**\n${data.explanation}\n\n`;
+        }
+        if (data.actionPlan) {
+          assistantContent += `✅ **خطة العمل:**\n${data.actionPlan}\n\n`;
+        }
+        if (data.legalNote) {
+          assistantContent += `⚖️ **ملاحظات قانونية:**\n${data.legalNote}\n\n`;
+        }
+        
+        assistantContent += `📝 **عشان أكتبلك جواب رسمي متكامل، محتاج منك بعض البيانات...**`;
 
-      // Fallback if nothing parsed
-      if (!assistantContent.trim()) {
-        assistantContent = data.rawContent || isRTL 
-          ? "تم استلام ردك. لو عندك أي سؤال تاني، اسألني!" 
-          : "Réponse reçue. Si vous avez d'autres questions, demandez-moi!";
+        const assistantMsgId = `assistant-${Date.now()}`;
+        const assistantMsg: Message = {
+          id: assistantMsgId,
+          role: 'assistant',
+          content: assistantContent.trim(),
+          showMissingInfoForm: true,
+          missingFields: data.missingFields,
+          letterContext: data.letterContext,
+        };
+
+        setMessages(prev => [...prev, assistantMsg]);
+        setPendingLetterMessage({
+          messageId: assistantMsgId,
+          missingFields: data.missingFields,
+          letterContext: data.letterContext || userMessage,
+        });
+      } else {
+        // Build regular assistant response
+        let assistantContent = '';
+        
+        if (data.explanation) {
+          assistantContent += `📋 **الشرح:**\n${data.explanation}\n\n`;
+        }
+        if (data.actionPlan) {
+          assistantContent += `✅ **خطة العمل:**\n${data.actionPlan}\n\n`;
+        }
+        if (data.formalLetter && data.formalLetter !== "لو عايز أكتبلك رد رسمي، قولي 'اكتبلي رد'") {
+          assistantContent += `📝 **الرسالة الرسمية:**\n${data.formalLetter}\n\n`;
+        } else if (data.formalLetter) {
+          assistantContent += `💡 ${data.formalLetter}\n\n`;
+        }
+        if (data.legalNote) {
+          assistantContent += `⚖️ **ملاحظات قانونية:**\n${data.legalNote}`;
+        }
+
+        // Fallback if nothing parsed
+        if (!assistantContent.trim()) {
+          assistantContent = data.rawContent || isRTL 
+            ? "تم استلام ردك. لو عندك أي سؤال تاني، اسألني!" 
+            : "Réponse reçue. Si vous avez d'autres questions, demandez-moi!";
+        }
+
+        // Add assistant message
+        const assistantMsg: Message = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: assistantContent.trim(),
+        };
+
+        setMessages(prev => [...prev, assistantMsg]);
       }
-
-      // Add assistant message
-      const assistantMsg: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: assistantContent.trim(),
-      };
-
-      setMessages(prev => [...prev, assistantMsg]);
 
     } catch (error) {
       console.error('Error analyzing:', error);
@@ -155,6 +217,86 @@ const AssistantPage = () => {
       });
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleFormSubmit = async (formData: Record<string, string>) => {
+    if (!pendingLetterMessage) return;
+
+    setIsAnalyzing(true);
+
+    try {
+      // Build conversation history
+      const conversationHistory = messages.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const { data, error } = await supabase.functions.invoke('analyze-request', {
+        body: { 
+          userMessage: pendingLetterMessage.letterContext,
+          conversationHistory,
+          generateLetterWithData: formData,
+          profile: profile ? {
+            full_name: profile.full_name,
+            address: profile.address,
+            phone: profile.phone,
+            caf_number: profile.caf_number,
+            foreigner_number: profile.foreigner_number,
+            social_security: profile.social_security,
+          } : null
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast({
+          variant: "destructive",
+          title: isRTL ? "خطأ" : "Erreur",
+          description: data.error,
+        });
+        return;
+      }
+
+      // Remove the form from the message
+      setMessages(prev => prev.map(m => 
+        m.id === pendingLetterMessage.messageId 
+          ? { ...m, showMissingInfoForm: false }
+          : m
+      ));
+      setPendingLetterMessage(null);
+
+      // Add the generated letter as a new message
+      const letterMsg: Message = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: `📝 **الرسالة الرسمية:**\n\n${data.formalLetter}\n\n✅ **تم!** دي الرسالة الجاهزة للطباعة والإرسال. لو محتاج أي تعديل، قولي!`,
+      };
+
+      setMessages(prev => [...prev, letterMsg]);
+
+    } catch (error) {
+      console.error('Error generating letter:', error);
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL ? "حدث خطأ أثناء كتابة الرسالة" : "Une erreur est survenue lors de la rédaction.",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleFormCancel = () => {
+    if (pendingLetterMessage) {
+      // Remove the form from the message
+      setMessages(prev => prev.map(m => 
+        m.id === pendingLetterMessage.messageId 
+          ? { ...m, showMissingInfoForm: false }
+          : m
+      ));
+      setPendingLetterMessage(null);
     }
   };
 
@@ -266,17 +408,30 @@ const AssistantPage = () => {
           </div>
         ) : (
           messages.map((message) => (
-            <ChatMessage
-              key={message.id}
-              role={message.role}
-              content={message.content}
-              isRTL={isRTL}
-            />
+            <React.Fragment key={message.id}>
+              <ChatMessage
+                role={message.role}
+                content={message.content}
+                isRTL={isRTL}
+              />
+              {/* Show missing info form if needed */}
+              {message.showMissingInfoForm && message.missingFields && pendingLetterMessage?.messageId === message.id && (
+                <div className="mt-3">
+                  <MissingInfoForm
+                    fields={message.missingFields}
+                    onSubmit={handleFormSubmit}
+                    onCancel={handleFormCancel}
+                    isLoading={isAnalyzing}
+                    isRTL={isRTL}
+                  />
+                </div>
+              )}
+            </React.Fragment>
           ))
         )}
         
         {/* Loading indicator */}
-        {isAnalyzing && (
+        {isAnalyzing && !pendingLetterMessage && (
           <div className={cn(
             "flex gap-3 p-4 rounded-xl bg-muted/50 mr-8",
             isRTL && "flex-row-reverse"

@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import ChatInput from '@/components/assistant/ChatInput';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
+import DispatchGuide from '@/components/assistant/DispatchGuide';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, HelpCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,13 @@ interface MissingField {
   type?: string;
 }
 
+interface DispatchInfo {
+  recipientName?: string;
+  recipientAddress?: string;
+  referenceNumber?: string;
+  subjectLine?: string;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -26,6 +34,9 @@ interface Message {
   showMissingInfoForm?: boolean;
   missingFields?: MissingField[];
   letterContext?: string;
+  showDispatchGuide?: boolean;
+  dispatchInfo?: DispatchInfo;
+  letterContent?: string;
 }
 
 const CHAT_STORAGE_KEY = 'assistant_chat_messages';
@@ -267,11 +278,14 @@ const AssistantPage = () => {
       ));
       setPendingLetterMessage(null);
 
-      // Add the generated letter as a new message
+      // Add the generated letter as a new message with dispatch guide
       const letterMsg: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
         content: `📝 **الرسالة الرسمية:**\n\n${data.formalLetter}\n\n✅ **تم!** دي الرسالة الجاهزة للطباعة والإرسال. لو محتاج أي تعديل، قولي!`,
+        showDispatchGuide: true,
+        dispatchInfo: data.dispatchInfo,
+        letterContent: data.formalLetter,
       };
 
       setMessages(prev => [...prev, letterMsg]);
@@ -425,6 +439,21 @@ const AssistantPage = () => {
                     isRTL={isRTL}
                   />
                 </div>
+              )}
+              {/* Show dispatch guide after letter generation */}
+              {message.showDispatchGuide && message.dispatchInfo && (
+                <DispatchGuide
+                  dispatchInfo={message.dispatchInfo}
+                  letterContent={message.letterContent || ''}
+                  isRTL={isRTL}
+                  onClose={() => {
+                    setMessages(prev => prev.map(m => 
+                      m.id === message.id 
+                        ? { ...m, showDispatchGuide: false }
+                        : m
+                    ));
+                  }}
+                />
               )}
             </React.Fragment>
           ))

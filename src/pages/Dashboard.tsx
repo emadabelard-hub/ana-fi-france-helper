@@ -37,12 +37,12 @@ const Dashboard = () => {
   return (
     <div className="py-6 space-y-8">
       {/* Welcome Section */}
-      <section className={cn("text-center space-y-2", isRTL && "font-cairo")}>
+      <section className="text-center space-y-2 font-cairo">
         <h1 className="text-2xl font-bold text-foreground">
-          {t('dashboard.welcome')}
+          مرحباً بك في أنا في فرنسا
         </h1>
         <p className="text-muted-foreground">
-          {t('dashboard.subtitle')}
+          مساعدك الإداري الذكي
         </p>
       </section>
 

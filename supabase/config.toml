@@ -2,3 +2,6 @@ project_id = "htgqgtwbbrzbadusvtxg"
 
 [functions.analyze-request]
 verify_jwt = false
+
+[functions.invoice-mentor]
+verify_jwt = false

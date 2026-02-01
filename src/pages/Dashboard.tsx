@@ -13,22 +13,22 @@ const Dashboard = () => {
   const quickAccessCards = [
     {
       icon: Music,
-      title: isRTL ? 'بوابة الترفيه' : 'Portail Divertissement',
-      description: isRTL ? 'قرآن، أجواء مصرية، ونكتة اليوم' : 'Quran, ambiances égyptiennes et blague du jour',
+      title: 'بوابة الترفيه',
+      description: 'قرآن، أجواء مصرية، ونكتة اليوم',
       path: '/radio',
       gradient: 'from-accent/20 to-accent/5',
     },
     {
       icon: HelpCircle,
-      title: isRTL ? 'أريد حلاً' : 'Je veux une solution',
-      description: isRTL ? 'تحليل الأوراق وكتابة الخطابات' : 'Analyse de documents et rédaction de courriers',
+      title: 'أريد حلاً',
+      description: 'تحليل الأوراق وكتابة الخطابات',
       path: '/assistant',
       gradient: 'from-primary/20 to-primary/5',
     },
     {
       icon: Briefcase,
-      title: isRTL ? 'بوابة الأرتيزان والدوفي' : 'Espace Artisan & Devis',
-      description: isRTL ? 'فواتير، دوفيهات، ومساعدة للمحترفين' : 'Factures, devis et aide aux professionnels',
+      title: 'بوابة الأرتيزان والدوفي',
+      description: 'فواتير، دوفيهات، ومساعدة للمحترفين',
       path: '/pro',
       gradient: 'from-green-500/20 to-green-500/5',
     },

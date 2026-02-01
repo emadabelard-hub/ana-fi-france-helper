@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Mic, Camera, Send, Loader2, X } from 'lucide-react';
+import { Mic, Paperclip, Send, Loader2, X, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -16,14 +16,14 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
   const { toast } = useToast();
   const [userInput, setUserInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<{ data: string; type: 'image' | 'pdf'; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
-    if (!userInput.trim() && !uploadedImage) return;
-    onSend(userInput.trim(), uploadedImage || undefined);
+    if (!userInput.trim() && !uploadedFile) return;
+    onSend(userInput.trim(), uploadedFile?.data || undefined);
     setUserInput('');
-    setUploadedImage(null);
+    setUploadedFile(null);
   };
 
   // Enter key now creates new lines - send only via button
@@ -43,13 +43,20 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.type.startsWith('image/')) {
+      const isImage = file.type.startsWith('image/');
+      const isPDF = file.type === 'application/pdf';
+      
+      if (isImage || isPDF) {
         const reader = new FileReader();
         reader.onload = (event) => {
-          setUploadedImage(event.target?.result as string);
+          setUploadedFile({
+            data: event.target?.result as string,
+            type: isImage ? 'image' : 'pdf',
+            name: file.name
+          });
           toast({
-            title: isRTL ? "تم رفع الصورة" : "Image téléchargée",
-            description: isRTL ? "تم رفع المستند بنجاح" : "Le document a été téléchargé avec succès.",
+            title: isRTL ? "تم رفع الملف" : "Fichier téléchargé",
+            description: isRTL ? `تم رفع ${file.name} بنجاح` : `${file.name} a été téléchargé avec succès.`,
           });
         };
         reader.readAsDataURL(file);
@@ -57,9 +64,13 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
         toast({
           variant: "destructive",
           title: isRTL ? "خطأ" : "Erreur",
-          description: isRTL ? "يرجى رفع صورة" : "Veuillez télécharger une image.",
+          description: isRTL ? "يرجى رفع صورة أو ملف PDF" : "Veuillez télécharger une image ou un fichier PDF.",
         });
       }
+    }
+    // Reset input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -70,23 +81,32 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept="image/*"
+        accept="image/*,application/pdf"
         className="hidden"
       />
 
-      {/* Uploaded Image Preview */}
-      {uploadedImage && (
+      {/* Uploaded File Preview */}
+      {uploadedFile && (
         <div className="relative inline-block">
-          <img
-            src={uploadedImage}
-            alt="Uploaded document"
-            className="h-20 object-contain rounded-lg border"
-          />
+          {uploadedFile.type === 'image' ? (
+            <img
+              src={uploadedFile.data}
+              alt="Uploaded document"
+              className="h-20 object-contain rounded-lg border"
+            />
+          ) : (
+            <div className="h-20 px-4 flex flex-col items-center justify-center rounded-lg border bg-muted/50 gap-1">
+              <FileText className="h-8 w-8 text-destructive" />
+              <span className="text-xs text-muted-foreground truncate max-w-[100px]">
+                {uploadedFile.name}
+              </span>
+            </div>
+          )}
           <Button
             variant="destructive"
             size="icon"
             className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-            onClick={() => setUploadedImage(null)}
+            onClick={() => setUploadedFile(null)}
           >
             <X className="h-3 w-3" />
           </Button>
@@ -129,13 +149,13 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
             disabled={isLoading}
             className="h-8 w-8"
           >
-            <Camera className="h-4 w-4" />
+            <Paperclip className="h-4 w-4" />
           </Button>
 
           <Button
             size="icon"
             onClick={handleSubmit}
-            disabled={(!userInput.trim() && !uploadedImage) || isLoading}
+            disabled={(!userInput.trim() && !uploadedFile) || isLoading}
             className="h-8 w-8"
           >
             {isLoading ? (

@@ -18,11 +18,19 @@ export type Database = {
         Row: {
           address: string | null
           caf_number: string | null
+          company_address: string | null
+          company_name: string | null
           created_at: string
+          email: string | null
           foreigner_number: string | null
           full_name: string | null
+          header_image_url: string | null
+          header_type: string | null
           id: string
+          legal_status: string | null
+          logo_url: string | null
           phone: string | null
+          siret: string | null
           social_security: string | null
           updated_at: string
           user_id: string
@@ -30,11 +38,19 @@ export type Database = {
         Insert: {
           address?: string | null
           caf_number?: string | null
+          company_address?: string | null
+          company_name?: string | null
           created_at?: string
+          email?: string | null
           foreigner_number?: string | null
           full_name?: string | null
+          header_image_url?: string | null
+          header_type?: string | null
           id?: string
+          legal_status?: string | null
+          logo_url?: string | null
           phone?: string | null
+          siret?: string | null
           social_security?: string | null
           updated_at?: string
           user_id: string
@@ -42,11 +58,19 @@ export type Database = {
         Update: {
           address?: string | null
           caf_number?: string | null
+          company_address?: string | null
+          company_name?: string | null
           created_at?: string
+          email?: string | null
           foreigner_number?: string | null
           full_name?: string | null
+          header_image_url?: string | null
+          header_type?: string | null
           id?: string
+          legal_status?: string | null
+          logo_url?: string | null
           phone?: string | null
+          siret?: string | null
           social_security?: string | null
           updated_at?: string
           user_id?: string

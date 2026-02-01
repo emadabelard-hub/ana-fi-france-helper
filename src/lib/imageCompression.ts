@@ -1,3 +1,80 @@
+export interface ImageCompressionOptions {
+  maxWidth?: number;
+  maxHeight?: number;
+  quality?: number;
+}
+
+/**
+ * Compresses an image File to reduce file size before upload
+ * Returns a compressed Blob
+ */
+export async function compressImageFile(
+  file: File,
+  options: ImageCompressionOptions = {}
+): Promise<Blob> {
+  const { maxWidth = 1200, maxHeight = 1200, quality = 0.8 } = options;
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      try {
+        URL.revokeObjectURL(url);
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+
+        let { width, height } = img;
+
+        // Scale down if necessary
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw image with white background (for transparent PNGs)
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              console.log(
+                `Image compressed: ${Math.round(file.size / 1024)}KB → ${Math.round(blob.size / 1024)}KB`
+              );
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to compress image'));
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image for compression'));
+    };
+
+    img.src = url;
+  });
+}
+
 /**
  * Compresses an image to reduce file size before sending to the API
  * Target: Max 1200px width/height, 0.6 JPEG quality (60%)

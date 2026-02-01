@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Briefcase, PenLine, Lightbulb, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Briefcase, PenLine, Lightbulb, ArrowRight, ArrowLeft, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ProPage = () => {
@@ -26,6 +26,16 @@ const ProPage = () => {
       description: 'اعمل فواتيرك بسهولة، وافهم الفرق بينهم، وظبط أسعارك عشان تكسب صح.',
       path: '/pro/invoice-creator',
       gradient: 'from-green-500/20 to-green-500/5',
+      available: true,
+    },
+    {
+      icon: Settings,
+      title: 'هويتي المهنية',
+      titleFr: 'Mon identité pro',
+      description: 'بيانات شركتك، اللوجو، وشكل الفواتير',
+      descriptionFr: 'Infos entreprise, logo et style des documents',
+      path: '/pro/settings',
+      gradient: 'from-purple-500/20 to-purple-500/5',
       available: true,
     },
     {
@@ -101,7 +111,7 @@ const ProPage = () => {
                       "font-semibold text-foreground text-lg",
                       isRTL && "font-cairo"
                     )}>
-                      {feature.title}
+                      {isRTL ? feature.title : (feature.titleFr || feature.title)}
                     </h3>
                     {!feature.available && (
                       <span className={cn(
@@ -116,7 +126,7 @@ const ProPage = () => {
                     "text-sm text-muted-foreground mt-1",
                     isRTL && "font-cairo"
                   )}>
-                    {feature.description}
+                    {isRTL ? feature.description : (feature.descriptionFr || feature.description)}
                   </p>
                 </div>
 

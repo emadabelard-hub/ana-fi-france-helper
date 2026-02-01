@@ -12,6 +12,16 @@ export interface Profile {
   caf_number: string | null;
   foreigner_number: string | null;
   social_security: string | null;
+  // Company fields
+  company_name: string | null;
+  siret: string | null;
+  company_address: string | null;
+  email: string | null;
+  legal_status: string | null;
+  logo_url: string | null;
+  header_type: string | null;
+  header_image_url: string | null;
+  // Timestamps
   created_at: string;
   updated_at: string;
 }

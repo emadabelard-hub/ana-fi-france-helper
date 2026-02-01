@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Send, Loader2, PenLine, HelpCircle, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Loader2, PenLine, HelpCircle, FileText, Image, Copy, RotateCcw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,12 +10,15 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/auth/AuthModal';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogClose,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 
 interface Message {
@@ -23,17 +26,18 @@ interface Message {
   content: string;
 }
 
+const STORAGE_KEY = 'invoice-mentor-session';
+
 const InvoiceCreatorPage = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: isRTL 
-        ? `أهلاً بيك! 👋 أنا مستشارك المهني للفواتير والتقديرات.
+  const getInitialMessage = (): Message => ({
+    role: 'assistant',
+    content: isRTL 
+      ? `أهلاً بيك! 👋 أنا مستشارك المهني للفواتير والتقديرات.
 
 مش بس هساعدك تعمل المستندات، لأ أنا كمان:
 ✅ هراجع أسعارك وأنصحك لو قليلة
@@ -44,7 +48,7 @@ const InvoiceCreatorPage = () => {
 1. 🏢 اسم شركتك ورقم SIRET
 2. 👤 اسم العميل وعنوانه
 3. 📋 عايز فاتورة (Facture) ولا تقدير (Devis)؟`
-        : `Bonjour ! 👋 Je suis votre consultant professionnel pour factures et devis.
+      : `Bonjour ! 👋 Je suis votre consultant professionnel pour factures et devis.
 
 Je ne fais pas que créer vos documents, je :
 ✅ Vérifie vos prix et vous conseille
@@ -55,13 +59,40 @@ Pour commencer, dites-moi :
 1. 🏢 Nom de votre entreprise et SIRET
 2. 👤 Nom et adresse du client
 3. 📋 Facture ou Devis ?`
-    }
-  ]);
+  });
+
+  const [messages, setMessages] = useState<Message[]>([getInitialMessage()]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
+  const [showResumeModal, setShowResumeModal] = useState(false);
+  const [pendingMessages, setPendingMessages] = useState<Message[] | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Check for saved session on mount
+  useEffect(() => {
+    const savedSession = localStorage.getItem(STORAGE_KEY);
+    if (savedSession) {
+      try {
+        const parsed = JSON.parse(savedSession) as Message[];
+        if (parsed.length > 1) {
+          setPendingMessages(parsed);
+          setShowResumeModal(true);
+        }
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  }, []);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (messages.length > 1) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    }
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -71,10 +102,33 @@ Pour commencer, dites-moi :
     scrollToBottom();
   }, [messages]);
 
+  const handleResumeSession = () => {
+    if (pendingMessages) {
+      setMessages(pendingMessages);
+    }
+    setShowResumeModal(false);
+    setPendingMessages(null);
+  };
+
+  const handleNewSession = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setMessages([getInitialMessage()]);
+    setShowResumeModal(false);
+    setPendingMessages(null);
+  };
+
+  const handleClearSession = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setMessages([getInitialMessage()]);
+    toast({
+      title: isRTL ? "تم المسح" : "Effacé",
+      description: isRTL ? "تم بدء محادثة جديدة" : "Nouvelle conversation démarrée",
+    });
+  };
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    // Allow anonymous/guest users - no auth check required
     const userMessage = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
@@ -115,10 +169,99 @@ Pour commencer, dites-moi :
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  // Check if the last message contains a finalized document (table format)
+  const hasGeneratedDocument = messages.length > 0 && 
+    messages[messages.length - 1].role === 'assistant' &&
+    (messages[messages.length - 1].content.includes('TOTAL') || 
+     messages[messages.length - 1].content.includes('━━━'));
+
+  const handleExportPDF = async () => {
+    if (!messagesContainerRef.current) return;
+    
+    try {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role !== 'assistant') return;
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      
+      pdf.setFont('helvetica');
+      pdf.setFontSize(10);
+      
+      const lines = pdf.splitTextToSize(lastMessage.content, pageWidth - 20);
+      let yPosition = 20;
+      
+      lines.forEach((line: string) => {
+        if (yPosition > 280) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        pdf.text(line, 10, yPosition);
+        yPosition += 5;
+      });
+
+      pdf.save(`devis-${Date.now()}.pdf`);
+      
+      toast({
+        title: isRTL ? "تم التحميل" : "Téléchargé",
+        description: isRTL ? "تم حفظ الملف PDF" : "Le fichier PDF a été enregistré",
+      });
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL ? "فشل في إنشاء PDF" : "Échec de la création du PDF",
+      });
+    }
+  };
+
+  const handleExportImage = async () => {
+    const lastMessageEl = document.querySelector('[data-last-message="true"]');
+    if (!lastMessageEl) return;
+
+    try {
+      const canvas = await html2canvas(lastMessageEl as HTMLElement, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `devis-${Date.now()}.jpg`;
+      link.href = canvas.toDataURL('image/jpeg', 0.9);
+      link.click();
+
+      toast({
+        title: isRTL ? "تم الحفظ" : "Enregistré",
+        description: isRTL ? "تم حفظ الصورة" : "L'image a été enregistrée",
+      });
+    } catch (error) {
+      console.error('Image export error:', error);
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL ? "فشل في إنشاء الصورة" : "Échec de la création de l'image",
+      });
+    }
+  };
+
+  const handleCopyText = async () => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.role !== 'assistant') return;
+
+    try {
+      await navigator.clipboard.writeText(lastMessage.content);
+      toast({
+        title: isRTL ? "تم النسخ" : "Copié",
+        description: isRTL ? "تم نسخ النص للحافظة" : "Le texte a été copié",
+      });
+    } catch (error) {
+      console.error('Copy error:', error);
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL ? "فشل في النسخ" : "Échec de la copie",
+      });
     }
   };
 
@@ -160,6 +303,17 @@ Pour commencer, dites-moi :
           </div>
         </div>
         
+        {/* Clear Session Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleClearSession}
+          className="shrink-0"
+          title={isRTL ? "مسح المحادثة" : "Effacer la conversation"}
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+        
         {/* Education Mode Button */}
         <button
           onClick={() => setShowEducationModal(true)}
@@ -169,37 +323,41 @@ Pour commencer, dites-moi :
           )}
         >
           <HelpCircle className="h-4 w-4" />
-          <span>{isRTL ? 'إيه الفرق بين الفاتورة والدوفي؟' : 'Quelle est la différence entre Facture et Devis?'}</span>
+          <span className="hidden sm:inline">{isRTL ? 'إيه الفرق بين الفاتورة والدوفي؟' : 'Facture vs Devis?'}</span>
         </button>
       </section>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto space-y-4 pb-4">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={cn(
-              "flex",
-              message.role === 'user' 
-                ? (isRTL ? 'justify-start' : 'justify-end')
-                : (isRTL ? 'justify-end' : 'justify-start')
-            )}
-          >
-            <Card className={cn(
-              "max-w-[85%]",
-              message.role === 'user' 
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted'
-            )}>
-              <CardContent className={cn(
-                "p-3 text-sm whitespace-pre-wrap",
-                isRTL && "font-cairo text-right"
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-4 pb-4">
+        {messages.map((message, index) => {
+          const isLastMessage = index === messages.length - 1;
+          return (
+            <div
+              key={index}
+              data-last-message={isLastMessage && message.role === 'assistant' ? "true" : undefined}
+              className={cn(
+                "flex",
+                message.role === 'user' 
+                  ? (isRTL ? 'justify-start' : 'justify-end')
+                  : (isRTL ? 'justify-end' : 'justify-start')
+              )}
+            >
+              <Card className={cn(
+                "max-w-[85%]",
+                message.role === 'user' 
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted'
               )}>
-                {message.content}
-              </CardContent>
-            </Card>
-          </div>
-        ))}
+                <CardContent className={cn(
+                  "p-3 text-sm whitespace-pre-wrap",
+                  isRTL && "font-cairo text-right"
+                )}>
+                  {message.content}
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })}
         
         {isLoading && (
           <div className={cn(
@@ -217,23 +375,58 @@ Pour commencer, dites-moi :
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
+      {/* Export Buttons - Show when document is generated */}
+      {hasGeneratedDocument && !isLoading && (
+        <div className={cn(
+          "flex gap-2 pb-3 border-b",
+          isRTL && "flex-row-reverse"
+        )}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPDF}
+            className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            {isRTL ? '📄 تحميل PDF' : '📄 Télécharger PDF'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportImage}
+            className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
+          >
+            <Image className="h-4 w-4 mr-2" />
+            {isRTL ? '🖼️ حفظ كصورة' : '🖼️ Enregistrer image'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopyText}
+            className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            {isRTL ? '📋 نسخ النص' : '📋 Copier texte'}
+          </Button>
+        </div>
+      )}
+
+      {/* Input Area - Enter key creates new line, send via button only */}
       <div className="border-t pt-4 pb-2">
         <div className={cn(
           "flex items-end gap-2",
           isRTL && "flex-row-reverse"
         )}>
           <Textarea
-            placeholder={isRTL ? 'اكتب رسالتك هنا...' : 'Écrivez votre message...'}
+            placeholder={isRTL ? 'اكتب رسالتك هنا... (Enter = سطر جديد)' : 'Écrivez votre message... (Entrée = nouvelle ligne)'}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
             disabled={isLoading}
             className={cn(
               "flex-1 min-h-[48px] max-h-[120px] resize-none",
               isRTL && "text-right font-cairo"
             )}
-            rows={1}
+            rows={2}
           />
           <Button
             onClick={handleSend}
@@ -251,6 +444,31 @@ Pour commencer, dites-moi :
       </div>
 
       <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+      
+      {/* Session Resume Modal */}
+      <Dialog open={showResumeModal} onOpenChange={setShowResumeModal}>
+        <DialogContent className={cn("max-w-md", isRTL && "font-cairo")}>
+          <DialogHeader>
+            <DialogTitle className={cn(isRTL && "text-right font-cairo")}>
+              {isRTL ? '🔄 تكملة شغل ولا جديد؟' : '🔄 Reprendre ou nouveau?'}
+            </DialogTitle>
+            <DialogDescription className={cn(isRTL && "text-right font-cairo")}>
+              {isRTL 
+                ? 'أنا فاكر آخر مرة كنا شغالين على دوفي. تحب نكمل عليه ولا نبدأ واحد جديد؟'
+                : 'J\'ai trouvé une session précédente. Voulez-vous la reprendre ou en commencer une nouvelle?'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className={cn("gap-2", isRTL && "flex-row-reverse")}>
+            <Button variant="outline" onClick={handleNewSession}>
+              {isRTL ? '🆕 دوفي جديد' : '🆕 Nouveau devis'}
+            </Button>
+            <Button onClick={handleResumeSession}>
+              {isRTL ? '▶️ نكمل القديم' : '▶️ Reprendre'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       {/* Education Modal */}
       <Dialog open={showEducationModal} onOpenChange={setShowEducationModal}>

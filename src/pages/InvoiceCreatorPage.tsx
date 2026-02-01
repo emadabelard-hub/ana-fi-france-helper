@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Send, Loader2, PenLine } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Loader2, PenLine, HelpCircle, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,13 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/auth/AuthModal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from '@/components/ui/dialog';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -26,27 +33,34 @@ const InvoiceCreatorPage = () => {
     {
       role: 'assistant',
       content: isRTL 
-        ? `أهلاً بيك! 👋 أنا مساعدك لإنشاء الفواتير والدوفيهات.
+        ? `أهلاً بيك! 👋 أنا مستشارك المهني للفواتير والتقديرات.
 
-عشان نبدأ، محتاج منك شوية معلومات:
-1. 📛 اسم العميل أو الشركة
-2. 📝 نوع الخدمة اللي قدمتها (ممكن بالعربي وأنا هحولها للفرنسي)
-3. 💰 المبلغ المطلوب
+مش بس هساعدك تعمل المستندات، لأ أنا كمان:
+✅ هراجع أسعارك وأنصحك لو قليلة
+✅ هفكرك بالمصاريف اللي ممكن تنساها
+✅ هتأكد إن كل البيانات القانونية موجودة
 
-قولي، إيه اللي محتاج تعمله النهاردة؟`
-        : `Bonjour ! 👋 Je suis votre assistant pour créer des factures et devis.
+عشان نبدأ، قولي:
+1. 🏢 اسم شركتك ورقم SIRET
+2. 👤 اسم العميل وعنوانه
+3. 📋 عايز فاتورة (Facture) ولا تقدير (Devis)؟`
+        : `Bonjour ! 👋 Je suis votre consultant professionnel pour factures et devis.
 
-Pour commencer, j'ai besoin de quelques informations :
-1. 📛 Nom du client ou de l'entreprise
-2. 📝 Type de service rendu
-3. 💰 Montant à facturer
+Je ne fais pas que créer vos documents, je :
+✅ Vérifie vos prix et vous conseille
+✅ Vous rappelle les frais oubliés
+✅ M'assure que toutes les mentions légales sont présentes
 
-Dites-moi, qu'avez-vous besoin de faire aujourd'hui ?`
+Pour commencer, dites-moi :
+1. 🏢 Nom de votre entreprise et SIRET
+2. 👤 Nom et adresse du client
+3. 📋 Facture ou Devis ?`
     }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showEducationModal, setShowEducationModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -145,6 +159,18 @@ Dites-moi, qu'avez-vous besoin de faire aujourd'hui ?`
             </p>
           </div>
         </div>
+        
+        {/* Education Mode Button */}
+        <button
+          onClick={() => setShowEducationModal(true)}
+          className={cn(
+            "flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors",
+            isRTL && "flex-row-reverse font-cairo"
+          )}
+        >
+          <HelpCircle className="h-4 w-4" />
+          <span>{isRTL ? 'إيه الفرق بين الفاتورة والدوفي؟' : 'Quelle est la différence entre Facture et Devis?'}</span>
+        </button>
       </section>
 
       {/* Messages Area */}
@@ -225,6 +251,61 @@ Dites-moi, qu'avez-vous besoin de faire aujourd'hui ?`
       </div>
 
       <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+      
+      {/* Education Modal */}
+      <Dialog open={showEducationModal} onOpenChange={setShowEducationModal}>
+        <DialogContent className={cn("max-w-md", isRTL && "font-cairo")}>
+          <DialogHeader>
+            <DialogTitle className={cn(isRTL && "text-right font-cairo")}>
+              {isRTL ? '📚 إيه الفرق بين الفاتورة والدوفي؟' : '📚 Différence entre Facture et Devis'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className={cn("space-y-4 text-sm", isRTL && "text-right")}>
+            {/* Devis Section */}
+            <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <h3 className="font-bold text-amber-700 dark:text-amber-400 mb-2">
+                {isRTL ? '📝 التقدير (Devis)' : '📝 Le Devis'}
+              </h3>
+              <p className="text-muted-foreground">
+                {isRTL 
+                  ? 'ده عرض سعر قبل ما تبدأ الشغل. لما العميل يوقع عليه، بيبقى عقد ملزم للطرفين. يعني لازم تلتزم بالسعر اللي كتبته.'
+                  : "C'est une proposition de prix avant les travaux. Une fois signé par le client, il devient un contrat engageant les deux parties."
+                }
+              </p>
+              <div className="mt-2 text-xs text-amber-600 dark:text-amber-300">
+                {isRTL ? '⚠️ مهم: لما توقع، مفيش تغيير في السعر!' : '⚠️ Important: Une fois signé, le prix est fixe!'}
+              </div>
+            </div>
+
+            {/* Facture Section */}
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <h3 className="font-bold text-primary mb-2">
+                {isRTL ? '🧾 الفاتورة (Facture)' : '🧾 La Facture'}
+              </h3>
+              <p className="text-muted-foreground">
+                {isRTL 
+                  ? 'دي بتتعمل بعد ما تخلص الشغل. بتطلب فيها الفلوس من العميل. لازم تحتوي على كل البيانات القانونية (SIRET، التاريخ، رقم الفاتورة، إلخ).'
+                  : "Elle est émise après les travaux pour demander le paiement. Elle doit contenir toutes les mentions légales obligatoires."
+                }
+              </p>
+              <div className="mt-2 text-xs text-primary">
+                {isRTL ? '💰 العميل لازم يدفع خلال 30 يوم (عادةً)' : '💰 Le client doit payer sous 30 jours (généralement)'}
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="p-3 rounded-lg bg-muted text-center">
+              <p className="text-muted-foreground text-xs">
+                {isRTL 
+                  ? '💡 باختصار: الدوفي = قبل الشغل | الفاتورة = بعد الشغل'
+                  : '💡 En résumé: Devis = Avant | Facture = Après'
+                }
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

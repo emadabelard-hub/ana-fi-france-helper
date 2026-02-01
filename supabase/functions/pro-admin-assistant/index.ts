@@ -18,6 +18,7 @@ interface ConversationMessage {
 
 interface RequestBody {
   userMessage: string;
+  imageData?: string;
   profile?: UserProfile;
   conversationHistory?: ConversationMessage[];
 }
@@ -81,7 +82,12 @@ ${profileInfo}
 1. **الشرح:** اشرح الموقف بالمصري البسيط أولاً
 2. **القانون:** اذكر المواد القانونية المناسبة (Code du Commerce, Code Civil)
 3. **العمل:** اقترح خطوات عملية واضحة
-4. **الخطابات:** لما تكتب خطاب رسمي:
+4. **تحليل الصور:** لما المستخدم يبعتلك صورة مستند:
+   - اقرأ المستند بعناية
+   - اشرح محتواه بالمصري
+   - حدد المطلوب من المستخدم
+   - اقترح الرد المناسب
+5. **الخطابات:** لما تكتب خطاب رسمي:
    - اكتبه بالفرنسي الرسمي
    - اذكر المواد القانونية
    - استخدم التنسيق المهني
@@ -99,17 +105,15 @@ function validateInput(body: unknown): { valid: true; data: RequestBody } | { va
     return { valid: false, error: 'Corps de requête invalide' };
   }
 
-  const { userMessage, profile, conversationHistory } = body as RequestBody;
+  const { userMessage, imageData, profile, conversationHistory } = body as RequestBody;
 
-  if (!userMessage || typeof userMessage !== 'string') {
-    return { valid: false, error: 'Message utilisateur requis' };
+  // Allow empty message if image is present
+  if ((!userMessage || typeof userMessage !== 'string' || userMessage.trim().length === 0) && !imageData) {
+    return { valid: false, error: 'Message utilisateur ou image requis' };
   }
 
-  if (userMessage.trim().length === 0) {
-    return { valid: false, error: 'Message utilisateur ne peut pas être vide' };
-  }
-
-  if (userMessage.length > MAX_MESSAGE_LENGTH) {
+  const message = userMessage || '';
+  if (message.length > MAX_MESSAGE_LENGTH) {
     return { valid: false, error: `Message trop long (max ${MAX_MESSAGE_LENGTH} caractères)` };
   }
 
@@ -125,7 +129,7 @@ function validateInput(body: unknown): { valid: true; data: RequestBody } | { va
       );
   }
 
-  return { valid: true, data: { userMessage: userMessage.trim(), profile, conversationHistory: validatedHistory } };
+  return { valid: true, data: { userMessage: message.trim(), imageData, profile, conversationHistory: validatedHistory } };
 }
 
 serve(async (req) => {
@@ -145,7 +149,7 @@ serve(async (req) => {
       });
     }
 
-    const { userMessage, profile, conversationHistory } = validation.data;
+    const { userMessage, imageData, profile, conversationHistory } = validation.data;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -153,20 +157,49 @@ serve(async (req) => {
     }
 
     const systemPrompt = buildSystemPrompt(profile);
+    const hasImage = !!imageData;
     
-    console.log("Pro Admin Assistant - Processing request:", userMessage.substring(0, 100));
+    console.log("Pro Admin Assistant - Processing request:", userMessage.substring(0, 100), "hasImage:", hasImage);
     
-    const aiMessages: Array<{ role: string; content: string }> = [
+    // Build messages array
+    const aiMessages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }> = [
       { role: "system", content: systemPrompt }
     ];
     
+    // Add conversation history
     if (conversationHistory && conversationHistory.length > 0) {
       for (const msg of conversationHistory) {
         aiMessages.push({ role: msg.role, content: msg.content });
       }
     }
     
-    aiMessages.push({ role: "user", content: userMessage });
+    // Build user message with optional image
+    if (hasImage) {
+      // Use multimodal format for vision
+      const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
+      
+      // Add image first
+      userContent.push({
+        type: "image_url",
+        image_url: { url: imageData }
+      });
+      
+      // Add text instruction
+      const textPrompt = userMessage || 'حلل المستند ده وقولي إيه المكتوب فيه وإيه المطلوب مني';
+      userContent.push({
+        type: "text",
+        text: textPrompt
+      });
+      
+      aiMessages.push({ role: "user", content: userContent });
+    } else {
+      aiMessages.push({ role: "user", content: userMessage });
+    }
+    
+    // Use vision-capable model for images
+    const model = hasImage ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
+    
+    console.log("Pro Admin Assistant - Using model:", model);
     
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -175,7 +208,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model,
         messages: aiMessages,
         stream: false,
       }),
@@ -209,7 +242,7 @@ serve(async (req) => {
       throw new Error("No content in AI response");
     }
 
-    console.log("Pro Admin Assistant - Response generated successfully");
+    console.log("Pro Admin Assistant - Response generated successfully, length:", content.length);
 
     return new Response(JSON.stringify({ response: content }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

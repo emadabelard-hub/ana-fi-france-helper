@@ -19,10 +19,22 @@ interface ConversationMessage {
   content: string;
 }
 
+interface MissingField {
+  key: string;
+  label: string;
+  placeholder: string;
+  type?: string;
+}
+
+interface FilledData {
+  [key: string]: string;
+}
+
 interface RequestBody {
   userMessage: string;
   profile?: UserProfile;
   conversationHistory?: ConversationMessage[];
+  generateLetterWithData?: FilledData;
 }
 
 // Input validation constants
@@ -30,12 +42,79 @@ const MAX_MESSAGE_LENGTH = 5000;
 const MAX_FIELD_LENGTH = 500;
 const ALLOWED_PROFILE_FIELDS = ['full_name', 'address', 'phone', 'caf_number', 'foreigner_number', 'social_security'];
 
+// Field definitions for missing info detection
+const FIELD_DEFINITIONS: Record<string, MissingField> = {
+  full_name: {
+    key: 'full_name',
+    label: 'اكتب اسمك بالكامل هنا',
+    placeholder: 'مثال: محمد أحمد علي',
+  },
+  address: {
+    key: 'address',
+    label: 'عنوانك في فرنسا',
+    placeholder: 'مثال: 12 rue de Paris, 75001 Paris',
+  },
+  phone: {
+    key: 'phone',
+    label: 'رقم تليفونك',
+    placeholder: 'مثال: 06 12 34 56 78',
+  },
+  caf_number: {
+    key: 'caf_number',
+    label: 'رقم الملف عند الكاف (CAF)',
+    placeholder: 'مثال: 1234567A',
+  },
+  foreigner_number: {
+    key: 'foreigner_number',
+    label: 'رقم الأجنبي (Numéro Étranger)',
+    placeholder: 'مثال: 1234567890',
+  },
+  social_security: {
+    key: 'social_security',
+    label: 'رقم الضمان الاجتماعي',
+    placeholder: 'مثال: 1 23 45 67 890 123 45',
+  },
+  recipient_name: {
+    key: 'recipient_name',
+    label: 'اسم الجهة أو الشخص المرسل إليه',
+    placeholder: 'مثال: CAF de Paris / Préfecture de Police',
+  },
+  reference_number: {
+    key: 'reference_number',
+    label: 'رقم المرجع أو الملف (لو موجود في الجواب)',
+    placeholder: 'مثال: REF-2024-12345',
+  },
+  date_of_letter: {
+    key: 'date_of_letter',
+    label: 'تاريخ الخطاب الأصلي (لو موجود)',
+    placeholder: 'مثال: 15/01/2024',
+    type: 'text',
+  },
+  deadline: {
+    key: 'deadline',
+    label: 'الموعد النهائي للرد (لو موجود)',
+    placeholder: 'مثال: 30/01/2024',
+    type: 'text',
+  },
+  birth_date: {
+    key: 'birth_date',
+    label: 'تاريخ ميلادك',
+    placeholder: 'مثال: 15/03/1990',
+    type: 'text',
+  },
+  siret: {
+    key: 'siret',
+    label: 'رقم SIRET (للحرفيين)',
+    placeholder: 'مثال: 123 456 789 00012',
+  },
+};
+
 function validateInput(body: unknown): { valid: true; data: RequestBody } | { valid: false; error: string } {
   if (!body || typeof body !== 'object') {
     return { valid: false, error: 'Corps de requête invalide' };
   }
 
-  const { userMessage, profile, conversationHistory } = body as RequestBody;
+  const { userMessage, profile, conversationHistory, generateLetterWithData } = body as RequestBody;
 
   // Validate userMessage
   if (!userMessage || typeof userMessage !== 'string') {
@@ -84,7 +163,7 @@ function validateInput(body: unknown): { valid: true; data: RequestBody } | { va
       );
   }
 
-  return { valid: true, data: { userMessage: userMessage.trim(), profile, conversationHistory: validatedHistory } };
+  return { valid: true, data: { userMessage: userMessage.trim(), profile, conversationHistory: validatedHistory, generateLetterWithData } };
 }
 
 serve(async (req) => {
@@ -105,11 +184,16 @@ serve(async (req) => {
       });
     }
 
-    const { userMessage, profile, conversationHistory } = validation.data;
+    const { userMessage, profile, conversationHistory, generateLetterWithData } = validation.data;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    // Check if this is a letter generation request with filled data
+    if (generateLetterWithData && Object.keys(generateLetterWithData).length > 0) {
+      return await generateLetterWithFilledData(generateLetterWithData, profile, conversationHistory, LOVABLE_API_KEY);
     }
 
     // Build system prompt with PII minimization - use placeholders for sensitive data
@@ -176,7 +260,26 @@ serve(async (req) => {
     // Parse the AI response into sections
     const result = parseAIResponse(content);
 
-    // Post-process: Replace placeholders with actual user data (client-side replacement)
+    // Check if user is asking for a letter and detect missing fields
+    const isLetterRequest = detectLetterRequest(userMessage, content);
+    
+    if (isLetterRequest) {
+      const missingFields = detectMissingFields(profile, content);
+      
+      if (missingFields.length > 0) {
+        // Return missing fields for the form
+        return new Response(JSON.stringify({
+          ...result,
+          requiresMoreInfo: true,
+          missingFields: missingFields,
+          letterContext: userMessage,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // Post-process: Replace placeholders with actual user data
     const processedResult = replacePlaceholders(result, profile);
 
     return new Response(JSON.stringify(processedResult), {
@@ -193,6 +296,163 @@ serve(async (req) => {
     });
   }
 });
+
+function detectLetterRequest(userMessage: string, aiResponse: string): boolean {
+  const letterKeywords = [
+    'اكتبلي رد', 'اكتب رد', 'عايز رد', 'اكتبلي جواب', 'اكتب جواب',
+    'اكتبلي خطاب', 'عايز خطاب', 'محتاج رد', 'محتاج جواب', 'رد رسمي',
+    'lettre', 'répondre', 'courrier', 'رسالة رسمية', 'نعم', 'أيوه', 'ايوه', 'اه', 'آه',
+    'oui', 'yes', 'اكتب', 'تمام'
+  ];
+  
+  const lowerMessage = userMessage.toLowerCase();
+  const hasLetterRequest = letterKeywords.some(keyword => lowerMessage.includes(keyword));
+  
+  // Also check if the AI response suggests writing a letter
+  const aiSuggestsLetter = aiResponse.includes('تحب أكتبلك خطاب') || 
+                           aiResponse.includes('اكتبلك رد رسمي') ||
+                           aiResponse.includes('أكتبلك جواب');
+  
+  return hasLetterRequest || (aiSuggestsLetter && letterKeywords.some(k => lowerMessage.includes(k)));
+}
+
+function detectMissingFields(profile: UserProfile | undefined, aiResponse: string): MissingField[] {
+  const missingFields: MissingField[] = [];
+  
+  // Always need name and address for formal letters
+  if (!profile?.full_name) {
+    missingFields.push(FIELD_DEFINITIONS.full_name);
+  }
+  if (!profile?.address) {
+    missingFields.push(FIELD_DEFINITIONS.address);
+  }
+  
+  // Check AI response for context-specific fields
+  const responseText = aiResponse.toLowerCase();
+  
+  // CAF-related
+  if ((responseText.includes('caf') || responseText.includes('كاف') || responseText.includes('allocations')) && !profile?.caf_number) {
+    missingFields.push(FIELD_DEFINITIONS.caf_number);
+  }
+  
+  // Prefecture/Residence permit related
+  if ((responseText.includes('préfecture') || responseText.includes('بريفكتير') || responseText.includes('إقامة') || responseText.includes('titre de séjour')) && !profile?.foreigner_number) {
+    missingFields.push(FIELD_DEFINITIONS.foreigner_number);
+  }
+  
+  // Health/Social security related
+  if ((responseText.includes('cpam') || responseText.includes('ameli') || responseText.includes('أميلي') || responseText.includes('carte vitale') || responseText.includes('sécurité sociale')) && !profile?.social_security) {
+    missingFields.push(FIELD_DEFINITIONS.social_security);
+  }
+  
+  // Always ask for recipient if not obvious
+  missingFields.push(FIELD_DEFINITIONS.recipient_name);
+  
+  // Reference number if mentioned
+  if (responseText.includes('référence') || responseText.includes('مرجع') || responseText.includes('numéro de dossier')) {
+    missingFields.push(FIELD_DEFINITIONS.reference_number);
+  }
+  
+  return missingFields;
+}
+
+async function generateLetterWithFilledData(
+  filledData: FilledData,
+  profile: UserProfile | undefined,
+  conversationHistory: ConversationMessage[] | undefined,
+  apiKey: string
+): Promise<Response> {
+  // Merge profile with filled data
+  const mergedProfile = {
+    ...profile,
+    full_name: filledData.full_name || profile?.full_name,
+    address: filledData.address || profile?.address,
+    phone: filledData.phone || profile?.phone,
+    caf_number: filledData.caf_number || profile?.caf_number,
+    foreigner_number: filledData.foreigner_number || profile?.foreigner_number,
+    social_security: filledData.social_security || profile?.social_security,
+  };
+
+  // Build letter generation prompt
+  const letterPrompt = `أنت مساعد متخصص في كتابة الرسائل الإدارية الرسمية بالفرنسي.
+
+بناءً على المحادثة السابقة، اكتب الآن خطاب رسمي متكامل بالفرنسي.
+
+بيانات المرسل:
+- الاسم: ${mergedProfile.full_name || '[غير متوفر]'}
+- العنوان: ${mergedProfile.address || '[غير متوفر]'}
+- التليفون: ${mergedProfile.phone || '[غير متوفر]'}
+- رقم CAF: ${filledData.caf_number || mergedProfile.caf_number || '[غير متوفر]'}
+- رقم الأجنبي: ${filledData.foreigner_number || mergedProfile.foreigner_number || '[غير متوفر]'}
+- رقم الضمان الاجتماعي: ${filledData.social_security || mergedProfile.social_security || '[غير متوفر]'}
+
+المرسل إليه: ${filledData.recipient_name || '[الجهة المعنية]'}
+رقم المرجع: ${filledData.reference_number || '[إن وجد]'}
+
+⚠️ مهم جداً:
+1. اكتب الخطاب بالفرنسي الرسمي فقط
+2. لا تستخدم أي placeholders مثل [Nom] أو [...] - استخدم البيانات الفعلية
+3. اذكر المواد القانونية المناسبة (CESEDA, CSS, etc.)
+4. اجعل الخطاب مهني ومقنع
+5. أضف التاريخ الحالي
+
+ابدأ الخطاب مباشرة بدون مقدمات بالعربي.`;
+
+  const aiMessages: Array<{ role: string; content: string }> = [
+    { role: "system", content: letterPrompt }
+  ];
+  
+  // Add conversation history for context
+  if (conversationHistory && conversationHistory.length > 0) {
+    for (const msg of conversationHistory.slice(-6)) {
+      aiMessages.push({ role: msg.role, content: msg.content });
+    }
+  }
+  
+  aiMessages.push({ 
+    role: "user", 
+    content: `اكتب الخطاب الرسمي الآن بالفرنسي مستخدماً البيانات المتوفرة.` 
+  });
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: aiMessages,
+      stream: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("AI gateway error during letter generation:", response.status, errorText);
+    return new Response(JSON.stringify({ error: "Erreur lors de la génération de la lettre" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const data = await response.json();
+  const letterContent = data.choices?.[0]?.message?.content;
+
+  if (!letterContent) {
+    throw new Error("No content in letter generation response");
+  }
+
+  return new Response(JSON.stringify({
+    explanation: '',
+    actionPlan: '',
+    formalLetter: letterContent,
+    legalNote: '',
+    letterGenerated: true,
+  }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
 function buildSystemPrompt(profile: UserProfile | undefined): string {
   // PII Minimization: Only send placeholder markers to AI, not actual sensitive data

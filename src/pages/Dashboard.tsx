@@ -3,7 +3,7 @@ import { Music, HelpCircle, Briefcase, ArrowRight, ArrowLeft } from 'lucide-reac
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-
+import ValuePropositions from '@/components/home/ValuePropositions';
 const Dashboard = () => {
   const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
@@ -109,6 +109,9 @@ const Dashboard = () => {
           })}
         </div>
       </section>
+
+      {/* Value Propositions Carousel */}
+      <ValuePropositions />
 
       {/* Info Banner */}
       <section>

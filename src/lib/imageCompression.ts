@@ -1,6 +1,7 @@
 /**
  * Compresses an image to reduce file size before sending to the API
- * Target: Max 1024px width/height, 0.7 JPEG quality
+ * Target: Max 1200px width/height, 0.6 JPEG quality (60%)
+ * Goal: Keep payload under 1MB to prevent Edge Function timeouts
  */
 export async function compressImage(base64Data: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -16,8 +17,8 @@ export async function compressImage(base64Data: string): Promise<string> {
           return;
         }
         
-        // Calculate new dimensions (max 1024px)
-        const MAX_SIZE = 1024;
+        // Calculate new dimensions (max 1200px)
+        const MAX_SIZE = 1200;
         let { width, height } = img;
         
         if (width > height) {
@@ -40,8 +41,8 @@ export async function compressImage(base64Data: string): Promise<string> {
         ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Convert to JPEG with 0.7 quality
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        // Convert to JPEG with 0.6 quality (60%)
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
         
         console.log(`Image compressed: ${Math.round(base64Data.length / 1024)}KB → ${Math.round(compressedBase64.length / 1024)}KB`);
         
@@ -67,10 +68,17 @@ export function isImageData(base64Data: string): boolean {
 }
 
 /**
- * Get human-readable file size
+ * Get human-readable file size in KB
  */
 export function getFileSizeKB(base64Data: string): number {
   // Base64 is ~4/3 of the actual binary size
   const binarySize = (base64Data.length * 3) / 4;
   return Math.round(binarySize / 1024);
+}
+
+/**
+ * Check if file size exceeds limit (in KB)
+ */
+export function isFileSizeExceeded(base64Data: string, maxSizeKB: number = 1024): boolean {
+  return getFileSizeKB(base64Data) > maxSizeKB;
 }

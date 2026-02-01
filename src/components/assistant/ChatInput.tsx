@@ -118,14 +118,15 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
         "flex items-end gap-2",
         isRTL && "flex-row-reverse"
       )}>
-        {/* Text Input */}
+        {/* Text Input - Disabled while loading */}
         <Textarea
           placeholder={t('assistant.textPlaceholder')}
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
           className={cn(
-            "min-h-[60px] max-h-[150px] resize-none flex-1",
-            isRTL && "text-right font-cairo"
+            "min-h-[60px] max-h-[150px] resize-none flex-1 transition-opacity",
+            isRTL && "text-right font-cairo",
+            isLoading && "opacity-50 cursor-not-allowed"
           )}
           disabled={isLoading}
         />

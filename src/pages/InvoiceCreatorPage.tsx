@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Send, Loader2, PenLine, HelpCircle, FileText, Image, Copy, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Loader2, PenLine, HelpCircle, RotateCcw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,8 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/auth/AuthModal';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import InvoiceDisplay, { InvoiceData } from '@/components/invoice/InvoiceDisplay';
+import InvoiceActions from '@/components/invoice/InvoiceActions';
 import {
   Dialog,
   DialogContent,
@@ -24,9 +24,45 @@ import {
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  invoiceData?: InvoiceData;
 }
 
 const STORAGE_KEY = 'invoice-mentor-session';
+
+// Parse invoice JSON from AI response
+const parseInvoiceData = (content: string): InvoiceData | null => {
+  const startMarker = '---INVOICE_START---';
+  const endMarker = '---INVOICE_END---';
+  
+  const startIndex = content.indexOf(startMarker);
+  const endIndex = content.indexOf(endMarker);
+  
+  if (startIndex === -1 || endIndex === -1) return null;
+  
+  try {
+    const jsonStr = content.substring(startIndex + startMarker.length, endIndex).trim();
+    return JSON.parse(jsonStr) as InvoiceData;
+  } catch (error) {
+    console.error('Failed to parse invoice data:', error);
+    return null;
+  }
+};
+
+// Get display content without the JSON block
+const getDisplayContent = (content: string): string => {
+  const startMarker = '---INVOICE_START---';
+  const endMarker = '---INVOICE_END---';
+  
+  const startIndex = content.indexOf(startMarker);
+  const endIndex = content.indexOf(endMarker);
+  
+  if (startIndex === -1 || endIndex === -1) return content;
+  
+  const beforeJson = content.substring(0, startIndex).trim();
+  const afterJson = content.substring(endIndex + endMarker.length).trim();
+  
+  return `${beforeJson}\n\n${afterJson}`.trim();
+};
 
 const InvoiceCreatorPage = () => {
   const { isRTL } = useLanguage();
@@ -39,10 +75,12 @@ const InvoiceCreatorPage = () => {
     content: isRTL 
       ? `أهلاً بيك! 👋 أنا مستشارك المهني للفواتير والتقديرات.
 
-مش بس هساعدك تعمل المستندات، لأ أنا كمان:
-✅ هراجع أسعارك وأنصحك لو قليلة
-✅ هفكرك بالمصاريف اللي ممكن تنساها
-✅ هتأكد إن كل البيانات القانونية موجودة
+أنا مش مجرد أداة، أنا مدربك الشخصي! 🎯
+
+✅ هسألك عن المصنعية (Main d'œuvre) - شغلك يستاهل فلوس!
+✅ هسألك عن مصاريف التنقل (Frais de déplacement) - البنزين مش ببلاش!
+✅ هفكرك بالمستهلكات (Fournitures) - المسامير والسليكون بفلوس!
+✅ هظبط معاك الـ TVA حسب وضعك القانوني
 
 عشان نبدأ، قولي:
 1. 🏢 اسم شركتك ورقم SIRET
@@ -50,10 +88,12 @@ const InvoiceCreatorPage = () => {
 3. 📋 عايز فاتورة (Facture) ولا تقدير (Devis)؟`
       : `Bonjour ! 👋 Je suis votre consultant professionnel pour factures et devis.
 
-Je ne fais pas que créer vos documents, je :
-✅ Vérifie vos prix et vous conseille
-✅ Vous rappelle les frais oubliés
-✅ M'assure que toutes les mentions légales sont présentes
+Je ne suis pas qu'un simple outil, je suis votre coach ! 🎯
+
+✅ Je vérifie la main d'œuvre - votre travail mérite d'être payé !
+✅ Je calcule les frais de déplacement - l'essence n'est pas gratuite !
+✅ Je n'oublie pas les fournitures - vis, silicone, tout compte !
+✅ Je configure la TVA selon votre statut juridique
 
 Pour commencer, dites-moi :
 1. 🏢 Nom de votre entreprise et SIRET
@@ -68,8 +108,9 @@ Pour commencer, dites-moi :
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [pendingMessages, setPendingMessages] = useState<Message[] | null>(null);
+  const [showArabic, setShowArabic] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
   // Check for saved session on mount
   useEffect(() => {
@@ -120,6 +161,7 @@ Pour commencer, dites-moi :
   const handleClearSession = () => {
     localStorage.removeItem(STORAGE_KEY);
     setMessages([getInitialMessage()]);
+    setShowArabic(false);
     toast({
       title: isRTL ? "تم المسح" : "Effacé",
       description: isRTL ? "تم بدء محادثة جديدة" : "Nouvelle conversation démarrée",
@@ -156,7 +198,14 @@ Pour commencer, dites-moi :
         return;
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+      const responseContent = data.response;
+      const invoiceData = parseInvoiceData(responseContent);
+      
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: responseContent,
+        invoiceData: invoiceData || undefined
+      }]);
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -169,101 +218,8 @@ Pour commencer, dites-moi :
     }
   };
 
-  // Check if the last message contains a finalized document (table format)
-  const hasGeneratedDocument = messages.length > 0 && 
-    messages[messages.length - 1].role === 'assistant' &&
-    (messages[messages.length - 1].content.includes('TOTAL') || 
-     messages[messages.length - 1].content.includes('━━━'));
-
-  const handleExportPDF = async () => {
-    if (!messagesContainerRef.current) return;
-    
-    try {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.role !== 'assistant') return;
-
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      
-      pdf.setFont('helvetica');
-      pdf.setFontSize(10);
-      
-      const lines = pdf.splitTextToSize(lastMessage.content, pageWidth - 20);
-      let yPosition = 20;
-      
-      lines.forEach((line: string) => {
-        if (yPosition > 280) {
-          pdf.addPage();
-          yPosition = 20;
-        }
-        pdf.text(line, 10, yPosition);
-        yPosition += 5;
-      });
-
-      pdf.save(`devis-${Date.now()}.pdf`);
-      
-      toast({
-        title: isRTL ? "تم التحميل" : "Téléchargé",
-        description: isRTL ? "تم حفظ الملف PDF" : "Le fichier PDF a été enregistré",
-      });
-    } catch (error) {
-      console.error('PDF export error:', error);
-      toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "فشل في إنشاء PDF" : "Échec de la création du PDF",
-      });
-    }
-  };
-
-  const handleExportImage = async () => {
-    const lastMessageEl = document.querySelector('[data-last-message="true"]');
-    if (!lastMessageEl) return;
-
-    try {
-      const canvas = await html2canvas(lastMessageEl as HTMLElement, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-      });
-      
-      const link = document.createElement('a');
-      link.download = `devis-${Date.now()}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 0.9);
-      link.click();
-
-      toast({
-        title: isRTL ? "تم الحفظ" : "Enregistré",
-        description: isRTL ? "تم حفظ الصورة" : "L'image a été enregistrée",
-      });
-    } catch (error) {
-      console.error('Image export error:', error);
-      toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "فشل في إنشاء الصورة" : "Échec de la création de l'image",
-      });
-    }
-  };
-
-  const handleCopyText = async () => {
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage.role !== 'assistant') return;
-
-    try {
-      await navigator.clipboard.writeText(lastMessage.content);
-      toast({
-        title: isRTL ? "تم النسخ" : "Copié",
-        description: isRTL ? "تم نسخ النص للحافظة" : "Le texte a été copié",
-      });
-    } catch (error) {
-      console.error('Copy error:', error);
-      toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "فشل في النسخ" : "Échec de la copie",
-      });
-    }
-  };
+  // Get the last message with invoice data
+  const lastInvoiceMessage = [...messages].reverse().find(m => m.invoiceData);
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
@@ -328,33 +284,56 @@ Pour commencer, dites-moi :
       </section>
 
       {/* Messages Area */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-4 pb-4">
+      <div className="flex-1 overflow-y-auto space-y-4 pb-4">
         {messages.map((message, index) => {
-          const isLastMessage = index === messages.length - 1;
+          const displayContent = message.role === 'assistant' 
+            ? getDisplayContent(message.content) 
+            : message.content;
+          const hasInvoice = message.invoiceData != null;
+          
           return (
-            <div
-              key={index}
-              data-last-message={isLastMessage && message.role === 'assistant' ? "true" : undefined}
-              className={cn(
-                "flex",
-                message.role === 'user' 
-                  ? (isRTL ? 'justify-start' : 'justify-end')
-                  : (isRTL ? 'justify-end' : 'justify-start')
-              )}
-            >
-              <Card className={cn(
-                "max-w-[85%]",
-                message.role === 'user' 
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted'
-              )}>
-                <CardContent className={cn(
-                  "p-3 text-sm whitespace-pre-wrap",
-                  isRTL && "font-cairo text-right"
+            <div key={index} className="space-y-3">
+              {/* Message Bubble */}
+              <div
+                className={cn(
+                  "flex",
+                  message.role === 'user' 
+                    ? (isRTL ? 'justify-start' : 'justify-end')
+                    : (isRTL ? 'justify-end' : 'justify-start')
+                )}
+              >
+                <Card className={cn(
+                  "max-w-[85%]",
+                  message.role === 'user' 
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted'
                 )}>
-                  {message.content}
-                </CardContent>
-              </Card>
+                  <CardContent className={cn(
+                    "p-3 text-sm whitespace-pre-wrap",
+                    isRTL && "font-cairo text-right"
+                  )}>
+                    {displayContent}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Invoice Display (if present) */}
+              {hasInvoice && message.invoiceData && (
+                <div className="space-y-4">
+                  <InvoiceActions
+                    invoiceData={message.invoiceData}
+                    invoiceRef={invoiceRef}
+                    showArabic={showArabic}
+                    onToggleArabic={setShowArabic}
+                  />
+                  <div ref={invoiceRef}>
+                    <InvoiceDisplay 
+                      data={message.invoiceData} 
+                      showArabic={showArabic} 
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
@@ -375,43 +354,7 @@ Pour commencer, dites-moi :
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Export Buttons - Show when document is generated */}
-      {hasGeneratedDocument && !isLoading && (
-        <div className={cn(
-          "flex gap-2 pb-3 border-b",
-          isRTL && "flex-row-reverse"
-        )}>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportPDF}
-            className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            {isRTL ? '📄 تحميل PDF' : '📄 Télécharger PDF'}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportImage}
-            className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
-          >
-            <Image className="h-4 w-4 mr-2" />
-            {isRTL ? '🖼️ حفظ كصورة' : '🖼️ Enregistrer image'}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopyText}
-            className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
-          >
-            <Copy className="h-4 w-4 mr-2" />
-            {isRTL ? '📋 نسخ النص' : '📋 Copier texte'}
-          </Button>
-        </div>
-      )}
-
-      {/* Input Area - Enter key creates new line, send via button only */}
+      {/* Input Area */}
       <div className="border-t pt-4 pb-2">
         <div className={cn(
           "flex items-end gap-2",
@@ -510,6 +453,19 @@ Pour commencer, dites-moi :
               <div className="mt-2 text-xs text-primary">
                 {isRTL ? '💰 العميل لازم يدفع خلال 30 يوم (عادةً)' : '💰 Le client doit payer sous 30 jours (généralement)'}
               </div>
+            </div>
+
+            {/* TVA Section */}
+            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <h3 className="font-bold text-blue-700 dark:text-blue-400 mb-2">
+                {isRTL ? '💶 الضريبة (TVA)' : '💶 La TVA'}
+              </h3>
+              <p className="text-muted-foreground">
+                {isRTL 
+                  ? 'لو Auto-entrepreneur: مفيش TVA (هتكتب: TVA non applicable). لو شركة: 10% للتجديد، 20% للبناء الجديد.'
+                  : "Auto-entrepreneur: pas de TVA. Société: 10% rénovation, 20% construction neuve."
+                }
+              </p>
             </div>
 
             {/* Summary */}

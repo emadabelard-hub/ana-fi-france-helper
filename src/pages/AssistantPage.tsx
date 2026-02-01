@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Mic, Camera, Send, FileText, Scale, ListChecks, Copy, Download, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -90,11 +90,34 @@ const AssistantPage = () => {
     });
   };
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+
   const handleDocumentUpload = () => {
-    toast({
-      title: isRTL ? "قريباً" : "Bientôt disponible",
-      description: isRTL ? "رفع المستندات قيد التطوير" : "Le téléchargement de documents sera bientôt disponible.",
-    });
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setUploadedImage(event.target?.result as string);
+          toast({
+            title: isRTL ? "تم رفع الصورة" : "Image téléchargée",
+            description: isRTL ? "تم رفع المستند بنجاح" : "Le document a été téléchargé avec succès.",
+          });
+        };
+        reader.readAsDataURL(file);
+      } else {
+        toast({
+          variant: "destructive",
+          title: isRTL ? "خطأ" : "Erreur",
+          description: isRTL ? "يرجى رفع صورة" : "Veuillez télécharger une image.",
+        });
+      }
+    }
   };
 
   const handleCopy = async (text: string) => {
@@ -145,9 +168,37 @@ const AssistantPage = () => {
         </p>
       </section>
 
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        className="hidden"
+      />
+
       {/* Input Section */}
       <Card>
         <CardContent className="p-4 space-y-4">
+          {/* Uploaded Image Preview */}
+          {uploadedImage && (
+            <div className="relative">
+              <img 
+                src={uploadedImage} 
+                alt="Uploaded document" 
+                className="w-full max-h-48 object-contain rounded-lg border"
+              />
+              <Button
+                variant="destructive"
+                size="sm"
+                className="absolute top-2 right-2"
+                onClick={() => setUploadedImage(null)}
+              >
+                ✕
+              </Button>
+            </div>
+          )}
+
           {/* Text Input */}
           <Textarea
             placeholder={t('assistant.textPlaceholder')}

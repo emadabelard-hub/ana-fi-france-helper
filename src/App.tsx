@@ -12,6 +12,7 @@ import RadioPage from "@/pages/RadioPage";
 import AssistantPage from "@/pages/AssistantPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ProPage from "@/pages/ProPage";
+import InvoiceCreatorPage from "@/pages/InvoiceCreatorPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
                   <Route path="/assistant" element={<AssistantPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/pro" element={<ProPage />} />
+                  <Route path="/pro/invoice-creator" element={<InvoiceCreatorPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

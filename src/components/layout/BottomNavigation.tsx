@@ -1,9 +1,10 @@
+import { forwardRef } from 'react';
 import { Home, Radio, Bot, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
-const BottomNavigation = () => {
+const BottomNavigation = forwardRef<HTMLElement>((_, ref) => {
   const { t, isRTL } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -16,10 +17,12 @@ const BottomNavigation = () => {
   ];
 
   return (
-    <nav className={cn(
-      "fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border",
-      "safe-area-pb"
-    )}>
+    <nav 
+      ref={ref}
+      className={cn(
+        "fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border",
+        "safe-area-pb"
+      )}>
       <div className={cn(
         "flex items-center justify-around py-2",
         isRTL && "flex-row-reverse"
@@ -53,6 +56,8 @@ const BottomNavigation = () => {
       </div>
     </nav>
   );
-};
+});
+
+BottomNavigation.displayName = 'BottomNavigation';
 
 export default BottomNavigation;

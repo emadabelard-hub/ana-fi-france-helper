@@ -1,10 +1,11 @@
+import { forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Music, HelpCircle, Briefcase, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
-const Dashboard = () => {
+const Dashboard = forwardRef<HTMLDivElement>((_, ref) => {
   const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
 
@@ -35,7 +36,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="py-6 space-y-8">
+    <div ref={ref} className="py-6 space-y-8">
       {/* Welcome Section */}
       <section className={cn("text-center space-y-2", isRTL && "font-cairo")}>
         <h1 className="text-2xl font-bold text-foreground">
@@ -128,6 +129,8 @@ const Dashboard = () => {
       </section>
     </div>
   );
-};
+});
+
+Dashboard.displayName = 'Dashboard';
 
 export default Dashboard;

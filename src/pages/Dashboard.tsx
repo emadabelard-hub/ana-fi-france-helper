@@ -21,7 +21,7 @@ const Dashboard = () => {
     {
       icon: HelpCircle,
       title: 'أريد حلاً',
-      description: 'تحليل الأوراق وكتابة الخطابات',
+      description: 'تحليل أي موقف أو صعوبات إدارية أو قانونية وتقديم الحل النموذجي',
       path: '/assistant',
       gradient: 'from-primary/20 to-primary/5',
     },

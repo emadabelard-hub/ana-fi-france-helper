@@ -1,44 +1,58 @@
-import React, { useState } from 'react';
-import { Mic, Camera, Send, FileText, Scale, ListChecks, Copy, Download, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import AuthModal from '@/components/auth/AuthModal';
+import ChatMessage from '@/components/assistant/ChatMessage';
+import ChatInput from '@/components/assistant/ChatInput';
 
-interface AIResult {
-  formalLetter: string;
-  legalNote: string;
-  actionPlan: string;
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
 }
 
 const AssistantPage = () => {
   const { t, isRTL } = useLanguage();
-  const { user } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
   
-  const [userInput, setUserInput] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [result, setResult] = useState<AIResult | null>(null);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleAnalyze = async () => {
-    if (!userInput.trim()) return;
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-    // Allow anonymous/guest users - no auth check required
+  const handleSend = async (userMessage: string, image?: string) => {
+    if (!userMessage.trim() && !image) return;
+
+    // Create user message
+    const userMsg: Message = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: image ? `[صورة مرفقة]\n${userMessage}` : userMessage,
+    };
+
+    // Add user message to chat
+    setMessages(prev => [...prev, userMsg]);
     setIsAnalyzing(true);
+
     try {
+      // Build conversation history for context
+      const conversationHistory = [...messages, userMsg].map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+
       const { data, error } = await supabase.functions.invoke('analyze-request', {
         body: { 
-          userMessage: userInput,
+          userMessage,
+          conversationHistory,
           profile: profile ? {
             full_name: profile.full_name,
             address: profile.address,
@@ -61,11 +75,40 @@ const AssistantPage = () => {
         return;
       }
 
-      setResult(data);
-      toast({
-        title: isRTL ? "تم التحليل" : "Analyse terminée",
-        description: isRTL ? "تم إنشاء الرسالة بنجاح" : "Votre lettre a été générée avec succès.",
-      });
+      // Build assistant response from the parsed sections
+      let assistantContent = '';
+      
+      if (data.explanation) {
+        assistantContent += `📋 **الشرح:**\n${data.explanation}\n\n`;
+      }
+      if (data.actionPlan) {
+        assistantContent += `✅ **خطة العمل:**\n${data.actionPlan}\n\n`;
+      }
+      if (data.formalLetter && data.formalLetter !== "لو عايز أكتبلك رد رسمي، قولي 'اكتبلي رد'") {
+        assistantContent += `📝 **الرسالة الرسمية:**\n${data.formalLetter}\n\n`;
+      } else if (data.formalLetter) {
+        assistantContent += `💡 ${data.formalLetter}\n\n`;
+      }
+      if (data.legalNote) {
+        assistantContent += `⚖️ **ملاحظات قانونية:**\n${data.legalNote}`;
+      }
+
+      // Fallback if nothing parsed
+      if (!assistantContent.trim()) {
+        assistantContent = data.rawContent || isRTL 
+          ? "تم استلام ردك. لو عندك أي سؤال تاني، اسألني!" 
+          : "Réponse reçue. Si vous avez d'autres questions, demandez-moi!";
+      }
+
+      // Add assistant message
+      const assistantMsg: Message = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: assistantContent.trim(),
+      };
+
+      setMessages(prev => [...prev, assistantMsg]);
+
     } catch (error) {
       console.error('Error analyzing:', error);
       toast({
@@ -78,256 +121,77 @@ const AssistantPage = () => {
     }
   };
 
-  const handleVoiceRecord = () => {
-    setIsRecording(!isRecording);
-    toast({
-      title: isRTL ? "قريباً" : "Bientôt disponible",
-      description: isRTL ? "تسجيل الصوت قيد التطوير" : "L'enregistrement vocal sera bientôt disponible.",
-    });
-  };
-
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-
-  const handleDocumentUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          setUploadedImage(event.target?.result as string);
-          toast({
-            title: isRTL ? "تم رفع الصورة" : "Image téléchargée",
-            description: isRTL ? "تم رفع المستند بنجاح" : "Le document a été téléchargé avec succès.",
-          });
-        };
-        reader.readAsDataURL(file);
-      } else {
-        toast({
-          variant: "destructive",
-          title: isRTL ? "خطأ" : "Erreur",
-          description: isRTL ? "يرجى رفع صورة" : "Veuillez télécharger une image.",
-        });
-      }
-    }
-  };
-
-  const handleCopy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: isRTL ? "تم النسخ" : "Copié",
-        description: isRTL ? "تم نسخ النص" : "Le texte a été copié dans le presse-papier.",
-      });
-    } catch {
-      toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "فشل النسخ" : "Impossible de copier le texte.",
-      });
-    }
-  };
-
-  const handleDownloadPDF = () => {
-    if (!result) return;
-    
-    // Create a simple text file for now
-    const blob = new Blob([result.formalLetter], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'lettre-administrative.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: isRTL ? "تم التحميل" : "Téléchargé",
-      description: isRTL ? "تم تحميل الرسالة" : "La lettre a été téléchargée.",
-    });
-  };
-
   return (
-    <div className="py-6 pb-28 space-y-6">
+    <div className="flex flex-col h-[calc(100vh-140px)] pb-20">
       {/* Title */}
-      <section className={cn("text-center space-y-2", isRTL && "font-cairo")}>
+      <section className={cn("text-center py-4 flex-shrink-0", isRTL && "font-cairo")}>
         <h1 className="text-2xl font-bold text-foreground">
           {isRTL ? 'أريد حلاً' : 'Je veux une solution'}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {isRTL ? 'تحليل الأوراق وكتابة الخطابات' : 'Analyse de documents et rédaction de courriers'}
+          {isRTL ? 'مساعدك الإداري المصري' : 'Votre assistant administratif'}
         </p>
       </section>
 
-      {/* Hidden File Input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        accept="image/*"
-        className="hidden"
-      />
-
-      {/* Input Section */}
-      <Card>
-        <CardContent className="p-4 space-y-4">
-          {/* Uploaded Image Preview */}
-          {uploadedImage && (
-            <div className="relative">
-              <img 
-                src={uploadedImage} 
-                alt="Uploaded document" 
-                className="w-full max-h-48 object-contain rounded-lg border"
-              />
-              <Button
-                variant="destructive"
-                size="sm"
-                className="absolute top-2 right-2"
-                onClick={() => setUploadedImage(null)}
-              >
-                ✕
-              </Button>
-            </div>
-          )}
-
-          {/* Text Input */}
-          <Textarea
-            placeholder={t('assistant.textPlaceholder')}
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            className={cn(
-              "min-h-[120px] resize-none",
-              isRTL && "text-right font-cairo"
-            )}
-          />
-
-          {/* Action Buttons */}
+      {/* Chat Messages Area */}
+      <div className="flex-1 overflow-y-auto px-2 space-y-3">
+        {messages.length === 0 ? (
           <div className={cn(
-            "flex items-center gap-3",
+            "flex flex-col items-center justify-center h-full text-center text-muted-foreground",
+            isRTL && "font-cairo"
+          )}>
+            <div className="text-5xl mb-4">🇪🇬</div>
+            <p className="text-lg font-medium">
+              {isRTL ? 'أهلاً بيك يا صاحبي!' : 'Bienvenue!'}
+            </p>
+            <p className="text-sm max-w-xs mt-2">
+              {isRTL 
+                ? 'ابعتلي أي مستند أو سؤال عن الإدارة الفرنسية وأنا هشرحلك بالمصري 😊'
+                : 'Envoyez-moi un document ou une question sur l\'administration française'}
+            </p>
+          </div>
+        ) : (
+          messages.map((message) => (
+            <ChatMessage
+              key={message.id}
+              role={message.role}
+              content={message.content}
+              isRTL={isRTL}
+            />
+          ))
+        )}
+        
+        {/* Loading indicator */}
+        {isAnalyzing && (
+          <div className={cn(
+            "flex gap-3 p-4 rounded-xl bg-muted/50 mr-8",
             isRTL && "flex-row-reverse"
           )}>
-            <Button
-              variant={isRecording ? "destructive" : "secondary"}
-              size="sm"
-              onClick={handleVoiceRecord}
-              className="gap-2"
-            >
-              <Mic className={cn("h-4 w-4", isRecording && "animate-pulse")} />
-              <span className={isRTL ? "font-cairo" : ""}>
-                {t('assistant.recordVoice')}
-              </span>
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleDocumentUpload}
-              className="gap-2"
-            >
-              <Camera className="h-4 w-4" />
-              <span className={isRTL ? "font-cairo" : ""}>
-                {t('assistant.uploadDocument')}
-              </span>
-            </Button>
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
+              <span className="animate-pulse">🤔</span>
+            </div>
+            <div className={cn("text-sm text-muted-foreground", isRTL && "text-right font-cairo")}>
+              {isRTL ? 'جار التحليل...' : 'Analyse en cours...'}
+            </div>
           </div>
+        )}
+        
+        <div ref={messagesEndRef} />
+      </div>
 
-          {/* Analyze Button */}
-          <Button
-            onClick={handleAnalyze}
-            disabled={!userInput.trim() || isAnalyzing}
-            className={cn(
-              "w-full gap-2 h-12 text-base",
-              isRTL && "font-cairo"
-            )}
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                {isRTL ? "جار التحليل..." : "Analyse en cours..."}
-              </>
-            ) : (
-              <>
-                <Send className="h-5 w-5" />
-                {t('assistant.analyze')}
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Results Section */}
-      {result && (
+      {/* Input Area - Fixed at bottom */}
+      <div className="flex-shrink-0 p-3 border-t bg-background">
         <Card>
-          <CardContent className="p-4">
-            <Tabs defaultValue="letter" className="w-full">
-              <TabsList className={cn(
-                "grid w-full grid-cols-3 mb-4",
-                isRTL && "flex-row-reverse"
-              )}>
-                <TabsTrigger value="letter" className="gap-1 text-xs">
-                  <FileText className="h-3 w-3" />
-                  <span className={isRTL ? "font-cairo" : ""}>
-                    {t('assistant.formalLetter')}
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger value="legal" className="gap-1 text-xs">
-                  <Scale className="h-3 w-3" />
-                  <span className={isRTL ? "font-cairo" : ""}>
-                    {t('assistant.legalNote')}
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger value="action" className="gap-1 text-xs">
-                  <ListChecks className="h-3 w-3" />
-                  <span className={isRTL ? "font-cairo" : ""}>
-                    {t('assistant.actionPlan')}
-                  </span>
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="letter" className="space-y-4">
-                <div className="bg-muted/50 rounded-xl p-4 min-h-[200px] whitespace-pre-wrap text-sm">
-                  {result.formalLetter}
-                </div>
-                <div className={cn(
-                  "flex gap-2",
-                  isRTL && "flex-row-reverse"
-                )}>
-                  <Button variant="outline" size="sm" onClick={() => handleCopy(result.formalLetter)} className="gap-2">
-                    <Copy className="h-4 w-4" />
-                    {t('assistant.copy')}
-                  </Button>
-                  <Button size="sm" onClick={handleDownloadPDF} className="gap-2">
-                    <Download className="h-4 w-4" />
-                    {t('assistant.download')}
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="legal">
-                <div className="bg-muted/50 rounded-xl p-4 min-h-[200px] whitespace-pre-wrap text-sm">
-                  {result.legalNote}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="action">
-                <div className={cn(
-                  "bg-muted/50 rounded-xl p-4 min-h-[200px] whitespace-pre-wrap text-sm",
-                  "text-right font-cairo"
-                )} dir="rtl">
-                  {result.actionPlan}
-                </div>
-              </TabsContent>
-            </Tabs>
+          <CardContent className="p-3">
+            <ChatInput
+              onSend={handleSend}
+              isLoading={isAnalyzing}
+              isRTL={isRTL}
+              t={t}
+            />
           </CardContent>
         </Card>
-      )}
-
-      <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+      </div>
     </div>
   );
 };

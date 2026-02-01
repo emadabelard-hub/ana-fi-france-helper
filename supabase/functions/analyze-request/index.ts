@@ -14,9 +14,15 @@ interface UserProfile {
   social_security?: string;
 }
 
+interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 interface RequestBody {
   userMessage: string;
   profile?: UserProfile;
+  conversationHistory?: ConversationMessage[];
 }
 
 // Input validation constants
@@ -29,7 +35,7 @@ function validateInput(body: unknown): { valid: true; data: RequestBody } | { va
     return { valid: false, error: 'Corps de requête invalide' };
   }
 
-  const { userMessage, profile } = body as RequestBody;
+  const { userMessage, profile, conversationHistory } = body as RequestBody;
 
   // Validate userMessage
   if (!userMessage || typeof userMessage !== 'string') {
@@ -65,7 +71,20 @@ function validateInput(body: unknown): { valid: true; data: RequestBody } | { va
     }
   }
 
-  return { valid: true, data: { userMessage: userMessage.trim(), profile } };
+  // Validate conversation history if provided (limit to last 10 messages)
+  let validatedHistory: ConversationMessage[] = [];
+  if (conversationHistory && Array.isArray(conversationHistory)) {
+    validatedHistory = conversationHistory
+      .slice(-10) // Keep only last 10 messages for context
+      .filter(msg => 
+        msg && 
+        typeof msg === 'object' && 
+        (msg.role === 'user' || msg.role === 'assistant') &&
+        typeof msg.content === 'string'
+      );
+  }
+
+  return { valid: true, data: { userMessage: userMessage.trim(), profile, conversationHistory: validatedHistory } };
 }
 
 serve(async (req) => {
@@ -86,7 +105,7 @@ serve(async (req) => {
       });
     }
 
-    const { userMessage, profile } = validation.data;
+    const { userMessage, profile, conversationHistory } = validation.data;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -96,7 +115,22 @@ serve(async (req) => {
     // Build system prompt with PII minimization - use placeholders for sensitive data
     const systemPrompt = buildSystemPrompt(profile);
     
-    console.log("Processing request with message length:", userMessage.length);
+    console.log("Processing request with message length:", userMessage.length, "history:", conversationHistory?.length || 0);
+    
+    // Build messages array with conversation history
+    const aiMessages: Array<{ role: string; content: string }> = [
+      { role: "system", content: systemPrompt }
+    ];
+    
+    // Add conversation history for context (already validated and limited to 10)
+    if (conversationHistory && conversationHistory.length > 0) {
+      for (const msg of conversationHistory) {
+        aiMessages.push({ role: msg.role, content: msg.content });
+      }
+    }
+    
+    // Add the current user message
+    aiMessages.push({ role: "user", content: userMessage });
     
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -106,10 +140,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage }
-        ],
+        messages: aiMessages,
         stream: false,
       }),
     });

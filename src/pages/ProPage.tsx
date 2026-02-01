@@ -23,7 +23,7 @@ const ProPage = () => {
     {
       icon: PenLine,
       title: 'فواتيرك ودوفيهاتك معانا',
-      description: 'اعمل فواتيرك ودوفيهاتك بسهولة',
+      description: 'اعمل فواتيرك بسهولة، وافهم الفرق بينهم، وظبط أسعارك عشان تكسب صح.',
       path: '/pro/invoice-creator',
       gradient: 'from-green-500/20 to-green-500/5',
       available: true,

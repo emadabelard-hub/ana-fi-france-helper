@@ -611,6 +611,15 @@ const AssistantPage = () => {
           )}
         </section>
 
+      {/* Contextual Training Tip */}
+      <div className="px-4 mb-3 flex-shrink-0">
+        <DismissibleTip
+          storageKey="assistant_tip_dismissed"
+          title="💡 ازاي تستفيد مني؟"
+          text="اضغط على الميكروفون واحكي مشكلتك، أو صور الجواب اللي وصلك وأنا هترجمه وأقولك تعمل إيه."
+        />
+      </div>
+
       {/* How It Works Guide */}
       <div className="px-2 mb-3 flex-shrink-0">
         <Collapsible open={isGuideOpen} onOpenChange={setIsGuideOpen}>

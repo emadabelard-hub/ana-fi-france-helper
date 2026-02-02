@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Type, Image, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Type, Image, Trash2, GripVertical, Upload, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { compressImageFile } from '@/lib/imageCompression';
+import { toast } from 'sonner';
 import type { ContentBlock, TextBlock, ImageBlock } from '@/types/lessons';
 
 interface ContentBlockEditorProps {
@@ -14,6 +17,9 @@ interface ContentBlockEditorProps {
 }
 
 const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEditorProps) => {
+  const [uploadingBlockId, setUploadingBlockId] = useState<string | null>(null);
+  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  
   const generateId = () => `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   const addTextBlock = () => {
@@ -57,6 +63,59 @@ const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEdit
     const [removed] = newBlocks.splice(fromIndex, 1);
     newBlocks.splice(toIndex, 0, removed);
     onChange(newBlocks);
+  };
+
+  const handleImageUpload = async (blockId: string, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error(isRTL ? 'يرجى اختيار ملف صورة' : 'Please select an image file');
+      return;
+    }
+
+    setUploadingBlockId(blockId);
+    
+    try {
+      // Compress the image before upload
+      const compressedBlob = await compressImageFile(file, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 0.8,
+      });
+
+      // Generate unique filename
+      const fileExt = 'jpg'; // Always save as jpg after compression
+      const fileName = `${blockId}-${Date.now()}.${fileExt}`;
+      const filePath = `lessons/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('lesson-images')
+        .upload(filePath, compressedBlob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('lesson-images')
+        .getPublicUrl(filePath);
+
+      // Update the block with the new URL
+      updateBlock(blockId, { imageUrl: urlData.publicUrl });
+      toast.success(isRTL ? 'تم رفع الصورة بنجاح' : 'Image uploaded successfully');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(isRTL ? 'فشل رفع الصورة' : `Upload failed: ${error.message}`);
+    } finally {
+      setUploadingBlockId(null);
+    }
+  };
+
+  const triggerFileInput = (blockId: string) => {
+    fileInputRefs.current[blockId]?.click();
   };
 
   return (
@@ -174,12 +233,54 @@ const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEdit
                 </div>
               ) : (
                 <div className="space-y-3">
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={(el) => { fileInputRefs.current[block.id] = el; }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(block.id, file);
+                    }}
+                    className="hidden"
+                  />
+                  
+                  {/* Upload Button */}
                   <div>
                     <label className={cn(
                       "text-sm font-medium mb-1 block",
                       isRTL && "text-right font-cairo"
                     )}>
-                      {isRTL ? 'رابط الصورة' : 'Image URL'}
+                      {isRTL ? 'رفع صورة' : 'Upload Image'}
+                    </label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => triggerFileInput(block.id)}
+                      disabled={uploadingBlockId === block.id}
+                      className={cn("w-full gap-2", isRTL && "flex-row-reverse font-cairo")}
+                    >
+                      {uploadingBlockId === block.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          {isRTL ? 'جاري الرفع...' : 'Uploading...'}
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4" />
+                          {isRTL ? 'اختر صورة للرفع' : 'Choose image to upload'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Or enter URL manually */}
+                  <div>
+                    <label className={cn(
+                      "text-sm font-medium mb-1 block text-muted-foreground",
+                      isRTL && "text-right font-cairo"
+                    )}>
+                      {isRTL ? 'أو أدخل رابط الصورة' : 'Or enter image URL'}
                     </label>
                     <Input
                       value={(block as ImageBlock).imageUrl}
@@ -188,6 +289,7 @@ const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEdit
                       dir="ltr"
                     />
                   </div>
+                  
                   <div>
                     <label className={cn(
                       "text-sm font-medium mb-1 block",
@@ -203,6 +305,8 @@ const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEdit
                       dir={isRTL ? "rtl" : "ltr"}
                     />
                   </div>
+                  
+                  {/* Image Preview */}
                   {(block as ImageBlock).imageUrl && (
                     <div className="mt-2">
                       <img

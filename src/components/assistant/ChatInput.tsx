@@ -4,6 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  validateFileUpload, 
+  ALLOWED_DOCUMENT_TYPES, 
+  MAX_MESSAGE_LENGTH,
+  sanitizeString 
+} from '@/lib/validation';
 
 interface ChatInputProps {
   onSend: (message: string, image?: string) => void;
@@ -20,7 +26,21 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
 
   const handleSubmit = () => {
     if (!userInput.trim() && !uploadedFile) return;
-    onSend(userInput.trim(), uploadedFile?.data || undefined);
+    
+    // Sanitize and validate message
+    const sanitizedMessage = sanitizeString(userInput.trim());
+    if (sanitizedMessage.length > MAX_MESSAGE_LENGTH) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL 
+          ? `الرسالة طويلة جداً (الحد الأقصى ${MAX_MESSAGE_LENGTH} حرف)`
+          : `Message trop long (maximum ${MAX_MESSAGE_LENGTH} caractères)`,
+      });
+      return;
+    }
+    
+    onSend(sanitizedMessage, uploadedFile?.data || undefined);
     setUserInput('');
     setUploadedFile(null);
   };
@@ -34,30 +54,38 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const isImage = file.type.startsWith('image/');
-      const isPDF = file.type === 'application/pdf';
+      // Validate file using our security validation
+      const validation = validateFileUpload(file, ALLOWED_DOCUMENT_TYPES);
       
-      if (isImage || isPDF) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          setUploadedFile({
-            data: event.target?.result as string,
-            type: isImage ? 'image' : 'pdf',
-            name: file.name
-          });
-          toast({
-            title: isRTL ? "تم رفع الملف" : "Fichier téléchargé",
-            description: isRTL ? `تم رفع ${file.name} بنجاح` : `${file.name} a été téléchargé avec succès.`,
-          });
-        };
-        reader.readAsDataURL(file);
-      } else {
+      if (!validation.valid) {
         toast({
           variant: "destructive",
           title: isRTL ? "خطأ" : "Erreur",
-          description: isRTL ? "يرجى رفع صورة أو ملف PDF" : "Veuillez télécharger une image ou un fichier PDF.",
+          description: isRTL 
+            ? "يرجى رفع صورة (JPG/PNG) أو ملف PDF فقط"
+            : "Veuillez télécharger une image (JPG/PNG) ou un fichier PDF uniquement.",
         });
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
       }
+      
+      const isImage = file.type.startsWith('image/');
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setUploadedFile({
+          data: event.target?.result as string,
+          type: isImage ? 'image' : 'pdf',
+          name: file.name
+        });
+        toast({
+          title: isRTL ? "تم رفع الملف" : "Fichier téléchargé",
+          description: isRTL ? `تم رفع ${file.name} بنجاح` : `${file.name} a été téléchargé avec succès.`,
+        });
+      };
+      reader.readAsDataURL(file);
     }
     // Reset input so the same file can be selected again
     if (fileInputRef.current) {
@@ -72,7 +100,7 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept="image/*,application/pdf"
+        accept=".jpg,.jpeg,.png,.pdf"
         className="hidden"
       />
 

@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.pro-admin-assistant]
 verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false

@@ -1,6 +1,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import HowItWorksModal from '@/components/home/HowItWorksModal';
 
 const Header = () => {
   const { language, setLanguage, isRTL } = useLanguage();
@@ -33,17 +34,23 @@ const Header = () => {
           </h1>
         </div>
 
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={toggleLanguage}
-          className={cn(
-            "rounded-full px-4 font-medium text-sm",
-            "bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
-          )}
-        >
-          {language === 'fr' ? 'العربية' : 'Français'}
-        </Button>
+        <div className={cn(
+          "flex items-center gap-2",
+          isRTL && "flex-row-reverse"
+        )}>
+          <HowItWorksModal />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={toggleLanguage}
+            className={cn(
+              "rounded-full px-4 font-medium text-sm",
+              "bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
+            )}
+          >
+            {language === 'fr' ? 'العربية' : 'Français'}
+          </Button>
+        </div>
       </div>
     </header>
   );

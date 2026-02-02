@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { FileText, Briefcase } from 'lucide-react';
+import { FileText, MessageSquare } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import ValuePropositions from '@/components/home/ValuePropositions';
 
 const Dashboard = () => {
   const { isRTL } = useLanguage();
@@ -10,22 +11,24 @@ const Dashboard = () => {
 
   const actionButtons = [
     {
-      icon: FileText,
-      title: 'تصحيح أو كتابة خطاب',
-      subtitle: 'رسائل إدارية باللغة الفرنسية',
+      icon: MessageSquare,
+      title: 'استشارات وحلول',
+      subtitle: 'صور أي جواب أو اشرح مشكلتك الإدارية، وهقولك الحل القانوني فوراً.',
       path: '/assistant',
       gradient: 'from-primary/20 to-primary/5',
       iconBg: 'bg-primary/10',
       iconColor: 'text-primary',
+      emoji: '📄',
     },
     {
-      icon: Briefcase,
+      icon: FileText,
       title: 'دراعك اليمين 💪',
-      subtitle: 'كل أدوات شغلك وفواتيرك في مكان واحد',
+      subtitle: 'اعمل دوفيهاتك وفواتيرك، واحمي نفسك من مشاكل الشغل والضرايب.',
       path: '/pro',
       gradient: 'from-accent/20 to-accent/5',
       iconBg: 'bg-accent/10',
       iconColor: 'text-accent',
+      emoji: '🧰',
     },
   ];
 
@@ -82,6 +85,9 @@ const Dashboard = () => {
           );
         })}
       </section>
+
+      {/* Value Propositions Carousel */}
+      <ValuePropositions />
 
       {/* Info Banner */}
       <section>

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Mic, Paperclip, Send, Loader2, X, FileText } from 'lucide-react';
+import { Paperclip, Send, Loader2, X, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -15,7 +15,6 @@ interface ChatInputProps {
 const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
   const { toast } = useToast();
   const [userInput, setUserInput] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<{ data: string; type: 'image' | 'pdf'; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,14 +26,6 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
   };
 
   // Enter key now creates new lines - send only via button
-
-  const handleVoiceRecord = () => {
-    setIsRecording(!isRecording);
-    toast({
-      title: isRTL ? "قريباً" : "Bientôt disponible",
-      description: isRTL ? "تسجيل الصوت قيد التطوير" : "L'enregistrement vocal sera bientôt disponible.",
-    });
-  };
 
   const handleDocumentUpload = () => {
     fileInputRef.current?.click();
@@ -133,16 +124,6 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleVoiceRecord}
-            disabled={isLoading}
-            className={cn("h-8 w-8", isRecording && "text-destructive")}
-          >
-            <Mic className={cn("h-4 w-4", isRecording && "animate-pulse")} />
-          </Button>
-
           <Button
             variant="ghost"
             size="icon"

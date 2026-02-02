@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          admin_pin: string | null
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          admin_pin?: string | null
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          admin_pin?: string | null
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      lessons: {
+        Row: {
+          audio_url: string | null
+          category: Database["public"]["Enums"]["lesson_category"]
+          content: Json
+          created_at: string
+          display_order: number
+          id: string
+          is_published: boolean
+          title_ar: string
+          title_fr: string
+          updated_at: string
+        }
+        Insert: {
+          audio_url?: string | null
+          category?: Database["public"]["Enums"]["lesson_category"]
+          content?: Json
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_published?: boolean
+          title_ar: string
+          title_fr: string
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string | null
+          category?: Database["public"]["Enums"]["lesson_category"]
+          content?: Json
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_published?: boolean
+          title_ar?: string
+          title_fr?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -77,15 +137,70 @@ export type Database = {
         }
         Relationships: []
       }
+      questions: {
+        Row: {
+          correct_answer: number
+          created_at: string
+          display_order: number
+          explanation_ar: string | null
+          id: string
+          is_published: boolean
+          lesson_id: string | null
+          options: Json
+          question_ar: string
+          question_fr: string
+          updated_at: string
+        }
+        Insert: {
+          correct_answer?: number
+          created_at?: string
+          display_order?: number
+          explanation_ar?: string | null
+          id?: string
+          is_published?: boolean
+          lesson_id?: string | null
+          options?: Json
+          question_ar: string
+          question_fr: string
+          updated_at?: string
+        }
+        Update: {
+          correct_answer?: number
+          created_at?: string
+          display_order?: number
+          explanation_ar?: string | null
+          id?: string
+          is_published?: boolean
+          lesson_id?: string | null
+          options?: Json
+          question_ar?: string
+          question_fr?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      lesson_category:
+        | "vie_quotidienne"
+        | "vie_professionnelle"
+        | "droits_devoirs"
+        | "histoire_culture"
+        | "valeurs_republicaines"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -212,6 +327,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      lesson_category: [
+        "vie_quotidienne",
+        "vie_professionnelle",
+        "droits_devoirs",
+        "histoire_culture",
+        "valeurs_republicaines",
+      ],
+    },
   },
 } as const

@@ -190,11 +190,11 @@ const LessonFormDialog = ({
               <Label className={cn(isRTL && "text-right font-cairo block")}>
                 {isRTL ? 'محتوى الدرس' : 'Lesson Content'}
               </Label>
-              <ContentBlockEditor
-                blocks={(formData.content || []) as ContentBlock[]}
-                onChange={(blocks) => setFormData({ ...formData, content: blocks })}
-                isRTL={isRTL}
-              />
+            <ContentBlockEditor
+              blocks={(formData.content || []) as ContentBlock[]}
+              onChange={(blocks) => setFormData(prev => ({ ...prev, content: blocks }))}
+              isRTL={isRTL}
+            />
             </div>
           </div>
         </ScrollArea>

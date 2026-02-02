@@ -99,6 +99,14 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </section>
+
+      {/* Hidden Admin Link for Testing */}
+      <button 
+        onClick={() => navigate('/admin')}
+        className="text-xs text-muted-foreground/50 hover:text-primary"
+      >
+        Admin
+      </button>
     </div>
   );
 };

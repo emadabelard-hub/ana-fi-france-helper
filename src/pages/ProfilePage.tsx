@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { cn } from '@/lib/utils';
 import AuthModal from '@/components/auth/AuthModal';
+import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
 
 const ProfilePage = () => {
   const { t, isRTL } = useLanguage();
@@ -217,6 +218,9 @@ const ProfilePage = () => {
           }
         </CardContent>
       </Card>
+
+      {/* GDPR - Delete Account Section */}
+      <DeleteAccountSection />
     </div>
   );
 };

@@ -1,18 +1,18 @@
-import { Home, Radio, Bot, User } from 'lucide-react';
+import { Home, FileText, Briefcase, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
 const BottomNavigation = () => {
-  const { t, isRTL } = useLanguage();
+  const { isRTL } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
 
   const navItems = [
-    { path: '/', icon: Home, label: t('nav.dashboard') },
-    { path: '/radio', icon: Radio, label: t('nav.radio') },
-    { path: '/assistant', icon: Bot, label: t('nav.assistant') },
-    { path: '/profile', icon: User, label: t('nav.profile') },
+    { path: '/', icon: Home, label: 'الرئيسية' },
+    { path: '/assistant', icon: FileText, label: 'خدماتي' },
+    { path: '/pro', icon: Briefcase, label: 'الصنايعية' },
+    { path: '/profile', icon: User, label: 'حسابي' },
   ];
 
   return (

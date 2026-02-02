@@ -1,130 +1,103 @@
 import { useNavigate } from 'react-router-dom';
-import { Music, HelpCircle, Briefcase, ArrowRight, ArrowLeft } from 'lucide-react';
+import { FileText, Receipt, MessageSquare } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import ValuePropositions from '@/components/home/ValuePropositions';
+
 const Dashboard = () => {
-  const { t, isRTL } = useLanguage();
+  const { isRTL } = useLanguage();
   const navigate = useNavigate();
 
-  const Arrow = isRTL ? ArrowLeft : ArrowRight;
-
-  const quickAccessCards = [
+  const actionButtons = [
     {
-      icon: Music,
-      title: 'بوابة الترفيه',
-      description: 'قرآن، أجواء مصرية، ونكتة اليوم',
-      path: '/radio',
-      gradient: 'from-accent/20 to-accent/5',
-    },
-    {
-      icon: HelpCircle,
-      title: 'أريد حلاً',
-      description: 'تحليل أي موقف أو صعوبات إدارية أو قانونية وتقديم الحل النموذجي',
+      icon: FileText,
+      title: 'تصحيح أو كتابة خطاب',
+      subtitle: 'رسائل إدارية باللغة الفرنسية',
       path: '/assistant',
       gradient: 'from-primary/20 to-primary/5',
+      iconBg: 'bg-primary/10',
+      iconColor: 'text-primary',
     },
     {
-      icon: Briefcase,
-      title: 'بوابة الأرتيزان والدوفي',
-      description: 'فواتير، دوفيهات، ومساعدة للمحترفين',
-      path: '/pro',
+      icon: Receipt,
+      title: 'عمل دوفي أو فاتورة',
+      subtitle: 'للحرفيين والمقاولين',
+      path: '/pro/invoice-creator',
+      gradient: 'from-accent/20 to-accent/5',
+      iconBg: 'bg-accent/10',
+      iconColor: 'text-accent',
+    },
+    {
+      icon: MessageSquare,
+      title: 'المساعد الإداري',
+      subtitle: 'اسأل أي سؤال إداري أو قانوني',
+      path: '/pro/admin-assistant',
       gradient: 'from-green-500/20 to-green-500/5',
+      iconBg: 'bg-green-500/10',
+      iconColor: 'text-green-600',
     },
   ];
 
   return (
-    <div className="py-6 space-y-8">
+    <div className="py-8 space-y-8">
       {/* Welcome Section */}
-      <section className="text-center space-y-2 font-cairo">
+      <section className="text-center space-y-3 font-cairo">
         <h1 className="text-2xl font-bold text-foreground">
           مرحباً بك في أنا في فرنسا
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-lg">
           مساعدك الإداري الذكي
         </p>
       </section>
 
-      {/* Quick Access Cards */}
+      {/* Action Buttons */}
       <section className="space-y-4">
-        <h2 className={cn(
-          "text-lg font-semibold text-foreground",
-          isRTL && "text-right font-cairo"
-        )}>
-          {t('dashboard.quickAccess')}
-        </h2>
-
-        <div className="grid gap-4">
-          {quickAccessCards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <Card
-                key={card.path}
-                className={cn(
-                  "cursor-pointer transition-all duration-300 hover:shadow-lg",
-                  "border-none bg-gradient-to-br",
-                  card.gradient,
-                  "overflow-hidden group"
-                )}
-                onClick={() => navigate(card.path)}
-              >
-                <CardContent className={cn(
-                  "flex items-center gap-4 p-6",
-                  isRTL && "flex-row-reverse"
+        {actionButtons.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Card
+              key={action.path}
+              className={cn(
+                "cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02]",
+                "border-none bg-gradient-to-br overflow-hidden",
+                action.gradient
+              )}
+              onClick={() => navigate(action.path)}
+            >
+              <CardContent className={cn(
+                "flex items-center gap-5 p-6",
+                isRTL && "flex-row-reverse"
+              )}>
+                <div className={cn(
+                  "w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm",
+                  action.iconBg
                 )}>
-                  <div className={cn(
-                    "w-14 h-14 rounded-2xl flex items-center justify-center",
-                    "bg-card shadow-sm group-hover:scale-105 transition-transform"
-                  )}>
-                    <Icon className="h-7 w-7 text-primary" />
-                  </div>
-                  
-                  <div className={cn(
-                    "flex-1",
-                    isRTL && "text-right"
-                  )}>
-                    <h3 className={cn(
-                      "font-semibold text-foreground text-lg",
-                      isRTL && "font-cairo"
-                    )}>
-                      {card.title}
-                    </h3>
-                    <p className={cn(
-                      "text-sm text-muted-foreground mt-1",
-                      isRTL && "font-cairo"
-                    )}>
-                      {card.description}
-                    </p>
-                  </div>
-
-                  <Arrow className={cn(
-                    "h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors",
-                    "group-hover:translate-x-1",
-                    isRTL && "group-hover:-translate-x-1 group-hover:translate-x-0"
-                  )} />
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                  <Icon className={cn("h-8 w-8", action.iconColor)} />
+                </div>
+                
+                <div className={cn(
+                  "flex-1",
+                  isRTL && "text-right"
+                )}>
+                  <h3 className="font-bold text-foreground text-xl font-cairo">
+                    {action.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1 font-cairo">
+                    {action.subtitle}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </section>
-
-      {/* Value Propositions Carousel */}
-      <ValuePropositions />
 
       {/* Info Banner */}
       <section>
         <Card className="bg-primary/5 border-primary/20">
-          <CardContent className={cn(
-            "p-4 text-center",
-            isRTL && "font-cairo"
-          )}>
+          <CardContent className="p-4 text-center font-cairo">
             <p className="text-sm text-muted-foreground">
-              {isRTL 
-                ? '🇫🇷 تطبيقك للمساعدة في الإجراءات الإدارية الفرنسية'
-                : '🇫🇷 Votre application d\'aide aux démarches administratives françaises'
-              }
+              🇫🇷 تطبيقك للمساعدة في الإجراءات الإدارية الفرنسية
             </p>
           </CardContent>
         </Card>

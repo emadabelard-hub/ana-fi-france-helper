@@ -10,7 +10,7 @@ const BottomNavigation = () => {
 
   const navItems = [
     { path: '/', icon: Home, label: 'الرئيسية' },
-    { path: '/assistant', icon: FileText, label: 'خدماتي' },
+    { path: '/assistant', icon: FileText, label: 'استشارات' },
     { path: '/pro', icon: Briefcase, label: 'دراعك اليمين' },
     { path: '/profile', icon: User, label: 'حسابي' },
   ];

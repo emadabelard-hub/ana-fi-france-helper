@@ -9,6 +9,7 @@ import ChatMessage from '@/components/assistant/ChatMessage';
 import ChatInput from '@/components/assistant/ChatInput';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 import DispatchGuide from '@/components/assistant/DispatchGuide';
+import DismissibleTip from '@/components/shared/DismissibleTip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, HelpCircle, Trash2, RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -682,6 +683,13 @@ const AssistantPage = () => {
             </Card>
           </CollapsibleContent>
         </Collapsible>
+        
+        {/* Contextual Training Tip */}
+        <DismissibleTip
+          storageKey="assistant_tip_dismissed"
+          title="💡 ازاي تستفيد مني؟"
+          text="اضغط على الميكروفون واحكي مشكلتك، أو صور الجواب اللي وصلك وأنا هترجمه وأقولك تعمل إيه."
+        />
       </div>
 
       {/* Chat Messages Area */}

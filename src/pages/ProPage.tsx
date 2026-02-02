@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Briefcase, PenLine, ArrowRight, ArrowLeft, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import DismissibleTip from '@/components/shared/DismissibleTip';
 
 const ProPage = () => {
   const { isRTL } = useLanguage();
@@ -74,6 +75,13 @@ const ProPage = () => {
           </p>
         </div>
       </section>
+
+      {/* Contextual Training Tip */}
+      <DismissibleTip
+        storageKey="pro_tip_dismissed"
+        title="💡 شرح سريع"
+        text="عشان تعمل دوفي، اكتب المقاسات وأنا هحسبلك الحسبة. وعشان تسأل في القانون، كلم مساعد الارتيزان."
+      />
 
       {/* Feature Cards */}
       <section className="space-y-4">

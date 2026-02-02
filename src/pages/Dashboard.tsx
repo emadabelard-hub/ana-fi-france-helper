@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { FileText, Receipt, MessageSquare } from 'lucide-react';
+import { FileText, Briefcase } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -19,22 +19,13 @@ const Dashboard = () => {
       iconColor: 'text-primary',
     },
     {
-      icon: Receipt,
-      title: 'عمل دوفي أو فاتورة',
-      subtitle: 'للحرفيين والمقاولين',
-      path: '/pro/invoice-creator',
+      icon: Briefcase,
+      title: 'دراعك اليمين 💪',
+      subtitle: 'كل أدوات شغلك وفواتيرك في مكان واحد',
+      path: '/pro',
       gradient: 'from-accent/20 to-accent/5',
       iconBg: 'bg-accent/10',
       iconColor: 'text-accent',
-    },
-    {
-      icon: MessageSquare,
-      title: 'المساعد الإداري',
-      subtitle: 'اسأل أي سؤال إداري أو قانوني',
-      path: '/pro/admin-assistant',
-      gradient: 'from-green-500/20 to-green-500/5',
-      iconBg: 'bg-green-500/10',
-      iconColor: 'text-green-600',
     },
   ];
 

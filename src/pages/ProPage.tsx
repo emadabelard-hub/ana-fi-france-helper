@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Briefcase, PenLine, Lightbulb, ArrowRight, ArrowLeft, Settings } from 'lucide-react';
+import { Briefcase, PenLine, ArrowRight, ArrowLeft, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ProPage = () => {
@@ -13,19 +13,23 @@ const ProPage = () => {
 
   const features = [
     {
-      icon: Briefcase,
-      title: 'مساعد الارتيزان الذكي',
-      description: 'حلك لمشاكل الـ URSSAF، الضرايب، ومنازعات الشغل.',
-      path: '/pro/admin-assistant',
-      gradient: 'from-blue-500/20 to-blue-500/5',
+      icon: PenLine,
+      title: 'مساعد الفواتير والدوفي',
+      titleFr: 'Assistant Devis & Factures',
+      description: 'اعمل فواتيرك بسهولة، وافهم الفرق بينهم، وظبط أسعارك عشان تكسب صح.',
+      descriptionFr: 'Créez vos devis et factures facilement',
+      path: '/pro/invoice-creator',
+      gradient: 'from-green-500/20 to-green-500/5',
       available: true,
     },
     {
-      icon: PenLine,
-      title: 'فواتيرك ودوفيهاتك معانا',
-      description: 'اعمل فواتيرك بسهولة، وافهم الفرق بينهم، وظبط أسعارك عشان تكسب صح.',
-      path: '/pro/invoice-creator',
-      gradient: 'from-green-500/20 to-green-500/5',
+      icon: Briefcase,
+      title: 'مساعد الارتيزان الذكي',
+      titleFr: 'Assistant Artisan Intelligent',
+      description: 'حلك لمشاكل الـ URSSAF، الضرايب، ومنازعات الشغل.',
+      descriptionFr: 'URSSAF, impôts et litiges professionnels',
+      path: '/pro/admin-assistant',
+      gradient: 'from-blue-500/20 to-blue-500/5',
       available: true,
     },
     {
@@ -37,14 +41,6 @@ const ProPage = () => {
       path: '/pro/settings',
       gradient: 'from-purple-500/20 to-purple-500/5',
       available: true,
-    },
-    {
-      icon: Lightbulb,
-      title: 'دليلك المهني',
-      description: 'قوانين، تأمين عشري، ونصايح',
-      path: '/pro/guide',
-      gradient: 'from-amber-500/20 to-amber-500/5',
-      available: false,
     },
   ];
 
@@ -68,13 +64,13 @@ const ProPage = () => {
             "text-2xl font-bold text-foreground",
             isRTL && "font-cairo"
           )}>
-            بوابة المحترفين
+            دراعك اليمين 💪
           </h1>
           <p className={cn(
             "text-sm text-muted-foreground",
             isRTL && "font-cairo"
           )}>
-            {isRTL ? 'كل أدواتك المهنية في مكان واحد' : 'Tous vos outils professionnels en un seul endroit'}
+            {isRTL ? 'كل أدوات شغلك وفواتيرك في مكان واحد' : 'Tous vos outils professionnels en un seul endroit'}
           </p>
         </div>
       </section>
@@ -151,8 +147,8 @@ const ProPage = () => {
         )}>
           <p className="text-sm text-muted-foreground">
             {isRTL 
-              ? '💼 أدوات مخصصة للحرفيين وأصحاب العمل الحر في فرنسا'
-              : '💼 Outils dédiés aux artisans et auto-entrepreneurs en France'
+              ? '🧰 أدوات مخصصة للحرفيين وأصحاب العمل الحر في فرنسا'
+              : '🧰 Outils dédiés aux artisans et auto-entrepreneurs en France'
             }
           </p>
         </CardContent>

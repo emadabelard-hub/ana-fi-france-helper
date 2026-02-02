@@ -23,8 +23,8 @@ const HowItWorksModal = () => {
     {
       number: '٢',
       icon: Camera,
-      title: 'صور أو اتكلم',
-      description: 'صور الجواب أو اشرح مشكلتك',
+      title: 'اكتب أو صور',
+      description: 'اكتب مشكلتك أو صور الجواب',
     },
     {
       number: '٣',

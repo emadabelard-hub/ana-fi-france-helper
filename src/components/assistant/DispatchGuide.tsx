@@ -56,6 +56,7 @@ const DispatchGuide = ({
     ? `Objet: ${dispatchInfo.subjectLine || 'Réclamation'} - Dossier N°${dispatchInfo.referenceNumber}`
     : `Objet: ${dispatchInfo.subjectLine || 'Demande officielle'} - ${dispatchInfo.recipientName || '[Destinataire]'}`;
 
+  // French formal email body - properly formatted
   const emailBody = `Madame, Monsieur,
 
 Veuillez trouver ci-joint ma lettre officielle concernant ma demande.
@@ -290,7 +291,11 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
                       <span className="font-medium">{isRTL ? 'عنوان الإيميل (Subject)' : 'Objet de l\'email'}</span>
                     </div>
                     <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-                      <code className="flex-1 bg-background p-2 rounded text-sm border" dir="ltr">
+                      <code 
+                        dir="ltr"
+                        lang="fr"
+                        className="french-email flex-1 bg-background p-2 rounded text-sm border"
+                      >
                         {emailSubject}
                       </code>
                       <Button 
@@ -329,7 +334,11 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
                       <span className="font-medium">{isRTL ? 'نص الإيميل' : 'Corps de l\'email'}</span>
                     </div>
                     <div className="relative">
-                      <pre className="bg-background p-3 rounded border text-sm whitespace-pre-wrap" dir="ltr">
+                      <pre 
+                        dir="ltr"
+                        lang="fr"
+                        className="french-email bg-background p-3 rounded border text-sm whitespace-pre-wrap"
+                      >
                         {emailBody}
                       </pre>
                       <Button 

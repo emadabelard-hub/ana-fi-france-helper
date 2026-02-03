@@ -944,18 +944,18 @@ ${formData.items}`;
           )}
         </section>
 
-      {/* Chat Messages Area */}
-      <div className="flex-1 overflow-y-auto px-2 space-y-3">
+      {/* Chat Messages Area - generous padding for readability */}
+      <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 space-y-5">
         {messages.length === 0 ? (
           <div className={cn(
-            "flex flex-col items-center justify-center h-full text-center text-muted-foreground px-4",
+            "flex flex-col items-center justify-center h-full text-center text-muted-foreground px-6",
             isRTL && "font-cairo"
           )}>
             <div className="text-6xl mb-3">🇪🇬</div>
             <p className="text-xl font-semibold text-foreground">
               {isRTL ? 'أهلاً بيك يا صاحبي!' : 'Bienvenue!'}
             </p>
-            <p className="text-base mt-2 max-w-sm">
+            <p className="text-base mt-2 max-w-sm leading-relaxed">
               {isRTL 
                 ? 'صوّر أي جواب وصلك 📷 أو اكتب سؤالك وأنا هشرحلك بالمصري 😊'
                 : 'Photographiez une lettre 📷 ou posez votre question'}
@@ -1058,13 +1058,13 @@ ${formData.items}`;
           {/* Loading indicator - Image Analysis */}
           {isAnalyzingImage && (
             <div className={cn(
-              "flex gap-3 p-4 rounded-xl bg-primary/10 mr-8",
-              isRTL && "flex-row-reverse"
+              "flex gap-4 p-5 rounded-xl bg-primary/10 mx-3 sm:mx-4 mr-6 sm:mr-10",
+              isRTL && "flex-row-reverse ml-6 sm:ml-10 mr-3 sm:mr-4"
             )}>
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+              <div className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
                 <span className="animate-spin">🔍</span>
               </div>
-              <div className={cn("text-sm text-primary font-medium", isRTL && "text-right font-cairo")}>
+              <div className={cn("text-base text-primary font-medium", isRTL && "text-right font-cairo leading-[1.8]")}>
                 {isRTL ? '🖼️ جاري تحليل الصورة...' : 'Analyse de l\'image en cours...'}
               </div>
             </div>
@@ -1073,13 +1073,13 @@ ${formData.items}`;
           {/* Loading indicator - Regular Analysis */}
           {isAnalyzing && !pendingLetterMessage && !isAnalyzingImage && (
             <div className={cn(
-              "flex gap-3 p-4 rounded-xl bg-muted/50 mr-8",
-              isRTL && "flex-row-reverse"
+              "flex gap-4 p-5 rounded-xl bg-muted/50 mx-3 sm:mx-4 mr-6 sm:mr-10",
+              isRTL && "flex-row-reverse ml-6 sm:ml-10 mr-3 sm:mr-4"
             )}>
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
+              <div className="flex-shrink-0 w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
                 <span className="animate-pulse">🤔</span>
               </div>
-              <div className={cn("text-sm text-muted-foreground", isRTL && "text-right font-cairo")}>
+              <div className={cn("text-base text-muted-foreground", isRTL && "text-right font-cairo leading-[1.8]")}>
                 {isRTL ? 'جار التحليل...' : 'Analyse en cours...'}
               </div>
             </div>

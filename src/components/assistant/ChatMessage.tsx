@@ -230,17 +230,17 @@ const ChatMessage = ({
   return (
     <div
       className={cn(
-        "flex gap-3 p-4 rounded-xl",
+        "flex gap-4 p-5 rounded-xl mx-3 sm:mx-4",
         isUser 
-          ? "bg-primary/10 ml-8" 
-          : "bg-muted/50 mr-8",
+          ? "bg-primary/10 ml-6 sm:ml-10" 
+          : "bg-muted/50 mr-6 sm:mr-10",
         isRTL && "flex-row-reverse"
       )}
     >
       {/* Avatar */}
       <div
         className={cn(
-          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+          "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center",
           isUser ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"
         )}
       >
@@ -248,13 +248,14 @@ const ChatMessage = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 space-y-3">
+      <div className="flex-1 space-y-4">
         {/* Arabic/RTL content */}
         {arabic && (
           <div
             className={cn(
-              "text-sm leading-relaxed whitespace-pre-wrap",
-              isRTL && "text-right font-cairo"
+              "text-base whitespace-pre-wrap",
+              isRTL && "text-right font-cairo leading-[1.8]",
+              !isRTL && "leading-relaxed"
             )}
             dir={isRTL ? "rtl" : "ltr"}
           >

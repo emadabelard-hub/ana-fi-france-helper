@@ -261,11 +261,11 @@ const ChatMessage = ({
         {arabic && (
           <div
             className={cn(
-              // Larger font (18px) for better mobile readability + paragraph spacing
-              "text-lg whitespace-pre-wrap break-words [&>p]:mb-3 space-y-3",
+              // 17px font for optimal mobile readability + paragraph spacing
+              "text-[17px] whitespace-pre-wrap break-words [&>p]:mb-3 space-y-3 font-medium",
               // RTL: proper line height + right padding for Arabic
-              isRTL && "text-right font-cairo leading-[1.9] pr-2",
-              !isRTL && "leading-relaxed pl-2"
+              isRTL && "text-right font-cairo leading-[1.7] pr-2",
+              !isRTL && "leading-[1.6] pl-2"
             )}
             dir={isRTL ? "rtl" : "ltr"}
           >

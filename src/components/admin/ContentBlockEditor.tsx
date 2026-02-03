@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +19,20 @@ interface ContentBlockEditorProps {
 const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEditorProps) => {
   const [uploadingBlockId, setUploadingBlockId] = useState<string | null>(null);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const [localBlocks, setLocalBlocks] = useState<ContentBlock[]>(blocks);
+
+  // Keep local UI state in sync when the parent replaces blocks (e.g., switching lessons)
+  useEffect(() => {
+    setLocalBlocks(blocks);
+  }, [blocks]);
+
+  const commitBlocks = (updater: (prev: ContentBlock[]) => ContentBlock[]) => {
+    setLocalBlocks((prev) => {
+      const next = updater(prev);
+      onChange(next);
+      return next;
+    });
+  };
   
   const generateId = () => `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -29,7 +43,7 @@ const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEdit
       textAr: '',
       termFr: '',
     };
-    onChange([...blocks, newBlock]);
+    commitBlocks((prev) => [...prev, newBlock]);
   };
 
   const addImageBlock = () => {
@@ -39,30 +53,33 @@ const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEdit
       imageUrl: '',
       caption: '',
     };
-    onChange([...blocks, newBlock]);
+    commitBlocks((prev) => [...prev, newBlock]);
   };
 
   const updateBlock = (id: string, updates: Partial<TextBlock> | Partial<ImageBlock>) => {
-    onChange(blocks.map(block => {
-      if (block.id !== id) return block;
-      if (block.type === 'text') {
-        return { ...block, ...updates } as TextBlock;
-      } else {
+    commitBlocks((prev) =>
+      prev.map((block) => {
+        if (block.id !== id) return block;
+        if (block.type === 'text') {
+          return { ...block, ...updates } as TextBlock;
+        }
         return { ...block, ...updates } as ImageBlock;
-      }
-    }));
+      }),
+    );
   };
 
   const removeBlock = (id: string) => {
-    onChange(blocks.filter(block => block.id !== id));
+    commitBlocks((prev) => prev.filter((block) => block.id !== id));
   };
 
   const moveBlock = (fromIndex: number, toIndex: number) => {
-    if (toIndex < 0 || toIndex >= blocks.length) return;
-    const newBlocks = [...blocks];
-    const [removed] = newBlocks.splice(fromIndex, 1);
-    newBlocks.splice(toIndex, 0, removed);
-    onChange(newBlocks);
+    commitBlocks((prev) => {
+      if (toIndex < 0 || toIndex >= prev.length) return prev;
+      const next = [...prev];
+      const [removed] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, removed);
+      return next;
+    });
   };
 
   const handleImageUpload = async (blockId: string, file: File) => {
@@ -146,7 +163,7 @@ const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEdit
 
       {/* Blocks List */}
       <div className="space-y-3">
-        {blocks.map((block, index) => (
+        {localBlocks.map((block, index) => (
           <Card key={block.id} className="relative">
             <CardContent className="p-4">
               {/* Block Header */}
@@ -182,7 +199,7 @@ const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEdit
                     size="icon"
                     className="h-8 w-8"
                     onClick={() => moveBlock(index, index + 1)}
-                    disabled={index === blocks.length - 1}
+                     disabled={index === localBlocks.length - 1}
                   >
                     ↓
                   </Button>
@@ -325,7 +342,7 @@ const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEdit
           </Card>
         ))}
 
-        {blocks.length === 0 && (
+        {localBlocks.length === 0 && (
           <div className={cn(
             "text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg",
             isRTL && "font-cairo"

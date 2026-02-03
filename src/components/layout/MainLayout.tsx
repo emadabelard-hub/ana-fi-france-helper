@@ -17,7 +17,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       isRTL && "font-cairo"
     )}>
       <Header />
-      <main className="pt-16 pb-20 px-4">
+      {/* pt-28 accounts for header + tabs */}
+      <main className="pt-28 pb-20 px-4">
         {children}
       </main>
       <BottomNavigation />

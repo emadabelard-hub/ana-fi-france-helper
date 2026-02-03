@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/hooks/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
-import Dashboard from "@/pages/Dashboard";
 import AssistantPage from "@/pages/AssistantPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ProPage from "@/pages/ProPage";
@@ -28,7 +27,8 @@ const App = () => (
           <BrowserRouter>
             <MainLayout>
               <Routes>
-                <Route path="/" element={<Dashboard />} />
+                {/* Redirect home to assistant (Consultations is the main tab) */}
+                <Route path="/" element={<AssistantPage />} />
                 <Route path="/assistant" element={<AssistantPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/pro" element={<ProPage />} />

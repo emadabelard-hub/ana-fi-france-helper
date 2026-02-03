@@ -20,156 +20,190 @@ const Index = () => {
   const navigate = useNavigate();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
-  const toolCards = [
-    {
-      icon: FileText,
-      title: isRTL ? 'الفواتير' : 'Factures',
-      subtitle: isRTL ? 'إنشاء فواتير احترافية' : 'Créer des factures pro',
-      path: '/pro/invoice-creator',
-      gradient: 'from-orange-400 to-amber-500',
-      bgColor: 'bg-orange-50 dark:bg-orange-950/30',
-      iconColor: 'text-orange-600',
-      emoji: '📄',
-    },
-    {
-      icon: Scale,
-      title: isRTL ? 'دليل القوانين' : 'Guide Juridique',
-      subtitle: isRTL ? 'حقوقك وواجباتك' : 'Vos droits & devoirs',
-      path: '/assistant',
-      gradient: 'from-teal-400 to-emerald-500',
-      bgColor: 'bg-teal-50 dark:bg-teal-950/30',
-      iconColor: 'text-teal-600',
-      emoji: '⚖️',
-    },
-    {
-      icon: Car,
-      title: 'Code de la Route',
-      subtitle: isRTL ? 'تعلم السياقة' : 'Apprenez à conduire',
-      path: '/assistant',
-      gradient: 'from-violet-400 to-purple-500',
-      bgColor: 'bg-violet-50 dark:bg-violet-950/30',
-      iconColor: 'text-violet-600',
-      emoji: '🚗',
-    },
-  ];
-
   const Arrow = isRTL ? ChevronLeft : ChevronRight;
 
   return (
     <div className={cn(
-      "min-h-[85vh] flex flex-col py-6 px-3 max-w-lg mx-auto",
+      "min-h-[85vh] flex flex-col py-4 px-3 max-w-lg mx-auto",
       isRTL && "font-cairo"
     )}>
-      {/* Hero Section - Chat Card */}
-      <section className="mb-8">
-        <Card
-          className={cn(
-            "cursor-pointer transition-all duration-300",
-            "hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]",
-            "border-none overflow-hidden",
-            "bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700",
-            "shadow-xl shadow-indigo-500/25"
-          )}
-          onClick={() => navigate('/assistant')}
-        >
-          <CardContent className="p-0">
-            <div className="relative p-8">
-              {/* Decorative elements */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-              
-              <div className={cn(
-                "flex items-center gap-5 relative z-10",
-                isRTL && "flex-row-reverse"
-              )}>
-                {/* Icon */}
-                <div className="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-lg">
-                  <span className="text-5xl">🤖</span>
-                </div>
+      {/* SECTION 1: Ask Hero Card - Full Width */}
+      <Card
+        className={cn(
+          "cursor-pointer transition-all duration-300 mb-4",
+          "hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]",
+          "border-none overflow-hidden",
+          "bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700",
+          "shadow-xl shadow-indigo-500/25"
+        )}
+        onClick={() => navigate('/assistant')}
+      >
+        <CardContent className="p-0">
+          <div className="relative p-6">
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+            
+            <div className={cn(
+              "flex items-center gap-4 relative z-10",
+              isRTL && "flex-row-reverse"
+            )}>
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-lg">
+                <span className="text-4xl">🤖</span>
+              </div>
 
-                {/* Text */}
-                <div className={cn("flex-1", isRTL && "text-right")}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="h-4 w-4 text-amber-300" />
-                    <span className="text-xs text-white/80 uppercase tracking-wider">
-                      {isRTL ? 'ذكاء اصطناعي' : 'Intelligence IA'}
-                    </span>
-                  </div>
-                  <h1 className="text-2xl font-bold text-white mb-1">
-                    {isRTL ? 'استفساراتي' : 'Mes Consultations'}
-                  </h1>
-                  <p className="text-white/80 text-sm">
-                    {isRTL ? 'المساعد الإداري الذكي' : 'Assistant administratif intelligent'}
-                  </p>
+              {/* Text */}
+              <div className={cn("flex-1", isRTL && "text-right")}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="h-4 w-4 text-amber-300" />
+                  <span className="text-xs text-white/80 uppercase tracking-wider">
+                    {isRTL ? 'ذكاء اصطناعي' : 'Intelligence IA'}
+                  </span>
                 </div>
+                <h1 className="text-xl font-bold text-white mb-1">
+                  {isRTL ? 'اسأل وأنا أجاوب' : 'Posez votre question'}
+                </h1>
+                <p className="text-white/80 text-xs leading-relaxed">
+                  {isRTL 
+                    ? 'هاشرحلك ايه الموضوع وتعمل ايه ولو تطلب الأمر هعمل لك الرد المظبوط' 
+                    : 'Je vous explique la situation et prépare votre réponse'}
+                </p>
+              </div>
 
-                {/* Arrow */}
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                  <Arrow className="h-5 w-5 text-white" />
-                </div>
+              {/* Arrow */}
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                <Arrow className="h-5 w-5 text-white" />
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </section>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Tools Section */}
-      <section className="mb-8">
+      {/* SECTION 2: Code de la Route - Full Width */}
+      <Card
+        className={cn(
+          "cursor-pointer transition-all duration-300 mb-4",
+          "hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]",
+          "border-none overflow-hidden",
+          "bg-gradient-to-br from-pink-500 via-fuchsia-500 to-violet-600",
+          "shadow-xl shadow-fuchsia-500/25"
+        )}
+        onClick={() => navigate('/assistant')}
+      >
+        <CardContent className="p-0">
+          <div className="relative p-6">
+            {/* Decorative elements */}
+            <div className="absolute top-0 left-0 w-28 h-28 bg-white/10 rounded-full -translate-y-1/2 -translate-x-1/2" />
+            <div className="absolute bottom-0 right-0 w-20 h-20 bg-white/5 rounded-full translate-y-1/2 translate-x-1/2" />
+            
+            <div className={cn(
+              "flex items-center gap-4 relative z-10",
+              isRTL && "flex-row-reverse"
+            )}>
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-lg">
+                <span className="text-4xl">🚗</span>
+              </div>
+
+              {/* Text */}
+              <div className={cn("flex-1", isRTL && "text-right")}>
+                <h2 className="text-xl font-bold text-white mb-1">
+                  {isRTL ? 'تعليم السواقة' : 'Code de la Route'}
+                </h2>
+                <p className="text-white/80 text-sm">
+                  {isRTL ? 'دروس بالفيديو والتمارين' : 'Leçons vidéo et exercices'}
+                </p>
+              </div>
+
+              {/* Arrow */}
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                <Arrow className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SECTION 3: Artisan Tools Grid */}
+      <div className="mb-4">
         <h2 className={cn(
-          "text-lg font-bold text-foreground mb-4 flex items-center gap-2",
+          "text-base font-bold text-foreground mb-3 flex items-center gap-2",
           isRTL && "flex-row-reverse text-right"
         )}>
-          <span className="text-2xl">💪</span>
-          {isRTL ? 'دراعك اليمين' : 'Votre bras droit'}
+          <span className="text-xl">💪</span>
+          {isRTL ? 'دراعك اليمين' : 'Vos outils'}
         </h2>
 
         <div className="grid grid-cols-2 gap-3">
-          {toolCards.map((card) => (
-            <Card
-              key={card.path + card.title}
-              className={cn(
-                "cursor-pointer transition-all duration-300",
-                "hover:scale-[1.03] hover:shadow-lg active:scale-[0.97]",
-                "border border-border/50 overflow-hidden",
-                card.bgColor
-              )}
-              onClick={() => navigate(card.path)}
-            >
-              <CardContent className="p-4">
-                <div className={cn(
-                  "flex flex-col gap-3",
-                  isRTL && "items-end"
-                )}>
-                  {/* Icon */}
-                  <div className={cn(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center",
-                    `bg-gradient-to-br ${card.gradient}`
-                  )}>
-                    <span className="text-2xl">{card.emoji}</span>
-                  </div>
-
-                  {/* Text */}
-                  <div className={isRTL ? "text-right" : ""}>
-                    <h3 className="font-bold text-foreground text-sm mb-0.5">
-                      {card.title}
-                    </h3>
-                    <p className="text-xs text-muted-foreground line-clamp-1">
-                      {card.subtitle}
-                    </p>
-                  </div>
+          {/* Invoices Card */}
+          <Card
+            className={cn(
+              "cursor-pointer transition-all duration-300",
+              "hover:scale-[1.03] hover:shadow-lg active:scale-[0.97]",
+              "border border-border/50 overflow-hidden",
+              "bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-950/40 dark:to-amber-950/30"
+            )}
+            onClick={() => navigate('/pro/invoice-creator')}
+          >
+            <CardContent className="p-4">
+              <div className={cn(
+                "flex flex-col gap-3",
+                isRTL && "items-end"
+              )}>
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg">
+                  <span className="text-2xl">📄</span>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+                <div className={isRTL ? "text-right" : ""}>
+                  <h3 className="font-bold text-foreground text-sm mb-0.5">
+                    {isRTL ? 'الفواتير' : 'Factures'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL ? 'إنشاء فواتير احترافية' : 'Créer des factures pro'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Feedback Section */}
-      <section className="mt-auto">
+          {/* Laws Card */}
+          <Card
+            className={cn(
+              "cursor-pointer transition-all duration-300",
+              "hover:scale-[1.03] hover:shadow-lg active:scale-[0.97]",
+              "border border-border/50 overflow-hidden",
+              "bg-gradient-to-br from-emerald-100 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30"
+            )}
+            onClick={() => navigate('/assistant')}
+          >
+            <CardContent className="p-4">
+              <div className={cn(
+                "flex flex-col gap-3",
+                isRTL && "items-end"
+              )}>
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg">
+                  <span className="text-2xl">⚖️</span>
+                </div>
+                <div className={isRTL ? "text-right" : ""}>
+                  <h3 className="font-bold text-foreground text-sm mb-0.5">
+                    {isRTL ? 'دليل القوانين' : 'Guide Juridique'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL ? 'حقوقك وواجباتك' : 'Vos droits & devoirs'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* SECTION 4: Feedback Button */}
+      <div className="mt-auto">
         <Button
           variant="outline"
           className={cn(
-            "w-full py-6 border-2 border-dashed border-amber-400/50",
+            "w-full py-5 border-2 border-dashed border-amber-400/50",
             "bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20",
             "hover:border-amber-500 hover:shadow-lg transition-all duration-300",
             "group"
@@ -194,7 +228,7 @@ const Index = () => {
             <Arrow className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
           </div>
         </Button>
-      </section>
+      </div>
 
       {/* Feedback Modal */}
       <FeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />

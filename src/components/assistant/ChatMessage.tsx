@@ -262,9 +262,11 @@ const ChatMessage = ({
           <div
             className={cn(
               // 17px font for optimal mobile readability + paragraph spacing
-              "text-[17px] whitespace-pre-wrap break-words [&>p]:mb-3 space-y-3 font-medium",
-              // RTL: proper line height + right padding for Arabic
-              isRTL && "text-right font-cairo leading-[1.7] pr-2",
+              "text-[17px] whitespace-pre-wrap break-words font-medium",
+              // Paragraph & list spacing: 16px margin-bottom for "eye rest"
+              "[&>p]:mb-4 [&>li]:mb-4 [&>ul]:mb-4 [&>ol]:mb-4 space-y-4",
+              // RTL: justified text, proper line height + right padding for Arabic
+              isRTL && "text-justify text-right font-cairo leading-[1.8] pr-2",
               !isRTL && "leading-[1.6] pl-2"
             )}
             dir={isRTL ? "rtl" : "ltr"}

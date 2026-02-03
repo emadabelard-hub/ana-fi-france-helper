@@ -49,57 +49,61 @@ const EnvelopeHelper = ({
   if (!recipientName) return null;
 
   return (
-    <Alert className="mt-4 border-2 border-border bg-muted/50">
-      <Mail className="h-5 w-5 text-primary" />
+    <Alert className="mt-6 border-2 border-primary/30 bg-primary/5 shadow-lg">
+      <Mail className="h-6 w-6 text-primary" />
       <AlertTitle className={cn(
-        "text-foreground font-semibold flex items-center justify-between flex-wrap gap-2",
+        "text-lg text-foreground font-bold flex items-center justify-between flex-wrap gap-2",
         isRTL && "flex-row-reverse font-cairo"
       )}>
         <span>
           {isRTL ? '✉️ اكتب ده على الظرف:' : "✉️ Écrire sur l'enveloppe:"}
         </span>
         <Button
-          variant="outline"
+          variant="default"
           size="sm"
           onClick={handleCopy}
-          className="h-7 text-xs gap-1"
+          className="gap-2"
         >
-          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-          {isRTL ? 'نسخ' : 'Copier'}
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {isRTL ? 'نسخ العنوان' : 'Copier l\'adresse'}
         </Button>
       </AlertTitle>
-      <AlertDescription className="mt-3">
-        {/* Envelope Preview - LTR for French address */}
+      <AlertDescription className="mt-4">
+        {/* Envelope Preview - LTR for French address with large text */}
         <div 
           dir="ltr" 
-          className="bg-background border-2 border-dashed border-muted-foreground/30 rounded-lg p-4 font-mono text-sm space-y-1"
+          className="bg-background border-3 border-dashed border-primary/40 rounded-xl p-6 font-mono space-y-2 shadow-inner"
         >
-          <p className="font-bold text-foreground">{recipientName}</p>
+          <p className="text-xl font-bold text-foreground leading-relaxed">{recipientName}</p>
           {recipientAddress && (
-            <p className="text-muted-foreground whitespace-pre-line">{recipientAddress}</p>
+            <p className="text-lg text-muted-foreground whitespace-pre-line leading-relaxed">{recipientAddress}</p>
           )}
         </div>
         
         {/* Reference reminder */}
         {referenceNumber && (
-          <p className={cn(
-            "text-xs text-muted-foreground mt-3",
+          <div className={cn(
+            "mt-4 p-3 bg-muted rounded-lg",
             isRTL && "text-right font-cairo"
           )}>
-            📎 {isRTL ? 'متنساش تكتب رقم المرجع في الجواب:' : "N'oubliez pas la référence dans la lettre:"}{' '}
-            <span className="font-mono font-bold text-foreground">{referenceNumber}</span>
-          </p>
+            <p className="text-sm font-medium text-foreground">
+              📎 {isRTL ? 'متنساش تكتب رقم المرجع في الجواب:' : "N'oubliez pas la référence dans la lettre:"}
+            </p>
+            <p className="text-lg font-mono font-bold text-primary mt-1">{referenceNumber}</p>
+          </div>
         )}
         
         {/* Tip for Lettre Recommandée */}
-        <p className={cn(
-          "text-xs text-muted-foreground mt-2",
+        <div className={cn(
+          "mt-4 p-3 bg-accent/50 border border-border rounded-lg",
           isRTL && "text-right font-cairo"
         )}>
-          💡 {isRTL 
-            ? 'نصيحة: ابعته بـ "Lettre Recommandée avec Accusé de Réception" عشان يبقى معاك إثبات' 
-            : 'Conseil: Envoyez en "Lettre Recommandée avec Accusé de Réception" pour avoir une preuve'}
-        </p>
+          <p className="text-sm font-medium text-accent-foreground">
+            💡 {isRTL 
+              ? 'نصيحة مهمة: ابعته بـ "Lettre Recommandée avec Accusé de Réception" عشان يبقى معاك إثبات رسمي' 
+              : 'Conseil: Envoyez en "Lettre Recommandée avec Accusé de Réception" pour avoir une preuve'}
+          </p>
+        </div>
       </AlertDescription>
     </Alert>
   );

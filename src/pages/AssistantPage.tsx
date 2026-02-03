@@ -72,6 +72,33 @@ interface Message {
 
 const CHAT_STORAGE_KEY = 'assistant_chat_messages';
 
+const extractLetterFromContent = (raw: string): { cleaned: string; letterContent?: string } => {
+  const marker = '===الرسالة_الرسمية===';
+  if (!raw.includes(marker)) return { cleaned: raw };
+  const parts = raw.split(marker);
+  const cleaned = (parts[0] || '').trim();
+  const letter = (parts[1] || '').trim();
+  return { cleaned: cleaned || '✅ Document Ready', letterContent: letter || undefined };
+};
+
+const toConversationHistory = (msgs: Message[]) => {
+  return msgs.map(m => {
+    if (m.letterContent) {
+      const subject = m.dispatchInfo?.subjectLine;
+      return {
+        role: m.role,
+        content: `✅ Document Ready${subject ? `: ${subject}` : ''}`,
+      };
+    }
+    // Backward-compat: strip legacy inline marker if present
+    const extracted = extractLetterFromContent(m.content);
+    return {
+      role: m.role,
+      content: extracted.cleaned,
+    };
+  });
+};
+
 const AssistantPage = () => {
   const { t, isRTL } = useLanguage();
   const { profile } = useProfile();
@@ -116,10 +143,15 @@ const AssistantPage = () => {
       try {
         const parsed = JSON.parse(savedMessages);
         if (Array.isArray(parsed)) {
-          const cleanedMessages = parsed.map((m: Message) => ({
-            ...m,
-            showMissingInfoForm: false,
-          }));
+          const cleanedMessages = parsed.map((m: Message) => {
+            const extracted = extractLetterFromContent(m.content);
+            return {
+              ...m,
+              content: extracted.cleaned,
+              letterContent: m.letterContent || extracted.letterContent,
+              showMissingInfoForm: false,
+            };
+          });
           setMessages(cleanedMessages);
         }
       } catch (e) {
@@ -279,10 +311,7 @@ ${formData.items}`;
       try {
         // Build conversation history for context
         const currentMessages = isRetry ? messages : [...messages, userMsg];
-        const conversationHistory = currentMessages.map(m => ({
-          role: m.role,
-          content: m.content,
-        }));
+         const conversationHistory = toConversationHistory(currentMessages);
 
         const { data, error } = await supabase.functions.invoke('analyze-request', {
           body: { 
@@ -435,11 +464,19 @@ ${formData.items}`;
           if (data.actionPlan) {
             assistantContent += `✅ **خطة العمل:**\n${data.actionPlan}\n\n`;
           }
-          if (data.formalLetter && data.formalLetter !== "لو عايز أكتبلك رد رسمي، قولي 'اكتبلي رد'") {
-            assistantContent += `📝 **الرسالة الرسمية:**\n${data.formalLetter}\n\n`;
-          } else if (data.formalLetter) {
-            assistantContent += `💡 ${data.formalLetter}\n\n`;
-          }
+           // If a formal document was generated, DO NOT inline-render it in chat.
+           // We'll store it separately and show a “Document Ready” card instead.
+           const hasGeneratedDocument =
+             !!data.formalLetter &&
+             data.formalLetter !== "لو عايز أكتبلك رد رسمي، قولي 'اكتبلي رد'";
+
+           if (hasGeneratedDocument) {
+             assistantContent += isRTL
+               ? `✅ تم تجهيز المستند. افتحه من زر \"Open Document\".`
+               : `✅ Document prêt. Ouvrez-le via le bouton \"Open Document\".`;
+           } else if (data.formalLetter) {
+             assistantContent += `💡 ${data.formalLetter}\n\n`;
+           }
           if (data.legalNote) {
             assistantContent += `⚖️ **ملاحظات قانونية:**\n${data.legalNote}`;
           }
@@ -478,6 +515,9 @@ ${formData.items}`;
             isDocumentAnalysis: isDocAnalysis,
             extractedInfo: hasExtractedRecipient ? extractedInfo : undefined,
             showLetterSuggestion: (isDocAnalysis || hasExtractedRecipient) && hasSuggestion && !data.formalLetter,
+             letterContent: hasGeneratedDocument ? data.formalLetter : undefined,
+             showEnvelopeHelper: hasGeneratedDocument,
+             dispatchInfo: data.dispatchInfo,
           };
 
           setMessages(prev => [...prev, assistantMsg]);
@@ -548,10 +588,7 @@ ${formData.items}`;
 
     try {
       // Build conversation history
-      const conversationHistory = messages.map(m => ({
-        role: m.role,
-        content: m.content,
-      }));
+      const conversationHistory = toConversationHistory(messages);
 
       const { data, error } = await supabase.functions.invoke('analyze-request', {
         body: { 
@@ -592,8 +629,11 @@ ${formData.items}`;
       const letterMsg: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: `📝 **الرسالة الرسمية:**\n\n${data.formalLetter}\n\n✅ **تم!** دي الرسالة الجاهزة للطباعة والإرسال. لو محتاج أي تعديل، قولي!`,
+        content: isRTL
+          ? `✅ Document Ready: ${data.dispatchInfo?.subjectLine || 'Lettre officielle'}`
+          : `✅ Document Ready: ${data.dispatchInfo?.subjectLine || 'Lettre officielle'}`,
         showDispatchGuide: true,
+        showEnvelopeHelper: true,
         dispatchInfo: data.dispatchInfo,
         letterContent: data.formalLetter,
       };
@@ -662,10 +702,7 @@ ${formData.items}`;
 السياق: ${lastAnalysisMessage?.content || 'بناءً على المستند المرفق'}`;
 
       // Build conversation history
-      const conversationHistory = messages.map(m => ({
-        role: m.role,
-        content: m.content,
-      }));
+      const conversationHistory = toConversationHistory(messages);
 
       const { data, error } = await supabase.functions.invoke('analyze-request', {
         body: { 
@@ -711,7 +748,7 @@ ${formData.items}`;
       const letterMsg: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: `===الرسالة_الرسمية===\n${data.formalLetter}\n\n✅ **تم!** دي الرسالة الجاهزة للطباعة والإرسال. لو محتاج أي تعديل، قولي!`,
+        content: `✅ Document Ready: ${extractedInfo?.subject || data.dispatchInfo?.subjectLine || 'Lettre officielle'}`,
         showDispatchGuide: true,
         showEnvelopeHelper: true,
         dispatchInfo: {
@@ -985,6 +1022,7 @@ ${formData.items}`;
                   isGeneratingLetter={isGeneratingLetter && pendingLetterMessageId === message.id}
                   showEnvelopeHelper={message.showEnvelopeHelper}
                   dispatchInfo={message.dispatchInfo}
+                  letterContent={message.letterContent}
                 />
               )}
               {/* Show missing info form if needed */}

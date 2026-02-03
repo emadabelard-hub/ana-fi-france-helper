@@ -1,12 +1,11 @@
 import { cn } from '@/lib/utils';
-import { User, Bot, Copy, Check, Download, FileText } from 'lucide-react';
+import { User, Bot, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import LetterSuggestionButton from './LetterSuggestionButton';
-import EnvelopeHelper from './EnvelopeHelper';
+import DocumentReadyCard from './DocumentReadyCard';
+import DocumentViewerModal from './DocumentViewerModal';
 
 interface ExtractedInfo {
   recipientName?: string;
@@ -33,7 +32,11 @@ interface ChatMessageProps {
     recipientName?: string;
     recipientAddress?: string;
     referenceNumber?: string;
+    subjectLine?: string;
   };
+  // When available, keep the full document text OUT of `content`.
+  // This prevents context contamination and fixes the “chat loop”.
+  letterContent?: string;
 }
 
 /**
@@ -171,15 +174,20 @@ const ChatMessage = ({
   isGeneratingLetter = false,
   showEnvelopeHelper = false,
   dispatchInfo,
+  letterContent,
 }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const letterRef = useRef<HTMLDivElement>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const { toast } = useToast();
   const isUser = role === 'user';
 
   // Parse content to separate Arabic from French letter
-  const { arabic, frenchLetter } = useMemo(() => parseContent(content), [content]);
+  const { arabic, frenchLetter: parsedFrenchLetter } = useMemo(() => parseContent(content), [content]);
+  const frenchLetter = useMemo(() => {
+    const direct = typeof letterContent === 'string' ? letterContent.trim() : '';
+    if (direct) return direct;
+    return parsedFrenchLetter;
+  }, [letterContent, parsedFrenchLetter]);
   
   // Detect if this is an analysis message
   const isAnalysis = useMemo(() => 
@@ -217,52 +225,7 @@ const ChatMessage = ({
     }
   };
 
-  const handleExportPDF = async () => {
-    if (!letterRef.current) return;
-
-    setIsExporting(true);
-
-    try {
-      const canvas = await html2canvas(letterRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      
-      const finalWidth = imgWidth * ratio * 0.95;
-      const finalHeight = imgHeight * ratio * 0.95;
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = 10;
-
-      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
-      pdf.save(`lettre-${Date.now()}.pdf`);
-
-      toast({
-        title: isRTL ? "تم التحميل" : "Téléchargé",
-        description: isRTL ? "تم حفظ الملف PDF" : "Le fichier PDF a été enregistré",
-      });
-    } catch (error) {
-      console.error('PDF export error:', error);
-      toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "فشل في إنشاء PDF" : "Échec de la création du PDF",
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  // No handleDraftReply needed anymore - we use inline button
+  // No inline document rendering anymore — document opens in a dedicated viewer modal.
 
   return (
     <div
@@ -308,66 +271,23 @@ const ChatMessage = ({
           />
         )}
 
-        {/* French Letter Section - professionally formatted */}
+        {/* Document Ready Card + Fullscreen Viewer */}
         {frenchLetter && (
           <div className="mt-4 border-t border-border pt-4">
-            <div className={cn(
-              "flex items-center justify-between mb-3 flex-wrap gap-2",
-              isRTL && "flex-row-reverse"
-            )}>
-              <span className={cn(
-                "text-xs font-medium text-muted-foreground flex items-center gap-1",
-                isRTL && "font-cairo flex-row-reverse"
-              )}>
-                <FileText className="h-4 w-4" />
-                {isRTL ? "الخطاب الرسمي (بالفرنسية)" : "Lettre officielle"}
-              </span>
-              
-              {/* Action Buttons */}
-              <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCopy(frenchLetter)}
-                  className="h-7 text-xs gap-1"
-                >
-                  {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                  <span>{isRTL ? "📋 نسخ" : "📋 Copier"}</span>
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleExportPDF}
-                  disabled={isExporting}
-                  className="h-7 text-xs gap-1"
-                >
-                  {isExporting ? (
-                    <div className="h-3 w-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Download className="h-3 w-3" />
-                  )}
-                  <span>{isRTL ? "📄 PDF" : "📄 PDF"}</span>
-                </Button>
-              </div>
-            </div>
-            <div
-              ref={letterRef}
-              dir="ltr"
-              lang="fr"
-              className="french-letter bg-white text-black p-6 rounded-lg border shadow-sm"
-            >
-              <div className="whitespace-pre-wrap text-sm leading-relaxed">{frenchLetter}</div>
-            </div>
-            
-            {/* Envelope Helper - shows recipient address for physical mail */}
-            {showEnvelopeHelper && dispatchInfo && (
-              <EnvelopeHelper
-                recipientName={dispatchInfo.recipientName || ''}
-                recipientAddress={dispatchInfo.recipientAddress}
-                referenceNumber={dispatchInfo.referenceNumber}
-                isRTL={isRTL}
-              />
-            )}
+            <DocumentReadyCard
+              title={dispatchInfo?.subjectLine || extractedInfo?.subject}
+              isRTL={isRTL}
+              onOpen={() => setIsViewerOpen(true)}
+            />
+
+            <DocumentViewerModal
+              open={isViewerOpen}
+              onOpenChange={setIsViewerOpen}
+              isRTL={isRTL}
+              title={dispatchInfo?.subjectLine || extractedInfo?.subject}
+              documentText={frenchLetter}
+              dispatchInfo={showEnvelopeHelper ? dispatchInfo : undefined}
+            />
           </div>
         )}
 

@@ -99,11 +99,15 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 500;
+    line-height: 1.6;
   }
 
-  /* Cairo font for Arabic text */
+  /* Cairo font class for explicit Arabic text */
   .font-cairo {
     font-family: 'Cairo', sans-serif;
+    font-weight: 500;
   }
 }
 

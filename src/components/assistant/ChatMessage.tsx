@@ -262,16 +262,26 @@ const ChatMessage = ({
           <div
             className={cn(
               // 17px font for optimal mobile readability + paragraph spacing
-              "text-[17px] whitespace-pre-wrap break-words font-medium",
+              "text-[17px] whitespace-pre-line break-words font-medium",
               // Paragraph & list spacing: 16px margin-bottom for "eye rest"
               "[&>p]:mb-4 [&>li]:mb-4 [&>ul]:mb-4 [&>ol]:mb-4 space-y-4",
               // RTL: justified text, proper line height + right padding for Arabic
-              isRTL && "text-justify text-right font-cairo leading-[1.8] pr-2",
+              // Using line-height 2.2 to create visible gaps between numbered items
+              isRTL && "text-justify text-right font-cairo leading-[2.2] pr-2 [&_br]:block [&_br]:mb-4",
               !isRTL && "leading-[1.6] pl-2"
             )}
             dir={isRTL ? "rtl" : "ltr"}
+            style={{
+              // Force spacing: treat each line break as a paragraph gap
+              wordSpacing: '0.05em',
+            }}
           >
-            {arabic}
+            {arabic.split('\n').map((line, i, arr) => (
+              <span key={i}>
+                {line}
+                {i < arr.length - 1 && <><br /><span className="block h-2" /></>}
+              </span>
+            ))}
           </div>
         )}
 

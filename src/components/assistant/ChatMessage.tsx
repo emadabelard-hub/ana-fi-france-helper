@@ -1,7 +1,10 @@
 import { cn } from '@/lib/utils';
-import { User, Bot, Copy, Check } from 'lucide-react';
+import { User, Bot, Copy, Check, Download, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -58,6 +61,9 @@ const parseContent = (content: string): { arabic: string; frenchLetter: string |
 
 const ChatMessage = ({ role, content, isRTL = true }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const letterRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   const isUser = role === 'user';
 
   // Parse content to separate Arabic from French letter
@@ -69,8 +75,57 @@ const ChatMessage = ({ role, content, isRTL = true }: ChatMessageProps) => {
       await navigator.clipboard.writeText(textToCopy || content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      toast({
+        title: isRTL ? "تم النسخ" : "Copié",
+        description: isRTL ? "تم نسخ النص للحافظة" : "Le texte a été copié",
+      });
     } catch {
       // Ignore copy errors
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!letterRef.current) return;
+
+    setIsExporting(true);
+
+    try {
+      const canvas = await html2canvas(letterRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      
+      const finalWidth = imgWidth * ratio * 0.95;
+      const finalHeight = imgHeight * ratio * 0.95;
+      const x = (pdfWidth - finalWidth) / 2;
+      const y = 10;
+
+      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+      pdf.save(`lettre-${Date.now()}.pdf`);
+
+      toast({
+        title: isRTL ? "تم التحميل" : "Téléchargé",
+        description: isRTL ? "تم حفظ الملف PDF" : "Le fichier PDF a été enregistré",
+      });
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL ? "فشل في إنشاء PDF" : "Échec de la création du PDF",
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -112,29 +167,52 @@ const ChatMessage = ({ role, content, isRTL = true }: ChatMessageProps) => {
         {/* French Letter Section - professionally formatted */}
         {frenchLetter && (
           <div className="mt-4 border-t border-border pt-4">
-            <div className="flex items-center justify-between mb-2">
+            <div className={cn(
+              "flex items-center justify-between mb-3 flex-wrap gap-2",
+              isRTL && "flex-row-reverse"
+            )}>
               <span className={cn(
-                "text-xs font-medium text-muted-foreground",
-                isRTL && "font-cairo"
+                "text-xs font-medium text-muted-foreground flex items-center gap-1",
+                isRTL && "font-cairo flex-row-reverse"
               )}>
-                {isRTL ? "📄 الخطاب الرسمي (بالفرنسية)" : "📄 Lettre officielle"}
+                <FileText className="h-4 w-4" />
+                {isRTL ? "الخطاب الرسمي (بالفرنسية)" : "Lettre officielle"}
               </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleCopy(frenchLetter)}
-                className="h-6 text-xs gap-1"
-              >
-                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                <span>{isRTL ? "نسخ الخطاب" : "Copier"}</span>
-              </Button>
+              
+              {/* Action Buttons */}
+              <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCopy(frenchLetter)}
+                  className="h-7 text-xs gap-1"
+                >
+                  {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                  <span>{isRTL ? "📋 نسخ" : "📋 Copier"}</span>
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleExportPDF}
+                  disabled={isExporting}
+                  className="h-7 text-xs gap-1"
+                >
+                  {isExporting ? (
+                    <div className="h-3 w-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Download className="h-3 w-3" />
+                  )}
+                  <span>{isRTL ? "📄 PDF" : "📄 PDF"}</span>
+                </Button>
+              </div>
             </div>
             <div
+              ref={letterRef}
               dir="ltr"
               lang="fr"
-              className="french-letter bg-white text-black p-4 rounded-lg border shadow-sm"
+              className="french-letter bg-white text-black p-6 rounded-lg border shadow-sm"
             >
-              <div className="whitespace-pre-wrap">{frenchLetter}</div>
+              <div className="whitespace-pre-wrap text-sm leading-relaxed">{frenchLetter}</div>
             </div>
           </div>
         )}

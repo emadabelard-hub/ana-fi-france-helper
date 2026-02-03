@@ -49,28 +49,41 @@ const LessonFormDialog = ({
   });
   const [isSaving, setIsSaving] = useState(false);
 
+  const createEmptyTextBlock = (): ContentBlock => ({
+    type: 'text',
+    id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    textAr: '',
+    termFr: '',
+  });
+
   useEffect(() => {
-    if (lesson) {
-      setFormData({
-        title_fr: lesson.title_fr,
-        title_ar: lesson.title_ar,
-        category: lesson.category,
-        audio_url: lesson.audio_url || '',
-        content: lesson.content || [],
-        display_order: lesson.display_order,
-        is_published: lesson.is_published,
-      });
-    } else {
-      setFormData({
-        title_fr: '',
-        title_ar: '',
-        category: 'vie_quotidienne',
-        audio_url: '',
-        content: [],
-        display_order: 0,
-        is_published: false,
-      });
+    const next: Partial<Lesson> = lesson
+      ? {
+          title_fr: lesson.title_fr,
+          title_ar: lesson.title_ar,
+          category: lesson.category,
+          audio_url: lesson.audio_url || '',
+          content: lesson.content || [],
+          display_order: lesson.display_order,
+          is_published: lesson.is_published,
+        }
+      : {
+          title_fr: '',
+          title_ar: '',
+          category: 'vie_quotidienne',
+          audio_url: '',
+          content: [],
+          display_order: 0,
+          is_published: false,
+        };
+
+    // Mobile workaround: if opening editor with empty content, auto-add a first text block.
+    const contentArr = Array.isArray(next.content) ? (next.content as ContentBlock[]) : [];
+    if (open && contentArr.length === 0) {
+      next.content = [createEmptyTextBlock()];
     }
+
+    setFormData(next);
   }, [lesson, open]);
 
   const handleSave = async () => {

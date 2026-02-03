@@ -9,11 +9,9 @@ import ChatMessage from '@/components/assistant/ChatMessage';
 import ChatInput from '@/components/assistant/ChatInput';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 import DispatchGuide from '@/components/assistant/DispatchGuide';
-import DismissibleTip from '@/components/shared/DismissibleTip';
+import PostAnalysisActions from '@/components/assistant/PostAnalysisActions';
 import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/DocumentTypeSelector';
-// SmartReplyForm removed - now using inline auto-generation
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, HelpCircle, RefreshCw, FileText, Mail, RotateCcw } from 'lucide-react';
+import { RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -664,8 +662,8 @@ ${formData.items}`;
     }
   };
 
-  // Handler for accepting letter suggestion - auto-generates with profile + extracted data
-  const handleAcceptLetterSuggestion = async (messageId: string, extractedInfo?: ExtractedInfo) => {
+  // Handler for accepting letter suggestion with mode (email or courrier) - auto-generates with profile + extracted data
+  const handleAcceptLetterSuggestion = async (messageId: string, extractedInfo?: ExtractedInfo, mode: 'email' | 'courrier' = 'courrier') => {
     if (!profile?.full_name || !profile?.address) {
       toast({
         variant: "destructive",
@@ -684,8 +682,10 @@ ${formData.items}`;
       // Get the last analysis message for context
       const lastAnalysisMessage = messages.filter(m => m.role === 'assistant' && m.isDocumentAnalysis).slice(-1)[0];
       
+      const documentType = mode === 'email' ? 'إيميل رسمي' : 'خطاب رسمي مسجل';
+      
       // Build generation request using profile data + extracted info
-      const letterRequest = `اكتب رد رسمي بالفرنسي على المستند اللي حللناه.
+      const letterRequest = `اكتب ${documentType} بالفرنسي على المستند اللي حللناه.
 
 معلومات المرسل (من الملف الشخصي):
 - الاسم: ${profile.full_name}
@@ -698,6 +698,8 @@ ${formData.items}`;
 
 المرجع: ${extractedInfo?.referenceNumber || 'حسب المستند'}
 الموضوع: ${extractedInfo?.subject || 'رد على المستند'}
+
+نوع الإرسال: ${mode === 'email' ? 'Email' : 'Lettre Recommandée avec AR'}
 
 السياق: ${lastAnalysisMessage?.content || 'بناءً على المستند المرفق'}`;
 
@@ -825,169 +827,59 @@ ${formData.items}`;
         </DialogContent>
       </Dialog>
 
-      <div className="flex flex-col h-[calc(100vh-140px)] pb-20">
-        {/* Title with New Topic and Clear Buttons */}
-        <section className={cn("text-center py-4 flex-shrink-0 relative", isRTL && "font-cairo")}>
-          <h1 className="text-2xl font-bold text-foreground">
-            {isRTL ? 'أريد حلاً' : 'Je veux une solution'}
+      <div className="flex flex-col h-[calc(100vh-90px)] pb-12">
+        {/* Compact Title with New Topic Button */}
+        <section className={cn("text-center py-2 flex-shrink-0 relative", isRTL && "font-cairo")}>
+          <h1 className="text-xl font-bold text-foreground">
+            {isRTL ? '🇪🇬 أريد حلاً' : '🇪🇬 Je veux une solution'}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            {isRTL ? 'مساعدك الإداري المصري' : 'Votre assistant administratif'}
-          </p>
           
-          {/* New Topic Button - Always visible when there are messages */}
+          {/* New Topic Button */}
           {messages.length > 0 && (
-            <div className={cn(
-              "absolute top-4 flex items-center gap-1",
-              isRTL ? "left-2" : "right-2"
-            )}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleNewTopicClick}
-                className="text-muted-foreground hover:text-primary"
-                title={isRTL ? "موضوع جديد" : "Nouveau sujet"}
-              >
-                <RefreshCw className="h-4 w-4 mr-1" />
-                {isRTL ? "جديد" : "Nouveau"}
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleNewTopicClick}
+              className={cn(
+                "absolute top-2 text-muted-foreground hover:text-primary",
+                isRTL ? "left-1" : "right-1"
+              )}
+              title={isRTL ? "موضوع جديد" : "Nouveau sujet"}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           )}
         </section>
-
-      {/* Quick Action Buttons */}
-      <div className="px-4 mb-3 flex-shrink-0">
-        <div className={cn(
-          "flex gap-2",
-          isRTL && "flex-row-reverse"
-        )}>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDocumentSelector(true)}
-            className={cn("flex-1 gap-2", isRTL && "flex-row-reverse font-cairo")}
-          >
-            <FileText className="h-4 w-4" />
-            {isRTL ? '✉️ اكتبلي جواب' : '✉️ Rédiger courrier'}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDocumentSelector(true)}
-            className={cn("flex-1 gap-2", isRTL && "flex-row-reverse font-cairo")}
-          >
-            <Mail className="h-4 w-4" />
-            {isRTL ? '📧 إيميل رسمي' : '📧 Email officiel'}
-          </Button>
-        </div>
-      </div>
-
-      {/* Contextual Training Tip */}
-      <div className="px-4 mb-3 flex-shrink-0">
-        <DismissibleTip
-          storageKey="assistant_tip_dismissed"
-          title="💡 ازاي تستفيد مني؟"
-          text="اكتب مشكلتك بالتفصيل أو صور الجواب اللي وصلك، وأنا هقولك تعمل إيه فوراً."
-        />
-      </div>
-
-      {/* How It Works Guide */}
-      <div className="px-2 mb-3 flex-shrink-0">
-        <Collapsible open={isGuideOpen} onOpenChange={setIsGuideOpen}>
-          <CollapsibleTrigger asChild>
-            <Button 
-              variant="outline" 
-              className={cn(
-                "w-full justify-between",
-                isRTL && "flex-row-reverse font-cairo"
-              )}
-            >
-              <span className="flex items-center gap-2">
-                <HelpCircle className="h-4 w-4" />
-                {isRTL ? 'ازاي تستخدم المساعد؟' : 'Comment utiliser l\'assistant?'}
-              </span>
-              <ChevronDown className={cn(
-                "h-4 w-4 transition-transform",
-                isGuideOpen && "rotate-180"
-              )} />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <Card className="mt-2 bg-muted/50">
-              <CardContent className={cn("p-4 space-y-3", isRTL && "text-right font-cairo")}>
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">📸</span>
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {isRTL ? 'صوّر الجواب' : 'Photographiez la lettre'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {isRTL ? 'ارفع صورة الخطاب اللي جالك أو اكتب مشكلتك.' : 'Téléchargez une photo de la lettre ou décrivez votre problème.'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">🔍</span>
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {isRTL ? 'التحليل' : 'L\'analyse'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {isRTL ? 'البرنامج هيشرحلك المكتوب ببساطة.' : 'L\'application vous expliquera le contenu simplement.'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">✉️</span>
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {isRTL ? 'الحل' : 'La solution'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {isRTL ? 'لو محتاج، هنكتبلك الرد الرسمي بالفرنساوي عشان تبعته.' : 'Si nécessaire, nous rédigerons la réponse officielle en français.'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">🧠</span>
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {isRTL ? 'استشارة وشرح دقيق' : 'Consultation détaillée'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {isRTL ? 'ولو محتاج تفهم أي موضوع أو أي مشكلة، هشرحلك الوضع بصورة دقيقة وهتفهم إيه المطلوب منك وتعمل إيه.' : 'Si vous avez besoin de comprendre un sujet, je vous l\'expliquerai en détail.'}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </CollapsibleContent>
-        </Collapsible>
-        
-        {/* Contextual Training Tip */}
-        <DismissibleTip
-          storageKey="assistant_tip_dismissed"
-          title="💡 ازاي تستفيد مني؟"
-          text="اضغط على الميكروفون واحكي مشكلتك، أو صور الجواب اللي وصلك وأنا هترجمه وأقولك تعمل إيه."
-        />
-      </div>
 
       {/* Chat Messages Area */}
       <div className="flex-1 overflow-y-auto px-2 space-y-3">
         {messages.length === 0 ? (
           <div className={cn(
-            "flex flex-col items-center justify-center h-full text-center text-muted-foreground",
+            "flex flex-col items-center justify-center h-full text-center text-muted-foreground px-4",
             isRTL && "font-cairo"
           )}>
-            <div className="text-5xl mb-4">🇪🇬</div>
-            <p className="text-lg font-medium">
+            <div className="text-6xl mb-3">🇪🇬</div>
+            <p className="text-xl font-semibold text-foreground">
               {isRTL ? 'أهلاً بيك يا صاحبي!' : 'Bienvenue!'}
             </p>
-            <p className="text-sm max-w-xs mt-2">
+            <p className="text-base mt-2 max-w-sm">
               {isRTL 
-                ? 'ابعتلي أي مستند أو سؤال عن الإدارة الفرنسية وأنا هشرحلك بالمصري 😊'
-                : 'Envoyez-moi un document ou une question sur l\'administration française'}
+                ? 'صوّر أي جواب وصلك 📷 أو اكتب سؤالك وأنا هشرحلك بالمصري 😊'
+                : 'Photographiez une lettre 📷 ou posez votre question'}
             </p>
+            <div className={cn(
+              "flex items-center gap-3 mt-4 text-sm text-muted-foreground",
+              isRTL && "flex-row-reverse"
+            )}>
+              <span>📷</span>
+              <span>{isRTL ? 'صورة' : 'Photo'}</span>
+              <span className="text-muted-foreground/40">|</span>
+              <span>📎</span>
+              <span>{isRTL ? 'ملف' : 'Fichier'}</span>
+              <span className="text-muted-foreground/40">|</span>
+              <span>✏️</span>
+              <span>{isRTL ? 'نص' : 'Texte'}</span>
+            </div>
           </div>
         ) : (
           messages.map((message) => (
@@ -1017,14 +909,28 @@ ${formData.items}`;
                   isRTL={isRTL}
                   isDocumentAnalysis={message.isDocumentAnalysis}
                   extractedInfo={message.extractedInfo}
-                  showLetterSuggestion={message.showLetterSuggestion}
-                  onAcceptLetterSuggestion={() => handleAcceptLetterSuggestion(message.id, message.extractedInfo)}
+                  showLetterSuggestion={false}
                   isGeneratingLetter={isGeneratingLetter && pendingLetterMessageId === message.id}
                   showEnvelopeHelper={message.showEnvelopeHelper}
                   dispatchInfo={message.dispatchInfo}
                   letterContent={message.letterContent}
                 />
               )}
+              
+              {/* Smart Action Buttons - Show after document analysis (when no letter yet) */}
+              {message.isDocumentAnalysis && !message.letterContent && message.role === 'assistant' && (
+                <PostAnalysisActions
+                  onContinueChat={() => {
+                    // Focus on input - just allow user to type next question
+                    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  onDraftReply={(mode) => handleAcceptLetterSuggestion(message.id, message.extractedInfo, mode)}
+                  extractedInfo={message.extractedInfo}
+                  isRTL={isRTL}
+                  isGenerating={isGeneratingLetter && pendingLetterMessageId === message.id}
+                />
+              )}
+              
               {/* Show missing info form if needed */}
               {message.showMissingInfoForm && message.missingFields && pendingLetterMessage?.messageId === message.id && (
                 <div className="mt-3">
@@ -1089,31 +995,27 @@ ${formData.items}`;
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area - Fixed at bottom with loading overlay */}
-        <div className="flex-shrink-0 p-3 border-t bg-background relative">
+        {/* Input Area - Compact fixed at bottom */}
+        <div className="flex-shrink-0 p-2 border-t bg-background relative">
           {/* Loading Overlay - Prevents double-clicks */}
           {isAnalyzing && (
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
               <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>
-                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 <span className="text-sm text-primary font-medium">
                   {isAnalyzingImage 
-                    ? (isRTL ? 'جاري تحليل الصورة...' : 'Analyse de l\'image...') 
-                    : (isRTL ? 'جاري التحليل...' : 'Analyse en cours...')}
+                    ? (isRTL ? '🖼️ جاري تحليل الصورة...' : '🖼️ Analyse...') 
+                    : (isRTL ? '⏳ جاري التحليل...' : '⏳ Analyse...')}
                 </span>
               </div>
             </div>
           )}
-          <Card>
-            <CardContent className="p-3">
-              <ChatInput
-                onSend={handleSend}
-                isLoading={isAnalyzing}
-                isRTL={isRTL}
-                t={t}
-              />
-            </CardContent>
-          </Card>
+          <ChatInput
+            onSend={handleSend}
+            isLoading={isAnalyzing}
+            isRTL={isRTL}
+            t={t}
+          />
         </div>
       </div>
 

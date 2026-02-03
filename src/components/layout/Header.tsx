@@ -39,40 +39,40 @@ const Header = () => {
       "safe-area-pt"
     )}>
       <div className={cn(
-        "flex items-center justify-between px-4 py-3",
+        "flex items-center justify-between px-3 py-2",
         isRTL && "flex-row-reverse"
       )}>
-        {/* Logo */}
+        {/* Compact Logo */}
         <div className={cn(
-          "flex items-center gap-2",
+          "flex items-center gap-1.5",
           isRTL && "flex-row-reverse"
         )}>
-          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-            <span className="text-accent-foreground font-bold text-sm">AF</span>
+          <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center">
+            <span className="text-accent-foreground font-bold text-xs">AF</span>
           </div>
           <h1 className={cn(
-            "text-lg font-bold",
+            "text-base font-bold",
             isRTL && "font-cairo"
           )}>
             {isRTL ? 'أنا في فرنسا' : 'Ana Fi France'}
           </h1>
         </div>
 
-        {/* Language Toggle */}
+        {/* Language Toggle - Compact */}
         <Button
           variant="secondary"
           size="sm"
           onClick={toggleLanguage}
           className={cn(
-            "rounded-full px-4 font-medium text-sm",
+            "rounded-full px-3 py-1 h-7 font-medium text-xs",
             "bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
           )}
         >
-          {language === 'fr' ? 'العربية' : 'Français'}
+          {language === 'fr' ? 'عربي' : 'FR'}
         </Button>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation - Compact */}
       <div className={cn(
         "flex border-t border-primary-foreground/10",
         isRTL && "flex-row-reverse"
@@ -82,7 +82,7 @@ const Header = () => {
             key={tab.id}
             onClick={() => navigate(tab.path)}
             className={cn(
-              "flex-1 py-3 text-sm font-medium transition-all",
+              "flex-1 py-2 text-xs font-medium transition-all",
               "border-b-2",
               tab.isActive
                 ? "border-accent text-primary-foreground"

@@ -135,7 +135,7 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Hidden File Input */}
       <input
         type="file"
@@ -157,90 +157,102 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
 
       {/* Uploaded File Preview */}
       {uploadedFile && (
-        <div className="relative inline-block">
+        <div className={cn(
+          "flex items-center gap-2 p-2 bg-muted/50 rounded-lg",
+          isRTL && "flex-row-reverse"
+        )}>
           {uploadedFile.type === 'image' ? (
             <img
               src={uploadedFile.data}
               alt="Uploaded document"
-              className="h-20 object-contain rounded-lg border"
+              className="h-12 w-12 object-cover rounded border"
             />
           ) : (
-            <div className="h-20 px-4 flex flex-col items-center justify-center rounded-lg border bg-muted/50 gap-1">
-              <FileText className="h-8 w-8 text-destructive" />
-              <span className="text-xs text-muted-foreground truncate max-w-[100px]">
-                {uploadedFile.name}
-              </span>
+            <div className="h-12 w-12 flex items-center justify-center rounded border bg-background">
+              <FileText className="h-6 w-6 text-destructive" />
             </div>
           )}
+          <span className={cn(
+            "flex-1 text-sm truncate",
+            isRTL && "text-right font-cairo"
+          )}>
+            {uploadedFile.type === 'image' 
+              ? (isRTL ? '📷 صورة جاهزة' : '📷 Image prête')
+              : uploadedFile.name}
+          </span>
           <Button
-            variant="destructive"
+            variant="ghost"
             size="icon"
-            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
             onClick={() => setUploadedFile(null)}
           >
-            <X className="h-3 w-3" />
+            <X className="h-4 w-4" />
           </Button>
         </div>
       )}
 
-      {/* Input Row */}
+      {/* Input Row - Horizontal layout with prominent buttons */}
       <div className={cn(
         "flex items-end gap-2",
         isRTL && "flex-row-reverse"
       )}>
-        {/* Text Input - Disabled while loading */}
-        <Textarea
-          placeholder={t('assistant.textPlaceholder')}
-          value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
-          className={cn(
-            "min-h-[60px] max-h-[150px] resize-none flex-1 transition-opacity",
-            isRTL && "text-right font-cairo",
-            isLoading && "opacity-50 cursor-not-allowed"
-          )}
-          disabled={isLoading}
-        />
-
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-1">
-          {/* Camera Button */}
+        {/* Attachment Buttons - Left side */}
+        <div className={cn(
+          "flex gap-1",
+          isRTL && "flex-row-reverse"
+        )}>
+          {/* Camera Button - Big & Visible */}
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={handleCameraCapture}
             disabled={isLoading}
-            className="h-8 w-8"
-            title={isRTL ? "صور مستند" : "Photographier"}
+            className="h-10 w-10"
+            title={isRTL ? "📷 صور مستند" : "📷 Photo"}
           >
-            <Camera className="h-4 w-4" />
+            <Camera className="h-5 w-5" />
           </Button>
 
           {/* Attach File Button */}
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={handleDocumentUpload}
             disabled={isLoading}
-            className="h-8 w-8"
-            title={isRTL ? "رفع ملف" : "Joindre un fichier"}
+            className="h-10 w-10"
+            title={isRTL ? "📎 رفع ملف" : "📎 Fichier"}
           >
-            <Paperclip className="h-4 w-4" />
-          </Button>
-
-          {/* Send Button */}
-          <Button
-            size="icon"
-            onClick={handleSubmit}
-            disabled={(!userInput.trim() && !uploadedFile) || isLoading}
-            className="h-8 w-8"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+            <Paperclip className="h-5 w-5" />
           </Button>
         </div>
+
+        {/* Text Input - Expands to fill space */}
+        <Textarea
+          placeholder={isRTL ? 'اكتب سؤالك أو صور المستند...' : 'Écrivez ou joignez un document...'}
+          value={userInput}
+          onChange={(e) => setUserInput(e.target.value)}
+          className={cn(
+            "min-h-[44px] max-h-[120px] resize-none flex-1 text-base py-2",
+            isRTL && "text-right font-cairo",
+            isLoading && "opacity-50 cursor-not-allowed"
+          )}
+          disabled={isLoading}
+          rows={1}
+        />
+
+        {/* Send Button - Prominent */}
+        <Button
+          size="icon"
+          onClick={handleSubmit}
+          disabled={(!userInput.trim() && !uploadedFile) || isLoading}
+          className="h-10 w-10"
+        >
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Send className="h-5 w-5" />
+          )}
+        </Button>
       </div>
     </div>
   );

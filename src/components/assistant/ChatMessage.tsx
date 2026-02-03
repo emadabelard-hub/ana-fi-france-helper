@@ -233,8 +233,8 @@ const ChatMessage = ({
         // Force internal padding so RTL Arabic never touches the bubble edge.
         // Spec requested: padding: 15px 20px !important; + border-box sizing.
         "flex gap-4 rounded-xl box-border !py-[15px] !px-5",
-        // Minimal margins: bubbles take ~95% width on mobile
-        "mx-2 sm:mx-4",
+        // Maximum width: bubbles take ~98% width on mobile (only 1% margin each side)
+        "mx-[1%] sm:mx-[2%]",
         // Background colors only, no directional offsets to maximize width
         isUser ? "bg-primary/10" : "bg-muted/50",
         isRTL && "flex-row-reverse"
@@ -261,9 +261,10 @@ const ChatMessage = ({
         {arabic && (
           <div
             className={cn(
-              "text-base whitespace-pre-wrap break-words",
+              // Larger font (18px) for better mobile readability + paragraph spacing
+              "text-lg whitespace-pre-wrap break-words [&>p]:mb-3 space-y-3",
               // RTL: proper line height + right padding for Arabic
-              isRTL && "text-right font-cairo leading-[1.8] pr-2",
+              isRTL && "text-right font-cairo leading-[1.9] pr-2",
               !isRTL && "leading-relaxed pl-2"
             )}
             dir={isRTL ? "rtl" : "ltr"}

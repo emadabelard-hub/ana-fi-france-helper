@@ -138,13 +138,13 @@ const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEdit
   return (
     <div className="space-y-4">
       {/* Add Block Buttons */}
-      <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+      <div className={cn("flex gap-2 relative z-10", isRTL && "flex-row-reverse")}>
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={addTextBlock}
-          className={cn("gap-2", isRTL && "flex-row-reverse font-cairo")}
+          className={cn("gap-2 touch-manipulation", isRTL && "flex-row-reverse font-cairo")}
         >
           <Type className="h-4 w-4" />
           {isRTL ? 'أضف نص' : 'Add Text Block'}
@@ -154,7 +154,7 @@ const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEdit
           variant="outline"
           size="sm"
           onClick={addImageBlock}
-          className={cn("gap-2", isRTL && "flex-row-reverse font-cairo")}
+          className={cn("gap-2 touch-manipulation", isRTL && "flex-row-reverse font-cairo")}
         >
           <Image className="h-4 w-4" />
           {isRTL ? 'أضف صورة' : 'Add Image Block'}

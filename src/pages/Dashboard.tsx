@@ -1,190 +1,118 @@
 import { useNavigate } from 'react-router-dom';
-import { FileText, MessageSquare, PenLine, Mail, Briefcase } from 'lucide-react';
+import { Camera, PenLine, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import ValuePropositions from '@/components/home/ValuePropositions';
 
 const Dashboard = () => {
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
 
-  const consultationItems = [
+  const actionCards = [
     {
-      icon: MessageSquare,
-      title: isRTL ? 'استشارات وحلول' : 'Consultations & Solutions',
-      description: isRTL 
-        ? 'صور أي جواب أو اشرح مشكلتك الإدارية، وهقولك الحل القانوني فوراً.' 
-        : 'Photographiez une lettre ou décrivez votre problème administratif.',
+      icon: Camera,
+      title: isRTL ? 'صوّر وحلّ' : 'Scanner & Résoudre',
+      subtitle: isRTL ? 'صور أي جواب وهفهملك' : 'Photographiez, je vous explique',
       path: '/assistant',
-      gradient: 'from-primary/20 to-primary/5',
-      emoji: '📄',
+      gradient: 'from-blue-500 to-blue-600',
+      iconBg: 'bg-blue-400/30',
+      emoji: '📸',
     },
-    {
-      icon: Mail,
-      title: isRTL ? 'اكتبلي خطاب/إيميل' : 'Rédiger courrier/email',
-      description: isRTL 
-        ? 'هكتبلك جواب رسمي أو إيميل بالفرنساوي لأي جهة.' 
-        : 'Je rédige une lettre ou email officiel en français.',
-      path: '/assistant',
-      gradient: 'from-blue-500/20 to-blue-500/5',
-      emoji: '✉️',
-    },
-  ];
-
-  const proItems = [
     {
       icon: PenLine,
-      title: isRTL ? 'الفواتير والدوفيهات' : 'Factures & Devis',
-      description: isRTL 
-        ? 'اعمل فواتيرك ودوفيهاتك باحترافية.' 
-        : 'Créez vos factures et devis professionnellement.',
-      path: '/pro/invoice-creator',
-      gradient: 'from-green-500/20 to-green-500/5',
-      emoji: '🧾',
+      title: isRTL ? 'اكتبلي خطاب' : 'Écrire une Lettre',
+      subtitle: isRTL ? 'خطاب رسمي بالفرنساوي' : 'Lettre officielle en français',
+      path: '/assistant',
+      gradient: 'from-emerald-500 to-emerald-600',
+      iconBg: 'bg-emerald-400/30',
+      emoji: '✍️',
     },
     {
-      icon: Briefcase,
-      title: isRTL ? 'مساعد الارتيزان' : 'Assistant Artisan',
-      description: isRTL 
-        ? 'حلك لمشاكل الـ URSSAF، الضرايب، ومنازعات الشغل.' 
-        : 'URSSAF, impôts et litiges professionnels.',
-      path: '/pro/admin-assistant',
-      gradient: 'from-purple-500/20 to-purple-500/5',
-      emoji: '🔧',
+      icon: FileText,
+      title: isRTL ? 'فاتورة جديدة' : 'Créer une Facture',
+      subtitle: isRTL ? 'للحرفيين والمستقلين' : 'Pour artisans & indépendants',
+      path: '/pro/invoice-creator',
+      gradient: 'from-amber-500 to-orange-500',
+      iconBg: 'bg-amber-400/30',
+      emoji: '📄',
     },
   ];
 
-  const renderActionCard = (action: typeof consultationItems[0]) => {
-    const Icon = action.icon;
-    return (
-      <Card
-        key={action.path + action.title}
-        className={cn(
-          "cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.01]",
-          "border-none bg-gradient-to-br overflow-hidden",
-          action.gradient
-        )}
-        onClick={() => navigate(action.path)}
-      >
-        <CardContent className={cn(
-          "flex items-center gap-4 p-4",
-          isRTL && "flex-row-reverse"
-        )}>
-          <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center shadow-sm">
-            <Icon className="h-6 w-6 text-primary" />
-          </div>
-          
-          <div className={cn("flex-1", isRTL && "text-right")}>
-            <h3 className="font-bold text-foreground text-lg font-cairo">
-              {action.emoji} {action.title}
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1 font-cairo">
-              {action.description}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
   return (
-    <div className="py-8 space-y-6">
-      {/* Welcome Section */}
-      <section className="text-center space-y-3 font-cairo">
-        <h1 className="text-2xl font-bold text-foreground">
-          مرحباً بك في أنا في فرنسا
+    <div className="min-h-[80vh] flex flex-col justify-center py-8 px-2">
+      {/* Welcome Header */}
+      <section className="text-center mb-10 font-cairo">
+        <h1 className="text-3xl font-bold text-foreground mb-2">
+          {isRTL ? 'أهلاً بيك 👋' : 'Bienvenue 👋'}
         </h1>
-        <p className="text-muted-foreground text-lg">
-          مساعدك الإداري الذكي
+        <p className="text-lg text-muted-foreground">
+          {isRTL ? 'اختار اللي محتاجه' : 'Que puis-je faire pour vous ?'}
         </p>
       </section>
 
-      {/* Accordion Navigation */}
-      <section>
-        <Accordion type="multiple" defaultValue={['consultations', 'pro']} className="space-y-3">
-          {/* Consultations Section */}
-          <AccordionItem value="consultations" className="border rounded-xl overflow-hidden bg-gradient-to-br from-primary/5 to-primary/10">
-            <AccordionTrigger className={cn(
-              "px-4 py-3 hover:no-underline",
-              isRTL && "flex-row-reverse"
-            )}>
-              <div className={cn(
-                "flex items-center gap-3",
-                isRTL && "flex-row-reverse"
-              )}>
-                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                </div>
-                <div className={cn(isRTL && "text-right")}>
-                  <h2 className="font-bold text-foreground text-lg font-cairo">
-                    📄 {isRTL ? 'استشارات وحلول' : 'Consultations & Solutions'}
-                  </h2>
-                  <p className="text-xs text-muted-foreground font-cairo">
-                    {isRTL ? 'مساعدة في المشاكل الإدارية' : 'Aide administrative'}
-                  </p>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4 pt-2 space-y-3">
-              {consultationItems.map(renderActionCard)}
-            </AccordionContent>
-          </AccordionItem>
+      {/* Big Action Cards */}
+      <section className="space-y-4 max-w-md mx-auto w-full">
+        {actionCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <Card
+              key={card.path + card.title}
+              className={cn(
+                'cursor-pointer transition-all duration-300',
+                'hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]',
+                'border-none overflow-hidden',
+                `bg-gradient-to-r ${card.gradient}`,
+              )}
+              onClick={() => navigate(card.path)}
+            >
+              <CardContent className="p-0">
+                <div className={cn(
+                  'flex items-center gap-5 p-6',
+                  isRTL && 'flex-row-reverse'
+                )}>
+                  {/* Icon Circle */}
+                  <div className={cn(
+                    'w-16 h-16 rounded-2xl flex items-center justify-center shrink-0',
+                    card.iconBg
+                  )}>
+                    <span className="text-3xl">{card.emoji}</span>
+                  </div>
 
-          {/* Professional Tools Section */}
-          <AccordionItem value="pro" className="border rounded-xl overflow-hidden bg-gradient-to-br from-accent/5 to-accent/10">
-            <AccordionTrigger className={cn(
-              "px-4 py-3 hover:no-underline",
-              isRTL && "flex-row-reverse"
-            )}>
-              <div className={cn(
-                "flex items-center gap-3",
-                isRTL && "flex-row-reverse"
-              )}>
-                <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-accent" />
+                  {/* Text */}
+                  <div className={cn('flex-1', isRTL && 'text-right')}>
+                    <h2 className="text-xl font-bold text-white font-cairo mb-1">
+                      {card.title}
+                    </h2>
+                    <p className="text-white/80 text-sm font-cairo">
+                      {card.subtitle}
+                    </p>
+                  </div>
+
+                  {/* Arrow */}
+                  <div className={cn(
+                    'text-white/60 text-2xl',
+                    isRTL ? 'rotate-180' : ''
+                  )}>
+                    →
+                  </div>
                 </div>
-                <div className={cn(isRTL && "text-right")}>
-                  <h2 className="font-bold text-foreground text-lg font-cairo">
-                    💪 {isRTL ? 'دراعك اليمين' : 'Votre bras droit'}
-                  </h2>
-                  <p className="text-xs text-muted-foreground font-cairo">
-                    {isRTL ? 'أدوات الحرفيين والمستقلين' : 'Outils pour artisans'}
-                  </p>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4 pt-2 space-y-3">
-              {proItems.map(renderActionCard)}
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+              </CardContent>
+            </Card>
+          );
+        })}
       </section>
 
-      {/* Value Propositions Carousel */}
-      <ValuePropositions />
-
-      {/* Info Banner */}
-      <section>
-        <Card className="bg-primary/5 border-primary/20">
-          <CardContent className="p-4 text-center font-cairo">
-            <p className="text-sm text-muted-foreground">
-              🇫🇷 تطبيقك للمساعدة في الإجراءات الإدارية الفرنسية
-            </p>
-          </CardContent>
-        </Card>
+      {/* Simple Footer */}
+      <section className="text-center mt-12">
+        <p className="text-sm text-muted-foreground font-cairo">
+          🇫🇷 {isRTL ? 'مساعدك في فرنسا' : 'Votre assistant en France'}
+        </p>
       </section>
 
-      {/* Hidden Admin Link for Testing */}
+      {/* Hidden Admin Link */}
       <button 
         onClick={() => navigate('/admin')}
-        className="text-xs text-muted-foreground/50 hover:text-primary"
+        className="absolute bottom-4 left-4 text-xs text-muted-foreground/30 hover:text-primary"
       >
         Admin
       </button>

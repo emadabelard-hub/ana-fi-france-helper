@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Paperclip, Send, Loader2, X, FileText, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,17 +10,22 @@ import {
   MAX_MESSAGE_LENGTH,
   sanitizeString 
 } from '@/lib/validation';
+import type { AttachedDocument } from './AttachedDocuments';
 
 interface ChatInputProps {
   onSend: (message: string, image?: string) => void;
+  onDocumentAdd?: (doc: AttachedDocument) => void;
   isLoading: boolean;
   isRTL: boolean;
   t: (key: string) => string;
+  /** If provided, ChatInput won't manage its own file state - parent handles it */
+  externalDocumentsMode?: boolean;
 }
 
-const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
+const ChatInput = ({ onSend, onDocumentAdd, isLoading, isRTL, t, externalDocumentsMode = false }: ChatInputProps) => {
   const { toast } = useToast();
   const [userInput, setUserInput] = useState('');
+  // Only used when NOT in external documents mode
   const [uploadedFile, setUploadedFile] = useState<{ data: string; type: 'image' | 'pdf'; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -46,8 +51,6 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
     setUploadedFile(null);
   };
 
-  // Enter key now creates new lines - send only via button
-
   const handleDocumentUpload = () => {
     fileInputRef.current?.click();
   };
@@ -56,10 +59,9 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
     cameraInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file using our security validation
+  const processFile = (file: File, fromCamera: boolean = false) => {
+    // Validate file using our security validation
+    if (!fromCamera) {
       const validation = validateFileUpload(file, ALLOWED_DOCUMENT_TYPES);
       
       if (!validation.valid) {
@@ -70,27 +72,60 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
             ? "يرجى رفع صورة (JPG/PNG) أو ملف PDF فقط"
             : "Veuillez télécharger une image (JPG/PNG) ou un fichier PDF uniquement.",
         });
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
         return;
       }
-      
-      const isImage = file.type.startsWith('image/');
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setUploadedFile({
-          data: event.target?.result as string,
-          type: isImage ? 'image' : 'pdf',
-          name: file.name
+    } else {
+      // Only allow images from camera
+      if (!file.type.startsWith('image/')) {
+        toast({
+          variant: "destructive",
+          title: isRTL ? "خطأ" : "Erreur",
+          description: isRTL ? "يرجى التقاط صورة فقط" : "Veuillez capturer une image uniquement.",
         });
+        return;
+      }
+    }
+    
+    const isImage = file.type.startsWith('image/');
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const docData = {
+        data: event.target?.result as string,
+        type: isImage ? 'image' as const : 'pdf' as const,
+        name: fromCamera ? `camera_${Date.now()}.jpg` : file.name
+      };
+      
+      if (externalDocumentsMode && onDocumentAdd) {
+        // In external mode, emit to parent
+        const doc: AttachedDocument = {
+          id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          ...docData,
+          timestamp: Date.now()
+        };
+        onDocumentAdd(doc);
+        toast({
+          title: isRTL ? "📎 تم إضافة الملف للدوسيه" : "📎 Fichier ajouté au dossier",
+          description: isRTL 
+            ? `${docData.name} - يمكنك إضافة المزيد` 
+            : `${docData.name} - Vous pouvez en ajouter d'autres`,
+        });
+      } else {
+        // Original behavior - single file
+        setUploadedFile(docData);
         toast({
           title: isRTL ? "تم رفع الملف" : "Fichier téléchargé",
-          description: isRTL ? `تم رفع ${file.name} بنجاح` : `${file.name} a été téléchargé avec succès.`,
+          description: isRTL ? `تم رفع ${docData.name} بنجاح` : `${docData.name} a été téléchargé avec succès.`,
         });
-      };
-      reader.readAsDataURL(file);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processFile(file, false);
     }
     // Reset input so the same file can be selected again
     if (fileInputRef.current) {
@@ -101,38 +136,18 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
   const handleCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Only allow images from camera
-      if (!file.type.startsWith('image/')) {
-        toast({
-          variant: "destructive",
-          title: isRTL ? "خطأ" : "Erreur",
-          description: isRTL ? "يرجى التقاط صورة فقط" : "Veuillez capturer une image uniquement.",
-        });
-        if (cameraInputRef.current) {
-          cameraInputRef.current.value = '';
-        }
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setUploadedFile({
-          data: event.target?.result as string,
-          type: 'image',
-          name: `camera_${Date.now()}.jpg`
-        });
-        toast({
-          title: isRTL ? "📷 تم التصوير!" : "📷 Photo capturée!",
-          description: isRTL ? "الصورة جاهزة للتحليل" : "L'image est prête à être analysée.",
-        });
-      };
-      reader.readAsDataURL(file);
+      processFile(file, true);
     }
     // Reset input
     if (cameraInputRef.current) {
       cameraInputRef.current.value = '';
     }
   };
+
+  // Determine if we can send (in external mode, always allow if there's text)
+  const canSend = externalDocumentsMode 
+    ? userInput.trim().length > 0
+    : (userInput.trim().length > 0 || !!uploadedFile);
 
   return (
     <div className="space-y-2">
@@ -155,8 +170,8 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
         className="hidden"
       />
 
-      {/* Uploaded File Preview */}
-      {uploadedFile && (
+      {/* Uploaded File Preview - Only in non-external mode */}
+      {!externalDocumentsMode && uploadedFile && (
         <div className={cn(
           "flex items-center gap-2 p-2 bg-muted/50 rounded-lg",
           isRTL && "flex-row-reverse"
@@ -196,12 +211,12 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
         "flex items-end gap-2",
         isRTL && "flex-row-reverse"
       )}>
-        {/* Attachment Buttons - Left side */}
+        {/* Attachment Buttons - Always visible */}
         <div className={cn(
           "flex gap-1",
           isRTL && "flex-row-reverse"
         )}>
-          {/* Camera Button - Big & Visible */}
+          {/* Camera Button */}
           <Button
             variant="outline"
             size="icon"
@@ -220,15 +235,15 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
             onClick={handleDocumentUpload}
             disabled={isLoading}
             className="h-10 w-10"
-            title={isRTL ? "📎 رفع ملف" : "📎 Fichier"}
+            title={isRTL ? "📎 أضف ملف للدوسيه" : "📎 Ajouter au dossier"}
           >
             <Paperclip className="h-5 w-5" />
           </Button>
         </div>
 
-        {/* Text Input - Expands to fill space */}
+        {/* Text Input */}
         <Textarea
-          placeholder={isRTL ? 'اكتب سؤالك أو صور المستند...' : 'Écrivez ou joignez un document...'}
+          placeholder={isRTL ? 'اكتب سؤالك أو أضف مستند...' : 'Écrivez ou ajoutez un document...'}
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
           className={cn(
@@ -240,11 +255,11 @@ const ChatInput = ({ onSend, isLoading, isRTL, t }: ChatInputProps) => {
           rows={1}
         />
 
-        {/* Send Button - Prominent */}
+        {/* Send Button */}
         <Button
           size="icon"
           onClick={handleSubmit}
-          disabled={(!userInput.trim() && !uploadedFile) || isLoading}
+          disabled={!canSend || isLoading}
           className="h-10 w-10"
         >
           {isLoading ? (

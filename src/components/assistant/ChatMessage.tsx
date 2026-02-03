@@ -230,8 +230,9 @@ const ChatMessage = ({
   return (
     <div
       className={cn(
-        // Internal padding: 20px all around, with extra on sides
-        "flex gap-4 p-5 rounded-2xl",
+        // Force internal padding so RTL Arabic never touches the bubble edge.
+        // Spec requested: padding: 15px 20px !important; + border-box sizing.
+        "flex gap-4 rounded-xl box-border !py-[15px] !px-5",
         // Outer margins: ensure bubble never touches screen edges
         "mx-4 sm:mx-6",
         // Offset to show conversation flow direction
@@ -253,7 +254,8 @@ const ChatMessage = ({
 
       {/* Content - with internal padding for breathing room */}
       <div className={cn(
-        "flex-1 space-y-4",
+        // min-w-0 is critical in flex layouts so long words can wrap instead of overflowing.
+        "flex-1 min-w-0 space-y-4",
         // Extra padding inside content area for text breathing room
         isRTL ? "pr-3 pl-1" : "pl-3 pr-1"
       )}>

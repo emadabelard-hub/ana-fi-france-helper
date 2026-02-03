@@ -35,7 +35,9 @@ interface RequestBody {
   profile?: UserProfile;
   conversationHistory?: ConversationMessage[];
   generateLetterWithData?: FilledData;
-  imageData?: string; // Base64 image for vision analysis
+  imageData?: string; // Base64 image for vision analysis (single image)
+  multipleImages?: string[]; // Array of base64 images for multi-document analysis
+  documentContext?: string; // Context about the session documents
 }
 
 // Input validation constants
@@ -164,10 +166,23 @@ function validateInput(body: unknown): { valid: true; data: RequestBody } | { va
       );
   }
 
-  // Extract imageData if present
+  // Extract imageData and multipleImages if present
   const imageData = (body as any).imageData;
+  const multipleImages = (body as any).multipleImages;
+  const documentContext = (body as any).documentContext;
   
-  return { valid: true, data: { userMessage: userMessage.trim(), profile, conversationHistory: validatedHistory, generateLetterWithData, imageData } };
+  return { 
+    valid: true, 
+    data: { 
+      userMessage: userMessage.trim(), 
+      profile, 
+      conversationHistory: validatedHistory, 
+      generateLetterWithData, 
+      imageData,
+      multipleImages,
+      documentContext,
+    } 
+  };
 }
 
 serve(async (req) => {
@@ -188,7 +203,7 @@ serve(async (req) => {
       });
     }
 
-    const { userMessage, profile, conversationHistory, generateLetterWithData, imageData } = validation.data;
+    const { userMessage, profile, conversationHistory, generateLetterWithData, imageData, multipleImages, documentContext } = validation.data;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -200,10 +215,18 @@ serve(async (req) => {
       return await generateLetterWithFilledData(generateLetterWithData, profile, conversationHistory, LOVABLE_API_KEY);
     }
 
+    // Determine if we have images to analyze
+    const hasImages = !!imageData || (multipleImages && multipleImages.length > 0);
+    const imageCount = multipleImages?.length || (imageData ? 1 : 0);
+
     // Build system prompt with PII minimization - use placeholders for sensitive data
-    const systemPrompt = buildSystemPrompt(profile);
+    // Add document context if provided (for multi-document sessions)
+    let systemPrompt = buildSystemPrompt(profile);
+    if (documentContext) {
+      systemPrompt += `\n\n📂 DOCUMENT SESSION CONTEXT:\n${documentContext}\nWhen analyzing multiple documents, compare them, find connections, and help the user understand the full picture of their case.`;
+    }
     
-    console.log("Processing request with message length:", userMessage.length, "history:", conversationHistory?.length || 0, "hasImage:", !!imageData);
+    console.log("Processing request with message length:", userMessage.length, "history:", conversationHistory?.length || 0, "hasImages:", hasImages, "imageCount:", imageCount);
     
     // Build messages array with conversation history
     const aiMessages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }> = [
@@ -217,22 +240,35 @@ serve(async (req) => {
       }
     }
     
-    // Add the current user message - with image if provided (Vision API)
-    if (imageData) {
+    // Add the current user message - with images if provided (Vision API)
+    if (hasImages) {
       // Use multimodal format for vision analysis
-      aiMessages.push({ 
-        role: "user", 
-        content: [
-          { type: "text", text: userMessage || "حلل الصورة دي وقولي إيه المكتوب فيها. لو ده جواب إداري، اشرحلي بالمصري إيه المطلوب مني." },
-          { type: "image_url", image_url: { url: imageData } }
-        ]
-      });
+      const contentParts: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
+        { 
+          type: "text", 
+          text: multipleImages && multipleImages.length > 1
+            ? `${userMessage || 'حلل المستندات دي'}. (${imageCount} documents in the session dossier - analyze all and find connections between them)`
+            : (userMessage || "حلل الصورة دي وقولي إيه المكتوب فيها. لو ده جواب إداري، اشرحلي بالمصري إيه المطلوب مني.")
+        }
+      ];
+      
+      // Add all images from multipleImages array
+      if (multipleImages && multipleImages.length > 0) {
+        for (let i = 0; i < multipleImages.length; i++) {
+          contentParts.push({ type: "image_url", image_url: { url: multipleImages[i] } });
+        }
+      } else if (imageData) {
+        // Single image
+        contentParts.push({ type: "image_url", image_url: { url: imageData } });
+      }
+      
+      aiMessages.push({ role: "user", content: contentParts });
     } else {
       aiMessages.push({ role: "user", content: userMessage });
     }
     
     // Use gemini-2.5-flash for vision (multimodal support) or gemini-3-flash-preview for text
-    const model = imageData ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
+    const model = hasImages ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
     
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

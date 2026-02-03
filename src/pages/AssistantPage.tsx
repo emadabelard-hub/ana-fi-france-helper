@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import ChatInput from '@/components/assistant/ChatInput';
+import AttachedDocuments, { AttachedDocument } from '@/components/assistant/AttachedDocuments';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 import DispatchGuide from '@/components/assistant/DispatchGuide';
 import PostAnalysisActions from '@/components/assistant/PostAnalysisActions';
@@ -66,9 +67,12 @@ interface Message {
   showLetterSuggestion?: boolean;
   // Envelope helper - show after letter generation
   showEnvelopeHelper?: boolean;
+  // Track which documents were referenced in this message
+  referencedDocumentIds?: string[];
 }
 
 const CHAT_STORAGE_KEY = 'assistant_chat_messages';
+const DOCUMENTS_STORAGE_KEY = 'assistant_session_documents';
 
 const extractLetterFromContent = (raw: string): { cleaned: string; letterContent?: string } => {
   const marker = '===الرسالة_الرسمية===';
@@ -103,6 +107,8 @@ const AssistantPage = () => {
   const { toast } = useToast();
   
   const [messages, setMessages] = useState<Message[]>([]);
+  // Multi-document session state
+  const [sessionDocuments, setSessionDocuments] = useState<AttachedDocument[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -119,9 +125,23 @@ const AssistantPage = () => {
   const [pendingLetterMessageId, setPendingLetterMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load messages from localStorage on mount and show session dialog
+  // Load messages AND documents from localStorage on mount
   useEffect(() => {
     const savedMessages = localStorage.getItem(CHAT_STORAGE_KEY);
+    const savedDocuments = localStorage.getItem(DOCUMENTS_STORAGE_KEY);
+    
+    // Load documents first
+    if (savedDocuments) {
+      try {
+        const parsedDocs = JSON.parse(savedDocuments);
+        if (Array.isArray(parsedDocs)) {
+          setSessionDocuments(parsedDocs);
+        }
+      } catch (e) {
+        console.error('Failed to parse saved documents:', e);
+      }
+    }
+    
     if (savedMessages) {
       try {
         const parsed = JSON.parse(savedMessages);
@@ -161,7 +181,9 @@ const AssistantPage = () => {
 
   const handleNewSession = () => {
     localStorage.removeItem(CHAT_STORAGE_KEY);
+    localStorage.removeItem(DOCUMENTS_STORAGE_KEY);
     setMessages([]);
+    setSessionDocuments([]);
     setPendingLetterMessage(null);
     setShowSessionDialog(false);
   };
@@ -178,6 +200,15 @@ const AssistantPage = () => {
     }
   }, [messages]);
 
+  // Save session documents to localStorage
+  useEffect(() => {
+    if (sessionDocuments.length > 0) {
+      localStorage.setItem(DOCUMENTS_STORAGE_KEY, JSON.stringify(sessionDocuments));
+    } else {
+      localStorage.removeItem(DOCUMENTS_STORAGE_KEY);
+    }
+  }, [sessionDocuments]);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -185,8 +216,10 @@ const AssistantPage = () => {
 
   const clearChat = () => {
     setMessages([]);
+    setSessionDocuments([]);
     setPendingLetterMessage(null);
     localStorage.removeItem(CHAT_STORAGE_KEY);
+    localStorage.removeItem(DOCUMENTS_STORAGE_KEY);
     toast({
       title: isRTL ? "تم مسح المحادثة" : "Conversation effacée",
       description: isRTL ? "يمكنك بدء محادثة جديدة" : "Vous pouvez commencer une nouvelle conversation",
@@ -201,13 +234,25 @@ const AssistantPage = () => {
 
   const confirmNewTopic = () => {
     setMessages([]);
+    setSessionDocuments([]);
     setPendingLetterMessage(null);
     localStorage.removeItem(CHAT_STORAGE_KEY);
+    localStorage.removeItem(DOCUMENTS_STORAGE_KEY);
     setShowNewTopicConfirm(false);
     toast({
       title: isRTL ? "تم بدء موضوع جديد" : "Nouvelle discussion commencée",
       description: isRTL ? "يمكنك بدء محادثة جديدة" : "Vous pouvez commencer une nouvelle conversation",
     });
+  };
+
+  // Handler to add document to session
+  const handleDocumentAdd = (doc: AttachedDocument) => {
+    setSessionDocuments(prev => [...prev, doc]);
+  };
+
+  // Handler to remove document from session
+  const handleDocumentRemove = (docId: string) => {
+    setSessionDocuments(prev => prev.filter(d => d.id !== docId));
   };
 
   // Handle document form submission - generates structured request
@@ -268,13 +313,16 @@ ${formData.items}`;
   };
 
   const handleSend = async (userMessage: string, image?: string, isRetry: boolean = false) => {
-    if (!userMessage.trim() && !image) return;
+    // Allow sending if there's text OR if there are session documents (for cross-doc questions)
+    const hasSessionDocs = sessionDocuments.length > 0;
+    if (!userMessage.trim() && !image && !hasSessionDocs) return;
 
-    // Detect if this is an image analysis request
+    // Detect if this is an image analysis request (direct image or session docs)
     const hasImage = !!image;
+    const hasNewDocs = hasImage || hasSessionDocs;
     let processedImage = image;
 
-    // Compress image if present
+    // Compress image if present (new direct upload)
     if (hasImage && image && isImageData(image)) {
       try {
         const originalSize = getFileSizeKB(image);
@@ -284,15 +332,31 @@ ${formData.items}`;
         console.log(`Compressed image size: ${compressedSize}KB (${Math.round((1 - compressedSize / originalSize) * 100)}% reduction)`);
       } catch (compressionError) {
         console.error('Image compression failed, using original:', compressionError);
-        // Continue with original image if compression fails
       }
     }
 
-    // Create user message
+    // Build document context description for the user message
+    let docContextLabel = '';
+    if (hasSessionDocs) {
+      const docCount = sessionDocuments.length;
+      docContextLabel = isRTL 
+        ? `[${docCount} مستند في الدوسيه]` 
+        : `[${docCount} document(s) dans le dossier]`;
+    }
+    if (hasImage) {
+      docContextLabel = docContextLabel 
+        ? `${docContextLabel} + [صورة جديدة]` 
+        : '[صورة مرفقة]';
+    }
+
+    // Create user message with document context
     const userMsg: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
-      content: hasImage ? `[صورة مرفقة]\n${userMessage || 'حلل الصورة دي'}` : userMessage,
+      content: docContextLabel 
+        ? `${docContextLabel}\n${userMessage || (isRTL ? 'حلل المستندات دي' : 'Analysez ces documents')}`
+        : userMessage,
+      referencedDocumentIds: sessionDocuments.map(d => d.id),
     };
 
     // Add user message to chat (only if not a retry)
@@ -300,7 +364,7 @@ ${formData.items}`;
       setMessages(prev => [...prev, userMsg]);
     }
     setIsAnalyzing(true);
-    if (hasImage) {
+    if (hasNewDocs) {
       setIsAnalyzingImage(true);
     }
 
@@ -309,13 +373,42 @@ ${formData.items}`;
       try {
         // Build conversation history for context
         const currentMessages = isRetry ? messages : [...messages, userMsg];
-         const conversationHistory = toConversationHistory(currentMessages);
+        const conversationHistory = toConversationHistory(currentMessages);
+
+        // Prepare all session documents for the API (compress images)
+        const allDocumentImages: string[] = [];
+        
+        // Add session documents (compressed)
+        for (const doc of sessionDocuments) {
+          if (doc.type === 'image' && isImageData(doc.data)) {
+            try {
+              const compressed = await compressImage(doc.data);
+              allDocumentImages.push(compressed);
+            } catch {
+              allDocumentImages.push(doc.data);
+            }
+          } else {
+            allDocumentImages.push(doc.data);
+          }
+        }
+        
+        // Add the new direct image if present
+        if (processedImage) {
+          allDocumentImages.push(processedImage);
+        }
+
+        // Build document context for AI
+        const documentContextDescription = sessionDocuments.length > 0
+          ? `The user has ${sessionDocuments.length} document(s) in their session dossier. They may ask questions about any or all of them. Treat all documents as part of the same case file.`
+          : undefined;
 
         const { data, error } = await supabase.functions.invoke('analyze-request', {
           body: { 
-            userMessage: userMessage || 'حلل الصورة دي وقولي إيه المكتوب فيها',
+            userMessage: userMessage || (isRTL ? 'حلل المستندات دي وقولي إيه المكتوب فيها' : 'Analysez ces documents'),
             conversationHistory,
-            imageData: processedImage, // Pass the compressed base64 image data
+            imageData: allDocumentImages.length === 1 ? allDocumentImages[0] : undefined,
+            multipleImages: allDocumentImages.length > 1 ? allDocumentImages : undefined,
+            documentContext: documentContextDescription,
             profile: profile ? {
               full_name: profile.full_name,
               address: profile.address,
@@ -995,6 +1088,14 @@ ${formData.items}`;
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Session Documents Display - Above Input */}
+        <AttachedDocuments
+          documents={sessionDocuments}
+          onRemove={handleDocumentRemove}
+          isRTL={isRTL}
+          disabled={isAnalyzing}
+        />
+
         {/* Input Area - Compact fixed at bottom */}
         <div className="flex-shrink-0 p-2 border-t bg-background relative">
           {/* Loading Overlay - Prevents double-clicks */}
@@ -1012,9 +1113,11 @@ ${formData.items}`;
           )}
           <ChatInput
             onSend={handleSend}
+            onDocumentAdd={handleDocumentAdd}
             isLoading={isAnalyzing}
             isRTL={isRTL}
             t={t}
+            externalDocumentsMode={true}
           />
         </div>
       </div>

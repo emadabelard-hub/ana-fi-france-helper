@@ -233,12 +233,10 @@ const ChatMessage = ({
         // Force internal padding so RTL Arabic never touches the bubble edge.
         // Spec requested: padding: 15px 20px !important; + border-box sizing.
         "flex gap-4 rounded-xl box-border !py-[15px] !px-5",
-        // Outer margins: ensure bubble never touches screen edges
-        "mx-4 sm:mx-6",
-        // Offset to show conversation flow direction
-        isUser 
-          ? "bg-primary/10 ml-8 sm:ml-12" 
-          : "bg-muted/50 mr-8 sm:mr-12",
+        // Minimal margins: bubbles take ~95% width on mobile
+        "mx-2 sm:mx-4",
+        // Background colors only, no directional offsets to maximize width
+        isUser ? "bg-primary/10" : "bg-muted/50",
         isRTL && "flex-row-reverse"
       )}
     >

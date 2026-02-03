@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { FileText, Mail, Receipt, PenLine, Building2, X } from 'lucide-react';
+import { FileText, Mail, Receipt, PenLine, Building2, X, Upload, Image, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export interface CompanyHeader {
   companyName: string;
@@ -27,6 +28,7 @@ export interface CompanyHeader {
   address: string;
   phone: string;
   email: string;
+  logoUrl?: string; // Base64 logo image
 }
 
 export interface DocumentFormData {
@@ -60,6 +62,9 @@ const DocumentTypeSelector = ({
   onSubmit,
   isRTL = true,
 }: DocumentTypeSelectorProps) => {
+  const { toast } = useToast();
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  
   const [selectedType, setSelectedType] = useState<DocumentFormData['type'] | null>(null);
   const [companyHeader, setCompanyHeader] = useState<CompanyHeader>({
     companyName: '',
@@ -67,6 +72,7 @@ const DocumentTypeSelector = ({
     address: '',
     phone: '',
     email: '',
+    logoUrl: '',
   });
   const [clientName, setClientName] = useState('');
   const [clientAddress, setClientAddress] = useState('');
@@ -94,6 +100,52 @@ const DocumentTypeSelector = ({
     const updated = { ...companyHeader, ...updates };
     setCompanyHeader(updated);
     localStorage.setItem(COMPANY_HEADER_KEY, JSON.stringify(updated));
+  };
+
+  // Handle logo upload
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'يرجى رفع صورة فقط' : 'Veuillez télécharger une image uniquement',
+      });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'الصورة كبيرة جداً (الحد الأقصى 2MB)' : 'Image trop volumineuse (max 2MB)',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const logoUrl = event.target?.result as string;
+      updateCompanyHeader({ logoUrl });
+      toast({
+        title: isRTL ? 'تم رفع اللوجو' : 'Logo téléchargé',
+        description: isRTL ? 'تم حفظ اللوجو بنجاح' : 'Logo enregistré avec succès',
+      });
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input
+    if (logoInputRef.current) {
+      logoInputRef.current.value = '';
+    }
+  };
+
+  const removeLogo = () => {
+    updateCompanyHeader({ logoUrl: '' });
   };
 
   const handleSubmit = () => {
@@ -260,6 +312,62 @@ const DocumentTypeSelector = ({
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 pt-2">
+                      {/* Logo Upload Section */}
+                      <div className="space-y-2">
+                        <Label className={cn("text-xs font-medium", isRTL && "block text-right")}>
+                          {isRTL ? '📷 لوجو الشركة (اختياري)' : '📷 Logo entreprise (optionnel)'}
+                        </Label>
+                        <input
+                          type="file"
+                          ref={logoInputRef}
+                          onChange={handleLogoUpload}
+                          accept="image/*"
+                          className="hidden"
+                        />
+                        {companyHeader.logoUrl ? (
+                          <div className="flex items-center gap-3">
+                            <img 
+                              src={companyHeader.logoUrl} 
+                              alt="Company Logo" 
+                              className="h-16 w-16 object-contain rounded-lg border bg-white"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => logoInputRef.current?.click()}
+                                className="gap-1"
+                              >
+                                <Upload className="h-3 w-3" />
+                                {isRTL ? 'تغيير' : 'Changer'}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={removeLogo}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => logoInputRef.current?.click()}
+                            className={cn("w-full gap-2 h-16 border-dashed", isRTL && "flex-row-reverse")}
+                          >
+                            <Image className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              {isRTL ? 'اضغط لرفع لوجو' : 'Cliquez pour télécharger un logo'}
+                            </span>
+                          </Button>
+                        )}
+                      </div>
+
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <Label className={cn("text-xs", isRTL && "block text-right")}>

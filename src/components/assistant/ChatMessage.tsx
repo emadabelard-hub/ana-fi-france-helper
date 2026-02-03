@@ -5,11 +5,26 @@ import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import PostAnalysisActions from './PostAnalysisActions';
+
+interface ExtractedInfo {
+  recipientName?: string;
+  recipientAddress?: string;
+  referenceNumber?: string;
+  subject?: string;
+  documentDate?: string;
+}
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
   isRTL?: boolean;
+  // New props for post-analysis workflow
+  isDocumentAnalysis?: boolean;
+  extractedInfo?: ExtractedInfo;
+  onContinueChat?: () => void;
+  onDraftReply?: (extractedInfo?: ExtractedInfo) => void;
+  showPostAnalysisActions?: boolean;
 }
 
 /**
@@ -30,6 +45,72 @@ const containsFrenchLetter = (content: string): boolean => {
     /À l'attention de/i,
   ];
   return frenchPatterns.some(pattern => pattern.test(content));
+};
+
+/**
+ * Detects if this message is a document/image analysis response.
+ * Analysis responses typically contain الشرح (explanation) and خطة العمل (action plan).
+ */
+const isAnalysisResponse = (content: string): boolean => {
+  const analysisMarkers = [
+    '📋 **الشرح:**',
+    '✅ **خطة العمل:**',
+    '===شرح_المستند===',
+    '===خطة_العمل===',
+    'تحليل المستند',
+    'المستند بيقول',
+    'الجواب ده',
+    'الخطاب ده',
+  ];
+  return analysisMarkers.some(marker => content.includes(marker));
+};
+
+/**
+ * Extract reference numbers and recipient info from analysis content.
+ */
+const extractInfoFromContent = (content: string): ExtractedInfo => {
+  const info: ExtractedInfo = {};
+  
+  // Extract reference numbers (various formats)
+  const refPatterns = [
+    /(?:N°|n°|Ref|REF|Référence|رقم المرجع|رقم الملف)[:\s]*([A-Z0-9\-\/]+)/gi,
+    /(?:Dossier|ملف)[:\s]*([A-Z0-9\-\/]+)/gi,
+    /([A-Z]{2,}\d{4,}[\-\/]?\d*)/g, // Generic reference like CAF2024-12345
+  ];
+  
+  for (const pattern of refPatterns) {
+    const match = content.match(pattern);
+    if (match) {
+      // Extract just the number part
+      const numMatch = match[0].match(/[A-Z0-9\-\/]{5,}/i);
+      if (numMatch) {
+        info.referenceNumber = numMatch[0];
+        break;
+      }
+    }
+  }
+  
+  // Extract recipient names
+  const recipientPatterns = [
+    /(?:من|from|de la?)\s+(CAF|CPAM|Préfecture|Pôle Emploi|URSSAF|Sécurité Sociale)[^,\n]*/gi,
+    /(CAF|CPAM|Préfecture|Pôle Emploi|URSSAF|RSI|Ameli)/gi,
+  ];
+  
+  for (const pattern of recipientPatterns) {
+    const match = content.match(pattern);
+    if (match) {
+      info.recipientName = match[0].replace(/^(من|from|de la?)\s+/i, '').trim();
+      break;
+    }
+  }
+  
+  // Extract subject from Objet line
+  const subjectMatch = content.match(/Objet\s*:\s*([^\n]+)/i);
+  if (subjectMatch) {
+    info.subject = subjectMatch[1].trim();
+  }
+  
+  return info;
 };
 
 /**
@@ -59,7 +140,16 @@ const parseContent = (content: string): { arabic: string; frenchLetter: string |
   return { arabic: content, frenchLetter: null };
 };
 
-const ChatMessage = ({ role, content, isRTL = true }: ChatMessageProps) => {
+const ChatMessage = ({ 
+  role, 
+  content, 
+  isRTL = true,
+  isDocumentAnalysis,
+  extractedInfo: propExtractedInfo,
+  onContinueChat,
+  onDraftReply,
+  showPostAnalysisActions = false,
+}: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const letterRef = useRef<HTMLDivElement>(null);
@@ -68,7 +158,21 @@ const ChatMessage = ({ role, content, isRTL = true }: ChatMessageProps) => {
 
   // Parse content to separate Arabic from French letter
   const { arabic, frenchLetter } = useMemo(() => parseContent(content), [content]);
-  const hasFrenchContent = frenchLetter !== null || (!isUser && containsFrenchLetter(content));
+  
+  // Detect if this is an analysis message
+  const isAnalysis = useMemo(() => 
+    !isUser && (isDocumentAnalysis || isAnalysisResponse(content)), 
+    [isUser, isDocumentAnalysis, content]
+  );
+  
+  // Extract info from content if not provided
+  const extractedInfo = useMemo(() => 
+    propExtractedInfo || (isAnalysis ? extractInfoFromContent(content) : undefined),
+    [propExtractedInfo, isAnalysis, content]
+  );
+  
+  // Should show actions: analysis message without a letter already generated
+  const shouldShowActions = showPostAnalysisActions && isAnalysis && !frenchLetter && onContinueChat && onDraftReply;
 
   const handleCopy = async (textToCopy?: string) => {
     try {
@@ -129,6 +233,12 @@ const ChatMessage = ({ role, content, isRTL = true }: ChatMessageProps) => {
     }
   };
 
+  const handleDraftReply = () => {
+    if (onDraftReply) {
+      onDraftReply(extractedInfo);
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -162,6 +272,16 @@ const ChatMessage = ({ role, content, isRTL = true }: ChatMessageProps) => {
           >
             {arabic}
           </div>
+        )}
+
+        {/* Post-Analysis Actions */}
+        {shouldShowActions && (
+          <PostAnalysisActions
+            onContinueChat={onContinueChat}
+            onDraftReply={handleDraftReply}
+            extractedInfo={extractedInfo}
+            isRTL={isRTL}
+          />
         )}
 
         {/* French Letter Section - professionally formatted */}
@@ -218,7 +338,7 @@ const ChatMessage = ({ role, content, isRTL = true }: ChatMessageProps) => {
         )}
 
         {/* Copy button for assistant messages (whole message) */}
-        {!isUser && !frenchLetter && (
+        {!isUser && !frenchLetter && !shouldShowActions && (
           <Button
             variant="ghost"
             size="sm"

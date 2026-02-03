@@ -11,6 +11,7 @@ import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 import DispatchGuide from '@/components/assistant/DispatchGuide';
 import DismissibleTip from '@/components/shared/DismissibleTip';
 import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/DocumentTypeSelector';
+import SmartReplyForm, { SmartReplyData } from '@/components/assistant/SmartReplyForm';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, HelpCircle, RefreshCw, FileText, Mail, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,14 @@ interface DispatchInfo {
   subjectLine?: string;
 }
 
+interface ExtractedInfo {
+  recipientName?: string;
+  recipientAddress?: string;
+  referenceNumber?: string;
+  subject?: string;
+  documentDate?: string;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -52,6 +61,10 @@ interface Message {
   isError?: boolean;
   errorType?: 'auth' | 'timeout' | 'generic';
   retryData?: { message: string; image?: string };
+  // New: for post-analysis workflow
+  isDocumentAnalysis?: boolean;
+  extractedInfo?: ExtractedInfo;
+  showPostAnalysisActions?: boolean;
 }
 
 const CHAT_STORAGE_KEY = 'assistant_chat_messages';
@@ -73,6 +86,10 @@ const AssistantPage = () => {
   const [showSessionDialog, setShowSessionDialog] = useState(false);
   const [showNewTopicConfirm, setShowNewTopicConfirm] = useState(false);
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
+  // Smart Reply Form state
+  const [showSmartReplyForm, setShowSmartReplyForm] = useState(false);
+  const [smartReplyExtractedInfo, setSmartReplyExtractedInfo] = useState<ExtractedInfo | undefined>(undefined);
+  const [smartReplyContext, setSmartReplyContext] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load messages from localStorage on mount and show session dialog
@@ -432,11 +449,25 @@ ${formData.items}`;
               : "Réponse reçue. Si vous avez d'autres questions, demandez-moi!";
           }
 
-          // Add assistant message
+          // Detect if this is a document analysis (has explanation and action plan, and was image analysis)
+          const isDocAnalysis = hasImage && (data.explanation || data.actionPlan);
+          
+          // Extract info from the response for smart reply
+          const extractedInfo: ExtractedInfo | undefined = isDocAnalysis ? {
+            recipientName: data.dispatchInfo?.recipientName,
+            recipientAddress: data.dispatchInfo?.recipientAddress,
+            referenceNumber: data.dispatchInfo?.referenceNumber,
+            subject: data.dispatchInfo?.subjectLine,
+          } : undefined;
+
+          // Add assistant message with post-analysis actions if it's a document analysis
           const assistantMsg: Message = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
             content: assistantContent.trim(),
+            isDocumentAnalysis: isDocAnalysis,
+            extractedInfo: extractedInfo,
+            showPostAnalysisActions: isDocAnalysis && !data.formalLetter,
           };
 
           setMessages(prev => [...prev, assistantMsg]);
@@ -580,6 +611,132 @@ ${formData.items}`;
           : m
       ));
       setPendingLetterMessage(null);
+    }
+  };
+
+  // Handler for "Continue Chat" button after document analysis
+  const handleContinueChat = () => {
+    // Simply dismiss the post-analysis actions
+    setMessages(prev => prev.map(m => ({
+      ...m,
+      showPostAnalysisActions: false,
+    })));
+  };
+
+  // Handler for "Draft Reply" button after document analysis
+  const handleDraftReply = (extractedInfo?: ExtractedInfo) => {
+    // Store context and extracted info, then open the smart reply form
+    const lastAssistantMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
+    setSmartReplyExtractedInfo(extractedInfo);
+    setSmartReplyContext(lastAssistantMessage?.content || '');
+    setShowSmartReplyForm(true);
+    
+    // Hide the post-analysis actions
+    setMessages(prev => prev.map(m => ({
+      ...m,
+      showPostAnalysisActions: false,
+    })));
+  };
+
+  // Handler for smart reply form submission
+  const handleSmartReplySubmit = async (data: SmartReplyData) => {
+    setIsAnalyzing(true);
+
+    try {
+      // Build the request with smart reply data
+      const smartReplyMessage = `اكتب رد رسمي بالفرنسي على المستند اللي حللناه.
+
+معلومات المرسل:
+- الاسم: ${data.senderName}
+- العنوان: ${data.senderAddress}
+- التليفون: ${data.senderPhone}
+
+المرسل إليه:
+- الجهة: ${data.recipientName}
+- العنوان: ${data.recipientAddress || 'غير محدد'}
+
+المرجع: ${data.referenceNumber || 'غير متوفر'}
+الموضوع: ${data.subject}
+
+النقاط الأساسية للرد:
+${data.keyPoints || 'أريد الرد على هذا المستند'}`;
+
+      // Add user message to show what was requested
+      const userMsg: Message = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: `✍️ ${isRTL ? 'اكتبلي رد رسمي لـ' : 'Rédiger une réponse à'} ${data.recipientName}`,
+      };
+      setMessages(prev => [...prev, userMsg]);
+
+      // Build conversation history
+      const conversationHistory = messages.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const { data: responseData, error } = await supabase.functions.invoke('analyze-request', {
+        body: { 
+          userMessage: smartReplyMessage,
+          conversationHistory: [...conversationHistory, { role: 'user', content: smartReplyMessage }],
+          generateLetterWithData: {
+            full_name: data.senderName,
+            address: data.senderAddress,
+            phone: data.senderPhone,
+            recipient_name: data.recipientName,
+            reference_number: data.referenceNumber,
+          },
+          profile: profile ? {
+            full_name: profile.full_name || data.senderName,
+            address: profile.address || data.senderAddress,
+            phone: profile.phone || data.senderPhone,
+            caf_number: profile.caf_number,
+            foreigner_number: profile.foreigner_number,
+            social_security: profile.social_security,
+          } : null
+        }
+      });
+
+      if (error) throw error;
+
+      if (responseData.error) {
+        toast({
+          variant: "destructive",
+          title: isRTL ? "خطأ" : "Erreur",
+          description: responseData.error,
+        });
+        return;
+      }
+
+      // Close the form
+      setShowSmartReplyForm(false);
+
+      // Add the generated letter as a new message with dispatch guide
+      const letterMsg: Message = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: `📝 **الرسالة الرسمية:**\n\n${responseData.formalLetter}\n\n✅ **تم!** دي الرسالة الجاهزة للطباعة والإرسال. لو محتاج أي تعديل، قولي!`,
+        showDispatchGuide: true,
+        dispatchInfo: {
+          recipientName: data.recipientName,
+          recipientAddress: data.recipientAddress,
+          referenceNumber: data.referenceNumber,
+          subjectLine: data.subject,
+        },
+        letterContent: responseData.formalLetter,
+      };
+
+      setMessages(prev => [...prev, letterMsg]);
+
+    } catch (error) {
+      console.error('Error generating smart reply:', error);
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL ? "حدث خطأ أثناء كتابة الرد" : "Une erreur est survenue lors de la rédaction.",
+      });
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -823,6 +980,11 @@ ${formData.items}`;
                   role={message.role}
                   content={message.content}
                   isRTL={isRTL}
+                  isDocumentAnalysis={message.isDocumentAnalysis}
+                  extractedInfo={message.extractedInfo}
+                  showPostAnalysisActions={message.showPostAnalysisActions}
+                  onContinueChat={handleContinueChat}
+                  onDraftReply={handleDraftReply}
                 />
               )}
               {/* Show missing info form if needed */}
@@ -923,6 +1085,17 @@ ${formData.items}`;
         onClose={() => setShowDocumentSelector(false)}
         onSubmit={handleDocumentFormSubmit}
         isRTL={isRTL}
+      />
+
+      {/* Smart Reply Form Modal */}
+      <SmartReplyForm
+        isOpen={showSmartReplyForm}
+        onClose={() => setShowSmartReplyForm(false)}
+        onSubmit={handleSmartReplySubmit}
+        extractedInfo={smartReplyExtractedInfo}
+        profile={profile}
+        isRTL={isRTL}
+        isLoading={isAnalyzing}
       />
     </>
   );

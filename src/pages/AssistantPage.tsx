@@ -10,8 +10,9 @@ import ChatInput from '@/components/assistant/ChatInput';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 import DispatchGuide from '@/components/assistant/DispatchGuide';
 import DismissibleTip from '@/components/shared/DismissibleTip';
+import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/DocumentTypeSelector';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, HelpCircle, Trash2, RefreshCw, RotateCcw } from 'lucide-react';
+import { ChevronDown, HelpCircle, RefreshCw, FileText, Mail, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -71,6 +72,7 @@ const AssistantPage = () => {
   } | null>(null);
   const [showSessionDialog, setShowSessionDialog] = useState(false);
   const [showNewTopicConfirm, setShowNewTopicConfirm] = useState(false);
+  const [showDocumentSelector, setShowDocumentSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load messages from localStorage on mount and show session dialog
@@ -157,6 +159,56 @@ const AssistantPage = () => {
       title: isRTL ? "تم بدء موضوع جديد" : "Nouvelle discussion commencée",
       description: isRTL ? "يمكنك بدء محادثة جديدة" : "Vous pouvez commencer une nouvelle conversation",
     });
+  };
+
+  // Handle document form submission - generates structured request
+  const handleDocumentFormSubmit = (formData: DocumentFormData) => {
+    setShowDocumentSelector(false);
+    
+    let userMessage = '';
+    
+    if (formData.type === 'lettre' || formData.type === 'email') {
+      userMessage = isRTL 
+        ? `اكتبلي ${formData.type === 'lettre' ? 'خطاب رسمي' : 'إيميل رسمي'} لـ ${formData.recipientName}${formData.recipientAddress ? ` على العنوان: ${formData.recipientAddress}` : ''}.
+الموضوع: ${formData.subject}
+التفاصيل: ${formData.description}`
+        : `Rédigez ${formData.type === 'lettre' ? 'une lettre officielle' : 'un email professionnel'} à ${formData.recipientName}${formData.recipientAddress ? ` à l'adresse: ${formData.recipientAddress}` : ''}.
+Objet: ${formData.subject}
+Détails: ${formData.description}`;
+    } else {
+      // Devis or Facture
+      const docType = formData.type === 'devis' ? (isRTL ? 'تقدير (Devis)' : 'Devis') : (isRTL ? 'فاتورة (Facture)' : 'Facture');
+      const header = formData.companyHeader;
+      
+      userMessage = isRTL
+        ? `اعملي ${docType} من:
+🏢 الشركة: ${header.companyName}
+📍 SIRET: ${header.siret}
+📍 العنوان: ${header.address}
+📞 التليفون: ${header.phone}
+📧 الإيميل: ${header.email}
+
+👤 للعميل: ${formData.clientName}
+📍 عنوان العميل: ${formData.clientAddress}
+
+📋 الشغل:
+${formData.items}`
+        : `Créez ${docType === 'Devis' ? 'un Devis' : 'une Facture'} de:
+🏢 Entreprise: ${header.companyName}
+📍 SIRET: ${header.siret}
+📍 Adresse: ${header.address}
+📞 Téléphone: ${header.phone}
+📧 Email: ${header.email}
+
+👤 Pour le client: ${formData.clientName}
+📍 Adresse client: ${formData.clientAddress}
+
+📋 Travaux:
+${formData.items}`;
+    }
+
+    // Send the message
+    handleSend(userMessage);
   };
 
   const handleRetry = (retryData: { message: string; image?: string }) => {
@@ -611,6 +663,33 @@ const AssistantPage = () => {
           )}
         </section>
 
+      {/* Quick Action Buttons */}
+      <div className="px-4 mb-3 flex-shrink-0">
+        <div className={cn(
+          "flex gap-2",
+          isRTL && "flex-row-reverse"
+        )}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDocumentSelector(true)}
+            className={cn("flex-1 gap-2", isRTL && "flex-row-reverse font-cairo")}
+          >
+            <FileText className="h-4 w-4" />
+            {isRTL ? '✉️ اكتبلي جواب' : '✉️ Rédiger courrier'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDocumentSelector(true)}
+            className={cn("flex-1 gap-2", isRTL && "flex-row-reverse font-cairo")}
+          >
+            <Mail className="h-4 w-4" />
+            {isRTL ? '📧 إيميل رسمي' : '📧 Email officiel'}
+          </Button>
+        </div>
+      </div>
+
       {/* Contextual Training Tip */}
       <div className="px-4 mb-3 flex-shrink-0">
         <DismissibleTip
@@ -837,6 +916,14 @@ const AssistantPage = () => {
           </Card>
         </div>
       </div>
+
+      {/* Document Type Selector Modal */}
+      <DocumentTypeSelector
+        isOpen={showDocumentSelector}
+        onClose={() => setShowDocumentSelector(false)}
+        onSubmit={handleDocumentFormSubmit}
+        isRTL={isRTL}
+      />
     </>
   );
 };

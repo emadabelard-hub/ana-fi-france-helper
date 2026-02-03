@@ -20,11 +20,32 @@ const ContentBlockEditor = ({ blocks, onChange, isRTL = true }: ContentBlockEdit
   const [uploadingBlockId, setUploadingBlockId] = useState<string | null>(null);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [localBlocks, setLocalBlocks] = useState<ContentBlock[]>(blocks);
+  const didAutoSeedRef = useRef(false);
+
+  const createEmptyTextBlock = (): TextBlock => ({
+    type: 'text',
+    id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    textAr: '',
+    termFr: '',
+  });
 
   // Keep local UI state in sync when the parent replaces blocks (e.g., switching lessons)
   useEffect(() => {
+    // Mobile-first UX/workaround: always ensure at least one visible Textarea when there are no blocks.
+    // This avoids relying on the "Add Text" button (which can be flaky on some mobile browsers).
+    if (Array.isArray(blocks) && blocks.length === 0) {
+      if (didAutoSeedRef.current) return;
+      didAutoSeedRef.current = true;
+
+      const seeded: ContentBlock[] = [createEmptyTextBlock()];
+      setLocalBlocks(seeded);
+      onChange(seeded);
+      return;
+    }
+
+    didAutoSeedRef.current = false;
     setLocalBlocks(blocks);
-  }, [blocks]);
+  }, [blocks, onChange]);
 
   const commitBlocks = (updater: (prev: ContentBlock[]) => ContentBlock[]) => {
     setLocalBlocks((prev) => {

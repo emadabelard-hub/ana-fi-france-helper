@@ -116,3 +116,122 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* ============================================
+   French Document Styling
+   Professional formatting for administrative documents
+   (Devis, Factures, Courriers, Emails)
+   ============================================ */
+@layer components {
+  /* Base French document container - forces LTR regardless of parent RTL */
+  .french-document {
+    direction: ltr !important;
+    text-align: left;
+    font-family: "Times New Roman", Georgia, "Noto Serif", serif;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    color: #1a1a1a;
+  }
+
+  /* French formal letter styling */
+  .french-letter {
+    @apply text-base;
+  }
+
+  .french-letter p {
+    text-align: justify;
+    text-justify: inter-word;
+    margin-bottom: 1em;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+
+  .french-letter h1,
+  .french-letter h2,
+  .french-letter h3 {
+    text-align: left;
+    font-weight: 600;
+  }
+
+  .french-letter .letter-header {
+    text-align: left;
+    margin-bottom: 2em;
+  }
+
+  .french-letter .letter-date {
+    text-align: right;
+    margin-bottom: 1.5em;
+  }
+
+  .french-letter .letter-recipient {
+    text-align: left;
+    margin-bottom: 1.5em;
+  }
+
+  .french-letter .letter-subject {
+    font-weight: 600;
+    text-decoration: underline;
+    margin-bottom: 1.5em;
+  }
+
+  .french-letter .letter-body {
+    text-align: justify;
+  }
+
+  .french-letter .letter-signature {
+    text-align: left;
+    margin-top: 2em;
+  }
+
+  /* French invoice/devis styling */
+  .french-invoice {
+    font-family: Arial, "Helvetica Neue", sans-serif;
+    @apply text-sm;
+  }
+
+  .french-invoice table {
+    direction: ltr !important;
+  }
+
+  .french-invoice th,
+  .french-invoice td {
+    text-align: left;
+  }
+
+  .french-invoice th:last-child,
+  .french-invoice td:last-child,
+  .french-invoice .text-right {
+    text-align: right !important;
+  }
+
+  .french-invoice .text-center {
+    text-align: center !important;
+  }
+
+  /* French email styling */
+  .french-email {
+    font-family: Arial, "Helvetica Neue", sans-serif;
+    @apply text-sm leading-relaxed;
+  }
+
+  .french-email p {
+    margin-bottom: 0.75em;
+  }
+
+  /* Utility class for inline French text in RTL context */
+  .french-text {
+    direction: ltr !important;
+    text-align: left;
+    display: inline-block;
+    unicode-bidi: isolate;
+  }
+
+  /* French formal paragraph - justified */
+  .french-paragraph {
+    direction: ltr !important;
+    text-align: justify;
+    text-justify: inter-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+}

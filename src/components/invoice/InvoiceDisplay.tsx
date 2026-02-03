@@ -53,8 +53,9 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
 
   return (
     <div 
-      className="bg-white text-black p-6 rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none"
-      style={{ fontFamily: 'Arial, sans-serif' }}
+      dir="ltr"
+      lang="fr"
+      className="french-invoice bg-white text-black p-6 rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none"
     >
       {/* Header */}
       <div className="border-b-2 border-primary pb-4 mb-4">

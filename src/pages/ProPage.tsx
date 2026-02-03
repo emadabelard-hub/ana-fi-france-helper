@@ -1,10 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Briefcase, PenLine, ArrowRight, ArrowLeft, Settings } from 'lucide-react';
+import { PenLine, Scale, Settings, ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import DismissibleTip from '@/components/shared/DismissibleTip';
 
 const ProPage = () => {
   const { isRTL } = useLanguage();
@@ -12,155 +10,132 @@ const ProPage = () => {
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
-  const features = [
+  const mainTools = [
     {
       icon: PenLine,
-      title: 'مساعد الفواتير والدوفي',
-      titleFr: 'Assistant Devis & Factures',
-      description: 'اعمل فواتيرك بسهولة، وافهم الفرق بينهم، وظبط أسعارك عشان تكسب صح.',
-      descriptionFr: 'Créez vos devis et factures facilement',
+      emoji: '📄',
+      title: isRTL ? 'فواتير ودوفي' : 'Devis & Factures',
+      description: isRTL 
+        ? 'اعمل فواتيرك وتقديراتك بسهولة' 
+        : 'Créez vos devis et factures facilement',
       path: '/pro/invoice-creator',
-      gradient: 'from-green-500/20 to-green-500/5',
-      available: true,
+      gradient: 'from-emerald-500 to-emerald-600',
     },
     {
-      icon: Briefcase,
-      title: 'مساعد الارتيزان الذكي',
-      titleFr: 'Assistant Artisan Intelligent',
-      description: 'حلك لمشاكل الـ URSSAF، الضرايب، ومنازعات الشغل.',
-      descriptionFr: 'URSSAF, impôts et litiges professionnels',
+      icon: Scale,
+      emoji: '⚖️',
+      title: isRTL ? 'دليل القوانين' : 'Guide Juridique',
+      description: isRTL 
+        ? 'افهم قوانين الشغل والضرايب' 
+        : 'Comprendre le droit du travail et les impôts',
       path: '/pro/admin-assistant',
-      gradient: 'from-blue-500/20 to-blue-500/5',
-      available: true,
-    },
-    {
-      icon: Settings,
-      title: 'هويتي المهنية',
-      titleFr: 'Mon identité pro',
-      description: 'بيانات شركتك، اللوجو، وشكل الفواتير',
-      descriptionFr: 'Infos entreprise, logo et style des documents',
-      path: '/pro/settings',
-      gradient: 'from-purple-500/20 to-purple-500/5',
-      available: true,
+      gradient: 'from-blue-500 to-blue-600',
     },
   ];
 
   return (
-    <div className="py-6 space-y-6">
-      {/* Header with Back Button */}
-      <section className={cn(
-        "flex items-center gap-4",
-        isRTL && "flex-row-reverse"
-      )}>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/')}
-          className="shrink-0"
-        >
-          {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
-        </Button>
-        <div className={cn("flex-1", isRTL && "text-right")}>
-          <h1 className={cn(
-            "text-2xl font-bold text-foreground",
-            isRTL && "font-cairo"
-          )}>
-            دراعك اليمين 💪
-          </h1>
-          <p className={cn(
-            "text-sm text-muted-foreground",
-            isRTL && "font-cairo"
-          )}>
-            {isRTL ? 'كل أدوات شغلك وفواتيرك في مكان واحد' : 'Tous vos outils professionnels en un seul endroit'}
-          </p>
-        </div>
+    <div className="py-4 space-y-6">
+      {/* Page Header */}
+      <section className={cn("text-center", isRTL && "font-cairo")}>
+        <h1 className="text-2xl font-bold text-foreground mb-2">
+          {isRTL ? 'دراعك اليمين 💪' : 'Votre Bras Droit 💪'}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {isRTL 
+            ? 'أدوات للحرفيين وأصحاب العمل الحر' 
+            : 'Outils pour artisans et indépendants'}
+        </p>
       </section>
 
-      {/* Contextual Training Tip */}
-      <DismissibleTip
-        storageKey="pro_tip_dismissed"
-        title="💡 شرح سريع"
-        text="اكتب مقاسات الشغل أو تفاصيل الفاتورة كتابة، وأنا هحسبلك الحسبة وأعملك الدوفي."
-      />
-
-      {/* Feature Cards */}
+      {/* Main Tool Cards */}
       <section className="space-y-4">
-        {features.map((feature, index) => {
-          const Icon = feature.icon;
+        {mainTools.map((tool) => {
+          const Icon = tool.icon;
           return (
             <Card
-              key={index}
+              key={tool.path}
               className={cn(
-                "cursor-pointer transition-all duration-300 hover:shadow-lg",
-                "border-none bg-gradient-to-br overflow-hidden group",
-                feature.gradient,
-                !feature.available && "opacity-60"
+                "cursor-pointer transition-all duration-300",
+                "hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]",
+                "border-none overflow-hidden",
+                `bg-gradient-to-r ${tool.gradient}`
               )}
-              onClick={() => feature.available && navigate(feature.path)}
+              onClick={() => navigate(tool.path)}
             >
-              <CardContent className={cn(
-                "flex items-center gap-4 p-6",
-                isRTL && "flex-row-reverse"
-              )}>
+              <CardContent className="p-0">
                 <div className={cn(
-                  "w-16 h-16 rounded-2xl flex items-center justify-center",
-                  "bg-card shadow-sm group-hover:scale-105 transition-transform"
+                  "flex items-center gap-5 p-6",
+                  isRTL && "flex-row-reverse"
                 )}>
-                  <Icon className="h-8 w-8 text-primary" />
-                </div>
-                
-                <div className={cn("flex-1", isRTL && "text-right")}>
-                  <div className="flex items-center gap-2">
-                    <h3 className={cn(
-                      "font-semibold text-foreground text-lg",
+                  {/* Icon Circle */}
+                  <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                    <span className="text-3xl">{tool.emoji}</span>
+                  </div>
+
+                  {/* Text */}
+                  <div className={cn("flex-1", isRTL && "text-right")}>
+                    <h2 className={cn(
+                      "text-xl font-bold text-white mb-1",
                       isRTL && "font-cairo"
                     )}>
-                      {isRTL ? feature.title : (feature.titleFr || feature.title)}
-                    </h3>
-                    {!feature.available && (
-                      <span className={cn(
-                        "text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground",
-                        isRTL && "font-cairo"
-                      )}>
-                        {isRTL ? 'قريباً' : 'Bientôt'}
-                      </span>
-                    )}
+                      {tool.title}
+                    </h2>
+                    <p className={cn(
+                      "text-white/80 text-sm",
+                      isRTL && "font-cairo"
+                    )}>
+                      {tool.description}
+                    </p>
                   </div>
-                  <p className={cn(
-                    "text-sm text-muted-foreground mt-1",
-                    isRTL && "font-cairo"
-                  )}>
-                    {isRTL ? feature.description : (feature.descriptionFr || feature.description)}
-                  </p>
-                </div>
 
-                {feature.available && (
-                  <Arrow className={cn(
-                    "h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors",
-                    "group-hover:translate-x-1",
-                    isRTL && "group-hover:-translate-x-1 group-hover:translate-x-0"
-                  )} />
-                )}
+                  {/* Arrow */}
+                  <Arrow className="h-6 w-6 text-white/60" />
+                </div>
               </CardContent>
             </Card>
           );
         })}
       </section>
 
-      {/* Info Notice */}
-      <Card className="bg-primary/5 border-primary/20">
+      {/* Settings Link */}
+      <Card 
+        className="cursor-pointer hover:bg-muted/50 transition-colors"
+        onClick={() => navigate('/pro/settings')}
+      >
         <CardContent className={cn(
-          "p-4 text-center",
-          isRTL && "font-cairo"
+          "flex items-center gap-4 p-4",
+          isRTL && "flex-row-reverse"
         )}>
-          <p className="text-sm text-muted-foreground">
-            {isRTL 
-              ? '🧰 أدوات مخصصة للحرفيين وأصحاب العمل الحر في فرنسا'
-              : '🧰 Outils dédiés aux artisans et auto-entrepreneurs en France'
-            }
-          </p>
+          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+            <Settings className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div className={cn("flex-1", isRTL && "text-right")}>
+            <h3 className={cn(
+              "font-medium text-foreground",
+              isRTL && "font-cairo"
+            )}>
+              {isRTL ? 'هويتي المهنية' : 'Mon identité pro'}
+            </h3>
+            <p className={cn(
+              "text-xs text-muted-foreground",
+              isRTL && "font-cairo"
+            )}>
+              {isRTL ? 'بيانات الشركة واللوجو' : 'Infos entreprise et logo'}
+            </p>
+          </div>
+          <Arrow className="h-4 w-4 text-muted-foreground" />
         </CardContent>
       </Card>
+
+      {/* Info Notice */}
+      <div className={cn(
+        "text-center text-sm text-muted-foreground pt-4",
+        isRTL && "font-cairo"
+      )}>
+        🧰 {isRTL 
+          ? 'أدوات مخصصة للحرفيين في فرنسا' 
+          : 'Outils dédiés aux artisans en France'}
+      </div>
     </div>
   );
 };

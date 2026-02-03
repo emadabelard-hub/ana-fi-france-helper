@@ -14,6 +14,7 @@ import InvoiceCreatorPage from "@/pages/InvoiceCreatorPage";
 import ProAdminAssistantPage from "@/pages/ProAdminAssistantPage";
 import AdminPage from "@/pages/AdminPage";
 import NotFound from "./pages/NotFound";
+import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
@@ -27,8 +28,9 @@ const App = () => (
           <BrowserRouter>
             <MainLayout>
               <Routes>
-                {/* Redirect home to assistant (Consultations is the main tab) */}
-                <Route path="/" element={<AssistantPage />} />
+                {/* Home is the main hub */}
+                <Route path="/" element={<Index />} />
+                <Route path="/home" element={<Index />} />
                 <Route path="/assistant" element={<AssistantPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/pro" element={<ProPage />} />

@@ -1,4 +1,4 @@
-import { MessageCircle, Wrench, User } from 'lucide-react';
+import { Home, MessageCircle, Wrench, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,12 @@ const BottomNavigation = () => {
 
   const navItems = [
     { 
+      path: '/', 
+      icon: Home, 
+      labelAr: 'الرئيسية',
+      labelFr: 'Accueil'
+    },
+    { 
       path: '/assistant', 
       icon: MessageCircle, 
       labelAr: 'استشارات',
@@ -18,8 +24,8 @@ const BottomNavigation = () => {
     { 
       path: '/pro', 
       icon: Wrench, 
-      labelAr: 'دراعك اليمين',
-      labelFr: 'Outils Pro'
+      labelAr: 'أدوات',
+      labelFr: 'Outils'
     },
     { 
       path: '/profile', 
@@ -40,7 +46,7 @@ const BottomNavigation = () => {
       )}>
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || 
-            (item.path === '/assistant' && location.pathname === '/') ||
+            (item.path === '/' && location.pathname === '/home') ||
             (item.path === '/pro' && location.pathname.startsWith('/pro'));
           const Icon = item.icon;
           
@@ -49,8 +55,8 @@ const BottomNavigation = () => {
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                "flex flex-col items-center justify-center px-4 py-1 rounded-lg transition-all duration-200",
-                "min-w-[70px] gap-0.5",
+                "flex flex-col items-center justify-center px-3 py-1 rounded-lg transition-all duration-200",
+                "min-w-[60px] gap-0.5",
                 isActive 
                   ? "text-primary bg-primary/10" 
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"

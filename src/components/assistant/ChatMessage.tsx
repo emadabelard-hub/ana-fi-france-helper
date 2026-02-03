@@ -230,10 +230,13 @@ const ChatMessage = ({
   return (
     <div
       className={cn(
-        "flex gap-4 p-5 rounded-xl mx-3 sm:mx-4",
+        "flex gap-4 p-4 sm:p-5 rounded-xl",
+        // Outer margins: ensure bubble never touches screen edges
+        "mx-4 sm:mx-6",
+        // Offset to show conversation flow direction
         isUser 
-          ? "bg-primary/10 ml-6 sm:ml-10" 
-          : "bg-muted/50 mr-6 sm:mr-10",
+          ? "bg-primary/10 ml-8 sm:ml-12" 
+          : "bg-muted/50 mr-8 sm:mr-12",
         isRTL && "flex-row-reverse"
       )}
     >
@@ -247,15 +250,16 @@ const ChatMessage = ({
         {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 space-y-4">
+      {/* Content - with internal padding for breathing room */}
+      <div className="flex-1 space-y-4 pr-2 pl-1">
         {/* Arabic/RTL content */}
         {arabic && (
           <div
             className={cn(
               "text-base whitespace-pre-wrap",
-              isRTL && "text-right font-cairo leading-[1.8]",
-              !isRTL && "leading-relaxed"
+              // RTL: extra padding on right side for Arabic text breathing room
+              isRTL && "text-right font-cairo leading-[1.8] pr-1",
+              !isRTL && "leading-relaxed pl-1"
             )}
             dir={isRTL ? "rtl" : "ltr"}
           >

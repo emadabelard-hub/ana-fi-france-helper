@@ -1058,13 +1058,13 @@ ${formData.items}`;
           {/* Loading indicator - Image Analysis */}
           {isAnalyzingImage && (
             <div className={cn(
-              "flex gap-4 p-5 rounded-xl bg-primary/10 mx-3 sm:mx-4 mr-6 sm:mr-10",
-              isRTL && "flex-row-reverse ml-6 sm:ml-10 mr-3 sm:mr-4"
+              "flex gap-4 p-4 sm:p-5 rounded-xl bg-primary/10 mx-4 sm:mx-6",
+              isRTL ? "flex-row-reverse ml-8 sm:ml-12" : "mr-8 sm:mr-12"
             )}>
               <div className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
                 <span className="animate-spin">🔍</span>
               </div>
-              <div className={cn("text-base text-primary font-medium", isRTL && "text-right font-cairo leading-[1.8]")}>
+              <div className={cn("flex-1 pr-2 text-base text-primary font-medium", isRTL && "text-right font-cairo leading-[1.8]")}>
                 {isRTL ? '🖼️ جاري تحليل الصورة...' : 'Analyse de l\'image en cours...'}
               </div>
             </div>
@@ -1073,13 +1073,13 @@ ${formData.items}`;
           {/* Loading indicator - Regular Analysis */}
           {isAnalyzing && !pendingLetterMessage && !isAnalyzingImage && (
             <div className={cn(
-              "flex gap-4 p-5 rounded-xl bg-muted/50 mx-3 sm:mx-4 mr-6 sm:mr-10",
-              isRTL && "flex-row-reverse ml-6 sm:ml-10 mr-3 sm:mr-4"
+              "flex gap-4 p-4 sm:p-5 rounded-xl bg-muted/50 mx-4 sm:mx-6",
+              isRTL ? "flex-row-reverse ml-8 sm:ml-12" : "mr-8 sm:mr-12"
             )}>
               <div className="flex-shrink-0 w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
                 <span className="animate-pulse">🤔</span>
               </div>
-              <div className={cn("text-base text-muted-foreground", isRTL && "text-right font-cairo leading-[1.8]")}>
+              <div className={cn("flex-1 pr-2 text-base text-muted-foreground", isRTL && "text-right font-cairo leading-[1.8]")}>
                 {isRTL ? 'جار التحليل...' : 'Analyse en cours...'}
               </div>
             </div>

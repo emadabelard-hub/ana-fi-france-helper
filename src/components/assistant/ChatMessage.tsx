@@ -230,7 +230,8 @@ const ChatMessage = ({
   return (
     <div
       className={cn(
-        "flex gap-4 p-4 sm:p-5 rounded-xl",
+        // Internal padding: 20px all around, with extra on sides
+        "flex gap-4 p-5 rounded-2xl",
         // Outer margins: ensure bubble never touches screen edges
         "mx-4 sm:mx-6",
         // Offset to show conversation flow direction
@@ -251,15 +252,19 @@ const ChatMessage = ({
       </div>
 
       {/* Content - with internal padding for breathing room */}
-      <div className="flex-1 space-y-4 pr-2 pl-1">
+      <div className={cn(
+        "flex-1 space-y-4",
+        // Extra padding inside content area for text breathing room
+        isRTL ? "pr-3 pl-1" : "pl-3 pr-1"
+      )}>
         {/* Arabic/RTL content */}
         {arabic && (
           <div
             className={cn(
-              "text-base whitespace-pre-wrap",
-              // RTL: extra padding on right side for Arabic text breathing room
-              isRTL && "text-right font-cairo leading-[1.8] pr-1",
-              !isRTL && "leading-relaxed pl-1"
+              "text-base whitespace-pre-wrap break-words",
+              // RTL: proper line height + right padding for Arabic
+              isRTL && "text-right font-cairo leading-[1.8] pr-2",
+              !isRTL && "leading-relaxed pl-2"
             )}
             dir={isRTL ? "rtl" : "ltr"}
           >

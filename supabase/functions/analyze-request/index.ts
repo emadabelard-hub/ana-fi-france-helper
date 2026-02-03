@@ -278,6 +278,14 @@ serve(async (req) => {
     // Parse the AI response into sections
     const result = parseAIResponse(content);
 
+    // Build dispatch info from extracted sender (sender becomes recipient for reply)
+    const dispatchInfo = {
+      recipientName: result.extractedSender?.name,
+      recipientAddress: result.extractedSender?.address,
+      referenceNumber: result.extractedSender?.reference,
+      subjectLine: result.extractedSender?.subject,
+    };
+
     // Check if user is asking for a letter and detect missing fields
     const isLetterRequest = detectLetterRequest(userMessage, content);
     
@@ -291,6 +299,7 @@ serve(async (req) => {
           requiresMoreInfo: true,
           missingFields: missingFields,
           letterContext: userMessage,
+          dispatchInfo: dispatchInfo,
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -300,7 +309,10 @@ serve(async (req) => {
     // Post-process: Replace placeholders with actual user data
     const processedResult = replacePlaceholders(result, profile);
 
-    return new Response(JSON.stringify(processedResult), {
+    return new Response(JSON.stringify({
+      ...processedResult,
+      dispatchInfo: dispatchInfo,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
@@ -583,8 +595,13 @@ function buildSystemPrompt(profile: UserProfile | undefined): string {
 📋 طريقة شغلك (مهم جداً):
 عندما المستخدم يبعتلك نص أو صورة مستند:
 
-الخطوة 1 - التحليل والفهم:
-اقرأ المستند كويس وافهم إيه اللي جاي فيه.
+الخطوة 1 - التحليل والاستخراج:
+اقرأ المستند كويس واستخرج المعلومات دي بالضبط:
+- اسم المرسل (الجهة اللي بعتت الجواب): زي "CAF de Paris" أو "Préfecture de Police"
+- عنوان المرسل: العنوان الكامل للجهة
+- رقم المرجع/الملف: زي "N° 2024-12345" أو "Réf: ABC123"
+- الموضوع: موضوع الجواب
+- التاريخ: تاريخ الجواب
 
 الخطوة 2 - الشرح بالمصري:
 اشرح للمستخدم بالعربي المصري:
@@ -598,10 +615,9 @@ function buildSystemPrompt(profile: UserProfile | undefined): string {
 - فين يروح
 - إزاي يتواصل معاهم
 
-الخطوة 4 - كتابة الرد (بس لو طلب):
-لو المستخدم قال "اكتبلي رد" أو "عايز أرد عليهم":
-- اكتب جواب رسمي بالفرنسي
-- استخدم المواد القانونية المناسبة (CESEDA, CSS, إلخ)
+الخطوة 4 - اقتراح الرد:
+⭐ مهم جداً: بعد ما تخلص الشرح وخطة العمل، اعرض على المستخدم تكتبله الرد بالشكل ده:
+"شوفت إن الجواب ده من [اسم الجهة]. تحب أكتبلك خطاب رسمي (Lettre) للجهة دي عشان تحل المشكلة؟ 📝"
 ${headerInstructions}
 
 ===تنسيق الرد===
@@ -609,40 +625,59 @@ ${headerInstructions}
 ===شرح_المستند===
 [اشرح هنا بالمصري إيه اللي في المستند]
 
+===معلومات_المرسل===
+- الجهة: [اسم الجهة المرسلة]
+- العنوان: [عنوان الجهة الكامل]
+- المرجع: [رقم المرجع/الملف]
+- الموضوع: [موضوع الجواب]
+- التاريخ: [تاريخ الجواب]
+
 ===خطة_العمل===
 [اكتب هنا الخطوات اللي لازم يعملها بالمصري]
 
 ===الرسالة_الرسمية===
-[لو المستخدم طلب رد، اكتب الجواب الرسمي بالفرنسي هنا. لو مطلبش، اكتب: "لو عايز أكتبلك رد رسمي، قولي 'اكتبلي رد'"]
+[لو المستخدم طلب رد، اكتب الجواب الرسمي بالفرنسي هنا. لو مطلبش، اكتب: "تحب أكتبلك خطاب رسمي (Lettre) للجهة دي عشان تحل المشكلة؟ 📝"]
 
 ===ملاحظات_قانونية===
 [اكتب هنا بالمصري أي معلومات قانونية مهمة أو حقوق المستخدم]
 
-📚 المؤسسات اللي بتتعامل معاها:
-- CAF (الكاف): مساعدات اجتماعية، APL، allocations
-- Préfecture (البريفكتير): الإقامة، التجديد، التأشيرات
-- CPAM/Ameli (أميلي): التأمين الصحي، carte vitale
-- Pôle Emploi (بول أمبلوا): البطالة، البحث عن شغل
+📚 المؤسسات اللي بتتعامل معاها وعناوينها:
+- CAF de Paris: 21 rue Joubert, 75009 Paris
+- CAF de la Seine-Saint-Denis: 1-9 rue du Chemin Vert, 93000 Bobigny
+- CAF du Val-de-Marne: 7 avenue du Général de Gaulle, 94000 Créteil
+- Préfecture de Police de Paris: 12-14 quai de Gesvres, 75004 Paris
+- Préfecture de Paris: 5 rue Leblanc, 75015 Paris
+- CPAM de Paris: 21 rue Georges Auric, 75948 Paris Cedex 19
+- Pôle Emploi (بول أمبلوا): حسب الوكالة المحلية
 - URSSAF: للحرفيين والـ auto-entrepreneurs
-- Impôts: الضرايب
 
 ⚠️ قواعد مهمة:
+- دايماً استخرج اسم وعنوان الجهة المرسلة من المستند
 - دايماً ابدأ بالشرح بالمصري قبل أي حاجة
 - متكتبش جواب رسمي غير لما المستخدم يطلب
 - طمن المستخدم وخليه يحس إن الموضوع بسيط
 - لو في موعد أو ديدلاين، نبهو عليه بوضوح
-- استخدم الإيموجي عشان الكلام يبقى ودود 😊
-- ⭐ مهم جداً: بعد ما تخلص الشرح وخطة العمل، لازم دايماً تسأل المستخدم: "تحب أكتبلك خطاب رسمي (Lettre) للجهة دي عشان تحل المشكلة؟ 📝" - ده بيديله الفرصة يطلب الرد الرسمي لو محتاج`;
+- استخدم الإيموجي عشان الكلام يبقى ودود 😊`;
 }
 
-function parseAIResponse(content: string): { 
+interface ParsedResponse { 
   formalLetter: string; 
   legalNote: string; 
   actionPlan: string;
   explanation: string;
-} {
+  extractedSender?: {
+    name?: string;
+    address?: string;
+    reference?: string;
+    subject?: string;
+    date?: string;
+  };
+}
+
+function parseAIResponse(content: string): ParsedResponse {
   // New Arabic section markers
-  const explanationMatch = content.match(/===شرح_المستند===([\s\S]*?)(?====خطة_العمل===|$)/);
+  const explanationMatch = content.match(/===شرح_المستند===([\s\S]*?)(?====معلومات_المرسل===|===خطة_العمل===|$)/);
+  const senderMatch = content.match(/===معلومات_المرسل===([\s\S]*?)(?====خطة_العمل===|$)/);
   const actionMatch = content.match(/===خطة_العمل===([\s\S]*?)(?====الرسالة_الرسمية===|$)/);
   const letterMatch = content.match(/===الرسالة_الرسمية===([\s\S]*?)(?====ملاحظات_قانونية===|$)/);
   const legalMatch = content.match(/===ملاحظات_قانونية===([\s\S]*?)$/);
@@ -652,11 +687,75 @@ function parseAIResponse(content: string): {
   const oldLegalMatch = content.match(/===NOTE_JURIDIQUE===([\s\S]*?)(?====PLAN_ACTION===|$)/);
   const oldActionMatch = content.match(/===PLAN_ACTION===([\s\S]*?)$/);
 
+  // Parse extracted sender info from the new section
+  let extractedSender: ParsedResponse['extractedSender'] = undefined;
+  if (senderMatch) {
+    const senderText = senderMatch[1];
+    extractedSender = {};
+    
+    // Extract fields using patterns
+    const nameMatch = senderText.match(/الجهة:\s*(.+?)(?:\n|$)/);
+    const addressMatch = senderText.match(/العنوان:\s*(.+?)(?:\n|$)/);
+    const refMatch = senderText.match(/المرجع:\s*(.+?)(?:\n|$)/);
+    const subjectMatch = senderText.match(/الموضوع:\s*(.+?)(?:\n|$)/);
+    const dateMatch = senderText.match(/التاريخ:\s*(.+?)(?:\n|$)/);
+    
+    if (nameMatch && nameMatch[1].trim() !== '[اسم الجهة المرسلة]') {
+      extractedSender.name = nameMatch[1].trim();
+    }
+    if (addressMatch && addressMatch[1].trim() !== '[عنوان الجهة الكامل]') {
+      extractedSender.address = addressMatch[1].trim();
+    }
+    if (refMatch && refMatch[1].trim() !== '[رقم المرجع/الملف]') {
+      extractedSender.reference = refMatch[1].trim();
+    }
+    if (subjectMatch && subjectMatch[1].trim() !== '[موضوع الجواب]') {
+      extractedSender.subject = subjectMatch[1].trim();
+    }
+    if (dateMatch && dateMatch[1].trim() !== '[تاريخ الجواب]') {
+      extractedSender.date = dateMatch[1].trim();
+    }
+  }
+
+  // Also try to extract sender from content patterns if not found
+  if (!extractedSender || !extractedSender.name) {
+    extractedSender = extractedSender || {};
+    // Try common patterns
+    const contentPatterns = [
+      /(?:جواب|خطاب|رسالة)\s+(?:من|de)\s+(CAF|CPAM|Préfecture|Pôle Emploi|URSSAF)[^.\n]*/i,
+      /(CAF|CPAM|Préfecture|Pôle Emploi|URSSAF|RSI|Ameli)\s+(?:de\s+)?([A-Za-zÀ-ÿ\s-]+)/i,
+    ];
+    for (const pattern of contentPatterns) {
+      const match = content.match(pattern);
+      if (match) {
+        extractedSender.name = match[0].replace(/^(?:جواب|خطاب|رسالة)\s+(?:من|de)\s+/i, '').trim();
+        break;
+      }
+    }
+    
+    // Extract reference number
+    const refPatterns = [
+      /(?:N°|n°|Ref|REF|Référence|رقم المرجع|رقم الملف)[:\s]*([A-Z0-9\-\/]+)/gi,
+      /(?:Dossier|ملف)[:\s]*([A-Z0-9\-\/]+)/gi,
+    ];
+    for (const pattern of refPatterns) {
+      const match = content.match(pattern);
+      if (match && !extractedSender.reference) {
+        const numMatch = match[0].match(/[A-Z0-9\-\/]{5,}/i);
+        if (numMatch) {
+          extractedSender.reference = numMatch[0];
+          break;
+        }
+      }
+    }
+  }
+
   return {
     explanation: explanationMatch ? explanationMatch[1].trim() : "",
     actionPlan: actionMatch ? actionMatch[1].trim() : (oldActionMatch ? oldActionMatch[1].trim() : "مفيش خطة عمل متاحة"),
-    formalLetter: letterMatch ? letterMatch[1].trim() : (oldLetterMatch ? oldLetterMatch[1].trim() : "لو عايز أكتبلك رد رسمي، قولي 'اكتبلي رد'"),
-    legalNote: legalMatch ? legalMatch[1].trim() : (oldLegalMatch ? oldLegalMatch[1].trim() : "")
+    formalLetter: letterMatch ? letterMatch[1].trim() : (oldLetterMatch ? oldLetterMatch[1].trim() : "تحب أكتبلك خطاب رسمي (Lettre) للجهة دي عشان تحل المشكلة؟ 📝"),
+    legalNote: legalMatch ? legalMatch[1].trim() : (oldLegalMatch ? oldLegalMatch[1].trim() : ""),
+    extractedSender: (extractedSender && Object.keys(extractedSender).length > 0) ? extractedSender : undefined,
   };
 }
 

@@ -454,17 +454,21 @@ ${formData.items}`;
           // Detect if this is a document analysis (has explanation and action plan, and was image analysis)
           const isDocAnalysis = hasImage && (data.explanation || data.actionPlan);
           
-          // Extract info from the response for smart reply
-          const extractedInfo: ExtractedInfo | undefined = isDocAnalysis ? {
+          // Extract info from the response for smart reply - use extracted sender as recipient
+          const extractedInfo: ExtractedInfo | undefined = {
             recipientName: data.dispatchInfo?.recipientName,
             recipientAddress: data.dispatchInfo?.recipientAddress,
             referenceNumber: data.dispatchInfo?.referenceNumber,
             subject: data.dispatchInfo?.subjectLine,
-          } : undefined;
+          };
+
+          // Check if we have valid extracted info (at least a name)
+          const hasExtractedRecipient = !!extractedInfo.recipientName;
 
           // Detect if AI is suggesting to write a letter
           const hasSuggestion = assistantContent.includes('تحب أكتبلك خطاب رسمي') || 
-                                assistantContent.includes("لو عايز أكتبلك رد رسمي، قولي");
+                                assistantContent.includes("لو عايز أكتبلك رد رسمي، قولي") ||
+                                assistantContent.includes("عشان تحل المشكلة؟");
 
           // Add assistant message with letter suggestion if applicable
           const assistantMsg: Message = {
@@ -472,8 +476,8 @@ ${formData.items}`;
             role: 'assistant',
             content: assistantContent.trim(),
             isDocumentAnalysis: isDocAnalysis,
-            extractedInfo: extractedInfo,
-            showLetterSuggestion: isDocAnalysis && hasSuggestion && !data.formalLetter,
+            extractedInfo: hasExtractedRecipient ? extractedInfo : undefined,
+            showLetterSuggestion: (isDocAnalysis || hasExtractedRecipient) && hasSuggestion && !data.formalLetter,
           };
 
           setMessages(prev => [...prev, assistantMsg]);

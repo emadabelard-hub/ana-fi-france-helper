@@ -76,6 +76,7 @@ const isAnalysisResponse = (content: string): boolean => {
 
 /**
  * Extract reference numbers and recipient info from analysis content.
+ * This is a fallback for when the backend doesn't provide structured data.
  */
 const extractInfoFromContent = (content: string): ExtractedInfo => {
   const info: ExtractedInfo = {};
@@ -99,22 +100,32 @@ const extractInfoFromContent = (content: string): ExtractedInfo => {
     }
   }
   
-  // Extract recipient names
-  const recipientPatterns = [
-    /(?:من|from|de la?)\s+(CAF|CPAM|Préfecture|Pôle Emploi|URSSAF|Sécurité Sociale)[^,\n]*/gi,
-    /(CAF|CPAM|Préfecture|Pôle Emploi|URSSAF|RSI|Ameli)/gi,
+  // Extract recipient names from known institutions
+  const institutionPatterns = [
+    /(?:جواب|خطاب|رسالة)\s+(?:من|de)\s+(CAF|CPAM|Préfecture|Pôle Emploi|URSSAF)[^.\n,]*/gi,
+    /(CAF|CPAM|Préfecture|Pôle Emploi|URSSAF|RSI|Ameli)\s+(?:de\s+)?([A-Za-zÀ-ÿ\s-]+?)(?:[,.\n]|$)/gi,
+    /الجهة:\s*(.+?)(?:\n|$)/,
   ];
   
-  for (const pattern of recipientPatterns) {
+  for (const pattern of institutionPatterns) {
     const match = content.match(pattern);
     if (match) {
-      info.recipientName = match[0].replace(/^(من|from|de la?)\s+/i, '').trim();
+      info.recipientName = match[0]
+        .replace(/^(?:جواب|خطاب|رسالة)\s+(?:من|de)\s+/i, '')
+        .replace(/^الجهة:\s*/i, '')
+        .trim();
       break;
     }
   }
   
+  // Extract address if present
+  const addressMatch = content.match(/العنوان:\s*(.+?)(?:\n|$)/);
+  if (addressMatch) {
+    info.recipientAddress = addressMatch[1].trim();
+  }
+  
   // Extract subject from Objet line
-  const subjectMatch = content.match(/Objet\s*:\s*([^\n]+)/i);
+  const subjectMatch = content.match(/(?:Objet|الموضوع)\s*:\s*([^\n]+)/i);
   if (subjectMatch) {
     info.subject = subjectMatch[1].trim();
   }

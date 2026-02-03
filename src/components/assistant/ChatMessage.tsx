@@ -5,7 +5,8 @@ import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import PostAnalysisActions from './PostAnalysisActions';
+import LetterSuggestionButton from './LetterSuggestionButton';
+import EnvelopeHelper from './EnvelopeHelper';
 
 interface ExtractedInfo {
   recipientName?: string;
@@ -19,12 +20,20 @@ interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
   isRTL?: boolean;
-  // New props for post-analysis workflow
+  // Document analysis props
   isDocumentAnalysis?: boolean;
   extractedInfo?: ExtractedInfo;
-  onContinueChat?: () => void;
-  onDraftReply?: (extractedInfo?: ExtractedInfo) => void;
-  showPostAnalysisActions?: boolean;
+  // Letter generation props
+  showLetterSuggestion?: boolean;
+  onAcceptLetterSuggestion?: () => void;
+  isGeneratingLetter?: boolean;
+  // Envelope/dispatch info
+  showEnvelopeHelper?: boolean;
+  dispatchInfo?: {
+    recipientName?: string;
+    recipientAddress?: string;
+    referenceNumber?: string;
+  };
 }
 
 /**
@@ -146,9 +155,11 @@ const ChatMessage = ({
   isRTL = true,
   isDocumentAnalysis,
   extractedInfo: propExtractedInfo,
-  onContinueChat,
-  onDraftReply,
-  showPostAnalysisActions = false,
+  showLetterSuggestion = false,
+  onAcceptLetterSuggestion,
+  isGeneratingLetter = false,
+  showEnvelopeHelper = false,
+  dispatchInfo,
 }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -171,8 +182,15 @@ const ChatMessage = ({
     [propExtractedInfo, isAnalysis, content]
   );
   
-  // Should show actions: analysis message without a letter already generated
-  const shouldShowActions = showPostAnalysisActions && isAnalysis && !frenchLetter && onContinueChat && onDraftReply;
+  // Detect if AI is suggesting to write a letter (contains the suggestion prompt)
+  const hasSuggestionPrompt = useMemo(() => 
+    content.includes('تحب أكتبلك خطاب رسمي') || 
+    content.includes("لو عايز أكتبلك رد رسمي، قولي"),
+    [content]
+  );
+  
+  // Show inline button when: AI suggests letter, callback provided, and not already showing letter
+  const shouldShowLetterButton = showLetterSuggestion && hasSuggestionPrompt && onAcceptLetterSuggestion && !frenchLetter;
 
   const handleCopy = async (textToCopy?: string) => {
     try {
@@ -233,11 +251,7 @@ const ChatMessage = ({
     }
   };
 
-  const handleDraftReply = () => {
-    if (onDraftReply) {
-      onDraftReply(extractedInfo);
-    }
-  };
+  // No handleDraftReply needed anymore - we use inline button
 
   return (
     <div
@@ -274,12 +288,11 @@ const ChatMessage = ({
           </div>
         )}
 
-        {/* Post-Analysis Actions */}
-        {shouldShowActions && (
-          <PostAnalysisActions
-            onContinueChat={onContinueChat}
-            onDraftReply={handleDraftReply}
-            extractedInfo={extractedInfo}
+        {/* Letter Suggestion Button - appears when AI suggests writing a letter */}
+        {shouldShowLetterButton && (
+          <LetterSuggestionButton
+            onAccept={onAcceptLetterSuggestion!}
+            isLoading={isGeneratingLetter}
             isRTL={isRTL}
           />
         )}
@@ -334,11 +347,21 @@ const ChatMessage = ({
             >
               <div className="whitespace-pre-wrap text-sm leading-relaxed">{frenchLetter}</div>
             </div>
+            
+            {/* Envelope Helper - shows recipient address for physical mail */}
+            {showEnvelopeHelper && dispatchInfo && (
+              <EnvelopeHelper
+                recipientName={dispatchInfo.recipientName || ''}
+                recipientAddress={dispatchInfo.recipientAddress}
+                referenceNumber={dispatchInfo.referenceNumber}
+                isRTL={isRTL}
+              />
+            )}
           </div>
         )}
 
         {/* Copy button for assistant messages (whole message) */}
-        {!isUser && !frenchLetter && !shouldShowActions && (
+        {!isUser && !frenchLetter && !shouldShowLetterButton && (
           <Button
             variant="ghost"
             size="sm"

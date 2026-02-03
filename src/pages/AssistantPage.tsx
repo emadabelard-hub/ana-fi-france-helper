@@ -11,7 +11,7 @@ import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 import DispatchGuide from '@/components/assistant/DispatchGuide';
 import DismissibleTip from '@/components/shared/DismissibleTip';
 import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/DocumentTypeSelector';
-import SmartReplyForm, { SmartReplyData } from '@/components/assistant/SmartReplyForm';
+// SmartReplyForm removed - now using inline auto-generation
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, HelpCircle, RefreshCw, FileText, Mail, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -61,10 +61,13 @@ interface Message {
   isError?: boolean;
   errorType?: 'auth' | 'timeout' | 'generic';
   retryData?: { message: string; image?: string };
-  // New: for post-analysis workflow
+  // Document analysis workflow
   isDocumentAnalysis?: boolean;
   extractedInfo?: ExtractedInfo;
-  showPostAnalysisActions?: boolean;
+  // Letter suggestion workflow - AI suggests, user clicks Yes
+  showLetterSuggestion?: boolean;
+  // Envelope helper - show after letter generation
+  showEnvelopeHelper?: boolean;
 }
 
 const CHAT_STORAGE_KEY = 'assistant_chat_messages';
@@ -86,10 +89,9 @@ const AssistantPage = () => {
   const [showSessionDialog, setShowSessionDialog] = useState(false);
   const [showNewTopicConfirm, setShowNewTopicConfirm] = useState(false);
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
-  // Smart Reply Form state
-  const [showSmartReplyForm, setShowSmartReplyForm] = useState(false);
-  const [smartReplyExtractedInfo, setSmartReplyExtractedInfo] = useState<ExtractedInfo | undefined>(undefined);
-  const [smartReplyContext, setSmartReplyContext] = useState<string>('');
+  // Letter generation state
+  const [isGeneratingLetter, setIsGeneratingLetter] = useState(false);
+  const [pendingLetterMessageId, setPendingLetterMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load messages from localStorage on mount and show session dialog
@@ -460,14 +462,18 @@ ${formData.items}`;
             subject: data.dispatchInfo?.subjectLine,
           } : undefined;
 
-          // Add assistant message with post-analysis actions if it's a document analysis
+          // Detect if AI is suggesting to write a letter
+          const hasSuggestion = assistantContent.includes('تحب أكتبلك خطاب رسمي') || 
+                                assistantContent.includes("لو عايز أكتبلك رد رسمي، قولي");
+
+          // Add assistant message with letter suggestion if applicable
           const assistantMsg: Message = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
             content: assistantContent.trim(),
             isDocumentAnalysis: isDocAnalysis,
             extractedInfo: extractedInfo,
-            showPostAnalysisActions: isDocAnalysis && !data.formalLetter,
+            showLetterSuggestion: isDocAnalysis && hasSuggestion && !data.formalLetter,
           };
 
           setMessages(prev => [...prev, assistantMsg]);
@@ -614,60 +620,42 @@ ${formData.items}`;
     }
   };
 
-  // Handler for "Continue Chat" button after document analysis
-  const handleContinueChat = () => {
-    // Simply dismiss the post-analysis actions
-    setMessages(prev => prev.map(m => ({
-      ...m,
-      showPostAnalysisActions: false,
-    })));
-  };
+  // Handler for accepting letter suggestion - auto-generates with profile + extracted data
+  const handleAcceptLetterSuggestion = async (messageId: string, extractedInfo?: ExtractedInfo) => {
+    if (!profile?.full_name || !profile?.address) {
+      toast({
+        variant: "destructive",
+        title: isRTL ? "بيانات ناقصة" : "Données manquantes",
+        description: isRTL 
+          ? "من فضلك اكمل بياناتك في الملف الشخصي أولاً (الاسم والعنوان)" 
+          : "Veuillez compléter votre profil (nom et adresse)",
+      });
+      return;
+    }
 
-  // Handler for "Draft Reply" button after document analysis
-  const handleDraftReply = (extractedInfo?: ExtractedInfo) => {
-    // Store context and extracted info, then open the smart reply form
-    const lastAssistantMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
-    setSmartReplyExtractedInfo(extractedInfo);
-    setSmartReplyContext(lastAssistantMessage?.content || '');
-    setShowSmartReplyForm(true);
-    
-    // Hide the post-analysis actions
-    setMessages(prev => prev.map(m => ({
-      ...m,
-      showPostAnalysisActions: false,
-    })));
-  };
-
-  // Handler for smart reply form submission
-  const handleSmartReplySubmit = async (data: SmartReplyData) => {
-    setIsAnalyzing(true);
+    setIsGeneratingLetter(true);
+    setPendingLetterMessageId(messageId);
 
     try {
-      // Build the request with smart reply data
-      const smartReplyMessage = `اكتب رد رسمي بالفرنسي على المستند اللي حللناه.
+      // Get the last analysis message for context
+      const lastAnalysisMessage = messages.filter(m => m.role === 'assistant' && m.isDocumentAnalysis).slice(-1)[0];
+      
+      // Build generation request using profile data + extracted info
+      const letterRequest = `اكتب رد رسمي بالفرنسي على المستند اللي حللناه.
 
-معلومات المرسل:
-- الاسم: ${data.senderName}
-- العنوان: ${data.senderAddress}
-- التليفون: ${data.senderPhone}
+معلومات المرسل (من الملف الشخصي):
+- الاسم: ${profile.full_name}
+- العنوان: ${profile.address}
+- التليفون: ${profile.phone || 'غير محدد'}
 
-المرسل إليه:
-- الجهة: ${data.recipientName}
-- العنوان: ${data.recipientAddress || 'غير محدد'}
+المرسل إليه (من المستند):
+- الجهة: ${extractedInfo?.recipientName || 'الجهة المختصة'}
+- العنوان: ${extractedInfo?.recipientAddress || 'غير محدد'}
 
-المرجع: ${data.referenceNumber || 'غير متوفر'}
-الموضوع: ${data.subject}
+المرجع: ${extractedInfo?.referenceNumber || 'حسب المستند'}
+الموضوع: ${extractedInfo?.subject || 'رد على المستند'}
 
-النقاط الأساسية للرد:
-${data.keyPoints || 'أريد الرد على هذا المستند'}`;
-
-      // Add user message to show what was requested
-      const userMsg: Message = {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        content: `✍️ ${isRTL ? 'اكتبلي رد رسمي لـ' : 'Rédiger une réponse à'} ${data.recipientName}`,
-      };
-      setMessages(prev => [...prev, userMsg]);
+السياق: ${lastAnalysisMessage?.content || 'بناءً على المستند المرفق'}`;
 
       // Build conversation history
       const conversationHistory = messages.map(m => ({
@@ -675,68 +663,74 @@ ${data.keyPoints || 'أريد الرد على هذا المستند'}`;
         content: m.content,
       }));
 
-      const { data: responseData, error } = await supabase.functions.invoke('analyze-request', {
+      const { data, error } = await supabase.functions.invoke('analyze-request', {
         body: { 
-          userMessage: smartReplyMessage,
-          conversationHistory: [...conversationHistory, { role: 'user', content: smartReplyMessage }],
+          userMessage: letterRequest,
+          conversationHistory: [...conversationHistory, { role: 'user', content: 'اكتبلي الخطاب الرسمي' }],
           generateLetterWithData: {
-            full_name: data.senderName,
-            address: data.senderAddress,
-            phone: data.senderPhone,
-            recipient_name: data.recipientName,
-            reference_number: data.referenceNumber,
+            full_name: profile.full_name,
+            address: profile.address,
+            phone: profile.phone,
+            recipient_name: extractedInfo?.recipientName || 'الجهة المختصة',
+            reference_number: extractedInfo?.referenceNumber,
           },
-          profile: profile ? {
-            full_name: profile.full_name || data.senderName,
-            address: profile.address || data.senderAddress,
-            phone: profile.phone || data.senderPhone,
+          profile: {
+            full_name: profile.full_name,
+            address: profile.address,
+            phone: profile.phone,
             caf_number: profile.caf_number,
             foreigner_number: profile.foreigner_number,
             social_security: profile.social_security,
-          } : null
+          }
         }
       });
 
       if (error) throw error;
 
-      if (responseData.error) {
+      if (data.error) {
         toast({
           variant: "destructive",
           title: isRTL ? "خطأ" : "Erreur",
-          description: responseData.error,
+          description: data.error,
         });
         return;
       }
 
-      // Close the form
-      setShowSmartReplyForm(false);
+      // Hide the suggestion button from the original message
+      setMessages(prev => prev.map(m => 
+        m.id === messageId 
+          ? { ...m, showLetterSuggestion: false }
+          : m
+      ));
 
-      // Add the generated letter as a new message with dispatch guide
+      // Add the generated letter as a new message with envelope helper
       const letterMsg: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: `📝 **الرسالة الرسمية:**\n\n${responseData.formalLetter}\n\n✅ **تم!** دي الرسالة الجاهزة للطباعة والإرسال. لو محتاج أي تعديل، قولي!`,
+        content: `===الرسالة_الرسمية===\n${data.formalLetter}\n\n✅ **تم!** دي الرسالة الجاهزة للطباعة والإرسال. لو محتاج أي تعديل، قولي!`,
         showDispatchGuide: true,
+        showEnvelopeHelper: true,
         dispatchInfo: {
-          recipientName: data.recipientName,
-          recipientAddress: data.recipientAddress,
-          referenceNumber: data.referenceNumber,
-          subjectLine: data.subject,
+          recipientName: extractedInfo?.recipientName || data.dispatchInfo?.recipientName,
+          recipientAddress: extractedInfo?.recipientAddress || data.dispatchInfo?.recipientAddress,
+          referenceNumber: extractedInfo?.referenceNumber || data.dispatchInfo?.referenceNumber,
+          subjectLine: extractedInfo?.subject || data.dispatchInfo?.subjectLine,
         },
-        letterContent: responseData.formalLetter,
+        letterContent: data.formalLetter,
       };
 
       setMessages(prev => [...prev, letterMsg]);
 
     } catch (error) {
-      console.error('Error generating smart reply:', error);
+      console.error('Error generating letter:', error);
       toast({
         variant: "destructive",
         title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "حدث خطأ أثناء كتابة الرد" : "Une erreur est survenue lors de la rédaction.",
+        description: isRTL ? "حدث خطأ أثناء كتابة الخطاب" : "Une erreur est survenue lors de la rédaction.",
       });
     } finally {
-      setIsAnalyzing(false);
+      setIsGeneratingLetter(false);
+      setPendingLetterMessageId(null);
     }
   };
 
@@ -982,9 +976,11 @@ ${data.keyPoints || 'أريد الرد على هذا المستند'}`;
                   isRTL={isRTL}
                   isDocumentAnalysis={message.isDocumentAnalysis}
                   extractedInfo={message.extractedInfo}
-                  showPostAnalysisActions={message.showPostAnalysisActions}
-                  onContinueChat={handleContinueChat}
-                  onDraftReply={handleDraftReply}
+                  showLetterSuggestion={message.showLetterSuggestion}
+                  onAcceptLetterSuggestion={() => handleAcceptLetterSuggestion(message.id, message.extractedInfo)}
+                  isGeneratingLetter={isGeneratingLetter && pendingLetterMessageId === message.id}
+                  showEnvelopeHelper={message.showEnvelopeHelper}
+                  dispatchInfo={message.dispatchInfo}
                 />
               )}
               {/* Show missing info form if needed */}
@@ -1087,16 +1083,7 @@ ${data.keyPoints || 'أريد الرد على هذا المستند'}`;
         isRTL={isRTL}
       />
 
-      {/* Smart Reply Form Modal */}
-      <SmartReplyForm
-        isOpen={showSmartReplyForm}
-        onClose={() => setShowSmartReplyForm(false)}
-        onSubmit={handleSmartReplySubmit}
-        extractedInfo={smartReplyExtractedInfo}
-        profile={profile}
-        isRTL={isRTL}
-        isLoading={isAnalyzing}
-      />
+      {/* Smart Reply Form removed - now using inline auto-generation */}
     </>
   );
 };

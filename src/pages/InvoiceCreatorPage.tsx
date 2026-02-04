@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Send, Loader2, PenLine, HelpCircle, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Loader2, PenLine, HelpCircle, RotateCcw, Edit3, Check, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/auth/AuthModal';
 import InvoiceDisplay, { InvoiceData } from '@/components/invoice/InvoiceDisplay';
 import InvoiceActions from '@/components/invoice/InvoiceActions';
+import LineItemEditor, { LineItem } from '@/components/invoice/LineItemEditor';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,9 @@ interface Message {
   content: string;
   invoiceData?: InvoiceData;
 }
+
+// Generate unique ID
+const generateId = () => Math.random().toString(36).substr(2, 9);
 
 const STORAGE_KEY = 'invoice-mentor-session';
 
@@ -109,6 +113,8 @@ Pour commencer, dites-moi :
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [pendingMessages, setPendingMessages] = useState<Message[] | null>(null);
   const [showArabic, setShowArabic] = useState(false);
+  const [editingInvoiceId, setEditingInvoiceId] = useState<number | null>(null);
+  const [editedItems, setEditedItems] = useState<LineItem[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
@@ -162,9 +168,80 @@ Pour commencer, dites-moi :
     localStorage.removeItem(STORAGE_KEY);
     setMessages([getInitialMessage()]);
     setShowArabic(false);
+    setEditingInvoiceId(null);
+    setEditedItems([]);
     toast({
       title: isRTL ? "تم المسح" : "Effacé",
       description: isRTL ? "تم بدء محادثة جديدة" : "Nouvelle conversation démarrée",
+    });
+  };
+
+  // Start editing an invoice
+  const handleStartEditing = (messageIndex: number, invoiceData: InvoiceData) => {
+    const items: LineItem[] = invoiceData.items.map(item => ({
+      id: generateId(),
+      designation_fr: item.designation_fr,
+      designation_ar: item.designation_ar,
+      quantity: item.quantity,
+      unit: item.unit,
+      unitPrice: item.unitPrice,
+      total: item.total,
+    }));
+    setEditedItems(items);
+    setEditingInvoiceId(messageIndex);
+  };
+
+  // Cancel editing
+  const handleCancelEditing = () => {
+    setEditingInvoiceId(null);
+    setEditedItems([]);
+  };
+
+  // Save edited items back to invoice
+  const handleSaveEditing = (messageIndex: number) => {
+    if (editedItems.length === 0) {
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL ? "أضف على الأقل سطر واحد" : "Ajoutez au moins une ligne",
+      });
+      return;
+    }
+
+    // Recalculate totals
+    const subtotal = editedItems.reduce((sum, item) => sum + item.total, 0);
+    
+    setMessages(prev => prev.map((msg, idx) => {
+      if (idx !== messageIndex || !msg.invoiceData) return msg;
+      
+      const tvaAmount = msg.invoiceData.tvaExempt ? 0 : Math.round(subtotal * (msg.invoiceData.tvaRate / 100) * 100) / 100;
+      const total = subtotal + tvaAmount;
+      
+      return {
+        ...msg,
+        invoiceData: {
+          ...msg.invoiceData,
+          items: editedItems.map(item => ({
+            designation_fr: item.designation_fr,
+            designation_ar: item.designation_ar,
+            quantity: item.quantity,
+            unit: item.unit,
+            unitPrice: item.unitPrice,
+            total: item.total,
+          })),
+          subtotal: Math.round(subtotal * 100) / 100,
+          tvaAmount,
+          total: Math.round(total * 100) / 100,
+        }
+      };
+    }));
+
+    setEditingInvoiceId(null);
+    setEditedItems([]);
+    
+    toast({
+      title: isRTL ? "تم الحفظ" : "Enregistré",
+      description: isRTL ? "تم تحديث الفاتورة" : "Facture mise à jour",
     });
   };
 
@@ -320,18 +397,72 @@ Pour commencer, dites-moi :
               {/* Invoice Display (if present) */}
               {hasInvoice && message.invoiceData && (
                 <div className="space-y-4">
-                  <InvoiceActions
-                    invoiceData={message.invoiceData}
-                    invoiceRef={invoiceRef}
-                    showArabic={showArabic}
-                    onToggleArabic={setShowArabic}
-                  />
-                  <div ref={invoiceRef}>
-                    <InvoiceDisplay 
-                      data={message.invoiceData} 
-                      showArabic={showArabic} 
-                    />
+                  {/* Edit Mode Toggle */}
+                  <div className={cn(
+                    "flex items-center gap-2",
+                    isRTL && "flex-row-reverse"
+                  )}>
+                    {editingInvoiceId === index ? (
+                      <>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleSaveEditing(index)}
+                          className={cn(isRTL && "font-cairo")}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          {isRTL ? 'حفظ التعديلات' : 'Enregistrer'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCancelEditing}
+                          className={cn(isRTL && "font-cairo")}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          {isRTL ? 'إلغاء' : 'Annuler'}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStartEditing(index, message.invoiceData!)}
+                        className={cn(isRTL && "font-cairo")}
+                      >
+                        <Edit3 className="h-4 w-4 mr-1" />
+                        {isRTL ? '✏️ تعديل الأسعار والبنود' : '✏️ Modifier les lignes'}
+                      </Button>
+                    )}
                   </div>
+
+                  {/* Line Item Editor (when editing) */}
+                  {editingInvoiceId === index && (
+                    <div className="p-4 border rounded-lg bg-background">
+                      <LineItemEditor
+                        items={editedItems}
+                        onItemsChange={setEditedItems}
+                      />
+                    </div>
+                  )}
+
+                  {/* Invoice Actions & Display (when not editing) */}
+                  {editingInvoiceId !== index && (
+                    <>
+                      <InvoiceActions
+                        invoiceData={message.invoiceData}
+                        invoiceRef={invoiceRef}
+                        showArabic={showArabic}
+                        onToggleArabic={setShowArabic}
+                      />
+                      <div ref={invoiceRef}>
+                        <InvoiceDisplay 
+                          data={message.invoiceData} 
+                          showArabic={showArabic} 
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

@@ -279,11 +279,12 @@ serve(async (req) => {
       aiMessages.push({ role: "user", content: userMessage });
     }
     
-    // Use vision-capable model for images
+    // Use vision-capable model for images, fast model for text
     const model = hasImage ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
     
-    console.log("Pro Admin Assistant - Using model:", model);
+    console.log("Pro Admin Assistant - Using model:", model, "streaming: true");
     
+    // Enable streaming for faster response
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -293,7 +294,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model,
         messages: aiMessages,
-        stream: false,
+        stream: true, // Enable streaming
       }),
     });
 
@@ -318,17 +319,10 @@ serve(async (req) => {
       });
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new Error("No content in AI response");
-    }
-
-    console.log("Pro Admin Assistant - Response generated successfully, length:", content.length);
-
-    return new Response(JSON.stringify({ response: content }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Return the stream directly to the client
+    console.log("Pro Admin Assistant - Streaming response to client");
+    return new Response(response.body, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
 
   } catch (error) {

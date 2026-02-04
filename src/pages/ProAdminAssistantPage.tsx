@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import { streamProAdminAssistant } from '@/hooks/useStreamingChat';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import ChatInput from '@/components/assistant/ChatInput';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -142,7 +142,7 @@ Envoyez-moi une photo de n'importe quel document, ou décrivez votre problème e
     handleSend(retryData.message, retryData.image, true);
   };
 
-  const handleSend = async (userMessage: string, image?: string, isRetry: boolean = false) => {
+  const handleSend = useCallback(async (userMessage: string, image?: string, isRetry: boolean = false) => {
     if (!userMessage.trim() && !image) return;
 
     const hasImage = !!image;
@@ -175,133 +175,88 @@ Envoyez-moi une photo de n'importe quel document, ou décrivez votre problème e
       setIsAnalyzingImage(true);
     }
 
-    // Helper function to make the API call with retry
-    const makeRequest = async (attemptNumber: number = 1): Promise<void> => {
-      try {
-        const currentMessages = isRetry ? messages : [...messages, userMsg];
-        const conversationHistory = currentMessages.map(m => ({
-          role: m.role,
-          content: m.content,
-        }));
+    // Create a placeholder assistant message for streaming
+    const assistantMsgId = `assistant-${Date.now()}`;
+    let streamedContent = '';
 
-        const { data, error } = await supabase.functions.invoke('pro-admin-assistant', {
-          body: { 
-            userMessage: userMessage || (language === 'fr' ? 'Analysez ce document et expliquez son contenu' : 'حلل المستند ده وقولي إيه المكتوب فيه'),
-            imageData: processedImage,
-            conversationHistory,
-            language, // Pass current app language
-            profile: profile ? {
-              full_name: profile.full_name,
-              address: profile.address,
-              phone: profile.phone,
-            } : null
-          }
-        });
+    // Add empty assistant message that will be updated with streaming content
+    setMessages(prev => [...prev, {
+      id: assistantMsgId,
+      role: 'assistant',
+      content: '',
+    }]);
 
-        if (error) {
-          const status = (error as any)?.status || 500;
-          const isRetryableError = status === 500 || status === 504 || error.message?.includes('timeout');
+    const currentMessages = isRetry ? messages : [...messages, userMsg];
+    const conversationHistory = currentMessages.map(m => ({
+      role: m.role,
+      content: m.content,
+    }));
+
+    await streamProAdminAssistant(
+      {
+        userMessage: userMessage || (language === 'fr' ? 'Analysez ce document et expliquez son contenu' : 'حلل المستند ده وقولي إيه المكتوب فيه'),
+        imageData: processedImage,
+        conversationHistory,
+        language,
+        profile: profile ? {
+          full_name: profile.full_name,
+          address: profile.address,
+          phone: profile.phone,
+        } : null,
+      },
+      {
+        onDelta: (deltaText) => {
+          streamedContent += deltaText;
+          // Update the assistant message with new content
+          setMessages(prev => 
+            prev.map(m => 
+              m.id === assistantMsgId 
+                ? { ...m, content: streamedContent }
+                : m
+            )
+          );
+        },
+        onDone: () => {
+          setIsAnalyzing(false);
+          setIsAnalyzingImage(false);
+          console.log('Streaming complete, total length:', streamedContent.length);
+        },
+        onError: (error) => {
+          console.error('Streaming error:', error);
           
-          // Auto-retry once for timeout/server errors
-          if (isRetryableError && attemptNumber === 1) {
-            toast({
-              title: isRTL ? 'الشبكة ضعيفة، بحاول تاني...' : 'Connexion faible, nouvelle tentative...',
-              description: isRTL ? 'انتظر لحظة...' : 'Veuillez patienter...',
-            });
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            return makeRequest(2);
-          }
-
+          // Remove the empty assistant message
+          setMessages(prev => prev.filter(m => m.id !== assistantMsgId));
+          
           let errorType: 'auth' | 'timeout' | 'generic' = 'generic';
-          let errorMessage = '';
+          let errorMessage = error.message || '❌ حدث خطأ أثناء التحليل. حاول مرة تانية.';
 
-          if (status === 401 || status === 403) {
+          if (error.status === 401 || error.status === 403) {
             errorType = 'auth';
             errorMessage = '⚠️ تأكد من إعدادات مفتاح الذكاء الاصطناعي (API Key).';
-          } else if (isRetryableError) {
+          } else if (error.status === 429 || error.status === 402) {
+            errorType = 'generic';
+            // Keep the error message from the server
+          } else if (error.status === 500 || error.status === 504) {
             errorType = 'timeout';
             errorMessage = '⏱️ الصورة كبيرة جداً أو حصل مشكلة في السيرفر. حاول مرة تانية.';
-          } else {
-            errorMessage = '❌ حدث خطأ أثناء التحليل. حاول مرة تانية.';
           }
 
           const errorMsg: Message = {
             id: `error-${Date.now()}`,
             role: 'assistant',
-            content: errorMessage,
+            content: `❌ ${errorMessage}`,
             isError: true,
             errorType,
             retryData: { message: userMessage, image: processedImage },
           };
           setMessages(prev => [...prev, errorMsg]);
-          return;
-        }
-
-        if (data.error) {
-          const isRetryableDataError = data.error.includes('timeout') || data.error.includes('500') || data.error.includes('504');
           
-          if (isRetryableDataError && attemptNumber === 1) {
-            toast({
-              title: isRTL ? 'الشبكة ضعيفة، بحاول تاني...' : 'Connexion faible, nouvelle tentative...',
-              description: isRTL ? 'انتظر لحظة...' : 'Veuillez patienter...',
-            });
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            return makeRequest(2);
-          }
-
-          const errorMsg: Message = {
-            id: `error-${Date.now()}`,
-            role: 'assistant',
-            content: `❌ ${data.error}`,
-            isError: true,
-            errorType: 'generic',
-            retryData: { message: userMessage, image: processedImage },
-          };
-          setMessages(prev => [...prev, errorMsg]);
-          return;
-        }
-
-        // Success - add AI response
-        const assistantMsg: Message = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: data.response,
-        };
-
-        setMessages(prev => [...prev, assistantMsg]);
-
-      } catch (error) {
-        console.error('Error analyzing:', error);
-        
-        const errorStr = String(error);
-        const isRetryableError = errorStr.includes('timeout') || errorStr.includes('500') || errorStr.includes('504');
-        
-        if (isRetryableError && attemptNumber === 1) {
-          toast({
-            title: isRTL ? 'الشبكة ضعيفة، بحاول تاني...' : 'Connexion faible, nouvelle tentative...',
-            description: isRTL ? 'انتظر لحظة...' : 'Veuillez patienter...',
-          });
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          return makeRequest(2);
-        }
-
-        const errorMsg: Message = {
-          id: `error-${Date.now()}`,
-          role: 'assistant',
-          content: '❌ حدث خطأ أثناء التحليل. حاول مرة تانية.',
-          isError: true,
-          errorType: 'generic',
-          retryData: { message: userMessage, image: processedImage },
-        };
-        setMessages(prev => [...prev, errorMsg]);
+          setIsAnalyzing(false);
+          setIsAnalyzingImage(false);
+        },
       }
-    };
-
-    await makeRequest(1);
-    
-    setIsAnalyzing(false);
-    setIsAnalyzingImage(false);
-  };
+    );
+  }, [messages, language, profile, isRTL, toast]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] pb-20">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export interface LineItem {
   id: string;
@@ -23,13 +25,15 @@ interface LineItemEditorProps {
   onItemsChange: (items: LineItem[]) => void;
 }
 
+// Franco-Arabe unit options with phonetic transliteration
 const UNIT_OPTIONS = [
-  { value: 'h', label_fr: 'Heure(s)', label_ar: 'ساعة' },
-  { value: 'm²', label_fr: 'm²', label_ar: 'متر مربع' },
-  { value: 'ml', label_fr: 'ml (mètre linéaire)', label_ar: 'متر طولي' },
-  { value: 'u', label_fr: 'Unité(s)', label_ar: 'وحدة' },
-  { value: 'forfait', label_fr: 'Forfait', label_ar: 'مقطوعية' },
-  { value: 'jour', label_fr: 'Jour(s)', label_ar: 'يوم' },
+  { value: 'm²', label_display: 'm² - متر كاري', label_fr: 'm²', label_ar: 'متر كاري' },
+  { value: 'ml', label_display: 'ml - متر طولي', label_fr: 'ml', label_ar: 'متر طولي' },
+  { value: 'u', label_display: 'U - أونيتيه', label_fr: 'Unité', label_ar: 'أونيتيه' },
+  { value: 'h', label_display: 'H - ساعة', label_fr: 'Heure', label_ar: 'ساعة' },
+  { value: 'jour', label_display: 'J - يوم', label_fr: 'Jour', label_ar: 'يوم' },
+  { value: 'forfait', label_display: 'F - فورفيه', label_fr: 'Forfait', label_ar: 'فورفيه' },
+  { value: 'ens', label_display: 'Ens - أنسومبل', label_fr: 'Ensemble', label_ar: 'أنسومبل' },
 ];
 
 const PRESET_ITEMS = [
@@ -44,12 +48,6 @@ const PRESET_ITEMS = [
     designation_ar: 'توريد مواد',
     unit: 'forfait',
     unitPrice: 0 
-  },
-  { 
-    designation_fr: 'Frais de déplacement', 
-    designation_ar: 'مصاريف تنقل',
-    unit: 'forfait',
-    unitPrice: 30 
   },
   { 
     designation_fr: 'Peinture', 
@@ -69,12 +67,20 @@ const PRESET_ITEMS = [
     unit: 'm²',
     unitPrice: 40 
   },
+  { 
+    designation_fr: 'Plomberie', 
+    designation_ar: 'بلومبري (سباكة)',
+    unit: 'h',
+    unitPrice: 45 
+  },
 ];
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
   const { isRTL } = useLanguage();
+  const { toast } = useToast();
+  const [suggestingPriceFor, setSuggestingPriceFor] = useState<string | null>(null);
 
   const updateItem = (id: string, field: keyof LineItem, value: string | number) => {
     const updatedItems = items.map(item => {
@@ -93,6 +99,50 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
     });
     
     onItemsChange(updatedItems);
+  };
+
+  const suggestPrice = async (item: LineItem) => {
+    if (!item.designation_fr.trim()) {
+      toast({
+        variant: "destructive",
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'اكتب وصف الشغل الأول' : 'Entrez d\'abord une description',
+      });
+      return;
+    }
+
+    setSuggestingPriceFor(item.id);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('invoice-mentor', {
+        body: {
+          action: 'suggest_price',
+          description: item.designation_fr,
+          unit: item.unit,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.suggestedPrice) {
+        updateItem(item.id, 'unitPrice', data.suggestedPrice);
+        toast({
+          title: isRTL ? '💡 سعر مقترح' : '💡 Prix suggéré',
+          description: isRTL 
+            ? `السعر المقترح: ${data.suggestedPrice}€ / ${item.unit}`
+            : `Prix suggéré: ${data.suggestedPrice}€ / ${item.unit}`,
+        });
+      }
+    } catch (error) {
+      console.error('Price suggestion error:', error);
+      toast({
+        variant: "destructive",
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'تعذر اقتراح السعر' : 'Impossible de suggérer un prix',
+      });
+    } finally {
+      setSuggestingPriceFor(null);
+    }
   };
 
   const addPresetItem = (preset: typeof PRESET_ITEMS[0]) => {
@@ -114,7 +164,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
       designation_fr: '',
       designation_ar: '',
       quantity: 1,
-      unit: 'u',
+      unit: 'm²',
       unitPrice: 0,
       total: 0,
     };
@@ -174,7 +224,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                       <Input
                         value={item.designation_fr}
                         onChange={(e) => updateItem(item.id, 'designation_fr', e.target.value)}
-                        placeholder="Ex: Main d'œuvre - 5ème étage"
+                        placeholder="Ex: Pose de carrelage - cuisine"
                         className="text-sm"
                       />
                     </div>
@@ -185,7 +235,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                       <Input
                         value={item.designation_ar}
                         onChange={(e) => updateItem(item.id, 'designation_ar', e.target.value)}
-                        placeholder="مثال: مصنعية - الدور الخامس"
+                        placeholder="اكتب وصف الشغل هنا (مثال: تركيب سيراميك...)"
                         className={cn("text-sm", isRTL && "text-right font-cairo")}
                         dir="rtl"
                       />
@@ -193,7 +243,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                   </div>
                   
                   {/* Numbers Row */}
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                     <div>
                       <Label className="text-xs text-muted-foreground">
                         {isRTL ? 'الكمية' : 'Quantité'}
@@ -218,29 +268,46 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                         <SelectTrigger className="text-sm">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-background">
                           {UNIT_OPTIONS.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
-                              {isRTL ? option.label_ar : option.label_fr}
+                              {option.label_display}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
+                    <div className="col-span-2 sm:col-span-1">
                       <Label className="text-xs text-muted-foreground">
                         {isRTL ? 'سعر الوحدة €' : 'Prix Unit. €'}
                       </Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.unitPrice}
-                        onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                        className="text-sm"
-                      />
+                      <div className="flex gap-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unitPrice}
+                          onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                          className="text-sm flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 shrink-0 text-primary hover:bg-primary/10"
+                          onClick={() => suggestPrice(item)}
+                          disabled={suggestingPriceFor === item.id}
+                          title={isRTL ? 'اقترح سعر' : 'Suggérer un prix'}
+                        >
+                          {suggestingPriceFor === item.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
-                    <div>
+                    <div className="col-span-2 sm:col-span-1">
                       <Label className="text-xs text-muted-foreground">
                         {isRTL ? 'الإجمالي' : 'Total'}
                       </Label>

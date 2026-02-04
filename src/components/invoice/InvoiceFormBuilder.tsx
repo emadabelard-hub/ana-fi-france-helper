@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Check, X } from 'lucide-react';
+import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck } from 'lucide-react';
 import InvoiceDisplay, { InvoiceData } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
@@ -41,6 +42,11 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
   const [workSiteSameAsClient, setWorkSiteSameAsClient] = useState(true);
   const [workSiteAddress, setWorkSiteAddress] = useState('');
   
+  // Travel costs state
+  const [includeTravelCosts, setIncludeTravelCosts] = useState(false);
+  const [travelDescription, setTravelDescription] = useState('');
+  const [travelPrice, setTravelPrice] = useState(30);
+  
   // Line items
   const [items, setItems] = useState<LineItem[]>([
     {
@@ -48,7 +54,7 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
       designation_fr: '',
       designation_ar: '',
       quantity: 1,
-      unit: 'u',
+      unit: 'm²',
       unitPrice: 0,
       total: 0,
     }
@@ -61,7 +67,23 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
   
   // Build invoice data from form
   const buildInvoiceData = (): InvoiceData => {
-    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+    // Combine regular items with travel costs if enabled
+    const allItems = [...items.filter(item => item.designation_fr.trim() && item.unitPrice > 0)];
+    
+    // Add travel costs as a line item if enabled
+    if (includeTravelCosts && travelPrice > 0) {
+      allItems.push({
+        id: generateId(),
+        designation_fr: travelDescription || 'Frais de déplacement',
+        designation_ar: 'مصاريف النقل',
+        quantity: 1,
+        unit: 'forfait',
+        unitPrice: travelPrice,
+        total: travelPrice,
+      });
+    }
+    
+    const subtotal = allItems.reduce((sum, item) => sum + item.total, 0);
     const tvaExempt = profile?.legal_status === 'auto-entrepreneur';
     const tvaRate = tvaExempt ? 0 : 10; // Default 10% for renovation
     const tvaAmount = tvaExempt ? 0 : Math.round(subtotal * (tvaRate / 100) * 100) / 100;
@@ -89,7 +111,7 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
         sameAsClient: workSiteSameAsClient,
         address: workSiteSameAsClient ? undefined : workSiteAddress,
       },
-      items: items.filter(item => item.designation_fr.trim()).map(item => ({
+      items: allItems.map(item => ({
         designation_fr: item.designation_fr,
         designation_ar: item.designation_ar || item.designation_fr,
         quantity: item.quantity,
@@ -456,6 +478,75 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
               </div>
             ))}
           </div>
+          
+          {/* Travel Costs Section */}
+          <Card className="border-orange-500/20 bg-orange-500/5">
+            <CardContent className="p-4 space-y-4">
+              <div className={cn(
+                "flex items-center justify-between",
+                isRTL && "flex-row-reverse"
+              )}>
+                <div className={cn(
+                  "flex items-center gap-2",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <Truck className="h-5 w-5 text-orange-600" />
+                  <h4 className={cn(
+                    "font-bold text-orange-700 dark:text-orange-400",
+                    isRTL && "font-cairo"
+                  )}>
+                    {isRTL ? '🚚 مصاريف النقل' : '🚚 Frais de déplacement'}
+                  </h4>
+                </div>
+                
+                <div className={cn(
+                  "flex items-center gap-2",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <Label 
+                    htmlFor="travel-toggle" 
+                    className={cn("text-sm", isRTL && "font-cairo")}
+                  >
+                    {isRTL ? 'إضافة؟' : 'Ajouter?'}
+                  </Label>
+                  <Switch
+                    id="travel-toggle"
+                    checked={includeTravelCosts}
+                    onCheckedChange={setIncludeTravelCosts}
+                  />
+                </div>
+              </div>
+              
+              {includeTravelCosts && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div className="space-y-1.5">
+                    <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                      {isRTL ? 'الوصف' : 'Description'}
+                    </Label>
+                    <Input
+                      value={travelDescription}
+                      onChange={(e) => setTravelDescription(e.target.value)}
+                      placeholder={isRTL ? 'مثال: Paris A/R' : 'Ex: Paris A/R'}
+                      className={cn("text-sm", isRTL && "text-right font-cairo")}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">
+                      {isRTL ? 'المبلغ (€)' : 'Montant (€)'}
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={travelPrice}
+                      onChange={(e) => setTravelPrice(parseFloat(e.target.value) || 0)}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
           
           {/* Totals Summary */}
           <div className="pt-4 border-t space-y-2">

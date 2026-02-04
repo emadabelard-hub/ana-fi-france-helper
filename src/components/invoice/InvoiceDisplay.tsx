@@ -18,6 +18,10 @@ export interface InvoiceData {
     name: string;
     address: string;
   };
+  workSite?: {
+    sameAsClient: boolean;
+    address?: string;
+  };
   items: Array<{
     designation_fr: string;
     designation_ar: string;
@@ -89,6 +93,14 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         <h3 className="font-semibold text-gray-700 mb-2">CLIENT</h3>
         <p className="font-medium">{data.client.name}</p>
         <p className="text-sm text-gray-600 whitespace-pre-line">{data.client.address}</p>
+        
+        {/* Work Site Address (if different from client) */}
+        {data.workSite && !data.workSite.sameAsClient && data.workSite.address && (
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <p className="text-xs font-semibold text-gray-500 uppercase mb-1">📍 Adresse du Chantier</p>
+            <p className="text-sm text-gray-600 whitespace-pre-line">{data.workSite.address}</p>
+          </div>
+        )}
       </div>
 
       {/* Items Table */}

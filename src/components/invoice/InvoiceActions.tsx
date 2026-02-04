@@ -361,7 +361,11 @@ const InvoiceActions = ({
         open={showSmartReview}
         onOpenChange={setShowSmartReview}
         invoiceData={invoiceData}
-        clientAddress={invoiceData.client.address}
+        workSiteAddress={
+          invoiceData.workSite?.sameAsClient === false && invoiceData.workSite?.address
+            ? invoiceData.workSite.address
+            : invoiceData.client.address
+        }
         onConfirm={handleSmartReviewConfirm}
         onCancel={handleSmartReviewCancel}
         creditCost={creditCost}

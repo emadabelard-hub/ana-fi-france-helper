@@ -13,10 +13,11 @@ interface Message {
 interface RequestBody {
   message?: string;
   conversationHistory?: Message[];
-  action?: 'suggest_price' | 'generate_quote';
+  action?: 'suggest_price' | 'generate_quote' | 'generate_invoice';
   description?: string;
   unit?: string;
   category?: string;
+  documentType?: 'devis' | 'facture';
   categoryAnswers?: string;
   logistics?: string;
 }
@@ -86,6 +87,121 @@ Ajuste selon la complexité décrite. Sois réaliste.`;
   return new Response(JSON.stringify({ suggestedPrice: 40, error: "Could not parse suggestion" }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+// Invoice generation handler (FACTURE - distinct from DEVIS)
+async function handleInvoiceGeneration(category: string, categoryAnswers: string, logistics: string, apiKey: string): Promise<Response> {
+  const prompt = `Tu es un expert en facturation pour artisans du bâtiment en France. Tu génères des FACTURES professionnelles (pas des devis).
+
+⚠️ IMPORTANT: C'est une FACTURE, pas un devis. Le travail a DÉJÀ été réalisé.
+
+CATÉGORIE DE TRAVAUX RÉALISÉS: ${category}
+
+DÉTAILS DU PROJET TERMINÉ:
+${categoryAnswers}
+
+LOGISTIQUE:
+${logistics}
+
+Génère une FACTURE complète avec toutes les lignes de prestations RÉALISÉES. Utilise les prix du marché français 2024.
+
+RÈGLES POUR FACTURE (différent d'un devis):
+- Utilise le passé composé ou présent simple pour décrire les travaux (travaux effectués, pas proposés)
+- Pas de "sur demande" ni d'options - tout est définitif
+- Inclus la main d'œuvre avec le détail des heures/jours travaillés
+- Inclus les fournitures et matériaux utilisés
+- Inclus les frais de déplacement effectués
+- Tout montant est DÛ, pas estimé
+
+RÉPONDS UNIQUEMENT AVEC UN JSON VALIDE (sans markdown, sans \`\`\`):
+{
+  "lineItems": [
+    {
+      "designation_fr": "Description professionnelle de la prestation réalisée",
+      "designation_ar": "وصف الشغل المنفذ بالعربي",
+      "quantity": NUMBER,
+      "unit": "m²|ml|u|h|jour|forfait|ens",
+      "unitPrice": NUMBER
+    }
+  ]
+}
+
+Prix de référence du marché:
+- Peinture: 25-45€/m² (préparation + 2 couches)
+- Carrelage: 40-80€/m² (pose uniquement)
+- Plomberie: 45-65€/h
+- Électricité: 45-60€/h ou 250-400€/jour
+- Démolition: 30-50€/m²
+- Enduit/préparation murs: 15-35€/m²
+- Main d'œuvre générale: 35-55€/h
+- Frais de déplacement: 0.50-0.80€/km ou 30-50€ forfait
+
+Génère des lignes réalistes pour une FACTURE de travaux terminés.`;
+
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [{ role: "user", content: prompt }],
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw new Error("AI gateway error");
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    
+    console.log("Invoice generation raw response:", content);
+    
+    // Extract JSON from response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return new Response(JSON.stringify(parsed), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        console.error("Failed to parse invoice JSON:", e);
+      }
+    }
+    
+    // Fallback with sample items for invoice
+    return new Response(JSON.stringify({ 
+      lineItems: [
+        {
+          designation_fr: "Main d'œuvre - travaux effectués",
+          designation_ar: "مصنعية - الشغل المنفذ",
+          quantity: 8,
+          unit: "h",
+          unitPrice: 45
+        }
+      ],
+      error: "Could not parse AI response, using fallback" 
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Invoice generation error:", error);
+    return new Response(JSON.stringify({ error: "Invoice generation failed" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 }
 
 // Quote generation handler
@@ -233,6 +349,17 @@ serve(async (req) => {
         });
       }
       return handleQuoteGeneration(body.category, body.categoryAnswers || '', body.logistics || '', LOVABLE_API_KEY);
+    }
+
+    // Handle INVOICE generation action (distinct from quote)
+    if (body.action === 'generate_invoice') {
+      if (!body.category) {
+        return new Response(JSON.stringify({ error: 'Category required' }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return handleInvoiceGeneration(body.category, body.categoryAnswers || '', body.logistics || '', LOVABLE_API_KEY);
     }
 
     // Original chat functionality

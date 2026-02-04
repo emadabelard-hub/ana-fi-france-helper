@@ -293,10 +293,11 @@ const QuoteWizardModal = ({ open, onOpenChange, onGenerate, documentType = 'devi
 
       const { data, error } = await supabase.functions.invoke('invoice-mentor', {
         body: {
-          action: 'generate_quote',
+          action: isFacture ? 'generate_invoice' : 'generate_quote',
           category: categoryInfo?.label_fr,
           categoryAnswers: answersContext,
           logistics: logisticsContext,
+          documentType: documentType,
         },
       });
 
@@ -575,7 +576,10 @@ const QuoteWizardModal = ({ open, onOpenChange, onGenerate, documentType = 'devi
                 ) : (
                   <>
                     <Wand2 className="h-4 w-4 mr-2" />
-                    {isRTL ? '✨ أنشئ الديفي' : '✨ Générer le devis'}
+                    {isRTL 
+                      ? (isFacture ? '✨ أنشئ الفاتورة' : '✨ أنشئ الديفي')
+                      : (isFacture ? '✨ Générer la facture' : '✨ Générer le devis')
+                    }
                   </>
                 )}
               </Button>

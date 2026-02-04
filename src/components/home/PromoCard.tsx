@@ -88,14 +88,6 @@ export const PromoCard = ({
             {isRTL ? 'إعلان' : 'Promo'}
           </div>
         </div>
-
-        {/* Stats Badge - Visible for testing */}
-        <div className={cn(
-          "absolute bottom-1 right-1 px-2 py-0.5 rounded text-[10px] font-mono",
-          "bg-black/70 text-white"
-        )}>
-          👁️ {metrics.views} | 👆 {metrics.clicks}
-        </div>
       </CardContent>
     </Card>
   );
@@ -149,14 +141,6 @@ export const PromoBanner = ({
         <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">
           {isRTL ? 'إعلان' : 'Promo'}
         </span>
-      </div>
-
-      {/* Stats Badge */}
-      <div className={cn(
-        "absolute bottom-1 right-1 px-2 py-0.5 rounded text-[10px] font-mono",
-        "bg-black/50 text-white"
-      )}>
-        👁️ {metrics.views} | 👆 {metrics.clicks}
       </div>
     </div>
   );

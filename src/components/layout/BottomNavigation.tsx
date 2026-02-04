@@ -1,14 +1,42 @@
-import { Home, MessageCircle, Wrench, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Home, MessageCircle, Wrench, User, Shield } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 const BottomNavigation = () => {
   const { isRTL } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const navItems = [
+  // Check admin status
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.rpc('is_admin', { _user_id: user.id });
+        if (!error && data === true) {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch {
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user]);
+
+  const baseNavItems = [
     { 
       path: '/', 
       icon: Home, 
@@ -35,6 +63,16 @@ const BottomNavigation = () => {
     },
   ];
 
+  // Add admin nav item only for admins
+  const navItems = isAdmin 
+    ? [...baseNavItems, {
+        path: '/admin',
+        icon: Shield,
+        labelAr: 'الإدارة',
+        labelFr: 'Admin'
+      }]
+    : baseNavItems;
+
   return (
     <nav className={cn(
       "fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border",
@@ -59,10 +97,15 @@ const BottomNavigation = () => {
                 "min-w-[60px] gap-0.5",
                 isActive 
                   ? "text-primary bg-primary/10" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                item.path === '/admin' && "text-amber-600 dark:text-amber-400"
               )}
             >
-              <Icon className={cn("h-5 w-5", isActive && "text-accent")} />
+              <Icon className={cn(
+                "h-5 w-5", 
+                isActive && "text-accent",
+                item.path === '/admin' && !isActive && "text-amber-500"
+              )} />
               <span className={cn(
                 "text-[10px] font-medium",
                 isRTL && "font-cairo"

@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, Lock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, Lock, BarChart3, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import AuthModal from '@/components/auth/AuthModal';
 import LessonsManager from '@/components/admin/LessonsManager';
 import QuestionsManager from '@/components/admin/QuestionsManager';
+import PromoStatsManager from '@/components/admin/PromoStatsManager';
+import UsersManager from '@/components/admin/UsersManager';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();
@@ -23,7 +25,7 @@ const AdminPage = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('lessons');
+  const [activeTab, setActiveTab] = useState('stats');
 
   // PIN protection as fallback
   const [showPinEntry, setShowPinEntry] = useState(false);
@@ -261,16 +263,32 @@ const AdminPage = () => {
 
       {/* Admin Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={cn("grid w-full grid-cols-2", isRTL && "direction-rtl")}>
-          <TabsTrigger value="lessons" className={cn("gap-2", isRTL && "flex-row-reverse font-cairo")}>
+        <TabsList className={cn("grid w-full grid-cols-4", isRTL && "direction-rtl")}>
+          <TabsTrigger value="stats" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
+            <BarChart3 className="h-4 w-4" />
+            {isRTL ? 'الإحصائيات' : 'Stats'}
+          </TabsTrigger>
+          <TabsTrigger value="users" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
+            <Users className="h-4 w-4" />
+            {isRTL ? 'المستخدمين' : 'Users'}
+          </TabsTrigger>
+          <TabsTrigger value="lessons" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <BookOpen className="h-4 w-4" />
             {isRTL ? 'الدروس' : 'Lessons'}
           </TabsTrigger>
-          <TabsTrigger value="questions" className={cn("gap-2", isRTL && "flex-row-reverse font-cairo")}>
+          <TabsTrigger value="questions" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <HelpCircle className="h-4 w-4" />
             {isRTL ? 'الأسئلة' : 'Questions'}
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="stats" className="mt-6">
+          <PromoStatsManager isRTL={isRTL} />
+        </TabsContent>
+
+        <TabsContent value="users" className="mt-6">
+          <UsersManager isRTL={isRTL} />
+        </TabsContent>
 
         <TabsContent value="lessons" className="mt-6">
           <LessonsManager isRTL={isRTL} />

@@ -81,6 +81,8 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
   const [suggestingPriceFor, setSuggestingPriceFor] = useState<string | null>(null);
+  // Track temporary string values for quantity and price inputs
+  const [tempValues, setTempValues] = useState<Record<string, { quantity?: string; unitPrice?: string }>>({});
 
   const updateItem = (id: string, field: keyof LineItem, value: string | number) => {
     const updatedItems = items.map(item => {
@@ -99,6 +101,45 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
     });
     
     onItemsChange(updatedItems);
+  };
+
+  // Handle focus - select all text
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.select();
+  };
+
+  // Handle change for numeric fields - allow empty string while typing
+  const handleNumericChange = (id: string, field: 'quantity' | 'unitPrice', value: string) => {
+    setTempValues(prev => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: value }
+    }));
+  };
+
+  // Handle blur - validate and set final value
+  const handleNumericBlur = (id: string, field: 'quantity' | 'unitPrice', defaultValue: number) => {
+    const tempValue = tempValues[id]?.[field];
+    const numValue = tempValue === undefined || tempValue === '' ? defaultValue : parseFloat(tempValue) || defaultValue;
+    
+    // Clear temp value
+    setTempValues(prev => {
+      const newTempValues = { ...prev };
+      if (newTempValues[id]) {
+        delete newTempValues[id][field];
+        if (Object.keys(newTempValues[id]).length === 0) {
+          delete newTempValues[id];
+        }
+      }
+      return newTempValues;
+    });
+    
+    updateItem(id, field, numValue);
+  };
+
+  // Get display value for numeric fields
+  const getNumericDisplayValue = (id: string, field: 'quantity' | 'unitPrice', actualValue: number): string => {
+    const tempValue = tempValues[id]?.[field];
+    return tempValue !== undefined ? tempValue : String(actualValue);
   };
 
   const suggestPrice = async (item: LineItem) => {
@@ -249,12 +290,14 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                         {isRTL ? 'الكمية' : 'Quantité'}
                       </Label>
                       <Input
-                        type="number"
-                        min="0"
-                        step="0.5"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                        type="text"
+                        inputMode="decimal"
+                        value={getNumericDisplayValue(item.id, 'quantity', item.quantity)}
+                        onFocus={handleFocus}
+                        onChange={(e) => handleNumericChange(item.id, 'quantity', e.target.value)}
+                        onBlur={() => handleNumericBlur(item.id, 'quantity', 1)}
                         className="text-sm"
+                        placeholder="1"
                       />
                     </div>
                     <div>
@@ -283,12 +326,14 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                       </Label>
                       <div className="flex gap-1">
                         <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.unitPrice}
-                          onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                          type="text"
+                          inputMode="decimal"
+                          value={getNumericDisplayValue(item.id, 'unitPrice', item.unitPrice)}
+                          onFocus={handleFocus}
+                          onChange={(e) => handleNumericChange(item.id, 'unitPrice', e.target.value)}
+                          onBlur={() => handleNumericBlur(item.id, 'unitPrice', 0)}
                           className="text-sm flex-1"
+                          placeholder="0"
                         />
                         <Button
                           type="button"

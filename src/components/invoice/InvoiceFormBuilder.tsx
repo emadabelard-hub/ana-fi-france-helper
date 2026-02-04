@@ -13,6 +13,7 @@ import InvoiceDisplay, { InvoiceData } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
 import QuoteWizardModal from './QuoteWizardModal';
+import InvoiceGuideModal from './InvoiceGuideModal';
 
 interface InvoiceFormBuilderProps {
   documentType: 'devis' | 'facture';
@@ -205,6 +206,12 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
 
   return (
     <div className="space-y-6">
+      {/* Header with Guide Button */}
+      <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+        <div />
+        <InvoiceGuideModal />
+      </div>
+
       {/* Company Info (Auto-filled) */}
       <Card className="border-green-500/20 bg-green-500/5">
         <CardContent className="p-4">

@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  FileText, 
-  Scale, 
-  Car,
   Lightbulb,
   ChevronRight,
   ChevronLeft,
@@ -16,18 +13,22 @@ import { cn } from '@/lib/utils';
 import FeedbackModal from '@/components/home/FeedbackModal';
 
 const Index = () => {
-  const { isRTL } = useLanguage();
+  const { language, setLanguage, isRTL } = useLanguage();
   const navigate = useNavigate();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const Arrow = isRTL ? ChevronLeft : ChevronRight;
+
+  const toggleLanguage = (lang: 'fr' | 'ar') => {
+    setLanguage(lang);
+  };
 
   return (
     <div className={cn(
       "min-h-[85vh] flex flex-col py-4 px-3 max-w-lg mx-auto",
       isRTL && "font-cairo"
     )}>
-      {/* SECTION 1: Ask Hero Card - Full Width */}
+      {/* SECTION 1: Ask Hero Card with Language Toggle */}
       <Card
         className={cn(
           "cursor-pointer transition-all duration-300 mb-4",
@@ -44,6 +45,45 @@ const Index = () => {
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
             
+            {/* Language Toggle - Large & Vibrant */}
+            <div className={cn(
+              "flex gap-3 mb-4 relative z-20",
+              isRTL && "flex-row-reverse justify-end"
+            )}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleLanguage('fr');
+                }}
+                className={cn(
+                  "text-3xl p-2 rounded-xl transition-all duration-200",
+                  "hover:scale-110 active:scale-95",
+                  language === 'fr' 
+                    ? "bg-white/30 shadow-lg ring-2 ring-white/50" 
+                    : "bg-white/10 hover:bg-white/20"
+                )}
+                aria-label="Switch to French"
+              >
+                🇫🇷
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleLanguage('ar');
+                }}
+                className={cn(
+                  "text-3xl p-2 rounded-xl transition-all duration-200",
+                  "hover:scale-110 active:scale-95",
+                  language === 'ar' 
+                    ? "bg-white/30 shadow-lg ring-2 ring-white/50" 
+                    : "bg-white/10 hover:bg-white/20"
+                )}
+                aria-label="Switch to Arabic"
+              >
+                🇪🇬
+              </button>
+            </div>
+
             <div className={cn(
               "flex items-center gap-4 relative z-10",
               isRTL && "flex-row-reverse"
@@ -80,7 +120,82 @@ const Index = () => {
         </CardContent>
       </Card>
 
-      {/* SECTION 2: Code de la Route - Full Width */}
+      {/* SECTION 2: Artisan Tools Grid - "Dira'ak El Yameen" */}
+      <div className="mb-4">
+        <h2 className={cn(
+          "text-base font-bold text-foreground mb-3 flex items-center gap-2",
+          isRTL && "flex-row-reverse text-right"
+        )}>
+          <span className="text-xl">💪</span>
+          {isRTL ? 'دراعك اليمين' : 'Vos outils'}
+        </h2>
+
+        <div className="grid grid-cols-2 gap-3">
+          {/* Invoices Card - Right in RTL */}
+          <Card
+            className={cn(
+              "cursor-pointer transition-all duration-300",
+              "hover:scale-[1.03] hover:shadow-lg active:scale-[0.97]",
+              "border border-border/50 overflow-hidden",
+              "bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-950/40 dark:to-amber-950/30",
+              isRTL && "order-2"
+            )}
+            onClick={() => navigate('/pro/invoice-creator')}
+          >
+            <CardContent className="p-4">
+              <div className={cn(
+                "flex flex-col gap-3",
+                isRTL && "items-end"
+              )}>
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg">
+                  <span className="text-2xl">📄</span>
+                </div>
+                <div className={isRTL ? "text-right" : ""}>
+                  <h3 className="font-bold text-foreground text-sm mb-0.5">
+                    {isRTL ? 'فواتير وعروض أسعار' : 'Factures & Devis'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL ? 'إنشاء فواتير احترافية' : 'Créer des factures pro'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Laws Card - Left in RTL */}
+          <Card
+            className={cn(
+              "cursor-pointer transition-all duration-300",
+              "hover:scale-[1.03] hover:shadow-lg active:scale-[0.97]",
+              "border border-border/50 overflow-hidden",
+              "bg-gradient-to-br from-emerald-100 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30",
+              isRTL && "order-1"
+            )}
+            onClick={() => navigate('/assistant')}
+          >
+            <CardContent className="p-4">
+              <div className={cn(
+                "flex flex-col gap-3",
+                isRTL && "items-end"
+              )}>
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg">
+                  <span className="text-2xl">⚖️</span>
+                </div>
+                <div className={isRTL ? "text-right" : ""}>
+                  <h3 className="font-bold text-foreground text-sm mb-0.5">
+                    {isRTL ? 'قوانين تهمك' : 'Guide Juridique'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL ? 'حقوقك وواجباتك كصاحب عمل' : 'Vos droits & devoirs'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* SECTION 3: Code de la Route - Bottom, Full Width */}
       <Card
         className={cn(
           "cursor-pointer transition-all duration-300 mb-4",
@@ -89,7 +204,7 @@ const Index = () => {
           "bg-gradient-to-br from-pink-500 via-fuchsia-500 to-violet-600",
           "shadow-xl shadow-fuchsia-500/25"
         )}
-        onClick={() => navigate('/assistant')}
+        onClick={() => navigate('/coming-soon')}
       >
         <CardContent className="p-0">
           <div className="relative p-6">
@@ -108,11 +223,11 @@ const Index = () => {
 
               {/* Text */}
               <div className={cn("flex-1", isRTL && "text-right")}>
-                <h2 className="text-xl font-bold text-white mb-1">
-                  {isRTL ? 'تعليم السواقة' : 'Code de la Route'}
+                <h2 className="text-lg font-bold text-white mb-1">
+                  {isRTL ? 'اتعلم كود دي لا روت بالعربي' : 'Code de la Route'}
                 </h2>
                 <p className="text-white/80 text-sm">
-                  {isRTL ? 'دروس بالفيديو والتمارين' : 'Leçons vidéo et exercices'}
+                  {isRTL ? 'وامتحنه برضه بالعربي' : 'Leçons vidéo et exercices'}
                 </p>
               </div>
 
@@ -124,79 +239,6 @@ const Index = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* SECTION 3: Artisan Tools Grid */}
-      <div className="mb-4">
-        <h2 className={cn(
-          "text-base font-bold text-foreground mb-3 flex items-center gap-2",
-          isRTL && "flex-row-reverse text-right"
-        )}>
-          <span className="text-xl">💪</span>
-          {isRTL ? 'دراعك اليمين' : 'Vos outils'}
-        </h2>
-
-        <div className="grid grid-cols-2 gap-3">
-          {/* Invoices Card */}
-          <Card
-            className={cn(
-              "cursor-pointer transition-all duration-300",
-              "hover:scale-[1.03] hover:shadow-lg active:scale-[0.97]",
-              "border border-border/50 overflow-hidden",
-              "bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-950/40 dark:to-amber-950/30"
-            )}
-            onClick={() => navigate('/pro/invoice-creator')}
-          >
-            <CardContent className="p-4">
-              <div className={cn(
-                "flex flex-col gap-3",
-                isRTL && "items-end"
-              )}>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg">
-                  <span className="text-2xl">📄</span>
-                </div>
-                <div className={isRTL ? "text-right" : ""}>
-                  <h3 className="font-bold text-foreground text-sm mb-0.5">
-                    {isRTL ? 'الفواتير' : 'Factures'}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {isRTL ? 'إنشاء فواتير احترافية' : 'Créer des factures pro'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Laws Card */}
-          <Card
-            className={cn(
-              "cursor-pointer transition-all duration-300",
-              "hover:scale-[1.03] hover:shadow-lg active:scale-[0.97]",
-              "border border-border/50 overflow-hidden",
-              "bg-gradient-to-br from-emerald-100 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30"
-            )}
-            onClick={() => navigate('/assistant')}
-          >
-            <CardContent className="p-4">
-              <div className={cn(
-                "flex flex-col gap-3",
-                isRTL && "items-end"
-              )}>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg">
-                  <span className="text-2xl">⚖️</span>
-                </div>
-                <div className={isRTL ? "text-right" : ""}>
-                  <h3 className="font-bold text-foreground text-sm mb-0.5">
-                    {isRTL ? 'دليل القوانين' : 'Guide Juridique'}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {isRTL ? 'حقوقك وواجباتك' : 'Vos droits & devoirs'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
 
       {/* SECTION 4: Feedback Button */}
       <div className="mt-auto">

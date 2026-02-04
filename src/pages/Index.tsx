@@ -11,9 +11,12 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import FeedbackModal from '@/components/home/FeedbackModal';
+import CreditsDisplay from '@/components/shared/CreditsDisplay';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const { language, setLanguage, isRTL } = useLanguage();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
@@ -119,6 +122,11 @@ const Index = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Credits Display - Only show if logged in */}
+      {user && (
+        <CreditsDisplay showDaily className="mb-4" />
+      )}
 
       {/* SECTION 2: Artisan Tools Grid - "Dira'ak El Yameen" */}
       <div className="mb-4">

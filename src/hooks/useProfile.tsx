@@ -21,6 +21,10 @@ export interface Profile {
   logo_url: string | null;
   header_type: string | null;
   header_image_url: string | null;
+  // Credits & Rate Limiting
+  credits_balance: number;
+  daily_message_count: number;
+  last_message_date: string | null;
   // Timestamps
   created_at: string;
   updated_at: string;

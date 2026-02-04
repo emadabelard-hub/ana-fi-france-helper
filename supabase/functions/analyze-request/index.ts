@@ -267,8 +267,14 @@ serve(async (req) => {
       aiMessages.push({ role: "user", content: userMessage });
     }
     
-    // Use gemini-2.5-flash for vision (multimodal support) or gemini-3-flash-preview for text
-    const model = hasImages ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
+    // Model selection for cost optimization:
+    // - Vision (images): Use gemini-2.5-flash for multimodal support
+    // - Text chat: Use openai/gpt-5-nano for cost efficiency (cheapest option)
+    const model = hasImages 
+      ? "google/gemini-2.5-flash" 
+      : "openai/gpt-5-nano"; // Cost-optimized model for text chat
+    
+    console.log("Using model:", model, "for", hasImages ? "vision" : "text");
     
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

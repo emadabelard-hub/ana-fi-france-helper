@@ -1,9 +1,14 @@
-import { FileText, Image, Copy, Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Image, Copy, Eye, EyeOff, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import { useCredits, CREDIT_COSTS } from '@/hooks/useCredits';
+import { useAuth } from '@/hooks/useAuth';
+import InsufficientCreditsModal from '@/components/shared/InsufficientCreditsModal';
 import { cn } from '@/lib/utils';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -24,9 +29,32 @@ const InvoiceActions = ({
 }: InvoiceActionsProps) => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { balance, canAfford, deductCredits, getCost } = useCredits();
+  const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
+
+  const creditCost = getCost('invoice_pdf');
 
   const handleExportPDF = async () => {
     if (!invoiceRef.current) return;
+
+    // Check if user is logged in
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: isRTL ? "تسجيل الدخول مطلوب" : "Connexion requise",
+        description: isRTL 
+          ? "سجل الدخول لتحميل الفواتير" 
+          : "Connectez-vous pour télécharger des factures",
+      });
+      return;
+    }
+
+    // Check if user can afford this action
+    if (!canAfford('invoice_pdf')) {
+      setShowInsufficientCredits(true);
+      return;
+    }
     
     // Temporarily switch to French for PDF
     const wasArabic = showArabic;
@@ -37,6 +65,13 @@ const InvoiceActions = ({
     }
 
     try {
+      // Deduct credits first
+      const success = await deductCredits('invoice_pdf');
+      if (!success) {
+        if (wasArabic) onToggleArabic(true);
+        return;
+      }
+
       const canvas = await html2canvas(invoiceRef.current, {
         backgroundColor: '#ffffff',
         scale: 2,
@@ -216,10 +251,19 @@ const InvoiceActions = ({
           variant="default"
           size="sm"
           onClick={handleExportPDF}
-          className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
+          className={cn("flex-1 relative", isRTL && "flex-row-reverse font-cairo")}
         >
           <FileText className="h-4 w-4 mr-2" />
           {isRTL ? '📄 تحميل PDF' : '📄 Télécharger PDF'}
+          {creditCost > 0 && (
+            <Badge 
+              variant="secondary" 
+              className="ml-2 text-xs px-1.5 py-0 bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
+            >
+              <Coins className="h-3 w-3 mr-0.5" />
+              {creditCost}
+            </Badge>
+          )}
         </Button>
         <Button
           variant="outline"
@@ -240,6 +284,13 @@ const InvoiceActions = ({
           {isRTL ? '📋 نسخ النص' : '📋 Copier texte'}
         </Button>
       </div>
+
+      <InsufficientCreditsModal
+        open={showInsufficientCredits}
+        onOpenChange={setShowInsufficientCredits}
+        currentBalance={balance}
+        requiredCredits={creditCost}
+      />
     </div>
   );
 };

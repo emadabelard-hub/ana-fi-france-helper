@@ -3,6 +3,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
+import { useCredits, DAILY_MESSAGE_LIMIT } from '@/hooks/useCredits';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -13,6 +15,7 @@ import DispatchGuide from '@/components/assistant/DispatchGuide';
 import PostAnalysisActions from '@/components/assistant/PostAnalysisActions';
 import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/DocumentTypeSelector';
 import LoadingOverlay from '@/components/shared/LoadingOverlay';
+import CreditsDisplay from '@/components/shared/CreditsDisplay';
 import { RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -106,6 +109,8 @@ const AssistantPage = () => {
   const { t, isRTL } = useLanguage();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { dailyLimitReached, incrementDailyMessages, dailyMessagesUsed } = useCredits();
   
   const [messages, setMessages] = useState<Message[]>([]);
   // Multi-document session state
@@ -319,6 +324,24 @@ ${formData.items}`;
       // Allow sending if there's text OR if there are session documents (for cross-doc questions)
       const hasSessionDocs = sessionDocuments.length > 0;
       if (!userMessage.trim() && !image && !hasSessionDocs) return;
+
+      // Check daily message limit for logged-in users
+      if (user && dailyLimitReached) {
+        toast({
+          variant: "destructive",
+          title: isRTL ? "🌙 الحد اليومي" : "🌙 Limite quotidienne",
+          description: isRTL 
+            ? "وصلت للحد اليومي (30 رسالة). ارجع بكره!" 
+            : "Limite quotidienne atteinte (30 messages). À demain !",
+        });
+        return;
+      }
+
+      // Increment daily message count for logged-in users
+      if (user && !isRetry) {
+        const canContinue = await incrementDailyMessages();
+        if (!canContinue) return;
+      }
 
       // Check if too many documents (prevent memory overflow)
       const MAX_DOCS = 10;
@@ -951,9 +974,26 @@ ${formData.items}`;
       </Dialog>
 
       <div className="flex flex-col h-[calc(100vh-90px)] pb-12">
-        {/* Compact Title with New Topic Button */}
-        <section className={cn("text-center py-2 flex-shrink-0 relative", isRTL && "font-cairo")}>
-          <h1 className="text-xl font-bold text-foreground">
+        {/* Compact Title with Credits Display & New Topic Button */}
+        <section className={cn("py-2 flex-shrink-0 relative", isRTL && "font-cairo")}>
+          {/* Credits Display for logged-in users */}
+          {user && (
+            <div className={cn(
+              "flex justify-center mb-2",
+              isRTL && "flex-row-reverse"
+            )}>
+              <CreditsDisplay compact />
+              <span className="mx-2 text-muted-foreground/50">•</span>
+              <span className="text-xs text-muted-foreground">
+                {isRTL 
+                  ? `${dailyMessagesUsed}/${DAILY_MESSAGE_LIMIT} رسالة` 
+                  : `${dailyMessagesUsed}/${DAILY_MESSAGE_LIMIT} messages`
+                }
+              </span>
+            </div>
+          )}
+
+          <h1 className="text-xl font-bold text-foreground text-center">
             {isRTL ? '🇪🇬 أريد حلاً' : '🇪🇬 Je veux une solution'}
           </h1>
           

@@ -10,6 +10,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { cn } from '@/lib/utils';
 import AuthModal from '@/components/auth/AuthModal';
 import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
+import CreditsDisplay from '@/components/shared/CreditsDisplay';
 
 const ProfilePage = () => {
   const { t, isRTL } = useLanguage();
@@ -133,6 +134,9 @@ const ProfilePage = () => {
 
   return (
     <div className="py-6 space-y-6">
+      {/* Credits Balance */}
+      <CreditsDisplay showDaily className="mx-auto max-w-sm" />
+
       {/* Title */}
       <section className={cn("text-center", isRTL && "font-cairo")}>
         <h1 className="text-2xl font-bold text-foreground">

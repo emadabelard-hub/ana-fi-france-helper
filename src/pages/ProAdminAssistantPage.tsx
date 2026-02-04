@@ -27,7 +27,7 @@ const CHAT_STORAGE_KEY = 'pro_admin_assistant_messages';
 
 const ProAdminAssistantPage = () => {
   const navigate = useNavigate();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { profile } = useProfile();
   const { toast } = useToast();
   
@@ -167,9 +167,10 @@ const ProAdminAssistantPage = () => {
 
         const { data, error } = await supabase.functions.invoke('pro-admin-assistant', {
           body: { 
-            userMessage: userMessage || 'حلل المستند ده وقولي إيه المكتوب فيه',
+            userMessage: userMessage || (language === 'fr' ? 'Analysez ce document et expliquez son contenu' : 'حلل المستند ده وقولي إيه المكتوب فيه'),
             imageData: processedImage,
             conversationHistory,
+            language, // Pass current app language
             profile: profile ? {
               full_name: profile.full_name,
               address: profile.address,

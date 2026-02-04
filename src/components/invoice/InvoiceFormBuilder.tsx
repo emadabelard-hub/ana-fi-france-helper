@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2 } from 'lucide-react';
 import InvoiceDisplay, { InvoiceData } from './InvoiceDisplay';
@@ -36,6 +37,7 @@ const generateDocNumber = (type: 'devis' | 'facture') => {
 const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) => {
   const { isRTL } = useLanguage();
   const { profile } = useProfile();
+  const { toast } = useToast();
   const invoiceRef = useRef<HTMLDivElement>(null);
   
   // Form state
@@ -369,7 +371,7 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
         </CardContent>
       </Card>
       
-      {/* AI Quote Wizard Button */}
+      {/* AI Quote Wizard Button - Dynamic based on document type */}
       <Button
         variant="outline"
         size="lg"
@@ -383,10 +385,14 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
         <Wand2 className="h-6 w-6 text-primary" />
         <div className={cn("text-center", isRTL && "font-cairo")}>
           <div className="font-bold text-primary">
-            {isRTL ? '🧙‍♂️ مساعد الديفي الذكي' : '🧙‍♂️ Assistant Devis Intelligent'}
+            {documentType === 'devis' 
+              ? (isRTL ? '🧙‍♂️ مساعد تسعير الدوفيه' : '🧙‍♂️ Assistant Devis - Chiffrage')
+              : (isRTL ? '📝 مساعد إعداد الفاتورة' : '📝 Assistant Facture')}
           </div>
           <div className="text-xs text-muted-foreground">
-            {isRTL ? 'ساعدني أحسب السعر!' : 'Aidez-moi à chiffrer!'}
+            {documentType === 'devis'
+              ? (isRTL ? 'ساعدني أحسب السعر!' : 'Aidez-moi à chiffrer!')
+              : (isRTL ? 'ساعدني أكتب البنود بسرعة!' : 'Aidez-moi à rédiger rapidement!')}
           </div>
         </div>
       </Button>
@@ -449,20 +455,23 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">
-                      {isRTL ? 'الوصف بالفرنسية' : 'Désignation (FR)'}
+                    <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                      {isRTL ? 'الوصف في الفاتورة (فرنسي)' : 'Désignation (FR)'}
                     </Label>
                     <Input
                       value={item.designation_fr}
                       onChange={(e) => handleItemChange(item.id, 'designation_fr', e.target.value)}
-                      placeholder="Peinture mur salon"
+                      placeholder={isRTL ? 'اكتب وصف الشغل هنا (مثال: Peinture salon)' : 'Ex: Peinture mur salon'}
                       className="text-sm"
                     />
+                    <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
+                      {isRTL ? '👁️ يظهر للعميل' : '👁️ Visible par le client'}
+                    </p>
                   </div>
                   
                   <div className="space-y-1.5">
                     <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                      {isRTL ? 'الوصف بالعربي (اختياري)' : 'Désignation (AR)'}
+                      {isRTL ? 'ملاحظات ليك (عربي - اختياري)' : 'Notes perso (AR - optionnel)'}
                     </Label>
                     <Input
                       value={item.designation_ar}
@@ -475,7 +484,9 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
                 
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">{isRTL ? 'الكمية' : 'Qté'}</Label>
+                    <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                      {isRTL ? 'الكمية (مساحة / عدد / وقت)' : 'Qté'}
+                    </Label>
                     <Input
                       type="number"
                       min="1"
@@ -486,7 +497,9 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
                   </div>
                   
                   <div className="space-y-1.5">
-                    <Label className="text-xs">{isRTL ? 'الوحدة' : 'Unité'}</Label>
+                    <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                      {isRTL ? 'الوحدة (متر / حبة / ساعة)' : 'Unité'}
+                    </Label>
                     <Input
                       value={item.unit}
                       onChange={(e) => handleItemChange(item.id, 'unit', e.target.value)}
@@ -672,8 +685,33 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
           </Button>
           
           <Button
-            onClick={() => setShowPreview(true)}
-            disabled={!isFormValid}
+            onClick={() => {
+              // Validation with toast feedback
+              if (!clientName.trim()) {
+                toast({
+                  variant: "destructive",
+                  title: isRTL ? "⚠️ بيانات ناقصة" : "⚠️ Données manquantes",
+                  description: isRTL 
+                    ? "من فضلك اكتب اسم العميل أولاً" 
+                    : "Veuillez saisir le nom du client",
+                });
+                return;
+              }
+              
+              const hasValidItem = items.some(item => item.designation_fr.trim() && item.unitPrice > 0);
+              if (!hasValidItem && !(includeTravelCosts && travelPrice > 0)) {
+                toast({
+                  variant: "destructive",
+                  title: isRTL ? "⚠️ بيانات ناقصة" : "⚠️ Données manquantes",
+                  description: isRTL 
+                    ? "من فضلك اكتب اسم العميل وسعر البند أولاً" 
+                    : "Veuillez ajouter au moins une prestation avec un prix",
+                });
+                return;
+              }
+              
+              setShowPreview(true);
+            }}
             className={cn("flex-1", isRTL && "font-cairo")}
           >
             <FileText className="h-4 w-4 mr-2" />

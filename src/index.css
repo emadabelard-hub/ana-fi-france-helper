@@ -4,14 +4,76 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ana Fi France - Professional Legal Tech Design System
-   Primary: Navy Blue | Accent: Gold | Clean professional aesthetic
+/* Ana Fi France - Deep Dark Professional Theme
+   Primary: Navy Blue | Accent: Gold | Dark Mode First
    All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    /* Navy Blue & Gold Theme */
+    /* DARK MODE FIRST - Deep Dark Blue/Slate Theme */
+    /* App Background: #1A1F2C = hsl(224, 24%, 14%) */
+    --background: 224 24% 14%;
+    /* Main Text: Off-White #F1F5F9 = hsl(210, 40%, 96%) */
+    --foreground: 210 40% 96%;
+
+    /* Cards/Containers: #2A2F3C = hsl(224, 18%, 20%) */
+    --card: 224 18% 20%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 224 18% 20%;
+    --popover-foreground: 210 40% 96%;
+
+    /* Primary: Vibrant Blue for buttons/accents */
+    --primary: 220 70% 55%;
+    --primary-foreground: 210 40% 98%;
+
+    /* Secondary: Slightly lighter dark */
+    --secondary: 224 20% 25%;
+    --secondary-foreground: 210 40% 96%;
+
+    /* Muted: For subtle backgrounds */
+    --muted: 224 15% 22%;
+    /* Secondary Text: Light Gray #94A3B8 = hsl(215, 16%, 65%) */
+    --muted-foreground: 215 16% 65%;
+
+    /* Accent: Gold #d4af37 */
+    --accent: 45 70% 52%;
+    --accent-foreground: 224 24% 14%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Border/Input: Subtle dark borders */
+    --border: 224 15% 28%;
+    --input: 224 18% 22%;
+    --ring: 220 70% 55%;
+
+    --radius: 0.75rem;
+
+    /* Chat-specific colors */
+    /* AI Bubble: #334155 = hsl(217, 26%, 27%) */
+    --chat-ai: 217 26% 27%;
+    --chat-ai-foreground: 210 40% 96%;
+    /* User Bubble: Blue gradient (handled in components) */
+    --chat-user: 220 70% 55%;
+    --chat-user-foreground: 210 40% 98%;
+    /* Chat Input */
+    --chat-input: 224 18% 18%;
+    --chat-input-foreground: 210 40% 96%;
+
+    --sidebar-background: 224 24% 12%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 45 70% 52%;
+    --sidebar-primary-foreground: 224 24% 14%;
+    --sidebar-accent: 224 20% 22%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 224 15% 25%;
+    --sidebar-ring: 45 70% 52%;
+  }
+
+  /* Light mode override (if ever needed) */
+  .light {
     --background: 0 0% 99%;
     --foreground: 215 50% 15%;
 
@@ -21,7 +83,6 @@
     --popover: 0 0% 100%;
     --popover-foreground: 215 50% 15%;
 
-    /* Primary: Navy Blue #1a365d */
     --primary: 215 55% 23%;
     --primary-foreground: 45 100% 97%;
 
@@ -31,7 +92,6 @@
     --muted: 215 15% 95%;
     --muted-foreground: 215 15% 45%;
 
-    /* Accent: Gold #d4af37 */
     --accent: 45 70% 52%;
     --accent-foreground: 215 55% 15%;
 
@@ -42,7 +102,12 @@
     --input: 215 20% 90%;
     --ring: 215 55% 23%;
 
-    --radius: 0.75rem;
+    --chat-ai: 215 15% 95%;
+    --chat-ai-foreground: 215 50% 15%;
+    --chat-user: 215 55% 23%;
+    --chat-user-foreground: 45 100% 97%;
+    --chat-input: 0 0% 100%;
+    --chat-input-foreground: 215 50% 15%;
 
     --sidebar-background: 215 55% 23%;
     --sidebar-foreground: 45 100% 97%;
@@ -51,45 +116,6 @@
     --sidebar-accent: 215 45% 30%;
     --sidebar-accent-foreground: 45 100% 97%;
     --sidebar-border: 215 45% 30%;
-    --sidebar-ring: 45 70% 52%;
-  }
-
-  .dark {
-    --background: 215 50% 8%;
-    --foreground: 45 100% 97%;
-
-    --card: 215 45% 12%;
-    --card-foreground: 45 100% 97%;
-
-    --popover: 215 45% 12%;
-    --popover-foreground: 45 100% 97%;
-
-    --primary: 45 70% 52%;
-    --primary-foreground: 215 55% 15%;
-
-    --secondary: 215 35% 18%;
-    --secondary-foreground: 45 100% 97%;
-
-    --muted: 215 30% 20%;
-    --muted-foreground: 215 15% 60%;
-
-    --accent: 45 70% 52%;
-    --accent-foreground: 215 55% 15%;
-
-    --destructive: 0 62% 35%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 215 30% 20%;
-    --input: 215 30% 20%;
-    --ring: 45 70% 52%;
-    
-    --sidebar-background: 215 50% 10%;
-    --sidebar-foreground: 45 100% 97%;
-    --sidebar-primary: 45 70% 52%;
-    --sidebar-primary-foreground: 215 55% 15%;
-    --sidebar-accent: 215 40% 18%;
-    --sidebar-accent-foreground: 45 100% 97%;
-    --sidebar-border: 215 35% 18%;
     --sidebar-ring: 45 70% 52%;
   }
 

@@ -32,7 +32,7 @@ interface SmartReviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoiceData: InvoiceData;
-  clientAddress: string;
+  workSiteAddress: string;
   onConfirm: (addons: SuggestedAddon[]) => void;
   onCancel: () => void;
   creditCost: number;
@@ -63,13 +63,13 @@ const SmartReviewModal = ({
   open,
   onOpenChange,
   invoiceData,
-  clientAddress,
+  workSiteAddress,
   onConfirm,
   onCancel,
   creditCost,
 }: SmartReviewModalProps) => {
   const { isRTL } = useLanguage();
-  const isHighDensity = detectHighDensityArea(clientAddress);
+  const isHighDensity = detectHighDensityArea(workSiteAddress);
 
   // Initialize suggested addons
   const [addons, setAddons] = useState<SuggestedAddon[]>(() => {

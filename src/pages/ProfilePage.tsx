@@ -126,7 +126,7 @@ const ProfilePage = () => {
       id: 'social_security',
       label: t('profile.socialSecurity'),
       icon: Shield,
-      placeholder: isRTL ? 'رقم الضمان الاجتماعي' : 'Numéro de sécurité sociale',
+      placeholder: isRTL ? 'اكتب الـ 15 رقم اللي على الكارت فيتال' : 'Les 15 chiffres sur la Carte Vitale',
       required: false,
     },
   ];

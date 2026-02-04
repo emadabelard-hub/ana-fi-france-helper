@@ -6,38 +6,53 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
-import { useCredits, CREDIT_COSTS } from '@/hooks/useCredits';
+import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import InsufficientCreditsModal from '@/components/shared/InsufficientCreditsModal';
+import SmartReviewModal from './SmartReviewModal';
 import { cn } from '@/lib/utils';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import type { InvoiceData } from './InvoiceDisplay';
+import type { LineItem } from './LineItemEditor';
+
+interface SuggestedAddon {
+  id: string;
+  label_fr: string;
+  label_ar: string;
+  icon: string;
+  defaultPrice: number;
+  price: number;
+  selected: boolean;
+  isParking?: boolean;
+}
 
 interface InvoiceActionsProps {
   invoiceData: InvoiceData;
   invoiceRef: React.RefObject<HTMLDivElement>;
   showArabic: boolean;
   onToggleArabic: (value: boolean) => void;
+  onUpdateInvoice?: (updatedData: InvoiceData) => void;
 }
 
 const InvoiceActions = ({ 
   invoiceData, 
   invoiceRef, 
   showArabic, 
-  onToggleArabic 
+  onToggleArabic,
+  onUpdateInvoice 
 }: InvoiceActionsProps) => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
   const { user } = useAuth();
   const { balance, canAfford, deductCredits, getCost } = useCredits();
   const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
+  const [showSmartReview, setShowSmartReview] = useState(false);
 
   const creditCost = getCost('invoice_pdf');
 
-  const handleExportPDF = async () => {
-    if (!invoiceRef.current) return;
-
+  // Open smart review instead of directly exporting
+  const handlePDFClick = () => {
     // Check if user is logged in
     if (!user) {
       toast({
@@ -55,6 +70,56 @@ const InvoiceActions = ({
       setShowInsufficientCredits(true);
       return;
     }
+
+    // Show smart review modal
+    setShowSmartReview(true);
+  };
+
+  const handleSmartReviewConfirm = async (addons: SuggestedAddon[]) => {
+    setShowSmartReview(false);
+    
+    // If addons were selected, update the invoice first
+    if (addons.length > 0 && onUpdateInvoice) {
+      const newItems = [
+        ...invoiceData.items,
+        ...addons.map(addon => ({
+          designation_fr: addon.label_fr,
+          designation_ar: addon.label_ar,
+          quantity: 1,
+          unit: 'forfait',
+          unitPrice: addon.price,
+          total: addon.price,
+        }))
+      ];
+      
+      const newSubtotal = newItems.reduce((sum, item) => sum + item.total, 0);
+      const newTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(newSubtotal * (invoiceData.tvaRate / 100) * 100) / 100;
+      const newTotal = newSubtotal + newTvaAmount;
+      
+      const updatedData: InvoiceData = {
+        ...invoiceData,
+        items: newItems,
+        subtotal: Math.round(newSubtotal * 100) / 100,
+        tvaAmount: newTvaAmount,
+        total: Math.round(newTotal * 100) / 100,
+      };
+      
+      onUpdateInvoice(updatedData);
+      
+      // Wait for re-render before exporting
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    // Now proceed with PDF export
+    await executeExportPDF();
+  };
+
+  const handleSmartReviewCancel = () => {
+    setShowSmartReview(false);
+  };
+
+  const executeExportPDF = async () => {
+    if (!invoiceRef.current) return;
     
     // Temporarily switch to French for PDF
     const wasArabic = showArabic;
@@ -250,7 +315,7 @@ const InvoiceActions = ({
         <Button
           variant="default"
           size="sm"
-          onClick={handleExportPDF}
+          onClick={handlePDFClick}
           className={cn("flex-1 relative", isRTL && "flex-row-reverse font-cairo")}
         >
           <FileText className="h-4 w-4 mr-2" />
@@ -258,7 +323,7 @@ const InvoiceActions = ({
           {creditCost > 0 && (
             <Badge 
               variant="secondary" 
-              className="ml-2 text-xs px-1.5 py-0 bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
+              className="ml-2 text-xs px-1.5 py-0"
             >
               <Coins className="h-3 w-3 mr-0.5" />
               {creditCost}
@@ -290,6 +355,16 @@ const InvoiceActions = ({
         onOpenChange={setShowInsufficientCredits}
         currentBalance={balance}
         requiredCredits={creditCost}
+      />
+
+      <SmartReviewModal
+        open={showSmartReview}
+        onOpenChange={setShowSmartReview}
+        invoiceData={invoiceData}
+        clientAddress={invoiceData.client.address}
+        onConfirm={handleSmartReviewConfirm}
+        onCancel={handleSmartReviewCancel}
+        creditCost={creditCost}
       />
     </div>
   );

@@ -343,6 +343,17 @@ ${!docTypeLabel ? '3. 📋 Facture ou Devis ?' : ''}
     });
   };
 
+  // Update invoice data (from SmartReviewModal)
+  const handleUpdateInvoice = (messageIndex: number, updatedData: InvoiceData) => {
+    setMessages(prev => prev.map((msg, idx) => {
+      if (idx !== messageIndex) return msg;
+      return {
+        ...msg,
+        invoiceData: updatedData
+      };
+    }));
+  };
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -552,6 +563,7 @@ ${!docTypeLabel ? '3. 📋 Facture ou Devis ?' : ''}
                         invoiceRef={invoiceRef}
                         showArabic={showArabic}
                         onToggleArabic={setShowArabic}
+                        onUpdateInvoice={(updatedData) => handleUpdateInvoice(index, updatedData)}
                       />
                       <div ref={invoiceRef}>
                         <InvoiceDisplay 

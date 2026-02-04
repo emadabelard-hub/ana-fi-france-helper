@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Copy, Check, FileText, Download } from 'lucide-react';
+import { Copy, Check, Download, Coins } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useCredits, CREDIT_COSTS, type CreditAction } from '@/hooks/useCredits';
+import { useAuth } from '@/hooks/useAuth';
+import InsufficientCreditsModal from '@/components/shared/InsufficientCreditsModal';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -12,6 +16,7 @@ interface DocumentActionsProps {
   documentName?: string;
   isRTL?: boolean;
   showPdfButton?: boolean;
+  creditAction?: CreditAction; // 'letter_pdf' or 'invoice_pdf'
 }
 
 const DocumentActions = ({
@@ -20,10 +25,16 @@ const DocumentActions = ({
   documentName = 'document',
   isRTL = true,
   showPdfButton = true,
+  creditAction = 'letter_pdf',
 }: DocumentActionsProps) => {
   const [copied, setCopied] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { balance, canAfford, deductCredits, getCost } = useCredits();
+
+  const creditCost = getCost(creditAction);
 
   const handleCopy = async () => {
     try {
@@ -45,14 +56,40 @@ const DocumentActions = ({
 
   const handleExportPDF = async () => {
     if (!documentRef?.current) {
-      // If no ref, just copy the text
       handleCopy();
+      return;
+    }
+
+    // Check if user is logged in for paid features
+    if (creditCost > 0 && !user) {
+      toast({
+        variant: "destructive",
+        title: isRTL ? "تسجيل الدخول مطلوب" : "Connexion requise",
+        description: isRTL 
+          ? "سجل الدخول لتحميل المستندات" 
+          : "Connectez-vous pour télécharger des documents",
+      });
+      return;
+    }
+
+    // Check if user can afford this action
+    if (creditCost > 0 && !canAfford(creditAction)) {
+      setShowInsufficientCredits(true);
       return;
     }
 
     setIsExporting(true);
 
     try {
+      // Deduct credits first (if applicable)
+      if (creditCost > 0) {
+        const success = await deductCredits(creditAction);
+        if (!success) {
+          setIsExporting(false);
+          return;
+        }
+      }
+
       const canvas = await html2canvas(documentRef.current, {
         backgroundColor: '#ffffff',
         scale: 2,
@@ -93,51 +130,69 @@ const DocumentActions = ({
   };
 
   return (
-    <div className={cn(
-      "flex gap-2 mt-3",
-      isRTL && "flex-row-reverse"
-    )}>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleCopy}
-        className={cn("gap-2", isRTL && "flex-row-reverse")}
-      >
-        {copied ? (
-          <>
-            <Check className="h-4 w-4 text-green-500" />
-            <span>{isRTL ? 'تم النسخ' : 'Copié'}</span>
-          </>
-        ) : (
-          <>
-            <Copy className="h-4 w-4" />
-            <span>{isRTL ? '📋 نسخ النص' : '📋 Copier'}</span>
-          </>
-        )}
-      </Button>
-
-      {showPdfButton && (
+    <>
+      <div className={cn(
+        "flex gap-2 mt-3",
+        isRTL && "flex-row-reverse"
+      )}>
         <Button
-          variant="default"
+          variant="outline"
           size="sm"
-          onClick={handleExportPDF}
-          disabled={isExporting}
+          onClick={handleCopy}
           className={cn("gap-2", isRTL && "flex-row-reverse")}
         >
-          {isExporting ? (
+          {copied ? (
             <>
-              <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-              <span>{isRTL ? 'جاري التحميل...' : 'Export...'}</span>
+              <Check className="h-4 w-4 text-emerald-500" />
+              <span>{isRTL ? 'تم النسخ' : 'Copié'}</span>
             </>
           ) : (
             <>
-              <Download className="h-4 w-4" />
-              <span>{isRTL ? '📄 تحميل PDF' : '📄 Télécharger PDF'}</span>
+              <Copy className="h-4 w-4" />
+              <span>{isRTL ? '📋 نسخ النص' : '📋 Copier'}</span>
             </>
           )}
         </Button>
-      )}
-    </div>
+
+        {showPdfButton && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className={cn("gap-2 relative", isRTL && "flex-row-reverse")}
+          >
+            {isExporting ? (
+              <>
+                <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                <span>{isRTL ? 'جاري التحميل...' : 'Export...'}</span>
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4" />
+                <span>{isRTL ? '📄 تحميل PDF' : '📄 Télécharger PDF'}</span>
+                {creditCost > 0 && (
+                  <Badge 
+                    variant="secondary" 
+                    className="ml-1 text-xs px-1.5 py-0 bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
+                  >
+                    <Coins className="h-3 w-3 mr-0.5" />
+                    {creditCost}
+                  </Badge>
+                )}
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+
+      <InsufficientCreditsModal
+        open={showInsufficientCredits}
+        onOpenChange={setShowInsufficientCredits}
+        currentBalance={balance}
+        requiredCredits={creditCost}
+      />
+    </>
   );
 };
 

@@ -3,10 +3,14 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Download } from 'lucide-react';
+import { Download, Coins } from 'lucide-react';
 import EnvelopeHelper from './EnvelopeHelper';
 import { useToast } from '@/hooks/use-toast';
+import { useCredits, CREDIT_COSTS } from '@/hooks/useCredits';
+import { useAuth } from '@/hooks/useAuth';
+import InsufficientCreditsModal from '@/components/shared/InsufficientCreditsModal';
 
 interface DispatchInfo {
   recipientName?: string;
@@ -33,8 +37,13 @@ const DocumentViewerModal = ({
   dispatchInfo,
 }: DocumentViewerModalProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { balance, canAfford, deductCredits, getCost } = useCredits();
   const [isExporting, setIsExporting] = useState(false);
+  const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
   const letterRef = useRef<HTMLDivElement>(null);
+
+  const creditCost = getCost('letter_pdf');
 
   const displayTitle = useMemo(() => {
     if (title?.trim()) return title.trim();
@@ -44,8 +53,34 @@ const DocumentViewerModal = ({
 
   const handleExportPDF = async () => {
     if (!letterRef.current) return;
+
+    // Check if user is logged in
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: isRTL ? "تسجيل الدخول مطلوب" : "Connexion requise",
+        description: isRTL 
+          ? "سجل الدخول لتحميل المستندات" 
+          : "Connectez-vous pour télécharger des documents",
+      });
+      return;
+    }
+
+    // Check if user can afford this action
+    if (!canAfford('letter_pdf')) {
+      setShowInsufficientCredits(true);
+      return;
+    }
+
     setIsExporting(true);
     try {
+      // Deduct credits first
+      const success = await deductCredits('letter_pdf');
+      if (!success) {
+        setIsExporting(false);
+        return;
+      }
+
       const canvas = await html2canvas(letterRef.current, {
         backgroundColor: '#ffffff',
         scale: 2,
@@ -158,11 +193,27 @@ const DocumentViewerModal = ({
                   <Download className="h-4 w-4" />
                 )}
                 {isRTL ? 'تحميل PDF' : 'Télécharger PDF'}
+                {creditCost > 0 && (
+                  <Badge 
+                    variant="secondary" 
+                    className="ml-1 text-xs px-1.5 py-0 bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
+                  >
+                    <Coins className="h-3 w-3 mr-0.5" />
+                    {creditCost}
+                  </Badge>
+                )}
               </Button>
             </div>
           </footer>
         </div>
       </DialogContent>
+
+      <InsufficientCreditsModal
+        open={showInsufficientCredits}
+        onOpenChange={setShowInsufficientCredits}
+        currentBalance={balance}
+        requiredCredits={creditCost}
+      />
     </Dialog>
   );
 };

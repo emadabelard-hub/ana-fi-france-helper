@@ -81,12 +81,15 @@ export type Database = {
           company_address: string | null
           company_name: string | null
           created_at: string
+          credits_balance: number
+          daily_message_count: number
           email: string | null
           foreigner_number: string | null
           full_name: string | null
           header_image_url: string | null
           header_type: string | null
           id: string
+          last_message_date: string | null
           legal_status: string | null
           logo_url: string | null
           phone: string | null
@@ -101,12 +104,15 @@ export type Database = {
           company_address?: string | null
           company_name?: string | null
           created_at?: string
+          credits_balance?: number
+          daily_message_count?: number
           email?: string | null
           foreigner_number?: string | null
           full_name?: string | null
           header_image_url?: string | null
           header_type?: string | null
           id?: string
+          last_message_date?: string | null
           legal_status?: string | null
           logo_url?: string | null
           phone?: string | null
@@ -121,12 +127,15 @@ export type Database = {
           company_address?: string | null
           company_name?: string | null
           created_at?: string
+          credits_balance?: number
+          daily_message_count?: number
           email?: string | null
           foreigner_number?: string | null
           full_name?: string | null
           header_image_url?: string | null
           header_type?: string | null
           id?: string
+          last_message_date?: string | null
           legal_status?: string | null
           logo_url?: string | null
           phone?: string | null

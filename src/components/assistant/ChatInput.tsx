@@ -59,39 +59,69 @@ const ChatInput = ({ onSend, onDocumentAdd, isLoading, isRTL, t, externalDocumen
     cameraInputRef.current?.click();
   };
 
-  const processFile = (file: File, fromCamera: boolean = false) => {
-    // Validate file using our security validation
-    if (!fromCamera) {
-      const validation = validateFileUpload(file, ALLOWED_DOCUMENT_TYPES);
-      
-      if (!validation.valid) {
+  const processFile = async (file: File, fromCamera: boolean = false) => {
+    try {
+      // Validate file using our security validation
+      if (!fromCamera) {
+        const validation = validateFileUpload(file, ALLOWED_DOCUMENT_TYPES);
+        
+        if (!validation.valid) {
+          toast({
+            variant: "destructive",
+            title: isRTL ? "خطأ" : "Erreur",
+            description: isRTL 
+              ? "يرجى رفع صورة (JPG/PNG) أو ملف PDF فقط"
+              : "Veuillez télécharger une image (JPG/PNG) ou un fichier PDF uniquement.",
+          });
+          return;
+        }
+      } else {
+        // Only allow images from camera
+        if (!file.type.startsWith('image/')) {
+          toast({
+            variant: "destructive",
+            title: isRTL ? "خطأ" : "Erreur",
+            description: isRTL ? "يرجى التقاط صورة فقط" : "Veuillez capturer une image uniquement.",
+          });
+          return;
+        }
+      }
+
+      // Check file size (max 10MB)
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+      if (file.size > MAX_FILE_SIZE) {
         toast({
           variant: "destructive",
           title: isRTL ? "خطأ" : "Erreur",
           description: isRTL 
-            ? "يرجى رفع صورة (JPG/PNG) أو ملف PDF فقط"
-            : "Veuillez télécharger une image (JPG/PNG) ou un fichier PDF uniquement.",
+            ? "الملف كبير جداً (الحد الأقصى 10 ميجا)"
+            : "Fichier trop volumineux (max 10 Mo).",
         });
         return;
       }
-    } else {
-      // Only allow images from camera
-      if (!file.type.startsWith('image/')) {
-        toast({
-          variant: "destructive",
-          title: isRTL ? "خطأ" : "Erreur",
-          description: isRTL ? "يرجى التقاط صورة فقط" : "Veuillez capturer une image uniquement.",
+      
+      const isImage = file.type.startsWith('image/');
+      
+      // Read file as data URL
+      const readFileAsDataURL = (f: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            if (event.target?.result) {
+              resolve(event.target.result as string);
+            } else {
+              reject(new Error('Failed to read file'));
+            }
+          };
+          reader.onerror = () => reject(new Error('File read error'));
+          reader.readAsDataURL(f);
         });
-        return;
-      }
-    }
-    
-    const isImage = file.type.startsWith('image/');
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
+      };
+
+      const fileData = await readFileAsDataURL(file);
+      
       const docData = {
-        data: event.target?.result as string,
+        data: fileData,
         type: isImage ? 'image' as const : 'pdf' as const,
         name: fromCamera ? `camera_${Date.now()}.jpg` : file.name
       };
@@ -118,25 +148,71 @@ const ChatInput = ({ onSend, onDocumentAdd, isLoading, isRTL, t, externalDocumen
           description: isRTL ? `تم رفع ${docData.name} بنجاح` : `${docData.name} a été téléchargé avec succès.`,
         });
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('File processing error:', error);
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL 
+          ? "حدث خطأ أثناء معالجة الملف. حاول مرة تانية."
+          : "Erreur lors du traitement du fichier. Réessayez.",
+      });
+    }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      processFile(file, false);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    // Limit to max 5 files at once
+    const MAX_FILES = 5;
+    if (files.length > MAX_FILES) {
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL 
+          ? `الحد الأقصى ${MAX_FILES} ملفات في المرة الواحدة`
+          : `Maximum ${MAX_FILES} fichiers à la fois`,
+      });
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
     }
+
+    // Process files sequentially to avoid memory issues
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        await processFile(file, false);
+      } catch (error) {
+        console.error(`Error processing file ${i + 1}:`, error);
+        // Continue with other files even if one fails
+      }
+    }
+
     // Reset input so the same file can be selected again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const handleCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      processFile(file, true);
+      try {
+        await processFile(file, true);
+      } catch (error) {
+        console.error('Camera capture error:', error);
+        toast({
+          variant: "destructive",
+          title: isRTL ? "خطأ" : "Erreur",
+          description: isRTL 
+            ? "حدث خطأ أثناء التقاط الصورة"
+            : "Erreur lors de la capture",
+        });
+      }
     }
     // Reset input
     if (cameraInputRef.current) {
@@ -151,12 +227,13 @@ const ChatInput = ({ onSend, onDocumentAdd, isLoading, isRTL, t, externalDocumen
 
   return (
     <div className="space-y-2">
-      {/* Hidden File Input */}
+      {/* Hidden File Input - Multiple files supported */}
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
         accept=".jpg,.jpeg,.png,.pdf"
+        multiple
         className="hidden"
       />
       

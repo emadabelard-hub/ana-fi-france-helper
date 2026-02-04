@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,39 +17,78 @@ import AdminPage from "@/pages/AdminPage";
 import ComingSoonPage from "@/pages/ComingSoonPage";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
+import { toast } from "@/hooks/use-toast";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <LanguageProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <MainLayout>
-              <Routes>
-                {/* Home is the main hub */}
-                <Route path="/" element={<Index />} />
-                <Route path="/home" element={<Index />} />
-                <Route path="/assistant" element={<AssistantPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/pro" element={<ProPage />} />
-                <Route path="/pro/invoice-creator" element={<InvoiceCreatorPage />} />
-                <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />
-                <Route path="/pro/settings" element={<ProSettingsPage />} />
-                <Route path="/admin" element={<AdminPage />} />
-                <Route path="/coming-soon" element={<ComingSoonPage />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </MainLayout>
-          </BrowserRouter>
-        </TooltipProvider>
-      </LanguageProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Global unhandled promise rejection handler to prevent blank screens
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error("Unhandled promise rejection:", event.reason);
+      
+      // Prevent the default crash behavior
+      event.preventDefault();
+      
+      // Show user-friendly error toast
+      toast({
+        variant: "destructive",
+        title: "حدث خطأ غير متوقع",
+        description: "حاول مرة تانية أو أعد تحميل الصفحة",
+      });
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      console.error("Global error:", event.error);
+      
+      // Show user-friendly error toast
+      toast({
+        variant: "destructive",
+        title: "حدث خطأ",
+        description: "حاول مرة تانية",
+      });
+    };
+
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+    window.addEventListener("error", handleError);
+
+    return () => {
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+      window.removeEventListener("error", handleError);
+    };
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <LanguageProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <MainLayout>
+                <Routes>
+                  {/* Home is the main hub */}
+                  <Route path="/" element={<Index />} />
+                  <Route path="/home" element={<Index />} />
+                  <Route path="/assistant" element={<AssistantPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/pro" element={<ProPage />} />
+                  <Route path="/pro/invoice-creator" element={<InvoiceCreatorPage />} />
+                  <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />
+                  <Route path="/pro/settings" element={<ProSettingsPage />} />
+                  <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/coming-soon" element={<ComingSoonPage />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </MainLayout>
+            </BrowserRouter>
+          </TooltipProvider>
+        </LanguageProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

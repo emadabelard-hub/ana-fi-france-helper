@@ -12,6 +12,7 @@ import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 import DispatchGuide from '@/components/assistant/DispatchGuide';
 import PostAnalysisActions from '@/components/assistant/PostAnalysisActions';
 import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/DocumentTypeSelector';
+import LoadingOverlay from '@/components/shared/LoadingOverlay';
 import { RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -313,27 +314,42 @@ ${formData.items}`;
   };
 
   const handleSend = async (userMessage: string, image?: string, isRetry: boolean = false) => {
-    // Allow sending if there's text OR if there are session documents (for cross-doc questions)
-    const hasSessionDocs = sessionDocuments.length > 0;
-    if (!userMessage.trim() && !image && !hasSessionDocs) return;
+    // Wrap entire function in try/catch to prevent app crashes
+    try {
+      // Allow sending if there's text OR if there are session documents (for cross-doc questions)
+      const hasSessionDocs = sessionDocuments.length > 0;
+      if (!userMessage.trim() && !image && !hasSessionDocs) return;
 
-    // Detect if this is an image analysis request (direct image or session docs)
-    const hasImage = !!image;
-    const hasNewDocs = hasImage || hasSessionDocs;
-    let processedImage = image;
-
-    // Compress image if present (new direct upload)
-    if (hasImage && image && isImageData(image)) {
-      try {
-        const originalSize = getFileSizeKB(image);
-        console.log(`Original image size: ${originalSize}KB`);
-        processedImage = await compressImage(image);
-        const compressedSize = getFileSizeKB(processedImage);
-        console.log(`Compressed image size: ${compressedSize}KB (${Math.round((1 - compressedSize / originalSize) * 100)}% reduction)`);
-      } catch (compressionError) {
-        console.error('Image compression failed, using original:', compressionError);
+      // Check if too many documents (prevent memory overflow)
+      const MAX_DOCS = 10;
+      if (sessionDocuments.length > MAX_DOCS) {
+        toast({
+          variant: "destructive",
+          title: isRTL ? "خطأ" : "Erreur",
+          description: isRTL 
+            ? `الحد الأقصى ${MAX_DOCS} ملفات في الجلسة الواحدة`
+            : `Maximum ${MAX_DOCS} fichiers par session`,
+        });
+        return;
       }
-    }
+
+      // Detect if this is an image analysis request (direct image or session docs)
+      const hasImage = !!image;
+      const hasNewDocs = hasImage || hasSessionDocs;
+      let processedImage = image;
+
+      // Compress image if present (new direct upload)
+      if (hasImage && image && isImageData(image)) {
+        try {
+          const originalSize = getFileSizeKB(image);
+          console.log(`Original image size: ${originalSize}KB`);
+          processedImage = await compressImage(image);
+          const compressedSize = getFileSizeKB(processedImage);
+          console.log(`Compressed image size: ${compressedSize}KB (${Math.round((1 - compressedSize / originalSize) * 100)}% reduction)`);
+        } catch (compressionError) {
+          console.error('Image compression failed, using original:', compressionError);
+        }
+      }
 
     // Build document context description for the user message
     let docContextLabel = '';
@@ -669,6 +685,20 @@ ${formData.items}`;
     
     setIsAnalyzing(false);
     setIsAnalyzingImage(false);
+    } catch (globalError) {
+      // Global catch to prevent app crashes
+      console.error('Critical error in handleSend:', globalError);
+      setIsAnalyzing(false);
+      setIsAnalyzingImage(false);
+      
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL 
+          ? "حدث خطأ غير متوقع. حاول مرة تانية."
+          : "Erreur inattendue. Veuillez réessayer.",
+      });
+    }
   };
 
 
@@ -1121,6 +1151,14 @@ ${formData.items}`;
           />
         </div>
       </div>
+
+      {/* Full-screen Loading Overlay for document analysis */}
+      <LoadingOverlay
+        isVisible={isAnalyzingImage}
+        text={isRTL ? '📄 تحليل المستندات...' : '📄 Analyse des documents...'}
+        subText={isRTL ? 'يرجى الانتظار لحظات' : 'Veuillez patienter quelques instants'}
+        isRTL={isRTL}
+      />
 
       {/* Document Type Selector Modal */}
       <DocumentTypeSelector

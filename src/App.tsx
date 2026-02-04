@@ -13,6 +13,7 @@ import ProSettingsPage from "@/pages/ProSettingsPage";
 import InvoiceCreatorPage from "@/pages/InvoiceCreatorPage";
 import ProAdminAssistantPage from "@/pages/ProAdminAssistantPage";
 import AdminPage from "@/pages/AdminPage";
+import ComingSoonPage from "@/pages/ComingSoonPage";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 
@@ -38,6 +39,7 @@ const App = () => (
                 <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />
                 <Route path="/pro/settings" element={<ProSettingsPage />} />
                 <Route path="/admin" element={<AdminPage />} />
+                <Route path="/coming-soon" element={<ComingSoonPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

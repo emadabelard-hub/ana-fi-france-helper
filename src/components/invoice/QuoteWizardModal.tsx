@@ -21,6 +21,7 @@ interface QuoteWizardModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onGenerate: (items: LineItem[]) => void;
+  documentType?: 'devis' | 'facture';
 }
 
 type WorkCategory = 'peinture' | 'plomberie' | 'electricite' | 'carrelage' | 'maconnerie' | 'autre';
@@ -231,9 +232,12 @@ const LOGISTICS_QUESTIONS: CategoryQuestion[] = [
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-const QuoteWizardModal = ({ open, onOpenChange, onGenerate }: QuoteWizardModalProps) => {
+const QuoteWizardModal = ({ open, onOpenChange, onGenerate, documentType = 'devis' }: QuoteWizardModalProps) => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
+  
+  // Dynamic text based on document type
+  const isFacture = documentType === 'facture';
   
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedCategory, setSelectedCategory] = useState<WorkCategory | null>(null);
@@ -313,7 +317,9 @@ const QuoteWizardModal = ({ open, onOpenChange, onGenerate }: QuoteWizardModalPr
         handleClose();
         
         toast({
-          title: isRTL ? '✨ تم إنشاء العرض' : '✨ Devis généré',
+          title: isRTL 
+            ? (isFacture ? '✨ تم إنشاء الفاتورة' : '✨ تم إنشاء العرض')
+            : (isFacture ? '✨ Facture générée' : '✨ Devis généré'),
           description: isRTL 
             ? `تم إضافة ${items.length} سطر. يمكنك تعديلها حسب رغبتك!`
             : `${items.length} lignes ajoutées. Vous pouvez les modifier à votre guise!`,
@@ -326,7 +332,9 @@ const QuoteWizardModal = ({ open, onOpenChange, onGenerate }: QuoteWizardModalPr
       toast({
         variant: "destructive",
         title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'تعذر إنشاء العرض' : 'Impossible de générer le devis',
+        description: isRTL 
+          ? (isFacture ? 'تعذر إنشاء الفاتورة' : 'تعذر إنشاء العرض')
+          : (isFacture ? 'Impossible de générer la facture' : 'Impossible de générer le devis'),
       });
     } finally {
       setIsGenerating(false);
@@ -442,10 +450,14 @@ const QuoteWizardModal = ({ open, onOpenChange, onGenerate }: QuoteWizardModalPr
         <DialogHeader>
           <DialogTitle className={cn("flex items-center gap-2", isRTL && "flex-row-reverse text-right")}>
             <Wand2 className="h-5 w-5 text-primary" />
-            {step === 1 && (isRTL ? '🧙‍♂️ مساعد الديفي - اختر نوع الشغل' : '🧙‍♂️ Assistant Devis - Nature des travaux')}
+            {step === 1 && (isRTL 
+              ? (isFacture ? '📝 مساعد الفاتورة - اختر نوع الشغل' : '🧙‍♂️ مساعد الديفي - اختر نوع الشغل')
+              : (isFacture ? '📝 Assistant Facture - Nature des travaux' : '🧙‍♂️ Assistant Devis - Nature des travaux'))}
             {step === 2 && (isRTL ? '📋 تفاصيل الشغل' : '📋 Détails des travaux')}
             {step === 3 && (isRTL ? '🚚 اللوجستيك' : '🚚 Logistique')}
-            {step === 4 && (isRTL ? '✨ إنشاء العرض' : '✨ Génération du devis')}
+            {step === 4 && (isRTL 
+              ? (isFacture ? '✨ إنشاء الفاتورة' : '✨ إنشاء العرض')
+              : (isFacture ? '✨ Génération de la facture' : '✨ Génération du devis'))}
           </DialogTitle>
         </DialogHeader>
 

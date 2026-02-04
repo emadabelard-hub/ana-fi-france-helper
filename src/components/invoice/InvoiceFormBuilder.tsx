@@ -51,18 +51,21 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
   const [travelDescription, setTravelDescription] = useState('');
   const [travelPrice, setTravelPrice] = useState(30);
   
-  // Line items
+  // Line items - use empty strings for quantity/price to allow clean input
   const [items, setItems] = useState<LineItem[]>([
     {
       id: generateId(),
       designation_fr: '',
       designation_ar: '',
-      quantity: 1,
+      quantity: '' as unknown as number, // Allow empty for clean input
       unit: 'm²',
-      unitPrice: 0,
+      unitPrice: '' as unknown as number, // Allow empty for clean input
       total: 0,
     }
   ]);
+  
+  // Track temporary string values for quantity and price inputs
+  const [tempValues, setTempValues] = useState<Record<string, { quantity?: string; unitPrice?: string }>>({});
   
   // Invoice preview state
   const [showPreview, setShowPreview] = useState(false);
@@ -178,11 +181,53 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
       id: generateId(),
       designation_fr: '',
       designation_ar: '',
-      quantity: 1,
+      quantity: '' as unknown as number, // Allow empty for clean input
       unit: 'u',
-      unitPrice: 0,
+      unitPrice: '' as unknown as number, // Allow empty for clean input
       total: 0,
     }]);
+  };
+  
+  // Handle focus - select all text
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.select();
+  };
+
+  // Handle change for numeric fields - allow empty string while typing
+  const handleNumericChange = (id: string, field: 'quantity' | 'unitPrice', value: string) => {
+    setTempValues(prev => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: value }
+    }));
+  };
+
+  // Handle blur - validate and set final value
+  const handleNumericBlur = (id: string, field: 'quantity' | 'unitPrice', defaultValue: number) => {
+    const tempValue = tempValues[id]?.[field];
+    const numValue = tempValue === undefined || tempValue === '' ? defaultValue : parseFloat(tempValue) || defaultValue;
+    
+    // Clear temp value
+    setTempValues(prev => {
+      const newTempValues = { ...prev };
+      if (newTempValues[id]) {
+        delete newTempValues[id][field];
+        if (Object.keys(newTempValues[id]).length === 0) {
+          delete newTempValues[id];
+        }
+      }
+      return newTempValues;
+    });
+    
+    handleItemChange(id, field, numValue);
+  };
+
+  // Get display value for numeric fields
+  const getNumericDisplayValue = (id: string, field: 'quantity' | 'unitPrice', actualValue: number | string): string => {
+    const tempValue = tempValues[id]?.[field];
+    if (tempValue !== undefined) return tempValue;
+    // Show empty string if value is empty or 0
+    if (actualValue === '' || actualValue === 0) return '';
+    return String(actualValue);
   };
   
   // Remove line item
@@ -488,10 +533,13 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
                       {isRTL ? 'الكمية (مساحة / عدد / وقت)' : 'Qté'}
                     </Label>
                     <Input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(e) => handleItemChange(item.id, 'quantity', parseFloat(e.target.value) || 1)}
+                      type="text"
+                      inputMode="decimal"
+                      value={getNumericDisplayValue(item.id, 'quantity', item.quantity)}
+                      onFocus={handleInputFocus}
+                      onChange={(e) => handleNumericChange(item.id, 'quantity', e.target.value)}
+                      onBlur={() => handleNumericBlur(item.id, 'quantity', 1)}
+                      placeholder="1"
                       className="text-sm"
                     />
                   </div>
@@ -511,11 +559,13 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
                   <div className="space-y-1.5">
                     <Label className="text-xs">{isRTL ? 'السعر (€)' : 'P.U. (€)'}</Label>
                     <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.unitPrice}
-                      onChange={(e) => handleItemChange(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                      type="text"
+                      inputMode="decimal"
+                      value={getNumericDisplayValue(item.id, 'unitPrice', item.unitPrice)}
+                      onFocus={handleInputFocus}
+                      onChange={(e) => handleNumericChange(item.id, 'unitPrice', e.target.value)}
+                      onBlur={() => handleNumericBlur(item.id, 'unitPrice', 0)}
+                      placeholder="0"
                       className="text-sm"
                     />
                   </div>
@@ -686,26 +736,47 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
           
           <Button
             onClick={() => {
-              // Validation with toast feedback
+              // Comprehensive validation with detailed feedback
+              const missingFields: string[] = [];
+              
+              // Check client name
               if (!clientName.trim()) {
-                toast({
-                  variant: "destructive",
-                  title: isRTL ? "⚠️ بيانات ناقصة" : "⚠️ Données manquantes",
-                  description: isRTL 
-                    ? "من فضلك اكتب اسم العميل أولاً" 
-                    : "Veuillez saisir le nom du client",
-                });
-                return;
+                missingFields.push(isRTL ? '👤 اسم العميل' : '👤 Nom du client');
               }
               
-              const hasValidItem = items.some(item => item.designation_fr.trim() && item.unitPrice > 0);
+              // Check client address
+              if (!clientAddress.trim()) {
+                missingFields.push(isRTL ? '📍 عنوان الفاتورة' : '📍 Adresse de facturation');
+              }
+              
+              // Check work site address if different from client
+              if (!workSiteSameAsClient && !workSiteAddress.trim()) {
+                missingFields.push(isRTL ? '🏗️ عنوان الشانتي' : '🏗️ Adresse du chantier');
+              }
+              
+              // Check line items
+              const hasValidItem = items.some(item => item.designation_fr.trim() && Number(item.unitPrice) > 0);
               if (!hasValidItem && !(includeTravelCosts && travelPrice > 0)) {
+                missingFields.push(isRTL ? '📋 بند واحد على الأقل مع سعر' : '📋 Au moins une prestation avec un prix');
+              }
+              
+              // Show validation errors if any
+              if (missingFields.length > 0) {
                 toast({
                   variant: "destructive",
                   title: isRTL ? "⚠️ بيانات ناقصة" : "⚠️ Données manquantes",
-                  description: isRTL 
-                    ? "من فضلك اكتب اسم العميل وسعر البند أولاً" 
-                    : "Veuillez ajouter au moins une prestation avec un prix",
+                  description: (
+                    <div className="mt-2 space-y-1">
+                      <p className={cn("font-medium", isRTL && "font-cairo text-right")}>
+                        {isRTL ? 'من فضلك أكمل الحقول التالية:' : 'Veuillez compléter:'}
+                      </p>
+                      <ul className={cn("list-none space-y-1 text-sm", isRTL && "text-right")}>
+                        {missingFields.map((field, idx) => (
+                          <li key={idx} className="text-destructive-foreground">{field}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ),
                 });
                 return;
               }
@@ -725,6 +796,7 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
         open={showWizard}
         onOpenChange={setShowWizard}
         onGenerate={handleWizardGenerate}
+        documentType={documentType}
       />
     </div>
   );

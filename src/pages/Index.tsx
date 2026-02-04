@@ -14,11 +14,14 @@ import FeedbackModal from '@/components/home/FeedbackModal';
 import CreditsDisplay from '@/components/shared/CreditsDisplay';
 import { useAuth } from '@/hooks/useAuth';
 import { PromoCard, PromoBanner } from '@/components/home/PromoCard';
+import DocumentTypeModal from '@/components/invoice/DocumentTypeModal';
+
 const Index = () => {
   const { language, setLanguage, isRTL } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [documentTypeModalOpen, setDocumentTypeModalOpen] = useState(false);
 
   const Arrow = isRTL ? ChevronLeft : ChevronRight;
 
@@ -164,7 +167,7 @@ const Index = () => {
               "shadow-lg shadow-orange-500/25",
               isRTL && "order-2"
             )}
-            onClick={() => navigate('/pro/invoice-creator')}
+            onClick={() => setDocumentTypeModalOpen(true)}
           >
             <CardContent className="p-5">
               <div className={cn(
@@ -179,7 +182,7 @@ const Index = () => {
                     {isRTL ? 'فواتيرك ودوفيهاتك' : 'Factures & Devis'}
                   </h3>
                   <p className="text-sm text-slate-700 font-medium leading-relaxed">
-                    {isRTL ? 'إنشاء فواتير احترافية' : 'Créer des factures pro'}
+                    {isRTL ? 'اعمل فواتيرك ودوفيهاتك بطريقة سليمة وحسابات مظبوطة' : 'Créez vos documents avec des calculs précis'}
                   </p>
                 </div>
               </div>
@@ -319,6 +322,16 @@ const Index = () => {
 
       {/* Feedback Modal */}
       <FeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+
+      {/* Document Type Selection Modal */}
+      <DocumentTypeModal
+        open={documentTypeModalOpen}
+        onOpenChange={setDocumentTypeModalOpen}
+        onSelect={(type) => {
+          setDocumentTypeModalOpen(false);
+          navigate(`/pro/invoice-creator?type=${type}`);
+        }}
+      />
 
       {/* Hidden Admin Link */}
       <button 

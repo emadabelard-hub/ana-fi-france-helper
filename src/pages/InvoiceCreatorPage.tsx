@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Send, Loader2, PenLine, HelpCircle, RotateCcw, Edit3, Check, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,13 +72,93 @@ const getDisplayContent = (content: string): string => {
 const InvoiceCreatorPage = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const { profile, isLoading: profileLoading } = useProfile();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const documentType = searchParams.get('type') as 'devis' | 'facture' | null;
   
-  const getInitialMessage = (): Message => ({
-    role: 'assistant',
-    content: isRTL 
-      ? `أهلاً بيك! 👋 أنا مستشارك المهني للفواتير والتقديرات.
+  // Build profile info string for auto-fill
+  const getProfileInfo = () => {
+    if (!profile) return '';
+    
+    const parts: string[] = [];
+    
+    if (profile.company_name) {
+      parts.push(`🏢 الشركة: ${profile.company_name}`);
+    }
+    if (profile.siret) {
+      parts.push(`📝 SIRET: ${profile.siret}`);
+    }
+    if (profile.company_address) {
+      parts.push(`📍 العنوان: ${profile.company_address}`);
+    }
+    if (profile.phone) {
+      parts.push(`📞 الهاتف: ${profile.phone}`);
+    }
+    if (profile.email) {
+      parts.push(`📧 الإيميل: ${profile.email}`);
+    }
+    if (profile.legal_status) {
+      const statusLabel = profile.legal_status === 'auto-entrepreneur' 
+        ? 'Auto-entrepreneur (معفى من TVA)'
+        : 'Société (خاضع لـ TVA)';
+      parts.push(`⚖️ الوضع القانوني: ${statusLabel}`);
+    }
+    
+    return parts.join('\n');
+  };
+
+  const getInitialMessage = (): Message => {
+    const profileInfo = getProfileInfo();
+    const docTypeLabel = documentType === 'devis' 
+      ? (isRTL ? 'عرض سعر (Devis)' : 'Devis')
+      : documentType === 'facture' 
+        ? (isRTL ? 'فاتورة (Facture)' : 'Facture')
+        : null;
+    
+    // If profile has data, show auto-filled info
+    const hasProfileData = profile && (profile.company_name || profile.siret);
+    
+    if (hasProfileData && isRTL) {
+      return {
+        role: 'assistant',
+        content: `أهلاً بيك! 👋 أنا مستشارك المهني للفواتير والتقديرات.
+
+${docTypeLabel ? `📋 انت اخترت: **${docTypeLabel}**` : ''}
+
+✅ لقيت بياناتك محفوظة! هستخدمها تلقائياً:
+${profileInfo}
+
+${docTypeLabel ? '👤 دلوقتي قولي اسم العميل وعنوانه، وإيه الشغل اللي عملته؟' : '👤 قولي اسم العميل وعنوانه، وعايز فاتورة ولا تقدير؟'}
+
+💡 لو عايز تعدل بياناتك، روح صفحة الملف الشخصي.`
+      };
+    }
+    
+    if (hasProfileData && !isRTL) {
+      return {
+        role: 'assistant',
+        content: `Bonjour ! 👋 Je suis votre consultant professionnel.
+
+${docTypeLabel ? `📋 Vous avez choisi : **${docTypeLabel}**` : ''}
+
+✅ J'ai trouvé vos informations ! Je les utiliserai automatiquement :
+${profileInfo}
+
+${docTypeLabel ? '👤 Maintenant, donnez-moi le nom et l\'adresse du client, et décrivez le travail effectué.' : '👤 Donnez-moi le nom du client et son adresse. Facture ou Devis ?'}
+
+💡 Pour modifier vos informations, allez dans votre profil.`
+      };
+    }
+    
+    // Fallback: no profile data
+    return {
+      role: 'assistant',
+      content: isRTL 
+        ? `أهلاً بيك! 👋 أنا مستشارك المهني للفواتير والتقديرات.
+
+${docTypeLabel ? `📋 انت اخترت: **${docTypeLabel}**` : ''}
 
 أنا مش مجرد أداة، أنا مدربك الشخصي! 🎯
 
@@ -89,8 +170,12 @@ const InvoiceCreatorPage = () => {
 عشان نبدأ، قولي:
 1. 🏢 اسم شركتك ورقم SIRET
 2. 👤 اسم العميل وعنوانه
-3. 📋 عايز فاتورة (Facture) ولا تقدير (Devis)؟`
-      : `Bonjour ! 👋 Je suis votre consultant professionnel pour factures et devis.
+${!docTypeLabel ? '3. 📋 عايز فاتورة (Facture) ولا تقدير (Devis)؟' : ''}
+
+💡 نصيحة: احفظ بياناتك في صفحة الملف الشخصي عشان تظهر تلقائياً!`
+        : `Bonjour ! 👋 Je suis votre consultant professionnel pour factures et devis.
+
+${docTypeLabel ? `📋 Vous avez choisi : **${docTypeLabel}**` : ''}
 
 Je ne suis pas qu'un simple outil, je suis votre coach ! 🎯
 
@@ -102,10 +187,13 @@ Je ne suis pas qu'un simple outil, je suis votre coach ! 🎯
 Pour commencer, dites-moi :
 1. 🏢 Nom de votre entreprise et SIRET
 2. 👤 Nom et adresse du client
-3. 📋 Facture ou Devis ?`
-  });
+${!docTypeLabel ? '3. 📋 Facture ou Devis ?' : ''}
 
-  const [messages, setMessages] = useState<Message[]>([getInitialMessage()]);
+💡 Conseil : Enregistrez vos infos dans votre profil pour les pré-remplir !`
+    };
+  };
+
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -115,8 +203,18 @@ Pour commencer, dites-moi :
   const [showArabic, setShowArabic] = useState(false);
   const [editingInvoiceId, setEditingInvoiceId] = useState<number | null>(null);
   const [editedItems, setEditedItems] = useState<LineItem[]>([]);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
+
+  // Initialize messages once profile is loaded (or if no user)
+  useEffect(() => {
+    if (hasInitialized) return;
+    if (user && profileLoading) return; // Wait for profile if user is logged in
+    
+    setMessages([getInitialMessage()]);
+    setHasInitialized(true);
+  }, [user, profileLoading, hasInitialized, profile, documentType, isRTL]);
 
   // Check for saved session on mount
   useEffect(() => {

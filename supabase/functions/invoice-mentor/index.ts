@@ -11,8 +11,78 @@ interface Message {
 }
 
 interface RequestBody {
-  message: string;
+  message?: string;
   conversationHistory?: Message[];
+  action?: 'suggest_price';
+  description?: string;
+  unit?: string;
+}
+
+// Price suggestion handler
+async function handlePriceSuggestion(description: string, unit: string, apiKey: string): Promise<Response> {
+  const prompt = `Tu es un expert en tarification pour artisans du bâtiment en France.
+  
+Analyse cette prestation et suggère un prix unitaire réaliste pour le marché français 2024:
+- Description: "${description}"
+- Unité: ${unit}
+
+Réponds UNIQUEMENT avec un JSON valide:
+{"suggestedPrice": NUMBER, "minPrice": NUMBER, "maxPrice": NUMBER, "reasoning": "Explication courte en français"}
+
+Prix de référence du marché (€/${unit}):
+- Peinture: 25-45€/m²
+- Carrelage: 40-80€/m²
+- Plomberie: 45-65€/h
+- Électricité: 45-60€/h
+- Démolition: 30-50€/m²
+- Enduit: 15-35€/m²
+- Main d'œuvre générale: 35-55€/h
+- Forfait journée: 250-400€
+
+Ajuste selon la complexité décrite. Sois réaliste.`;
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [{ role: "user", content: prompt }],
+      stream: false,
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    throw new Error("AI gateway error");
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || "";
+  
+  // Extract JSON from response
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return new Response(JSON.stringify(parsed), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch {
+      // Fallback
+    }
+  }
+  
+  return new Response(JSON.stringify({ suggestedPrice: 40, error: "Could not parse suggestion" }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
 
 serve(async (req) => {
@@ -21,19 +91,32 @@ serve(async (req) => {
   }
 
   try {
-    const { message, conversationHistory = [] }: RequestBody = await req.json();
+    const body: RequestBody = await req.json();
+    
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    // Handle price suggestion action
+    if (body.action === 'suggest_price') {
+      if (!body.description || !body.unit) {
+        return new Response(JSON.stringify({ error: 'Description and unit required' }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return handlePriceSuggestion(body.description, body.unit, LOVABLE_API_KEY);
+    }
+
+    // Original chat functionality
+    const { message, conversationHistory = [] } = body;
     
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return new Response(JSON.stringify({ error: 'Message requis' }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const systemPrompt = `أنت مستشار محترف للحرفيين والعمال المستقلين في فرنسا. أنت خبير في البناء والمحاسبة الفرنسية.

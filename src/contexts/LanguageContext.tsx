@@ -55,7 +55,7 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.phone': 'Téléphone',
     'profile.cafNumber': 'Numéro CAF',
     'profile.foreignerNumber': 'Numéro Étranger',
-    'profile.socialSecurity': 'Sécurité Sociale',
+    'profile.socialSecurity': 'N° Sécu (Carte Vitale)',
     'profile.save': 'Enregistrer',
     'profile.optional': '(optionnel)',
     
@@ -111,7 +111,7 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.phone': 'الهاتف',
     'profile.cafNumber': 'رقم CAF',
     'profile.foreignerNumber': 'رقم الأجانب',
-    'profile.socialSecurity': 'الضمان الاجتماعي',
+    'profile.socialSecurity': 'رقم السيكوريتيه (Sécu)',
     'profile.save': 'حفظ',
     'profile.optional': '(اختياري)',
     

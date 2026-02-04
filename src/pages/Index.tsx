@@ -123,21 +123,32 @@ const Index = () => {
       {/* SECTION 2: Artisan Tools Grid - "Dira'ak El Yameen" */}
       <div className="mb-4">
         <h2 className={cn(
-          "text-base font-bold text-foreground mb-3 flex items-center gap-2",
+          "text-base font-bold text-foreground mb-1 flex items-center gap-2",
           isRTL && "flex-row-reverse text-right"
         )}>
           <span className="text-xl">💪</span>
           {isRTL ? 'دراعك اليمين' : 'Vos outils'}
         </h2>
+        
+        {/* Subtitle */}
+        <p className={cn(
+          "text-xs text-muted-foreground mb-3 px-1",
+          isRTL ? "text-right" : "text-left"
+        )}>
+          {isRTL 
+            ? 'دراعك اليمين لعمل فواتيرك ودوفيهاتك وكل ما يتعلق بقوانين العمل والضرايب' 
+            : 'Votre assistant pour factures, devis et tout ce qui concerne le travail et les impôts'}
+        </p>
 
         <div className="grid grid-cols-2 gap-3">
-          {/* Invoices Card - Right in RTL */}
+          {/* Invoices Card - Primary Action, MAKE IT POP */}
           <Card
             className={cn(
               "cursor-pointer transition-all duration-300",
-              "hover:scale-[1.03] hover:shadow-lg active:scale-[0.97]",
-              "border border-border/50 overflow-hidden",
-              "bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-950/40 dark:to-amber-950/30",
+              "hover:scale-[1.03] hover:shadow-xl active:scale-[0.97]",
+              "border-2 border-orange-400/50 overflow-hidden",
+              "bg-gradient-to-br from-orange-200 to-amber-100 dark:from-orange-900/60 dark:to-amber-900/40",
+              "shadow-lg shadow-orange-500/20",
               isRTL && "order-2"
             )}
             onClick={() => navigate('/pro/invoice-creator')}
@@ -147,12 +158,12 @@ const Index = () => {
                 "flex flex-col gap-3",
                 isRTL && "items-end"
               )}>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg">
-                  <span className="text-2xl">📄</span>
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg">
+                  <span className="text-3xl">📄</span>
                 </div>
                 <div className={isRTL ? "text-right" : ""}>
-                  <h3 className="font-bold text-foreground text-sm mb-0.5">
-                    {isRTL ? 'فواتير وعروض أسعار' : 'Factures & Devis'}
+                  <h3 className="font-extrabold text-foreground text-base mb-0.5">
+                    {isRTL ? 'فواتيرك ودوفيهاتك' : 'Factures & Devis'}
                   </h3>
                   <p className="text-xs text-muted-foreground">
                     {isRTL ? 'إنشاء فواتير احترافية' : 'Créer des factures pro'}
@@ -162,7 +173,7 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          {/* Laws Card - Left in RTL */}
+          {/* Laws Card - Secondary */}
           <Card
             className={cn(
               "cursor-pointer transition-all duration-300",
@@ -182,11 +193,11 @@ const Index = () => {
                   <span className="text-2xl">⚖️</span>
                 </div>
                 <div className={isRTL ? "text-right" : ""}>
-                  <h3 className="font-bold text-foreground text-sm mb-0.5">
-                    {isRTL ? 'قوانين تهمك' : 'Guide Juridique'}
+                  <h3 className="font-bold text-foreground text-[13px] mb-0.5 leading-tight">
+                    {isRTL ? 'قوانين العمل والضرائب والتأمين الصحي' : 'Travail, Impôts & Santé'}
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    {isRTL ? 'حقوقك وواجباتك كصاحب عمل' : 'Vos droits & devoirs'}
+                    {isRTL ? 'حقوقك وواجباتك' : 'Vos droits & devoirs'}
                   </p>
                 </div>
               </div>

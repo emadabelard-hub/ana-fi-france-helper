@@ -146,6 +146,33 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_metrics: {
+        Row: {
+          clicks: number
+          created_at: string
+          id: string
+          promo_id: string
+          updated_at: string
+          views: number
+        }
+        Insert: {
+          clicks?: number
+          created_at?: string
+          id?: string
+          promo_id: string
+          updated_at?: string
+          views?: number
+        }
+        Update: {
+          clicks?: number
+          created_at?: string
+          id?: string
+          promo_id?: string
+          updated_at?: string
+          views?: number
+        }
+        Relationships: []
+      }
       questions: {
         Row: {
           correct_answer: number
@@ -222,6 +249,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_promo_clicks: {
+        Args: { p_promo_id: string }
+        Returns: undefined
+      }
+      increment_promo_views: {
+        Args: { p_promo_id: string }
+        Returns: undefined
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {

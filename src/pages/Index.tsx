@@ -140,32 +140,37 @@ const Index = () => {
             : 'Votre assistant pour factures, devis et tout ce qui concerne le travail et les impôts'}
         </p>
 
-        <div className="grid grid-cols-2 gap-3">
-          {/* Invoices Card - Primary Action, MAKE IT POP */}
+        {/* Asymmetrical Grid: 65/35 split */}
+        <div className={cn(
+          "grid gap-3",
+          "grid-cols-[1.8fr_1fr]",
+          isRTL && "grid-cols-[1fr_1.8fr]"
+        )}>
+          {/* Invoices Card - Primary Action, THE BIG ONE */}
           <Card
             className={cn(
               "cursor-pointer transition-all duration-300",
-              "hover:scale-[1.03] hover:shadow-xl active:scale-[0.97]",
-              "border-2 border-orange-400/50 overflow-hidden",
-              "bg-gradient-to-br from-orange-200 to-amber-100 dark:from-orange-900/60 dark:to-amber-900/40",
-              "shadow-lg shadow-orange-500/20",
+              "hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]",
+              "border-2 border-orange-400/60 overflow-hidden",
+              "bg-gradient-to-br from-orange-200 via-amber-100 to-yellow-100",
+              "shadow-lg shadow-orange-500/25",
               isRTL && "order-2"
             )}
             onClick={() => navigate('/pro/invoice-creator')}
           >
-            <CardContent className="p-4">
+            <CardContent className="p-5">
               <div className={cn(
-                "flex flex-col gap-3",
+                "flex flex-col gap-4",
                 isRTL && "items-end"
               )}>
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg">
-                  <span className="text-3xl">📄</span>
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg">
+                  <span className="text-4xl">📄</span>
                 </div>
                 <div className={isRTL ? "text-right" : ""}>
-                  <h3 className="font-extrabold text-foreground text-base mb-0.5">
+                  <h3 className="font-extrabold text-slate-900 text-xl mb-1 leading-relaxed">
                     {isRTL ? 'فواتيرك ودوفيهاتك' : 'Factures & Devis'}
                   </h3>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-slate-700 font-medium leading-relaxed">
                     {isRTL ? 'إنشاء فواتير احترافية' : 'Créer des factures pro'}
                   </p>
                 </div>
@@ -173,13 +178,14 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          {/* Laws Card - Secondary */}
+          {/* Laws Card - Secondary, THE SMALLER ONE */}
           <Card
             className={cn(
               "cursor-pointer transition-all duration-300",
-              "hover:scale-[1.03] hover:shadow-lg active:scale-[0.97]",
-              "border border-border/50 overflow-hidden",
-              "bg-gradient-to-br from-emerald-100 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30",
+              "hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]",
+              "border border-emerald-400/50 overflow-hidden",
+              "bg-gradient-to-br from-emerald-200 via-teal-100 to-cyan-100",
+              "shadow-md",
               isRTL && "order-1"
             )}
             onClick={() => navigate('/assistant')}
@@ -189,14 +195,14 @@ const Index = () => {
                 "flex flex-col gap-3",
                 isRTL && "items-end"
               )}>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg">
-                  <span className="text-2xl">⚖️</span>
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-md">
+                  <span className="text-xl">⚖️</span>
                 </div>
                 <div className={isRTL ? "text-right" : ""}>
-                  <h3 className="font-bold text-foreground text-[13px] mb-0.5 leading-tight">
-                    {isRTL ? 'قوانين العمل والضرائب والتأمين الصحي' : 'Travail, Impôts & Santé'}
+                  <h3 className="font-bold text-slate-900 text-sm mb-1 leading-relaxed">
+                    {isRTL ? 'قوانين العمل والضرائب والتأمين' : 'Travail, Impôts & Santé'}
                   </h3>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed">
                     {isRTL ? 'حقوقك وواجباتك' : 'Vos droits & devoirs'}
                   </p>
                 </div>

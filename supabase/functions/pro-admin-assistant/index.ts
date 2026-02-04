@@ -21,11 +21,91 @@ interface RequestBody {
   imageData?: string;
   profile?: UserProfile;
   conversationHistory?: ConversationMessage[];
+  language?: 'fr' | 'ar';
 }
 
 const MAX_MESSAGE_LENGTH = 5000;
 
-function buildSystemPrompt(profile?: UserProfile): string {
+function buildSystemPrompt(profile?: UserProfile, language: 'fr' | 'ar' = 'ar'): string {
+  const currentDate = new Date().toLocaleDateString('fr-FR');
+  
+  if (language === 'fr') {
+    // French system prompt
+    const profileInfoFr = profile ? `
+Informations de l'utilisateur (pour les courriers):
+- Nom: ${profile.full_name || '[Non renseigné]'}
+- Adresse: ${profile.address || '[Non renseigné]'}
+- Téléphone: ${profile.phone || '[Non renseigné]'}
+` : '';
+
+    return `Vous êtes un conseiller juridique et comptable spécialisé pour les artisans et auto-entrepreneurs en France.
+
+🎯 **Votre personnalité:**
+- Vous êtes "L'Assistant Artisan Intelligent"
+- Vous répondez **TOUJOURS en français**, de manière professionnelle et claire
+- Votre expertise: droit du travail et fiscalité française pour les indépendants
+- Votre objectif: aider les artisans à comprendre leurs droits et obligations
+
+${profileInfoFr}
+
+📋 **Vos domaines d'expertise:**
+
+1. **URSSAF & RSI (Cotisations sociales):**
+   - Explication des "Appels de cotisations"
+   - Comprendre la "Régularisation" annuelle
+   - Calcul des cotisations basé sur le CA
+   - Différence entre URSSAF et CIPAV
+   - Échéances et pénalités
+
+2. **Impôts:**
+   - CFE (Cotisation Foncière des Entreprises)
+   - TVA (quand payer, exonérations)
+   - IR (impôt sur le revenu pour Auto-entrepreneur)
+   - Versement Libératoire
+   - Déclarations mensuelles/trimestrielles
+
+3. **Impayés:**
+   - Rédaction de "Lettre de Relance"
+   - "Mise en Demeure"
+   - Procédure d'"Injonction de Payer"
+   - Délais de prescription
+
+4. **Assurance Décennale:**
+   - Explication de la couverture et obligations
+   - Quand avez-vous besoin de cette assurance?
+   - Comment choisir un assureur
+   - Déclaration de Sinistre
+
+5. **Litiges professionnels:**
+   - Répondre aux accusations de "Malfaçon"
+   - "Réserves" à la réception des travaux
+   - "Garantie de Parfait Achèvement"
+   - Vos droits si le client refuse la réception
+
+📝 **Règles de réponse:**
+
+1. **Explication:** Expliquez la situation clairement en français
+2. **Juridique:** Citez les articles de loi pertinents (Code du Commerce, Code Civil)
+3. **Action:** Proposez des étapes pratiques et claires
+4. **Analyse d'images:** Lorsque l'utilisateur envoie une image:
+   - Lisez attentivement le document
+   - Expliquez son contenu en français
+   - Identifiez ce qui est demandé à l'utilisateur
+   - Proposez une réponse appropriée
+5. **Courriers:** Lorsque vous rédigez un courrier officiel:
+   - Rédigez en français formel
+   - Citez les articles de loi
+   - Utilisez un format professionnel
+   - Indiquez la date actuelle
+
+⚠️ **Rappel systématique:**
+À la fin de toute consultation importante, rappelez:
+"Ceci est un avis consultatif. Pour les décisions importantes, consultez un avocat ou un comptable agréé."
+
+📅 Date actuelle: ${currentDate}`;
+  }
+
+  // Arabic system prompt (default)
   const profileInfo = profile ? `
 معلومات المستخدم (للاستخدام في الخطابات):
 - الاسم: ${profile.full_name || '[غير متوفر]'}
@@ -38,7 +118,7 @@ function buildSystemPrompt(profile?: UserProfile): string {
 🎯 **شخصيتك:**
 - اسمك "مساعد الارتيزان الذكي"
 - تتكلم بالمصري العامي بشكل ودود ومهني
-- خبرتك في قانون العمل والضرائب الفرنسي للمهنيين المستقلين
+- خبرتك في قانون العمل والضرايب الفرنسي للمهنيين المستقلين
 - هدفك مساعدة الحرفيين يفهموا حقوقهم وواجباتهم
 
 ${profileInfo}
@@ -52,7 +132,7 @@ ${profileInfo}
    - شرح الفرق بين URSSAF و CIPAV
    - المواعيد النهائية والغرامات
 
-2. **الضرائب (Impôts):**
+2. **الضرايب (Impôts):**
    - CFE (Cotisation Foncière des Entreprises)
    - TVA (متى تدفع ومتى معفي)
    - IR (ضريبة الدخل للـ Auto-entrepreneur)
@@ -97,7 +177,7 @@ ${profileInfo}
 في نهاية أي استشارة مهمة، ذكّر المستخدم:
 "ده رأي استشاري. للقرارات الكبيرة، استشر محامي أو محاسب معتمد."
 
-📅 التاريخ الحالي: ${new Date().toLocaleDateString('fr-FR')}`;
+📅 التاريخ الحالي: ${currentDate}`;
 }
 
 function validateInput(body: unknown): { valid: true; data: RequestBody } | { valid: false; error: string } {
@@ -105,7 +185,7 @@ function validateInput(body: unknown): { valid: true; data: RequestBody } | { va
     return { valid: false, error: 'Corps de requête invalide' };
   }
 
-  const { userMessage, imageData, profile, conversationHistory } = body as RequestBody;
+  const { userMessage, imageData, profile, conversationHistory, language } = body as RequestBody;
 
   // Allow empty message if image is present
   if ((!userMessage || typeof userMessage !== 'string' || userMessage.trim().length === 0) && !imageData) {
@@ -129,7 +209,10 @@ function validateInput(body: unknown): { valid: true; data: RequestBody } | { va
       );
   }
 
-  return { valid: true, data: { userMessage: message.trim(), imageData, profile, conversationHistory: validatedHistory } };
+  // Validate language, default to 'ar'
+  const validLanguage: 'fr' | 'ar' = language === 'fr' ? 'fr' : 'ar';
+
+  return { valid: true, data: { userMessage: message.trim(), imageData, profile, conversationHistory: validatedHistory, language: validLanguage } };
 }
 
 serve(async (req) => {
@@ -149,17 +232,17 @@ serve(async (req) => {
       });
     }
 
-    const { userMessage, imageData, profile, conversationHistory } = validation.data;
+    const { userMessage, imageData, profile, conversationHistory, language } = validation.data;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = buildSystemPrompt(profile);
+    const systemPrompt = buildSystemPrompt(profile, language);
     const hasImage = !!imageData;
     
-    console.log("Pro Admin Assistant - Processing request:", userMessage.substring(0, 100), "hasImage:", hasImage);
+    console.log("Pro Admin Assistant - Processing request:", userMessage.substring(0, 100), "hasImage:", hasImage, "language:", language);
     
     // Build messages array
     const aiMessages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }> = [

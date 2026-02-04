@@ -39,11 +39,29 @@ const ProAdminAssistantPage = () => {
 
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
 
-  // Initial greeting for Pro Mode
-  const initialGreeting: Message = {
-    id: 'initial-greeting',
-    role: 'assistant',
-    content: `أهلاً يا هندسة 💼
+  // Initial greeting for Pro Mode - dynamic based on language
+  const getInitialGreeting = (): Message => {
+    if (language === 'fr') {
+      return {
+        id: 'initial-greeting',
+        role: 'assistant',
+        content: `Bonjour ! 💼
+
+Je suis votre conseiller comptable et juridique pour votre activité en France.
+
+📬 Vous avez reçu un courrier de l'URSSAF ou du RSI ?
+💰 Un client refuse de payer votre facture ?
+📊 Vous voulez comprendre vos impôts et déclarations ?
+🏗️ Un client prétend qu'il y a un défaut ("Malfaçon") ?
+🛡️ Vous ne comprenez pas votre contrat d'assurance décennale ?
+
+Envoyez-moi une photo de n'importe quel document, ou décrivez votre problème et je vous expliquerai et vous aiderai à répondre.`,
+      };
+    }
+    return {
+      id: 'initial-greeting',
+      role: 'assistant',
+      content: `أهلاً يا هندسة 💼
 
 أنا محاسبك ومستشارك القانوني للشغل في فرنسا.
 
@@ -54,9 +72,10 @@ const ProAdminAssistantPage = () => {
 🛡️ مش فاهم عقد التأمين العشري (Décennale)؟
 
 صور وابعتلي أي مستند، أو اكتبلي مشكلتك وأنا هشرحلك وهساعدك ترد.`,
+    };
   };
 
-  // Load messages from localStorage on mount
+  // Load messages from localStorage on mount OR when language changes
   useEffect(() => {
     const savedMessages = localStorage.getItem(CHAT_STORAGE_KEY);
     if (savedMessages) {
@@ -71,16 +90,16 @@ const ProAdminAssistantPage = () => {
           }));
           setMessages(cleanedMessages);
         } else {
-          setMessages([initialGreeting]);
+          setMessages([getInitialGreeting()]);
         }
       } catch (e) {
         console.error('Failed to parse saved messages:', e);
-        setMessages([initialGreeting]);
+        setMessages([getInitialGreeting()]);
       }
     } else {
-      setMessages([initialGreeting]);
+      setMessages([getInitialGreeting()]);
     }
-  }, []);
+  }, [language]);
 
   // Save messages to localStorage whenever they change
   useEffect(() => {
@@ -108,7 +127,7 @@ const ProAdminAssistantPage = () => {
   }, [messages]);
 
   const clearChat = () => {
-    setMessages([initialGreeting]);
+    setMessages([getInitialGreeting()]);
     localStorage.removeItem(CHAT_STORAGE_KEY);
     toast({
       title: isRTL ? "تم مسح المحادثة" : "Conversation effacée",

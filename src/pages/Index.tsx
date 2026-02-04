@@ -280,8 +280,8 @@ const Index = () => {
       {/* Promo Spot B: Transfer Promo Banner */}
       <PromoBanner
         promoId="transfer_promo"
-        textAr="حول فلوس لمصر ببلاش"
-        textFr="Envoyez de l'argent en Égypte sans frais"
+        textAr="حول فلوسك لأهلك في مصر بأمان"
+        textFr="Transférez votre argent vers l'Égypte en toute sécurité"
         className="mb-4"
       />
 

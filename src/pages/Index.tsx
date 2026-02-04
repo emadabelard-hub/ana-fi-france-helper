@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import FeedbackModal from '@/components/home/FeedbackModal';
 import CreditsDisplay from '@/components/shared/CreditsDisplay';
 import { useAuth } from '@/hooks/useAuth';
-
+import { PromoCard, PromoBanner } from '@/components/home/PromoCard';
 const Index = () => {
   const { language, setLanguage, isRTL } = useLanguage();
   const { user } = useAuth();
@@ -218,6 +218,18 @@ const Index = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Promo Spot A: Bank Promo */}
+        <PromoCard
+          promoId="bank_promo"
+          icon="🏦"
+          titleAr="وفر فلوسك"
+          titleFr="Économisez"
+          subtitleAr="أفضل بنك للمحترفين"
+          subtitleFr="Best Bank for Pros"
+          variant="gold"
+          className="mt-3"
+        />
       </div>
 
       {/* SECTION 3: Code de la Route - Bottom, Full Width */}
@@ -264,6 +276,14 @@ const Index = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Promo Spot B: Transfer Promo Banner */}
+      <PromoBanner
+        promoId="transfer_promo"
+        textAr="حول فلوس لمصر ببلاش"
+        textFr="Envoyez de l'argent en Égypte sans frais"
+        className="mb-4"
+      />
 
       {/* SECTION 4: Feedback Button */}
       <div className="mt-auto">

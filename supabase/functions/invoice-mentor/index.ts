@@ -13,9 +13,12 @@ interface Message {
 interface RequestBody {
   message?: string;
   conversationHistory?: Message[];
-  action?: 'suggest_price';
+  action?: 'suggest_price' | 'generate_quote';
   description?: string;
   unit?: string;
+  category?: string;
+  categoryAnswers?: string;
+  logistics?: string;
 }
 
 // Price suggestion handler
@@ -85,6 +88,118 @@ Ajuste selon la complexité décrite. Sois réaliste.`;
   });
 }
 
+// Quote generation handler
+async function handleQuoteGeneration(category: string, categoryAnswers: string, logistics: string, apiKey: string): Promise<Response> {
+  const prompt = `Tu es un expert en devis pour artisans du bâtiment en France. Tu génères des lignes de devis professionnelles.
+
+CATÉGORIE DE TRAVAUX: ${category}
+
+DÉTAILS DU PROJET:
+${categoryAnswers}
+
+LOGISTIQUE:
+${logistics}
+
+Génère un devis complet avec toutes les lignes nécessaires. Utilise les prix du marché français 2024.
+
+IMPORTANT:
+- Inclus la main d'œuvre séparément si approprié
+- Inclus les fournitures/matériaux si mentionnés
+- Inclus les frais de déplacement si la distance > 20km
+- Inclus les frais de stationnement si parking = difficile
+
+RÉPONDS UNIQUEMENT AVEC UN JSON VALIDE (sans markdown, sans \`\`\`):
+{
+  "lineItems": [
+    {
+      "designation_fr": "Description professionnelle en français",
+      "designation_ar": "وصف بالعربي",
+      "quantity": NUMBER,
+      "unit": "m²|ml|u|h|jour|forfait|ens",
+      "unitPrice": NUMBER
+    }
+  ]
+}
+
+Prix de référence du marché:
+- Peinture: 25-45€/m² (préparation + 2 couches)
+- Carrelage: 40-80€/m² (pose uniquement)
+- Plomberie: 45-65€/h
+- Électricité: 45-60€/h ou 250-400€/jour
+- Démolition: 30-50€/m²
+- Enduit/préparation murs: 15-35€/m²
+- Main d'œuvre générale: 35-55€/h
+- Frais de déplacement: 0.50-0.80€/km ou 30-50€ forfait
+- Stationnement Paris: 30-50€/jour
+
+Génère des lignes réalistes et complètes.`;
+
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [{ role: "user", content: prompt }],
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw new Error("AI gateway error");
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    
+    console.log("Quote generation raw response:", content);
+    
+    // Extract JSON from response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return new Response(JSON.stringify(parsed), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        console.error("Failed to parse quote JSON:", e);
+      }
+    }
+    
+    // Fallback with sample items
+    return new Response(JSON.stringify({ 
+      lineItems: [
+        {
+          designation_fr: "Main d'œuvre",
+          designation_ar: "مصنعية",
+          quantity: 8,
+          unit: "h",
+          unitPrice: 45
+        }
+      ],
+      error: "Could not parse AI response, using fallback" 
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Quote generation error:", error);
+    return new Response(JSON.stringify({ error: "Quote generation failed" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -107,6 +222,17 @@ serve(async (req) => {
         });
       }
       return handlePriceSuggestion(body.description, body.unit, LOVABLE_API_KEY);
+    }
+
+    // Handle quote generation action
+    if (body.action === 'generate_quote') {
+      if (!body.category) {
+        return new Response(JSON.stringify({ error: 'Category required' }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return handleQuoteGeneration(body.category, body.categoryAnswers || '', body.logistics || '', LOVABLE_API_KEY);
     }
 
     // Original chat functionality

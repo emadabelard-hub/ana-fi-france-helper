@@ -8,10 +8,11 @@ import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck } from 'lucide-react';
+import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2 } from 'lucide-react';
 import InvoiceDisplay, { InvoiceData } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
+import QuoteWizardModal from './QuoteWizardModal';
 
 interface InvoiceFormBuilderProps {
   documentType: 'devis' | 'facture';
@@ -64,6 +65,22 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
   const [showPreview, setShowPreview] = useState(false);
   const [showArabic, setShowArabic] = useState(false);
   const [editingItems, setEditingItems] = useState(false);
+  
+  // Quote Wizard state
+  const [showWizard, setShowWizard] = useState(false);
+  
+  // Handle wizard-generated items
+  const handleWizardGenerate = (generatedItems: LineItem[]) => {
+    // Replace existing items with generated ones (or merge if there are already valid items)
+    const existingValidItems = items.filter(item => item.designation_fr.trim() && item.unitPrice > 0);
+    if (existingValidItems.length > 0) {
+      // Merge: append generated items to existing valid items
+      setItems([...existingValidItems, ...generatedItems]);
+    } else {
+      // Replace: no valid items exist, just use generated ones
+      setItems(generatedItems);
+    }
+  };
   
   // Build invoice data from form
   const buildInvoiceData = (): InvoiceData => {
@@ -344,6 +361,28 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
           )}
         </CardContent>
       </Card>
+      
+      {/* AI Quote Wizard Button */}
+      <Button
+        variant="outline"
+        size="lg"
+        onClick={() => setShowWizard(true)}
+        className={cn(
+          "w-full border-2 border-dashed border-primary/50 bg-primary/5 hover:bg-primary/10 hover:border-primary",
+          "flex items-center justify-center gap-3 py-6",
+          isRTL && "flex-row-reverse font-cairo"
+        )}
+      >
+        <Wand2 className="h-6 w-6 text-primary" />
+        <div className={cn("text-center", isRTL && "font-cairo")}>
+          <div className="font-bold text-primary">
+            {isRTL ? '🧙‍♂️ مساعد الديفي الذكي' : '🧙‍♂️ Assistant Devis Intelligent'}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {isRTL ? 'ساعدني أحسب السعر!' : 'Aidez-moi à chiffrer!'}
+          </div>
+        </div>
+      </Button>
       
       {/* Line Items Section */}
       <Card>
@@ -635,6 +674,13 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
           </Button>
         </div>
       )}
+      
+      {/* Quote Wizard Modal */}
+      <QuoteWizardModal
+        open={showWizard}
+        onOpenChange={setShowWizard}
+        onGenerate={handleWizardGenerate}
+      />
     </div>
   );
 };

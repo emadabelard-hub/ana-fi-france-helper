@@ -3,18 +3,20 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2 } from 'lucide-react';
+import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2 } from 'lucide-react';
 import InvoiceDisplay, { InvoiceData } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
 import QuoteWizardModal from './QuoteWizardModal';
 import InvoiceGuideModal from './InvoiceGuideModal';
+import { supabase } from '@/integrations/supabase/client';
 
 interface InvoiceFormBuilderProps {
   documentType: 'devis' | 'facture';
@@ -74,6 +76,9 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
   
   // Quote Wizard state
   const [showWizard, setShowWizard] = useState(false);
+
+  // Translation state
+  const [translatingItemId, setTranslatingItemId] = useState<string | null>(null);
   
   // Handle wizard-generated items
   const handleWizardGenerate = (generatedItems: LineItem[]) => {
@@ -173,6 +178,89 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
       
       return updated;
     }));
+  };
+
+  // Strict translation mechanism: bottom (AR/Darija/Franco) drives top (French)
+  const invokeTranslation = async (input: string): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke('invoice-mentor', {
+      body: {
+        action: 'translate_to_french',
+        text: input,
+      },
+    });
+
+    if (error) throw error;
+
+    const translation = (data?.translation as string | undefined)?.trim();
+    if (!translation) throw new Error('Missing translation');
+    return translation;
+  };
+
+  const handleTranslation = async (id: string) => {
+    const current = items.find(i => i.id === id);
+    const input = current?.designation_ar?.trim() || '';
+    if (!input) return;
+
+    setTranslatingItemId(id);
+    try {
+      const translation = await invokeTranslation(input);
+      // Overwrite the French field (golden rule)
+      setItems(prev => prev.map(it => (it.id === id ? { ...it, designation_fr: translation } : it)));
+    } catch (e) {
+      console.error('Translation failed:', e);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL
+          ? 'تعذر ترجمة النص. جرّب تاني.'
+          : 'Impossible de traduire. Réessayez.',
+      });
+    } finally {
+      setTranslatingItemId(null);
+    }
+  };
+
+  // Security: on "Ajouter" (new row) or before preview, forbid proceeding if FR is empty but AR is filled.
+  const ensureTranslations = async () => {
+    const pending = items.filter(i => i.designation_ar?.trim() && !i.designation_fr?.trim());
+    if (pending.length === 0) return true;
+
+    const updates: Record<string, string> = {};
+
+    try {
+      for (const item of pending) {
+        setTranslatingItemId(item.id);
+        updates[item.id] = await invokeTranslation(item.designation_ar.trim());
+      }
+    } catch (e) {
+      console.error('Bulk translation failed:', e);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL
+          ? 'تعذر ترجمة النص. جرّب تاني.'
+          : 'Impossible de traduire. Réessayez.',
+      });
+      setTranslatingItemId(null);
+      return false;
+    }
+
+    setItems(prev => prev.map(it => (updates[it.id] ? { ...it, designation_fr: updates[it.id] } : it)));
+    setTranslatingItemId(null);
+
+    const stillPending = pending.some(it => !updates[it.id]?.trim());
+    if (stillPending) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'لازم الترجمة' : 'Traduction requise',
+        description: isRTL
+          ? 'مينفعش تكمل قبل ما الوصف بالفرنسي يتملي.'
+          : 'Impossible de continuer: la description française doit être remplie.',
+      });
+      return false;
+    }
+
+    return true;
   };
   
   // Add new line item
@@ -465,10 +553,19 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
             <Button
               variant="outline"
               size="sm"
-              onClick={addLineItem}
+              onClick={async () => {
+                const ok = await ensureTranslations();
+                if (!ok) return;
+                addLineItem();
+              }}
               className={cn(isRTL && "font-cairo")}
+              disabled={!!translatingItemId}
             >
-              <Plus className="h-4 w-4 mr-1" />
+              {translatingItemId ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4 mr-1" />
+              )}
               {isRTL ? 'سطر جديد' : 'Ajouter'}
             </Button>
           </div>
@@ -501,13 +598,16 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                      {isRTL ? 'الوصف في الفاتورة (فرنسي)' : 'Désignation (FR)'}
+                      {isRTL ? 'الوصف بالفرنسية' : 'Désignation (Français)'}
                     </Label>
                     <Input
                       value={item.designation_fr}
                       onChange={(e) => handleItemChange(item.id, 'designation_fr', e.target.value)}
                       placeholder={isRTL ? 'اكتب وصف الشغل هنا (مثال: Peinture salon)' : 'Ex: Peinture mur salon'}
-                      className="text-sm"
+                      className={cn(
+                        "text-sm",
+                        item.designation_ar?.trim() && !item.designation_fr?.trim() && "border-destructive/50 bg-destructive/5"
+                      )}
                     />
                     <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
                       {isRTL ? '👁️ يظهر للعميل' : '👁️ Visible par le client'}
@@ -516,14 +616,24 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
                   
                   <div className="space-y-1.5">
                     <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                      {isRTL ? 'ملاحظات ليك (عربي - اختياري)' : 'Notes perso (AR - optionnel)'}
+                      {'اكتب بالعربي وانا اترجم'}
                     </Label>
-                    <Input
+                    <Textarea
                       value={item.designation_ar}
                       onChange={(e) => handleItemChange(item.id, 'designation_ar', e.target.value)}
-                      placeholder="دهان حيطة الصالون"
-                      className={cn("text-sm", isRTL && "text-right font-cairo")}
+                      onBlur={() => handleTranslation(item.id)}
+                      placeholder={isRTL ? 'مثال: زليج / بانتير / كليما' : 'Ex: zelij / bantoura / clima'}
+                      className={cn(
+                        "text-sm min-h-[44px]",
+                        isRTL && "text-right font-cairo"
+                      )}
                     />
+                    {translatingItemId === item.id && (
+                      <p className={cn("text-[10px] text-primary flex items-center gap-1", isRTL && "font-cairo")}> 
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        {isRTL ? 'جاري الترجمة...' : 'Traduction...'}
+                      </p>
+                    )}
                   </div>
                 </div>
                 
@@ -735,7 +845,10 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
           </Button>
           
           <Button
-            onClick={() => {
+            onClick={async () => {
+              const ok = await ensureTranslations();
+              if (!ok) return;
+
               // Comprehensive validation with detailed feedback
               const missingFields: string[] = [];
               

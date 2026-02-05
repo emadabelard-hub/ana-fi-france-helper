@@ -121,11 +121,11 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
                 <td className="p-3 border">
                   <div>
                     <span className="font-medium">
-                      {showArabic ? item.designation_ar : item.designation_fr}
+                      {item.designation_fr}
                     </span>
-                    {showArabic && (
-                      <span className="block text-xs text-gray-500 mt-1">
-                        {item.designation_fr}
+                    {showArabic && item.designation_ar && (
+                      <span className="block text-xs text-gray-500 mt-1 print:hidden" dir="rtl">
+                        {item.designation_ar}
                       </span>
                     )}
                   </div>

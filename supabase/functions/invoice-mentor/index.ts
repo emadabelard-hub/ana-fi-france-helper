@@ -92,30 +92,21 @@ Ajuste selon la complexité décrite. Sois réaliste.`;
 
 // Translation handler - Arabic to French professional
 async function handleTranslation(text: string, apiKey: string): Promise<Response> {
-  const prompt = `Tu es un traducteur expert pour artisans du bâtiment.
+  const prompt = `Tu es un traducteur expert en BTP.
 
-═══════════════════════════════════════════════════════════════════════════════
-MISSION: Traduire le texte suivant en français professionnel pour facture/devis.
-═══════════════════════════════════════════════════════════════════════════════
+Traduis ce texte (Arabe/Darija/Franco-Arabe) en Français technique précis, adapté à une ligne de devis/facture.
 
-TEXTE À TRADUIRE:
+Exemples:
+- "Bantoura" -> "Peinture"
+- "Zelij" -> "Pose de carrelage"
+
+Texte:
 "${text}"
 
-RÈGLES:
-1. Si c'est de l'arabe/franco-arabe/dialecte égyptien → traduis en français technique professionnel
-2. Si c'est déjà du français → corrige/améliore pour un document officiel
-3. Si c'est de l'anglais → traduis en français
-4. Utilise des termes techniques du bâtiment français (pose, installation, réfection, etc.)
-
-EXEMPLES:
-- "صبغ الصالون" → "Peinture du salon"
-- "ركبت لمبات في الكوزينة" → "Installation de luminaires - Cuisine"
-- "كاغلاج في الحمام" → "Pose de carrelage - Salle de bain"
-- "سباكة" → "Travaux de plomberie"
-- "enduit + peinture" → "Enduit et peinture"
-
-RÉPONDS UNIQUEMENT AVEC UN JSON VALIDE:
-{"translation": "La traduction professionnelle en français"}`;
+Règles:
+- Ne donne QUE la traduction.
+- Sans guillemets.
+- Pas de JSON. Pas d'explication.`;
 
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -142,27 +133,18 @@ RÉPONDS UNIQUEMENT AVEC UN JSON VALIDE:
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
-    
-    console.log("Translation raw response:", content);
-    
-    // Extract JSON from response
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[0]);
-        return new Response(JSON.stringify(parsed), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      } catch (e) {
-        console.error("Failed to parse translation JSON:", e);
-        return new Response(JSON.stringify({ translation: text }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-    
-    return new Response(JSON.stringify({ translation: text }), {
+    const raw = (data.choices?.[0]?.message?.content || "").trim();
+
+    // Defensive cleanup: remove wrapping quotes/backticks if the model adds them
+    const cleaned = raw
+      .replace(/^```[a-zA-Z]*\n?/, "")
+      .replace(/```$/, "")
+      .trim()
+      .replace(/^"/, "")
+      .replace(/"$/, "")
+      .trim();
+
+    return new Response(JSON.stringify({ translation: cleaned || text }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

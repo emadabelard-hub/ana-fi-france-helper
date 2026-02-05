@@ -309,7 +309,7 @@ const Index = () => {
             </div>
             <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
               <p className="font-semibold text-foreground text-sm">
-                {isRTL ? 'آراء ومقترحات' : 'Avis & Suggestions'}
+                {isRTL ? 'آراء ومقترحات' : 'Avis & Suggestions ✨'}
               </p>
               <p className="text-xs text-muted-foreground">
                 {isRTL ? 'شاركنا رأيك 💡' : 'Partagez votre avis 💡'}

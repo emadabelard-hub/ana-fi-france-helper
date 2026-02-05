@@ -300,15 +300,15 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                     {/* Arabic Input - PRIMARY INPUT (Step 1) */}
                     <div className="order-2 md:order-1">
                       <Label className={cn("text-xs font-medium text-foreground", isRTL && "font-cairo block text-right")}>
-                        {isRTL ? '1️⃣ اكتب العمل هنا بالعربية' : "1️⃣ Écrivez le travail ici (Arabe/Darija)"}
+                        {isRTL ? '🪄 اكتب بالعربي وانا اترجم' : "🪄 Écris en arabe et je traduis"}
                       </Label>
                       <Textarea
                         value={item.designation_ar}
                         onChange={(e) => updateItem(item.id, 'designation_ar', e.target.value)}
                         onBlur={() => handleArabicBlur(item)}
                         placeholder={isRTL 
-                          ? "اكتب وصف الشغل هنا بالعربي أو الفرنكو (مثال: صبغت الصالون، ركبت كاغلاج...)" 
-                          : "Écrivez en arabe ou franco-arabe (ex: صبغ الصالون, carrelage cuisine...)"
+                          ? "مثال: صبغ الصالون / بان تير / كاغلاج..." 
+                          : "Ex: صبغ الصالون / bantoura / karelaj..."
                         }
                         className={cn(
                           "text-sm min-h-[60px] resize-none",
@@ -321,8 +321,8 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                         isRTL && "font-cairo text-right"
                       )}>
                         {isRTL 
-                          ? '⬆️ سيترجم تلقائياً للفرنسية في الخانة المقابلة'
-                          : '⬆️ Sera traduit automatiquement en français au-dessus'}
+                          ? '⬆️ سيظهر بالفرنسية في الخانة فوق تلقائياً'
+                          : '⬆️ Apparaîtra en français dans la case au-dessus'}
                       </p>
                       {translatingFor === item.id && (
                         <div className={cn(
@@ -338,7 +338,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                     {/* French Output - RESULT (Step 2) */}
                     <div className="order-1 md:order-2">
                       <Label className="text-xs font-medium text-foreground flex items-center gap-1">
-                        2️⃣ Résultat sur la Facture (Français)
+                        📄 Description (Français)
                         {translatingFor === item.id && (
                           <Loader2 className="h-3 w-3 animate-spin text-primary" />
                         )}
@@ -346,12 +346,12 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                       <Textarea
                         value={item.designation_fr}
                         onChange={(e) => updateItem(item.id, 'designation_fr', e.target.value)}
-                        placeholder="Rempli automatiquement après traduction..."
+                        placeholder="Ex: Peinture salon (si vous savez écrire en français)"
                         className="text-sm"
                         rows={2}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        ✅ Ce texte apparaîtra sur le PDF final
+                        ✅ C'est ce texte qui apparaîtra sur le PDF
                       </p>
                     </div>
                   </div>

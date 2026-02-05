@@ -26,7 +26,7 @@ const ProPage = () => {
       icon: null, // Custom icon component
       customIcon: QuoteToInvoiceIcon,
       emoji: null,
-      title: isRTL ? 'حوّل الدوفي لفاتورة' : 'Devis → Facture',
+      title: isRTL ? 'عشان ما تغلطش حول دوفي الشانتي لفاكتير' : 'Devis → Facture',
       description: isRTL 
         ? 'حمّل الدوفي والذكاء الاصطناعي يملأ الفاتورة' 
         : 'L\'IA remplit votre facture automatiquement',

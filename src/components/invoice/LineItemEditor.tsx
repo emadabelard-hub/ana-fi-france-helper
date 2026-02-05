@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import { CheckCircle } from 'lucide-react';
 
 export interface LineItem {
   id: string;
@@ -142,8 +143,8 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
   const handleArabicBlur = async (item: LineItem) => {
     const arabicText = item.designation_ar?.trim();
     
-    // Only translate if there's Arabic text and French field is empty
-    if (!arabicText || item.designation_fr.trim()) return;
+    // Only translate if there's Arabic text
+    if (!arabicText) return;
     
     setTranslatingFor(item.id);
     
@@ -296,10 +297,10 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                 <div className="flex-1 space-y-3">
                   {/* Description Row */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {/* Arabic Input - PRIMARY (comes first visually for RTL users) */}
+                    {/* Arabic Input - PRIMARY INPUT (Step 1) */}
                     <div className="order-2 md:order-1">
                       <Label className={cn("text-xs font-medium text-foreground", isRTL && "font-cairo block text-right")}>
-                        {isRTL ? '✍️ اكتب تفاصيل الشغل هنا' : "✍️ Écrivez le travail ici (Arabe/Darija)"}
+                        {isRTL ? '1️⃣ اكتب العمل هنا بالعربية' : "1️⃣ Écrivez le travail ici (Arabe/Darija)"}
                       </Label>
                       <Textarea
                         value={item.designation_ar}
@@ -320,8 +321,8 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                         isRTL && "font-cairo text-right"
                       )}>
                         {isRTL 
-                          ? '⬆️ ما تكتبه هنا سيترجم تلقائياً للفرنسية في الخانة المقابلة'
-                          : '⬆️ Ce que vous écrivez ici sera traduit automatiquement en français'}
+                          ? '⬆️ سيترجم تلقائياً للفرنسية في الخانة المقابلة'
+                          : '⬆️ Sera traduit automatiquement en français au-dessus'}
                       </p>
                       {translatingFor === item.id && (
                         <div className={cn(
@@ -334,10 +335,10 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                       )}
                     </div>
                     
-                    {/* French Output - SECONDARY (auto-filled) */}
+                    {/* French Output - RESULT (Step 2) */}
                     <div className="order-1 md:order-2">
                       <Label className="text-xs font-medium text-foreground flex items-center gap-1">
-                        🇫🇷 Désignation (Français)
+                        2️⃣ Résultat sur la Facture (Français)
                         {translatingFor === item.id && (
                           <Loader2 className="h-3 w-3 animate-spin text-primary" />
                         )}
@@ -345,12 +346,12 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                       <Textarea
                         value={item.designation_fr}
                         onChange={(e) => updateItem(item.id, 'designation_fr', e.target.value)}
-                        placeholder="Ex: Pose de carrelage - cuisine (rempli automatiquement)"
+                        placeholder="Rempli automatiquement après traduction..."
                         className="text-sm"
                         rows={2}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        ✅ Ce texte apparaîtra sur le document PDF final
+                        ✅ Ce texte apparaîtra sur le PDF final
                       </p>
                     </div>
                   </div>
@@ -455,8 +456,8 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
         onClick={addFreeItem}
         className={cn("w-full border-dashed border-2 py-6", isRTL && "font-cairo")}
       >
-        <Plus className="h-4 w-4 mr-2" />
-        {isRTL ? '➕ أضف عمل جديد للفاتورة' : '➕ Valider et Ajouter une ligne'}
+        <CheckCircle className="h-4 w-4 mr-2" />
+        {isRTL ? '✅ أضف هذا العمل للفاتورة' : '✅ Valider et Ajouter la ligne'}
       </Button>
       
       {/* Explanation text under button */}
@@ -465,8 +466,8 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
         isRTL && "font-cairo"
       )}>
         {isRTL 
-          ? '👆 اضغط هنا لإضافة بند جديد. يمكنك إضافة أكثر من بند.' 
-          : '👆 Cliquez ici pour ajouter un travail. Vous pourrez en ajouter d\'autres ensuite.'}
+          ? '👆 اضغط هنا لتأكيد هذا البند وإضافته للفاتورة' 
+          : '👆 Cliquez ici pour confirmer cette ligne et l\'ajouter au tableau final'}
       </p>
 
       {/* Grand Total */}

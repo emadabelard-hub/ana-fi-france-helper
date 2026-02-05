@@ -18,9 +18,24 @@ import QuoteWizardModal from './QuoteWizardModal';
 import InvoiceGuideModal from './InvoiceGuideModal';
 import { supabase } from '@/integrations/supabase/client';
 
+interface PrefillData {
+  clientName?: string;
+  clientAddress?: string;
+  workSiteAddress?: string;
+  items: Array<{
+    designation_fr: string;
+    designation_ar?: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+  }>;
+  notes?: string;
+}
+
 interface InvoiceFormBuilderProps {
   documentType: 'devis' | 'facture';
   onBack: () => void;
+  prefillData?: PrefillData | null;
 }
 
 // Generate unique ID
@@ -36,7 +51,7 @@ const generateDocNumber = (type: 'devis' | 'facture') => {
   return `${prefix}-${year}${month}-${random}`;
 };
 
-const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) => {
+const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBuilderProps) => {
   const { isRTL } = useLanguage();
   const { profile } = useProfile();
   const { toast } = useToast();
@@ -88,6 +103,50 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
+
+  // Handle prefill data from quote-to-invoice conversion
+  useEffect(() => {
+    if (prefillData) {
+      console.log('Prefilling invoice with extracted data:', prefillData);
+      
+      // Set client info
+      if (prefillData.clientName) {
+        setClientName(prefillData.clientName);
+      }
+      if (prefillData.clientAddress) {
+        setClientAddress(prefillData.clientAddress);
+      }
+      if (prefillData.workSiteAddress) {
+        setWorkSiteAddress(prefillData.workSiteAddress);
+        setWorkSiteSameAsClient(false);
+      }
+      
+      // Set items
+      if (prefillData.items && prefillData.items.length > 0) {
+        const newItems: LineItem[] = prefillData.items.map((item) => ({
+          id: generateId(),
+          designation_fr: item.designation_fr || '',
+          designation_ar: item.designation_ar || '',
+          quantity: item.quantity || 1,
+          unit: item.unit || 'U',
+          unitPrice: item.unitPrice || 0,
+          total: (item.quantity || 1) * (item.unitPrice || 0),
+        }));
+        setItems(newItems);
+        
+        // Mark these items as having already been translated (from AI extraction)
+        const attemptedIds = new Set(newItems.map(item => item.id));
+        setTranslationAttemptIds(attemptedIds);
+      }
+      
+      toast({
+        title: isRTL ? '✅ تم ملء البيانات!' : '✅ Données pré-remplies!',
+        description: isRTL 
+          ? 'راجع البيانات واضغط على معاينة' 
+          : 'Vérifiez les données et cliquez sur Aperçu',
+      });
+    }
+  }, [prefillData, isRTL, toast]);
 
   const startTranslating = (id: string) => {
     setTranslatingIds(prev => {

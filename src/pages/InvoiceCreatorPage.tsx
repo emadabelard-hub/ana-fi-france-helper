@@ -25,19 +25,36 @@ const InvoiceCreatorPage = () => {
   
   // Get document type from URL or show modal
   const urlDocType = searchParams.get('type') as 'devis' | 'facture' | null;
+  const prefillSource = searchParams.get('prefill');
   
   const [documentType, setDocumentType] = useState<'devis' | 'facture' | null>(urlDocType);
   const [showTypeModal, setShowTypeModal] = useState(!urlDocType);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
+  const [prefillData, setPrefillData] = useState<any>(null);
   
-  // Sync URL with document type
+  // Sync URL with document type and check for prefill data
   useEffect(() => {
     if (urlDocType && !documentType) {
       setDocumentType(urlDocType);
       setShowTypeModal(false);
     }
-  }, [urlDocType, documentType]);
+    
+    // Check for prefill data from quote-to-invoice
+    if (prefillSource === 'quote') {
+      const storedData = sessionStorage.getItem('quoteToInvoiceData');
+      if (storedData) {
+        try {
+          const parsed = JSON.parse(storedData);
+          setPrefillData(parsed);
+          // Clear after reading
+          sessionStorage.removeItem('quoteToInvoiceData');
+        } catch (e) {
+          console.error('Failed to parse prefill data:', e);
+        }
+      }
+    }
+  }, [urlDocType, documentType, prefillSource]);
   
   // Handle document type selection
   const handleTypeSelect = (type: 'devis' | 'facture') => {
@@ -131,6 +148,7 @@ const InvoiceCreatorPage = () => {
           <InvoiceFormBuilder 
             documentType={documentType}
             onBack={handleBackToTypeSelection}
+            prefillData={prefillData}
           />
         ) : (
           <div className="flex items-center justify-center h-full">

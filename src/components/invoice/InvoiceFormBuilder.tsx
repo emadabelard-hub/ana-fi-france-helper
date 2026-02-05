@@ -503,7 +503,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
               "font-bold text-green-700 dark:text-green-400",
               isRTL && "font-cairo"
             )}>
-              {isRTL ? '✅ بياناتك (محفوظة تلقائياً)' : '✅ Vos informations (pré-remplies)'}
+              {isRTL ? '✅ بياناتك (متحفوظة)' : '✅ Vos informations (pré-remplies)'}
             </h3>
           </div>
           
@@ -525,7 +525,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
             </div>
             {profile?.legal_status && (
               <div className="flex items-center gap-2 col-span-full">
-                <span className="text-muted-foreground">{isRTL ? 'الوضع القانوني:' : 'Statut:'}</span>
+                <span className="text-muted-foreground">{isRTL ? 'نوع النشاط:' : 'Statut:'}</span>
                 <span className={cn(
                   "font-medium px-2 py-0.5 rounded text-xs",
                   profile.legal_status === 'auto-entrepreneur' 
@@ -533,8 +533,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                     : 'bg-primary/10 text-primary'
                 )}>
                   {profile.legal_status === 'auto-entrepreneur' 
-                    ? 'Auto-entrepreneur (معفى من TVA)'
-                    : 'Société (خاضع لـ TVA)'}
+                    ? 'Auto-entrepreneur (معفى من الـ TVA)'
+                    : 'Société (يدفع TVA)'}
                 </span>
               </div>
             )}
@@ -554,31 +554,31 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
               "font-bold",
               isRTL && "font-cairo"
             )}>
-              {isRTL ? '👤 بيانات العميل' : '👤 Informations client'}
+              {isRTL ? '👤 بيانات الزبون' : '👤 Informations client'}
             </h3>
           </div>
           
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
               <Label className={cn(isRTL && "font-cairo text-right block")}>
-                {isRTL ? 'اسم العميل' : 'Nom du client'} *
+                {isRTL ? 'اسم الزبون' : 'Nom du client'} *
               </Label>
               <Input
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                placeholder={isRTL ? 'مثال: السيد محمد أحمد' : 'Ex: M. Jean Dupont'}
+                placeholder={isRTL ? 'مثلاً: M. Jean Dupont' : 'Ex: M. Jean Dupont'}
                 className={cn(isRTL && "text-right font-cairo")}
               />
             </div>
             
             <div className="space-y-2">
               <Label className={cn(isRTL && "font-cairo text-right block")}>
-                {isRTL ? 'عنوان الفاتورة' : 'Adresse de facturation'} *
+                {isRTL ? 'عنوان الفاكتير' : 'Adresse de facturation'} *
               </Label>
               <Input
                 value={clientAddress}
                 onChange={(e) => setClientAddress(e.target.value)}
-                placeholder={isRTL ? '12 شارع باريس، 75001 باريس' : '12 rue de Paris, 75001 Paris'}
+                placeholder={isRTL ? '12 rue de Paris, 75001 Paris' : '12 rue de Paris, 75001 Paris'}
                 className={cn(isRTL && "text-right font-cairo")}
               />
             </div>
@@ -598,7 +598,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
               "font-bold",
               isRTL && "font-cairo"
             )}>
-              {isRTL ? '📍 عنوان الشانتي' : '📍 Adresse du Chantier'}
+              {isRTL ? '📍 عنوان الشانتييه' : '📍 Adresse du Chantier'}
             </h3>
           </div>
           
@@ -619,7 +619,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
               )}
             >
               {isRTL 
-                ? 'عنوان الشانتي نفس عنوان العميل'
+                ? 'نفس عنوان الزبون'
                 : "L'adresse du chantier est identique à l'adresse du client"}
             </Label>
           </div>
@@ -627,12 +627,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
           {!workSiteSameAsClient && (
             <div className="space-y-2 pt-2">
               <Label className={cn(isRTL && "font-cairo text-right block")}>
-                {isRTL ? 'عنوان الشانتي / مكان الركن' : 'Adresse du Chantier / Stationnement'}
+                {isRTL ? 'عنوان الشانتييه' : 'Adresse du Chantier / Stationnement'}
               </Label>
               <Input
                 value={workSiteAddress}
                 onChange={(e) => setWorkSiteAddress(e.target.value)}
-                placeholder={isRTL ? '45 شارع ليون، 69001 ليون' : '45 avenue de Lyon, 69001 Lyon'}
+                placeholder={isRTL ? '45 avenue de Lyon, 69001 Lyon' : '45 avenue de Lyon, 69001 Lyon'}
                 className={cn(isRTL && "text-right font-cairo")}
               />
               <p className={cn(
@@ -640,7 +640,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                 isRTL && "font-cairo text-right"
               )}>
                 {isRTL 
-                  ? '⚠️ ده العنوان اللي الشاحنة هتركن فيه - مهم لحساب مصاريف الركن!'
+                  ? '⚠️ العنوان اللي هتركن فيه - مهم عشان مصاريف الباركينج!'
                   : '⚠️ C\'est l\'adresse où le véhicule sera garé - important pour les frais de stationnement!'}
               </p>
             </div>
@@ -663,13 +663,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
         <div className={cn("text-center", isRTL && "font-cairo")}>
           <div className="font-bold text-primary">
             {documentType === 'devis' 
-              ? (isRTL ? '🧙‍♂️ مساعد تسعير الدوفيه' : '🧙‍♂️ Assistant Devis - Chiffrage')
-              : (isRTL ? '📝 مساعد إعداد الفاتورة' : '📝 Assistant Facture')}
+              ? (isRTL ? '🧙‍♂️ ساعدني أحسب الدوفي' : '🧙‍♂️ Assistant Devis - Chiffrage')
+              : (isRTL ? '📝 ساعدني أعمل الفاكتير' : '📝 Assistant Facture')}
           </div>
           <div className="text-xs text-muted-foreground">
             {documentType === 'devis'
-              ? (isRTL ? 'ساعدني أحسب السعر!' : 'Aidez-moi à chiffrer!')
-              : (isRTL ? 'ساعدني أكتب البنود بسرعة!' : 'Aidez-moi à rédiger rapidement!')}
+              ? (isRTL ? 'قولي الشغل وأنا أحسبلك!' : 'Aidez-moi à chiffrer!')
+              : (isRTL ? 'أملّيلك البنود بسرعة!' : 'Aidez-moi à rédiger rapidement!')}
           </div>
         </div>
       </Button>
@@ -690,7 +690,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                 "font-bold",
                 isRTL && "font-cairo"
               )}>
-                {isRTL ? '📋 البنود والأسعار' : '📋 Lignes de prestation'}
+                {isRTL ? '📋 الشغل والأسعار' : '📋 Lignes de prestation'}
               </h3>
             </div>
             
@@ -710,7 +710,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
               ) : (
                 <Plus className="h-4 w-4 mr-1" />
               )}
-              {isRTL ? 'سطر جديد' : 'Ajouter'}
+              {isRTL ? 'زود بند' : 'Ajouter'}
             </Button>
           </div>
           
@@ -742,12 +742,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                      {isRTL ? 'الوصف بالفرنسية' : 'Désignation (Français)'}
+                      {isRTL ? 'الوصف بالفرنساوي (يظهر للزبون)' : 'Désignation (Français)'}
                     </Label>
                     <Input
                       value={item.designation_fr}
                       onChange={(e) => handleItemChange(item.id, 'designation_fr', e.target.value)}
-                      placeholder={isRTL ? 'اكتب وصف الشغل هنا (مثال: Peinture salon)' : 'Ex: Peinture mur salon'}
+                      placeholder={isRTL ? 'مثال: Peinture salon' : 'Ex: Peinture mur salon'}
                       className={cn(
                         "text-sm",
                         // Do NOT show blocking validation while user is typing in Arabic.
@@ -760,13 +760,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                       )}
                     />
                     <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
-                      {isRTL ? '👁️ يظهر للعميل' : '👁️ Visible par le client'}
+                      {isRTL ? '👁️ ده اللي الزبون يشوفه' : '👁️ Visible par le client'}
                     </p>
                   </div>
                   
                   <div className="space-y-1.5">
                     <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                      {'اكتب بالعربي وانا اترجم'}
+                      {'اكتب بالعربي وأنا أترجم ✨'}
                     </Label>
                     <Textarea
                       value={item.designation_ar}
@@ -785,7 +785,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                     {translatingIds.has(item.id) && (
                       <p className={cn("text-[10px] text-primary flex items-center gap-1", isRTL && "font-cairo")}> 
                         <Loader2 className="h-3 w-3 animate-spin" />
-                        {isRTL ? 'جاري الترجمة...' : '🔄 Traduction en cours...'}
+                        {isRTL ? 'بترجم...' : '🔄 Traduction en cours...'}
                       </p>
                     )}
                   </div>
@@ -794,7 +794,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                   <div className="space-y-1.5">
                     <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                      {isRTL ? 'الكمية (مساحة / عدد / وقت)' : 'Qté'}
+                      {isRTL ? 'الكمية' : 'Qté'}
                     </Label>
                     <Input
                       type="text"
@@ -810,7 +810,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                   
                   <div className="space-y-1.5">
                     <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                      {isRTL ? 'الوحدة (متر / حبة / ساعة)' : 'Unité'}
+                      {isRTL ? 'الوحدة' : 'Unité'}
                     </Label>
                     <Input
                       value={item.unit}
@@ -821,7 +821,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                   </div>
                   
                   <div className="space-y-1.5">
-                    <Label className="text-xs">{isRTL ? 'السعر (€)' : 'P.U. (€)'}</Label>
+                    <Label className="text-xs">{isRTL ? 'السعر €' : 'P.U. (€)'}</Label>
                     <Input
                       type="text"
                       inputMode="decimal"
@@ -868,7 +868,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                     "font-bold text-orange-700 dark:text-orange-400",
                     isRTL && "font-cairo"
                   )}>
-                    {isRTL ? '🚚 مصاريف النقل' : '🚚 Frais de déplacement'}
+                    {isRTL ? '🚚 مصاريف المشوار' : '🚚 Frais de déplacement'}
                   </h4>
                 </div>
                 
@@ -880,7 +880,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                     htmlFor="travel-toggle" 
                     className={cn("text-sm", isRTL && "font-cairo")}
                   >
-                    {isRTL ? 'إضافة؟' : 'Ajouter?'}
+                    {isRTL ? 'أضيف؟' : 'Ajouter?'}
                   </Label>
                   <Switch
                     id="travel-toggle"
@@ -937,7 +937,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                     "font-bold text-blue-700 dark:text-blue-400",
                     isRTL && "font-cairo"
                   )}>
-                    {isRTL ? 'الضريبة (TVA)' : 'TVA'}
+                    {isRTL ? 'الـ TVA (الضريبة)' : 'TVA'}
                   </h4>
                 </div>
                 
@@ -949,7 +949,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                     htmlFor="auto-entrepreneur-toggle" 
                     className={cn("text-xs", isRTL && "font-cairo")}
                   >
-                    {isRTL ? 'Auto-entrepreneur؟' : 'Auto-entrepreneur?'}
+                    {isRTL ? 'أوطو أنتروبرونور؟' : 'Auto-entrepreneur?'}
                   </Label>
                   <Switch
                     id="auto-entrepreneur-toggle"
@@ -966,7 +966,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                     isRTL && "font-cairo text-right"
                   )}>
                     ✅ {isRTL 
-                      ? 'TVA = 0% - سيُضاف تلقائياً: "TVA non applicable, art. 293 B du CGI"' 
+                      ? 'TVA = 0% - هيتكتب تلقائي: "TVA non applicable, art. 293 B du CGI"' 
                       : 'TVA = 0% - Mention légale ajoutée automatiquement'}
                   </p>
                 </div>
@@ -977,7 +977,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                     isRTL && "font-cairo text-right"
                   )}>
                     {isRTL 
-                      ? 'اختر نسبة الضريبة حسب نوع العمل:' 
+                      ? 'اختار نسبة الـ TVA حسب نوع الشغل:' 
                       : 'Choisissez le taux selon les travaux:'}
                   </p>
                   <div className={cn(
@@ -993,7 +993,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                     >
                       <span className="font-bold">5,5%</span>
                       <span className="text-xs ml-1 opacity-70">
-                        {isRTL ? '(تجديد طاقة)' : '(énergétique)'}
+                        {isRTL ? '(عزل حراري)' : '(énergétique)'}
                       </span>
                     </Button>
                     <Button
@@ -1032,7 +1032,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
               "flex justify-between text-sm",
               isRTL && "flex-row-reverse"
             )}>
-              <span className="text-muted-foreground">{isRTL ? 'المجموع الفرعي:' : 'Sous-total HT:'}</span>
+              <span className="text-muted-foreground">{isRTL ? 'المجموع قبل الضريبة:' : 'Sous-total HT:'}</span>
               <span className="font-mono font-medium">{invoiceData.subtotal.toFixed(2)} €</span>
             </div>
             
@@ -1057,7 +1057,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
               "flex justify-between text-lg font-bold pt-2 border-t",
               isRTL && "flex-row-reverse"
             )}>
-              <span>{isRTL ? 'المجموع الكلي:' : 'Total TTC:'}</span>
+              <span>{isRTL ? 'الإجمالي:' : 'Total TTC:'}</span>
               <span className="font-mono text-primary">{invoiceData.total.toFixed(2)} €</span>
             </div>
           </div>
@@ -1078,7 +1078,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
               className={cn(isRTL && "font-cairo")}
             >
               <Edit3 className="h-4 w-4 mr-1" />
-              {isRTL ? 'تعديل النموذج' : 'Modifier le formulaire'}
+              {isRTL ? 'عدّل البيانات' : 'Modifier le formulaire'}
             </Button>
           </div>
           
@@ -1120,34 +1120,34 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
               
               // Check client name
               if (!clientName.trim()) {
-                missingFields.push(isRTL ? '👤 اسم العميل' : '👤 Nom du client');
+                missingFields.push(isRTL ? '👤 اسم الزبون' : '👤 Nom du client');
               }
               
               // Check client address
               if (!clientAddress.trim()) {
-                missingFields.push(isRTL ? '📍 عنوان الفاتورة' : '📍 Adresse de facturation');
+                missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
               }
               
               // Check work site address if different from client
               if (!workSiteSameAsClient && !workSiteAddress.trim()) {
-                missingFields.push(isRTL ? '🏗️ عنوان الشانتي' : '🏗️ Adresse du chantier');
+                missingFields.push(isRTL ? '🏗️ عنوان الشانتييه' : '🏗️ Adresse du chantier');
               }
               
               // Check line items
               const hasValidItem = items.some(item => item.designation_fr.trim() && Number(item.unitPrice) > 0);
               if (!hasValidItem && !(includeTravelCosts && travelPrice > 0)) {
-                missingFields.push(isRTL ? '📋 بند واحد على الأقل مع سعر' : '📋 Au moins une prestation avec un prix');
+                missingFields.push(isRTL ? '📋 بند واحد على الأقل بسعره' : '📋 Au moins une prestation avec un prix');
               }
               
               // Show validation errors if any
               if (missingFields.length > 0) {
                 toast({
                   variant: "destructive",
-                  title: isRTL ? "⚠️ بيانات ناقصة" : "⚠️ Données manquantes",
+                  title: isRTL ? "⚠️ في حاجات ناقصة" : "⚠️ Données manquantes",
                   description: (
                     <div className="mt-2 space-y-1">
                       <p className={cn("font-medium", isRTL && "font-cairo text-right")}>
-                        {isRTL ? 'من فضلك أكمل الحقول التالية:' : 'Veuillez compléter:'}
+                        {isRTL ? 'كمّل الخانات دي:' : 'Veuillez compléter:'}
                       </p>
                       <ul className={cn("list-none space-y-1 text-sm", isRTL && "text-right")}>
                         {missingFields.map((field, idx) => (
@@ -1165,7 +1165,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
             className={cn("flex-1", isRTL && "font-cairo")}
           >
             <FileText className="h-4 w-4 mr-2" />
-            {isRTL ? 'معاينة وتحميل PDF' : 'Aperçu et Télécharger PDF'}
+            {isRTL ? 'معاينة وتحميل' : 'Aperçu et Télécharger PDF'}
           </Button>
         </div>
       )}

@@ -108,11 +108,11 @@ const Index = () => {
                   </span>
                 </div>
                 <h1 className="text-xl font-bold text-white mb-1">
-                  {isRTL ? 'اسأل وأنا أجاوب' : 'Posez votre question'}
+                  {isRTL ? 'اسأل وأنا أجاوبك' : 'Posez votre question'}
                 </h1>
                 <p className="text-white/80 text-xs leading-relaxed">
                   {isRTL 
-                    ? 'هاشرحلك ايه الموضوع وتعمل ايه ولو تطلب الأمر هعمل لك الرد المظبوط' 
+                    ? 'هاشرحلك الموضوع وتعمل إيه، ولو لازم هاعملك الخطاب' 
                     : 'Je vous explique la situation et prépare votre réponse'}
                 </p>
               </div>
@@ -147,7 +147,7 @@ const Index = () => {
           isRTL ? "text-right" : "text-left"
         )}>
           {isRTL 
-            ? 'دراعك اليمين لعمل فواتيرك ودوفيهاتك وكل ما يتعلق بقوانين العمل والضرايب' 
+            ? 'اعمل الفاكتير والدوفي بتوعك واعرف كل حاجة عن الشغل والضرايب' 
             : 'Votre assistant pour factures, devis et tout ce qui concerne le travail et les impôts'}
         </p>
 
@@ -179,10 +179,10 @@ const Index = () => {
                 </div>
                 <div className={isRTL ? "text-right" : ""}>
                   <h3 className="font-extrabold text-slate-900 text-xl mb-1 leading-relaxed">
-                    {isRTL ? 'فواتيرك ودوفيهاتك' : 'Factures & Devis'}
+                    {isRTL ? 'فاكتير ودوفي' : 'Factures & Devis'}
                   </h3>
                   <p className="text-sm text-slate-700 font-medium leading-relaxed">
-                    {isRTL ? 'اعمل فواتيرك ودوفيهاتك بطريقة سليمة وحسابات مظبوطة' : 'Créez vos documents avec des calculs précis'}
+                    {isRTL ? 'اعملهم صح والحسابات على الجاهز' : 'Créez vos documents avec des calculs précis'}
                   </p>
                 </div>
               </div>
@@ -211,10 +211,10 @@ const Index = () => {
                 </div>
                 <div className={isRTL ? "text-right" : ""}>
                   <h3 className="font-bold text-slate-900 text-sm mb-1 leading-relaxed">
-                    {isRTL ? 'قوانين العمل والضرائب والتأمين' : 'Travail, Impôts & Santé'}
+                    {isRTL ? 'الشغل والضرايب والتأمين' : 'Travail, Impôts & Santé'}
                   </h3>
                   <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                    {isRTL ? 'حقوقك وواجباتك' : 'Vos droits & devoirs'}
+                    {isRTL ? 'اعرف حقوقك وواجباتك' : 'Vos droits & devoirs'}
                   </p>
                 </div>
               </div>
@@ -264,10 +264,10 @@ const Index = () => {
               {/* Text */}
               <div className={cn("flex-1", isRTL && "text-right")}>
                 <h2 className="text-lg font-bold text-white mb-1">
-                  {isRTL ? 'اتعلم كود دي لا روت بالعربي' : 'Code de la Route'}
+                  {isRTL ? 'اتعلم الكود بالعربي' : 'Code de la Route'}
                 </h2>
                 <p className="text-white/80 text-sm">
-                  {isRTL ? 'وامتحنه برضه بالعربي' : 'Leçons vidéo et exercices'}
+                  {isRTL ? 'دروس وامتحانات بالمصري' : 'Leçons vidéo et exercices'}
                 </p>
               </div>
 
@@ -309,10 +309,10 @@ const Index = () => {
             </div>
             <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
               <p className="font-semibold text-foreground text-sm">
-                {isRTL ? 'آراء ومقترحات' : 'Avis & Suggestions ✨'}
+                {isRTL ? 'رأيك يهمنا' : 'Avis & Suggestions ✨'}
               </p>
                 <p className="text-xs text-muted-foreground">
-                  {isRTL ? 'شاركنا رأيك 💡' : 'Partagez votre avis. 💡'}
+                  {isRTL ? 'قولنا إيه رأيك في التطبيق 💡' : 'Partagez votre avis. 💡'}
                 </p>
             </div>
             <Arrow className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />

@@ -15,9 +15,9 @@ const ProPage = () => {
     {
       icon: PenLine,
       emoji: '📄',
-      title: isRTL ? 'فواتير ودوفي' : 'Devis & Factures',
+      title: isRTL ? 'فواتير ودوفيهات' : 'Devis & Factures',
       description: isRTL 
-        ? 'اعمل فواتيرك وتقديراتك بسهولة' 
+        ? 'اعمل الفاكتير والدوفي بتوعك بسهولة' 
         : 'Créez vos devis et factures facilement',
       path: '/pro/invoice-creator',
       gradient: 'from-emerald-500 to-emerald-600',
@@ -26,9 +26,9 @@ const ProPage = () => {
       icon: null, // Custom icon component
       customIcon: QuoteToInvoiceIcon,
       emoji: null,
-      title: isRTL ? 'عشان ما تغلطش حول دوفي الشانتي لفاكتير' : 'Devis → Facture',
+      title: isRTL ? 'حوّل الدوفي لفاكتير' : 'Devis → Facture',
       description: isRTL 
-        ? 'حمّل الدوفي والذكاء الاصطناعي يملأ الفاتورة' 
+        ? 'ارفع الدوفي وأنا أملّي الفاكتير تلقائي!' 
         : 'L\'IA remplit votre facture automatiquement',
       path: '/pro/quote-to-invoice',
       gradient: 'from-amber-500 to-emerald-500',
@@ -36,9 +36,9 @@ const ProPage = () => {
     {
       icon: Scale,
       emoji: '⚖️',
-      title: isRTL ? 'دليل القوانين' : 'Guide Juridique',
+      title: isRTL ? 'قوانين الشغل والضرايب' : 'Guide Juridique',
       description: isRTL 
-        ? 'افهم قوانين الشغل والضرايب' 
+        ? 'اعرف حقوقك وواجباتك' 
         : 'Comprendre le droit du travail et les impôts',
       path: '/pro/admin-assistant',
       gradient: 'from-blue-500 to-blue-600',
@@ -54,7 +54,7 @@ const ProPage = () => {
         </h1>
         <p className="text-sm text-muted-foreground">
           {isRTL 
-            ? 'أدوات للحرفيين وأصحاب العمل الحر' 
+            ? 'كل اللي يحتاجه الصنايعي والحرفي في فرنسا' 
             : 'Outils pour artisans et indépendants'}
         </p>
       </section>
@@ -131,13 +131,13 @@ const ProPage = () => {
               "font-medium text-foreground",
               isRTL && "font-cairo"
             )}>
-              {isRTL ? 'هويتي المهنية' : 'Mon identité pro'}
+              {isRTL ? 'بيانات شركتي' : 'Mon identité pro'}
             </h3>
             <p className={cn(
               "text-xs text-muted-foreground",
               isRTL && "font-cairo"
             )}>
-              {isRTL ? 'بيانات الشركة واللوجو' : 'Infos entreprise et logo'}
+              {isRTL ? 'الاسم واللوجو والـ SIRET' : 'Infos entreprise et logo'}
             </p>
           </div>
           <Arrow className="h-4 w-4 text-muted-foreground" />
@@ -150,7 +150,7 @@ const ProPage = () => {
         isRTL && "font-cairo"
       )}>
         🧰 {isRTL 
-          ? 'أدوات مخصصة للحرفيين في فرنسا' 
+          ? 'أدوات مخصصة للصنايعية والحرفيين في فرنسا' 
           : 'Outils dédiés aux artisans en France'}
       </div>
     </div>

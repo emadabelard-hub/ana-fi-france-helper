@@ -20,7 +20,7 @@ const DocumentTypeModal = ({ open, onOpenChange, onSelect }: DocumentTypeModalPr
             "text-xl text-center",
             isRTL && "font-cairo"
           )}>
-            {isRTL ? 'ماذا تريد أن تنشئ؟' : 'Que souhaitez-vous créer ?'}
+            {isRTL ? 'إيه اللي عايز تعمله؟' : 'Que souhaitez-vous créer ?'}
           </DialogTitle>
         </DialogHeader>
         
@@ -43,13 +43,13 @@ const DocumentTypeModal = ({ open, onOpenChange, onSelect }: DocumentTypeModalPr
                 "font-bold text-lg",
                 isRTL && "font-cairo"
               )}>
-                {isRTL ? 'عرض سعر (دوفي)' : 'Devis'}
+                {isRTL ? 'دوفي (Devis)' : 'Devis'}
               </p>
               <p className={cn(
                 "text-xs text-muted-foreground mt-1",
                 isRTL && "font-cairo"
               )}>
-                {isRTL ? 'تقدير للعميل' : 'Estimation client'}
+                {isRTL ? 'عرض سعر للزبون' : 'Estimation client'}
               </p>
             </div>
           </Button>
@@ -69,13 +69,13 @@ const DocumentTypeModal = ({ open, onOpenChange, onSelect }: DocumentTypeModalPr
                 "font-bold text-lg",
                 isRTL && "font-cairo"
               )}>
-                {isRTL ? 'فاتورة (فاكتير)' : 'Facture'}
+                {isRTL ? 'فاكتير (Facture)' : 'Facture'}
               </p>
               <p className={cn(
                 "text-xs text-muted-foreground mt-1",
                 isRTL && "font-cairo"
               )}>
-                {isRTL ? 'بعد العمل' : 'Après le travail'}
+                {isRTL ? 'بعد ما تخلص الشغل' : 'Après le travail'}
               </p>
             </div>
           </Button>

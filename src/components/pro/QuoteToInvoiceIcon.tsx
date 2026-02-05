@@ -32,14 +32,15 @@ const QuoteToInvoiceIcon = ({ className = "h-8 w-8" }: QuoteToInvoiceIconProps) 
       <rect x="7" y="18" width="10" height="2" rx="1" fill="white" opacity="0.6" />
       <text 
         x="12" 
-        y="25" 
-        fontSize="4" 
+        y="24" 
+        fontSize="3.5" 
         fill="white" 
         fontWeight="bold" 
         textAnchor="middle"
         opacity="0.9"
+        fontFamily="Cairo, sans-serif"
       >
-        DEV
+        دوفي
       </text>
       
       {/* Transfer arrow (center) - animated pulse effect via CSS */}
@@ -64,14 +65,15 @@ const QuoteToInvoiceIcon = ({ className = "h-8 w-8" }: QuoteToInvoiceIconProps) 
       <rect x="31" y="22" width="10" height="2" rx="1" fill="white" opacity="0.6" />
       <text 
         x="36" 
-        y="29" 
-        fontSize="4" 
+        y="28" 
+        fontSize="3.5" 
         fill="white" 
         fontWeight="bold" 
         textAnchor="middle"
         opacity="0.9"
+        fontFamily="Cairo, sans-serif"
       >
-        FAC
+        فاكتير
       </text>
       
       {/* Sparkle effect on invoice (success indicator) */}

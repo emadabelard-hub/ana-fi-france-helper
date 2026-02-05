@@ -43,7 +43,7 @@ const DocumentTypeModal = ({ open, onOpenChange, onSelect }: DocumentTypeModalPr
                 "font-bold text-lg",
                 isRTL && "font-cairo"
               )}>
-                {isRTL ? 'عرض سعر' : 'Devis'}
+                {isRTL ? 'عرض سعر (دوفي)' : 'Devis'}
               </p>
               <p className={cn(
                 "text-xs text-muted-foreground mt-1",
@@ -69,7 +69,7 @@ const DocumentTypeModal = ({ open, onOpenChange, onSelect }: DocumentTypeModalPr
                 "font-bold text-lg",
                 isRTL && "font-cairo"
               )}>
-                {isRTL ? 'فاتورة' : 'Facture'}
+                {isRTL ? 'فاتورة (فاكتير)' : 'Facture'}
               </p>
               <p className={cn(
                 "text-xs text-muted-foreground mt-1",

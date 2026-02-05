@@ -68,6 +68,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
   const [travelDescription, setTravelDescription] = useState('');
   const [travelPrice, setTravelPrice] = useState(30);
   
+  // TVA state - Auto-entrepreneur franchise de TVA
+  const [isAutoEntrepreneur, setIsAutoEntrepreneur] = useState(false);
+  const [selectedTvaRate, setSelectedTvaRate] = useState<5.5 | 10 | 20>(10);
+  
   // Line items - use empty strings for quantity/price to allow clean input
   const [items, setItems] = useState<LineItem[]>([
     {
@@ -196,8 +200,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
     }
     
     const subtotal = allItems.reduce((sum, item) => sum + item.total, 0);
-    const tvaExempt = profile?.legal_status === 'auto-entrepreneur';
-    const tvaRate = tvaExempt ? 0 : 10; // Default 10% for renovation
+    
+    // Smart TVA calculation: Auto-entrepreneur = franchise de TVA
+    const tvaExempt = isAutoEntrepreneur;
+    const tvaRate = tvaExempt ? 0 : selectedTvaRate;
     const tvaAmount = tvaExempt ? 0 : Math.round(subtotal * (tvaRate / 100) * 100) / 100;
     const total = subtotal + tvaAmount;
     
@@ -915,6 +921,111 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
             </CardContent>
           </Card>
           
+          {/* TVA Settings - French Law Compliance */}
+          <Card className="border-blue-500/20 bg-blue-500/5">
+            <CardContent className="p-4 space-y-4">
+              <div className={cn(
+                "flex items-center justify-between",
+                isRTL && "flex-row-reverse"
+              )}>
+                <div className={cn(
+                  "flex items-center gap-2",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <span className="text-xl">💶</span>
+                  <h4 className={cn(
+                    "font-bold text-blue-700 dark:text-blue-400",
+                    isRTL && "font-cairo"
+                  )}>
+                    {isRTL ? 'الضريبة (TVA)' : 'TVA'}
+                  </h4>
+                </div>
+                
+                <div className={cn(
+                  "flex items-center gap-2",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <Label 
+                    htmlFor="auto-entrepreneur-toggle" 
+                    className={cn("text-xs", isRTL && "font-cairo")}
+                  >
+                    {isRTL ? 'Auto-entrepreneur؟' : 'Auto-entrepreneur?'}
+                  </Label>
+                  <Switch
+                    id="auto-entrepreneur-toggle"
+                    checked={isAutoEntrepreneur}
+                    onCheckedChange={setIsAutoEntrepreneur}
+                  />
+                </div>
+              </div>
+              
+              {isAutoEntrepreneur ? (
+                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <p className={cn(
+                    "text-sm text-green-700 dark:text-green-400",
+                    isRTL && "font-cairo text-right"
+                  )}>
+                    ✅ {isRTL 
+                      ? 'TVA = 0% - سيُضاف تلقائياً: "TVA non applicable, art. 293 B du CGI"' 
+                      : 'TVA = 0% - Mention légale ajoutée automatiquement'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className={cn(
+                    "text-xs text-muted-foreground",
+                    isRTL && "font-cairo text-right"
+                  )}>
+                    {isRTL 
+                      ? 'اختر نسبة الضريبة حسب نوع العمل:' 
+                      : 'Choisissez le taux selon les travaux:'}
+                  </p>
+                  <div className={cn(
+                    "flex gap-2 flex-wrap",
+                    isRTL && "flex-row-reverse"
+                  )}>
+                    <Button
+                      type="button"
+                      variant={selectedTvaRate === 5.5 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedTvaRate(5.5)}
+                      className="flex-1 min-w-[80px]"
+                    >
+                      <span className="font-bold">5,5%</span>
+                      <span className="text-xs ml-1 opacity-70">
+                        {isRTL ? '(تجديد طاقة)' : '(énergétique)'}
+                      </span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={selectedTvaRate === 10 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedTvaRate(10)}
+                      className="flex-1 min-w-[80px]"
+                    >
+                      <span className="font-bold">10%</span>
+                      <span className="text-xs ml-1 opacity-70">
+                        {isRTL ? '(تجديد)' : '(rénovation)'}
+                      </span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={selectedTvaRate === 20 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedTvaRate(20)}
+                      className="flex-1 min-w-[80px]"
+                    >
+                      <span className="font-bold">20%</span>
+                      <span className="text-xs ml-1 opacity-70">
+                        {isRTL ? '(بناء جديد)' : '(neuf)'}
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
           {/* Totals Summary */}
           <div className="pt-4 border-t space-y-2">
             <div className={cn(
@@ -925,7 +1036,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
               <span className="font-mono font-medium">{invoiceData.subtotal.toFixed(2)} €</span>
             </div>
             
-            {!invoiceData.tvaExempt && (
+            {invoiceData.tvaExempt ? (
+              <div className={cn(
+                "text-xs text-muted-foreground italic",
+                isRTL && "text-right font-cairo"
+              )}>
+                TVA non applicable, art. 293 B du CGI
+              </div>
+            ) : (
               <div className={cn(
                 "flex justify-between text-sm",
                 isRTL && "flex-row-reverse"

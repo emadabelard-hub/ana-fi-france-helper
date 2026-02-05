@@ -93,6 +93,21 @@ Ajuste selon la complexité décrite. Sois réaliste.`;
 async function handleInvoiceGeneration(category: string, categoryAnswers: string, logistics: string, apiKey: string): Promise<Response> {
   const prompt = `Tu es un expert en facturation pour artisans du bâtiment en France. Tu génères des FACTURES professionnelles (pas des devis).
 
+═══════════════════════════════════════════════════════════════════════════════
+🔴 RÈGLE D'OR - SORTIE EN FRANÇAIS UNIQUEMENT (STRICT OUTPUT RULE):
+═══════════════════════════════════════════════════════════════════════════════
+PEU IMPORTE la langue d'entrée de l'utilisateur (Arabe, Anglais, Franco-Arabe, Dialecte égyptien),
+le contenu généré dans le JSON final (designation_fr, description) DOIT TOUJOURS ÊTRE EN FRANÇAIS PROFESSIONNEL.
+
+EXEMPLES DE TRADUCTION OBLIGATOIRE:
+- "ركبت لمبات في الكوزينة" → designation_fr: "Installation de luminaires dans la cuisine"
+- "صبغ الصالون" → designation_fr: "Peinture du salon"
+- "سباكة الحمام" → designation_fr: "Travaux de plomberie - Salle de bain"
+- "كاغلاج في المطبخ" → designation_fr: "Pose de carrelage - Cuisine"
+
+⚠️ INTERDICTION ABSOLUE: N'écris JAMAIS d'arabe dans designation_fr. Le PDF doit être 100% en français.
+═══════════════════════════════════════════════════════════════════════════════
+
 ⚠️ IMPORTANT: C'est une FACTURE, pas un devis. Le travail a DÉJÀ été réalisé.
 
 CATÉGORIE DE TRAVAUX RÉALISÉS: ${category}
@@ -207,6 +222,21 @@ Génère des lignes réalistes pour une FACTURE de travaux terminés.`;
 // Quote generation handler
 async function handleQuoteGeneration(category: string, categoryAnswers: string, logistics: string, apiKey: string): Promise<Response> {
   const prompt = `Tu es un expert en devis pour artisans du bâtiment en France. Tu génères des lignes de devis professionnelles.
+
+═══════════════════════════════════════════════════════════════════════════════
+🔴 RÈGLE D'OR - SORTIE EN FRANÇAIS UNIQUEMENT (STRICT OUTPUT RULE):
+═══════════════════════════════════════════════════════════════════════════════
+PEU IMPORTE la langue d'entrée de l'utilisateur (Arabe, Anglais, Franco-Arabe, Dialecte égyptien),
+le contenu généré dans le JSON final (designation_fr, description) DOIT TOUJOURS ÊTRE EN FRANÇAIS PROFESSIONNEL.
+
+EXEMPLES DE TRADUCTION OBLIGATOIRE:
+- "ركبت لمبات في الكوزينة" → designation_fr: "Installation de luminaires dans la cuisine"
+- "صبغ الصالون" → designation_fr: "Peinture du salon"
+- "سباكة الحمام" → designation_fr: "Travaux de plomberie - Salle de bain"
+- "كاغلاج في المطبخ" → designation_fr: "Pose de carrelage - Cuisine"
+
+⚠️ INTERDICTION ABSOLUE: N'écris JAMAIS d'arabe dans designation_fr. Le PDF doit être 100% en français.
+═══════════════════════════════════════════════════════════════════════════════
 
 CATÉGORIE DE TRAVAUX: ${category}
 

@@ -367,7 +367,7 @@ const QuoteWizardModal = ({ open, onOpenChange, onGenerate, documentType = 'devi
             value={value}
             onChange={(e) => setCategoryAnswers(prev => ({ ...prev, [question.id]: e.target.value }))}
             className={cn(isRTL && "text-right font-cairo")}
-            placeholder={isRTL ? "اكتب هنا..." : "Décrivez..."}
+            placeholder={isRTL ? "اكتب بالعربية أو الفرنسية (ex: صبغ الصالون, carrelage...)" : "Décrivez en Arabe ou Français (ex: صبغ الصالون, carrelage cuisine...)"}
           />
         )}
         

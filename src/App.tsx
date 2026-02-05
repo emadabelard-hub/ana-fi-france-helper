@@ -12,6 +12,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import ProPage from "@/pages/ProPage";
 import ProSettingsPage from "@/pages/ProSettingsPage";
 import InvoiceCreatorPage from "@/pages/InvoiceCreatorPage";
+import QuoteToInvoicePage from "@/pages/QuoteToInvoicePage";
 import ProAdminAssistantPage from "@/pages/ProAdminAssistantPage";
 import AdminPage from "@/pages/AdminPage";
 import ComingSoonPage from "@/pages/ComingSoonPage";
@@ -75,6 +76,7 @@ const App = () => {
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/pro" element={<ProPage />} />
                   <Route path="/pro/invoice-creator" element={<InvoiceCreatorPage />} />
+                  <Route path="/pro/quote-to-invoice" element={<QuoteToInvoicePage />} />
                   <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />
                   <Route path="/pro/settings" element={<ProSettingsPage />} />
                   <Route path="/admin" element={<AdminPage />} />

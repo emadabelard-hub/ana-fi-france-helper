@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { PenLine, Scale, Settings, ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
 
 const ProPage = () => {
   const { isRTL } = useLanguage();
@@ -20,6 +21,17 @@ const ProPage = () => {
         : 'Créez vos devis et factures facilement',
       path: '/pro/invoice-creator',
       gradient: 'from-emerald-500 to-emerald-600',
+    },
+    {
+      icon: null, // Custom icon component
+      customIcon: QuoteToInvoiceIcon,
+      emoji: null,
+      title: isRTL ? 'حوّل الدوفي لفاتورة' : 'Devis → Facture',
+      description: isRTL 
+        ? 'حمّل الدوفي والذكاء الاصطناعي يملأ الفاتورة' 
+        : 'L\'IA remplit votre facture automatiquement',
+      path: '/pro/quote-to-invoice',
+      gradient: 'from-amber-500 to-emerald-500',
     },
     {
       icon: Scale,
@@ -51,6 +63,7 @@ const ProPage = () => {
       <section className="space-y-4">
         {mainTools.map((tool) => {
           const Icon = tool.icon;
+          const CustomIcon = tool.customIcon;
           return (
             <Card
               key={tool.path}
@@ -69,7 +82,11 @@ const ProPage = () => {
                 )}>
                   {/* Icon Circle */}
                   <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-                    <span className="text-3xl">{tool.emoji}</span>
+                    {CustomIcon ? (
+                      <CustomIcon className="h-10 w-10" />
+                    ) : (
+                      <span className="text-3xl">{tool.emoji}</span>
+                    )}
                   </div>
 
                   {/* Text */}

@@ -9,6 +9,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
 
 export interface LineItem {
   id: string;
@@ -81,6 +82,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
   const [suggestingPriceFor, setSuggestingPriceFor] = useState<string | null>(null);
+  const [translatingFor, setTranslatingFor] = useState<string | null>(null);
   // Track temporary string values for quantity and price inputs
   const [tempValues, setTempValues] = useState<Record<string, { quantity?: string; unitPrice?: string }>>({});
 
@@ -134,6 +136,42 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
     });
     
     updateItem(id, field, numValue);
+  };
+
+  // Auto-translate Arabic to French
+  const handleArabicBlur = async (item: LineItem) => {
+    const arabicText = item.designation_ar?.trim();
+    
+    // Only translate if there's Arabic text and French field is empty
+    if (!arabicText || item.designation_fr.trim()) return;
+    
+    setTranslatingFor(item.id);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('invoice-mentor', {
+        body: {
+          action: 'translate_to_french',
+          text: arabicText,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.translation) {
+        updateItem(item.id, 'designation_fr', data.translation);
+        toast({
+          title: isRTL ? '✨ تم الترجمة!' : '✨ Traduit!',
+          description: isRTL 
+            ? `تم ترجمة "${arabicText.substring(0, 20)}..." للفرنسية`
+            : `"${arabicText.substring(0, 20)}..." traduit en français`,
+        });
+      }
+    } catch (error) {
+      console.error('Translation error:', error);
+      // Silently fail - user can still type manually
+    } finally {
+      setTranslatingFor(null);
+    }
   };
 
   // Get display value for numeric fields
@@ -258,28 +296,62 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                 <div className="flex-1 space-y-3">
                   {/* Description Row */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs text-muted-foreground">
-                        Description (FR)
+                    {/* Arabic Input - PRIMARY (comes first visually for RTL users) */}
+                    <div className="order-2 md:order-1">
+                      <Label className={cn("text-xs font-medium text-foreground", isRTL && "font-cairo block text-right")}>
+                        {isRTL ? '✍️ اكتب تفاصيل الشغل هنا' : "✍️ Écrivez le travail ici (Arabe/Darija)"}
                       </Label>
-                      <Input
-                        value={item.designation_fr}
-                        onChange={(e) => updateItem(item.id, 'designation_fr', e.target.value)}
-                        placeholder="Ex: Pose de carrelage - cuisine"
-                        className="text-sm"
-                      />
-                    </div>
-                    <div>
-                      <Label className={cn("text-xs text-muted-foreground", isRTL && "font-cairo")}>
-                        {isRTL ? 'الوصف (عربي)' : 'Description (AR)'}
-                      </Label>
-                      <Input
+                      <Textarea
                         value={item.designation_ar}
                         onChange={(e) => updateItem(item.id, 'designation_ar', e.target.value)}
-                        placeholder="اكتب وصف الشغل هنا (مثال: تركيب سيراميك...)"
-                        className={cn("text-sm", isRTL && "text-right font-cairo")}
+                        onBlur={() => handleArabicBlur(item)}
+                        placeholder={isRTL 
+                          ? "اكتب وصف الشغل هنا بالعربي أو الفرنكو (مثال: صبغت الصالون، ركبت كاغلاج...)" 
+                          : "Écrivez en arabe ou franco-arabe (ex: صبغ الصالون, carrelage cuisine...)"
+                        }
+                        className={cn(
+                          "text-sm min-h-[60px] resize-none",
+                          isRTL && "text-right font-cairo"
+                        )}
                         dir="rtl"
                       />
+                      <p className={cn(
+                        "text-xs text-muted-foreground mt-1",
+                        isRTL && "font-cairo text-right"
+                      )}>
+                        {isRTL 
+                          ? '⬆️ ما تكتبه هنا سيترجم تلقائياً للفرنسية في الخانة المقابلة'
+                          : '⬆️ Ce que vous écrivez ici sera traduit automatiquement en français'}
+                      </p>
+                      {translatingFor === item.id && (
+                        <div className={cn(
+                          "flex items-center gap-1 text-xs text-primary mt-1",
+                          isRTL && "flex-row-reverse font-cairo"
+                        )}>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>{isRTL ? 'جاري الترجمة...' : 'Traduction en cours...'}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* French Output - SECONDARY (auto-filled) */}
+                    <div className="order-1 md:order-2">
+                      <Label className="text-xs font-medium text-foreground flex items-center gap-1">
+                        🇫🇷 Désignation (Français)
+                        {translatingFor === item.id && (
+                          <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                        )}
+                      </Label>
+                      <Textarea
+                        value={item.designation_fr}
+                        onChange={(e) => updateItem(item.id, 'designation_fr', e.target.value)}
+                        placeholder="Ex: Pose de carrelage - cuisine (rempli automatiquement)"
+                        className="text-sm"
+                        rows={2}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        ✅ Ce texte apparaîtra sur le document PDF final
+                      </p>
                     </div>
                   </div>
                   
@@ -381,11 +453,21 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
       <Button
         variant="outline"
         onClick={addFreeItem}
-        className={cn("w-full border-dashed", isRTL && "font-cairo")}
+        className={cn("w-full border-dashed border-2 py-6", isRTL && "font-cairo")}
       >
         <Plus className="h-4 w-4 mr-2" />
-        {isRTL ? '+ إضافة سطر حر' : '+ Ajouter une ligne libre'}
+        {isRTL ? '➕ أضف عمل جديد للفاتورة' : '➕ Valider et Ajouter une ligne'}
       </Button>
+      
+      {/* Explanation text under button */}
+      <p className={cn(
+        "text-xs text-muted-foreground text-center -mt-2",
+        isRTL && "font-cairo"
+      )}>
+        {isRTL 
+          ? '👆 اضغط هنا لإضافة بند جديد. يمكنك إضافة أكثر من بند.' 
+          : '👆 Cliquez ici pour ajouter un travail. Vous pourrez en ajouter d\'autres ensuite.'}
+      </p>
 
       {/* Grand Total */}
       {items.length > 0 && (

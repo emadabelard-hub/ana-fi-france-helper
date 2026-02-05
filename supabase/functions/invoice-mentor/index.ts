@@ -13,13 +13,14 @@ interface Message {
 interface RequestBody {
   message?: string;
   conversationHistory?: Message[];
-  action?: 'suggest_price' | 'generate_quote' | 'generate_invoice';
+  action?: 'suggest_price' | 'generate_quote' | 'generate_invoice' | 'translate_to_french';
   description?: string;
   unit?: string;
   category?: string;
   documentType?: 'devis' | 'facture';
   categoryAnswers?: string;
   logistics?: string;
+  text?: string;
 }
 
 // Price suggestion handler
@@ -87,6 +88,90 @@ Ajuste selon la complexité décrite. Sois réaliste.`;
   return new Response(JSON.stringify({ suggestedPrice: 40, error: "Could not parse suggestion" }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+// Translation handler - Arabic to French professional
+async function handleTranslation(text: string, apiKey: string): Promise<Response> {
+  const prompt = `Tu es un traducteur expert pour artisans du bâtiment.
+
+═══════════════════════════════════════════════════════════════════════════════
+MISSION: Traduire le texte suivant en français professionnel pour facture/devis.
+═══════════════════════════════════════════════════════════════════════════════
+
+TEXTE À TRADUIRE:
+"${text}"
+
+RÈGLES:
+1. Si c'est de l'arabe/franco-arabe/dialecte égyptien → traduis en français technique professionnel
+2. Si c'est déjà du français → corrige/améliore pour un document officiel
+3. Si c'est de l'anglais → traduis en français
+4. Utilise des termes techniques du bâtiment français (pose, installation, réfection, etc.)
+
+EXEMPLES:
+- "صبغ الصالون" → "Peinture du salon"
+- "ركبت لمبات في الكوزينة" → "Installation de luminaires - Cuisine"
+- "كاغلاج في الحمام" → "Pose de carrelage - Salle de bain"
+- "سباكة" → "Travaux de plomberie"
+- "enduit + peinture" → "Enduit et peinture"
+
+RÉPONDS UNIQUEMENT AVEC UN JSON VALIDE:
+{"translation": "La traduction professionnelle en français"}`;
+
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [{ role: "user", content: prompt }],
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw new Error("AI gateway error");
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    
+    console.log("Translation raw response:", content);
+    
+    // Extract JSON from response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return new Response(JSON.stringify(parsed), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        console.error("Failed to parse translation JSON:", e);
+        return new Response(JSON.stringify({ translation: text }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+    
+    return new Response(JSON.stringify({ translation: text }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Translation error:", error);
+    return new Response(JSON.stringify({ error: "Translation failed" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 }
 
 // Invoice generation handler (FACTURE - distinct from DEVIS)
@@ -390,6 +475,17 @@ serve(async (req) => {
         });
       }
       return handleInvoiceGeneration(body.category, body.categoryAnswers || '', body.logistics || '', LOVABLE_API_KEY);
+    }
+
+    // Handle translation action (Arabic to French)
+    if (body.action === 'translate_to_french') {
+      if (!body.text) {
+        return new Response(JSON.stringify({ error: 'Text required' }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return handleTranslation(body.text, LOVABLE_API_KEY);
     }
 
     // Original chat functionality

@@ -311,9 +311,9 @@ const Index = () => {
               <p className="font-semibold text-foreground text-sm">
                 {isRTL ? 'آراء ومقترحات' : 'Avis & Suggestions ✨'}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {isRTL ? 'شاركنا رأيك 💡' : 'Partagez votre avis 💡'}
-              </p>
+                <p className="text-xs text-muted-foreground">
+                  {isRTL ? 'شاركنا رأيك 💡' : 'Partagez votre avis. 💡'}
+                </p>
             </div>
             <Arrow className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
           </div>

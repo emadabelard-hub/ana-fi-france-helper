@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,7 +78,32 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
   const [showWizard, setShowWizard] = useState(false);
 
   // Translation state
-  const [translatingItemId, setTranslatingItemId] = useState<string | null>(null);
+  const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
+  const [typingArabicIds, setTypingArabicIds] = useState<Set<string>>(new Set());
+  const [translationAttemptIds, setTranslationAttemptIds] = useState<Set<string>>(new Set());
+  const arabicDebounceTimersRef = useRef<Record<string, ReturnType<typeof setTimeout> | undefined>>({});
+  const lastTranslatedSourceRef = useRef<Record<string, string | undefined>>({});
+  const itemsRef = useRef(items);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  const startTranslating = (id: string) => {
+    setTranslatingIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
+
+  const stopTranslating = (id: string) => {
+    setTranslatingIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
   
   // Handle wizard-generated items
   const handleWizardGenerate = (generatedItems: LineItem[]) => {
@@ -196,15 +221,26 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
     return translation;
   };
 
-  const handleTranslation = async (id: string) => {
-    const current = items.find(i => i.id === id);
-    const input = current?.designation_ar?.trim() || '';
+  const handleTranslation = async (id: string, textOverride?: string) => {
+    const current = itemsRef.current.find(i => i.id === id);
+    const input = (textOverride ?? current?.designation_ar ?? '').trim();
     if (!input) return;
 
-    setTranslatingItemId(id);
+    // Mark that we attempted translation for this row (used for UX validation only)
+    setTranslationAttemptIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+
+    // If we already translated the exact same source text, skip re-calling the model.
+    if (lastTranslatedSourceRef.current[id] === input) return;
+
+    // Arabic input drives French output: overwrite FR with translated text.
+    startTranslating(id);
     try {
       const translation = await invokeTranslation(input);
-      // Overwrite the French field (golden rule)
+      lastTranslatedSourceRef.current[id] = input;
       setItems(prev => prev.map(it => (it.id === id ? { ...it, designation_fr: translation } : it)));
     } catch (e) {
       console.error('Translation failed:', e);
@@ -216,20 +252,63 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
           : 'Impossible de traduire. Réessayez.',
       });
     } finally {
-      setTranslatingItemId(null);
+      stopTranslating(id);
     }
+  };
+
+  // Auto-translate (debounced): when user stops typing in Arabic for 1s, translate and inject into FR.
+  const handleArabicChange = (id: string, value: string) => {
+    handleItemChange(id, 'designation_ar', value);
+
+    // While user is typing, never show blocking validation on the French field.
+    setTypingArabicIds(prev => {
+      const next = new Set(prev);
+      if (value.trim()) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
+    // Reset attempt state if Arabic is cleared
+    if (!value.trim()) {
+      setTranslationAttemptIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      lastTranslatedSourceRef.current[id] = undefined;
+    }
+
+    // Debounce translation per-item
+    const existing = arabicDebounceTimersRef.current[id];
+    if (existing) clearTimeout(existing);
+
+    const snapshot = value;
+    arabicDebounceTimersRef.current[id] = setTimeout(() => {
+      // If user kept typing, ignore this run
+      const latest = (itemsRef.current.find(i => i.id === id)?.designation_ar ?? '').trim();
+      if (latest !== snapshot.trim()) return;
+      if (!latest) return;
+
+      setTypingArabicIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+
+      void handleTranslation(id, latest);
+    }, 1000);
   };
 
   // Security: on "Ajouter" (new row) or before preview, forbid proceeding if FR is empty but AR is filled.
   const ensureTranslations = async () => {
-    const pending = items.filter(i => i.designation_ar?.trim() && !i.designation_fr?.trim());
+    const pending = itemsRef.current.filter(i => i.designation_ar?.trim() && !i.designation_fr?.trim());
     if (pending.length === 0) return true;
 
     const updates: Record<string, string> = {};
 
     try {
       for (const item of pending) {
-        setTranslatingItemId(item.id);
+        startTranslating(item.id);
         updates[item.id] = await invokeTranslation(item.designation_ar.trim());
       }
     } catch (e) {
@@ -241,12 +320,12 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
           ? 'تعذر ترجمة النص. جرّب تاني.'
           : 'Impossible de traduire. Réessayez.',
       });
-      setTranslatingItemId(null);
+      for (const item of pending) stopTranslating(item.id);
       return false;
     }
 
     setItems(prev => prev.map(it => (updates[it.id] ? { ...it, designation_fr: updates[it.id] } : it)));
-    setTranslatingItemId(null);
+    for (const item of pending) stopTranslating(item.id);
 
     const stillPending = pending.some(it => !updates[it.id]?.trim());
     if (stillPending) {
@@ -559,9 +638,9 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
                 addLineItem();
               }}
               className={cn(isRTL && "font-cairo")}
-              disabled={!!translatingItemId}
+               disabled={translatingIds.size > 0}
             >
-              {translatingItemId ? (
+              {translatingIds.size > 0 ? (
                 <Loader2 className="h-4 w-4 mr-1 animate-spin" />
               ) : (
                 <Plus className="h-4 w-4 mr-1" />
@@ -606,7 +685,13 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
                       placeholder={isRTL ? 'اكتب وصف الشغل هنا (مثال: Peinture salon)' : 'Ex: Peinture mur salon'}
                       className={cn(
                         "text-sm",
-                        item.designation_ar?.trim() && !item.designation_fr?.trim() && "border-destructive/50 bg-destructive/5"
+                        // Do NOT show blocking validation while user is typing in Arabic.
+                        item.designation_ar?.trim() &&
+                          !item.designation_fr?.trim() &&
+                          !typingArabicIds.has(item.id) &&
+                          !translatingIds.has(item.id) &&
+                          translationAttemptIds.has(item.id) &&
+                          "border-destructive/50 bg-destructive/5"
                       )}
                     />
                     <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
@@ -620,18 +705,22 @@ const InvoiceFormBuilder = ({ documentType, onBack }: InvoiceFormBuilderProps) =
                     </Label>
                     <Textarea
                       value={item.designation_ar}
-                      onChange={(e) => handleItemChange(item.id, 'designation_ar', e.target.value)}
-                      onBlur={() => handleTranslation(item.id)}
+                      onChange={(e) => handleArabicChange(item.id, e.target.value)}
+                      onBlur={(e) => {
+                        const existing = arabicDebounceTimersRef.current[item.id];
+                        if (existing) clearTimeout(existing);
+                        void handleTranslation(item.id, e.currentTarget.value);
+                      }}
                       placeholder={isRTL ? 'مثال: زليج / بانتير / كليما' : 'Ex: zelij / bantoura / clima'}
                       className={cn(
                         "text-sm min-h-[44px]",
                         isRTL && "text-right font-cairo"
                       )}
                     />
-                    {translatingItemId === item.id && (
+                    {translatingIds.has(item.id) && (
                       <p className={cn("text-[10px] text-primary flex items-center gap-1", isRTL && "font-cairo")}> 
                         <Loader2 className="h-3 w-3 animate-spin" />
-                        {isRTL ? 'جاري الترجمة...' : 'Traduction...'}
+                        {isRTL ? 'جاري الترجمة...' : '🔄 Traduction en cours...'}
                       </p>
                     )}
                   </div>

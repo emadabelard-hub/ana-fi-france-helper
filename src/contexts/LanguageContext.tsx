@@ -14,7 +14,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Navigation
     'nav.dashboard': 'Accueil',
     'nav.radio': 'Radio',
-    'nav.assistant': 'Assistant',
+    'nav.assistant': 'Consultations',
     'nav.profile': 'Mon Profil',
     
     // Dashboard
@@ -36,7 +36,7 @@ const translations: Record<Language, Record<string, string>> = {
     'radio.noResults': 'Aucune station trouvée',
     
     // Assistant
-    'assistant.title': 'Assistant Administratif',
+    'assistant.title': 'Consultations',
     'assistant.subtitle': 'Décrivez votre situation et recevez une lettre professionnelle',
     'assistant.textPlaceholder': 'Décrivez votre situation en détail (en français ou en arabe)...',
     'assistant.recordVoice': 'Enregistrer',
@@ -70,55 +70,55 @@ const translations: Record<Language, Record<string, string>> = {
     // Navigation
     'nav.dashboard': 'الرئيسية',
     'nav.radio': 'الراديو',
-    'nav.assistant': 'المساعد',
-    'nav.profile': 'ملفي الشخصي',
+    'nav.assistant': 'استشارات',
+    'nav.profile': 'بياناتي',
     
     // Dashboard
-    'dashboard.welcome': 'مرحباً بك في أنا في فرنسا',
-    'dashboard.subtitle': 'مساعدك الإداري الذكي',
-    'dashboard.quickAccess': 'وصول سريع',
+    'dashboard.welcome': 'أهلاً بيك في أنا في فرنسا',
+    'dashboard.subtitle': 'مساعدك الشخصي لكل حاجة إدارية',
+    'dashboard.quickAccess': 'دخول سريع',
     'dashboard.radioCard': 'الراديو المصري',
-    'dashboard.radioDesc': 'استمع إلى محطاتك المفضلة',
+    'dashboard.radioDesc': 'اسمع محطاتك المفضلة',
     'dashboard.assistantCard': 'المساعد الذكي',
-    'dashboard.assistantDesc': 'اكتب رسائلك الإدارية',
+    'dashboard.assistantDesc': 'هاعملك خطاباتك الرسمية',
     
     // Radio
     'radio.title': 'الراديو',
-    'radio.nowPlaying': 'يتم التشغيل الآن',
-    'radio.selectStation': 'اختر محطة',
-    'radio.searchPlaceholder': 'ابحث عن محطة...',
+    'radio.nowPlaying': 'بيشتغل دلوقتي',
+    'radio.selectStation': 'اختار محطة',
+    'radio.searchPlaceholder': 'دور على محطة...',
     'radio.categoryEgypt': 'إذاعات مصرية (موسيقى وأخبار)',
     'radio.categoryMaghreb': 'إذاعات المغرب وفرنسا',
-    'radio.noResults': 'لم يتم العثور على محطة',
+    'radio.noResults': 'مافيش نتايج',
     
-    // Assistant
-    'assistant.title': 'المساعد الإداري',
-    'assistant.subtitle': 'صف وضعك واحصل على رسالة رسمية احترافية',
-    'assistant.textPlaceholder': 'صف وضعك بالتفصيل (بالفرنسية أو بالعربية)...',
-    'assistant.recordVoice': 'تسجيل',
-    'assistant.uploadDocument': 'رفع مستند',
-    'assistant.analyze': 'تحليل',
-    'assistant.formalLetter': 'الرسالة الرسمية',
-    'assistant.legalNote': 'الملاحظة القانونية',
+    // Assistant - Consultations
+    'assistant.title': 'استشارات',
+    'assistant.subtitle': 'احكيلي موضوعك وأنا هاساعدك',
+    'assistant.textPlaceholder': 'احكيلي إيه المشكلة... (بالعربي أو بالفرنساوي)',
+    'assistant.recordVoice': 'سجّل صوتك',
+    'assistant.uploadDocument': 'ارفع صورة أو PDF',
+    'assistant.analyze': 'حلل',
+    'assistant.formalLetter': 'الخطاب الرسمي',
+    'assistant.legalNote': 'ملاحظات قانونية',
     'assistant.actionPlan': 'خطة العمل',
     'assistant.copy': 'نسخ',
-    'assistant.download': 'تحميل PDF',
+    'assistant.download': 'حمّل PDF',
     
     // Profile
-    'profile.title': 'ملفي الشخصي',
+    'profile.title': 'بياناتي',
     'profile.fullName': 'الاسم الكامل',
     'profile.address': 'العنوان',
-    'profile.phone': 'الهاتف',
-    'profile.cafNumber': 'رقم CAF',
+    'profile.phone': 'التليفون',
+    'profile.cafNumber': 'رقم الـ CAF',
     'profile.foreignerNumber': 'رقم الأجانب',
-    'profile.socialSecurity': 'رقم السيكوريتيه (Sécu)',
-    'profile.save': 'حفظ',
+    'profile.socialSecurity': 'رقم السيكو (Sécu)',
+    'profile.save': 'احفظ',
     'profile.optional': '(اختياري)',
     
     // Common
-    'common.loading': 'جار التحميل...',
-    'common.error': 'خطأ',
-    'common.success': 'نجاح',
+    'common.loading': 'استنى شوية...',
+    'common.error': 'حصل مشكلة',
+    'common.success': 'تمام',
     'common.cancel': 'إلغاء',
     'common.confirm': 'تأكيد',
   },

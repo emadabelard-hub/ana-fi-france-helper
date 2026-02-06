@@ -17,7 +17,7 @@ const DocumentTypeModal = ({ open, onOpenChange, onSelect }: DocumentTypeModalPr
 
   const handleConversion = () => {
     onOpenChange(false);
-    navigate('/quote-to-invoice');
+    navigate('/pro/quote-to-invoice');
   };
 
   return (

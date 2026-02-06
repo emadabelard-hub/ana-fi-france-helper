@@ -315,53 +315,59 @@ serve(async (req) => {
     
     console.log("Using model:", model, "for", hasImages ? "vision" : "text");
     
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: aiMessages,
-        stream: false,
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requêtes dépassée. Veuillez réessayer plus tard." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Crédits insuffisants. Veuillez recharger votre compte." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "Erreur du service IA" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const callModel = async (messages: any, modelName: string): Promise<string> => {
+      const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages,
+          stream: false,
+        }),
       });
-    }
 
-    const data = await response.json();
-    let content = data.choices?.[0]?.message?.content;
+      if (!resp.ok) {
+        if (resp.status === 429) {
+          throw new Error("Limite de requêtes dépassée. Veuillez réessayer plus tard.");
+        }
+        if (resp.status === 402) {
+          throw new Error("Crédits insuffisants. Veuillez recharger votre compte.");
+        }
+        const errorText = await resp.text();
+        console.error("AI gateway error:", resp.status, errorText);
+        throw new Error("Erreur du service IA");
+      }
 
-    if (!content) {
-      throw new Error("No content in AI response");
-    }
+      const json = await resp.json();
+      const c = json.choices?.[0]?.message?.content;
+      if (!c) throw new Error("No content in AI response");
+      return c;
+    };
 
-    // ⚠️ CRITICAL: Validate and sanitize AI response to block forbidden alphabets
+    let content = await callModel(aiMessages, model);
+
+    // ⚠️ CRITICAL: Block & retry if forbidden alphabets are detected (cyrillic, etc.)
     const forbiddenScripts = detectForbiddenScripts(content);
     if (forbiddenScripts.length > 0) {
       console.warn("Forbidden scripts detected in AI response:", forbiddenScripts);
-      // Sanitize the response by removing forbidden characters
-      content = sanitizeAIResponse(content);
+
+      const strictRule = `\n\n🔒 RÈGLE ABSOLUE (SORTIE):\n- Interdiction d'utiliser un alphabet autre que latin (français) ou arabe.\n- Interdiction: cyrillique, grec, chinois, japonais, coréen, etc.\n- Réponds strictement selon la langue demandée (FR=français pur, AR=arabe/darija).`;
+
+      const retryMessages = [...aiMessages];
+      const sys = String(retryMessages[0]?.content ?? "");
+      retryMessages[0] = { role: "system", content: sys + strictRule };
+
+      content = await callModel(retryMessages, model);
+
+      // If still forbidden, sanitize as a last resort (never display raw foreign alphabets)
+      const stillForbidden = detectForbiddenScripts(content);
+      if (stillForbidden.length > 0) {
+        console.warn("Still forbidden after retry; sanitizing.", stillForbidden);
+        content = sanitizeAIResponse(content);
+      }
     }
 
     // Parse the AI response into sections

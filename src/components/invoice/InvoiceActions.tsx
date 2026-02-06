@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Image, Copy, Eye, EyeOff, Coins, PenLine, Share2 } from 'lucide-react';
+import { FileText, Image, Copy, Eye, EyeOff, Coins, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -10,13 +10,13 @@ import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import InsufficientCreditsModal from '@/components/shared/InsufficientCreditsModal';
 import SmartReviewModal from './SmartReviewModal';
-import SignatureModal from './SignatureModal';
 import { cn } from '@/lib/utils';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import type { InvoiceData } from './InvoiceDisplay';
 import type { LineItem } from './LineItemEditor';
+
 
 interface SuggestedAddon {
   id: string;
@@ -50,40 +50,12 @@ const InvoiceActions = ({
   const { balance, canAfford, deductCredits, getCost } = useCredits();
   const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
   const [showSmartReview, setShowSmartReview] = useState(false);
-  const [showSignatureModal, setShowSignatureModal] = useState(false);
-  const [isSigned, setIsSigned] = useState(false);
   const [signedPdfBlob, setSignedPdfBlob] = useState<Blob | null>(null);
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const creditCost = getCost('invoice_pdf');
 
-  // Handle signature completion
-  const handleSignatureComplete = async (signatureDataUrl: string) => {
-    if (!onUpdateInvoice) return;
-
-    // Update invoice with signature
-    const signedData: InvoiceData = {
-      ...invoiceData,
-      signatureDataUrl,
-      signatureDate: new Date().toLocaleDateString('fr-FR'),
-    };
-    
-    onUpdateInvoice(signedData);
-    setIsSigned(true);
-
-    toast({
-      title: isRTL ? '✅ تم التوقيع!' : '✅ Document signé!',
-      description: isRTL 
-        ? 'الوثيقة جاهزة للتحميل أو الإرسال'
-        : 'Le document est prêt à être téléchargé ou partagé',
-    });
-
-    // Wait for re-render then generate PDF
-    setTimeout(async () => {
-      await generateSignedPdf();
-    }, 300);
-  };
 
   // Generate PDF from signed invoice
   const generateSignedPdf = async () => {
@@ -143,7 +115,7 @@ const InvoiceActions = ({
 
     setIsUploading(true);
     try {
-      const fileName = `${user.id}/${invoiceData.type.toLowerCase()}-${invoiceData.number}-signed-${Date.now()}.pdf`;
+      const fileName = `${user.id}/${invoiceData.type.toLowerCase()}-${invoiceData.number}-${Date.now()}.pdf`;
       
       const { data, error } = await supabase.storage
         .from('signed-documents')
@@ -211,8 +183,7 @@ const InvoiceActions = ({
     const message = encodeURIComponent(
       `${invoiceData.type} N° ${invoiceData.number}\n` +
       `Client: ${invoiceData.client.name}\n` +
-      `Total: ${invoiceData.total.toFixed(2)}€\n\n` +
-      `✅ Document signé le ${new Date().toLocaleDateString('fr-FR')}`
+      `Total: ${invoiceData.total.toFixed(2)}€\n`
     );
 
     // Open WhatsApp with pre-filled message
@@ -443,42 +414,20 @@ const InvoiceActions = ({
 
   return (
     <div className="space-y-4">
-      {/* Signature Button - Primary action for getting client approval */}
       <Button
-        onClick={() => setShowSignatureModal(true)}
-        disabled={isSigned}
+        onClick={handleWhatsAppShare}
+        disabled={isUploading}
         className={cn(
-          "w-full py-6 text-base font-medium",
-          isSigned 
-            ? "bg-green-600 hover:bg-green-600 cursor-default" 
-            : "bg-blue-600 hover:bg-blue-700",
+          "w-full py-5",
           isRTL && "font-cairo flex-row-reverse"
         )}
       >
-        <PenLine className="h-5 w-5 mr-2" />
-        {isSigned 
-          ? (isRTL ? '✅ تم التوقيع' : '✅ Document signé')
-          : (isRTL ? '✍️ خلّي الزبون يوقّع' : '✍️ Faire signer le client')
+        <Share2 className="h-5 w-5 mr-2" />
+        {isUploading
+          ? (isRTL ? '⏳ جاري الحفظ...' : '⏳ Sauvegarde...')
+          : (isRTL ? '📲 ابعت بالواتساب' : '📲 Envoyer par WhatsApp')
         }
       </Button>
-
-      {/* WhatsApp Share - Only shown after signing */}
-      {isSigned && (
-        <Button
-          onClick={handleWhatsAppShare}
-          disabled={isUploading}
-          className={cn(
-            "w-full py-5 bg-green-500 hover:bg-green-600 text-white",
-            isRTL && "font-cairo flex-row-reverse"
-          )}
-        >
-          <Share2 className="h-5 w-5 mr-2" />
-          {isUploading 
-            ? (isRTL ? '⏳ جاري الحفظ...' : '⏳ Sauvegarde...')
-            : (isRTL ? '📲 ابعت بالواتساب' : '📲 Envoyer par WhatsApp')
-          }
-        </Button>
-      )}
 
       {/* Arabic Toggle */}
       <div className={cn(
@@ -584,14 +533,6 @@ const InvoiceActions = ({
         onConfirm={handleSmartReviewConfirm}
         onCancel={handleSmartReviewCancel}
         creditCost={creditCost}
-      />
-
-      <SignatureModal
-        open={showSignatureModal}
-        onOpenChange={setShowSignatureModal}
-        onSignatureComplete={handleSignatureComplete}
-        documentType={invoiceData.type as 'DEVIS' | 'FACTURE'}
-        documentNumber={invoiceData.number}
       />
     </div>
   );

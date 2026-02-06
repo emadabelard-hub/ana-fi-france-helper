@@ -66,7 +66,7 @@ const Header = () => {
             "bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
           )}
         >
-          {language === 'fr' ? 'عربي' : 'FR'}
+          {language === 'fr' ? 'AR' : 'FR'}
         </Button>
       </div>
 

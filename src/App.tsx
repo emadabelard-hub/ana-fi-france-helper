@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/hooks/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
+import GlobalErrorHandler from "@/components/app/GlobalErrorHandler";
 import AssistantPage from "@/pages/AssistantPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ProPage from "@/pages/ProPage";
@@ -19,52 +19,16 @@ import AdminPage from "@/pages/AdminPage";
 import ComingSoonPage from "@/pages/ComingSoonPage";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
-import { toast } from "@/hooks/use-toast";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Global unhandled promise rejection handler to prevent blank screens
-  useEffect(() => {
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error("Unhandled promise rejection:", event.reason);
-      
-      // Prevent the default crash behavior
-      event.preventDefault();
-      
-      // Show user-friendly error toast
-      toast({
-        variant: "destructive",
-        title: "حدث خطأ غير متوقع",
-        description: "حاول مرة تانية أو أعد تحميل الصفحة",
-      });
-    };
-
-    const handleError = (event: ErrorEvent) => {
-      console.error("Global error:", event.error);
-      
-      // Show user-friendly error toast
-      toast({
-        variant: "destructive",
-        title: "حدث خطأ",
-        description: "حاول مرة تانية",
-      });
-    };
-
-    window.addEventListener("unhandledrejection", handleUnhandledRejection);
-    window.addEventListener("error", handleError);
-
-    return () => {
-      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
-      window.removeEventListener("error", handleError);
-    };
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <LanguageProvider>
           <TooltipProvider>
+            <GlobalErrorHandler />
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -96,3 +60,4 @@ const App = () => {
 };
 
 export default App;
+

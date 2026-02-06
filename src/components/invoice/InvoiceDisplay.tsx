@@ -1,5 +1,4 @@
 import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 export interface InvoiceData {
   type: string;
@@ -38,12 +37,10 @@ export interface InvoiceData {
   tvaExemptText?: string;
   paymentTerms: string;
   legalMentions?: string;
-  // Artisan permanent signature
+  // Artisan permanent signature (unique signature affichée sur les PDF)
   artisanSignatureUrl?: string;
-  // Client signature data (signed on-site)
-  signatureDataUrl?: string;
-  signatureDate?: string;
 }
+
 
 interface InvoiceDisplayProps {
   data: InvoiceData;
@@ -51,7 +48,6 @@ interface InvoiceDisplayProps {
 }
 
 const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
-  const { isRTL } = useLanguage();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -171,60 +167,26 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         </div>
       </div>
 
-      {/* Signatures Section */}
-      {(data.artisanSignatureUrl || data.signatureDataUrl) && (
+      {/* Signatures Section (Signature artisan uniquement) */}
+      {data.artisanSignatureUrl && (
         <div className="border-t-2 border-dashed border-gray-300 pt-6 mt-6">
-          <div className={cn(
-            "flex gap-8",
-            data.artisanSignatureUrl && data.signatureDataUrl ? "justify-between" : "justify-end"
-          )}>
-            {/* Artisan Signature - Left side */}
-            {data.artisanSignatureUrl && (
-              <div className="w-56 text-center">
-                <p className="text-sm font-medium text-gray-700 mb-1">
-                  Le prestataire
-                </p>
-                <p className="text-xs text-gray-500 mb-3">
-                  Date: {data.date}
-                </p>
-                
-                <div className="bg-white border border-gray-200 rounded-lg p-2 mb-2">
-                  <img 
-                    src={data.artisanSignatureUrl} 
-                    alt="Signature du prestataire" 
-                    className="max-h-20 mx-auto"
-                  />
-                </div>
-                
-                <div className="border-t border-gray-400 pt-1">
-                  <p className="text-xs text-gray-500">Signature</p>
-                </div>
-              </div>
-            )}
+          <div className="flex justify-end">
+            <div className="w-56 text-center">
+              <p className="text-sm font-medium text-gray-700 mb-1">Le prestataire</p>
+              <p className="text-xs text-gray-500 mb-3">Date: {data.date}</p>
 
-            {/* Client Signature - Right side */}
-            {data.signatureDataUrl && (
-              <div className="w-56 text-center">
-                <p className="text-sm font-medium text-gray-700 mb-1">
-                  Bon pour accord
-                </p>
-                <p className="text-xs text-gray-500 mb-3">
-                  Date: {data.signatureDate || new Date().toLocaleDateString('fr-FR')}
-                </p>
-                
-                <div className="bg-white border border-gray-200 rounded-lg p-2 mb-2">
-                  <img 
-                    src={data.signatureDataUrl} 
-                    alt="Signature du client" 
-                    className="max-h-20 mx-auto"
-                  />
-                </div>
-                
-                <div className="border-t border-gray-400 pt-1">
-                  <p className="text-xs text-gray-500">Signature du client</p>
-                </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-2 mb-2">
+                <img
+                  src={data.artisanSignatureUrl}
+                  alt="Signature du prestataire"
+                  className="max-h-20 mx-auto"
+                />
               </div>
-            )}
+
+              <div className="border-t border-gray-400 pt-1">
+                <p className="text-xs text-gray-500">Signature</p>
+              </div>
+            </div>
           </div>
         </div>
       )}

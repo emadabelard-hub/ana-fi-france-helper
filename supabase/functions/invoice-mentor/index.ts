@@ -92,7 +92,11 @@ Ajuste selon la complexité décrite. Sois réaliste.`;
 
 // Translation handler - Arabic to French professional
 async function handleTranslation(text: string, apiKey: string): Promise<Response> {
-  const prompt = `Tu es un traducteur expert en BTP.
+  // Forbidden scripts: Cyrillic, Greek, CJK, Hebrew, etc.
+  const FORBIDDEN_SCRIPTS =
+    /[\u0400-\u052F\u0370-\u03FF\u4E00-\u9FFF\u3400-\u4DBF\u3040-\u30FF\uAC00-\uD7AF\u0590-\u05FF]/;
+
+  const buildPrompt = (strict: boolean) => `Tu es un traducteur expert en BTP.
 
 Traduis ce texte (Arabe/Darija/Franco-Arabe) en Français technique précis, adapté à une ligne de devis/facture.
 
@@ -106,9 +110,11 @@ Texte:
 Règles:
 - Ne donne QUE la traduction.
 - Sans guillemets.
-- Pas de JSON. Pas d'explication.`;
+- Pas de JSON. Pas d'explication.
+${strict ? "- Interdiction stricte d'utiliser un alphabet autre que latin (français)." : ""}`;
 
-  try {
+  const callOnce = async (strict: boolean) => {
+    const prompt = buildPrompt(strict);
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -143,6 +149,25 @@ Règles:
       .replace(/^"/, "")
       .replace(/"$/, "")
       .trim();
+
+    return cleaned || text;
+  };
+
+  try {
+    let cleaned = await callOnce(false);
+
+    // Retry once if forbidden scripts appear
+    if (FORBIDDEN_SCRIPTS.test(cleaned)) {
+      console.warn("Forbidden scripts detected in invoice-mentor translation. Retrying...");
+      cleaned = await callOnce(true);
+    }
+
+    if (FORBIDDEN_SCRIPTS.test(cleaned)) {
+      return new Response(JSON.stringify({ error: "Caractères non autorisés détectés" }), {
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({ translation: cleaned || text }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

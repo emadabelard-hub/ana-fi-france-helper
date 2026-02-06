@@ -28,7 +28,8 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.assistant': 'Consultations',
     'nav.profile': 'Mon Profil',
     'nav.pro': 'Outils Pro',
-    
+    'nav.admin': 'Admin',
+
     // ===== HEADER =====
     'header.appName': 'Ana Fi France',
     'header.consultations': 'Consultations',
@@ -189,7 +190,8 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.assistant': 'استشارات',
     'nav.profile': 'بياناتي',
     'nav.pro': 'دراعك اليمين',
-    
+    'nav.admin': 'الإدارة',
+
     // ===== HEADER =====
     'header.appName': 'أنا في فرنسا',
     'header.consultations': 'استشارات',

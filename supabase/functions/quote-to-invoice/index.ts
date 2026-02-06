@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+// Version for deployment tracking
+const VERSION = "v1.0.1";
+const DEPLOYED_AT = new Date().toISOString();
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -20,6 +24,9 @@ interface ExtractedData {
 }
 
 serve(async (req) => {
+  console.log(`[${VERSION}] quote-to-invoice function called at ${new Date().toISOString()}`);
+  console.log(`[${VERSION}] Deployed at: ${DEPLOYED_AT}`);
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -214,13 +221,14 @@ IMPORTANT: Traduis tout texte arabe en français professionnel.`;
       unitPrice: Number(item.unitPrice) || 0,
     }));
 
-    console.log(`Extracted ${extractedData.items.length} items`);
+    console.log(`[${VERSION}] Successfully extracted ${extractedData.items.length} items`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         extractedData,
-        message: `Extraction réussie: ${extractedData.items.length} articles trouvés`
+        message: `Extraction réussie: ${extractedData.items.length} articles trouvés`,
+        _version: VERSION
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

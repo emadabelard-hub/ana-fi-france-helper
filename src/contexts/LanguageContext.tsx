@@ -9,15 +9,32 @@ interface LanguageContextType {
   isRTL: boolean;
 }
 
+/**
+ * PROTECTED TRANSLATIONS DICTIONARY
+ * 
+ * ⚠️ RÈGLES STRICTES:
+ * 1. FRANÇAIS: Professionnel, précis, jargon administratif français
+ * 2. ARABE: Mélange de Darija et arabe clair - PAS de traduction mot-à-mot
+ * 3. TERMES PROTÉGÉS (ne JAMAIS modifier):
+ *    - عرض سعر (دوفي)
+ *    - فاتورة (فاكتير)
+ *    - عشان ما تتلخبطش حول الدوفي لفاكتير
+ */
 const translations: Record<Language, Record<string, string>> = {
   fr: {
-    // Navigation
+    // ===== NAVIGATION =====
     'nav.dashboard': 'Accueil',
     'nav.radio': 'Radio',
     'nav.assistant': 'Consultations',
     'nav.profile': 'Mon Profil',
+    'nav.pro': 'Outils Pro',
     
-    // Dashboard
+    // ===== HEADER =====
+    'header.appName': 'Ana Fi France',
+    'header.consultations': 'Consultations',
+    'header.proTools': 'Outils Pro',
+    
+    // ===== DASHBOARD =====
     'dashboard.welcome': 'Bienvenue sur Ana Fi France',
     'dashboard.subtitle': 'Votre assistant administratif intelligent',
     'dashboard.quickAccess': 'Accès Rapide',
@@ -26,7 +43,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.assistantCard': 'Assistant IA',
     'dashboard.assistantDesc': 'Rédigez vos courriers administratifs',
     
-    // Radio
+    // ===== RADIO =====
     'radio.title': 'Radio',
     'radio.nowPlaying': 'En cours de lecture',
     'radio.selectStation': 'Sélectionnez une station',
@@ -35,10 +52,10 @@ const translations: Record<Language, Record<string, string>> = {
     'radio.categoryMaghreb': 'Radios Maghreb & France',
     'radio.noResults': 'Aucune station trouvée',
     
-    // Assistant
+    // ===== ASSISTANT / CONSULTATIONS =====
     'assistant.title': 'Consultations',
     'assistant.subtitle': 'Décrivez votre situation et recevez une lettre professionnelle',
-    'assistant.textPlaceholder': 'Décrivez votre situation en détail (en français ou en arabe)...',
+    'assistant.textPlaceholder': 'Décrivez votre situation en détail...',
     'assistant.recordVoice': 'Enregistrer',
     'assistant.uploadDocument': 'Télécharger un document',
     'assistant.analyze': 'Analyser',
@@ -47,33 +64,138 @@ const translations: Record<Language, Record<string, string>> = {
     'assistant.actionPlan': 'Plan d\'Action',
     'assistant.copy': 'Copier',
     'assistant.download': 'Télécharger PDF',
+    'assistant.newTopic': 'Nouveau sujet',
+    'assistant.continueSession': 'Reprendre',
+    'assistant.startNew': 'Nouveau sujet',
+    'assistant.sessionDialog.title': 'Conversation précédente',
+    'assistant.sessionDialog.description': 'Voulez-vous reprendre votre conversation précédente ou commencer un nouveau sujet ?',
+    'assistant.clearConfirm.title': 'Effacer la conversation ?',
+    'assistant.clearConfirm.description': 'Cette action effacera tout l\'historique de la conversation.',
+    'assistant.dailyLimit': 'Limite quotidienne atteinte',
+    'assistant.dailyLimitDesc': 'Limite quotidienne atteinte (30 messages). À demain !',
+    'assistant.analyzing': 'Analyse en cours...',
+    'assistant.documentReady': 'Document prêt',
+    'assistant.viewDocument': 'Voir le document',
+    'assistant.generateLetter': 'Générer une lettre',
+    'assistant.generating': 'Génération...',
     
-    // Profile
+    // ===== PROFILE =====
     'profile.title': 'Mon Profil',
     'profile.fullName': 'Nom Complet',
     'profile.address': 'Adresse',
     'profile.phone': 'Téléphone',
     'profile.cafNumber': 'Numéro CAF',
     'profile.foreignerNumber': 'Numéro Étranger',
-    'profile.socialSecurity': 'N° Sécu (Carte Vitale)',
+    'profile.socialSecurity': 'N° Sécurité Sociale (Carte Vitale)',
     'profile.save': 'Enregistrer',
     'profile.optional': '(optionnel)',
+    'profile.saved': 'Profil enregistré',
+    'profile.savedDesc': 'Vos informations ont été sauvegardées.',
     
-    // Common
+    // ===== PRO TOOLS =====
+    'pro.title': 'Votre Bras Droit',
+    'pro.subtitle': 'Outils pour artisans et indépendants',
+    'pro.invoices': 'Devis & Factures',
+    'pro.invoicesDesc': 'Créez vos devis et factures facilement',
+    'pro.quoteToInvoice': 'Devis → Facture',
+    'pro.quoteToInvoiceDesc': 'L\'IA remplit votre facture automatiquement',
+    'pro.legal': 'Guide Juridique',
+    'pro.legalDesc': 'Comprendre le droit du travail et les impôts',
+    'pro.cvGenerator': 'Générateur de CV',
+    'pro.cvGeneratorDesc': 'Écrivez en arabe, l\'IA traduit en français',
+    'pro.settings': 'Mon identité pro',
+    'pro.settingsDesc': 'Infos entreprise et logo',
+    'pro.toolsNotice': 'Outils dédiés aux artisans en France',
+    
+    // ===== INVOICE CREATOR =====
+    'invoice.quote': 'Devis',
+    'invoice.invoice': 'Facture',
+    'invoice.client': 'Client',
+    'invoice.clientName': 'Nom du client',
+    'invoice.clientAddress': 'Adresse du client',
+    'invoice.worksite': 'Adresse du chantier',
+    'invoice.description': 'Description',
+    'invoice.quantity': 'Quantité',
+    'invoice.unit': 'Unité',
+    'invoice.unitPrice': 'Prix unitaire',
+    'invoice.total': 'Total',
+    'invoice.subtotal': 'Sous-total HT',
+    'invoice.tva': 'TVA',
+    'invoice.totalTTC': 'Total TTC',
+    'invoice.addLine': 'Ajouter une ligne',
+    'invoice.preview': 'Aperçu & Télécharger PDF',
+    'invoice.signature': 'Signature',
+    'invoice.clientSignature': 'Signature du client',
+    'invoice.artisanSignature': 'Signature du prestataire',
+    'invoice.bonPourAccord': 'Bon pour accord',
+    'invoice.validUntil': 'Devis valable jusqu\'au',
+    'invoice.paymentTerms': 'Conditions de paiement',
+    
+    // ===== CV GENERATOR =====
+    'cv.title': 'Générateur de CV Pro',
+    'cv.subtitle': 'Rédigez en arabe, l\'IA traduit en français professionnel',
+    'cv.personalInfo': 'Informations personnelles',
+    'cv.fullName': 'Nom complet',
+    'cv.profession': 'Métier / Poste souhaité',
+    'cv.email': 'Email',
+    'cv.phone': 'Téléphone',
+    'cv.address': 'Adresse',
+    'cv.summary': 'Résumé professionnel',
+    'cv.experience': 'Expérience professionnelle',
+    'cv.education': 'Formation',
+    'cv.skills': 'Compétences',
+    'cv.languages': 'Langues',
+    'cv.translate': 'Traduire en français',
+    'cv.translating': 'Traduction en cours...',
+    'cv.downloadPdf': 'Télécharger PDF',
+    'cv.preview': 'Aperçu',
+    
+    // ===== COMMON =====
     'common.loading': 'Chargement...',
     'common.error': 'Erreur',
     'common.success': 'Succès',
     'common.cancel': 'Annuler',
     'common.confirm': 'Confirmer',
+    'common.save': 'Enregistrer',
+    'common.delete': 'Supprimer',
+    'common.edit': 'Modifier',
+    'common.close': 'Fermer',
+    'common.back': 'Retour',
+    'common.next': 'Suivant',
+    'common.previous': 'Précédent',
+    'common.yes': 'Oui',
+    'common.no': 'Non',
+    'common.or': 'ou',
+    'common.and': 'et',
+    
+    // ===== ERRORS =====
+    'error.network': 'Erreur de connexion. Veuillez réessayer.',
+    'error.timeout': 'La requête a pris trop de temps. Veuillez réessayer.',
+    'error.generic': 'Une erreur est survenue. Veuillez réessayer.',
+    'error.invalidAlphabet': 'Caractères non autorisés détectés. Utilisez uniquement le français ou l\'arabe.',
+    
+    // ===== AUTH =====
+    'auth.login': 'Se connecter',
+    'auth.signup': 'S\'inscrire',
+    'auth.logout': 'Se déconnecter',
+    'auth.email': 'Email',
+    'auth.password': 'Mot de passe',
+    'auth.forgotPassword': 'Mot de passe oublié ?',
   },
   ar: {
-    // Navigation
+    // ===== NAVIGATION =====
     'nav.dashboard': 'الرئيسية',
     'nav.radio': 'الراديو',
     'nav.assistant': 'استشارات',
     'nav.profile': 'بياناتي',
+    'nav.pro': 'دراعك اليمين',
     
-    // Dashboard
+    // ===== HEADER =====
+    'header.appName': 'أنا في فرنسا',
+    'header.consultations': 'استشارات',
+    'header.proTools': 'دراعك اليمين',
+    
+    // ===== DASHBOARD =====
     'dashboard.welcome': 'أهلاً بيك في أنا في فرنسا',
     'dashboard.subtitle': 'مساعدك الشخصي لكل حاجة إدارية',
     'dashboard.quickAccess': 'دخول سريع',
@@ -82,7 +204,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.assistantCard': 'المساعد الذكي',
     'dashboard.assistantDesc': 'هاعملك خطاباتك الرسمية',
     
-    // Radio
+    // ===== RADIO =====
     'radio.title': 'الراديو',
     'radio.nowPlaying': 'بيشتغل دلوقتي',
     'radio.selectStation': 'اختار محطة',
@@ -91,7 +213,7 @@ const translations: Record<Language, Record<string, string>> = {
     'radio.categoryMaghreb': 'إذاعات المغرب وفرنسا',
     'radio.noResults': 'مافيش نتايج',
     
-    // Assistant - Consultations
+    // ===== ASSISTANT / CONSULTATIONS =====
     'assistant.title': 'استشارات',
     'assistant.subtitle': 'احكيلي موضوعك وأنا هاساعدك',
     'assistant.textPlaceholder': 'احكيلي إيه المشكلة... (بالعربي أو بالفرنساوي)',
@@ -103,24 +225,125 @@ const translations: Record<Language, Record<string, string>> = {
     'assistant.actionPlan': 'خطة العمل',
     'assistant.copy': 'نسخ',
     'assistant.download': 'حمّل PDF',
+    'assistant.newTopic': 'موضوع جديد',
+    'assistant.continueSession': 'نكمل',
+    'assistant.startNew': 'موضوع جديد',
+    'assistant.sessionDialog.title': 'في محادثة قديمة',
+    'assistant.sessionDialog.description': 'نكمل الكلام في الموضوع القديم؟',
+    'assistant.clearConfirm.title': 'امسح المحادثة؟',
+    'assistant.clearConfirm.description': 'كده هتمسح كل الكلام اللي فات.',
+    'assistant.dailyLimit': 'الحد اليومي',
+    'assistant.dailyLimitDesc': 'وصلت للحد اليومي (30 رسالة). ارجع بكره!',
+    'assistant.analyzing': 'بحلل...',
+    'assistant.documentReady': 'الخطاب جاهز',
+    'assistant.viewDocument': 'شوف الخطاب',
+    'assistant.generateLetter': 'اكتبلي خطاب',
+    'assistant.generating': 'بكتب...',
     
-    // Profile
+    // ===== PROFILE =====
     'profile.title': 'بياناتي',
     'profile.fullName': 'الاسم الكامل',
     'profile.address': 'العنوان',
     'profile.phone': 'التليفون',
     'profile.cafNumber': 'رقم الـ CAF',
     'profile.foreignerNumber': 'رقم الأجانب',
-    'profile.socialSecurity': 'رقم السيكو (Sécu)',
+    'profile.socialSecurity': 'رقم السيكوريتيه (Sécu)',
     'profile.save': 'احفظ',
     'profile.optional': '(اختياري)',
+    'profile.saved': 'تم الحفظ',
+    'profile.savedDesc': 'بياناتك اتحفظت.',
     
-    // Common
+    // ===== PRO TOOLS =====
+    // ⚠️ TERMES PROTÉGÉS - NE PAS MODIFIER
+    'pro.title': 'دراعك اليمين 💪',
+    'pro.subtitle': 'كل اللي يحتاجه الصنايعي والحرفي في فرنسا',
+    'pro.invoices': 'فواتير ودوفيهات',
+    'pro.invoicesDesc': 'اعمل الفاكتير والدوفي بتوعك بسهولة',
+    'pro.quoteToInvoice': 'حوّل الدوفي لفاكتير',
+    'pro.quoteToInvoiceDesc': 'ارفع الدوفي وأنا أملّي الفاكتير تلقائي!',
+    'pro.legal': 'قوانين الشغل والضرايب',
+    'pro.legalDesc': 'اعرف حقوقك وواجباتك',
+    'pro.cvGenerator': 'مُولّد CV Pro',
+    'pro.cvGeneratorDesc': 'اكتب بالعربي والذكاء الاصطناعي يترجم للفرنسية',
+    'pro.settings': 'بيانات شركتي',
+    'pro.settingsDesc': 'الاسم واللوجو والـ SIRET',
+    'pro.toolsNotice': 'أدوات مخصصة للصنايعية والحرفيين في فرنسا',
+    
+    // ===== INVOICE CREATOR =====
+    // ⚠️ TERMES PROTÉGÉS
+    'invoice.quote': 'عرض سعر (دوفي)',
+    'invoice.invoice': 'فاتورة (فاكتير)',
+    'invoice.client': 'الزبون',
+    'invoice.clientName': 'اسم الزبون',
+    'invoice.clientAddress': 'عنوان الزبون',
+    'invoice.worksite': 'عنوان الشانتييه',
+    'invoice.description': 'الوصف',
+    'invoice.quantity': 'الكمية',
+    'invoice.unit': 'الوحدة',
+    'invoice.unitPrice': 'سعر الوحدة',
+    'invoice.total': 'المجموع',
+    'invoice.subtotal': 'المجموع قبل الضريبة',
+    'invoice.tva': 'TVA',
+    'invoice.totalTTC': 'المجموع الكلي TTC',
+    'invoice.addLine': 'أضف سطر',
+    'invoice.preview': 'معاينة وتحميل PDF',
+    'invoice.signature': 'التوقيع',
+    'invoice.clientSignature': 'توقيع الزبون',
+    'invoice.artisanSignature': 'توقيع الحرفي',
+    'invoice.bonPourAccord': 'موافق على العرض',
+    'invoice.validUntil': 'الدوفي صالح لغاية',
+    'invoice.paymentTerms': 'شروط الدفع',
+    
+    // ===== CV GENERATOR =====
+    'cv.title': 'مُولّد CV Pro',
+    'cv.subtitle': 'اكتب بالعربي والذكاء الاصطناعي يترجم للفرنسية',
+    'cv.personalInfo': 'البيانات الشخصية',
+    'cv.fullName': 'الاسم الكامل',
+    'cv.profession': 'المهنة / الوظيفة المطلوبة',
+    'cv.email': 'الإيميل',
+    'cv.phone': 'التليفون',
+    'cv.address': 'العنوان',
+    'cv.summary': 'ملخص مهني',
+    'cv.experience': 'الخبرة المهنية',
+    'cv.education': 'التعليم',
+    'cv.skills': 'المهارات',
+    'cv.languages': 'اللغات',
+    'cv.translate': 'ترجم للفرنسية',
+    'cv.translating': 'بترجم...',
+    'cv.downloadPdf': 'حمّل PDF',
+    'cv.preview': 'معاينة',
+    
+    // ===== COMMON =====
     'common.loading': 'استنى شوية...',
     'common.error': 'حصل مشكلة',
     'common.success': 'تمام',
     'common.cancel': 'إلغاء',
     'common.confirm': 'تأكيد',
+    'common.save': 'احفظ',
+    'common.delete': 'امسح',
+    'common.edit': 'عدّل',
+    'common.close': 'اقفل',
+    'common.back': 'رجوع',
+    'common.next': 'التالي',
+    'common.previous': 'السابق',
+    'common.yes': 'أيوه',
+    'common.no': 'لأ',
+    'common.or': 'أو',
+    'common.and': 'و',
+    
+    // ===== ERRORS =====
+    'error.network': 'مشكلة في الاتصال. جرب تاني.',
+    'error.timeout': 'الطلب أخد وقت طويل. جرب تاني.',
+    'error.generic': 'حصل مشكلة. جرب تاني.',
+    'error.invalidAlphabet': 'في حروف مش مسموحة. استخدم عربي أو فرنسي بس.',
+    
+    // ===== AUTH =====
+    'auth.login': 'دخول',
+    'auth.signup': 'تسجيل',
+    'auth.logout': 'خروج',
+    'auth.email': 'الإيميل',
+    'auth.password': 'الباسورد',
+    'auth.forgotPassword': 'نسيت الباسورد؟',
   },
 };
 

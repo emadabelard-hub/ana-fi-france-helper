@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
 
 const ProPage = () => {
-  const { isRTL } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const navigate = useNavigate();
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
@@ -15,10 +15,8 @@ const ProPage = () => {
     {
       icon: PenLine,
       emoji: '📄',
-      title: isRTL ? 'فواتير ودوفيهات' : 'Devis & Factures',
-      description: isRTL 
-        ? 'اعمل الفاكتير والدوفي بتوعك بسهولة' 
-        : 'Créez vos devis et factures facilement',
+      title: t('pro.invoices'),
+      description: t('pro.invoicesDesc'),
       path: '/pro/invoice-creator',
       gradient: 'from-emerald-500 to-emerald-600',
     },
@@ -26,30 +24,24 @@ const ProPage = () => {
       icon: null, // Custom icon component
       customIcon: QuoteToInvoiceIcon,
       emoji: null,
-      title: isRTL ? 'حوّل الدوفي لفاكتير' : 'Devis → Facture',
-      description: isRTL 
-        ? 'ارفع الدوفي وأنا أملّي الفاكتير تلقائي!' 
-        : 'L\'IA remplit votre facture automatiquement',
+      title: t('pro.quoteToInvoice'),
+      description: t('pro.quoteToInvoiceDesc'),
       path: '/pro/quote-to-invoice',
       gradient: 'from-amber-500 to-emerald-500',
     },
     {
       icon: Scale,
       emoji: '⚖️',
-      title: isRTL ? 'قوانين الشغل والضرايب' : 'Guide Juridique',
-      description: isRTL 
-        ? 'اعرف حقوقك وواجباتك' 
-        : 'Comprendre le droit du travail et les impôts',
+      title: t('pro.legal'),
+      description: t('pro.legalDesc'),
       path: '/pro/admin-assistant',
       gradient: 'from-blue-500 to-blue-600',
     },
     {
       icon: FileUser,
       emoji: '📄',
-      title: isRTL ? 'مُولّد CV Pro' : 'Générateur de CV',
-      description: isRTL 
-        ? 'اكتب بالعربي والذكاء الاصطناعي يترجم للفرنسية' 
-        : 'Écrivez en arabe, l\'IA traduit en français',
+      title: t('pro.cvGenerator'),
+      description: t('pro.cvGeneratorDesc'),
       path: '/pro/cv-generator',
       gradient: 'from-indigo-500 to-purple-600',
     },
@@ -60,12 +52,10 @@ const ProPage = () => {
       {/* Page Header */}
       <section className={cn("text-center", isRTL && "font-cairo")}>
         <h1 className="text-2xl font-bold text-foreground mb-2">
-          {isRTL ? 'دراعك اليمين 💪' : 'Votre Bras Droit 💪'}
+          {t('pro.title')}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {isRTL 
-            ? 'كل اللي يحتاجه الصنايعي والحرفي في فرنسا' 
-            : 'Outils pour artisans et indépendants'}
+          {t('pro.subtitle')}
         </p>
       </section>
 
@@ -141,13 +131,13 @@ const ProPage = () => {
               "font-medium text-foreground",
               isRTL && "font-cairo"
             )}>
-              {isRTL ? 'بيانات شركتي' : 'Mon identité pro'}
+              {t('pro.settings')}
             </h3>
             <p className={cn(
               "text-xs text-muted-foreground",
               isRTL && "font-cairo"
             )}>
-              {isRTL ? 'الاسم واللوجو والـ SIRET' : 'Infos entreprise et logo'}
+              {t('pro.settingsDesc')}
             </p>
           </div>
           <Arrow className="h-4 w-4 text-muted-foreground" />
@@ -159,9 +149,7 @@ const ProPage = () => {
         "text-center text-sm text-muted-foreground pt-4",
         isRTL && "font-cairo"
       )}>
-        🧰 {isRTL 
-          ? 'أدوات مخصصة للصنايعية والحرفيين في فرنسا' 
-          : 'Outils dédiés aux artisans en France'}
+        🧰 {t('pro.toolsNotice')}
       </div>
     </div>
   );

@@ -105,7 +105,7 @@ const toConversationHistory = (msgs: Message[]) => {
 };
 
 const AssistantPage = () => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { profile } = useProfile();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -447,6 +447,7 @@ ${formData.items}`;
             imageData: allDocumentImages.length === 1 ? allDocumentImages[0] : undefined,
             multipleImages: allDocumentImages.length > 1 ? allDocumentImages : undefined,
             documentContext: documentContextDescription,
+            language: language, // Pass interface language to AI for response synchronization
             profile: profile ? {
               full_name: profile.full_name,
               address: profile.address,

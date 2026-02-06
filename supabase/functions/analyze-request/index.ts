@@ -38,6 +38,43 @@ interface RequestBody {
   imageData?: string; // Base64 image for vision analysis (single image)
   multipleImages?: string[]; // Array of base64 images for multi-document analysis
   documentContext?: string; // Context about the session documents
+  language?: 'fr' | 'ar'; // Interface language - determines AI response language
+}
+
+// Alphabet validation - block Cyrillic, Greek, Chinese, etc.
+const CYRILLIC_RANGE = /[\u0400-\u04FF\u0500-\u052F]/;
+const GREEK_RANGE = /[\u0370-\u03FF]/;
+const CHINESE_RANGE = /[\u4E00-\u9FFF]/;
+const JAPANESE_RANGE = /[\u3040-\u309F\u30A0-\u30FF]/;
+const KOREAN_RANGE = /[\uAC00-\uD7AF]/;
+
+function detectForbiddenScripts(text: string): string[] {
+  const detected: string[] = [];
+  if (CYRILLIC_RANGE.test(text)) detected.push('cyrillic');
+  if (GREEK_RANGE.test(text)) detected.push('greek');
+  if (CHINESE_RANGE.test(text)) detected.push('chinese');
+  if (JAPANESE_RANGE.test(text)) detected.push('japanese');
+  if (KOREAN_RANGE.test(text)) detected.push('korean');
+  return detected;
+}
+
+function sanitizeAIResponse(text: string): string {
+  // Remove any forbidden characters from AI response
+  let result = '';
+  for (const char of text) {
+    const code = char.charCodeAt(0);
+    // Skip Cyrillic (0400-052F), Greek (0370-03FF), Chinese (4E00-9FFF), Japanese (3040-30FF), Korean (AC00-D7AF)
+    const isForbidden = 
+      (code >= 0x0400 && code <= 0x052F) ||
+      (code >= 0x0370 && code <= 0x03FF) ||
+      (code >= 0x4E00 && code <= 0x9FFF) ||
+      (code >= 0x3040 && code <= 0x30FF) ||
+      (code >= 0xAC00 && code <= 0xD7AF);
+    if (!isForbidden) {
+      result += char;
+    }
+  }
+  return result;
 }
 
 // Input validation constants
@@ -166,10 +203,11 @@ function validateInput(body: unknown): { valid: true; data: RequestBody } | { va
       );
   }
 
-  // Extract imageData and multipleImages if present
+  // Extract imageData, multipleImages, documentContext, and language if present
   const imageData = (body as any).imageData;
   const multipleImages = (body as any).multipleImages;
   const documentContext = (body as any).documentContext;
+  const language = (body as any).language as 'fr' | 'ar' | undefined;
   
   return { 
     valid: true, 
@@ -181,6 +219,7 @@ function validateInput(body: unknown): { valid: true; data: RequestBody } | { va
       imageData,
       multipleImages,
       documentContext,
+      language: language || 'ar', // Default to Arabic for backward compatibility
     } 
   };
 }
@@ -203,7 +242,7 @@ serve(async (req) => {
       });
     }
 
-    const { userMessage, profile, conversationHistory, generateLetterWithData, imageData, multipleImages, documentContext } = validation.data;
+    const { userMessage, profile, conversationHistory, generateLetterWithData, imageData, multipleImages, documentContext, language } = validation.data;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -219,9 +258,9 @@ serve(async (req) => {
     const hasImages = !!imageData || (multipleImages && multipleImages.length > 0);
     const imageCount = multipleImages?.length || (imageData ? 1 : 0);
 
-    // Build system prompt with PII minimization - use placeholders for sensitive data
-    // Add document context if provided (for multi-document sessions)
-    let systemPrompt = buildSystemPrompt(profile);
+    // Build system prompt based on language setting
+    // French mode = pure French responses, Arabic mode = Egyptian Arabic
+    let systemPrompt = buildSystemPrompt(profile, language || 'ar');
     if (documentContext) {
       systemPrompt += `\n\n📂 DOCUMENT SESSION CONTEXT:\n${documentContext}\nWhen analyzing multiple documents, compare them, find connections, and help the user understand the full picture of their case.`;
     }
@@ -311,10 +350,18 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    let content = data.choices?.[0]?.message?.content;
 
     if (!content) {
       throw new Error("No content in AI response");
+    }
+
+    // ⚠️ CRITICAL: Validate and sanitize AI response to block forbidden alphabets
+    const forbiddenScripts = detectForbiddenScripts(content);
+    if (forbiddenScripts.length > 0) {
+      console.warn("Forbidden scripts detected in AI response:", forbiddenScripts);
+      // Sanitize the response by removing forbidden characters
+      content = sanitizeAIResponse(content);
     }
 
     // Parse the AI response into sections
@@ -612,9 +659,85 @@ function extractDispatchInfo(filledData: FilledData, letterContent: string): {
   return dispatchInfo;
 }
 
-function buildSystemPrompt(profile: UserProfile | undefined): string {
+function buildSystemPrompt(profile: UserProfile | undefined, language: 'fr' | 'ar' = 'ar'): string {
   // PII Minimization: Only send placeholder markers to AI, not actual sensitive data
   const hasProfile = profile && (profile.full_name || profile.address);
+  
+  // FRENCH MODE: Pure French professional responses
+  if (language === 'fr') {
+    return buildFrenchSystemPrompt(profile, hasProfile);
+  }
+  
+  // ARABIC MODE: Egyptian Arabic (Masri) responses
+  return buildArabicSystemPrompt(profile, hasProfile);
+}
+
+function buildFrenchSystemPrompt(profile: UserProfile | undefined, hasProfile: boolean): string {
+  const headerInstructions = hasProfile ? `
+Informations de l'utilisateur pour les courriers (utilisez ces marqueurs) :
+- Nom : [NOM_COMPLET] (ou "[À compléter]" si absent)
+- Adresse : [ADRESSE] (ou "[À compléter]" si absent)
+- Téléphone : [TELEPHONE] (ou "[À compléter]" si absent)
+- Numéro CAF : [NUMERO_CAF] (si le sujet concerne la CAF)
+- Numéro Étranger : [NUMERO_ETRANGER] (si le sujet concerne le titre de séjour)
+- Numéro Sécurité Sociale : [NUMERO_SS] (si le sujet concerne la santé)
+` : '';
+
+  return `Vous êtes un assistant administratif professionnel spécialisé dans l'accompagnement des résidents en France.
+
+⛔ DIRECTIVE LINGUISTIQUE STRICTE:
+Vous devez répondre EXCLUSIVEMENT en français. Aucun mot arabe, aucun caractère non-latin.
+- Utilisez un français professionnel, précis et adapté au jargon administratif français.
+- Ton: courtois, clair, rassurant mais professionnel.
+
+⛔ ALPHABETS INTERDITS:
+- Cyrillique (russe, ukrainien): А-Я, а-я
+- Grec: Α-Ω
+- Arabe: ا-ي (dans vos réponses - l'utilisateur peut écrire en arabe)
+- Chinois, japonais, coréen, hébreu, hindi
+
+🔍 AUTO-VÉRIFICATION:
+Avant d'envoyer votre réponse, vérifiez:
+1. Tout le texte est-il en français ?
+2. Y a-t-il des caractères d'alphabets interdits ?
+3. Le ton est-il professionnel et adapté ?
+
+⚖️ RÈGLE D'HONNÊTETÉ:
+1. Vérifiez que vos conseils s'appliquent au contexte français.
+2. Si un courrier n'est pas utile, expliquez pourquoi et proposez une alternative.
+3. Si vous n'êtes pas sûr, indiquez-le clairement.
+
+🔢 DOUBLE VÉRIFICATION DES DONNÉES:
+- Relisez deux fois les montants, dates et taux de TVA.
+- TVA française: 5.5% (rénovation énergétique), 10% (rénovation standard), 20% (construction neuve), 0% (auto-entrepreneurs - art. 293 B CGI).
+${headerInstructions}
+
+📋 STRUCTURE DE RÉPONSE:
+
+===ANALYSE===
+[Expliquez clairement le document ou la situation]
+
+===PLAN_ACTION===
+[Listez les étapes à suivre, documents requis, contacts]
+
+===LETTRE_OFFICIELLE===
+[Si demandé et pertinent, rédigez le courrier officiel en français]
+
+===NOTES_JURIDIQUES===
+[Informations légales pertinentes, articles de loi applicables]
+
+📚 INSTITUTIONS COURANTES:
+- CAF de Paris: 21 rue Joubert, 75009 Paris
+- Préfecture de Police de Paris: 12-14 quai de Gesvres, 75004 Paris
+- CPAM de Paris: 21 rue Georges Auric, 75948 Paris Cedex 19
+
+⚠️ RÈGLES FINALES:
+- Français uniquement - pas d'arabe dans vos réponses
+- Toujours vérifier l'absence de caractères étrangers avant d'envoyer
+- Proposer un courrier seulement si vraiment utile`;
+}
+
+function buildArabicSystemPrompt(profile: UserProfile | undefined, hasProfile: boolean): string {
   
   const headerInstructions = hasProfile ? `
 معلومات المستخدم للرسائل (استخدم هذه العلامات بالضبط):

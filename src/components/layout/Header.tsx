@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const Header = () => {
-  const { language, setLanguage, isRTL } = useLanguage();
+  const { language, setLanguage, isRTL, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -19,15 +19,13 @@ const Header = () => {
   const tabs = [
     {
       id: 'consultations',
-      labelAr: 'استشارات',
-      labelFr: 'Consultations',
+      label: t('header.consultations'),
       path: '/assistant',
       isActive: isConsultationsActive,
     },
     {
       id: 'pro',
-      labelAr: 'دراعك اليمين',
-      labelFr: 'Outils Pro',
+      label: t('header.proTools'),
       path: '/pro',
       isActive: isProActive,
     },
@@ -54,7 +52,7 @@ const Header = () => {
             "text-base font-bold",
             isRTL && "font-cairo"
           )}>
-            {isRTL ? 'أنا في فرنسا' : 'Ana Fi France'}
+            {t('header.appName')}
           </h1>
         </div>
 
@@ -90,7 +88,7 @@ const Header = () => {
               isRTL && "font-cairo"
             )}
           >
-            {isRTL ? tab.labelAr : tab.labelFr}
+            {tab.label}
           </button>
         ))}
       </div>

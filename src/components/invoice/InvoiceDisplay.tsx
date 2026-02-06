@@ -38,6 +38,9 @@ export interface InvoiceData {
   tvaExemptText?: string;
   paymentTerms: string;
   legalMentions?: string;
+  // Signature data
+  signatureDataUrl?: string;
+  signatureDate?: string;
 }
 
 interface InvoiceDisplayProps {
@@ -166,8 +169,39 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         </div>
       </div>
 
+      {/* Signature Section - Only shown when signed */}
+      {data.signatureDataUrl && (
+        <div className="border-t-2 border-dashed border-gray-300 pt-6 mt-6">
+          <div className="flex justify-end">
+            <div className="w-72 text-center">
+              {/* Legal mention */}
+              <p className="text-sm font-medium text-gray-700 mb-1">
+                Bon pour accord
+              </p>
+              <p className="text-xs text-gray-500 mb-3">
+                Date: {data.signatureDate || new Date().toLocaleDateString('fr-FR')}
+              </p>
+              
+              {/* Signature image */}
+              <div className="bg-white border border-gray-200 rounded-lg p-2 mb-2">
+                <img 
+                  src={data.signatureDataUrl} 
+                  alt="Signature du client" 
+                  className="max-h-24 mx-auto"
+                />
+              </div>
+              
+              {/* Signature line and label */}
+              <div className="border-t border-gray-400 pt-1">
+                <p className="text-xs text-gray-500">Signature du client</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer / Legal Mentions */}
-      <div className="border-t pt-4 text-xs text-gray-500 space-y-2">
+      <div className="border-t pt-4 text-xs text-gray-500 space-y-2 mt-4">
         <p><strong>Conditions de paiement:</strong> {data.paymentTerms}</p>
         {data.legalMentions && <p>{data.legalMentions}</p>}
         

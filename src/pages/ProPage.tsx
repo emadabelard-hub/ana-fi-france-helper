@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { PenLine, Scale, Settings, ArrowRight, ArrowLeft } from 'lucide-react';
+import { PenLine, Scale, Settings, ArrowRight, ArrowLeft, FileUser } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
 
@@ -42,6 +42,16 @@ const ProPage = () => {
         : 'Comprendre le droit du travail et les impôts',
       path: '/pro/admin-assistant',
       gradient: 'from-blue-500 to-blue-600',
+    },
+    {
+      icon: FileUser,
+      emoji: '📄',
+      title: isRTL ? 'مُولّد CV Pro' : 'Générateur de CV',
+      description: isRTL 
+        ? 'اكتب بالعربي والذكاء الاصطناعي يترجم للفرنسية' 
+        : 'Écrivez en arabe, l\'IA traduit en français',
+      path: '/pro/cv-generator',
+      gradient: 'from-indigo-500 to-purple-600',
     },
   ];
 

@@ -14,6 +14,7 @@ import ProSettingsPage from "@/pages/ProSettingsPage";
 import InvoiceCreatorPage from "@/pages/InvoiceCreatorPage";
 import QuoteToInvoicePage from "@/pages/QuoteToInvoicePage";
 import ProAdminAssistantPage from "@/pages/ProAdminAssistantPage";
+import CVGeneratorPage from "@/pages/CVGeneratorPage";
 import AdminPage from "@/pages/AdminPage";
 import ComingSoonPage from "@/pages/ComingSoonPage";
 import NotFound from "./pages/NotFound";
@@ -78,6 +79,7 @@ const App = () => {
                   <Route path="/pro/invoice-creator" element={<InvoiceCreatorPage />} />
                   <Route path="/pro/quote-to-invoice" element={<QuoteToInvoicePage />} />
                   <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />
+                  <Route path="/pro/cv-generator" element={<CVGeneratorPage />} />
                   <Route path="/pro/settings" element={<ProSettingsPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/coming-soon" element={<ComingSoonPage />} />

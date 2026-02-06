@@ -21,6 +21,8 @@ export interface Profile {
   logo_url: string | null;
   header_type: string | null;
   header_image_url: string | null;
+  // Artisan permanent signature
+  artisan_signature_url: string | null;
   // Credits & Rate Limiting
   credits_balance: number;
   daily_message_count: number;

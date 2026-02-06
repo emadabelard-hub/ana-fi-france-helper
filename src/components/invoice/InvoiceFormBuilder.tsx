@@ -246,6 +246,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
       legalMentions: tvaExempt 
         ? 'TVA non applicable, article 293 B du CGI'
         : undefined,
+      // Inject artisan's permanent signature from profile
+      artisanSignatureUrl: (profile as any)?.artisan_signature_url || undefined,
     };
   };
   

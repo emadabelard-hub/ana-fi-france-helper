@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { compressImageFile } from '@/lib/imageCompression';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import ArtisanSignatureSection from './ArtisanSignatureSection';
 
 interface CompanyFormData {
   company_name: string;
@@ -483,8 +484,11 @@ const CompanyProfileSection = () => {
               )}
             </div>
           </div>
-        </CardContent>
+      </CardContent>
       </Card>
+
+      {/* Artisan Signature Section */}
+      <ArtisanSignatureSection />
 
       {/* Save Button */}
       <Button

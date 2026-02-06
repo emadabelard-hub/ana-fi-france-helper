@@ -77,6 +77,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          artisan_signature_url: string | null
           caf_number: string | null
           company_address: string | null
           company_name: string | null
@@ -100,6 +101,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          artisan_signature_url?: string | null
           caf_number?: string | null
           company_address?: string | null
           company_name?: string | null
@@ -123,6 +125,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          artisan_signature_url?: string | null
           caf_number?: string | null
           company_address?: string | null
           company_name?: string | null

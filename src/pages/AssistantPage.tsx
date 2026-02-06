@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
-import { useCredits, DAILY_MESSAGE_LIMIT } from '@/hooks/useCredits';
+import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +15,6 @@ import DispatchGuide from '@/components/assistant/DispatchGuide';
 import PostAnalysisActions from '@/components/assistant/PostAnalysisActions';
 import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/DocumentTypeSelector';
 import LoadingOverlay from '@/components/shared/LoadingOverlay';
-import CreditsDisplay from '@/components/shared/CreditsDisplay';
 import { RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -110,7 +109,7 @@ const AssistantPage = () => {
   const { profile } = useProfile();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { dailyLimitReached, incrementDailyMessages, dailyMessagesUsed } = useCredits();
+  const { dailyLimitReached, incrementDailyMessages } = useCredits();
   
   const [messages, setMessages] = useState<Message[]>([]);
   // Multi-document session state
@@ -976,25 +975,8 @@ ${formData.items}`;
       <div className="flex flex-col h-[calc(100vh-90px)] pb-12">
         {/* Compact Title with Credits Display & New Topic Button */}
         <section className={cn("py-2 flex-shrink-0 relative", isRTL && "font-cairo")}>
-          {/* Credits Display for logged-in users */}
-          {user && (
-            <div className={cn(
-              "flex justify-center mb-2",
-              isRTL && "flex-row-reverse"
-            )}>
-              <CreditsDisplay compact />
-              <span className="mx-2 text-muted-foreground/50">•</span>
-              <span className="text-xs text-muted-foreground">
-                {isRTL 
-                  ? `${dailyMessagesUsed}/${DAILY_MESSAGE_LIMIT} رسالة` 
-                  : `${dailyMessagesUsed}/${DAILY_MESSAGE_LIMIT} messages`
-                }
-              </span>
-            </div>
-          )}
-
           <h1 className="text-xl font-bold text-foreground text-center">
-            {isRTL ? '🇪🇬 أريد حلاً' : '🇪🇬 Je veux une solution'}
+            {isRTL ? '🇪🇬 مساعدك الإداري' : '🇪🇬 Votre Assistant'}
           </h1>
           
           {/* New Topic Button */}

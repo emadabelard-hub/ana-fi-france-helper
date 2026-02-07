@@ -34,11 +34,16 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
     </div>
   );
 
-  // Section Container - Gribelin style with thin gray border
+  // Section Container - Gribelin style with thin gray border, flexible height
   const SectionBox = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
     <div 
       className={`border border-gray-300 rounded-md p-4 ${className}`}
-      style={{ backgroundColor: '#ffffff' }}
+      style={{ 
+        backgroundColor: '#ffffff',
+        minHeight: 'fit-content',
+        height: 'auto',
+        overflow: 'visible',
+      }}
     >
       {children}
     </div>
@@ -54,60 +59,74 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
         fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
         minHeight: '297mm',
         padding: '24px',
+        boxSizing: 'border-box',
+        overflowWrap: 'break-word',
+        wordBreak: 'break-word',
       }}
     >
-      {/* Header - Perfectly Centered */}
+      {/* Header - Perfectly Centered with responsive sizing */}
       <div className="text-center mb-6 pb-4 border-b-2 border-gray-200">
         <h1 
-          className="text-3xl font-bold mb-1"
-          style={{ color: '#1e3a5f' }}
+          className="font-bold mb-1"
+          style={{ 
+            color: '#1e3a5f',
+            fontSize: 'clamp(1.25rem, 5vw, 1.875rem)',
+            lineHeight: '1.2',
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word',
+          }}
         >
           {formattedName}
         </h1>
         <p 
-          className="text-lg font-medium"
-          style={{ color: '#2563eb' }}
+          className="font-medium"
+          style={{ 
+            color: '#2563eb',
+            fontSize: 'clamp(0.875rem, 3vw, 1.125rem)',
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word',
+          }}
         >
           {data.profession || 'Votre Métier'}
         </p>
       </div>
 
-      {/* Two Column Layout */}
-      <div className="flex gap-5">
+      {/* Two Column Layout - Flexible */}
+      <div className="flex gap-5" style={{ width: '100%', maxWidth: '100%' }}>
         {/* Left Column - Contact & Skills */}
-        <div className="w-[35%] space-y-4">
+        <div style={{ width: '35%', minWidth: 0, maxWidth: '35%' }} className="space-y-4">
           {/* Contact Info */}
           <SectionBox>
             <SectionTitle>Contact</SectionTitle>
-            <div className="space-y-2 text-sm text-slate-700">
+            <div className="space-y-2 text-sm text-slate-700" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>
               {data.email && (
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2" style={{ minWidth: 0 }}>
                   <Mail className="h-4 w-4 mt-0.5 shrink-0 text-blue-600" />
-                  <span className="break-all">{data.email}</span>
+                  <span style={{ overflowWrap: 'break-word', wordBreak: 'break-all', minWidth: 0, maxWidth: '100%' }}>{data.email}</span>
                 </div>
               )}
               {data.phone && (
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2" style={{ minWidth: 0 }}>
                   <Phone className="h-4 w-4 mt-0.5 shrink-0 text-blue-600" />
-                  <span>{data.phone}</span>
+                  <span style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{data.phone}</span>
                 </div>
               )}
               {data.birthDate && (
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2" style={{ minWidth: 0 }}>
                   <Calendar className="h-4 w-4 mt-0.5 shrink-0 text-blue-600" />
-                  <span>{data.birthDate}</span>
+                  <span style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{data.birthDate}</span>
                 </div>
               )}
               {data.address && (
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2" style={{ minWidth: 0 }}>
                   <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-blue-600" />
-                  <span style={{ textAlign: 'justify', textJustify: 'inter-word' }}>{data.address}</span>
+                  <span style={{ textAlign: 'justify', textJustify: 'inter-word', overflowWrap: 'break-word', wordBreak: 'break-word', minWidth: 0 }}>{data.address}</span>
                 </div>
               )}
               {data.drivingLicense && (
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2" style={{ minWidth: 0 }}>
                   <Car className="h-4 w-4 mt-0.5 shrink-0 text-blue-600" />
-                  <span>Permis {data.drivingLicense}</span>
+                  <span style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>Permis {data.drivingLicense}</span>
                 </div>
               )}
             </div>
@@ -168,7 +187,7 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
         </div>
 
         {/* Right Column - Profile, Experience, Education */}
-        <div className="w-[65%] space-y-4">
+        <div style={{ width: '65%', minWidth: 0, maxWidth: '65%' }} className="space-y-4">
           {/* Summary / Profile */}
           {data.summary && (
             <SectionBox>

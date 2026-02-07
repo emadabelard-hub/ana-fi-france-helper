@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, User, Briefcase, GraduationCap, Languages, Wrench } from 'lucide-react';
+import { Plus, Trash2, User, Briefcase, GraduationCap, Languages, Wrench, Car, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CVData, Experience, Education, Language } from '@/pages/CVGeneratorPage';
 
@@ -18,6 +18,7 @@ interface CVFormSectionProps {
 
 const CVFormSection = ({ cvData, onChange, isRTL }: CVFormSectionProps) => {
   const [newSkill, setNewSkill] = useState('');
+  const [newInterest, setNewInterest] = useState('');
 
   const updateField = (field: keyof CVData, value: any) => {
     onChange({ ...cvData, [field]: value });
@@ -78,6 +79,17 @@ const CVFormSection = ({ cvData, onChange, isRTL }: CVFormSectionProps) => {
 
   const removeSkill = (skill: string) => {
     updateField('skills', cvData.skills.filter(s => s !== skill));
+  };
+
+  const addInterest = () => {
+    if (newInterest.trim() && !cvData.interests.includes(newInterest.trim())) {
+      updateField('interests', [...cvData.interests, newInterest.trim()]);
+      setNewInterest('');
+    }
+  };
+
+  const removeInterest = (interest: string) => {
+    updateField('interests', cvData.interests.filter(i => i !== interest));
   };
 
   const addLanguage = () => {
@@ -192,6 +204,19 @@ const CVFormSection = ({ cvData, onChange, isRTL }: CVFormSectionProps) => {
                 placeholder={isRTL ? '١٢ شارع الجمهورية، ٧٥٠١٠ باريس' : '12 rue de la République, 75010 Paris'}
                 dir={isRTL ? 'rtl' : 'ltr'}
                 className={cn(isRTL && "text-right font-cairo")}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label className={cn(isRTL && "font-cairo text-right block")}>
+                {isRTL ? 'نوع الرخصة' : 'Permis de conduire'}
+              </Label>
+              <Input
+                value={cvData.drivingLicense}
+                onChange={(e) => updateField('drivingLicense', e.target.value)}
+                placeholder={isRTL ? 'B, A2, Moto...' : 'B, A2, Moto...'}
+                dir="ltr"
               />
             </div>
           </div>
@@ -508,6 +533,44 @@ const CVFormSection = ({ cvData, onChange, isRTL }: CVFormSectionProps) => {
               {isRTL ? 'لم تضف أي لغة بعد' : 'Aucune langue ajoutée'}
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Centres d'intérêt */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className={cn("flex items-center gap-2 text-lg", isRTL && "flex-row-reverse font-cairo")}>
+            <Heart className="h-5 w-5 text-rose-500" />
+            {isRTL ? 'اهتماماتك' : 'Centres d\'intérêt'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+            <Input
+              value={newInterest}
+              onChange={(e) => setNewInterest(e.target.value)}
+              placeholder={isRTL ? 'أضف اهتمام جديد' : 'Ajouter un centre d\'intérêt'}
+              dir={isRTL ? 'rtl' : 'ltr'}
+              className={cn("flex-1", isRTL && "text-right font-cairo")}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addInterest())}
+            />
+            <Button onClick={addInterest} size="icon">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {cvData.interests.map((interest) => (
+              <Badge 
+                key={interest} 
+                variant="secondary"
+                className="gap-1 pr-1 cursor-pointer hover:bg-destructive/20"
+                onClick={() => removeInterest(interest)}
+              >
+                {interest}
+                <Trash2 className="h-3 w-3" />
+              </Badge>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>

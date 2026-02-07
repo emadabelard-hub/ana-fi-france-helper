@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, GripVertical, Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Sparkles, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle } from 'lucide-react';
+import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
 
 export interface LineItem {
   id: string;
@@ -88,6 +88,8 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
   const [tempValues, setTempValues] = useState<Record<string, { quantity?: string; unitPrice?: string }>>({});
   // Track items that need translation before adding
   const [pendingTranslation, setPendingTranslation] = useState<Set<string>>(new Set());
+  // Unit guide modal state
+  const [showUnitGuide, setShowUnitGuide] = useState(false);
 
   const updateItem = (id: string, field: keyof LineItem, value: string | number) => {
     const updatedItems = items.map(item => {
@@ -301,6 +303,9 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
 
   return (
     <div className="space-y-4">
+      {/* Unit Guide Modal */}
+      <UnitGuideModal open={showUnitGuide} onOpenChange={setShowUnitGuide} />
+
       {/* Quick Add Presets */}
       <div className="space-y-2">
         <Label className={cn("text-sm font-medium", isRTL && "font-cairo text-right block")}>
@@ -420,9 +425,17 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                       />
                     </div>
                     <div>
-                      <Label className="text-xs text-muted-foreground">
-                        {isRTL ? 'الوحدة' : 'Unité'}
-                      </Label>
+                      <div className={cn(
+                        "flex items-center justify-between gap-1 mb-1",
+                        isRTL && "flex-row-reverse"
+                      )}>
+                        <Label className="text-xs text-muted-foreground">
+                          {isRTL ? 'الوحدة' : 'Unité'}
+                        </Label>
+                        {index === 0 && (
+                          <UnitGuideButton onClick={() => setShowUnitGuide(true)} />
+                        )}
+                      </div>
                       <Select
                         value={item.unit}
                         onValueChange={(value) => updateItem(item.id, 'unit', value)}

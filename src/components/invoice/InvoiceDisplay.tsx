@@ -112,15 +112,15 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         )}
       </div>
 
-      {/* Items Table */}
+      {/* Items Table - Mobile Optimized */}
       <div className="mb-6 overflow-x-auto">
-        <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
+        <table className="w-full border-collapse text-[11px]" style={{ tableLayout: 'fixed' }}>
           <thead>
-            <tr className="bg-primary text-primary-foreground">
-              <th className="p-3 text-left border" style={{ width: '60%' }}>Désignation</th>
-              <th className="p-3 text-center border" style={{ width: '12%' }}>Qté/Unité</th>
-              <th className="p-3 text-right border" style={{ width: '14%' }}>P.U (€)</th>
-              <th className="p-3 text-right border" style={{ width: '14%' }}>Total (€)</th>
+            <tr className="bg-primary text-primary-foreground text-[10px]">
+              <th className="p-2 text-left border" style={{ width: '40%' }}>Désignation</th>
+              <th className="p-2 text-center border" style={{ width: '15%' }}>Qté/Unité</th>
+              <th className="p-2 text-left border" style={{ width: '20%' }}>P.U (€)</th>
+              <th className="p-2 text-left border" style={{ width: '25%' }}>Total (€)</th>
             </tr>
           </thead>
           <tbody>
@@ -136,26 +136,34 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
                   className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}
                 >
                   <td 
-                    className="p-3 border text-left"
+                    className="p-2 border text-left align-top"
                     style={isSection && index > 0 ? { paddingTop: '32px' } : undefined}
                   >
                     <div>
                       <span 
-                        className={`font-medium ${isSection ? 'font-bold text-primary' : ''}`}
+                        className={`font-medium leading-tight ${isSection ? 'font-bold text-primary' : ''}`}
                         style={{ textAlign: 'left', display: 'block' }}
                       >
                         {item.designation_fr}
                       </span>
                       {showArabic && item.designation_ar && (
-                        <span className="block text-xs text-gray-500 mt-1 print:hidden" dir="rtl">
+                        <span className="block text-[9px] text-gray-500 mt-1 print:hidden" dir="rtl">
                           {item.designation_ar}
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="p-3 text-center border whitespace-nowrap">{item.quantity} {item.unit}</td>
-                  <td className="p-3 text-right border whitespace-nowrap">{formatNumber(item.unitPrice)}</td>
-                  <td className="p-3 text-right border font-medium whitespace-nowrap">{formatNumber(item.total)}</td>
+                  {/* Qté on line 1 (bold), Unit on line 2 (small) */}
+                  <td className="p-2 text-center border align-top">
+                    <div className="flex flex-col items-center leading-tight">
+                      <span className="font-bold">{item.quantity}</span>
+                      <span className="text-[9px] text-gray-500">{item.unit}</span>
+                    </div>
+                  </td>
+                  {/* Price without € symbol, left aligned */}
+                  <td className="p-2 text-left border align-top font-medium">{formatNumber(item.unitPrice)}</td>
+                  {/* Total without € symbol, left aligned */}
+                  <td className="p-2 text-left border align-top font-bold">{formatNumber(item.total)}</td>
                 </tr>
               );
             })}

@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   FileText, Scale, Car, Landmark, 
   ChevronRight, FileUser, MessageSquare,
-  Home, Settings, User, Sparkles
+  Home, Settings, User, Brain
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -60,21 +60,16 @@ const Index = () => {
         {/* AI BANNER */}
         <button 
           onClick={() => navigate('/assistant')}
-          className="w-full bg-gradient-to-r from-[#6366f1] to-[#a855f7] p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden active:scale-95 transition-transform border border-white/10 text-left"
+          className="w-full flex justify-between items-center bg-[#1e293b] p-6 rounded-[2.5rem] border border-white/5 shadow-xl relative overflow-hidden active:scale-95 transition-transform text-left"
         >
-          <div className="relative z-10 space-y-2">
-            <div className="flex gap-2 text-2xl">
-              <span>🇫🇷</span>
-              <span>🇪🇬</span>
-            </div>
-            <h2 className="text-2xl font-black text-white font-cairo">
-              اسأل وأنا أجاوبك
-            </h2>
-            <p className="text-[10px] font-black text-indigo-100 uppercase tracking-widest flex items-center gap-2">
-              <Sparkles size={12} className="animate-pulse" /> Intelligence IA
-            </p>
+          <div className="z-10">
+            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Intelligence IA</p>
+            <h2 className="text-xl font-black text-white leading-tight font-cairo">اسأل وأنا أجاوبك</h2>
           </div>
-          <div className="absolute right-[-20px] top-[-20px] w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="bg-white/10 p-3 rounded-2xl z-10">
+            <Brain className="text-white" size={24} />
+          </div>
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl"></div>
         </button>
 
         {/* TOOLS GRID */}
@@ -83,72 +78,60 @@ const Index = () => {
           {/* CV Button */}
           <button 
             onClick={() => navigate('/pro/cv-generator')}
-            className="bg-[#eef2ff] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform border-b-4 border-indigo-200 group"
+            className="bg-[#eef2ff] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform border-b-4 border-indigo-200"
           >
-            <div className="p-3 bg-[#4f46e5] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+            <div className="p-3 bg-indigo-600 rounded-2xl text-white shadow-lg">
               <FileUser size={28} />
             </div>
             <div>
               <h3 className="font-black text-[#1e1b4b] text-[14px] font-cairo leading-tight">
                 سيرتي الذكية<br/>(سي في)
               </h3>
-              <p className="text-[10px] font-bold text-[#6366f1] mt-1 uppercase opacity-60 tracking-tighter">
-                Mon CV Pro
-              </p>
             </div>
           </button>
 
           {/* Invoices Button */}
           <button 
             onClick={() => navigate('/pro/invoice-creator')}
-            className="bg-[#fff7ed] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform border-b-4 border-orange-200 group"
+            className="bg-[#fff7ed] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform border-b-4 border-orange-200"
           >
-            <div className="p-3 bg-[#f97316] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+            <div className="p-3 bg-orange-500 rounded-2xl text-white shadow-lg">
               <FileText size={28} />
             </div>
             <div>
-              <h3 className="font-black text-[#431407] text-[15px] font-cairo leading-tight">
+              <h3 className="font-black text-[#431407] text-[14px] font-cairo leading-tight">
                 فواتير ودوفي
               </h3>
-              <p className="text-[10px] font-bold text-[#ea580c] mt-1 uppercase opacity-60 tracking-tighter">
-                Factures
-              </p>
             </div>
           </button>
 
           {/* Bank Button */}
           <button 
             onClick={() => navigate('/coming-soon')}
-            className="bg-[#fefce8] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform border-b-4 border-yellow-200 group"
+            className="bg-[#fefce8] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform border-b-4 border-yellow-200"
           >
-            <div className="p-3 bg-[#eab308] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+            <div className="p-3 bg-yellow-500 rounded-2xl text-white shadow-lg">
               <Landmark size={28} />
             </div>
             <div>
-              <h3 className="font-black text-[#422006] text-[15px] font-cairo leading-tight text-center">
+              <h3 className="font-black text-[#422006] text-[14px] font-cairo leading-tight">
                 وفّر فلوسك
               </h3>
-              <p className="text-[10px] font-bold text-[#ca8a04] mt-1 uppercase opacity-60 tracking-tighter">
-                Banque Pro
-              </p>
             </div>
           </button>
 
           {/* Rights Button */}
           <button 
             onClick={() => navigate('/assistant')}
-            className="bg-[#f0fdf4] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform border-b-4 border-emerald-200 group"
+            className="bg-[#f0fdf4] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform border-b-4 border-emerald-200"
           >
-            <div className="p-3 bg-[#059669] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+            <div className="p-3 bg-emerald-600 rounded-2xl text-white shadow-lg">
               <Scale size={28} />
             </div>
             <div>
-              <h3 className="font-black text-[#064e3b] text-[13px] font-cairo leading-tight">
-                شغل وضرائب وصحة
+              <h3 className="font-black text-[#064e3b] text-[14px] font-cairo leading-tight">
+                شغل وضرائب
               </h3>
-              <p className="text-[10px] font-bold text-[#059669] mt-1 uppercase opacity-60 tracking-tighter">
-                Droits
-              </p>
             </div>
           </button>
         </div>
@@ -156,22 +139,20 @@ const Index = () => {
         {/* CODE DE LA ROUTE */}
         <button 
           onClick={() => navigate('/coming-soon')}
-          className="w-full bg-gradient-to-r from-[#db2777] to-[#9333ea] p-5 rounded-[2.5rem] shadow-xl flex items-center justify-between text-white active:scale-95 transition-transform border border-white/10"
+          className="w-full bg-gradient-to-r from-[#db2777] to-[#9333ea] p-6 rounded-[2.5rem] shadow-xl flex items-center justify-between text-white active:scale-95 transition-transform"
         >
-          <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md">
+          <div className="bg-white/20 p-3 rounded-2xl">
             <Car size={26} />
           </div>
           <div className="text-right flex-1 pr-4">
             <h3 className="font-black text-xl font-cairo leading-none mb-1">
               كود دو لاروت
             </h3>
-            <p className="text-[10px] font-bold text-pink-100 font-cairo opacity-80">
+            <p className="text-[10px] font-bold opacity-80 font-cairo">
               دروس وامتحانات بالمصري
             </p>
           </div>
-          <div className="bg-white/20 p-2 rounded-full">
-            <ChevronRight size={16} />
-          </div>
+          <ChevronRight />
         </button>
 
       </main>
@@ -189,7 +170,7 @@ const Index = () => {
             "w-1.5 h-1.5 rounded-full bg-[#facc15] mb-0.5 transition-all",
             isActive('/') ? "scale-100" : "scale-0"
           )} />
-          <Home size={24} strokeWidth={isActive('/') ? 3 : 2} />
+          <Home size={26} strokeWidth={isActive('/') ? 3 : 2} />
           <span className="text-[10px] font-black uppercase">
             {isRTL ? 'الرئيسية' : 'Accueil'}
           </span>
@@ -206,8 +187,8 @@ const Index = () => {
             "w-1.5 h-1.5 rounded-full bg-purple-400 mb-0.5 transition-all",
             isActive('/assistant') ? "scale-100" : "scale-0"
           )} />
-          <MessageSquare size={24} />
-          <span className="text-[10px] font-black uppercase tracking-tighter">
+          <MessageSquare size={26} />
+          <span className="text-[10px] font-black uppercase">
             {isRTL ? 'استشارات' : 'Conseils'}
           </span>
         </button>
@@ -223,7 +204,7 @@ const Index = () => {
             "w-1.5 h-1.5 rounded-full bg-orange-400 mb-0.5 transition-all",
             location.pathname.startsWith('/pro') ? "scale-100" : "scale-0"
           )} />
-          <Settings size={24} />
+          <Settings size={26} />
           <span className="text-[10px] font-black uppercase">
             {isRTL ? 'أدوات' : 'Outils'}
           </span>
@@ -240,8 +221,8 @@ const Index = () => {
             "w-1.5 h-1.5 rounded-full bg-[#facc15] mb-0.5 transition-all",
             isActive('/profile') ? "scale-100" : "scale-0"
           )} />
-          <User size={24} />
-          <span className="text-[10px] font-black uppercase">
+          <User size={26} />
+          <span className="text-[10px] font-black uppercase tracking-tighter">
             {isRTL ? 'حسابي' : 'Profil'}
           </span>
         </button>

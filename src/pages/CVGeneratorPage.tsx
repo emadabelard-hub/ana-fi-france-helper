@@ -18,11 +18,13 @@ export interface CVData {
   phone: string;
   address: string;
   birthDate: string;
+  drivingLicense: string;
   summary: string;
   experiences: Experience[];
   education: Education[];
   skills: string[];
   languages: Language[];
+  interests: string[];
 }
 
 export interface Experience {
@@ -56,11 +58,13 @@ const initialCVData: CVData = {
   phone: '',
   address: '',
   birthDate: '',
+  drivingLicense: '',
   summary: '',
   experiences: [],
   education: [],
   skills: [],
   languages: [],
+  interests: [],
 };
 
 const CVGeneratorPage = () => {

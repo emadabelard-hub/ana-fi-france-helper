@@ -210,6 +210,18 @@ const CVFormSection = ({ cvData, onChange, isRTL }: CVFormSectionProps) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label className={cn(isRTL && "font-cairo text-right block")}>
+                {isRTL ? 'الحالة العائلية' : 'Situation familiale'}
+              </Label>
+              <Input
+                value={cvData.maritalStatus}
+                onChange={(e) => updateField('maritalStatus', e.target.value)}
+                placeholder={isRTL ? 'أعزب، متزوج...' : 'Célibataire, Marié(e)...'}
+                dir={isRTL ? 'rtl' : 'ltr'}
+                className={cn(isRTL && "text-right font-cairo")}
+              />
+            </div>
+            <div>
+              <Label className={cn(isRTL && "font-cairo text-right block")}>
                 {isRTL ? 'نوع الرخصة' : 'Permis de conduire'}
               </Label>
               <Input

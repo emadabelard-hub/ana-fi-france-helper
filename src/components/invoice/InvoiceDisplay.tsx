@@ -90,8 +90,10 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             <h2 className="text-2xl font-bold text-primary">{data.type}</h2>
             <p className="text-sm text-gray-600">N° {data.number}</p>
             <p className="text-sm text-gray-600">Date: {data.date}</p>
-            {data.validUntil && (
-              <p className="text-sm text-gray-600">Valide jusqu'au: {data.validUntil}</p>
+            {data.type === 'DEVIS' && data.validUntil && (
+              <p className="text-sm font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded mt-1">
+                📅 Validité : 1 mois (jusqu'au {data.validUntil})
+              </p>
             )}
           </div>
         </div>

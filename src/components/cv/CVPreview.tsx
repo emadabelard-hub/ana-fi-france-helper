@@ -52,13 +52,13 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
   const headerInfoItems: string[] = [];
   if (age) headerInfoItems.push(age);
   if (data.maritalStatus) headerInfoItems.push(data.maritalStatus);
-  if (data.drivingLicense) headerInfoItems.push(`Permis ${data.drivingLicense}`);
+  if (data.drivingLicense) headerInfoItems.push(data.drivingLicense);
 
   // Section Title Component - Prestige style: Bold uppercase navy blue with elegant underline
   const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <div className="mb-4">
+    <div className="mb-2">
       <h2 
-        className="text-sm font-bold uppercase tracking-wider mb-2"
+        className="text-xs font-bold uppercase tracking-wider mb-1"
         style={{ 
           color: '#1a365d',
           letterSpacing: '0.1em',
@@ -69,7 +69,7 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
       <div 
         style={{ 
           height: '1px', 
-          background: 'linear-gradient(to right, #1a365d 0%, #1a365d 40%, transparent 100%)',
+          background: 'linear-gradient(to right, #1a365d 0%, #1a365d 50%, transparent 100%)',
           width: '100%',
         }} 
       />
@@ -85,23 +85,23 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
       style={{
         fontFamily: "'Urbanist', 'Inter', 'Segoe UI', sans-serif",
         minHeight: '297mm',
-        padding: '32px 36px',
+        padding: '24px 28px',
         boxSizing: 'border-box',
         overflowWrap: 'break-word',
         wordBreak: 'break-word',
-        backgroundColor: '#f8fafc', // Pearl Gray background
+        backgroundColor: '#f8fafc',
       }}
     >
       {/* ========== HEADER - Prestige Style Perfectly Centered ========== */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-4">
         {/* Line 1: Prénom NOM */}
         <h1 
           className="font-semibold"
           style={{ 
             color: '#1a365d',
-            fontSize: 'clamp(1.5rem, 5.5vw, 1.875rem)',
-            lineHeight: '1.3',
-            marginBottom: '6px',
+            fontSize: 'clamp(1.4rem, 5vw, 1.75rem)',
+            lineHeight: '1.2',
+            marginBottom: '4px',
             letterSpacing: '0.04em',
           }}
         >
@@ -113,8 +113,8 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
           className="font-medium"
           style={{ 
             color: '#475569',
-            fontSize: 'clamp(0.9rem, 3.5vw, 1.05rem)',
-            marginBottom: '8px',
+            fontSize: 'clamp(0.85rem, 3.5vw, 1rem)',
+            marginBottom: '4px',
             fontStyle: 'italic',
             letterSpacing: '0.02em',
           }}
@@ -122,11 +122,11 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
           {data.profession || 'Votre Métier'}
         </p>
         
-        {/* Line 3: Age | Situation familiale | Permis */}
+        {/* Line 3: Age • Situation familiale • Permis */}
         {headerInfoItems.length > 0 && (
           <p 
             style={{ 
-              fontSize: '0.8rem',
+              fontSize: '0.75rem',
               color: '#64748b',
               letterSpacing: '0.03em',
             }}
@@ -138,26 +138,26 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
 
       {/* ========== CONTACT BLOCK - Left Aligned with Elegant Icons ========== */}
       <div 
-        className="flex justify-start mb-6 pb-5"
+        className="flex justify-start mb-4 pb-3"
         style={{ borderBottom: '1px solid #e2e8f0' }}
       >
-        <div className="text-left space-y-2" style={{ color: '#475569' }}>
+        <div className="text-left space-y-1" style={{ color: '#475569' }}>
           {data.phone && (
-            <div className="flex items-center gap-3" style={{ fontSize: '0.85rem' }}>
-              <span style={{ color: '#1a365d', fontSize: '0.75rem' }}>✆</span>
-              <span style={{ overflowWrap: 'break-word' }}>{data.phone}</span>
+            <div className="flex items-center gap-2" style={{ fontSize: '0.8rem' }}>
+              <span style={{ color: '#1a365d', fontSize: '0.7rem' }}>✆</span>
+              <span>{data.phone}</span>
             </div>
           )}
           {data.email && (
-            <div className="flex items-center gap-3" style={{ fontSize: '0.85rem' }}>
-              <span style={{ color: '#1a365d', fontSize: '0.75rem' }}>✉</span>
-              <span style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }}>{data.email}</span>
+            <div className="flex items-center gap-2" style={{ fontSize: '0.8rem' }}>
+              <span style={{ color: '#1a365d', fontSize: '0.7rem' }}>✉</span>
+              <span style={{ wordBreak: 'break-all' }}>{data.email}</span>
             </div>
           )}
           {data.address && (
-            <div className="flex items-start gap-3" style={{ fontSize: '0.85rem' }}>
-              <span style={{ color: '#1a365d', fontSize: '0.75rem', marginTop: '2px' }}>⌂</span>
-              <span style={{ overflowWrap: 'break-word', maxWidth: '280px' }}>{data.address}</span>
+            <div className="flex items-start gap-2" style={{ fontSize: '0.8rem' }}>
+              <span style={{ color: '#1a365d', fontSize: '0.7rem', marginTop: '1px' }}>⌂</span>
+              <span style={{ maxWidth: '280px' }}>{data.address}</span>
             </div>
           )}
         </div>
@@ -165,25 +165,25 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
 
       {/* ========== MAIN CONTENT RECTANGLE - Prestige Navy Border ========== */}
       <div 
-        className="rounded"
+        className="rounded-sm"
         style={{ 
-          border: '1px solid #1a365d',
+          border: '1.5px solid #1a365d',
           backgroundColor: '#ffffff',
           minHeight: 'fit-content',
-          padding: '28px 32px',
+          padding: '20px 24px',
         }}
       >
         {/* Profile / Summary */}
         {data.summary && (
-          <div className="mb-6">
+          <div className="mb-4">
             <SectionTitle>Profil</SectionTitle>
             <p 
-              className="text-slate-600 leading-relaxed"
+              className="text-slate-600"
               style={{ 
                 textAlign: 'justify', 
                 textJustify: 'inter-word',
-                fontSize: '0.875rem',
-                lineHeight: '1.7',
+                fontSize: '0.8rem',
+                lineHeight: '1.5',
               }}
             >
               {data.summary}
@@ -193,18 +193,18 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
 
         {/* Formation */}
         {data.education.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-4">
             <SectionTitle>Formation</SectionTitle>
-            <div className="space-y-4">
+            <div className="space-y-2">
               {data.education.map((edu, index) => (
-                <div key={edu.id} className={index > 0 ? 'pt-3 border-t border-slate-100' : ''}>
-                  <div className="flex justify-between items-start gap-4">
+                <div key={edu.id} className={index > 0 ? 'pt-2 border-t border-slate-100' : ''}>
+                  <div className="flex justify-between items-start gap-3">
                     <div style={{ flex: 1 }}>
-                      <p className="font-semibold text-slate-800" style={{ fontSize: '0.875rem' }}>{edu.degree}</p>
-                      <p className="text-slate-600" style={{ fontSize: '0.8rem' }}>{edu.institution}</p>
-                      {edu.field && <p className="text-slate-500 italic" style={{ fontSize: '0.75rem' }}>{edu.field}</p>}
+                      <p className="font-semibold text-slate-800" style={{ fontSize: '0.8rem' }}>{edu.degree}</p>
+                      <p className="text-slate-600" style={{ fontSize: '0.75rem' }}>{edu.institution}</p>
+                      {edu.field && <p className="text-slate-500 italic" style={{ fontSize: '0.7rem' }}>{edu.field}</p>}
                     </div>
-                    <span className="text-slate-400 shrink-0" style={{ fontSize: '0.75rem' }}>
+                    <span className="text-slate-400 shrink-0" style={{ fontSize: '0.7rem' }}>
                       {edu.startDate} — {edu.endDate}
                     </span>
                   </div>
@@ -216,26 +216,26 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
 
         {/* Expériences Professionnelles */}
         {data.experiences.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-4">
             <SectionTitle>Expériences Professionnelles</SectionTitle>
-            <div className="space-y-5">
+            <div className="space-y-3">
               {data.experiences.map((exp, index) => (
-                <div key={exp.id} className={index > 0 ? 'pt-4 border-t border-slate-100' : ''}>
-                  <div className="flex justify-between items-start gap-4 mb-1">
-                    <p className="font-semibold text-slate-800" style={{ fontSize: '0.875rem' }}>{exp.position}</p>
-                    <span className="text-slate-400 shrink-0" style={{ fontSize: '0.75rem' }}>
+                <div key={exp.id} className={index > 0 ? 'pt-2 border-t border-slate-100' : ''}>
+                  <div className="flex justify-between items-start gap-3 mb-0.5">
+                    <p className="font-semibold text-slate-800" style={{ fontSize: '0.8rem' }}>{exp.position}</p>
+                    <span className="text-slate-400 shrink-0" style={{ fontSize: '0.7rem' }}>
                       {exp.startDate} — {exp.endDate || 'Présent'}
                     </span>
                   </div>
-                  <p className="text-slate-600 mb-2" style={{ fontSize: '0.8rem', fontStyle: 'italic' }}>{exp.company}</p>
+                  <p className="text-slate-600 mb-1" style={{ fontSize: '0.75rem', fontStyle: 'italic' }}>{exp.company}</p>
                   {exp.description && (
                     <p 
-                      className="text-slate-500 leading-relaxed"
+                      className="text-slate-500"
                       style={{ 
                         textAlign: 'justify', 
                         textJustify: 'inter-word',
-                        fontSize: '0.8rem',
-                        lineHeight: '1.65',
+                        fontSize: '0.75rem',
+                        lineHeight: '1.45',
                       }}
                     >
                       {exp.description}
@@ -249,18 +249,18 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
 
         {/* Compétences */}
         {data.skills.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-4">
             <SectionTitle>Compétences</SectionTitle>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {data.skills.map((skill, index) => (
                 <span 
                   key={index} 
-                  className="px-3 py-1.5 rounded"
+                  className="px-2 py-1 rounded-sm"
                   style={{
                     border: '1px solid #cbd5e1',
                     color: '#1a365d',
                     backgroundColor: '#f8fafc',
-                    fontSize: '0.75rem',
+                    fontSize: '0.7rem',
                     fontWeight: 500,
                   }}
                 >
@@ -273,13 +273,13 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
 
         {/* Langues */}
         {data.languages.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-4">
             <SectionTitle>Langues</SectionTitle>
-            <div className="space-y-2">
+            <div className="space-y-1">
               {data.languages.map((lang) => (
                 <div key={lang.id} className="flex justify-between items-center">
-                  <span className="font-medium text-slate-700" style={{ fontSize: '0.85rem' }}>{lang.name}</span>
-                  <span className="text-slate-400" style={{ fontSize: '0.75rem', fontStyle: 'italic' }}>
+                  <span className="font-medium text-slate-700" style={{ fontSize: '0.8rem' }}>{lang.name}</span>
+                  <span className="text-slate-400" style={{ fontSize: '0.7rem', fontStyle: 'italic' }}>
                     {languageLevelMap[lang.level] || lang.level}
                   </span>
                 </div>
@@ -292,16 +292,16 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
         {data.interests && data.interests.length > 0 && (
           <div>
             <SectionTitle>Centres d'intérêt</SectionTitle>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {data.interests.map((interest, index) => (
                 <span 
                   key={index} 
-                  className="px-3 py-1.5 rounded"
+                  className="px-2 py-1 rounded-sm"
                   style={{
                     border: '1px solid #e2e8f0',
                     color: '#64748b',
                     backgroundColor: '#fafafa',
-                    fontSize: '0.75rem',
+                    fontSize: '0.7rem',
                   }}
                 >
                   {interest}

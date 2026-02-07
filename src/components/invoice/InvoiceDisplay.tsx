@@ -89,13 +89,22 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
           <div className="text-right">
             <h2 className="text-2xl font-bold text-primary">{data.type}</h2>
             <p className="text-sm text-gray-600">N° {data.number}</p>
-            <p className="text-sm text-gray-600">Date: {data.date}</p>
-            {data.type === 'DEVIS' && data.validUntil && (
-              <p className="text-sm font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded mt-1">
-                📅 Validité : 1 mois (jusqu'au {data.validUntil})
-              </p>
-            )}
           </div>
+        </div>
+        
+        {/* Date Bar - Compact format */}
+        <div className="flex flex-wrap gap-4 text-[10px] font-bold bg-muted/50 p-3 rounded-lg border border-border mt-4">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <span>📅 Émis le : {data.date}</span>
+          </div>
+          {data.type === 'DEVIS' && data.validUntil && (
+            <>
+              <div className="w-[1px] bg-border hidden sm:block"></div>
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-semibold">
+                <span>⏳ Valide jusqu'au : {data.validUntil}</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

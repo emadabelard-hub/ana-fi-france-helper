@@ -106,37 +106,54 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
 
       {/* Items Table */}
       <div className="mb-6 overflow-x-auto">
-        <table className="w-full border-collapse">
+        <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
           <thead>
             <tr className="bg-primary text-primary-foreground">
-              <th className="p-3 text-left border">Désignation</th>
-              <th className="p-3 text-center border w-20">Qté</th>
-              <th className="p-3 text-center border w-20">Unité</th>
-              <th className="p-3 text-right border w-28">Prix Unit.</th>
-              <th className="p-3 text-right border w-28">Total HT</th>
+              <th className="p-3 text-left border" style={{ width: '45%' }}>Désignation</th>
+              <th className="p-3 text-center border" style={{ width: '10%' }}>Qté</th>
+              <th className="p-3 text-center border" style={{ width: '12%' }}>Unité</th>
+              <th className="p-3 text-right border" style={{ width: '16%' }}>Prix Unit.</th>
+              <th className="p-3 text-right border" style={{ width: '17%' }}>Total HT</th>
             </tr>
           </thead>
           <tbody>
-            {data.items.map((item, index) => (
-              <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                <td className="p-3 border">
-                  <div>
-                    <span className="font-medium">
-                      {item.designation_fr}
-                    </span>
-                    {showArabic && item.designation_ar && (
-                      <span className="block text-xs text-gray-500 mt-1 print:hidden" dir="rtl">
-                        {item.designation_ar}
+            {data.items.map((item, index) => {
+              // Check if this is a section header (starts with "ZONE" or is a forfait)
+              const isSection = item.designation_fr.toUpperCase().startsWith('ZONE') || 
+                               item.unit.toLowerCase() === 'forfait' ||
+                               item.unit.toLowerCase() === 'f';
+              
+              return (
+                <tr 
+                  key={index} 
+                  className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}
+                  style={isSection && index > 0 ? { marginTop: '32px' } : undefined}
+                >
+                  <td 
+                    className="p-3 border"
+                    style={isSection && index > 0 ? { paddingTop: '32px' } : undefined}
+                  >
+                    <div>
+                      <span 
+                        className={`font-medium ${isSection ? 'font-bold text-primary' : ''}`}
+                        style={{ textAlign: 'justify', textJustify: 'inter-word', display: 'block' }}
+                      >
+                        {item.designation_fr}
                       </span>
-                    )}
-                  </div>
-                </td>
-                <td className="p-3 text-center border">{item.quantity}</td>
-                <td className="p-3 text-center border">{item.unit}</td>
-                <td className="p-3 text-right border">{formatCurrency(item.unitPrice)}</td>
-                <td className="p-3 text-right border font-medium">{formatCurrency(item.total)}</td>
-              </tr>
-            ))}
+                      {showArabic && item.designation_ar && (
+                        <span className="block text-xs text-gray-500 mt-1 print:hidden" dir="rtl">
+                          {item.designation_ar}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-3 text-center border">{item.quantity}</td>
+                  <td className="p-3 text-center border">{item.unit}</td>
+                  <td className="p-3 text-right border">{formatCurrency(item.unitPrice)}</td>
+                  <td className="p-3 text-right border font-medium">{formatCurrency(item.total)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

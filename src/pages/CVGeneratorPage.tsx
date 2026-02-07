@@ -5,7 +5,7 @@ import CVFormSection from '@/components/cv/CVFormSection';
 import CVPreview from '@/components/cv/CVPreview';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Eye, Download, Loader2, Sparkles } from 'lucide-react';
+import { FileText, Eye, Download, Loader2, Sparkles, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import html2canvas from 'html2canvas';
@@ -17,6 +17,7 @@ export interface CVData {
   email: string;
   phone: string;
   address: string;
+  birthDate: string;
   summary: string;
   experiences: Experience[];
   education: Education[];
@@ -54,6 +55,7 @@ const initialCVData: CVData = {
   email: '',
   phone: '',
   address: '',
+  birthDate: '',
   summary: '',
   experiences: [],
   education: [],
@@ -192,7 +194,7 @@ const CVGeneratorPage = () => {
             <Button
               onClick={handleTranslate}
               disabled={!hasData || isTranslating}
-              className="w-full gap-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700"
+              className="w-full gap-2"
               size="lg"
             >
               {isTranslating ? (
@@ -211,6 +213,19 @@ const CVGeneratorPage = () => {
         </TabsContent>
 
         <TabsContent value="preview" className="mt-4">
+          {/* Edit Button */}
+          <div className="flex justify-end mb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveTab('edit')}
+              className="gap-2"
+            >
+              <Pencil className="h-4 w-4" />
+              {isRTL ? 'تعديل ✏️' : 'Modifier ✏️'}
+            </Button>
+          </div>
+
           {/* CV Preview */}
           <div className="bg-muted/30 rounded-lg p-4 overflow-auto">
             <CVPreview ref={cvRef} data={displayData} />

@@ -170,17 +170,30 @@ const CVFormSection = ({ cvData, onChange, isRTL }: CVFormSectionProps) => {
               />
             </div>
           </div>
-          <div>
-            <Label className={cn(isRTL && "font-cairo text-right block")}>
-              {isRTL ? 'العنوان' : 'Adresse'}
-            </Label>
-            <Input
-              value={cvData.address}
-              onChange={(e) => updateField('address', e.target.value)}
-              placeholder={isRTL ? 'باريس، فرنسا' : 'Paris, France'}
-              dir={isRTL ? 'rtl' : 'ltr'}
-              className={cn(isRTL && "text-right font-cairo")}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label className={cn(isRTL && "font-cairo text-right block")}>
+                {isRTL ? 'تاريخ الميلاد' : 'Date de naissance'}
+              </Label>
+              <Input
+                value={cvData.birthDate}
+                onChange={(e) => updateField('birthDate', e.target.value)}
+                placeholder={isRTL ? '١٥/٠٣/١٩٨٥' : '15/03/1985'}
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <Label className={cn(isRTL && "font-cairo text-right block")}>
+                {isRTL ? 'العنوان الكامل' : 'Adresse complète'}
+              </Label>
+              <Input
+                value={cvData.address}
+                onChange={(e) => updateField('address', e.target.value)}
+                placeholder={isRTL ? '١٢ شارع الجمهورية، ٧٥٠١٠ باريس' : '12 rue de la République, 75010 Paris'}
+                dir={isRTL ? 'rtl' : 'ltr'}
+                className={cn(isRTL && "text-right font-cairo")}
+              />
+            </div>
           </div>
           <div>
             <Label className={cn(isRTL && "font-cairo text-right block")}>

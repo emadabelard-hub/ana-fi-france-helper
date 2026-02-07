@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
-import { Mail, Phone, MapPin, Briefcase, GraduationCap, Wrench, Languages } from 'lucide-react';
+import { Mail, Phone, MapPin, Calendar, Briefcase, GraduationCap, Wrench, Languages } from 'lucide-react';
+import { formatFullName } from '@/lib/nameFormatter';
 import type { CVData } from '@/pages/CVGeneratorPage';
 
 interface CVPreviewProps {
@@ -14,6 +15,8 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
     bilingue: 'Bilingue',
     natif: 'Langue maternelle',
   };
+
+  const formattedName = formatFullName(data.fullName) || 'Votre Nom';
 
   return (
     <div
@@ -35,15 +38,6 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
             background: 'linear-gradient(180deg, #1e3a5f 0%, #2d4a6f 50%, #1e3a5f 100%)',
           }}
         >
-          {/* Profile Circle */}
-          <div className="flex justify-center mb-6">
-            <div 
-              className="w-28 h-28 rounded-full bg-white/20 flex items-center justify-center text-4xl font-bold border-4 border-white/30"
-            >
-              {data.fullName ? data.fullName.charAt(0).toUpperCase() : '?'}
-            </div>
-          </div>
-
           {/* Contact */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-white/30 uppercase tracking-wider">
@@ -62,10 +56,16 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
                   <span>{data.phone}</span>
                 </div>
               )}
+              {data.birthDate && (
+                <div className="flex items-start gap-3">
+                  <Calendar className="h-4 w-4 mt-0.5 shrink-0 opacity-80" />
+                  <span>{data.birthDate}</span>
+                </div>
+              )}
               {data.address && (
                 <div className="flex items-start gap-3">
                   <MapPin className="h-4 w-4 mt-0.5 shrink-0 opacity-80" />
-                  <span>{data.address}</span>
+                  <span style={{ textAlign: 'justify', textJustify: 'inter-word' }}>{data.address}</span>
                 </div>
               )}
             </div>
@@ -125,13 +125,13 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
 
         {/* Main Content - Right Column */}
         <div className="w-[65%] p-8">
-          {/* Header */}
-          <div className="mb-8 pb-6 border-b-2 border-slate-200">
+          {/* Header - Centered */}
+          <div className="mb-8 pb-6 border-b-2 border-slate-200 text-center">
             <h1 
               className="text-3xl font-bold mb-2"
               style={{ color: '#1e3a5f' }}
             >
-              {data.fullName || 'Votre Nom'}
+              {formattedName}
             </h1>
             <p className="text-xl text-slate-600 font-medium">
               {data.profession || 'Votre Métier'}
@@ -147,7 +147,10 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
               >
                 Profil
               </h2>
-              <p className="text-sm text-slate-600 leading-relaxed text-justify">
+              <p 
+                className="text-sm text-slate-600 leading-relaxed"
+                style={{ textAlign: 'justify', textJustify: 'inter-word' }}
+              >
                 {data.summary}
               </p>
             </div>
@@ -178,7 +181,10 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
                     </div>
                     <p className="text-sm font-medium text-slate-600 mb-2">{exp.company}</p>
                     {exp.description && (
-                      <p className="text-sm text-slate-500 leading-relaxed">
+                      <p 
+                        className="text-sm text-slate-500 leading-relaxed"
+                        style={{ textAlign: 'justify', textJustify: 'inter-word' }}
+                      >
                         {exp.description}
                       </p>
                     )}

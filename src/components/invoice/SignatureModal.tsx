@@ -18,6 +18,7 @@ interface SignatureModalProps {
   onSignatureComplete: (signatureDataUrl: string) => void;
   documentType: 'DEVIS' | 'FACTURE';
   documentNumber: string;
+  validUntil?: string; // Format: DD/MM/YYYY
 }
 
 const SignatureModal = ({
@@ -26,10 +27,25 @@ const SignatureModal = ({
   onSignatureComplete,
   documentType,
   documentNumber,
+  validUntil,
 }: SignatureModalProps) => {
   const { isRTL } = useLanguage();
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+
+  // Check if the quote has expired (for DEVIS only)
+  const isExpired = (() => {
+    if (documentType !== 'DEVIS' || !validUntil) return false;
+    // Parse DD/MM/YYYY format
+    const parts = validUntil.split('/');
+    if (parts.length !== 3) return false;
+    const expiryDate = new Date(
+      parseInt(parts[2], 10),  // year
+      parseInt(parts[1], 10) - 1,  // month (0-indexed)
+      parseInt(parts[0], 10)  // day
+    );
+    return new Date() > expiryDate;
+  })();
 
   const handleConfirm = () => {
     if (!signatureDataUrl) return;
@@ -91,6 +107,24 @@ const SignatureModal = ({
                   {isRTL 
                     ? 'لما الزبون يوقع، الدوفي بيبقى عقد ملزم للطرفين!'
                     : 'La signature engage les deux parties sur les termes du devis.'
+                  }
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Expired Quote Warning - Security Alert */}
+          {isExpired && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+              <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div className={cn("text-sm", isRTL && "text-right")}>
+                <p className="font-bold text-destructive">
+                  {isRTL ? '🚨 الدوفي منتهي الصلاحية!' : '🚨 Devis expiré!'}
+                </p>
+                <p className="text-xs text-destructive/80 mt-1">
+                  {isRTL 
+                    ? 'انتبه! أسعار المواد ممكن تكون تغيرت. راجع الأسعار قبل التوقيع.'
+                    : 'Attention, les prix des matériaux ont peut-être changé. Révisez les prix avant signature.'
                   }
                 </p>
               </div>

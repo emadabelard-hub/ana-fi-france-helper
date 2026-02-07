@@ -498,8 +498,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
 
       {/* Quote Validity Duration Selector - Only for Devis */}
       {documentType === 'devis' && (
-        <Card className="border-amber-500/20 bg-amber-500/5">
-          <CardContent className="p-4">
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 space-y-3">
             <div className={cn(
               "flex items-center justify-between gap-4",
               isRTL && "flex-row-reverse"
@@ -508,12 +508,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                 "flex items-center gap-2",
                 isRTL && "flex-row-reverse"
               )}>
-                <Calendar className="h-5 w-5 text-amber-600" />
+                <Calendar className="h-5 w-5 text-primary" />
                 <span className={cn(
-                  "font-bold text-amber-700 dark:text-amber-400 text-sm",
+                  "font-bold text-primary text-sm uppercase tracking-wide",
                   isRTL && "font-cairo"
                 )}>
-                  {isRTL ? '⏳ مدة صلاحية الدوفي' : '⏳ Validité du devis'}
+                  {isRTL ? 'مدة صلاحية الدوفي' : 'Validité du devis'}
                 </span>
               </div>
               <select 
@@ -525,10 +525,35 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                 )}
               >
                 <option value="15">{isRTL ? '15 يوم' : '15 Jours'}</option>
-                <option value="30">{isRTL ? '1 شهر (عادي)' : '1 Mois (Standard)'}</option>
+                <option value="30">{isRTL ? '1 شهر (موصى به)' : '1 Mois (Recommandé)'}</option>
                 <option value="60">{isRTL ? '2 شهور' : '2 Mois'}</option>
                 <option value="90">{isRTL ? '3 شهور' : '3 Mois'}</option>
               </select>
+            </div>
+            
+            {/* Educational Tip */}
+            <p className={cn(
+              "text-[10px] text-primary/80 leading-tight",
+              isRTL && "text-right font-cairo"
+            )}>
+              {isRTL 
+                ? '💡 نصيحة: اختار شهر واحد أحسن. ده بيحميك لو أسعار المواد (دهان، نحاس...) زادت الشهر الجاي.'
+                : '💡 Conseil : Choisir 1 mois est idéal. Cela vous protège si le prix des matériaux (peinture, cuivre...) augmente le mois prochain.'
+              }
+            </p>
+            
+            {/* Date Display */}
+            <div className={cn(
+              "pt-2 border-t border-primary/10 flex justify-between text-[10px] font-bold text-muted-foreground",
+              isRTL && "flex-row-reverse font-cairo"
+            )}>
+              <span>{isRTL ? `صادر في : ${new Date().toLocaleDateString('fr-FR')}` : `Émis le : ${new Date().toLocaleDateString('fr-FR')}`}</span>
+              <span className="text-destructive">
+                {isRTL 
+                  ? `ينتهي في : ${new Date(Date.now() + validityDuration * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}`
+                  : `Expire le : ${new Date(Date.now() + validityDuration * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}`
+                }
+              </span>
             </div>
           </CardContent>
         </Card>

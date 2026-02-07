@@ -75,73 +75,41 @@ const Index = () => {
           <div className="absolute left-[-20px] top-[-20px] w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
         </div>
 
-        {/* TOOLS GRID */}
-        <div className="grid grid-cols-2 gap-4">
-          
-          {/* CV Button */}
-          <button 
-            onClick={() => navigate('/pro/cv-generator')}
-            className="bg-[#e0e7ff] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 border-b-4 border-indigo-200 active:scale-95 transition-transform group"
-          >
-            <div className="p-3.5 bg-[#4f46e5] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
-              <FileUser size={28} />
-            </div>
-            <div>
-              <h3 className="font-black text-[#1e1b4b] text-[15px] font-cairo leading-tight">
-                سيرتي الذكية<br/>(سي في)
-              </h3>
-              <p className="text-[9px] font-black text-indigo-600 mt-1 uppercase opacity-50 tracking-tighter">Mon CV Pro</p>
-            </div>
-          </button>
+      {/* TOOLS GRID - 2 columns only */}
+      <div className="grid grid-cols-2 gap-4">
+        
+        {/* CV Button */}
+        <button 
+          onClick={() => navigate('/pro/cv-generator')}
+          className="bg-[#e0e7ff] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 border-b-4 border-indigo-200 active:scale-95 transition-transform group"
+        >
+          <div className="p-3 bg-[#4f46e5] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+            <FileUser size={28} />
+          </div>
+          <div>
+            <h3 className="font-black text-[#1e1b4b] text-[15px] font-cairo leading-tight">
+              سيرتي الذكية<br/>(سي في)
+            </h3>
+            <p className="text-[9px] font-black text-indigo-600 mt-1 uppercase opacity-50">Mon CV Pro</p>
+          </div>
+        </button>
 
-          {/* Invoices Button */}
-          <button 
-            onClick={() => navigate('/pro/invoice-creator')}
-            className="bg-[#ffedd5] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 border-b-4 border-orange-200 active:scale-95 transition-transform group"
-          >
-            <div className="p-3.5 bg-[#f97316] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
-              <FileText size={28} />
-            </div>
-            <div>
-              <h3 className="font-black text-[#431407] text-[15px] font-cairo leading-tight">
-                فواتير ودوفي
-              </h3>
-              <p className="text-[9px] font-black text-orange-600 mt-1 uppercase opacity-50 tracking-tighter">Factures</p>
-            </div>
-          </button>
-
-          {/* Bank Button */}
-          <button 
-            onClick={() => navigate('/coming-soon')}
-            className="bg-[#fef9c3] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 border-b-4 border-yellow-200 active:scale-95 transition-transform group"
-          >
-            <div className="p-3.5 bg-[#eab308] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
-              <Landmark size={28} />
-            </div>
-            <div>
-              <h3 className="font-black text-[#422006] text-[15px] font-cairo leading-tight">
-                وفّر فلوسك
-              </h3>
-              <p className="text-[9px] font-black text-yellow-600 mt-1 uppercase opacity-50 tracking-tighter">Banque</p>
-            </div>
-          </button>
-
-          {/* Rights Button */}
-          <button 
-            onClick={() => navigate('/assistant')}
-            className="bg-[#d1fae5] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 border-b-4 border-emerald-200 active:scale-95 transition-transform group"
-          >
-            <div className="p-3.5 bg-[#059669] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
-              <Scale size={28} />
-            </div>
-            <div>
-              <h3 className="font-black text-[#064e3b] text-[15px] font-cairo leading-tight">
-                شغل وضرائب
-              </h3>
-              <p className="text-[9px] font-black text-emerald-600 mt-1 uppercase opacity-50 tracking-tighter">Droits</p>
-            </div>
-          </button>
-        </div>
+        {/* Invoices Button */}
+        <button 
+          onClick={() => navigate('/pro/invoice-creator')}
+          className="bg-[#ffedd5] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 border-b-4 border-orange-200 active:scale-95 transition-transform group"
+        >
+          <div className="p-3 bg-[#f97316] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+            <FileText size={28} />
+          </div>
+          <div>
+            <h3 className="font-black text-[#431407] text-[15px] font-cairo leading-tight">
+              فواتير ودوفي
+            </h3>
+            <p className="text-[9px] font-black text-orange-600 mt-1 uppercase opacity-50">Factures</p>
+          </div>
+        </button>
+      </div>
 
         {/* CODE DE LA ROUTE */}
         <button 
@@ -232,7 +200,7 @@ const Index = () => {
           )} />
           <User size={26} />
           <span className="text-[10px] font-black uppercase tracking-tighter">
-            {isRTL ? 'حسابي' : 'Profil'}
+            {isRTL ? 'حسابي' : 'Mon Profil'}
           </span>
         </button>
       </nav>

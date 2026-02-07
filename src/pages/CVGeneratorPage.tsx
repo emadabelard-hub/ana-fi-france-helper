@@ -18,6 +18,7 @@ export interface CVData {
   phone: string;
   address: string;
   birthDate: string;
+  maritalStatus: string;
   drivingLicense: string;
   summary: string;
   experiences: Experience[];
@@ -58,6 +59,7 @@ const initialCVData: CVData = {
   phone: '',
   address: '',
   birthDate: '',
+  maritalStatus: '',
   drivingLicense: '',
   summary: '',
   experiences: [],

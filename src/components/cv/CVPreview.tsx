@@ -54,11 +54,11 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
   if (data.maritalStatus) headerInfoItems.push(data.maritalStatus);
   if (data.drivingLicense) headerInfoItems.push(`Permis ${data.drivingLicense}`);
 
-  // Section Title Component - Bold text only
+  // Section Title Component - Prestige style: Bold uppercase navy blue
   const SectionTitle = ({ children }: { children: React.ReactNode }) => (
     <h2 
       className="text-sm font-bold uppercase tracking-wide mb-3"
-      style={{ color: '#1e3a5f' }}
+      style={{ color: '#1a365d' }}
     >
       {children}
     </h2>
@@ -71,24 +71,26 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
       lang="fr"
       className="bg-white text-slate-800 w-full max-w-[210mm] mx-auto shadow-lg"
       style={{
-        fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
+        fontFamily: "'Urbanist', 'Inter', 'Segoe UI', sans-serif",
         minHeight: '297mm',
         padding: '28px',
         boxSizing: 'border-box',
         overflowWrap: 'break-word',
         wordBreak: 'break-word',
+        backgroundColor: '#fafafa',
       }}
     >
-      {/* ========== HEADER - Perfectly Centered ========== */}
+      {/* ========== HEADER - Prestige Style Perfectly Centered ========== */}
       <div className="text-center mb-4">
         {/* Line 1: Prénom NOM */}
         <h1 
           className="font-bold"
           style={{ 
-            color: '#1e3a5f',
+            color: '#1a365d',
             fontSize: 'clamp(1.5rem, 6vw, 2rem)',
             lineHeight: '1.2',
             marginBottom: '4px',
+            letterSpacing: '0.02em',
           }}
         >
           {formattedName}
@@ -98,9 +100,10 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
         <p 
           className="font-medium"
           style={{ 
-            color: '#475569',
+            color: '#64748b',
             fontSize: 'clamp(0.95rem, 3.5vw, 1.125rem)',
             marginBottom: '6px',
+            fontStyle: 'italic',
           }}
         >
           {data.profession || 'Votre Métier'}
@@ -109,20 +112,22 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
         {/* Line 3: Age | Situation familiale | Permis */}
         {headerInfoItems.length > 0 && (
           <p 
-            className="text-sm text-slate-500"
-            style={{ fontSize: '0.875rem' }}
+            style={{ 
+              fontSize: '0.875rem',
+              color: '#94a3b8',
+            }}
           >
             {headerInfoItems.join(' • ')}
           </p>
         )}
       </div>
 
-      {/* ========== CONTACT BLOCK - Right Aligned ========== */}
+      {/* ========== CONTACT BLOCK - Left Aligned (French Standard) ========== */}
       <div 
-        className="flex justify-end mb-5 pb-4"
-        style={{ borderBottom: '1px solid #e2e8f0' }}
+        className="flex justify-start mb-5 pb-4"
+        style={{ borderBottom: '1px solid #cbd5e1' }}
       >
-        <div className="text-right text-sm text-slate-600 space-y-1">
+        <div className="text-left text-sm space-y-1" style={{ color: '#475569' }}>
           {data.phone && (
             <p style={{ overflowWrap: 'break-word' }}>📞 {data.phone}</p>
           )}
@@ -130,16 +135,16 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
             <p style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }}>✉️ {data.email}</p>
           )}
           {data.address && (
-            <p style={{ overflowWrap: 'break-word', maxWidth: '280px', marginLeft: 'auto' }}>📍 {data.address}</p>
+            <p style={{ overflowWrap: 'break-word', maxWidth: '300px' }}>📍 {data.address}</p>
           )}
         </div>
       </div>
 
-      {/* ========== MAIN CONTENT RECTANGLE ========== */}
+      {/* ========== MAIN CONTENT RECTANGLE - Prestige Navy Border ========== */}
       <div 
-        className="border rounded-md p-5"
+        className="rounded-md p-6"
         style={{ 
-          borderColor: '#cbd5e1',
+          border: '1.5px solid #1a365d',
           backgroundColor: '#ffffff',
           minHeight: 'fit-content',
         }}
@@ -216,7 +221,12 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
               {data.skills.map((skill, index) => (
                 <span 
                   key={index} 
-                  className="px-3 py-1 text-xs rounded-full border border-slate-300 text-slate-700 bg-slate-50"
+                  className="px-3 py-1 text-xs rounded-full"
+                  style={{
+                    border: '1px solid #1a365d',
+                    color: '#1a365d',
+                    backgroundColor: '#f1f5f9',
+                  }}
                 >
                   {skill}
                 </span>
@@ -250,7 +260,12 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
               {data.interests.map((interest, index) => (
                 <span 
                   key={index} 
-                  className="px-3 py-1 text-xs rounded-full border border-amber-300 text-amber-700 bg-amber-50"
+                  className="px-3 py-1 text-xs rounded-full"
+                  style={{
+                    border: '1px solid #64748b',
+                    color: '#475569',
+                    backgroundColor: '#f8fafc',
+                  }}
                 >
                   {interest}
                 </span>

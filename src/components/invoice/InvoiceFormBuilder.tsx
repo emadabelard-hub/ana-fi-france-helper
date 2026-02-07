@@ -10,7 +10,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar } from 'lucide-react';
 import InvoiceDisplay, { InvoiceData } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
@@ -71,6 +71,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
   // TVA state - Auto-entrepreneur franchise de TVA
   const [isAutoEntrepreneur, setIsAutoEntrepreneur] = useState(false);
   const [selectedTvaRate, setSelectedTvaRate] = useState<5.5 | 10 | 20>(10);
+  
+  // Quote validity duration (in days) - default 30 days
+  const [validityDuration, setValidityDuration] = useState<15 | 30 | 60 | 90>(30);
   
   // Line items - use empty strings for quantity/price to allow clean input
   const [items, setItems] = useState<LineItem[]>([
@@ -212,7 +215,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
       number: generateDocNumber(documentType),
       date: new Date().toLocaleDateString('fr-FR'),
       validUntil: documentType === 'devis' 
-        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
+        ? new Date(Date.now() + validityDuration * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
         : undefined,
       emitter: {
         name: profile?.company_name || 'Votre Entreprise',
@@ -493,7 +496,43 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
         <InvoiceGuideModal />
       </div>
 
-      {/* Company Info (Auto-filled) */}
+      {/* Quote Validity Duration Selector - Only for Devis */}
+      {documentType === 'devis' && (
+        <Card className="border-amber-500/20 bg-amber-500/5">
+          <CardContent className="p-4">
+            <div className={cn(
+              "flex items-center justify-between gap-4",
+              isRTL && "flex-row-reverse"
+            )}>
+              <div className={cn(
+                "flex items-center gap-2",
+                isRTL && "flex-row-reverse"
+              )}>
+                <Calendar className="h-5 w-5 text-amber-600" />
+                <span className={cn(
+                  "font-bold text-amber-700 dark:text-amber-400 text-sm",
+                  isRTL && "font-cairo"
+                )}>
+                  {isRTL ? '⏳ مدة صلاحية الدوفي' : '⏳ Validité du devis'}
+                </span>
+              </div>
+              <select 
+                value={validityDuration} 
+                onChange={(e) => setValidityDuration(parseInt(e.target.value) as 15 | 30 | 60 | 90)}
+                className={cn(
+                  "bg-background border border-border text-foreground text-xs font-bold rounded-lg focus:ring-primary focus:border-primary p-2 uppercase",
+                  isRTL && "font-cairo"
+                )}
+              >
+                <option value="15">{isRTL ? '15 يوم' : '15 Jours'}</option>
+                <option value="30">{isRTL ? '1 شهر (عادي)' : '1 Mois (Standard)'}</option>
+                <option value="60">{isRTL ? '2 شهور' : '2 Mois'}</option>
+                <option value="90">{isRTL ? '3 شهور' : '3 Mois'}</option>
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card className="border-green-500/20 bg-green-500/5">
         <CardContent className="p-4">
           <div className={cn(

@@ -23,22 +23,22 @@ const Index = () => {
       {/* HEADER */}
       <header className="bg-[#1e293b] p-4 pt-14 flex justify-between items-center shadow-lg border-b border-white/5 relative z-50">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 bg-[#facc15] rounded-2xl flex items-center justify-center text-[#111827] font-black text-lg border-2 border-[#111827] shadow-xl shadow-yellow-500/10 italic">
+          <div className="w-10 h-10 bg-[#facc15] rounded-xl flex items-center justify-center text-[#111827] font-black text-lg border-2 border-[#111827] italic">
             AF
           </div>
           <div>
-            <h1 className="text-xl font-black tracking-tighter text-white uppercase italic leading-none">Ana Fi France</h1>
+            <h1 className="text-lg font-black tracking-tighter text-white uppercase italic leading-none">Ana Fi France</h1>
             <div className="h-1 w-full bg-[#facc15] rounded-full mt-1 opacity-50"></div>
           </div>
         </div>
         
         {/* Language Toggle */}
-        <div className="flex bg-[#0f172a] p-1.5 rounded-2xl border border-white/10 shadow-inner">
+        <div className="flex bg-[#0f172a] p-1.5 rounded-2xl border border-white/10">
           <button 
             onClick={() => setLanguage('fr')} 
             className={cn(
               "px-4 py-2 rounded-xl text-[10px] font-black transition-all",
-              language === 'fr' ? 'bg-[#3b82f6] text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
+              language === 'fr' ? 'bg-[#3b82f6] text-white' : 'text-slate-500'
             )}
           >
             FR
@@ -47,7 +47,7 @@ const Index = () => {
             onClick={() => setLanguage('ar')} 
             className={cn(
               "px-4 py-2 rounded-xl text-[10px] font-black transition-all",
-              language === 'ar' ? 'bg-[#3b82f6] text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
+              language === 'ar' ? 'bg-[#3b82f6] text-white' : 'text-slate-500'
             )}
           >
             عربي
@@ -85,14 +85,14 @@ const Index = () => {
             onClick={() => navigate('/pro/cv-generator')}
             className="bg-[#eef2ff] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform border-b-4 border-indigo-200 group"
           >
-            <div className="p-3.5 bg-[#4f46e5] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+            <div className="p-3 bg-[#4f46e5] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
               <FileUser size={28} />
             </div>
             <div>
               <h3 className="font-black text-[#1e1b4b] text-[14px] font-cairo leading-tight">
                 سيرتي الذكية<br/>(سي في)
               </h3>
-              <p className="text-[10px] font-bold text-[#6366f1] mt-1 uppercase opacity-60">
+              <p className="text-[10px] font-bold text-[#6366f1] mt-1 uppercase opacity-60 tracking-tighter">
                 Mon CV Pro
               </p>
             </div>
@@ -103,14 +103,14 @@ const Index = () => {
             onClick={() => navigate('/pro/invoice-creator')}
             className="bg-[#fff7ed] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform border-b-4 border-orange-200 group"
           >
-            <div className="p-3.5 bg-[#f97316] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+            <div className="p-3 bg-[#f97316] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
               <FileText size={28} />
             </div>
             <div>
               <h3 className="font-black text-[#431407] text-[15px] font-cairo leading-tight">
                 فواتير ودوفي
               </h3>
-              <p className="text-[10px] font-bold text-[#ea580c] mt-1 uppercase opacity-60">
+              <p className="text-[10px] font-bold text-[#ea580c] mt-1 uppercase opacity-60 tracking-tighter">
                 Factures
               </p>
             </div>
@@ -121,14 +121,14 @@ const Index = () => {
             onClick={() => navigate('/coming-soon')}
             className="bg-[#fefce8] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform border-b-4 border-yellow-200 group"
           >
-            <div className="p-3.5 bg-[#eab308] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+            <div className="p-3 bg-[#eab308] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
               <Landmark size={28} />
             </div>
             <div>
-              <h3 className="font-black text-[#422006] text-[15px] font-cairo leading-tight">
+              <h3 className="font-black text-[#422006] text-[15px] font-cairo leading-tight text-center">
                 وفّر فلوسك
               </h3>
-              <p className="text-[10px] font-bold text-[#ca8a04] mt-1 uppercase opacity-60">
+              <p className="text-[10px] font-bold text-[#ca8a04] mt-1 uppercase opacity-60 tracking-tighter">
                 Banque Pro
               </p>
             </div>
@@ -139,14 +139,14 @@ const Index = () => {
             onClick={() => navigate('/assistant')}
             className="bg-[#f0fdf4] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform border-b-4 border-emerald-200 group"
           >
-            <div className="p-3.5 bg-[#059669] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+            <div className="p-3 bg-[#059669] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
               <Scale size={28} />
             </div>
             <div>
               <h3 className="font-black text-[#064e3b] text-[13px] font-cairo leading-tight">
                 شغل وضرائب وصحة
               </h3>
-              <p className="text-[10px] font-bold text-[#059669] mt-1 uppercase opacity-60">
+              <p className="text-[10px] font-bold text-[#059669] mt-1 uppercase opacity-60 tracking-tighter">
                 Droits
               </p>
             </div>
@@ -203,15 +203,15 @@ const Index = () => {
           onClick={() => navigate('/')}
           className={cn(
             "flex flex-col items-center gap-1.5 transition-all",
-            isActive('/') ? "text-[#facc15] scale-110" : "text-slate-500 hover:text-slate-300"
+            isActive('/') ? "text-[#facc15]" : "text-slate-500"
           )}
         >
           <div className={cn(
             "w-1.5 h-1.5 rounded-full bg-[#facc15] mb-0.5 transition-all",
             isActive('/') ? "scale-100" : "scale-0"
           )} />
-          <Home size={26} strokeWidth={isActive('/') ? 3 : 2} />
-          <span className="text-[10px] font-black uppercase tracking-tighter">
+          <Home size={24} strokeWidth={isActive('/') ? 3 : 2} />
+          <span className="text-[10px] font-black uppercase">
             {isRTL ? 'الرئيسية' : 'Accueil'}
           </span>
         </button>
@@ -220,14 +220,14 @@ const Index = () => {
           onClick={() => navigate('/assistant')}
           className={cn(
             "flex flex-col items-center gap-1.5 transition-all",
-            isActive('/assistant') ? "text-purple-400 scale-110" : "text-slate-500 hover:text-slate-300"
+            isActive('/assistant') ? "text-purple-400" : "text-slate-500"
           )}
         >
           <div className={cn(
             "w-1.5 h-1.5 rounded-full bg-purple-400 mb-0.5 transition-all",
             isActive('/assistant') ? "scale-100" : "scale-0"
           )} />
-          <MessageSquare size={26} />
+          <MessageSquare size={24} />
           <span className="text-[10px] font-black uppercase tracking-tighter">
             {isRTL ? 'استشارات' : 'Conseils'}
           </span>
@@ -237,15 +237,15 @@ const Index = () => {
           onClick={() => navigate('/pro')}
           className={cn(
             "flex flex-col items-center gap-1.5 transition-all",
-            location.pathname.startsWith('/pro') ? "text-orange-400 scale-110" : "text-slate-500 hover:text-slate-300"
+            location.pathname.startsWith('/pro') ? "text-orange-400" : "text-slate-500"
           )}
         >
           <div className={cn(
             "w-1.5 h-1.5 rounded-full bg-orange-400 mb-0.5 transition-all",
             location.pathname.startsWith('/pro') ? "scale-100" : "scale-0"
           )} />
-          <Settings size={26} />
-          <span className="text-[10px] font-black uppercase tracking-tighter">
+          <Settings size={24} />
+          <span className="text-[10px] font-black uppercase">
             {isRTL ? 'أدوات' : 'Outils'}
           </span>
         </button>
@@ -254,16 +254,16 @@ const Index = () => {
           onClick={() => navigate('/profile')}
           className={cn(
             "flex flex-col items-center gap-1.5 transition-all",
-            isActive('/profile') ? "text-[#facc15] scale-110" : "text-slate-500 hover:text-slate-300"
+            isActive('/profile') ? "text-[#facc15]" : "text-slate-500"
           )}
         >
           <div className={cn(
             "w-1.5 h-1.5 rounded-full bg-[#facc15] mb-0.5 transition-all",
             isActive('/profile') ? "scale-100" : "scale-0"
           )} />
-          <User size={26} />
-          <span className="text-[10px] font-black uppercase tracking-tighter">
-            {isRTL ? 'حسابي' : 'Mon Profil'}
+          <User size={24} />
+          <span className="text-[10px] font-black uppercase">
+            {isRTL ? 'حسابي' : 'Profil'}
           </span>
         </button>
       </nav>

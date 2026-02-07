@@ -56,6 +56,14 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
     }).format(amount);
   };
 
+  // Format number without € symbol (for table cells)
+  const formatNumber = (amount: number) => {
+    return amount.toLocaleString('fr-FR', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
+  };
+
   return (
     <div 
       dir="ltr"
@@ -109,11 +117,10 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
           <thead>
             <tr className="bg-primary text-primary-foreground">
-              <th className="p-3 text-left border" style={{ width: '45%' }}>Désignation</th>
-              <th className="p-3 text-center border" style={{ width: '10%' }}>Qté</th>
-              <th className="p-3 text-center border" style={{ width: '12%' }}>Unité</th>
-              <th className="p-3 text-right border" style={{ width: '16%' }}>Prix Unit.</th>
-              <th className="p-3 text-right border" style={{ width: '17%' }}>Total HT</th>
+              <th className="p-3 text-left border" style={{ width: '60%' }}>Désignation</th>
+              <th className="p-3 text-center border" style={{ width: '12%' }}>Qté/Unité</th>
+              <th className="p-3 text-right border" style={{ width: '14%' }}>P.U (€)</th>
+              <th className="p-3 text-right border" style={{ width: '14%' }}>Total (€)</th>
             </tr>
           </thead>
           <tbody>
@@ -127,16 +134,15 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
                 <tr 
                   key={index} 
                   className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}
-                  style={isSection && index > 0 ? { marginTop: '32px' } : undefined}
                 >
                   <td 
-                    className="p-3 border"
+                    className="p-3 border text-left"
                     style={isSection && index > 0 ? { paddingTop: '32px' } : undefined}
                   >
                     <div>
                       <span 
                         className={`font-medium ${isSection ? 'font-bold text-primary' : ''}`}
-                        style={{ textAlign: 'justify', textJustify: 'inter-word', display: 'block' }}
+                        style={{ textAlign: 'left', display: 'block' }}
                       >
                         {item.designation_fr}
                       </span>
@@ -147,10 +153,9 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
                       )}
                     </div>
                   </td>
-                  <td className="p-3 text-center border">{item.quantity}</td>
-                  <td className="p-3 text-center border">{item.unit}</td>
-                  <td className="p-3 text-right border">{formatCurrency(item.unitPrice)}</td>
-                  <td className="p-3 text-right border font-medium">{formatCurrency(item.total)}</td>
+                  <td className="p-3 text-center border whitespace-nowrap">{item.quantity} {item.unit}</td>
+                  <td className="p-3 text-right border whitespace-nowrap">{formatNumber(item.unitPrice)}</td>
+                  <td className="p-3 text-right border font-medium whitespace-nowrap">{formatNumber(item.total)}</td>
                 </tr>
               );
             })}

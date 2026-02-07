@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  FileText, Scale, Car, Landmark, Send, 
+  FileText, Scale, Car, Landmark, 
   ChevronRight, FileUser, MessageSquare,
   Home, Settings, User, Sparkles
 } from 'lucide-react';
@@ -161,7 +161,7 @@ const Index = () => {
           <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md">
             <Car size={26} />
           </div>
-          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-right")}>
+          <div className="text-right flex-1 pr-4">
             <h3 className="font-black text-xl font-cairo leading-none mb-1">
               كود دو لاروت
             </h3>
@@ -172,27 +172,6 @@ const Index = () => {
           <div className="bg-white/20 p-2 rounded-full">
             <ChevronRight size={16} />
           </div>
-        </button>
-
-        {/* SEND MONEY */}
-        <button 
-          onClick={() => navigate('/coming-soon')}
-          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 p-5 rounded-[2.5rem] shadow-lg flex items-center justify-between text-white active:scale-95 transition-transform border border-white/10"
-        >
-          <div className="bg-white/20 p-3 rounded-2xl">
-            <Send size={26} />
-          </div>
-          <div className={cn("flex-1 px-4", isRTL ? "text-right" : "text-left")}>
-            <h3 className="font-black text-lg font-cairo">
-              {isRTL ? 'حول فلوسك' : "Envoyer de l'argent"}
-            </h3>
-            <p className="text-[10px] font-bold text-emerald-100 font-cairo">
-              {isRTL ? 'تحويل فلوس لأهلك بأمان' : 'Transfert sécurisé'}
-            </p>
-          </div>
-          <span className="text-[8px] font-black bg-white/20 px-2 py-1 rounded-full uppercase">
-            Promo
-          </span>
         </button>
 
       </main>

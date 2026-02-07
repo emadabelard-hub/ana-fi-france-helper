@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Camera, PenLine, FileText } from 'lucide-react';
+import { Camera, PenLine, FileText, User } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -35,6 +35,15 @@ const Dashboard = () => {
       gradient: 'from-amber-500 to-orange-500',
       iconBg: 'bg-amber-400/30',
       emoji: '📄',
+    },
+    {
+      icon: User,
+      title: isRTL ? 'سيرة ذاتية احترافية' : 'CV Professionnel',
+      subtitle: isRTL ? 'اصنع سيرتك الذاتية في دقائق' : 'Créez un CV pro en quelques minutes',
+      path: '/pro/cv-generator',
+      gradient: 'from-indigo-500 to-violet-600',
+      iconBg: 'bg-indigo-400/30',
+      emoji: '👤',
     },
   ];
 

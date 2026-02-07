@@ -1,24 +1,19 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FileText, Scale, Car, Landmark, Send, 
   ChevronRight, FileUser, MessageSquare,
-  Home, Settings, User
+  Home, Settings, User, Brain
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import FeedbackModal from '@/components/home/FeedbackModal';
-import DocumentTypeModal from '@/components/invoice/DocumentTypeModal';
 
 const Index = () => {
   const { language, setLanguage, isRTL } = useLanguage();
   const navigate = useNavigate();
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [documentTypeModalOpen, setDocumentTypeModalOpen] = useState(false);
 
   return (
     <div className={cn(
-      "min-h-screen bg-[#111827] text-white pb-28 select-none",
+      "min-h-screen bg-[#0f172a] text-white pb-28 select-none",
       isRTL && "font-cairo"
     )}>
       
@@ -62,37 +57,28 @@ const Index = () => {
         {/* AI BANNER */}
         <button 
           onClick={() => navigate('/assistant')}
-          className="w-full bg-gradient-to-r from-[#6366f1] to-[#a855f7] p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden active:scale-95 transition-transform group border border-white/10"
+          className="w-full bg-gradient-to-r from-[#6366f1] to-[#a855f7] p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden active:scale-95 transition-transform border border-white/10 text-left"
         >
           <div className="relative z-10">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex gap-2">
-                <span className="text-2xl drop-shadow-md">🇫🇷</span>
-                <span className="text-2xl drop-shadow-md">🇪🇬</span>
+            <div className="flex justify-between mb-4">
+              <div className="flex gap-2 text-2xl">
+                <span>🇫🇷</span>
+                <span>🇪🇬</span>
               </div>
-              <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
-                <MessageSquare size={20} className="text-white" />
-              </div>
+              <Brain className="text-white opacity-80" />
             </div>
-            
-            <div className={cn("text-right", !isRTL && "text-left")}>
-              <h2 className="text-2xl font-black font-cairo mb-1 leading-tight">
-                {isRTL ? 'اسأل وأنا أجاوبك' : 'Posez votre question'}
-              </h2>
-              <p className="text-[11px] font-bold text-indigo-100 font-cairo bg-white/10 px-2 py-1 rounded-lg inline-block">
-                {isRTL ? 'بالعربي والفرنساوي 🇫🇷 🇪🇬' : 'En français et arabe 🇫🇷 🇪🇬'}
-              </p>
-            </div>
+            <h2 className={cn(
+              "text-2xl font-black text-white leading-tight mb-1",
+              isRTL && "text-right"
+            )}>
+              {isRTL ? (
+                <>اسأل وأنا أجاوبك<br/><span className="opacity-90 text-lg">Posez votre question</span></>
+              ) : (
+                <>Posez votre question<br/><span className="font-cairo opacity-90 text-lg">اسأل وأنا أجاوبك</span></>
+              )}
+            </h2>
           </div>
-          
-          {/* Decoration */}
-          <div className="absolute left-[-20px] top-[20px] w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
-          <div className={cn(
-            "absolute bottom-4 bg-white/20 p-2 rounded-full",
-            isRTL ? "left-4" : "right-4"
-          )}>
-            <ChevronRight size={16} className={cn(isRTL && "rotate-180")} />
-          </div>
+          <div className="absolute right-[-20px] top-[-20px] w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
         </button>
 
         {/* TOOLS GRID */}
@@ -101,17 +87,18 @@ const Index = () => {
           {/* CV Button */}
           <button 
             onClick={() => navigate('/pro/cv-generator')}
-            className="bg-[#e0e7ff] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform group"
+            className="bg-[#e0e7ff] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform h-48 justify-center"
           >
-            <div className="p-3.5 bg-[#4f46e5] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+            <div className="p-3 bg-[#4f46e5] rounded-2xl text-white shadow-lg">
               <FileUser size={28} />
             </div>
             <div>
-              <h3 className="font-black text-[#1e1b4b] text-[15px] font-cairo leading-tight">
+              <h3 className="font-black text-[#1e1b4b] text-sm leading-tight font-cairo">
                 {isRTL ? 'سيرتي الذكية' : 'Mon CV Pro'}
-                {isRTL && <><br/>(سي في)</>}
+                <br/>
+                <span className="text-[11px]">{isRTL ? '(سي في)' : ''}</span>
               </h3>
-              <p className="text-[10px] font-bold text-[#6366f1] mt-1 font-cairo">
+              <p className="text-[10px] font-bold text-[#6366f1] mt-1">
                 {isRTL ? 'اصنع سيرتك' : 'Créez votre CV'}
               </p>
             </div>
@@ -119,17 +106,17 @@ const Index = () => {
 
           {/* Invoices Button */}
           <button 
-            onClick={() => setDocumentTypeModalOpen(true)}
-            className="bg-[#ffedd5] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform group"
+            onClick={() => navigate('/pro/invoice-creator')}
+            className="bg-[#ffedd5] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform h-48 justify-center"
           >
-            <div className="p-3.5 bg-[#f97316] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+            <div className="p-3 bg-[#f97316] rounded-2xl text-white shadow-lg">
               <FileText size={28} />
             </div>
             <div>
-              <h3 className="font-black text-[#431407] text-[15px] font-cairo leading-tight">
+              <h3 className="font-black text-[#431407] text-sm leading-tight font-cairo">
                 {isRTL ? 'فواتير ودوفي' : 'Factures & Devis'}
               </h3>
-              <p className="text-[10px] font-bold text-[#ea580c] mt-1 font-cairo">
+              <p className="text-[10px] font-bold text-[#ea580c] mt-1">
                 {isRTL ? 'اعملهم صح' : 'Créez-les facilement'}
               </p>
             </div>
@@ -138,16 +125,16 @@ const Index = () => {
           {/* Bank Button */}
           <button 
             onClick={() => navigate('/coming-soon')}
-            className="bg-[#fef9c3] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform group"
+            className="bg-[#fef9c3] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform h-40 justify-center"
           >
-            <div className="p-3.5 bg-[#eab308] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
-              <Landmark size={28} />
+            <div className="p-3 bg-[#eab308] rounded-2xl text-white shadow-lg">
+              <Landmark size={24} />
             </div>
             <div>
-              <h3 className="font-black text-[#422006] text-[15px] font-cairo leading-tight">
+              <h3 className="font-black text-[#422006] text-sm font-cairo">
                 {isRTL ? 'وفّر فلوسك' : 'Économisez'}
               </h3>
-              <p className="text-[10px] font-bold text-[#ca8a04] mt-1 font-cairo">
+              <p className="text-[10px] font-bold text-[#ca8a04]">
                 {isRTL ? 'أفضل بنك' : 'Meilleure banque'}
               </p>
             </div>
@@ -156,16 +143,16 @@ const Index = () => {
           {/* Rights Button */}
           <button 
             onClick={() => navigate('/assistant')}
-            className="bg-[#d1fae5] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform group"
+            className="bg-[#d1fae5] p-5 rounded-[2.2rem] shadow-lg flex flex-col items-center text-center gap-3 active:scale-95 transition-transform h-40 justify-center"
           >
-            <div className="p-3.5 bg-[#059669] rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
-              <Scale size={28} />
+            <div className="p-3 bg-[#059669] rounded-2xl text-white shadow-lg">
+              <Scale size={24} />
             </div>
             <div>
-              <h3 className="font-black text-[#064e3b] text-[13px] font-cairo leading-tight">
-                {isRTL ? 'شغل وضرائب وصحة' : 'Travail, Impôts & Santé'}
+              <h3 className="font-black text-[#064e3b] text-sm font-cairo">
+                {isRTL ? 'شغل وضرائب' : 'Travail & Impôts'}
               </h3>
-              <p className="text-[10px] font-bold text-[#059669] mt-1 font-cairo">
+              <p className="text-[10px] font-bold text-[#059669]">
                 {isRTL ? 'اعرف حقوقك' : 'Vos droits'}
               </p>
             </div>
@@ -209,7 +196,7 @@ const Index = () => {
               {isRTL ? 'تحويل فلوس لأهلك بأمان' : 'Transfert sécurisé'}
             </p>
           </div>
-          <span className="text-[8px] font-black bg-white/25 px-2.5 py-1 rounded-full uppercase">
+          <span className="text-[8px] font-black bg-white/20 px-2 py-1 rounded-full uppercase">
             Promo
           </span>
         </button>
@@ -223,7 +210,7 @@ const Index = () => {
           className="flex flex-col items-center gap-1 text-[#facc15]"
         >
           <Home size={24} strokeWidth={3} />
-          <span className="text-[10px] font-bold font-cairo">
+          <span className="text-[10px] font-bold">
             {isRTL ? 'الرئيسية' : 'Accueil'}
           </span>
         </button>
@@ -233,8 +220,8 @@ const Index = () => {
           className="flex flex-col items-center gap-1 text-slate-500"
         >
           <MessageSquare size={24} />
-          <span className="text-[10px] font-bold font-cairo">
-            {isRTL ? 'استشارات' : 'Consultations'}
+          <span className="text-[10px] font-bold">
+            {isRTL ? 'استشارات' : 'Conseils'}
           </span>
         </button>
         
@@ -243,8 +230,8 @@ const Index = () => {
           className="flex flex-col items-center gap-1 text-slate-500"
         >
           <Settings size={24} />
-          <span className="text-[10px] font-bold font-cairo">
-            {isRTL ? 'أدوات' : 'Outils Pro'}
+          <span className="text-[10px] font-bold">
+            {isRTL ? 'أدوات' : 'Outils'}
           </span>
         </button>
         
@@ -253,22 +240,11 @@ const Index = () => {
           className="flex flex-col items-center gap-1 text-slate-500"
         >
           <User size={24} />
-          <span className="text-[10px] font-bold font-cairo">
-            {isRTL ? 'حسابي' : 'Mon Profil'}
+          <span className="text-[10px] font-bold">
+            {isRTL ? 'حسابي' : 'Compte'}
           </span>
         </button>
       </nav>
-
-      {/* Modals */}
-      <FeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />
-      <DocumentTypeModal
-        open={documentTypeModalOpen}
-        onOpenChange={setDocumentTypeModalOpen}
-        onSelect={(type) => {
-          setDocumentTypeModalOpen(false);
-          navigate(`/pro/invoice-creator?type=${type}`);
-        }}
-      />
     </div>
   );
 };

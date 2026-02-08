@@ -20,7 +20,7 @@ import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/D
 import LoadingOverlay from '@/components/shared/LoadingOverlay';
 import WelcomeIntro from '@/components/assistant/WelcomeIntro';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
-import { RefreshCw, RotateCcw, Brain, ArrowLeft } from 'lucide-react';
+import { RefreshCw, RotateCcw, Brain, ArrowLeft, User, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -1157,6 +1157,42 @@ ${formData.items}`;
           isRTL={isRTL}
           disabled={isAnalyzing}
         />
+
+        {/* Quick Action Buttons - Fixed Above Input */}
+        <div className={cn(
+          "px-3 py-2 bg-muted/50 flex gap-2 overflow-x-auto border-t border-border",
+          isRTL && "flex-row-reverse"
+        )}>
+          {/* CV Button */}
+          <button 
+            onClick={() => navigate('/pro/cv-generator')}
+            className={cn(
+              "flex items-center gap-2 bg-primary/10 text-primary px-4 py-3 rounded-xl border border-primary/20",
+              "shadow-sm active:scale-95 transition-transform flex-1 justify-center min-w-fit",
+              isRTL && "flex-row-reverse font-cairo"
+            )}
+          >
+            <User size={18} />
+            <span className="font-bold text-xs whitespace-nowrap">
+              {isRTL ? 'عايز تعمل سي في' : 'Créer mon CV'}
+            </span>
+          </button>
+
+          {/* Invoice/Devis Button */}
+          <button 
+            onClick={() => navigate('/pro/invoice-creator')}
+            className={cn(
+              "flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-3 rounded-xl border border-border",
+              "shadow-sm active:scale-95 transition-transform flex-1 justify-center min-w-fit",
+              isRTL && "flex-row-reverse font-cairo"
+            )}
+          >
+            <FileText size={18} />
+            <span className="font-bold text-xs whitespace-nowrap">
+              {isRTL ? 'عايز تعمل فاتورة أو دوفي' : 'Facture / Devis'}
+            </span>
+          </button>
+        </div>
 
         {/* Input Area - Compact fixed at bottom */}
         <div className="flex-shrink-0 p-2 border-t bg-background relative">

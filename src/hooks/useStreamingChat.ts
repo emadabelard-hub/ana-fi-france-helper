@@ -45,9 +45,13 @@ export async function streamProAdminAssistant(
       let errorMessage = 'حدث خطأ غير متوقع';
       
       if (status === 429) {
-        errorMessage = 'Limite de requêtes dépassée. Veuillez réessayer plus tard.';
+        errorMessage = 'الخدمة مشغولة، جرب تاني بعد دقيقة 🙏';
       } else if (status === 402) {
-        errorMessage = 'Crédits insuffisants. Veuillez recharger votre compte.';
+        errorMessage = 'الخدمة متوقفة مؤقتاً - جاري الإصلاح ⏳';
+      } else if (status === 404) {
+        errorMessage = 'الخدمة غير متاحة حالياً 🔧';
+      } else if (status >= 500) {
+        errorMessage = 'مشكلة في السيرفر، جرب تاني 🔄';
       } else {
         try {
           const errorData = await resp.json();

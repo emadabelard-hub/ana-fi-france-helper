@@ -1159,38 +1159,23 @@ ${formData.items}`;
         />
 
         {/* Quick Action Buttons - Fixed Above Input */}
-        <div className={cn(
-          "px-3 py-2 bg-muted/50 flex gap-2 overflow-x-auto border-t border-border",
-          isRTL && "flex-row-reverse"
-        )}>
-          {/* CV Button */}
+        <div className="px-4 pb-2 bg-muted/30 flex gap-2 overflow-x-auto">
+          {/* CV Button - Indigo style */}
           <button 
             onClick={() => navigate('/pro/cv-generator')}
-            className={cn(
-              "flex items-center gap-2 bg-primary/10 text-primary px-4 py-3 rounded-xl border border-primary/20",
-              "shadow-sm active:scale-95 transition-transform flex-1 justify-center min-w-fit",
-              isRTL && "flex-row-reverse font-cairo"
-            )}
+            className="flex items-center gap-2 bg-[hsl(226,76%,94%)] text-[hsl(243,75%,49%)] px-4 py-3 rounded-xl border border-[hsl(228,90%,86%)] shadow-sm active:scale-95 transition-transform flex-1 justify-center"
           >
             <User size={18} />
-            <span className="font-bold text-xs whitespace-nowrap">
-              {isRTL ? 'عايز تعمل سي في' : 'Créer mon CV'}
-            </span>
+            <span className="font-black text-xs font-cairo">عايز تعمل سي في</span>
           </button>
 
-          {/* Invoice/Devis Button */}
+          {/* Invoice/Devis Button - Orange style */}
           <button 
             onClick={() => navigate('/pro/invoice-creator')}
-            className={cn(
-              "flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-3 rounded-xl border border-border",
-              "shadow-sm active:scale-95 transition-transform flex-1 justify-center min-w-fit",
-              isRTL && "flex-row-reverse font-cairo"
-            )}
+            className="flex items-center gap-2 bg-[hsl(30,100%,92%)] text-[hsl(21,90%,38%)] px-4 py-3 rounded-xl border border-[hsl(27,96%,83%)] shadow-sm active:scale-95 transition-transform flex-1 justify-center"
           >
             <FileText size={18} />
-            <span className="font-bold text-xs whitespace-nowrap">
-              {isRTL ? 'عايز تعمل فاتورة أو دوفي' : 'Facture / Devis'}
-            </span>
+            <span className="font-black text-xs font-cairo">عايز تعمل فاتورة أو دوفي</span>
           </button>
         </div>
 

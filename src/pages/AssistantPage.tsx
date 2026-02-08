@@ -7,9 +7,7 @@ import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-
 import AttachedDocuments, { AttachedDocument } from '@/components/assistant/AttachedDocuments';
-import LoadingOverlay from '@/components/shared/LoadingOverlay';
 import { ArrowLeft, User, FileText, Mail, Sparkles, Brain, Camera, Paperclip, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {

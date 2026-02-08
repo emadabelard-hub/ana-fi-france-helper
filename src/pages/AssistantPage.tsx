@@ -1017,8 +1017,8 @@ ${formData.items}`;
           <WelcomeIntro
             isRTL={isRTL}
             quickActions={isRTL 
-              ? ['إزاي أعمل فاتورة؟', 'العميل مش بيدفع', 'غلط في الدوفي']
-              : ['Comment faire une facture ?', 'Client ne paie pas', 'Erreur sur devis']
+              ? ['عايز أعمل فاتورة', 'بدور على شغل (CV)', 'مشكلة في الدفع']
+              : ['Je veux faire une Facture', 'Je cherche du travail (CV)', 'Problème de paiement']
             }
             onQuickAction={(action) => handleSend(action)}
           />
@@ -1054,10 +1054,19 @@ ${formData.items}`;
                   dispatchInfo={message.dispatchInfo}
                   letterContent={message.letterContent}
                   onActionClick={(action) => {
+                    // Redirect to CV tool
+                    if (action.includes("CV") || action.includes("سيرة")) {
+                      navigate('/pro/cv-generator');
+                    }
                     // Redirect to invoice tool
-                    if (action.includes("Ouvrir l'outil") || action.includes("افتح أداة")) {
+                    else if (action.includes("Facture") || action.includes("Devis") || action.includes("فاتورة") || action.includes("دوفي")) {
                       navigate('/pro/invoice-creator');
-                    } else {
+                    }
+                    // Redirect to dashboard/tools
+                    else if (action.includes("Outils") || action.includes("Tableau de Bord") || action.includes("أدوات") || action.includes("لوحة")) {
+                      navigate('/pro');
+                    }
+                    else {
                       // Treat other actions as new user messages
                       handleSend(action);
                     }

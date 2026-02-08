@@ -1,6 +1,5 @@
 import { forwardRef } from 'react';
 import type { CVData } from '@/pages/CVGeneratorPage';
-import { Settings } from 'lucide-react';
 
 /**
  * Calculate age from birth date string (DD/MM/YYYY format)
@@ -32,7 +31,7 @@ function calculateAge(birthDate: string): string {
 }
 
 /**
- * Format name as: Prénom (normal) + NOM (bold)
+ * Format name as: Prénom (normal) + NOM (MAJUSCULES)
  */
 function formatNameParts(fullName: string): { firstName: string; lastName: string } {
   if (!fullName || !fullName.trim()) return { firstName: '', lastName: '' };
@@ -40,7 +39,7 @@ function formatNameParts(fullName: string): { firstName: string; lastName: strin
   const parts = fullName.trim().split(/\s+/);
   
   if (parts.length === 1) {
-    return { firstName: parts[0], lastName: '' };
+    return { firstName: '', lastName: parts[0].toUpperCase() };
   }
   
   const lastName = parts[parts.length - 1].toUpperCase();
@@ -55,6 +54,13 @@ interface CVPreviewProps {
   data: CVData;
 }
 
+/**
+ * CV Preview - Style "Gribelin"
+ * - Thin gray frames on white background
+ * - Perfectly centered header with Name (UPPERCASE), First name, Job
+ * - Justified text (block alignment)
+ * - Includes Permis & Centres d'intérêt sections
+ */
 const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => {
   const languageLevelMap: Record<string, string> = {
     debutant: 'Débutant',
@@ -67,20 +73,23 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
   const { firstName, lastName } = formatNameParts(data.fullName);
   const age = calculateAge(data.birthDate);
 
-  // Build the personal info line
+  // Build the personal info line (Age • Situation • Permis)
   const personalInfoItems: string[] = [];
   if (age) personalInfoItems.push(age);
   if (data.maritalStatus) personalInfoItems.push(data.maritalStatus);
-  if (data.drivingLicense) personalInfoItems.push(data.drivingLicense);
+  if (data.drivingLicense) personalInfoItems.push(`Permis ${data.drivingLicense}`);
 
-  // Section Title Component
+  // Section Title Component with thin gray underline
   const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <div className="mb-2">
+    <div className="mb-3 mt-5">
       <h2 
-        className="text-xs font-bold uppercase tracking-wider"
         style={{ 
-          color: '#1a365d',
-          letterSpacing: '0.1em',
+          fontSize: '0.75rem',
+          fontWeight: '700',
+          textTransform: 'uppercase',
+          letterSpacing: '0.15em',
+          color: '#374151',
+          marginBottom: '6px',
         }}
       >
         {children}
@@ -88,9 +97,8 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
       <div 
         style={{ 
           height: '1px', 
-          backgroundColor: '#1a365d',
+          backgroundColor: '#9ca3af',
           width: '100%',
-          marginTop: '4px',
         }} 
       />
     </div>
@@ -101,7 +109,7 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
       ref={ref}
       dir="ltr"
       lang="fr"
-      className="bg-white text-slate-800 w-full max-w-[210mm] mx-auto shadow-lg"
+      className="bg-white text-gray-800 w-full max-w-[210mm] mx-auto"
       style={{
         fontFamily: "'Urbanist', 'Inter', 'Segoe UI', sans-serif",
         minHeight: '297mm',
@@ -109,85 +117,66 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
         overflowWrap: 'break-word',
         wordBreak: 'break-word',
         backgroundColor: '#ffffff',
-        display: 'flex',
-        flexDirection: 'column',
+        border: '1px solid #e5e7eb',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
       }}
     >
-      {/* ========== TOP BAR - Dark Blue ========== */}
+      {/* ========== MAIN CONTENT - White with thin gray border ========== */}
       <div 
         style={{ 
-          backgroundColor: '#0f172a',
-          padding: '10px 20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          padding: '32px 28px',
+          border: '1px solid #d1d5db',
+          margin: '16px',
+          minHeight: 'calc(297mm - 32px)',
+          backgroundColor: '#ffffff',
         }}
       >
-        <span 
-          style={{ 
-            color: '#ffffff',
-            fontWeight: '600',
-            fontSize: '0.85rem',
-            letterSpacing: '0.15em',
-          }}
-        >
-          ANA FI PARIS
-        </span>
-        <Settings 
-          size={18} 
-          color="#ffffff" 
-          strokeWidth={1.5}
-        />
-      </div>
-
-      {/* ========== MAIN CONTENT AREA ========== */}
-      <div style={{ padding: '24px 28px', flex: 1, display: 'flex', flexDirection: 'column' }}>
         
         {/* ========== HEADER - Perfectly Centered ========== */}
-        <div className="text-center mb-4">
-          {/* Name: Prénom NOM */}
+        <div className="text-center mb-6">
+          {/* Name: Prénom NOM - Centered */}
           <h1 
             style={{ 
-              fontSize: 'clamp(1.6rem, 5vw, 2rem)',
+              fontSize: '1.75rem',
               lineHeight: '1.2',
-              marginBottom: '8px',
-              color: '#1a365d',
+              marginBottom: '4px',
+              color: '#1f2937',
             }}
           >
-            <span style={{ fontWeight: '300' }}>{firstName || 'Prénom'}</span>
-            {' '}
+            <span style={{ fontWeight: '400' }}>{firstName || 'Prénom'}</span>
+            {(firstName && lastName) && ' '}
             <span style={{ fontWeight: '700' }}>{lastName || 'NOM'}</span>
           </h1>
           
-          {/* Blue horizontal line */}
+          {/* Thin gray horizontal line */}
           <div 
             style={{ 
-              height: '2px', 
-              backgroundColor: '#1a365d',
-              width: '60px',
-              margin: '0 auto 12px auto',
+              height: '1px', 
+              backgroundColor: '#9ca3af',
+              width: '80px',
+              margin: '10px auto',
             }} 
           />
           
-          {/* Profession */}
+          {/* Profession - Centered */}
           <p 
             style={{ 
-              color: '#1a365d',
+              color: '#374151',
               fontSize: '1rem',
-              fontWeight: '500',
-              marginBottom: '6px',
+              fontWeight: '600',
+              marginBottom: '8px',
               letterSpacing: '0.02em',
             }}
           >
             {data.profession || 'Votre Métier'}
           </p>
           
-          {/* Age • Marital Status • Driving License */}
+          {/* Age • Situation familiale • Permis */}
           {personalInfoItems.length > 0 && (
             <p 
               style={{ 
                 fontSize: '0.8rem',
-                color: '#475569',
+                color: '#6b7280',
                 letterSpacing: '0.03em',
               }}
             >
@@ -198,170 +187,173 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
 
         {/* ========== CONTACT INFO - Centered ========== */}
         <div 
-          className="text-center mb-5 pb-4"
-          style={{ borderBottom: '1px solid #e2e8f0' }}
+          className="text-center mb-6 pb-4"
+          style={{ borderBottom: '1px solid #e5e7eb' }}
         >
-          <div className="flex flex-col items-center gap-1" style={{ color: '#334155' }}>
+          <div className="flex flex-col items-center gap-1" style={{ color: '#4b5563' }}>
             {data.phone && (
               <div className="flex items-center gap-2" style={{ fontSize: '0.8rem' }}>
-                <span style={{ fontSize: '0.7rem' }}>✆</span>
+                <span style={{ fontSize: '0.75rem' }}>📞</span>
                 <span>{data.phone}</span>
               </div>
             )}
             {data.email && (
               <div className="flex items-center gap-2" style={{ fontSize: '0.8rem' }}>
-                <span style={{ fontSize: '0.7rem' }}>✉</span>
+                <span style={{ fontSize: '0.75rem' }}>✉️</span>
                 <span>{data.email}</span>
               </div>
             )}
             {data.address && (
               <div className="flex items-center gap-2" style={{ fontSize: '0.8rem' }}>
-                <span style={{ fontSize: '0.7rem' }}>⌂</span>
+                <span style={{ fontSize: '0.75rem' }}>📍</span>
                 <span>{data.address}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* ========== MAIN CONTENT RECTANGLE - Navy Border ========== */}
-        <div 
-          style={{ 
-            border: '1.5px solid #1a365d',
-            backgroundColor: '#ffffff',
-            padding: '20px 24px',
-            flex: 1,
-          }}
-        >
-          {/* Profile / Summary */}
-          {data.summary && (
-            <div className="mb-4">
-              <SectionTitle>Profil</SectionTitle>
-              <p 
-                style={{ 
-                  textAlign: 'justify', 
-                  textJustify: 'inter-word',
-                  fontSize: '0.8rem',
-                  lineHeight: '1.55',
-                  color: '#1e293b',
-                }}
-              >
-                {data.summary}
-              </p>
-            </div>
-          )}
+        {/* ========== PROFILE / SUMMARY - Justified ========== */}
+        {data.summary && (
+          <div>
+            <SectionTitle>Profil</SectionTitle>
+            <p 
+              style={{ 
+                textAlign: 'justify', 
+                textJustify: 'inter-word',
+                fontSize: '0.85rem',
+                lineHeight: '1.6',
+                color: '#374151',
+              }}
+            >
+              {data.summary}
+            </p>
+          </div>
+        )}
 
-          {/* Formation */}
-          {data.education.length > 0 && (
-            <div className="mb-4">
-              <SectionTitle>Formation</SectionTitle>
-              <div className="space-y-2">
-                {data.education.map((edu, index) => (
-                  <div key={edu.id} className={index > 0 ? 'pt-2 border-t border-slate-100' : ''}>
-                    <div className="flex justify-between items-start gap-3">
-                      <div style={{ flex: 1 }}>
-                        <p className="font-semibold" style={{ fontSize: '0.8rem', color: '#1e293b' }}>{edu.degree}</p>
-                        <p style={{ fontSize: '0.75rem', color: '#475569' }}>{edu.institution}</p>
-                        {edu.field && <p className="italic" style={{ fontSize: '0.7rem', color: '#64748b' }}>{edu.field}</p>}
-                      </div>
-                      <span className="shrink-0" style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                        {edu.startDate} — {edu.endDate}
-                      </span>
+        {/* ========== FORMATION ========== */}
+        {data.education.length > 0 && (
+          <div>
+            <SectionTitle>Formation</SectionTitle>
+            <div className="space-y-3">
+              {data.education.map((edu, index) => (
+                <div key={edu.id} className={index > 0 ? 'pt-2 border-t border-gray-100' : ''}>
+                  <div className="flex justify-between items-start gap-3">
+                    <div style={{ flex: 1 }}>
+                      <p className="font-semibold" style={{ fontSize: '0.85rem', color: '#1f2937' }}>{edu.degree}</p>
+                      <p style={{ fontSize: '0.8rem', color: '#6b7280' }}>{edu.institution}</p>
+                      {edu.field && <p className="italic" style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{edu.field}</p>}
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Expériences Professionnelles */}
-          {data.experiences.length > 0 && (
-            <div className="mb-4">
-              <SectionTitle>Expériences Professionnelles</SectionTitle>
-              <div className="space-y-3">
-                {data.experiences.map((exp, index) => (
-                  <div key={exp.id} className={index > 0 ? 'pt-2 border-t border-slate-100' : ''}>
-                    <div className="flex justify-between items-start gap-3 mb-0.5">
-                      <p className="font-semibold" style={{ fontSize: '0.8rem', color: '#1e293b' }}>{exp.position}</p>
-                      <span className="shrink-0" style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                        {exp.startDate} — {exp.endDate || 'Présent'}
-                      </span>
-                    </div>
-                    <p className="mb-1" style={{ fontSize: '0.75rem', fontStyle: 'italic', color: '#475569' }}>{exp.company}</p>
-                    {exp.description && (
-                      <p 
-                        style={{ 
-                          textAlign: 'justify', 
-                          textJustify: 'inter-word',
-                          fontSize: '0.75rem',
-                          lineHeight: '1.5',
-                          color: '#334155',
-                        }}
-                      >
-                        {exp.description}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Compétences */}
-          {data.skills.length > 0 && (
-            <div className="mb-4">
-              <SectionTitle>Compétences</SectionTitle>
-              <p 
-                style={{
-                  fontSize: '0.8rem',
-                  color: '#1e293b',
-                  lineHeight: '1.6',
-                }}
-              >
-                {data.skills.join('  •  ')}
-              </p>
-            </div>
-          )}
-
-          {/* Langues */}
-          {data.languages.length > 0 && (
-            <div className="mb-4">
-              <SectionTitle>Langues</SectionTitle>
-              <div className="space-y-1">
-                {data.languages.map((lang) => (
-                  <div key={lang.id} className="flex justify-between items-center">
-                    <span className="font-medium" style={{ fontSize: '0.8rem', color: '#1e293b' }}>{lang.name}</span>
-                    <span style={{ fontSize: '0.7rem', fontStyle: 'italic', color: '#64748b' }}>
-                      {languageLevelMap[lang.level] || lang.level}
+                    <span className="shrink-0" style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                      {edu.startDate} — {edu.endDate}
                     </span>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Centres d'intérêt */}
-          {data.interests && data.interests.length > 0 && (
-            <div>
-              <SectionTitle>Centres d'intérêt</SectionTitle>
-              <p 
-                style={{
-                  fontSize: '0.8rem',
-                  color: '#1e293b',
-                  lineHeight: '1.6',
-                }}
-              >
-                {data.interests.join('  •  ')}
-              </p>
+        {/* ========== EXPÉRIENCES PROFESSIONNELLES ========== */}
+        {data.experiences.length > 0 && (
+          <div>
+            <SectionTitle>Expériences Professionnelles</SectionTitle>
+            <div className="space-y-4">
+              {data.experiences.map((exp, index) => (
+                <div key={exp.id} className={index > 0 ? 'pt-3 border-t border-gray-100' : ''}>
+                  <div className="flex justify-between items-start gap-3 mb-1">
+                    <p className="font-semibold" style={{ fontSize: '0.85rem', color: '#1f2937' }}>{exp.position}</p>
+                    <span className="shrink-0" style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                      {exp.startDate} — {exp.endDate || 'Présent'}
+                    </span>
+                  </div>
+                  <p className="mb-1" style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#6b7280' }}>{exp.company}</p>
+                  {exp.description && (
+                    <p 
+                      style={{ 
+                        textAlign: 'justify', 
+                        textJustify: 'inter-word',
+                        fontSize: '0.8rem',
+                        lineHeight: '1.55',
+                        color: '#4b5563',
+                      }}
+                    >
+                      {exp.description}
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* ========== COMPÉTENCES ========== */}
+        {data.skills.length > 0 && (
+          <div>
+            <SectionTitle>Compétences</SectionTitle>
+            <p 
+              style={{
+                fontSize: '0.85rem',
+                color: '#374151',
+                lineHeight: '1.6',
+                textAlign: 'justify',
+              }}
+            >
+              {data.skills.join('  •  ')}
+            </p>
+          </div>
+        )}
+
+        {/* ========== LANGUES ========== */}
+        {data.languages.length > 0 && (
+          <div>
+            <SectionTitle>Langues</SectionTitle>
+            <div className="space-y-1">
+              {data.languages.map((lang) => (
+                <div key={lang.id} className="flex justify-between items-center">
+                  <span className="font-medium" style={{ fontSize: '0.85rem', color: '#374151' }}>{lang.name}</span>
+                  <span style={{ fontSize: '0.75rem', fontStyle: 'italic', color: '#9ca3af' }}>
+                    {languageLevelMap[lang.level] || lang.level}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ========== PERMIS DE CONDUIRE ========== */}
+        {data.drivingLicense && (
+          <div>
+            <SectionTitle>Permis de Conduire</SectionTitle>
+            <p style={{ fontSize: '0.85rem', color: '#374151' }}>
+              Permis {data.drivingLicense}
+            </p>
+          </div>
+        )}
+
+        {/* ========== CENTRES D'INTÉRÊT ========== */}
+        {data.interests && data.interests.length > 0 && (
+          <div>
+            <SectionTitle>Centres d'Intérêt</SectionTitle>
+            <p 
+              style={{
+                fontSize: '0.85rem',
+                color: '#374151',
+                lineHeight: '1.6',
+                textAlign: 'justify',
+              }}
+            >
+              {data.interests.join('  •  ')}
+            </p>
+          </div>
+        )}
 
         {/* ========== FOOTER ========== */}
         <div 
-          className="text-center mt-4 pt-2"
+          className="text-center mt-8 pt-4"
           style={{ 
+            borderTop: '1px solid #e5e7eb',
             fontSize: '0.65rem',
-            color: '#94a3b8',
+            color: '#9ca3af',
             letterSpacing: '0.05em',
           }}
         >

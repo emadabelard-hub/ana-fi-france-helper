@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, User, FileText, Mail, Brain, Camera, Paperclip, Send, ChevronRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, Brain, Camera, Paperclip, Send, Loader2 } from 'lucide-react';
 import { streamProAdminAssistant } from '@/hooks/useStreamingChat';
 import { useToast } from '@/hooks/use-toast';
 import QuickActionsBar from '@/components/assistant/QuickActionsBar';
@@ -21,7 +21,6 @@ const AssistantPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,9 +36,6 @@ const AssistantPage = () => {
   const handleSend = async (messageText?: string, imageData?: string) => {
     const text = messageText || inputValue;
     if (!text.trim() && !imageData) return;
-
-    // Hide welcome card once user starts chatting
-    setShowWelcome(false);
 
     const userMsg: Message = {
       id: `user-${Date.now()}`,
@@ -88,12 +84,11 @@ const AssistantPage = () => {
             console.error('Stream error:', error);
             setIsTyping(false);
 
-            // Update assistant message with error
             const errorMessage = language === 'fr'
               ? (error.status === 429
                   ? "Service surchargé — réessayez dans une minute."
                   : error.status === 402
-                  ? "Crédits IA indisponibles — vérifiez votre abonnement/crédits."
+                  ? "Crédits IA indisponibles — vérifiez votre abonnement."
                   : "Problème serveur — réessayez dans un instant.")
               : (error.status === 429
                   ? 'الخدمة مشغولة حاليا، جرب تاني بعد شوية 🙏'
@@ -108,7 +103,6 @@ const AssistantPage = () => {
             toast({
               variant: 'destructive',
               title: isRTL ? 'خطأ' : 'Erreur',
-              // Never surface raw "500 Internal Server Error" strings; show a controlled message
               description: errorMessage,
             });
           }
@@ -127,7 +121,6 @@ const AssistantPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
         variant: 'destructive',
@@ -137,7 +130,6 @@ const AssistantPage = () => {
       return;
     }
 
-    // Convert to base64
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
@@ -145,7 +137,6 @@ const AssistantPage = () => {
     };
     reader.readAsDataURL(file);
 
-    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -160,100 +151,58 @@ const AssistantPage = () => {
         navigate('/pro/invoice-creator');
         break;
       case 'mail':
-        setShowWelcome(false);
         setInputValue('عايز ارد على خطاب أو إيميل وصلني');
         break;
     }
   };
 
+  const hasMessages = messages.length > 0;
+
   return (
     <div className="flex flex-col h-full bg-background text-foreground font-sans">
       
-      {/* HEADER */}
-      <header className="bg-card p-4 pt-12 shadow-sm border-b border-border flex items-center gap-3 sticky top-0 z-10">
+      {/* HEADER - Compact */}
+      <header className="bg-card p-3 pt-10 shadow-sm border-b border-border flex items-center gap-3 sticky top-0 z-10">
         <button 
           onClick={() => navigate('/')} 
           className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground"
         >
-          <ArrowLeft size={24} />
+          <ArrowLeft size={22} />
         </button>
-        <div className="w-10 h-10 bg-gradient-to-r from-primary to-[hsl(280,70%,50%)] rounded-full flex items-center justify-center text-primary-foreground shadow-md">
-          <Brain size={20} />
+        <div className="w-9 h-9 bg-gradient-to-r from-primary to-[hsl(280,70%,50%)] rounded-full flex items-center justify-center text-primary-foreground shadow">
+          <Brain size={18} />
         </div>
         <div>
-          <h1 className="text-base font-bold text-foreground">Discussion IA</h1>
+          <h1 className="text-sm font-bold text-foreground font-cairo">شبيك لبيك 🧞‍♂️</h1>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <p className="text-xs text-muted-foreground">En ligne</p>
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+            <p className="text-[10px] text-muted-foreground">اسأل وانا اجاوب</p>
           </div>
         </div>
       </header>
 
-      {/* CHAT AREA */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* CHAT AREA - Simple WhatsApp Style */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         
-        {/* WELCOME CARD - Only shown initially */}
-        {showWelcome && (
-          <div className="w-full animate-in slide-in-from-bottom-10 fade-in duration-700">
-            <div className="bg-gradient-to-br from-primary to-[hsl(280,70%,50%)] p-8 rounded-[2.5rem] shadow-2xl text-center text-primary-foreground relative overflow-hidden border border-white/20">
-              {/* Background decorations */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full blur-2xl -ml-5 -mb-5" />
-              
-              <div className="relative z-10">
-                <h2 className="text-3xl font-black mb-2 font-cairo drop-shadow-md">شبيك لبيك 🧞‍♂️</h2>
-                <p className="text-lg font-bold opacity-90 mb-8 font-cairo text-primary-foreground/80">اسأل وانا اجاوب</p>
-
-                {/* Action Buttons inside the card */}
-                <div className="space-y-3">
-                  {/* Mail Reply Button */}
-                  <button
-                    onClick={() => handleActionClick('mail')}
-                    className="w-full flex items-center justify-between p-4 rounded-2xl shadow-lg active:scale-95 transition-all bg-white text-primary border-2 border-white"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                        <Mail size={20} />
-                      </div>
-                      <span className="font-bold text-sm font-cairo">الرد على خطاب أو إيميل</span>
-                    </div>
-                    <ChevronRight size={18} className="text-primary" />
-                  </button>
-
-                  {/* CV Button */}
-                  <button
-                    onClick={() => handleActionClick('cv')}
-                    className="w-full flex items-center justify-between p-4 rounded-2xl shadow-lg active:scale-95 transition-all bg-white/10 text-primary-foreground border border-white/20 hover:bg-white/20"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-white/20 text-primary-foreground">
-                        <User size={20} />
-                      </div>
-                      <span className="font-bold text-sm font-cairo">عايز تعمل سي في</span>
-                    </div>
-                    <ChevronRight size={18} className="text-primary-foreground/70" />
-                  </button>
-
-                  {/* Invoice Button */}
-                  <button
-                    onClick={() => handleActionClick('invoice')}
-                    className="w-full flex items-center justify-between p-4 rounded-2xl shadow-lg active:scale-95 transition-all bg-white/10 text-primary-foreground border border-white/20 hover:bg-white/20"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-white/20 text-primary-foreground">
-                        <FileText size={20} />
-                      </div>
-                      <span className="font-bold text-sm font-cairo">عايز تكتب فاتورة أو دوفي</span>
-                    </div>
-                    <ChevronRight size={18} className="text-primary-foreground/70" />
-                  </button>
-                </div>
+        {/* Welcome Message - Only when empty */}
+        {!hasMessages && (
+          <div className="flex justify-start">
+            <div className="flex items-start gap-2">
+              <div className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center shrink-0 shadow-sm">
+                <Brain size={14} className="text-primary" />
+              </div>
+              <div className="max-w-[85%] p-3 px-4 rounded-2xl rounded-tl-none bg-card text-card-foreground border border-border shadow-sm">
+                <p className="text-[15px] leading-relaxed font-cairo text-right" dir="rtl">
+                  أهلا! أنا مساعدك الذكي 🧞‍♂️
+                  <br />
+                  اكتب سؤالك أو ارفع صورة مستند وأنا هساعدك.
+                </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Message History */}
+        {/* Message History - Simple Bubbles */}
         {messages.map((msg) => (
           <div key={msg.id} className={cn("flex w-full", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
             
@@ -264,11 +213,11 @@ const AssistantPage = () => {
               </div>
             )}
 
-            {/* Message Bubble */}
+            {/* Message Bubble - Simple */}
             <div className={cn(
               "max-w-[85%] p-3 px-4 rounded-2xl text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap",
               msg.role === 'user' 
-                ? 'bg-primary text-primary-foreground rounded-tr-none' 
+                ? 'bg-primary text-primary-foreground rounded-br-none' 
                 : 'bg-card text-card-foreground rounded-tl-none border border-border',
               isArabic(msg.content) ? 'font-cairo text-right' : 'text-left'
             )}>
@@ -281,7 +230,7 @@ const AssistantPage = () => {
         {isTyping && messages[messages.length - 1]?.content === '' && (
           <div className="flex items-center gap-2 p-3 bg-card rounded-2xl rounded-tl-none w-fit border border-border shadow-sm ml-10">
             <Loader2 className="w-4 h-4 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">يفكر...</span>
+            <span className="text-sm text-muted-foreground font-cairo">يفكر...</span>
           </div>
         )}
         
@@ -292,20 +241,22 @@ const AssistantPage = () => {
       <input 
         ref={fileInputRef}
         type="file" 
-        accept="image/*" 
+        accept="image/*,application/pdf" 
         className="hidden" 
         onChange={handleImageUpload}
       />
 
-      {/* INPUT BAR */}
+      {/* INPUT AREA - Fixed at bottom */}
       <div className="bg-background border-t border-border p-3 safe-area-pb">
-        {/* Always-visible quick actions above the keyboard */}
-        <QuickActionsBar
-          isRTL={isRTL}
-          onAction={(action) => handleActionClick(action)}
-          className="mb-2"
-        />
+        {/* 3 Fixed Action Buttons - ALWAYS visible above keyboard */}
+        <div className="overflow-x-auto pb-2 -mx-1 px-1">
+          <QuickActionsBar
+            isRTL={isRTL}
+            onAction={(action) => handleActionClick(action)}
+          />
+        </div>
 
+        {/* Input Form */}
         <form
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}
           className="flex items-center gap-2 bg-muted p-1.5 rounded-full border border-border"
@@ -321,7 +272,7 @@ const AssistantPage = () => {
           <input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Message..."
+            placeholder={isRTL ? "اكتب سؤالك هنا..." : "Écrivez votre message..."}
             className="flex-1 bg-transparent text-sm font-medium px-2 outline-none text-foreground placeholder:text-muted-foreground"
             dir="auto"
             disabled={isTyping}

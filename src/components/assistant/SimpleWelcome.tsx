@@ -1,11 +1,12 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Sparkles, ChevronRight, User, FileText, Mail } from 'lucide-react';
+import { ChevronRight, User, FileText, Mail } from 'lucide-react';
 
 interface ActionItem {
   label: string;
   type: string;
   icon?: React.ReactNode;
+  highlight?: boolean;
 }
 
 interface SimpleWelcomeProps {
@@ -14,65 +15,62 @@ interface SimpleWelcomeProps {
   onActionClick: (action: ActionItem) => void;
 }
 
+// Icon mapping for action types
+const getIcon = (type: string) => {
+  switch (type) {
+    case 'cv':
+      return <User size={20} />;
+    case 'invoice-edit':
+      return <FileText size={20} />;
+    case 'mail-reply':
+      return <Mail size={20} />;
+    default:
+      return null;
+  }
+};
+
 const SimpleWelcome = ({ isRTL, actions, onActionClick }: SimpleWelcomeProps) => {
-  // Short, friendly welcome message
-  const welcomeText = "شبيك لبيك 🧞‍♂️\nاسأل وانا اجاوب";
-
-  // Icon mapping for action types
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'cv':
-        return <User size={18} />;
-      case 'invoice-edit':
-        return <FileText size={18} />;
-      case 'mail-reply':
-        return <Mail size={18} />;
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div className="flex flex-col items-start animate-in fade-in slide-in-from-bottom-2 duration-500">
-      {/* AI Avatar */}
-      <div className="flex items-start gap-2 mb-1">
-        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-          <Sparkles size={14} className="text-primary" />
+    <div className="w-full animate-in slide-in-from-bottom-10 fade-in duration-700">
+      {/* Grande carte de bienvenue colorée */}
+      <div className="bg-gradient-to-br from-primary to-[hsl(280,70%,50%)] p-8 rounded-[2.5rem] shadow-2xl text-center text-primary-foreground relative overflow-hidden border border-white/20">
+        {/* Décorations de fond */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full blur-2xl -ml-5 -mb-5" />
+        
+        <div className="relative z-10">
+          <h2 className="text-3xl font-black mb-2 font-cairo drop-shadow-md">شبيك لبيك 🧞‍♂️</h2>
+          <p className="text-lg font-bold opacity-90 mb-8 font-cairo text-primary-foreground/80">اسأل وانا اجاوب</p>
+
+          <div className="space-y-3">
+            {actions.map((action, index) => {
+              const isHighlighted = action.highlight || index === 0;
+              return (
+                <button
+                  key={index}
+                  onClick={() => onActionClick(action)}
+                  className={cn(
+                    "w-full flex items-center justify-between p-4 rounded-2xl shadow-lg active:scale-95 transition-all",
+                    isHighlighted
+                      ? "bg-white text-primary border-2 border-white"
+                      : "bg-white/10 text-primary-foreground border border-white/20 hover:bg-white/20"
+                  )}
+                >
+                  <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
+                    <div className={cn(
+                      "p-2 rounded-xl",
+                      isHighlighted ? "bg-primary/10 text-primary" : "bg-white/20 text-primary-foreground"
+                    )}>
+                      {action.icon || getIcon(action.type)}
+                    </div>
+                    <span className="font-bold text-sm font-cairo">{action.label}</span>
+                  </div>
+                  <ChevronRight size={18} className={isHighlighted ? "text-primary" : "text-primary-foreground/70"} />
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
-
-      {/* Welcome Message Bubble */}
-      <div
-        className={cn(
-          "max-w-[85%] p-3.5 rounded-2xl text-[13px] leading-relaxed shadow-sm ml-10",
-          "bg-card text-card-foreground border border-border rounded-bl-none",
-          "font-cairo text-right whitespace-pre-wrap"
-        )}
-      >
-        {welcomeText}
-      </div>
-
-      {/* Action Buttons - Stacked Cards Style */}
-      <div className="flex flex-col gap-2 mt-3 ml-10 w-[85%]">
-        {actions.map((action, idx) => (
-          <button
-            key={idx}
-            onClick={() => onActionClick(action)}
-            className={cn(
-              "flex items-center justify-between w-full",
-              "bg-[hsl(226,76%,94%)] text-[hsl(243,75%,49%)]",
-              "p-3 rounded-xl border border-[hsl(228,90%,86%)] shadow-sm",
-              "active:scale-[0.98] transition-transform",
-              "font-cairo"
-            )}
-          >
-            <div className="flex items-center gap-3">
-              {action.icon || getIcon(action.type)}
-              <span className="font-bold text-xs">{action.label}</span>
-            </div>
-            <ChevronRight size={16} className="opacity-50" />
-          </button>
-        ))}
       </div>
     </div>
   );

@@ -7,18 +7,11 @@ import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import StructuredChatMessage from '@/components/assistant/StructuredChatMessage';
-import SimpleTypingIndicator from '@/components/assistant/SimpleTypingIndicator';
 import ChatInput from '@/components/assistant/ChatInput';
 import AttachedDocuments, { AttachedDocument } from '@/components/assistant/AttachedDocuments';
-import MissingInfoForm from '@/components/assistant/MissingInfoForm';
-import DispatchGuide from '@/components/assistant/DispatchGuide';
-import PostAnalysisActions from '@/components/assistant/PostAnalysisActions';
-import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/DocumentTypeSelector';
 import LoadingOverlay from '@/components/shared/LoadingOverlay';
-import { RefreshCw, RotateCcw, Brain, ArrowLeft, User, FileText, Mail, Sparkles } from 'lucide-react';
+import { ArrowLeft, User, FileText, Mail, Sparkles, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -29,81 +22,18 @@ import {
 } from '@/components/ui/dialog';
 import { compressImage, isImageData, getFileSizeKB } from '@/lib/imageCompression';
 
-interface MissingField {
-  key: string;
-  label: string;
-  placeholder: string;
-  type?: string;
-}
-
-interface DispatchInfo {
-  recipientName?: string;
-  recipientAddress?: string;
-  referenceNumber?: string;
-  subjectLine?: string;
-}
-
-interface ExtractedInfo {
-  recipientName?: string;
-  recipientAddress?: string;
-  referenceNumber?: string;
-  subject?: string;
-  documentDate?: string;
-}
-
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  showMissingInfoForm?: boolean;
-  missingFields?: MissingField[];
-  letterContext?: string;
-  showDispatchGuide?: boolean;
-  dispatchInfo?: DispatchInfo;
-  letterContent?: string;
+  image?: string;
   isError?: boolean;
-  errorType?: 'auth' | 'timeout' | 'generic';
   retryData?: { message: string; image?: string };
-  // Document analysis workflow
-  isDocumentAnalysis?: boolean;
-  extractedInfo?: ExtractedInfo;
-  // Letter suggestion workflow - AI suggests, user clicks Yes
-  showLetterSuggestion?: boolean;
-  // Envelope helper - show after letter generation
-  showEnvelopeHelper?: boolean;
-  // Track which documents were referenced in this message
   referencedDocumentIds?: string[];
 }
 
 const CHAT_STORAGE_KEY = 'assistant_chat_messages';
 const DOCUMENTS_STORAGE_KEY = 'assistant_session_documents';
-
-const extractLetterFromContent = (raw: string): { cleaned: string; letterContent?: string } => {
-  const marker = '===الرسالة_الرسمية===';
-  if (!raw.includes(marker)) return { cleaned: raw };
-  const parts = raw.split(marker);
-  const cleaned = (parts[0] || '').trim();
-  const letter = (parts[1] || '').trim();
-  return { cleaned: cleaned || '✅ Document Ready', letterContent: letter || undefined };
-};
-
-const toConversationHistory = (msgs: Message[]) => {
-  return msgs.map(m => {
-    if (m.letterContent) {
-      const subject = m.dispatchInfo?.subjectLine;
-      return {
-        role: m.role,
-        content: `✅ Document Ready${subject ? `: ${subject}` : ''}`,
-      };
-    }
-    // Backward-compat: strip legacy inline marker if present
-    const extracted = extractLetterFromContent(m.content);
-    return {
-      role: m.role,
-      content: extracted.cleaned,
-    };
-  });
-};
 
 const AssistantPage = () => {
   const navigate = useNavigate();
@@ -114,30 +44,23 @@ const AssistantPage = () => {
   const { dailyLimitReached, incrementDailyMessages } = useCredits();
   
   const [messages, setMessages] = useState<Message[]>([]);
-  // Multi-document session state
   const [sessionDocuments, setSessionDocuments] = useState<AttachedDocument[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
-  const [pendingLetterMessage, setPendingLetterMessage] = useState<{
-    messageId: string;
-    missingFields: MissingField[];
-    letterContext: string;
-  } | null>(null);
   const [showSessionDialog, setShowSessionDialog] = useState(false);
   const [showNewTopicConfirm, setShowNewTopicConfirm] = useState(false);
-  const [showDocumentSelector, setShowDocumentSelector] = useState(false);
-  // Letter generation state
-  const [isGeneratingLetter, setIsGeneratingLetter] = useState(false);
-  const [pendingLetterMessageId, setPendingLetterMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load messages AND documents from localStorage on mount
+  // Welcome message - bilingual and conversational
+  const welcomeMessage = "مرحباً بك في مساعدك الشخصي. أنا هنا لمناقشة أي موضوع يهمك بالتفصيل.\n\nيمكنك سؤالي عن القوانين، كيفية التعامل مع الزبائن، أو صياغة رسائل معقدة. أنا أستمع إليك وسأجيبك بشرح كامل وواضح.\n\nBonjour ! Je suis votre assistant personnel. Posez-moi n'importe quelle question, je suis là pour vous expliquer les choses en détail et discuter avec vous comme un partenaire.";
+
+  // Helper to detect Arabic text
+  const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
+
+  // Load messages and documents from localStorage on mount
   useEffect(() => {
     const savedMessages = localStorage.getItem(CHAT_STORAGE_KEY);
     const savedDocuments = localStorage.getItem(DOCUMENTS_STORAGE_KEY);
     
-    // Load documents first
     if (savedDocuments) {
       try {
         const parsedDocs = JSON.parse(savedDocuments);
@@ -153,7 +76,6 @@ const AssistantPage = () => {
       try {
         const parsed = JSON.parse(savedMessages);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Show session dialog to ask user if they want to continue
           setShowSessionDialog(true);
         }
       } catch (e) {
@@ -168,16 +90,7 @@ const AssistantPage = () => {
       try {
         const parsed = JSON.parse(savedMessages);
         if (Array.isArray(parsed)) {
-          const cleanedMessages = parsed.map((m: Message) => {
-            const extracted = extractLetterFromContent(m.content);
-            return {
-              ...m,
-              content: extracted.cleaned,
-              letterContent: m.letterContent || extracted.letterContent,
-              showMissingInfoForm: false,
-            };
-          });
-          setMessages(cleanedMessages);
+          setMessages(parsed);
         }
       } catch (e) {
         console.error('Failed to parse saved messages:', e);
@@ -191,19 +104,13 @@ const AssistantPage = () => {
     localStorage.removeItem(DOCUMENTS_STORAGE_KEY);
     setMessages([]);
     setSessionDocuments([]);
-    setPendingLetterMessage(null);
     setShowSessionDialog(false);
   };
 
   // Save messages to localStorage whenever they change
   useEffect(() => {
     if (messages.length > 0) {
-      // Don't save the form state
-      const messagesToSave = messages.map(m => ({
-        ...m,
-        showMissingInfoForm: false,
-      }));
-      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messagesToSave));
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
     }
   }, [messages]);
 
@@ -219,110 +126,23 @@ const AssistantPage = () => {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, pendingLetterMessage]);
+  }, [messages]);
 
-  const clearChat = () => {
-    setMessages([]);
-    setSessionDocuments([]);
-    setPendingLetterMessage(null);
-    localStorage.removeItem(CHAT_STORAGE_KEY);
-    localStorage.removeItem(DOCUMENTS_STORAGE_KEY);
-    toast({
-      title: isRTL ? "تم مسح المحادثة" : "Conversation effacée",
-      description: isRTL ? "يمكنك بدء محادثة جديدة" : "Vous pouvez commencer une nouvelle conversation",
-    });
-  };
-
-  const handleNewTopicClick = () => {
-    if (messages.length > 0) {
-      setShowNewTopicConfirm(true);
-    }
-  };
-
-  const confirmNewTopic = () => {
-    setMessages([]);
-    setSessionDocuments([]);
-    setPendingLetterMessage(null);
-    localStorage.removeItem(CHAT_STORAGE_KEY);
-    localStorage.removeItem(DOCUMENTS_STORAGE_KEY);
-    setShowNewTopicConfirm(false);
-    toast({
-      title: isRTL ? "تم بدء موضوع جديد" : "Nouvelle discussion commencée",
-      description: isRTL ? "يمكنك بدء محادثة جديدة" : "Vous pouvez commencer une nouvelle conversation",
-    });
-  };
-
-  // Handler to add document to session
   const handleDocumentAdd = (doc: AttachedDocument) => {
     setSessionDocuments(prev => [...prev, doc]);
   };
 
-  // Handler to remove document from session
   const handleDocumentRemove = (docId: string) => {
     setSessionDocuments(prev => prev.filter(d => d.id !== docId));
   };
 
-  // Handle document form submission - generates structured request
-  const handleDocumentFormSubmit = (formData: DocumentFormData) => {
-    setShowDocumentSelector(false);
-    
-    let userMessage = '';
-    
-    if (formData.type === 'lettre' || formData.type === 'email') {
-      userMessage = isRTL 
-        ? `اكتبلي ${formData.type === 'lettre' ? 'خطاب رسمي' : 'إيميل رسمي'} لـ ${formData.recipientName}${formData.recipientAddress ? ` على العنوان: ${formData.recipientAddress}` : ''}.
-الموضوع: ${formData.subject}
-التفاصيل: ${formData.description}`
-        : `Rédigez ${formData.type === 'lettre' ? 'une lettre officielle' : 'un email professionnel'} à ${formData.recipientName}${formData.recipientAddress ? ` à l'adresse: ${formData.recipientAddress}` : ''}.
-Objet: ${formData.subject}
-Détails: ${formData.description}`;
-    } else {
-      // Devis or Facture
-      const docType = formData.type === 'devis' ? (isRTL ? 'تقدير (Devis)' : 'Devis') : (isRTL ? 'فاتورة (Facture)' : 'Facture');
-      const header = formData.companyHeader;
-      
-      userMessage = isRTL
-        ? `اعملي ${docType} من:
-🏢 الشركة: ${header.companyName}
-📍 SIRET: ${header.siret}
-📍 العنوان: ${header.address}
-📞 التليفون: ${header.phone}
-📧 الإيميل: ${header.email}
-
-👤 للعميل: ${formData.clientName}
-📍 عنوان العميل: ${formData.clientAddress}
-
-📋 الشغل:
-${formData.items}`
-        : `Créez ${docType === 'Devis' ? 'un Devis' : 'une Facture'} de:
-🏢 Entreprise: ${header.companyName}
-📍 SIRET: ${header.siret}
-📍 Adresse: ${header.address}
-📞 Téléphone: ${header.phone}
-📧 Email: ${header.email}
-
-👤 Pour le client: ${formData.clientName}
-📍 Adresse client: ${formData.clientAddress}
-
-📋 Travaux:
-${formData.items}`;
-    }
-
-    // Send the message
-    handleSend(userMessage);
-  };
-
   const handleRetry = (retryData: { message: string; image?: string }) => {
-    // Remove the error message first
     setMessages(prev => prev.filter(m => !m.isError));
-    // Retry the request (mark as retry to avoid duplicating user message)
     handleSend(retryData.message, retryData.image, true);
   };
 
   const handleSend = async (userMessage: string, image?: string, isRetry: boolean = false) => {
-    // Wrap entire function in try/catch to prevent app crashes
     try {
-      // Allow sending if there's text OR if there are session documents (for cross-doc questions)
       const hasSessionDocs = sessionDocuments.length > 0;
       if (!userMessage.trim() && !image && !hasSessionDocs) return;
 
@@ -338,13 +158,12 @@ ${formData.items}`;
         return;
       }
 
-      // Increment daily message count for logged-in users
       if (user && !isRetry) {
         const canContinue = await incrementDailyMessages();
         if (!canContinue) return;
       }
 
-      // Check if too many documents (prevent memory overflow)
+      // Check document limit
       const MAX_DOCS = 10;
       if (sessionDocuments.length > MAX_DOCS) {
         toast({
@@ -357,390 +176,71 @@ ${formData.items}`;
         return;
       }
 
-      // Detect if this is an image analysis request (direct image or session docs)
       const hasImage = !!image;
-      const hasNewDocs = hasImage || hasSessionDocs;
       let processedImage = image;
 
-      // Compress image if present (new direct upload)
+      // Compress image if present
       if (hasImage && image && isImageData(image)) {
         try {
           const originalSize = getFileSizeKB(image);
-          console.log(`Original image size: ${originalSize}KB`);
           processedImage = await compressImage(image);
           const compressedSize = getFileSizeKB(processedImage);
-          console.log(`Compressed image size: ${compressedSize}KB (${Math.round((1 - compressedSize / originalSize) * 100)}% reduction)`);
+          console.log(`Compressed: ${originalSize}KB → ${compressedSize}KB`);
         } catch (compressionError) {
           console.error('Image compression failed, using original:', compressionError);
         }
       }
 
-    // Build document context description for the user message
-    let docContextLabel = '';
-    if (hasSessionDocs) {
-      const docCount = sessionDocuments.length;
-      docContextLabel = isRTL 
-        ? `[${docCount} مستند في الدوسيه]` 
-        : `[${docCount} document(s) dans le dossier]`;
-    }
-    if (hasImage) {
-      docContextLabel = docContextLabel 
-        ? `${docContextLabel} + [صورة جديدة]` 
-        : '[صورة مرفقة]';
-    }
+      // Create user message
+      const userMsg: Message = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: userMessage,
+        image: processedImage,
+        referencedDocumentIds: sessionDocuments.map(d => d.id),
+      };
 
-    // Create user message with document context
-    const userMsg: Message = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: docContextLabel 
-        ? `${docContextLabel}\n${userMessage || (isRTL ? 'حلل المستندات دي' : 'Analysez ces documents')}`
-        : userMessage,
-      referencedDocumentIds: sessionDocuments.map(d => d.id),
-    };
+      if (!isRetry) {
+        setMessages(prev => [...prev, userMsg]);
+      }
+      setIsAnalyzing(true);
 
-    // Add user message to chat (only if not a retry)
-    if (!isRetry) {
-      setMessages(prev => [...prev, userMsg]);
-    }
-    setIsAnalyzing(true);
-    if (hasNewDocs) {
-      setIsAnalyzingImage(true);
-    }
+      // Build conversation history
+      const conversationHistory = messages.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
 
-    // Helper function to make the API call with optional retry
-    const makeRequest = async (attemptNumber: number = 1): Promise<void> => {
-      try {
-        // Build conversation history for context
-        const currentMessages = isRetry ? messages : [...messages, userMsg];
-        const conversationHistory = toConversationHistory(currentMessages);
-
-        // Prepare all session documents for the API (compress images)
-        const allDocumentImages: string[] = [];
-        
-        // Add session documents (compressed)
-        for (const doc of sessionDocuments) {
-          if (doc.type === 'image' && isImageData(doc.data)) {
-            try {
-              const compressed = await compressImage(doc.data);
-              allDocumentImages.push(compressed);
-            } catch {
-              allDocumentImages.push(doc.data);
-            }
-          } else {
+      // Prepare documents for API
+      const allDocumentImages: string[] = [];
+      for (const doc of sessionDocuments) {
+        if (doc.type === 'image' && isImageData(doc.data)) {
+          try {
+            const compressed = await compressImage(doc.data);
+            allDocumentImages.push(compressed);
+          } catch {
             allDocumentImages.push(doc.data);
           }
-        }
-        
-        // Add the new direct image if present
-        if (processedImage) {
-          allDocumentImages.push(processedImage);
-        }
-
-        // Build document context for AI
-        const documentContextDescription = sessionDocuments.length > 0
-          ? `The user has ${sessionDocuments.length} document(s) in their session dossier. They may ask questions about any or all of them. Treat all documents as part of the same case file.`
-          : undefined;
-
-        const { data, error } = await supabase.functions.invoke('analyze-request', {
-          body: { 
-            userMessage: userMessage || (isRTL ? 'حلل المستندات دي وقولي إيه المكتوب فيها' : 'Analysez ces documents'),
-            conversationHistory,
-            imageData: allDocumentImages.length === 1 ? allDocumentImages[0] : undefined,
-            multipleImages: allDocumentImages.length > 1 ? allDocumentImages : undefined,
-            documentContext: documentContextDescription,
-            language: language, // Pass interface language to AI for response synchronization
-            profile: profile ? {
-              full_name: profile.full_name,
-              address: profile.address,
-              phone: profile.phone,
-              caf_number: profile.caf_number,
-              foreigner_number: profile.foreigner_number,
-              social_security: profile.social_security,
-            } : null
-          }
-        });
-
-        if (error) {
-          // Determine error type for better messaging
-          const status = (error as any)?.status || 500;
-          const isRetryableError = status === 500 || status === 504 || error.message?.includes('timeout');
-          
-          // Auto-retry once for timeout/server errors (only on first attempt)
-          if (isRetryableError && attemptNumber === 1) {
-            toast({
-              title: isRTL ? 'الشبكة ضعيفة، بحاول تاني...' : 'Connexion faible, nouvelle tentative...',
-              description: isRTL ? 'انتظر لحظة...' : 'Veuillez patienter...',
-            });
-            
-            // Wait 2 seconds before retry
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            return makeRequest(2);
-          }
-
-          let errorType: 'auth' | 'timeout' | 'generic' = 'generic';
-          let errorMessage = '';
-
-          if (status === 401 || status === 403) {
-            errorType = 'auth';
-            errorMessage = isRTL 
-              ? '⚠️ تأكد من إعدادات مفتاح الذكاء الاصطناعي (API Key).'
-              : '⚠️ Vérifiez la configuration de la clé API.';
-          } else if (isRetryableError) {
-            errorType = 'timeout';
-            errorMessage = isRTL 
-              ? '⏱️ الصورة كبيرة جداً أو حصل مشكلة في السيرفر. حاول مرة تانية أو استخدم صورة أصغر.'
-              : '⏱️ Image trop volumineuse ou problème serveur. Réessayez ou utilisez une image plus petite.';
-          } else {
-            errorMessage = isRTL 
-              ? '❌ حدث خطأ أثناء التحليل. حاول مرة تانية.'
-              : '❌ Une erreur est survenue. Veuillez réessayer.';
-          }
-
-          // Add error message with retry capability
-          const errorMsg: Message = {
-            id: `error-${Date.now()}`,
-            role: 'assistant',
-            content: errorMessage,
-            isError: true,
-            errorType,
-            retryData: { message: userMessage, image: processedImage },
-          };
-          setMessages(prev => [...prev, errorMsg]);
-          return;
-        }
-
-        if (data.error) {
-          // Check if it's a specific error type from the edge function
-          const isRetryableDataError = data.error.includes('timeout') || data.error.includes('volumineuse') || data.error.includes('504') || data.error.includes('500');
-          
-          // Auto-retry once for timeout/server errors (only on first attempt)
-          if (isRetryableDataError && attemptNumber === 1) {
-            toast({
-              title: isRTL ? 'الشبكة ضعيفة، بحاول تاني...' : 'Connexion faible, nouvelle tentative...',
-              description: isRTL ? 'انتظر لحظة...' : 'Veuillez patienter...',
-            });
-            
-            // Wait 2 seconds before retry
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            return makeRequest(2);
-          }
-
-          let errorType: 'auth' | 'timeout' | 'generic' = 'generic';
-          let errorMessage = data.error;
-
-          if (data.error.includes('API') || data.error.includes('clé')) {
-            errorType = 'auth';
-            errorMessage = isRTL 
-              ? '⚠️ تأكد من إعدادات مفتاح الذكاء الاصطناعي (API Key).'
-              : '⚠️ Vérifiez la configuration de la clé API.';
-          } else if (isRetryableDataError) {
-            errorType = 'timeout';
-            errorMessage = isRTL 
-              ? '⏱️ الصورة كبيرة جداً. حاول مرة تانية بصورة أصغر أو جودة أقل.'
-              : '⏱️ Image trop volumineuse. Réessayez avec une image plus petite.';
-          }
-
-          const errorMsg: Message = {
-            id: `error-${Date.now()}`,
-            role: 'assistant',
-            content: errorMessage,
-            isError: true,
-            errorType,
-            retryData: { message: userMessage, image: processedImage },
-          };
-          setMessages(prev => [...prev, errorMsg]);
-          return;
-        }
-
-        // Check if we need to show missing info form
-        if (data.requiresMoreInfo && data.missingFields?.length > 0) {
-          // Build assistant response first
-          let assistantContent = '';
-          
-          if (data.explanation) {
-            assistantContent += `📋 **الشرح:**\n${data.explanation}\n\n`;
-          }
-          if (data.actionPlan) {
-            assistantContent += `✅ **خطة العمل:**\n${data.actionPlan}\n\n`;
-          }
-          if (data.legalNote) {
-            assistantContent += `⚖️ **ملاحظات قانونية:**\n${data.legalNote}\n\n`;
-          }
-          
-          assistantContent += `📝 **عشان أكتبلك جواب رسمي متكامل، محتاج منك بعض البيانات...**`;
-
-          const assistantMsgId = `assistant-${Date.now()}`;
-          const assistantMsg: Message = {
-            id: assistantMsgId,
-            role: 'assistant',
-            content: assistantContent.trim(),
-            showMissingInfoForm: true,
-            missingFields: data.missingFields,
-            letterContext: data.letterContext,
-          };
-
-          setMessages(prev => [...prev, assistantMsg]);
-          setPendingLetterMessage({
-            messageId: assistantMsgId,
-            missingFields: data.missingFields,
-            letterContext: data.letterContext || userMessage,
-          });
         } else {
-          // Build regular assistant response
-          let assistantContent = '';
-          
-          if (data.explanation) {
-            assistantContent += `📋 **الشرح:**\n${data.explanation}\n\n`;
-          }
-          if (data.actionPlan) {
-            assistantContent += `✅ **خطة العمل:**\n${data.actionPlan}\n\n`;
-          }
-           // If a formal document was generated, DO NOT inline-render it in chat.
-           // We'll store it separately and show a “Document Ready” card instead.
-           const hasGeneratedDocument =
-             !!data.formalLetter &&
-             data.formalLetter !== "لو عايز أكتبلك رد رسمي، قولي 'اكتبلي رد'";
-
-           if (hasGeneratedDocument) {
-             assistantContent += isRTL
-               ? `✅ تم تجهيز المستند. افتحه من زر \"Open Document\".`
-               : `✅ Document prêt. Ouvrez-le via le bouton \"Open Document\".`;
-           } else if (data.formalLetter) {
-             assistantContent += `💡 ${data.formalLetter}\n\n`;
-           }
-          if (data.legalNote) {
-            assistantContent += `⚖️ **ملاحظات قانونية:**\n${data.legalNote}`;
-          }
-
-          // Fallback if nothing parsed
-          if (!assistantContent.trim()) {
-            assistantContent = data.rawContent || isRTL 
-              ? "تم استلام ردك. لو عندك أي سؤال تاني، اسألني!" 
-              : "Réponse reçue. Si vous avez d'autres questions, demandez-moi!";
-          }
-
-          // Detect if this is a document analysis (has explanation and action plan, and was image analysis)
-          const isDocAnalysis = hasImage && (data.explanation || data.actionPlan);
-          
-          // Extract info from the response for smart reply - use extracted sender as recipient
-          const extractedInfo: ExtractedInfo | undefined = {
-            recipientName: data.dispatchInfo?.recipientName,
-            recipientAddress: data.dispatchInfo?.recipientAddress,
-            referenceNumber: data.dispatchInfo?.referenceNumber,
-            subject: data.dispatchInfo?.subjectLine,
-          };
-
-          // Check if we have valid extracted info (at least a name)
-          const hasExtractedRecipient = !!extractedInfo.recipientName;
-
-          // Detect if AI is suggesting to write a letter
-          const hasSuggestion = assistantContent.includes('تحب أكتبلك خطاب رسمي') || 
-                                assistantContent.includes("لو عايز أكتبلك رد رسمي، قولي") ||
-                                assistantContent.includes("عشان تحل المشكلة؟");
-
-          // Add assistant message with letter suggestion if applicable
-          const assistantMsg: Message = {
-            id: `assistant-${Date.now()}`,
-            role: 'assistant',
-            content: assistantContent.trim(),
-            isDocumentAnalysis: isDocAnalysis,
-            extractedInfo: hasExtractedRecipient ? extractedInfo : undefined,
-            showLetterSuggestion: (isDocAnalysis || hasExtractedRecipient) && hasSuggestion && !data.formalLetter,
-             letterContent: hasGeneratedDocument ? data.formalLetter : undefined,
-             showEnvelopeHelper: hasGeneratedDocument,
-             dispatchInfo: data.dispatchInfo,
-          };
-
-          setMessages(prev => [...prev, assistantMsg]);
+          allDocumentImages.push(doc.data);
         }
-
-      } catch (error) {
-        console.error('Error analyzing:', error);
-        
-        const errorStr = String(error);
-        const isRetryableError = errorStr.includes('timeout') || errorStr.includes('500') || errorStr.includes('504') || errorStr.includes('network');
-        
-        // Auto-retry once for timeout/server errors (only on first attempt)
-        if (isRetryableError && attemptNumber === 1) {
-          toast({
-            title: isRTL ? 'الشبكة ضعيفة، بحاول تاني...' : 'Connexion faible, nouvelle tentative...',
-            description: isRTL ? 'انتظر لحظة...' : 'Veuillez patienter...',
-          });
-          
-          // Wait 2 seconds before retry
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          return makeRequest(2);
-        }
-        
-        // Determine error type
-        let errorType: 'auth' | 'timeout' | 'generic' = 'generic';
-        let errorMessage = '';
-
-        if (errorStr.includes('401') || errorStr.includes('403') || errorStr.includes('API')) {
-          errorType = 'auth';
-          errorMessage = isRTL 
-            ? '⚠️ تأكد من إعدادات مفتاح الذكاء الاصطناعي (API Key).'
-            : '⚠️ Vérifiez la configuration de la clé API.';
-        } else if (isRetryableError) {
-          errorType = 'timeout';
-          errorMessage = isRTL 
-            ? '⏱️ الصورة كبيرة جداً أو حصل مشكلة في السيرفر. حاول مرة تانية أو استخدم صورة أصغر.'
-            : '⏱️ Image trop volumineuse ou problème serveur. Réessayez ou utilisez une image plus petite.';
-        } else {
-          errorMessage = isRTL 
-            ? '❌ حدث خطأ أثناء التحليل. حاول مرة تانية.'
-            : '❌ Une erreur est survenue. Veuillez réessayer.';
-        }
-
-        const errorMsg: Message = {
-          id: `error-${Date.now()}`,
-          role: 'assistant',
-          content: errorMessage,
-          isError: true,
-          errorType,
-          retryData: { message: userMessage, image: processedImage },
-        };
-        setMessages(prev => [...prev, errorMsg]);
       }
-    };
+      if (processedImage) {
+        allDocumentImages.push(processedImage);
+      }
 
-    // Start the request with retry mechanism
-    await makeRequest(1);
-    
-    setIsAnalyzing(false);
-    setIsAnalyzingImage(false);
-    } catch (globalError) {
-      // Global catch to prevent app crashes
-      console.error('Critical error in handleSend:', globalError);
-      setIsAnalyzing(false);
-      setIsAnalyzingImage(false);
-      
-      toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL 
-          ? "حدث خطأ غير متوقع. حاول مرة تانية."
-          : "Erreur inattendue. Veuillez réessayer.",
-      });
-    }
-  };
-
-
-  const handleFormSubmit = async (formData: Record<string, string>) => {
-    if (!pendingLetterMessage) return;
-
-    setIsAnalyzing(true);
-
-    try {
-      // Build conversation history
-      const conversationHistory = toConversationHistory(messages);
+      const documentContextDescription = sessionDocuments.length > 0
+        ? `The user has ${sessionDocuments.length} document(s) in their session dossier.`
+        : undefined;
 
       const { data, error } = await supabase.functions.invoke('analyze-request', {
         body: { 
-          userMessage: pendingLetterMessage.letterContext,
+          userMessage: userMessage || (isRTL ? 'حلل المستندات دي' : 'Analysez ces documents'),
           conversationHistory,
-          generateLetterWithData: formData,
+          imageData: allDocumentImages.length === 1 ? allDocumentImages[0] : undefined,
+          multipleImages: allDocumentImages.length > 1 ? allDocumentImages : undefined,
+          documentContext: documentContextDescription,
+          language: language,
           profile: profile ? {
             full_name: profile.full_name,
             address: profile.address,
@@ -752,474 +252,255 @@ ${formData.items}`;
         }
       });
 
-      if (error) throw error;
-
-      if (data.error) {
-        toast({
-          variant: "destructive",
-          title: isRTL ? "خطأ" : "Erreur",
-          description: data.error,
-        });
-        return;
+      if (error) {
+        throw error;
       }
 
-      // Remove the form from the message
-      setMessages(prev => prev.map(m => 
-        m.id === pendingLetterMessage.messageId 
-          ? { ...m, showMissingInfoForm: false }
-          : m
-      ));
-      setPendingLetterMessage(null);
-
-      // Add the generated letter as a new message with dispatch guide
-      const letterMsg: Message = {
+      const assistantResponse = data?.response || (isRTL ? 'عذراً، حدث خطأ' : 'Désolé, une erreur est survenue');
+      
+      const assistantMsg: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: isRTL
-          ? `✅ Document Ready: ${data.dispatchInfo?.subjectLine || 'Lettre officielle'}`
-          : `✅ Document Ready: ${data.dispatchInfo?.subjectLine || 'Lettre officielle'}`,
-        showDispatchGuide: true,
-        showEnvelopeHelper: true,
-        dispatchInfo: data.dispatchInfo,
-        letterContent: data.formalLetter,
+        content: assistantResponse,
       };
 
-      setMessages(prev => [...prev, letterMsg]);
+      setMessages(prev => [...prev, assistantMsg]);
 
     } catch (error) {
-      console.error('Error generating letter:', error);
-      toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "حدث خطأ أثناء كتابة الرسالة" : "Une erreur est survenue lors de la rédaction.",
-      });
+      console.error('Error in handleSend:', error);
+      const errorMsg: Message = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: isRTL 
+          ? 'حصل خطأ. جرب تاني!' 
+          : 'Une erreur est survenue. Réessayez !',
+        isError: true,
+        retryData: { message: userMessage, image },
+      };
+      setMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const handleFormCancel = () => {
-    if (pendingLetterMessage) {
-      // Remove the form from the message
-      setMessages(prev => prev.map(m => 
-        m.id === pendingLetterMessage.messageId 
-          ? { ...m, showMissingInfoForm: false }
-          : m
-      ));
-      setPendingLetterMessage(null);
+  const handleActionClick = (action: string) => {
+    switch (action) {
+      case 'cv':
+        navigate('/pro/cv-generator');
+        break;
+      case 'invoice-edit':
+        navigate('/pro/invoice-creator');
+        break;
+      case 'mail-reply':
+        const prompt = isRTL ? 'عايز ارد على خطاب أو إيميل' : "Je veux répondre à un courrier ou email";
+        handleSend(prompt);
+        break;
     }
   };
 
-  // Handler for accepting letter suggestion with mode (email or courrier) - auto-generates with profile + extracted data
-  const handleAcceptLetterSuggestion = async (messageId: string, extractedInfo?: ExtractedInfo, mode: 'email' | 'courrier' = 'courrier') => {
-    if (!profile?.full_name || !profile?.address) {
-      toast({
-        variant: "destructive",
-        title: isRTL ? "بيانات ناقصة" : "Données manquantes",
-        description: isRTL 
-          ? "من فضلك اكمل بياناتك في الملف الشخصي أولاً (الاسم والعنوان)" 
-          : "Veuillez compléter votre profil (nom et adresse)",
-      });
-      return;
-    }
-
-    setIsGeneratingLetter(true);
-    setPendingLetterMessageId(messageId);
-
-    try {
-      // Get the last analysis message for context
-      const lastAnalysisMessage = messages.filter(m => m.role === 'assistant' && m.isDocumentAnalysis).slice(-1)[0];
-      
-      const documentType = mode === 'email' ? 'إيميل رسمي' : 'خطاب رسمي مسجل';
-      
-      // Build generation request using profile data + extracted info
-      const letterRequest = `اكتب ${documentType} بالفرنسي على المستند اللي حللناه.
-
-معلومات المرسل (من الملف الشخصي):
-- الاسم: ${profile.full_name}
-- العنوان: ${profile.address}
-- التليفون: ${profile.phone || 'غير محدد'}
-
-المرسل إليه (من المستند):
-- الجهة: ${extractedInfo?.recipientName || 'الجهة المختصة'}
-- العنوان: ${extractedInfo?.recipientAddress || 'غير محدد'}
-
-المرجع: ${extractedInfo?.referenceNumber || 'حسب المستند'}
-الموضوع: ${extractedInfo?.subject || 'رد على المستند'}
-
-نوع الإرسال: ${mode === 'email' ? 'Email' : 'Lettre Recommandée avec AR'}
-
-السياق: ${lastAnalysisMessage?.content || 'بناءً على المستند المرفق'}`;
-
-      // Build conversation history
-      const conversationHistory = toConversationHistory(messages);
-
-      const { data, error } = await supabase.functions.invoke('analyze-request', {
-        body: { 
-          userMessage: letterRequest,
-          conversationHistory: [...conversationHistory, { role: 'user', content: 'اكتبلي الخطاب الرسمي' }],
-          generateLetterWithData: {
-            full_name: profile.full_name,
-            address: profile.address,
-            phone: profile.phone,
-            recipient_name: extractedInfo?.recipientName || 'الجهة المختصة',
-            reference_number: extractedInfo?.referenceNumber,
-          },
-          profile: {
-            full_name: profile.full_name,
-            address: profile.address,
-            phone: profile.phone,
-            caf_number: profile.caf_number,
-            foreigner_number: profile.foreigner_number,
-            social_security: profile.social_security,
-          }
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.error) {
-        toast({
-          variant: "destructive",
-          title: isRTL ? "خطأ" : "Erreur",
-          description: data.error,
-        });
-        return;
-      }
-
-      // Hide the suggestion button from the original message
-      setMessages(prev => prev.map(m => 
-        m.id === messageId 
-          ? { ...m, showLetterSuggestion: false }
-          : m
-      ));
-
-      // Add the generated letter as a new message with envelope helper
-      const letterMsg: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: `✅ Document Ready: ${extractedInfo?.subject || data.dispatchInfo?.subjectLine || 'Lettre officielle'}`,
-        showDispatchGuide: true,
-        showEnvelopeHelper: true,
-        dispatchInfo: {
-          recipientName: extractedInfo?.recipientName || data.dispatchInfo?.recipientName,
-          recipientAddress: extractedInfo?.recipientAddress || data.dispatchInfo?.recipientAddress,
-          referenceNumber: extractedInfo?.referenceNumber || data.dispatchInfo?.referenceNumber,
-          subjectLine: extractedInfo?.subject || data.dispatchInfo?.subjectLine,
-        },
-        letterContent: data.formalLetter,
-      };
-
-      setMessages(prev => [...prev, letterMsg]);
-
-    } catch (error) {
-      console.error('Error generating letter:', error);
-      toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "حدث خطأ أثناء كتابة الخطاب" : "Une erreur est survenue lors de la rédaction.",
-      });
-    } finally {
-      setIsGeneratingLetter(false);
-      setPendingLetterMessageId(null);
-    }
+  const confirmNewTopic = () => {
+    setMessages([]);
+    setSessionDocuments([]);
+    localStorage.removeItem(CHAT_STORAGE_KEY);
+    localStorage.removeItem(DOCUMENTS_STORAGE_KEY);
+    setShowNewTopicConfirm(false);
+    toast({
+      title: isRTL ? "تم بدء موضوع جديد" : "Nouvelle discussion commencée",
+    });
   };
 
   return (
-    <>
-      {/* Session Continue Dialog */}
-      <Dialog open={showSessionDialog} onOpenChange={setShowSessionDialog}>
-        <DialogContent className={cn("sm:max-w-[400px]", isRTL && "font-cairo text-right")}>
-          <DialogHeader>
-            <DialogTitle className="text-lg">
-              {isRTL ? '🔄 نكمل الكلام في الموضوع القديم؟' : 'Continuer la discussion précédente?'}
-            </DialogTitle>
-            <DialogDescription className="text-base">
-              {isRTL 
-                ? 'لقيت محادثة قديمة محفوظة. عايز تكمل ولا تبدأ موضوع جديد؟'
-                : 'Une conversation précédente a été trouvée. Voulez-vous continuer ou commencer une nouvelle?'}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-            <Button variant="outline" onClick={handleNewSession}>
-              {isRTL ? '🆕 موضوع جديد' : 'Nouveau sujet'}
-            </Button>
-            <Button onClick={handleContinueSession}>
-              {isRTL ? '✅ نكمل' : 'Continuer'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* New Topic Confirmation Dialog */}
-      <Dialog open={showNewTopicConfirm} onOpenChange={setShowNewTopicConfirm}>
-        <DialogContent className={cn("sm:max-w-[400px]", isRTL && "font-cairo text-right")}>
-          <DialogHeader>
-            <DialogTitle className="text-lg">
-              {isRTL ? '⚠️ بدء موضوع جديد؟' : 'Commencer un nouveau sujet?'}
-            </DialogTitle>
-            <DialogDescription className="text-base">
-              {isRTL 
-                ? 'ده هيمسح المحادثة الحالية. متأكد؟'
-                : 'Cela effacera la conversation actuelle. Êtes-vous sûr?'}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-            <Button variant="outline" onClick={() => setShowNewTopicConfirm(false)}>
-              {isRTL ? 'إلغاء' : 'Annuler'}
-            </Button>
-            <Button variant="destructive" onClick={confirmNewTopic}>
-              {isRTL ? '🗑️ امسح وابدأ جديد' : 'Effacer et commencer'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <div className="flex flex-col h-[calc(100vh-90px)] pb-12 bg-[hsl(var(--muted))]/50">
-        {/* Header - WhatsApp/Gemini Style */}
-        <header className={cn(
-          "bg-background p-4 pt-12 shadow-sm flex items-center gap-3 z-10",
-          isRTL && "font-cairo flex-row-reverse"
-        )}>
-          <button
-            onClick={() => navigate('/pro')}
-            className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground"
-          >
-            <ArrowLeft size={24} className={isRTL ? "rotate-180" : ""} />
-          </button>
-          <div className="w-10 h-10 bg-gradient-to-r from-primary to-[hsl(280,70%,55%)] rounded-full flex items-center justify-center text-primary-foreground shadow-md">
-            <Brain size={20} />
+    <div className="flex flex-col h-full bg-[#f0f2f5] text-foreground">
+      
+      {/* HEADER */}
+      <header className="bg-white p-4 pt-12 shadow-sm border-b border-border flex items-center gap-3 z-10">
+        <button 
+          onClick={() => navigate('/')} 
+          className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <div className="w-10 h-10 bg-gradient-to-r from-primary to-[hsl(240,70%,55%)] rounded-full flex items-center justify-center text-primary-foreground shadow-md">
+          <Bot size={22} />
+        </div>
+        <div>
+          <h1 className="text-sm font-bold text-foreground">Discussion IA</h1>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <p className="text-[10px] text-muted-foreground font-medium">En ligne • Toujours disponible</p>
           </div>
-          <div className={cn("flex-1", isRTL && "text-right")}>
-            <h1 className="text-base font-bold text-foreground">
-              {isRTL ? 'المساعد الذكي' : 'Gemini Assistant'}
-            </h1>
-            <div className={cn("flex items-center gap-1.5", isRTL && "flex-row-reverse justify-end")}>
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <p className="text-xs text-muted-foreground">
-                {isRTL ? 'متصل' : 'En ligne'}
-              </p>
-            </div>
-          </div>
-          {messages.length > 0 && (
-            <button
-              onClick={handleNewTopicClick}
-              className="p-2 rounded-full hover:bg-muted text-muted-foreground"
-            >
-              <RefreshCw size={18} />
-            </button>
-          )}
-        </header>
+        </div>
+      </header>
 
-      {/* Chat Messages Area - WhatsApp style beige background */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[hsl(35,30%,90%)]/50">
-        {messages.length === 0 ? (
-          // Simple bilingual welcome message
-          <div className="flex w-full justify-start">
-            <div className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center mr-2 mt-1 shrink-0">
-              <Sparkles size={14} className="text-primary" />
-            </div>
-            <div className="max-w-[80%] p-3 px-4 rounded-2xl rounded-tl-none text-sm leading-relaxed shadow-sm whitespace-pre-wrap bg-card text-card-foreground border border-border">
-              <span className="font-cairo text-right block">مرحباً! أنا المساعد الذكي. كيف يمكنني مساعدتك اليوم؟</span>
-              <span className="block mt-2">Bonjour ! Je suis votre assistant IA. Comment puis-je vous aider ?</span>
-            </div>
+      {/* CHAT AREA */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[hsl(35,30%,88%)]/30">
+        
+        {/* Session Documents */}
+        {sessionDocuments.length > 0 && (
+          <AttachedDocuments
+            documents={sessionDocuments}
+            onRemove={handleDocumentRemove}
+            isRTL={isRTL}
+          />
+        )}
+
+        {/* Welcome Message */}
+        <div className="flex w-full justify-start">
+          <div className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center mr-2 mt-1 shrink-0">
+            <Sparkles size={14} className="text-primary" />
           </div>
-        ) : (
-          messages.map((message) => (
-            <React.Fragment key={message.id}>
-              {/* Error message with retry button */}
-              {message.isError ? (
-                <Alert variant="destructive" className={cn("mr-8", isRTL && "ml-8 mr-0")}>
-                  <AlertDescription className={cn("flex items-center justify-between gap-2", isRTL && "flex-row-reverse font-cairo text-right")}>
-                    <span>{message.content}</span>
-                    {message.retryData && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRetry(message.retryData!)}
-                        className="shrink-0"
-                      >
-                        <RotateCcw className="h-4 w-4 mr-1" />
-                        {isRTL ? 'حاول تاني' : 'Réessayer'}
-                      </Button>
-                    )}
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <StructuredChatMessage
-                  role={message.role}
-                  content={message.content}
-                  isRTL={isRTL}
-                  isDocumentAnalysis={message.isDocumentAnalysis}
-                  extractedInfo={message.extractedInfo}
-                  showEnvelopeHelper={message.showEnvelopeHelper}
-                  dispatchInfo={message.dispatchInfo}
-                  letterContent={message.letterContent}
-                  onActionClick={(action, route) => {
-                    // Use route if provided (new format)
-                    if (route === 'cv') {
-                      navigate('/pro/cv-generator');
-                    } else if (route === 'invoice-edit') {
-                      navigate('/pro/invoice-creator');
-                    } else if (route === 'home') {
-                      navigate('/pro');
-                    }
-                    // Fallback to label-based detection (old format)
-                    else if (action.includes("CV") || action.includes("سيرة")) {
-                      navigate('/pro/cv-generator');
-                    } else if (action.includes("Facture") || action.includes("Devis") || action.includes("فاتورة") || action.includes("دوفي")) {
-                      navigate('/pro/invoice-creator');
-                    } else if (action.includes("Outils") || action.includes("Tableau de Bord") || action.includes("أدوات") || action.includes("لوحة")) {
-                      navigate('/pro');
-                    } else {
-                      // Treat other actions as new user messages
-                      handleSend(action);
-                    }
-                  }}
-                />
+          <div className="max-w-[85%] p-3.5 px-4 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap bg-white text-foreground rounded-tl-none border border-border font-cairo text-right">
+            {welcomeMessage}
+          </div>
+        </div>
+
+        {/* Message History */}
+        {messages.map((msg) => (
+          <div key={msg.id} className={cn("flex w-full", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+            
+            {/* AI Avatar */}
+            {msg.role === 'assistant' && (
+              <div className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center mr-2 mt-1 shrink-0">
+                <Sparkles size={14} className="text-primary" />
+              </div>
+            )}
+
+            {/* Message Bubble */}
+            <div className={cn(
+              "max-w-[85%] p-3.5 px-4 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap",
+              msg.role === 'user' 
+                ? 'bg-[#005c4b] text-white rounded-tr-none' 
+                : 'bg-white text-foreground rounded-tl-none border border-border',
+              isArabic(msg.content) ? 'font-cairo text-right' : 'text-left',
+              msg.isError && 'border-destructive'
+            )}>
+              {msg.image && (
+                <img src={msg.image} alt="Attached" className="max-w-full rounded-lg mb-2" />
               )}
+              {msg.content}
               
-              {/* Smart Action Buttons - Show after document analysis (when no letter yet) */}
-              {message.isDocumentAnalysis && !message.letterContent && message.role === 'assistant' && (
-                <PostAnalysisActions
-                  onContinueChat={() => {
-                    // Focus on input - just allow user to type next question
-                    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  onDraftReply={(mode) => handleAcceptLetterSuggestion(message.id, message.extractedInfo, mode)}
-                  extractedInfo={message.extractedInfo}
-                  isRTL={isRTL}
-                  isGenerating={isGeneratingLetter && pendingLetterMessageId === message.id}
-                />
+              {/* Retry button for error messages */}
+              {msg.isError && msg.retryData && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => handleRetry(msg.retryData!)}
+                >
+                  {isRTL ? 'حاول تاني' : 'Réessayer'}
+                </Button>
               )}
-              
-              {/* Show missing info form if needed */}
-              {message.showMissingInfoForm && message.missingFields && pendingLetterMessage?.messageId === message.id && (
-                <div className="mt-3">
-                  <MissingInfoForm
-                    fields={message.missingFields}
-                    onSubmit={handleFormSubmit}
-                    onCancel={handleFormCancel}
-                    isLoading={isAnalyzing}
-                    isRTL={isRTL}
-                  />
-                </div>
-              )}
-              {/* Show dispatch guide after letter generation */}
-              {message.showDispatchGuide && message.dispatchInfo && (
-                <DispatchGuide
-                  dispatchInfo={message.dispatchInfo}
-                  letterContent={message.letterContent || ''}
-                  isRTL={isRTL}
-                  onClose={() => {
-                    setMessages(prev => prev.map(m => 
-                      m.id === message.id 
-                        ? { ...m, showDispatchGuide: false }
-                        : m
-                    ));
-                  }}
-                />
-              )}
-            </React.Fragment>
-          ))
+            </div>
+          </div>
+        ))}
+        
+        {/* Typing Indicator */}
+        {isAnalyzing && (
+          <div className="flex items-center gap-1 p-3 bg-white rounded-2xl rounded-tl-none w-fit border border-border shadow-sm ml-10">
+            <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" />
+            <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '75ms' }} />
+            <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+          </div>
         )}
         
-          {/* Typing Indicator - Simple */}
-          {(isAnalyzing || isAnalyzingImage) && !pendingLetterMessage && (
-            <SimpleTypingIndicator isRTL={isRTL} />
-          )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* QUICK ACTION BAR */}
+      <div className="bg-[#f0f2f5] p-2 pb-0 border-t border-border">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-2">
           
-          <div ref={messagesEndRef} />
-        </div>
+          {/* 1. Mail Reply Button */}
+          <button 
+            onClick={() => handleActionClick('mail-reply')} 
+            className="flex items-center gap-2 bg-white text-foreground px-4 py-3 rounded-full border border-border shadow-sm active:scale-95 transition-transform shrink-0"
+          >
+            <Mail size={18} className="text-emerald-600" />
+            <span className="font-bold text-xs font-cairo">الرد على خطاب أو إيميل</span>
+          </button>
 
-        {/* Session Documents Display - Above Input */}
-        <AttachedDocuments
-          documents={sessionDocuments}
-          onRemove={handleDocumentRemove}
-          isRTL={isRTL}
-          disabled={isAnalyzing}
-        />
+          {/* 2. CV Button */}
+          <button 
+            onClick={() => handleActionClick('cv')}
+            className="flex items-center gap-2 bg-white text-foreground px-4 py-3 rounded-full border border-border shadow-sm active:scale-95 transition-transform shrink-0"
+          >
+            <User size={18} className="text-violet-600" />
+            <span className="font-bold text-xs font-cairo">عايز تعمل سي في</span>
+          </button>
 
-        {/* Fixed Quick Action Bar - WhatsApp style pills */}
-        <div className="bg-[hsl(var(--muted))]/50 p-2 pb-0">
-          <div className={cn(
-            "flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-2",
-            isRTL && "flex-row-reverse"
-          )}>
-            {/* CV Button */}
-            <button 
-              onClick={() => navigate('/pro/cv-generator')}
-              className="flex items-center gap-2 bg-card text-card-foreground px-4 py-2.5 rounded-full border border-border shadow-sm active:scale-95 transition-transform shrink-0"
-            >
-              <User size={16} className="text-[hsl(280,70%,55%)]" />
-              <span className="font-bold text-xs font-cairo">{isRTL ? 'عايز تعمل سي في' : 'Créer un CV'}</span>
-            </button>
-
-            {/* Invoice Button */}
-            <button 
-              onClick={() => navigate('/pro/invoice-creator')}
-              className="flex items-center gap-2 bg-card text-card-foreground px-4 py-2.5 rounded-full border border-border shadow-sm active:scale-95 transition-transform shrink-0"
-            >
-              <FileText size={16} className="text-[hsl(25,95%,53%)]" />
-              <span className="font-bold text-xs font-cairo">{isRTL ? 'عايز تكتب فاتورة أو دوفي' : 'Facture ou Devis'}</span>
-            </button>
-
-            {/* Mail Reply Button */}
-            <button 
-              onClick={() => handleSend(isRTL ? 'عايز ارد على خطاب أو إيميل' : 'Je veux répondre à un courrier ou email')}
-              className="flex items-center gap-2 bg-card text-card-foreground px-4 py-2.5 rounded-full border border-border shadow-sm active:scale-95 transition-transform shrink-0"
-            >
-              <Mail size={16} className="text-emerald-500" />
-              <span className="font-bold text-xs font-cairo">{isRTL ? 'الرد على خطاب أو إيميل' : 'Répondre à un courrier'}</span>
-            </button>
-          </div>
-          <style>{`.scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
-        </div>
-
-        {/* Input Area - Simplified WhatsApp style */}
-        <div className="flex-shrink-0 p-3 bg-[hsl(var(--muted))]/50 safe-area-bottom relative">
-          {/* Loading Overlay - Prevents double-clicks */}
-          {isAnalyzing && (
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
-              <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>
-                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-primary font-medium">
-                  {isAnalyzingImage 
-                    ? (isRTL ? '🖼️ جاري تحليل الصورة...' : '🖼️ Analyse...') 
-                    : (isRTL ? '⏳ جاري التحليل...' : '⏳ Analyse...')}
-                </span>
-              </div>
-            </div>
-          )}
-          <ChatInput
-            onSend={handleSend}
-            onDocumentAdd={handleDocumentAdd}
-            isLoading={isAnalyzing}
-            isRTL={isRTL}
-            t={t}
-            externalDocumentsMode={true}
-          />
+          {/* 3. Invoice Button */}
+          <button 
+            onClick={() => handleActionClick('invoice-edit')}
+            className="flex items-center gap-2 bg-white text-foreground px-4 py-3 rounded-full border border-border shadow-sm active:scale-95 transition-transform shrink-0"
+          >
+            <FileText size={18} className="text-orange-500" />
+            <span className="font-bold text-xs font-cairo">عايز تكتب فاتورة أو دوفي</span>
+          </button>
         </div>
       </div>
 
-      {/* Full-screen Loading Overlay for document analysis */}
-      <LoadingOverlay
-        isVisible={isAnalyzingImage}
-        text={isRTL ? '📄 تحليل المستندات...' : '📄 Analyse des documents...'}
-        subText={isRTL ? 'يرجى الانتظار لحظات' : 'Veuillez patienter quelques instants'}
-        isRTL={isRTL}
-      />
+      {/* INPUT AREA */}
+      <div className="p-3 bg-[#f0f2f5] safe-area-pb">
+        <ChatInput
+          onSend={handleSend}
+          onDocumentAdd={handleDocumentAdd}
+          isLoading={isAnalyzing}
+          isRTL={isRTL}
+          t={t}
+          externalDocumentsMode={true}
+        />
+      </div>
 
-      {/* Document Type Selector Modal */}
-      <DocumentTypeSelector
-        isOpen={showDocumentSelector}
-        onClose={() => setShowDocumentSelector(false)}
-        onSubmit={handleDocumentFormSubmit}
-        isRTL={isRTL}
-      />
+      {/* Session Resume Dialog */}
+      <Dialog open={showSessionDialog} onOpenChange={setShowSessionDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className={cn(isRTL && "text-right font-cairo")}>
+              {isRTL ? "استكمال المحادثة؟" : "Reprendre la conversation ?"}
+            </DialogTitle>
+            <DialogDescription className={cn(isRTL && "text-right font-cairo")}>
+              {isRTL 
+                ? "عندك محادثة سابقة. تكمل؟" 
+                : "Vous avez une conversation précédente. Continuer ?"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className={cn("gap-2", isRTL && "flex-row-reverse")}>
+            <Button variant="outline" onClick={handleNewSession}>
+              {isRTL ? "موضوع جديد" : "Nouveau sujet"}
+            </Button>
+            <Button onClick={handleContinueSession}>
+              {isRTL ? "نكمل" : "Continuer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Smart Reply Form removed - now using inline auto-generation */}
-    </>
+      {/* New Topic Confirm Dialog */}
+      <Dialog open={showNewTopicConfirm} onOpenChange={setShowNewTopicConfirm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className={cn(isRTL && "text-right font-cairo")}>
+              {isRTL ? "موضوع جديد؟" : "Nouveau sujet ?"}
+            </DialogTitle>
+            <DialogDescription className={cn(isRTL && "text-right font-cairo")}>
+              {isRTL 
+                ? "هيتم مسح المحادثة الحالية" 
+                : "La conversation actuelle sera effacée"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className={cn("gap-2", isRTL && "flex-row-reverse")}>
+            <Button variant="outline" onClick={() => setShowNewTopicConfirm(false)}>
+              {isRTL ? "إلغاء" : "Annuler"}
+            </Button>
+            <Button variant="destructive" onClick={confirmNewTopic}>
+              {isRTL ? "مسح وبدء جديد" : "Effacer et recommencer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <style>{`.scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
+    </div>
   );
 };
 

@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, User, FileText, Mail, Brain, Camera, Paperclip, Send, ChevronRight } from 'lucide-react';
+import { ArrowLeft, User, FileText, Mail, Brain, Camera, Paperclip, Send, ChevronRight, Loader2 } from 'lucide-react';
+import { streamProAdminAssistant } from '@/hooks/useStreamingChat';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -13,12 +15,14 @@ interface Message {
 const AssistantPage = () => {
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
+  const { toast } = useToast();
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper to detect Arabic text
   const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
@@ -28,9 +32,10 @@ const AssistantPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Simple auto-response (NO server call)
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
+  // Real AI streaming response
+  const handleSend = async (messageText?: string, imageData?: string) => {
+    const text = messageText || inputValue;
+    if (!text.trim() && !imageData) return;
 
     // Hide welcome card once user starts chatting
     setShowWelcome(false);
@@ -38,26 +43,104 @@ const AssistantPage = () => {
     const userMsg: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
-      content: inputValue,
+      content: text || (imageData ? '📷 صورة مرفقة' : ''),
     };
 
     setMessages(prev => [...prev, userMsg]);
     setInputValue('');
     setIsTyping(true);
 
-    // Simulated AI response after 1 second
-    setTimeout(() => {
-      const isUserArabic = isArabic(userMsg.content);
-      const autoResponse: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: isUserArabic
-          ? "فهمت سؤالك. يمكنني مساعدتك في صياغة هذا أو شرح الإجراءات. هل تريد أن أبدأ؟"
-          : "J'ai bien reçu votre demande. Je peux vous aider à rédiger cela ou vous expliquer les démarches. Voulez-vous que je commence ?",
-      };
-      setMessages(prev => [...prev, autoResponse]);
+    // Prepare conversation history for context
+    const conversationHistory = messages.map(m => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content
+    }));
+
+    // Determine language based on input
+    const language: 'fr' | 'ar' = isArabic(text) ? 'ar' : 'fr';
+
+    let assistantContent = '';
+    const assistantId = `assistant-${Date.now()}`;
+
+    // Add empty assistant message that will be updated
+    setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
+
+    try {
+      await streamProAdminAssistant(
+        {
+          userMessage: text,
+          imageData,
+          conversationHistory,
+          language,
+        },
+        {
+          onDelta: (deltaText) => {
+            assistantContent += deltaText;
+            setMessages(prev => 
+              prev.map(m => m.id === assistantId ? { ...m, content: assistantContent } : m)
+            );
+          },
+          onDone: () => {
+            setIsTyping(false);
+          },
+          onError: (error) => {
+            console.error('Stream error:', error);
+            setIsTyping(false);
+            
+            // Update assistant message with error
+            const errorMessage = error.status === 429 
+              ? 'الخدمة مشغولة حاليا، جرب تاني بعد شوية 🙏'
+              : error.status === 402
+              ? 'الرصيد خلص، محتاج تشحن الحساب 💳'
+              : 'حصل مشكلة في السيرفر، جرب تاني 🔄';
+            
+            setMessages(prev => 
+              prev.map(m => m.id === assistantId ? { ...m, content: errorMessage } : m)
+            );
+            
+            toast({
+              variant: 'destructive',
+              title: isRTL ? 'خطأ' : 'Erreur',
+              description: error.message,
+            });
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Chat error:', error);
       setIsTyping(false);
-    }, 1000);
+      setMessages(prev => 
+        prev.map(m => m.id === assistantId ? { ...m, content: 'حصل مشكلة، جرب تاني 🔄' } : m)
+      );
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'الملف كبير' : 'Fichier trop volumineux',
+        description: isRTL ? 'الحد الأقصى 5 ميجا' : 'Maximum 5 Mo',
+      });
+      return;
+    }
+
+    // Convert to base64
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      handleSend('حلل المستند ده وقولي إيه المكتوب فيه', base64);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleActionClick = (action: string) => {
@@ -70,8 +153,7 @@ const AssistantPage = () => {
         break;
       case 'mail':
         setShowWelcome(false);
-        const prompt = 'عايز ارد على خطاب أو إيميل';
-        setInputValue(prompt);
+        setInputValue('عايز ارد على خطاب أو إيميل وصلني');
         break;
     }
   };
@@ -182,22 +264,30 @@ const AssistantPage = () => {
                 : 'bg-card text-card-foreground rounded-tl-none border border-border',
               isArabic(msg.content) ? 'font-cairo text-right' : 'text-left'
             )}>
-              {msg.content}
+              {msg.content || (msg.role === 'assistant' && isTyping ? '...' : '')}
             </div>
           </div>
         ))}
         
         {/* Typing Indicator */}
-        {isTyping && (
-          <div className="flex items-center gap-1 p-3 bg-card rounded-2xl rounded-tl-none w-fit border border-border shadow-sm ml-10">
-            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '75ms' }} />
-            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        {isTyping && messages[messages.length - 1]?.content === '' && (
+          <div className="flex items-center gap-2 p-3 bg-card rounded-2xl rounded-tl-none w-fit border border-border shadow-sm ml-10">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground">يفكر...</span>
           </div>
         )}
         
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Hidden file input */}
+      <input 
+        ref={fileInputRef}
+        type="file" 
+        accept="image/*" 
+        className="hidden" 
+        onChange={handleImageUpload}
+      />
 
       {/* INPUT BAR */}
       <div className="bg-background border-t border-border p-3 safe-area-pb">
@@ -205,7 +295,11 @@ const AssistantPage = () => {
           onSubmit={(e) => { e.preventDefault(); handleSend(); }} 
           className="flex items-center gap-2 bg-muted p-1.5 rounded-full border border-border"
         >
-          <button type="button" className="p-2 text-muted-foreground hover:text-primary transition-colors">
+          <button 
+            type="button" 
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2 text-muted-foreground hover:text-primary transition-colors"
+          >
             <Camera size={22} />
           </button>
           
@@ -218,7 +312,11 @@ const AssistantPage = () => {
             disabled={isTyping}
           />
           
-          <button type="button" className="p-2 text-muted-foreground hover:text-primary transition-colors -ml-2">
+          <button 
+            type="button" 
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2 text-muted-foreground hover:text-primary transition-colors -ml-2"
+          >
             <Paperclip size={20} />
           </button>
           

@@ -1,10 +1,11 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ChevronRight, User, FileText, Mail } from 'lucide-react';
 
 interface ActionItem {
   label: string;
   type: string;
+  icon?: React.ReactNode;
 }
 
 interface SimpleWelcomeProps {
@@ -14,9 +15,22 @@ interface SimpleWelcomeProps {
 }
 
 const SimpleWelcome = ({ isRTL, actions, onActionClick }: SimpleWelcomeProps) => {
-  const welcomeText = isRTL
-    ? "أهلاً! 👋 أنا هنا عشان أساعدك. محتاج مساعدة في دوفي، CV، أو مشكلة في الشانتي؟"
-    : "Salut ! 👋 Je suis là pour t'aider. Tu as besoin d'un coup de main pour un devis, un CV ou un souci de chantier ?";
+  // Short, friendly welcome message
+  const welcomeText = "شبيك لبيك 🧞‍♂️\nاسأل وانا اجاوب";
+
+  // Icon mapping for action types
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'cv':
+        return <User size={18} />;
+      case 'invoice-edit':
+        return <FileText size={18} />;
+      case 'mail-reply':
+        return <Mail size={18} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="flex flex-col items-start animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -32,27 +46,31 @@ const SimpleWelcome = ({ isRTL, actions, onActionClick }: SimpleWelcomeProps) =>
         className={cn(
           "max-w-[85%] p-3.5 rounded-2xl text-[13px] leading-relaxed shadow-sm ml-10",
           "bg-card text-card-foreground border border-border rounded-bl-none",
-          isRTL ? "font-cairo text-right" : "text-left"
+          "font-cairo text-right whitespace-pre-wrap"
         )}
       >
         {welcomeText}
       </div>
 
-      {/* Quick Action Buttons */}
-      <div className="flex flex-wrap gap-2 mt-3 ml-10">
+      {/* Action Buttons - Stacked Cards Style */}
+      <div className="flex flex-col gap-2 mt-3 ml-10 w-[85%]">
         {actions.map((action, idx) => (
           <button
             key={idx}
             onClick={() => onActionClick(action)}
             className={cn(
-              "bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20",
-              "px-4 py-2 rounded-full text-[11px] font-bold transition-colors",
-              "flex items-center gap-1.5 active:scale-95",
-              isRTL && "flex-row-reverse font-cairo"
+              "flex items-center justify-between w-full",
+              "bg-[hsl(226,76%,94%)] text-[hsl(243,75%,49%)]",
+              "p-3 rounded-xl border border-[hsl(228,90%,86%)] shadow-sm",
+              "active:scale-[0.98] transition-transform",
+              "font-cairo"
             )}
           >
-            {action.label}
-            <ArrowRight size={12} className={cn(isRTL && "rotate-180")} />
+            <div className="flex items-center gap-3">
+              {action.icon || getIcon(action.type)}
+              <span className="font-bold text-xs">{action.label}</span>
+            </div>
+            <ChevronRight size={16} className="opacity-50" />
           </button>
         ))}
       </div>

@@ -20,7 +20,7 @@ import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/D
 import LoadingOverlay from '@/components/shared/LoadingOverlay';
 import WelcomeIntro from '@/components/assistant/WelcomeIntro';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
-import { RefreshCw, RotateCcw, Brain, ArrowLeft, User, FileText, Mail } from 'lucide-react';
+import { RefreshCw, RotateCcw, Brain, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -1158,43 +1158,7 @@ ${formData.items}`;
           disabled={isAnalyzing}
         />
 
-        {/* Quick Action Buttons - Fixed Above Input (Horizontal Scroll) */}
-        <div className="px-4 pb-2 bg-muted/30 flex gap-2 overflow-x-auto scrollbar-hide">
-          {/* CV Button - Indigo style */}
-          <button 
-            onClick={() => navigate('/pro/cv-generator')}
-            className="flex items-center gap-2 bg-[hsl(226,76%,94%)] text-[hsl(243,75%,49%)] px-4 py-3 rounded-xl border border-[hsl(228,90%,86%)] shadow-sm active:scale-95 transition-transform shrink-0"
-          >
-            <User size={18} />
-            <span className="font-black text-xs font-cairo">عايز تعمل سي في</span>
-          </button>
-
-          {/* Invoice/Devis Button - Orange style */}
-          <button 
-            onClick={() => navigate('/pro/invoice-creator')}
-            className="flex items-center gap-2 bg-[hsl(30,100%,92%)] text-[hsl(21,90%,38%)] px-4 py-3 rounded-xl border border-[hsl(27,96%,83%)] shadow-sm active:scale-95 transition-transform shrink-0"
-          >
-            <FileText size={18} />
-            <span className="font-black text-xs font-cairo">عايز تكتب فاتورة أو دوفي</span>
-          </button>
-
-          {/* Mail Reply Button - Green style */}
-          <button 
-            onClick={() => {
-              // Trigger mail reply flow - send prompt directly
-              const mailPrompt = isRTL 
-                ? "محتاج أرد على خطاب أو إيميل رسمي" 
-                : "Je veux répondre à un courrier ou email officiel";
-              handleSend(mailPrompt);
-            }}
-            className="flex items-center gap-2 bg-[hsl(152,76%,91%)] text-[hsl(160,84%,29%)] px-4 py-3 rounded-xl border border-[hsl(156,72%,67%)] shadow-sm active:scale-95 transition-transform shrink-0"
-          >
-            <Mail size={18} />
-            <span className="font-black text-xs font-cairo">الرد على خطاب أو إيميل</span>
-          </button>
-        </div>
-
-        <style>{`.scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
+        {/* Quick action buttons removed - now displayed inside welcome message */}
 
         {/* Input Area - Compact fixed at bottom */}
         <div className="flex-shrink-0 p-2 border-t bg-background relative">

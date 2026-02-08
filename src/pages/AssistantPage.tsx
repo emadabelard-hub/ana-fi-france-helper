@@ -50,8 +50,8 @@ const AssistantPage = () => {
   const [showNewTopicConfirm, setShowNewTopicConfirm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Welcome message - bilingual and conversational
-  const welcomeMessage = "مرحباً بك في مساعدك الشخصي. أنا هنا لمناقشة أي موضوع يهمك بالتفصيل.\n\nيمكنك سؤالي عن القوانين، كيفية التعامل مع الزبائن، أو صياغة رسائل معقدة. أنا أستمع إليك وسأجيبك بشرح كامل وواضح.\n\nBonjour ! Je suis votre assistant personnel. Posez-moi n'importe quelle question, je suis là pour vous expliquer les choses en détail et discuter avec vous comme un partenaire.";
+  // Welcome message - neutral and open
+  const welcomeMessage = "مرحباً بك! أنا هنا للمحادثة والمساعدة. يمكنك سؤالي عن أي شيء (قانون، تنظيم، نصائح) وسأجيبك فوراً.\n\nBonjour ! Je suis votre assistant IA. Posez-moi n'importe quelle question, je suis là pour discuter et vous aider.";
 
   // Helper to detect Arabic text
   const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);

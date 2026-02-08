@@ -1,10 +1,11 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ChevronRight, Sparkles, User, FileText, Mail } from 'lucide-react';
 
 interface ActionItem {
   label: string;
-  type: string; // route type: 'cv', 'invoice-edit', 'home', or custom message
+  type: string; // route type: 'cv', 'invoice-edit', 'mail-reply', 'home', or custom message
+  icon?: React.ReactNode;
 }
 
 interface SimpleChatMessageProps {
@@ -14,6 +15,20 @@ interface SimpleChatMessageProps {
   actions?: ActionItem[];
   onActionClick?: (action: ActionItem) => void;
 }
+
+// Icon mapping for action types
+const getIcon = (type: string) => {
+  switch (type) {
+    case 'cv':
+      return <User size={18} />;
+    case 'invoice-edit':
+      return <FileText size={18} />;
+    case 'mail-reply':
+      return <Mail size={18} />;
+    default:
+      return null;
+  }
+};
 
 const SimpleChatMessage = ({
   role,
@@ -40,7 +55,7 @@ const SimpleChatMessage = ({
       {/* Message Bubble */}
       <div
         className={cn(
-          "max-w-[85%] p-3.5 rounded-2xl text-[13px] leading-relaxed shadow-sm",
+          "max-w-[85%] p-3.5 rounded-2xl text-[13px] leading-relaxed shadow-sm whitespace-pre-wrap",
           isUser
             ? "bg-primary text-primary-foreground rounded-br-none"
             : "bg-card text-card-foreground border border-border rounded-bl-none",
@@ -51,22 +66,26 @@ const SimpleChatMessage = ({
         {content}
       </div>
 
-      {/* Action Buttons (only for AI messages) */}
+      {/* Action Buttons - Stacked Cards Style (only for AI messages) */}
       {!isUser && actions.length > 0 && onActionClick && (
-        <div className="flex flex-wrap gap-2 mt-2 ml-10">
+        <div className="flex flex-col gap-2 mt-2 ml-10 w-[85%]">
           {actions.map((action, idx) => (
             <button
               key={idx}
               onClick={() => onActionClick(action)}
               className={cn(
-                "bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20",
-                "px-4 py-2 rounded-full text-[11px] font-bold transition-colors",
-                "flex items-center gap-1.5 active:scale-95",
-                isArabic(action.label) && "flex-row-reverse font-cairo"
+                "flex items-center justify-between w-full",
+                "bg-[hsl(226,76%,94%)] text-[hsl(243,75%,49%)]",
+                "p-3 rounded-xl border border-[hsl(228,90%,86%)] shadow-sm",
+                "active:scale-[0.98] transition-transform",
+                isArabic(action.label) && "font-cairo"
               )}
             >
-              {action.label}
-              <ArrowRight size={12} className={cn(isArabic(action.label) && "rotate-180")} />
+              <div className="flex items-center gap-3">
+                {action.icon || getIcon(action.type)}
+                <span className="font-bold text-xs">{action.label}</span>
+              </div>
+              <ChevronRight size={16} className="opacity-50" />
             </button>
           ))}
         </div>

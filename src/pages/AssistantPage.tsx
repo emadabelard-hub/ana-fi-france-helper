@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +17,7 @@ import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/D
 import LoadingOverlay from '@/components/shared/LoadingOverlay';
 import WelcomeIntro from '@/components/assistant/WelcomeIntro';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
-import { RefreshCw, RotateCcw, ArrowLeft, Brain } from 'lucide-react';
+import { RefreshCw, RotateCcw, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -106,6 +107,7 @@ const toConversationHistory = (msgs: Message[]) => {
 };
 
 const AssistantPage = () => {
+  const navigate = useNavigate();
   const { t, isRTL, language } = useLanguage();
   const { profile } = useProfile();
   const { toast } = useToast();
@@ -1015,8 +1017,8 @@ ${formData.items}`;
           <WelcomeIntro
             isRTL={isRTL}
             quickActions={isRTL 
-              ? ['العميل مش بيدفع', 'غلط في الفاتورة', 'تصريح URSSAF']
-              : ['Client ne paie pas', 'Erreur sur devis', 'Déclarer URSSAF']
+              ? ['إزاي أعمل فاتورة؟', 'العميل مش بيدفع', 'غلط في الدوفي']
+              : ['Comment faire une facture ?', 'Client ne paie pas', 'Erreur sur devis']
             }
             onQuickAction={(action) => handleSend(action)}
           />
@@ -1051,6 +1053,15 @@ ${formData.items}`;
                   showEnvelopeHelper={message.showEnvelopeHelper}
                   dispatchInfo={message.dispatchInfo}
                   letterContent={message.letterContent}
+                  onActionClick={(action) => {
+                    // Redirect to invoice tool
+                    if (action.includes("Ouvrir l'outil") || action.includes("افتح أداة")) {
+                      navigate('/pro/invoice-creator');
+                    } else {
+                      // Treat other actions as new user messages
+                      handleSend(action);
+                    }
+                  }}
                 />
               )}
               

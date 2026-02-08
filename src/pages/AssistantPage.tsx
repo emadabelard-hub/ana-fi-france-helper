@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { ArrowLeft, User, FileText, Mail, Brain, Camera, Paperclip, Send, ChevronRight, Loader2 } from 'lucide-react';
 import { streamProAdminAssistant } from '@/hooks/useStreamingChat';
 import { useToast } from '@/hooks/use-toast';
+import QuickActionsBar from '@/components/assistant/QuickActionsBar';
 
 interface Message {
   id: string;
@@ -86,22 +87,29 @@ const AssistantPage = () => {
           onError: (error) => {
             console.error('Stream error:', error);
             setIsTyping(false);
-            
+
             // Update assistant message with error
-            const errorMessage = error.status === 429 
-              ? 'الخدمة مشغولة حاليا، جرب تاني بعد شوية 🙏'
-              : error.status === 402
-              ? 'الرصيد خلص، محتاج تشحن الحساب 💳'
-              : 'حصل مشكلة في السيرفر، جرب تاني 🔄';
-            
-            setMessages(prev => 
+            const errorMessage = language === 'fr'
+              ? (error.status === 429
+                  ? "Service surchargé — réessayez dans une minute."
+                  : error.status === 402
+                  ? "Crédits IA indisponibles — vérifiez votre abonnement/crédits."
+                  : "Problème serveur — réessayez dans un instant.")
+              : (error.status === 429
+                  ? 'الخدمة مشغولة حاليا، جرب تاني بعد شوية 🙏'
+                  : error.status === 402
+                  ? 'الرصيد خلص، محتاج تشحن الحساب 💳'
+                  : 'حصل مشكلة في السيرفر، جرب تاني 🔄');
+
+            setMessages(prev =>
               prev.map(m => m.id === assistantId ? { ...m, content: errorMessage } : m)
             );
-            
+
             toast({
               variant: 'destructive',
               title: isRTL ? 'خطأ' : 'Erreur',
-              description: error.message,
+              // Never surface raw "500 Internal Server Error" strings; show a controlled message
+              description: errorMessage,
             });
           }
         }
@@ -291,19 +299,26 @@ const AssistantPage = () => {
 
       {/* INPUT BAR */}
       <div className="bg-background border-t border-border p-3 safe-area-pb">
-        <form 
-          onSubmit={(e) => { e.preventDefault(); handleSend(); }} 
+        {/* Always-visible quick actions above the keyboard */}
+        <QuickActionsBar
+          isRTL={isRTL}
+          onAction={(action) => handleActionClick(action)}
+          className="mb-2"
+        />
+
+        <form
+          onSubmit={(e) => { e.preventDefault(); handleSend(); }}
           className="flex items-center gap-2 bg-muted p-1.5 rounded-full border border-border"
         >
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             className="p-2 text-muted-foreground hover:text-primary transition-colors"
           >
             <Camera size={22} />
           </button>
-          
-          <input 
+
+          <input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Message..."
@@ -311,18 +326,18 @@ const AssistantPage = () => {
             dir="auto"
             disabled={isTyping}
           />
-          
-          <button 
-            type="button" 
+
+          <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             className="p-2 text-muted-foreground hover:text-primary transition-colors -ml-2"
           >
             <Paperclip size={20} />
           </button>
-          
-          <button 
-            type="submit" 
-            disabled={!inputValue.trim() || isTyping} 
+
+          <button
+            type="submit"
+            disabled={!inputValue.trim() || isTyping}
             className={cn(
               "w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all",
               inputValue.trim() && !isTyping ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/20 text-muted-foreground'

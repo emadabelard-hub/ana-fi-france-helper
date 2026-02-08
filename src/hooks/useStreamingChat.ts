@@ -23,6 +23,23 @@ type StreamParams = {
 
 const STREAM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pro-admin-assistant`;
 
+function getFallbackErrorMessage(status: number | undefined, language: 'fr' | 'ar'): string {
+  if (language === 'fr') {
+    if (status === 429) return "Service surchargé — réessayez dans une minute.";
+    if (status === 402) return "Crédits IA indisponibles — vérifiez votre abonnement/crédits.";
+    if (status === 404) return "Service momentanément indisponible.";
+    if (status && status >= 500) return "Problème serveur — réessayez dans un instant.";
+    return "Erreur inattendue — réessayez.";
+  }
+
+  // ar
+  if (status === 429) return 'الخدمة مشغولة، جرب تاني بعد دقيقة 🙏';
+  if (status === 402) return 'الخدمة متوقفة مؤقتاً - جاري الإصلاح ⏳';
+  if (status === 404) return 'الخدمة غير متاحة حالياً 🔧';
+  if (status && status >= 500) return 'مشكلة في السيرفر، جرب تاني 🔄';
+  return 'حدث خطأ غير متوقع';
+}
+
 export async function streamProAdminAssistant(
   params: StreamParams,
   callbacks: StreamCallbacks
@@ -42,31 +59,28 @@ export async function streamProAdminAssistant(
     // Handle HTTP errors
     if (!resp.ok) {
       const status = resp.status;
-      let errorMessage = 'حدث خطأ غير متوقع';
-      
-      if (status === 429) {
-        errorMessage = 'الخدمة مشغولة، جرب تاني بعد دقيقة 🙏';
-      } else if (status === 402) {
-        errorMessage = 'الخدمة متوقفة مؤقتاً - جاري الإصلاح ⏳';
-      } else if (status === 404) {
-        errorMessage = 'الخدمة غير متاحة حالياً 🔧';
-      } else if (status >= 500) {
-        errorMessage = 'مشكلة في السيرفر، جرب تاني 🔄';
-      } else {
+
+      // Prefer a controlled, localized message for known statuses (avoid surfacing raw "500 ...")
+      let errorMessage = getFallbackErrorMessage(status, params.language);
+
+      // For non-5xx, try to use server-provided JSON error if present
+      if (!(status >= 500) && status !== 429 && status !== 402 && status !== 404) {
         try {
           const errorData = await resp.json();
-          errorMessage = errorData.error || errorMessage;
+          if (typeof errorData?.error === 'string' && errorData.error.trim()) {
+            errorMessage = errorData.error;
+          }
         } catch {
           // Ignore JSON parse errors
         }
       }
-      
+
       onError({ status, message: errorMessage });
       return;
     }
 
     if (!resp.body) {
-      onError({ message: 'No response body' });
+      onError({ message: getFallbackErrorMessage(undefined, params.language) });
       return;
     }
 
@@ -78,7 +92,7 @@ export async function streamProAdminAssistant(
     while (!streamDone) {
       const { done, value } = await reader.read();
       if (done) break;
-      
+
       textBuffer += decoder.decode(value, { stream: true });
 
       // Process line-by-line as data arrives
@@ -89,7 +103,7 @@ export async function streamProAdminAssistant(
 
         // Handle CRLF
         if (line.endsWith("\r")) line = line.slice(0, -1);
-        
+
         // Skip SSE comments/keepalive
         if (line.startsWith(":") || line.trim() === "") continue;
         if (!line.startsWith("data: ")) continue;
@@ -121,10 +135,10 @@ export async function streamProAdminAssistant(
         if (raw.endsWith("\r")) raw = raw.slice(0, -1);
         if (raw.startsWith(":") || raw.trim() === "") continue;
         if (!raw.startsWith("data: ")) continue;
-        
+
         const jsonStr = raw.slice(6).trim();
         if (jsonStr === "[DONE]") continue;
-        
+
         try {
           const parsed = JSON.parse(jsonStr);
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
@@ -138,8 +152,8 @@ export async function streamProAdminAssistant(
     onDone();
   } catch (error) {
     console.error("Stream error:", error);
-    onError({ 
-      message: error instanceof Error ? error.message : 'Unknown error' 
+    onError({
+      message: getFallbackErrorMessage(undefined, params.language),
     });
   }
 }

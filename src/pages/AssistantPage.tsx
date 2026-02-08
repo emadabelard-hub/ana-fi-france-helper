@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
@@ -7,7 +6,7 @@ import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import ChatMessage from '@/components/assistant/ChatMessage';
+import StructuredChatMessage from '@/components/assistant/StructuredChatMessage';
 import ChatInput from '@/components/assistant/ChatInput';
 import AttachedDocuments, { AttachedDocument } from '@/components/assistant/AttachedDocuments';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
@@ -15,7 +14,9 @@ import DispatchGuide from '@/components/assistant/DispatchGuide';
 import PostAnalysisActions from '@/components/assistant/PostAnalysisActions';
 import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/DocumentTypeSelector';
 import LoadingOverlay from '@/components/shared/LoadingOverlay';
-import { RefreshCw, RotateCcw } from 'lucide-react';
+import WelcomeIntro from '@/components/assistant/WelcomeIntro';
+import TypingIndicator from '@/components/assistant/TypingIndicator';
+import { RefreshCw, RotateCcw, ArrowLeft, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -973,60 +974,52 @@ ${formData.items}`;
         </DialogContent>
       </Dialog>
 
-      <div className="flex flex-col h-[calc(100vh-90px)] pb-12">
-        {/* Compact Title with Credits Display & New Topic Button */}
-        <section className={cn("py-2 flex-shrink-0 relative", isRTL && "font-cairo")}>
-          <h1 className="text-xl font-bold text-foreground text-center">
-            {isRTL ? '🇪🇬 مساعدك الإداري' : '🇪🇬 Votre Assistant'}
-          </h1>
-          
-          {/* New Topic Button */}
-          {messages.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleNewTopicClick}
-              className={cn(
-                "absolute top-2 text-muted-foreground hover:text-primary",
-                isRTL ? "left-1" : "right-1"
-              )}
-              title={isRTL ? "موضوع جديد" : "Nouveau sujet"}
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          )}
-        </section>
-
-      {/* Chat Messages Area - generous padding for readability */}
-      <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 space-y-5">
-        {messages.length === 0 ? (
-          <div className={cn(
-            "flex flex-col items-center justify-center h-full text-center text-muted-foreground px-6",
-            isRTL && "font-cairo"
-          )}>
-            <div className="text-6xl mb-3">🇪🇬</div>
-            <p className="text-xl font-semibold text-foreground">
-              {isRTL ? 'أهلاً بيك يا صاحبي!' : 'Bienvenue!'}
-            </p>
-            <p className="text-base mt-2 max-w-sm leading-relaxed">
-              {isRTL 
-                ? 'صوّر أي جواب وصلك 📷 أو اكتب سؤالك وأنا هشرحلك بالمصري 😊'
-                : 'Photographiez une lettre 📷 ou posez votre question'}
-            </p>
-            <div className={cn(
-              "flex items-center gap-3 mt-4 text-sm text-muted-foreground",
-              isRTL && "flex-row-reverse"
-            )}>
-              <span>📷</span>
-              <span>{isRTL ? 'صورة' : 'Photo'}</span>
-              <span className="text-muted-foreground/40">|</span>
-              <span>📎</span>
-              <span>{isRTL ? 'ملف' : 'Fichier'}</span>
-              <span className="text-muted-foreground/40">|</span>
-              <span>✏️</span>
-              <span>{isRTL ? 'نص' : 'Texte'}</span>
+      <div className="flex flex-col h-[calc(100vh-90px)] pb-12 bg-muted/30">
+        {/* Gradient Header - New Design */}
+        <header className={cn(
+          "bg-gradient-to-r from-primary to-primary/70 text-primary-foreground p-4 pt-12 shadow-lg rounded-b-[2rem] z-10",
+          isRTL && "font-cairo"
+        )}>
+          <div className="flex items-center gap-4">
+            {messages.length > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleNewTopicClick}
+                className="bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 rounded-full"
+              >
+                <RefreshCw className="h-5 w-5" />
+              </Button>
+            )}
+            <div className="flex-1">
+              <h1 className={cn(
+                "text-lg font-black flex items-center gap-2",
+                isRTL && "flex-row-reverse justify-end"
+              )}>
+                <Brain size={20} className="text-primary-foreground/70" />
+                {isRTL ? 'مساعدك الإداري' : 'Assistant Pro'}
+              </h1>
+              <p className="text-[10px] opacity-80 font-medium">
+                {isRTL ? 'حلول موثوقة وإجابات معتمدة' : 'Réponses certifiées & Solutions'}
+              </p>
+            </div>
+            <div className="w-10 h-10 bg-primary-foreground text-primary rounded-full flex items-center justify-center font-black text-xs shadow-md">
+              AF
             </div>
           </div>
+        </header>
+
+      {/* Chat Messages Area */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+        {messages.length === 0 ? (
+          <WelcomeIntro
+            isRTL={isRTL}
+            quickActions={isRTL 
+              ? ['العميل مش بيدفع', 'غلط في الفاتورة', 'تصريح URSSAF']
+              : ['Client ne paie pas', 'Erreur sur devis', 'Déclarer URSSAF']
+            }
+            onQuickAction={(action) => handleSend(action)}
+          />
         ) : (
           messages.map((message) => (
             <React.Fragment key={message.id}>
@@ -1049,14 +1042,12 @@ ${formData.items}`;
                   </AlertDescription>
                 </Alert>
               ) : (
-                <ChatMessage
+                <StructuredChatMessage
                   role={message.role}
                   content={message.content}
                   isRTL={isRTL}
                   isDocumentAnalysis={message.isDocumentAnalysis}
                   extractedInfo={message.extractedInfo}
-                  showLetterSuggestion={false}
-                  isGeneratingLetter={isGeneratingLetter && pendingLetterMessageId === message.id}
                   showEnvelopeHelper={message.showEnvelopeHelper}
                   dispatchInfo={message.dispatchInfo}
                   letterContent={message.letterContent}
@@ -1108,33 +1099,13 @@ ${formData.items}`;
           ))
         )}
         
-          {/* Loading indicator - Image Analysis */}
-          {isAnalyzingImage && (
+          {/* Typing Indicator - Unified */}
+          {(isAnalyzing || isAnalyzingImage) && !pendingLetterMessage && (
             <div className={cn(
-              "flex gap-4 p-4 sm:p-5 rounded-xl bg-primary/10 mx-4 sm:mx-6",
-              isRTL ? "flex-row-reverse ml-8 sm:ml-12" : "mr-8 sm:mr-12"
+              "flex gap-3",
+              isRTL ? "justify-start flex-row-reverse" : "justify-start"
             )}>
-              <div className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                <span className="animate-spin">🔍</span>
-              </div>
-              <div className={cn("flex-1 pr-2 text-base text-primary font-medium", isRTL && "text-right font-cairo leading-[1.8]")}>
-                {isRTL ? '🖼️ جاري تحليل الصورة...' : 'Analyse de l\'image en cours...'}
-              </div>
-            </div>
-          )}
-          
-          {/* Loading indicator - Regular Analysis */}
-          {isAnalyzing && !pendingLetterMessage && !isAnalyzingImage && (
-            <div className={cn(
-              "flex gap-4 p-4 sm:p-5 rounded-xl bg-muted/50 mx-4 sm:mx-6",
-              isRTL ? "flex-row-reverse ml-8 sm:ml-12" : "mr-8 sm:mr-12"
-            )}>
-              <div className="flex-shrink-0 w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
-                <span className="animate-pulse">🤔</span>
-              </div>
-              <div className={cn("flex-1 pr-2 text-base text-muted-foreground", isRTL && "text-right font-cairo leading-[1.8]")}>
-                {isRTL ? 'جار التحليل...' : 'Analyse en cours...'}
-              </div>
+              <TypingIndicator isRTL={isRTL} />
             </div>
           )}
           

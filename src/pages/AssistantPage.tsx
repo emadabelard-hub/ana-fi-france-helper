@@ -50,8 +50,8 @@ const AssistantPage = () => {
   const [showNewTopicConfirm, setShowNewTopicConfirm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Welcome message - neutral and open
-  const welcomeMessage = "مرحباً بك! أنا هنا للمحادثة والمساعدة. يمكنك سؤالي عن أي شيء (قانون، تنظيم، نصائح) وسأجيبك فوراً.\n\nBonjour ! Je suis votre assistant IA. Posez-moi n'importe quelle question, je suis là pour discuter et vous aider.";
+  // Welcome message - short and direct
+  const welcomeMessage = "مرحباً! أنا هنا لمساعدتك. اسألني عن أي شيء أو اختر أداة من الأسفل.\n\nBonjour ! Je suis là pour vous aider. Posez-moi une question ou choisissez un outil ci-dessous.";
 
   // Helper to detect Arabic text
   const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
@@ -313,27 +313,27 @@ const AssistantPage = () => {
     <div className="flex flex-col h-full bg-[#f0f2f5] text-foreground">
       
       {/* HEADER */}
-      <header className="bg-white p-4 pt-12 shadow-sm border-b border-border flex items-center gap-3 z-10">
+      <header className="bg-white p-4 pt-12 shadow-sm border-b border-gray-200 flex items-center gap-3 z-10 sticky top-0">
         <button 
           onClick={() => navigate('/')} 
-          className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground"
+          className="p-2 -ml-2 rounded-full hover:bg-gray-100 text-slate-600"
         >
           <ArrowLeft size={24} />
         </button>
-        <div className="w-10 h-10 bg-gradient-to-r from-primary to-[hsl(240,70%,55%)] rounded-full flex items-center justify-center text-primary-foreground shadow-md">
-          <Bot size={22} />
+        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-md">
+          <Bot size={20} />
         </div>
         <div>
-          <h1 className="text-sm font-bold text-foreground">Discussion IA</h1>
+          <h1 className="text-base font-bold text-slate-800">Assistant IA</h1>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            <p className="text-[10px] text-muted-foreground font-medium">En ligne • Toujours disponible</p>
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <p className="text-xs text-slate-500">En ligne</p>
           </div>
         </div>
       </header>
 
       {/* CHAT AREA */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[hsl(35,30%,88%)]/30">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f0f2f5]">
         
         {/* Session Documents */}
         {sessionDocuments.length > 0 && (
@@ -346,10 +346,10 @@ const AssistantPage = () => {
 
         {/* Welcome Message */}
         <div className="flex w-full justify-start">
-          <div className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center mr-2 mt-1 shrink-0">
-            <Sparkles size={14} className="text-primary" />
+          <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center mr-2 mt-1 shrink-0 shadow-sm">
+            <Sparkles size={14} className="text-blue-600" />
           </div>
-          <div className="max-w-[85%] p-3.5 px-4 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap bg-white text-foreground rounded-tl-none border border-border font-cairo text-right">
+          <div className="max-w-[85%] p-3.5 px-4 rounded-2xl text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap bg-white text-slate-800 rounded-tl-none border border-gray-200 font-cairo text-right">
             {welcomeMessage}
           </div>
         </div>
@@ -360,17 +360,17 @@ const AssistantPage = () => {
             
             {/* AI Avatar */}
             {msg.role === 'assistant' && (
-              <div className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center mr-2 mt-1 shrink-0">
-                <Sparkles size={14} className="text-primary" />
+              <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center mr-2 mt-1 shrink-0 shadow-sm">
+                <Sparkles size={14} className="text-blue-600" />
               </div>
             )}
 
             {/* Message Bubble */}
             <div className={cn(
-              "max-w-[85%] p-3.5 px-4 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap",
+              "max-w-[85%] p-3.5 px-4 rounded-2xl text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap",
               msg.role === 'user' 
-                ? 'bg-[#005c4b] text-white rounded-tr-none' 
-                : 'bg-white text-foreground rounded-tl-none border border-border',
+                ? 'bg-blue-600 text-white rounded-tr-none' 
+                : 'bg-white text-slate-800 rounded-tl-none border border-gray-200',
               isArabic(msg.content) ? 'font-cairo text-right' : 'text-left',
               msg.isError && 'border-destructive'
             )}>
@@ -396,59 +396,59 @@ const AssistantPage = () => {
         
         {/* Typing Indicator */}
         {isAnalyzing && (
-          <div className="flex items-center gap-1 p-3 bg-white rounded-2xl rounded-tl-none w-fit border border-border shadow-sm ml-10">
-            <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" />
-            <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '75ms' }} />
-            <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+          <div className="flex items-center gap-1 p-3 bg-white rounded-2xl rounded-tl-none w-fit border border-gray-200 shadow-sm ml-10">
+            <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" />
+            <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '75ms' }} />
+            <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
           </div>
         )}
         
         <div ref={messagesEndRef} />
       </div>
 
-      {/* QUICK ACTION BAR */}
-      <div className="bg-[#f0f2f5] p-2 pb-0 border-t border-border">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-2">
+      {/* QUICK ACTION BAR & INPUT (Combined white section) */}
+      <div className="bg-white border-t border-gray-200 p-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-1">
           
-          {/* 1. Mail Reply Button */}
-          <button 
-            onClick={() => handleActionClick('mail-reply')} 
-            className="flex items-center gap-2 bg-white text-foreground px-4 py-3 rounded-full border border-border shadow-sm active:scale-95 transition-transform shrink-0"
-          >
-            <Mail size={18} className="text-emerald-600" />
-            <span className="font-bold text-xs font-cairo">الرد على خطاب أو إيميل</span>
-          </button>
-
-          {/* 2. CV Button */}
+          {/* 1. CV Button */}
           <button 
             onClick={() => handleActionClick('cv')}
-            className="flex items-center gap-2 bg-white text-foreground px-4 py-3 rounded-full border border-border shadow-sm active:scale-95 transition-transform shrink-0"
+            className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-4 py-3 rounded-xl border border-indigo-100 active:scale-95 transition-transform shrink-0"
           >
-            <User size={18} className="text-violet-600" />
+            <User size={18} />
             <span className="font-bold text-xs font-cairo">عايز تعمل سي في</span>
           </button>
 
-          {/* 3. Invoice Button */}
+          {/* 2. Invoice Button */}
           <button 
             onClick={() => handleActionClick('invoice-edit')}
-            className="flex items-center gap-2 bg-white text-foreground px-4 py-3 rounded-full border border-border shadow-sm active:scale-95 transition-transform shrink-0"
+            className="flex items-center gap-2 bg-orange-50 text-orange-700 px-4 py-3 rounded-xl border border-orange-100 active:scale-95 transition-transform shrink-0"
           >
-            <FileText size={18} className="text-orange-500" />
-            <span className="font-bold text-xs font-cairo">عايز تكتب فاتورة أو دوفي</span>
+            <FileText size={18} />
+            <span className="font-bold text-xs font-cairo">عايز تكتب فاتورة</span>
+          </button>
+
+          {/* 3. Mail Reply Button */}
+          <button 
+            onClick={() => handleActionClick('mail-reply')} 
+            className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-3 rounded-xl border border-green-100 active:scale-95 transition-transform shrink-0"
+          >
+            <Mail size={18} />
+            <span className="font-bold text-xs font-cairo">الرد على خطاب</span>
           </button>
         </div>
-      </div>
 
-      {/* INPUT AREA */}
-      <div className="p-3 bg-[#f0f2f5] safe-area-pb">
-        <ChatInput
-          onSend={handleSend}
-          onDocumentAdd={handleDocumentAdd}
-          isLoading={isAnalyzing}
-          isRTL={isRTL}
-          t={t}
-          externalDocumentsMode={true}
-        />
+        {/* INPUT AREA */}
+        <div className="pt-1 safe-area-pb">
+          <ChatInput
+            onSend={handleSend}
+            onDocumentAdd={handleDocumentAdd}
+            isLoading={isAnalyzing}
+            isRTL={isRTL}
+            t={t}
+            externalDocumentsMode={true}
+          />
+        </div>
       </div>
 
       {/* Session Resume Dialog */}

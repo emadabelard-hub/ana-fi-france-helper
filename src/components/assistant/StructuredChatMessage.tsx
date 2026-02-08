@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { 
   Sparkles, AlertTriangle, Lightbulb, CheckCircle2, 
-  FileText, ChevronRight, PlayCircle, Scale, Copy, Check, Wrench, User
+  FileText, ChevronRight, Scale, Copy, Check, Wrench, User, ArrowRightCircle, Brain
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,11 @@ interface StructuredStep {
   text: string;
 }
 
+interface ActionItem {
+  label: string;
+  route: string;
+}
+
 interface StructuredChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
@@ -36,9 +41,9 @@ interface StructuredChatMessageProps {
     subjectLine?: string;
   };
   letterContent?: string;
-  // Actions
-  suggestedActions?: string[];
-  onActionClick?: (action: string) => void;
+  // Actions - now support both strings and action objects
+  suggestedActions?: (string | ActionItem)[];
+  onActionClick?: (action: string, route?: string) => void;
 }
 
 const getStepIcon = (iconType: StructuredStep['icon']) => {
@@ -169,7 +174,17 @@ const StructuredChatMessage = ({
     [content, isUser]
   );
 
-  const allActions = [...suggestedActions, ...parsedActions].filter((v, i, a) => a.indexOf(v) === i);
+  // Normalize actions to ActionItem format for consistency
+  const normalizedActions: ActionItem[] = useMemo(() => {
+    const combined = [...suggestedActions, ...parsedActions];
+    return combined.filter((v, i, a) => {
+      const getLabel = (item: string | ActionItem) => typeof item === 'object' ? item.label : item;
+      return a.findIndex(x => getLabel(x) === getLabel(v)) === i;
+    }).map(action => {
+      if (typeof action === 'object') return action;
+      return { label: action, route: '' };
+    });
+  }, [suggestedActions, parsedActions]);
 
   const handleCopy = async () => {
     try {
@@ -223,9 +238,9 @@ const StructuredChatMessage = ({
                 "font-black text-card-foreground text-sm mb-4 flex items-center gap-2 border-b border-border pb-3",
                 isRTL && "flex-row-reverse"
               )}>
-                {!isRTL && <Sparkles size={16} className="text-primary" />}
+                {!isRTL && <Lightbulb size={18} className="text-yellow-500" />}
                 {title}
-                {isRTL && <Sparkles size={16} className="text-primary" />}
+                {isRTL && <Lightbulb size={18} className="text-yellow-500" />}
               </h3>
             )}
 
@@ -255,36 +270,46 @@ const StructuredChatMessage = ({
             )}
 
             {/* Action Buttons */}
-            {allActions.length > 0 && onActionClick && (
-              <div className="mt-5 space-y-2">
+            {normalizedActions.length > 0 && onActionClick && (
+              <div className="mt-6 space-y-2">
                 <p className={cn(
                   "text-[9px] font-black text-muted-foreground uppercase tracking-widest",
                   isRTL && "text-right"
                 )}>
-                  {isRTL ? 'حلولنا:' : 'NOS SOLUTIONS :'}
+                  {isRTL ? 'الحل عندنا:' : 'LA SOLUTION ANA FI FRANCE :'}
                 </p>
-                {allActions.map((action, i) => (
-                  <button
-                    key={i}
-                    onClick={() => onActionClick(action)}
-                    className={cn(
-                      "w-full bg-primary/10 p-3 rounded-xl flex items-center justify-between text-primary font-bold text-xs hover:bg-primary/20 transition-colors active:scale-[0.98]",
-                      isRTL && "flex-row-reverse"
-                    )}
-                  >
-                    <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-                      {action.includes("CV") || action.includes("سيرة") ? (
-                        <User size={16} />
-                      ) : action.includes("Facture") || action.includes("Devis") || action.includes("فاتورة") || action.includes("دوفي") ? (
-                        <FileText size={16} />
-                      ) : (
-                        <Wrench size={16} />
+                {normalizedActions.map((action, i) => {
+                  const actionLabel = action.label;
+                  const actionRoute = action.route || undefined;
+                  
+                  // Determine icon based on route or label
+                  const getActionIcon = () => {
+                    if (actionRoute === 'cv' || actionLabel.includes("CV") || actionLabel.includes("سيرة")) {
+                      return <User size={18} className="text-primary-foreground/70" />;
+                    }
+                    if (actionRoute === 'invoice-edit' || actionLabel.includes("Facture") || actionLabel.includes("Devis") || actionLabel.includes("فاتورة") || actionLabel.includes("دوفي")) {
+                      return <FileText size={18} className="text-primary-foreground/70" />;
+                    }
+                    return <ArrowRightCircle size={18} className="text-primary-foreground/70" />;
+                  };
+
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => onActionClick(actionLabel, actionRoute)}
+                      className={cn(
+                        "w-full bg-primary text-primary-foreground p-3.5 rounded-xl flex items-center justify-between font-black text-xs shadow-lg active:scale-[0.98] transition-all",
+                        isRTL && "flex-row-reverse"
                       )}
-                      <span className={isRTL ? "font-cairo" : ""}>{action}</span>
-                    </div>
-                    <ChevronRight size={14} className={cn("text-primary/50", isRTL && "rotate-180")} />
-                  </button>
-                ))}
+                    >
+                      <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                        {getActionIcon()}
+                        <span className={isRTL ? "font-cairo" : ""}>{actionLabel}</span>
+                      </div>
+                      <ChevronRight size={16} className={cn("text-primary-foreground", isRTL && "rotate-180")} />
+                    </button>
+                  );
+                })}
               </div>
             )}
 

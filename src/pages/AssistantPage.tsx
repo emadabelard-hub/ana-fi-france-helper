@@ -1002,7 +1002,7 @@ ${formData.items}`;
                 {isRTL ? 'مساعدك الإداري' : 'Assistant Pro'}
               </h1>
               <p className="text-[10px] opacity-80 font-medium">
-                {isRTL ? 'حلول موثوقة وإجابات معتمدة' : 'Réponses certifiées & Solutions'}
+                {isRTL ? 'بوريك الحل الصح' : "Je t'oriente vers la bonne solution"}
               </p>
             </div>
             <div className="w-10 h-10 bg-primary-foreground text-primary rounded-full flex items-center justify-center font-black text-xs shadow-md">
@@ -1017,8 +1017,8 @@ ${formData.items}`;
           <WelcomeIntro
             isRTL={isRTL}
             quickActions={isRTL 
-              ? ['عايز أعمل فاتورة', 'بدور على شغل (CV)', 'مشكلة في الدفع']
-              : ['Je veux faire une Facture', 'Je cherche du travail (CV)', 'Problème de paiement']
+              ? ['عايز أعمل فاتورة', 'بدور على شغل (CV)', 'مشكلة فلوس']
+              : ['Je veux faire une Facture', 'Je cherche du travail (CV)', "Problème d'argent"]
             }
             onQuickAction={(action) => handleSend(action)}
           />
@@ -1053,20 +1053,23 @@ ${formData.items}`;
                   showEnvelopeHelper={message.showEnvelopeHelper}
                   dispatchInfo={message.dispatchInfo}
                   letterContent={message.letterContent}
-                  onActionClick={(action) => {
-                    // Redirect to CV tool
-                    if (action.includes("CV") || action.includes("سيرة")) {
+                  onActionClick={(action, route) => {
+                    // Use route if provided (new format)
+                    if (route === 'cv') {
                       navigate('/pro/cv-generator');
-                    }
-                    // Redirect to invoice tool
-                    else if (action.includes("Facture") || action.includes("Devis") || action.includes("فاتورة") || action.includes("دوفي")) {
+                    } else if (route === 'invoice-edit') {
                       navigate('/pro/invoice-creator');
-                    }
-                    // Redirect to dashboard/tools
-                    else if (action.includes("Outils") || action.includes("Tableau de Bord") || action.includes("أدوات") || action.includes("لوحة")) {
+                    } else if (route === 'home') {
                       navigate('/pro');
                     }
-                    else {
+                    // Fallback to label-based detection (old format)
+                    else if (action.includes("CV") || action.includes("سيرة")) {
+                      navigate('/pro/cv-generator');
+                    } else if (action.includes("Facture") || action.includes("Devis") || action.includes("فاتورة") || action.includes("دوفي")) {
+                      navigate('/pro/invoice-creator');
+                    } else if (action.includes("Outils") || action.includes("Tableau de Bord") || action.includes("أدوات") || action.includes("لوحة")) {
+                      navigate('/pro');
+                    } else {
                       // Treat other actions as new user messages
                       handleSend(action);
                     }

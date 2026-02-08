@@ -8,8 +8,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import StructuredChatMessage from '@/components/assistant/StructuredChatMessage';
-import SimpleChatMessage from '@/components/assistant/SimpleChatMessage';
-import SimpleWelcome from '@/components/assistant/SimpleWelcome';
 import SimpleTypingIndicator from '@/components/assistant/SimpleTypingIndicator';
 import ChatInput from '@/components/assistant/ChatInput';
 import AttachedDocuments, { AttachedDocument } from '@/components/assistant/AttachedDocuments';
@@ -18,9 +16,7 @@ import DispatchGuide from '@/components/assistant/DispatchGuide';
 import PostAnalysisActions from '@/components/assistant/PostAnalysisActions';
 import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/DocumentTypeSelector';
 import LoadingOverlay from '@/components/shared/LoadingOverlay';
-import WelcomeIntro from '@/components/assistant/WelcomeIntro';
-import TypingIndicator from '@/components/assistant/TypingIndicator';
-import { RefreshCw, RotateCcw, Brain, ArrowLeft } from 'lucide-react';
+import { RefreshCw, RotateCcw, Brain, ArrowLeft, User, FileText, Mail, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -979,28 +975,28 @@ ${formData.items}`;
         </DialogContent>
       </Dialog>
 
-      <div className="flex flex-col h-[calc(100vh-90px)] pb-12 bg-muted/30">
-        {/* Simple White Header - New Design */}
+      <div className="flex flex-col h-[calc(100vh-90px)] pb-12 bg-[hsl(var(--muted))]/50">
+        {/* Header - WhatsApp/Gemini Style */}
         <header className={cn(
-          "bg-background p-4 pt-12 shadow-sm border-b border-border flex items-center gap-3 z-10",
+          "bg-background p-4 pt-12 shadow-sm flex items-center gap-3 z-10",
           isRTL && "font-cairo flex-row-reverse"
         )}>
           <button
             onClick={() => navigate('/pro')}
-            className="p-2 -ml-2 rounded-full hover:bg-muted"
+            className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground"
           >
-            <ArrowLeft size={20} className={cn("text-muted-foreground", isRTL && "rotate-180")} />
+            <ArrowLeft size={24} className={isRTL ? "rotate-180" : ""} />
           </button>
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center text-primary-foreground shadow-md">
-            <Brain size={18} />
+          <div className="w-10 h-10 bg-gradient-to-r from-primary to-[hsl(280,70%,55%)] rounded-full flex items-center justify-center text-primary-foreground shadow-md">
+            <Brain size={20} />
           </div>
           <div className={cn("flex-1", isRTL && "text-right")}>
-            <h1 className="text-sm font-bold text-foreground">
-              {isRTL ? 'مساعدك' : 'Ton Assistant'}
+            <h1 className="text-base font-bold text-foreground">
+              {isRTL ? 'المساعد الذكي' : 'Gemini Assistant'}
             </h1>
             <div className={cn("flex items-center gap-1.5", isRTL && "flex-row-reverse justify-end")}>
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-              <p className="text-[10px] text-muted-foreground font-medium">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              <p className="text-xs text-muted-foreground">
                 {isRTL ? 'متصل' : 'En ligne'}
               </p>
             </div>
@@ -1015,38 +1011,19 @@ ${formData.items}`;
           )}
         </header>
 
-      {/* Chat Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/30">
+      {/* Chat Messages Area - WhatsApp style beige background */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[hsl(35,30%,90%)]/50">
         {messages.length === 0 ? (
-          <SimpleWelcome
-            isRTL={isRTL}
-            actions={isRTL 
-              ? [
-                  { label: 'الرد على خطاب أو إيميل', type: 'mail-reply', highlight: true },
-                  { label: 'عايز تعمل سي في', type: 'cv' },
-                  { label: 'عايز تكتب فاتورة أو دوفي', type: 'invoice-edit' }
-                ]
-              : [
-                  { label: 'Répondre à un courrier ou email', type: 'mail-reply', highlight: true },
-                  { label: 'Créer un CV', type: 'cv' },
-                  { label: 'Faire une facture ou devis', type: 'invoice-edit' }
-                ]
-            }
-            onActionClick={(action) => {
-              if (action.type === 'cv') {
-                navigate('/pro/cv-generator');
-              } else if (action.type === 'invoice-edit') {
-                navigate('/pro/invoice-creator');
-              } else if (action.type === 'mail-reply') {
-                // Start a mail reply conversation
-                handleSend(isRTL ? 'عايز ارد على خطاب أو إيميل' : 'Je veux répondre à un courrier ou email');
-              } else if (action.type === 'home') {
-                navigate('/pro');
-              } else {
-                handleSend(action.label);
-              }
-            }}
-          />
+          // Simple bilingual welcome message
+          <div className="flex w-full justify-start">
+            <div className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center mr-2 mt-1 shrink-0">
+              <Sparkles size={14} className="text-primary" />
+            </div>
+            <div className="max-w-[80%] p-3 px-4 rounded-2xl rounded-tl-none text-sm leading-relaxed shadow-sm whitespace-pre-wrap bg-card text-card-foreground border border-border">
+              <span className="font-cairo text-right block">مرحباً! أنا المساعد الذكي. كيف يمكنني مساعدتك اليوم؟</span>
+              <span className="block mt-2">Bonjour ! Je suis votre assistant IA. Comment puis-je vous aider ?</span>
+            </div>
+          </div>
         ) : (
           messages.map((message) => (
             <React.Fragment key={message.id}>
@@ -1163,10 +1140,44 @@ ${formData.items}`;
           disabled={isAnalyzing}
         />
 
-        {/* Quick action buttons removed - now displayed inside welcome message */}
+        {/* Fixed Quick Action Bar - WhatsApp style pills */}
+        <div className="bg-[hsl(var(--muted))]/50 p-2 pb-0">
+          <div className={cn(
+            "flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-2",
+            isRTL && "flex-row-reverse"
+          )}>
+            {/* CV Button */}
+            <button 
+              onClick={() => navigate('/pro/cv-generator')}
+              className="flex items-center gap-2 bg-card text-card-foreground px-4 py-2.5 rounded-full border border-border shadow-sm active:scale-95 transition-transform shrink-0"
+            >
+              <User size={16} className="text-[hsl(280,70%,55%)]" />
+              <span className="font-bold text-xs font-cairo">{isRTL ? 'عايز تعمل سي في' : 'Créer un CV'}</span>
+            </button>
 
-        {/* Input Area - Compact fixed at bottom */}
-        <div className="flex-shrink-0 p-2 border-t bg-background relative">
+            {/* Invoice Button */}
+            <button 
+              onClick={() => navigate('/pro/invoice-creator')}
+              className="flex items-center gap-2 bg-card text-card-foreground px-4 py-2.5 rounded-full border border-border shadow-sm active:scale-95 transition-transform shrink-0"
+            >
+              <FileText size={16} className="text-[hsl(25,95%,53%)]" />
+              <span className="font-bold text-xs font-cairo">{isRTL ? 'عايز تكتب فاتورة أو دوفي' : 'Facture ou Devis'}</span>
+            </button>
+
+            {/* Mail Reply Button */}
+            <button 
+              onClick={() => handleSend(isRTL ? 'عايز ارد على خطاب أو إيميل' : 'Je veux répondre à un courrier ou email')}
+              className="flex items-center gap-2 bg-card text-card-foreground px-4 py-2.5 rounded-full border border-border shadow-sm active:scale-95 transition-transform shrink-0"
+            >
+              <Mail size={16} className="text-emerald-500" />
+              <span className="font-bold text-xs font-cairo">{isRTL ? 'الرد على خطاب أو إيميل' : 'Répondre à un courrier'}</span>
+            </button>
+          </div>
+          <style>{`.scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
+        </div>
+
+        {/* Input Area - Simplified WhatsApp style */}
+        <div className="flex-shrink-0 p-3 bg-[hsl(var(--muted))]/50 safe-area-bottom relative">
           {/* Loading Overlay - Prevents double-clicks */}
           {isAnalyzing && (
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">

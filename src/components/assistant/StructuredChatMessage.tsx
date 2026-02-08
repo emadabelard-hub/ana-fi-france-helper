@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { 
   Sparkles, AlertTriangle, Lightbulb, CheckCircle2, 
-  FileText, ChevronRight, PlayCircle, Scale, Copy, Check
+  FileText, ChevronRight, PlayCircle, Scale, Copy, Check, Wrench
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -273,7 +273,13 @@ const StructuredChatMessage = ({
                     )}
                   >
                     <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-                      {i === 0 ? <FileText size={16} /> : <PlayCircle size={16} />}
+                      {action.includes("Ouvrir l'outil") || action.includes("افتح أداة") ? (
+                        <Wrench size={16} />
+                      ) : i === 0 ? (
+                        <FileText size={16} />
+                      ) : (
+                        <PlayCircle size={16} />
+                      )}
                       <span className={isRTL ? "font-cairo" : ""}>{action}</span>
                     </div>
                     <ChevronRight size={14} className={cn("text-primary/50", isRTL && "rotate-180")} />

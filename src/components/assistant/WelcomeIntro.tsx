@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Brain, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface WelcomeIntroProps {
   isRTL: boolean;
@@ -19,12 +19,12 @@ const WelcomeIntro = ({ isRTL, quickActions, onQuickAction }: WelcomeIntroProps)
       {/* Welcome Message Bubble */}
       <div className={cn(
         "bg-card p-5 rounded-2xl shadow-sm border border-border max-w-sm w-full mb-4",
-        isRTL ? "text-right font-cairo" : "text-left"
+        isRTL ? "text-right font-cairo rounded-tr-none" : "text-left rounded-tl-none"
       )}>
         <p className="text-sm font-medium text-card-foreground leading-relaxed">
           {isRTL 
             ? "أهلاً! أنا مساعدك Ana Fi France. أقدر أساعدك في حقوقك، فواتيرك، أو أي إجراءات إدارية. إيه اللي محتاج مساعدة فيه النهارده؟"
-            : "Bonjour ! Je suis votre assistant Ana Fi France. Je peux vous aider avec vos droits, vos devis ou vos démarches administratives. Quel est votre souci aujourd'hui ?"}
+            : "Bonjour ! Je suis ton assistant Ana Fi France. Je peux t'aider sur tes droits, tes devis ou tes démarches. Quel est ton souci aujourd'hui ?"}
         </p>
       </div>
 

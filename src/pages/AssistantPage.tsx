@@ -1022,12 +1022,14 @@ ${formData.items}`;
             isRTL={isRTL}
             actions={isRTL 
               ? [
-                  { label: 'عايز أعمل فاتورة', type: 'invoice-edit' },
-                  { label: 'بدور على شغل (CV)', type: 'cv' }
+                  { label: 'الرد على خطاب أو إيميل', type: 'mail-reply', highlight: true },
+                  { label: 'عايز تعمل سي في', type: 'cv' },
+                  { label: 'عايز تكتب فاتورة أو دوفي', type: 'invoice-edit' }
                 ]
               : [
-                  { label: 'Faire une facture', type: 'invoice-edit' },
-                  { label: 'Refaire mon CV', type: 'cv' }
+                  { label: 'Répondre à un courrier ou email', type: 'mail-reply', highlight: true },
+                  { label: 'Créer un CV', type: 'cv' },
+                  { label: 'Faire une facture ou devis', type: 'invoice-edit' }
                 ]
             }
             onActionClick={(action) => {
@@ -1035,6 +1037,9 @@ ${formData.items}`;
                 navigate('/pro/cv-generator');
               } else if (action.type === 'invoice-edit') {
                 navigate('/pro/invoice-creator');
+              } else if (action.type === 'mail-reply') {
+                // Start a mail reply conversation
+                handleSend(isRTL ? 'عايز ارد على خطاب أو إيميل' : 'Je veux répondre à un courrier ou email');
               } else if (action.type === 'home') {
                 navigate('/pro');
               } else {

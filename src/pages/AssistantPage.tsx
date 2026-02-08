@@ -8,6 +8,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import StructuredChatMessage from '@/components/assistant/StructuredChatMessage';
+import SimpleChatMessage from '@/components/assistant/SimpleChatMessage';
+import SimpleWelcome from '@/components/assistant/SimpleWelcome';
+import SimpleTypingIndicator from '@/components/assistant/SimpleTypingIndicator';
 import ChatInput from '@/components/assistant/ChatInput';
 import AttachedDocuments, { AttachedDocument } from '@/components/assistant/AttachedDocuments';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
@@ -17,7 +20,7 @@ import DocumentTypeSelector, { DocumentFormData } from '@/components/assistant/D
 import LoadingOverlay from '@/components/shared/LoadingOverlay';
 import WelcomeIntro from '@/components/assistant/WelcomeIntro';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
-import { RefreshCw, RotateCcw, Brain } from 'lucide-react';
+import { RefreshCw, RotateCcw, Brain, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -977,50 +980,67 @@ ${formData.items}`;
       </Dialog>
 
       <div className="flex flex-col h-[calc(100vh-90px)] pb-12 bg-muted/30">
-        {/* Gradient Header - New Design */}
+        {/* Simple White Header - New Design */}
         <header className={cn(
-          "bg-gradient-to-r from-primary to-primary/70 text-primary-foreground p-4 pt-12 shadow-lg rounded-b-[2rem] z-10",
-          isRTL && "font-cairo"
+          "bg-background p-4 pt-12 shadow-sm border-b border-border flex items-center gap-3 z-10",
+          isRTL && "font-cairo flex-row-reverse"
         )}>
-          <div className="flex items-center gap-4">
-            {messages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleNewTopicClick}
-                className="bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 rounded-full"
-              >
-                <RefreshCw className="h-5 w-5" />
-              </Button>
-            )}
-            <div className="flex-1">
-              <h1 className={cn(
-                "text-lg font-black flex items-center gap-2",
-                isRTL && "flex-row-reverse justify-end"
-              )}>
-                <Brain size={20} className="text-primary-foreground/70" />
-                {isRTL ? 'مساعدك الإداري' : 'Assistant Pro'}
-              </h1>
-              <p className="text-[10px] opacity-80 font-medium">
-                {isRTL ? 'بوريك الحل الصح' : "Je t'oriente vers la bonne solution"}
+          <button
+            onClick={() => navigate('/pro')}
+            className="p-2 -ml-2 rounded-full hover:bg-muted"
+          >
+            <ArrowLeft size={20} className={cn("text-muted-foreground", isRTL && "rotate-180")} />
+          </button>
+          <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center text-primary-foreground shadow-md">
+            <Brain size={18} />
+          </div>
+          <div className={cn("flex-1", isRTL && "text-right")}>
+            <h1 className="text-sm font-bold text-foreground">
+              {isRTL ? 'مساعدك' : 'Ton Assistant'}
+            </h1>
+            <div className={cn("flex items-center gap-1.5", isRTL && "flex-row-reverse justify-end")}>
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+              <p className="text-[10px] text-muted-foreground font-medium">
+                {isRTL ? 'متصل' : 'En ligne'}
               </p>
             </div>
-            <div className="w-10 h-10 bg-primary-foreground text-primary rounded-full flex items-center justify-center font-black text-xs shadow-md">
-              AF
-            </div>
           </div>
+          {messages.length > 0 && (
+            <button
+              onClick={handleNewTopicClick}
+              className="p-2 rounded-full hover:bg-muted text-muted-foreground"
+            >
+              <RefreshCw size={18} />
+            </button>
+          )}
         </header>
 
       {/* Chat Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/30">
         {messages.length === 0 ? (
-          <WelcomeIntro
+          <SimpleWelcome
             isRTL={isRTL}
-            quickActions={isRTL 
-              ? ['عايز أعمل فاتورة', 'بدور على شغل (CV)', 'مشكلة فلوس']
-              : ['Je veux faire une Facture', 'Je cherche du travail (CV)', "Problème d'argent"]
+            actions={isRTL 
+              ? [
+                  { label: 'عايز أعمل فاتورة', type: 'invoice-edit' },
+                  { label: 'بدور على شغل (CV)', type: 'cv' }
+                ]
+              : [
+                  { label: 'Faire une facture', type: 'invoice-edit' },
+                  { label: 'Refaire mon CV', type: 'cv' }
+                ]
             }
-            onQuickAction={(action) => handleSend(action)}
+            onActionClick={(action) => {
+              if (action.type === 'cv') {
+                navigate('/pro/cv-generator');
+              } else if (action.type === 'invoice-edit') {
+                navigate('/pro/invoice-creator');
+              } else if (action.type === 'home') {
+                navigate('/pro');
+              } else {
+                handleSend(action.label);
+              }
+            }}
           />
         ) : (
           messages.map((message) => (
@@ -1122,14 +1142,9 @@ ${formData.items}`;
           ))
         )}
         
-          {/* Typing Indicator - Unified */}
+          {/* Typing Indicator - Simple */}
           {(isAnalyzing || isAnalyzingImage) && !pendingLetterMessage && (
-            <div className={cn(
-              "flex gap-3",
-              isRTL ? "justify-start flex-row-reverse" : "justify-start"
-            )}>
-              <TypingIndicator isRTL={isRTL} />
-            </div>
+            <SimpleTypingIndicator isRTL={isRTL} />
           )}
           
           <div ref={messagesEndRef} />

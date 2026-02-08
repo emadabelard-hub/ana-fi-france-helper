@@ -23,8 +23,8 @@ const WelcomeIntro = ({ isRTL, quickActions, onQuickAction }: WelcomeIntroProps)
       )}>
         <p className="text-sm font-medium text-card-foreground leading-relaxed">
           {isRTL 
-            ? "أهلاً! أنا مساعدك Ana Fi France. أقدر أساعدك في حقوقك، فواتيرك، أو أي إجراءات إدارية. إيه اللي محتاج مساعدة فيه النهارده؟"
-            : "Bonjour ! Je suis ton assistant Ana Fi France. Je peux t'aider sur tes droits, tes devis ou tes démarches. Quel est ton souci aujourd'hui ?"}
+            ? "أهلاً! أنا مساعدك الذكي. أنا هنا عشان أوفرلك وقتك. إيه اللي محتاجه؟"
+            : "Bonjour ! Je suis ton assistant intelligent. Je suis là pour te faire gagner du temps. Quel est ton besoin ?"}
         </p>
       </div>
 

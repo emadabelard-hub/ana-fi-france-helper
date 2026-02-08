@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { 
   Sparkles, AlertTriangle, Lightbulb, CheckCircle2, 
-  FileText, ChevronRight, PlayCircle, Scale, Copy, Check, Wrench
+  FileText, ChevronRight, PlayCircle, Scale, Copy, Check, Wrench, User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -261,7 +261,7 @@ const StructuredChatMessage = ({
                   "text-[9px] font-black text-muted-foreground uppercase tracking-widest",
                   isRTL && "text-right"
                 )}>
-                  {isRTL ? 'الحلول المقترحة:' : 'Actions recommandées'}
+                  {isRTL ? 'حلولنا:' : 'NOS SOLUTIONS :'}
                 </p>
                 {allActions.map((action, i) => (
                   <button
@@ -273,12 +273,12 @@ const StructuredChatMessage = ({
                     )}
                   >
                     <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-                      {action.includes("Ouvrir l'outil") || action.includes("افتح أداة") ? (
-                        <Wrench size={16} />
-                      ) : i === 0 ? (
+                      {action.includes("CV") || action.includes("سيرة") ? (
+                        <User size={16} />
+                      ) : action.includes("Facture") || action.includes("Devis") || action.includes("فاتورة") || action.includes("دوفي") ? (
                         <FileText size={16} />
                       ) : (
-                        <PlayCircle size={16} />
+                        <Wrench size={16} />
                       )}
                       <span className={isRTL ? "font-cairo" : ""}>{action}</span>
                     </div>

@@ -265,59 +265,73 @@ const AssistantPage = () => {
         onChange={handleImageUpload}
       />
 
-      {/* INPUT AREA - Fixed at bottom */}
-      <div className="bg-background border-t border-border p-3 safe-area-pb">
-        {/* 3 Fixed Action Buttons - ALWAYS visible above keyboard */}
-        <div className="overflow-x-auto pb-2 -mx-1 px-1">
+      {/* INPUT AREA - Fixed at bottom, mail-compose style */}
+      <div className="bg-background border-t border-border safe-area-pb">
+        {/* 3 Fixed Action Buttons - ALWAYS visible above textarea */}
+        <div className="overflow-x-auto px-3 pt-2 pb-1">
           <QuickActionsBar
             onAction={(action) => handleActionClick(action)}
           />
         </div>
 
-        {/* Input Form */}
-        <form
-          onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-          className="flex items-center gap-2 bg-muted p-1.5 rounded-full border border-border"
-        >
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-muted-foreground hover:text-primary transition-colors"
-          >
-            <Camera size={22} />
-          </button>
-
-          <input
+        {/* Large Compose Area */}
+        <div className="mx-3 mb-3 bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+          <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={t('chat.placeholder')}
             className={cn(
-              "flex-1 bg-transparent text-sm font-medium px-2 outline-none text-foreground placeholder:text-muted-foreground",
-              isRTL && "font-cairo"
+              "w-full resize-none bg-transparent px-4 pt-3 pb-2 text-[15px] leading-relaxed outline-none text-foreground placeholder:text-muted-foreground",
+              isRTL && "font-cairo text-right"
             )}
             dir="auto"
             disabled={isTyping}
+            rows={5}
           />
 
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-muted-foreground hover:text-primary transition-colors -ml-2"
-          >
-            <Paperclip size={20} />
-          </button>
+          {/* Bottom toolbar inside the compose box */}
+          <div className={cn(
+            "flex items-center justify-between px-3 pb-2.5",
+            isRTL && "flex-row-reverse"
+          )}>
+            {/* Left: attachment icons */}
+            <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                title={isRTL ? '📷 صورة' : '📷 Photo'}
+              >
+                <Camera size={20} />
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                title={isRTL ? '📎 ملف' : '📎 Fichier'}
+              >
+                <Paperclip size={20} />
+              </button>
+            </div>
 
-          <button
-            type="submit"
-            disabled={!inputValue.trim() || isTyping}
-            className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all",
-              inputValue.trim() && !isTyping ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/20 text-muted-foreground'
-            )}
-          >
-            <Send size={18} className={inputValue.trim() ? 'ml-0.5' : ''} />
-          </button>
-        </form>
+            {/* Right: send button */}
+            <button
+              type="button"
+              onClick={() => handleSend()}
+              disabled={!inputValue.trim() || isTyping}
+              className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all",
+                inputValue.trim() && !isTyping ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/20 text-muted-foreground'
+              )}
+            >
+              {isTyping ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Send size={18} className={inputValue.trim() ? (isRTL ? '-mr-0.5' : 'ml-0.5') : ''} />
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
       <style>{`

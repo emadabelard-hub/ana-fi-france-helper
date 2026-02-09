@@ -172,7 +172,7 @@ const AssistantPage = () => {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex flex-col h-full bg-background text-foreground font-sans" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="flex flex-col bg-background text-foreground font-sans -mx-2 -mt-20 -mb-14" style={{ height: 'calc(100vh)' }} dir={isRTL ? 'rtl' : 'ltr'}>
       
       {/* HEADER - Compact */}
       <header className="bg-card p-3 pt-10 shadow-sm border-b border-border flex items-center gap-3 sticky top-0 z-10">

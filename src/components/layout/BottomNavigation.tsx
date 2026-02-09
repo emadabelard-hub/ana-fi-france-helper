@@ -1,95 +1,89 @@
 import { useState, useEffect } from 'react';
 import { Home, Newspaper, MessageCircle, Wrench, User, Shield } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
+const navItems = [
+  {
+    path: '/',
+    icon: Home,
+    label: 'الرئيسية',
+    color: 'text-amber-400',
+    activeBg: 'bg-amber-400/15',
+    dotColor: 'bg-amber-400',
+  },
+  {
+    path: '/assistant',
+    icon: MessageCircle,
+    label: 'استشارات',
+    color: 'text-violet-400',
+    activeBg: 'bg-violet-400/15',
+    dotColor: 'bg-violet-400',
+  },
+  {
+    path: '/news',
+    icon: Newspaper,
+    label: 'أخبار',
+    color: 'text-red-500',
+    activeBg: 'bg-red-500/15',
+    dotColor: 'bg-red-500',
+  },
+  {
+    path: '/pro',
+    icon: Wrench,
+    label: 'أدوات',
+    color: 'text-orange-400',
+    activeBg: 'bg-orange-400/15',
+    dotColor: 'bg-orange-400',
+  },
+  {
+    path: '/profile',
+    icon: User,
+    label: 'حسابي',
+    color: 'text-blue-400',
+    activeBg: 'bg-blue-400/15',
+    dotColor: 'bg-blue-400',
+  },
+];
+
 const BottomNavigation = () => {
-  const { isRTL, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Check admin status
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (!user) {
-        setIsAdmin(false);
-        return;
-      }
-
+      if (!user) { setIsAdmin(false); return; }
       try {
         const { data, error } = await supabase.rpc('is_admin', { _user_id: user.id });
-        if (!error && data === true) {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-        }
-      } catch {
-        setIsAdmin(false);
-      }
+        if (!error && data === true) setIsAdmin(true);
+        else setIsAdmin(false);
+      } catch { setIsAdmin(false); }
     };
-
     checkAdminStatus();
   }, [user]);
 
-  const baseNavItems = [
-    {
-      path: '/',
-      icon: Home,
-      labelKey: 'nav.dashboard',
-    },
-    {
-      path: '/news',
-      icon: Newspaper,
-      labelKey: 'nav.news',
-    },
-    {
-      path: '/assistant',
-      icon: MessageCircle,
-      labelKey: 'nav.assistant',
-    },
-    {
-      path: '/pro',
-      icon: Wrench,
-      labelKey: 'nav.pro',
-    },
-    {
-      path: '/profile',
-      icon: User,
-      labelKey: 'nav.profile',
-    },
-  ];
-
-  // Add admin nav item only for admins
-  const navItems = isAdmin
+  const allItems = isAdmin
     ? [
-        ...baseNavItems,
+        ...navItems,
         {
           path: '/admin',
           icon: Shield,
-          labelKey: 'nav.admin',
+          label: 'إدارة',
+          color: 'text-amber-500',
+          activeBg: 'bg-amber-500/15',
+          dotColor: 'bg-amber-500',
         },
       ]
-    : baseNavItems;
+    : navItems;
 
   return (
-    <nav
-      className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border",
-        "safe-area-pb"
-      )}
-    >
-      <div
-        className={cn(
-          "flex items-center justify-around py-1.5",
-          isRTL && "flex-row-reverse"
-        )}
-      >
-        {navItems.map((item) => {
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border safe-area-pb">
+      <div className="flex items-center justify-around py-1.5">
+        {allItems.map((item) => {
           const isActive =
             location.pathname === item.path ||
             (item.path === '/' && location.pathname === '/home') ||
@@ -101,26 +95,36 @@ const BottomNavigation = () => {
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                "flex flex-col items-center justify-center px-3 py-1 rounded-lg transition-all duration-200",
-                "min-w-[60px] gap-0.5",
-                isActive
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted",
-                item.path === '/admin' && "text-amber-600 dark:text-amber-400"
+                "flex flex-col items-center justify-center px-2 py-1 rounded-xl transition-all duration-200",
+                "min-w-[56px] gap-0.5 relative",
+                isActive ? item.activeBg : "hover:bg-muted/50"
               )}
             >
               <Icon
                 className={cn(
-                  "h-5 w-5",
-                  isActive && "text-accent",
-                  item.path === '/admin' && !isActive && "text-amber-500"
+                  "h-[22px] w-[22px] transition-all duration-200",
+                  item.color,
+                  isActive && "scale-110"
                 )}
+                strokeWidth={isActive ? 2.5 : 2}
               />
               <span
-                className={cn("text-[10px] font-medium", isRTL && "font-cairo")}
+                className={cn(
+                  "text-[10px] font-cairo font-semibold transition-all",
+                  isActive ? item.color : "text-muted-foreground"
+                )}
               >
-                {t(item.labelKey)}
+                {item.label}
               </span>
+              {/* Active dot indicator */}
+              {isActive && (
+                <span
+                  className={cn(
+                    "absolute -bottom-0.5 w-1 h-1 rounded-full",
+                    item.dotColor
+                  )}
+                />
+              )}
             </button>
           );
         })}

@@ -16,6 +16,7 @@ import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
 import QuoteWizardModal from './QuoteWizardModal';
 import InvoiceGuideModal from './InvoiceGuideModal';
+import PreFlightChecklistModal from './PreFlightChecklistModal';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PrefillData {
@@ -98,6 +99,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
   
   // Quote Wizard state
   const [showWizard, setShowWizard] = useState(false);
+  
+  // Pre-flight checklist state
+  const [showChecklist, setShowChecklist] = useState(false);
 
   // Translation state
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
@@ -1226,7 +1230,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                 return;
               }
               
-              setShowPreview(true);
+              setShowChecklist(true);
             }}
             className={cn("flex-1", isRTL && "font-cairo")}
           >
@@ -1242,6 +1246,17 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
         onOpenChange={setShowWizard}
         onGenerate={handleWizardGenerate}
         documentType={documentType}
+      />
+      
+      {/* Pre-Flight Checklist Modal */}
+      <PreFlightChecklistModal
+        open={showChecklist}
+        onOpenChange={setShowChecklist}
+        onConfirm={() => {
+          setShowChecklist(false);
+          setShowPreview(true);
+        }}
+        items={items}
       />
     </div>
   );

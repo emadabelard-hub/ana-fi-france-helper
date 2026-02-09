@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, MessageCircle, Wrench, User, Shield } from 'lucide-react';
+import { Home, Newspaper, MessageCircle, Wrench, User, Shield } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -41,6 +41,11 @@ const BottomNavigation = () => {
       path: '/',
       icon: Home,
       labelKey: 'nav.dashboard',
+    },
+    {
+      path: '/news',
+      icon: Newspaper,
+      labelKey: 'nav.news',
     },
     {
       path: '/assistant',

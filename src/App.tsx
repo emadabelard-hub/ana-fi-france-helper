@@ -17,6 +17,7 @@ import ProAdminAssistantPage from "@/pages/ProAdminAssistantPage";
 import CVGeneratorPage from "@/pages/CVGeneratorPage";
 import AdminPage from "@/pages/AdminPage";
 import ComingSoonPage from "@/pages/ComingSoonPage";
+import NewsPage from "@/pages/NewsPage";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 
@@ -37,6 +38,7 @@ const App = () => {
                   {/* Home is the main hub */}
                   <Route path="/" element={<Index />} />
                   <Route path="/home" element={<Index />} />
+                  <Route path="/news" element={<NewsPage />} />
                   <Route path="/assistant" element={<AssistantPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/pro" element={<ProPage />} />

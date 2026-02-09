@@ -209,6 +209,12 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.email': 'Email',
     'auth.password': 'Mot de passe',
     'auth.forgotPassword': 'Mot de passe oublié ?',
+
+    // ===== NEWS =====
+    'news.title': 'Actualités',
+    'news.subtitle': 'Suivez l\'info en direct',
+    'news.disclaimer': 'Liens vers des sources externes. Ana Fi France n\'est pas responsable du contenu.',
+    'nav.news': 'Actus',
   },
   ar: {
     // ===== NAVIGATION =====
@@ -400,6 +406,12 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.email': 'الإيميل',
     'auth.password': 'الباسورد',
     'auth.forgotPassword': 'نسيت الباسورد؟',
+
+    // ===== NEWS =====
+    'news.title': 'الأخبار',
+    'news.subtitle': 'تابع آخر الأخبار',
+    'news.disclaimer': 'روابط لمصادر خارجية. أنا في فرنسا مش مسؤول عن المحتوى.',
+    'nav.news': 'أخبار',
   },
 };
 

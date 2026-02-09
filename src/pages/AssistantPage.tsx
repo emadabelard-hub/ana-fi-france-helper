@@ -172,7 +172,7 @@ const AssistantPage = () => {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex flex-col h-full bg-background text-foreground font-sans">
+    <div className="flex flex-col h-full bg-background text-foreground font-sans" dir={isRTL ? 'rtl' : 'ltr'}>
       
       {/* HEADER - Compact */}
       <header className="bg-card p-3 pt-10 shadow-sm border-b border-border flex items-center gap-3 sticky top-0 z-10">
@@ -187,12 +187,12 @@ const AssistantPage = () => {
         </div>
         <div>
           <h1 className={cn("text-sm font-bold text-foreground", isRTL && "font-cairo")}>
-            {isRTL ? 'شبيك لبيك 🧞‍♂️' : 'Assistant Admin 🧞‍♂️'}
+            {t('chat.title')}
           </h1>
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
             <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo")}>
-              {isRTL ? 'اسأل وانا اجاوب' : 'Posez vos questions'}
+              {t('chat.subtitle')}
             </p>
           </div>
         </div>
@@ -210,19 +210,9 @@ const AssistantPage = () => {
               </div>
               <div className="max-w-[85%] p-3 px-4 rounded-2xl rounded-tl-none bg-card text-card-foreground border border-border shadow-sm">
                 <p className={cn("text-[15px] leading-relaxed", isRTL ? "font-cairo text-right" : "text-left")} dir={isRTL ? "rtl" : "ltr"}>
-                  {isRTL ? (
-                    <>
-                      أهلا! أنا مساعدك الذكي 🧞‍♂️
-                      <br />
-                      اكتب سؤالك أو ارفع صورة مستند وأنا هساعدك.
-                    </>
-                  ) : (
-                    <>
-                      Bonjour ! Je suis votre assistant intelligent 🧞‍♂️
-                      <br />
-                      Décrivez votre situation ou téléchargez un document.
-                    </>
-                  )}
+                  {t('chat.welcomeTitle')}
+                  <br />
+                  {t('chat.welcomeMessage')}
                 </p>
               </div>
             </div>
@@ -258,7 +248,7 @@ const AssistantPage = () => {
           <div className="flex items-center gap-2 p-3 bg-card rounded-2xl rounded-tl-none w-fit border border-border shadow-sm ml-10">
             <Loader2 className="w-4 h-4 animate-spin text-primary" />
             <span className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
-              {isRTL ? 'يفكر...' : 'Réflexion...'}
+              {t('chat.thinking')}
             </span>
           </div>
         )}
@@ -280,7 +270,6 @@ const AssistantPage = () => {
         {/* 3 Fixed Action Buttons - ALWAYS visible above keyboard */}
         <div className="overflow-x-auto pb-2 -mx-1 px-1">
           <QuickActionsBar
-            isRTL={isRTL}
             onAction={(action) => handleActionClick(action)}
           />
         </div>
@@ -301,8 +290,11 @@ const AssistantPage = () => {
           <input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder={isRTL ? "اكتب سؤالك هنا..." : "Écrivez votre message..."}
-            className="flex-1 bg-transparent text-sm font-medium px-2 outline-none text-foreground placeholder:text-muted-foreground"
+            placeholder={t('chat.placeholder')}
+            className={cn(
+              "flex-1 bg-transparent text-sm font-medium px-2 outline-none text-foreground placeholder:text-muted-foreground",
+              isRTL && "font-cairo"
+            )}
             dir="auto"
             disabled={isTyping}
           />

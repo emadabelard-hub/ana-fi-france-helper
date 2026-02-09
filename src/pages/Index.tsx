@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  FileText, Scale, Car, Landmark, 
+  FileText, Car, 
   ChevronRight, FileUser, MessageSquare,
   Home, Settings, User
 } from 'lucide-react';
@@ -8,17 +8,20 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
-  const { language, setLanguage, isRTL } = useLanguage();
+  const { language, setLanguage, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className={cn(
-      "min-h-screen bg-[#0b0f1a] text-white select-none overflow-x-hidden",
-      isRTL && "font-cairo"
-    )}>
+    <div 
+      className={cn(
+        "min-h-screen bg-[#0b0f1a] text-white select-none overflow-x-hidden",
+        isRTL && "font-cairo"
+      )}
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
       
       {/* HEADER */}
       <header className="bg-[#1e293b] p-4 pt-14 flex justify-between items-center shadow-lg border-b border-white/5 relative z-50">
@@ -27,7 +30,9 @@ const Index = () => {
             AF
           </div>
           <div>
-            <h1 className="text-lg font-black tracking-tighter text-white uppercase italic leading-none">Ana Fi France</h1>
+            <h1 className="text-lg font-black tracking-tighter text-white uppercase italic leading-none">
+              {t('header.appName')}
+            </h1>
             <div className="h-1 w-full bg-[#facc15] rounded-full mt-1 opacity-50"></div>
           </div>
         </div>
@@ -69,8 +74,18 @@ const Index = () => {
                 <MessageSquare className="text-white" size={20} />
               </div>
             </div>
-            <h2 className="text-2xl font-black text-white font-cairo text-right mb-1 leading-tight">اسأل وأنا أجاوبك</h2>
-            <p className="text-[11px] font-bold text-indigo-100 font-cairo text-right">بالعربي والفرنساوي 🇫🇷 🇪🇬</p>
+            <h2 className={cn(
+              "text-2xl font-black text-white mb-1 leading-tight",
+              isRTL ? "font-cairo text-right" : "text-left"
+            )}>
+              {t('dashboard.aiBanner')}
+            </h2>
+            <p className={cn(
+              "text-[11px] font-bold text-indigo-100",
+              isRTL ? "font-cairo text-right" : "text-left"
+            )}>
+              {t('dashboard.aiBannerSub')} 🇫🇷 🇪🇬
+            </p>
           </button>
           <div className="absolute left-[-20px] top-[-20px] w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
         </div>
@@ -87,10 +102,15 @@ const Index = () => {
             <FileUser size={28} />
           </div>
           <div>
-            <h3 className="font-black text-[#1e1b4b] text-[15px] font-cairo leading-tight">
-              سيرتي الذكية<br/>(سي في)
+            <h3 className={cn(
+              "font-black text-[#1e1b4b] text-[15px] leading-tight",
+              isRTL && "font-cairo"
+            )}>
+              {t('dashboard.cvCard')}
             </h3>
-            <p className="text-[9px] font-black text-indigo-600 mt-1 uppercase opacity-50">Mon CV Pro</p>
+            <p className="text-[9px] font-black text-indigo-600 mt-1 uppercase opacity-50">
+              {t('dashboard.cvCardSub')}
+            </p>
           </div>
         </button>
 
@@ -103,10 +123,15 @@ const Index = () => {
             <FileText size={28} />
           </div>
           <div>
-            <h3 className="font-black text-[#431407] text-[15px] font-cairo leading-tight">
-              فواتير ودوفي
+            <h3 className={cn(
+              "font-black text-[#431407] text-[15px] leading-tight",
+              isRTL && "font-cairo"
+            )}>
+              {t('dashboard.invoiceCard')}
             </h3>
-            <p className="text-[9px] font-black text-orange-600 mt-1 uppercase opacity-50">Factures</p>
+            <p className="text-[9px] font-black text-orange-600 mt-1 uppercase opacity-50">
+              {t('dashboard.invoiceCardSub')}
+            </p>
           </div>
         </button>
       </div>
@@ -119,16 +144,22 @@ const Index = () => {
           <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md">
             <Car size={26} />
           </div>
-          <div className="text-right flex-1 pr-4">
-            <h3 className="font-black text-xl font-cairo leading-none mb-1">
-              كود دو لاروت
+          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
+            <h3 className={cn(
+              "font-black text-xl leading-none mb-1",
+              isRTL && "font-cairo"
+            )}>
+              {t('dashboard.codeRoute')}
             </h3>
-            <p className="text-[10px] font-bold opacity-80 font-cairo">
-              دروس وامتحانات بالمصري
+            <p className={cn(
+              "text-[10px] font-bold opacity-80",
+              isRTL && "font-cairo"
+            )}>
+              {t('dashboard.codeRouteSub')}
             </p>
           </div>
           <div className="bg-white/20 p-2 rounded-full">
-            <ChevronRight size={16} />
+            <ChevronRight size={16} className={isRTL ? "rotate-180" : ""} />
           </div>
         </button>
 
@@ -149,7 +180,7 @@ const Index = () => {
           )} />
           <Home size={26} strokeWidth={isActive('/') ? 3 : 2} />
           <span className="text-[10px] font-black uppercase">
-            {isRTL ? 'الرئيسية' : 'Accueil'}
+            {t('nav.dashboard')}
           </span>
         </button>
         
@@ -166,7 +197,7 @@ const Index = () => {
           )} />
           <MessageSquare size={26} />
           <span className="text-[10px] font-black uppercase">
-            {isRTL ? 'استشارات' : 'Conseils'}
+            {t('nav.assistant')}
           </span>
         </button>
         
@@ -183,7 +214,7 @@ const Index = () => {
           )} />
           <Settings size={26} />
           <span className="text-[10px] font-black uppercase">
-            {isRTL ? 'أدوات' : 'Outils'}
+            {t('nav.pro')}
           </span>
         </button>
         
@@ -200,7 +231,7 @@ const Index = () => {
           )} />
           <User size={26} />
           <span className="text-[10px] font-black uppercase tracking-tighter">
-            {isRTL ? 'حسابي' : 'Mon Profil'}
+            {t('nav.profile')}
           </span>
         </button>
       </nav>

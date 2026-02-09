@@ -1,16 +1,19 @@
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   FileText, Car, 
   ChevronRight, FileUser, MessageSquare,
-  Home, Settings, User
+  Home, Settings, User, SendHorizonal
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import MoneyTransferModal from '@/components/home/MoneyTransferModal';
 
 const Index = () => {
   const { language, setLanguage, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -136,6 +139,33 @@ const Index = () => {
         </button>
       </div>
 
+        {/* MONEY TRANSFER */}
+        <button 
+          onClick={() => setShowTransferModal(true)}
+          className="w-full bg-gradient-to-r from-[#059669] to-[#0d9488] p-5 rounded-[2.5rem] shadow-xl flex items-center justify-between text-white active:scale-95 transition-transform border border-white/5"
+        >
+          <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md">
+            <SendHorizonal size={26} />
+          </div>
+          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
+            <h3 className={cn(
+              "font-black text-xl leading-none mb-1",
+              isRTL && "font-cairo"
+            )}>
+              {language === 'fr' ? 'Envoyer de l\'argent' : 'حوّل فلوس'}
+            </h3>
+            <p className={cn(
+              "text-[10px] font-bold opacity-80",
+              isRTL && "font-cairo"
+            )}>
+              {language === 'fr' ? 'Vers l\'Égypte بأمان' : 'لمصر بأمان'}
+            </p>
+          </div>
+          <div className="bg-white/20 p-2 rounded-full">
+            <ChevronRight size={16} className={isRTL ? "rotate-180" : ""} />
+          </div>
+        </button>
+
         {/* CODE DE LA ROUTE */}
         <button 
           onClick={() => navigate('/coming-soon')}
@@ -235,6 +265,7 @@ const Index = () => {
           </span>
         </button>
       </nav>
+      <MoneyTransferModal open={showTransferModal} onOpenChange={setShowTransferModal} />
     </div>
   );
 };

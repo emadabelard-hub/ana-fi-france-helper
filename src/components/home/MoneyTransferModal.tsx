@@ -1,110 +1,135 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { CreditCard, Globe, Briefcase, ExternalLink } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Rocket, CheckCircle2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MoneyTransferModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const OPTIONS = [
-  {
-    id: 'remitly',
-    icon: CreditCard,
-    url: 'https://www.remitly.com',
-    fr: { label: "J'ai une Carte d'Identité / Titre de Séjour", badge: 'Recommandé' },
-    ar: { label: 'عندي كارت إقامة أو بطاقة هوية', badge: 'موصى به' },
-    badgeClass: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-  },
-  {
-    id: 'taptap',
-    icon: Globe,
-    url: 'https://www.taptapsend.com',
-    fr: { label: "J'ai un Passeport International", badge: 'Validation Souple' },
-    ar: { label: 'عندي باسبور دولي', badge: 'تحقق مرن' },
-    badgeClass: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  },
-  {
-    id: 'wise',
-    icon: Briefcase,
-    url: 'https://wise.com',
-    fr: { label: "J'ai un Compte Pro (Société)", badge: 'B2B' },
-    ar: { label: 'عندي حساب شركة (بروفيشنال)', badge: 'B2B' },
-    badgeClass: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  },
-];
-
 const MoneyTransferModal = ({ open, onOpenChange }: MoneyTransferModalProps) => {
   const { language, isRTL } = useLanguage();
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleClick = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+  const handleSubmit = async () => {
+    if (!email || !email.includes('@')) {
+      toast({
+        title: language === 'fr' ? 'Email invalide' : 'إيميل غلط',
+        description: language === 'fr' ? 'Veuillez entrer un email valide.' : 'اكتب إيميل صحيح من فضلك.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('transfer_waitlist')
+        .insert({ email: email.trim().toLowerCase() });
+
+      if (error && error.code === '23505') {
+        // duplicate
+        toast({
+          title: language === 'fr' ? 'Déjà inscrit !' : 'مسجّل من قبل!',
+          description: language === 'fr' ? 'Cet email est déjà sur la liste.' : 'الإيميل ده موجود عندنا.',
+        });
+        setSubmitted(true);
+      } else if (error) {
+        throw error;
+      } else {
+        setSubmitted(true);
+      }
+    } catch {
+      toast({
+        title: language === 'fr' ? 'Erreur' : 'خطأ',
+        description: language === 'fr' ? 'Réessayez plus tard.' : 'جرّب تاني بعدين.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = (val: boolean) => {
+    if (!val) {
+      setEmail('');
+      setSubmitted(false);
+    }
+    onOpenChange(val);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className={cn(
         "bg-[#1e293b] border-white/10 text-white max-w-md rounded-[2rem] p-6",
         isRTL && "font-cairo"
       )}>
         <DialogHeader>
+          <div className="flex justify-center mb-3">
+            <div className="p-4 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20">
+              {submitted
+                ? <CheckCircle2 size={36} className="text-emerald-400" />
+                : <Rocket size={36} className="text-emerald-400" />
+              }
+            </div>
+          </div>
           <DialogTitle className={cn(
-            "text-lg font-black text-white",
-            isRTL ? "text-right font-cairo" : "text-left"
+            "text-xl font-black text-white text-center",
+            isRTL && "font-cairo"
           )}>
-            {language === 'fr' ? "Choisissez votre mode d'envoi" : 'اختر طريقة التحويل'}
+            {submitted
+              ? (language === 'fr' ? "C'est noté ! ✅" : 'تمام، اتسجّلت! ✅')
+              : (language === 'fr' ? 'Bientôt Disponible 🚀' : 'قريباً 🚀')
+            }
           </DialogTitle>
           <DialogDescription className={cn(
-            "text-slate-400 text-xs",
-            isRTL ? "text-right font-cairo" : "text-left"
+            "text-slate-400 text-sm text-center mt-2 leading-relaxed",
+            isRTL && "font-cairo"
           )}>
-            {language === 'fr'
-              ? 'Nous vous dirigeons vers le partenaire agréé adapté à vos documents.'
-              : 'هنوجهك للشريك المعتمد المناسب لأوراقك.'}
+            {submitted
+              ? (language === 'fr'
+                  ? 'Vous serez le premier informé dès le lancement.'
+                  : 'هتكون أول واحد يعرف أول ما نفتح الخدمة.')
+              : (language === 'fr'
+                  ? 'Nous finalisons un partenariat exclusif pour vous offrir des transferts sans frais vers l\'Égypte et le Maroc.'
+                  : 'بنجهّز شراكة حصرية عشان نوفّرلك تحويلات بدون رسوم لمصر والمغرب.')
+            }
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 mt-4">
-          {OPTIONS.map((opt) => {
-            const Icon = opt.icon;
-            const text = language === 'fr' ? opt.fr : opt.ar;
-            return (
-              <button
-                key={opt.id}
-                onClick={() => handleClick(opt.url)}
-                className={cn(
-                  "w-full flex items-center gap-3 p-4 rounded-2xl border border-white/10 bg-white/5",
-                  "hover:bg-white/10 active:scale-[0.98] transition-all text-left",
-                  isRTL && "flex-row-reverse text-right"
-                )}
-              >
-                <div className="p-2.5 rounded-xl bg-white/10 shrink-0">
-                  <Icon size={20} className="text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-white leading-snug">{text.label}</p>
-                  <Badge className={cn("mt-1.5 text-[10px] font-bold border", opt.badgeClass)}>
-                    {text.badge}
-                  </Badge>
-                </div>
-                <ExternalLink size={14} className="text-slate-500 shrink-0" />
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Legal disclaimer */}
-        <p className={cn(
-          "text-[10px] text-slate-500 mt-4 leading-relaxed",
-          isRTL ? "text-right font-cairo" : "text-left"
-        )}>
-          {language === 'fr'
-            ? "Ana Fi France est un apporteur d'affaires. Les transactions et la vérification d'identité (KYC) sont effectuées exclusivement par les partenaires bancaires agréés."
-            : 'أنا في فرنسا وسيط فقط. كل المعاملات والتحقق من الهوية (KYC) بتتم حصرياً من خلال الشركاء المصرفيين المعتمدين.'}
-        </p>
+        {!submitted && (
+          <div className="mt-5 space-y-3">
+            <Input
+              type="email"
+              placeholder={language === 'fr' ? 'Votre adresse email' : 'الإيميل بتاعك'}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={cn(
+                "bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-12 text-sm",
+                isRTL && "text-right font-cairo"
+              )}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            />
+            <Button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm"
+            >
+              {loading
+                ? '...'
+                : (language === 'fr' ? 'Me prévenir du lancement' : 'بلّغني أول ما ينزل')
+              }
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

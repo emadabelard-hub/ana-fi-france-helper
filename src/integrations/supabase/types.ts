@@ -226,6 +226,24 @@ export type Database = {
           },
         ]
       }
+      transfer_waitlist: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
       user_feedback: {
         Row: {
           created_at: string

@@ -266,7 +266,7 @@ const AssistantPage = () => {
       />
 
       {/* INPUT AREA - Fixed at bottom, mail-compose style */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border safe-area-pb">
+      <div className="fixed left-0 right-0 z-[60] bg-background border-t border-border safe-area-pb" style={{ bottom: '5rem' }}>
         {/* 3 Fixed Action Buttons - ALWAYS visible above textarea */}
         <div className="overflow-x-auto px-3 pt-2 pb-1">
           <QuickActionsBar

@@ -146,18 +146,26 @@ const AssistantPage = () => {
   };
 
   const handleActionClick = (action: string) => {
-    switch (action) {
-      case 'cv':
-        navigate('/pro/cv-generator');
-        break;
-      case 'invoice':
-        navigate('/pro/invoice-creator');
-        break;
-      case 'mail':
-        setInputValue(language === 'fr' 
-          ? 'Je souhaite répondre à un courrier que j\'ai reçu' 
-          : 'عايز ارد على خطاب أو إيميل وصلني');
-        break;
+    try {
+      switch (action) {
+        case 'cv':
+          navigate('/pro/cv-generator');
+          break;
+        case 'invoice':
+          navigate('/pro/invoice-creator');
+          break;
+        case 'mail':
+          // Start a mail reply conversation directly in chat
+          const mailPrompt = language === 'fr' 
+            ? 'Je souhaite répondre à un courrier officiel que j\'ai reçu. Pouvez-vous m\'aider ?' 
+            : 'عايز ارد على خطاب رسمي وصلني، ممكن تساعدني؟';
+          setInputValue(mailPrompt);
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
     }
   };
 

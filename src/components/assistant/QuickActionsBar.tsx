@@ -1,20 +1,22 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Mail, User, FileText } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export type AssistantQuickAction = "mail" | "cv" | "invoice";
 
 interface QuickActionsBarProps {
-  isRTL: boolean;
   onAction: (action: AssistantQuickAction) => void;
   className?: string;
 }
 
 /**
  * 3 Fixed Action Buttons - Always visible above keyboard
- * Labels in Egyptian Arabic as per spec
+ * Labels switch based on global language toggle (FR/AR)
  */
-const QuickActionsBar = ({ isRTL, onAction, className }: QuickActionsBarProps) => {
+const QuickActionsBar = ({ onAction, className }: QuickActionsBarProps) => {
+  const { t, isRTL } = useLanguage();
+
   return (
     <div className={cn("flex justify-center gap-3", className)}>
       {/* CV Button */}
@@ -27,11 +29,11 @@ const QuickActionsBar = ({ isRTL, onAction, className }: QuickActionsBarProps) =
           "border border-indigo-200 dark:border-indigo-700",
           "text-xs font-bold shadow-sm",
           "active:scale-95 transition-transform",
-          "font-cairo"
+          isRTL && "font-cairo"
         )}
       >
         <User className="h-4 w-4" />
-        <span>👤 عايز تعمل سي في</span>
+        <span>{t('chat.action.cv')}</span>
       </button>
 
       {/* Invoice Button */}
@@ -44,11 +46,11 @@ const QuickActionsBar = ({ isRTL, onAction, className }: QuickActionsBarProps) =
           "border border-orange-200 dark:border-orange-700",
           "text-xs font-bold shadow-sm",
           "active:scale-95 transition-transform",
-          "font-cairo"
+          isRTL && "font-cairo"
         )}
       >
         <FileText className="h-4 w-4" />
-        <span>📄 عايز تكتب فاتورة</span>
+        <span>{t('chat.action.invoice')}</span>
       </button>
 
       {/* Mail Reply Button */}
@@ -61,11 +63,11 @@ const QuickActionsBar = ({ isRTL, onAction, className }: QuickActionsBarProps) =
           "border border-emerald-200 dark:border-emerald-700",
           "text-xs font-bold shadow-sm",
           "active:scale-95 transition-transform",
-          "font-cairo"
+          isRTL && "font-cairo"
         )}
       >
         <Mail className="h-4 w-4" />
-        <span>✉️ الرد على خطاب</span>
+        <span>{t('chat.action.mail')}</span>
       </button>
     </div>
   );

@@ -25,9 +25,9 @@ const translations: Record<Language, Record<string, string>> = {
     // ===== NAVIGATION =====
     'nav.dashboard': 'Accueil',
     'nav.radio': 'Radio',
-    'nav.assistant': 'Consultations',
+    'nav.assistant': 'Conseils',
     'nav.profile': 'Mon Profil',
-    'nav.pro': 'Outils Pro',
+    'nav.pro': 'Outils',
     'nav.admin': 'Admin',
 
     // ===== HEADER =====
@@ -43,6 +43,25 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.radioDesc': 'Écoutez vos stations préférées',
     'dashboard.assistantCard': 'Assistant IA',
     'dashboard.assistantDesc': 'Rédigez vos courriers administratifs',
+    'dashboard.aiBanner': 'Posez-moi vos questions',
+    'dashboard.aiBannerSub': 'En français et en arabe',
+    'dashboard.cvCard': 'Mon CV Pro',
+    'dashboard.cvCardSub': 'Mon CV Pro',
+    'dashboard.invoiceCard': 'Factures & Devis',
+    'dashboard.invoiceCardSub': 'Factures',
+    'dashboard.codeRoute': 'Code de la Route',
+    'dashboard.codeRouteSub': 'Cours et tests en français',
+    
+    // ===== CHAT QUICK ACTIONS =====
+    'chat.action.cv': 'Faire un CV',
+    'chat.action.invoice': 'Faire une Facture',
+    'chat.action.mail': 'Répondre Courrier',
+    'chat.title': 'Assistant Admin',
+    'chat.subtitle': 'Posez vos questions',
+    'chat.placeholder': 'Écrivez votre message...',
+    'chat.thinking': 'Réflexion...',
+    'chat.welcomeTitle': 'Bonjour ! Je suis votre assistant intelligent',
+    'chat.welcomeMessage': 'Décrivez votre situation ou téléchargez un document.',
     
     // ===== RADIO =====
     'radio.title': 'Radio',
@@ -54,7 +73,7 @@ const translations: Record<Language, Record<string, string>> = {
     'radio.noResults': 'Aucune station trouvée',
     
     // ===== ASSISTANT / CONSULTATIONS =====
-    'assistant.title': 'Consultations',
+    'assistant.title': 'Discussion',
     'assistant.subtitle': 'Décrivez votre situation et recevez une lettre professionnelle',
     'assistant.textPlaceholder': 'Décrivez votre situation en détail...',
     'assistant.recordVoice': 'Enregistrer',
@@ -83,6 +102,8 @@ const translations: Record<Language, Record<string, string>> = {
     // ===== PROFILE =====
     'profile.title': 'Mon Profil',
     'profile.fullName': 'Nom Complet',
+    'profile.firstName': 'Prénom',
+    'profile.lastName': 'Nom',
     'profile.address': 'Adresse',
     'profile.phone': 'Téléphone',
     'profile.cafNumber': 'Numéro CAF',
@@ -133,10 +154,12 @@ const translations: Record<Language, Record<string, string>> = {
     'invoice.paymentTerms': 'Conditions de paiement',
     
     // ===== CV GENERATOR =====
-    'cv.title': 'Générateur de CV Pro',
+    'cv.title': 'Mon CV',
     'cv.subtitle': 'Rédigez en arabe, l\'IA traduit en français professionnel',
     'cv.personalInfo': 'Informations personnelles',
     'cv.fullName': 'Nom complet',
+    'cv.firstName': 'Prénom',
+    'cv.lastName': 'Nom',
     'cv.profession': 'Métier / Poste souhaité',
     'cv.email': 'Email',
     'cv.phone': 'Téléphone',
@@ -150,6 +173,9 @@ const translations: Record<Language, Record<string, string>> = {
     'cv.translating': 'Traduction en cours...',
     'cv.downloadPdf': 'Télécharger PDF',
     'cv.preview': 'Aperçu',
+    'cv.edit': 'Éditer',
+    'cv.drivingLicense': 'Permis de conduire',
+    'cv.interests': 'Centres d\'intérêt',
     
     // ===== COMMON =====
     'common.loading': 'Chargement...',
@@ -168,6 +194,7 @@ const translations: Record<Language, Record<string, string>> = {
     'common.no': 'Non',
     'common.or': 'ou',
     'common.and': 'et',
+    'common.send': 'Envoyer',
     
     // ===== ERRORS =====
     'error.network': 'Erreur de connexion. Veuillez réessayer.',
@@ -188,8 +215,8 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.dashboard': 'الرئيسية',
     'nav.radio': 'الراديو',
     'nav.assistant': 'استشارات',
-    'nav.profile': 'بياناتي',
-    'nav.pro': 'دراعك اليمين',
+    'nav.profile': 'حسابي',
+    'nav.pro': 'أدوات',
     'nav.admin': 'الإدارة',
 
     // ===== HEADER =====
@@ -205,6 +232,25 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.radioDesc': 'اسمع محطاتك المفضلة',
     'dashboard.assistantCard': 'المساعد الذكي',
     'dashboard.assistantDesc': 'هاعملك خطاباتك الرسمية',
+    'dashboard.aiBanner': 'اسأل وأنا أجاوبك',
+    'dashboard.aiBannerSub': 'بالعربي والفرنساوي',
+    'dashboard.cvCard': 'سيرتي الذكية (سي في)',
+    'dashboard.cvCardSub': 'Mon CV Pro',
+    'dashboard.invoiceCard': 'فواتير ودوفي',
+    'dashboard.invoiceCardSub': 'Factures',
+    'dashboard.codeRoute': 'كود دو لاروت',
+    'dashboard.codeRouteSub': 'دروس وامتحانات بالمصري',
+    
+    // ===== CHAT QUICK ACTIONS =====
+    'chat.action.cv': '👤 عايز تعمل سي في',
+    'chat.action.invoice': '📄 عايز تكتب فاتورة',
+    'chat.action.mail': '✉️ الرد على خطاب',
+    'chat.title': 'شبيك لبيك 🧞‍♂️',
+    'chat.subtitle': 'اسأل وانا اجاوب',
+    'chat.placeholder': 'اكتب رسالتك...',
+    'chat.thinking': 'يفكر...',
+    'chat.welcomeTitle': 'أهلا! أنا مساعدك الذكي 🧞‍♂️',
+    'chat.welcomeMessage': 'اكتب سؤالك أو ارفع صورة مستند وأنا هساعدك.',
     
     // ===== RADIO =====
     'radio.title': 'الراديو',
@@ -216,7 +262,7 @@ const translations: Record<Language, Record<string, string>> = {
     'radio.noResults': 'مافيش نتايج',
     
     // ===== ASSISTANT / CONSULTATIONS =====
-    'assistant.title': 'استشارات',
+    'assistant.title': 'محادثة',
     'assistant.subtitle': 'احكيلي موضوعك وأنا هاساعدك',
     'assistant.textPlaceholder': 'احكيلي إيه المشكلة... (بالعربي أو بالفرنساوي)',
     'assistant.recordVoice': 'سجّل صوتك',
@@ -245,6 +291,8 @@ const translations: Record<Language, Record<string, string>> = {
     // ===== PROFILE =====
     'profile.title': 'بياناتي',
     'profile.fullName': 'الاسم الكامل',
+    'profile.firstName': 'الاسم الأول',
+    'profile.lastName': 'اللقب',
     'profile.address': 'العنوان',
     'profile.phone': 'التليفون',
     'profile.cafNumber': 'رقم الـ CAF',
@@ -297,10 +345,12 @@ const translations: Record<Language, Record<string, string>> = {
     'invoice.paymentTerms': 'شروط الدفع',
     
     // ===== CV GENERATOR =====
-    'cv.title': 'مُولّد CV Pro',
+    'cv.title': 'سيرتي الذاتية',
     'cv.subtitle': 'اكتب بالعربي والذكاء الاصطناعي يترجم للفرنسية',
     'cv.personalInfo': 'البيانات الشخصية',
     'cv.fullName': 'الاسم الكامل',
+    'cv.firstName': 'الاسم الأول',
+    'cv.lastName': 'اللقب',
     'cv.profession': 'المهنة / الوظيفة المطلوبة',
     'cv.email': 'الإيميل',
     'cv.phone': 'التليفون',
@@ -314,6 +364,9 @@ const translations: Record<Language, Record<string, string>> = {
     'cv.translating': 'بترجم...',
     'cv.downloadPdf': 'حمّل PDF',
     'cv.preview': 'معاينة',
+    'cv.edit': 'تعديل',
+    'cv.drivingLicense': 'رخصة القيادة',
+    'cv.interests': 'الهوايات',
     
     // ===== COMMON =====
     'common.loading': 'استنى شوية...',
@@ -332,6 +385,7 @@ const translations: Record<Language, Record<string, string>> = {
     'common.no': 'لأ',
     'common.or': 'أو',
     'common.and': 'و',
+    'common.send': 'ارسل',
     
     // ===== ERRORS =====
     'error.network': 'مشكلة في الاتصال. جرب تاني.',

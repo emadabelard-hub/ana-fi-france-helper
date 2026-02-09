@@ -15,7 +15,7 @@ interface Message {
 
 const AssistantPage = () => {
   const navigate = useNavigate();
-  const { isRTL } = useLanguage();
+  const { isRTL, language, t } = useLanguage();
   const { toast } = useToast();
   
   const [messages, setMessages] = useState<Message[]>([]);
@@ -53,8 +53,8 @@ const AssistantPage = () => {
       content: m.content
     }));
 
-    // Determine language based on input
-    const language: 'fr' | 'ar' = isArabic(text) ? 'ar' : 'fr';
+    // Use app's global language setting (from toggle), not text detection
+    const chatLanguage: 'fr' | 'ar' = language;
 
     let assistantContent = '';
     const assistantId = `assistant-${Date.now()}`;
@@ -68,7 +68,7 @@ const AssistantPage = () => {
           userMessage: text,
           imageData,
           conversationHistory,
-          language,
+          language: chatLanguage,
         },
         {
           onDelta: (deltaText) => {
@@ -84,7 +84,7 @@ const AssistantPage = () => {
             console.error('Stream error:', error);
             setIsTyping(false);
 
-            const errorMessage = language === 'fr'
+            const errorMessage = chatLanguage === 'fr'
               ? (error.status === 429
                   ? "Service surchargé — réessayez dans une minute."
                   : error.status === 402
@@ -133,7 +133,10 @@ const AssistantPage = () => {
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
-      handleSend('حلل المستند ده وقولي إيه المكتوب فيه', base64);
+      const imagePrompt = language === 'fr' 
+        ? 'Analysez ce document et expliquez-moi son contenu' 
+        : 'حلل المستند ده وقولي إيه المكتوب فيه';
+      handleSend(imagePrompt, base64);
     };
     reader.readAsDataURL(file);
 
@@ -151,7 +154,9 @@ const AssistantPage = () => {
         navigate('/pro/invoice-creator');
         break;
       case 'mail':
-        setInputValue('عايز ارد على خطاب أو إيميل وصلني');
+        setInputValue(language === 'fr' 
+          ? 'Je souhaite répondre à un courrier que j\'ai reçu' 
+          : 'عايز ارد على خطاب أو إيميل وصلني');
         break;
     }
   };
@@ -173,10 +178,14 @@ const AssistantPage = () => {
           <Brain size={18} />
         </div>
         <div>
-          <h1 className="text-sm font-bold text-foreground font-cairo">شبيك لبيك 🧞‍♂️</h1>
+          <h1 className={cn("text-sm font-bold text-foreground", isRTL && "font-cairo")}>
+            {isRTL ? 'شبيك لبيك 🧞‍♂️' : 'Assistant Admin 🧞‍♂️'}
+          </h1>
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-            <p className="text-[10px] text-muted-foreground">اسأل وانا اجاوب</p>
+            <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo")}>
+              {isRTL ? 'اسأل وانا اجاوب' : 'Posez vos questions'}
+            </p>
           </div>
         </div>
       </header>
@@ -192,10 +201,20 @@ const AssistantPage = () => {
                 <Brain size={14} className="text-primary" />
               </div>
               <div className="max-w-[85%] p-3 px-4 rounded-2xl rounded-tl-none bg-card text-card-foreground border border-border shadow-sm">
-                <p className="text-[15px] leading-relaxed font-cairo text-right" dir="rtl">
-                  أهلا! أنا مساعدك الذكي 🧞‍♂️
-                  <br />
-                  اكتب سؤالك أو ارفع صورة مستند وأنا هساعدك.
+                <p className={cn("text-[15px] leading-relaxed", isRTL ? "font-cairo text-right" : "text-left")} dir={isRTL ? "rtl" : "ltr"}>
+                  {isRTL ? (
+                    <>
+                      أهلا! أنا مساعدك الذكي 🧞‍♂️
+                      <br />
+                      اكتب سؤالك أو ارفع صورة مستند وأنا هساعدك.
+                    </>
+                  ) : (
+                    <>
+                      Bonjour ! Je suis votre assistant intelligent 🧞‍♂️
+                      <br />
+                      Décrivez votre situation ou téléchargez un document.
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -230,7 +249,9 @@ const AssistantPage = () => {
         {isTyping && messages[messages.length - 1]?.content === '' && (
           <div className="flex items-center gap-2 p-3 bg-card rounded-2xl rounded-tl-none w-fit border border-border shadow-sm ml-10">
             <Loader2 className="w-4 h-4 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground font-cairo">يفكر...</span>
+            <span className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
+              {isRTL ? 'يفكر...' : 'Réflexion...'}
+            </span>
           </div>
         )}
         

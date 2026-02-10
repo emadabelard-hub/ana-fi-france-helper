@@ -269,15 +269,8 @@ const AssistantPage = () => {
 
       {/* INPUT AREA - Fixed at bottom, mail-compose style */}
       <div className="fixed left-0 right-0 z-[60] bg-background border-t border-border safe-area-pb" style={{ bottom: '5rem' }}>
-        {/* 3 Fixed Action Buttons - ALWAYS visible above textarea */}
-        <div className="overflow-x-auto px-3 pt-2 pb-1">
-          <QuickActionsBar
-            onAction={(action) => handleActionClick(action)}
-          />
-        </div>
-
-        {/* Large Compose Area */}
-        <div className="mx-3 mb-3 bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+        {/* Large Compose Area - NOW above buttons */}
+        <div className="mx-3 mt-2 bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
@@ -333,6 +326,13 @@ const AssistantPage = () => {
               )}
             </button>
           </div>
+        </div>
+
+        {/* 3 Action Buttons - NOW at the very bottom */}
+        <div className="overflow-x-auto px-3 pt-1 pb-2">
+          <QuickActionsBar
+            onAction={(action) => handleActionClick(action)}
+          />
         </div>
       </div>
 

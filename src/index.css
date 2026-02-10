@@ -12,64 +12,61 @@
 
 @layer base {
   :root {
-    /* DARK MODE FIRST - Deep Dark Blue/Slate Theme */
-    /* App Background: #1A1F2C = hsl(224, 24%, 14%) */
-    --background: 224 24% 14%;
-    /* Main Text: Off-White #F1F5F9 = hsl(210, 40%, 96%) */
-    --foreground: 210 40% 96%;
+    /* SOFT DARK MODE - Slate/Gray Night Theme */
+    /* App Background: #111827 = hsl(221, 39%, 11%) */
+    --background: 221 39% 11%;
+    /* Main Text: Gris Perle #f3f4f6 = hsl(220, 14%, 96%) */
+    --foreground: 220 14% 96%;
 
-    /* Cards/Containers: #2A2F3C = hsl(224, 18%, 20%) */
-    --card: 224 18% 20%;
-    --card-foreground: 210 40% 96%;
+    /* Cards/Containers: #1f2937 = hsl(215, 28%, 17%) */
+    --card: 215 28% 17%;
+    --card-foreground: 220 14% 96%;
 
-    --popover: 224 18% 20%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 215 28% 17%;
+    --popover-foreground: 220 14% 96%;
 
     /* Primary: Vibrant Blue for buttons/accents */
     --primary: 220 70% 55%;
-    --primary-foreground: 210 40% 98%;
+    --primary-foreground: 220 14% 96%;
 
     /* Secondary: Slightly lighter dark */
-    --secondary: 224 20% 25%;
-    --secondary-foreground: 210 40% 96%;
+    --secondary: 215 25% 22%;
+    --secondary-foreground: 220 14% 96%;
 
     /* Muted: For subtle backgrounds */
-    --muted: 224 15% 22%;
-    /* Secondary Text: Light Gray #94A3B8 = hsl(215, 16%, 65%) */
-    --muted-foreground: 215 16% 65%;
+    --muted: 215 20% 19%;
+    /* Secondary Text: Light Gray #9ca3af = hsl(220, 9%, 63%) */
+    --muted-foreground: 220 9% 63%;
 
     /* Accent: Gold #d4af37 */
     --accent: 45 70% 52%;
-    --accent-foreground: 224 24% 14%;
+    --accent-foreground: 221 39% 11%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 220 14% 96%;
 
-    /* Border/Input: Subtle dark borders */
-    --border: 224 15% 28%;
-    --input: 224 18% 22%;
+    /* Border/Input: Softer borders */
+    --border: 215 20% 24%;
+    --input: 215 25% 19%;
     --ring: 220 70% 55%;
 
     --radius: 0.75rem;
 
     /* Chat-specific colors */
-    /* AI Bubble: #334155 = hsl(217, 26%, 27%) */
-    --chat-ai: 217 26% 27%;
-    --chat-ai-foreground: 210 40% 96%;
-    /* User Bubble: Blue gradient (handled in components) */
+    --chat-ai: 215 25% 22%;
+    --chat-ai-foreground: 220 14% 96%;
     --chat-user: 220 70% 55%;
-    --chat-user-foreground: 210 40% 98%;
-    /* Chat Input */
-    --chat-input: 224 18% 18%;
-    --chat-input-foreground: 210 40% 96%;
+    --chat-user-foreground: 220 14% 96%;
+    --chat-input: 215 28% 15%;
+    --chat-input-foreground: 220 14% 96%;
 
-    --sidebar-background: 224 24% 12%;
-    --sidebar-foreground: 210 40% 96%;
+    --sidebar-background: 221 39% 9%;
+    --sidebar-foreground: 220 14% 96%;
     --sidebar-primary: 45 70% 52%;
-    --sidebar-primary-foreground: 224 24% 14%;
-    --sidebar-accent: 224 20% 22%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 224 15% 25%;
+    --sidebar-primary-foreground: 221 39% 11%;
+    --sidebar-accent: 215 25% 18%;
+    --sidebar-accent-foreground: 220 14% 96%;
+    --sidebar-border: 215 20% 20%;
     --sidebar-ring: 45 70% 52%;
   }
 

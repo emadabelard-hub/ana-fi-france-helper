@@ -2,9 +2,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/hooks/useTheme';
+import { Sun, Moon } from 'lucide-react';
 
 const Header = () => {
   const { language, setLanguage, isRTL, t } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -56,18 +59,30 @@ const Header = () => {
           </h1>
         </div>
 
-        {/* Language Toggle - Compact */}
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={toggleLanguage}
-          className={cn(
-            "rounded-full px-3 py-1 h-7 font-medium text-xs",
-            "bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
-          )}
-        >
-          {language === 'fr' ? 'AR' : 'FR'}
-        </Button>
+        <div className={cn("flex items-center gap-1.5", isRTL && "flex-row-reverse")}>
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleTheme}
+            className="rounded-full w-7 h-7 p-0 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
+          >
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+          </Button>
+
+          {/* Language Toggle */}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={toggleLanguage}
+            className={cn(
+              "rounded-full px-3 py-1 h-7 font-medium text-xs",
+              "bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
+            )}
+          >
+            {language === 'fr' ? 'AR' : 'FR'}
+          </Button>
+        </div>
       </div>
 
       {/* Tab Navigation - Compact */}

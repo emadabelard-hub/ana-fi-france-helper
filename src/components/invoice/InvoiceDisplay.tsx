@@ -78,67 +78,58 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       }}
     >
       {/* Header */}
-      <div className="border-b-2 border-primary pb-3 mb-3">
+      <div className="border-b-2 border-primary pb-2 mb-2">
         <div className="flex justify-between items-start">
-          {/* Company Info */}
           <div>
-            <h1 className="text-lg font-bold text-primary">{data.emitter.name}</h1>
-            <p className="text-[11px] text-gray-600 whitespace-pre-line">{data.emitter.address}</p>
-            <p className="text-[11px] text-gray-600">SIRET: {data.emitter.siret}</p>
-            {data.emitter.phone && <p className="text-[11px] text-gray-600">Tél: {data.emitter.phone}</p>}
-            {data.emitter.email && <p className="text-[11px] text-gray-600">Email: {data.emitter.email}</p>}
+            <h1 className="text-base font-bold text-primary leading-tight">{data.emitter.name}</h1>
+            <p className="text-[10px] text-gray-600 whitespace-pre-line leading-snug">{data.emitter.address}</p>
+            <p className="text-[10px] text-gray-600">SIRET: {data.emitter.siret}</p>
+            {data.emitter.phone && <p className="text-[10px] text-gray-600">Tél: {data.emitter.phone}</p>}
+            {data.emitter.email && <p className="text-[10px] text-gray-600">Email: {data.emitter.email}</p>}
             {data.emitter.decennale && (
-              <p className="text-[11px] text-gray-600">Assurance Décennale: {data.emitter.decennale}</p>
+              <p className="text-[10px] text-gray-600">Assurance Décennale: {data.emitter.decennale}</p>
             )}
           </div>
-          
-          {/* Document Info */}
           <div className="text-right">
-            <h2 className="text-xl font-bold text-primary">{data.type}</h2>
-            <p className="text-[11px] text-gray-600">N° {data.number}</p>
+            <h2 className="text-lg font-bold text-primary">{data.type}</h2>
+            <p className="text-[10px] text-gray-600">N° {data.number}</p>
           </div>
         </div>
         
-        {/* Date Bar */}
-        <div className="flex flex-wrap gap-4 text-[9px] font-bold bg-muted/50 p-2 rounded-lg border border-border mt-3">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <span>📅 Émis le : {data.date}</span>
-          </div>
+        <div className="flex flex-wrap gap-3 text-[8px] font-bold bg-gray-50 p-1.5 rounded border border-gray-200 mt-2">
+          <span className="text-gray-500">📅 Émis le : {data.date}</span>
           {data.type === 'DEVIS' && data.validUntil && (
             <>
-              <div className="w-[1px] bg-border hidden sm:block"></div>
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-semibold">
-                <span>⏳ Valide jusqu'au : {data.validUntil}</span>
-              </div>
+              <span className="text-gray-300">|</span>
+              <span className="text-amber-600 font-semibold">⏳ Valide jusqu'au : {data.validUntil}</span>
             </>
           )}
         </div>
       </div>
 
       {/* Client Info */}
-      <div className="bg-muted/30 p-3 rounded-lg mb-4">
-        <h3 className="font-semibold text-gray-700 mb-1 text-[11px]">CLIENT</h3>
-        <p className="font-medium text-[12px]">{data.client.name}</p>
-        <p className="text-[11px] text-gray-600 whitespace-pre-line">{data.client.address}</p>
+      <div className="bg-gray-50 p-2 rounded border border-gray-200 mb-3">
+        <h3 className="font-semibold text-gray-700 text-[10px] mb-0.5">CLIENT</h3>
+        <p className="font-medium text-[11px] leading-tight">{data.client.name}</p>
+        <p className="text-[10px] text-gray-600 whitespace-pre-line leading-snug">{data.client.address}</p>
         
-        {/* Work Site Address (if different from client) */}
         {data.workSite && !data.workSite.sameAsClient && data.workSite.address && (
-          <div className="mt-2 pt-2 border-t border-gray-200">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase mb-0.5">📍 Adresse du Chantier</p>
-            <p className="text-[11px] text-gray-600 whitespace-pre-line">{data.workSite.address}</p>
+          <div className="mt-1.5 pt-1.5 border-t border-gray-200">
+            <p className="text-[9px] font-semibold text-gray-500 uppercase">📍 Adresse du Chantier</p>
+            <p className="text-[10px] text-gray-600 whitespace-pre-line leading-snug">{data.workSite.address}</p>
           </div>
         )}
       </div>
 
       {/* Items Table */}
-      <div className="mb-4 overflow-x-auto">
-        <table className="w-full border-collapse text-[11px]" style={{ tableLayout: 'fixed' }}>
+      <div className="mb-3">
+        <table className="w-full border-collapse text-[10px]" style={{ tableLayout: 'fixed' }}>
           <thead>
-            <tr className="bg-primary text-primary-foreground text-[10px]">
-              <th className="p-1.5 text-left border align-middle" style={{ width: '40%' }}>Désignation</th>
-              <th className="p-1.5 text-center border align-middle" style={{ width: '15%' }}>Qté/Unité</th>
-              <th className="p-1.5 text-left border align-middle" style={{ width: '20%' }}>P.U (€)</th>
-              <th className="p-1.5 text-left border align-middle" style={{ width: '25%' }}>Total (€)</th>
+            <tr className="bg-primary text-primary-foreground text-[9px]">
+              <th className="py-1.5 px-1.5 text-left border border-primary/30" style={{ width: '40%', verticalAlign: 'middle' }}>Désignation</th>
+              <th className="py-1.5 px-1 text-center border border-primary/30" style={{ width: '15%', verticalAlign: 'middle' }}>Qté/Unité</th>
+              <th className="py-1.5 px-1.5 text-left border border-primary/30" style={{ width: '20%', verticalAlign: 'middle' }}>P.U (€)</th>
+              <th className="py-1.5 px-1.5 text-left border border-primary/30" style={{ width: '25%', verticalAlign: 'middle' }}>Total (€)</th>
             </tr>
           </thead>
           <tbody>
@@ -153,31 +144,29 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
                   className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}
                 >
                   <td 
-                    className="p-1.5 border text-left align-middle"
-                    style={isSection && index > 0 ? { paddingTop: '32px' } : undefined}
+                    className="py-1 px-1.5 border border-gray-200"
+                    style={{ 
+                      verticalAlign: 'middle',
+                      ...(isSection && index > 0 ? { paddingTop: '24px' } : {})
+                    }}
                   >
-                    <div>
-                      <span 
-                        className={`font-medium leading-tight ${isSection ? 'font-bold text-primary' : ''}`}
-                        style={{ textAlign: 'left', display: 'block' }}
-                      >
-                        {item.designation_fr}
+                    <span 
+                      className={`font-medium leading-tight block ${isSection ? 'font-bold text-primary' : ''}`}
+                    >
+                      {item.designation_fr}
+                    </span>
+                    {showArabic && item.designation_ar && (
+                      <span className="block text-[8px] text-gray-400 mt-0.5 print:hidden" dir="rtl">
+                        {item.designation_ar}
                       </span>
-                      {showArabic && item.designation_ar && (
-                        <span className="block text-[9px] text-gray-500 mt-0.5 print:hidden" dir="rtl">
-                          {item.designation_ar}
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </td>
-                  <td className="p-1.5 text-center border align-middle">
-                    <div className="flex flex-col items-center leading-tight">
-                      <span className="font-bold">{item.quantity}</span>
-                      <span className="text-[9px] text-gray-500">{item.unit}</span>
-                    </div>
+                  <td className="py-1 px-1 text-center border border-gray-200" style={{ verticalAlign: 'middle' }}>
+                    <span className="font-bold block leading-tight">{item.quantity}</span>
+                    <span className="text-[8px] text-gray-400 block">{item.unit}</span>
                   </td>
-                  <td className="p-1.5 text-left border align-middle font-medium">{formatNumber(item.unitPrice)}</td>
-                  <td className="p-1.5 text-left border align-middle font-bold">{formatNumber(item.total)}</td>
+                  <td className="py-1 px-1.5 border border-gray-200 font-medium" style={{ verticalAlign: 'middle' }}>{formatNumber(item.unitPrice)}</td>
+                  <td className="py-1 px-1.5 border border-gray-200 font-bold" style={{ verticalAlign: 'middle' }}>{formatNumber(item.total)}</td>
                 </tr>
               );
             })}
@@ -186,67 +175,74 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       </div>
 
       {/* Totals */}
-      <div className="flex justify-end mb-4">
-        <div className="w-56">
-          <div className="flex justify-between py-1.5 border-b">
-            <span className="text-gray-600 text-[11px]">Total HT:</span>
-            <span className="font-medium text-[11px]">{formatCurrency(data.subtotal)}</span>
+      <div className="flex justify-end mb-3">
+        <div className="w-52">
+          <div className="flex justify-between py-1 border-b border-gray-200">
+            <span className="text-gray-600 text-[10px]">Total HT:</span>
+            <span className="font-medium text-[10px]">{formatCurrency(data.subtotal)}</span>
           </div>
           
           {data.tvaExempt ? (
-            <div className="py-2 border-b">
-              <p className="text-xs text-gray-500 italic">{data.tvaExemptText}</p>
+            <div className="py-1 border-b border-gray-200">
+              <p className="text-[9px] text-gray-500 italic leading-tight">{data.tvaExemptText}</p>
             </div>
           ) : (
-            <div className="flex justify-between py-1.5 border-b">
-              <span className="text-gray-600 text-[11px]">TVA ({data.tvaRate}%):</span>
-              <span className="font-medium text-[11px]">{formatCurrency(data.tvaAmount)}</span>
+            <div className="flex justify-between py-1 border-b border-gray-200">
+              <span className="text-gray-600 text-[10px]">TVA ({data.tvaRate}%):</span>
+              <span className="font-medium text-[10px]">{formatCurrency(data.tvaAmount)}</span>
             </div>
           )}
           
-          <div className="flex justify-between py-2 bg-primary text-primary-foreground px-3 rounded-b-lg">
-            <span className="font-bold text-[12px]">Total TTC:</span>
-            <span className="font-bold text-[14px]">{formatCurrency(data.total)}</span>
+          <div className="flex justify-between py-1.5 bg-primary text-primary-foreground px-2.5 rounded-b-lg">
+            <span className="font-bold text-[11px]">Total TTC:</span>
+            <span className="font-bold text-[13px]">{formatCurrency(data.total)}</span>
           </div>
         </div>
       </div>
 
-      {/* Signatures Section (Signature above Stamp) */}
-      {(data.artisanSignatureUrl || data.stampUrl) && (
-        <div className="border-t-2 border-dashed border-gray-300 pt-4 mt-4">
-          <div className="flex justify-end">
-            <div className="w-48 text-center">
-              <p className="text-[11px] font-medium text-gray-700 mb-0.5">Le prestataire</p>
-              <p className="text-[10px] text-gray-500 mb-2">Date: {data.date}</p>
+      {/* Signature & Stamp Section */}
+      <div className="border-t border-gray-300 pt-3 mt-2">
+        <div className="flex justify-between items-end">
+          {/* Client signature space */}
+          <div className="w-40 text-center">
+            <p className="text-[9px] font-medium text-gray-600 mb-0.5">Le client</p>
+            <p className="text-[8px] text-gray-400 mb-1">Bon pour accord</p>
+            <div className="h-14 border border-dashed border-gray-300 rounded" />
+            <p className="text-[8px] text-gray-400 mt-0.5">Date & Signature</p>
+          </div>
 
-              {data.artisanSignatureUrl && (
-                <div className="bg-white border border-gray-200 rounded-lg p-1.5 mb-1">
-                  <img src={data.artisanSignatureUrl} alt="Signature du prestataire" className="max-h-16 mx-auto" />
-                </div>
-              )}
+          {/* Artisan signature & stamp */}
+          <div className="w-44 text-center">
+            <p className="text-[9px] font-medium text-gray-600 mb-0.5">Le prestataire</p>
+            <p className="text-[8px] text-gray-400 mb-1">Date: {data.date}</p>
 
-              {data.stampUrl && (
-                <div className="bg-white border border-gray-200 rounded-lg p-1.5 mb-1.5">
-                  <img src={data.stampUrl} alt="Cachet du prestataire" className="max-h-16 mx-auto" />
-                </div>
-              )}
-
-              <div className="border-t border-gray-400 pt-0.5">
-                <p className="text-[10px] text-gray-500">Signature & Cachet</p>
+            {data.artisanSignatureUrl ? (
+              <div className="bg-white border border-gray-200 rounded p-1 mb-0.5">
+                <img src={data.artisanSignatureUrl} alt="Signature" className="max-h-12 mx-auto object-contain" />
               </div>
-            </div>
+            ) : (
+              <div className="h-12 border border-dashed border-gray-300 rounded mb-0.5" />
+            )}
+
+            {data.stampUrl ? (
+              <div className="bg-white border border-gray-200 rounded p-1">
+                <img src={data.stampUrl} alt="Cachet" className="max-h-12 mx-auto object-contain" />
+              </div>
+            ) : (
+              <div className="h-10 border border-dashed border-gray-300 rounded" />
+            )}
+
+            <p className="text-[8px] text-gray-400 mt-0.5">Signature & Cachet</p>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Footer / Legal Mentions */}
-      <div className="border-t pt-2 text-[10px] text-gray-500 space-y-1 mt-3">
-        <p><strong>Conditions de paiement:</strong> {data.paymentTerms}</p>
+      <div className="border-t border-gray-200 pt-1.5 text-[8px] text-gray-400 space-y-0.5 mt-2">
+        <p><strong className="text-gray-500">Conditions de paiement:</strong> {data.paymentTerms}</p>
         {data.legalMentions && <p>{data.legalMentions}</p>}
-        <div className="mt-2 pt-1 border-t border-gray-200">
-          <p>En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée, 
-          ainsi qu'une indemnité forfaitaire de 40€ pour frais de recouvrement (Art. L.441-10 du Code de commerce).</p>
-        </div>
+        <p className="pt-0.5 border-t border-gray-100">En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée, 
+        ainsi qu'une indemnité forfaitaire de 40€ pour frais de recouvrement (Art. L.441-10 du Code de commerce).</p>
       </div>
     </div>
   );

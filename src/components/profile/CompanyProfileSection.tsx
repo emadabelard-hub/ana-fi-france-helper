@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { compressImageFile } from '@/lib/imageCompression';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import ArtisanSignatureSection from './ArtisanSignatureSection';
+import StampUploadSection from './StampUploadSection';
 
 interface CompanyFormData {
   company_name: string;
@@ -489,6 +490,9 @@ const CompanyProfileSection = () => {
 
       {/* Artisan Signature Section */}
       <ArtisanSignatureSection />
+
+      {/* Stamp (Cachet) Upload Section */}
+      <StampUploadSection />
 
       {/* Save Button */}
       <Button

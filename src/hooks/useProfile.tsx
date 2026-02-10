@@ -23,6 +23,8 @@ export interface Profile {
   header_image_url: string | null;
   // Artisan permanent signature
   artisan_signature_url: string | null;
+  // Stamp (cachet)
+  stamp_url: string | null;
   // Credits & Rate Limiting
   credits_balance: number;
   daily_message_count: number;

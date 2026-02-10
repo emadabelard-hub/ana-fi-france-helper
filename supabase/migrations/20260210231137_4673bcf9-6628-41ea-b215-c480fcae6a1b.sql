@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN stamp_url text DEFAULT NULL;

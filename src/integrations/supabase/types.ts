@@ -96,6 +96,7 @@ export type Database = {
           phone: string | null
           siret: string | null
           social_security: string | null
+          stamp_url: string | null
           updated_at: string
           user_id: string
         }
@@ -120,6 +121,7 @@ export type Database = {
           phone?: string | null
           siret?: string | null
           social_security?: string | null
+          stamp_url?: string | null
           updated_at?: string
           user_id: string
         }
@@ -144,6 +146,7 @@ export type Database = {
           phone?: string | null
           siret?: string | null
           social_security?: string | null
+          stamp_url?: string | null
           updated_at?: string
           user_id?: string
         }

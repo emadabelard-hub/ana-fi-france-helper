@@ -39,6 +39,8 @@ export interface InvoiceData {
   legalMentions?: string;
   // Artisan permanent signature (unique signature affichée sur les PDF)
   artisanSignatureUrl?: string;
+  // Stamp (cachet)
+  stampUrl?: string;
 }
 
 
@@ -208,24 +210,38 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         </div>
       </div>
 
-      {/* Signatures Section (Signature artisan uniquement) */}
-      {data.artisanSignatureUrl && (
+      {/* Signatures Section (Signature above Stamp) */}
+      {(data.artisanSignatureUrl || data.stampUrl) && (
         <div className="border-t-2 border-dashed border-gray-300 pt-6 mt-6">
           <div className="flex justify-end">
             <div className="w-56 text-center">
               <p className="text-sm font-medium text-gray-700 mb-1">Le prestataire</p>
               <p className="text-xs text-gray-500 mb-3">Date: {data.date}</p>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-2 mb-2">
-                <img
-                  src={data.artisanSignatureUrl}
-                  alt="Signature du prestataire"
-                  className="max-h-20 mx-auto"
-                />
-              </div>
+              {/* Signature (above stamp) */}
+              {data.artisanSignatureUrl && (
+                <div className="bg-white border border-gray-200 rounded-lg p-2 mb-1">
+                  <img
+                    src={data.artisanSignatureUrl}
+                    alt="Signature du prestataire"
+                    className="max-h-20 mx-auto"
+                  />
+                </div>
+              )}
+
+              {/* Stamp (below signature) */}
+              {data.stampUrl && (
+                <div className="bg-white border border-gray-200 rounded-lg p-2 mb-2">
+                  <img
+                    src={data.stampUrl}
+                    alt="Cachet du prestataire"
+                    className="max-h-20 mx-auto"
+                  />
+                </div>
+              )}
 
               <div className="border-t border-gray-400 pt-1">
-                <p className="text-xs text-gray-500">Signature</p>
+                <p className="text-xs text-gray-500">Signature & Cachet</p>
               </div>
             </div>
           </div>

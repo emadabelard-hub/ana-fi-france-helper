@@ -199,7 +199,7 @@ const AssistantPage = () => {
       </header>
 
       {/* CHAT AREA - Simple WhatsApp Style */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ paddingBottom: '250px' }}>
         
         {/* Welcome Message - Only when empty */}
         {!hasMessages && (

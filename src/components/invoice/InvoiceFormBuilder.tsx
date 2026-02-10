@@ -97,6 +97,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
   const [showArabic, setShowArabic] = useState(false);
   const [editingItems, setEditingItems] = useState(false);
   
+  // Editable document number
+  const [docNumber, setDocNumber] = useState(() => generateDocNumber(documentType));
+  
   // Quote Wizard state
   const [showWizard, setShowWizard] = useState(false);
   
@@ -216,7 +219,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
     
     return {
       type: documentType === 'devis' ? 'DEVIS' : 'FACTURE',
-      number: generateDocNumber(documentType),
+      number: docNumber,
       date: new Date().toLocaleDateString('fr-FR'),
       validUntil: documentType === 'devis' 
         ? new Date(Date.now() + validityDuration * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
@@ -253,8 +256,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
       legalMentions: tvaExempt 
         ? 'TVA non applicable, article 293 B du CGI'
         : undefined,
-      // Inject artisan's permanent signature from profile
+      // Inject artisan's permanent signature and stamp from profile
       artisanSignatureUrl: (profile as any)?.artisan_signature_url || undefined,
+      stampUrl: (profile as any)?.stamp_url || undefined,
     };
   };
   
@@ -562,6 +566,29 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
           </CardContent>
         </Card>
       )}
+      {/* Document Number - Editable */}
+      <Card>
+        <CardContent className="p-4 space-y-2">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <FileText className="h-5 w-5 text-primary" />
+            <h3 className={cn("font-bold", isRTL && "font-cairo")}>
+              {isRTL ? 'رقم المستند' : 'Numéro du document'}
+            </h3>
+          </div>
+          <Input
+            value={docNumber}
+            onChange={(e) => setDocNumber(e.target.value)}
+            placeholder={isRTL ? 'مثال: FAC-2026-001' : 'Ex: FAC-2026-001'}
+            className="font-mono"
+          />
+          <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+            {isRTL
+              ? '💡 تقدر تغيّر الرقم حسب نظام الترقيم بتاعك'
+              : '💡 Vous pouvez personnaliser ce numéro selon votre système de numérotation'}
+          </p>
+        </CardContent>
+      </Card>
+
       <Card className="border-green-500/20 bg-green-500/5">
         <CardContent className="p-4">
           <div className={cn(
@@ -1136,7 +1163,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
       
       {/* Preview & Actions */}
       {showPreview ? (
-        <div className="space-y-4">
+        <div className="space-y-4 relative">
+          {/* Floating Edit Button */}
+          <Button
+            onClick={() => setShowPreview(false)}
+            className={cn(
+              "fixed bottom-24 right-4 z-50 rounded-full shadow-lg gap-2 px-5 py-3 text-sm font-bold",
+              isRTL && "font-cairo left-4 right-auto"
+            )}
+          >
+            <Edit3 className="h-4 w-4" />
+            {isRTL ? 'تعديل' : 'Modifier'}
+          </Button>
+
           <div className={cn(
             "flex items-center gap-2",
             isRTL && "flex-row-reverse"

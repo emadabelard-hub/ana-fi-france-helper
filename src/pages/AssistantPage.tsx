@@ -253,6 +253,8 @@ const AssistantPage = () => {
           </div>
         )}
         
+        {/* Spacer cushion to push last message above input */}
+        <div className="h-64 w-full shrink-0" aria-hidden="true" />
         <div ref={messagesEndRef} />
       </div>
 

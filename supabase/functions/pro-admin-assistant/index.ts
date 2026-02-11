@@ -366,8 +366,8 @@ serve(async (req) => {
       aiMessages.push({ role: "user", content: userMessage });
     }
     
-    // Hybrid model routing: gpt-5-mini for text (cost-optimized), gpt-5 for vision (max precision)
-    const model = hasImage ? "openai/gpt-5" : "openai/gpt-5-mini";
+    // Single stable model for all requests
+    const model = "openai/gpt-5";
     
     console.log("Pro Admin Assistant - Using model:", model, "streaming: true");
     

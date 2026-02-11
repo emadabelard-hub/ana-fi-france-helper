@@ -116,7 +116,7 @@ IMPORTANT: Traduis tout texte arabe en français professionnel.`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-5", // Vision model for document OCR
+          model: "openai/gpt-5-mini", // Cost-optimized model
           messages: [
             { role: "system", content: systemPrompt },
             {

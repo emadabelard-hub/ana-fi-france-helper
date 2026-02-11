@@ -306,12 +306,10 @@ serve(async (req) => {
       aiMessages.push({ role: "user", content: userMessage });
     }
     
-    // Hybrid model routing: gpt-5-mini for text (cost-optimized), gpt-5 for vision (max precision OCR)
-    const model = hasImages 
-      ? "openai/gpt-5" 
-      : "openai/gpt-5-mini";
+    // Single stable model for all requests
+    const model = "openai/gpt-5";
     
-    console.log("Using model:", model, "for", hasImages ? "vision" : "text");
+    console.log("Using model:", model);
     
     const callModel = async (messages: any, modelName: string): Promise<string> => {
       const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

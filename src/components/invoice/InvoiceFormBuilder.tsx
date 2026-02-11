@@ -42,14 +42,18 @@ interface InvoiceFormBuilderProps {
 // Generate unique ID
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-// Generate document number
-const generateDocNumber = (type: 'devis' | 'facture') => {
+// Generate document number prefix (locked part)
+const getDocPrefix = (type: 'devis' | 'facture') => {
   const prefix = type === 'devis' ? 'DEV' : 'FAC';
   const date = new Date();
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `${prefix}-${year}${month}-${random}`;
+  return `${prefix} ${year}${month} - `;
+};
+
+// Generate document number (prefix only, user fills the rest)
+const generateDocNumber = (type: 'devis' | 'facture') => {
+  return getDocPrefix(type);
 };
 
 const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBuilderProps) => {
@@ -580,12 +584,29 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
           <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
               ? 'حطيت لك السنة والشهر وانت حط الرقم التسلسلي'
-              : "L'année et le mois sont déjà renseignés, veuillez saisir uniquement le numéro séquentiel."}
+              : "L'année et le mois sont déjà renseignés, vous devez saisir uniquement le numéro après le trait d'union."}
           </p>
           <Input
             value={docNumber}
-            onChange={(e) => setDocNumber(e.target.value)}
-            placeholder={isRTL ? 'مثال: FAC-2026-001' : 'Ex: FAC-2026-001'}
+            onChange={(e) => {
+              const prefix = getDocPrefix(documentType);
+              const val = e.target.value;
+              // Prevent modifying the locked prefix
+              if (val.length < prefix.length) {
+                setDocNumber(prefix);
+              } else if (val.startsWith(prefix)) {
+                setDocNumber(val);
+              } else {
+                setDocNumber(prefix);
+              }
+            }}
+            onFocus={() => {
+              const prefix = getDocPrefix(documentType);
+              if (!docNumber || !docNumber.startsWith(prefix)) {
+                setDocNumber(prefix);
+              }
+            }}
+            placeholder={isRTL ? `مثال: ${getDocPrefix(documentType)}001` : `Ex: ${getDocPrefix(documentType)}001`}
             className="font-mono"
           />
           <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>

@@ -6,11 +6,48 @@ import { ArrowLeft, Brain, Camera, Paperclip, Send, Loader2 } from 'lucide-react
 import { streamProAdminAssistant } from '@/hooks/useStreamingChat';
 import { useToast } from '@/hooks/use-toast';
 import QuickActionsBar from '@/components/assistant/QuickActionsBar';
+import DocumentActionButtons from '@/components/assistant/DocumentActionButtons';
+import { extractTextFromPDF } from '@/lib/pdfExtractor';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  /** Detected document type after AI analysis */
+  detectedDocType?: 'invoice' | 'letter' | null;
+}
+
+/**
+ * Detect document type from AI response content.
+ * Returns 'invoice' for quotes/invoices, 'letter' for official letters/mail, or null.
+ */
+function detectDocumentType(aiResponse: string): 'invoice' | 'letter' | null {
+  const lower = aiResponse.toLowerCase();
+
+  // Invoice / Quote keywords (French + Arabic)
+  const invoiceKeywords = [
+    'facture', 'devis', 'montant total', 'total ttc', 'total ht', 'tva',
+    'فاتورة', 'دوفي', 'المبلغ الإجمالي', 'ضريبة', 'سعر',
+    'ligne de facturation', 'bon de commande', 'numéro de facture',
+    'prix unitaire', 'quantité', 'sous-total',
+  ];
+
+  // Letter / Mail keywords (French + Arabic)
+  const letterKeywords = [
+    'courrier', 'lettre recommandée', 'madame, monsieur', 'objet :',
+    'nous vous informons', 'veuillez agréer', 'accusé de réception',
+    'préfecture', 'caf', 'cpam', 'pôle emploi', 'urssaf',
+    'mise en demeure', 'notification', 'convocation', 'délai',
+    'جواب', 'خطاب رسمي', 'إشعار', 'مهلة', 'بريفكتير',
+    'كاف', 'موعد', 'استدعاء', 'إنذار',
+  ];
+
+  const invoiceScore = invoiceKeywords.filter(k => lower.includes(k)).length;
+  const letterScore = letterKeywords.filter(k => lower.includes(k)).length;
+
+  if (invoiceScore >= 2) return 'invoice';
+  if (letterScore >= 2) return 'letter';
+  return null;
 }
 
 const AssistantPage = () => {
@@ -21,8 +58,10 @@ const AssistantPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isExtractingPdf, setIsExtractingPdf] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // Helper to detect Arabic text
   const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
@@ -53,7 +92,6 @@ const AssistantPage = () => {
       content: m.content
     }));
 
-    // Use app's global language setting (from toggle), not text detection
     const chatLanguage: 'fr' | 'ar' = language;
 
     let assistantContent = '';
@@ -79,6 +117,13 @@ const AssistantPage = () => {
           },
           onDone: () => {
             setIsTyping(false);
+            // Detect document type from completed response
+            const docType = detectDocumentType(assistantContent);
+            if (docType) {
+              setMessages(prev =>
+                prev.map(m => m.id === assistantId ? { ...m, detectedDocType: docType } : m)
+              );
+            }
           },
           onError: (error) => {
             console.error('Stream error:', error);
@@ -117,32 +162,110 @@ const AssistantPage = () => {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
+  /** Process uploaded file: PDF → extract text, Image → send as vision */
+  const handleFileUpload = async (file: File, fromCamera: boolean = false) => {
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         variant: 'destructive',
         title: isRTL ? 'الملف كبير' : 'Fichier trop volumineux',
-        description: isRTL ? 'الحد الأقصى 5 ميجا' : 'Maximum 5 Mo',
+        description: isRTL ? 'الحد الأقصى 10 ميجا' : 'Maximum 10 Mo',
       });
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      const imagePrompt = language === 'fr' 
-        ? 'Analysez ce document et expliquez-moi son contenu' 
-        : 'حلل المستند ده وقولي إيه المكتوب فيه';
-      handleSend(imagePrompt, base64);
-    };
-    reader.readAsDataURL(file);
+    const isPDF = file.type === 'application/pdf';
+    const isImage = file.type.startsWith('image/');
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (!isPDF && !isImage) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL
+          ? 'يرجى رفع صورة (JPG/PNG) أو ملف PDF فقط'
+          : 'Veuillez télécharger une image (JPG/PNG) ou un fichier PDF uniquement.',
+      });
+      return;
     }
+
+    // Read file as data URL
+    const readAsDataURL = (f: File): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = () => reject(new Error('File read error'));
+        reader.readAsDataURL(f);
+      });
+
+    try {
+      if (isPDF) {
+        // PDF → extract text client-side (no vision cost)
+        setIsExtractingPdf(true);
+        toast({
+          title: isRTL ? '📄 جاري قراءة الـ PDF...' : '📄 Lecture du PDF en cours...',
+        });
+
+        const dataUrl = await readAsDataURL(file);
+        const extractedText = await extractTextFromPDF(dataUrl);
+        setIsExtractingPdf(false);
+
+        if (!extractedText.trim()) {
+          // PDF has no extractable text → fallback to vision (scanned PDF)
+          toast({
+            title: isRTL ? '📷 PDF ممسوح، جاري التحليل بالصورة...' : '📷 PDF scanné, analyse par image...',
+          });
+          handleSend(
+            language === 'fr'
+              ? 'Analysez ce document PDF et expliquez-moi son contenu'
+              : 'حلل المستند ده وقولي إيه المكتوب فيه',
+            dataUrl
+          );
+          return;
+        }
+
+        // Send extracted text to AI (much cheaper than vision)
+        const prompt = language === 'fr'
+          ? `Voici le contenu extrait d'un document PDF :\n\n${extractedText}\n\nAnalysez ce document et expliquez-moi son contenu.`
+          : `ده محتوى ملف PDF:\n\n${extractedText}\n\nحلل المستند ده وقولي إيه المكتوب فيه وإيه المطلوب مني.`;
+        handleSend(prompt);
+      } else {
+        // Image → use vision/OCR
+        const base64 = await readAsDataURL(file);
+        const imagePrompt = language === 'fr'
+          ? 'Analysez ce document et expliquez-moi son contenu'
+          : 'حلل المستند ده وقولي إيه المكتوب فيه';
+        handleSend(imagePrompt, base64);
+      }
+    } catch (error) {
+      console.error('File processing error:', error);
+      setIsExtractingPdf(false);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL
+          ? 'حدث خطأ أثناء معالجة الملف. حاول مرة تانية.'
+          : 'Erreur lors du traitement du fichier. Réessayez.',
+      });
+    }
+  };
+
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) await handleFileUpload(file, false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) await handleFileUpload(file, true);
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+  };
+
+  const handleGenerateReply = () => {
+    const replyPrompt = language === 'fr'
+      ? 'Rédigez une réponse formelle à ce courrier.'
+      : 'اكتبلي رد رسمي على الخطاب ده.';
+    handleSend(replyPrompt);
   };
 
   const handleActionClick = (action: string) => {
@@ -155,7 +278,6 @@ const AssistantPage = () => {
           navigate('/pro/invoice-creator');
           break;
         case 'mail':
-          // Start a mail reply conversation directly in chat
           const mailPrompt = language === 'fr' 
             ? 'Je souhaite répondre à un courrier officiel que j\'ai reçu. Pouvez-vous m\'aider ?' 
             : 'عايز ارد على خطاب رسمي وصلني، ممكن تساعدني؟';
@@ -221,28 +343,49 @@ const AssistantPage = () => {
 
         {/* Message History - Simple Bubbles */}
         {messages.map((msg) => (
-          <div key={msg.id} className={cn("flex w-full", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
-            
-            {/* AI Avatar */}
-            {msg.role === 'assistant' && (
-              <div className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center mr-2 mt-1 shrink-0 shadow-sm">
-                <Brain size={14} className="text-primary" />
-              </div>
-            )}
+          <React.Fragment key={msg.id}>
+            <div className={cn("flex w-full", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+              
+              {/* AI Avatar */}
+              {msg.role === 'assistant' && (
+                <div className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center mr-2 mt-1 shrink-0 shadow-sm">
+                  <Brain size={14} className="text-primary" />
+                </div>
+              )}
 
-            {/* Message Bubble - Simple */}
-            <div className={cn(
-              "max-w-[85%] p-3 px-4 rounded-2xl text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap",
-              msg.role === 'user' 
-                ? 'bg-primary text-primary-foreground rounded-br-none' 
-                : 'bg-card text-card-foreground rounded-tl-none border border-border',
-              isArabic(msg.content) ? 'font-cairo text-right' : 'text-left'
-            )}>
-              {msg.content || (msg.role === 'assistant' && isTyping ? '...' : '')}
+              {/* Message Bubble - Simple */}
+              <div className={cn(
+                "max-w-[85%] p-3 px-4 rounded-2xl text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap",
+                msg.role === 'user' 
+                  ? 'bg-primary text-primary-foreground rounded-br-none' 
+                  : 'bg-card text-card-foreground rounded-tl-none border border-border',
+                isArabic(msg.content) ? 'font-cairo text-right' : 'text-left'
+              )}>
+                {msg.content || (msg.role === 'assistant' && isTyping ? '...' : '')}
+              </div>
             </div>
-          </div>
+
+            {/* Document Action Buttons - After assistant messages with detected type */}
+            {msg.role === 'assistant' && msg.detectedDocType && (
+              <DocumentActionButtons
+                documentType={msg.detectedDocType}
+                isRTL={isRTL}
+                onGenerateReply={handleGenerateReply}
+              />
+            )}
+          </React.Fragment>
         ))}
         
+        {/* PDF Extraction Indicator */}
+        {isExtractingPdf && (
+          <div className="flex items-center gap-2 p-3 bg-card rounded-2xl rounded-tl-none w-fit border border-border shadow-sm ml-10">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
+              {isRTL ? '📄 جاري قراءة ملف الـ PDF...' : '📄 Lecture du PDF en cours...'}
+            </span>
+          </div>
+        )}
+
         {/* Typing Indicator */}
         {isTyping && messages[messages.length - 1]?.content === '' && (
           <div className="flex items-center gap-2 p-3 bg-card rounded-2xl rounded-tl-none w-fit border border-border shadow-sm ml-10">
@@ -253,23 +396,30 @@ const AssistantPage = () => {
           </div>
         )}
         
-        {/* Spacer cushion to push last message above input */}
+        {/* Spacer */}
         <div className="h-64 w-full shrink-0" aria-hidden="true" />
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Hidden file input */}
+      {/* Hidden file inputs */}
       <input 
         ref={fileInputRef}
         type="file" 
         accept="image/*,application/pdf" 
         className="hidden" 
-        onChange={handleImageUpload}
+        onChange={handleFileInputChange}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleCameraChange}
       />
 
-      {/* INPUT AREA - Fixed at bottom, mail-compose style */}
+      {/* INPUT AREA - Fixed at bottom */}
       <div className="fixed left-0 right-0 z-[60] bg-background border-t border-border safe-area-pb" style={{ bottom: '5rem' }}>
-        {/* Large Compose Area - NOW above buttons */}
         <div className="mx-3 mt-2 bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
           <textarea
             value={inputValue}
@@ -280,40 +430,41 @@ const AssistantPage = () => {
               isRTL && "font-cairo text-right"
             )}
             dir="auto"
-            disabled={isTyping}
+            disabled={isTyping || isExtractingPdf}
             rows={5}
           />
 
-          {/* Bottom toolbar inside the compose box */}
           <div className={cn(
             "flex items-center justify-between px-3 pb-2.5",
             isRTL && "flex-row-reverse"
           )}>
-            {/* Left: attachment icons */}
             <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
+              {/* Camera Button */}
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={isTyping || isExtractingPdf}
                 className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
                 title={isRTL ? '📷 صورة' : '📷 Photo'}
               >
                 <Camera size={20} />
               </button>
+              {/* Attach File Button (PDF + Images) */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={isTyping || isExtractingPdf}
                 className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
-                title={isRTL ? '📎 ملف' : '📎 Fichier'}
+                title={isRTL ? '📎 ملف (PDF/صورة)' : '📎 Fichier (PDF/Image)'}
               >
                 <Paperclip size={20} />
               </button>
             </div>
 
-            {/* Right: send button */}
             <button
               type="button"
               onClick={() => handleSend()}
-              disabled={!inputValue.trim() || isTyping}
+              disabled={!inputValue.trim() || isTyping || isExtractingPdf}
               className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all",
                 inputValue.trim() && !isTyping ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/20 text-muted-foreground'
@@ -328,11 +479,8 @@ const AssistantPage = () => {
           </div>
         </div>
 
-        {/* 3 Action Buttons - NOW at the very bottom */}
         <div className="overflow-x-auto px-3 pt-1 pb-2">
-          <QuickActionsBar
-            onAction={(action) => handleActionClick(action)}
-          />
+          <QuickActionsBar onAction={(action) => handleActionClick(action)} />
         </div>
       </div>
 

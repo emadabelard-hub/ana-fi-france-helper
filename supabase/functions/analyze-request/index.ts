@@ -307,7 +307,7 @@ serve(async (req) => {
     }
     
     // Single stable model for all requests
-    const model = "openai/gpt-5";
+    const model = "openai/gpt-5-mini";
     
     console.log("Using model:", model);
     

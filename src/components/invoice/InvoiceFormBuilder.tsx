@@ -17,6 +17,7 @@ import LineItemEditor, { LineItem } from './LineItemEditor';
 import QuoteWizardModal from './QuoteWizardModal';
 import InvoiceGuideModal from './InvoiceGuideModal';
 import PreFlightChecklistModal from './PreFlightChecklistModal';
+import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PrefillData {
@@ -109,6 +110,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
   
   // Pre-flight checklist state
   const [showChecklist, setShowChecklist] = useState(false);
+  
+  // Unit Guide state
+  const [showUnitGuide, setShowUnitGuide] = useState(false);
 
   // Translation state
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
@@ -934,9 +938,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
                   </div>
                   
                   <div className="space-y-1.5">
-                    <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                      {isRTL ? 'الوحدة' : 'Unité'}
-                    </Label>
+                    <div className="flex items-center gap-1">
+                      <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                        {isRTL ? 'الوحدة' : 'Unité'}
+                      </Label>
+                      {index === 0 && <UnitGuideButton onClick={() => setShowUnitGuide(true)} />}
+                    </div>
                     <Input
                       value={item.unit}
                       onChange={(e) => handleItemChange(item.id, 'unit', e.target.value)}
@@ -1324,6 +1331,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
           setShowPreview(true);
         }}
         items={items}
+      />
+      
+      {/* Unit Guide Modal */}
+      <UnitGuideModal
+        open={showUnitGuide}
+        onOpenChange={setShowUnitGuide}
       />
     </div>
   );

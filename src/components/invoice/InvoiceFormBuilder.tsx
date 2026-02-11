@@ -572,9 +572,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
             <FileText className="h-5 w-5 text-primary" />
             <h3 className={cn("font-bold", isRTL && "font-cairo")}>
-              {isRTL ? 'رقم المستند' : 'Numéro du document'}
+              {isRTL 
+                ? (documentType === 'facture' ? 'رقم الفاتورة' : 'رقم الدوفي')
+                : (documentType === 'facture' ? 'Numéro de facture' : 'Numéro de devis')}
             </h3>
           </div>
+          <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+            {isRTL
+              ? 'حطيت لك السنة والشهر وانت حط الرقم التسلسلي'
+              : "L'année et le mois sont déjà renseignés, veuillez saisir uniquement le numéro séquentiel."}
+          </p>
           <Input
             value={docNumber}
             onChange={(e) => setDocNumber(e.target.value)}

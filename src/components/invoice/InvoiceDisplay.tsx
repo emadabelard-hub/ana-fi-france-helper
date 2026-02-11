@@ -225,8 +225,8 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             )}
 
             {data.stampUrl ? (
-              <div className="bg-white border border-gray-200 rounded p-1">
-                <img src={data.stampUrl} alt="Cachet" className="max-h-12 mx-auto object-contain" />
+              <div className="bg-white border border-gray-200 rounded p-1" style={{ width: '120px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 'auto', marginRight: 'auto' }}>
+                <img src={data.stampUrl} alt="Cachet" style={{ maxWidth: '110px', maxHeight: '52px', width: 'auto', height: 'auto', objectFit: 'contain', backgroundColor: 'white' }} />
               </div>
             ) : (
               <div className="h-10 border border-dashed border-gray-300 rounded" />

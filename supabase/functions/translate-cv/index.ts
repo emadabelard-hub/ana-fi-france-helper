@@ -30,7 +30,7 @@ async function callGateway({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: "openai/gpt-5-mini", // Text-only: cost-optimized
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },

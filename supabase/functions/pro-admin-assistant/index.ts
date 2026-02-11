@@ -366,8 +366,8 @@ serve(async (req) => {
       aiMessages.push({ role: "user", content: userMessage });
     }
     
-    // Use vision-capable model for images, fast model for text
-    const model = hasImage ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
+    // Hybrid model routing: gpt-5-mini for text (cost-optimized), gpt-5 for vision (max precision)
+    const model = hasImage ? "openai/gpt-5" : "openai/gpt-5-mini";
     
     console.log("Pro Admin Assistant - Using model:", model, "streaming: true");
     

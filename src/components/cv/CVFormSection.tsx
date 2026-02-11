@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, User, Briefcase, GraduationCap, Languages, Wrench, Car, Heart } from 'lucide-react';
+import { Plus, Trash2, User, Briefcase, GraduationCap, Languages, Wrench, Car, Heart, Camera, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CVData, Experience, Education, Language } from '@/pages/CVGeneratorPage';
 
@@ -19,6 +19,22 @@ interface CVFormSectionProps {
 const CVFormSection = ({ cvData, onChange, isRTL }: CVFormSectionProps) => {
   const [newSkill, setNewSkill] = useState('');
   const [newInterest, setNewInterest] = useState('');
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      updateField('photoUrl', reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePhoto = () => {
+    updateField('photoUrl', undefined);
+    if (photoInputRef.current) photoInputRef.current.value = '';
+  };
 
   const updateField = (field: keyof CVData, value: any) => {
     onChange({ ...cvData, [field]: value });
@@ -229,6 +245,48 @@ const CVFormSection = ({ cvData, onChange, isRTL }: CVFormSectionProps) => {
                 onChange={(e) => updateField('drivingLicense', e.target.value)}
                 placeholder={isRTL ? 'B, A2, Moto...' : 'B, A2, Moto...'}
                 dir="ltr"
+              />
+            </div>
+          </div>
+          {/* Photo upload - optional */}
+          <div>
+            <Label className={cn(isRTL && "font-cairo text-right block")}>
+              {isRTL ? 'صورة شخصية (اختياري)' : 'Photo (facultatif)'}
+            </Label>
+            <div className="flex items-center gap-3 mt-1">
+              {cvData.photoUrl ? (
+                <div className="relative">
+                  <img
+                    src={cvData.photoUrl}
+                    alt="Photo CV"
+                    className="w-16 h-16 rounded-full object-cover border border-border"
+                  />
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => photoInputRef.current?.click()}
+                  className="gap-2"
+                >
+                  <Camera className="h-4 w-4" />
+                  {isRTL ? 'اختر صورة' : 'Choisir une photo'}
+                </Button>
+              )}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoUpload}
               />
             </div>
           </div>

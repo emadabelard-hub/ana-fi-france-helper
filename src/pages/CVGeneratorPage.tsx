@@ -26,6 +26,7 @@ export interface CVData {
   skills: string[];
   languages: Language[];
   interests: string[];
+  photoUrl?: string;
 }
 
 export interface Experience {
@@ -67,6 +68,7 @@ const initialCVData: CVData = {
   skills: [],
   languages: [],
   interests: [],
+  photoUrl: undefined,
 };
 
 const CVGeneratorPage = () => {

@@ -35,7 +35,6 @@ async function callGateway({
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      temperature: 0.3,
     }),
   });
 

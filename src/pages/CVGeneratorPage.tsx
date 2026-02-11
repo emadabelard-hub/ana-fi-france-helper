@@ -89,7 +89,18 @@ const CVGeneratorPage = () => {
         body: { cvData },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Extract detailed error from edge function response
+        let detailMsg = error.message || 'Unknown error';
+        try {
+          if (error.context?.body) {
+            const body = typeof error.context.body === 'string' ? JSON.parse(error.context.body) : error.context.body;
+            if (body?.error) detailMsg = body.error;
+          }
+        } catch { /* ignore parse errors */ }
+        console.error('translate-cv detailed error:', { status: error.status, message: detailMsg, raw: error });
+        throw new Error(detailMsg);
+      }
 
       setTranslatedData(data.translatedCV);
       setActiveTab('preview');
@@ -100,13 +111,12 @@ const CVGeneratorPage = () => {
           : 'Vos données ont été traduites en français professionnel',
       });
     } catch (error) {
-      console.error('Translation error:', error);
+      const errMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Translation error:', errMsg, error);
       toast({
         variant: 'destructive',
         title: isRTL ? 'خطأ في الترجمة' : 'Erreur de traduction',
-        description: isRTL 
-          ? 'حدث خطأ أثناء الترجمة، حاول مرة أخرى' 
-          : 'Une erreur est survenue, réessayez',
+        description: errMsg,
       });
     } finally {
       setIsTranslating(false);

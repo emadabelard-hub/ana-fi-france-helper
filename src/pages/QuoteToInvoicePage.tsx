@@ -133,7 +133,17 @@ const QuoteToInvoicePage = () => {
         },
       });
 
-      if (fnError) throw fnError;
+      if (fnError) {
+        let detailMsg = fnError.message || 'Unknown error';
+        try {
+          if (fnError.context?.body) {
+            const body = typeof fnError.context.body === 'string' ? JSON.parse(fnError.context.body) : fnError.context.body;
+            if (body?.error) detailMsg = body.error;
+          }
+        } catch { /* ignore */ }
+        console.error('quote-to-invoice detailed error:', { status: fnError.status, message: detailMsg, raw: fnError });
+        throw new Error(detailMsg);
+      }
 
       if (data.error) {
         throw new Error(data.error);

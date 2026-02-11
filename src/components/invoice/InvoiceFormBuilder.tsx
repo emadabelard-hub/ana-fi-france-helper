@@ -38,6 +38,7 @@ interface InvoiceFormBuilderProps {
   documentType: 'devis' | 'facture';
   onBack: () => void;
   prefillData?: PrefillData | null;
+  onDocumentTypeChange?: (type: 'devis' | 'facture') => void;
 }
 
 // Generate unique ID
@@ -57,7 +58,7 @@ const generateDocNumber = (type: 'devis' | 'facture') => {
   return getDocPrefix(type);
 };
 
-const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBuilderProps) => {
+const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeChange }: InvoiceFormBuilderProps) => {
   const { isRTL } = useLanguage();
   const { profile } = useProfile();
   const { toast } = useToast();
@@ -506,9 +507,42 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData }: InvoiceFormBu
 
   return (
     <div className="space-y-6">
-      {/* Header with Guide Button */}
+      {/* Document Type Toggle + Guide Button */}
       <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
-        <div />
+        {onDocumentTypeChange ? (
+          <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
+            <span className={cn(
+              "text-xs font-bold uppercase",
+              documentType === 'devis' ? 'text-primary' : 'text-muted-foreground',
+              isRTL && "font-cairo"
+            )}>
+              {isRTL ? 'دوفي' : 'Devis'}
+            </span>
+            <Switch
+              checked={documentType === 'facture'}
+              onCheckedChange={(checked) => {
+                const newType = checked ? 'facture' : 'devis';
+                // Update doc number prefix without losing the sequential part
+                const currentPrefix = getDocPrefix(documentType);
+                const newPrefix = getDocPrefix(newType);
+                const userPart = docNumber.startsWith(currentPrefix) 
+                  ? docNumber.slice(currentPrefix.length) 
+                  : '';
+                setDocNumber(newPrefix + userPart);
+                onDocumentTypeChange(newType);
+              }}
+            />
+            <span className={cn(
+              "text-xs font-bold uppercase",
+              documentType === 'facture' ? 'text-primary' : 'text-muted-foreground',
+              isRTL && "font-cairo"
+            )}>
+              {isRTL ? 'فاتورة' : 'Facture'}
+            </span>
+          </div>
+        ) : (
+          <div />
+        )}
         <InvoiceGuideModal />
       </div>
 

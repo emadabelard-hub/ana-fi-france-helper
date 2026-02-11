@@ -149,6 +149,10 @@ const InvoiceCreatorPage = () => {
             documentType={documentType}
             onBack={handleBackToTypeSelection}
             prefillData={prefillData}
+            onDocumentTypeChange={(type) => {
+              setDocumentType(type);
+              setSearchParams({ type });
+            }}
           />
         ) : (
           <div className="flex items-center justify-center h-full">

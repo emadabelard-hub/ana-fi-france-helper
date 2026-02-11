@@ -1,52 +1,39 @@
 import { forwardRef } from 'react';
 import type { CVData } from '@/pages/CVGeneratorPage';
 
-/**
- * Calculate age from birth date string (DD/MM/YYYY format)
- */
+const ACCENT = '#3b4f6b'; // Bleu-gris anthracite discret
+
 function calculateAge(birthDate: string): string {
   if (!birthDate) return '';
-  
   const parts = birthDate.split('/');
   if (parts.length === 3) {
     const day = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10) - 1;
     const year = parseInt(parts[2], 10);
-    
     if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
       const birthDateObj = new Date(year, month, day);
       const today = new Date();
       let age = today.getFullYear() - birthDateObj.getFullYear();
       const monthDiff = today.getMonth() - birthDateObj.getMonth();
-      
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
         age--;
       }
-      
       return age > 0 ? `${age} ans` : '';
     }
   }
-  
   return '';
 }
 
-/**
- * Format name as: Prénom (normal) + NOM (MAJUSCULES)
- */
 function formatNameParts(fullName: string): { firstName: string; lastName: string } {
   if (!fullName || !fullName.trim()) return { firstName: '', lastName: '' };
-  
   const parts = fullName.trim().split(/\s+/);
-  
   if (parts.length === 1) {
     return { firstName: '', lastName: parts[0].toUpperCase() };
   }
-  
   const lastName = parts[parts.length - 1].toUpperCase();
-  const firstName = parts.slice(0, -1).map(p => 
+  const firstName = parts.slice(0, -1).map(p =>
     p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()
   ).join(' ');
-  
   return { firstName, lastName };
 }
 
@@ -54,13 +41,6 @@ interface CVPreviewProps {
   data: CVData;
 }
 
-/**
- * CV Preview - Style "Gribelin"
- * - Thin gray frames on white background
- * - Perfectly centered header with Name (UPPERCASE), First name, Job
- * - Justified text (block alignment)
- * - Includes Permis & Centres d'intérêt sections
- */
 const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => {
   const languageLevelMap: Record<string, string> = {
     debutant: 'Débutant',
@@ -73,34 +53,26 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
   const { firstName, lastName } = formatNameParts(data.fullName);
   const age = calculateAge(data.birthDate);
 
-  // Build the personal info line (Age • Situation • Permis)
   const personalInfoItems: string[] = [];
   if (age) personalInfoItems.push(age);
   if (data.maritalStatus) personalInfoItems.push(data.maritalStatus);
   if (data.drivingLicense) personalInfoItems.push(`Permis ${data.drivingLicense}`);
 
-  // Section Title Component with thin gray underline
   const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <div className="mb-3 mt-5">
-      <h2 
-        style={{ 
-          fontSize: '0.75rem',
+    <div className="mb-2" style={{ marginTop: '18px' }}>
+      <h2
+        style={{
+          fontSize: '0.7rem',
           fontWeight: '700',
           textTransform: 'uppercase',
-          letterSpacing: '0.15em',
-          color: '#374151',
-          marginBottom: '6px',
+          letterSpacing: '0.18em',
+          color: ACCENT,
+          marginBottom: '5px',
         }}
       >
         {children}
       </h2>
-      <div 
-        style={{ 
-          height: '1px', 
-          backgroundColor: '#9ca3af',
-          width: '100%',
-        }} 
-      />
+      <div style={{ height: '1.5px', backgroundColor: ACCENT, width: '36px' }} />
     </div>
   );
 
@@ -121,106 +93,104 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
       }}
     >
-      {/* ========== MAIN CONTENT - White with thin gray border ========== */}
-      <div 
-        style={{ 
-          padding: '32px 28px',
+      <div
+        style={{
+          padding: '30px 26px',
           border: '1px solid #d1d5db',
           margin: '16px',
           minHeight: 'calc(297mm - 32px)',
           backgroundColor: '#ffffff',
         }}
       >
-        
-        {/* ========== HEADER - Perfectly Centered ========== */}
-        <div className="text-center mb-6">
-          {/* Name: Prénom NOM - Centered */}
-          <h1 
-            style={{ 
-              fontSize: '1.75rem',
-              lineHeight: '1.2',
-              marginBottom: '4px',
-              color: '#1f2937',
-            }}
-          >
-            <span style={{ fontWeight: '400' }}>{firstName || 'Prénom'}</span>
-            {(firstName && lastName) && ' '}
-            <span style={{ fontWeight: '700' }}>{lastName || 'NOM'}</span>
-          </h1>
-          
-          {/* Thin gray horizontal line */}
-          <div 
-            style={{ 
-              height: '1px', 
-              backgroundColor: '#9ca3af',
-              width: '80px',
-              margin: '10px auto',
-            }} 
-          />
-          
-          {/* Profession - Centered */}
-          <p 
-            style={{ 
-              color: '#374151',
-              fontSize: '1rem',
-              fontWeight: '600',
-              marginBottom: '8px',
-              letterSpacing: '0.02em',
-            }}
-          >
-            {data.profession || 'Votre Métier'}
-          </p>
-          
-          {/* Age • Situation familiale • Permis */}
-          {personalInfoItems.length > 0 && (
-            <p 
-              style={{ 
-                fontSize: '0.8rem',
-                color: '#6b7280',
+        {/* ========== HEADER ========== */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
+          {/* Left: Name & profession */}
+          <div style={{ flex: 1, textAlign: 'center', paddingRight: data.photoUrl ? '12px' : '0' }}>
+            <h1
+              style={{
+                fontSize: '1.6rem',
+                lineHeight: '1.2',
+                marginBottom: '3px',
+                color: '#1f2937',
+              }}
+            >
+              <span style={{ fontWeight: '400' }}>{firstName || 'Prénom'}</span>
+              {(firstName && lastName) && ' '}
+              <span style={{ fontWeight: '700', letterSpacing: '0.04em' }}>{lastName || 'NOM'}</span>
+            </h1>
+
+            <div style={{ height: '1.5px', backgroundColor: ACCENT, width: '50px', margin: '8px auto' }} />
+
+            <p
+              style={{
+                color: ACCENT,
+                fontSize: '0.95rem',
+                fontWeight: '600',
+                marginBottom: '6px',
                 letterSpacing: '0.03em',
               }}
             >
-              {personalInfoItems.join('  •  ')}
+              {data.profession || 'Votre Métier'}
             </p>
+
+            {personalInfoItems.length > 0 && (
+              <p
+                style={{
+                  fontSize: '0.78rem',
+                  color: '#6b7280',
+                  letterSpacing: '0.03em',
+                }}
+              >
+                {personalInfoItems.join('  •  ')}
+              </p>
+            )}
+          </div>
+
+          {/* Right: Photo (optional) */}
+          {data.photoUrl && (
+            <div style={{ flexShrink: 0 }}>
+              <img
+                src={data.photoUrl}
+                alt="Photo"
+                style={{
+                  width: '72px',
+                  height: '72px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: `1.5px solid ${ACCENT}`,
+                }}
+              />
+            </div>
           )}
         </div>
 
-        {/* ========== CONTACT INFO - Centered ========== */}
-        <div 
-          className="text-center mb-6 pb-4"
-          style={{ borderBottom: '1px solid #e5e7eb' }}
+        {/* ========== CONTACT INFO ========== */}
+        <div
+          className="text-center pb-3 mb-4"
+          style={{ borderBottom: `1px solid #e5e7eb` }}
         >
-          <div className="flex flex-col items-center gap-1" style={{ color: '#4b5563' }}>
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-1" style={{ color: '#4b5563' }}>
             {data.phone && (
-              <div className="flex items-center gap-2" style={{ fontSize: '0.8rem' }}>
-                <span style={{ fontSize: '0.75rem' }}>📞</span>
-                <span>{data.phone}</span>
-              </div>
+              <span style={{ fontSize: '0.78rem' }}>📞 {data.phone}</span>
             )}
             {data.email && (
-              <div className="flex items-center gap-2" style={{ fontSize: '0.8rem' }}>
-                <span style={{ fontSize: '0.75rem' }}>✉️</span>
-                <span>{data.email}</span>
-              </div>
+              <span style={{ fontSize: '0.78rem' }}>✉️ {data.email}</span>
             )}
             {data.address && (
-              <div className="flex items-center gap-2" style={{ fontSize: '0.8rem' }}>
-                <span style={{ fontSize: '0.75rem' }}>📍</span>
-                <span>{data.address}</span>
-              </div>
+              <span style={{ fontSize: '0.78rem' }}>📍 {data.address}</span>
             )}
           </div>
         </div>
 
-        {/* ========== PROFILE / SUMMARY - Justified ========== */}
+        {/* ========== PROFIL ========== */}
         {data.summary && (
           <div>
             <SectionTitle>Profil</SectionTitle>
-            <p 
-              style={{ 
-                textAlign: 'justify', 
+            <p
+              style={{
+                textAlign: 'justify',
                 textJustify: 'inter-word',
-                fontSize: '0.85rem',
+                fontSize: '0.83rem',
                 lineHeight: '1.6',
                 color: '#374151',
               }}
@@ -234,16 +204,16 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
         {data.education.length > 0 && (
           <div>
             <SectionTitle>Formation</SectionTitle>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {data.education.map((edu, index) => (
                 <div key={edu.id} className={index > 0 ? 'pt-2 border-t border-gray-100' : ''}>
                   <div className="flex justify-between items-start gap-3">
                     <div style={{ flex: 1 }}>
-                      <p className="font-semibold" style={{ fontSize: '0.85rem', color: '#1f2937' }}>{edu.degree}</p>
-                      <p style={{ fontSize: '0.8rem', color: '#6b7280' }}>{edu.institution}</p>
-                      {edu.field && <p className="italic" style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{edu.field}</p>}
+                      <p style={{ fontSize: '0.83rem', fontWeight: '600', color: '#1f2937' }}>{edu.degree}</p>
+                      <p style={{ fontSize: '0.78rem', color: '#6b7280' }}>{edu.institution}</p>
+                      {edu.field && <p style={{ fontSize: '0.73rem', color: '#9ca3af', fontStyle: 'italic' }}>{edu.field}</p>}
                     </div>
-                    <span className="shrink-0" style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                    <span style={{ fontSize: '0.73rem', color: ACCENT, fontWeight: '500', whiteSpace: 'nowrap' }}>
                       {edu.startDate} — {edu.endDate}
                     </span>
                   </div>
@@ -253,26 +223,26 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
           </div>
         )}
 
-        {/* ========== EXPÉRIENCES PROFESSIONNELLES ========== */}
+        {/* ========== EXPÉRIENCES ========== */}
         {data.experiences.length > 0 && (
           <div>
             <SectionTitle>Expériences Professionnelles</SectionTitle>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {data.experiences.map((exp, index) => (
-                <div key={exp.id} className={index > 0 ? 'pt-3 border-t border-gray-100' : ''}>
-                  <div className="flex justify-between items-start gap-3 mb-1">
-                    <p className="font-semibold" style={{ fontSize: '0.85rem', color: '#1f2937' }}>{exp.position}</p>
-                    <span className="shrink-0" style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                <div key={exp.id} className={index > 0 ? 'pt-2.5 border-t border-gray-100' : ''}>
+                  <div className="flex justify-between items-start gap-3 mb-0.5">
+                    <p style={{ fontSize: '0.83rem', fontWeight: '600', color: '#1f2937' }}>{exp.position}</p>
+                    <span style={{ fontSize: '0.73rem', color: ACCENT, fontWeight: '500', whiteSpace: 'nowrap' }}>
                       {exp.startDate} — {exp.endDate || 'Présent'}
                     </span>
                   </div>
-                  <p className="mb-1" style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#6b7280' }}>{exp.company}</p>
+                  <p style={{ fontSize: '0.78rem', fontStyle: 'italic', color: '#6b7280', marginBottom: '2px' }}>{exp.company}</p>
                   {exp.description && (
-                    <p 
-                      style={{ 
-                        textAlign: 'justify', 
+                    <p
+                      style={{
+                        textAlign: 'justify',
                         textJustify: 'inter-word',
-                        fontSize: '0.8rem',
+                        fontSize: '0.78rem',
                         lineHeight: '1.55',
                         color: '#4b5563',
                       }}
@@ -290,9 +260,9 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
         {data.skills.length > 0 && (
           <div>
             <SectionTitle>Compétences</SectionTitle>
-            <p 
+            <p
               style={{
-                fontSize: '0.85rem',
+                fontSize: '0.83rem',
                 color: '#374151',
                 lineHeight: '1.6',
                 textAlign: 'justify',
@@ -310,8 +280,8 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
             <div className="space-y-1">
               {data.languages.map((lang) => (
                 <div key={lang.id} className="flex justify-between items-center">
-                  <span className="font-medium" style={{ fontSize: '0.85rem', color: '#374151' }}>{lang.name}</span>
-                  <span style={{ fontSize: '0.75rem', fontStyle: 'italic', color: '#9ca3af' }}>
+                  <span style={{ fontSize: '0.83rem', fontWeight: '500', color: '#374151' }}>{lang.name}</span>
+                  <span style={{ fontSize: '0.73rem', fontStyle: 'italic', color: ACCENT }}>
                     {languageLevelMap[lang.level] || lang.level}
                   </span>
                 </div>
@@ -320,11 +290,11 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
           </div>
         )}
 
-        {/* ========== PERMIS DE CONDUIRE ========== */}
+        {/* ========== PERMIS ========== */}
         {data.drivingLicense && (
           <div>
             <SectionTitle>Permis de Conduire</SectionTitle>
-            <p style={{ fontSize: '0.85rem', color: '#374151' }}>
+            <p style={{ fontSize: '0.83rem', color: '#374151' }}>
               Permis {data.drivingLicense}
             </p>
           </div>
@@ -334,9 +304,9 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
         {data.interests && data.interests.length > 0 && (
           <div>
             <SectionTitle>Centres d'Intérêt</SectionTitle>
-            <p 
+            <p
               style={{
-                fontSize: '0.85rem',
+                fontSize: '0.83rem',
                 color: '#374151',
                 lineHeight: '1.6',
                 textAlign: 'justify',
@@ -348,13 +318,13 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
         )}
 
         {/* ========== FOOTER ========== */}
-        <div 
-          className="text-center mt-8 pt-4"
-          style={{ 
-            borderTop: '1px solid #e5e7eb',
-            fontSize: '0.65rem',
+        <div
+          className="text-center mt-8 pt-3"
+          style={{
+            borderTop: `1px solid ${ACCENT}40`,
+            fontSize: '0.6rem',
             color: '#9ca3af',
-            letterSpacing: '0.05em',
+            letterSpacing: '0.06em',
           }}
         >
           Document réalisé avec Ana Fi Paris

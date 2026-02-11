@@ -85,12 +85,14 @@ const CVGeneratorPage = () => {
   const handleTranslate = async () => {
     setIsTranslating(true);
     try {
+      // Exclude photoUrl from translation payload — photo is visual only
+      const { photoUrl, ...cvDataWithoutPhoto } = cvData;
+
       const { data, error } = await supabase.functions.invoke('translate-cv', {
-        body: { cvData },
+        body: { cvData: cvDataWithoutPhoto },
       });
 
       if (error) {
-        // Extract detailed error from edge function response
         let detailMsg = error.message || 'Unknown error';
         try {
           if (error.context?.body) {
@@ -102,7 +104,8 @@ const CVGeneratorPage = () => {
         throw new Error(detailMsg);
       }
 
-      setTranslatedData(data.translatedCV);
+      // Preserve original photo in translated data
+      setTranslatedData({ ...data.translatedCV, photoUrl });
       setActiveTab('preview');
       toast({
         title: isRTL ? 'تمت الترجمة بنجاح!' : 'Traduction réussie !',

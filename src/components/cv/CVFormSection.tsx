@@ -21,9 +21,22 @@ const CVFormSection = ({ cvData, onChange, isRTL }: CVFormSectionProps) => {
   const [newInterest, setNewInterest] = useState('');
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  const [photoError, setPhotoError] = useState('');
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Only accept JPG/JPEG
+    if (file.type !== 'image/jpeg') {
+      setPhotoError(isRTL 
+        ? 'صيغة الصورة غير مقبولة. يرجى استيراد صورة بصيغة JPG.' 
+        : 'Format d\'image non pris en compte. Veuillez importer une image JPG.');
+      if (photoInputRef.current) photoInputRef.current.value = '';
+      return;
+    }
+    
+    setPhotoError('');
     const reader = new FileReader();
     reader.onloadend = () => {
       updateField('photoUrl', reader.result as string);
@@ -284,11 +297,14 @@ const CVFormSection = ({ cvData, onChange, isRTL }: CVFormSectionProps) => {
               <input
                 ref={photoInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg"
                 className="hidden"
                 onChange={handlePhotoUpload}
               />
             </div>
+            {photoError && (
+              <p className="text-sm text-destructive mt-1">{photoError}</p>
+            )}
           </div>
           <div>
             <Label className={cn(isRTL && "font-cairo text-right block")}>

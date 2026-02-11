@@ -63,16 +63,15 @@ export async function streamProAdminAssistant(
       // Prefer a controlled, localized message for known statuses (avoid surfacing raw "500 ...")
       let errorMessage = getFallbackErrorMessage(status, params.language);
 
-      // For non-5xx, try to use server-provided JSON error if present
-      if (!(status >= 500) && status !== 429 && status !== 402 && status !== 404) {
-        try {
-          const errorData = await resp.json();
-          if (typeof errorData?.error === 'string' && errorData.error.trim()) {
-            errorMessage = errorData.error;
-          }
-        } catch {
-          // Ignore JSON parse errors
+      // Always try to extract server-provided error details for logging
+      try {
+        const errorData = await resp.json();
+        console.error(`pro-admin-assistant error [${status}]:`, errorData);
+        if (typeof errorData?.error === 'string' && errorData.error.trim()) {
+          errorMessage = errorData.error;
         }
+      } catch {
+        console.error(`pro-admin-assistant error [${status}]: could not parse response body`);
       }
 
       onError({ status, message: errorMessage });

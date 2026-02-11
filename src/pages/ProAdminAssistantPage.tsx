@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, HelpCircle, Trash2, ArrowRight, ArrowLeft, Briefcase, RotateCcw } from 'lucide-react';
 import { compressImage, isImageData, getFileSizeKB } from '@/lib/imageCompression';
+import { extractTextFromPDF } from '@/lib/pdfExtractor';
 
 interface Message {
   id: string;
@@ -34,6 +35,7 @@ const ProAdminAssistantPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  const [isExtractingPDF, setIsExtractingPDF] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -147,9 +149,41 @@ Envoyez-moi une photo de n'importe quel document, ou décrivez votre problème e
 
     const hasImage = !!image;
     let processedImage = image;
+    let pdfExtractedText: string | null = null;
 
-    // Compress image if present
-    if (hasImage && image && isImageData(image)) {
+    // Check if the attached file is a PDF (data:application/pdf;base64,...)
+    const isPDF = image && image.startsWith('data:application/pdf');
+
+    if (isPDF && image) {
+      // Extract text from PDF in the browser
+      setIsExtractingPDF(true);
+      try {
+        pdfExtractedText = await extractTextFromPDF(image);
+        console.log(`PDF text extracted: ${pdfExtractedText.length} chars`);
+        if (!pdfExtractedText.trim()) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? 'PDF فارغ' : 'PDF vide',
+            description: isRTL ? 'لم يتم العثور على نص في هذا الملف' : 'Aucun texte trouvé dans ce fichier.',
+          });
+          setIsExtractingPDF(false);
+          return;
+        }
+      } catch (err) {
+        console.error('PDF extraction error:', err);
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'خطأ في قراءة PDF' : 'Erreur de lecture PDF',
+          description: isRTL ? 'تعذر قراءة الملف. حاول مرة أخرى.' : 'Impossible de lire le fichier. Réessayez.',
+        });
+        setIsExtractingPDF(false);
+        return;
+      }
+      setIsExtractingPDF(false);
+      // Don't send the raw PDF binary to the AI
+      processedImage = undefined;
+    } else if (hasImage && image && isImageData(image)) {
+      // Compress image if present
       try {
         const originalSize = getFileSizeKB(image);
         console.log(`Original image size: ${originalSize}KB`);
@@ -161,17 +195,32 @@ Envoyez-moi une photo de n'importe quel document, ou décrivez votre problème e
       }
     }
 
+    // Build the user message content
+    let displayContent: string;
+    let aiMessage: string;
+
+    if (pdfExtractedText) {
+      displayContent = `[📄 PDF مرفق]\n${userMessage || (isRTL ? 'حلل المستند ده' : 'Analysez ce document')}`;
+      aiMessage = `${userMessage || (isRTL ? 'حلل المستند ده وقولي إيه المكتوب فيه' : 'Analysez ce document et expliquez son contenu')}\n\n--- Contenu du PDF ---\n${pdfExtractedText}`;
+    } else if (hasImage && !isPDF) {
+      displayContent = `[صورة مرفقة]\n${userMessage || 'حلل المستند ده'}`;
+      aiMessage = userMessage || (language === 'fr' ? 'Analysez ce document et expliquez son contenu' : 'حلل المستند ده وقولي إيه المكتوب فيه');
+    } else {
+      displayContent = userMessage;
+      aiMessage = userMessage;
+    }
+
     const userMsg: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
-      content: hasImage ? `[صورة مرفقة]\n${userMessage || 'حلل المستند ده'}` : userMessage,
+      content: displayContent,
     };
 
     if (!isRetry) {
       setMessages(prev => [...prev, userMsg]);
     }
     setIsAnalyzing(true);
-    if (hasImage) {
+    if (hasImage && !isPDF) {
       setIsAnalyzingImage(true);
     }
 
@@ -194,7 +243,7 @@ Envoyez-moi une photo de n'importe quel document, ou décrivez votre problème e
 
     await streamProAdminAssistant(
       {
-        userMessage: userMessage || (language === 'fr' ? 'Analysez ce document et expliquez son contenu' : 'حلل المستند ده وقولي إيه المكتوب فيه'),
+        userMessage: aiMessage,
         imageData: processedImage,
         conversationHistory,
         language,
@@ -406,6 +455,21 @@ Envoyez-moi une photo de n'importe quel document, ou décrivez votre problème e
           </React.Fragment>
         ))}
         
+        {/* Loading indicator - PDF Extraction */}
+        {isExtractingPDF && (
+          <div className={cn(
+            "flex gap-3 p-4 rounded-xl bg-primary/10 mr-8",
+            isRTL && "flex-row-reverse ml-8 mr-0"
+          )}>
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+              <span className="animate-spin">📄</span>
+            </div>
+            <div className={cn("text-sm text-primary font-medium", isRTL && "text-right font-cairo")}>
+              {isRTL ? '📄 جاري قراءة ملف PDF...' : '📄 Lecture du PDF en cours...'}
+            </div>
+          </div>
+        )}
+
         {/* Loading indicator - Image Analysis */}
         {isAnalyzingImage && (
           <div className={cn(

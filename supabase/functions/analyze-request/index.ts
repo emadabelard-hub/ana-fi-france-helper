@@ -306,12 +306,10 @@ serve(async (req) => {
       aiMessages.push({ role: "user", content: userMessage });
     }
     
-    // Model selection for cost optimization:
-    // - Vision (images): Use gemini-2.5-flash for multimodal support
-    // - Text chat: Use openai/gpt-5-nano for cost efficiency (cheapest option)
+    // Hybrid model routing: gpt-5-mini for text (cost-optimized), gpt-5 for vision (max precision OCR)
     const model = hasImages 
-      ? "google/gemini-2.5-flash" 
-      : "openai/gpt-5-nano"; // Cost-optimized model for text chat
+      ? "openai/gpt-5" 
+      : "openai/gpt-5-mini";
     
     console.log("Using model:", model, "for", hasImages ? "vision" : "text");
     

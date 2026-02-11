@@ -53,7 +53,7 @@ Ajuste selon la complexité décrite. Sois réaliste.`;
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: "openai/gpt-5-mini",
       messages: [{ role: "user", content: prompt }],
       stream: false,
     }),
@@ -122,7 +122,7 @@ ${strict ? "- Interdiction stricte d'utiliser un alphabet autre que latin (fran�
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-5-mini",
         messages: [{ role: "user", content: prompt }],
         stream: false,
       }),
@@ -253,7 +253,7 @@ Génère des lignes réalistes pour une FACTURE de travaux terminés.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-5-mini",
         messages: [{ role: "user", content: prompt }],
         stream: false,
       }),
@@ -380,7 +380,7 @@ Génère des lignes réalistes et complètes.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-5-mini",
         messages: [{ role: "user", content: prompt }],
         stream: false,
       }),
@@ -774,7 +774,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-5-mini",
         messages,
         stream: false,
       }),

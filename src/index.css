@@ -270,30 +270,11 @@
    ============================================ */
 @media print {
   /* Hide everything by default */
-  body * {
-    visibility: hidden;
+  body > *:not(.print-root) {
+    display: none !important;
   }
 
-  /* Show only the printable document area */
-  .print-area,
-  .print-area * {
-    visibility: visible !important;
-  }
-
-  .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
-    box-shadow: none !important;
-    border: none !important;
-    overflow: visible !important;
-  }
-
-  /* Force hide navigation, header, buttons, bottom bar */
+  /* Hide all UI chrome */
   header,
   nav,
   footer,
@@ -302,10 +283,31 @@
   button,
   .no-print {
     display: none !important;
-    visibility: hidden !important;
   }
 
-  /* Re-show buttons inside print-area that are part of the document (none expected) */
+  /* Show only the printable document area */
+  .print-area {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+
+  .print-area * {
+    visibility: visible !important;
+    color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 
   /* Clean page setup */
   @page {

@@ -202,26 +202,7 @@ const InvoiceActions = ({
 
   // Open smart review instead of directly exporting
   const handlePDFClick = () => {
-    // Check if user is logged in
-    if (!user) {
-      toast({
-        variant: "destructive",
-        title: isRTL ? "تسجيل الدخول مطلوب" : "Connexion requise",
-        description: isRTL 
-          ? "سجل الدخول لتحميل الفواتير" 
-          : "Connectez-vous pour télécharger des factures",
-      });
-      return;
-    }
-
-    // Check if user can afford this action
-    if (!canAfford('invoice_pdf')) {
-      setShowInsufficientCredits(true);
-      return;
-    }
-
-    // Show smart review modal
-    setShowSmartReview(true);
+    window.print();
   };
 
   const handleSmartReviewConfirm = async (addons: SuggestedAddon[]) => {

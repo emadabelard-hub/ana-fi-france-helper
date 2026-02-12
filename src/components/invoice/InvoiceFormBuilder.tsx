@@ -268,9 +268,23 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       // Inject artisan's permanent signature and stamp from profile
       artisanSignatureUrl: (profile as any)?.artisan_signature_url || undefined,
       stampUrl: (profile as any)?.stamp_url || undefined,
-      // Logo & legal footer from profile
+      // Logo from profile
       logoUrl: (profile as any)?.logo_url || undefined,
-      legalFooter: (profile as any)?.legal_footer || undefined,
+      // Auto-generate legal footer from profile fields
+      legalFooter: (() => {
+        const p = profile as any;
+        if (!p) return undefined;
+        const parts: string[] = [];
+        if (p.company_name) parts.push(p.company_name);
+        const statusLabel = p.legal_status === 'auto-entrepreneur' ? 'Auto-entrepreneur' : (p.legal_status === 'societe' ? 'Société' : p.legal_status);
+        if (statusLabel) parts.push(statusLabel);
+        if (p.capital_social) parts.push(`au capital de ${p.capital_social}`);
+        if (p.siret) parts.push(`SIRET : ${p.siret}`);
+        if (p.code_naf) parts.push(`NAF : ${p.code_naf}`);
+        if (p.ville_immatriculation) parts.push(`RCS ${p.ville_immatriculation}`);
+        if (p.numero_tva) parts.push(`TVA : ${p.numero_tva}`);
+        return parts.length > 1 ? parts.join(' - ') : (p.legal_footer || undefined);
+      })(),
     };
   };
   

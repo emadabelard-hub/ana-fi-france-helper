@@ -27,6 +27,10 @@ interface CompanyFormData {
   logo_url: string;
   header_image_url: string;
   legal_footer: string;
+  capital_social: string;
+  code_naf: string;
+  ville_immatriculation: string;
+  numero_tva: string;
 }
 
 const CompanyProfileSection = () => {
@@ -49,6 +53,10 @@ const CompanyProfileSection = () => {
     logo_url: '',
     header_image_url: '',
     legal_footer: 'Dispensé d\'immatriculation au registre du commerce et des sociétés (RCS) et au répertoire des métiers (RM). TVA non applicable, art. 293 B du CGI.',
+    capital_social: '',
+    code_naf: '',
+    ville_immatriculation: '',
+    numero_tva: '',
   });
 
   useEffect(() => {
@@ -63,6 +71,10 @@ const CompanyProfileSection = () => {
         logo_url: (profile as any).logo_url || '',
         header_image_url: (profile as any).header_image_url || '',
         legal_footer: (profile as any).legal_footer || 'Dispensé d\'immatriculation au registre du commerce et des sociétés (RCS) et au répertoire des métiers (RM). TVA non applicable, art. 293 B du CGI.',
+        capital_social: (profile as any).capital_social || '',
+        code_naf: (profile as any).code_naf || '',
+        ville_immatriculation: (profile as any).ville_immatriculation || '',
+        numero_tva: (profile as any).numero_tva || '',
       });
     }
   }, [profile]);
@@ -492,28 +504,92 @@ const CompanyProfileSection = () => {
       </CardContent>
       </Card>
 
-      {/* Legal Footer Card */}
+      {/* Legal Details Card */}
       <Card>
         <CardHeader>
           <CardTitle className={cn("flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>
             <FileText className="h-5 w-5 text-primary" />
-            {isRTL ? 'الذيل القانوني' : 'Mentions Légales / Pied de page'}
+            {isRTL ? 'البيانات القانونية' : 'Mentions Légales (Pied de page)'}
           </CardTitle>
           <CardDescription className={cn(isRTL && "text-right font-cairo")}>
             {isRTL 
-              ? 'النص ده هيظهر في أسفل كل فاتورة ودوفي'
-              : 'Ce texte apparaîtra en bas de chaque facture et devis'
+              ? 'البيانات دي هتتجمع تلقائياً في سطر قانوني أسفل كل فاتورة'
+              : 'Ces informations seront assemblées automatiquement en bas de chaque document'
             }
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Textarea
-            value={formData.legal_footer}
-            onChange={(e) => handleChange('legal_footer', e.target.value)}
-            placeholder={isRTL ? 'أدخل الذيل القانوني...' : 'Dispensé d\'immatriculation...'}
-            className={cn("min-h-[80px] text-sm", isRTL && "text-right font-cairo")}
-            rows={3}
-          />
+        <CardContent className="space-y-4">
+          {/* Forme Juridique - already handled by legal_status select above, but we need a text field for display */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'رأس المال' : 'Capital Social'}
+              </Label>
+              <Input
+                value={formData.capital_social}
+                onChange={(e) => handleChange('capital_social', e.target.value)}
+                placeholder="Ex: 1 000 €"
+                className={cn(isRTL && "text-right")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'كود NAF/APE' : 'Code NAF / APE'}
+              </Label>
+              <Input
+                value={formData.code_naf}
+                onChange={(e) => handleChange('code_naf', e.target.value)}
+                placeholder="Ex: 4334Z"
+                className={cn(isRTL && "text-right")}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'مدينة التسجيل (RCS/RM)' : 'Ville d\'immatriculation (RCS/RM)'}
+              </Label>
+              <Input
+                value={formData.ville_immatriculation}
+                onChange={(e) => handleChange('ville_immatriculation', e.target.value)}
+                placeholder="Ex: Paris"
+                className={cn(isRTL && "text-right")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'رقم TVA (اختياري)' : 'N° TVA Intracommunautaire'}
+              </Label>
+              <Input
+                value={formData.numero_tva}
+                onChange={(e) => handleChange('numero_tva', e.target.value)}
+                placeholder="Ex: FR 12 345678901"
+                className={cn(isRTL && "text-right")}
+              />
+            </div>
+          </div>
+
+          {/* Auto-generated footer preview */}
+          <div className="space-y-2">
+            <Label className={cn("text-xs text-muted-foreground", isRTL && "font-cairo")}>
+              {isRTL ? 'معاينة الذيل القانوني' : 'Aperçu du pied de page généré'}
+            </Label>
+            <div className="bg-muted/50 rounded-md p-3 text-[10px] text-muted-foreground text-center leading-relaxed border">
+              {(() => {
+                const parts: string[] = [];
+                if (formData.company_name) parts.push(formData.company_name);
+                const statusLabel = formData.legal_status === 'auto-entrepreneur' ? 'Auto-entrepreneur' : 'Société';
+                parts.push(statusLabel);
+                if (formData.capital_social) parts.push(`au capital de ${formData.capital_social}`);
+                if (formData.siret) parts.push(`SIRET : ${formData.siret}`);
+                if (formData.code_naf) parts.push(`NAF : ${formData.code_naf}`);
+                if (formData.ville_immatriculation) parts.push(`RCS ${formData.ville_immatriculation}`);
+                if (formData.numero_tva) parts.push(`TVA : ${formData.numero_tva}`);
+                return parts.join(' - ') || (isRTL ? 'املأ الحقول لمعاينة النص' : 'Remplissez les champs pour voir l\'aperçu');
+              })()}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

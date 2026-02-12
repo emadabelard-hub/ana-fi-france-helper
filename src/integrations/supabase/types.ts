@@ -79,6 +79,8 @@ export type Database = {
           address: string | null
           artisan_signature_url: string | null
           caf_number: string | null
+          capital_social: string | null
+          code_naf: string | null
           company_address: string | null
           company_name: string | null
           created_at: string
@@ -94,17 +96,21 @@ export type Database = {
           legal_footer: string | null
           legal_status: string | null
           logo_url: string | null
+          numero_tva: string | null
           phone: string | null
           siret: string | null
           social_security: string | null
           stamp_url: string | null
           updated_at: string
           user_id: string
+          ville_immatriculation: string | null
         }
         Insert: {
           address?: string | null
           artisan_signature_url?: string | null
           caf_number?: string | null
+          capital_social?: string | null
+          code_naf?: string | null
           company_address?: string | null
           company_name?: string | null
           created_at?: string
@@ -120,17 +126,21 @@ export type Database = {
           legal_footer?: string | null
           legal_status?: string | null
           logo_url?: string | null
+          numero_tva?: string | null
           phone?: string | null
           siret?: string | null
           social_security?: string | null
           stamp_url?: string | null
           updated_at?: string
           user_id: string
+          ville_immatriculation?: string | null
         }
         Update: {
           address?: string | null
           artisan_signature_url?: string | null
           caf_number?: string | null
+          capital_social?: string | null
+          code_naf?: string | null
           company_address?: string | null
           company_name?: string | null
           created_at?: string
@@ -146,12 +156,14 @@ export type Database = {
           legal_footer?: string | null
           legal_status?: string | null
           logo_url?: string | null
+          numero_tva?: string | null
           phone?: string | null
           siret?: string | null
           social_security?: string | null
           stamp_url?: string | null
           updated_at?: string
           user_id?: string
+          ville_immatriculation?: string | null
         }
         Relationships: []
       }

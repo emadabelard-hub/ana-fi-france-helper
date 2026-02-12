@@ -250,10 +250,10 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         ainsi qu'une indemnité forfaitaire de 40€ pour frais de recouvrement (Art. L.441-10 du Code de commerce).</p>
       </div>
 
-      {/* Legal Footer */}
+      {/* Auto-generated Legal Footer */}
       {data.legalFooter && (
         <div className="mt-3 pt-2 border-t border-gray-300 text-center">
-          <p className="text-[7px] text-gray-400 leading-snug whitespace-pre-line">{data.legalFooter}</p>
+          <p className="text-[7px] text-gray-400 leading-snug">{data.legalFooter}</p>
         </div>
       )}
     </div>

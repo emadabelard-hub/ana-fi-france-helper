@@ -25,6 +25,11 @@ export interface Profile {
   artisan_signature_url: string | null;
   // Stamp (cachet)
   stamp_url: string | null;
+  // Legal detail fields
+  capital_social: string | null;
+  code_naf: string | null;
+  ville_immatriculation: string | null;
+  numero_tva: string | null;
   // Credits & Rate Limiting
   credits_balance: number;
   daily_message_count: number;

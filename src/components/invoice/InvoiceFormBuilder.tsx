@@ -268,6 +268,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       // Inject artisan's permanent signature and stamp from profile
       artisanSignatureUrl: (profile as any)?.artisan_signature_url || undefined,
       stampUrl: (profile as any)?.stamp_url || undefined,
+      // Logo & legal footer from profile
+      logoUrl: (profile as any)?.logo_url || undefined,
+      legalFooter: (profile as any)?.legal_footer || undefined,
     };
   };
   

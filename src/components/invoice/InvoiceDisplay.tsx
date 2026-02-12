@@ -37,6 +37,8 @@ export interface InvoiceData {
   tvaExemptText?: string;
   paymentTerms: string;
   legalMentions?: string;
+  legalFooter?: string;
+  logoUrl?: string;
   // Artisan permanent signature (unique signature affichée sur les PDF)
   artisanSignatureUrl?: string;
   // Stamp (cachet)
@@ -81,6 +83,9 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       <div className="border-b-2 border-primary pb-2 mb-2">
         <div className="flex justify-between items-start">
           <div>
+            {data.logoUrl && (
+              <img src={data.logoUrl} alt="Logo" className="mb-1 object-contain" style={{ maxHeight: '60px', maxWidth: '120px' }} />
+            )}
             <h1 className="text-base font-bold text-primary leading-tight">{data.emitter.name}</h1>
             <p className="text-[10px] text-gray-600 whitespace-pre-line leading-snug">{data.emitter.address}</p>
             <p className="text-[10px] text-gray-600">SIRET: {data.emitter.siret}</p>
@@ -244,6 +249,13 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         <p className="pt-0.5 border-t border-gray-100">En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée, 
         ainsi qu'une indemnité forfaitaire de 40€ pour frais de recouvrement (Art. L.441-10 du Code de commerce).</p>
       </div>
+
+      {/* Legal Footer */}
+      {data.legalFooter && (
+        <div className="mt-3 pt-2 border-t border-gray-300 text-center">
+          <p className="text-[7px] text-gray-400 leading-snug whitespace-pre-line">{data.legalFooter}</p>
+        </div>
+      )}
     </div>
   );
 };

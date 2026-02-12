@@ -91,6 +91,7 @@ export type Database = {
           header_type: string | null
           id: string
           last_message_date: string | null
+          legal_footer: string | null
           legal_status: string | null
           logo_url: string | null
           phone: string | null
@@ -116,6 +117,7 @@ export type Database = {
           header_type?: string | null
           id?: string
           last_message_date?: string | null
+          legal_footer?: string | null
           legal_status?: string | null
           logo_url?: string | null
           phone?: string | null
@@ -141,6 +143,7 @@ export type Database = {
           header_type?: string | null
           id?: string
           last_message_date?: string | null
+          legal_footer?: string | null
           legal_status?: string | null
           logo_url?: string | null
           phone?: string | null

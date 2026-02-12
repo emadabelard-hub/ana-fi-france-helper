@@ -156,9 +156,13 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
                     }}
                   >
                     <span 
-                      className={`font-medium leading-tight block ${isSection ? 'font-bold text-primary' : ''}`}
+                      className={`font-medium leading-tight block whitespace-pre-wrap text-left ${isSection ? 'font-bold text-primary' : ''}`}
                     >
-                      {item.designation_fr}
+                      {item.designation_fr.includes('\n') 
+                        ? item.designation_fr.split('\n').filter(l => l.trim()).map((line, i) => (
+                            <span key={i} className="block">- {line.trim()}</span>
+                          ))
+                        : item.designation_fr}
                     </span>
                     {showArabic && item.designation_ar && (
                       <span className="block text-[8px] text-gray-400 mt-0.5 print:hidden" dir="rtl">

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,7 @@ const LegalGuidePage = () => {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<{ id: string; file: File; name: string }[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -45,14 +47,68 @@ const LegalGuidePage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const readAsDataURL = (f: File): Promise<string> =>
+    new Promise((resolve, reject) => { const r = new FileReader(); r.onload = (e) => resolve(e.target?.result as string); r.onerror = () => reject(new Error('File read error')); r.readAsDataURL(f); });
+
   const handleSend = async (messageText?: string, imageData?: string) => {
     const text = messageText || inputValue;
-    if (!text.trim() && !imageData) return;
+    const filesToSend = [...pendingFiles];
+    
+    if (!text.trim() && !imageData && filesToSend.length === 0) return;
+
+    // Build combined content from pending files
+    let combinedText = text;
+    let primaryImage = imageData;
+    
+    if (filesToSend.length > 0) {
+      setIsExtractingPdf(true);
+      toast({
+        title: isRTL
+          ? `📄 جاري تحليل ${filesToSend.length} مستند...`
+          : `📄 Analyse de ${filesToSend.length} documents en cours...`,
+      });
+
+      const textParts: string[] = [];
+      for (const pf of filesToSend) {
+        const f = pf.file;
+        const isPDF = f.type === 'application/pdf';
+        const isImage = f.type.startsWith('image/');
+
+        if (isPDF) {
+          const dataUrl = await readAsDataURL(f);
+          const extracted = await extractTextFromPDF(dataUrl);
+          if (extracted.trim()) {
+            textParts.push(`--- ${f.name} ---\n${extracted}`);
+          } else if (!primaryImage) {
+            primaryImage = dataUrl;
+          }
+        } else if (isImage) {
+          if (!primaryImage) {
+            primaryImage = await readAsDataURL(f);
+          }
+        }
+      }
+
+      setIsExtractingPdf(false);
+      setPendingFiles([]);
+
+      if (textParts.length > 0) {
+        const prefix = isRTL
+          ? `محتوى ${textParts.length} مستند مرفق:\n\n`
+          : `Contenu de ${textParts.length} document(s) :\n\n`;
+        combinedText = prefix + textParts.join('\n\n') + (combinedText.trim() ? `\n\n${combinedText}` : '');
+      }
+      if (!combinedText.trim() && primaryImage) {
+        combinedText = isRTL
+          ? 'حلل المستندات دي وقولي إيه حقوقي وواجباتي'
+          : 'Analysez ces documents et conseillez-moi sur mes droits';
+      }
+    }
 
     const userMsg: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
-      content: text || (imageData ? '📷 صورة مرفقة' : ''),
+      content: combinedText || (primaryImage ? '📷 صورة مرفقة' : ''),
     };
 
     setMessages(prev => [...prev, userMsg]);
@@ -73,11 +129,10 @@ const LegalGuidePage = () => {
     try {
       await streamProAdminAssistant(
         {
-          userMessage: text,
-          imageData,
+          userMessage: combinedText,
+          imageData: primaryImage,
           conversationHistory,
           language: chatLanguage,
-          // The system prompt in the edge function already handles legal context
         },
         {
           onDelta: (deltaText) => {
@@ -128,48 +183,31 @@ const LegalGuidePage = () => {
       toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: isRTL ? 'يرجى رفع صورة (JPG/PNG) أو ملف PDF فقط' : 'Veuillez télécharger une image (JPG/PNG) ou un fichier PDF uniquement.' });
       return;
     }
-    const readAsDataURL = (f: File): Promise<string> =>
-      new Promise((resolve, reject) => { const r = new FileReader(); r.onload = (e) => resolve(e.target?.result as string); r.onerror = () => reject(new Error('File read error')); r.readAsDataURL(f); });
+    // Add to pending files list instead of sending immediately
+    setPendingFiles(prev => [...prev, { id: crypto.randomUUID(), file, name: file.name }]);
+  };
 
-    try {
-      if (isPDF) {
-        setIsExtractingPdf(true);
-        toast({ title: isRTL ? '📄 جاري قراءة الـ PDF...' : '📄 Lecture du PDF en cours...' });
-        const dataUrl = await readAsDataURL(file);
-        const extractedText = await extractTextFromPDF(dataUrl);
-        setIsExtractingPdf(false);
-        if (!extractedText.trim()) {
-          toast({ title: isRTL ? '📷 PDF ممسوح، جاري التحليل بالصورة...' : '📷 PDF scanné, analyse par image...' });
-          handleSend(language === 'fr' ? 'Analysez ce document juridique/administratif et expliquez-moi mes droits et obligations' : 'حلل المستند القانوني ده وقولي إيه حقوقي وواجباتي', dataUrl);
-          return;
-        }
-        const prompt = language === 'fr'
-          ? `Voici le contenu extrait d'un document administratif/juridique :\n\n${extractedText}\n\nAnalysez ce document, expliquez-moi son contenu et conseillez-moi sur mes droits et les démarches à suivre.`
-          : `ده محتوى مستند إداري/قانوني:\n\n${extractedText}\n\nحلل المستند ده وقولي إيه المكتوب فيه وإيه حقوقي وإيه المطلوب مني أعمله.`;
-        handleSend(prompt);
-      } else {
-        const base64 = await readAsDataURL(file);
-        const imagePrompt = language === 'fr'
-          ? 'Analysez ce document administratif/juridique et expliquez-moi son contenu et mes droits'
-          : 'حلل المستند القانوني ده وقولي إيه المكتوب فيه وإيه حقوقي';
-        handleSend(imagePrompt, base64);
-      }
-    } catch (error) {
-      console.error('File processing error:', error);
-      setIsExtractingPdf(false);
-      toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: isRTL ? 'حدث خطأ أثناء معالجة الملف. حاول مرة تانية.' : 'Erreur lors du traitement du fichier. Réessayez.' });
-    }
+  const removePendingFile = (id: string) => {
+    setPendingFiles(prev => prev.filter(f => f.id !== id));
   };
 
   const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) await handleFileUpload(file, false);
+    const selected = e.target.files;
+    if (selected) {
+      for (const file of Array.from(selected)) {
+        await handleFileUpload(file, false);
+      }
+    }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) await handleFileUpload(file, true);
+    const selected = e.target.files;
+    if (selected) {
+      for (const file of Array.from(selected)) {
+        await handleFileUpload(file, true);
+      }
+    }
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
@@ -279,11 +317,24 @@ const LegalGuidePage = () => {
       </div>
 
       {/* Hidden file inputs */}
-      <input ref={fileInputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFileInputChange} />
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCameraChange} />
+      <input ref={fileInputRef} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={handleFileInputChange} />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={handleCameraChange} />
 
       {/* INPUT AREA */}
       <div className="fixed left-0 right-0 z-[60] bg-background border-t border-border safe-area-pb" style={{ bottom: '5rem' }}>
+        {/* Pending files list */}
+        {pendingFiles.length > 0 && (
+          <div className="mx-3 mt-2 space-y-1">
+            {pendingFiles.map((pf) => (
+              <div key={pf.id} className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-card border border-border text-sm">
+                <span className="truncate text-foreground text-xs">{pf.name}</span>
+                <button onClick={() => removePendingFile(pf.id)} className="flex-shrink-0 p-1 rounded-full hover:bg-destructive/10 text-destructive">
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="mx-3 mt-2 mb-2 bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
           <textarea
             value={inputValue}
@@ -321,10 +372,10 @@ const LegalGuidePage = () => {
             <button
               type="button"
               onClick={() => handleSend()}
-              disabled={!inputValue.trim() || isTyping || isExtractingPdf}
+              disabled={(!inputValue.trim() && pendingFiles.length === 0) || isTyping || isExtractingPdf}
               className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all",
-                inputValue.trim() && !isTyping ? 'bg-emerald-600 text-white' : 'bg-muted-foreground/20 text-muted-foreground'
+                (inputValue.trim() || pendingFiles.length > 0) && !isTyping ? 'bg-emerald-600 text-white' : 'bg-muted-foreground/20 text-muted-foreground'
               )}
             >
               {isTyping ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}

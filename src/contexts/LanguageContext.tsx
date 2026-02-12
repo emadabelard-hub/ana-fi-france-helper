@@ -216,6 +216,9 @@ const translations: Record<Language, Record<string, string>> = {
     'news.disclaimer': 'Liens vers des sources externes. Ana Fi France n\'est pas responsable du contenu.',
     'nav.news': 'Actus',
 
+    // ===== COURRIER =====
+    'courrier.title': 'Répondre au Courrier',
+
     // ===== LEGAL GUIDE =====
     'legal.title': 'Guide Juridique',
     'legal.subtitle': 'Analyse de documents active',
@@ -421,6 +424,9 @@ const translations: Record<Language, Record<string, string>> = {
     'news.subtitle': 'تابع آخر الأخبار',
     'news.disclaimer': 'روابط لمصادر خارجية. أنا في فرنسا مش مسؤول عن المحتوى.',
     'nav.news': 'أخبار',
+
+    // ===== COURRIER =====
+    'courrier.title': 'الرد على خطاب',
 
     // ===== LEGAL GUIDE =====
     'legal.title': 'دليلك الإداري والقانوني',

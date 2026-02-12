@@ -1268,7 +1268,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             onUpdateInvoice={handleUpdateInvoice}
           />
           
-          <div ref={invoiceRef}>
+          <div ref={invoiceRef} className="print-area">
             <InvoiceDisplay 
               data={invoiceData} 
               showArabic={showArabic} 

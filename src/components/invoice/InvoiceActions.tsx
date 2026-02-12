@@ -268,64 +268,16 @@ const InvoiceActions = ({
   };
 
   const executeExportPDF = async () => {
-    if (!invoiceRef.current) return;
-    
-    // Temporarily switch to French for PDF
-    const wasArabic = showArabic;
-    if (wasArabic) {
-      onToggleArabic(false);
-      // Wait for re-render
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
+    // Deduct credits first
+    const success = await deductCredits('invoice_pdf');
+    if (!success) return;
 
-    try {
-      // Deduct credits first
-      const success = await deductCredits('invoice_pdf');
-      if (!success) {
-        if (wasArabic) onToggleArabic(true);
-        return;
-      }
+    window.print();
 
-      const canvas = await html2canvas(invoiceRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      
-      const finalWidth = imgWidth * ratio * 0.95;
-      const finalHeight = imgHeight * ratio * 0.95;
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = 10;
-
-      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
-      pdf.save(`${invoiceData.type.toLowerCase()}-${invoiceData.number}-${Date.now()}.pdf`);
-
-      toast({
-        title: isRTL ? "تم التحميل" : "Téléchargé",
-        description: isRTL ? "تم حفظ الملف PDF" : "Le fichier PDF a été enregistré",
-      });
-    } catch (error) {
-      console.error('PDF export error:', error);
-      toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "فشل في إنشاء PDF" : "Échec de la création du PDF",
-      });
-    } finally {
-      // Restore Arabic if it was on
-      if (wasArabic) {
-        onToggleArabic(true);
-      }
-    }
+    toast({
+      title: isRTL ? "تم التحميل" : "Téléchargé",
+      description: isRTL ? "تم حفظ الملف PDF" : "Le fichier PDF a été enregistré",
+    });
   };
 
   const handleExportImage = async () => {

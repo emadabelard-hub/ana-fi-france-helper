@@ -215,6 +215,15 @@ const translations: Record<Language, Record<string, string>> = {
     'news.subtitle': 'Suivez l\'info en direct',
     'news.disclaimer': 'Liens vers des sources externes. Ana Fi France n\'est pas responsable du contenu.',
     'nav.news': 'Actus',
+
+    // ===== LEGAL GUIDE =====
+    'legal.title': 'Guide Juridique',
+    'legal.subtitle': 'Analyse de documents active',
+    'legal.welcome': 'Bienvenue dans votre guide administratif et juridique.',
+    'legal.welcomeSub': 'Envoyez une photo de document ou posez vos questions sur vos droits.',
+    'legal.placeholder': 'Décrivez votre situation ou envoyez un document...',
+    'legal.dashboardTitle': 'Guide Juridique',
+    'legal.dashboardSub': 'Analyse Documents & Droits',
   },
   ar: {
     // ===== NAVIGATION =====
@@ -412,6 +421,15 @@ const translations: Record<Language, Record<string, string>> = {
     'news.subtitle': 'تابع آخر الأخبار',
     'news.disclaimer': 'روابط لمصادر خارجية. أنا في فرنسا مش مسؤول عن المحتوى.',
     'nav.news': 'أخبار',
+
+    // ===== LEGAL GUIDE =====
+    'legal.title': 'دليلك الإداري والقانوني',
+    'legal.subtitle': 'تحليل المستندات شغال',
+    'legal.welcome': 'مرحباً بك في دليلك الإداري والقانوني.',
+    'legal.welcomeSub': 'ابعت صورة المستند أو اسأل عن حقوقك وأنا هساعدك.',
+    'legal.placeholder': 'احكيلي موضوعك أو ابعت صورة المستند...',
+    'legal.dashboardTitle': 'دليلك الإداري والقانوني',
+    'legal.dashboardSub': 'تحليل مستندات وحقوق',
   },
 };
 

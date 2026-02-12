@@ -19,6 +19,7 @@ import CVGeneratorPage from "@/pages/CVGeneratorPage";
 import AdminPage from "@/pages/AdminPage";
 import ComingSoonPage from "@/pages/ComingSoonPage";
 import NewsPage from "@/pages/NewsPage";
+import LegalGuidePage from "@/pages/LegalGuidePage";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 
@@ -49,6 +50,7 @@ const App = () => {
                   <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />
                   <Route path="/pro/cv-generator" element={<CVGeneratorPage />} />
                   <Route path="/pro/settings" element={<ProSettingsPage />} />
+                  <Route path="/legal-guide" element={<LegalGuidePage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/coming-soon" element={<ComingSoonPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -278,10 +278,7 @@ const AssistantPage = () => {
           navigate('/pro/invoice-creator');
           break;
         case 'mail':
-          const mailPrompt = language === 'fr' 
-            ? 'Je souhaite répondre à un courrier officiel que j\'ai reçu. Pouvez-vous m\'aider ?' 
-            : 'عايز ارد على خطاب رسمي وصلني، ممكن تساعدني؟';
-          setInputValue(mailPrompt);
+          navigate('/courrier');
           break;
         default:
           break;

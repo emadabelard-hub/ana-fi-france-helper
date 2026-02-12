@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -25,6 +26,7 @@ interface CompanyFormData {
   header_type: 'automatic' | 'full_image';
   logo_url: string;
   header_image_url: string;
+  legal_footer: string;
 }
 
 const CompanyProfileSection = () => {
@@ -46,6 +48,7 @@ const CompanyProfileSection = () => {
     header_type: 'automatic',
     logo_url: '',
     header_image_url: '',
+    legal_footer: 'Dispensé d\'immatriculation au registre du commerce et des sociétés (RCS) et au répertoire des métiers (RM). TVA non applicable, art. 293 B du CGI.',
   });
 
   useEffect(() => {
@@ -59,6 +62,7 @@ const CompanyProfileSection = () => {
         header_type: (profile as any).header_type || 'automatic',
         logo_url: (profile as any).logo_url || '',
         header_image_url: (profile as any).header_image_url || '',
+        legal_footer: (profile as any).legal_footer || 'Dispensé d\'immatriculation au registre du commerce et des sociétés (RCS) et au répertoire des métiers (RM). TVA non applicable, art. 293 B du CGI.',
       });
     }
   }, [profile]);
@@ -486,6 +490,31 @@ const CompanyProfileSection = () => {
             </div>
           </div>
       </CardContent>
+      </Card>
+
+      {/* Legal Footer Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className={cn("flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>
+            <FileText className="h-5 w-5 text-primary" />
+            {isRTL ? 'الذيل القانوني' : 'Mentions Légales / Pied de page'}
+          </CardTitle>
+          <CardDescription className={cn(isRTL && "text-right font-cairo")}>
+            {isRTL 
+              ? 'النص ده هيظهر في أسفل كل فاتورة ودوفي'
+              : 'Ce texte apparaîtra en bas de chaque facture et devis'
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={formData.legal_footer}
+            onChange={(e) => handleChange('legal_footer', e.target.value)}
+            placeholder={isRTL ? 'أدخل الذيل القانوني...' : 'Dispensé d\'immatriculation...'}
+            className={cn("min-h-[80px] text-sm", isRTL && "text-right font-cairo")}
+            rows={3}
+          />
+        </CardContent>
       </Card>
 
       {/* Artisan Signature Section */}

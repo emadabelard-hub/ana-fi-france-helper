@@ -1146,14 +1146,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 {/* Acompte */}
                 <div className="space-y-1.5">
                   <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                    {isRTL ? 'التسبيق (%)' : 'Acompte (%)'}
+                    {isRTL ? 'المقدم (%)' : 'Acompte (%)'}
                   </Label>
                   <select
                     value={acomptePercent}
                     onChange={(e) => setAcomptePercent(parseInt(e.target.value))}
                     className="w-full bg-background border border-border text-foreground text-sm rounded-md focus:ring-primary focus:border-primary p-2"
                   >
-                    <option value="0">0% - {isRTL ? 'من غير تسبيق' : 'Sans acompte'}</option>
+                    <option value="0">0% - {isRTL ? 'بدون مقدم' : 'Sans acompte'}</option>
                     <option value="30">30%</option>
                     <option value="40">40%</option>
                     <option value="50">50%</option>

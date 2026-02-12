@@ -82,6 +82,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Quote validity duration (in days) - default 30 days
   const [validityDuration, setValidityDuration] = useState<15 | 30 | 60 | 90>(30);
   
+  // Payment terms state
+  const [acomptePercent, setAcomptePercent] = useState<number>(30);
+  const [delaiPaiement, setDelaiPaiement] = useState<string>('reception');
+  const [moyenPaiement, setMoyenPaiement] = useState<string>('virement');
+  
   // Line items - use empty strings for quantity/price to allow clean input
   const [items, setItems] = useState<LineItem[]>([
     {
@@ -261,7 +266,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       tvaAmount,
       tvaExempt,
       total: Math.round(total * 100) / 100,
-      paymentTerms: 'Paiement à réception de facture',
+      paymentTerms: (() => {
+        const delaiLabel = delaiPaiement === 'reception' ? 'à réception de facture' : delaiPaiement === '30jours' ? 'à 30 jours' : 'fin de mois';
+        const moyenLabel = moyenPaiement === 'virement' ? 'Virement' : moyenPaiement === 'cheque' ? 'Chèque' : 'Espèces';
+        let text = '';
+        if (acomptePercent > 0) {
+          text += `Acompte de ${acomptePercent}% à la commande. Solde ${delaiLabel} par ${moyenLabel}.`;
+        } else {
+          text += `Paiement ${delaiLabel} par ${moyenLabel}.`;
+        }
+        text += ` En cas de retard : pénalités de 3 fois le taux légal + indemnité forfaitaire de 40€.`;
+        return text;
+      })(),
       legalMentions: tvaExempt 
         ? 'TVA non applicable, article 293 B du CGI'
         : undefined,
@@ -1104,6 +1120,88 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             </CardContent>
           </Card>
           
+          {/* Payment Terms - Conditions de Règlement */}
+          <Card className="border-amber-500/20 bg-amber-500/5">
+            <CardContent className="p-4 space-y-4">
+              {/* Pedagogical Alert */}
+              <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700">
+                <p className={cn("font-bold text-amber-800 dark:text-amber-300 text-sm mb-1", isRTL && "text-right font-cairo")}>
+                  {isRTL ? '⚖️ احمي حقك / Protégez vos droits' : '⚖️ Protégez vos droits / احمي حقك'}
+                </p>
+                <p className={cn("text-xs text-amber-700 dark:text-amber-400", isRTL && "text-right font-cairo")}>
+                  {isRTL 
+                    ? 'البيانات دي إجبارية. من غيرها مش هتقدر تطالب بحقك لو العميل اتأخر في الدفع.'
+                    : 'Ces mentions sont obligatoires. Sans elles, vous ne pourrez pas réclamer de pénalités en cas de retard de paiement.'}
+                </p>
+              </div>
+
+              <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                <span className="text-xl">💳</span>
+                <h4 className={cn("font-bold text-amber-700 dark:text-amber-400", isRTL && "font-cairo")}>
+                  {isRTL ? 'شروط الدفع' : 'Conditions de règlement'}
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Acompte */}
+                <div className="space-y-1.5">
+                  <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                    {isRTL ? 'التسبيق (%)' : 'Acompte (%)'}
+                  </Label>
+                  <select
+                    value={acomptePercent}
+                    onChange={(e) => setAcomptePercent(parseInt(e.target.value))}
+                    className="w-full bg-background border border-border text-foreground text-sm rounded-md focus:ring-primary focus:border-primary p-2"
+                  >
+                    <option value="0">0% - {isRTL ? 'من غير تسبيق' : 'Sans acompte'}</option>
+                    <option value="30">30%</option>
+                    <option value="40">40%</option>
+                    <option value="50">50%</option>
+                  </select>
+                </div>
+
+                {/* Délai */}
+                <div className="space-y-1.5">
+                  <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                    {isRTL ? 'مهلة الدفع' : 'Délai de paiement'}
+                  </Label>
+                  <select
+                    value={delaiPaiement}
+                    onChange={(e) => setDelaiPaiement(e.target.value)}
+                    className="w-full bg-background border border-border text-foreground text-sm rounded-md focus:ring-primary focus:border-primary p-2"
+                  >
+                    <option value="reception">{isRTL ? 'عند الاستلام' : 'À réception'}</option>
+                    <option value="30jours">{isRTL ? '30 يوم' : '30 jours'}</option>
+                    <option value="finmois">{isRTL ? 'آخر الشهر' : 'Fin de mois'}</option>
+                  </select>
+                </div>
+
+                {/* Moyen */}
+                <div className="space-y-1.5">
+                  <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                    {isRTL ? 'طريقة الدفع' : 'Moyen de paiement'}
+                  </Label>
+                  <select
+                    value={moyenPaiement}
+                    onChange={(e) => setMoyenPaiement(e.target.value)}
+                    className="w-full bg-background border border-border text-foreground text-sm rounded-md focus:ring-primary focus:border-primary p-2"
+                  >
+                    <option value="virement">{isRTL ? 'تحويل بنكي' : 'Virement'}</option>
+                    <option value="cheque">{isRTL ? 'شيك' : 'Chèque'}</option>
+                    <option value="especes">{isRTL ? 'كاش' : 'Espèces'}</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Preview of generated text */}
+              <div className="p-2 rounded bg-muted/50 border border-border">
+                <p className="text-[10px] text-muted-foreground font-mono leading-relaxed">
+                  📄 {invoiceData.paymentTerms}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* TVA Settings - French Law Compliance */}
           <Card className="border-blue-500/20 bg-blue-500/5">
             <CardContent className="p-4 space-y-4">

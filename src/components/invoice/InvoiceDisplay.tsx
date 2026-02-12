@@ -244,10 +244,8 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
 
       {/* Footer / Legal Mentions */}
       <div className="border-t border-gray-200 pt-1.5 text-[8px] text-gray-400 space-y-0.5 mt-2">
-        <p><strong className="text-gray-500">Conditions de paiement:</strong> {data.paymentTerms}</p>
+        <p><strong className="text-gray-500">Conditions de règlement:</strong> {data.paymentTerms}</p>
         {data.legalMentions && <p>{data.legalMentions}</p>}
-        <p className="pt-0.5 border-t border-gray-100">En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée, 
-        ainsi qu'une indemnité forfaitaire de 40€ pour frais de recouvrement (Art. L.441-10 du Code de commerce).</p>
       </div>
 
       {/* Auto-generated Legal Footer */}

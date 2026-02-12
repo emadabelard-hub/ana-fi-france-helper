@@ -270,25 +270,31 @@
    ============================================ */
 @media print {
   /* Hide everything by default */
-  body > *:not(.print-root) {
-    display: none !important;
+  body * {
+    visibility: hidden !important;
   }
 
-  /* Hide all UI chrome */
+  /* Hide all UI chrome explicitly */
   header,
   nav,
   footer,
   [class*="BottomNavigation"],
   [class*="bottom-nav"],
   button,
-  .no-print {
+  .no-print,
+  [class*="TabsList"],
+  [class*="Switch"],
+  [class*="Badge"] {
     display: none !important;
   }
 
   /* Show only the printable document area */
-  .print-area {
-    display: block !important;
+  .print-area,
+  .print-area * {
     visibility: visible !important;
+  }
+
+  .print-area {
     position: absolute;
     left: 0;
     top: 0;
@@ -300,11 +306,6 @@
     box-shadow: none !important;
     border: none !important;
     overflow: visible !important;
-  }
-
-  .print-area * {
-    visibility: visible !important;
-    color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }

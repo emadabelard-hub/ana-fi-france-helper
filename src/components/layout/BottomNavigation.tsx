@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Newspaper, MessageCircle, Wrench, User, Shield } from 'lucide-react';
+import { Home, Newspaper, FileText, User, Shield } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,14 +15,6 @@ const navItems = [
     dotColor: 'bg-amber-400',
   },
   {
-    path: '/assistant',
-    icon: MessageCircle,
-    label: 'استشارات',
-    color: 'text-violet-400',
-    activeBg: 'bg-violet-400/15',
-    dotColor: 'bg-violet-400',
-  },
-  {
     path: '/news',
     icon: Newspaper,
     label: 'أخبار',
@@ -32,7 +24,7 @@ const navItems = [
   },
   {
     path: '/pro',
-    icon: Wrench,
+    icon: FileText,
     label: 'أدوات',
     color: 'text-orange-400',
     activeBg: 'bg-orange-400/15',
@@ -116,7 +108,6 @@ const BottomNavigation = () => {
               >
                 {item.label}
               </span>
-              {/* Active dot indicator */}
               {isActive && (
                 <span
                   className={cn(

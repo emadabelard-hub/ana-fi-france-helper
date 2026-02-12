@@ -1,18 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Mail, Loader2 } from 'lucide-react';
+import { ArrowLeft, Mail, Loader2, X } from 'lucide-react';
 import { Camera, Paperclip } from 'lucide-react';
+
+interface UploadedFile {
+  id: string;
+  file: File;
+  name: string;
+}
 
 const CourrierPage = () => {
   const navigate = useNavigate();
   const { isRTL, t } = useLanguage();
   const [content, setContent] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [files, setFiles] = useState<UploadedFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const hasContent = content.trim().length > 0 || files.length > 0;
+
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files;
+    if (!selected) return;
+    const newFiles: UploadedFile[] = Array.from(selected).map(f => ({
+      id: crypto.randomUUID(),
+      file: f,
+      name: f.name,
+    }));
+    setFiles(prev => [...prev, ...newFiles]);
+    e.target.value = '';
+  };
+
+  const removeFile = (id: string) => {
+    setFiles(prev => prev.filter(f => f.id !== id));
+  };
 
   const handleGenerate = () => {
-    if (!content.trim()) return;
+    if (!hasContent) return;
     setIsProcessing(true);
     // TODO: integrate payment + AI generation
     setTimeout(() => setIsProcessing(false), 2000);
@@ -54,25 +81,73 @@ const CourrierPage = () => {
           </p>
         </div>
 
+        {/* Hidden file inputs */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          className="hidden"
+          onChange={handleFilesSelected}
+        />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.pdf,.doc,.docx,.txt"
+          multiple
+          className="hidden"
+          onChange={handleFilesSelected}
+        />
+
         {/* Upload buttons */}
         <div className="flex gap-3 justify-center">
-          <button className={cn(
-            "flex items-center gap-2 px-4 py-2.5 rounded-full",
-            "bg-card border border-border text-muted-foreground",
-            "text-xs font-bold shadow-sm active:scale-95 transition-transform"
-          )}>
+          <button
+            onClick={() => cameraInputRef.current?.click()}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-full",
+              "bg-card border border-border text-muted-foreground",
+              "text-xs font-bold shadow-sm active:scale-95 transition-transform"
+            )}
+          >
             <Camera size={16} />
             <span className={cn(isRTL && "font-cairo")}>{isRTL ? 'صوّر الخطاب' : 'Photographier'}</span>
           </button>
-          <button className={cn(
-            "flex items-center gap-2 px-4 py-2.5 rounded-full",
-            "bg-card border border-border text-muted-foreground",
-            "text-xs font-bold shadow-sm active:scale-95 transition-transform"
-          )}>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-full",
+              "bg-card border border-border text-muted-foreground",
+              "text-xs font-bold shadow-sm active:scale-95 transition-transform"
+            )}
+          >
             <Paperclip size={16} />
             <span className={cn(isRTL && "font-cairo")}>{isRTL ? 'حمّل ملف' : 'Joindre fichier'}</span>
           </button>
         </div>
+
+        {/* Attached files list */}
+        {files.length > 0 && (
+          <div className="space-y-2">
+            {files.map((f) => (
+              <div
+                key={f.id}
+                className={cn(
+                  "flex items-center justify-between gap-2 px-3 py-2 rounded-xl",
+                  "bg-card border border-border text-sm"
+                )}
+              >
+                <span className="truncate text-foreground">{f.name}</span>
+                <button
+                  onClick={() => removeFile(f.id)}
+                  className="flex-shrink-0 p-1 rounded-full hover:bg-destructive/10 text-destructive"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Large textarea */}
         <textarea
@@ -91,11 +166,11 @@ const CourrierPage = () => {
         {/* Generate button */}
         <button
           onClick={handleGenerate}
-          disabled={!content.trim() || isProcessing}
+          disabled={!hasContent || isProcessing}
           className={cn(
             "w-full py-4 rounded-2xl font-bold text-base shadow-lg",
             "active:scale-[0.98] transition-all",
-            content.trim() && !isProcessing
+            hasContent && !isProcessing
               ? "bg-emerald-600 text-white hover:bg-emerald-700"
               : "bg-muted text-muted-foreground cursor-not-allowed",
             isRTL && "font-cairo"

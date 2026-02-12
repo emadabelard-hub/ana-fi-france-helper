@@ -4,6 +4,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Mail, Loader2, X } from 'lucide-react';
 import { Camera, Paperclip } from 'lucide-react';
+import { extractTextFromPDF } from '@/lib/pdfExtractor';
+import { streamProAdminAssistant } from '@/hooks/useStreamingChat';
+import { useToast } from '@/hooks/use-toast';
 
 interface UploadedFile {
   id: string;
@@ -19,6 +22,9 @@ const CourrierPage = () => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const { toast } = useToast();
+  const [result, setResult] = useState('');
 
   const hasContent = content.trim().length > 0 || files.length > 0;
 
@@ -38,11 +44,96 @@ const CourrierPage = () => {
     setFiles(prev => prev.filter(f => f.id !== id));
   };
 
-  const handleGenerate = () => {
+  const readAsDataURL = (f: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = (e) => resolve(e.target?.result as string);
+      r.onerror = () => reject(new Error('File read error'));
+      r.readAsDataURL(f);
+    });
+
+  const handleGenerate = async () => {
     if (!hasContent) return;
     setIsProcessing(true);
-    // TODO: integrate payment + AI generation
-    setTimeout(() => setIsProcessing(false), 2000);
+
+    const totalFiles = files.length;
+    if (totalFiles > 0) {
+      toast({
+        title: isRTL
+          ? `📄 جاري تحليل ${totalFiles} مستند...`
+          : `📄 Analyse de ${totalFiles} documents en cours...`,
+      });
+    }
+
+    try {
+      // Process all files into text/image data
+      const fileContents: string[] = [];
+      const imageDataArr: string[] = [];
+
+      for (const uploadedFile of files) {
+        const f = uploadedFile.file;
+        const isPDF = f.type === 'application/pdf';
+        const isImage = f.type.startsWith('image/');
+
+        if (isPDF) {
+          const dataUrl = await readAsDataURL(f);
+          const extractedText = await extractTextFromPDF(dataUrl);
+          if (extractedText.trim()) {
+            fileContents.push(`--- ${f.name} ---\n${extractedText}`);
+          } else {
+            // Scanned PDF → send as image
+            imageDataArr.push(dataUrl);
+          }
+        } else if (isImage) {
+          const base64 = await readAsDataURL(f);
+          imageDataArr.push(base64);
+        }
+      }
+
+      // Build combined prompt
+      let combinedPrompt = content.trim();
+      if (fileContents.length > 0) {
+        const prefix = isRTL
+          ? `محتوى ${fileContents.length} مستند مرفق:\n\n`
+          : `Contenu de ${fileContents.length} document(s) joint(s) :\n\n`;
+        combinedPrompt = prefix + fileContents.join('\n\n') + (combinedPrompt ? `\n\n${combinedPrompt}` : '');
+      }
+      if (!combinedPrompt && imageDataArr.length > 0) {
+        combinedPrompt = isRTL
+          ? 'حلل المستندات دي واكتبلي رد رسمي مناسب'
+          : 'Analysez ces documents et rédigez une réponse formelle appropriée';
+      }
+
+      // Stream response
+      let assistantContent = '';
+      await streamProAdminAssistant(
+        {
+          userMessage: combinedPrompt,
+          imageData: imageDataArr[0], // primary image if any
+          conversationHistory: [],
+          language: isRTL ? 'ar' : 'fr',
+        },
+        {
+          onDelta: (delta) => {
+            assistantContent += delta;
+            setResult(assistantContent);
+          },
+          onDone: () => {
+            setIsProcessing(false);
+            toast({ title: isRTL ? '✅ الرد جاهز' : '✅ Réponse générée' });
+          },
+          onError: (error) => {
+            console.error('Stream error:', error);
+            setIsProcessing(false);
+            toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: String(error) });
+          },
+        }
+      );
+    } catch (error) {
+      console.error('Generate error:', error);
+      setIsProcessing(false);
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur' });
+    }
   };
 
   return (

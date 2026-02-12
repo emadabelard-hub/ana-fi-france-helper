@@ -263,3 +263,59 @@
     -webkit-hyphens: auto;
   }
 }
+
+/* ============================================
+   Print Styles - Clean PDF output
+   Hides all UI chrome, shows only the document
+   ============================================ */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the printable document area */
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+
+  /* Force hide navigation, header, buttons, bottom bar */
+  header,
+  nav,
+  footer,
+  [class*="BottomNavigation"],
+  [class*="bottom-nav"],
+  button,
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Re-show buttons inside print-area that are part of the document (none expected) */
+
+  /* Clean page setup */
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

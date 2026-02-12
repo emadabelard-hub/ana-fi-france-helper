@@ -126,51 +126,8 @@ const CVGeneratorPage = () => {
     }
   };
 
-  const handleExportPDF = async () => {
-    if (!cvRef.current) return;
-    
-    setIsExporting(true);
-    try {
-      const canvas = await html2canvas(cvRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      
-      const finalWidth = imgWidth * ratio * 0.95;
-      const finalHeight = imgHeight * ratio * 0.95;
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = 5;
-
-      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
-      
-      const fileName = translatedData?.fullName || cvData.fullName || 'CV';
-      pdf.save(`CV-${fileName.replace(/\s+/g, '-')}-${Date.now()}.pdf`);
-
-      toast({
-        title: isRTL ? 'تم التحميل!' : 'Téléchargé !',
-        description: isRTL ? 'تم حفظ الـ CV بنجاح' : 'Le CV a été enregistré',
-      });
-    } catch (error) {
-      console.error('PDF export error:', error);
-      toast({
-        variant: 'destructive',
-        title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'فشل في إنشاء PDF' : 'Échec de la création du PDF',
-      });
-    } finally {
-      setIsExporting(false);
-    }
+  const handleExportPDF = () => {
+    window.print();
   };
 
   const displayData = translatedData || cvData;
@@ -249,28 +206,21 @@ const CVGeneratorPage = () => {
 
           {/* CV Preview */}
           <div className="bg-muted/30 rounded-lg p-4 overflow-auto">
-            <CVPreview ref={cvRef} data={displayData} />
+            <div className="print-area">
+              <CVPreview ref={cvRef} data={displayData} />
+            </div>
           </div>
 
           {/* Export Button */}
           <div className="mt-4">
             <Button
               onClick={handleExportPDF}
-              disabled={isExporting || !hasData}
+              disabled={!hasData}
               className="w-full gap-2"
               size="lg"
             >
-              {isExporting ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  {isRTL ? 'جاري التصدير...' : 'Export en cours...'}
-                </>
-              ) : (
-                <>
-                  <Download className="h-5 w-5" />
-                  {isRTL ? '📥 تحميل PDF' : '📥 Télécharger PDF'}
-                </>
-              )}
+              <Download className="h-5 w-5" />
+              {isRTL ? '📥 تحميل PDF' : '📥 Télécharger PDF'}
             </Button>
           </div>
         </TabsContent>

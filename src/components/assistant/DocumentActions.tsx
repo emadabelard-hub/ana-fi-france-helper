@@ -54,79 +54,8 @@ const DocumentActions = ({
     }
   };
 
-  const handleExportPDF = async () => {
-    if (!documentRef?.current) {
-      handleCopy();
-      return;
-    }
-
-    // Check if user is logged in for paid features
-    if (creditCost > 0 && !user) {
-      toast({
-        variant: "destructive",
-        title: isRTL ? "تسجيل الدخول مطلوب" : "Connexion requise",
-        description: isRTL 
-          ? "سجل الدخول لتحميل المستندات" 
-          : "Connectez-vous pour télécharger des documents",
-      });
-      return;
-    }
-
-    // Check if user can afford this action
-    if (creditCost > 0 && !canAfford(creditAction)) {
-      setShowInsufficientCredits(true);
-      return;
-    }
-
-    setIsExporting(true);
-
-    try {
-      // Deduct credits first (if applicable)
-      if (creditCost > 0) {
-        const success = await deductCredits(creditAction);
-        if (!success) {
-          setIsExporting(false);
-          return;
-        }
-      }
-
-      const canvas = await html2canvas(documentRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      
-      const finalWidth = imgWidth * ratio * 0.95;
-      const finalHeight = imgHeight * ratio * 0.95;
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = 10;
-
-      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
-      pdf.save(`${documentName}-${Date.now()}.pdf`);
-
-      toast({
-        title: isRTL ? "تم التحميل" : "Téléchargé",
-        description: isRTL ? "تم حفظ الملف PDF" : "Le fichier PDF a été enregistré",
-      });
-    } catch (error) {
-      console.error('PDF export error:', error);
-      toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "فشل في إنشاء PDF" : "Échec de la création du PDF",
-      });
-    } finally {
-      setIsExporting(false);
-    }
+  const handleExportPDF = () => {
+    window.print();
   };
 
   return (

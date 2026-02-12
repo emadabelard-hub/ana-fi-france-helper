@@ -8,7 +8,6 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthProvider } from "@/hooks/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
 import GlobalErrorHandler from "@/components/app/GlobalErrorHandler";
-import AssistantPage from "@/pages/AssistantPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ProPage from "@/pages/ProPage";
 import ProSettingsPage from "@/pages/ProSettingsPage";
@@ -17,10 +16,7 @@ import QuoteToInvoicePage from "@/pages/QuoteToInvoicePage";
 import ProAdminAssistantPage from "@/pages/ProAdminAssistantPage";
 import CVGeneratorPage from "@/pages/CVGeneratorPage";
 import AdminPage from "@/pages/AdminPage";
-import ComingSoonPage from "@/pages/ComingSoonPage";
 import NewsPage from "@/pages/NewsPage";
-import LegalGuidePage from "@/pages/LegalGuidePage";
-import CourrierPage from "@/pages/CourrierPage";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 
@@ -43,7 +39,6 @@ const App = () => {
                   <Route path="/" element={<Index />} />
                   <Route path="/home" element={<Index />} />
                   <Route path="/news" element={<NewsPage />} />
-                  <Route path="/assistant" element={<AssistantPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/pro" element={<ProPage />} />
                   <Route path="/pro/invoice-creator" element={<InvoiceCreatorPage />} />
@@ -51,10 +46,7 @@ const App = () => {
                   <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />
                   <Route path="/pro/cv-generator" element={<CVGeneratorPage />} />
                   <Route path="/pro/settings" element={<ProSettingsPage />} />
-                  <Route path="/legal-guide" element={<LegalGuidePage />} />
-                  <Route path="/courrier" element={<CourrierPage />} />
                   <Route path="/admin" element={<AdminPage />} />
-                  <Route path="/coming-soon" element={<ComingSoonPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

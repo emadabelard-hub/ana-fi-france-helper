@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  FileText, Car, 
+  FileText, Car, Scale,
   ChevronRight, FileUser, MessageSquare,
   Home, Settings, User, SendHorizonal
 } from 'lucide-react';
@@ -138,6 +138,33 @@ const Index = () => {
           </div>
         </button>
       </div>
+
+        {/* LEGAL GUIDE */}
+        <button
+          onClick={() => navigate('/legal-guide')}
+          className="w-full bg-[#d1fae5] p-5 rounded-[2.2rem] shadow-lg flex items-center justify-between active:scale-95 transition-transform border-b-4 border-emerald-200"
+        >
+          <div className="bg-emerald-600 p-3 rounded-2xl text-white shadow-lg">
+            <Scale size={26} />
+          </div>
+          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
+            <h3 className={cn(
+              "font-black text-[#064e3b] text-[15px] leading-tight",
+              isRTL && "font-cairo"
+            )}>
+              {t('legal.dashboardTitle')}
+            </h3>
+            <p className={cn(
+              "text-[10px] font-bold text-emerald-700 mt-1",
+              isRTL && "font-cairo"
+            )}>
+              {t('legal.dashboardSub')}
+            </p>
+          </div>
+          <div className="bg-emerald-200 p-2 rounded-full">
+            <ChevronRight size={16} className={cn("text-emerald-800", isRTL && "rotate-180")} />
+          </div>
+        </button>
 
         {/* MONEY TRANSFER */}
         <button 

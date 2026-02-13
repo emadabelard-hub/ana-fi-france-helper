@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Scale, Camera, Paperclip, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Scale, Camera, Paperclip, Send, Loader2, X } from 'lucide-react';
 import { streamProAdminAssistant } from '@/hooks/useStreamingChat';
 import { useToast } from '@/hooks/use-toast';
 import DocumentActionButtons from '@/components/assistant/DocumentActionButtons';

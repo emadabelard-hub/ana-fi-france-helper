@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { PenLine, Scale, Settings, ArrowRight, ArrowLeft, FileUser } from 'lucide-react';
+import { PenLine, Settings, ArrowRight, ArrowLeft, FileUser } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
 
@@ -30,18 +30,11 @@ const ProPage = () => {
       gradient: 'from-amber-500 to-emerald-500',
     },
     {
-      icon: Scale,
-      emoji: '⚖️',
-      title: t('pro.legal'),
-      description: t('pro.legalDesc'),
-      path: '/pro/admin-assistant',
-      gradient: 'from-blue-500 to-blue-600',
-    },
-    {
       icon: FileUser,
       emoji: '📄',
       title: t('pro.cvGenerator'),
       description: t('pro.cvGeneratorDesc'),
+      description2: t('pro.cvGeneratorDesc2'),
       path: '/pro/cv-generator',
       gradient: 'from-indigo-500 to-purple-600',
     },
@@ -103,6 +96,14 @@ const ProPage = () => {
                     )}>
                       {tool.description}
                     </p>
+                    {tool.description2 && (
+                      <p className={cn(
+                        "text-white/80 text-sm",
+                        isRTL && "font-cairo"
+                      )}>
+                        {tool.description2}
+                      </p>
+                    )}
                   </div>
 
                   {/* Arrow */}

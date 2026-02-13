@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { FileText, FileUser, Newspaper, ChevronRight, Sparkles } from 'lucide-react';
+import { FileText, FileUser, Newspaper, ChevronRight, Sparkles, Scale } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -109,6 +109,27 @@ const Index = () => {
             </h3>
             <p className={cn("text-[11px] font-bold opacity-80", isRTL && "font-cairo")}>
               {language === 'fr' ? 'Gratuit • Réponses instantanées' : 'مجاني • ردود فورية'}
+            </p>
+          </div>
+          <div className="bg-white/20 p-2 rounded-full">
+            <ChevronRight size={18} className={isRTL ? "rotate-180" : ""} />
+          </div>
+        </button>
+
+        {/* Premium Consultation Pro */}
+        <button
+          onClick={() => navigate('/premium-consultation')}
+          className="w-full bg-gradient-to-r from-[#f59e0b] to-[#ea580c] p-6 rounded-[2.5rem] shadow-xl flex items-center justify-between text-white active:scale-95 transition-transform border border-white/10"
+        >
+          <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md">
+            <Scale size={32} />
+          </div>
+          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
+            <h3 className={cn("font-black text-xl leading-none mb-1", isRTL && "font-cairo")}>
+              {isRTL ? 'المستشار القانوني والمهني الاحترافي' : 'Consultation Pro'}
+            </h3>
+            <p className={cn("text-[11px] font-bold opacity-80", isRTL && "font-cairo")}>
+              {isRTL ? 'محامي • محاسب • ترجمة • رد رسمي' : 'Avocat • Comptable • Traduction • Réponse'}
             </p>
           </div>
           <div className="bg-white/20 p-2 rounded-full">

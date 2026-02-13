@@ -19,6 +19,7 @@ import AdminPage from "@/pages/AdminPage";
 import NewsPage from "@/pages/NewsPage";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
+import AIAssistantPage from "./pages/AIAssistantPage";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => {
                   <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />
                   <Route path="/pro/cv-generator" element={<CVGeneratorPage />} />
                   <Route path="/pro/settings" element={<ProSettingsPage />} />
+                  <Route path="/ai-assistant" element={<AIAssistantPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

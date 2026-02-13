@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.translate-cv]
 verify_jwt = false
+
+[functions.ai-assistant]
+verify_jwt = false

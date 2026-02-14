@@ -21,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import AIAssistantPage from "./pages/AIAssistantPage";
 import PremiumConsultationPage from "./pages/PremiumConsultationPage";
+import PeinturePage from "./pages/PeinturePage";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => {
                   <Route path="/pro/settings" element={<ProSettingsPage />} />
                   <Route path="/ai-assistant" element={<AIAssistantPage />} />
                   <Route path="/premium-consultation" element={<PremiumConsultationPage />} />
+                  <Route path="/pro/peinture" element={<PeinturePage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

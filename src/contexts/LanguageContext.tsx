@@ -47,8 +47,8 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.aiBannerSub': 'En français et en arabe',
     'dashboard.cvCard': 'Mon CV Pro',
     'dashboard.cvCardSub': 'Mon CV Pro',
-    'dashboard.invoiceCard': 'Factures & Devis',
-    'dashboard.invoiceCardSub': 'Factures',
+    'dashboard.invoiceCard': 'Devis, Factures & Étude de Rentabilité IA',
+    'dashboard.invoiceCardSub': 'Devis, Factures & Étude de Rentabilité IA',
     'dashboard.codeRoute': 'Code de la Route',
     'dashboard.codeRouteSub': 'Cours et tests en français',
     
@@ -255,8 +255,8 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.aiBannerSub': 'بالعربي والفرنساوي',
     'dashboard.cvCard': 'سيرتي الذكية (سي في)',
     'dashboard.cvCardSub': 'Mon CV Pro',
-    'dashboard.invoiceCard': 'فواتير ودوفي',
-    'dashboard.invoiceCardSub': 'Factures',
+    'dashboard.invoiceCard': 'اعمل فواتيرك ودوفيهاتك ودراسة الجدوى والتكاليف معانا. احنا والذكاء الصناعي واحد',
+    'dashboard.invoiceCardSub': 'Devis, Factures & Étude de Rentabilité IA',
     'dashboard.codeRoute': 'كود دو لاروت',
     'dashboard.codeRouteSub': 'دروس وامتحانات بالمصري',
     

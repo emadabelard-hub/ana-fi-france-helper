@@ -19,19 +19,23 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { userMessage, imageData, pdfText, profile, language } = await req.json();
+    const { userMessage, imageData, imageDataArray, pdfText, profile, language } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    if (!userMessage && !imageData && !pdfText) {
+    // Collect all images
+    const allImages: string[] = [];
+    if (imageData) allImages.push(imageData);
+    if (imageDataArray && Array.isArray(imageDataArray)) allImages.push(...imageDataArray);
+
+    if (!userMessage && allImages.length === 0 && !pdfText) {
       return new Response(JSON.stringify({ error: "Aucun contenu à analyser" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const lang = language || 'ar';
     const currentDate = new Date().toLocaleDateString('fr-FR');
     const profileBlock = buildProfileBlock(profile);
 
@@ -41,6 +45,7 @@ serve(async (req) => {
 
 🎯 مهمتك:
 عندما يرسل لك المستخدم مستنداً فرنسياً (صورة أو نص أو PDF)، يجب أن تقوم بالتالي بدقة:
+ملاحظة: قد يرسل المستخدم عدة مستندات في آن واحد. حللها جميعاً كملف واحد متكامل.
 
 ${profileBlock}
 
@@ -93,19 +98,21 @@ ${profileBlock}
       { role: "system", content: systemPrompt },
     ];
 
-    // Build user content
+    // Build user content parts
     const userText = pdfText
       ? `المستخدم أرسل مستند PDF. محتوى المستند:\n\n${pdfText}\n\n${userMessage || 'حلل هذا المستند وقدم لي التحليل الكامل.'}`
       : (userMessage || 'حلل هذا المستند وقدم لي التحليل الكامل.');
 
-    if (imageData) {
-      aiMessages.push({
-        role: "user",
-        content: [
-          { type: "text", text: userText },
-          { type: "image_url", image_url: { url: imageData } },
-        ],
-      });
+    if (allImages.length > 0) {
+      const contentParts: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
+        { type: "text", text: allImages.length > 1
+          ? `${userText}\n\nالمستخدم أرسل ${allImages.length} صور/مستندات. حللها جميعاً كملف واحد متكامل.`
+          : userText },
+      ];
+      for (const img of allImages) {
+        contentParts.push({ type: "image_url", image_url: { url: img } });
+      }
+      aiMessages.push({ role: "user", content: contentParts });
     } else {
       aiMessages.push({ role: "user", content: userText });
     }
@@ -117,7 +124,7 @@ ${profileBlock}
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash",
         messages: aiMessages,
         stream: false,
       }),
@@ -145,7 +152,6 @@ ${profileBlock}
     const content = data.choices?.[0]?.message?.content;
     if (!content) throw new Error("No content in AI response");
 
-    // Parse the structured response
     const parsed = parseResponse(content);
 
     return new Response(JSON.stringify(parsed), {

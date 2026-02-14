@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { FileText, FileUser, Newspaper, ChevronRight, Sparkles, Scale } from 'lucide-react';
+import { FileText, FileUser, Newspaper, ChevronRight, Sparkles, Scale, Paintbrush } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -56,20 +56,22 @@ const Index = () => {
         {/* Factures & Devis */}
         <button
           onClick={() => navigate('/pro/invoice-creator')}
-          className="w-full bg-[#ffedd5] p-6 rounded-[2.2rem] shadow-lg flex items-center justify-between active:scale-95 transition-transform border-b-4 border-orange-200"
+          className="w-full bg-[#ffedd5] p-6 rounded-[2.2rem] shadow-lg flex items-center justify-between active:scale-95 transition-transform border-b-4 border-orange-200 relative overflow-hidden"
         >
-          <div className="bg-[#f97316] p-4 rounded-2xl text-white shadow-lg">
+          {/* Soft pulse glow for AI indicator */}
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-400/0 via-orange-400/10 to-orange-400/0 animate-[pulse_3s_ease-in-out_infinite]" />
+          <div className="bg-[#f97316] p-4 rounded-2xl text-white shadow-lg relative z-10">
             <FileText size={32} />
           </div>
-          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
-            <h3 className={cn("font-black text-[#431407] text-xl leading-tight", isRTL && "font-cairo")}>
+          <div className={cn("flex-1 pr-4 relative z-10", isRTL ? "text-right" : "text-left pl-4")}>
+            <h3 className={cn("font-black text-[#431407] text-lg leading-tight", isRTL && "font-cairo")}>
               {t('dashboard.invoiceCard')}
             </h3>
-            <p className={cn("text-[11px] font-bold text-orange-600 mt-1 uppercase opacity-60", isRTL && "font-cairo")}>
+            <p className={cn("text-[11px] font-bold text-orange-600 mt-1 opacity-70", isRTL && "font-cairo")}>
               {t('dashboard.invoiceCardSub')}
             </p>
           </div>
-          <div className="bg-orange-200 p-2 rounded-full">
+          <div className="bg-orange-200 p-2 rounded-full relative z-10">
             <ChevronRight size={18} className={cn("text-orange-800", isRTL && "rotate-180")} />
           </div>
         </button>
@@ -92,6 +94,27 @@ const Index = () => {
           </div>
           <div className="bg-indigo-200 p-2 rounded-full">
             <ChevronRight size={18} className={cn("text-indigo-800", isRTL && "rotate-180")} />
+          </div>
+        </button>
+
+        {/* Module Peinture (Bantera) */}
+        <button
+          onClick={() => navigate('/pro/peinture')}
+          className="w-full bg-[#fef3c7] p-5 rounded-[2.2rem] shadow-lg flex items-center justify-between active:scale-95 transition-transform border-b-4 border-amber-200"
+        >
+          <div className="bg-[#d97706] p-4 rounded-2xl text-white shadow-lg">
+            <Paintbrush size={28} />
+          </div>
+          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
+            <h3 className={cn("font-black text-[#78350f] text-lg leading-tight", isRTL && "font-cairo")}>
+              {isRTL ? 'حاسبة الصباغة (بانتيرة)' : 'Module Peinture (Bantera)'}
+            </h3>
+            <p className={cn("text-[11px] font-bold text-amber-600 mt-1 opacity-70", isRTL && "font-cairo")}>
+              {isRTL ? 'احسب العمال والأيام اللي محتاجهم' : 'Estimez vos besoins en main-d\'œuvre'}
+            </p>
+          </div>
+          <div className="bg-amber-200 p-2 rounded-full">
+            <ChevronRight size={18} className={cn("text-amber-800", isRTL && "rotate-180")} />
           </div>
         </button>
 

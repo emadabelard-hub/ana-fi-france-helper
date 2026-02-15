@@ -7,6 +7,9 @@ import { Camera, Paperclip } from 'lucide-react';
 import { extractTextFromPDF } from '@/lib/pdfExtractor';
 import { streamProAdminAssistant } from '@/hooks/useStreamingChat';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useCredits } from '@/hooks/useCredits';
+import InsufficientCreditsModal from '@/components/shared/InsufficientCreditsModal';
 
 interface UploadedFile {
   id: string;
@@ -22,8 +25,12 @@ const CourrierPage = () => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
 
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { balance, canAfford, deductCredits, getCost } = useCredits();
+  const creditCost = getCost('letter_pdf');
   const [result, setResult] = useState('');
 
   const hasContent = content.trim().length > 0 || files.length > 0;
@@ -54,6 +61,24 @@ const CourrierPage = () => {
 
   const handleGenerate = async () => {
     if (!hasContent) return;
+
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'يجب تسجيل الدخول' : 'Connexion requise',
+        description: isRTL ? 'سجل دخولك الأول' : 'Veuillez vous connecter.',
+      });
+      return;
+    }
+
+    if (!canAfford('letter_pdf')) {
+      setShowInsufficientCredits(true);
+      return;
+    }
+
+    const success = await deductCredits('letter_pdf');
+    if (!success) return;
+
     setIsProcessing(true);
 
     const totalFiles = files.length;
@@ -273,12 +298,19 @@ const CourrierPage = () => {
               {isRTL ? 'جاري التحضير...' : 'Préparation...'}
             </span>
           ) : (
-            isRTL ? 'ادفع 5€ واعمل الرد' : 'Payer 5€ et Générer'
+            isRTL ? `استخدم ${creditCost} كريديت واعمل الرد` : `Utiliser ${creditCost} crédits et Générer`
           )}
         </button>
 
         <div className="h-20" />
       </div>
+
+      <InsufficientCreditsModal
+        open={showInsufficientCredits}
+        onOpenChange={setShowInsufficientCredits}
+        currentBalance={balance}
+        requiredCredits={creditCost}
+      />
     </div>
   );
 };

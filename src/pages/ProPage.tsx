@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { PenLine, Settings, ArrowRight, ArrowLeft, FileUser } from 'lucide-react';
+import { PenLine, Settings, ArrowRight, ArrowLeft, FileUser, Paintbrush } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
 
@@ -37,6 +37,15 @@ const ProPage = () => {
       description2: t('pro.cvGeneratorDesc2'),
       path: '/pro/cv-generator',
       gradient: 'from-indigo-500 to-purple-600',
+    },
+    {
+      icon: Paintbrush,
+      customIcon: null,
+      emoji: '🎨',
+      title: isRTL ? 'قبل ما تعمل الدوفي احسب التكاليف والجدوى معانا. احنا والذكاء الصناعي واحد' : 'Calcule tes coûts et ta rentabilité avant de faire ton devis. L\'IA à ton service.',
+      description: isRTL ? 'حاسبة الصباغة والتكاليف' : 'Module Peinture & Estimation',
+      path: '/pro/peinture',
+      gradient: 'from-amber-500 to-orange-500',
     },
   ];
 

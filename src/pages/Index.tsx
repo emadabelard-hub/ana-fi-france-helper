@@ -97,26 +97,6 @@ const Index = () => {
           </div>
         </button>
 
-        {/* Module Peinture (Bantera) */}
-        <button
-          onClick={() => navigate('/pro/peinture')}
-          className="w-full bg-[#fef3c7] p-5 rounded-[2.2rem] shadow-lg flex items-center justify-between active:scale-95 transition-transform border-b-4 border-amber-200"
-        >
-          <div className="bg-[#d97706] p-4 rounded-2xl text-white shadow-lg">
-            <Paintbrush size={28} />
-          </div>
-          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
-            <h3 className={cn("font-black text-[#78350f] text-lg leading-tight", isRTL && "font-cairo")}>
-              {isRTL ? 'حاسبة الصباغة (بانتيرة)' : 'Module Peinture (Bantera)'}
-            </h3>
-            <p className={cn("text-[11px] font-bold text-amber-600 mt-1 opacity-70", isRTL && "font-cairo")}>
-              {isRTL ? 'احسب العمال والأيام اللي محتاجهم' : 'Estimez vos besoins en main-d\'œuvre'}
-            </p>
-          </div>
-          <div className="bg-amber-200 p-2 rounded-full">
-            <ChevronRight size={18} className={cn("text-amber-800", isRTL && "rotate-180")} />
-          </div>
-        </button>
 
         {/* Assistant IA */}
         <button

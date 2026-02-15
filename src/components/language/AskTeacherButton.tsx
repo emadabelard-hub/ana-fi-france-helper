@@ -34,23 +34,18 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
         body: { question: question.trim(), currentPhrase, lessonTitle, userApiKey: userKey || undefined },
       });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       setAnswer(data?.answer || 'عذراً، لم أستطع الإجابة.');
     } catch (e: any) {
-      console.error('Ask teacher error:', e);
-      const status = e?.context?.status || e?.status;
-      const body = e?.context?.body || e?.message || '';
-      if (status === 429) {
-        setAnswer('⏳ الخدمة مشغولة، جرب بعد دقيقة');
-      } else if (status === 402) {
-        setAnswer('💳 الرصيد غير كافٍ — Error 402');
-      } else if (status === 500 || String(body).includes('500')) {
-        setAnswer(`❌ خطأ في الخادم — Error 500\n${body ? String(body).slice(0, 100) : ''}`);
-      } else {
-        const hasUserKey = !!localStorage.getItem('user_ai_api_key');
-        setAnswer(hasUserKey 
-          ? '🤖 عذراً، المفتاح غير صالح أو منتهي. تحقق من الإعدادات.'
-          : '⚙️ يرجى إدخال مفتاح الذكاء الاصطناعي في الإعدادات لتفعيل المدرس');
-      }
+      console.error('Ask teacher error (falling back to demo mode):', e);
+      // Mock fallback — never block the user
+      await new Promise(r => setTimeout(r, 1500));
+      const mockReplies = [
+        "Ceci est une réponse de démonstration (Mode Gratuit). Votre prononciation semble correcte ! Continuez comme ça. 🌟",
+        "وضع تجريبي — حاول نطق الكلمة ببطء، مقطع بمقطع. أنت على الطريق الصحيح! 👏",
+        "Mode démo — En français, chaque lettre a un son précis. Répétez après le modèle audio. Bravo ! 🎯",
+      ];
+      setAnswer(mockReplies[Math.floor(Math.random() * mockReplies.length)]);
     } finally {
       setLoading(false);
     }

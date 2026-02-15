@@ -19,7 +19,7 @@ const PeintureHeader: React.FC<PeintureHeaderProps> = ({ isFr, isRTL }) => {
       <Paintbrush size={28} />
       <div>
         <h1 className="text-xl font-black">
-          {isFr ? 'Module Peinture (Bantera)' : 'وحدة الصباغة (بانتيرة)'}
+          {isFr ? 'Module Peinture (Bantera)' : 'قسم البانتيرة'}
         </h1>
         <p className="text-xs opacity-80 font-bold">
           {isFr ? 'Audit financier & technique complet' : 'تدقيق مالي وتقني شامل'}

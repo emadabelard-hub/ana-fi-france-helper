@@ -34,10 +34,23 @@ const AccuracyBadge = ({ level }: { level: AccuracyLevel }) => {
   );
 };
 
+/** Build a natural TTS prompt so OpenAI Nova pronounces letters correctly */
+function buildTTSText(termFr: string): string {
+  // Detect alphabet-style entries like "A (Ah)" or "R (Èrre)"
+  const match = termFr.match(/^([A-Z])\s*\(([^)]+)\)$/i);
+  if (match) {
+    // Send the full letter name for clear pronunciation
+    return match[2]; // e.g. "Ah", "Bé", "Èrre"
+  }
+  return termFr;
+}
+
 const PhraseCard = ({ block }: { block: TextBlock }) => {
   const { isRTL } = useLanguage();
   const tts = useTTS();
   const stt = useSTT();
+
+  const ttsText = buildTTSText(block.termFr);
 
   return (
     <div className="bg-[#22262e] rounded-2xl p-5 border border-white/8 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)] space-y-4">
@@ -46,7 +59,7 @@ const PhraseCard = ({ block }: { block: TextBlock }) => {
         <p className="text-base font-semibold text-slate-200 flex-1" dir="ltr">{block.termFr}</p>
         {tts.isSupported && (
           <button
-            onClick={() => (tts.isSpeaking || tts.isLoading) ? tts.stop() : tts.speak(block.termFr)}
+            onClick={() => (tts.isSpeaking || tts.isLoading) ? tts.stop() : tts.speak(ttsText)}
             disabled={tts.isLoading}
             className={cn(
               'p-2.5 rounded-xl border transition-all',

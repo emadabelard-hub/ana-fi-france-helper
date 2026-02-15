@@ -65,24 +65,9 @@ export function useTTS() {
       audioRef.current = audio;
       await audio.play();
     } catch (e) {
-      console.warn('OpenAI TTS failed, falling back to browser TTS:', e);
-      // Browser TTS fallback
-      try {
-        if (window.speechSynthesis) {
-          const utt = new SpeechSynthesisUtterance(text);
-          utt.lang = lang;
-          utt.rate = 0.85;
-          utt.onstart = () => { setIsLoading(false); setIsSpeaking(true); };
-          utt.onend = () => setIsSpeaking(false);
-          utt.onerror = () => { setIsSpeaking(false); setIsLoading(false); };
-          window.speechSynthesis.speak(utt);
-        } else {
-          setIsLoading(false);
-        }
-      } catch {
-        setIsLoading(false);
-        setIsSpeaking(false);
-      }
+      console.error('OpenAI TTS failed:', e);
+      setIsLoading(false);
+      setIsSpeaking(false);
     }
   }, []);
 

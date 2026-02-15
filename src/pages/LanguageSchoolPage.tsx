@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Lock, BookOpen } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import LessonViewer from '@/components/language/LessonViewer';
 
 const levels = [
   { id: 'A1', locked: false, colorClass: 'bg-[#4a9a8a]/15 border-[#4a9a8a]/20 text-[#4a9a8a]' },
@@ -12,6 +14,11 @@ const levels = [
 const LanguageSchoolPage = () => {
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
+  const [activeLevel, setActiveLevel] = useState<string | null>(null);
+
+  if (activeLevel) {
+    return <LessonViewer onBack={() => setActiveLevel(null)} />;
+  }
 
   return (
     <div
@@ -42,6 +49,7 @@ const LanguageSchoolPage = () => {
           <button
             key={level.id}
             disabled={level.locked}
+            onClick={() => !level.locked && setActiveLevel(level.id)}
             className={cn(
               "relative w-full p-8 rounded-2xl flex flex-col items-center justify-center gap-4 transition-all duration-200 border border-white/8 bg-[#22262e]",
               "shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)]",
@@ -49,11 +57,7 @@ const LanguageSchoolPage = () => {
             )}
           >
             <div className={cn("p-4 rounded-2xl border", level.colorClass)}>
-              {level.locked ? (
-                <Lock size={36} />
-              ) : (
-                <BookOpen size={36} />
-              )}
+              {level.locked ? <Lock size={36} /> : <BookOpen size={36} />}
             </div>
             <h2 className="text-2xl font-black text-slate-200">{level.id}</h2>
             {level.locked && (

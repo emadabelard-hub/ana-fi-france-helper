@@ -14,7 +14,13 @@ export interface ImageBlock {
   caption?: string;
 }
 
-export type ContentBlock = TextBlock | ImageBlock;
+export interface TeacherTipBlock {
+  type: 'tip';
+  id: string;
+  tipAr: string;
+}
+
+export type ContentBlock = TextBlock | ImageBlock | TeacherTipBlock;
 
 // Lesson categories
 export type LessonCategory = 

@@ -46,16 +46,21 @@ const PhraseCard = ({ block }: { block: TextBlock }) => {
         <p className="text-base font-semibold text-slate-200 flex-1" dir="ltr">{block.termFr}</p>
         {tts.isSupported && (
           <button
-            onClick={() => tts.isSpeaking ? tts.stop() : tts.speak(block.termFr)}
+            onClick={() => (tts.isSpeaking || tts.isLoading) ? tts.stop() : tts.speak(block.termFr)}
+            disabled={tts.isLoading}
             className={cn(
               'p-2.5 rounded-xl border transition-all',
-              tts.isSpeaking
-                ? 'bg-[#7c3aed]/20 border-[#7c3aed]/30 text-[#a78bfa] animate-pulse'
-                : 'bg-[#7c3aed]/10 border-[#7c3aed]/20 text-[#a78bfa] active:scale-90'
+              tts.isLoading
+                ? 'bg-[#7c3aed]/20 border-[#7c3aed]/30 text-[#a78bfa]'
+                : tts.isSpeaking
+                  ? 'bg-[#7c3aed]/20 border-[#7c3aed]/30 text-[#a78bfa] animate-pulse'
+                  : 'bg-[#7c3aed]/10 border-[#7c3aed]/20 text-[#a78bfa] active:scale-90'
             )}
             aria-label="Listen"
           >
-            {tts.isSpeaking ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            {tts.isLoading ? (
+              <div className="w-[18px] h-[18px] border-2 border-[#a78bfa] border-t-transparent rounded-full animate-spin" />
+            ) : tts.isSpeaking ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
         )}
       </div>

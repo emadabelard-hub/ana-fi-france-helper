@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Briefcase } from 'lucide-react';
+import { MessageCircle, Briefcase, Newspaper } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -84,6 +84,19 @@ const Index = () => {
             </h3>
           </button>
         </div>
+
+          {/* Card 3 - News */}
+          <button
+            onClick={() => navigate('/news')}
+            className="col-span-2 bg-gradient-to-br from-[#ef4444] to-[#dc2626] p-5 rounded-[2rem] shadow-xl flex items-center justify-center gap-4 text-white active:scale-95 transition-transform border border-white/10"
+          >
+            <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md">
+              <Newspaper size={32} />
+            </div>
+            <h3 className={cn("font-black text-lg leading-tight", isRTL && "font-cairo")}>
+              {isRTL ? 'أخبار' : 'Actualités / News'}
+            </h3>
+          </button>
       </main>
     </div>
   );

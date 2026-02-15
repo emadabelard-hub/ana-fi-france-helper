@@ -36,7 +36,17 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
       setAnswer(data?.answer || 'عذراً، لم أستطع الإجابة.');
     } catch (e: any) {
       console.error('Ask teacher error:', e);
-      setAnswer('حدث خطأ، حاول مرة أخرى 🙏');
+      const status = e?.context?.status || e?.status;
+      const body = e?.context?.body || e?.message || '';
+      if (status === 429) {
+        setAnswer('⏳ الخدمة مشغولة، جرب بعد دقيقة');
+      } else if (status === 402) {
+        setAnswer('💳 الرصيد غير كافٍ — Error 402');
+      } else if (status === 500 || String(body).includes('500')) {
+        setAnswer(`❌ خطأ في الخادم — Error 500\n${body ? String(body).slice(0, 100) : ''}`);
+      } else {
+        setAnswer(`❌ خطأ ${status || 'غير معروف'}: ${String(body).slice(0, 120) || 'حاول مرة أخرى'}`);
+      }
     } finally {
       setLoading(false);
     }

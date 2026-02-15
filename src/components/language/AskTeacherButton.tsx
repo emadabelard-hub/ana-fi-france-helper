@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { MessageCircleQuestion, X, Send, Loader2, Volume2 } from 'lucide-react';
+import { MessageCircleQuestion, X, Send, Loader2, Volume2, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTTS } from '@/hooks/useWebSpeech';
@@ -23,11 +23,13 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isLive, setIsLive] = useState(false);
 
   const handleAsk = useCallback(async () => {
     if (!question.trim() || loading) return;
     setLoading(true);
     setAnswer('');
+    setIsLive(false);
     try {
       const userKey = localStorage.getItem('user_ai_api_key');
       const { data, error } = await supabase.functions.invoke('ask-teacher', {
@@ -36,16 +38,19 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setAnswer(data?.answer || 'عذراً، لم أستطع الإجابة.');
+      setIsLive(true);
     } catch (e: any) {
-      console.error('Ask teacher error (falling back to demo mode):', e);
-      // Mock fallback — never block the user
-      await new Promise(r => setTimeout(r, 1500));
-      const mockReplies = [
-        "Ceci est une réponse de démonstration (Mode Gratuit). Votre prononciation semble correcte ! Continuez comme ça. 🌟",
-        "وضع تجريبي — حاول نطق الكلمة ببطء، مقطع بمقطع. أنت على الطريق الصحيح! 👏",
-        "Mode démo — En français, chaque lettre a un son précis. Répétez après le modèle audio. Bravo ! 🎯",
-      ];
-      setAnswer(mockReplies[Math.floor(Math.random() * mockReplies.length)]);
+      console.error('Ask teacher error:', e);
+      const msg = e?.message || '';
+      if (msg.includes('429') || msg.includes('مشغولة')) {
+        setAnswer('⏳ الرصيد لم يتفعل بعد، انتظر 5 دقائق (Error 429)');
+      } else if (msg.includes('402') || msg.includes('كافٍ')) {
+        setAnswer('💳 الرصيد غير كافٍ — Error 402');
+      } else if (msg.includes('401') || msg.includes('Incorrect') || msg.includes('invalid')) {
+        setAnswer('🔑 الرصيد لم يتفعل بعد، انتظر 5 دقائق (Error 401)');
+      } else {
+        setAnswer('❌ حدث خطأ — تحقق من المفتاح في الإعدادات أو حاول لاحقاً');
+      }
     } finally {
       setLoading(false);
     }
@@ -55,6 +60,7 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
     setOpen(false);
     setAnswer('');
     setQuestion('');
+    setIsLive(false);
     tts.stop();
   };
 
@@ -84,6 +90,11 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
             {answer && (
               <div className="bg-[#22262e] rounded-2xl p-4 border border-amber-500/10 space-y-2 max-h-40 overflow-y-auto">
                 <p className="text-sm text-amber-100/90 leading-relaxed font-cairo whitespace-pre-wrap" dir="rtl">{answer}</p>
+                {isLive && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 rounded-full px-2 py-0.5">
+                    <Sparkles size={10} /> AI Live
+                  </span>
+                )}
                 {tts.isSupported && (
                   <button
                     onClick={() => tts.isSpeaking ? tts.stop() : tts.speak(answer, 'ar-SA')}

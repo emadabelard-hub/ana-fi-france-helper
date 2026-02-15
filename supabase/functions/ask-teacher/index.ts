@@ -9,9 +9,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { question, currentPhrase, lessonTitle } = await req.json();
+    const { question, currentPhrase, lessonTitle, userApiKey } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    if (!LOVABLE_API_KEY && !userApiKey) throw new Error("No API key available");
 
     const systemPrompt = `أنت "معلم فرنسي" ودود وصبور. تشرح قواعد اللغة الفرنسية بالعربية الفصحى البسيطة.
 السياق: الطالب يتعلم درس "${lessonTitle || 'فرنسي'}" والعبارة الحالية هي: "${currentPhrase || ''}".
@@ -20,14 +20,21 @@ serve(async (req) => {
 - إذا كان السؤال عن النطق، اكتب النطق بالحروف العربية.
 - كن مشجعاً ولطيفاً.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const useUserKey = !LOVABLE_API_KEY && userApiKey;
+    const apiUrl = useUserKey 
+      ? "https://api.openai.com/v1/chat/completions" 
+      : "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const apiKey = useUserKey ? userApiKey : LOVABLE_API_KEY;
+    const model = useUserKey ? "gpt-4o-mini" : "google/gemini-3-flash-preview";
+
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: question },

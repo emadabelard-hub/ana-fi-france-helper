@@ -29,8 +29,9 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
     setLoading(true);
     setAnswer('');
     try {
+      const userKey = localStorage.getItem('user_ai_api_key');
       const { data, error } = await supabase.functions.invoke('ask-teacher', {
-        body: { question: question.trim(), currentPhrase, lessonTitle },
+        body: { question: question.trim(), currentPhrase, lessonTitle, userApiKey: userKey || undefined },
       });
       if (error) throw error;
       setAnswer(data?.answer || 'عذراً، لم أستطع الإجابة.');
@@ -45,8 +46,10 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
       } else if (status === 500 || String(body).includes('500')) {
         setAnswer(`❌ خطأ في الخادم — Error 500\n${body ? String(body).slice(0, 100) : ''}`);
       } else {
-        // Fallback mock response so the app doesn't crash
-        setAnswer('🤖 عذراً، واجهت مشكلة في الاتصال. حاول مرة أخرى بعد قليل.\n\n' + (status ? `Error ${status}` : 'Connection Error'));
+        const hasUserKey = !!localStorage.getItem('user_ai_api_key');
+        setAnswer(hasUserKey 
+          ? '🤖 عذراً، المفتاح غير صالح أو منتهي. تحقق من الإعدادات.'
+          : '⚙️ يرجى إدخال مفتاح الذكاء الاصطناعي في الإعدادات لتفعيل المدرس');
       }
     } finally {
       setLoading(false);
@@ -65,7 +68,7 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
       {/* FAB — floating above nav */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-amber-500/20 border-2 border-amber-500/40 text-amber-400 flex items-center justify-center shadow-lg active:scale-90 transition-all"
+        className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-[#F59E0B] border-2 border-[#D97706] text-white flex items-center justify-center shadow-lg shadow-amber-500/30 active:scale-90 transition-all"
         aria-label="Ask the teacher"
       >
         <MessageCircleQuestion size={26} />

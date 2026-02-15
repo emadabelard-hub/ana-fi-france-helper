@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Key } from 'lucide-react';
+import ApiKeySettingsModal from './ApiKeySettingsModal';
 
 const Header = () => {
   const { language, setLanguage, isRTL, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  const [showApiSettings, setShowApiSettings] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -60,6 +63,16 @@ const Header = () => {
         </div>
 
         <div className={cn("flex items-center gap-1.5", isRTL && "flex-row-reverse")}>
+          {/* API Key Settings */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowApiSettings(true)}
+            className="rounded-full w-7 h-7 p-0 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
+          >
+            <Key size={14} />
+          </Button>
+
           {/* Theme Toggle */}
           <Button
             variant="ghost"
@@ -107,6 +120,7 @@ const Header = () => {
           </button>
         ))}
       </div>
+      <ApiKeySettingsModal open={showApiSettings} onOpenChange={setShowApiSettings} />
     </header>
   );
 };

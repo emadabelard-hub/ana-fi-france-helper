@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Briefcase, Newspaper } from 'lucide-react';
+import { MessageCircle, Briefcase, Newspaper, GraduationCap } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -86,7 +86,7 @@ const Index = () => {
           </button>
         </div>
 
-        {/* Bottom Row: Wide News Card (Muted Burgundy) */}
+        {/* Bottom Row: 2 Wide Cards */}
         <button
           onClick={() => navigate('/news')}
           className="w-full mt-4 bg-[#2a1e24] p-5 rounded-2xl flex items-center justify-center gap-4 text-white active:scale-95 transition-all duration-200 border border-[#4a2838]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)]"
@@ -96,6 +96,19 @@ const Index = () => {
           </div>
           <h3 className={cn("font-black text-lg leading-tight text-center text-slate-200", isRTL && "font-cairo")}>
             {isRTL ? 'أخبار' : 'Actualités / News'}
+          </h3>
+        </button>
+
+        {/* Language School Card (Muted Pastel Purple) */}
+        <button
+          onClick={() => navigate('/language-school')}
+          className="w-full mt-4 bg-[#241e2e] p-5 rounded-2xl flex items-center justify-center gap-4 text-white active:scale-95 transition-all duration-200 border border-[#3a2850]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)]"
+        >
+          <div className="bg-[#7c3aed]/15 p-4 rounded-2xl border border-[#7c3aed]/20">
+            <GraduationCap size={32} className="text-[#a78bfa]" />
+          </div>
+          <h3 className={cn("font-black text-lg leading-tight text-center text-slate-200", isRTL && "font-cairo")}>
+            {isRTL ? 'مدرسة اللغة - طريقك للورق' : 'École de Langue - Objectif Papiers'}
           </h3>
         </button>
       </main>

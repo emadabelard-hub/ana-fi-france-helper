@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Volume2, Mic, Loader2, CheckCircle2, RefreshCcw, BookOpen, Lightbulb, Pause, Play, SkipBack, SkipForward, RotateCcw } from 'lucide-react';
+import { X, Volume2, Mic, Loader2, CheckCircle2, RefreshCcw, BookOpen, Lightbulb, Pause, Play, SkipBack, SkipForward, RotateCcw, Square } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTTS, useSTT } from '@/hooks/useWebSpeech';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import AskTeacherButton from '@/components/language/AskTeacherButton';
+import { playTTS, stopGlobalAudio } from '@/lib/audioController';
 import type { ContentBlock, TextBlock, TeacherTipBlock, GrammarBlock } from '@/types/lessons';
 
 interface LessonEngineProps {
@@ -114,7 +115,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
   const playingRef = useRef(false);
   const [playAllPhase, setPlayAllPhase] = useState<'speaking' | 'repeating'>('speaking');
   const handlePlayAll = useCallback(async () => {
-    if (playingRef.current || !tts.isSupported) return;
+    if (playingRef.current) return;
     playingRef.current = true;
     setPlayAllPaused(false);
 
@@ -123,31 +124,12 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
       setPlayAllIdx(i);
       setPlayAllPhase('speaking');
 
-      // Step 1: Speak the phrase via OpenAI TTS (Nova voice)
-      await new Promise<void>((resolve) => {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-        fetch(`${supabaseUrl}/functions/v1/tts`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
-          },
-          body: JSON.stringify({ text: phrases[i].termFr, voice: 'nova' }),
-        })
-          .then(res => res.ok ? res.blob() : Promise.reject('TTS failed'))
-          .then(blob => {
-            if (!playingRef.current) { resolve(); return; }
-            const url = URL.createObjectURL(blob);
-            const audio = new Audio(url);
-            audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-            audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
-            audio.play().catch(() => resolve());
-          })
-          .catch(() => resolve());
-      });
+      // Step 1: Play via global audio controller (OpenAI Nova)
+      try {
+        await playTTS(phrases[i].termFr, 'nova');
+      } catch {
+        // TTS failed, skip
+      }
 
       if (!playingRef.current) break;
 
@@ -170,10 +152,11 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
     setPlayAllIdx(-1);
     setPlayAllPaused(false);
     setPlayAllPhase('speaking');
-  }, [phrases, tts.isSupported]);
+  }, [phrases]);
 
   const stopPlayAll = useCallback(() => {
     playingRef.current = false;
+    stopGlobalAudio();
     setPlayAllIdx(-1);
     setPlayAllPaused(false);
     setPlayAllPhase('speaking');

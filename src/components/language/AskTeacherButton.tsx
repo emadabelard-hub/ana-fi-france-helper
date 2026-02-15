@@ -220,7 +220,7 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
                 )}
                 {tts.isSupported && answer && (
                   <button
-                    onClick={() => tts.isSpeaking ? tts.stop() : tts.speak(answer, 'ar-SA')}
+                    onClick={() => tts.isSpeaking ? tts.stop() : tts.speak(answer)}
                     className="flex items-center gap-1.5 text-[10px] text-amber-400/70 font-bold"
                   >
                     <Volume2 size={12} /> {tts.isSpeaking ? (isRTL ? 'إيقاف' : 'Stop') : (isRTL ? 'استمع للإجابة' : 'Écouter')}

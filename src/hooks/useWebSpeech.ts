@@ -1,82 +1,38 @@
 import { useState, useCallback, useRef } from 'react';
+import { playTTS, stopGlobalAudio } from '@/lib/audioController';
 
-// ─── TTS (Text-to-Speech) via OpenAI API with browser fallback ───
+// ─── TTS (Text-to-Speech) via Global Audio Controller (OpenAI only) ───
 export function useTTS() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const activeIdRef = useRef(0); // track which request is active
 
-  const speak = useCallback(async (text: string, lang = 'fr-FR') => {
-    // Stop any currently playing audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    window.speechSynthesis?.cancel();
+  const speak = useCallback(async (text: string) => {
+    // Cancel any previous request
+    stopGlobalAudio();
+    const id = ++activeIdRef.current;
 
     setIsLoading(true);
     setIsSpeaking(false);
 
     try {
-      // Try OpenAI TTS first
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-      if (!supabaseUrl || !supabaseKey) throw new Error('Missing Supabase config');
-
-      const response = await fetch(`${supabaseUrl}/functions/v1/tts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-        },
-        body: JSON.stringify({ text, voice: 'nova' }),
-      });
-
-      if (!response.ok) {
-        const errBody = await response.text();
-        console.error('OpenAI TTS error:', response.status, errBody);
-        throw new Error(`TTS request failed: ${response.status}`);
-      }
-
-      const audioBlob = await response.blob();
-      if (audioBlob.size < 100) throw new Error('Empty audio response');
-
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-
-      audio.onplay = () => {
-        setIsLoading(false);
-        setIsSpeaking(true);
-      };
-      audio.onended = () => {
-        setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
-        audioRef.current = null;
-      };
-      audio.onerror = () => {
-        setIsSpeaking(false);
-        setIsLoading(false);
-        URL.revokeObjectURL(audioUrl);
-        audioRef.current = null;
-      };
-
-      audioRef.current = audio;
-      await audio.play();
-    } catch (e) {
-      console.error('OpenAI TTS failed:', e);
+      if (id !== activeIdRef.current) return; // stale
       setIsLoading(false);
-      setIsSpeaking(false);
+      setIsSpeaking(true);
+      await playTTS(text, 'nova');
+    } catch (e) {
+      console.error('TTS error:', e);
+    } finally {
+      if (id === activeIdRef.current) {
+        setIsSpeaking(false);
+        setIsLoading(false);
+      }
     }
   }, []);
 
   const stop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    window.speechSynthesis?.cancel();
+    activeIdRef.current++; // invalidate any in-flight request
+    stopGlobalAudio();
     setIsSpeaking(false);
     setIsLoading(false);
   }, []);

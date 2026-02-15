@@ -45,7 +45,8 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
       } else if (status === 500 || String(body).includes('500')) {
         setAnswer(`❌ خطأ في الخادم — Error 500\n${body ? String(body).slice(0, 100) : ''}`);
       } else {
-        setAnswer(`❌ خطأ ${status || 'غير معروف'}: ${String(body).slice(0, 120) || 'حاول مرة أخرى'}`);
+        // Fallback mock response so the app doesn't crash
+        setAnswer('🤖 عذراً، واجهت مشكلة في الاتصال. حاول مرة أخرى بعد قليل.\n\n' + (status ? `Error ${status}` : 'Connection Error'));
       }
     } finally {
       setLoading(false);

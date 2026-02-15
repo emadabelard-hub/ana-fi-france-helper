@@ -416,10 +416,10 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
               </button>
             </div>
           )}
-          {feedback === 'idle' && (
+          {(feedback === 'idle' || feedback === 'listening' || feedback === 'retry') && (
             <button
               onClick={handleNext}
-              className="px-8 py-3 rounded-2xl bg-[#7c3aed]/20 border-2 border-[#7c3aed]/40 text-white text-sm font-black active:scale-95 transition-all shadow-lg"
+              className="px-8 py-3 rounded-2xl bg-blue-600 border-2 border-blue-500 text-white text-sm font-black active:scale-95 transition-all shadow-lg shadow-blue-600/20"
             >
               {nextLabel}
             </button>

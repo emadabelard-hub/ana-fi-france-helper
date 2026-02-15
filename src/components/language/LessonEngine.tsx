@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useTTS, useSTT } from '@/hooks/useWebSpeech';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
-import type { ContentBlock, TextBlock, TeacherTipBlock } from '@/types/lessons';
+import type { ContentBlock, TextBlock, TeacherTipBlock, GrammarBlock } from '@/types/lessons';
 
 interface LessonEngineProps {
   onClose: () => void;
@@ -51,12 +51,13 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
   const allBlocks = currentLesson?.content || [];
   const phrases = allBlocks.filter((b): b is TextBlock => b.type === 'text');
   const teacherTip = allBlocks.find((b): b is TeacherTipBlock => b.type === 'tip');
+  const grammarRule = allBlocks.find((b): b is GrammarBlock => b.type === 'grammar');
   const currentPhrase = phrases[phraseIdx];
   const totalLessons = lessons.length;
   const progressPct = totalLessons > 0 ? Math.round((lessonIdx / totalLessons) * 100) : 0;
   const canSkip = practicedCount >= 3;
 
-  // Handle microphone result
+  // Handle microphone result with 5-second timeout fallback
   useEffect(() => {
     if (feedback === 'listening') {
       if (stt.accuracy) {
@@ -67,15 +68,14 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
         }, 1200);
         return () => clearTimeout(timer);
       }
+      // 5-second fallback: simulate success if STT doesn't respond
       const fallback = setTimeout(() => {
-        if (feedback === 'listening') {
-          setFeedback('checking');
-          setTimeout(() => {
-            setFeedback('success');
-            setPracticedCount(prev => prev + 1);
-          }, 1000);
-        }
-      }, 3000);
+        setFeedback('checking');
+        setTimeout(() => {
+          setFeedback('success');
+          setPracticedCount(prev => prev + 1);
+        }, 800);
+      }, 5000);
       return () => clearTimeout(fallback);
     }
   }, [stt.accuracy, feedback]);
@@ -265,6 +265,24 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
               <p className="text-xs text-amber-200/80 font-cairo leading-relaxed" dir="rtl">
                 {teacherTip.tipAr}
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Grammar Rule ─── */}
+        {grammarRule && (
+          <div className="w-full max-w-sm bg-[#1e2430] rounded-2xl border border-blue-500/10 p-4 flex gap-3 items-start">
+            <BookOpen size={18} className="text-blue-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-[10px] text-blue-400/70 font-bold mb-1">{isRTL ? 'قاعدة نحوية' : 'Règle de grammaire'}</p>
+              <p className="text-xs text-blue-200/80 font-cairo leading-relaxed" dir="rtl">
+                {grammarRule.ruleAr}
+              </p>
+              {grammarRule.ruleFr && (
+                <p className="text-xs text-blue-300/50 mt-1 leading-relaxed" dir="ltr">
+                  {grammarRule.ruleFr}
+                </p>
+              )}
             </div>
           </div>
         )}

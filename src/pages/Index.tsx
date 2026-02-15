@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { FileText, FileUser, Newspaper, ChevronRight, Sparkles, Scale, Paintbrush } from 'lucide-react';
+import { MessageCircle, Briefcase } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -52,114 +52,38 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="space-y-5 pb-32 px-5 pt-6">
-        {/* Factures & Devis */}
-        <button
-          onClick={() => navigate('/pro/invoice-creator')}
-          className="w-full bg-[#ffedd5] p-6 rounded-[2.2rem] shadow-lg flex items-center justify-between active:scale-95 transition-transform border-b-4 border-orange-200 relative overflow-hidden"
-        >
-          {/* Soft pulse glow for AI indicator */}
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-400/0 via-orange-400/10 to-orange-400/0 animate-[pulse_3s_ease-in-out_infinite]" />
-          <div className="bg-[#f97316] p-4 rounded-2xl text-white shadow-lg relative z-10">
-            <FileText size={32} />
-          </div>
-          <div className={cn("flex-1 pr-4 relative z-10", isRTL ? "text-right" : "text-left pl-4")}>
-            <h3 className={cn("font-black text-[#431407] text-lg leading-tight", isRTL && "font-cairo")}>
-              {t('dashboard.invoiceCard')}
+      <main className="px-5 pt-8 pb-32">
+        <div className="grid grid-cols-2 gap-4">
+          {/* Card 1 - Consultations */}
+          <button
+            onClick={() => navigate('/consultations')}
+            className="bg-gradient-to-br from-[#7c3aed] to-[#a855f7] p-5 rounded-[2rem] shadow-xl flex flex-col items-center justify-center text-white active:scale-95 transition-transform border border-white/10 aspect-square"
+          >
+            <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md mb-4">
+              <MessageCircle size={36} />
+            </div>
+            <h3 className={cn("font-black text-center text-sm leading-tight", isRTL && "font-cairo")}>
+              {isRTL
+                ? 'انا جاي اساعدك واقول لك اي حاجة عايز تعرفها'
+                : 'Je suis là pour t\'aider et répondre à toutes tes questions'}
             </h3>
-            <p className={cn("text-[11px] font-bold text-orange-600 mt-1 opacity-70", isRTL && "font-cairo")}>
-              {t('dashboard.invoiceCardSub')}
-            </p>
-          </div>
-          <div className="bg-orange-200 p-2 rounded-full relative z-10">
-            <ChevronRight size={18} className={cn("text-orange-800", isRTL && "rotate-180")} />
-          </div>
-        </button>
+          </button>
 
-        {/* Mon CV Pro */}
-        <button
-          onClick={() => navigate('/pro/cv-generator')}
-          className="w-full bg-[#e0e7ff] p-6 rounded-[2.2rem] shadow-lg flex items-center justify-between active:scale-95 transition-transform border-b-4 border-indigo-200"
-        >
-          <div className="bg-[#4f46e5] p-4 rounded-2xl text-white shadow-lg">
-            <FileUser size={32} />
-          </div>
-          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
-            <h3 className={cn("font-black text-[#1e1b4b] text-xl leading-tight", isRTL && "font-cairo")}>
-              {t('dashboard.cvCard')}
+          {/* Card 2 - Tools */}
+          <button
+            onClick={() => navigate('/pro')}
+            className="bg-gradient-to-br from-[#f59e0b] to-[#ea580c] p-5 rounded-[2rem] shadow-xl flex flex-col items-center justify-center text-white active:scale-95 transition-transform border border-white/10 aspect-square"
+          >
+            <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md mb-4">
+              <Briefcase size={36} />
+            </div>
+            <h3 className={cn("font-black text-center text-sm leading-tight", isRTL && "font-cairo")}>
+              {isRTL
+                ? 'حلول مهنية واحترافية وصانع سي في سهل وسريع على أعلى مستوى'
+                : 'Solutions pro et générateur de CV facile et rapide au plus haut niveau'}
             </h3>
-            <p className={cn("text-[11px] font-bold text-indigo-600 mt-1 uppercase opacity-60", isRTL && "font-cairo")}>
-              {t('dashboard.cvCardSub')}
-            </p>
-          </div>
-          <div className="bg-indigo-200 p-2 rounded-full">
-            <ChevronRight size={18} className={cn("text-indigo-800", isRTL && "rotate-180")} />
-          </div>
-        </button>
-
-
-        {/* Assistant IA */}
-        <button
-          onClick={() => navigate('/ai-assistant')}
-          className="w-full bg-gradient-to-r from-[#7c3aed] to-[#a855f7] p-6 rounded-[2.5rem] shadow-xl flex items-center justify-between text-white active:scale-95 transition-transform border border-white/5"
-        >
-          <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md">
-            <Sparkles size={32} />
-          </div>
-          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
-            <h3 className={cn("font-black text-xl leading-none mb-1", isRTL && "font-cairo")}>
-              {language === 'fr' ? 'Votre Assistant IA' : 'شبيك لبيك اسأل وانا اجاوب'}
-            </h3>
-            <p className={cn("text-[11px] font-bold opacity-80", isRTL && "font-cairo")}>
-              {language === 'fr' ? 'Gratuit • Réponses instantanées' : 'مجاني • ردود فورية'}
-            </p>
-          </div>
-          <div className="bg-white/20 p-2 rounded-full">
-            <ChevronRight size={18} className={isRTL ? "rotate-180" : ""} />
-          </div>
-        </button>
-
-        {/* Premium Consultation Pro */}
-        <button
-          onClick={() => navigate('/premium-consultation')}
-          className="w-full bg-gradient-to-r from-[#f59e0b] to-[#ea580c] p-6 rounded-[2.5rem] shadow-xl flex items-center justify-between text-white active:scale-95 transition-transform border border-white/10"
-        >
-          <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md">
-            <Scale size={32} />
-          </div>
-          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
-            <h3 className={cn("font-black text-xl leading-none mb-1", isRTL && "font-cairo")}>
-              {isRTL ? 'المستشار القانوني والمهني الاحترافي' : 'Consultation Pro'}
-            </h3>
-            <p className={cn("text-[11px] font-bold opacity-80", isRTL && "font-cairo")}>
-              {isRTL ? 'محامي • محاسب • ترجمة • رد رسمي' : 'Avocat • Comptable • Traduction • Réponse'}
-            </p>
-          </div>
-          <div className="bg-white/20 p-2 rounded-full">
-            <ChevronRight size={18} className={isRTL ? "rotate-180" : ""} />
-          </div>
-        </button>
-
-        {/* Actualités / News */}
-        <button
-          onClick={() => navigate('/news')}
-          className="w-full bg-gradient-to-r from-[#dc2626] to-[#ef4444] p-6 rounded-[2.5rem] shadow-xl flex items-center justify-between text-white active:scale-95 transition-transform border border-white/5"
-        >
-          <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md">
-            <Newspaper size={32} />
-          </div>
-          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
-            <h3 className={cn("font-black text-xl leading-none mb-1", isRTL && "font-cairo")}>
-              {language === 'fr' ? 'Actualités' : 'أخبار'}
-            </h3>
-            <p className={cn("text-[11px] font-bold opacity-80", isRTL && "font-cairo")}>
-              {language === 'fr' ? 'Égypte • France • Sport' : 'مصر • فرنسا • رياضة'}
-            </p>
-          </div>
-          <div className="bg-white/20 p-2 rounded-full">
-            <ChevronRight size={18} className={isRTL ? "rotate-180" : ""} />
-          </div>
-        </button>
+          </button>
+        </div>
       </main>
     </div>
   );

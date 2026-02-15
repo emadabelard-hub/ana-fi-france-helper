@@ -110,8 +110,9 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
     setFeedback('idle');
   }, [stt]);
 
-  // Interactive Play All: one item at a time with 3s pause
+  // Alliance Française Audio Mode: step-by-step with speaking/repeating phases
   const playingRef = useRef(false);
+  const [playAllPhase, setPlayAllPhase] = useState<'speaking' | 'repeating'>('speaking');
   const handlePlayAll = useCallback(async () => {
     if (playingRef.current || !tts.isSupported) return;
     playingRef.current = true;
@@ -120,12 +121,13 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
     for (let i = 0; i < phrases.length; i++) {
       if (!playingRef.current) break;
       setPlayAllIdx(i);
+      setPlayAllPhase('speaking');
 
-      // Speak the phrase
+      // Step 1: Speak the phrase slowly (0.7)
       await new Promise<void>((resolve) => {
         const utterance = new SpeechSynthesisUtterance(phrases[i].termFr);
         utterance.lang = 'fr-FR';
-        utterance.rate = 0.75;
+        utterance.rate = 0.7;
         utterance.onend = () => resolve();
         utterance.onerror = () => resolve();
         window.speechSynthesis.speak(utterance);
@@ -133,14 +135,14 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
 
       if (!playingRef.current) break;
 
-      // 3-second pause with "دورك تكرر" visual cue
+      // Step 2: 4-second pause — "كرر الآن / Répétez"
+      setPlayAllPhase('repeating');
       setPlayAllPaused(true);
       await new Promise<void>((resolve) => {
         const timer = setTimeout(() => {
           setPlayAllPaused(false);
           resolve();
-        }, 3000);
-        // Store timer for cleanup
+        }, 4000);
         if (!playingRef.current) {
           clearTimeout(timer);
           resolve();
@@ -151,6 +153,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
     playingRef.current = false;
     setPlayAllIdx(-1);
     setPlayAllPaused(false);
+    setPlayAllPhase('speaking');
   }, [phrases, tts.isSupported]);
 
   const stopPlayAll = useCallback(() => {

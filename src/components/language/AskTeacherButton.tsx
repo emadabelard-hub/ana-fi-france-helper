@@ -1,8 +1,10 @@
-import { useState, useCallback } from 'react';
-import { MessageCircleQuestion, X, Send, Loader2, Volume2, Sparkles } from 'lucide-react';
+import { useState, useCallback, useRef } from 'react';
+import { MessageCircleQuestion, Send, Loader2, Volume2, Sparkles, Paperclip, X, FileText } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTTS } from '@/hooks/useWebSpeech';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -17,87 +19,103 @@ interface AskTeacherButtonProps {
 
 const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps) => {
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
   const tts = useTTS();
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLive, setIsLive] = useState(false);
+  const [attachment, setAttachment] = useState<{ data: string; name: string; type: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      setAnswer('❌ الملف كبير جداً (الحد الأقصى 5 ميجا)');
+      return;
+    }
+
+    const isImage = file.type.startsWith('image/');
+    const isPdf = file.type === 'application/pdf';
+    if (!isImage && !isPdf) {
+      setAnswer('❌ يرجى رفع صورة (JPG/PNG) أو ملف PDF فقط');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      if (ev.target?.result) {
+        setAttachment({
+          data: ev.target.result as string,
+          name: file.name,
+          type: isImage ? 'image' : 'pdf',
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleAsk = useCallback(async () => {
-    if (!question.trim() || loading) return;
+    if ((!question.trim() && !attachment) || loading) return;
     setLoading(true);
     setAnswer('');
     setIsLive(false);
 
-    const apiKey = localStorage.getItem('user_ai_api_key');
-    if (!apiKey) {
-      setAnswer('🔑 لم يتم العثور على مفتاح — اذهب إلى الإعدادات وأدخل مفتاح OpenAI الخاص بك');
-      setLoading(false);
-      return;
-    }
-
-    const systemPrompt = `أنت "معلم فرنسي" ودود وصبور. تشرح قواعد اللغة الفرنسية بالعربية الفصحى البسيطة.
-السياق: الطالب يتعلم درس "${lessonTitle || 'فرنسي'}" والعبارة الحالية هي: "${currentPhrase || ''}".
-- أجب بشكل مختصر (3-5 جمل كحد أقصى).
-- استخدم أمثلة فرنسية مع الترجمة.
-- إذا كان السؤال عن النطق، اكتب النطق بالحروف العربية.
-- كن مشجعاً ولطيفاً.`;
-
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+      const { data, error } = await supabase.functions.invoke('ask-teacher', {
+        body: {
+          question: question.trim() || (attachment ? 'ما هذا؟ اشرح لي.' : ''),
+          currentPhrase,
+          lessonTitle,
+          imageData: attachment?.type === 'image' ? attachment.data : undefined,
         },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: question.trim() },
-          ],
-        }),
       });
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        const errMsg = errData?.error?.message || `HTTP ${response.status}`;
-        if (response.status === 401) {
-          setAnswer(`🔑 Error 401: ${errMsg}`);
-        } else if (response.status === 429) {
-          setAnswer(`⏳ Error 429: ${errMsg}`);
-        } else if (response.status === 402) {
-          setAnswer(`💳 Error 402: ${errMsg}`);
-        } else {
-          setAnswer(`❌ Error ${response.status}: ${errMsg}`);
-        }
-        setLoading(false);
+      if (error) {
+        setAnswer(`❌ ${error.message || 'خطأ في الاتصال بالسيرفر'}`);
         return;
       }
 
-      const data = await response.json();
-      setAnswer(data.choices?.[0]?.message?.content || 'عذراً، لم أستطع الإجابة.');
+      if (data?.error) {
+        setAnswer(`⚠️ ${data.error}`);
+        return;
+      }
+
+      setAnswer(data?.answer || 'عذراً، لم أستطع الإجابة.');
       setIsLive(true);
+      setAttachment(null);
     } catch (e: any) {
-      console.error('Direct OpenAI error:', e);
-      setAnswer(`❌ ${e?.message || 'Network error — تحقق من اتصالك بالإنترنت'}`);
+      setAnswer(`❌ ${e?.message || 'خطأ في الاتصال'}`);
     } finally {
       setLoading(false);
     }
-  }, [question, currentPhrase, lessonTitle, loading]);
+  }, [question, currentPhrase, lessonTitle, loading, attachment]);
 
   const handleClose = () => {
     setOpen(false);
     setAnswer('');
     setQuestion('');
     setIsLive(false);
+    setAttachment(null);
     tts.stop();
   };
 
   return (
     <>
-      {/* FAB — floating above nav */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+        accept=".jpg,.jpeg,.png,.pdf"
+        className="hidden"
+      />
+
+      {/* FAB */}
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-[#F59E0B] border-2 border-[#D97706] text-white flex items-center justify-center shadow-lg shadow-amber-500/30 active:scale-90 transition-all"
@@ -106,7 +124,6 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
         <MessageCircleQuestion size={26} />
       </button>
 
-      {/* Centered Modal */}
       <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true); }}>
         <DialogContent className="bg-[#1a1d23] border-amber-500/20 text-white max-w-[92vw] sm:max-w-md top-[35%]">
           <DialogHeader>
@@ -126,7 +143,7 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
                     <Sparkles size={10} /> AI Live
                   </span>
                 )}
-                {tts.isSupported && (
+                {tts.isSupported && answer && (
                   <button
                     onClick={() => tts.isSpeaking ? tts.stop() : tts.speak(answer, 'ar-SA')}
                     className="flex items-center gap-1.5 text-[10px] text-amber-400/70 font-bold"
@@ -137,13 +154,37 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
               </div>
             )}
 
-            {/* Input */}
+            {/* Attachment preview */}
+            {attachment && (
+              <div className="flex items-center gap-2 bg-[#22262e] rounded-xl p-2 border border-amber-500/10">
+                {attachment.type === 'image' ? (
+                  <img src={attachment.data} alt="upload" className="h-10 w-10 object-cover rounded" />
+                ) : (
+                  <div className="h-10 w-10 flex items-center justify-center bg-red-500/10 rounded">
+                    <FileText size={18} className="text-red-400" />
+                  </div>
+                )}
+                <span className="flex-1 text-xs text-slate-400 truncate">{attachment.name}</span>
+                <button onClick={() => setAttachment(null)} className="text-slate-500 hover:text-red-400">
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+
+            {/* Input row */}
             <div className="flex gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
+                className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0 active:scale-90 transition-all"
+              >
+                <Paperclip size={18} />
+              </button>
               <input
                 value={question}
                 onChange={e => setQuestion(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAsk()}
-                placeholder={isRTL ? 'اكتب سؤالك هنا...' : 'Posez votre question...'}
+                placeholder={isRTL ? 'اكتب سؤالك أو أرسل صورة...' : 'Posez votre question...'}
                 className="flex-1 bg-[#22262e] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/30 font-cairo"
                 dir="rtl"
                 disabled={loading}
@@ -151,7 +192,7 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
               />
               <button
                 onClick={handleAsk}
-                disabled={loading || !question.trim()}
+                disabled={loading || (!question.trim() && !attachment)}
                 className={cn(
                   'w-12 h-12 rounded-xl flex items-center justify-center transition-all shrink-0',
                   loading ? 'bg-amber-500/10 text-amber-400/50' : 'bg-amber-500/20 border border-amber-500/30 text-amber-400 active:scale-90'
@@ -160,6 +201,13 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
                 {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
               </button>
             </div>
+
+            {/* Usage info */}
+            {!user && (
+              <p className="text-[10px] text-slate-600 text-center font-cairo" dir="rtl">
+                سجّل دخولك للحصول على 10 أسئلة مجانية يومياً
+              </p>
+            )}
           </div>
         </DialogContent>
       </Dialog>

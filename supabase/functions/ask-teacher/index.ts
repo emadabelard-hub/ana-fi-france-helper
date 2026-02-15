@@ -1,67 +1,101 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-openai-key, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const DAILY_TEACHER_LIMIT = 10;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { question, currentPhrase, lessonTitle, userApiKey } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    // Key validation moved after priority logic below
+    if (!LOVABLE_API_KEY) throw new Error("Server AI key not configured");
+
+    // Auth check
+    const authHeader = req.headers.get("Authorization");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    let userId: string | null = null;
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
+    }
+
+    const { question, currentPhrase, lessonTitle, imageData } = await req.json();
+
+    // Daily limit check
+    if (userId) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("daily_message_count, last_message_date")
+        .eq("user_id", userId)
+        .single();
+
+      const today = new Date().toISOString().split("T")[0];
+      const isNewDay = profile?.last_message_date !== today;
+      const currentCount = isNewDay ? 0 : (profile?.daily_message_count ?? 0);
+
+      if (currentCount >= DAILY_TEACHER_LIMIT) {
+        return new Response(
+          JSON.stringify({ error: "لقد وصلت للحد اليومي (10 أسئلة). عد غداً! 🌙" }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Increment count
+      await supabase
+        .from("profiles")
+        .update({
+          daily_message_count: currentCount + 1,
+          last_message_date: today,
+        })
+        .eq("user_id", userId);
+    }
 
     const systemPrompt = `أنت "معلم فرنسي" ودود وصبور. تشرح قواعد اللغة الفرنسية بالعربية الفصحى البسيطة.
 السياق: الطالب يتعلم درس "${lessonTitle || 'فرنسي'}" والعبارة الحالية هي: "${currentPhrase || ''}".
 - أجب بشكل مختصر (3-5 جمل كحد أقصى).
 - استخدم أمثلة فرنسية مع الترجمة.
 - إذا كان السؤال عن النطق، اكتب النطق بالحروف العربية.
+- إذا أرسل المستخدم صورة أو ملف، حلل محتواه وأجب عن أي أسئلة متعلقة به.
 - كن مشجعاً ولطيفاً.`;
 
-    // PRIORITY: user's own key first, then server key
-    const useUserKey = !!userApiKey;
-    const apiUrl = useUserKey 
-      ? "https://api.openai.com/v1/chat/completions" 
-      : "https://ai.gateway.lovable.dev/v1/chat/completions";
-    const apiKey = useUserKey ? userApiKey : LOVABLE_API_KEY;
-    const model = useUserKey ? "gpt-4o-mini" : "google/gemini-3-flash-preview";
+    // Build messages array
+    const messages: any[] = [{ role: "system", content: systemPrompt }];
 
-    if (!apiKey) throw new Error("No API key available");
+    if (imageData) {
+      // Vision message with image
+      messages.push({
+        role: "user",
+        content: [
+          { type: "text", text: question || "ما هذا؟ اشرح لي بالعربية." },
+          { type: "image_url", image_url: { url: imageData } },
+        ],
+      });
+    } else {
+      messages.push({ role: "user", content: question });
+    }
 
-    const response = await fetch(apiUrl, {
+    const model = imageData ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite";
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: question },
-        ],
-      }),
+      body: JSON.stringify({ model, messages }),
     });
 
     if (!response.ok) {
       const status = response.status;
-      if (status === 401) {
-        return new Response(JSON.stringify({ error: "المفتاح غير صحيح، تأكد من نسخه بدقة 🔑" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (status === 429) {
-        return new Response(JSON.stringify({ error: "الخدمة مشغولة، جرب بعد دقيقة 🙏" }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: "الرصيد غير كافٍ ⏳" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       throw new Error(`AI gateway error: ${status}`);
     }
 
@@ -73,8 +107,9 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("ask-teacher error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "خطأ غير متوقع" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "خطأ غير متوقع" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });

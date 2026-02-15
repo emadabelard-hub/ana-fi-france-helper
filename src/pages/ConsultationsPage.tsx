@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Sparkles, Scale, ChevronRight } from 'lucide-react';
+import { Sparkles, Scale, ChevronRight, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ConsultationsPage = () => {
@@ -60,6 +60,26 @@ const ConsultationsPage = () => {
             <ChevronRight size={18} className={isRTL ? "rotate-180" : ""} />
           </div>
         </button>
+
+        {/* Protected Consultations — Locked Premium */}
+        <div className="relative w-full p-6 rounded-[2.5rem] shadow-xl flex items-center justify-between border border-white/10 bg-gradient-to-r from-slate-700/60 to-slate-800/60 opacity-70 cursor-not-allowed">
+          <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md">
+            <ShieldCheck size={32} className="text-slate-400" />
+          </div>
+          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
+            <h3 className={cn("font-black text-xl leading-none mb-1 text-slate-300", isRTL && "font-cairo")}>
+              {isRTL ? 'الاستشارات المحمية' : 'Consultations Protégées'}
+            </h3>
+            <p className={cn("text-[11px] font-bold text-slate-400 mt-1", isRTL && "font-cairo")}>
+              {isRTL 
+                ? 'هذه الميزة تستخدم ذكاء اصطناعي متقدم وتتطلب اشتراك Premium 🔒'
+                : 'Cette fonctionnalité utilise une IA avancée et nécessite un abonnement Premium 🔒'}
+            </p>
+          </div>
+          <div className="bg-white/10 p-2 rounded-full">
+            <ShieldCheck size={18} className="text-slate-500" />
+          </div>
+        </div>
       </div>
     </div>
   );

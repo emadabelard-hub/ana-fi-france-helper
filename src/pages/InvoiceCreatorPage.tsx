@@ -118,7 +118,7 @@ const InvoiceCreatorPage = () => {
                 ? (isRTL ? 'إنشاء عرض سعر (Devis)' : 'Créer un Devis')
                 : documentType === 'facture'
                   ? (isRTL ? 'إنشاء فاتورة (Facture)' : 'Créer une Facture')
-                  : (isRTL ? 'فواتيرك ودوفيهاتك' : 'Factures & Devis')}
+                  : (isRTL ? 'اعمل فواتيرك ودوفيهاتك معانا' : 'Factures & Devis')}
             </h1>
             <p className={cn(
               "text-xs text-muted-foreground",

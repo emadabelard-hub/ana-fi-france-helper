@@ -9,11 +9,11 @@ import AskTeacherButton from '@/components/language/AskTeacherButton';
 import { playTTS, stopGlobalAudio } from '@/lib/audioController';
 import type { ContentBlock, TextBlock, TeacherTipBlock, GrammarBlock } from '@/types/lessons';
 
-/** Force French context for OpenAI Nova so alphabet letters sound native Parisian */
+/** Extract just the phonetic sound for clean French letter pronunciation */
 function buildTTSText(termFr: string): string {
   const match = termFr.match(/^([A-Z])\s*\(([^)]+)\)$/i);
   if (match) {
-    return `En français, la lettre ${match[1]} se prononce : ${match[2]}.`;
+    return match[2]; // Just the phonetic: "Ah", "Bé", "Sé", etc.
   }
   return termFr;
 }

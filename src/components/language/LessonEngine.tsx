@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Volume2, Mic, Loader2, CheckCircle2, RefreshCcw, BookOpen, Lightbulb, Pause, Play, SkipBack, SkipForward, RotateCcw, Square } from 'lucide-react';
+import { X, Volume2, Mic, Loader2, CheckCircle2, RefreshCcw, BookOpen, Lightbulb, Pause, Play, SkipBack, SkipForward, RotateCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTTS, useSTT } from '@/hooks/useWebSpeech';

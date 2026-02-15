@@ -123,14 +123,30 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
       setPlayAllIdx(i);
       setPlayAllPhase('speaking');
 
-      // Step 1: Speak the phrase slowly (0.7)
+      // Step 1: Speak the phrase via OpenAI TTS (Nova voice)
       await new Promise<void>((resolve) => {
-        const utterance = new SpeechSynthesisUtterance(phrases[i].termFr);
-        utterance.lang = 'fr-FR';
-        utterance.rate = 0.7;
-        utterance.onend = () => resolve();
-        utterance.onerror = () => resolve();
-        window.speechSynthesis.speak(utterance);
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+        fetch(`${supabaseUrl}/functions/v1/tts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({ text: phrases[i].termFr, voice: 'nova' }),
+        })
+          .then(res => res.ok ? res.blob() : Promise.reject('TTS failed'))
+          .then(blob => {
+            if (!playingRef.current) { resolve(); return; }
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+            audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+            audio.play().catch(() => resolve());
+          })
+          .catch(() => resolve());
       });
 
       if (!playingRef.current) break;
@@ -158,7 +174,6 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
 
   const stopPlayAll = useCallback(() => {
     playingRef.current = false;
-    window.speechSynthesis.cancel();
     setPlayAllIdx(-1);
     setPlayAllPaused(false);
     setPlayAllPhase('speaking');

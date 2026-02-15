@@ -11,7 +11,7 @@ serve(async (req) => {
   try {
     const { question, currentPhrase, lessonTitle, userApiKey } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY && !userApiKey) throw new Error("No API key available");
+    // Key validation moved after priority logic below
 
     const systemPrompt = `أنت "معلم فرنسي" ودود وصبور. تشرح قواعد اللغة الفرنسية بالعربية الفصحى البسيطة.
 السياق: الطالب يتعلم درس "${lessonTitle || 'فرنسي'}" والعبارة الحالية هي: "${currentPhrase || ''}".
@@ -20,12 +20,15 @@ serve(async (req) => {
 - إذا كان السؤال عن النطق، اكتب النطق بالحروف العربية.
 - كن مشجعاً ولطيفاً.`;
 
-    const useUserKey = !LOVABLE_API_KEY && userApiKey;
+    // PRIORITY: user's own key first, then server key
+    const useUserKey = !!userApiKey;
     const apiUrl = useUserKey 
       ? "https://api.openai.com/v1/chat/completions" 
       : "https://ai.gateway.lovable.dev/v1/chat/completions";
     const apiKey = useUserKey ? userApiKey : LOVABLE_API_KEY;
     const model = useUserKey ? "gpt-4o-mini" : "google/gemini-3-flash-preview";
+
+    if (!apiKey) throw new Error("No API key available");
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -44,6 +47,11 @@ serve(async (req) => {
 
     if (!response.ok) {
       const status = response.status;
+      if (status === 401) {
+        return new Response(JSON.stringify({ error: "المفتاح غير صحيح، تأكد من نسخه بدقة 🔑" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       if (status === 429) {
         return new Response(JSON.stringify({ error: "الخدمة مشغولة، جرب بعد دقيقة 🙏" }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { MessageCircleQuestion, X, Send, Loader2, Volume2, Sparkles } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTTS } from '@/hooks/useWebSpeech';
 import { cn } from '@/lib/utils';
@@ -31,41 +30,61 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
     setAnswer('');
     setIsLive(false);
 
-    const userKey = localStorage.getItem('user_ai_api_key');
-    const body = { question: question.trim(), currentPhrase, lessonTitle, userApiKey: userKey || undefined };
+    const apiKey = localStorage.getItem('user_ai_api_key');
+    if (!apiKey) {
+      setAnswer('🔑 لم يتم العثور على مفتاح — اذهب إلى الإعدادات وأدخل مفتاح OpenAI الخاص بك');
+      setLoading(false);
+      return;
+    }
 
-    let lastError: any = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const { data, error } = await supabase.functions.invoke('ask-teacher', { body });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-        setAnswer(data?.answer || 'عذراً، لم أستطع الإجابة.');
-        setIsLive(true);
+    const systemPrompt = `أنت "معلم فرنسي" ودود وصبور. تشرح قواعد اللغة الفرنسية بالعربية الفصحى البسيطة.
+السياق: الطالب يتعلم درس "${lessonTitle || 'فرنسي'}" والعبارة الحالية هي: "${currentPhrase || ''}".
+- أجب بشكل مختصر (3-5 جمل كحد أقصى).
+- استخدم أمثلة فرنسية مع الترجمة.
+- إذا كان السؤال عن النطق، اكتب النطق بالحروف العربية.
+- كن مشجعاً ولطيفاً.`;
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: question.trim() },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        const errMsg = errData?.error?.message || `HTTP ${response.status}`;
+        if (response.status === 401) {
+          setAnswer(`🔑 Error 401: ${errMsg}`);
+        } else if (response.status === 429) {
+          setAnswer(`⏳ Error 429: ${errMsg}`);
+        } else if (response.status === 402) {
+          setAnswer(`💳 Error 402: ${errMsg}`);
+        } else {
+          setAnswer(`❌ Error ${response.status}: ${errMsg}`);
+        }
         setLoading(false);
         return;
-      } catch (e: any) {
-        lastError = e;
-        console.warn(`ask-teacher attempt ${attempt + 1} failed:`, e?.message);
-        if (attempt < 2) await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
       }
-    }
 
-    // All 3 attempts failed — friendly fallback
-    console.error('Ask teacher all retries failed:', lastError);
-    const msg = lastError?.message || '';
-    if (msg.includes('Failed to send') || msg.includes('NetworkError') || msg.includes('fetch')) {
-      setAnswer('⚡ جاري إعادة الاتصال بالسيرفر... حاول مرة أخرى بعد قليل.\n\n💡 نصيحة: تأكد من اتصالك بالإنترنت.');
-    } else if (msg.includes('429') || msg.includes('مشغولة')) {
-      setAnswer('⏳ الرصيد لم يتفعل بعد، انتظر 5 دقائق (Error 429)');
-    } else if (msg.includes('402') || msg.includes('كافٍ')) {
-      setAnswer('💳 الرصيد غير كافٍ — Error 402');
-    } else if (msg.includes('401') || msg.includes('Incorrect') || msg.includes('invalid')) {
-      setAnswer('🔑 المفتاح غير صحيح — تأكد من نسخه بدقة من OpenAI');
-    } else {
-      setAnswer('❌ حدث خطأ — حاول مرة أخرى أو تحقق من الإعدادات');
+      const data = await response.json();
+      setAnswer(data.choices?.[0]?.message?.content || 'عذراً، لم أستطع الإجابة.');
+      setIsLive(true);
+    } catch (e: any) {
+      console.error('Direct OpenAI error:', e);
+      setAnswer(`❌ ${e?.message || 'Network error — تحقق من اتصالك بالإنترنت'}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [question, currentPhrase, lessonTitle, loading]);
 
   const handleClose = () => {

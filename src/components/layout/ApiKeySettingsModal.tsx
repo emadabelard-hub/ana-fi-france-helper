@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Key, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import {
@@ -49,26 +48,34 @@ const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
     setTestResult(null);
     setErrorDetail('');
     try {
-      const { data, error } = await supabase.functions.invoke('ask-teacher', {
-        body: { question: 'Bonjour', currentPhrase: '', lessonTitle: 'Test', userApiKey: key.trim() || undefined },
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key.trim()}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: 'Say "OK" in one word.' }],
+          max_tokens: 5,
+        }),
       });
-      if (error) {
-        const msg = error.message || '';
-        if (msg.includes('401')) setErrorDetail('Error 401: Invalid Key — المفتاح غلط');
-        else if (msg.includes('429')) setErrorDetail('Error 429: Quota — الرصيد مخلصش أو لسه ماتفعلش');
-        else if (msg.includes('404')) setErrorDetail('Error 404: Model Not Found — الموديل مش متاح');
-        else setErrorDetail(`Error: ${msg}`);
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        const msg = errData?.error?.message || `HTTP ${response.status}`;
+        if (response.status === 401) setErrorDetail(`Error 401: Invalid Key — ${msg}`);
+        else if (response.status === 429) setErrorDetail(`Error 429: Quota — ${msg}`);
+        else if (response.status === 404) setErrorDetail(`Error 404: Model Not Found — ${msg}`);
+        else setErrorDetail(`Error ${response.status}: ${msg}`);
         setTestResult('fail');
         return;
       }
-      if (data?.error) {
-        setErrorDetail(data.error);
-        setTestResult('fail');
-        return;
-      }
-      setTestResult(data?.answer ? 'ok' : 'fail');
+
+      const data = await response.json();
+      setTestResult(data.choices?.[0]?.message?.content ? 'ok' : 'fail');
     } catch (e: any) {
-      setErrorDetail(e?.message || 'Unknown error');
+      setErrorDetail(e?.message || 'Network error');
       setTestResult('fail');
     } finally {
       setTesting(false);

@@ -11,13 +11,19 @@ export function useTTS() {
 
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = lang;
-    utt.rate = 0.75;
+    utt.rate = lang.startsWith('fr') ? 0.78 : 0.85;
     utt.pitch = 1;
 
-    // Try to pick a French voice
+    // Pick the best available voice for the language
     const voices = window.speechSynthesis.getVoices();
-    const frVoice = voices.find(v => v.lang.startsWith('fr'));
-    if (frVoice) utt.voice = frVoice;
+    const langPrefix = lang.split('-')[0];
+    
+    // Prefer premium/enhanced voices, then native ones
+    const premiumVoice = voices.find(v => v.lang.startsWith(langPrefix) && /premium|enhanced|natural|neural/i.test(v.name));
+    const nativeVoice = voices.find(v => v.lang.startsWith(langPrefix) && !v.localService);
+    const anyVoice = voices.find(v => v.lang.startsWith(langPrefix));
+    
+    utt.voice = premiumVoice || nativeVoice || anyVoice || null;
 
     utt.onstart = () => setIsSpeaking(true);
     utt.onend = () => setIsSpeaking(false);

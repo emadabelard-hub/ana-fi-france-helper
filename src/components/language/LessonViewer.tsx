@@ -34,13 +34,15 @@ const AccuracyBadge = ({ level }: { level: AccuracyLevel }) => {
   );
 };
 
-/** Build a natural TTS prompt so OpenAI Nova pronounces letters correctly */
+/** Build a natural TTS prompt so OpenAI Nova pronounces letters correctly in French */
 function buildTTSText(termFr: string): string {
   // Detect alphabet-style entries like "A (Ah)" or "R (Èrre)"
   const match = termFr.match(/^([A-Z])\s*\(([^)]+)\)$/i);
   if (match) {
-    // Send the full letter name for clear pronunciation
-    return match[2]; // e.g. "Ah", "Bé", "Èrre"
+    // Give Nova full French context so it never falls back to English pronunciation
+    const letter = match[1];
+    const phonetic = match[2];
+    return `En français, la lettre ${letter} se prononce : ${phonetic}.`;
   }
   return termFr;
 }

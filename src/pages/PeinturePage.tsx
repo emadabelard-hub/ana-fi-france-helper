@@ -169,7 +169,7 @@ const PeinturePage = () => {
             {/* TVA Selector */}
             <div className="space-y-2">
               <Label className={cn("font-bold text-sm", isRTL && "block text-right")}>
-                {isFr ? 'Taux de TVA' : 'نسبة الضريبة (TVA)'}
+                {isFr ? 'Taux de TVA' : 'احسب التي في ا (TVA)'}
               </Label>
               <div className={cn("flex gap-3", isRTL && "flex-row-reverse")}>
                 <Button type="button" variant={tvaRate === 10 ? 'default' : 'outline'}

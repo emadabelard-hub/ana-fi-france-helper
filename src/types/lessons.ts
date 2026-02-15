@@ -4,6 +4,7 @@ export interface TextBlock {
   id: string;
   textAr: string;
   termFr: string;
+  phoneticAr?: string;
 }
 
 export interface ImageBlock {

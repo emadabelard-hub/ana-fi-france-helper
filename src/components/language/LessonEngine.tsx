@@ -58,7 +58,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
   const currentPhrase = phrases[phraseIdx];
   const totalLessons = lessons.length;
   const progressPct = totalLessons > 0 ? Math.round((lessonIdx / totalLessons) * 100) : 0;
-  const canSkip = practicedCount >= 3;
+  const canSkip = true; // Always allow navigation
 
   // Handle microphone result with 5-second timeout fallback
   useEffect(() => {
@@ -416,20 +416,13 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
               </button>
             </div>
           )}
-          {feedback === 'idle' && canSkip && (
+          {feedback === 'idle' && (
             <button
               onClick={handleNext}
-              className="px-6 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-slate-400 text-xs font-bold active:scale-95 transition-all"
+              className="px-8 py-3 rounded-2xl bg-[#7c3aed]/20 border-2 border-[#7c3aed]/40 text-white text-sm font-black active:scale-95 transition-all shadow-lg"
             >
-              {isRTL ? 'تخطي ←' : 'Passer →'}
+              {nextLabel}
             </button>
-          )}
-          {feedback === 'idle' && !canSkip && (
-            <p className="text-[10px] text-slate-600 font-bold text-center">
-              {isRTL
-                ? `تدرب على ${3 - practicedCount} عبارات أخرى للتخطي`
-                : `Pratiquez ${3 - practicedCount} phrases de plus pour passer`}
-            </p>
           )}
           {feedback === 'listening' && !stt.accuracy && (
             <span className="text-sm text-red-400 animate-pulse font-bold">🎙️ {isRTL ? 'تكلم الآن...' : 'Parlez maintenant...'}</span>

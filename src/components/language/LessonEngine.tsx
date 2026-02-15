@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
-import { X, Volume2, VolumeX, Mic, Loader2, CheckCircle2, RefreshCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { X, Volume2, VolumeX, Mic, Loader2, CheckCircle2, RefreshCcw, BookOpen, Lightbulb } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTTS, useSTT } from '@/hooks/useWebSpeech';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
-import type { ContentBlock, TextBlock } from '@/types/lessons';
+import type { ContentBlock, TextBlock, TeacherTipBlock } from '@/types/lessons';
 
 interface LessonEngineProps {
   onClose: () => void;
@@ -30,8 +30,9 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [feedback, setFeedback] = useState<FeedbackState>('idle');
   const [loading, setLoading] = useState(true);
+  const [practicedCount, setPracticedCount] = useState(0);
+  const [showVocab, setShowVocab] = useState(false);
 
-  // Fetch all published lessons
   useEffect(() => {
     const fetchLessons = async () => {
       setLoading(true);
@@ -47,30 +48,32 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
   }, []);
 
   const currentLesson = lessons[lessonIdx];
-  const phrases = currentLesson
-    ? (currentLesson.content || []).filter((b): b is TextBlock => b.type === 'text')
-    : [];
+  const allBlocks = currentLesson?.content || [];
+  const phrases = allBlocks.filter((b): b is TextBlock => b.type === 'text');
+  const teacherTip = allBlocks.find((b): b is TeacherTipBlock => b.type === 'tip');
   const currentPhrase = phrases[phraseIdx];
   const totalLessons = lessons.length;
+  const progressPct = totalLessons > 0 ? Math.round((lessonIdx / totalLessons) * 100) : 0;
+  const canSkip = practicedCount >= 3;
 
-  // Progress: lesson-based (e.g. 1/10)
-  const progressPct = totalLessons > 0 ? Math.round(((lessonIdx) / totalLessons) * 100) : 0;
-
-  // Handle microphone result — simulate success after timeout if STT not supported
+  // Handle microphone result
   useEffect(() => {
     if (feedback === 'listening') {
       if (stt.accuracy) {
         setFeedback('checking');
         const timer = setTimeout(() => {
           setFeedback(stt.accuracy === 'high' || stt.accuracy === 'medium' ? 'success' : 'retry');
+          setPracticedCount(prev => prev + 1);
         }, 1200);
         return () => clearTimeout(timer);
       }
-      // Simulate success after 3s if STT doesn't respond (for browsers without support)
       const fallback = setTimeout(() => {
         if (feedback === 'listening') {
           setFeedback('checking');
-          setTimeout(() => setFeedback('success'), 1000);
+          setTimeout(() => {
+            setFeedback('success');
+            setPracticedCount(prev => prev + 1);
+          }, 1000);
         }
       }, 3000);
       return () => clearTimeout(fallback);
@@ -84,17 +87,18 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
     stt.listen(currentPhrase.termFr);
   }, [currentPhrase, stt]);
 
-  // Move to next phrase within lesson, or next lesson
   const handleNext = useCallback(() => {
     stt.reset();
     setFeedback('idle');
     if (phraseIdx < phrases.length - 1) {
-      setPhraseIdx((prev) => prev + 1);
+      setPhraseIdx(prev => prev + 1);
     } else if (lessonIdx < totalLessons - 1) {
-      setLessonIdx((prev) => prev + 1);
+      setLessonIdx(prev => prev + 1);
       setPhraseIdx(0);
+      setPracticedCount(0);
+      setShowVocab(false);
     } else {
-      onClose(); // completed all lessons
+      onClose();
     }
   }, [phraseIdx, phrases.length, lessonIdx, totalLessons, onClose, stt]);
 
@@ -102,6 +106,29 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
     stt.reset();
     setFeedback('idle');
   }, [stt]);
+
+  // Sequential TTS: play all phrases one by one
+  const playingRef = useRef(false);
+  const handlePlayAll = useCallback(async () => {
+    if (playingRef.current || !tts.isSupported) return;
+    playingRef.current = true;
+    for (const phrase of phrases) {
+      if (!playingRef.current) break;
+      await new Promise<void>((resolve) => {
+        const utterance = new SpeechSynthesisUtterance(phrase.termFr);
+        utterance.lang = 'fr-FR';
+        utterance.onend = () => resolve();
+        utterance.onerror = () => resolve();
+        window.speechSynthesis.speak(utterance);
+      });
+    }
+    playingRef.current = false;
+  }, [phrases, tts.isSupported]);
+
+  const stopPlayAll = useCallback(() => {
+    playingRef.current = false;
+    window.speechSynthesis.cancel();
+  }, []);
 
   if (loading) {
     return (
@@ -144,7 +171,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
       </header>
 
       {/* ─── Middle: Phrase Bubble ─── */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 gap-6">
+      <main className="flex-1 flex flex-col items-center px-6 pt-4 gap-4 overflow-y-auto pb-4">
         {/* Lesson title */}
         <p className="text-xs text-slate-500 font-bold text-center">
           {isRTL ? currentLesson?.title_ar : currentLesson?.title_fr}
@@ -171,7 +198,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
             </p>
           </div>
 
-          {/* Sound button */}
+          {/* Sound button — single phrase */}
           {tts.isSupported && (
             <button
               onClick={() => tts.isSpeaking ? tts.stop() : tts.speak(currentPhrase?.termFr || '')}
@@ -187,6 +214,60 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
             </button>
           )}
         </div>
+
+        {/* ─── Vocabulary List Toggle ─── */}
+        <button
+          onClick={() => setShowVocab(v => !v)}
+          className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#22262e] border border-white/8 text-slate-400 text-xs font-bold active:scale-95 transition-all"
+        >
+          <BookOpen size={14} className="text-[#a78bfa]" />
+          {isRTL ? 'قائمة المفردات' : 'Liste de vocabulaire'}
+        </button>
+
+        {showVocab && (
+          <div className="w-full max-w-sm bg-[#22262e] rounded-2xl border border-white/8 p-4 space-y-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] text-slate-500 font-bold">{isRTL ? 'كل العبارات' : 'Toutes les phrases'}</span>
+              {tts.isSupported && (
+                <button
+                  onClick={playingRef.current ? stopPlayAll : handlePlayAll}
+                  className="text-[10px] text-[#a78bfa] font-bold flex items-center gap-1"
+                >
+                  <Volume2 size={12} /> {playingRef.current ? (isRTL ? 'إيقاف' : 'Stop') : (isRTL ? 'شغل الكل' : 'Écouter tout')}
+                </button>
+              )}
+            </div>
+            {phrases.map((p, i) => (
+              <div
+                key={p.id}
+                className={cn(
+                  'flex items-start gap-2 py-1.5 px-2 rounded-xl text-xs transition-colors',
+                  i === phraseIdx ? 'bg-[#a78bfa]/10 border border-[#a78bfa]/20' : 'opacity-60'
+                )}
+              >
+                <span className="text-[#a78bfa] font-bold min-w-[18px]">{i + 1}.</span>
+                <div className="flex-1">
+                  <span className="text-white font-bold" dir="ltr">{p.termFr}</span>
+                  <span className="text-slate-500 mx-1">—</span>
+                  <span className="text-slate-400 font-cairo" dir="rtl">{p.textAr}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ─── Teacher's Tip ─── */}
+        {teacherTip && (
+          <div className="w-full max-w-sm bg-[#2a2420] rounded-2xl border border-amber-500/10 p-4 flex gap-3 items-start">
+            <Lightbulb size={18} className="text-amber-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-[10px] text-amber-400/70 font-bold mb-1">{isRTL ? 'نصيحة المعلم' : 'Conseil du prof'}</p>
+              <p className="text-xs text-amber-200/80 font-cairo leading-relaxed" dir="rtl">
+                {teacherTip.tipAr}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ─── Feedback Area ─── */}
         <div className="min-h-[80px] flex items-center justify-center">
@@ -224,13 +305,20 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
               </button>
             </div>
           )}
-          {feedback === 'idle' && (
+          {feedback === 'idle' && canSkip && (
             <button
               onClick={handleNext}
               className="px-6 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-slate-400 text-xs font-bold active:scale-95 transition-all"
             >
               {isRTL ? 'تخطي ←' : 'Passer →'}
             </button>
+          )}
+          {feedback === 'idle' && !canSkip && (
+            <p className="text-[10px] text-slate-600 font-bold text-center">
+              {isRTL
+                ? `تدرب على ${3 - practicedCount} عبارات أخرى للتخطي`
+                : `Pratiquez ${3 - practicedCount} phrases de plus pour passer`}
+            </p>
           )}
           {feedback === 'listening' && !stt.accuracy && (
             <span className="text-sm text-red-400 animate-pulse font-bold">🎙️ {isRTL ? 'تكلم الآن...' : 'Parlez maintenant...'}</span>

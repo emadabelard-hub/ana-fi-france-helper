@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Volume2, VolumeX, Mic, Loader2, CheckCircle2, RefreshCcw, BookOpen, Lightbulb, Pause, Play } from 'lucide-react';
+import { X, Volume2, Mic, Loader2, CheckCircle2, RefreshCcw, BookOpen, Lightbulb, Pause, Play, SkipBack, SkipForward, RotateCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTTS, useSTT } from '@/hooks/useWebSpeech';
@@ -205,7 +205,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
       </header>
 
       {/* ─── Middle: Phrase Bubble ─── */}
-      <main className="flex-1 flex flex-col items-center px-6 pt-4 gap-4 overflow-y-auto pb-4">
+      <main className="flex-1 flex flex-col items-center px-6 pt-4 gap-4 overflow-y-auto pb-[150px]">
         {/* Lesson title */}
         <p className="text-xs text-slate-500 font-bold text-center">
           {isRTL ? currentLesson?.title_ar : currentLesson?.title_fr}
@@ -232,17 +232,31 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
             </p>
           </div>
 
-          {/* Sound button — single phrase */}
-          {tts.isSupported && (
+        </div>
+
+        {/* ─── Audio Control Bar ─── */}
+        {tts.isSupported && (
+          <div className="w-full max-w-sm flex items-center justify-center gap-3 bg-[#22262e] rounded-2xl p-3 border border-white/8">
+            {/* Rewind / Previous */}
+            <button
+              onClick={() => { if (phraseIdx > 0) { setPhraseIdx(p => p - 1); setFeedback('idle'); stt.reset(); } }}
+              disabled={phraseIdx === 0}
+              className="p-2.5 rounded-xl bg-white/5 border border-white/8 text-slate-400 disabled:opacity-30 active:scale-90 transition-all"
+              aria-label="Previous"
+            >
+              <SkipBack size={18} />
+            </button>
+
+            {/* Play / Pause */}
             <button
               onClick={() => tts.isSpeaking ? tts.stop() : tts.speak(currentPhrase?.termFr || '')}
               className={cn(
-                'absolute -top-3 ltr:-right-3 rtl:-left-3 p-3 rounded-2xl border transition-all',
+                'p-3.5 rounded-2xl border-2 transition-all',
                 tts.isSpeaking
                   ? 'bg-[#7c3aed]/25 border-[#7c3aed]/40 text-[#a78bfa]'
-                  : 'bg-[#22262e] border-[#7c3aed]/20 text-[#a78bfa] active:scale-90'
+                  : 'bg-[#7c3aed]/15 border-[#7c3aed]/25 text-[#a78bfa] active:scale-90'
               )}
-              aria-label="Listen"
+              aria-label={tts.isSpeaking ? 'Pause' : 'Play'}
             >
               {tts.isSpeaking ? (
                 <div className="flex items-center gap-[2px]">
@@ -250,10 +264,29 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
                     <span key={i} className="w-[3px] bg-[#a78bfa] rounded-full animate-pulse" style={{ height: `${8 + Math.random() * 10}px`, animationDelay: `${i * 0.15}s` }} />
                   ))}
                 </div>
-              ) : <Volume2 size={20} />}
+              ) : <Volume2 size={22} />}
             </button>
-          )}
-        </div>
+
+            {/* Replay current */}
+            <button
+              onClick={() => { tts.stop(); setTimeout(() => tts.speak(currentPhrase?.termFr || ''), 100); }}
+              className="p-2.5 rounded-xl bg-white/5 border border-white/8 text-slate-400 active:scale-90 transition-all"
+              aria-label="Replay"
+            >
+              <RotateCcw size={18} />
+            </button>
+
+            {/* Next */}
+            <button
+              onClick={() => { if (phraseIdx < phrases.length - 1) { setPhraseIdx(p => p + 1); setFeedback('idle'); stt.reset(); } }}
+              disabled={phraseIdx >= phrases.length - 1}
+              className="p-2.5 rounded-xl bg-white/5 border border-white/8 text-slate-400 disabled:opacity-30 active:scale-90 transition-all"
+              aria-label="Next"
+            >
+              <SkipForward size={18} />
+            </button>
+          </div>
+        )}
 
         {/* ─── Vocabulary List Toggle ─── */}
         <button

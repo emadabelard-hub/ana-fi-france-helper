@@ -17,6 +17,8 @@ interface AskTeacherButtonProps {
   lessonTitle?: string;
 }
 
+const EDGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-teacher`;
+
 const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps) => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
@@ -33,7 +35,7 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       setAnswer('❌ الملف كبير جداً (الحد الأقصى 5 ميجا)');
       return;
@@ -60,37 +62,112 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // Primary: Edge Function call via fetch (not supabase.functions.invoke)
+  const callEdgeFunction = async (body: any): Promise<{ answer?: string; error?: string }> => {
+    const session = (await supabase.auth.getSession()).data.session;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    };
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
+    const resp = await fetch(EDGE_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) {
+      return { error: data?.error || `HTTP ${resp.status}` };
+    }
+    return data;
+  };
+
+  // Fallback: Direct OpenAI call using user's local key (if stored)
+  const callDirectOpenAI = async (body: any): Promise<{ answer?: string; error?: string }> => {
+    const apiKey = localStorage.getItem('user_ai_api_key');
+    if (!apiKey) return { error: 'لا يوجد مفتاح احتياطي — سجّل مفتاح OpenAI في الإعدادات' };
+
+    const systemPrompt = `أنت "معلم فرنسي" ودود وصبور. تشرح قواعد اللغة الفرنسية بالعربية الفصحى البسيطة.
+السياق: الطالب يتعلم درس "${body.lessonTitle || 'فرنسي'}" والعبارة الحالية هي: "${body.currentPhrase || ''}".
+- أجب بشكل مختصر (3-5 جمل كحد أقصى). استخدم أمثلة فرنسية مع الترجمة. كن مشجعاً.`;
+
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: body.question },
+        ],
+        max_tokens: 500,
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      return { error: `Fallback OpenAI Error ${resp.status}: ${err?.error?.message || ''}` };
+    }
+
+    const data = await resp.json();
+    return { answer: data.choices?.[0]?.message?.content || 'عذراً، لم أستطع الإجابة.' };
+  };
+
   const handleAsk = useCallback(async () => {
     if ((!question.trim() && !attachment) || loading) return;
     setLoading(true);
     setAnswer('');
     setIsLive(false);
 
+    const body = {
+      question: question.trim() || (attachment ? 'ما هذا؟ اشرح لي.' : ''),
+      currentPhrase,
+      lessonTitle,
+      imageData: attachment?.type === 'image' ? attachment.data : undefined,
+    };
+
     try {
-      const { data, error } = await supabase.functions.invoke('ask-teacher', {
-        body: {
-          question: question.trim() || (attachment ? 'ما هذا؟ اشرح لي.' : ''),
-          currentPhrase,
-          lessonTitle,
-          imageData: attachment?.type === 'image' ? attachment.data : undefined,
-        },
-      });
+      // Try edge function first (uses global OPENAI_API_KEY on server)
+      const result = await callEdgeFunction(body);
 
-      if (error) {
-        setAnswer(`❌ ${error.message || 'خطأ في الاتصال بالسيرفر'}`);
+      if (result.answer) {
+        setAnswer(result.answer);
+        setIsLive(true);
+        setAttachment(null);
         return;
       }
 
-      if (data?.error) {
-        setAnswer(`⚠️ ${data.error}`);
+      // Edge function returned an error — try direct fallback
+      console.warn('Edge function failed, trying direct fallback:', result.error);
+      const fallback = await callDirectOpenAI(body);
+
+      if (fallback.answer) {
+        setAnswer(fallback.answer);
+        setIsLive(true);
+        setAttachment(null);
         return;
       }
 
-      setAnswer(data?.answer || 'عذراً، لم أستطع الإجابة.');
-      setIsLive(true);
-      setAttachment(null);
+      setAnswer(`⚠️ ${fallback.error || result.error || 'خطأ غير متوقع'}`);
     } catch (e: any) {
-      setAnswer(`❌ ${e?.message || 'خطأ في الاتصال'}`);
+      console.error('Ask teacher error:', e);
+      // Network failure — try direct fallback
+      try {
+        const fallback = await callDirectOpenAI(body);
+        if (fallback.answer) {
+          setAnswer(fallback.answer);
+          setIsLive(true);
+          setAttachment(null);
+          return;
+        }
+        setAnswer(`⚠️ ${fallback.error}`);
+      } catch {
+        setAnswer('❌ خطأ في الاتصال — تحقق من الإنترنت وحاول مرة أخرى');
+      }
     } finally {
       setLoading(false);
     }
@@ -115,7 +192,6 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
         className="hidden"
       />
 
-      {/* FAB */}
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-[#F59E0B] border-2 border-[#D97706] text-white flex items-center justify-center shadow-lg shadow-amber-500/30 active:scale-90 transition-all"
@@ -134,7 +210,6 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
           </DialogHeader>
 
           <div className="space-y-3">
-            {/* Answer */}
             {answer && (
               <div className="bg-[#22262e] rounded-2xl p-4 border border-amber-500/10 space-y-2 max-h-40 overflow-y-auto">
                 <p className="text-sm text-amber-100/90 leading-relaxed font-cairo whitespace-pre-wrap" dir="rtl">{answer}</p>
@@ -154,7 +229,6 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
               </div>
             )}
 
-            {/* Attachment preview */}
             {attachment && (
               <div className="flex items-center gap-2 bg-[#22262e] rounded-xl p-2 border border-amber-500/10">
                 {attachment.type === 'image' ? (
@@ -171,7 +245,6 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
               </div>
             )}
 
-            {/* Input row */}
             <div className="flex gap-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -202,7 +275,6 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
               </button>
             </div>
 
-            {/* Usage info */}
             {!user && (
               <p className="text-[10px] text-slate-600 text-center font-cairo" dir="rtl">
                 سجّل دخولك للحصول على 10 أسئلة مجانية يومياً

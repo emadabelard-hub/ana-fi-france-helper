@@ -3,19 +3,21 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const DAILY_TEACHER_LIMIT = 10;
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("Server AI key not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
-    // Auth check
+    // Auth check for daily limit
     const authHeader = req.headers.get("Authorization");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -49,13 +51,9 @@ serve(async (req) => {
         );
       }
 
-      // Increment count
       await supabase
         .from("profiles")
-        .update({
-          daily_message_count: currentCount + 1,
-          last_message_date: today,
-        })
+        .update({ daily_message_count: currentCount + 1, last_message_date: today })
         .eq("user_id", userId);
     }
 
@@ -64,14 +62,12 @@ serve(async (req) => {
 - أجب بشكل مختصر (3-5 جمل كحد أقصى).
 - استخدم أمثلة فرنسية مع الترجمة.
 - إذا كان السؤال عن النطق، اكتب النطق بالحروف العربية.
-- إذا أرسل المستخدم صورة أو ملف، حلل محتواه وأجب عن أي أسئلة متعلقة به.
+- إذا أرسل المستخدم صورة، حلل محتواها وأجب عن أي أسئلة متعلقة بها.
 - كن مشجعاً ولطيفاً.`;
 
-    // Build messages array
     const messages: any[] = [{ role: "system", content: systemPrompt }];
 
     if (imageData) {
-      // Vision message with image
       messages.push({
         role: "user",
         content: [
@@ -83,24 +79,34 @@ serve(async (req) => {
       messages.push({ role: "user", content: question });
     }
 
-    const model = imageData ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite";
+    console.log("Calling OpenAI GPT-4o-mini...");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model, messages }),
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages,
+        max_tokens: 500,
+      }),
     });
 
     if (!response.ok) {
-      const status = response.status;
-      throw new Error(`AI gateway error: ${status}`);
+      const errBody = await response.text();
+      console.error("OpenAI error:", response.status, errBody);
+      return new Response(
+        JSON.stringify({ error: `OpenAI Error ${response.status}: ${errBody}` }),
+        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const data = await response.json();
     const answer = data.choices?.[0]?.message?.content || "عذراً، لم أستطع الإجابة.";
+
+    console.log("OpenAI responded successfully");
 
     return new Response(JSON.stringify({ answer }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

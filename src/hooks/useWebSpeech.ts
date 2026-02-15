@@ -1,41 +1,55 @@
 import { useState, useCallback, useRef } from 'react';
 
-// ─── TTS (Text-to-Speech) via OpenAI API ───
+// ─── TTS (Text-to-Speech) via OpenAI API with browser fallback ───
 export function useTTS() {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const speak = useCallback(async (text: string, _lang = 'fr-FR') => {
+  const speak = useCallback(async (text: string, lang = 'fr-FR') => {
     // Stop any currently playing audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
     }
+    window.speechSynthesis?.cancel();
 
-    setIsSpeaking(true);
+    setIsLoading(true);
+    setIsSpeaking(false);
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ text, voice: 'nova' }),
-        }
-      );
+      // Try OpenAI TTS first
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      if (!supabaseUrl || !supabaseKey) throw new Error('Missing Supabase config');
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/tts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ text, voice: 'nova' }),
+      });
 
       if (!response.ok) {
+        const errBody = await response.text();
+        console.error('OpenAI TTS error:', response.status, errBody);
         throw new Error(`TTS request failed: ${response.status}`);
       }
 
       const audioBlob = await response.blob();
+      if (audioBlob.size < 100) throw new Error('Empty audio response');
+
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
 
+      audio.onplay = () => {
+        setIsLoading(false);
+        setIsSpeaking(true);
+      };
       audio.onended = () => {
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
@@ -43,6 +57,7 @@ export function useTTS() {
       };
       audio.onerror = () => {
         setIsSpeaking(false);
+        setIsLoading(false);
         URL.revokeObjectURL(audioUrl);
         audioRef.current = null;
       };
@@ -50,8 +65,24 @@ export function useTTS() {
       audioRef.current = audio;
       await audio.play();
     } catch (e) {
-      console.error('OpenAI TTS error:', e);
-      setIsSpeaking(false);
+      console.warn('OpenAI TTS failed, falling back to browser TTS:', e);
+      // Browser TTS fallback
+      try {
+        if (window.speechSynthesis) {
+          const utt = new SpeechSynthesisUtterance(text);
+          utt.lang = lang;
+          utt.rate = 0.85;
+          utt.onstart = () => { setIsLoading(false); setIsSpeaking(true); };
+          utt.onend = () => setIsSpeaking(false);
+          utt.onerror = () => { setIsSpeaking(false); setIsLoading(false); };
+          window.speechSynthesis.speak(utt);
+        } else {
+          setIsLoading(false);
+        }
+      } catch {
+        setIsLoading(false);
+        setIsSpeaking(false);
+      }
     }
   }, []);
 
@@ -60,10 +91,12 @@ export function useTTS() {
       audioRef.current.pause();
       audioRef.current = null;
     }
+    window.speechSynthesis?.cancel();
     setIsSpeaking(false);
+    setIsLoading(false);
   }, []);
 
-  return { speak, stop, isSpeaking, isSupported: true };
+  return { speak, stop, isSpeaking, isLoading, isSupported: true };
 }
 
 // ─── STT (Speech-to-Text) ───

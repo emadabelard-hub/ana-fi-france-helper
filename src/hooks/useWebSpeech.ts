@@ -11,7 +11,7 @@ export function useTTS() {
 
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = lang;
-    utt.rate = 0.85;
+    utt.rate = 0.75;
     utt.pitch = 1;
 
     // Try to pick a French voice

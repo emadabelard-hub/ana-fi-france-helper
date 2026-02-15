@@ -157,11 +157,16 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
 
         {/* French phrase bubble */}
         <div className="relative w-full max-w-sm">
-          <div className="bg-[#22262e] rounded-3xl p-8 border border-white/8 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)] text-center">
+          <div className="bg-[#22262e] rounded-3xl p-8 border border-white/8 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)] text-center space-y-3">
             <p className="text-xl font-black text-white leading-relaxed" dir="ltr">
               {currentPhrase?.termFr}
             </p>
-            <p className={cn('text-sm text-slate-400 mt-3 leading-relaxed', isRTL && 'font-cairo')} dir="rtl">
+            {currentPhrase?.phoneticAr && (
+              <p className="text-sm text-[#a78bfa]/70 font-cairo leading-relaxed" dir="rtl">
+                [{currentPhrase.phoneticAr}]
+              </p>
+            )}
+            <p className={cn('text-sm text-slate-400 leading-relaxed', isRTL && 'font-cairo')} dir="rtl">
               {currentPhrase?.textAr}
             </p>
           </div>
@@ -184,7 +189,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
         </div>
 
         {/* ─── Feedback Area ─── */}
-        <div className="h-20 flex items-center justify-center">
+        <div className="min-h-[80px] flex items-center justify-center">
           {feedback === 'checking' && (
             <div className="flex items-center gap-2 text-slate-400 animate-pulse">
               <Loader2 size={18} className="animate-spin" />
@@ -218,6 +223,14 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
                 <RefreshCcw size={14} /> {isRTL ? 'إعادة' : 'Réessayer'}
               </button>
             </div>
+          )}
+          {feedback === 'idle' && (
+            <button
+              onClick={handleNext}
+              className="px-6 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-slate-400 text-xs font-bold active:scale-95 transition-all"
+            >
+              {isRTL ? 'تخطي ←' : 'Passer →'}
+            </button>
           )}
           {feedback === 'listening' && !stt.accuracy && (
             <span className="text-sm text-red-400 animate-pulse font-bold">🎙️ {isRTL ? 'تكلم الآن...' : 'Parlez maintenant...'}</span>

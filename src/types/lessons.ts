@@ -20,7 +20,14 @@ export interface TeacherTipBlock {
   tipAr: string;
 }
 
-export type ContentBlock = TextBlock | ImageBlock | TeacherTipBlock;
+export interface GrammarBlock {
+  type: 'grammar';
+  id: string;
+  ruleAr: string;
+  ruleFr?: string;
+}
+
+export type ContentBlock = TextBlock | ImageBlock | TeacherTipBlock | GrammarBlock;
 
 // Lesson categories
 export type LessonCategory = 

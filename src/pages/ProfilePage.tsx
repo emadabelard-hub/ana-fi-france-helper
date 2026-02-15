@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Save, LogOut, User, Loader2, MapPin, Phone, CreditCard, IdCard, Shield } from 'lucide-react';
+import { Save, LogOut, User, Loader2, MapPin, Phone, CreditCard, IdCard, Shield, Key } from 'lucide-react';
+import ApiKeySettingsModal from '@/components/layout/ApiKeySettingsModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,7 @@ const ProfilePage = () => {
   const { profile, isLoading, updateProfile } = useProfile();
   
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
@@ -222,6 +224,25 @@ const ProfilePage = () => {
           }
         </CardContent>
       </Card>
+
+      {/* API Key Settings */}
+      <Card>
+        <CardContent className={cn("p-4", isRTL && "font-cairo")}>
+          <button
+            onClick={() => setShowApiKey(true)}
+            className="flex items-center gap-3 w-full text-left"
+          >
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Key className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-medium text-sm">{isRTL ? 'مفتاح API للذكاء الاصطناعي' : 'Clé API IA'}</p>
+              <p className="text-xs text-muted-foreground">{isRTL ? 'تحديث مفتاح OpenAI' : 'Mettre à jour la clé OpenAI'}</p>
+            </div>
+          </button>
+        </CardContent>
+      </Card>
+      <ApiKeySettingsModal open={showApiKey} onOpenChange={setShowApiKey} />
 
       {/* GDPR - Delete Account Section */}
       <DeleteAccountSection />

@@ -1,44 +1,69 @@
 import { useState, useCallback, useRef } from 'react';
 
-// ─── TTS (Text-to-Speech) ───
+// ─── TTS (Text-to-Speech) via OpenAI API ───
 export function useTTS() {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const speak = useCallback((text: string, lang = 'fr-FR') => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
+  const speak = useCallback(async (text: string, _lang = 'fr-FR') => {
+    // Stop any currently playing audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
 
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = lang;
-    utt.rate = lang.startsWith('fr') ? 0.78 : 0.85;
-    utt.pitch = 1;
+    setIsSpeaking(true);
 
-    // Pick the best available voice for the language
-    const voices = window.speechSynthesis.getVoices();
-    const langPrefix = lang.split('-')[0];
-    
-    // Prefer premium/enhanced voices, then native ones
-    const premiumVoice = voices.find(v => v.lang.startsWith(langPrefix) && /premium|enhanced|natural|neural/i.test(v.name));
-    const nativeVoice = voices.find(v => v.lang.startsWith(langPrefix) && !v.localService);
-    const anyVoice = voices.find(v => v.lang.startsWith(langPrefix));
-    
-    utt.voice = premiumVoice || nativeVoice || anyVoice || null;
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ text, voice: 'nova' }),
+        }
+      );
 
-    utt.onstart = () => setIsSpeaking(true);
-    utt.onend = () => setIsSpeaking(false);
-    utt.onerror = () => setIsSpeaking(false);
-    utteranceRef.current = utt;
+      if (!response.ok) {
+        throw new Error(`TTS request failed: ${response.status}`);
+      }
 
-    window.speechSynthesis.speak(utt);
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+
+      audio.onended = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+      };
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+      };
+
+      audioRef.current = audio;
+      await audio.play();
+    } catch (e) {
+      console.error('OpenAI TTS error:', e);
+      setIsSpeaking(false);
+    }
   }, []);
 
   const stop = useCallback(() => {
-    window.speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
     setIsSpeaking(false);
   }, []);
 
-  return { speak, stop, isSpeaking, isSupported: typeof window !== 'undefined' && 'speechSynthesis' in window };
+  return { speak, stop, isSpeaking, isSupported: true };
 }
 
 // ─── STT (Speech-to-Text) ───

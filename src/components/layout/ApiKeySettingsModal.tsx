@@ -42,16 +42,33 @@ const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
     }
   };
 
+  const [errorDetail, setErrorDetail] = useState('');
+
   const handleTest = async () => {
     setTesting(true);
     setTestResult(null);
+    setErrorDetail('');
     try {
       const { data, error } = await supabase.functions.invoke('ask-teacher', {
         body: { question: 'Bonjour', currentPhrase: '', lessonTitle: 'Test', userApiKey: key.trim() || undefined },
       });
-      if (error) throw error;
+      if (error) {
+        const msg = error.message || '';
+        if (msg.includes('401')) setErrorDetail('Error 401: Invalid Key — المفتاح غلط');
+        else if (msg.includes('429')) setErrorDetail('Error 429: Quota — الرصيد مخلصش أو لسه ماتفعلش');
+        else if (msg.includes('404')) setErrorDetail('Error 404: Model Not Found — الموديل مش متاح');
+        else setErrorDetail(`Error: ${msg}`);
+        setTestResult('fail');
+        return;
+      }
+      if (data?.error) {
+        setErrorDetail(data.error);
+        setTestResult('fail');
+        return;
+      }
       setTestResult(data?.answer ? 'ok' : 'fail');
-    } catch {
+    } catch (e: any) {
+      setErrorDetail(e?.message || 'Unknown error');
       setTestResult('fail');
     } finally {
       setTesting(false);
@@ -99,8 +116,15 @@ const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
             </div>
           )}
           {testResult === 'fail' && (
-            <div className="flex items-center gap-2 text-destructive text-sm font-medium">
-              <XCircle size={16} /> {isRTL ? 'فشل الاتصال — تحقق من المفتاح' : 'Échec — vérifiez la clé'}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-destructive text-sm font-medium">
+                <XCircle size={16} /> {isRTL ? 'فشل الاتصال' : 'Échec de connexion'}
+              </div>
+              {errorDetail && (
+                <p className="text-xs text-destructive/80 font-mono bg-destructive/5 rounded p-2 break-all" dir="ltr">
+                  {errorDetail}
+                </p>
+              )}
             </div>
           )}
 

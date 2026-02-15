@@ -30,30 +30,42 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
     setLoading(true);
     setAnswer('');
     setIsLive(false);
-    try {
-      const userKey = localStorage.getItem('user_ai_api_key');
-      const { data, error } = await supabase.functions.invoke('ask-teacher', {
-        body: { question: question.trim(), currentPhrase, lessonTitle, userApiKey: userKey || undefined },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setAnswer(data?.answer || 'عذراً، لم أستطع الإجابة.');
-      setIsLive(true);
-    } catch (e: any) {
-      console.error('Ask teacher error:', e);
-      const msg = e?.message || '';
-      if (msg.includes('429') || msg.includes('مشغولة')) {
-        setAnswer('⏳ الرصيد لم يتفعل بعد، انتظر 5 دقائق (Error 429)');
-      } else if (msg.includes('402') || msg.includes('كافٍ')) {
-        setAnswer('💳 الرصيد غير كافٍ — Error 402');
-      } else if (msg.includes('401') || msg.includes('Incorrect') || msg.includes('invalid')) {
-        setAnswer('🔑 الرصيد لم يتفعل بعد، انتظر 5 دقائق (Error 401)');
-      } else {
-        setAnswer('❌ حدث خطأ — تحقق من المفتاح في الإعدادات أو حاول لاحقاً');
+
+    const userKey = localStorage.getItem('user_ai_api_key');
+    const body = { question: question.trim(), currentPhrase, lessonTitle, userApiKey: userKey || undefined };
+
+    let lastError: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const { data, error } = await supabase.functions.invoke('ask-teacher', { body });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        setAnswer(data?.answer || 'عذراً، لم أستطع الإجابة.');
+        setIsLive(true);
+        setLoading(false);
+        return;
+      } catch (e: any) {
+        lastError = e;
+        console.warn(`ask-teacher attempt ${attempt + 1} failed:`, e?.message);
+        if (attempt < 2) await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
       }
-    } finally {
-      setLoading(false);
     }
+
+    // All 3 attempts failed — friendly fallback
+    console.error('Ask teacher all retries failed:', lastError);
+    const msg = lastError?.message || '';
+    if (msg.includes('Failed to send') || msg.includes('NetworkError') || msg.includes('fetch')) {
+      setAnswer('⚡ جاري إعادة الاتصال بالسيرفر... حاول مرة أخرى بعد قليل.\n\n💡 نصيحة: تأكد من اتصالك بالإنترنت.');
+    } else if (msg.includes('429') || msg.includes('مشغولة')) {
+      setAnswer('⏳ الرصيد لم يتفعل بعد، انتظر 5 دقائق (Error 429)');
+    } else if (msg.includes('402') || msg.includes('كافٍ')) {
+      setAnswer('💳 الرصيد غير كافٍ — Error 402');
+    } else if (msg.includes('401') || msg.includes('Incorrect') || msg.includes('invalid')) {
+      setAnswer('🔑 المفتاح غير صحيح — تأكد من نسخه بدقة من OpenAI');
+    } else {
+      setAnswer('❌ حدث خطأ — حاول مرة أخرى أو تحقق من الإعدادات');
+    }
+    setLoading(false);
   }, [question, currentPhrase, lessonTitle, loading]);
 
   const handleClose = () => {

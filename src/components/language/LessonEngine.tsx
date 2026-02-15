@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Volume2, VolumeX, Mic, Loader2, CheckCircle2, RefreshCcw, BookOpen, Lightbulb } from 'lucide-react';
+import { X, Volume2, VolumeX, Mic, Loader2, CheckCircle2, RefreshCcw, BookOpen, Lightbulb, Pause, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTTS, useSTT } from '@/hooks/useWebSpeech';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import AskTeacherButton from '@/components/language/AskTeacherButton';
 import type { ContentBlock, TextBlock, TeacherTipBlock, GrammarBlock } from '@/types/lessons';
 
 interface LessonEngineProps {
@@ -32,6 +33,8 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
   const [loading, setLoading] = useState(true);
   const [practicedCount, setPracticedCount] = useState(0);
   const [showVocab, setShowVocab] = useState(false);
+  const [playAllIdx, setPlayAllIdx] = useState(-1);
+  const [playAllPaused, setPlayAllPaused] = useState(false);
 
   useEffect(() => {
     const fetchLessons = async () => {
@@ -107,27 +110,54 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
     setFeedback('idle');
   }, [stt]);
 
-  // Sequential TTS: play all phrases one by one
+  // Interactive Play All: one item at a time with 3s pause
   const playingRef = useRef(false);
   const handlePlayAll = useCallback(async () => {
     if (playingRef.current || !tts.isSupported) return;
     playingRef.current = true;
-    for (const phrase of phrases) {
+    setPlayAllPaused(false);
+
+    for (let i = 0; i < phrases.length; i++) {
       if (!playingRef.current) break;
+      setPlayAllIdx(i);
+
+      // Speak the phrase
       await new Promise<void>((resolve) => {
-        const utterance = new SpeechSynthesisUtterance(phrase.termFr);
+        const utterance = new SpeechSynthesisUtterance(phrases[i].termFr);
         utterance.lang = 'fr-FR';
+        utterance.rate = 0.75;
         utterance.onend = () => resolve();
         utterance.onerror = () => resolve();
         window.speechSynthesis.speak(utterance);
       });
+
+      if (!playingRef.current) break;
+
+      // 3-second pause with "دورك تكرر" visual cue
+      setPlayAllPaused(true);
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(() => {
+          setPlayAllPaused(false);
+          resolve();
+        }, 3000);
+        // Store timer for cleanup
+        if (!playingRef.current) {
+          clearTimeout(timer);
+          resolve();
+        }
+      });
     }
+
     playingRef.current = false;
+    setPlayAllIdx(-1);
+    setPlayAllPaused(false);
   }, [phrases, tts.isSupported]);
 
   const stopPlayAll = useCallback(() => {
     playingRef.current = false;
     window.speechSynthesis.cancel();
+    setPlayAllIdx(-1);
+    setPlayAllPaused(false);
   }, []);
 
   if (loading) {
@@ -229,20 +259,27 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] text-slate-500 font-bold">{isRTL ? 'كل العبارات' : 'Toutes les phrases'}</span>
               {tts.isSupported && (
-                <button
-                  onClick={playingRef.current ? stopPlayAll : handlePlayAll}
-                  className="text-[10px] text-[#a78bfa] font-bold flex items-center gap-1"
-                >
-                  <Volume2 size={12} /> {playingRef.current ? (isRTL ? 'إيقاف' : 'Stop') : (isRTL ? 'شغل الكل' : 'Écouter tout')}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={playingRef.current ? stopPlayAll : handlePlayAll}
+                    className="text-[10px] text-[#a78bfa] font-bold flex items-center gap-1"
+                  >
+                    {playingRef.current ? <Pause size={12} /> : <Play size={12} />}
+                    {playingRef.current ? (isRTL ? 'إيقاف' : 'Stop') : (isRTL ? 'استمع وكرر' : 'Écouter & répéter')}
+                  </button>
+                </div>
               )}
             </div>
             {phrases.map((p, i) => (
               <div
                 key={p.id}
                 className={cn(
-                  'flex items-start gap-2 py-1.5 px-2 rounded-xl text-xs transition-colors',
-                  i === phraseIdx ? 'bg-[#a78bfa]/10 border border-[#a78bfa]/20' : 'opacity-60'
+                  'flex items-start gap-2 py-1.5 px-2 rounded-xl text-xs transition-all duration-300',
+                  playAllIdx === i
+                    ? playAllPaused
+                      ? 'bg-amber-500/15 border border-amber-500/30 scale-[1.02]'
+                      : 'bg-[#a78bfa]/15 border border-[#a78bfa]/30 scale-[1.02]'
+                    : i === phraseIdx ? 'bg-[#a78bfa]/10 border border-[#a78bfa]/20' : 'opacity-60'
                 )}
               >
                 <span className="text-[#a78bfa] font-bold min-w-[18px]">{i + 1}.</span>
@@ -250,6 +287,11 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
                   <span className="text-white font-bold" dir="ltr">{p.termFr}</span>
                   <span className="text-slate-500 mx-1">—</span>
                   <span className="text-slate-400 font-cairo" dir="rtl">{p.textAr}</span>
+                  {playAllIdx === i && playAllPaused && (
+                    <span className="block text-[10px] text-amber-400 font-bold mt-1 animate-pulse">
+                      🎤 {isRTL ? 'دورك تكرر...' : 'À vous de répéter...'}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -365,6 +407,12 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
           {feedback === 'idle' && (isRTL ? 'اضغط وتكلم' : 'Appuyez et parlez')}
         </span>
       </div>
+
+      {/* ─── Ask the Teacher (Floating) ─── */}
+      <AskTeacherButton
+        currentPhrase={currentPhrase?.termFr}
+        lessonTitle={isRTL ? currentLesson?.title_ar : currentLesson?.title_fr}
+      />
     </div>
   );
 };

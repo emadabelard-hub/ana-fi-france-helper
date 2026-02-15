@@ -9,6 +9,15 @@ import AskTeacherButton from '@/components/language/AskTeacherButton';
 import { playTTS, stopGlobalAudio } from '@/lib/audioController';
 import type { ContentBlock, TextBlock, TeacherTipBlock, GrammarBlock } from '@/types/lessons';
 
+/** Force French context for OpenAI Nova so alphabet letters sound native Parisian */
+function buildTTSText(termFr: string): string {
+  const match = termFr.match(/^([A-Z])\s*\(([^)]+)\)$/i);
+  if (match) {
+    return `En français, la lettre ${match[1]} se prononce : ${match[2]}.`;
+  }
+  return termFr;
+}
+
 interface LessonEngineProps {
   onClose: () => void;
 }
@@ -126,7 +135,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
 
       // Step 1: Play via global audio controller (OpenAI Nova)
       try {
-        await playTTS(phrases[i].termFr, 'nova');
+        await playTTS(buildTTSText(phrases[i].termFr), 'nova');
       } catch {
         // TTS failed, skip
       }
@@ -247,7 +256,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
 
             {/* Play / Pause */}
             <button
-              onClick={() => tts.isSpeaking ? tts.stop() : tts.speak(currentPhrase?.termFr || '')}
+              onClick={() => tts.isSpeaking ? tts.stop() : tts.speak(buildTTSText(currentPhrase?.termFr || ''))}
               className={cn(
                 'p-3.5 rounded-2xl border-2 transition-all',
                 tts.isSpeaking
@@ -267,7 +276,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
 
             {/* Replay current */}
             <button
-              onClick={() => { tts.stop(); setTimeout(() => tts.speak(currentPhrase?.termFr || ''), 100); }}
+              onClick={() => { tts.stop(); setTimeout(() => tts.speak(buildTTSText(currentPhrase?.termFr || '')), 100); }}
               className="p-2.5 rounded-xl bg-white/5 border border-white/8 text-slate-400 active:scale-90 transition-all"
               aria-label="Replay"
             >

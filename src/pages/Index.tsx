@@ -54,48 +54,57 @@ const Index = () => {
 
       <main className="px-5 pt-8 pb-32">
         <div className="grid grid-cols-2 gap-4">
-          {/* Card 1 - Consultations */}
+          {/* Card 1 - Consultations (Glassmorphism Purple) */}
           <button
             onClick={() => navigate('/consultations')}
-            className="bg-gradient-to-br from-[#7c3aed] to-[#a855f7] p-5 rounded-[2rem] shadow-xl flex flex-col items-center justify-center text-white active:scale-95 transition-transform border border-white/10 aspect-square"
+            className="relative overflow-hidden bg-[#7c3aed]/25 backdrop-blur-xl p-5 rounded-[2rem] shadow-[0_8px_32px_rgba(124,58,237,0.3)] flex flex-col items-center justify-center text-white active:scale-95 transition-all duration-300 border border-white/20 aspect-square hover:shadow-[0_8px_40px_rgba(124,58,237,0.45)] hover:border-white/30"
           >
-            <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md mb-4">
-              <MessageCircle size={36} />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#7c3aed]/30 to-[#a855f7]/20 rounded-[2rem]" />
+            <div className="relative z-10 flex flex-col items-center justify-center">
+              <div className="bg-white/15 p-4 rounded-2xl backdrop-blur-md mb-4 border border-white/10 shadow-lg">
+                <MessageCircle size={36} />
+              </div>
+              <h3 className={cn("font-black text-center text-sm leading-tight", isRTL && "font-cairo")}>
+                {isRTL
+                  ? 'انا جاي اساعدك واقول لك اي حاجة عايز تعرفها'
+                  : 'Je suis là pour t\'aider et répondre à toutes tes questions'}
+              </h3>
             </div>
-            <h3 className={cn("font-black text-center text-sm leading-tight", isRTL && "font-cairo")}>
-              {isRTL
-                ? 'انا جاي اساعدك واقول لك اي حاجة عايز تعرفها'
-                : 'Je suis là pour t\'aider et répondre à toutes tes questions'}
-            </h3>
           </button>
 
-          {/* Card 2 - Tools */}
+          {/* Card 2 - Tools (Glassmorphism Orange) */}
           <button
             onClick={() => navigate('/pro')}
-            className="bg-gradient-to-br from-[#f59e0b] to-[#ea580c] p-5 rounded-[2rem] shadow-xl flex flex-col items-center justify-center text-white active:scale-95 transition-transform border border-white/10 aspect-square"
+            className="relative overflow-hidden bg-[#f59e0b]/25 backdrop-blur-xl p-5 rounded-[2rem] shadow-[0_8px_32px_rgba(245,158,11,0.3)] flex flex-col items-center justify-center text-white active:scale-95 transition-all duration-300 border border-white/20 aspect-square hover:shadow-[0_8px_40px_rgba(245,158,11,0.45)] hover:border-white/30"
           >
-            <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md mb-4">
-              <Briefcase size={36} />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#f59e0b]/30 to-[#ea580c]/20 rounded-[2rem]" />
+            <div className="relative z-10 flex flex-col items-center justify-center">
+              <div className="bg-white/15 p-4 rounded-2xl backdrop-blur-md mb-4 border border-white/10 shadow-lg">
+                <Briefcase size={36} />
+              </div>
+              <h3 className={cn("font-black text-center text-sm leading-tight", isRTL && "font-cairo")}>
+                {isRTL
+                  ? 'حلول مهنية واحترافية وصانع سي في سهل وسريع على أعلى مستوى'
+                  : 'Solutions pro et générateur de CV facile et rapide au plus haut niveau'}
+              </h3>
             </div>
-            <h3 className={cn("font-black text-center text-sm leading-tight", isRTL && "font-cairo")}>
-              {isRTL
-                ? 'حلول مهنية واحترافية وصانع سي في سهل وسريع على أعلى مستوى'
-                : 'Solutions pro et générateur de CV facile et rapide au plus haut niveau'}
-            </h3>
           </button>
         </div>
 
-          {/* Card 3 - News */}
+          {/* Card 3 - News (Glassmorphism Red) */}
           <button
             onClick={() => navigate('/news')}
-            className="col-span-2 bg-gradient-to-br from-[#ef4444] to-[#dc2626] p-5 rounded-[2rem] shadow-xl flex items-center justify-center gap-4 text-white active:scale-95 transition-transform border border-white/10"
+            className="relative overflow-hidden bg-[#ef4444]/25 backdrop-blur-xl p-5 rounded-[2rem] shadow-[0_8px_32px_rgba(239,68,68,0.3)] flex flex-col items-center justify-center gap-4 text-white active:scale-95 transition-all duration-300 border border-white/20 hover:shadow-[0_8px_40px_rgba(239,68,68,0.45)] hover:border-white/30"
           >
-            <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md">
-              <Newspaper size={32} />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#ef4444]/30 to-[#dc2626]/20 rounded-[2rem]" />
+            <div className="relative z-10 flex items-center justify-center gap-4">
+              <div className="bg-white/15 p-4 rounded-2xl backdrop-blur-md border border-white/10 shadow-lg">
+                <Newspaper size={32} />
+              </div>
+              <h3 className={cn("font-black text-lg leading-tight text-center", isRTL && "font-cairo")}>
+                {isRTL ? 'أخبار' : 'Actualités / News'}
+              </h3>
             </div>
-            <h3 className={cn("font-black text-lg leading-tight", isRTL && "font-cairo")}>
-              {isRTL ? 'أخبار' : 'Actualités / News'}
-            </h3>
           </button>
       </main>
     </div>

@@ -55,6 +55,7 @@ const AIAssistantPage = () => {
         }),
       });
 
+
       if (!resp.ok || !resp.body) {
         upsert(language === 'ar' ? 'حصل مشكلة، جرب تاني 🔄' : 'Erreur, réessayez.');
         setIsLoading(false);

@@ -161,6 +161,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
     window.speechSynthesis.cancel();
     setPlayAllIdx(-1);
     setPlayAllPaused(false);
+    setPlayAllPhase('speaking');
   }, []);
 
   if (loading) {
@@ -238,12 +239,18 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
               className={cn(
                 'absolute -top-3 ltr:-right-3 rtl:-left-3 p-3 rounded-2xl border transition-all',
                 tts.isSpeaking
-                  ? 'bg-[#7c3aed]/25 border-[#7c3aed]/40 text-[#a78bfa] animate-pulse'
+                  ? 'bg-[#7c3aed]/25 border-[#7c3aed]/40 text-[#a78bfa]'
                   : 'bg-[#22262e] border-[#7c3aed]/20 text-[#a78bfa] active:scale-90'
               )}
               aria-label="Listen"
             >
-              {tts.isSpeaking ? <VolumeX size={20} /> : <Volume2 size={20} />}
+              {tts.isSpeaking ? (
+                <div className="flex items-center gap-[2px]">
+                  {[1,2,3,4].map(i => (
+                    <span key={i} className="w-[3px] bg-[#a78bfa] rounded-full animate-pulse" style={{ height: `${8 + Math.random() * 10}px`, animationDelay: `${i * 0.15}s` }} />
+                  ))}
+                </div>
+              ) : <Volume2 size={20} />}
             </button>
           )}
         </div>
@@ -292,7 +299,15 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
                   <span className="text-slate-400 font-cairo" dir="rtl">{p.textAr}</span>
                   {playAllIdx === i && playAllPaused && (
                     <span className="block text-[10px] text-amber-400 font-bold mt-1 animate-pulse">
-                      🎤 {isRTL ? 'دورك تكرر...' : 'À vous de répéter...'}
+                      🎤 {isRTL ? 'كرر الآن!' : 'Répétez !'}
+                    </span>
+                  )}
+                  {playAllIdx === i && !playAllPaused && (
+                    <span className="flex items-center gap-[2px] mt-1">
+                      {[1,2,3,4,5].map(j => (
+                        <span key={j} className="w-[2px] bg-[#a78bfa] rounded-full animate-pulse" style={{ height: `${4 + Math.random() * 8}px`, animationDelay: `${j * 0.1}s` }} />
+                      ))}
+                      <span className="text-[10px] text-[#a78bfa]/70 font-bold ml-1">{isRTL ? 'يتحدث...' : 'Écoute...'}</span>
                     </span>
                   )}
                 </div>

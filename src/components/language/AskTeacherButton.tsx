@@ -40,7 +40,7 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-28 right-4 z-50 w-14 h-14 rounded-full bg-amber-500/20 border-2 border-amber-500/40 text-amber-400 flex items-center justify-center shadow-lg active:scale-90 transition-all"
+        className="fixed bottom-36 right-4 z-50 w-14 h-14 rounded-full bg-amber-500/20 border-2 border-amber-500/40 text-amber-400 flex items-center justify-center shadow-lg active:scale-90 transition-all"
         aria-label="Ask the teacher"
       >
         <MessageCircleQuestion size={26} />

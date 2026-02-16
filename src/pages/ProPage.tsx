@@ -154,13 +154,6 @@ const ProPage = () => {
         </CardContent>
       </Card>
 
-      {/* Info Notice */}
-      <div className={cn(
-        "text-center text-sm text-muted-foreground pt-4",
-        isRTL && "font-cairo"
-      )}>
-        🧰 {t('pro.toolsNotice')}
-      </div>
     </div>
   );
 };

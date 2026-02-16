@@ -55,25 +55,7 @@ const PhraseCard = ({ block }: { block: TextBlock }) => {
       {/* French term */}
       <div className="flex items-center justify-between gap-3">
         <p className="text-base font-semibold text-slate-200 flex-1" dir="ltr">{block.termFr}</p>
-        {tts.isSupported && (
-          <button
-            onClick={() => (tts.isSpeaking || tts.isLoading) ? tts.stop() : tts.speak(ttsText)}
-            disabled={tts.isLoading}
-            className={cn(
-              'p-2.5 rounded-xl border transition-all',
-              tts.isLoading
-                ? 'bg-[#7c3aed]/20 border-[#7c3aed]/30 text-[#a78bfa]'
-                : tts.isSpeaking
-                  ? 'bg-[#7c3aed]/20 border-[#7c3aed]/30 text-[#a78bfa] animate-pulse'
-                  : 'bg-[#7c3aed]/10 border-[#7c3aed]/20 text-[#a78bfa] active:scale-90'
-            )}
-            aria-label="Listen"
-          >
-            {tts.isLoading ? (
-              <div className="w-[18px] h-[18px] border-2 border-[#a78bfa] border-t-transparent rounded-full animate-spin" />
-            ) : tts.isSpeaking ? <VolumeX size={18} /> : <Volume2 size={18} />}
-          </button>
-        )}
+        {/* Audio button — disabled for launch */}
       </div>
 
       {/* Arabic translation */}
@@ -81,42 +63,7 @@ const PhraseCard = ({ block }: { block: TextBlock }) => {
         {block.textAr}
       </p>
 
-      {/* Practice Mode (STT) */}
-      {stt.isSupported && (
-        <div className="pt-3 border-t border-white/5 space-y-3">
-          <div className="flex items-center justify-center gap-3">
-            <button
-              onClick={() => stt.isListening ? stt.stopListening() : stt.listen(block.termFr)}
-              className={cn(
-                'p-3 rounded-xl border transition-all',
-                stt.isListening
-                  ? 'bg-red-500/20 border-red-500/30 text-red-400 animate-pulse'
-                  : 'bg-[#4a9a8a]/10 border-[#4a9a8a]/20 text-[#4a9a8a] active:scale-90'
-              )}
-              aria-label="Practice speaking"
-            >
-              {stt.isListening ? <MicOff size={20} /> : <Mic size={20} />}
-            </button>
-            <span className="text-xs text-slate-500">
-              {stt.isListening
-                ? (isRTL ? '🎙️ تكلم الآن...' : '🎙️ Parlez maintenant...')
-                : (isRTL ? 'تدرّب على النطق' : 'Pratiquez la prononciation')}
-            </span>
-            {stt.accuracy && (
-              <button onClick={stt.reset} className="p-1.5 text-slate-500 hover:text-slate-300">
-                <RotateCcw size={14} />
-              </button>
-            )}
-          </div>
-
-          {stt.transcript && (
-            <div className="text-center space-y-2">
-              <p className="text-sm text-slate-300" dir="ltr">« {stt.transcript} »</p>
-              <AccuracyBadge level={stt.accuracy} />
-            </div>
-          )}
-        </div>
-      )}
+      {/* Practice Mode — disabled for launch */}
     </div>
   );
 };

@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DAILY_TEACHER_LIMIT = 10;
+const DAILY_TEACHER_LIMIT = 5;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -46,7 +46,7 @@ serve(async (req) => {
 
       if (currentCount >= DAILY_TEACHER_LIMIT) {
         return new Response(
-          JSON.stringify({ error: "لقد وصلت للحد اليومي (10 أسئلة). عد غداً! 🌙" }),
+          JSON.stringify({ error: "لقد وصلت للحد اليومي (5 أسئلة). عد غداً! 🌙" }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

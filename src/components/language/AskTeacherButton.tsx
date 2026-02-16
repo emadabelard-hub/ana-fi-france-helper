@@ -199,15 +199,16 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
               >
                 <Paperclip size={18} />
               </button>
-              <input
+              <textarea
                 value={question}
                 onChange={e => setQuestion(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAsk()}
                 placeholder={isRTL ? 'اكتب سؤالك أو أرسل صورة...' : 'Posez votre question...'}
-                className="flex-1 bg-[#22262e] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/30 font-cairo"
+                className="flex-1 bg-[#22262e] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/30 font-cairo resize-none min-h-[48px] max-h-[120px]"
                 dir="rtl"
                 disabled={loading}
                 autoFocus
+                rows={1}
+                onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; }}
               />
               <button
                 onClick={handleAsk}

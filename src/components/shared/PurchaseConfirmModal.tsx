@@ -20,6 +20,7 @@ interface PurchaseConfirmModalProps {
   returnPath?: string;
 }
 
+/** v2.1 – trust-based social discount */
 const PurchaseConfirmModal = ({
   open, onOpenChange, serviceName, serviceKey, price, isBundle = false, returnPath = '/'
 }: PurchaseConfirmModalProps) => {

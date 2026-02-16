@@ -275,27 +275,31 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
 
-        {/* API Key Settings */}
-        <Card className="bg-white dark:bg-[#1A1A1C] border border-border/30 rounded-[1.25rem]">
-          <CardContent className={cn("p-4", isRTL && "font-[IBMPlexSansArabic]")}>
-            <button
-              onClick={() => setShowApiKey(true)}
-              className={cn(
-                "flex items-center gap-3 w-full",
-                isRTL ? "flex-row-reverse text-right" : "text-left"
-              )}
-            >
-              <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Key className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-sm text-foreground">{isRTL ? 'مفتاح API للذكاء الاصطناعي' : 'Clé API IA'}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{isRTL ? 'تحديث مفتاح OpenAI' : 'Mettre à jour la clé OpenAI'}</p>
-              </div>
-            </button>
-          </CardContent>
-        </Card>
-        <ApiKeySettingsModal open={showApiKey} onOpenChange={setShowApiKey} />
+        {/* API Key Settings - Admin only */}
+        {isAdmin && (
+          <>
+            <Card className="bg-white dark:bg-[#1A1A1C] border border-border/30 rounded-[1.25rem]">
+              <CardContent className={cn("p-4", isRTL && "font-[IBMPlexSansArabic]")}>
+                <button
+                  onClick={() => setShowApiKey(true)}
+                  className={cn(
+                    "flex items-center gap-3 w-full",
+                    isRTL ? "flex-row-reverse text-right" : "text-left"
+                  )}
+                >
+                  <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Key className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm text-foreground">{isRTL ? 'مفتاح API للذكاء الاصطناعي' : 'Clé API IA'}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{isRTL ? 'تحديث مفتاح OpenAI' : 'Mettre à jour la clé OpenAI'}</p>
+                  </div>
+                </button>
+              </CardContent>
+            </Card>
+            <ApiKeySettingsModal open={showApiKey} onOpenChange={setShowApiKey} />
+          </>
+        )}
 
         {/* Log Out Button */}
         <Button

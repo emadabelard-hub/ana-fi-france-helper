@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronRight, Sparkles, User, FileText, Mail } from 'lucide-react';
+import MarkdownRenderer from './MarkdownRenderer';
 
 interface ActionItem {
   label: string;
@@ -55,15 +56,17 @@ const SimpleChatMessage = ({
       {/* Message Bubble */}
       <div
         className={cn(
-          "max-w-[85%] p-3.5 rounded-2xl text-[13px] leading-relaxed shadow-sm whitespace-pre-wrap",
+          "max-w-[85%] p-3.5 rounded-2xl shadow-sm",
           isUser
-            ? "bg-primary text-primary-foreground rounded-br-none"
+            ? "bg-primary text-primary-foreground rounded-br-none text-[13px] leading-relaxed whitespace-pre-wrap"
             : "bg-card text-card-foreground border border-border rounded-bl-none",
-          textIsArabic ? "font-cairo text-right" : "text-left",
-          !isUser && "ml-10" // Offset to align with avatar
+          isUser && textIsArabic ? "font-cairo text-right" : isUser ? "text-left" : "",
+          !isUser && "ml-10"
         )}
       >
-        {content}
+        {isUser ? content : (
+          <MarkdownRenderer content={content} isRTL={textIsArabic} />
+        )}
       </div>
 
       {/* Action Buttons - Stacked Cards Style (only for AI messages) */}

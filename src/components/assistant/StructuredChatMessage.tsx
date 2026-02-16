@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import MarkdownRenderer from './MarkdownRenderer';
 import { cn } from '@/lib/utils';
 import { 
   Sparkles, AlertTriangle, Lightbulb, CheckCircle2, 
@@ -336,10 +337,10 @@ const StructuredChatMessage = ({
         ) : (
           // Simple text response (fallback)
           <div className={cn(
-            "bg-card p-5 rounded-2xl shadow-sm border border-border text-sm font-medium text-muted-foreground leading-relaxed",
+            "bg-card p-5 rounded-2xl shadow-sm border border-border",
             isRTL ? "text-right font-cairo rounded-tr-none" : "text-left rounded-tl-none"
           )}>
-            {content}
+            <MarkdownRenderer content={content} isRTL={isRTL} />
           </div>
         )}
 

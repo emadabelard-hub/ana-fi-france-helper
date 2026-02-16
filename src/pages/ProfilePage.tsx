@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Save, LogOut, User, Loader2, MapPin, Phone, CreditCard, IdCard, Shield, Key } from 'lucide-react';
 import ApiKeySettingsModal from '@/components/layout/ApiKeySettingsModal';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import AuthModal from '@/components/auth/AuthModal';
 import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
@@ -18,10 +20,12 @@ const ProfilePage = () => {
   const { t, isRTL } = useLanguage();
   const { user, signOut } = useAuth();
   const { profile, isLoading, updateProfile } = useProfile();
+  const navigate = useNavigate();
   
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
     address: '',
@@ -43,6 +47,13 @@ const ProfilePage = () => {
       });
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.rpc('is_admin', { _user_id: user.id }).then(({ data }) => {
+      setIsAdmin(data === true);
+    });
+  }, [user]);
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -169,6 +180,29 @@ const ProfilePage = () => {
 
         {/* Credits Balance */}
         <CreditsDisplay showDaily className="mx-auto max-w-sm" />
+
+        {/* Admin Dashboard Button - only visible to admins */}
+        {isAdmin && (
+          <Card className="bg-white dark:bg-[#1A1A1C] border border-amber-200 dark:border-amber-800/50 rounded-[1.25rem]">
+            <CardContent className={cn("p-4", isRTL && "font-[IBMPlexSansArabic]")}>
+              <button
+                onClick={() => navigate('/admin')}
+                className={cn(
+                  "flex items-center gap-3 w-full",
+                  isRTL ? "flex-row-reverse text-right" : "text-left"
+                )}
+              >
+                <div className="w-11 h-11 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+                  <Shield className="h-5 w-5 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm text-foreground">{isRTL ? 'لوحة الإدارة' : 'Admin Dashboard'}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{isRTL ? 'مراقبة النظام والإحصائيات' : 'Monitoring système et analytics'}</p>
+                </div>
+              </button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Transaction History */}
         <TransactionHistory />

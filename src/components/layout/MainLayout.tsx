@@ -3,6 +3,7 @@ import Header from './Header';
 import BottomNavigation from './BottomNavigation';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import useVisitTracker from '@/hooks/useVisitTracker';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -10,6 +11,7 @@ interface MainLayoutProps {
 
 const MainLayout = ({ children }: MainLayoutProps) => {
   const { isRTL } = useLanguage();
+  useVisitTracker();
 
   return (
     <div className={cn(

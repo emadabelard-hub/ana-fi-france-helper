@@ -313,8 +313,44 @@ export type Database = {
         }
         Relationships: []
       }
+      visit_logs: {
+        Row: {
+          created_at: string
+          id: string
+          section: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          section: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          section?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
+      admin_transactions_view: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          is_bundle: boolean | null
+          price_eur: number | null
+          service_key: string | null
+          service_name: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       admin_user_list: {
         Row: {
           created_at: string | null

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Sparkles, Scale, ChevronRight, Lock } from 'lucide-react';
+import { Sparkles, Scale, ChevronRight, Lock, Euro } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -58,7 +58,7 @@ const ConsultationsPage = () => {
               {isRTL ? 'المستشار القانوني والمهني الاحترافي' : 'Consultation Pro'}
             </h3>
             <p className={cn("text-[11px] font-bold opacity-80", isRTL && "font-cairo")}>
-              {isRTL ? 'محامي • محاسب • ترجمة • رد رسمي' : 'Avocat • Comptable • Traduction • Réponse'}
+              {isRTL ? 'محامي • محاسب • ترجمة • رد رسمي • 8 €' : 'Avocat • Comptable • Traduction • Réponse • 8 €'}
             </p>
           </div>
           <div className="bg-white/20 p-2 rounded-full">

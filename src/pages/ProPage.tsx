@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { PenLine, Settings, ArrowRight, ArrowLeft, FileUser, Paintbrush } from 'lucide-react';
+import { PenLine, Settings, ArrowRight, ArrowLeft, FileUser, Paintbrush, Euro } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
 
 const ProPage = () => {
@@ -19,15 +20,17 @@ const ProPage = () => {
       description: t('pro.invoicesDesc'),
       path: '/pro/invoice-creator',
       gradient: 'from-emerald-500 to-emerald-600',
+      price: '8 €',
     },
     {
-      icon: null, // Custom icon component
+      icon: null,
       customIcon: QuoteToInvoiceIcon,
       emoji: null,
       title: t('pro.quoteToInvoice'),
       description: t('pro.quoteToInvoiceDesc'),
       path: '/pro/quote-to-invoice',
       gradient: 'from-amber-500 to-emerald-500',
+      price: '12 €',
     },
     {
       icon: FileUser,
@@ -37,6 +40,7 @@ const ProPage = () => {
       description2: t('pro.cvGeneratorDesc2'),
       path: '/pro/cv-generator',
       gradient: 'from-indigo-500 to-purple-600',
+      price: '6 €',
     },
     {
       icon: Paintbrush,
@@ -46,6 +50,7 @@ const ProPage = () => {
       description: isRTL ? 'حاسبة الصباغة والتكاليف' : 'Module Peinture & Estimation',
       path: '/pro/peinture',
       gradient: 'from-amber-500 to-orange-500',
+      price: null,
     },
   ];
 
@@ -115,8 +120,15 @@ const ProPage = () => {
                     )}
                   </div>
 
-                  {/* Arrow */}
-                  <Arrow className="h-6 w-6 text-white/60" />
+                  {/* Price badge & Arrow */}
+                  <div className="flex flex-col items-center gap-1">
+                    {tool.price && (
+                      <Badge className="bg-white/25 text-white border-0 text-sm font-black px-3 py-1 backdrop-blur-sm">
+                        {tool.price}
+                      </Badge>
+                    )}
+                    <Arrow className="h-6 w-6 text-white/60" />
+                  </div>
                 </div>
               </CardContent>
             </Card>

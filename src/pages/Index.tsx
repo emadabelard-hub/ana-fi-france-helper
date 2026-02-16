@@ -87,8 +87,8 @@ const Index = () => {
             </div>
             <h3 className={cn("font-black text-base leading-snug text-[#1A1A1C]", isRTL ? "font-cairo text-right" : "text-left")}>
               {isRTL
-                ? 'حلول مهنية واحترافية وصانع سي في سهل وسريع على أعلى مستوى'
-                : 'Solutions pro et générateur de CV facile et rapide au plus haut niveau'}
+                ? 'حلول مهنية واحترافية وصانع سي في ذكي لجميع التخصصات والمهن'
+                : 'Solutions professionnelles et créateur de CV intelligent pour tous les domaines'}
             </h3>
           </button>
         </div>

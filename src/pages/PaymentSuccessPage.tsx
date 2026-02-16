@@ -14,6 +14,7 @@ const PaymentSuccessPage = () => {
   const { toast } = useToast();
 
   const returnPath = searchParams.get('return') || '/';
+  const price = searchParams.get('price') || '';
 
   useEffect(() => {
     toast({
@@ -47,6 +48,7 @@ const PaymentSuccessPage = () => {
             isRTL && "font-cairo"
           )}>
             {isRTL ? 'تم قبول الدفع.. شكراً على ثقتك فينا' : 'Paiement accepté.. Merci pour votre confiance'}
+            {price && <span className="block text-lg font-bold text-emerald-500 mt-1">{price} €</span>}
           </h1>
           <p className={cn(
             "text-sm text-muted-foreground",

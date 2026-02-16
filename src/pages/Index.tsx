@@ -116,9 +116,19 @@ const Index = () => {
           <div className="bg-gradient-to-br from-[#CE93D8] to-[#AB47BC] dark:from-[#8B5CF6] dark:to-[#7C3AED] p-4 rounded-2xl shadow-[0_4px_20px_rgba(171,71,188,0.3)] dark:shadow-[0_4px_20px_rgba(139,92,246,0.3)]">
             <GraduationCap size={32} className="text-white" />
           </div>
-          <h3 className={cn("font-black text-lg leading-tight text-center text-foreground", isRTL && "font-cairo")}>
-            {isRTL ? 'مدرسة اللغة - طريقك للورق' : 'École de Langue - Objectif Papiers'}
-          </h3>
+          <div className={cn("font-black text-lg leading-tight text-center text-foreground", isRTL && "font-cairo")}>
+            {isRTL ? (
+              <>
+                <div>برنامج A1 A2 - B1 B2</div>
+                <div className="text-sm mt-1 opacity-80">تحت التجربة والانشاء</div>
+              </>
+            ) : (
+              <>
+                <div>Programme A1 A2 - B1 B2</div>
+                <div className="text-sm mt-1 opacity-80">En cours de test et construction</div>
+              </>
+            )}
+          </div>
         </button>
       </main>
     </div>

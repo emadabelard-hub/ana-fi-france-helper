@@ -20,7 +20,7 @@ const ConsultationsPage = () => {
       </section>
 
       <div className="space-y-5">
-        {/* Assistant IA */}
+        {/* Assistant IA - Free */}
         <button
           onClick={() => navigate('/ai-assistant')}
           className="w-full bg-gradient-to-r from-[#7c3aed] to-[#a855f7] p-6 rounded-[2.5rem] shadow-xl flex items-center justify-between text-white active:scale-95 transition-transform border border-white/5"
@@ -41,11 +41,15 @@ const ConsultationsPage = () => {
           </div>
         </button>
 
-        {/* Premium Consultation Pro */}
+        {/* Premium Consultation Pro — with Premium badge & lock */}
         <button
           onClick={() => navigate('/premium-consultation')}
-          className="w-full bg-gradient-to-r from-[#f59e0b] to-[#ea580c] p-6 rounded-[2.5rem] shadow-xl flex items-center justify-between text-white active:scale-95 transition-transform border border-white/10"
+          className="relative w-full bg-gradient-to-r from-[#f59e0b] to-[#ea580c] p-6 rounded-[2.5rem] shadow-xl flex items-center justify-between text-white active:scale-95 transition-transform border border-white/10"
         >
+          <Badge className="absolute top-3 right-3 bg-white/25 text-white border-0 text-[10px] font-bold px-2.5 py-1 backdrop-blur-sm flex items-center gap-1 z-10">
+            <Lock size={10} />
+            Premium
+          </Badge>
           <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md">
             <Scale size={32} />
           </div>
@@ -61,30 +65,6 @@ const ConsultationsPage = () => {
             <ChevronRight size={18} className={isRTL ? "rotate-180" : ""} />
           </div>
         </button>
-
-        {/* Protected Consultations — Locked Premium */}
-        <div className="relative w-full p-6 rounded-[2.5rem] shadow-xl flex items-center justify-between border border-white/10 bg-gradient-to-r from-slate-700/60 to-slate-800/60 cursor-not-allowed overflow-hidden">
-          {/* Coming Soon badge */}
-          <Badge className="absolute top-4 right-4 bg-amber-500/90 text-white border-0 text-[10px] font-bold px-2.5 py-1 z-10">
-            {isRTL ? 'قريباً' : 'Bientôt'}
-          </Badge>
-          <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md">
-            <Lock size={32} className="text-slate-400" />
-          </div>
-          <div className={cn("flex-1 pr-4", isRTL ? "text-right" : "text-left pl-4")}>
-            <h3 className={cn("font-black text-xl leading-none mb-1 text-slate-300", isRTL && "font-cairo")}>
-              {isRTL ? 'الاستشارات المحمية' : 'Consultations Protégées'}
-            </h3>
-            <p className={cn("text-[11px] font-bold text-slate-400 mt-1", isRTL && "font-cairo")}>
-              {isRTL 
-                ? 'ذكاء اصطناعي متقدم — اشتراك Premium مطلوب'
-                : 'IA avancée — Abonnement Premium requis'}
-            </p>
-          </div>
-          <div className="bg-white/10 p-2 rounded-full">
-            <Lock size={18} className="text-slate-500" />
-          </div>
-        </div>
       </div>
     </div>
   );

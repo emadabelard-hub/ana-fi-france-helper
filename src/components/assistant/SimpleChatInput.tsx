@@ -28,8 +28,7 @@ const SimpleChatInput = ({
 
   return (
     <div className="p-3 bg-background border-t border-border safe-area-bottom">
-      <form
-        onSubmit={handleSubmit}
+      <div
         className={cn(
           "flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border",
           "focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all"
@@ -40,23 +39,26 @@ const SimpleChatInput = ({
           <Smile size={20} />
         </div>
 
-        {/* Input field */}
-        <input
+        {/* Textarea field */}
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={placeholder || defaultPlaceholder}
           disabled={isLoading}
           className={cn(
-            "flex-1 bg-transparent text-sm font-medium px-2 outline-none",
+            "flex-1 bg-transparent text-sm font-medium px-2 outline-none resize-none min-h-[36px] max-h-[120px] py-2",
             "text-foreground placeholder:text-muted-foreground",
             isRTL && "font-cairo text-right"
           )}
           dir="auto"
+          rows={1}
+          onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; }}
         />
 
         {/* Send button */}
         <button
-          type="submit"
+          type="button"
+          onClick={handleSubmit}
           disabled={!input.trim() || isLoading}
           className={cn(
             "w-10 h-10 rounded-full flex items-center justify-center shadow-md",
@@ -68,7 +70,7 @@ const SimpleChatInput = ({
         >
           <Send size={18} className={input.trim() ? "ml-0.5" : ""} />
         </button>
-      </form>
+      </div>
 
       <style>{`
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }

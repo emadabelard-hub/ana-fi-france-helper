@@ -162,7 +162,10 @@ const AIAssistantPage = () => {
                     {msg.content}
                   </span>
                 ) : (
-                  <MarkdownRenderer content={msg.content} isRTL={textAr} />
+                  <MarkdownRenderer content={msg.content} isRTL={textAr} onSmartLinkClick={(type) => {
+                    if (type === 'cv') navigate('/pro/cv-generator');
+                    else if (type === 'pro') navigate('/pro/invoice-creator');
+                  }} />
                 )}
               </div>
             </div>

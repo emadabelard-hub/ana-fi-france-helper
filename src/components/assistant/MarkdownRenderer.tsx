@@ -5,32 +5,62 @@ interface MarkdownRendererProps {
   content: string;
   isRTL?: boolean;
   className?: string;
+  onSmartLinkClick?: (linkType: 'cv' | 'pro') => void;
 }
 
 /**
  * Lightweight markdown renderer for AI chat responses.
- * Supports: ## headings, ### subheadings, **bold**, * bullets, --- separators, numbered lists.
+ * Supports: ## headings, ### subheadings, **bold**, * bullets, --- separators, numbered lists, smart links.
  */
-const MarkdownRenderer = ({ content, isRTL = false, className }: MarkdownRendererProps) => {
-  const lines = content.split('\n');
+const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick }: MarkdownRendererProps) => {
+  // First, extract smart links and replace with placeholders
+  const smartLinks: { type: 'cv' | 'pro'; text: string }[] = [];
+  let processedContent = content.replace(
+    /\[(CV_LINK|PRO_LINK)\](.*?)\[\/\1\]/gs,
+    (_match, type: string, text: string) => {
+      const linkType = type === 'CV_LINK' ? 'cv' : 'pro';
+      const idx = smartLinks.length;
+      smartLinks.push({ type: linkType as 'cv' | 'pro', text: text.trim() });
+      return `__SMART_LINK_${idx}__`;
+    }
+  );
+
+  const lines = processedContent.split('\n');
 
   const renderInline = (text: string): React.ReactNode[] => {
-    // Bold: **text**
     const parts: React.ReactNode[] = [];
-    const regex = /\*\*(.+?)\*\*/g;
+    // Handle smart link placeholders and bold
+    const combinedRegex = /__SMART_LINK_(\d+)__|\*\*(.+?)\*\*/g;
     let lastIndex = 0;
     let match;
 
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = combinedRegex.exec(text)) !== null) {
       if (match.index > lastIndex) {
         parts.push(text.slice(lastIndex, match.index));
       }
-      parts.push(
-        <strong key={match.index} className="font-bold">
-          {match[1]}
-        </strong>
-      );
-      lastIndex = regex.lastIndex;
+      if (match[1] !== undefined) {
+        // Smart link
+        const linkData = smartLinks[parseInt(match[1])];
+        if (linkData) {
+          parts.push(
+            <button
+              key={`link-${match.index}`}
+              onClick={() => onSmartLinkClick?.(linkData.type)}
+              className="text-primary font-bold underline underline-offset-2 hover:opacity-80 transition-opacity inline"
+            >
+              {linkData.text}
+            </button>
+          );
+        }
+      } else if (match[2]) {
+        // Bold
+        parts.push(
+          <strong key={match.index} className="font-bold">
+            {match[2]}
+          </strong>
+        );
+      }
+      lastIndex = combinedRegex.lastIndex;
     }
     if (lastIndex < text.length) {
       parts.push(text.slice(lastIndex));

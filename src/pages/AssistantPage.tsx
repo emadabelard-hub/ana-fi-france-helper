@@ -363,7 +363,10 @@ const AssistantPage = () => {
                     {msg.content || ''}
                   </span>
                 ) : (
-                  <MarkdownRenderer content={msg.content || (isTyping ? '...' : '')} isRTL={isArabic(msg.content)} className="text-[15px]" />
+                  <MarkdownRenderer content={msg.content || (isTyping ? '...' : '')} isRTL={isArabic(msg.content)} className="text-[15px]" onSmartLinkClick={(type) => {
+                    if (type === 'cv') navigate('/pro/cv-generator');
+                    else if (type === 'pro') navigate('/pro/invoice-creator');
+                  }} />
                 )}
               </div>
             </div>

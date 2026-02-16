@@ -177,6 +177,10 @@ Lorsque l'utilisateur pose une question générale, votre PREMIÈRE réponse doi
 ⚠️ **Rappel systématique:**
 "Ceci est un avis consultatif. Pour les décisions importantes, consultez un professionnel (avocat, comptable, conseiller)."
 
+🔗 **LIENS CONTEXTUELS (OBLIGATOIRE):**
+- Quand ta réponse mentionne un CV ou la recherche d'emploi, ajoute à la fin : [CV_LINK]Si vous souhaitez créer un CV conforme aux normes françaises, cliquez ici → Générateur de CV[/CV_LINK]
+- Quand ta réponse mentionne un devis, une facture, ou des outils professionnels, ajoute : [PRO_LINK]Si vous avez besoin de créer un devis ou une facture professionnelle, cliquez ici → Outils Pro[/PRO_LINK]
+
 📅 Date actuelle: ${currentDate}`;
   }
 
@@ -287,6 +291,10 @@ ${profileInfo}
 
 ⚠️ **تنبيه دائم:**
 "ده رأي استشاري. للقرارات الكبيرة، استشر متخصص (محامي، محاسب، مستشار)."
+
+🔗 **روابط ذكية (إلزامي):**
+- لو ردك فيه كلام عن سي في أو البحث عن شغل، أضف في الآخر: [CV_LINK]لو حابب تعمل سي في مطابق للمواصفات المطلوبة اضغط هنا ← صانع CV[/CV_LINK]
+- لو ردك فيه كلام عن فاتورة أو عرض سعر أو أدوات مهنية، أضف: [PRO_LINK]لو محتاج تعمل عرض سعر أو فاتورة احترافية اضغط هنا ← أدوات البرو[/PRO_LINK]
 
 📅 التاريخ الحالي: ${currentDate}`;
 }

@@ -60,8 +60,8 @@ const Index = () => {
             onClick={() => navigate('/consultations')}
             className="bg-card p-5 rounded-2xl flex flex-col items-center justify-center text-foreground active:scale-95 transition-all duration-200 border border-border aspect-square shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)]"
           >
-            <div className="bg-orange-500/15 p-4 rounded-2xl mb-4 border border-orange-500/20">
-              <MessageCircle size={36} className="text-orange-400" />
+           <div className="bg-gradient-to-br from-[#FF8A80] to-[#FF6E40] dark:from-[#F59E0B] dark:to-[#F97316] p-4 rounded-2xl mb-4 shadow-[0_4px_20px_rgba(255,110,64,0.3)] dark:shadow-[0_4px_20px_rgba(245,158,11,0.3)]">
+              <MessageCircle size={36} className="text-white" />
             </div>
             <h3 className={cn("font-black text-center text-sm leading-tight text-foreground", isRTL && "font-cairo")}>
               {isRTL
@@ -75,8 +75,8 @@ const Index = () => {
             onClick={() => navigate('/pro')}
             className="bg-card p-5 rounded-2xl flex flex-col items-center justify-center text-foreground active:scale-95 transition-all duration-200 border border-border aspect-square shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)]"
           >
-            <div className="bg-teal-500/15 p-4 rounded-2xl mb-4 border border-teal-500/20">
-              <Briefcase size={36} className="text-teal-400" />
+           <div className="bg-gradient-to-br from-[#A5D6A7] to-[#66BB6A] dark:from-[#10B981] dark:to-[#059669] p-4 rounded-2xl mb-4 shadow-[0_4px_20px_rgba(102,187,106,0.3)] dark:shadow-[0_4px_20px_rgba(16,185,129,0.3)]">
+              <Briefcase size={36} className="text-white" />
             </div>
             <h3 className={cn("font-black text-center text-sm leading-tight text-foreground", isRTL && "font-cairo")}>
               {isRTL
@@ -91,8 +91,8 @@ const Index = () => {
           onClick={() => navigate('/news')}
           className="w-full mt-4 bg-card p-5 rounded-2xl flex items-center justify-center gap-4 text-foreground active:scale-95 transition-all duration-200 border border-border shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)]"
         >
-          <div className="bg-rose-500/15 p-4 rounded-2xl border border-rose-500/20">
-            <Newspaper size={32} className="text-rose-400" />
+          <div className="bg-gradient-to-br from-[#90CAF9] to-[#42A5F5] dark:from-[#3B82F6] dark:to-[#2563EB] p-4 rounded-2xl shadow-[0_4px_20px_rgba(66,165,245,0.3)] dark:shadow-[0_4px_20px_rgba(59,130,246,0.3)]">
+            <Newspaper size={32} className="text-white" />
           </div>
           <h3 className={cn("font-black text-lg leading-tight text-center text-foreground", isRTL && "font-cairo")}>
             {isRTL ? 'أخبار' : 'Actualités / News'}
@@ -104,8 +104,8 @@ const Index = () => {
           onClick={() => navigate('/language-school')}
           className="w-full mt-4 bg-card p-5 rounded-2xl flex items-center justify-center gap-4 text-foreground active:scale-95 transition-all duration-200 border border-border shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)]"
         >
-          <div className="bg-violet-500/15 p-4 rounded-2xl border border-violet-500/20">
-            <GraduationCap size={32} className="text-violet-400" />
+          <div className="bg-gradient-to-br from-[#CE93D8] to-[#AB47BC] dark:from-[#8B5CF6] dark:to-[#7C3AED] p-4 rounded-2xl shadow-[0_4px_20px_rgba(171,71,188,0.3)] dark:shadow-[0_4px_20px_rgba(139,92,246,0.3)]">
+            <GraduationCap size={32} className="text-white" />
           </div>
           <h3 className={cn("font-black text-lg leading-tight text-center text-foreground", isRTL && "font-cairo")}>
             {isRTL ? 'مدرسة اللغة - طريقك للورق' : 'École de Langue - Objectif Papiers'}

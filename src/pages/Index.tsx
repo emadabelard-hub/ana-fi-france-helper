@@ -60,17 +60,17 @@ const Index = () => {
       </header>
 
       <main className="px-5 pt-8 pb-32">
-        {/* Top Row: 2 Square Cards */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Top Cards: Full Width Stacked */}
+        <div className="flex flex-col gap-4">
           {/* Card 1 - Chat (Soft Yellow) */}
           <button
             onClick={() => navigate('/consultations')}
-            className="bg-gradient-to-br from-[#FFF8E1] to-[#FFECB3] dark:from-[#2A1F0A] dark:to-[#1F1800] p-5 rounded-2xl flex flex-col items-center justify-center text-[#1A1A1C] active:scale-95 transition-all duration-200 border border-[#FFD54F]/30 dark:border-[#F59E0B]/20 aspect-square shadow-sm"
+            className="w-full bg-gradient-to-br from-[#FFF8E1] to-[#FFECB3] dark:from-[#2A1F0A] dark:to-[#1F1800] p-6 rounded-2xl flex items-center gap-5 text-[#1A1A1C] active:scale-[0.98] transition-all duration-200 border border-[#FFD54F]/30 dark:border-[#F59E0B]/20 shadow-sm min-h-[140px]"
           >
-            <div className="bg-gradient-to-br from-[#FF8A80] to-[#FF6E40] dark:from-[#F59E0B] dark:to-[#F97316] p-4 rounded-2xl mb-4 shadow-[0_4px_20px_rgba(255,110,64,0.3)] dark:shadow-[0_4px_20px_rgba(245,158,11,0.3)]">
+            <div className="bg-gradient-to-br from-[#FF8A80] to-[#FF6E40] dark:from-[#F59E0B] dark:to-[#F97316] p-4 rounded-2xl shadow-[0_4px_20px_rgba(255,110,64,0.3)] dark:shadow-[0_4px_20px_rgba(245,158,11,0.3)] shrink-0">
               <MessageCircle size={36} className="text-white" />
             </div>
-            <h3 className={cn("font-black text-center text-sm leading-tight text-[#1A1A1C]", isRTL && "font-cairo")}>
+            <h3 className={cn("font-black text-base leading-snug text-[#1A1A1C]", isRTL ? "font-cairo text-right" : "text-left")}>
               {isRTL
                 ? 'انا جاي اساعدك واقول لك اي حاجة عايز تعرفها'
                 : 'Je suis là pour t\'aider et répondre à toutes tes questions'}
@@ -80,12 +80,12 @@ const Index = () => {
           {/* Card 2 - Solutions Pro (Light Blue) */}
           <button
             onClick={() => navigate('/pro')}
-            className="bg-gradient-to-br from-[#E3F2FD] to-[#BBDEFB] dark:from-[#0A1628] dark:to-[#0D1B2A] p-5 rounded-2xl flex flex-col items-center justify-center text-[#1A1A1C] active:scale-95 transition-all duration-200 border border-[#64B5F6]/30 dark:border-[#3B82F6]/20 aspect-square shadow-sm"
+            className="w-full bg-gradient-to-br from-[#E3F2FD] to-[#BBDEFB] dark:from-[#0A1628] dark:to-[#0D1B2A] p-6 rounded-2xl flex items-center gap-5 text-[#1A1A1C] active:scale-[0.98] transition-all duration-200 border border-[#64B5F6]/30 dark:border-[#3B82F6]/20 shadow-sm min-h-[140px]"
           >
-            <div className="bg-gradient-to-br from-[#A5D6A7] to-[#66BB6A] dark:from-[#10B981] dark:to-[#059669] p-4 rounded-2xl mb-4 shadow-[0_4px_20px_rgba(102,187,106,0.3)] dark:shadow-[0_4px_20px_rgba(16,185,129,0.3)]">
+            <div className="bg-gradient-to-br from-[#A5D6A7] to-[#66BB6A] dark:from-[#10B981] dark:to-[#059669] p-4 rounded-2xl shadow-[0_4px_20px_rgba(102,187,106,0.3)] dark:shadow-[0_4px_20px_rgba(16,185,129,0.3)] shrink-0">
               <Briefcase size={36} className="text-white" />
             </div>
-            <h3 className={cn("font-black text-center text-sm leading-tight text-[#1A1A1C]", isRTL && "font-cairo")}>
+            <h3 className={cn("font-black text-base leading-snug text-[#1A1A1C]", isRTL ? "font-cairo text-right" : "text-left")}>
               {isRTL
                 ? 'حلول مهنية واحترافية وصانع سي في سهل وسريع على أعلى مستوى'
                 : 'Solutions pro et générateur de CV facile et rapide au plus haut niveau'}

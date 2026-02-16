@@ -28,6 +28,10 @@ const PurchaseConfirmModal = ({
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [discountAnswer, setDiscountAnswer] = useState<'yes' | 'no' | null>(null);
+
+  const DISCOUNT_PRICE = 4;
+  const finalPrice = discountAnswer === 'yes' ? DISCOUNT_PRICE : price;
 
   const handlePurchase = async () => {
     if (!user) {
@@ -41,7 +45,7 @@ const PurchaseConfirmModal = ({
         user_id: user.id,
         service_name: serviceName,
         service_key: serviceKey,
-        price_eur: price,
+        price_eur: finalPrice,
         is_bundle: isBundle,
         status: 'completed',
       });
@@ -50,12 +54,18 @@ const PurchaseConfirmModal = ({
     }
     setLoading(false);
     onOpenChange(false);
-    navigate(`/payment-success?return=${encodeURIComponent(returnPath)}&price=${price}`);
+    setDiscountAnswer(null);
+    navigate(`/payment-success?return=${encodeURIComponent(returnPath)}&price=${finalPrice}`);
+  };
+
+  const handleOpenChange = (v: boolean) => {
+    if (!v) setDiscountAnswer(null);
+    onOpenChange(v);
   };
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="rounded-[2rem] max-w-sm mx-auto">
           <DialogHeader className="text-center">
             <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-3">
@@ -70,47 +80,83 @@ const PurchaseConfirmModal = ({
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Service summary */}
-            <div className="bg-muted/50 rounded-2xl p-4 text-center space-y-2">
-              <p className={cn("font-bold text-foreground text-base", isRTL && "font-cairo")}>
-                {serviceName}
-              </p>
-              <Badge className="text-lg font-black px-4 py-1">
-                {price} €
-              </Badge>
-              {isBundle && (
-                <p className={cn("text-xs text-emerald-600 font-bold", isRTL && "font-cairo")}>
-                  {isRTL ? '🎁 عرض اقتصادي - وفّرت 4 €' : '🎁 Pack Éco - Vous économisez 4 €'}
+            {/* Discount question */}
+            {discountAnswer === null && (
+              <div className="bg-muted/50 rounded-2xl p-4 text-center space-y-3">
+                <p className={cn("text-sm font-semibold text-foreground leading-relaxed", isRTL && "font-cairo")}>
+                  {isRTL
+                    ? 'تبحث طالب أو تبحث عن اول وظيفة أو تريد تقديم السي في لفرانس ترافاي'
+                    : 'Êtes-vous étudiant, à la recherche de votre premier emploi ou souhaitez-vous soumettre votre CV à France Travail ?'}
                 </p>
-              )}
-            </div>
+                <div className="flex gap-2 justify-center">
+                  <Button size="sm" className="rounded-xl px-6 font-bold" onClick={() => setDiscountAnswer('yes')}>
+                    {isRTL ? 'نعم' : 'Oui'}
+                  </Button>
+                  <Button size="sm" variant="outline" className="rounded-xl px-6 font-bold" onClick={() => setDiscountAnswer('no')}>
+                    {isRTL ? 'لا' : 'Non'}
+                  </Button>
+                </div>
+              </div>
+            )}
 
-            {/* Demo notice */}
-            <p className={cn("text-[11px] text-muted-foreground text-center", isRTL && "font-cairo")}>
-              {isRTL
-                ? '⚠️ وضع تجريبي - لن يتم خصم أي مبلغ حقيقي'
-                : '⚠️ Mode démo - Aucun montant réel ne sera débité'}
-            </p>
-
-            {/* Actions */}
-            <div className="flex flex-col gap-2">
-              <Button
-                onClick={handlePurchase}
-                disabled={loading}
-                className="w-full rounded-2xl h-12 text-base font-bold"
-              >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-                  isRTL ? `ادفع ${price} €` : `Payer ${price} €`
+            {/* Service summary - shown after answering */}
+            {discountAnswer !== null && (
+              <>
+                {discountAnswer === 'yes' && (
+                  <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl p-3 text-center">
+                    <p className={cn("text-xs font-bold text-emerald-700 dark:text-emerald-400 leading-relaxed", isRTL && "font-cairo")}>
+                      {isRTL
+                        ? '💚 نحن هنا لندعمك في خطواتك الأولى. تم تطبيق سعر الدعم (4 يورو).'
+                        : '💚 Nous sommes là pour vous accompagner. Le tarif solidaire (4 €) a été appliqué.'}
+                    </p>
+                  </div>
                 )}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-                className="w-full rounded-2xl font-semibold"
-              >
-                {isRTL ? 'إلغاء' : 'Annuler'}
-              </Button>
-            </div>
+
+                <div className="bg-muted/50 rounded-2xl p-4 text-center space-y-2">
+                  <p className={cn("font-bold text-foreground text-base", isRTL && "font-cairo")}>
+                    {serviceName}
+                  </p>
+                  <Badge className="text-lg font-black px-4 py-1">
+                    {finalPrice} €
+                  </Badge>
+                  {discountAnswer === 'yes' && price !== DISCOUNT_PRICE && (
+                    <p className="text-xs text-muted-foreground line-through">{price} €</p>
+                  )}
+                  {isBundle && discountAnswer !== 'yes' && (
+                    <p className={cn("text-xs text-emerald-600 font-bold", isRTL && "font-cairo")}>
+                      {isRTL ? '🎁 عرض اقتصادي - وفّرت 4 €' : '🎁 Pack Éco - Vous économisez 4 €'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Demo notice */}
+                <p className={cn("text-[11px] text-muted-foreground text-center", isRTL && "font-cairo")}>
+                  {isRTL
+                    ? '⚠️ وضع تجريبي - لن يتم خصم أي مبلغ حقيقي'
+                    : '⚠️ Mode démo - Aucun montant réel ne sera débité'}
+                </p>
+
+                {/* Actions */}
+                <div className="flex flex-col gap-2">
+                  <Button
+                    onClick={handlePurchase}
+                    disabled={loading}
+                    className="w-full rounded-2xl h-12 text-base font-bold"
+                  >
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+                      isRTL ? `ادفع ${finalPrice} €` : `Payer ${finalPrice} €`
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleOpenChange(false)}
+                    className="w-full rounded-2xl font-semibold"
+                  >
+                    {isRTL ? 'إلغاء' : 'Annuler'}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>

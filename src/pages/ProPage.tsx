@@ -50,7 +50,8 @@ const ProPage = () => {
       description: isRTL ? 'حاسبة الصباغة والتكاليف' : 'Module Peinture & Estimation',
       path: '/pro/peinture',
       gradient: 'from-amber-500 to-orange-500',
-      price: null,
+      price: '8 €',
+      bundleLabel: isRTL ? '+ دوفي = 12 € (عرض اقتصادي)' : '+ Devis = 12 € (Pack Éco)',
     },
   ];
 
@@ -126,6 +127,11 @@ const ProPage = () => {
                       <Badge className="bg-white/25 text-white border-0 text-sm font-black px-3 py-1 backdrop-blur-sm">
                         {tool.price}
                       </Badge>
+                    )}
+                    {(tool as any).bundleLabel && (
+                      <span className="text-[10px] font-bold text-white/90 text-center leading-tight max-w-[90px]">
+                        {(tool as any).bundleLabel}
+                      </span>
                     )}
                     <Arrow className="h-6 w-6 text-white/60" />
                   </div>

@@ -16,19 +16,16 @@ export type Database = {
     Tables: {
       admin_users: {
         Row: {
-          admin_pin: string | null
           created_at: string
           id: string
           user_id: string
         }
         Insert: {
-          admin_pin?: string | null
           created_at?: string
           id?: string
           user_id: string
         }
         Update: {
-          admin_pin?: string | null
           created_at?: string
           id?: string
           user_id?: string

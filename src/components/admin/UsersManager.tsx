@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Users, Loader2, Mail, Calendar } from 'lucide-react';
+import { Users, Loader2, Calendar } from 'lucide-react';
 
 interface UserProfile {
   id: string;
   user_id: string;
-  email: string | null;
   full_name: string | null;
   created_at: string;
+  updated_at: string;
   credits_balance: number;
+  daily_message_count: number;
 }
 
 interface UsersManagerProps {
@@ -26,8 +27,8 @@ const UsersManager = ({ isRTL }: UsersManagerProps) => {
       // Note: This requires admin privileges via RLS
       // We fetch from profiles table which contains user info
       const { data, error } = await supabase
-        .from('profiles')
-        .select('id, user_id, email, full_name, created_at, credits_balance')
+        .from('admin_user_list')
+        .select('id, user_id, full_name, created_at, updated_at, credits_balance, daily_message_count')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -90,22 +91,21 @@ const UsersManager = ({ isRTL }: UsersManagerProps) => {
                     isRTL && "flex-row-reverse"
                   )}
                 >
-                  <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">
-                        {(user.full_name || user.email || '?').charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className={cn(isRTL && "text-right")}>
-                      <p className="font-medium text-sm">
-                        {user.full_name || (isRTL ? 'بدون اسم' : 'No name')}
-                      </p>
-                      <div className={cn("flex items-center gap-1 text-xs text-muted-foreground", isRTL && "flex-row-reverse")}>
-                        <Mail className="h-3 w-3" />
-                        <span>{user.email || (isRTL ? 'بدون بريد' : 'No email')}</span>
+                    <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary">
+                          {(user.full_name || '?').charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className={cn(isRTL && "text-right")}>
+                        <p className="font-medium text-sm">
+                          {user.full_name || (isRTL ? 'بدون اسم' : 'No name')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {user.daily_message_count} {isRTL ? 'رسالة اليوم' : 'msgs today'}
+                        </p>
                       </div>
                     </div>
-                  </div>
                   <div className={cn("text-right", isRTL && "text-left")}>
                     <div className={cn("flex items-center gap-1 text-xs text-muted-foreground", isRTL && "flex-row-reverse")}>
                       <Calendar className="h-3 w-3" />

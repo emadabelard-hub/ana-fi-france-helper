@@ -28,8 +28,15 @@ serve(async (req) => {
       });
     }
 
-    // Use Nova for natural multilingual voice (auto-detects language)
+    // Use Nova for native French pronunciation
     const selectedVoice = voice || "nova";
+
+    // Force French language context: wrap single letters/short words
+    // in a French carrier phrase so OpenAI TTS uses French phonetics, not English
+    const isSingleLetterOrShort = text.trim().length <= 3;
+    const ttsInput = isSingleLetterOrShort
+      ? `En français : ${text.trim()}.`
+      : text;
 
     const response = await fetch("https://api.openai.com/v1/audio/speech", {
       method: "POST",
@@ -39,7 +46,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "tts-1-hd",
-        input: text,
+        input: ttsInput,
         voice: selectedVoice,
         response_format: "mp3",
         speed: 0.78,

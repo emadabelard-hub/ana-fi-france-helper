@@ -34,11 +34,11 @@ const AccuracyBadge = ({ level }: { level: AccuracyLevel }) => {
   );
 };
 
-/** Extract just the phonetic sound for clean French letter pronunciation */
+/** Extract just the letter for native French pronunciation */
 function buildTTSText(termFr: string): string {
-  const match = termFr.match(/^([A-Z])\s*\(([^)]+)\)$/i);
+  const match = termFr.match(/^([A-Za-zÀ-ÿ])\s*\(/);
   if (match) {
-    return match[2]; // Just "Ah", "Bé", "Sé" — pure phonetic, no sentence
+    return match[1]; // Just the letter — TTS backend forces French context
   }
   return termFr;
 }

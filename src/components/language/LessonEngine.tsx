@@ -9,11 +9,13 @@ import AskTeacherButton from '@/components/language/AskTeacherButton';
 import { playTTS, stopGlobalAudio } from '@/lib/audioController';
 import type { ContentBlock, TextBlock, TeacherTipBlock, GrammarBlock } from '@/types/lessons';
 
-/** Extract just the phonetic sound for clean French letter pronunciation */
+/** Extract just the letter for clean native French pronunciation.
+ *  For alphabet entries like "A (Ah)", send just "A" — the TTS edge function
+ *  wraps it in French context to force Parisian pronunciation. */
 function buildTTSText(termFr: string): string {
-  const match = termFr.match(/^([A-Z])\s*\(([^)]+)\)$/i);
+  const match = termFr.match(/^([A-Za-zÀ-ÿ])\s*\(/);
   if (match) {
-    return match[2]; // Just the phonetic: "Ah", "Bé", "Sé", etc.
+    return match[1]; // Just the letter: "A", "B", "U", etc.
   }
   return termFr;
 }

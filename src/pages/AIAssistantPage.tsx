@@ -183,20 +183,23 @@ const AIAssistantPage = () => {
 
       {/* Input */}
       <div className="p-3 border-t border-border bg-background shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <form onSubmit={handleSubmit} className="flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-          <input
+        <div className="flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+          <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder={isRTL ? 'اكتب سؤالك هنا...' : 'Écrivez votre question...'}
             disabled={isLoading}
             className={cn(
-              "flex-1 bg-transparent text-sm font-medium px-3 py-2 outline-none text-foreground placeholder:text-muted-foreground",
+              "flex-1 bg-transparent text-sm font-medium px-3 py-2 outline-none text-foreground placeholder:text-muted-foreground resize-none min-h-[36px] max-h-[120px]",
               isRTL && "font-cairo text-right"
             )}
             dir="auto"
+            rows={1}
+            onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; }}
           />
           <button
-            type="submit"
+            type="button"
+            onClick={() => send()}
             disabled={!input.trim() || isLoading}
             className={cn(
               "w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all",
@@ -207,7 +210,7 @@ const AIAssistantPage = () => {
           >
             <Send size={18} />
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );

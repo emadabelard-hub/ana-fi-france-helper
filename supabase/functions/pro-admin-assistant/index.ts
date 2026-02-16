@@ -48,6 +48,26 @@ L'utilisateur a choisi le mode **FRANÇAIS**.
 - ما تغيرش اللغة غير لو المستخدم طلب صراحة.
 `;
 
+  const formattingRules = language === 'fr'
+    ? `
+RÈGLES DE FORMATAGE (OBLIGATOIRE):
+- Utilise ## pour les titres principaux et ### pour les sous-titres.
+- N'abuse PAS du gras (**). Réserve-le uniquement aux mots-clés essentiels (noms d'organismes, montants, délais).
+- Ajoute une ligne vide entre chaque paragraphe et chaque élément de liste.
+- Utilise --- pour séparer les sections distinctes.
+- Utilise des puces simples * pour les listes (un élément par ligne).
+- Les listes numérotées (1. 2. 3.) pour les étapes séquentielles.
+- Pas de murs de texte. Chaque idée = un paragraphe court.`
+    : `
+قواعد التنسيق (إلزامي):
+- استخدم ## للعناوين الرئيسية و ### للعناوين الفرعية.
+- ما تكترش من الخط العريض (**). استخدمه بس للكلمات المهمة جداً (أسماء الجهات، المبالغ، المواعيد).
+- اترك سطر فاضي بين كل فقرة وكل عنصر في القائمة.
+- استخدم --- للفصل بين الأقسام المختلفة.
+- استخدم نقاط بسيطة * للقوائم (عنصر واحد في كل سطر).
+- استخدم أرقام (1. 2. 3.) للخطوات المتتابعة.
+- ما تكتبش كتل نص كبيرة. كل فكرة = فقرة قصيرة.`;
+
   if (language === 'fr') {
     // French system prompt
     const profileInfoFr = profile ? `
@@ -58,6 +78,8 @@ Informations de l'utilisateur (pour les courriers):
 ` : '';
 
     return `${strictLanguageRuleFr}
+
+${formattingRules}
 
 Vous êtes un assistant administratif universel pour la communauté francophone et arabophone en France.
 
@@ -167,6 +189,8 @@ Lorsque l'utilisateur pose une question générale, votre PREMIÈRE réponse doi
 ` : '';
 
   return `${strictLanguageRuleAr}
+
+${formattingRules}
 
 أنت مساعد إداري شامل للمجتمع العربي والفرانكوفوني في فرنسا.
 

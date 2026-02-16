@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Send, Sparkles } from 'lucide-react';
+import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -150,14 +151,19 @@ const AIAssistantPage = () => {
               )}
               <div
                 className={cn(
-                  "max-w-[85%] p-3.5 rounded-2xl text-[13px] leading-relaxed shadow-sm whitespace-pre-wrap",
+                  "max-w-[85%] p-3.5 rounded-2xl shadow-sm",
                   isUser
                     ? "bg-primary text-primary-foreground rounded-br-none"
                     : "bg-card text-card-foreground border border-border rounded-bl-none",
-                  textAr ? "font-cairo text-right" : "text-left"
                 )}
               >
-                {msg.content}
+                {isUser ? (
+                  <span className={cn("text-[13px] leading-relaxed whitespace-pre-wrap", textAr ? "font-cairo text-right" : "text-left")} dir={textAr ? "rtl" : "ltr"}>
+                    {msg.content}
+                  </span>
+                ) : (
+                  <MarkdownRenderer content={msg.content} isRTL={textAr} />
+                )}
               </div>
             </div>
           );

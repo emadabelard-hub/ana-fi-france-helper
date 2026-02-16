@@ -5,7 +5,7 @@ interface MarkdownRendererProps {
   content: string;
   isRTL?: boolean;
   className?: string;
-  onSmartLinkClick?: (linkType: 'cv' | 'pro') => void;
+  onSmartLinkClick?: (linkType: 'cv' | 'pro' | 'solutions') => void;
 }
 
 /**
@@ -14,13 +14,13 @@ interface MarkdownRendererProps {
  */
 const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick }: MarkdownRendererProps) => {
   // First, extract smart links and replace with placeholders
-  const smartLinks: { type: 'cv' | 'pro'; text: string }[] = [];
+  const smartLinks: { type: 'cv' | 'pro' | 'solutions'; text: string }[] = [];
   let processedContent = content.replace(
-    /\[(CV_LINK|PRO_LINK)\](.*?)\[\/\1\]/gs,
+    /\[(CV_LINK|PRO_LINK|SOLUTIONS_LINK)\](.*?)\[\/\1\]/gs,
     (_match, type: string, text: string) => {
-      const linkType = type === 'CV_LINK' ? 'cv' : 'pro';
+      const linkType = type === 'CV_LINK' ? 'cv' : type === 'PRO_LINK' ? 'pro' : 'solutions';
       const idx = smartLinks.length;
-      smartLinks.push({ type: linkType as 'cv' | 'pro', text: text.trim() });
+      smartLinks.push({ type: linkType as 'cv' | 'pro' | 'solutions', text: text.trim() });
       return `__SMART_LINK_${idx}__`;
     }
   );

@@ -180,6 +180,7 @@ Lorsque l'utilisateur pose une question générale, votre PREMIÈRE réponse doi
 🔗 **LIENS CONTEXTUELS (OBLIGATOIRE):**
 - Quand ta réponse mentionne un CV ou la recherche d'emploi, ajoute à la fin : [CV_LINK]Si vous souhaitez créer un CV conforme aux normes françaises, cliquez ici → Générateur de CV[/CV_LINK]
 - Quand ta réponse mentionne un devis, une facture, ou des outils professionnels, ajoute : [PRO_LINK]Si vous avez besoin de créer un devis ou une facture professionnelle, cliquez ici → Outils Pro[/PRO_LINK]
+- Quand ta réponse concerne l'analyse de documents, la rédaction de réponses officielles, ou des problèmes administratifs complexes, ajoute : [SOLUTIONS_LINK]Pour obtenir de l'aide sur l'analyse de documents ou la rédaction d'une réponse professionnelle, cliquez ici → Solutions professionnelles et expertes[/SOLUTIONS_LINK]
 
 📅 Date actuelle: ${currentDate}`;
   }
@@ -295,6 +296,7 @@ ${profileInfo}
 🔗 **روابط ذكية (إلزامي):**
 - لو ردك فيه كلام عن سي في أو البحث عن شغل، أضف في الآخر: [CV_LINK]لو حابب تعمل سي في مطابق للمواصفات المطلوبة اضغط هنا ← صانع CV[/CV_LINK]
 - لو ردك فيه كلام عن فاتورة أو عرض سعر أو أدوات مهنية، أضف: [PRO_LINK]لو محتاج تعمل عرض سعر أو فاتورة احترافية اضغط هنا ← أدوات البرو[/PRO_LINK]
+- لو ردك فيه كلام عن تحليل مستندات أو صياغة رد رسمي أو مشاكل إدارية معقدة، أضف: [SOLUTIONS_LINK]للمساعدة في تحليل المستندات أو صياغة رد احترافي اضغط هنا ← حلول مهنية واحترافية[/SOLUTIONS_LINK]
 
 📅 التاريخ الحالي: ${currentDate}`;
 }

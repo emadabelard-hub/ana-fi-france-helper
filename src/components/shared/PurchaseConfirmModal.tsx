@@ -103,11 +103,19 @@ const PurchaseConfirmModal = ({
             {discountAnswer !== null && (
               <>
                 {discountAnswer === 'yes' && (
-                  <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl p-3 text-center">
-                    <p className={cn("text-xs font-bold text-emerald-700 dark:text-emerald-400 leading-relaxed", isRTL && "font-cairo")}>
+                  <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl p-4 text-center space-y-2 border border-emerald-200 dark:border-emerald-800">
+                    <div className="w-10 h-10 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+                      <span className="text-xl">🤝</span>
+                    </div>
+                    <p className={cn("text-sm font-black text-foreground leading-relaxed", isRTL && "font-cairo")}>
                       {isRTL
-                        ? '💚 نحن هنا لندعمك في خطواتك الأولى. تم تطبيق سعر الدعم (4 يورو).'
-                        : '💚 Nous sommes là pour vous accompagner. Le tarif solidaire (4 €) a été appliqué.'}
+                        ? 'نحن لا نطلب إثبات فنحن نثق في كلمتك'
+                        : 'Nous ne demandons pas de justificatif, nous vous faisons confiance.'}
+                    </p>
+                    <p className={cn("text-xs font-semibold text-emerald-700 dark:text-emerald-400", isRTL && "font-cairo")}>
+                      {isRTL
+                        ? '💚 تم تطبيق سعر الدعم (4 يورو) تقديراً لظروفك.'
+                        : '💚 Le tarif solidaire (4 €) a été appliqué en reconnaissance de votre situation.'}
                     </p>
                   </div>
                 )}

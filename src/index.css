@@ -72,23 +72,25 @@
 
   /* Light mode override (if ever needed) */
   .light {
-    --background: 0 0% 99%;
-    --foreground: 215 50% 15%;
+    /* Sophisticated light grey background (#F5F5F7) */
+    --background: 240 5% 96%;
+    --foreground: 220 30% 12%;
 
+    /* Cards: pure white to pop against grey bg */
     --card: 0 0% 100%;
-    --card-foreground: 215 50% 15%;
+    --card-foreground: 220 30% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 50% 15%;
+    --popover-foreground: 220 30% 12%;
 
     --primary: 215 55% 23%;
     --primary-foreground: 45 100% 97%;
 
-    --secondary: 215 20% 95%;
+    --secondary: 220 15% 92%;
     --secondary-foreground: 215 55% 23%;
 
-    --muted: 215 15% 95%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 220 10% 93%;
+    --muted-foreground: 215 15% 42%;
 
     --accent: 45 70% 52%;
     --accent-foreground: 215 55% 15%;
@@ -96,16 +98,16 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 215 20% 90%;
-    --input: 215 20% 90%;
+    --border: 220 15% 88%;
+    --input: 220 15% 90%;
     --ring: 215 55% 23%;
 
-    --chat-ai: 215 15% 95%;
-    --chat-ai-foreground: 215 50% 15%;
+    --chat-ai: 220 10% 94%;
+    --chat-ai-foreground: 220 30% 12%;
     --chat-user: 215 55% 23%;
     --chat-user-foreground: 45 100% 97%;
     --chat-input: 0 0% 100%;
-    --chat-input-foreground: 215 50% 15%;
+    --chat-input-foreground: 220 30% 12%;
 
     --sidebar-background: 215 55% 23%;
     --sidebar-foreground: 45 100% 97%;

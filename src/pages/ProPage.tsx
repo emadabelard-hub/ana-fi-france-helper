@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -5,12 +6,20 @@ import { PenLine, Settings, ArrowRight, ArrowLeft, FileUser, Paintbrush, Euro } 
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
+import PurchaseConfirmModal from '@/components/shared/PurchaseConfirmModal';
 
 const ProPage = () => {
   const { isRTL, t } = useLanguage();
   const navigate = useNavigate();
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+  const [purchaseModal, setPurchaseModal] = useState<{
+    open: boolean; name: string; key: string; price: number; bundle: boolean; returnPath: string;
+  }>({ open: false, name: '', key: '', price: 0, bundle: false, returnPath: '/' });
+
+  const openPurchase = (name: string, key: string, price: number, returnPath: string, bundle = false) => {
+    setPurchaseModal({ open: true, name, key, price, bundle, returnPath });
+  };
 
   const mainTools = [
     {
@@ -81,7 +90,19 @@ const ProPage = () => {
                 "border-none overflow-hidden",
                 `bg-gradient-to-r ${tool.gradient}`
               )}
-              onClick={() => navigate(tool.path)}
+              onClick={() => {
+                if (tool.price) {
+                  openPurchase(
+                    tool.title,
+                    tool.path,
+                    tool.price === '12 €' ? 12 : tool.price === '8 €' ? 8 : 6,
+                    tool.path,
+                    false
+                  );
+                } else {
+                  navigate(tool.path);
+                }
+              }}
             >
               <CardContent className="p-0">
                 <div className={cn(
@@ -172,6 +193,15 @@ const ProPage = () => {
         </CardContent>
       </Card>
 
+      <PurchaseConfirmModal
+        open={purchaseModal.open}
+        onOpenChange={(v) => setPurchaseModal(prev => ({ ...prev, open: v }))}
+        serviceName={purchaseModal.name}
+        serviceKey={purchaseModal.key}
+        price={purchaseModal.price}
+        isBundle={purchaseModal.bundle}
+        returnPath={purchaseModal.returnPath}
+      />
     </div>
   );
 };

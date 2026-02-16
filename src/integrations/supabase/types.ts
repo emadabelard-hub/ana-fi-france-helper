@@ -241,6 +241,39 @@ export type Database = {
           },
         ]
       }
+      transactions: {
+        Row: {
+          created_at: string
+          id: string
+          is_bundle: boolean
+          price_eur: number
+          service_key: string
+          service_name: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_bundle?: boolean
+          price_eur: number
+          service_key: string
+          service_name: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_bundle?: boolean
+          price_eur?: number
+          service_key?: string
+          service_name?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transfer_waitlist: {
         Row: {
           created_at: string

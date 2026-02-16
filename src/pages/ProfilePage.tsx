@@ -11,6 +11,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { cn } from '@/lib/utils';
 import AuthModal from '@/components/auth/AuthModal';
 import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
+import TransactionHistory from '@/components/profile/TransactionHistory';
 import CreditsDisplay from '@/components/shared/CreditsDisplay';
 
 const ProfilePage = () => {
@@ -168,6 +169,9 @@ const ProfilePage = () => {
 
         {/* Credits Balance */}
         <CreditsDisplay showDaily className="mx-auto max-w-sm" />
+
+        {/* Transaction History */}
+        <TransactionHistory />
 
         {/* Profile Form Card */}
         <Card className="bg-white dark:bg-[#1A1A1C] border border-border/50 rounded-[1.5rem] shadow-sm overflow-hidden">

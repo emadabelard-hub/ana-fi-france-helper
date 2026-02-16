@@ -65,12 +65,12 @@ const Index = () => {
           {/* Card 1 - Chat (Soft Yellow) */}
           <button
             onClick={() => navigate('/consultations')}
-            className="bg-gradient-to-br from-[#FFF8E1] to-[#FFECB3] dark:from-[#2A1F0A] dark:to-[#1F1800] p-5 rounded-2xl flex flex-col items-center justify-center text-foreground dark:text-white active:scale-95 transition-all duration-200 border border-[#FFD54F]/30 dark:border-[#F59E0B]/20 aspect-square shadow-sm"
+            className="bg-gradient-to-br from-[#FFF8E1] to-[#FFECB3] dark:from-[#2A1F0A] dark:to-[#1F1800] p-5 rounded-2xl flex flex-col items-center justify-center text-[#1A1A1C] active:scale-95 transition-all duration-200 border border-[#FFD54F]/30 dark:border-[#F59E0B]/20 aspect-square shadow-sm"
           >
             <div className="bg-gradient-to-br from-[#FF8A80] to-[#FF6E40] dark:from-[#F59E0B] dark:to-[#F97316] p-4 rounded-2xl mb-4 shadow-[0_4px_20px_rgba(255,110,64,0.3)] dark:shadow-[0_4px_20px_rgba(245,158,11,0.3)]">
               <MessageCircle size={36} className="text-white" />
             </div>
-            <h3 className={cn("font-black text-center text-sm leading-tight text-foreground", isRTL && "font-cairo")}>
+            <h3 className={cn("font-black text-center text-sm leading-tight text-[#1A1A1C]", isRTL && "font-cairo")}>
               {isRTL
                 ? 'انا جاي اساعدك واقول لك اي حاجة عايز تعرفها'
                 : 'Je suis là pour t\'aider et répondre à toutes tes questions'}
@@ -80,12 +80,12 @@ const Index = () => {
           {/* Card 2 - Solutions Pro (Light Blue) */}
           <button
             onClick={() => navigate('/pro')}
-            className="bg-gradient-to-br from-[#E3F2FD] to-[#BBDEFB] dark:from-[#0A1628] dark:to-[#0D1B2A] p-5 rounded-2xl flex flex-col items-center justify-center text-foreground dark:text-white active:scale-95 transition-all duration-200 border border-[#64B5F6]/30 dark:border-[#3B82F6]/20 aspect-square shadow-sm"
+            className="bg-gradient-to-br from-[#E3F2FD] to-[#BBDEFB] dark:from-[#0A1628] dark:to-[#0D1B2A] p-5 rounded-2xl flex flex-col items-center justify-center text-[#1A1A1C] active:scale-95 transition-all duration-200 border border-[#64B5F6]/30 dark:border-[#3B82F6]/20 aspect-square shadow-sm"
           >
             <div className="bg-gradient-to-br from-[#A5D6A7] to-[#66BB6A] dark:from-[#10B981] dark:to-[#059669] p-4 rounded-2xl mb-4 shadow-[0_4px_20px_rgba(102,187,106,0.3)] dark:shadow-[0_4px_20px_rgba(16,185,129,0.3)]">
               <Briefcase size={36} className="text-white" />
             </div>
-            <h3 className={cn("font-black text-center text-sm leading-tight text-foreground", isRTL && "font-cairo")}>
+            <h3 className={cn("font-black text-center text-sm leading-tight text-[#1A1A1C]", isRTL && "font-cairo")}>
               {isRTL
                 ? 'حلول مهنية واحترافية وصانع سي في سهل وسريع على أعلى مستوى'
                 : 'Solutions pro et générateur de CV facile et rapide au plus haut niveau'}
@@ -97,12 +97,12 @@ const Index = () => {
         {/* News Card (Light Coral) */}
         <button
           onClick={() => navigate('/news')}
-          className="w-full mt-4 bg-gradient-to-r from-[#FFEBEE] to-[#FFCDD2] dark:from-[#2A0A0A] dark:to-[#1F0808] p-5 rounded-2xl flex items-center justify-center gap-4 text-foreground dark:text-white active:scale-95 transition-all duration-200 border border-[#EF9A9A]/30 dark:border-[#EF4444]/20 shadow-sm"
+          className="w-full mt-4 bg-gradient-to-r from-[#FFEBEE] to-[#FFCDD2] dark:from-[#2A0A0A] dark:to-[#1F0808] p-5 rounded-2xl flex items-center justify-center gap-4 text-[#1A1A1C] active:scale-95 transition-all duration-200 border border-[#EF9A9A]/30 dark:border-[#EF4444]/20 shadow-sm"
         >
           <div className="bg-gradient-to-br from-[#90CAF9] to-[#42A5F5] dark:from-[#3B82F6] dark:to-[#2563EB] p-4 rounded-2xl shadow-[0_4px_20px_rgba(66,165,245,0.3)] dark:shadow-[0_4px_20px_rgba(59,130,246,0.3)]">
             <Newspaper size={32} className="text-white" />
           </div>
-          <h3 className={cn("font-black text-lg leading-tight text-center text-foreground", isRTL && "font-cairo")}>
+          <h3 className={cn("font-black text-lg leading-tight text-center text-[#1A1A1C]", isRTL && "font-cairo")}>
             {isRTL ? 'أخبار' : 'Actualités / News'}
           </h3>
         </button>
@@ -111,12 +111,12 @@ const Index = () => {
         {/* School Card (Lavender) */}
         <button
           onClick={() => navigate('/language-school')}
-          className="w-full mt-4 bg-gradient-to-r from-[#F3E5F5] to-[#E1BEE7] dark:from-[#1A0A2A] dark:to-[#140820] p-5 rounded-2xl flex items-center justify-center gap-4 text-foreground dark:text-white active:scale-95 transition-all duration-200 border border-[#CE93D8]/30 dark:border-[#8B5CF6]/20 shadow-sm"
+          className="w-full mt-4 bg-gradient-to-r from-[#F3E5F5] to-[#E1BEE7] dark:from-[#1A0A2A] dark:to-[#140820] p-5 rounded-2xl flex items-center justify-center gap-4 text-[#1A1A1C] active:scale-95 transition-all duration-200 border border-[#CE93D8]/30 dark:border-[#8B5CF6]/20 shadow-sm"
         >
           <div className="bg-gradient-to-br from-[#CE93D8] to-[#AB47BC] dark:from-[#8B5CF6] dark:to-[#7C3AED] p-4 rounded-2xl shadow-[0_4px_20px_rgba(171,71,188,0.3)] dark:shadow-[0_4px_20px_rgba(139,92,246,0.3)]">
             <GraduationCap size={32} className="text-white" />
           </div>
-          <div className={cn("font-black text-lg leading-tight text-center text-foreground", isRTL && "font-cairo")}>
+          <div className={cn("font-black text-lg leading-tight text-center text-[#1A1A1C]", isRTL && "font-cairo")}>
             {isRTL ? (
               <>
                 <div>برنامج A1 A2 - B1 B2</div>

@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -125,14 +125,14 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-weight: 500;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 400;
     line-height: 1.6;
   }
 
-  /* Cairo font class for explicit Arabic text */
+  /* Arabic font class for RTL text */
   .font-cairo {
-    font-family: 'Cairo', sans-serif;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
     font-weight: 500;
   }
 }

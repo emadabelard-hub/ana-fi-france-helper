@@ -15,8 +15,15 @@ const Index = () => {
       )}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
+      {/* BETA BANNER */}
+      <div className="bg-accent/10 border-b border-accent/20 py-1.5 text-center">
+        <span className="text-[11px] font-semibold text-accent tracking-wide">
+          نسخة تجريبية قيد الانشاء — Beta
+        </span>
+      </div>
+
       {/* HEADER */}
-      <header className="bg-card p-4 pt-14 flex justify-between items-center border-b border-border relative z-50">
+      <header className="bg-card p-4 flex justify-between items-center border-b border-border relative z-50">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-accent-foreground font-black text-lg border-2 border-background italic">
             AF
@@ -55,12 +62,12 @@ const Index = () => {
       <main className="px-5 pt-8 pb-32">
         {/* Top Row: 2 Square Cards */}
         <div className="grid grid-cols-2 gap-4">
-          {/* Card 1 - Consultations (Muted Burnt Orange) */}
+          {/* Card 1 - Chat (Soft Yellow) */}
           <button
             onClick={() => navigate('/consultations')}
-            className="bg-card p-5 rounded-2xl flex flex-col items-center justify-center text-foreground active:scale-95 transition-all duration-200 border border-border aspect-square shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)]"
+            className="bg-gradient-to-br from-[#FFF8E1] to-[#FFECB3] dark:from-[#4A3F2A] dark:to-[#3D3422] p-5 rounded-2xl flex flex-col items-center justify-center text-foreground active:scale-95 transition-all duration-200 border border-[#FFD54F]/30 dark:border-[#F59E0B]/20 aspect-square shadow-sm"
           >
-           <div className="bg-gradient-to-br from-[#FF8A80] to-[#FF6E40] dark:from-[#F59E0B] dark:to-[#F97316] p-4 rounded-2xl mb-4 shadow-[0_4px_20px_rgba(255,110,64,0.3)] dark:shadow-[0_4px_20px_rgba(245,158,11,0.3)]">
+            <div className="bg-gradient-to-br from-[#FF8A80] to-[#FF6E40] dark:from-[#F59E0B] dark:to-[#F97316] p-4 rounded-2xl mb-4 shadow-[0_4px_20px_rgba(255,110,64,0.3)] dark:shadow-[0_4px_20px_rgba(245,158,11,0.3)]">
               <MessageCircle size={36} className="text-white" />
             </div>
             <h3 className={cn("font-black text-center text-sm leading-tight text-foreground", isRTL && "font-cairo")}>
@@ -70,12 +77,12 @@ const Index = () => {
             </h3>
           </button>
 
-          {/* Card 2 - Tools (Muted Deep Teal) */}
+          {/* Card 2 - Solutions Pro (Light Blue) */}
           <button
             onClick={() => navigate('/pro')}
-            className="bg-card p-5 rounded-2xl flex flex-col items-center justify-center text-foreground active:scale-95 transition-all duration-200 border border-border aspect-square shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)]"
+            className="bg-gradient-to-br from-[#E3F2FD] to-[#BBDEFB] dark:from-[#1E3A5F] dark:to-[#1A2E4A] p-5 rounded-2xl flex flex-col items-center justify-center text-foreground active:scale-95 transition-all duration-200 border border-[#64B5F6]/30 dark:border-[#3B82F6]/20 aspect-square shadow-sm"
           >
-           <div className="bg-gradient-to-br from-[#A5D6A7] to-[#66BB6A] dark:from-[#10B981] dark:to-[#059669] p-4 rounded-2xl mb-4 shadow-[0_4px_20px_rgba(102,187,106,0.3)] dark:shadow-[0_4px_20px_rgba(16,185,129,0.3)]">
+            <div className="bg-gradient-to-br from-[#A5D6A7] to-[#66BB6A] dark:from-[#10B981] dark:to-[#059669] p-4 rounded-2xl mb-4 shadow-[0_4px_20px_rgba(102,187,106,0.3)] dark:shadow-[0_4px_20px_rgba(16,185,129,0.3)]">
               <Briefcase size={36} className="text-white" />
             </div>
             <h3 className={cn("font-black text-center text-sm leading-tight text-foreground", isRTL && "font-cairo")}>
@@ -87,9 +94,10 @@ const Index = () => {
         </div>
 
         {/* Bottom Row: 2 Wide Cards */}
+        {/* News Card (Light Coral) */}
         <button
           onClick={() => navigate('/news')}
-          className="w-full mt-4 bg-card p-5 rounded-2xl flex items-center justify-center gap-4 text-foreground active:scale-95 transition-all duration-200 border border-border shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)]"
+          className="w-full mt-4 bg-gradient-to-r from-[#FFEBEE] to-[#FFCDD2] dark:from-[#4A2A2A] dark:to-[#3D2222] p-5 rounded-2xl flex items-center justify-center gap-4 text-foreground active:scale-95 transition-all duration-200 border border-[#EF9A9A]/30 dark:border-[#EF4444]/20 shadow-sm"
         >
           <div className="bg-gradient-to-br from-[#90CAF9] to-[#42A5F5] dark:from-[#3B82F6] dark:to-[#2563EB] p-4 rounded-2xl shadow-[0_4px_20px_rgba(66,165,245,0.3)] dark:shadow-[0_4px_20px_rgba(59,130,246,0.3)]">
             <Newspaper size={32} className="text-white" />
@@ -100,9 +108,10 @@ const Index = () => {
         </button>
 
         {/* Language School Card (Muted Pastel Purple) */}
+        {/* School Card (Lavender) */}
         <button
           onClick={() => navigate('/language-school')}
-          className="w-full mt-4 bg-card p-5 rounded-2xl flex items-center justify-center gap-4 text-foreground active:scale-95 transition-all duration-200 border border-border shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)]"
+          className="w-full mt-4 bg-gradient-to-r from-[#F3E5F5] to-[#E1BEE7] dark:from-[#3A2A4A] dark:to-[#2E2240] p-5 rounded-2xl flex items-center justify-center gap-4 text-foreground active:scale-95 transition-all duration-200 border border-[#CE93D8]/30 dark:border-[#8B5CF6]/20 shadow-sm"
         >
           <div className="bg-gradient-to-br from-[#CE93D8] to-[#AB47BC] dark:from-[#8B5CF6] dark:to-[#7C3AED] p-4 rounded-2xl shadow-[0_4px_20px_rgba(171,71,188,0.3)] dark:shadow-[0_4px_20px_rgba(139,92,246,0.3)]">
             <GraduationCap size={32} className="text-white" />

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3, Users, MapPin, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,6 +13,8 @@ import LessonsManager from '@/components/admin/LessonsManager';
 import QuestionsManager from '@/components/admin/QuestionsManager';
 import PromoStatsManager from '@/components/admin/PromoStatsManager';
 import UsersManager from '@/components/admin/UsersManager';
+import VisitStatsManager from '@/components/admin/VisitStatsManager';
+import TransactionsManager from '@/components/admin/TransactionsManager';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();
@@ -148,7 +150,7 @@ const AdminPage = () => {
       </section>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={cn("grid w-full grid-cols-4", isRTL && "direction-rtl")}>
+        <TabsList className={cn("grid w-full grid-cols-3 mb-2", isRTL && "direction-rtl")}>
           <TabsTrigger value="stats" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <BarChart3 className="h-4 w-4" />
             {isRTL ? 'الإحصائيات' : 'Stats'}
@@ -156,6 +158,16 @@ const AdminPage = () => {
           <TabsTrigger value="users" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <Users className="h-4 w-4" />
             {isRTL ? 'المستخدمين' : 'Users'}
+          </TabsTrigger>
+          <TabsTrigger value="visits" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
+            <MapPin className="h-4 w-4" />
+            {isRTL ? 'الزيارات' : 'Visits'}
+          </TabsTrigger>
+        </TabsList>
+        <TabsList className={cn("grid w-full grid-cols-3", isRTL && "direction-rtl")}>
+          <TabsTrigger value="transactions" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
+            <Receipt className="h-4 w-4" />
+            {isRTL ? 'المعاملات' : 'Transactions'}
           </TabsTrigger>
           <TabsTrigger value="lessons" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <BookOpen className="h-4 w-4" />
@@ -172,6 +184,12 @@ const AdminPage = () => {
         </TabsContent>
         <TabsContent value="users" className="mt-6">
           <UsersManager isRTL={isRTL} />
+        </TabsContent>
+        <TabsContent value="visits" className="mt-6">
+          <VisitStatsManager isRTL={isRTL} />
+        </TabsContent>
+        <TabsContent value="transactions" className="mt-6">
+          <TransactionsManager isRTL={isRTL} />
         </TabsContent>
         <TabsContent value="lessons" className="mt-6">
           <LessonsManager isRTL={isRTL} />

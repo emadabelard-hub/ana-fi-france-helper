@@ -84,7 +84,7 @@ const VisitStatsManager = ({ isRTL }: VisitStatsManagerProps) => {
             <div className={cn(isRTL && "text-right")}>
               <p className="text-3xl font-bold">{totalVisits.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground">
-                {isRTL ? 'إجمالي الزيارات' : 'Total Visits'}
+                {isRTL ? 'إجمالي الزيارات' : 'Total des visites'}
               </p>
             </div>
           </div>
@@ -94,20 +94,20 @@ const VisitStatsManager = ({ isRTL }: VisitStatsManagerProps) => {
       <Card>
         <CardHeader>
           <CardTitle className={cn("text-lg", isRTL && "text-right font-cairo")}>
-            {isRTL ? 'زيارات حسب القسم' : 'Visits by Section'}
+            {isRTL ? 'زيارات حسب القسم' : 'Visites par section'}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {stats.length === 0 ? (
             <p className={cn("text-center text-muted-foreground py-8", isRTL && "font-cairo")}>
-              {isRTL ? 'لا توجد بيانات بعد' : 'No visit data yet'}
+              {isRTL ? 'لا توجد بيانات بعد' : 'Aucune donnée de visite'}
             </p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className={cn(isRTL && "text-right")}>{isRTL ? 'القسم' : 'Section'}</TableHead>
-                  <TableHead className="text-right">{isRTL ? 'الزيارات' : 'Visits'}</TableHead>
+                  <TableHead className="text-right">{isRTL ? 'الزيارات' : 'Visites'}</TableHead>
                   <TableHead className="text-right">%</TableHead>
                 </TableRow>
               </TableHeader>

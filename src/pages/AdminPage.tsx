@@ -141,11 +141,11 @@ const AdminPage = () => {
         </Button>
         <div className={cn("flex-1", isRTL && "text-right")}>
           <h1 className={cn("text-2xl font-bold text-foreground", isRTL && "font-cairo")}>
-            {isRTL ? 'لوحة إدارة المحتوى' : 'Content Admin Panel'}
-          </h1>
-          <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
-            {isRTL ? 'إدارة الدروس والأسئلة' : 'Manage lessons and questions'}
-          </p>
+              {isRTL ? 'لوحة الإدارة' : "Panneau d'administration"}
+            </h1>
+            <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
+              {isRTL ? 'إدارة الدروس والأسئلة' : 'Gérer les leçons et les questions'}
+            </p>
         </div>
       </section>
 
@@ -153,29 +153,29 @@ const AdminPage = () => {
         <TabsList className={cn("grid w-full grid-cols-3 mb-2", isRTL && "direction-rtl")}>
           <TabsTrigger value="stats" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <BarChart3 className="h-4 w-4" />
-            {isRTL ? 'الإحصائيات' : 'Stats'}
+            {isRTL ? 'إحصائيات' : 'Stats'}
           </TabsTrigger>
           <TabsTrigger value="users" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <Users className="h-4 w-4" />
-            {isRTL ? 'المستخدمين' : 'Users'}
+            {isRTL ? 'مستخدمون' : 'Utilisateurs'}
           </TabsTrigger>
           <TabsTrigger value="visits" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <MapPin className="h-4 w-4" />
-            {isRTL ? 'الزيارات' : 'Visits'}
+            {isRTL ? 'زيارات' : 'Visites'}
           </TabsTrigger>
         </TabsList>
         <TabsList className={cn("grid w-full grid-cols-3", isRTL && "direction-rtl")}>
           <TabsTrigger value="transactions" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <Receipt className="h-4 w-4" />
-            {isRTL ? 'المعاملات' : 'Transactions'}
+            {isRTL ? 'معاملات' : 'Transactions'}
           </TabsTrigger>
           <TabsTrigger value="lessons" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <BookOpen className="h-4 w-4" />
-            {isRTL ? 'الدروس' : 'Lessons'}
+            {isRTL ? 'دروس' : 'Leçons'}
           </TabsTrigger>
           <TabsTrigger value="questions" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <HelpCircle className="h-4 w-4" />
-            {isRTL ? 'الأسئلة' : 'Questions'}
+            {isRTL ? 'أسئلة' : 'Questions'}
           </TabsTrigger>
         </TabsList>
 

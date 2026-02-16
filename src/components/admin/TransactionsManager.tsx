@@ -83,7 +83,7 @@ const TransactionsManager = ({ isRTL }: TransactionsManagerProps) => {
               <div className={cn(isRTL && "text-right")}>
                 <p className="text-3xl font-bold">{totalRevenue.toFixed(0)} €</p>
                 <p className="text-sm text-muted-foreground">
-                  {isRTL ? 'إجمالي الإيرادات' : 'Total Revenue'}
+                  {isRTL ? 'إجمالي الإيرادات' : 'Revenu total'}
                 </p>
               </div>
             </div>
@@ -94,13 +94,13 @@ const TransactionsManager = ({ isRTL }: TransactionsManagerProps) => {
       <Card>
         <CardHeader>
           <CardTitle className={cn("text-lg", isRTL && "text-right font-cairo")}>
-            {isRTL ? 'سجل المعاملات' : 'Transaction History'}
+            {isRTL ? 'سجل المعاملات' : 'Historique des transactions'}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {transactions.length === 0 ? (
             <p className={cn("text-center text-muted-foreground py-8", isRTL && "font-cairo")}>
-              {isRTL ? 'لا توجد معاملات بعد' : 'No transactions yet'}
+              {isRTL ? 'لا توجد معاملات بعد' : 'Aucune transaction'}
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -108,10 +108,10 @@ const TransactionsManager = ({ isRTL }: TransactionsManagerProps) => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{isRTL ? 'التاريخ' : 'Date'}</TableHead>
-                    <TableHead>{isRTL ? 'المستخدم' : 'User'}</TableHead>
+                    <TableHead>{isRTL ? 'المستخدم' : 'Utilisateur'}</TableHead>
                     <TableHead>{isRTL ? 'الخدمة' : 'Service'}</TableHead>
-                    <TableHead className="text-right">{isRTL ? 'المبلغ' : 'Amount'}</TableHead>
-                    <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
+                    <TableHead className="text-right">{isRTL ? 'المبلغ' : 'Montant'}</TableHead>
+                    <TableHead>{isRTL ? 'الحالة' : 'Statut'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

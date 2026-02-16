@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Brain, Camera, Paperclip, Send, Loader2 } from 'lucide-react';
+import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import { streamProAdminAssistant } from '@/hooks/useStreamingChat';
 import { useToast } from '@/hooks/use-toast';
 import QuickActionsBar from '@/components/assistant/QuickActionsBar';
@@ -352,13 +353,18 @@ const AssistantPage = () => {
 
               {/* Message Bubble - Simple */}
               <div className={cn(
-                "max-w-[85%] p-3 px-4 rounded-2xl text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap",
+                "max-w-[85%] p-3 px-4 rounded-2xl shadow-sm",
                 msg.role === 'user' 
                   ? 'bg-primary text-primary-foreground rounded-br-none' 
                   : 'bg-card text-card-foreground rounded-tl-none border border-border',
-                isArabic(msg.content) ? 'font-cairo text-right' : 'text-left'
               )}>
-                {msg.content || (msg.role === 'assistant' && isTyping ? '...' : '')}
+                {msg.role === 'user' ? (
+                  <span className={cn("text-[15px] leading-relaxed whitespace-pre-wrap", isArabic(msg.content) ? 'font-cairo text-right' : 'text-left')}>
+                    {msg.content || ''}
+                  </span>
+                ) : (
+                  <MarkdownRenderer content={msg.content || (isTyping ? '...' : '')} isRTL={isArabic(msg.content)} className="text-[15px]" />
+                )}
               </div>
             </div>
 

@@ -180,7 +180,7 @@ const CVFormSection = ({ cvData, onChange, isRTL }: CVFormSectionProps) => {
               <Input
                 value={cvData.profession}
                 onChange={(e) => updateField('profession', e.target.value)}
-                placeholder={isRTL ? 'مثال: مهندس - محاسب - مطور - طالب' : 'Ex: Ingénieur - Comptable - Développeur - Étudiant'}
+                placeholder=""
                 dir={isRTL ? 'rtl' : 'ltr'}
                 className={cn(isRTL && "text-right font-cairo")}
               />

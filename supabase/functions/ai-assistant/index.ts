@@ -73,7 +73,7 @@ RÈGLES DE RÉPONSE :
 6. Mentionne les sites officiels, les formulaires et les délais quand c'est pertinent.
 7. Détaille les droits, les obligations et les pièges à éviter.
 8. Termine par un résumé ou un conseil pratique si pertinent.
-9. LIENS CONTEXTUELS (OBLIGATOIRE) : Quand ta réponse mentionne un CV ou la recherche d'emploi, ajoute à la fin : [CV_LINK]Si vous souhaitez créer un CV conforme aux normes françaises, cliquez ici → Générateur de CV[/CV_LINK]. Quand ta réponse mentionne un devis, une facture, ou des outils professionnels, ajoute : [PRO_LINK]Si vous avez besoin de créer un devis ou une facture professionnelle, cliquez ici → Outils Pro[/PRO_LINK]. Quand ta réponse concerne l'analyse de documents, la rédaction de réponses officielles, ou des problèmes administratifs complexes, ajoute : [SOLUTIONS_LINK]Pour obtenir de l'aide sur l'analyse de documents ou la rédaction d'une réponse professionnelle, cliquez ici → Solutions professionnelles et expertes[/SOLUTIONS_LINK].`
+9. LIENS CONTEXTUELS (OBLIGATOIRE) : Quand ta réponse mentionne un CV ou la recherche d'emploi, ajoute à la fin : [CV_LINK]Si vous souhaitez créer un CV conforme aux normes françaises, cliquez ici → Générateur de CV[/CV_LINK]. Quand ta réponse mentionne un devis, une facture, ou des outils professionnels, ajoute : [PRO_LINK]Si vous avez besoin de créer un devis ou une facture professionnelle, cliquez ici → Outils Pro[/PRO_LINK]. Quand ta réponse concerne l'analyse de documents, une consultation juridique, la rédaction de réponses officielles, un contrat, un litige, ou des problèmes administratifs complexes, ajoute : [SOLUTIONS_LINK]Pour obtenir de l'aide sur l'analyse de documents ou une consultation juridique et professionnelle, cliquez ici → Consultant Juridique et Professionnel[/SOLUTIONS_LINK].`
       : `أنت 'أنا في فرنسا'، مستشار خبير لكل الجالية العربية في فرنسا (مغرب، مصر، شرق أوسط) وكذلك الحرفيين والمستقلين.
 
 التاريخ: ${currentDate}.
@@ -89,7 +89,7 @@ ${formattingRulesAr}
 6. اذكر المواقع الرسمية والأوراق المطلوبة والمواعيد النهائية عند الحاجة.
 7. وضّح الحقوق والواجبات والأمور التي يجب الحذر منها.
 8. اختم بملخص أو نصيحة عملية إن كان ذلك مناسباً.
-9. روابط ذكية (إلزامي): لو ردك فيه كلام عن سي في أو البحث عن شغل، أضف في الآخر: [CV_LINK]لو حابب تعمل سي في مطابق للمواصفات المطلوبة اضغط هنا ← صانع CV[/CV_LINK]. لو ردك فيه كلام عن فاتورة أو عرض سعر أو أدوات مهنية، أضف: [PRO_LINK]لو محتاج تعمل عرض سعر أو فاتورة احترافية اضغط هنا ← أدوات البرو[/PRO_LINK]. لو ردك فيه كلام عن تحليل مستندات أو صياغة رد رسمي أو مشاكل إدارية معقدة، أضف: [SOLUTIONS_LINK]للمساعدة في تحليل المستندات أو صياغة رد احترافي اضغط هنا ← حلول مهنية واحترافية[/SOLUTIONS_LINK].`;
+9. روابط ذكية (إلزامي): لو ردك فيه كلام عن سي في أو البحث عن شغل، أضف في الآخر: [CV_LINK]لو حابب تعمل سي في مطابق للمواصفات المطلوبة اضغط هنا ← صانع CV[/CV_LINK]. لو ردك فيه كلام عن فاتورة أو عرض سعر أو أدوات مهنية، أضف: [PRO_LINK]لو محتاج تعمل عرض سعر أو فاتورة احترافية اضغط هنا ← أدوات البرو[/PRO_LINK]. لو ردك فيه كلام عن تحليل مستندات أو استشارة قانونية أو صياغة رد رسمي أو عقد أو نزاع أو مشاكل إدارية معقدة، أضف: [SOLUTIONS_LINK]للمساعدة في تحليل المستندات أو الحصول على استشارة قانونية ومهنية، اضغط هنا ← المستشار القانوني والمهني[/SOLUTIONS_LINK].`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

@@ -243,59 +243,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
 
         </div>
 
-        {/* ─── Audio Control Bar ─── */}
-        {tts.isSupported && (
-          <div className="w-full max-w-sm flex items-center justify-center gap-3 bg-[#22262e] rounded-2xl p-3 border border-white/8">
-            {/* Rewind / Previous */}
-            <button
-              onClick={() => { if (phraseIdx > 0) { setPhraseIdx(p => p - 1); setFeedback('idle'); stt.reset(); } }}
-              disabled={phraseIdx === 0}
-              className="p-2.5 rounded-xl bg-white/5 border border-white/8 text-slate-400 disabled:opacity-30 active:scale-90 transition-all"
-              aria-label="Previous"
-            >
-              <SkipBack size={18} />
-            </button>
-
-            {/* Play / Pause */}
-            <button
-              onClick={() => tts.isSpeaking ? tts.stop() : tts.speak(buildTTSText(currentPhrase?.termFr || ''))}
-              className={cn(
-                'p-3.5 rounded-2xl border-2 transition-all',
-                tts.isSpeaking
-                  ? 'bg-[#7c3aed]/25 border-[#7c3aed]/40 text-[#a78bfa]'
-                  : 'bg-[#7c3aed]/15 border-[#7c3aed]/25 text-[#a78bfa] active:scale-90'
-              )}
-              aria-label={tts.isSpeaking ? 'Pause' : 'Play'}
-            >
-              {tts.isSpeaking ? (
-                <div className="flex items-center gap-[2px]">
-                  {[1,2,3,4].map(i => (
-                    <span key={i} className="w-[3px] bg-[#a78bfa] rounded-full animate-pulse" style={{ height: `${8 + Math.random() * 10}px`, animationDelay: `${i * 0.15}s` }} />
-                  ))}
-                </div>
-              ) : <Volume2 size={22} />}
-            </button>
-
-            {/* Replay current */}
-            <button
-              onClick={() => { tts.stop(); setTimeout(() => tts.speak(buildTTSText(currentPhrase?.termFr || '')), 100); }}
-              className="p-2.5 rounded-xl bg-white/5 border border-white/8 text-slate-400 active:scale-90 transition-all"
-              aria-label="Replay"
-            >
-              <RotateCcw size={18} />
-            </button>
-
-            {/* Next */}
-            <button
-              onClick={() => { if (phraseIdx < phrases.length - 1) { setPhraseIdx(p => p + 1); setFeedback('idle'); stt.reset(); } }}
-              disabled={phraseIdx >= phrases.length - 1}
-              className="p-2.5 rounded-xl bg-white/5 border border-white/8 text-slate-400 disabled:opacity-30 active:scale-90 transition-all"
-              aria-label="Next"
-            >
-              <SkipForward size={18} />
-            </button>
-          </div>
-        )}
+        {/* Audio Control Bar — disabled for launch */}
 
         {/* ─── Vocabulary List Toggle ─── */}
         <button
@@ -439,27 +387,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
         </div>
       </main>
 
-      {/* ─── Bottom: Microphone Button ─── */}
-      <div className="pb-12 pt-4 flex flex-col items-center gap-3">
-        <button
-          onClick={handleMicPress}
-          disabled={feedback === 'checking' || feedback === 'success'}
-          className={cn(
-            'w-20 h-20 rounded-full flex items-center justify-center border-2 transition-all duration-300',
-            feedback === 'listening'
-              ? 'bg-red-500/20 border-red-500/40 text-red-400 animate-pulse scale-110'
-              : feedback === 'success'
-              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 opacity-50'
-              : 'bg-[#22262e] border-white/10 text-[#a78bfa] active:scale-95 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.3)]'
-          )}
-          aria-label="Record"
-        >
-          <Mic size={32} />
-        </button>
-        <span className="text-xs text-slate-500 font-bold">
-          {feedback === 'idle' && (isRTL ? 'اضغط وتكلم' : 'Appuyez et parlez')}
-        </span>
-      </div>
+      {/* Microphone — disabled for launch */}
 
       {/* ─── Ask the Teacher (Floating) ─── */}
       <AskTeacherButton

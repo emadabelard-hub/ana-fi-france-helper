@@ -86,36 +86,6 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
     return data;
   };
 
-  // Fallback: Direct OpenAI call using user's local key (if stored)
-  const callDirectOpenAI = async (body: any): Promise<{ answer?: string; error?: string }> => {
-    const apiKey = localStorage.getItem('user_ai_api_key');
-    if (!apiKey) return { error: 'لا يوجد مفتاح احتياطي — سجّل مفتاح OpenAI في الإعدادات' };
-
-    const systemPrompt = `أنت "معلم فرنسي" ودود وصبور. تشرح قواعد اللغة الفرنسية بالعربية الفصحى البسيطة.
-السياق: الطالب يتعلم درس "${body.lessonTitle || 'فرنسي'}" والعبارة الحالية هي: "${body.currentPhrase || ''}".
-- أجب بشكل مختصر (3-5 جمل كحد أقصى). استخدم أمثلة فرنسية مع الترجمة. كن مشجعاً.`;
-
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: body.question },
-        ],
-        max_tokens: 500,
-      }),
-    });
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      return { error: `Fallback OpenAI Error ${resp.status}: ${err?.error?.message || ''}` };
-    }
-
-    const data = await resp.json();
-    return { answer: data.choices?.[0]?.message?.content || 'عذراً، لم أستطع الإجابة.' };
-  };
 
   const handleAsk = useCallback(async () => {
     if ((!question.trim() && !attachment) || loading) return;
@@ -131,7 +101,6 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
     };
 
     try {
-      // Try edge function first (uses global OPENAI_API_KEY on server)
       const result = await callEdgeFunction(body);
 
       if (result.answer) {
@@ -141,33 +110,10 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
         return;
       }
 
-      // Edge function returned an error — try direct fallback
-      console.warn('Edge function failed, trying direct fallback:', result.error);
-      const fallback = await callDirectOpenAI(body);
-
-      if (fallback.answer) {
-        setAnswer(fallback.answer);
-        setIsLive(true);
-        setAttachment(null);
-        return;
-      }
-
-      setAnswer(`⚠️ ${fallback.error || result.error || 'خطأ غير متوقع'}`);
+      setAnswer(result.error || 'حدث خطأ — حاول مرة أخرى');
     } catch (e: any) {
       console.error('Ask teacher error:', e);
-      // Network failure — try direct fallback
-      try {
-        const fallback = await callDirectOpenAI(body);
-        if (fallback.answer) {
-          setAnswer(fallback.answer);
-          setIsLive(true);
-          setAttachment(null);
-          return;
-        }
-        setAnswer(`⚠️ ${fallback.error}`);
-      } catch {
-        setAnswer('❌ خطأ في الاتصال — تحقق من الإنترنت وحاول مرة أخرى');
-      }
+      setAnswer('خطأ في الاتصال — تحقق من الإنترنت وحاول مرة أخرى');
     } finally {
       setLoading(false);
     }
@@ -277,7 +223,7 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
 
             {!user && (
               <p className="text-[10px] text-slate-600 text-center font-cairo" dir="rtl">
-                سجّل دخولك للحصول على 10 أسئلة مجانية يومياً
+                سجّل دخولك للحصول على 5 أسئلة مجانية يومياً
               </p>
             )}
           </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Home, Newspaper, FileText, User, Shield } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -9,7 +10,8 @@ const navItems = [
   {
     path: '/',
     icon: Home,
-    label: 'الرئيسية',
+    labelAr: 'الرئيسية',
+    labelFr: 'Accueil',
     color: 'text-amber-400',
     activeBg: 'bg-amber-400/15',
     dotColor: 'bg-amber-400',
@@ -17,7 +19,8 @@ const navItems = [
   {
     path: '/news',
     icon: Newspaper,
-    label: 'أخبار',
+    labelAr: 'أخبار',
+    labelFr: 'Actualités',
     color: 'text-red-500',
     activeBg: 'bg-red-500/15',
     dotColor: 'bg-red-500',
@@ -25,7 +28,8 @@ const navItems = [
   {
     path: '/pro',
     icon: FileText,
-    label: 'أدوات',
+    labelAr: 'أدوات',
+    labelFr: 'Outils',
     color: 'text-orange-400',
     activeBg: 'bg-orange-400/15',
     dotColor: 'bg-orange-400',
@@ -33,7 +37,8 @@ const navItems = [
   {
     path: '/profile',
     icon: User,
-    label: 'حسابي',
+    labelAr: 'حسابي',
+    labelFr: 'Compte',
     color: 'text-blue-400',
     activeBg: 'bg-blue-400/15',
     dotColor: 'bg-blue-400',
@@ -41,6 +46,7 @@ const navItems = [
 ];
 
 const BottomNavigation = () => {
+  const { language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -61,14 +67,15 @@ const BottomNavigation = () => {
   const allItems = isAdmin
     ? [
         ...navItems,
-        {
-          path: '/admin',
-          icon: Shield,
-          label: 'إدارة',
-          color: 'text-amber-500',
-          activeBg: 'bg-amber-500/15',
-          dotColor: 'bg-amber-500',
-        },
+         {
+           path: '/admin',
+           icon: Shield,
+           labelAr: 'إدارة',
+           labelFr: 'Admin',
+           color: 'text-amber-500',
+           activeBg: 'bg-amber-500/15',
+           dotColor: 'bg-amber-500',
+         },
       ]
     : navItems;
 
@@ -106,7 +113,7 @@ const BottomNavigation = () => {
                   isActive ? item.color : "text-muted-foreground"
                 )}
               >
-                {item.label}
+                {language === 'ar' ? item.labelAr : item.labelFr}
               </span>
               {isActive && (
                 <span

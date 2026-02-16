@@ -77,7 +77,7 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
 
     // Empty line → spacer
     if (trimmed === '') {
-      elements.push(<div key={i} className="h-2" />);
+      elements.push(<div key={i} className="h-3" />);
       i++;
       continue;
     }
@@ -85,7 +85,7 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
     // Horizontal rule: --- or ***
     if (/^[-*_]{3,}$/.test(trimmed)) {
       elements.push(
-        <hr key={i} className="border-border my-3" />
+        <hr key={i} className="border-border my-4" />
       );
       i++;
       continue;
@@ -94,7 +94,7 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
     // ## Heading
     if (trimmed.startsWith('## ')) {
       elements.push(
-        <h2 key={i} className="text-[15px] font-bold mt-3 mb-1.5 text-foreground">
+        <h2 key={i} className="text-[15px] font-black mt-4 mb-2 text-foreground">
           {renderInline(trimmed.slice(3))}
         </h2>
       );
@@ -105,7 +105,7 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
     // ### Subheading
     if (trimmed.startsWith('### ')) {
       elements.push(
-        <h3 key={i} className="text-[14px] font-bold mt-2 mb-1 text-foreground/90">
+        <h3 key={i} className="text-[14px] font-bold mt-3 mb-1.5 text-foreground/90">
           {renderInline(trimmed.slice(4))}
         </h3>
       );
@@ -179,7 +179,8 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
   return (
     <div
       className={cn(
-        "text-[13.5px] leading-relaxed",
+        "text-[13.5px]",
+        "leading-[1.6]",
         isRTL ? "font-cairo text-right" : "text-left",
         className
       )}

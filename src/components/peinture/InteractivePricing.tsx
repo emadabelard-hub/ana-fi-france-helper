@@ -233,7 +233,7 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
           <CardHeader className="pb-2">
             <CardTitle className={cn("text-sm font-black flex items-center gap-2", isRTL && "flex-row-reverse")}>
               <CalendarDays className="h-5 w-5 text-primary" />
-              {isFr ? 'Phases du Chantier' : 'مراحل الشونتيي (Chantier)'}
+              {isFr ? 'Phases du Chantier' : 'مراحل الشانتييه (Chantier)'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-0">
@@ -351,7 +351,7 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
         <CardContent className="p-4 space-y-3">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
             <Users className="h-5 w-5 text-blue-500" />
-            <h3 className="text-sm font-black text-foreground">{isFr ? "Main d'œuvre (ajustable)" : 'اليد العاملة (قابل للتعديل)'}</h3>
+            <h3 className="text-sm font-black text-foreground">{isFr ? "Main d'œuvre (ajustable)" : 'العمالة (تقدر تعدّل)'}</h3>
           </div>
 
           {data.labor.workers && data.labor.workers.length > 0 ? (
@@ -381,7 +381,7 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
           {/* Days adjustment */}
           <div className={cn("flex items-center justify-between bg-muted/50 rounded-lg p-2.5", isRTL && "flex-row-reverse")}>
             <div>
-              <p className="text-sm font-bold">{isFr ? 'Durée du chantier' : 'مدة الشونتيي (Chantier)'}</p>
+              <p className="text-sm font-bold">{isFr ? 'Durée du chantier' : 'مدة الشانتييه (Chantier)'}</p>
               <p className="text-[10px] text-muted-foreground">{isFr ? 'jours' : 'أيام'}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -430,7 +430,7 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
             <Wallet className="h-5 w-5 text-purple-500" />
             <h3 className="text-sm font-black text-foreground">
-              {isFr ? 'Revenu Net Réel (après charges)' : 'الدخل الصافي الحقيقي (بعد الشارج Charges)'}
+              {isFr ? 'Revenu Net Réel (après charges)' : 'صافي ربحك الحقيقي (بعد الأعباء)'}
             </h3>
           </div>
 
@@ -438,10 +438,10 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
             {/* Auto-entrepreneur */}
             <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 rounded-xl p-3 space-y-1.5">
               <p className={cn("text-xs font-black text-indigo-700 dark:text-indigo-300", isRTL && "text-right")}>
-                {isFr ? 'Auto-entrepreneur (23.1% charges)' : 'أوتو أونتروبرونور (Auto-entrepreneur) — 23.1%'}
+                {isFr ? 'Auto-entrepreneur (23.1% charges)' : 'أوتو أونتروبرونور (Auto-entrepreneur) — أعباء 23.1%'}
               </p>
               <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
-                <span className="text-xs text-muted-foreground">{isFr ? 'Charges sociales' : 'شارج (Charges)'}</span>
+                <span className="text-xs text-muted-foreground">{isFr ? 'Charges sociales' : 'الأعباء الاجتماعية'}</span>
                 <span className="text-sm font-black text-red-500">-{totals.aeCharges.toFixed(0)} €</span>
               </div>
               <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
@@ -453,7 +453,7 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
             {/* SARL */}
             <div className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 rounded-xl p-3 space-y-1.5">
               <p className={cn("text-xs font-black text-violet-700 dark:text-violet-300", isRTL && "text-right")}>
-                {isFr ? 'SARL/EURL (~45% charges sur bénéfice)' : 'SARL/EURL — 45% على الربح'}
+                {isFr ? 'SARL/EURL (~45% charges sur bénéfice)' : 'ساغل (SARL/EURL) — أعباء 45% على الربح'}
               </p>
               <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
                 <span className="text-xs text-muted-foreground">{isFr ? 'Charges sociales' : 'شارج (Charges)'}</span>
@@ -492,12 +492,12 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
             <span className="text-3xl">🧔</span>
             <div className={isRTL ? "text-right" : ""}>
               <p className="font-black text-lg text-purple-700 dark:text-purple-400">
-                {isFr ? '💡 Conseil du Grand Frère' : '💡 نصيحة الخو الكبير'}
+                {isFr ? '💡 Conseil du Grand Frère' : '💡 نصيحة الأخ الكبير'}
               </p>
               <p className="text-sm font-bold text-purple-600 dark:text-purple-300 mt-1">
                 {isFr
                   ? `Attention Ya Batal, ${totals.dailyProfit.toFixed(0)}€/jour c'est trop bas ! Augmente ton prix ou choisis les options premium.`
-                  : `انتبه يا بطل، ${totals.dailyProfit.toFixed(0)}€ في اليوم قليلة بزاف! زيد في السعر ولا اختار الخيارات الممتازة.`
+                  : `خد بالك يا بطل، ${totals.dailyProfit.toFixed(0)}€ في اليوم قليلة أوي! زوّد السعر أو اختار الخيارات الممتازة.`
                 }
               </p>
             </div>
@@ -510,7 +510,7 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
             <CheckCircle2 className="h-5 w-5 text-green-600" />
             <p className="font-black text-green-700 dark:text-green-400">
-              {isFr ? 'Chantier rentable ! Bon courage Chef !' : 'الخدمة مربحة! بالتوفيق يا شاف!'}
+              {isFr ? 'Chantier rentable ! Bon courage Chef !' : 'المشروع مربح! بالتوفيق يا معلم! 💪'}
             </p>
           </div>
         </div>
@@ -526,26 +526,26 @@ const MaterialProviderCard = ({ data, isFr, isRTL }: { data: MaterialProvider; i
     <CardHeader className="pb-2">
       <CardTitle className={cn("text-sm font-black flex items-center gap-2", isRTL && "flex-row-reverse")}>
         <Package className="h-5 w-5 text-teal-500" />
-        {isFr ? 'Matériel à Fournir — Qui fournit quoi ?' : 'المواد المطلوبة — شكون يجيب واش؟'}
+        {isFr ? 'Matériel à Fournir — Qui fournit quoi ?' : 'المواد المطلوبة — مين بيجيب إيه؟'}
       </CardTitle>
     </CardHeader>
     <CardContent className="space-y-3 pt-0">
       <ProviderList
-        title={isFr ? '🏠 Le client fournit' : '🏠 الزبون يجيب'}
+        title={isFr ? '🏠 Le client fournit' : '🏠 الزبون بيجيب'}
         items={isFr ? data.client_provides_fr : data.client_provides_ar}
         isRTL={isRTL}
         colorClass="text-blue-700 dark:text-blue-300"
         bgClass="bg-blue-50 dark:bg-blue-900/30"
       />
       <ProviderList
-        title={isFr ? '🔧 L\'entrepreneur fournit' : '🔧 المقاول يجيب'}
+        title={isFr ? '🔧 L\'entrepreneur fournit' : '🔧 المقاول بيجيب'}
         items={isFr ? data.contractor_provides_fr : data.contractor_provides_ar}
         isRTL={isRTL}
         colorClass="text-amber-700 dark:text-amber-300"
         bgClass="bg-amber-50 dark:bg-amber-900/30"
       />
       <ProviderList
-        title={isFr ? '🛠️ Outillage nécessaire' : '🛠️ الأدوات اللازمة'}
+        title={isFr ? '🛠️ Outillage nécessaire' : '🛠️ العدد والأدوات'}
         items={isFr ? data.tools_needed_fr : data.tools_needed_ar}
         isRTL={isRTL}
         colorClass="text-gray-700 dark:text-gray-300"

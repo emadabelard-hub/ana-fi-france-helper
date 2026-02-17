@@ -19,10 +19,10 @@ const PeintureHeader: React.FC<PeintureHeaderProps> = ({ isFr, isRTL }) => {
       <HardHat size={28} />
       <div>
         <h1 className="text-xl font-black">
-          {isFr ? 'Expert Travaux & Devis' : 'مساعد المقاولات والتكاليف'}
+          {isFr ? 'Planificateur Technique' : 'مخطط فني للمشروع'}
         </h1>
         <p className="text-xs opacity-80 font-bold">
-          {isFr ? 'Analyse IA complète de votre chantier' : 'تحليل ذكي شامل للشانتييه ديالك'}
+          {isFr ? 'Estimation technique IA de votre chantier' : 'تقدير فني ذكي للشانتييه بتاعك'}
         </p>
       </div>
     </div>

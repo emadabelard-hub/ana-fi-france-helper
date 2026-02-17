@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, TrendingUp, Users, BadgeEuro, Info } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, TrendingUp, Users, Info, MapPin, CalendarDays, Minus, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -32,10 +32,43 @@ interface Category {
   items: LineItem[];
 }
 
-interface Labor {
-  workers_needed: number;
-  days_needed: number;
+interface WorkerDetail {
+  role_fr: string;
+  role_ar: string;
+  count: number;
   daily_rate: number;
+}
+
+interface PhaseWorker {
+  role_fr: string;
+  role_ar: string;
+  count: number;
+}
+
+interface Phase {
+  phase_number: number;
+  name_fr: string;
+  name_ar: string;
+  duration_days: number;
+  description_fr: string;
+  description_ar: string;
+  workers: PhaseWorker[];
+}
+
+interface LocationImpact {
+  zone: string;
+  cost_multiplier: number;
+  explanation_fr: string;
+  explanation_ar: string;
+}
+
+interface Labor {
+  workers?: WorkerDetail[];
+  total_workers?: number;
+  workers_needed?: number;
+  days_needed: number;
+  daily_rate?: number;
+  daily_rate_total?: number;
   total: number;
 }
 
@@ -46,6 +79,8 @@ interface Risk {
 
 export interface AnalysisData {
   summary: { fr: string; ar: string };
+  location_impact?: LocationImpact;
+  phases?: Phase[];
   categories: Category[];
   labor: Labor;
   financial: {
@@ -69,7 +104,6 @@ interface InteractivePricingProps {
 }
 
 const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isRTL }) => {
-  // Track selections and premium upgrades
   const [selections, setSelections] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
     data.categories.forEach(cat => cat.items.forEach(item => { init[item.id] = item.selected; }));
@@ -77,20 +111,30 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
   });
   const [premiumChoices, setPremiumChoices] = useState<Record<string, boolean>>({});
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [expandedPhases, setExpandedPhases] = useState<Record<number, boolean>>({});
 
-  const toggleSelection = (id: string, isCritical: boolean) => {
+  // Interactive labor adjustments
+  const [workerAdjustments, setWorkerAdjustments] = useState<Record<number, number>>(() => {
+    const init: Record<number, number> = {};
+    (data.labor.workers || []).forEach((w, i) => { init[i] = w.count; });
+    return init;
+  });
+  const [daysOverride, setDaysOverride] = useState(data.labor.days_needed);
+
+  const toggleSelection = (id: string) => {
     setSelections(prev => ({ ...prev, [id]: !prev[id] }));
   };
-
   const togglePremium = (id: string) => {
     setPremiumChoices(prev => ({ ...prev, [id]: !prev[id] }));
   };
-
   const toggleExpand = (id: string) => {
     setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Recalculate totals
+  const adjustWorker = (idx: number, delta: number) => {
+    setWorkerAdjustments(prev => ({ ...prev, [idx]: Math.max(0, (prev[idx] ?? 0) + delta) }));
+  };
+
   const totals = useMemo(() => {
     let materialTotal = 0;
     const deselectedCritical: Risk[] = [];
@@ -109,16 +153,26 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
       });
     });
 
-    const laborTotal = data.labor.total;
+    // Calculate labor from worker adjustments
+    let laborTotal = 0;
+    if (data.labor.workers && data.labor.workers.length > 0) {
+      data.labor.workers.forEach((w, i) => {
+        const count = workerAdjustments[i] ?? w.count;
+        laborTotal += count * w.daily_rate * daysOverride;
+      });
+    } else {
+      laborTotal = (data.labor.daily_rate || data.labor.daily_rate_total || 0) * daysOverride;
+    }
+
     const subtotal = materialTotal + laborTotal;
     const marginAmount = subtotal * (data.financial.margin_pct / 100);
     const totalHT = subtotal + marginAmount;
     const tvaAmount = totalHT * (data.financial.tva_rate / 100);
     const totalTTC = totalHT + tvaAmount;
-    const dailyProfit = data.labor.days_needed > 0 ? (totalHT - materialTotal) / data.labor.days_needed : 0;
+    const dailyProfit = daysOverride > 0 ? (totalHT - materialTotal) / daysOverride : 0;
 
     return { materialTotal, laborTotal, marginAmount, totalHT, tvaAmount, totalTTC, dailyProfit, deselectedCritical };
-  }, [selections, premiumChoices, data]);
+  }, [selections, premiumChoices, data, workerAdjustments, daysOverride]);
 
   const isDailyProfitLow = totals.dailyProfit < 200;
 
@@ -131,7 +185,76 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
         </p>
       </div>
 
-      {/* Step 1: Detailed Breakdown by Category */}
+      {/* Location Impact */}
+      {data.location_impact && (
+        <Card className="border-emerald-200 dark:border-emerald-800">
+          <CardContent className="p-4">
+            <div className={cn("flex items-center gap-2 mb-2", isRTL && "flex-row-reverse")}>
+              <MapPin className="h-5 w-5 text-emerald-500" />
+              <h3 className="text-sm font-black text-foreground">
+                {isFr ? `Impact localisation : ${data.location_impact.zone}` : `تأثير المكان: ${data.location_impact.zone}`}
+              </h3>
+              <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-full">
+                ×{data.location_impact.cost_multiplier}
+              </span>
+            </div>
+            <p className={cn("text-xs font-bold text-muted-foreground leading-relaxed", isRTL && "text-right")}>
+              {isFr ? data.location_impact.explanation_fr : data.location_impact.explanation_ar}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Phases */}
+      {data.phases && data.phases.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className={cn("text-sm font-black flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <CalendarDays className="h-5 w-5 text-primary" />
+              {isFr ? 'Phases du Chantier' : 'مراحل الشونتيي (Chantier)'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-0">
+            {data.phases.map((phase) => (
+              <div key={phase.phase_number} className="rounded-xl border p-3">
+                <button
+                  onClick={() => setExpandedPhases(prev => ({ ...prev, [phase.phase_number]: !prev[phase.phase_number] }))}
+                  className={cn("flex items-center justify-between w-full gap-2", isRTL && "flex-row-reverse")}
+                >
+                  <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                    <span className="text-xs font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                      {isFr ? `Phase ${phase.phase_number}` : `المرحلة ${phase.phase_number}`}
+                    </span>
+                    <span className="text-sm font-bold">{isFr ? phase.name_fr : phase.name_ar}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-muted-foreground">
+                      {phase.duration_days} {isFr ? 'j' : 'يوم'}
+                    </span>
+                    {expandedPhases[phase.phase_number] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </div>
+                </button>
+                {expandedPhases[phase.phase_number] && (
+                  <div className="mt-2 space-y-2">
+                    <p className={cn("text-xs text-muted-foreground leading-relaxed", isRTL && "text-right")}>
+                      {isFr ? phase.description_fr : phase.description_ar}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {phase.workers.map((w, wi) => (
+                        <span key={wi} className="text-xs font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-lg">
+                          {w.count}× {isFr ? w.role_fr : w.role_ar}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Categories */}
       {data.categories.map((cat, ci) => (
         <Card key={ci}>
           <CardHeader className="pb-2">
@@ -153,44 +276,27 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
                   item.is_critical && !isSelected && "border-red-300 dark:border-red-700 opacity-100"
                 )}>
                   <div className={cn("flex items-start gap-3", isRTL && "flex-row-reverse")}>
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => toggleSelection(item.id, item.is_critical)}
-                      className="mt-1"
-                    />
+                    <Checkbox checked={isSelected} onCheckedChange={() => toggleSelection(item.id)} className="mt-1" />
                     <div className="flex-1 min-w-0">
                       <div className={cn("flex items-center justify-between gap-2", isRTL && "flex-row-reverse")}>
                         <p className={cn("text-sm font-bold text-foreground", !isSelected && "line-through")}>
                           {isFr ? item.name_fr : item.name_ar}
                           {item.is_critical && <span className="text-red-500 ml-1">*</span>}
                         </p>
-                        <span className="text-sm font-black text-primary whitespace-nowrap">
-                          {currentPrice.toFixed(0)} €
-                        </span>
+                        <span className="text-sm font-black text-primary whitespace-nowrap">{currentPrice.toFixed(0)} €</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">{item.quantity}</p>
 
-                      {/* Premium toggle */}
                       {item.premium_option && isSelected && (
-                        <button
-                          onClick={() => togglePremium(item.id)}
-                          className={cn(
-                            "mt-1.5 text-xs font-bold px-2 py-1 rounded-md transition-colors",
-                            isPremium
-                              ? "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300"
-                              : "bg-muted text-muted-foreground hover:bg-muted/80"
-                          )}
-                        >
-                          {isPremium ? '⭐' : '↑'} {isFr ? item.premium_option.name_fr : item.premium_option.name_ar}
-                          {' '}({item.premium_option.total_price.toFixed(0)} €)
+                        <button onClick={() => togglePremium(item.id)} className={cn(
+                          "mt-1.5 text-xs font-bold px-2 py-1 rounded-md transition-colors",
+                          isPremium ? "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        )}>
+                          {isPremium ? '⭐' : '↑'} {isFr ? item.premium_option.name_fr : item.premium_option.name_ar} ({item.premium_option.total_price.toFixed(0)} €)
                         </button>
                       )}
 
-                      {/* Why important - expandable */}
-                      <button
-                        onClick={() => toggleExpand(item.id)}
-                        className={cn("flex items-center gap-1 mt-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors", isRTL && "flex-row-reverse")}
-                      >
+                      <button onClick={() => toggleExpand(item.id)} className={cn("flex items-center gap-1 mt-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors", isRTL && "flex-row-reverse")}>
                         <Info className="h-3 w-3" />
                         {isFr ? 'Pourquoi ?' : 'لماذا؟'}
                         {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -202,8 +308,6 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
                       )}
                     </div>
                   </div>
-
-                  {/* Critical warning when deselected */}
                   {item.is_critical && !isSelected && (
                     <div className={cn("flex items-center gap-2 mt-2 text-xs font-bold text-red-600 dark:text-red-400", isRTL && "flex-row-reverse")}>
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
@@ -217,22 +321,64 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
         </Card>
       ))}
 
-      {/* Step 2: Labor */}
+      {/* Labor — Interactive */}
       <Card className="border-blue-200 dark:border-blue-800">
-        <CardContent className="p-4">
-          <div className={cn("flex items-center gap-2 mb-3", isRTL && "flex-row-reverse")}>
+        <CardContent className="p-4 space-y-3">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
             <Users className="h-5 w-5 text-blue-500" />
-            <h3 className="text-sm font-black text-foreground">{isFr ? "Main d'œuvre" : 'اليد العاملة'}</h3>
+            <h3 className="text-sm font-black text-foreground">{isFr ? "Main d'œuvre (ajustable)" : 'اليد العاملة (قابل للتعديل)'}</h3>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <MiniStat label={isFr ? 'Ouvriers' : 'عمال'} value={data.labor.workers_needed} />
-            <MiniStat label={isFr ? 'Jours' : 'أيام'} value={data.labor.days_needed} />
-            <MiniStat label="Total" value={`${data.labor.total}€`} />
+
+          {/* Workers detail */}
+          {data.labor.workers && data.labor.workers.length > 0 ? (
+            <div className="space-y-2">
+              {data.labor.workers.map((w, i) => (
+                <div key={i} className={cn("flex items-center justify-between bg-muted/50 rounded-lg p-2.5", isRTL && "flex-row-reverse")}>
+                  <div>
+                    <p className="text-sm font-bold">{isFr ? w.role_fr : w.role_ar}</p>
+                    <p className="text-[10px] text-muted-foreground">{w.daily_rate}€/{isFr ? 'jour' : 'يوم'}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => adjustWorker(i, -1)} className="h-7 w-7 rounded-full bg-background border flex items-center justify-center hover:bg-muted transition-colors">
+                      <Minus className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="text-lg font-black w-6 text-center">{workerAdjustments[i] ?? w.count}</span>
+                    <button onClick={() => adjustWorker(i, 1)} className="h-7 w-7 rounded-full bg-background border flex items-center justify-center hover:bg-muted transition-colors">
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <MiniStat label={isFr ? 'Ouvriers' : 'عمال'} value={data.labor.total_workers || data.labor.workers_needed || 0} />
+          )}
+
+          {/* Days adjustment */}
+          <div className={cn("flex items-center justify-between bg-muted/50 rounded-lg p-2.5", isRTL && "flex-row-reverse")}>
+            <div>
+              <p className="text-sm font-bold">{isFr ? 'Durée du chantier' : 'مدة الشونتيي (Chantier)'}</p>
+              <p className="text-[10px] text-muted-foreground">{isFr ? 'jours' : 'أيام'}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setDaysOverride(d => Math.max(1, d - 1))} className="h-7 w-7 rounded-full bg-background border flex items-center justify-center hover:bg-muted transition-colors">
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="text-lg font-black w-8 text-center">{daysOverride}</span>
+              <button onClick={() => setDaysOverride(d => d + 1)} className="h-7 w-7 rounded-full bg-background border flex items-center justify-center hover:bg-muted transition-colors">
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-2.5 text-center">
+            <p className="text-lg font-black text-blue-600 dark:text-blue-400">{totals.laborTotal.toFixed(0)} €</p>
+            <p className="text-[10px] font-bold text-muted-foreground">{isFr ? "Total main d'œuvre" : 'مجموع اليد العاملة'}</p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Step 3: Financial Summary */}
+      {/* Financial Summary */}
       <div className="relative rounded-2xl border border-white/20 p-5 space-y-4 overflow-hidden"
         style={{
           background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(249,115,22,0.12) 100%)',
@@ -240,24 +386,17 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
           boxShadow: '0 8px 32px rgba(245,158,11,0.15), inset 0 1px 0 rgba(255,255,255,0.1)',
         }}>
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
-
         <h3 className={cn("text-lg font-black flex items-center gap-2 text-amber-600 dark:text-amber-400", isRTL && "flex-row-reverse")}>
           <TrendingUp className="h-5 w-5" />
           {isFr ? 'Synthèse Financière' : 'الملخص المالي'}
         </h3>
-
         <div className="grid grid-cols-2 gap-3">
           <StatBox label={isFr ? 'Matériaux' : 'المواد'} value={`${totals.materialTotal.toFixed(0)} €`} color="text-foreground" />
           <StatBox label={isFr ? "Main d'œuvre" : 'اليد العاملة'} value={`${totals.laborTotal.toFixed(0)} €`} color="text-blue-500" />
           <StatBox label={isFr ? `Marge (${data.financial.margin_pct}%)` : `هامش (${data.financial.margin_pct}%)`} value={`${totals.marginAmount.toFixed(0)} €`} color="text-amber-500" />
           <StatBox label={isFr ? `TVA (${data.financial.tva_rate}%)` : `ضريبة (${data.financial.tva_rate}%)`} value={`${totals.tvaAmount.toFixed(0)} €`} color="text-orange-500" />
           <StatBox label={isFr ? 'Total TTC' : 'المجموع الكلي'} value={`${totals.totalTTC.toFixed(0)} €`} color="text-amber-600 dark:text-amber-400" large />
-          <StatBox
-            label={isFr ? 'Profit / Jour' : 'الربح / يوم'}
-            value={`${totals.dailyProfit.toFixed(0)} €`}
-            color={isDailyProfitLow ? "text-red-500" : "text-green-600"}
-            large
-          />
+          <StatBox label={isFr ? 'Profit / Jour' : 'الربح / يوم'} value={`${totals.dailyProfit.toFixed(0)} €`} color={isDailyProfitLow ? "text-red-500" : "text-green-600"} large />
         </div>
       </div>
 

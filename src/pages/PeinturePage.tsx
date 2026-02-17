@@ -12,17 +12,19 @@ const PeinturePage = () => {
   const isFr = language === 'fr';
 
   const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const [estimatedDuration, setEstimatedDuration] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
 
   const handleAnalyze = async () => {
-    if (!description.trim()) return;
+    if (!description.trim() || !location.trim()) return;
     setIsLoading(true);
     setAnalysisData(null);
 
     try {
       const { data, error } = await supabase.functions.invoke('contracting-assistant', {
-        body: { description: description.trim() },
+        body: { description: description.trim(), location: location.trim(), estimatedDuration: estimatedDuration.trim() },
       });
 
       if (error) throw error;
@@ -47,6 +49,10 @@ const PeinturePage = () => {
           isRTL={isRTL}
           description={description}
           setDescription={setDescription}
+          location={location}
+          setLocation={setLocation}
+          estimatedDuration={estimatedDuration}
+          setEstimatedDuration={setEstimatedDuration}
           onAnalyze={handleAnalyze}
           isLoading={isLoading}
         />

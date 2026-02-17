@@ -43,7 +43,17 @@ const PeinturePage = () => {
       setAnalysisData(data as AnalysisData);
     } catch (e: any) {
       console.error('Analysis error:', e);
-      toast.error(isFr ? 'Erreur lors de l\'analyse. Réessayez.' : 'حصل خطأ في التحليل. جرب تاني.');
+      const errorBody = e?.context?.body;
+      let errorMsg = isFr 
+        ? 'Erreur lors de l\'analyse. Réessayez.' 
+        : 'معلش، فيه ضغط على النظام، جرب تبعت الوصف تاني بشوية تفاصيل أقل أو استنى ثواني';
+      if (errorBody) {
+        try {
+          const parsed = typeof errorBody === 'string' ? JSON.parse(errorBody) : errorBody;
+          if (parsed?.error) errorMsg = parsed.error;
+        } catch { /* use default */ }
+      }
+      toast.error(errorMsg, { duration: 6000 });
     } finally {
       setIsLoading(false);
     }

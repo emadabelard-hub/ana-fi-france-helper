@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, TrendingUp, Users, Info, MapPin, CalendarDays, Minus, Plus, Package, Wallet } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, TrendingUp, Users, Info, MapPin, CalendarDays, Minus, Plus, Package, Wallet, ShieldAlert } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -77,6 +77,14 @@ interface Risk {
   ar: string;
 }
 
+interface SafetyAlert {
+  title_fr: string;
+  title_ar: string;
+  description_fr: string;
+  description_ar: string;
+  severity: string;
+}
+
 interface SocialChargeEntry {
   rate_pct: number;
   amount: number;
@@ -116,6 +124,7 @@ export interface AnalysisData {
     auto_entrepreneur: SocialChargeEntry;
     sarl: SocialChargeEntry;
   };
+  safety_alerts?: SafetyAlert[];
   risks: Risk[];
 }
 
@@ -124,6 +133,9 @@ interface InteractivePricingProps {
   isFr: boolean;
   isRTL: boolean;
 }
+
+// Strip markdown symbols from AI text
+const stripMd = (text: string): string => text.replace(/\*{1,2}/g, '').replace(/_{1,2}/g, '').trim();
 
 const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isRTL }) => {
   const [selections, setSelections] = useState<Record<string, boolean>>(() => {
@@ -203,7 +215,7 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
       {/* Summary */}
       <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-2xl p-4 border border-amber-200 dark:border-amber-800">
         <p className={cn("text-sm font-bold text-foreground leading-relaxed", isRTL && "text-right")}>
-          {isFr ? data.summary.fr : data.summary.ar}
+          {stripMd(isFr ? data.summary.fr : data.summary.ar)}
         </p>
       </div>
 
@@ -467,6 +479,35 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
           </div>
         </CardContent>
       </Card>
+
+      {/* Safety Alerts */}
+      {data.safety_alerts && data.safety_alerts.length > 0 && (
+        <Card className="border-orange-300 dark:border-orange-700 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30">
+          <CardContent className="p-4 space-y-3">
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <ShieldAlert className="h-5 w-5 text-orange-600" />
+              <h3 className="text-sm font-black text-orange-700 dark:text-orange-400">
+                {isFr ? '🛡️ Alertes Sécurité' : '🛡️ تنبيهات الأمان'}
+              </h3>
+            </div>
+            {data.safety_alerts.map((alert, i) => (
+              <div key={i} className={cn(
+                "rounded-xl p-3 border",
+                alert.severity === 'high'
+                  ? "border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-950/30"
+                  : "border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20"
+              )}>
+                <p className={cn("text-sm font-black text-foreground", isRTL && "text-right")}>
+                  {alert.severity === 'high' ? '🔴' : '🟡'} {stripMd(isFr ? alert.title_fr : alert.title_ar)}
+                </p>
+                <p className={cn("text-xs font-bold text-muted-foreground mt-1 leading-relaxed", isRTL && "text-right")}>
+                  {stripMd(isFr ? alert.description_fr : alert.description_ar)}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Risk Alerts */}
       {totals.deselectedCritical.length > 0 && (

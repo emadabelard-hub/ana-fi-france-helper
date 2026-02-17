@@ -226,18 +226,23 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
     const totalHT = subtotal + marginAmount;
     const tvaAmount = totalHT * (data.financial.tva_rate / 100);
     const totalTTC = totalHT + tvaAmount;
-    const dailyProfit = daysOverride > 0 ? (totalHT - materialTotal) / daysOverride : 0;
+    // Gross margin = what you keep after paying materials + labor
+    const grossMargin = totalHT - materialTotal - laborTotal;
 
-    // Social charges calculations
-    const aeRate = data.social_charges?.auto_entrepreneur?.rate_pct ?? 23.1;
+    // Social charges — both calculated on gross margin only
+    const aeRate = data.social_charges?.auto_entrepreneur?.rate_pct ?? 22;
     const sarlRate = data.social_charges?.sarl?.rate_pct ?? 45;
-    const aeCharges = totalHT * (aeRate / 100);
-    const aeNet = totalHT - aeCharges - materialTotal;
-    const profit = totalHT - materialTotal - laborTotal;
-    const sarlCharges = profit * (sarlRate / 100);
-    const sarlNet = profit - sarlCharges;
+    const aeCharges = grossMargin * (aeRate / 100);
+    const aeNet = grossMargin - aeCharges;
+    const sarlCharges = grossMargin * (sarlRate / 100);
+    const sarlNet = grossMargin - sarlCharges;
 
-    return { materialTotal, laborTotal, marginAmount, totalHT, tvaAmount, totalTTC, dailyProfit, deselectedCritical, aeCharges, aeNet, sarlCharges, sarlNet };
+    // Daily net profit (gross margin / days)
+    const dailyProfit = daysOverride > 0 ? grossMargin / daysOverride : 0;
+    const aeDailyProfit = daysOverride > 0 ? aeNet / daysOverride : 0;
+    const sarlDailyProfit = daysOverride > 0 ? sarlNet / daysOverride : 0;
+
+    return { materialTotal, laborTotal, marginAmount, totalHT, tvaAmount, totalTTC, dailyProfit, deselectedCritical, aeCharges, aeNet, sarlCharges, sarlNet, grossMargin, aeDailyProfit, sarlDailyProfit };
   }, [selections, premiumChoices, data, workerAdjustments, daysOverride]);
 
   const isDailyProfitLow = totals.dailyProfit < 200;
@@ -464,7 +469,7 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
           <StatBox label={isFr ? `Marge (${data.financial.margin_pct}%)` : `هامش (${data.financial.margin_pct}%)`} value={`${totals.marginAmount.toFixed(0)} €`} color="text-amber-500" />
           <StatBox label={isFr ? `TVA (${data.financial.tva_rate}%)` : `ضريبة (${data.financial.tva_rate}%)`} value={`${totals.tvaAmount.toFixed(0)} €`} color="text-orange-500" />
           <StatBox label={isFr ? 'Total TTC' : 'المجموع الكلي'} value={`${totals.totalTTC.toFixed(0)} €`} color="text-amber-600 dark:text-amber-400" large />
-          <StatBox label={isFr ? 'Profit / Jour' : 'الربح / يوم'} value={`${totals.dailyProfit.toFixed(0)} €`} color={isDailyProfitLow ? "text-red-500" : "text-green-600"} large />
+          <StatBox label={isFr ? 'Marge brute' : 'هامش الربح'} value={`${totals.grossMargin.toFixed(0)} €`} color="text-emerald-600" large />
         </div>
       </div>
 
@@ -492,6 +497,10 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
                 <span className="text-xs font-bold text-foreground">{isFr ? 'Revenu net' : 'الدخل الصافي'}</span>
                 <span className={cn("text-lg font-black", totals.aeNet > 0 ? "text-green-600" : "text-red-500")}>{totals.aeNet.toFixed(0)} €</span>
               </div>
+              <div className={cn("flex items-center justify-between border-t border-indigo-200 dark:border-indigo-700 pt-1.5 mt-1", isRTL && "flex-row-reverse")}>
+                <span className="text-xs font-bold text-foreground">{isFr ? 'Profit net / jour' : 'صافي ربحك اليومي'}</span>
+                <span className={cn("text-sm font-black", totals.aeDailyProfit > 0 ? "text-green-600" : "text-red-500")}>{totals.aeDailyProfit.toFixed(0)} €/{isFr ? 'j' : 'يوم'}</span>
+              </div>
             </div>
 
             {/* SARL */}
@@ -506,6 +515,10 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
               <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
                 <span className="text-xs font-bold text-foreground">{isFr ? 'Revenu net' : 'الدخل الصافي'}</span>
                 <span className={cn("text-lg font-black", totals.sarlNet > 0 ? "text-green-600" : "text-red-500")}>{totals.sarlNet.toFixed(0)} €</span>
+              </div>
+              <div className={cn("flex items-center justify-between border-t border-violet-200 dark:border-violet-700 pt-1.5 mt-1", isRTL && "flex-row-reverse")}>
+                <span className="text-xs font-bold text-foreground">{isFr ? 'Profit net / jour' : 'صافي ربحك اليومي'}</span>
+                <span className={cn("text-sm font-black", totals.sarlDailyProfit > 0 ? "text-green-600" : "text-red-500")}>{totals.sarlDailyProfit.toFixed(0)} €/{isFr ? 'j' : 'يوم'}</span>
               </div>
             </div>
           </div>

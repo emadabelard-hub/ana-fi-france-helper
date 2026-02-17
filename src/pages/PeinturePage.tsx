@@ -15,8 +15,6 @@ const PeinturePage = () => {
   const [location, setLocation] = useState('');
   const [estimatedDuration, setEstimatedDuration] = useState('');
   const [materialBuyer, setMaterialBuyer] = useState('contractor');
-  const [propertyAge, setPropertyAge] = useState('old');
-  const [taxStatus, setTaxStatus] = useState('ae');
   const [isLoading, setIsLoading] = useState(false);
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
 
@@ -32,8 +30,6 @@ const PeinturePage = () => {
           location: location.trim(), 
           estimatedDuration: estimatedDuration.trim(),
           materialBuyer,
-          propertyAge,
-          taxStatus,
         },
       });
 
@@ -76,10 +72,6 @@ const PeinturePage = () => {
           setEstimatedDuration={setEstimatedDuration}
           materialBuyer={materialBuyer}
           setMaterialBuyer={setMaterialBuyer}
-          propertyAge={propertyAge}
-          setPropertyAge={setPropertyAge}
-          taxStatus={taxStatus}
-          setTaxStatus={setTaxStatus}
           onAnalyze={handleAnalyze}
           isLoading={isLoading}
         />

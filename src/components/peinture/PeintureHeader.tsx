@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Paintbrush } from 'lucide-react';
+import { ArrowLeft, HardHat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PeintureHeaderProps {
@@ -16,13 +16,13 @@ const PeintureHeader: React.FC<PeintureHeaderProps> = ({ isFr, isRTL }) => {
       <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-white/20">
         <ArrowLeft size={24} className={isRTL ? 'rotate-180' : ''} />
       </button>
-      <Paintbrush size={28} />
+      <HardHat size={28} />
       <div>
         <h1 className="text-xl font-black">
-          {isFr ? 'Module Peinture (Bantera)' : 'قسم البانتيرة'}
+          {isFr ? 'Expert Travaux & Devis' : 'مساعد المقاولات والتكاليف'}
         </h1>
         <p className="text-xs opacity-80 font-bold">
-          {isFr ? 'Audit financier & technique complet' : 'تدقيق مالي وتقني شامل'}
+          {isFr ? 'Analyse IA complète de votre chantier' : 'تحليل ذكي شامل للشانتييه ديالك'}
         </p>
       </div>
     </div>

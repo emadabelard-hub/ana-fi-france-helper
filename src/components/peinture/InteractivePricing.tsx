@@ -1,0 +1,329 @@
+import React, { useState, useMemo } from 'react';
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, TrendingUp, Users, BadgeEuro, Info } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
+
+interface PremiumOption {
+  name_fr: string;
+  name_ar: string;
+  unit_price: number;
+  total_price: number;
+}
+
+interface LineItem {
+  id: string;
+  name_fr: string;
+  name_ar: string;
+  quantity: string;
+  unit_price: number;
+  total_price: number;
+  tier: string;
+  premium_option?: PremiumOption | null;
+  why_important_fr: string;
+  why_important_ar: string;
+  is_critical: boolean;
+  selected: boolean;
+}
+
+interface Category {
+  name_fr: string;
+  name_ar: string;
+  items: LineItem[];
+}
+
+interface Labor {
+  workers_needed: number;
+  days_needed: number;
+  daily_rate: number;
+  total: number;
+}
+
+interface Risk {
+  fr: string;
+  ar: string;
+}
+
+export interface AnalysisData {
+  summary: { fr: string; ar: string };
+  categories: Category[];
+  labor: Labor;
+  financial: {
+    subtotal_materials: number;
+    subtotal_labor: number;
+    margin_pct: number;
+    margin_amount: number;
+    total_ht: number;
+    tva_rate: number;
+    tva_amount: number;
+    total_ttc: number;
+    daily_profit: number;
+  };
+  risks: Risk[];
+}
+
+interface InteractivePricingProps {
+  data: AnalysisData;
+  isFr: boolean;
+  isRTL: boolean;
+}
+
+const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isRTL }) => {
+  // Track selections and premium upgrades
+  const [selections, setSelections] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    data.categories.forEach(cat => cat.items.forEach(item => { init[item.id] = item.selected; }));
+    return init;
+  });
+  const [premiumChoices, setPremiumChoices] = useState<Record<string, boolean>>({});
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+
+  const toggleSelection = (id: string, isCritical: boolean) => {
+    setSelections(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const togglePremium = (id: string) => {
+    setPremiumChoices(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Recalculate totals
+  const totals = useMemo(() => {
+    let materialTotal = 0;
+    const deselectedCritical: Risk[] = [];
+
+    data.categories.forEach(cat => {
+      cat.items.forEach(item => {
+        if (selections[item.id]) {
+          const isPremium = premiumChoices[item.id] && item.premium_option;
+          materialTotal += isPremium ? item.premium_option!.total_price : item.total_price;
+        } else if (item.is_critical) {
+          deselectedCritical.push({
+            fr: `⚠️ ${item.name_fr} retiré : ${item.why_important_fr}`,
+            ar: `⚠️ ${item.name_ar} تم حذفه: ${item.why_important_ar}`,
+          });
+        }
+      });
+    });
+
+    const laborTotal = data.labor.total;
+    const subtotal = materialTotal + laborTotal;
+    const marginAmount = subtotal * (data.financial.margin_pct / 100);
+    const totalHT = subtotal + marginAmount;
+    const tvaAmount = totalHT * (data.financial.tva_rate / 100);
+    const totalTTC = totalHT + tvaAmount;
+    const dailyProfit = data.labor.days_needed > 0 ? (totalHT - materialTotal) / data.labor.days_needed : 0;
+
+    return { materialTotal, laborTotal, marginAmount, totalHT, tvaAmount, totalTTC, dailyProfit, deselectedCritical };
+  }, [selections, premiumChoices, data]);
+
+  const isDailyProfitLow = totals.dailyProfit < 200;
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      {/* Summary */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-2xl p-4 border border-amber-200 dark:border-amber-800">
+        <p className={cn("text-sm font-bold text-foreground leading-relaxed", isRTL && "text-right")}>
+          {isFr ? data.summary.fr : data.summary.ar}
+        </p>
+      </div>
+
+      {/* Step 1: Detailed Breakdown by Category */}
+      {data.categories.map((cat, ci) => (
+        <Card key={ci}>
+          <CardHeader className="pb-2">
+            <CardTitle className={cn("text-sm font-black flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              {isFr ? cat.name_fr : cat.name_ar}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-0">
+            {cat.items.map((item) => {
+              const isSelected = selections[item.id];
+              const isPremium = premiumChoices[item.id] && item.premium_option;
+              const isExpanded = expandedItems[item.id];
+              const currentPrice = isPremium ? item.premium_option!.total_price : item.total_price;
+
+              return (
+                <div key={item.id} className={cn(
+                  "rounded-xl border p-3 transition-all",
+                  isSelected ? "bg-background border-border" : "bg-muted/30 border-transparent opacity-60",
+                  item.is_critical && !isSelected && "border-red-300 dark:border-red-700 opacity-100"
+                )}>
+                  <div className={cn("flex items-start gap-3", isRTL && "flex-row-reverse")}>
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleSelection(item.id, item.is_critical)}
+                      className="mt-1"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className={cn("flex items-center justify-between gap-2", isRTL && "flex-row-reverse")}>
+                        <p className={cn("text-sm font-bold text-foreground", !isSelected && "line-through")}>
+                          {isFr ? item.name_fr : item.name_ar}
+                          {item.is_critical && <span className="text-red-500 ml-1">*</span>}
+                        </p>
+                        <span className="text-sm font-black text-primary whitespace-nowrap">
+                          {currentPrice.toFixed(0)} €
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">{item.quantity}</p>
+
+                      {/* Premium toggle */}
+                      {item.premium_option && isSelected && (
+                        <button
+                          onClick={() => togglePremium(item.id)}
+                          className={cn(
+                            "mt-1.5 text-xs font-bold px-2 py-1 rounded-md transition-colors",
+                            isPremium
+                              ? "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300"
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          )}
+                        >
+                          {isPremium ? '⭐' : '↑'} {isFr ? item.premium_option.name_fr : item.premium_option.name_ar}
+                          {' '}({item.premium_option.total_price.toFixed(0)} €)
+                        </button>
+                      )}
+
+                      {/* Why important - expandable */}
+                      <button
+                        onClick={() => toggleExpand(item.id)}
+                        className={cn("flex items-center gap-1 mt-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors", isRTL && "flex-row-reverse")}
+                      >
+                        <Info className="h-3 w-3" />
+                        {isFr ? 'Pourquoi ?' : 'لماذا؟'}
+                        {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      </button>
+                      {isExpanded && (
+                        <p className={cn("text-xs text-muted-foreground mt-1 p-2 bg-muted/50 rounded-lg leading-relaxed", isRTL && "text-right")}>
+                          {isFr ? item.why_important_fr : item.why_important_ar}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Critical warning when deselected */}
+                  {item.is_critical && !isSelected && (
+                    <div className={cn("flex items-center gap-2 mt-2 text-xs font-bold text-red-600 dark:text-red-400", isRTL && "flex-row-reverse")}>
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                      {isFr ? 'Élément critique retiré — risque technique !' : 'عنصر حساس محذوف — خطر تقني!'}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      ))}
+
+      {/* Step 2: Labor */}
+      <Card className="border-blue-200 dark:border-blue-800">
+        <CardContent className="p-4">
+          <div className={cn("flex items-center gap-2 mb-3", isRTL && "flex-row-reverse")}>
+            <Users className="h-5 w-5 text-blue-500" />
+            <h3 className="text-sm font-black text-foreground">{isFr ? "Main d'œuvre" : 'اليد العاملة'}</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <MiniStat label={isFr ? 'Ouvriers' : 'عمال'} value={data.labor.workers_needed} />
+            <MiniStat label={isFr ? 'Jours' : 'أيام'} value={data.labor.days_needed} />
+            <MiniStat label="Total" value={`${data.labor.total}€`} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Step 3: Financial Summary */}
+      <div className="relative rounded-2xl border border-white/20 p-5 space-y-4 overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(249,115,22,0.12) 100%)',
+          backdropFilter: 'blur(16px)',
+          boxShadow: '0 8px 32px rgba(245,158,11,0.15), inset 0 1px 0 rgba(255,255,255,0.1)',
+        }}>
+        <div className="absolute -top-20 -right-20 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+
+        <h3 className={cn("text-lg font-black flex items-center gap-2 text-amber-600 dark:text-amber-400", isRTL && "flex-row-reverse")}>
+          <TrendingUp className="h-5 w-5" />
+          {isFr ? 'Synthèse Financière' : 'الملخص المالي'}
+        </h3>
+
+        <div className="grid grid-cols-2 gap-3">
+          <StatBox label={isFr ? 'Matériaux' : 'المواد'} value={`${totals.materialTotal.toFixed(0)} €`} color="text-foreground" />
+          <StatBox label={isFr ? "Main d'œuvre" : 'اليد العاملة'} value={`${totals.laborTotal.toFixed(0)} €`} color="text-blue-500" />
+          <StatBox label={isFr ? `Marge (${data.financial.margin_pct}%)` : `هامش (${data.financial.margin_pct}%)`} value={`${totals.marginAmount.toFixed(0)} €`} color="text-amber-500" />
+          <StatBox label={isFr ? `TVA (${data.financial.tva_rate}%)` : `ضريبة (${data.financial.tva_rate}%)`} value={`${totals.tvaAmount.toFixed(0)} €`} color="text-orange-500" />
+          <StatBox label={isFr ? 'Total TTC' : 'المجموع الكلي'} value={`${totals.totalTTC.toFixed(0)} €`} color="text-amber-600 dark:text-amber-400" large />
+          <StatBox
+            label={isFr ? 'Profit / Jour' : 'الربح / يوم'}
+            value={`${totals.dailyProfit.toFixed(0)} €`}
+            color={isDailyProfitLow ? "text-red-500" : "text-green-600"}
+            large
+          />
+        </div>
+      </div>
+
+      {/* Risk Alerts */}
+      {totals.deselectedCritical.length > 0 && (
+        <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/50 dark:to-orange-950/50 border-2 border-red-300 dark:border-red-700 rounded-2xl p-4 space-y-2">
+          <div className={cn("flex items-center gap-2 mb-2", isRTL && "flex-row-reverse")}>
+            <AlertTriangle className="h-5 w-5 text-red-500" />
+            <h4 className="font-black text-red-700 dark:text-red-400">
+              {isFr ? '⚠️ Alertes de Risque' : '⚠️ تنبيهات المخاطر'}
+            </h4>
+          </div>
+          {totals.deselectedCritical.map((risk, i) => (
+            <p key={i} className={cn("text-sm font-bold text-red-600 dark:text-red-300", isRTL && "text-right")}>
+              {isFr ? risk.fr : risk.ar}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* Grand Frère Advice */}
+      {isDailyProfitLow && (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-4">
+          <div className={cn("flex items-start gap-3", isRTL && "flex-row-reverse")}>
+            <span className="text-3xl">🧔</span>
+            <div className={isRTL ? "text-right" : ""}>
+              <p className="font-black text-lg text-purple-700 dark:text-purple-400">
+                {isFr ? '💡 Conseil du Grand Frère' : '💡 نصيحة الخو الكبير'}
+              </p>
+              <p className="text-sm font-bold text-purple-600 dark:text-purple-300 mt-1">
+                {isFr
+                  ? `Attention Ya Batal, ${totals.dailyProfit.toFixed(0)}€/jour c'est trop bas ! Augmente ton prix ou choisis les options premium.`
+                  : `انتبه يا بطل، ${totals.dailyProfit.toFixed(0)}€ في اليوم قليلة بزاف! زيد في السعر ولا اختار الخيارات الممتازة.`
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isDailyProfitLow && totals.deselectedCritical.length === 0 && (
+        <div className="bg-green-50 dark:bg-green-950/50 border border-green-300 dark:border-green-700 rounded-2xl p-4">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <p className="font-black text-green-700 dark:text-green-400">
+              {isFr ? 'Chantier rentable ! Bon courage Chef !' : 'الخدمة مربحة! بالتوفيق يا شاف!'}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const StatBox = ({ label, value, color, large }: { label: string; value: string; color: string; large?: boolean }) => (
+  <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 text-center border border-white/10">
+    <p className={cn("font-black", color, large ? "text-2xl" : "text-xl")}>{value}</p>
+    <p className="text-xs font-bold text-muted-foreground mt-1">{label}</p>
+  </div>
+);
+
+const MiniStat = ({ label, value }: { label: string; value: string | number }) => (
+  <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+    <p className="text-lg font-black">{value}</p>
+    <p className="text-[10px] font-bold text-muted-foreground">{label}</p>
+  </div>
+);
+
+export default InteractivePricing;

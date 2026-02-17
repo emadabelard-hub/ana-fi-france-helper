@@ -49,6 +49,7 @@ const PeinturePage = () => {
     }
   };
 
+  // v2.1 - Egyptian Pro Edition
   return (
     <div className={cn("min-h-screen bg-background pb-24", isRTL && "font-cairo")} dir={isRTL ? 'rtl' : 'ltr'}>
       <PeintureHeader isFr={isFr} isRTL={isRTL} />

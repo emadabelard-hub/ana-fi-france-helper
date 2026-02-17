@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, TrendingUp, Users, Info, MapPin, CalendarDays, Minus, Plus } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, TrendingUp, Users, Info, MapPin, CalendarDays, Minus, Plus, Package, Wallet } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -77,10 +77,28 @@ interface Risk {
   ar: string;
 }
 
+interface SocialChargeEntry {
+  rate_pct: number;
+  amount: number;
+  net_income: number;
+  label_fr: string;
+  label_ar: string;
+}
+
+interface MaterialProvider {
+  client_provides_fr: string[];
+  client_provides_ar: string[];
+  contractor_provides_fr: string[];
+  contractor_provides_ar: string[];
+  tools_needed_fr: string[];
+  tools_needed_ar: string[];
+}
+
 export interface AnalysisData {
   summary: { fr: string; ar: string };
   location_impact?: LocationImpact;
   phases?: Phase[];
+  material_provider?: MaterialProvider;
   categories: Category[];
   labor: Labor;
   financial: {
@@ -93,6 +111,10 @@ export interface AnalysisData {
     tva_amount: number;
     total_ttc: number;
     daily_profit: number;
+  };
+  social_charges?: {
+    auto_entrepreneur: SocialChargeEntry;
+    sarl: SocialChargeEntry;
   };
   risks: Risk[];
 }
@@ -113,7 +135,6 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [expandedPhases, setExpandedPhases] = useState<Record<number, boolean>>({});
 
-  // Interactive labor adjustments
   const [workerAdjustments, setWorkerAdjustments] = useState<Record<number, number>>(() => {
     const init: Record<number, number> = {};
     (data.labor.workers || []).forEach((w, i) => { init[i] = w.count; });
@@ -121,16 +142,9 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
   });
   const [daysOverride, setDaysOverride] = useState(data.labor.days_needed);
 
-  const toggleSelection = (id: string) => {
-    setSelections(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-  const togglePremium = (id: string) => {
-    setPremiumChoices(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-  const toggleExpand = (id: string) => {
-    setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
+  const toggleSelection = (id: string) => setSelections(prev => ({ ...prev, [id]: !prev[id] }));
+  const togglePremium = (id: string) => setPremiumChoices(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleExpand = (id: string) => setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
   const adjustWorker = (idx: number, delta: number) => {
     setWorkerAdjustments(prev => ({ ...prev, [idx]: Math.max(0, (prev[idx] ?? 0) + delta) }));
   };
@@ -153,7 +167,6 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
       });
     });
 
-    // Calculate labor from worker adjustments
     let laborTotal = 0;
     if (data.labor.workers && data.labor.workers.length > 0) {
       data.labor.workers.forEach((w, i) => {
@@ -171,7 +184,16 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
     const totalTTC = totalHT + tvaAmount;
     const dailyProfit = daysOverride > 0 ? (totalHT - materialTotal) / daysOverride : 0;
 
-    return { materialTotal, laborTotal, marginAmount, totalHT, tvaAmount, totalTTC, dailyProfit, deselectedCritical };
+    // Social charges calculations
+    const aeRate = data.social_charges?.auto_entrepreneur?.rate_pct ?? 23.1;
+    const sarlRate = data.social_charges?.sarl?.rate_pct ?? 45;
+    const aeCharges = totalHT * (aeRate / 100);
+    const aeNet = totalHT - aeCharges - materialTotal;
+    const profit = totalHT - materialTotal - laborTotal;
+    const sarlCharges = profit * (sarlRate / 100);
+    const sarlNet = profit - sarlCharges;
+
+    return { materialTotal, laborTotal, marginAmount, totalHT, tvaAmount, totalTTC, dailyProfit, deselectedCritical, aeCharges, aeNet, sarlCharges, sarlNet };
   }, [selections, premiumChoices, data, workerAdjustments, daysOverride]);
 
   const isDailyProfitLow = totals.dailyProfit < 200;
@@ -254,6 +276,9 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
         </Card>
       )}
 
+      {/* Material Provider */}
+      {data.material_provider && <MaterialProviderCard data={data.material_provider} isFr={isFr} isRTL={isRTL} />}
+
       {/* Categories */}
       {data.categories.map((cat, ci) => (
         <Card key={ci}>
@@ -329,7 +354,6 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
             <h3 className="text-sm font-black text-foreground">{isFr ? "Main d'œuvre (ajustable)" : 'اليد العاملة (قابل للتعديل)'}</h3>
           </div>
 
-          {/* Workers detail */}
           {data.labor.workers && data.labor.workers.length > 0 ? (
             <div className="space-y-2">
               {data.labor.workers.map((w, i) => (
@@ -400,6 +424,50 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
         </div>
       </div>
 
+      {/* Social Charges & Net Income */}
+      <Card className="border-purple-200 dark:border-purple-800">
+        <CardContent className="p-4 space-y-3">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <Wallet className="h-5 w-5 text-purple-500" />
+            <h3 className="text-sm font-black text-foreground">
+              {isFr ? 'Revenu Net Réel (après charges)' : 'الدخل الصافي الحقيقي (بعد الشارج Charges)'}
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            {/* Auto-entrepreneur */}
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 rounded-xl p-3 space-y-1.5">
+              <p className={cn("text-xs font-black text-indigo-700 dark:text-indigo-300", isRTL && "text-right")}>
+                {isFr ? 'Auto-entrepreneur (23.1% charges)' : 'أوتو أونتروبرونور (Auto-entrepreneur) — 23.1%'}
+              </p>
+              <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                <span className="text-xs text-muted-foreground">{isFr ? 'Charges sociales' : 'شارج (Charges)'}</span>
+                <span className="text-sm font-black text-red-500">-{totals.aeCharges.toFixed(0)} €</span>
+              </div>
+              <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                <span className="text-xs font-bold text-foreground">{isFr ? 'Revenu net' : 'الدخل الصافي'}</span>
+                <span className={cn("text-lg font-black", totals.aeNet > 0 ? "text-green-600" : "text-red-500")}>{totals.aeNet.toFixed(0)} €</span>
+              </div>
+            </div>
+
+            {/* SARL */}
+            <div className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 rounded-xl p-3 space-y-1.5">
+              <p className={cn("text-xs font-black text-violet-700 dark:text-violet-300", isRTL && "text-right")}>
+                {isFr ? 'SARL/EURL (~45% charges sur bénéfice)' : 'SARL/EURL — 45% على الربح'}
+              </p>
+              <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                <span className="text-xs text-muted-foreground">{isFr ? 'Charges sociales' : 'شارج (Charges)'}</span>
+                <span className="text-sm font-black text-red-500">-{totals.sarlCharges.toFixed(0)} €</span>
+              </div>
+              <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                <span className="text-xs font-bold text-foreground">{isFr ? 'Revenu net' : 'الدخل الصافي'}</span>
+                <span className={cn("text-lg font-black", totals.sarlNet > 0 ? "text-green-600" : "text-red-500")}>{totals.sarlNet.toFixed(0)} €</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Risk Alerts */}
       {totals.deselectedCritical.length > 0 && (
         <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/50 dark:to-orange-950/50 border-2 border-red-300 dark:border-red-700 rounded-2xl p-4 space-y-2">
@@ -450,6 +518,56 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
     </div>
   );
 };
+
+/* Sub-components */
+
+const MaterialProviderCard = ({ data, isFr, isRTL }: { data: MaterialProvider; isFr: boolean; isRTL: boolean }) => (
+  <Card className="border-teal-200 dark:border-teal-800">
+    <CardHeader className="pb-2">
+      <CardTitle className={cn("text-sm font-black flex items-center gap-2", isRTL && "flex-row-reverse")}>
+        <Package className="h-5 w-5 text-teal-500" />
+        {isFr ? 'Matériel à Fournir — Qui fournit quoi ?' : 'المواد المطلوبة — شكون يجيب واش؟'}
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-3 pt-0">
+      <ProviderList
+        title={isFr ? '🏠 Le client fournit' : '🏠 الزبون يجيب'}
+        items={isFr ? data.client_provides_fr : data.client_provides_ar}
+        isRTL={isRTL}
+        colorClass="text-blue-700 dark:text-blue-300"
+        bgClass="bg-blue-50 dark:bg-blue-900/30"
+      />
+      <ProviderList
+        title={isFr ? '🔧 L\'entrepreneur fournit' : '🔧 المقاول يجيب'}
+        items={isFr ? data.contractor_provides_fr : data.contractor_provides_ar}
+        isRTL={isRTL}
+        colorClass="text-amber-700 dark:text-amber-300"
+        bgClass="bg-amber-50 dark:bg-amber-900/30"
+      />
+      <ProviderList
+        title={isFr ? '🛠️ Outillage nécessaire' : '🛠️ الأدوات اللازمة'}
+        items={isFr ? data.tools_needed_fr : data.tools_needed_ar}
+        isRTL={isRTL}
+        colorClass="text-gray-700 dark:text-gray-300"
+        bgClass="bg-gray-50 dark:bg-gray-800/50"
+      />
+    </CardContent>
+  </Card>
+);
+
+const ProviderList = ({ title, items, isRTL, colorClass, bgClass }: { title: string; items: string[]; isRTL: boolean; colorClass: string; bgClass: string }) => (
+  <div className={cn("rounded-lg p-2.5", bgClass)}>
+    <p className={cn("text-xs font-black mb-1.5", colorClass, isRTL && "text-right")}>{title}</p>
+    <ul className={cn("space-y-1", isRTL && "text-right")}>
+      {items.map((item, i) => (
+        <li key={i} className="text-xs font-bold text-foreground flex items-start gap-1.5">
+          <span className="mt-0.5 shrink-0">•</span>
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+);
 
 const StatBox = ({ label, value, color, large }: { label: string; value: string; color: string; large?: boolean }) => (
   <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 text-center border border-white/10">

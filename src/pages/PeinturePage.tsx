@@ -14,6 +14,9 @@ const PeinturePage = () => {
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [estimatedDuration, setEstimatedDuration] = useState('');
+  const [materialBuyer, setMaterialBuyer] = useState('contractor');
+  const [propertyAge, setPropertyAge] = useState('old');
+  const [taxStatus, setTaxStatus] = useState('ae');
   const [isLoading, setIsLoading] = useState(false);
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
 
@@ -24,7 +27,14 @@ const PeinturePage = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('contracting-assistant', {
-        body: { description: description.trim(), location: location.trim(), estimatedDuration: estimatedDuration.trim() },
+        body: { 
+          description: description.trim(), 
+          location: location.trim(), 
+          estimatedDuration: estimatedDuration.trim(),
+          materialBuyer,
+          propertyAge,
+          taxStatus,
+        },
       });
 
       if (error) throw error;
@@ -33,7 +43,7 @@ const PeinturePage = () => {
       setAnalysisData(data as AnalysisData);
     } catch (e: any) {
       console.error('Analysis error:', e);
-      toast.error(isFr ? 'Erreur lors de l\'analyse. Réessayez.' : 'خطأ في التحليل. حاول مرة أخرى.');
+      toast.error(isFr ? 'Erreur lors de l\'analyse. Réessayez.' : 'حصل خطأ في التحليل. جرب تاني.');
     } finally {
       setIsLoading(false);
     }
@@ -53,6 +63,12 @@ const PeinturePage = () => {
           setLocation={setLocation}
           estimatedDuration={estimatedDuration}
           setEstimatedDuration={setEstimatedDuration}
+          materialBuyer={materialBuyer}
+          setMaterialBuyer={setMaterialBuyer}
+          propertyAge={propertyAge}
+          setPropertyAge={setPropertyAge}
+          taxStatus={taxStatus}
+          setTaxStatus={setTaxStatus}
           onAnalyze={handleAnalyze}
           isLoading={isLoading}
         />

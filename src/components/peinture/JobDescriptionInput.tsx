@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClipboardList, Loader2, MapPin, Clock } from 'lucide-react';
+import { ClipboardList, Loader2, MapPin, Clock, ShoppingCart, Home, Briefcase } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,12 @@ interface JobDescriptionInputProps {
   setLocation: (v: string) => void;
   estimatedDuration: string;
   setEstimatedDuration: (v: string) => void;
+  materialBuyer: string;
+  setMaterialBuyer: (v: string) => void;
+  propertyAge: string;
+  setPropertyAge: (v: string) => void;
+  taxStatus: string;
+  setTaxStatus: (v: string) => void;
   onAnalyze: () => void;
   isLoading: boolean;
 }
@@ -27,9 +33,9 @@ const EXAMPLES = {
     "Rénovation électrique complète d'un local commercial 80m², mise aux normes NF C 15-100",
   ],
   ar: [
-    "صباغة شقة كاملة 65 متر مربع، 4 غرف + ممر، الحيطان متخربة",
-    "تركيب زليج 40 متر في المطبخ والحمام، لازم نحيّد الزليج القديم",
-    "تجديد الكهرباء الكاملة لمحل تجاري 80 متر مربع",
+    "بانتير (Peinture) شقة كاملة 65 متر مربع، 4 أوض + طرقة، الحيطان محتاجة تصليح",
+    "تركيب كاريلاج (Carrelage) 40 متر في المطبخ والحمام، لازم نشيل القديم الأول",
+    "تجديد إليكتريسيتي (Électricité) كامل لمحل تجاري 80 متر مربع",
   ],
 };
 
@@ -41,7 +47,9 @@ const LOCATIONS = [
 ];
 
 const JobDescriptionInput: React.FC<JobDescriptionInputProps> = ({
-  isFr, isRTL, description, setDescription, location, setLocation, estimatedDuration, setEstimatedDuration, onAnalyze, isLoading
+  isFr, isRTL, description, setDescription, location, setLocation, estimatedDuration, setEstimatedDuration,
+  materialBuyer, setMaterialBuyer, propertyAge, setPropertyAge, taxStatus, setTaxStatus,
+  onAnalyze, isLoading
 }) => {
   const examples = isFr ? EXAMPLES.fr : EXAMPLES.ar;
 
@@ -50,7 +58,7 @@ const JobDescriptionInput: React.FC<JobDescriptionInputProps> = ({
       <CardHeader className="pb-2">
         <CardTitle className={cn("text-base font-black flex items-center gap-2", isRTL && "flex-row-reverse")}>
           <ClipboardList className="h-5 w-5 text-primary" />
-          {isFr ? 'Description du chantier' : 'وصف العمل المطلوب'}
+          {isFr ? 'Description du chantier' : 'وصف الشغل'}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -100,16 +108,132 @@ const JobDescriptionInput: React.FC<JobDescriptionInputProps> = ({
           </div>
         </div>
 
-        <Textarea
-          placeholder={isFr
-            ? "Décrivez le chantier en détail : type de travaux, surface, état actuel, nombre de pièces, contraintes particulières..."
-            : "وصّف الخدمة بالتفصيل: نوع العمل، المساحة، الحالة الحالية، عدد الغرف، أي شيء خاص..."
-          }
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className={cn("min-h-[120px] text-base font-bold resize-none", isRTL && "text-right")}
-          dir={isRTL ? 'rtl' : 'ltr'}
-        />
+        {/* Interactive Questions */}
+        <div className="space-y-2.5 bg-muted/30 rounded-xl p-3 border border-border/50">
+          <p className={cn("text-xs font-black text-primary flex items-center gap-1.5", isRTL && "flex-row-reverse")}>
+            💡 {isFr ? 'Questions importantes pour le calcul' : 'أسئلة مهمة عشان الحسابات تطلع صح'}
+          </p>
+
+          {/* Material Buyer */}
+          <div className="space-y-1.5">
+            <Label className={cn("text-xs font-bold flex items-center gap-1", isRTL && "flex-row-reverse")}>
+              <ShoppingCart className="h-3 w-3 text-amber-500" />
+              {isFr ? 'Qui achète les matériaux ?' : 'مين اللي هيشتري المواد؟'}
+            </Label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setMaterialBuyer('client')}
+                className={cn(
+                  "flex-1 text-xs font-bold py-2 px-3 rounded-lg border transition-colors",
+                  materialBuyer === 'client'
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background border-border hover:bg-muted"
+                )}
+              >
+                {isFr ? '🏠 Le client' : '🏠 الزبون'}
+              </button>
+              <button
+                onClick={() => setMaterialBuyer('contractor')}
+                className={cn(
+                  "flex-1 text-xs font-bold py-2 px-3 rounded-lg border transition-colors",
+                  materialBuyer === 'contractor'
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background border-border hover:bg-muted"
+                )}
+              >
+                {isFr ? '🔧 L\'entrepreneur' : '🔧 المقاول'}
+              </button>
+            </div>
+            <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right")}>
+              {isFr 
+                ? 'Impacte le calcul de TVA (10% rénovation vs 20% neuf)' 
+                : 'ده بيأثر على حساب الضريبة (تي في إيه TVA)'}
+            </p>
+          </div>
+
+          {/* Property Age */}
+          <div className="space-y-1.5">
+            <Label className={cn("text-xs font-bold flex items-center gap-1", isRTL && "flex-row-reverse")}>
+              <Home className="h-3 w-3 text-emerald-500" />
+              {isFr ? 'Âge du bien ?' : 'البيت بقاله قد إيه؟'}
+            </Label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPropertyAge('old')}
+                className={cn(
+                  "flex-1 text-xs font-bold py-2 px-3 rounded-lg border transition-colors",
+                  propertyAge === 'old'
+                    ? "bg-emerald-500 text-white border-emerald-500"
+                    : "bg-background border-border hover:bg-muted"
+                )}
+              >
+                {isFr ? '🏗️ +2 ans (TVA 10%)' : '🏗️ أكتر من سنتين (10%)'}
+              </button>
+              <button
+                onClick={() => setPropertyAge('new')}
+                className={cn(
+                  "flex-1 text-xs font-bold py-2 px-3 rounded-lg border transition-colors",
+                  propertyAge === 'new'
+                    ? "bg-orange-500 text-white border-orange-500"
+                    : "bg-background border-border hover:bg-muted"
+                )}
+              >
+                {isFr ? '🆕 Neuf (TVA 20%)' : '🆕 جديد (20%)'}
+              </button>
+            </div>
+          </div>
+
+          {/* Tax Status */}
+          <div className="space-y-1.5">
+            <Label className={cn("text-xs font-bold flex items-center gap-1", isRTL && "flex-row-reverse")}>
+              <Briefcase className="h-3 w-3 text-purple-500" />
+              {isFr ? 'Votre statut ?' : 'نظامك الضريبي إيه؟'}
+            </Label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTaxStatus('ae')}
+                className={cn(
+                  "flex-1 text-xs font-bold py-2 px-3 rounded-lg border transition-colors",
+                  taxStatus === 'ae'
+                    ? "bg-indigo-500 text-white border-indigo-500"
+                    : "bg-background border-border hover:bg-muted"
+                )}
+              >
+                {isFr ? 'Auto-entrepreneur' : 'أوتو أونتروبرونور'}
+              </button>
+              <button
+                onClick={() => setTaxStatus('sarl')}
+                className={cn(
+                  "flex-1 text-xs font-bold py-2 px-3 rounded-lg border transition-colors",
+                  taxStatus === 'sarl'
+                    ? "bg-violet-500 text-white border-violet-500"
+                    : "bg-background border-border hover:bg-muted"
+                )}
+              >
+                {isFr ? 'SARL / EURL' : 'ساغل (SARL)'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="space-y-1">
+          <Label className={cn("text-xs font-bold text-muted-foreground", isRTL && "text-right block")}>
+            {isFr 
+              ? 'Plus vous décrivez, plus le calcul est précis' 
+              : 'اكتب كل تفاصيل المشروع.. كل ما زادت التفاصيل، كل ما الحسابات بقت أدق'}
+          </Label>
+          <Textarea
+            placeholder={isFr
+              ? "Décrivez le chantier en détail : type de travaux, surface, état actuel, nombre de pièces, contraintes particulières..."
+              : "وصّف الشغل بالتفصيل: نوع الشغل، المساحة، الحالة الحالية، عدد الأوض، أي حاجة خاصة..."
+            }
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className={cn("min-h-[140px] text-base font-bold resize-none", isRTL && "text-right")}
+            dir={isRTL ? 'rtl' : 'ltr'}
+          />
+        </div>
 
         {/* Quick examples */}
         <div className="space-y-1.5">

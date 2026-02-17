@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Briefcase, Newspaper, GraduationCap } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import WelcomeModal from '@/components/home/WelcomeModal';
 
 const Index = () => {
   const { language, setLanguage, isRTL, t } = useLanguage();
@@ -15,6 +16,7 @@ const Index = () => {
       )}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
+      <WelcomeModal />
       {/* BETA BANNER */}
       <div className="bg-accent/10 border-b border-accent/20 py-1.5 text-center">
         <span className="text-[11px] font-semibold text-accent tracking-wide">

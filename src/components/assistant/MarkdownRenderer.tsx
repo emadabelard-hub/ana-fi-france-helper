@@ -15,9 +15,19 @@ interface MarkdownRendererProps {
  * Uses react-markdown for robust rendering of bold, bullets, headings, separators, etc.
  */
 const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick }: MarkdownRendererProps) => {
+  // Pre-process: fix malformed markdown that AI sometimes produces
+  // 1. Ensure single * at line start become proper list items (need space after *)
+  // 2. Clean up stray ** that aren't proper bold (e.g. isolated ** on a line)
+  const cleanedContent = content
+    // Ensure blank lines before headings for proper parsing
+    .replace(/([^\n])\n(#{2,3}\s)/g, '$1\n\n$2')
+    // Ensure blank lines before list items for proper parsing
+    .replace(/([^\n])\n(\* )/g, '$1\n\n$2')
+    .replace(/([^\n])\n(\d+\. )/g, '$1\n\n$2');
+
   // Extract smart links and replace with placeholders
   const smartLinks: { type: 'cv' | 'pro' | 'solutions'; text: string }[] = [];
-  const processedContent = content.replace(
+  const processedContent = cleanedContent.replace(
     /\[(CV_LINK|PRO_LINK|SOLUTIONS_LINK)\](.*?)\[\/\1\]/gs,
     (_match, type: string, text: string) => {
       const linkType = type === 'CV_LINK' ? 'cv' : type === 'PRO_LINK' ? 'pro' : 'solutions';
@@ -92,6 +102,12 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
     ),
     strong: ({ children }) => (
       <strong className="font-bold text-foreground">{processChildren(children)}</strong>
+    ),
+    em: ({ children }) => (
+      <em className="italic text-foreground">{processChildren(children)}</em>
+    ),
+    code: ({ children }) => (
+      <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>
     ),
   };
 

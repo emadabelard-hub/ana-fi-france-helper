@@ -294,14 +294,55 @@ ${description}
     const data = await response.json();
     let content = data.choices?.[0]?.message?.content || "";
     content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    const analysis = JSON.parse(content);
+    
+    // Attempt to repair common JSON issues from AI output
+    // 1. Remove trailing commas before } or ]
+    content = content.replace(/,\s*([}\]])/g, '$1');
+    // 2. Fix unescaped newlines inside strings (common AI mistake)
+    content = content.replace(/(?<=:\s*"[^"]*)\n(?=[^"]*")/g, '\\n');
+    // 3. Remove any control characters
+    content = content.replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\r' || ch === '\t' ? ' ' : '');
+    
+    let analysis;
+    try {
+      analysis = JSON.parse(content);
+    } catch (parseErr) {
+      console.error("JSON parse failed, attempting extraction. Error:", parseErr);
+      // Try to extract the largest valid JSON object
+      const firstBrace = content.indexOf('{');
+      const lastBrace = content.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        let extracted = content.slice(firstBrace, lastBrace + 1);
+        extracted = extracted.replace(/,\s*([}\]])/g, '$1');
+        try {
+          analysis = JSON.parse(extracted);
+        } catch {
+          console.error("JSON extraction also failed. Raw content length:", content.length);
+          return new Response(JSON.stringify({ 
+            error: "معلش، فيه ضغط على النظام، جرب تبعت الوصف تاني بشوية تفاصيل أقل أو استنى ثواني" 
+          }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } else {
+        return new Response(JSON.stringify({ 
+          error: "معلش، فيه ضغط على النظام، جرب تبعت الوصف تاني بشوية تفاصيل أقل أو استنى ثواني" 
+        }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     return new Response(JSON.stringify(analysis), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("contracting-assistant error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    const userMsg = msg.includes("timeout") || msg.includes("Timeout")
+      ? "معلش، الطلب أخد وقت كتير. جرب تاني بوصف أقصر."
+      : "معلش، فيه ضغط على النظام، جرب تبعت الوصف تاني بشوية تفاصيل أقل أو استنى ثواني";
+    return new Response(JSON.stringify({ error: userMsg }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

@@ -19,11 +19,22 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
   // 1. Ensure single * at line start become proper list items (need space after *)
   // 2. Clean up stray ** that aren't proper bold (e.g. isolated ** on a line)
   const cleanedContent = content
-    // Ensure blank lines before headings for proper parsing
-    .replace(/([^\n])\n(#{2,3}\s)/g, '$1\n\n$2')
-    // Ensure blank lines before list items for proper parsing
+    // Fix lines that start with "* " but lack a blank line before them
     .replace(/([^\n])\n(\* )/g, '$1\n\n$2')
-    .replace(/([^\n])\n(\d+\. )/g, '$1\n\n$2');
+    // Fix lines starting with "- " missing blank line
+    .replace(/([^\n])\n(- )/g, '$1\n\n$2')
+    // Fix numbered lists missing blank line
+    .replace(/([^\n])\n(\d+\. )/g, '$1\n\n$2')
+    // Ensure blank lines before headings
+    .replace(/([^\n])\n(#{1,4}\s)/g, '$1\n\n$2')
+    // Ensure blank lines after headings
+    .replace(/(#{1,4}\s[^\n]+)\n([^\n#])/g, '$1\n\n$2')
+    // Convert bare "* text" at line start (no space) into proper "* text"
+    .replace(/^(\*{1})([^\s*])/gm, '* $2')
+    // Remove isolated ** on their own line (stray bold markers)
+    .replace(/^\*{2,}\s*$/gm, '')
+    // Force double newlines between consecutive paragraphs (non-empty lines)
+    .replace(/([^\n])\n([^\n\s*#\-\d])/g, '$1\n\n$2');
 
   // Extract smart links and replace with placeholders
   const smartLinks: { type: 'cv' | 'pro' | 'solutions'; text: string }[] = [];

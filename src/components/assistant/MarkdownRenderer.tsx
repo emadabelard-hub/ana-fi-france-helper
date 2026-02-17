@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 
 interface MarkdownRendererProps {
@@ -105,7 +106,7 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
       )}
       dir={isRTL ? "rtl" : "ltr"}
     >
-      <ReactMarkdown components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {processedContent}
       </ReactMarkdown>
     </div>

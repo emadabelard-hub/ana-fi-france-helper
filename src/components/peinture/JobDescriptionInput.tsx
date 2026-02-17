@@ -1,7 +1,9 @@
 import React from 'react';
-import { ClipboardList, Loader2 } from 'lucide-react';
+import { ClipboardList, Loader2, MapPin, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +12,10 @@ interface JobDescriptionInputProps {
   isRTL: boolean;
   description: string;
   setDescription: (v: string) => void;
+  location: string;
+  setLocation: (v: string) => void;
+  estimatedDuration: string;
+  setEstimatedDuration: (v: string) => void;
   onAnalyze: () => void;
   isLoading: boolean;
 }
@@ -27,8 +33,15 @@ const EXAMPLES = {
   ],
 };
 
+const LOCATIONS = [
+  { label: "Paris / Île-de-France", value: "Paris / Île-de-France" },
+  { label: "Lyon / Rhône-Alpes", value: "Lyon / Rhône-Alpes" },
+  { label: "Marseille / PACA", value: "Marseille / PACA" },
+  { label: "Province (autre)", value: "Province" },
+];
+
 const JobDescriptionInput: React.FC<JobDescriptionInputProps> = ({
-  isFr, isRTL, description, setDescription, onAnalyze, isLoading
+  isFr, isRTL, description, setDescription, location, setLocation, estimatedDuration, setEstimatedDuration, onAnalyze, isLoading
 }) => {
   const examples = isFr ? EXAMPLES.fr : EXAMPLES.ar;
 
@@ -41,6 +54,52 @@ const JobDescriptionInput: React.FC<JobDescriptionInputProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* Location & Duration row */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className={cn("text-xs font-black flex items-center gap-1", isRTL && "flex-row-reverse")}>
+              <MapPin className="h-3.5 w-3.5 text-primary" />
+              {isFr ? 'Localisation' : 'المكان'}
+            </Label>
+            <Input
+              placeholder={isFr ? "Ex: Paris, Lyon..." : "باريس، ليون..."}
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className={cn("text-sm font-bold", isRTL && "text-right")}
+              dir={isRTL ? 'rtl' : 'ltr'}
+            />
+            <div className="flex flex-wrap gap-1">
+              {LOCATIONS.map((loc) => (
+                <button
+                  key={loc.value}
+                  onClick={() => setLocation(loc.value)}
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 rounded-md font-bold transition-colors",
+                    location === loc.value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  )}
+                >
+                  {loc.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className={cn("text-xs font-black flex items-center gap-1", isRTL && "flex-row-reverse")}>
+              <Clock className="h-3.5 w-3.5 text-primary" />
+              {isFr ? 'Durée estimée' : 'المدة المتوقعة'}
+            </Label>
+            <Input
+              placeholder={isFr ? "Ex: 5 jours, 2 semaines" : "5 أيام، أسبوعين"}
+              value={estimatedDuration}
+              onChange={(e) => setEstimatedDuration(e.target.value)}
+              className={cn("text-sm font-bold", isRTL && "text-right")}
+              dir={isRTL ? 'rtl' : 'ltr'}
+            />
+          </div>
+        </div>
+
         <Textarea
           placeholder={isFr
             ? "Décrivez le chantier en détail : type de travaux, surface, état actuel, nombre de pièces, contraintes particulières..."
@@ -72,7 +131,7 @@ const JobDescriptionInput: React.FC<JobDescriptionInputProps> = ({
 
         <Button
           onClick={onAnalyze}
-          disabled={!description.trim() || isLoading}
+          disabled={!description.trim() || !location.trim() || isLoading}
           className="w-full font-black text-base py-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
         >
           {isLoading ? (

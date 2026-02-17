@@ -134,8 +134,40 @@ interface InteractivePricingProps {
   isRTL: boolean;
 }
 
-// Strip markdown symbols from AI text
-const stripMd = (text: string): string => text.replace(/\*{1,2}/g, '').replace(/_{1,2}/g, '').trim();
+// Strip ALL markdown symbols from AI text — zero stars policy
+const stripMd = (text: string): string =>
+  text
+    .replace(/\*{1,3}/g, '')
+    .replace(/_{1,3}/g, '')
+    .replace(/`{1,3}/g, '')
+    .replace(/^#+\s*/gm, '')
+    .replace(/^\s*[-*]\s+/gm, '• ')
+    .trim();
+
+// Check if text mentions scaffolding (إيشافوداج / Échafaudage) for red highlight
+const hasScaffolding = (text: string): boolean =>
+  /إيشافوداج|[eé]chafaudage/i.test(text);
+
+// Render text with scaffolding highlighted in red
+const renderWithScaffoldingHighlight = (text: string, className?: string) => {
+  const cleaned = stripMd(text);
+  if (!hasScaffolding(cleaned)) return <span className={className}>{cleaned}</span>;
+  // Split around scaffolding terms and highlight them
+  const parts = cleaned.split(/(إيشافوداج|[Éé]chafaudage)/gi);
+  return (
+    <span className={className}>
+      {parts.map((part, i) =>
+        /إيشافوداج|[éÉ]chafaudage/i.test(part) ? (
+          <span key={i} className="text-red-600 dark:text-red-400 font-black bg-red-50 dark:bg-red-950/50 px-1 rounded">
+            ⚠️ {part}
+          </span>
+        ) : (
+          part
+        )
+      )}
+    </span>
+  );
+};
 
 const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isRTL }) => {
   const [selections, setSelections] = useState<Record<string, boolean>>(() => {
@@ -214,8 +246,8 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
     <div className="space-y-4 animate-fade-in">
       {/* Summary */}
       <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-2xl p-4 border border-amber-200 dark:border-amber-800">
-        <p className={cn("text-sm font-bold text-foreground leading-relaxed", isRTL && "text-right")}>
-          {stripMd(isFr ? data.summary.fr : data.summary.ar)}
+        <p className={cn("text-sm font-bold text-foreground leading-[1.9]", isRTL && "text-right")}>
+          {renderWithScaffoldingHighlight(isFr ? data.summary.fr : data.summary.ar)}
         </p>
       </div>
 
@@ -232,8 +264,8 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
                 ×{data.location_impact.cost_multiplier}
               </span>
             </div>
-            <p className={cn("text-xs font-bold text-muted-foreground leading-relaxed", isRTL && "text-right")}>
-              {isFr ? data.location_impact.explanation_fr : data.location_impact.explanation_ar}
+            <p className={cn("text-xs font-bold text-muted-foreground leading-[1.9]", isRTL && "text-right")}>
+              {renderWithScaffoldingHighlight(isFr ? data.location_impact.explanation_fr : data.location_impact.explanation_ar)}
             </p>
           </CardContent>
         </Card>
@@ -270,8 +302,8 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
                 </button>
                 {expandedPhases[phase.phase_number] && (
                   <div className="mt-2 space-y-2">
-                    <p className={cn("text-xs text-muted-foreground leading-relaxed", isRTL && "text-right")}>
-                      {isFr ? phase.description_fr : phase.description_ar}
+                    <p className={cn("text-xs text-muted-foreground leading-[1.9]", isRTL && "text-right")}>
+                      {renderWithScaffoldingHighlight(isFr ? phase.description_fr : phase.description_ar)}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {phase.workers.map((w, wi) => (
@@ -317,12 +349,12 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
                     <div className="flex-1 min-w-0">
                       <div className={cn("flex items-center justify-between gap-2", isRTL && "flex-row-reverse")}>
                         <p className={cn("text-sm font-bold text-foreground", !isSelected && "line-through")}>
-                          {isFr ? item.name_fr : item.name_ar}
+                          {renderWithScaffoldingHighlight(isFr ? item.name_fr : item.name_ar)}
                           {item.is_critical && <span className="text-red-500 ml-1">*</span>}
                         </p>
                         <span className="text-sm font-black text-primary whitespace-nowrap">{currentPrice.toFixed(0)} €</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{item.quantity}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{stripMd(item.quantity)}</p>
 
                       {item.premium_option && isSelected && (
                         <button onClick={() => togglePremium(item.id)} className={cn(
@@ -339,8 +371,8 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
                         {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                       </button>
                       {isExpanded && (
-                        <p className={cn("text-xs text-muted-foreground mt-1 p-2 bg-muted/50 rounded-lg leading-relaxed", isRTL && "text-right")}>
-                          {isFr ? item.why_important_fr : item.why_important_ar}
+                        <p className={cn("text-xs text-muted-foreground mt-1 p-2 bg-muted/50 rounded-lg leading-[1.9]", isRTL && "text-right")}>
+                          {renderWithScaffoldingHighlight(isFr ? item.why_important_fr : item.why_important_ar)}
                         </p>
                       )}
                     </div>
@@ -497,11 +529,11 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
                   ? "border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-950/30"
                   : "border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20"
               )}>
-                <p className={cn("text-sm font-black text-foreground", isRTL && "text-right")}>
-                  {alert.severity === 'high' ? '🔴' : '🟡'} {stripMd(isFr ? alert.title_fr : alert.title_ar)}
+                <p className={cn("text-sm font-black text-foreground leading-[1.9]", isRTL && "text-right")}>
+                  {alert.severity === 'high' ? '🔴' : '🟡'} {renderWithScaffoldingHighlight(isFr ? alert.title_fr : alert.title_ar)}
                 </p>
-                <p className={cn("text-xs font-bold text-muted-foreground mt-1 leading-relaxed", isRTL && "text-right")}>
-                  {stripMd(isFr ? alert.description_fr : alert.description_ar)}
+                <p className={cn("text-xs font-bold text-muted-foreground mt-1 leading-[1.9]", isRTL && "text-right")}>
+                  {renderWithScaffoldingHighlight(isFr ? alert.description_fr : alert.description_ar)}
                 </p>
               </div>
             ))}
@@ -599,12 +631,11 @@ const MaterialProviderCard = ({ data, isFr, isRTL }: { data: MaterialProvider; i
 const ProviderList = ({ title, items, isRTL, colorClass, bgClass }: { title: string; items: string[]; isRTL: boolean; colorClass: string; bgClass: string }) => (
   <div className={cn("rounded-lg p-2.5", bgClass)}>
     <p className={cn("text-xs font-black mb-1.5", colorClass, isRTL && "text-right")}>{title}</p>
-    <ul className={cn("space-y-1", isRTL && "text-right")}>
+    <ul className={cn("list-disc space-y-2 mb-4", isRTL ? "pr-5 text-right" : "ml-5")}>
       {items.map((item, i) => (
-        <li key={i} className="text-xs font-bold text-foreground flex items-start gap-1.5">
-          <span className="mt-0.5 shrink-0">•</span>
-          <span>{item}</span>
-        </li>
+         <li key={i} className="text-xs font-bold text-foreground leading-[1.9]">
+           {stripMd(item)}
+         </li>
       ))}
     </ul>
   </div>

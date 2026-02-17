@@ -262,6 +262,63 @@ const ProfilePage = () => {
           {t('profile.save')}
         </Button>
 
+        {/* User Guide Section */}
+        <Card className="bg-[#F0F0F2] dark:bg-[#18181A] border border-border/30 rounded-[1.5rem]">
+          <CardContent className={cn("p-5 space-y-4", isRTL && "font-[IBMPlexSansArabic]")}>
+            <h3 className={cn(
+              "text-base font-bold text-foreground",
+              isRTL ? "text-right font-[IBMPlexSansArabic]" : "font-[Inter]"
+            )}>
+              {isRTL ? 'دليل الاستخدام' : "Guide d'utilisation"}
+            </h3>
+            {[
+              {
+                icon: '🔍',
+                titleFr: 'Analyse de documents',
+                titleAr: 'تحليل الوثائق',
+                descFr: 'Photographiez ou importez vos courriers pour une analyse instantanée par l\'IA.',
+                descAr: 'صوّر أو استورد رسائلك للحصول على تحليل فوري بالذكاء الاصطناعي.',
+              },
+              {
+                icon: '⚖️',
+                titleFr: 'Conseils juridiques',
+                titleAr: 'استشارات قانونية',
+                descFr: 'Posez vos questions sur vos droits, démarches et obligations en France.',
+                descAr: 'اطرح أسئلتك حول حقوقك وإجراءاتك والتزاماتك في فرنسا.',
+              },
+              {
+                icon: '💰',
+                titleFr: 'Système de crédits',
+                titleAr: 'نظام الرصيد',
+                descFr: 'Vous recevez des crédits gratuits chaque jour pour utiliser les services.',
+                descAr: 'تحصل على رصيد مجاني يومياً لاستخدام الخدمات.',
+              },
+              {
+                icon: '📋',
+                titleFr: 'Historique',
+                titleAr: 'السجل',
+                descFr: 'Retrouvez toutes vos transactions et activités dans votre compte.',
+                descAr: 'ارجع لجميع معاملاتك ونشاطاتك في حسابك.',
+              },
+            ].map((item, i) => (
+              <div key={i} className={cn(
+                "flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-[#1A1A1C]",
+                isRTL && "flex-row-reverse text-right"
+              )}>
+                <span className="text-xl mt-0.5 shrink-0">{item.icon}</span>
+                <div className="flex-1 space-y-0.5">
+                  <p className="text-sm font-bold text-foreground">
+                    {isRTL ? item.titleAr : item.titleFr}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {isRTL ? item.descAr : item.descFr}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
         {/* Security Info Note */}
         <Card className="bg-white dark:bg-[#1A1A1C] border border-border/30 rounded-[1.25rem]">
           <CardContent className={cn(

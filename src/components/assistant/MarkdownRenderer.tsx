@@ -65,29 +65,29 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
   // Custom components for react-markdown
   const components: Record<string, React.FC<any>> = {
     h2: ({ children }) => (
-      <h2 className="text-[15px] font-black mt-6 mb-3 text-foreground">{processChildren(children)}</h2>
+      <h2 className="text-xl font-extrabold mt-8 mb-4 text-foreground">{processChildren(children)}</h2>
     ),
     h3: ({ children }) => (
-      <h3 className="text-[14px] font-bold mt-5 mb-2 text-foreground/90">{processChildren(children)}</h3>
+      <h3 className="text-lg font-extrabold mt-8 mb-4 text-foreground">{processChildren(children)}</h3>
     ),
     p: ({ children }) => (
-      <p className="mb-4 last:mb-0">{processChildren(children)}</p>
+      <p className="mb-6 leading-relaxed text-foreground last:mb-0">{processChildren(children)}</p>
     ),
     ul: ({ children }) => (
-      <ul className={cn("my-3 space-y-2", isRTL ? "pr-5 list-disc list-inside" : "pl-5 list-disc list-inside")}>
+      <ul className={cn("list-disc mb-6 space-y-4", isRTL ? "pr-6" : "ml-6")}>
         {children}
       </ul>
     ),
     ol: ({ children }) => (
-      <ol className={cn("my-3 space-y-2", isRTL ? "pr-5 list-decimal list-inside" : "pl-5 list-decimal list-inside")}>
+      <ol className={cn("list-decimal mb-6 space-y-4", isRTL ? "pr-6" : "ml-6")}>
         {children}
       </ol>
     ),
     li: ({ children }) => (
-      <li className="mb-2 leading-relaxed">{processChildren(children)}</li>
+      <li className={cn("leading-relaxed text-foreground", isRTL ? "pr-2" : "pl-2")}>{processChildren(children)}</li>
     ),
     hr: () => (
-      <hr className="border-border my-6" />
+      <hr className="border-border my-8" />
     ),
     strong: ({ children }) => (
       <strong className="font-bold text-foreground">{processChildren(children)}</strong>
@@ -97,11 +97,10 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
   return (
     <div
       className={cn(
-        "text-[14px]",
-        "leading-[1.8]",
+        "text-[15px]",
+        "leading-[1.9]",
         isRTL ? "font-cairo text-right" : "text-left",
-        // Aerated spacing between all block elements
-        "[&>*+*]:mt-4",
+        "[&>*+*]:mt-5",
         className
       )}
       dir={isRTL ? "rtl" : "ltr"}

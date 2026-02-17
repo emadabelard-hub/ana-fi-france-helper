@@ -18,7 +18,7 @@ const PeinturePage = () => {
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
 
   const handleAnalyze = async () => {
-    if (!description.trim() || !location.trim()) return;
+    if (!description.trim()) return;
     setIsLoading(true);
     setAnalysisData(null);
 

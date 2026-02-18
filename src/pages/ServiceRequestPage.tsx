@@ -115,24 +115,58 @@ const ServiceRequestPage = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!user) { setShowAuth(true); return; }
-    if (!description.trim()) return;
+    if (!user) { 
+      setShowAuth(true); 
+      toast.info(isRTL ? 'لازم تسجل دخول الأول يا فندم' : 'Veuillez vous connecter d\'abord');
+      return; 
+    }
+    if (!description.trim()) {
+      toast.warning(isRTL ? 'اكتب وصف الخدمة الأول يا فندم' : 'Veuillez décrire votre besoin d\'abord');
+      return;
+    }
     setIsAnalyzing(true);
+    setRequirements('');
     try {
       const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) {
+        setShowAuth(true);
+        toast.info(isRTL ? 'لازم تسجل دخول الأول يا فندم' : 'Veuillez vous connecter d\'abord');
+        setIsAnalyzing(false);
+        return;
+      }
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-service-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.data.session?.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ description, language }),
       });
-      if (!resp.ok) throw new Error('Analysis failed');
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}));
+        console.error('Analysis error:', resp.status, errorData);
+        if (resp.status === 429) {
+          toast.error(isRTL ? 'طلبات كتير، استنى شوية يا فندم' : 'Trop de requêtes, réessayez');
+        } else if (resp.status === 401) {
+          setShowAuth(true);
+          toast.error(isRTL ? 'لازم تسجل دخول تاني' : 'Session expirée, reconnectez-vous');
+        } else {
+          toast.error(isRTL ? 'حصل مشكلة في التحليل، جرب تاني' : 'Erreur d\'analyse, réessayez');
+        }
+        setIsAnalyzing(false);
+        return;
+      }
       const data = await resp.json();
-      setRequirements(data.requirements);
-    } catch {
-      toast.error(isRTL ? 'حصل مشكلة في التحليل' : 'Erreur d\'analyse');
+      if (data.requirements) {
+        setRequirements(data.requirements);
+        toast.success(isRTL ? 'تم تحليل طلبك بنجاح يا فندم!' : 'Analyse terminée !');
+      } else {
+        toast.error(isRTL ? 'مفيش نتائج، جرب تاني' : 'Pas de résultats, réessayez');
+      }
+    } catch (err) {
+      console.error('Analysis network error:', err);
+      toast.error(isRTL ? 'مشكلة في الاتصال، تأكد من الإنترنت وجرب تاني' : 'Erreur de connexion, vérifiez votre internet');
     }
     setIsAnalyzing(false);
   };
@@ -313,9 +347,15 @@ const ServiceRequestPage = () => {
               className={cn("min-h-[100px] resize-none", isRTL && "font-cairo text-right")}
               dir={isRTL ? 'rtl' : 'ltr'}
             />
-            <Button onClick={handleAnalyze} disabled={isAnalyzing || !description.trim()} className="w-full">
-              {isAnalyzing ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
-              {isRTL ? 'حلل طلبي واعرض المطلوب' : 'Analyser ma demande'}
+            <Button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full">
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="animate-spin mr-2" size={16} />
+                  {isRTL ? 'جاري تحليل طلبك...' : 'Analyse en cours...'}
+                </>
+              ) : (
+                isRTL ? 'حلل طلبي واعرض المطلوب' : 'Analyser ma demande'
+              )}
             </Button>
           </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,8 @@ import InvoiceGuideModal from './InvoiceGuideModal';
 import PreFlightChecklistModal from './PreFlightChecklistModal';
 import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
 import { supabase } from '@/integrations/supabase/client';
+import { saveDraft, loadDraft, clearDraft } from '@/lib/invoiceDraftStorage';
+import { detectMultipleTasks } from '@/lib/smartItemSplit';
 
 interface PrefillData {
   clientName?: string;
@@ -131,6 +133,61 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
+
+  // --- DRAFT RESTORE on mount (only if no prefillData) ---
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    if (prefillData || draftRestored) return;
+    const draft = loadDraft();
+    if (draft) {
+      setClientName(draft.clientName || '');
+      setClientAddress(draft.clientAddress || '');
+      setWorkSiteSameAsClient(draft.workSiteSameAsClient);
+      setWorkSiteAddress(draft.workSiteAddress || '');
+      setIncludeTravelCosts(draft.includeTravelCosts);
+      setTravelDescription(draft.travelDescription || '');
+      setTravelPrice(draft.travelPrice || 30);
+      setIsAutoEntrepreneur(draft.isAutoEntrepreneur);
+      setSelectedTvaRate(draft.selectedTvaRate || 10);
+      setValidityDuration(draft.validityDuration || 30);
+      setAcomptePercent(draft.acomptePercent ?? 30);
+      setDelaiPaiement(draft.delaiPaiement || 'reception');
+      setMoyenPaiement(draft.moyenPaiement || 'virement');
+      if (draft.docNumber) setDocNumber(draft.docNumber);
+      if (draft.items?.length) setItems(draft.items);
+      toast({
+        title: isRTL ? '📝 تم استعادة المسودة' : '📝 Brouillon restauré',
+        description: isRTL ? 'رجعنالك الشغل اللي كنت بتعمله' : 'Votre travail précédent a été restauré',
+      });
+    }
+    setDraftRestored(true);
+  }, [prefillData, draftRestored]);
+
+  // --- AUTO-SAVE draft on every change (debounced) ---
+  useEffect(() => {
+    if (!draftRestored) return;
+    const timer = setTimeout(() => {
+      saveDraft({
+        documentType,
+        clientName,
+        clientAddress,
+        workSiteSameAsClient,
+        workSiteAddress,
+        includeTravelCosts,
+        travelDescription,
+        travelPrice,
+        isAutoEntrepreneur,
+        selectedTvaRate,
+        validityDuration,
+        acomptePercent,
+        delaiPaiement,
+        moyenPaiement,
+        docNumber,
+        items,
+      });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [draftRestored, documentType, clientName, clientAddress, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acomptePercent, delaiPaiement, moyenPaiement, docNumber, items]);
 
   // Handle prefill data from quote-to-invoice conversion
   useEffect(() => {
@@ -311,6 +368,37 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Handle item quantity/price change
   const handleItemChange = (id: string, field: keyof LineItem, value: string | number) => {
+    // Smart item split: if user pastes/types multi-task text in designation_fr
+    if (field === 'designation_fr' && typeof value === 'string') {
+      const parts = detectMultipleTasks(value);
+      if (parts && parts.length >= 2) {
+        setItems(prev => {
+          const idx = prev.findIndex(i => i.id === id);
+          if (idx === -1) return prev;
+          const base = prev[idx];
+          const newItems = parts.map((part, i) => ({
+            ...base,
+            id: i === 0 ? id : generateId(),
+            designation_fr: part.charAt(0).toUpperCase() + part.slice(1),
+            designation_ar: i === 0 ? base.designation_ar : '',
+            quantity: i === 0 ? base.quantity : ('' as unknown as number),
+            unitPrice: i === 0 ? base.unitPrice : ('' as unknown as number),
+            total: i === 0 ? base.total : 0,
+          }));
+          const result = [...prev];
+          result.splice(idx, 1, ...newItems);
+          return result;
+        });
+        toast({
+          title: isRTL ? '✂️ تم تقسيم البنود' : '✂️ Lignes séparées',
+          description: isRTL 
+            ? `تم تقسيم النص لـ ${parts.length} بنود منفصلة` 
+            : `Le texte a été séparé en ${parts.length} lignes`,
+        });
+        return;
+      }
+    }
+
     setItems(prev => prev.map(item => {
       if (item.id !== id) return item;
       
@@ -1478,6 +1566,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         onConfirm={() => {
           setShowChecklist(false);
           setShowPreview(true);
+          clearDraft(); // Draft is no longer needed once preview is shown
         }}
         items={items}
       />

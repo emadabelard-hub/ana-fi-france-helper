@@ -72,12 +72,17 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
     <div 
       dir="ltr"
       lang="fr"
-      className="french-invoice bg-white text-black rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none"
+      className="french-invoice bg-white text-black rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none select-none"
       style={{
         padding: '1.5cm 1.5cm 2cm 1.5cm',
         boxSizing: 'border-box',
         minHeight: 'auto',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
       }}
+      onCopy={(e) => e.preventDefault()}
+      onCut={(e) => e.preventDefault()}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {/* Header */}
       <div className="border-b-2 border-primary pb-2 mb-2">

@@ -28,14 +28,14 @@ const DeleteAccountSection = () => {
   const [confirmText, setConfirmText] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
-  const expectedConfirmText = isRTL ? 'حذف حسابي' : 'SUPPRIMER';
+  const expectedConfirmText = isRTL ? 'امسح حسابي' : 'SUPPRIMER';
 
   const handleDeleteAccount = async () => {
     if (!user) return;
     if (confirmText !== expectedConfirmText) {
       toast({
         variant: 'destructive',
-        title: isRTL ? 'خطأ' : 'Erreur',
+        title: isRTL ? 'حصلت مشكلة' : 'Erreur',
         description: isRTL 
           ? `اكتب "${expectedConfirmText}" للتأكيد`
           : `Tapez "${expectedConfirmText}" pour confirmer`,
@@ -60,13 +60,12 @@ const DeleteAccountSection = () => {
       if (error) throw error;
 
       toast({
-        title: isRTL ? 'تم الحذف' : 'Compte supprimé',
+        title: isRTL ? 'تم المسح' : 'Compte supprimé',
         description: isRTL 
-          ? 'تم حذف حسابك وجميع بياناتك بنجاح'
+          ? 'حسابك وكل بياناتك اتمسحوا بنجاح'
           : 'Votre compte et toutes vos données ont été supprimés',
       });
 
-      // Sign out and redirect
       await signOut();
       window.location.href = '/';
       
@@ -74,9 +73,9 @@ const DeleteAccountSection = () => {
       console.error('Delete account error:', error);
       toast({
         variant: 'destructive',
-        title: isRTL ? 'خطأ' : 'Erreur',
+        title: isRTL ? 'حصلت مشكلة' : 'Erreur',
         description: isRTL 
-          ? 'فشل في حذف الحساب. حاول مرة أخرى.'
+          ? 'ما قدرناش نمسح الحساب. جرب تاني.'
           : 'Échec de la suppression du compte. Veuillez réessayer.',
       });
     } finally {
@@ -100,14 +99,14 @@ const DeleteAccountSection = () => {
               "font-semibold text-destructive",
               isRTL && "font-cairo"
             )}>
-              {isRTL ? 'حذف الحساب نهائياً' : 'Supprimer le compte'}
+              {isRTL ? 'مسح الحساب نهائي' : 'Supprimer le compte'}
             </h3>
             <p className={cn(
               "text-sm text-muted-foreground mt-1",
               isRTL && "font-cairo"
             )}>
               {isRTL 
-                ? 'سيتم حذف جميع بياناتك (الملف الشخصي، المستندات، الصور) نهائياً ولا يمكن استعادتها.'
+                ? 'كل بياناتك (البروفايل، المستندات، الصور) هتتمسح نهائي ومفيش رجعة.'
                 : 'Toutes vos données (profil, documents, images) seront définitivement supprimées et ne pourront pas être récupérées.'}
             </p>
           </div>
@@ -120,7 +119,7 @@ const DeleteAccountSection = () => {
                 className={cn("gap-2", isRTL && "font-cairo")}
               >
                 <Trash2 className="h-4 w-4" />
-                {isRTL ? 'حذف حسابي' : 'Supprimer mon compte'}
+                {isRTL ? 'امسح حسابي' : 'Supprimer mon compte'}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className={cn(isRTL && "font-cairo")}>
@@ -130,19 +129,19 @@ const DeleteAccountSection = () => {
                   isRTL && "flex-row-reverse"
                 )}>
                   <AlertTriangle className="h-5 w-5" />
-                  {isRTL ? 'تأكيد حذف الحساب' : 'Confirmer la suppression'}
+                  {isRTL ? 'تأكيد مسح الحساب' : 'Confirmer la suppression'}
                 </AlertDialogTitle>
                 <AlertDialogDescription className={cn(isRTL && "text-right")}>
                   {isRTL 
-                    ? 'هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع بياناتك نهائياً بما في ذلك:'
+                    ? 'الخطوة دي مفيش رجعة فيها. كل بياناتك هتتمسح نهائي وفيهم:'
                     : 'Cette action est irréversible. Toutes vos données seront définitivement supprimées, notamment:'}
                   <ul className={cn(
                     "list-disc mt-2 space-y-1",
                     isRTL ? "mr-4" : "ml-4"
                   )}>
-                    <li>{isRTL ? 'الملف الشخصي ومعلومات الشركة' : 'Votre profil et informations entreprise'}</li>
-                    <li>{isRTL ? 'جميع المستندات والفواتير' : 'Tous vos documents et factures'}</li>
-                    <li>{isRTL ? 'الصور والشعارات المرفوعة' : 'Vos images et logos téléchargés'}</li>
+                    <li>{isRTL ? 'بياناتك الشخصية ومعلومات الشركة' : 'Votre profil et informations entreprise'}</li>
+                    <li>{isRTL ? 'كل المستندات والفواتير' : 'Tous vos documents et factures'}</li>
+                    <li>{isRTL ? 'الصور واللوجوهات اللي رفعتها' : 'Vos images et logos téléchargés'}</li>
                   </ul>
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -179,7 +178,7 @@ const DeleteAccountSection = () => {
                   ) : (
                     <Trash2 className="h-4 w-4" />
                   )}
-                  {isRTL ? 'حذف نهائياً' : 'Supprimer définitivement'}
+                  {isRTL ? 'امسح نهائي' : 'Supprimer définitivement'}
                 </Button>
               </AlertDialogFooter>
             </AlertDialogContent>

@@ -29,8 +29,8 @@ const FeedbackModal = ({ open, onOpenChange }: FeedbackModalProps) => {
   const handleSubmit = async () => {
     if (!message.trim()) {
       toast({
-        title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'الرجاء كتابة رسالتك' : 'Veuillez écrire votre message',
+        title: isRTL ? 'حصلت مشكلة' : 'Erreur',
+        description: isRTL ? 'اكتب رسالتك الأول' : 'Veuillez écrire votre message',
         variant: 'destructive',
       });
       return;
@@ -38,8 +38,8 @@ const FeedbackModal = ({ open, onOpenChange }: FeedbackModalProps) => {
 
     if (!user) {
       toast({
-        title: isRTL ? 'تسجيل الدخول مطلوب' : 'Connexion requise',
-        description: isRTL ? 'يجب تسجيل الدخول لإرسال رأيك' : 'Vous devez être connecté pour envoyer votre avis',
+        title: isRTL ? 'لازم تسجّل دخولك' : 'Connexion requise',
+        description: isRTL ? 'لازم تدخل حسابك الأول عشان تبعت رأيك' : 'Vous devez être connecté pour envoyer votre avis',
         variant: 'destructive',
       });
       return;
@@ -55,8 +55,8 @@ const FeedbackModal = ({ open, onOpenChange }: FeedbackModalProps) => {
       if (error) throw error;
 
       toast({
-        title: isRTL ? 'شكراً لك! ✨' : 'Merci ! ✨',
-        description: isRTL ? 'تم إرسال رسالتك بنجاح' : 'Message envoyé avec succès',
+        title: isRTL ? 'شكراً ليك! ✨' : 'Merci ! ✨',
+        description: isRTL ? 'رسالتك وصلت تمام' : 'Message envoyé avec succès',
       });
 
       setMessage('');
@@ -64,8 +64,8 @@ const FeedbackModal = ({ open, onOpenChange }: FeedbackModalProps) => {
     } catch (error) {
       console.error('Feedback submission error:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'حدث خطأ، حاول مرة أخرى' : 'Une erreur est survenue',
+        title: isRTL ? 'حصلت مشكلة' : 'Erreur',
+        description: isRTL ? 'حصلت مشكلة، جرب تاني' : 'Une erreur est survenue',
         variant: 'destructive',
       });
     } finally {
@@ -95,7 +95,7 @@ const FeedbackModal = ({ open, onOpenChange }: FeedbackModalProps) => {
             isRTL && "text-right"
           )}>
             {isRTL 
-              ? 'شاركنا أفكارك ومقترحاتك لتحسين التطبيق'
+              ? 'قولنا رأيك واقتراحاتك عشان نحسّن التطبيق'
               : 'Partagez vos idées et suggestions pour améliorer l\'application'
             }
           </p>
@@ -121,11 +121,11 @@ const FeedbackModal = ({ open, onOpenChange }: FeedbackModalProps) => {
               className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
             >
               {isSubmitting ? (
-                <span className="animate-pulse">{isRTL ? 'جاري الإرسال...' : 'Envoi...'}</span>
+                <span className="animate-pulse">{isRTL ? 'بيتبعت...' : 'Envoi...'}</span>
               ) : (
                 <>
                   <Send className="h-4 w-4" />
-                  {isRTL ? 'إرسال' : 'Envoyer'}
+                  {isRTL ? 'ابعت' : 'Envoyer'}
                 </>
               )}
             </Button>

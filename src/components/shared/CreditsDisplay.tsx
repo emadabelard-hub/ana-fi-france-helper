@@ -43,14 +43,14 @@ const CreditsDisplay = ({ showDaily = false, className, compact = false }: Credi
         )}>
           <span className="text-lg font-bold text-foreground">{balance}</span>
           <span className="text-sm text-muted-foreground">
-            {isRTL ? 'رصيد' : 'crédits'}
+            {isRTL ? 'رصيدك' : 'crédits'}
           </span>
         </div>
         
         {showDaily && (
           <p className="text-xs text-muted-foreground mt-0.5">
             {isRTL 
-              ? `${dailyMessagesUsed}/${DAILY_MESSAGE_LIMIT} رسالة اليوم`
+              ? `${dailyMessagesUsed}/${DAILY_MESSAGE_LIMIT} رسالة النهاردة`
               : `${dailyMessagesUsed}/${DAILY_MESSAGE_LIMIT} messages aujourd'hui`
             }
           </p>

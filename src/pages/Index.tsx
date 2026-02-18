@@ -20,7 +20,7 @@ const Index = () => {
       {/* BETA BANNER */}
       <div className="bg-accent/10 border-b border-accent/20 py-1.5 text-center">
         <span className="text-[11px] font-semibold text-accent tracking-wide">
-          نسخة تجريبية قيد الانشاء — Beta
+          نسخة تجريبية تحت الإنشاء — Beta
         </span>
       </div>
 

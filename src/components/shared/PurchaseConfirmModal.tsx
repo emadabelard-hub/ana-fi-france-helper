@@ -73,10 +73,10 @@ const PurchaseConfirmModal = ({
               <ShoppingCart className="h-8 w-8 text-primary" />
             </div>
             <DialogTitle className={cn("text-xl font-black", isRTL && "font-cairo")}>
-              {isRTL ? 'تأكيد الشراء' : 'Confirmer l\'achat'}
+              {isRTL ? 'تأكيد الشرا' : 'Confirmer l\'achat'}
             </DialogTitle>
             <DialogDescription className={cn("text-sm", isRTL && "font-cairo")}>
-              {isRTL ? 'أنت على وشك شراء:' : 'Vous êtes sur le point d\'acheter :'}
+              {isRTL ? 'انت على وشك تشتري:' : 'Vous êtes sur le point d\'acheter :'}
             </DialogDescription>
           </DialogHeader>
 
@@ -86,15 +86,15 @@ const PurchaseConfirmModal = ({
               <div className="bg-muted/50 rounded-2xl p-4 text-center space-y-3">
                 <p className={cn("text-sm font-semibold text-foreground leading-relaxed", isRTL && "font-cairo")}>
                   {isRTL
-                    ? 'تبحث طالب أو تبحث عن اول وظيفة أو تريد تقديم السي في لفرانس ترافاي'
+                    ? 'انت طالب ولا بتدوّر على أول شغلانة ولا عايز تقدم السي في لفرانس ترافاي؟'
                     : 'Êtes-vous étudiant, à la recherche de votre premier emploi ou souhaitez-vous soumettre votre CV à France Travail ?'}
                 </p>
                 <div className="flex gap-2 justify-center">
                   <Button size="sm" className="rounded-xl px-6 font-bold" onClick={() => setDiscountAnswer('yes')}>
-                    {isRTL ? 'نعم' : 'Oui'}
+                    {isRTL ? 'أيوه' : 'Oui'}
                   </Button>
                   <Button size="sm" variant="outline" className="rounded-xl px-6 font-bold" onClick={() => setDiscountAnswer('no')}>
-                    {isRTL ? 'لا' : 'Non'}
+                    {isRTL ? 'لأ' : 'Non'}
                   </Button>
                 </div>
               </div>
@@ -108,9 +108,9 @@ const PurchaseConfirmModal = ({
                     <div className="w-10 h-10 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
                       <span className="text-xl">🤝</span>
                     </div>
-                    <p className={cn("text-sm font-black text-foreground leading-relaxed", isRTL && "font-cairo")}>
-                      {isRTL
-                        ? 'نحن لا نطلب إثبات فنحن نثق في كلمتك'
+                     <p className={cn("text-sm font-black text-foreground leading-relaxed", isRTL && "font-cairo")}>
+                       {isRTL
+                         ? 'مش بنطلب إثبات، إحنا واثقين في كلمتك'
                         : 'Nous ne demandons pas de justificatif, nous vous faisons confiance.'}
                     </p>
                     <p className={cn("text-xs font-semibold text-emerald-700 dark:text-emerald-400", isRTL && "font-cairo")}>
@@ -140,8 +140,8 @@ const PurchaseConfirmModal = ({
 
                 {/* Demo notice */}
                 <p className={cn("text-[11px] text-muted-foreground text-center", isRTL && "font-cairo")}>
-                  {isRTL
-                    ? '⚠️ وضع تجريبي - لن يتم خصم أي مبلغ حقيقي'
+                   {isRTL
+                     ? '⚠️ وضع تجريبي - مش هيتخصم أي فلوس حقيقية'
                     : '⚠️ Mode démo - Aucun montant réel ne sera débité'}
                 </p>
 

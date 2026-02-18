@@ -31,7 +31,7 @@ const InsufficientCreditsModal = ({
               <Coins className="h-6 w-6 text-amber-600" />
             </div>
             <DialogTitle className="text-xl">
-              {isRTL ? '🪙 رصيد غير كافي' : '🪙 Crédits insuffisants'}
+              {isRTL ? '🪙 رصيدك مش كفاية' : '🪙 Crédits insuffisants'}
             </DialogTitle>
           </div>
           <DialogDescription className={cn("text-base", isRTL && "text-right")}>
@@ -65,7 +65,7 @@ const InsufficientCreditsModal = ({
             onClick={() => onOpenChange(false)}
             className={isRTL ? "font-cairo" : ""}
           >
-            {isRTL ? 'لاحقاً' : 'Plus tard'}
+            {isRTL ? 'بعدين' : 'Plus tard'}
           </Button>
           <Button 
             onClick={() => {
@@ -75,7 +75,7 @@ const InsufficientCreditsModal = ({
             className={cn("gap-2", isRTL && "flex-row-reverse font-cairo")}
           >
             <ShoppingCart className="h-4 w-4" />
-            {isRTL ? 'شراء كريديت' : 'Acheter des crédits'}
+            {isRTL ? 'اشتري كريديت' : 'Acheter des crédits'}
           </Button>
         </DialogFooter>
       </DialogContent>

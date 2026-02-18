@@ -43,7 +43,7 @@ const DismissibleTip = ({ storageKey, title, text, className }: DismissibleTipPr
         size="icon"
         className="absolute top-2 left-2 h-6 w-6 rounded-full hover:bg-accent/20"
         onClick={handleDismiss}
-        aria-label="إغلاق"
+        aria-label="اقفل"
       >
         <X className="h-3 w-3" />
       </Button>

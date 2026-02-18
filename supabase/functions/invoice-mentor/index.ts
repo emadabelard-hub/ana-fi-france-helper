@@ -90,19 +90,124 @@ Ajuste selon la complexité décrite. Sois réaliste.`;
   });
 }
 
+// Construction-specific dictionary for accurate translations
+const CONSTRUCTION_DICTIONARY: Record<string, string> = {
+  // Paint / Peinture
+  'بانتير': 'Peinture',
+  'بانتيرة': 'Peinture',
+  'بانتيره': 'Peinture',
+  'بنتير': 'Peinture',
+  'دهان': 'Peinture',
+  'دهانات': 'Peinture',
+  'صبغ': 'Peinture',
+  'صباغة': 'Peinture',
+  'peinture': 'Peinture',
+  'bantoura': 'Peinture',
+  'banture': 'Peinture',
+  'peinture acrylique': 'Peinture acrylique',
+  'بانتير اكريليك': 'Peinture acrylique',
+  'دهان اكريليك': 'Peinture acrylique',
+  // Plaster / Enduit
+  'اندوي': 'Enduit',
+  'اندويه': 'Enduit',
+  'معجون': 'Enduit',
+  'معجونة': 'Enduit',
+  'enduit': 'Enduit',
+  'endwi': 'Enduit',
+  // Sanding / Ponçage
+  'بونساج': 'Ponçage',
+  'صنفرة': 'Ponçage',
+  'ponsaj': 'Ponçage',
+  'ponçage': 'Ponçage',
+  // Primer / Impression
+  'امبريسيون': 'Impression (sous-couche)',
+  'impression': 'Impression (sous-couche)',
+  'سوكوش': 'Sous-couche',
+  'sous-couche': 'Sous-couche',
+  // Tiles / Carrelage
+  'زليج': 'Pose de carrelage',
+  'كاغلاج': 'Pose de carrelage',
+  'سيراميك': 'Pose de carrelage',
+  'zelij': 'Pose de carrelage',
+  'carrelage': 'Pose de carrelage',
+  'karelaj': 'Pose de carrelage',
+  // Plumbing / Plomberie
+  'بلومبري': 'Plomberie',
+  'سباكة': 'Plomberie',
+  'plomberie': 'Plomberie',
+  // Electricity / Électricité
+  'كهرباء': 'Électricité',
+  'كهربا': 'Électricité',
+  'electricite': 'Électricité',
+  // Demolition / Démolition
+  'هدم': 'Démolition',
+  'تكسير': 'Démolition',
+  'demolition': 'Démolition',
+  // Flooring / Parquet
+  'باركيه': 'Pose de parquet',
+  'parquet': 'Pose de parquet',
+  'باركي': 'Pose de parquet',
+  // Masonry / Maçonnerie
+  'ماسونري': 'Maçonnerie',
+  'بناء': 'Maçonnerie',
+  'maconnerie': 'Maçonnerie',
+  // Isolation
+  'عزل': 'Isolation',
+  'isolation': 'Isolation',
+  // Labour
+  'مصنعية': "Main d'œuvre",
+  'يد عاملة': "Main d'œuvre",
+  // Materials
+  'مواد': 'Fourniture de matériaux',
+  'توريد': 'Fourniture de matériaux',
+  // Transport
+  'نقل': 'Frais de déplacement',
+  'مصاريف النقل': 'Frais de déplacement',
+};
+
+// Try dictionary lookup before calling AI
+function dictionaryTranslate(text: string): string | null {
+  const normalized = text.trim().toLowerCase();
+  // Exact match
+  if (CONSTRUCTION_DICTIONARY[normalized]) return CONSTRUCTION_DICTIONARY[normalized];
+  // Try each key as a prefix/match
+  for (const [key, value] of Object.entries(CONSTRUCTION_DICTIONARY)) {
+    if (normalized === key.toLowerCase()) return value;
+  }
+  return null;
+}
+
 // Translation handler - Arabic to French professional
 async function handleTranslation(text: string, apiKey: string): Promise<Response> {
+  // Try dictionary first for known construction terms
+  const dictResult = dictionaryTranslate(text);
+  if (dictResult) {
+    return new Response(JSON.stringify({ translation: dictResult }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   // Forbidden scripts: Cyrillic, Greek, CJK, Hebrew, etc.
   const FORBIDDEN_SCRIPTS =
     /[\u0400-\u052F\u0370-\u03FF\u4E00-\u9FFF\u3400-\u4DBF\u3040-\u30FF\uAC00-\uD7AF\u0590-\u05FF]/;
 
-  const buildPrompt = (strict: boolean) => `Tu es un traducteur expert en BTP.
+  const dictionaryExamples = Object.entries(CONSTRUCTION_DICTIONARY)
+    .filter(([k]) => /[\u0600-\u06FF]/.test(k))
+    .slice(0, 15)
+    .map(([k, v]) => `- "${k}" -> "${v}"`)
+    .join('\n');
+
+  const buildPrompt = (strict: boolean) => `Tu es un traducteur expert en BTP (Bâtiment et Travaux Publics).
 
 Traduis ce texte (Arabe/Darija/Franco-Arabe) en Français technique précis, adapté à une ligne de devis/facture.
 
-Exemples:
+DICTIONNAIRE OBLIGATOIRE (utilise ces traductions exactes):
+${dictionaryExamples}
+
+Autres exemples:
 - "Bantoura" -> "Peinture"
 - "Zelij" -> "Pose de carrelage"
+- "صبغ الصالون" -> "Peinture du salon"
 
 Texte:
 "${text}"
@@ -111,6 +216,7 @@ Règles:
 - Ne donne QUE la traduction.
 - Sans guillemets.
 - Pas de JSON. Pas d'explication.
+- IMPORTANT: "Peinture" = دهان/بانتير, JAMAIS "جوازات".
 ${strict ? "- Interdiction stricte d'utiliser un alphabet autre que latin (français)." : ""}`;
 
   const callOnce = async (strict: boolean) => {

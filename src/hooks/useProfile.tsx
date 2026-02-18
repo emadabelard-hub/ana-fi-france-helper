@@ -27,6 +27,7 @@ export interface Profile {
   stamp_url: string | null;
   // Legal detail fields
   capital_social: string | null;
+  legal_footer: string | null;
   code_naf: string | null;
   ville_immatriculation: string | null;
   numero_tva: string | null;

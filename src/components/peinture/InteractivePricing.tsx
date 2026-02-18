@@ -159,7 +159,7 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
         <p className={cn("text-xs font-bold text-blue-700 dark:text-blue-300 leading-[1.9]", isRTL && "text-right")}>
           {isFr
             ? '📋 Cet outil fournit une estimation technique uniquement et ne comprend pas de calculs financiers officiels.'
-            : '📋 هذه الأداة تقدم تقديراً فنياً فقط ولا تشمل حسابات مالية رسمية'}
+            : '📋 الأداة دي بتقدّم تقدير فني بس يا فندم، ومفيهاش أي حسابات مالية رسمية'}
         </p>
       </div>
 
@@ -174,11 +174,11 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-background rounded-xl border p-3 text-center">
           <p className="text-2xl font-black text-primary">{totalWorkers}</p>
-          <p className="text-xs font-bold text-muted-foreground mt-1">{isFr ? 'Ouvriers' : 'عمال'}</p>
+          <p className="text-xs font-bold text-muted-foreground mt-1">{isFr ? 'Ouvriers' : 'عمّال'}</p>
         </div>
         <div className="bg-background rounded-xl border p-3 text-center">
           <p className="text-2xl font-black text-primary">{daysOverride} {isFr ? 'j' : 'يوم'}</p>
-          <p className="text-xs font-bold text-muted-foreground mt-1">{isFr ? 'Durée estimée' : 'المدة المتوقعة'}</p>
+          <p className="text-xs font-bold text-muted-foreground mt-1">{isFr ? 'Durée estimée' : 'المدة المتوقعة يا فندم'}</p>
         </div>
       </div>
 
@@ -277,7 +277,7 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
 
                       <button onClick={() => setExpandedItems(prev => ({ ...prev, [item.id]: !prev[item.id] }))} className={cn("flex items-center gap-1 mt-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors", isRTL && "flex-row-reverse")}>
                         <Info className="h-3 w-3" />
-                        {isFr ? 'Pourquoi ?' : 'لماذا؟'}
+                        {isFr ? 'Pourquoi ?' : 'ليه؟'}
                         {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                       </button>
                       {isExpanded && (
@@ -351,8 +351,8 @@ const InteractivePricing: React.FC<InteractivePricingProps> = ({ data, isFr, isR
           <CardContent className="p-4 space-y-3">
             <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
               <ShieldAlert className="h-5 w-5 text-orange-600" />
-              <h3 className="text-sm font-black text-orange-700 dark:text-orange-400">
-                {isFr ? '🛡️ Alertes Sécurité' : '🛡️ تنبيهات الأمان'}
+            <h3 className="text-sm font-black text-orange-700 dark:text-orange-400">
+                {isFr ? '🛡️ Alertes Sécurité' : '🛡️ تنبيهات أمان يا فندم'}
               </h3>
             </div>
             {data.safety_alerts.map((alert, i) => (

@@ -31,7 +31,7 @@ const WelcomeModal = () => {
             Bienvenue sur Ana Fi France
           </h2>
           <p className="text-base font-bold font-cairo text-accent-foreground/90 mt-1">
-            أهلاً بك في أنا في فرنسا
+            أهلاً بيك في أنا في فرنسا
           </p>
         </div>
 
@@ -46,7 +46,7 @@ const WelcomeModal = () => {
           <div className="flex items-start gap-3 text-right" dir="rtl">
             <Sparkles size={18} className="text-accent shrink-0 mt-0.5" />
             <p className="text-sm text-foreground leading-relaxed font-cairo">
-              حلل وثائقك، احصل على استشارات قانونية، وأدر معاملاتك بسهولة باستخدام الذكاء الاصطناعي.
+              حلّل ورقك، خد استشارات قانونية، ونظّم معاملاتك بسهولة بالذكاء الاصطناعي.
             </p>
           </div>
 
@@ -54,7 +54,7 @@ const WelcomeModal = () => {
             onClick={handleClose}
             className="w-full rounded-2xl h-12 text-base font-black bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg mt-2"
           >
-            Commencer / ابدأ الآن
+            Commencer / يلّا نبدأ
           </Button>
         </div>
       </DialogContent>

@@ -90,11 +90,11 @@ const ProfilePage = () => {
               isRTL && "font-[IBMPlexSansArabic]"
             )}>
               {isRTL 
-                ? "سجل الدخول لحفظ معلوماتك الشخصية واستخدامها في الرسائل الإدارية"
+                ? "سجّل دخولك عشان تحفظ بياناتك وتستخدمها في الخطابات الإدارية"
                 : "Connectez-vous pour sauvegarder vos informations et les utiliser dans vos courriers administratifs"}
             </p>
             <Button onClick={() => setShowAuthModal(true)} className="mt-4 h-12 px-8 rounded-xl text-base font-semibold">
-              {isRTL ? "تسجيل الدخول" : "Se connecter"}
+              {isRTL ? "ادخل حسابك" : "Se connecter"}
             </Button>
           </section>
           <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
@@ -116,14 +116,14 @@ const ProfilePage = () => {
       id: 'full_name',
       label: t('profile.fullName'),
       icon: User,
-      placeholder: isRTL ? 'أدخل اسمك الكامل' : 'Entrez votre nom complet',
+      placeholder: isRTL ? 'اكتب اسمك الكامل' : 'Entrez votre nom complet',
       required: true,
     },
     {
       id: 'address',
       label: t('profile.address'),
       icon: MapPin,
-      placeholder: isRTL ? 'أدخل عنوانك الكامل' : 'Entrez votre adresse complète',
+      placeholder: isRTL ? 'اكتب عنوانك الكامل' : 'Entrez votre adresse complète',
       required: true,
     },
     {
@@ -275,30 +275,30 @@ const ProfilePage = () => {
               {
                 icon: '🔍',
                 titleFr: 'Analyse de documents',
-                titleAr: 'تحليل الوثائق',
+                titleAr: 'تحليل الورق',
                 descFr: 'Photographiez ou importez vos courriers pour une analyse instantanée par l\'IA.',
-                descAr: 'صوّر أو استورد رسائلك للحصول على تحليل فوري بالذكاء الاصطناعي.',
+                descAr: 'صوّر أو ارفع جوابك وأنا هحلّله لك فوراً بالذكاء الاصطناعي.',
               },
               {
                 icon: '⚖️',
                 titleFr: 'Conseils juridiques',
                 titleAr: 'استشارات قانونية',
                 descFr: 'Posez vos questions sur vos droits, démarches et obligations en France.',
-                descAr: 'اطرح أسئلتك حول حقوقك وإجراءاتك والتزاماتك في فرنسا.',
+                descAr: 'اسأل عن حقوقك وإجراءاتك والتزاماتك في فرنسا.',
               },
               {
                 icon: '💰',
                 titleFr: 'Système de crédits',
                 titleAr: 'نظام الرصيد',
                 descFr: 'Vous recevez des crédits gratuits chaque jour pour utiliser les services.',
-                descAr: 'تحصل على رصيد مجاني يومياً لاستخدام الخدمات.',
+                descAr: 'بتاخد رصيد مجاني كل يوم عشان تستخدم الخدمات.',
               },
               {
                 icon: '📋',
                 titleFr: 'Historique',
                 titleAr: 'السجل',
                 descFr: 'Retrouvez toutes vos transactions et activités dans votre compte.',
-                descAr: 'ارجع لجميع معاملاتك ونشاطاتك في حسابك.',
+                descAr: 'ارجع لكل معاملاتك ونشاطاتك في حسابك.',
               },
             ].map((item, i) => (
               <div key={i} className={cn(
@@ -326,7 +326,7 @@ const ProfilePage = () => {
             isRTL && "font-[IBMPlexSansArabic]"
           )}>
             {isRTL 
-              ? '🔒 بياناتك محفوظة بشكل آمن وتُستخدم فقط لإنشاء رسائلك الإدارية'
+              ? '🔒 بياناتك محفوظة بأمان وبنستخدمها بس عشان نعملّك خطاباتك الإدارية'
               : '🔒 Vos données sont stockées en toute sécurité et utilisées uniquement pour générer vos courriers'
             }
           </CardContent>
@@ -368,7 +368,7 @@ const ProfilePage = () => {
           )}
         >
           <LogOut className="h-4 w-4" />
-          {isRTL ? "تسجيل الخروج" : "Se déconnecter"}
+          {isRTL ? "اخرج" : "Se déconnecter"}
         </Button>
 
         {/* GDPR - Delete Account Section */}

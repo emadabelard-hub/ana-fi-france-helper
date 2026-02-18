@@ -36,15 +36,15 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       if (error) {
         toast({
           variant: "destructive",
-          title: isRTL ? "خطأ" : "Erreur",
+          title: isRTL ? "حصلت مشكلة" : "Erreur",
           description: error.message,
         });
       } else {
         toast({
-          title: isRTL ? "نجاح" : "Succès",
+          title: isRTL ? "تمام" : "Succès",
           description: isLogin 
-            ? (isRTL ? "تم تسجيل الدخول بنجاح" : "Connexion réussie")
-            : (isRTL ? "تم إنشاء الحساب بنجاح" : "Compte créé avec succès"),
+            ? (isRTL ? "دخلت بنجاح" : "Connexion réussie")
+            : (isRTL ? "الحساب اتفتح بنجاح" : "Compte créé avec succès"),
         });
         onOpenChange(false);
         setEmail('');
@@ -63,15 +63,15 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
         <DialogHeader>
           <DialogTitle className={cn(isRTL && "text-right")}>
             {isLogin 
-              ? (isRTL ? "تسجيل الدخول" : "Connexion")
-              : (isRTL ? "إنشاء حساب" : "Créer un compte")}
+              ? (isRTL ? "دخول" : "Connexion")
+              : (isRTL ? "افتح حساب" : "Créer un compte")}
           </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email" className={cn(isRTL && "text-right block")}>
-              {isRTL ? "البريد الإلكتروني" : "Email"}
+              {isRTL ? "الإيميل" : "Email"}
             </Label>
             <Input
               id="email"
@@ -86,7 +86,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
           
           <div className="space-y-2">
             <Label htmlFor="password" className={cn(isRTL && "text-right block")}>
-              {isRTL ? "كلمة المرور" : "Mot de passe"}
+              {isRTL ? "الباسورد" : "Mot de passe"}
             </Label>
             <Input
               id="password"
@@ -104,32 +104,32 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : isLogin 
-              ? (isRTL ? "تسجيل الدخول" : "Se connecter")
-              : (isRTL ? "إنشاء حساب" : "Créer un compte")}
+              ? (isRTL ? "ادخل" : "Se connecter")
+              : (isRTL ? "افتح حساب" : "Créer un compte")}
           </Button>
         </form>
 
         <div className="text-center text-sm text-muted-foreground">
           {isLogin ? (
             <p>
-              {isRTL ? "ليس لديك حساب؟" : "Pas encore de compte ?"}{' '}
+              {isRTL ? "معندكش حساب؟" : "Pas encore de compte ?"}{' '}
               <button
                 type="button"
                 onClick={() => setIsLogin(false)}
                 className="text-primary underline hover:no-underline"
               >
-                {isRTL ? "إنشاء حساب" : "Créer un compte"}
+                {isRTL ? "افتح حساب" : "Créer un compte"}
               </button>
             </p>
           ) : (
             <p>
-              {isRTL ? "لديك حساب بالفعل؟" : "Déjà un compte ?"}{' '}
+              {isRTL ? "عندك حساب خلاص؟" : "Déjà un compte ?"}{' '}
               <button
                 type="button"
                 onClick={() => setIsLogin(true)}
                 className="text-primary underline hover:no-underline"
               >
-                {isRTL ? "تسجيل الدخول" : "Se connecter"}
+                {isRTL ? "ادخل" : "Se connecter"}
               </button>
             </p>
           )}

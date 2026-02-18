@@ -219,7 +219,7 @@ const ChatMessage = ({
       setTimeout(() => setCopied(false), 2000);
       toast({
         title: isRTL ? "تم النسخ" : "Copié",
-        description: isRTL ? "تم نسخ النص للحافظة" : "Le texte a été copié",
+        description: isRTL ? "النص اتنسخ" : "Le texte a été copié",
       });
     } catch {
       // Ignore copy errors
@@ -321,14 +321,14 @@ const ChatMessage = ({
               <>
                 <Check className="h-3 w-3" />
                 <span className={isRTL ? "font-cairo" : ""}>
-                  {isRTL ? "تم النسخ" : "Copié"}
+                  {isRTL ? "اتنسخ" : "Copié"}
                 </span>
               </>
             ) : (
               <>
                 <Copy className="h-3 w-3" />
                 <span className={isRTL ? "font-cairo" : ""}>
-                  {isRTL ? "نسخ" : "Copier"}
+                  {isRTL ? "انسخ" : "Copier"}
                 </span>
               </>
             )}

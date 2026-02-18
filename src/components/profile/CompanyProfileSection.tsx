@@ -253,7 +253,7 @@ const CompanyProfileSection = () => {
           <div className="space-y-2">
             <Label className={cn("flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>
               <Mail className="h-4 w-4 text-muted-foreground" />
-              {isRTL ? 'البريد الإلكتروني المهني' : 'Email professionnel'}
+              {isRTL ? 'الإيميل المهني' : 'Email professionnel'}
             </Label>
             <Input
               type="email"
@@ -267,7 +267,7 @@ const CompanyProfileSection = () => {
           {/* Legal Status */}
           <div className="space-y-3">
             <Label className={cn("flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>
-              {isRTL ? 'الوضع القانوني' : 'Statut juridique'}
+              {isRTL ? 'الشكل القانوني' : 'Statut juridique'}
             </Label>
             <Select
               value={formData.legal_status}
@@ -278,10 +278,10 @@ const CompanyProfileSection = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="auto-entrepreneur">
-                  {isRTL ? 'رائد أعمال ذاتي (Auto-entrepreneur)' : 'Auto-entrepreneur'}
+                  {isRTL ? 'أوتو أونتروبرونور (Auto-entrepreneur)' : 'Auto-entrepreneur'}
                 </SelectItem>
                 <SelectItem value="societe">
-                  {isRTL ? 'شركة (SARL, SAS, etc.)' : 'Société (SARL, SAS, etc.)'}
+                  {isRTL ? 'شركة (SARL, SAS, إلخ)' : 'Société (SARL, SAS, etc.)'}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -352,7 +352,7 @@ const CompanyProfileSection = () => {
                 </span>
                 <p className={cn("text-sm text-muted-foreground mt-1", isRTL && "font-cairo")}>
                   {isRTL 
-                    ? 'صورة عرضية واحدة بعرض الصفحة كاملة'
+                    ? 'صورة واحدة عريضة بعرض الصفحة كلها'
                     : 'Une seule image large sur toute la largeur de la page'
                   }
                 </p>
@@ -425,7 +425,7 @@ const CompanyProfileSection = () => {
                     <div className={cn("text-center", isRTL && "font-cairo")}>
                       <Image className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                       <p className="text-sm text-muted-foreground">
-                        {isRTL ? 'لم يتم رفع صورة بعد' : 'Aucune image téléchargée'}
+                        {isRTL ? 'لسه مرفعتش صورة' : 'Aucune image téléchargée'}
                       </p>
                     </div>
                   </div>
@@ -447,7 +447,7 @@ const CompanyProfileSection = () => {
                   isRTL && "text-right font-cairo"
                 )}>
                   {isRTL 
-                    ? '💡 للحصول على أفضل نتيجة، استخدم صورة عريضة (بانر) بأبعاد 1920×400 بكسل تقريباً'
+                    ? '💡 عشان أحسن نتيجة، استخدم صورة عريضة (بانر) حوالي 1920×400 بكسل'
                     : '💡 Pour un meilleur résultat, utilisez une image large (bannière) d\'environ 1920×400 pixels'
                   }
                 </p>
@@ -586,7 +586,7 @@ const CompanyProfileSection = () => {
                 if (formData.code_naf) parts.push(`NAF : ${formData.code_naf}`);
                 if (formData.ville_immatriculation) parts.push(`RCS ${formData.ville_immatriculation}`);
                 if (formData.numero_tva) parts.push(`TVA : ${formData.numero_tva}`);
-                return parts.join(' - ') || (isRTL ? 'املأ الحقول لمعاينة النص' : 'Remplissez les champs pour voir l\'aperçu');
+                return parts.join(' - ') || (isRTL ? 'املا الحقول عشان تشوف النص' : 'Remplissez les champs pour voir l\'aperçu');
               })()}
             </div>
           </div>

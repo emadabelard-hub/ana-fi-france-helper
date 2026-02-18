@@ -307,46 +307,78 @@ const ServiceRequestPage = () => {
         </TabsList>
 
         {/* NEW REQUEST TAB */}
-        <TabsContent value="new" className="flex-1 overflow-y-auto px-4 py-4 space-y-4 mt-0">
-          {/* Security badge */}
-          <div className="flex items-center gap-2 bg-accent/10 rounded-xl p-3 border border-accent/20">
-            <ShieldCheck size={16} className="text-accent shrink-0" />
-            <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-cairo")}>
-              {isRTL
-                ? 'بياناتك في أمان تام وبتتحذف بعد تنفيذ الخدمة مباشرة'
-                : 'Vos données sont sécurisées et supprimées après exécution du service'}
-            </p>
+        <TabsContent value="new" className="flex-1 overflow-hidden flex flex-col mt-0">
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-4">
+            {/* Security badge */}
+            <div className="flex items-center gap-2 bg-accent/10 rounded-xl p-3 border border-accent/20">
+              <ShieldCheck size={16} className="text-accent shrink-0" />
+              <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-cairo")}>
+                {isRTL
+                  ? 'بياناتك في أمان تام وبتتحذف بعد تنفيذ الخدمة مباشرة'
+                  : 'Vos données sont sécurisées et supprimées après exécution du service'}
+              </p>
+            </div>
+
+            {/* 48h badge */}
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="bg-primary/10 p-2 rounded-full">
+                  <Clock size={20} className="text-primary" />
+                </div>
+                <div className={cn("flex-1", isRTL && "text-right")}>
+                  <p className={cn("text-sm font-bold text-foreground", isRTL && "font-cairo")}>
+                    {isRTL ? 'خدمة احترافية خلال 48 ساعة' : 'Service professionnel sous 48h'}
+                  </p>
+                  <p className={cn("text-xs text-muted-foreground", isRTL && "font-cairo")}>
+                    {isRTL ? 'لضمان الجودة، الدقة، والسرية التامة' : 'Pour garantir qualité, précision et confidentialité'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Description input */}
+            <div className="space-y-2">
+              <label className={cn("text-sm font-semibold text-foreground", isRTL && "font-cairo block text-right")}>
+                {isRTL ? 'اوصف الخدمة اللي محتاجها يا فندم' : 'Décrivez le service dont vous avez besoin'}
+              </label>
+              <Textarea
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder={isRTL ? 'مثال: عايز أقدم على APL في الكاف...' : 'Ex: Je veux faire une demande d\'APL à la CAF...'}
+                className={cn("min-h-[100px] resize-none", isRTL && "font-cairo text-right")}
+                dir={isRTL ? 'rtl' : 'ltr'}
+              />
+            </div>
+
+            {/* AI Requirements */}
+            {requirements && (
+              <Card className="border-accent/30 bg-accent/5">
+                <CardContent className="p-4 space-y-3">
+                  <h3 className={cn("text-sm font-bold text-foreground flex items-center gap-2", isRTL && "font-cairo flex-row-reverse")}>
+                    <FileText size={16} className="text-accent" />
+                    {isRTL ? 'المستندات والمعلومات المطلوبة' : 'Documents et informations requis'}
+                  </h3>
+                  <div className={cn(isRTL && "text-right font-cairo")}>
+                    <MarkdownRenderer content={requirements} isRTL={isRTL} />
+                  </div>
+                  
+                  {/* Submit & Pay */}
+                  <div className="pt-3 border-t border-border">
+                    <Button onClick={handleSubmitRequest} disabled={isSubmitting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                      {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
+                      {isRTL ? `ابعت الطلب وادفع 4€` : `Envoyer la demande et payer 4€`}
+                    </Button>
+                    <p className={cn("text-[10px] text-muted-foreground mt-2 text-center", isRTL && "font-cairo")}>
+                      {isRTL ? 'وضع تجريبي - لا يتم خصم مبلغ حقيقي' : 'Mode démo - Aucun montant réel débité'}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
-          {/* 48h badge */}
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <Clock size={20} className="text-primary" />
-              </div>
-              <div className={cn("flex-1", isRTL && "text-right")}>
-                <p className={cn("text-sm font-bold text-foreground", isRTL && "font-cairo")}>
-                  {isRTL ? 'خدمة احترافية خلال 48 ساعة' : 'Service professionnel sous 48h'}
-                </p>
-                <p className={cn("text-xs text-muted-foreground", isRTL && "font-cairo")}>
-                  {isRTL ? 'لضمان الجودة، الدقة، والسرية التامة' : 'Pour garantir qualité, précision et confidentialité'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Description input */}
-          <div className="space-y-2">
-            <label className={cn("text-sm font-semibold text-foreground", isRTL && "font-cairo block text-right")}>
-              {isRTL ? 'اوصف الخدمة اللي محتاجها يا فندم' : 'Décrivez le service dont vous avez besoin'}
-            </label>
-            <Textarea
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder={isRTL ? 'مثال: عايز أقدم على APL في الكاف...' : 'Ex: Je veux faire une demande d\'APL à la CAF...'}
-              className={cn("min-h-[100px] resize-none", isRTL && "font-cairo text-right")}
-              dir={isRTL ? 'rtl' : 'ltr'}
-            />
+          {/* Fixed analyze button - always visible */}
+          <div className="sticky bottom-0 z-50 px-4 py-3 bg-background border-t border-border safe-area-pb">
             <Button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full">
               {isAnalyzing ? (
                 <>
@@ -358,32 +390,6 @@ const ServiceRequestPage = () => {
               )}
             </Button>
           </div>
-
-          {/* AI Requirements */}
-          {requirements && (
-            <Card className="border-accent/30 bg-accent/5">
-              <CardContent className="p-4 space-y-3">
-                <h3 className={cn("text-sm font-bold text-foreground flex items-center gap-2", isRTL && "font-cairo flex-row-reverse")}>
-                  <FileText size={16} className="text-accent" />
-                  {isRTL ? 'المستندات والمعلومات المطلوبة' : 'Documents et informations requis'}
-                </h3>
-                <div className={cn(isRTL && "text-right font-cairo")}>
-                  <MarkdownRenderer content={requirements} isRTL={isRTL} />
-                </div>
-                
-                {/* Submit & Pay */}
-                <div className="pt-3 border-t border-border">
-                  <Button onClick={handleSubmitRequest} disabled={isSubmitting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-                    {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
-                    {isRTL ? `ابعت الطلب وادفع 4€` : `Envoyer la demande et payer 4€`}
-                  </Button>
-                  <p className={cn("text-[10px] text-muted-foreground mt-2 text-center", isRTL && "font-cairo")}>
-                    {isRTL ? 'وضع تجريبي - لا يتم خصم مبلغ حقيقي' : 'Mode démo - Aucun montant réel débité'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
         {/* HISTORY TAB */}

@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.contracting-assistant]
 verify_jwt = false
+
+[functions.universal-admin-assistant]
+verify_jwt = false

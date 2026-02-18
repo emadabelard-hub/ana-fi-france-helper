@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3, Users, MapPin, Receipt } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3, Users, MapPin, Receipt, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,6 +15,7 @@ import PromoStatsManager from '@/components/admin/PromoStatsManager';
 import UsersManager from '@/components/admin/UsersManager';
 import VisitStatsManager from '@/components/admin/VisitStatsManager';
 import TransactionsManager from '@/components/admin/TransactionsManager';
+import ServiceRequestsManager from '@/components/admin/ServiceRequestsManager';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();
@@ -164,10 +165,14 @@ const AdminPage = () => {
             {isRTL ? 'زيارات' : 'Visites'}
           </TabsTrigger>
         </TabsList>
-        <TabsList className={cn("grid w-full grid-cols-3", isRTL && "direction-rtl")}>
+        <TabsList className={cn("grid w-full grid-cols-4", isRTL && "direction-rtl")}>
           <TabsTrigger value="transactions" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <Receipt className="h-4 w-4" />
-            {isRTL ? 'معاملات' : 'Transactions'}
+            {isRTL ? 'معاملات' : 'Trans.'}
+          </TabsTrigger>
+          <TabsTrigger value="service-requests" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
+            <ClipboardList className="h-4 w-4" />
+            {isRTL ? 'طلبات' : 'Demandes'}
           </TabsTrigger>
           <TabsTrigger value="lessons" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <BookOpen className="h-4 w-4" />
@@ -190,6 +195,9 @@ const AdminPage = () => {
         </TabsContent>
         <TabsContent value="transactions" className="mt-6">
           <TransactionsManager isRTL={isRTL} />
+        </TabsContent>
+        <TabsContent value="service-requests" className="mt-6">
+          <ServiceRequestsManager isRTL={isRTL} />
         </TabsContent>
         <TabsContent value="lessons" className="mt-6">
           <LessonsManager isRTL={isRTL} />

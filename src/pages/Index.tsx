@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Briefcase, Newspaper, GraduationCap, Sparkles, Scale, MonitorSmartphone } from 'lucide-react';
+import { MessageCircle, Briefcase, Newspaper, GraduationCap, Sparkles, Scale, MonitorSmartphone, Headphones } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import WelcomeModal from '@/components/home/WelcomeModal';
@@ -118,6 +118,24 @@ const Index = () => {
                 </h3>
                 <p className={cn("text-[11px] text-muted-foreground mt-1", isRTL && "font-cairo")}>
                   {isRTL ? 'صوّر أي موقع فرنسي وأنا هاشرح لك كل حاجة' : 'Capturez n\'importe quel site français'}
+                </p>
+              </div>
+            </button>
+
+            {/* خدمة متخصصة - Service Delegation */}
+            <button
+              onClick={() => navigate('/service-request')}
+              className="w-full bg-gradient-to-br from-[#E8EAF6] to-[#C5CAE9] dark:from-[#1A1A2E] dark:to-[#16213E] p-5 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[#7986CB]/30 dark:border-[#5C6BC0]/20 shadow-sm"
+            >
+              <div className="bg-gradient-to-br from-[#5c6bc0] to-[#3949ab] p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(92,107,192,0.3)] shrink-0">
+                <Headphones size={28} className="text-white" />
+              </div>
+              <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
+                <h3 className={cn("font-black text-base leading-snug text-foreground", isRTL && "font-cairo")}>
+                  {isRTL ? 'خدمة متخصصة' : 'Service Spécialisé'}
+                </h3>
+                <p className={cn("text-[11px] text-muted-foreground mt-1", isRTL && "font-cairo")}>
+                  {isRTL ? 'متخصص يقوم بالإجراءات نيابة عنك خلال 48 ساعة' : 'Un spécialiste effectue vos démarches sous 48h'}
                 </p>
               </div>
             </button>

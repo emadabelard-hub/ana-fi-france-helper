@@ -63,6 +63,8 @@ const ServiceRequestPage = () => {
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const requirementsRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
 
@@ -161,6 +163,10 @@ const ServiceRequestPage = () => {
       if (data.requirements) {
         setRequirements(data.requirements);
         toast.success(isRTL ? 'تم تحليل طلبك بنجاح يا فندم!' : 'Analyse terminée !');
+        // Auto-scroll to requirements after render
+        setTimeout(() => {
+          requirementsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
       } else {
         toast.error(isRTL ? 'مفيش نتائج، جرب تاني' : 'Pas de résultats, réessayez');
       }
@@ -352,6 +358,7 @@ const ServiceRequestPage = () => {
 
             {/* AI Requirements */}
             {requirements && (
+              <div ref={requirementsRef}>
               <Card className="border-accent/30 bg-accent/5">
                 <CardContent className="p-4 space-y-3">
                   <h3 className={cn("text-sm font-bold text-foreground flex items-center gap-2", isRTL && "font-cairo flex-row-reverse")}>
@@ -374,6 +381,7 @@ const ServiceRequestPage = () => {
                   </div>
                 </CardContent>
               </Card>
+              </div>
             )}
           </div>
 

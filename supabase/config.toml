@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.universal-admin-assistant]
 verify_jwt = false
+
+[functions.analyze-service-request]
+verify_jwt = false

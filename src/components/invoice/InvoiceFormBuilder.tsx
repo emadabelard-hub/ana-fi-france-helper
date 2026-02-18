@@ -339,14 +339,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         ? 'TVA non applicable, article 293 B du CGI'
         : undefined,
       // Inject artisan's permanent signature and stamp from profile
-      artisanSignatureUrl: (profile as any)?.artisan_signature_url || undefined,
-      stampUrl: (profile as any)?.stamp_url || undefined,
+      artisanSignatureUrl: profile?.artisan_signature_url || undefined,
+      stampUrl: profile?.stamp_url || undefined,
       // Logo from profile
-      logoUrl: (profile as any)?.logo_url || undefined,
+      logoUrl: profile?.logo_url || undefined,
       // Auto-generate legal footer from profile fields
       legalFooter: (() => {
-        const p = profile as any;
-        if (!p) return undefined;
+        if (!profile) return undefined;
+        const p = profile;
         const parts: string[] = [];
         if (p.company_name) parts.push(p.company_name);
         const statusLabel = p.legal_status === 'auto-entrepreneur' ? 'Auto-entrepreneur' : (p.legal_status === 'societe' ? 'Société' : p.legal_status);

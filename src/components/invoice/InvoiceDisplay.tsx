@@ -164,9 +164,13 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
                       className={`font-medium leading-tight block whitespace-pre-wrap text-left ${isSection ? 'font-bold text-primary' : ''}`}
                     >
                       {item.designation_fr.includes('\n') 
-                        ? item.designation_fr.split('\n').filter(l => l.trim()).map((line, i) => (
-                            <span key={i} className="block">- {line.trim()}</span>
-                          ))
+                        ? (
+                          <ul className="list-disc list-inside space-y-0.5 ml-0">
+                            {item.designation_fr.split('\n').filter(l => l.trim()).map((line, i) => (
+                              <li key={i} className="text-[10px] leading-snug">{line.trim().replace(/^[-•·]\s*/, '')}</li>
+                            ))}
+                          </ul>
+                        )
                         : item.designation_fr}
                     </span>
                     {showArabic && item.designation_ar && (

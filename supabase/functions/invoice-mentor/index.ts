@@ -163,6 +163,49 @@ const CONSTRUCTION_DICTIONARY: Record<string, string> = {
   // Transport
   'نقل': 'Frais de déplacement',
   'مصاريف النقل': 'Frais de déplacement',
+  // Crépi / Ravalement
+  'كريبي': 'Crépi',
+  'رشاش': 'Crépi projeté',
+  'ravalement': 'Ravalement de façade',
+  // Plâtre
+  'جبس': 'Plâtre',
+  'بلاتر': 'Plâtre',
+  'platre': 'Plâtre',
+  // Joint
+  'فيصل': 'Joint',
+  'جوانط': 'Joint',
+  'joint': 'Joint',
+  'jointoiement': 'Jointoiement',
+  // Faux-plafond
+  'تابو': 'Faux-plafond',
+  'فوبلافون': 'Faux-plafond',
+  'faux plafond': 'Faux-plafond',
+  'سقف معلق': 'Faux-plafond',
+  // Étanchéité
+  'اتانشيتي': 'Étanchéité',
+  'عزل مائي': 'Étanchéité',
+  'etancheite': 'Étanchéité',
+  // Menuiserie
+  'منويزري': 'Menuiserie',
+  'نجارة': 'Menuiserie',
+  'menuiserie': 'Menuiserie',
+  // Cloison
+  'كلوازون': 'Cloison',
+  'حاجز': 'Cloison',
+  'cloison': 'Cloison',
+  // Faïence
+  'فيانس': 'Pose de faïence',
+  'faience': 'Pose de faïence',
+  // Nettoyage
+  'تنظيف': 'Nettoyage de chantier',
+  'نتوياج': 'Nettoyage de chantier',
+  'nettoyage': 'Nettoyage de chantier',
+  // Évacuation
+  'جمع الأنقاض': 'Évacuation des gravats',
+  'ديباغاج': 'Évacuation des gravats',
+  // Protection
+  'حماية': 'Protection des sols et meubles',
+  'باش': 'Bâche de protection',
 };
 
 // Try dictionary lookup before calling AI

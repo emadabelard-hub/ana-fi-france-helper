@@ -55,8 +55,8 @@ const features: ComingSoonFeature[] = [
   {
     id: 'peinture',
     icon: <Paintbrush size={24} className="text-white" />,
-    titleAr: 'حاسبة الصباغة والتكاليف',
-    titleFr: 'Calculateur Peinture & Coûts',
+    titleAr: 'دراسة الجدوى وتكاليف الشانتي',
+    titleFr: 'Étude de Faisabilité & Coûts Chantier',
     descAr: 'احسب تكاليف أعمال الصباغة',
     descFr: 'Estimez vos coûts de peinture',
     path: '/pro/peinture',

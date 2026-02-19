@@ -56,7 +56,7 @@ const ProPage = () => {
       customIcon: null,
       emoji: '🎨',
       title: isRTL ? 'قبل ما تعمل الدوفي احسب التكاليف والجدوى معانا. احنا والذكاء الصناعي واحد' : 'Calcule tes coûts et ta rentabilité avant de faire ton devis. L\'IA à ton service.',
-      description: isRTL ? 'حاسبة الصباغة والتكاليف' : 'Module Peinture & Estimation',
+      description: isRTL ? 'دراسة الجدوى وتكاليف الشانتي' : 'Étude de Faisabilité & Coûts Chantier',
       path: '/pro/peinture',
       gradient: 'from-amber-500 to-orange-500',
       price: '8 €',

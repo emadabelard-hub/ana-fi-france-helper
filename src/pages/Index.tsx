@@ -80,10 +80,10 @@ const Index = () => {
               <Sparkles size={28} className="text-white" />
             </div>
             <div className={cn("flex-1 min-w-0", isRTL ? "text-right" : "text-left")}>
-              <h3 className={cn("font-semibold text-lg leading-snug text-foreground", isRTL && "font-cairo")}>
+              <h3 className={cn("text-[1.2rem] font-extrabold leading-snug text-black", isRTL && "font-cairo")}>
                 {isRTL ? 'شبيك لبيك' : 'Votre Assistant IA'}
               </h3>
-              <p className={cn("text-sm text-muted-foreground mt-1", isRTL && "font-cairo")}>
+              <p className={cn("text-[1rem] font-bold text-black/80 mt-1", isRTL && "font-cairo")}>
                 {isRTL ? 'اسأل أي سؤال وأنا هاجاوبك فوراً يا فندم' : 'Posez n\'importe quelle question'}
               </p>
             </div>
@@ -99,7 +99,7 @@ const Index = () => {
             <div className="bg-gradient-to-br from-[#A5D6A7] to-[#66BB6A] dark:from-[#10B981] dark:to-[#059669] p-4 rounded-2xl shadow-[0_4px_20px_rgba(102,187,106,0.3)] dark:shadow-[0_4px_20px_rgba(16,185,129,0.3)] shrink-0">
               <Briefcase size={36} className="text-white" />
             </div>
-            <h3 className={cn("font-semibold text-lg leading-snug text-foreground", isRTL ? "font-cairo text-right" : "text-left")}>
+            <h3 className={cn("text-[1.2rem] font-extrabold leading-snug text-black", isRTL ? "font-cairo text-right" : "text-left")}>
               {isRTL
                 ? 'حلول مهنية واحترافية لجميع التخصصات والمهن'
                 : 'Solutions professionnelles pour tous les domaines'}
@@ -117,12 +117,12 @@ const Index = () => {
           </div>
           <div className={cn("flex-1 min-w-0", isRTL ? "text-right" : "text-left")}>
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className={cn("font-semibold text-lg leading-snug text-foreground", isRTL && "font-cairo")}>
+              <h3 className={cn("text-[1.2rem] font-extrabold leading-snug text-black", isRTL && "font-cairo")}>
                 {isRTL ? 'صانع CV' : 'Créateur de CV'}
               </h3>
               <Badge className="bg-emerald-600 text-white text-[10px] px-2 py-0.5 shrink-0">€ 6</Badge>
             </div>
-            <p className={cn("text-sm text-muted-foreground mt-1 line-clamp-2", isRTL && "font-cairo")}>
+            <p className={cn("text-[1rem] font-bold text-black/80 mt-1 line-clamp-2", isRTL && "font-cairo")}>
               {isRTL
                 ? 'هتعمل لك سي في نموذجي في أقل من دقايق. املا الخانات المطلوبة بالعربي وأنا هعمل لك السي في بالفرنساوي'
                 : 'Créez un CV professionnel en quelques minutes. Remplissez en arabe, on traduit en français'}
@@ -139,7 +139,7 @@ const Index = () => {
           <div className="bg-gradient-to-br from-[#90CAF9] to-[#42A5F5] dark:from-[#3B82F6] dark:to-[#2563EB] p-4 rounded-2xl shadow-[0_4px_20px_rgba(66,165,245,0.3)] dark:shadow-[0_4px_20px_rgba(59,130,246,0.3)]">
             <Newspaper size={32} className="text-white" />
           </div>
-          <h3 className={cn("font-semibold text-lg leading-tight text-center text-foreground", isRTL && "font-cairo")}>
+          <h3 className={cn("text-[1.2rem] font-extrabold leading-tight text-center text-black", isRTL && "font-cairo")}>
             {isRTL ? 'أخبار' : 'Actualités / News'}
           </h3>
         </button>
@@ -153,16 +153,16 @@ const Index = () => {
           <div className="bg-gradient-to-br from-[#CE93D8] to-[#AB47BC] dark:from-[#8B5CF6] dark:to-[#7C3AED] p-4 rounded-2xl shadow-[0_4px_20px_rgba(171,71,188,0.3)] dark:shadow-[0_4px_20px_rgba(139,92,246,0.3)]">
             <GraduationCap size={32} className="text-white" />
           </div>
-          <div className={cn("font-semibold text-lg leading-tight text-center text-foreground", isRTL && "font-cairo")}>
+          <div className={cn("text-[1.2rem] font-extrabold leading-tight text-center text-black", isRTL && "font-cairo")}>
             {isRTL ? (
               <>
                 <div>برنامج A1 A2 - B1 B2</div>
-                <div className="text-sm mt-1 text-muted-foreground">تحت التجربة والانشاء</div>
+                <div className="text-[1rem] font-bold mt-1 text-black/70">تحت التجربة والانشاء</div>
               </>
             ) : (
               <>
                 <div>Programme A1 A2 - B1 B2</div>
-                <div className="text-sm mt-1 text-muted-foreground">En cours de test et construction</div>
+                <div className="text-[1rem] font-bold mt-1 text-black/70">En cours de test et construction</div>
               </>
             )}
           </div>

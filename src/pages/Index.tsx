@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Briefcase, Newspaper, GraduationCap, Sparkles, Scale, MonitorSmartphone, Headphones } from 'lucide-react';
+import { Briefcase, Newspaper, GraduationCap, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import WelcomeModal from '@/components/home/WelcomeModal';
+import ComingSoonSection from '@/components/home/ComingSoonSection';
 
 const Index = () => {
   const { language, setLanguage, isRTL, t } = useLanguage();
@@ -62,84 +63,30 @@ const Index = () => {
       </header>
 
       <main className="px-5 pt-8 pb-32">
-        {/* PRIMARY CATEGORY: أنا جاي أساعدك */}
+        {/* COMING SOON SECTION - Admin gated */}
+        <ComingSoonSection />
+
+        {/* PRIMARY: شبيك لبيك AI Assistant */}
         <div className="mb-6">
           <h2 className={cn("text-lg font-black text-foreground mb-4", isRTL ? "font-cairo text-right" : "text-left")}>
             {isRTL ? '🤝 أنا جاي أساعدك' : '🤝 Je suis là pour t\'aider'}
           </h2>
-          <div className="flex flex-col gap-3">
-            {/* شبيك لبيك */}
-            <button
-              onClick={() => navigate('/ai-assistant')}
-              className="w-full bg-gradient-to-br from-[#EDE7F6] to-[#D1C4E9] dark:from-[#1A0A2E] dark:to-[#140820] p-5 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[#B39DDB]/30 dark:border-[#7C3AED]/20 shadow-sm"
-            >
-              <div className="bg-gradient-to-br from-[#7c3aed] to-[#a855f7] p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(124,58,237,0.3)] shrink-0">
-                <Sparkles size={28} className="text-white" />
-              </div>
-              <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
-                <h3 className={cn("font-black text-base leading-snug text-foreground", isRTL && "font-cairo")}>
-                  {isRTL ? 'شبيك لبيك' : 'Votre Assistant IA'}
-                </h3>
-                <p className={cn("text-[11px] text-muted-foreground mt-1", isRTL && "font-cairo")}>
-                  {isRTL ? 'اسأل أي سؤال وأنا هاجاوبك فوراً يا فندم' : 'Posez n\'importe quelle question'}
-                </p>
-              </div>
-            </button>
-
-            {/* مستشارك القانوني */}
-            <button
-              onClick={() => navigate('/premium-consultation')}
-              className="w-full bg-gradient-to-br from-[#FFF3E0] to-[#FFE0B2] dark:from-[#2A1F0A] dark:to-[#1F1500] p-5 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[#FFB74D]/30 dark:border-[#F59E0B]/20 shadow-sm"
-            >
-              <div className="bg-gradient-to-br from-[#f59e0b] to-[#ea580c] p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(245,158,11,0.3)] shrink-0">
-                <Scale size={28} className="text-white" />
-              </div>
-              <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
-                <h3 className={cn("font-black text-base leading-snug text-foreground", isRTL && "font-cairo")}>
-                  {isRTL ? 'مستشارك القانوني والمهني' : 'Consultant Juridique Pro'}
-                </h3>
-                <p className={cn("text-[11px] text-muted-foreground mt-1", isRTL && "font-cairo")}>
-                  {isRTL ? 'تحليل مستندات • استشارة احترافية' : 'Analyse de documents • Consultation pro'}
-                </p>
-              </div>
-            </button>
-
-            {/* المساعد الإداري الشامل - NEW */}
-            <button
-              onClick={() => navigate('/universal-admin-assistant')}
-              className="w-full bg-gradient-to-br from-[#E0F2F1] to-[#B2DFDB] dark:from-[#0A2A28] dark:to-[#081F1D] p-5 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[#80CBC4]/30 dark:border-[#14B8A6]/20 shadow-sm"
-            >
-              <div className="bg-gradient-to-br from-[#14b8a6] to-[#0d9488] p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(20,184,166,0.3)] shrink-0">
-                <MonitorSmartphone size={28} className="text-white" />
-              </div>
-              <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
-                <h3 className={cn("font-black text-base leading-snug text-foreground", isRTL && "font-cairo")}>
-                  {isRTL ? 'المساعد الإداري الشامل' : 'Assistant Administratif Universel'}
-                </h3>
-                <p className={cn("text-[11px] text-muted-foreground mt-1", isRTL && "font-cairo")}>
-                  {isRTL ? 'صوّر أي موقع فرنسي وأنا هاشرح لك كل حاجة' : 'Capturez n\'importe quel site français'}
-                </p>
-              </div>
-            </button>
-
-            {/* خدمة متخصصة - Service Delegation */}
-            <button
-              onClick={() => navigate('/service-request')}
-              className="w-full bg-gradient-to-br from-[#E8EAF6] to-[#C5CAE9] dark:from-[#1A1A2E] dark:to-[#16213E] p-5 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[#7986CB]/30 dark:border-[#5C6BC0]/20 shadow-sm"
-            >
-              <div className="bg-gradient-to-br from-[#5c6bc0] to-[#3949ab] p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(92,107,192,0.3)] shrink-0">
-                <Headphones size={28} className="text-white" />
-              </div>
-              <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
-                <h3 className={cn("font-black text-base leading-snug text-foreground", isRTL && "font-cairo")}>
-                  {isRTL ? 'خدمة متخصصة' : 'Service Spécialisé'}
-                </h3>
-                <p className={cn("text-[11px] text-muted-foreground mt-1", isRTL && "font-cairo")}>
-                  {isRTL ? 'متخصص يقوم بالإجراءات نيابة عنك خلال 48 ساعة' : 'Un spécialiste effectue vos démarches sous 48h'}
-                </p>
-              </div>
-            </button>
-          </div>
+          <button
+            onClick={() => navigate('/ai-assistant')}
+            className="w-full bg-gradient-to-br from-[#EDE7F6] to-[#D1C4E9] dark:from-[#1A0A2E] dark:to-[#140820] p-5 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[#B39DDB]/30 dark:border-[#7C3AED]/20 shadow-sm"
+          >
+            <div className="bg-gradient-to-br from-[#7c3aed] to-[#a855f7] p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(124,58,237,0.3)] shrink-0">
+              <Sparkles size={28} className="text-white" />
+            </div>
+            <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
+              <h3 className={cn("font-black text-base leading-snug text-foreground", isRTL && "font-cairo")}>
+                {isRTL ? 'شبيك لبيك' : 'Votre Assistant IA'}
+              </h3>
+              <p className={cn("text-[11px] text-muted-foreground mt-1", isRTL && "font-cairo")}>
+                {isRTL ? 'اسأل أي سؤال وأنا هاجاوبك فوراً يا فندم' : 'Posez n\'importe quelle question'}
+              </p>
+            </div>
+          </button>
         </div>
 
         {/* Card - Solutions Pro */}

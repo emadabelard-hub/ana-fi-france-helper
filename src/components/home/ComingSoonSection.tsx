@@ -96,10 +96,10 @@ const ComingSoonSection = () => {
           <Construction size={22} className="text-white" />
         </div>
         <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
-          <h3 className={cn("font-black text-sm text-foreground", isRTL && "font-cairo")}>
+          <h3 className={cn("font-semibold text-lg text-foreground", isRTL && "font-cairo")}>
             {isRTL ? 'حاجات جديدة بنجهزها' : 'Nouveautés en préparation'}
           </h3>
-          <p className={cn("text-[10px] text-muted-foreground mt-0.5", isRTL && "font-cairo")}>
+          <p className={cn("text-sm text-muted-foreground mt-0.5", isRTL && "font-cairo")}>
             {isRTL ? 'تحت الإنشاء' : 'En construction'}
           </p>
         </div>
@@ -135,11 +135,11 @@ const ComingSoonSection = () => {
                 <div className={cn("bg-gradient-to-br p-2.5 rounded-xl shrink-0", f.iconGradient)}>
                   {f.icon}
                 </div>
-                <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
-                  <h4 className={cn("font-bold text-sm text-foreground leading-snug", isRTL && "font-cairo")}>
+                <div className={cn("flex-1 min-w-0", isRTL ? "text-right" : "text-left")}>
+                  <h4 className={cn("font-semibold text-base text-foreground leading-snug", isRTL && "font-cairo")}>
                     {isRTL ? f.titleAr : f.titleFr}
                   </h4>
-                  <p className={cn("text-[10px] text-muted-foreground mt-0.5", isRTL && "font-cairo")}>
+                  <p className={cn("text-sm text-muted-foreground mt-1 line-clamp-2", isRTL && "font-cairo")}>
                     {isRTL ? f.descAr : f.descFr}
                   </p>
                 </div>

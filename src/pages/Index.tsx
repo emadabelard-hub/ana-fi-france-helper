@@ -78,11 +78,11 @@ const Index = () => {
             <div className="bg-gradient-to-br from-[#7c3aed] to-[#a855f7] p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(124,58,237,0.3)] shrink-0">
               <Sparkles size={28} className="text-white" />
             </div>
-            <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
-              <h3 className={cn("font-black text-base leading-snug text-foreground", isRTL && "font-cairo")}>
+            <div className={cn("flex-1 min-w-0", isRTL ? "text-right" : "text-left")}>
+              <h3 className={cn("font-semibold text-lg leading-snug text-foreground", isRTL && "font-cairo")}>
                 {isRTL ? 'شبيك لبيك' : 'Votre Assistant IA'}
               </h3>
-              <p className={cn("text-[11px] text-muted-foreground mt-1", isRTL && "font-cairo")}>
+              <p className={cn("text-sm text-muted-foreground mt-1", isRTL && "font-cairo")}>
                 {isRTL ? 'اسأل أي سؤال وأنا هاجاوبك فوراً يا فندم' : 'Posez n\'importe quelle question'}
               </p>
             </div>
@@ -98,7 +98,7 @@ const Index = () => {
             <div className="bg-gradient-to-br from-[#A5D6A7] to-[#66BB6A] dark:from-[#10B981] dark:to-[#059669] p-4 rounded-2xl shadow-[0_4px_20px_rgba(102,187,106,0.3)] dark:shadow-[0_4px_20px_rgba(16,185,129,0.3)] shrink-0">
               <Briefcase size={36} className="text-white" />
             </div>
-            <h3 className={cn("font-black text-base leading-snug text-foreground", isRTL ? "font-cairo text-right" : "text-left")}>
+            <h3 className={cn("font-semibold text-lg leading-snug text-foreground", isRTL ? "font-cairo text-right" : "text-left")}>
               {isRTL
                 ? 'حلول مهنية واحترافية وصانع سي في ذكي لجميع التخصصات والمهن'
                 : 'Solutions professionnelles et créateur de CV intelligent pour tous les domaines'}
@@ -115,7 +115,7 @@ const Index = () => {
           <div className="bg-gradient-to-br from-[#90CAF9] to-[#42A5F5] dark:from-[#3B82F6] dark:to-[#2563EB] p-4 rounded-2xl shadow-[0_4px_20px_rgba(66,165,245,0.3)] dark:shadow-[0_4px_20px_rgba(59,130,246,0.3)]">
             <Newspaper size={32} className="text-white" />
           </div>
-          <h3 className={cn("font-black text-lg leading-tight text-center text-[#1A1A1C]", isRTL && "font-cairo")}>
+          <h3 className={cn("font-semibold text-lg leading-tight text-center text-foreground", isRTL && "font-cairo")}>
             {isRTL ? 'أخبار' : 'Actualités / News'}
           </h3>
         </button>
@@ -129,16 +129,16 @@ const Index = () => {
           <div className="bg-gradient-to-br from-[#CE93D8] to-[#AB47BC] dark:from-[#8B5CF6] dark:to-[#7C3AED] p-4 rounded-2xl shadow-[0_4px_20px_rgba(171,71,188,0.3)] dark:shadow-[0_4px_20px_rgba(139,92,246,0.3)]">
             <GraduationCap size={32} className="text-white" />
           </div>
-          <div className={cn("font-black text-lg leading-tight text-center text-[#1A1A1C]", isRTL && "font-cairo")}>
+          <div className={cn("font-semibold text-lg leading-tight text-center text-foreground", isRTL && "font-cairo")}>
             {isRTL ? (
               <>
                 <div>برنامج A1 A2 - B1 B2</div>
-                <div className="text-sm mt-1 opacity-80">تحت التجربة والانشاء</div>
+                <div className="text-sm mt-1 text-muted-foreground">تحت التجربة والانشاء</div>
               </>
             ) : (
               <>
                 <div>Programme A1 A2 - B1 B2</div>
-                <div className="text-sm mt-1 opacity-80">En cours de test et construction</div>
+                <div className="text-sm mt-1 text-muted-foreground">En cours de test et construction</div>
               </>
             )}
           </div>

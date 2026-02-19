@@ -109,7 +109,7 @@ const Index = () => {
 
         {/* CV Maker Card */}
         <button
-          onClick={() => navigate('/cv-generator')}
+          onClick={() => navigate('/pro/cv-generator')}
           className="w-full mt-4 bg-gradient-to-br from-[#E8F5E9] to-[#C8E6C9] dark:from-[#0A2A14] dark:to-[#081F0D] p-5 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[#81C784]/30 dark:border-[#22C55E]/20 shadow-sm"
         >
           <div className="bg-gradient-to-br from-[#26A69A] to-[#00897B] dark:from-[#14B8A6] dark:to-[#0D9488] p-4 rounded-2xl shadow-[0_4px_20px_rgba(38,166,154,0.3)] dark:shadow-[0_4px_20px_rgba(20,184,166,0.3)] shrink-0">

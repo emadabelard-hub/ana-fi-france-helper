@@ -107,6 +107,9 @@ const CONSTRUCTION_DICTIONARY: Record<string, string> = {
   'peinture acrylique': 'Peinture acrylique',
   'بانتير اكريليك': 'Peinture acrylique',
   'دهان اكريليك': 'Peinture acrylique',
+  'لاك': 'Peinture laquée',
+  'ساتان': 'Peinture satinée',
+  'مات': 'Peinture mate',
   // Plaster / Enduit
   'اندوي': 'Enduit',
   'اندويه': 'Enduit',
@@ -114,16 +117,20 @@ const CONSTRUCTION_DICTIONARY: Record<string, string> = {
   'معجونة': 'Enduit',
   'enduit': 'Enduit',
   'endwi': 'Enduit',
+  'اندوي دي ليساج': 'Enduit de lissage',
+  'راتيساج': 'Ratissage',
   // Sanding / Ponçage
   'بونساج': 'Ponçage',
   'صنفرة': 'Ponçage',
   'ponsaj': 'Ponçage',
   'ponçage': 'Ponçage',
+  'بونسي': 'Ponçage',
   // Primer / Impression
   'امبريسيون': 'Impression (sous-couche)',
   'impression': 'Impression (sous-couche)',
   'سوكوش': 'Sous-couche',
   'sous-couche': 'Sous-couche',
+  'فيكساتور': 'Fixateur',
   // Tiles / Carrelage
   'زليج': 'Pose de carrelage',
   'كاغلاج': 'Pose de carrelage',
@@ -131,38 +138,61 @@ const CONSTRUCTION_DICTIONARY: Record<string, string> = {
   'zelij': 'Pose de carrelage',
   'carrelage': 'Pose de carrelage',
   'karelaj': 'Pose de carrelage',
+  'موزايك': 'Pose de mosaïque',
   // Plumbing / Plomberie
   'بلومبري': 'Plomberie',
   'سباكة': 'Plomberie',
   'plomberie': 'Plomberie',
+  'روبيني': 'Robinetterie',
+  'روبينيه': 'Robinet',
+  'شوفاج': 'Chauffe-eau',
+  'بالون دو شو': 'Ballon d\'eau chaude',
+  'سيفون': 'Siphon',
+  'ميلانجور': 'Mitigeur',
   // Electricity / Électricité
   'كهرباء': 'Électricité',
   'كهربا': 'Électricité',
   'electricite': 'Électricité',
+  'تابلو': 'Tableau électrique',
+  'بريز': 'Prise électrique',
+  'انتيروبتور': 'Interrupteur',
+  'لوستر': 'Lustre / Luminaire',
   // Demolition / Démolition
   'هدم': 'Démolition',
   'تكسير': 'Démolition',
   'demolition': 'Démolition',
+  'كاساج': 'Démolition',
   // Flooring / Parquet
   'باركيه': 'Pose de parquet',
   'parquet': 'Pose de parquet',
   'باركي': 'Pose de parquet',
+  'سول': 'Revêtement de sol',
+  'لينو': 'Pose de linoléum',
   // Masonry / Maçonnerie
   'ماسونري': 'Maçonnerie',
   'بناء': 'Maçonnerie',
   'maconnerie': 'Maçonnerie',
+  'بريك': 'Briques',
+  'بلوك': 'Parpaings',
+  'سيمان': 'Ciment',
+  'بيطون': 'Béton',
   // Isolation
   'عزل': 'Isolation',
   'isolation': 'Isolation',
+  'عزل حراري': 'Isolation thermique',
+  'عزل صوتي': 'Isolation phonique',
+  'لان دي فير': 'Laine de verre',
   // Labour
   'مصنعية': "Main d'œuvre",
   'يد عاملة': "Main d'œuvre",
   // Materials
   'مواد': 'Fourniture de matériaux',
   'توريد': 'Fourniture de matériaux',
+  'فورنيتور': 'Fourniture',
   // Transport
   'نقل': 'Frais de déplacement',
   'مصاريف النقل': 'Frais de déplacement',
+  'ديبلاسمون': 'Frais de déplacement',
   // Crépi / Ravalement
   'كريبي': 'Crépi',
   'رشاش': 'Crépi projeté',
@@ -171,11 +201,13 @@ const CONSTRUCTION_DICTIONARY: Record<string, string> = {
   'جبس': 'Plâtre',
   'بلاتر': 'Plâtre',
   'platre': 'Plâtre',
+  'بلاكو': 'Placo (BA13)',
   // Joint
   'فيصل': 'Joint',
   'جوانط': 'Joint',
   'joint': 'Joint',
   'jointoiement': 'Jointoiement',
+  'سيليكون': 'Joint silicone',
   // Faux-plafond
   'تابو': 'Faux-plafond',
   'فوبلافون': 'Faux-plafond',
@@ -189,6 +221,10 @@ const CONSTRUCTION_DICTIONARY: Record<string, string> = {
   'منويزري': 'Menuiserie',
   'نجارة': 'Menuiserie',
   'menuiserie': 'Menuiserie',
+  'باب': 'Porte',
+  'شباك': 'Fenêtre',
+  'بورت': 'Porte',
+  'فنيتر': 'Fenêtre',
   // Cloison
   'كلوازون': 'Cloison',
   'حاجز': 'Cloison',
@@ -206,6 +242,19 @@ const CONSTRUCTION_DICTIONARY: Record<string, string> = {
   // Protection
   'حماية': 'Protection des sols et meubles',
   'باش': 'Bâche de protection',
+  // Ventilation / VMC
+  'فانتيلاسيون': 'VMC (Ventilation)',
+  'vmc': 'VMC (Ventilation)',
+  'تهوية': 'Ventilation',
+  // Plinthes
+  'بلانت': 'Pose de plinthes',
+  'plinthe': 'Pose de plinthes',
+  // Tapisserie
+  'تابيسري': 'Tapisserie / Papier peint',
+  'ورق حائط': 'Papier peint',
+  // Gouttière
+  'غوتيير': 'Gouttière',
+  'مزاريب': 'Gouttière',
 };
 
 // Try dictionary lookup before calling AI

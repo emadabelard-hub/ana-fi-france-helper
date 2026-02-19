@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Newspaper, GraduationCap, Sparkles } from 'lucide-react';
+import { Briefcase, Newspaper, GraduationCap, Sparkles, FileUser } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import WelcomeModal from '@/components/home/WelcomeModal';
@@ -100,11 +101,34 @@ const Index = () => {
             </div>
             <h3 className={cn("font-semibold text-lg leading-snug text-foreground", isRTL ? "font-cairo text-right" : "text-left")}>
               {isRTL
-                ? 'حلول مهنية واحترافية وصانع سي في ذكي لجميع التخصصات والمهن'
-                : 'Solutions professionnelles et créateur de CV intelligent pour tous les domaines'}
+                ? 'حلول مهنية واحترافية لجميع التخصصات والمهن'
+                : 'Solutions professionnelles pour tous les domaines'}
             </h3>
           </button>
         </div>
+
+        {/* CV Maker Card */}
+        <button
+          onClick={() => navigate('/cv-generator')}
+          className="w-full mt-4 bg-gradient-to-br from-[#E8F5E9] to-[#C8E6C9] dark:from-[#0A2A14] dark:to-[#081F0D] p-5 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[#81C784]/30 dark:border-[#22C55E]/20 shadow-sm"
+        >
+          <div className="bg-gradient-to-br from-[#26A69A] to-[#00897B] dark:from-[#14B8A6] dark:to-[#0D9488] p-4 rounded-2xl shadow-[0_4px_20px_rgba(38,166,154,0.3)] dark:shadow-[0_4px_20px_rgba(20,184,166,0.3)] shrink-0">
+            <FileUser size={32} className="text-white" />
+          </div>
+          <div className={cn("flex-1 min-w-0", isRTL ? "text-right" : "text-left")}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className={cn("font-semibold text-lg leading-snug text-foreground", isRTL && "font-cairo")}>
+                {isRTL ? 'صانع CV' : 'Créateur de CV'}
+              </h3>
+              <Badge className="bg-emerald-600 text-white text-[10px] px-2 py-0.5 shrink-0">€ 6</Badge>
+            </div>
+            <p className={cn("text-sm text-muted-foreground mt-1 line-clamp-2", isRTL && "font-cairo")}>
+              {isRTL
+                ? 'هتعمل لك سي في نموذجي في أقل من دقايق. املا الخانات المطلوبة بالعربي وأنا هعمل لك السي في بالفرنساوي'
+                : 'Créez un CV professionnel en quelques minutes. Remplissez en arabe, on traduit en français'}
+            </p>
+          </div>
+        </button>
 
         {/* Bottom Row: 2 Wide Cards */}
         {/* News Card (Light Coral) */}

@@ -1,7 +1,9 @@
 /**
  * Auto-save draft system for Devis & Facture forms.
- * Persists form data to localStorage and restores on return.
+ * Persists form data to both localStorage (offline) and Supabase cloud (cross-device).
  */
+
+import { supabase } from '@/integrations/supabase/client';
 
 const DRAFT_KEY = 'invoice_draft_v1';
 
@@ -33,6 +35,8 @@ export interface InvoiceDraft {
   savedAt: number;
 }
 
+// ── Local Storage (offline fallback) ──
+
 export const saveDraft = (draft: Omit<InvoiceDraft, 'savedAt'>) => {
   try {
     const data: InvoiceDraft = { ...draft, savedAt: Date.now() };
@@ -40,6 +44,8 @@ export const saveDraft = (draft: Omit<InvoiceDraft, 'savedAt'>) => {
   } catch (e) {
     console.warn('Failed to save draft:', e);
   }
+  // Fire-and-forget cloud save
+  saveCloudDraft(draft).catch(() => {});
 };
 
 export const loadDraft = (): InvoiceDraft | null => {
@@ -65,4 +71,64 @@ export const clearDraft = () => {
   } catch (e) {
     console.warn('Failed to clear draft:', e);
   }
+  // Fire-and-forget cloud clear
+  clearCloudDraft().catch(() => {});
+};
+
+// ── Cloud Storage (Supabase) ──
+
+export const saveCloudDraft = async (draft: Omit<InvoiceDraft, 'savedAt'>) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const draftData: InvoiceDraft = { ...draft, savedAt: Date.now() };
+
+  await (supabase as any).from('invoice_drafts').upsert(
+    {
+      user_id: user.id,
+      document_type: draft.documentType,
+      draft_data: draftData,
+    },
+    { onConflict: 'user_id,document_type' }
+  );
+};
+
+export const loadCloudDraft = async (documentType?: 'devis' | 'facture'): Promise<InvoiceDraft | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  let query = (supabase as any).from('invoice_drafts')
+    .select('draft_data')
+    .eq('user_id', user.id)
+    .order('updated_at', { ascending: false })
+    .limit(1);
+
+  if (documentType) {
+    query = query.eq('document_type', documentType);
+  }
+
+  const { data, error } = await query.maybeSingle();
+  if (error || !data) return null;
+
+  const draft = data.draft_data as InvoiceDraft;
+  // Expire drafts older than 30 days in cloud
+  if (Date.now() - draft.savedAt > 30 * 24 * 60 * 60 * 1000) {
+    return null;
+  }
+  return draft;
+};
+
+export const clearCloudDraft = async (documentType?: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  let query = (supabase as any).from('invoice_drafts')
+    .delete()
+    .eq('user_id', user.id);
+
+  if (documentType) {
+    query = query.eq('document_type', documentType);
+  }
+
+  await query;
 };

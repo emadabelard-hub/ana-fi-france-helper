@@ -19,8 +19,9 @@ import InvoiceGuideModal from './InvoiceGuideModal';
 import PreFlightChecklistModal from './PreFlightChecklistModal';
 import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
 import { supabase } from '@/integrations/supabase/client';
-import { saveDraft, loadDraft, clearDraft } from '@/lib/invoiceDraftStorage';
+import { saveDraft, loadDraft, clearDraft, loadCloudDraft } from '@/lib/invoiceDraftStorage';
 import { detectMultipleTasks } from '@/lib/smartItemSplit';
+import { useAuth } from '@/hooks/useAuth';
 
 interface PrefillData {
   clientName?: string;
@@ -62,6 +63,7 @@ const generateDocNumber = (type: 'devis' | 'facture') => {
 
 const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeChange }: InvoiceFormBuilderProps) => {
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
   const invoiceRef = useRef<HTMLDivElement>(null);
@@ -138,30 +140,38 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [draftRestored, setDraftRestored] = useState(false);
   useEffect(() => {
     if (prefillData || draftRestored) return;
-    const draft = loadDraft();
-    if (draft) {
-      setClientName(draft.clientName || '');
-      setClientAddress(draft.clientAddress || '');
-      setWorkSiteSameAsClient(draft.workSiteSameAsClient);
-      setWorkSiteAddress(draft.workSiteAddress || '');
-      setIncludeTravelCosts(draft.includeTravelCosts);
-      setTravelDescription(draft.travelDescription || '');
-      setTravelPrice(draft.travelPrice || 30);
-      setIsAutoEntrepreneur(draft.isAutoEntrepreneur);
-      setSelectedTvaRate(draft.selectedTvaRate || 10);
-      setValidityDuration(draft.validityDuration || 30);
-      setAcomptePercent(draft.acomptePercent ?? 30);
-      setDelaiPaiement(draft.delaiPaiement || 'reception');
-      setMoyenPaiement(draft.moyenPaiement || 'virement');
-      if (draft.docNumber) setDocNumber(draft.docNumber);
-      if (draft.items?.length) setItems(draft.items);
-      toast({
-        title: isRTL ? '📝 تم استعادة المسودة' : '📝 Brouillon restauré',
-        description: isRTL ? 'رجعنالك الشغل اللي كنت بتعمله' : 'Votre travail précédent a été restauré',
-      });
-    }
-    setDraftRestored(true);
-  }, [prefillData, draftRestored]);
+    
+    const restoreDraft = async () => {
+      // Try cloud first if logged in, fallback to localStorage
+      let draft = user ? await loadCloudDraft(documentType) : null;
+      if (!draft) draft = loadDraft();
+      
+      if (draft) {
+        setClientName(draft.clientName || '');
+        setClientAddress(draft.clientAddress || '');
+        setWorkSiteSameAsClient(draft.workSiteSameAsClient);
+        setWorkSiteAddress(draft.workSiteAddress || '');
+        setIncludeTravelCosts(draft.includeTravelCosts);
+        setTravelDescription(draft.travelDescription || '');
+        setTravelPrice(draft.travelPrice || 30);
+        setIsAutoEntrepreneur(draft.isAutoEntrepreneur);
+        setSelectedTvaRate(draft.selectedTvaRate || 10);
+        setValidityDuration(draft.validityDuration || 30);
+        setAcomptePercent(draft.acomptePercent ?? 30);
+        setDelaiPaiement(draft.delaiPaiement || 'reception');
+        setMoyenPaiement(draft.moyenPaiement || 'virement');
+        if (draft.docNumber) setDocNumber(draft.docNumber);
+        if (draft.items?.length) setItems(draft.items);
+        toast({
+          title: isRTL ? '📝 تم استعادة المسودة' : '📝 Brouillon restauré',
+          description: isRTL ? 'رجعنالك الشغل اللي كنت بتعمله' : 'Votre travail précédent a été restauré',
+        });
+      }
+      setDraftRestored(true);
+    };
+    
+    restoreDraft();
+  }, [prefillData, draftRestored, user, documentType]);
 
   // --- AUTO-SAVE draft on every change (debounced) ---
   useEffect(() => {

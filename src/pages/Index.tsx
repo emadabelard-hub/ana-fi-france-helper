@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Newspaper, GraduationCap, Sparkles, FileUser } from 'lucide-react';
+import { Briefcase, Newspaper, GraduationCap, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { FileUser } from 'lucide-react';
 import WelcomeModal from '@/components/home/WelcomeModal';
 import ComingSoonSection from '@/components/home/ComingSoonSection';
 

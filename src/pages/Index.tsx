@@ -101,8 +101,8 @@ const Index = () => {
             </div>
             <h3 className={cn("text-[1.2rem] font-extrabold leading-snug text-black", isRTL ? "font-cairo text-right" : "text-left")}>
               {isRTL
-                ? 'حلول مهنية واحترافية لجميع التخصصات والمهن'
-                : 'Solutions professionnelles pour tous les domaines'}
+                ? 'اعمل دوفيهاتك وفواتيرك بالعربي يطلعوا لك بالفرنساوي'
+                : 'Rédigez vos devis et factures en arabe, on les génère en français'}
             </h3>
           </button>
         </div>
@@ -116,16 +116,10 @@ const Index = () => {
             <FileUser size={32} className="text-white" />
           </div>
           <div className={cn("flex-1 min-w-0", isRTL ? "text-right" : "text-left")}>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className={cn("text-[1.2rem] font-extrabold leading-snug text-black", isRTL && "font-cairo")}>
-                {isRTL ? 'صانع CV' : 'Créateur de CV'}
-              </h3>
-              <Badge className="bg-emerald-600 text-white text-[10px] px-2 py-0.5 shrink-0">€ 6</Badge>
-            </div>
-            <p className={cn("text-[1rem] font-bold text-black/80 mt-1 line-clamp-2", isRTL && "font-cairo")}>
+            <p className={cn("text-[1.2rem] font-extrabold text-black leading-snug", isRTL && "font-cairo")}>
               {isRTL
-                ? 'هتعمل لك سي في نموذجي في أقل من دقايق. املا الخانات المطلوبة بالعربي وأنا هعمل لك السي في بالفرنساوي'
-                : 'Créez un CV professionnel en quelques minutes. Remplissez en arabe, on traduit en français'}
+                ? 'اعمل سي في بالعربي وأنا أطلعهولك بالفرنساوي'
+                : 'Rédigez votre CV en arabe, on le génère en français'}
             </p>
           </div>
         </button>

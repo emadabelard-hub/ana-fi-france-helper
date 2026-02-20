@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { PenLine, Settings, ArrowRight, ArrowLeft, FileUser, Paintbrush, Euro } from 'lucide-react';
+import { PenLine, Settings, ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
@@ -40,27 +40,6 @@ const ProPage = () => {
       path: '/pro/quote-to-invoice',
       gradient: 'from-amber-500 to-emerald-500',
       price: '12 €',
-    },
-    {
-      icon: FileUser,
-      emoji: '📄',
-      title: t('pro.cvGenerator'),
-      description: t('pro.cvGeneratorDesc'),
-      description2: t('pro.cvGeneratorDesc2'),
-      path: '/pro/cv-generator',
-      gradient: 'from-indigo-500 to-purple-600',
-      price: '6 €',
-    },
-    {
-      icon: Paintbrush,
-      customIcon: null,
-      emoji: '🎨',
-      title: isRTL ? 'قبل ما تعمل الدوفي احسب التكاليف والجدوى معانا. احنا والذكاء الصناعي واحد' : 'Calcule tes coûts et ta rentabilité avant de faire ton devis. L\'IA à ton service.',
-      description: isRTL ? 'دراسة الجدوى وتكاليف الشانتي' : 'Étude de Faisabilité & Coûts Chantier',
-      path: '/pro/peinture',
-      gradient: 'from-amber-500 to-orange-500',
-      price: '8 €',
-      bundleLabel: isRTL ? '+ دوفي = 12 € (عرض اقتصادي)' : '+ Devis = 12 € (Pack Éco)',
     },
   ];
 
@@ -132,14 +111,6 @@ const ProPage = () => {
                     )}>
                       {tool.description}
                     </p>
-                    {tool.description2 && (
-                      <p className={cn(
-                        "text-white/80 text-sm",
-                        isRTL && "font-cairo"
-                      )}>
-                        {tool.description2}
-                      </p>
-                    )}
                   </div>
 
                   {/* Price badge & Arrow */}

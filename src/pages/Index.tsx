@@ -102,7 +102,7 @@ const Index = () => {
             <h3 className={cn("text-[1.2rem] font-extrabold leading-snug text-black", isRTL ? "font-cairo text-right" : "text-left")}>
               {isRTL
                 ? 'اعمل دوفيهاتك وفواتيرك بالعربي يطلعوا لك بالفرنساوي'
-                : 'Rédigez vos devis et factures en arabe, on les génère en français'}
+                : 'Smart: le système intelligent pour générer les factures et les devis'}
             </h3>
           </button>
         </div>
@@ -119,7 +119,7 @@ const Index = () => {
             <p className={cn("text-[1.2rem] font-extrabold text-black leading-snug", isRTL && "font-cairo")}>
               {isRTL
                 ? 'اعمل سي في بالعربي وأنا أطلعهولك بالفرنساوي'
-                : 'Rédigez votre CV en arabe, on le génère en français'}
+                : 'Smart CV en quelques minutes'}
             </p>
           </div>
         </button>

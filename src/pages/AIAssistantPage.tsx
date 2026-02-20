@@ -62,7 +62,15 @@ const AIAssistantPage = () => {
 
 
       if (!resp.ok || !resp.body) {
-        upsert(language === 'ar' ? 'حصل مشكلة، جرب تاني 🔄' : 'Erreur, réessayez.');
+        let errorMsg = language === 'ar' 
+          ? 'عذراً، نظام الذكاء الاصطناعي يواجه ضغطاً، حاول مجدداً 🔄' 
+          : 'Service IA temporairement indisponible, réessayez 🔄';
+        try {
+          const errData = await resp.json();
+          if (errData?.error) errorMsg = errData.error;
+        } catch {}
+        console.error('AI Assistant error:', resp.status);
+        upsert(errorMsg);
         setIsLoading(false);
         return;
       }

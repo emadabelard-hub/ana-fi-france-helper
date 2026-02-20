@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Stamp, Trash2, Loader2, Check, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { compressImageFile } from '@/lib/imageCompression';
+import { getSignedAssetUrl } from '@/lib/storageUtils';
 
 const StampUploadSection = () => {
   const { isRTL } = useLanguage();
@@ -17,8 +18,18 @@ const StampUploadSection = () => {
 
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [displayUrl, setDisplayUrl] = useState<string | null>(null);
 
   const currentStampUrl = (profile as any)?.stamp_url || null;
+
+  // Resolve signed URL for display
+  useEffect(() => {
+    if (currentStampUrl) {
+      getSignedAssetUrl(currentStampUrl).then(url => setDisplayUrl(url));
+    } else {
+      setDisplayUrl(null);
+    }
+  }, [currentStampUrl]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,10 +91,10 @@ const StampUploadSection = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {currentStampUrl ? (
+        {currentStampUrl && displayUrl ? (
           <div className="space-y-4">
             <div className="bg-white border rounded-lg p-4">
-              <img src={currentStampUrl} alt={isRTL ? 'الطابع' : 'Mon tampon'} className="max-h-24 mx-auto" />
+              <img src={displayUrl} alt={isRTL ? 'الطابع' : 'Mon tampon'} className="max-h-24 mx-auto" />
             </div>
             <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
               <div className="flex items-center gap-1 text-sm text-green-600">

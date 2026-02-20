@@ -22,6 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { saveDraft, loadDraft, clearDraft, loadCloudDraft } from '@/lib/invoiceDraftStorage';
 import { detectMultipleTasks } from '@/lib/smartItemSplit';
 import { useAuth } from '@/hooks/useAuth';
+import { resolveAssetUrls } from '@/lib/storageUtils';
 
 interface PrefillData {
   clientName?: string;
@@ -131,6 +132,24 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const arabicDebounceTimersRef = useRef<Record<string, ReturnType<typeof setTimeout> | undefined>>({});
   const lastTranslatedSourceRef = useRef<Record<string, string | undefined>>({});
   const itemsRef = useRef(items);
+
+  // Signed URLs for company assets (logo, signature, stamp)
+  const [signedUrls, setSignedUrls] = useState<{
+    logoUrl: string | null;
+    artisanSignatureUrl: string | null;
+    stampUrl: string | null;
+    headerImageUrl: string | null;
+  }>({ logoUrl: null, artisanSignatureUrl: null, stampUrl: null, headerImageUrl: null });
+
+  useEffect(() => {
+    if (!profile) return;
+    resolveAssetUrls({
+      logoUrl: profile.logo_url,
+      artisanSignatureUrl: profile.artisan_signature_url,
+      stampUrl: profile.stamp_url,
+      headerImageUrl: profile.header_image_url,
+    }).then(setSignedUrls);
+  }, [profile?.logo_url, profile?.artisan_signature_url, profile?.stamp_url, profile?.header_image_url]);
 
   useEffect(() => {
     itemsRef.current = items;
@@ -348,11 +367,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       legalMentions: tvaExempt 
         ? 'TVA non applicable, article 293 B du CGI'
         : undefined,
-      // Inject artisan's permanent signature and stamp from profile
-      artisanSignatureUrl: profile?.artisan_signature_url || undefined,
-      stampUrl: profile?.stamp_url || undefined,
-      // Logo from profile
-      logoUrl: profile?.logo_url || undefined,
+      // Inject signed URLs for artisan's permanent signature, stamp, and logo
+      artisanSignatureUrl: signedUrls.artisanSignatureUrl || undefined,
+      stampUrl: signedUrls.stampUrl || undefined,
+      // Logo from profile (signed URL)
+      logoUrl: signedUrls.logoUrl || undefined,
       // Auto-generate legal footer from profile fields
       legalFooter: (() => {
         if (!profile) return undefined;

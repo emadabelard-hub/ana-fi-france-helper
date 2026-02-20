@@ -81,10 +81,10 @@ const Index = () => {
             </div>
             <div className={cn("flex-1 min-w-0", isRTL ? "text-right" : "text-left")}>
               <h3 className={cn("text-[1.2rem] font-extrabold leading-snug text-black", isRTL && "font-cairo")}>
-                {isRTL ? 'شبيك لبيك' : 'Votre Assistant IA'}
+                {isRTL ? 'شبيك لبيك' : 'Assistant IA'}
               </h3>
               <p className={cn("text-[1rem] font-bold text-black/80 mt-1", isRTL && "font-cairo")}>
-                {isRTL ? 'اسأل أي سؤال وأنا هاجاوبك فوراً يا فندم' : 'Posez n\'importe quelle question'}
+                {isRTL ? 'اسأل أي سؤال وأنا هاجاوبك فوراً يا فندم' : 'Smart : réponses instantanées à toutes vos questions'}
               </p>
             </div>
           </button>

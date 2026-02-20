@@ -83,6 +83,29 @@ const CVGeneratorPage = () => {
   const [activeTab, setActiveTab] = useState('edit');
 
   const handleTranslate = async () => {
+    // Validate minimum required fields before calling API
+    if (!cvData.fullName.trim() || !cvData.profession.trim()) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'بيانات ناقصة' : 'Données manquantes',
+        description: isRTL 
+          ? 'يرجى ملء الاسم والمهنة على الأقل' 
+          : 'Veuillez remplir au moins le nom et la profession',
+      });
+      return;
+    }
+
+    if (cvData.education.length === 0 && cvData.skills.length === 0 && cvData.languages.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'بيانات ناقصة' : 'Données manquantes',
+        description: isRTL 
+          ? 'يرجى إضافة التعليم أو المهارات أو اللغات على الأقل' 
+          : 'Veuillez ajouter au moins une formation, compétence ou langue',
+      });
+      return;
+    }
+
     setIsTranslating(true);
     try {
       // Exclude photoUrl from translation payload — photo is visual only
@@ -93,7 +116,7 @@ const CVGeneratorPage = () => {
       });
 
       if (error) {
-        let detailMsg = error.message || 'Unknown error';
+        let detailMsg = '';
         try {
           if (error.context?.body) {
             const body = typeof error.context.body === 'string' ? JSON.parse(error.context.body) : error.context.body;
@@ -101,7 +124,7 @@ const CVGeneratorPage = () => {
           }
         } catch { /* ignore parse errors */ }
         console.error('translate-cv detailed error:', { status: error.status, message: detailMsg, raw: error });
-        throw new Error(detailMsg);
+        throw new Error(detailMsg || 'translation_failed');
       }
 
       // Preserve original photo in translated data
@@ -114,12 +137,14 @@ const CVGeneratorPage = () => {
           : 'Vos données ont été traduites en français professionnel',
       });
     } catch (error) {
-      const errMsg = error instanceof Error ? error.message : 'Unknown error';
+      const errMsg = error instanceof Error ? error.message : '';
       console.error('Translation error:', errMsg, error);
       toast({
         variant: 'destructive',
         title: isRTL ? 'خطأ في الترجمة' : 'Erreur de traduction',
-        description: errMsg,
+        description: isRTL 
+          ? 'عذراً، نظام الترجمة مشغول حالياً، حاول مرة أخرى 🔄' 
+          : 'Le service de traduction est temporairement indisponible, réessayez 🔄',
       });
     } finally {
       setIsTranslating(false);

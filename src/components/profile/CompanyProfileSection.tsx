@@ -16,6 +16,7 @@ import { compressImageFile } from '@/lib/imageCompression';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import ArtisanSignatureSection from './ArtisanSignatureSection';
 import StampUploadSection from './StampUploadSection';
+import { getSignedAssetUrl } from '@/lib/storageUtils';
 
 interface CompanyFormData {
   company_name: string;
@@ -42,6 +43,8 @@ const CompanyProfileSection = () => {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingHeader, setIsUploadingHeader] = useState(false);
   const [siretError, setSiretError] = useState<string | null>(null);
+  const [signedLogoUrl, setSignedLogoUrl] = useState<string | null>(null);
+  const [signedHeaderUrl, setSignedHeaderUrl] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<CompanyFormData>({
     company_name: '',
@@ -78,6 +81,23 @@ const CompanyProfileSection = () => {
       });
     }
   }, [profile]);
+
+  // Resolve signed URLs for display when formData URLs change
+  useEffect(() => {
+    if (formData.logo_url) {
+      getSignedAssetUrl(formData.logo_url).then(url => setSignedLogoUrl(url));
+    } else {
+      setSignedLogoUrl(null);
+    }
+  }, [formData.logo_url]);
+
+  useEffect(() => {
+    if (formData.header_image_url) {
+      getSignedAssetUrl(formData.header_image_url).then(url => setSignedHeaderUrl(url));
+    } else {
+      setSignedHeaderUrl(null);
+    }
+  }, [formData.header_image_url]);
 
   const handleChange = (field: keyof CompanyFormData, value: string) => {
     if (field === 'siret') {
@@ -369,10 +389,10 @@ const CompanyProfileSection = () => {
               </Label>
               
               <div className={cn("flex items-center gap-4", isRTL && "flex-row-reverse")}>
-                {formData.logo_url ? (
+                {formData.logo_url && signedLogoUrl ? (
                   <div className="w-20 h-20 rounded-lg border overflow-hidden bg-muted">
                     <img 
-                      src={formData.logo_url} 
+                      src={signedLogoUrl} 
                       alt="Logo" 
                       className="w-full h-full object-contain"
                     />
@@ -410,11 +430,11 @@ const CompanyProfileSection = () => {
               </Label>
               
               <div className="space-y-3">
-                {formData.header_image_url ? (
+                {formData.header_image_url && signedHeaderUrl ? (
                   <div className="rounded-lg border overflow-hidden bg-muted">
                     <AspectRatio ratio={16/4}>
                       <img 
-                        src={formData.header_image_url} 
+                        src={signedHeaderUrl} 
                         alt="Header" 
                         className="w-full h-full object-cover"
                       />
@@ -461,11 +481,11 @@ const CompanyProfileSection = () => {
               {isRTL ? 'معاينة الهيدر' : 'Aperçu de l\'en-tête'}
             </Label>
             <div className="rounded-lg border bg-card p-4 shadow-sm">
-              {formData.header_type === 'full_image' && formData.header_image_url ? (
+              {formData.header_type === 'full_image' && formData.header_image_url && signedHeaderUrl ? (
                 <div className="rounded overflow-hidden">
                   <AspectRatio ratio={16/4}>
                     <img 
-                      src={formData.header_image_url} 
+                      src={signedHeaderUrl} 
                       alt="Header Preview" 
                       className="w-full h-full object-cover"
                     />
@@ -473,9 +493,9 @@ const CompanyProfileSection = () => {
                 </div>
               ) : (
                 <div className={cn("flex items-start gap-4", isRTL && "flex-row-reverse")}>
-                  {formData.logo_url ? (
+                  {formData.logo_url && signedLogoUrl ? (
                     <img 
-                      src={formData.logo_url} 
+                      src={signedLogoUrl} 
                       alt="Logo" 
                       className="w-16 h-16 object-contain"
                     />

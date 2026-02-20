@@ -8,6 +8,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import SignaturePad from 'signature_pad';
+import { getSignedAssetUrl } from '@/lib/storageUtils';
 
 const ArtisanSignatureSection = () => {
   const { isRTL } = useLanguage();
@@ -21,9 +22,19 @@ const ArtisanSignatureSection = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
+  const [displayUrl, setDisplayUrl] = useState<string | null>(null);
 
   // Get current signature from profile
   const currentSignatureUrl = (profile as any)?.artisan_signature_url || null;
+
+  // Resolve signed URL for display
+  useEffect(() => {
+    if (currentSignatureUrl) {
+      getSignedAssetUrl(currentSignatureUrl).then(url => setDisplayUrl(url));
+    } else {
+      setDisplayUrl(null);
+    }
+  }, [currentSignatureUrl]);
 
   // Initialize signature pad
   useEffect(() => {
@@ -134,12 +145,12 @@ const ArtisanSignatureSection = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {currentSignatureUrl ? (
+        {currentSignatureUrl && displayUrl ? (
           // Display saved signature
           <div className="space-y-4">
             <div className="bg-white border rounded-lg p-4">
               <img 
-                src={currentSignatureUrl} 
+                src={displayUrl} 
                 alt={isRTL ? 'توقيعي' : 'Ma signature'} 
                 className="max-h-24 mx-auto"
               />

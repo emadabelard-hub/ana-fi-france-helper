@@ -30,7 +30,7 @@ async function callGateway({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "openai/gpt-5-mini", // Cost-optimized model
+      model: "google/gemini-3-flash-preview", // Cost-optimized model
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -63,10 +63,10 @@ serve(async (req) => {
   }
 
   try {
-    // Auth check
+    // Auth check — allow anonymous users too
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      return new Response(JSON.stringify({ error: 'يرجى تسجيل الدخول أولاً' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -78,7 +78,7 @@ serve(async (req) => {
     );
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      return new Response(JSON.stringify({ error: 'يرجى تسجيل الدخول أولاً' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

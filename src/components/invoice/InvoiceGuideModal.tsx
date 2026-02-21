@@ -1,164 +1,241 @@
 import { useState } from 'react';
-import { HelpCircle, FileText, Users, ListPlus, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Building2, UserCheck, Languages, Receipt, ArrowRightLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const InvoiceGuideModal = () => {
-  const [open, setOpen] = useState(false);
+interface InvoiceGuideModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const InvoiceGuideModal = ({ open, onOpenChange }: InvoiceGuideModalProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const { isRTL } = useLanguage();
 
   const steps = [
     {
-      icon: FileText,
-      title_fr: 'Choisir le type',
-      title_ar: 'اختار النوع',
-      description_fr: 'Clique sur "Devis" pour un devis ou "Facture" pour facturer.',
-      description_ar: 'اضغط على "عرض سعر" للتسعير أو "فاتورة" للفوترة.',
-      emoji: '📋',
+      icon: Building2,
+      emoji: '🏢',
+      title_fr: 'Votre identité pro (Données société)',
+      title_ar: 'هويتك المهنية (بيانات الشركة)',
+      bullets_fr: [
+        '📸 Logo : Uploadez votre logo pour qu\'il apparaisse en en-tête de tous vos documents.',
+        '✍️ Signature : Dessinez ou uploadez votre signature professionnelle.',
+        '🔖 Cachet (Tampon) : Uploadez le tampon officiel de votre entreprise. Il sera placé automatiquement sur tous les PDF.',
+      ],
+      bullets_ar: [
+        '📸 اللوجو: ارفع لوجو شركتك عشان يظهر في رأس كل المستندات.',
+        '✍️ التوقيع: ارسم أو ارفع توقيعك المهني.',
+        '🔖 الكاشي (الختم): ارفع ختم شركتك الرسمي. هيتحط تلقائي على كل ملفات الـ PDF.',
+      ],
+      note_fr: '→ Allez dans "Mon identité pro" pour tout configurer.',
+      note_ar: '→ روح على "بيانات شركتي" وجهّز كل حاجة.',
     },
     {
-      icon: Users,
-      title_fr: 'Infos client & chantier',
-      title_ar: 'بيانات العميل والشانتي',
-      description_fr: 'Remplis le nom du client et l\'adresse du chantier.',
-      description_ar: 'اكتب اسم العميل وعنوان الشانتي.',
+      icon: UserCheck,
       emoji: '👤',
+      title_fr: 'Infos client & SIRET',
+      title_ar: 'بيانات الزبون والـ SIRET',
+      bullets_fr: [
+        '📝 Remplissez le nom et l\'adresse de votre client.',
+        '📍 Indiquez l\'adresse du chantier si différente.',
+        '⚠️ Vérifiez votre SIRET en bas de l\'écran pour que le document soit juridiquement valide.',
+      ],
+      bullets_ar: [
+        '📝 اكتب اسم الزبون وعنوانه.',
+        '📍 حط عنوان الشانتي لو مختلف.',
+        '⚠️ تأكد من رقم الـ SIRET بتاعك في أسفل الشاشة عشان المستند يبقى قانوني.',
+      ],
+      note_fr: null,
+      note_ar: null,
     },
     {
-      icon: ListPlus,
-      title_fr: 'Ajouter les lignes',
-      title_ar: 'أضف الخدمات',
-      description_fr: 'Ajoute tes prestations: Peinture, Carrelage, etc. avec les prix.',
-      description_ar: 'أضف شغلك: بانتيرة، كاريلاج... مع الأسعار.',
-      emoji: '✏️',
+      icon: Languages,
+      emoji: '🌐',
+      title_fr: 'Description & traduction intelligente',
+      title_ar: 'وصف العمل والترجمة الذكية',
+      bullets_fr: [
+        '✍️ Écrivez en arabe dans le champ prévu, le système traduit automatiquement en français professionnel.',
+        '🔧 Même si vous écrivez "بانتيرة" ou "كارلاح" ou "مانيفر", le système comprend et traduit correctement.',
+      ],
+      bullets_ar: [
+        '✍️ اكتب براحتك بالعربي في الخانة المخصصة، والبرنامج هيحول كلامك لفرنساوي احترافي.',
+        '🔧 وباطمنك حتى لو كتبت (بانتيرة، كارلاح، مانيفر) برضه البرنامج هايفهمك ويطلع الكلام بالفرنساوي صح للزبون.',
+      ],
+      note_fr: null,
+      note_ar: null,
     },
     {
-      icon: Download,
-      title_fr: 'Télécharger le PDF',
-      title_ar: 'حمّل الـ PDF',
-      description_fr: 'Clique sur "Créer PDF" et c\'est prêt !',
-      description_ar: 'اضغط "إنشاء PDF" وخلاص!',
-      emoji: '📥',
+      icon: Receipt,
+      emoji: '💶',
+      title_fr: 'Paiement & TVA',
+      title_ar: 'شروط الدفع والضريبة',
+      bullets_fr: [
+        '💰 Définissez le pourcentage d\'acompte (ex: 30%).',
+        '🏷️ Activez "Auto-entrepreneur TVA" pour mettre la TVA à 0% selon la loi française.',
+        '📅 La validité du devis est configurable (30, 60, 90 jours).',
+      ],
+      bullets_ar: [
+        '💰 حدد نسبة العربون (الأكونت) مثلاً 30%.',
+        '🏷️ فعّل "Auto-entrepreneur TVA" عشان الضريبة تبقى 0% حسب القانون الفرنسي.',
+        '📅 مدة صلاحية الدوفي تقدر تغيرها (30، 60، 90 يوم).',
+      ],
+      note_fr: null,
+      note_ar: null,
+    },
+    {
+      icon: ArrowRightLeft,
+      emoji: '✨',
+      title_fr: 'Le bouton magique (Devis → Facture)',
+      title_ar: 'الزر السحري (التحويل لفاتورة)',
+      bullets_fr: [
+        '✅ Une fois le devis créé et les travaux terminés, cliquez sur "Convertir en Facture".',
+        '⚡ Une facture complète est générée automatiquement sans retaper aucune donnée.',
+        '📄 Toutes les infos (client, lignes, prix) sont transférées instantanément.',
+      ],
+      bullets_ar: [
+        '✅ لما الدوفي يخلص والشغل يتعمل، اضغط "حوّل لفاتورة".',
+        '⚡ هيتعملك فاتورة كاملة تلقائي من غير ما تكتب أي حاجة تاني.',
+        '📄 كل البيانات (الزبون، الخدمات، الأسعار) بتتنقل فوراً.',
+      ],
+      note_fr: null,
+      note_ar: null,
     },
   ];
 
   const nextStep = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
+    if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
-  const currentStepData = steps[currentStep];
-  const Icon = currentStepData.icon;
+  const handleClose = () => {
+    onOpenChange(false);
+    setCurrentStep(0);
+  };
+
+  const step = steps[currentStep];
+  const Icon = step.icon;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
-      setOpen(isOpen);
-      if (!isOpen) setCurrentStep(0);
+      if (!isOpen) handleClose();
+      else onOpenChange(true);
     }}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn(
-            "gap-2 border-dashed",
-            isRTL && "font-cairo"
-          )}
-        >
-          <HelpCircle className="h-4 w-4" />
-          {isRTL ? '❓ كيف أستخدمه؟' : '❓ Comment ça marche ?'}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-sm mx-4 rounded-2xl">
-        <DialogHeader className="text-center pb-2">
+      <DialogContent className="max-w-md mx-4 rounded-2xl p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-2 text-center">
           <DialogTitle className={cn(
-            "text-xl font-bold text-center",
+            "text-xl font-black text-foreground text-center",
             isRTL && "font-cairo"
           )}>
-            {isRTL ? 'دليل سريع 📖' : 'Guide rapide 📖'}
+            {isRTL ? 'دليل إنشاء الدوفي 📖' : 'Guide complet du Devis 📖'}
           </DialogTitle>
         </DialogHeader>
-        
+
         {/* Step Indicator */}
-        <div className="flex justify-center gap-2 mb-4">
+        <div className="flex justify-center gap-1.5 px-6">
           {steps.map((_, index) => (
             <div
               key={index}
               className={cn(
-                "w-2 h-2 rounded-full transition-colors",
-                index === currentStep ? "bg-primary" : "bg-muted"
+                "h-1.5 rounded-full transition-all duration-300",
+                index === currentStep ? "bg-foreground w-6" : "bg-muted-foreground/30 w-1.5"
               )}
             />
           ))}
         </div>
 
-        {/* Current Step Content */}
-        <div className={cn(
-          "text-center py-8 px-4 rounded-xl",
-          "bg-gradient-to-b from-primary/10 to-transparent",
-          "border border-primary/20"
-        )}>
-          <div className="text-5xl mb-4">{currentStepData.emoji}</div>
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
-            <Icon className="h-8 w-8 text-primary" />
+        {/* Content */}
+        <div className="px-6 pb-2">
+          <div className={cn(
+            "py-6 px-4 rounded-xl border border-foreground/10",
+            "bg-gradient-to-b from-foreground/5 to-transparent"
+          )}>
+            {/* Icon + Title */}
+            <div className="flex flex-col items-center gap-3 mb-5">
+              <div className="text-4xl">{step.emoji}</div>
+              <div className="w-12 h-12 rounded-full bg-foreground/10 flex items-center justify-center">
+                <Icon className="h-6 w-6 text-foreground" />
+              </div>
+              <h3 className={cn(
+                "text-base font-black text-foreground text-center leading-tight",
+                isRTL && "font-cairo"
+              )}>
+                {isRTL ? step.title_ar : step.title_fr}
+              </h3>
+            </div>
+
+            {/* Bullets */}
+            <ul className={cn(
+              "space-y-2.5",
+              isRTL && "text-right"
+            )}>
+              {(isRTL ? step.bullets_ar : step.bullets_fr).map((bullet, i) => (
+                <li key={i} className={cn(
+                  "text-sm text-foreground/80 leading-relaxed",
+                  isRTL && "font-cairo"
+                )}>
+                  {bullet}
+                </li>
+              ))}
+            </ul>
+
+            {/* Note */}
+            {(isRTL ? step.note_ar : step.note_fr) && (
+              <div className={cn(
+                "mt-4 p-2.5 rounded-lg bg-foreground/5 border border-foreground/10",
+                isRTL && "text-right"
+              )}>
+                <p className={cn(
+                  "text-xs font-bold text-foreground/70",
+                  isRTL && "font-cairo"
+                )}>
+                  {isRTL ? step.note_ar : step.note_fr}
+                </p>
+              </div>
+            )}
           </div>
-          <h3 className={cn(
-            "text-lg font-bold text-foreground mb-2",
-            isRTL && "font-cairo"
-          )}>
-            {isRTL ? currentStepData.title_ar : currentStepData.title_fr}
-          </h3>
-          <p className={cn(
-            "text-muted-foreground",
-            isRTL && "font-cairo"
-          )}>
-            {isRTL ? currentStepData.description_ar : currentStepData.description_fr}
-          </p>
         </div>
 
         {/* Step Counter */}
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-xs text-muted-foreground font-bold">
           {currentStep + 1} / {steps.length}
         </p>
 
         {/* Navigation */}
-        <div className="flex gap-2 mt-2">
+        <div className="flex gap-2 px-6 pb-6">
           <Button
             variant="outline"
             onClick={prevStep}
             disabled={currentStep === 0}
-            className="flex-1"
+            className="flex-1 font-bold"
           >
             <ChevronLeft className="h-4 w-4" />
+            {isRTL ? 'اللي قبله' : 'Précédent'}
           </Button>
-          
+
           {currentStep === steps.length - 1 ? (
             <Button
-              onClick={() => setOpen(false)}
-              className={cn("flex-1", isRTL && "font-cairo")}
+              onClick={handleClose}
+              className={cn("flex-1 font-black", isRTL && "font-cairo")}
             >
-              {isRTL ? 'فهمت! 👍' : 'Compris ! 👍'}
+              {isRTL ? 'فهمت يا معلم! 👍' : 'Compris ! 👍'}
             </Button>
           ) : (
             <Button
               onClick={nextStep}
-              className="flex-1"
+              className={cn("flex-1 font-bold", isRTL && "font-cairo")}
             >
+              {isRTL ? 'اللي بعده' : 'Suivant'}
               <ChevronRight className="h-4 w-4" />
             </Button>
           )}

@@ -10,7 +10,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar } from 'lucide-react';
+import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle } from 'lucide-react';
 import InvoiceDisplay, { InvoiceData } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
@@ -124,6 +124,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Unit Guide state
   const [showUnitGuide, setShowUnitGuide] = useState(false);
+  
+  // Guide modal state
+  const [showGuide, setShowGuide] = useState(false);
 
   // Translation state
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
@@ -657,7 +660,27 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
   return (
     <div className="space-y-6">
-      {/* Document Type Toggle + Guide Button */}
+      {/* Help Banner */}
+      <button
+        type="button"
+        onClick={() => setShowGuide(true)}
+        className={cn(
+          "w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl",
+          "border-2 border-dashed border-foreground/30 bg-foreground/5",
+          "hover:bg-foreground/10 transition-colors cursor-pointer",
+          isRTL && "flex-row-reverse font-cairo"
+        )}
+      >
+        <HelpCircle className="h-5 w-5 text-foreground shrink-0" />
+        <span className="text-sm font-black text-foreground">
+          {isRTL ? 'عايز تعرف تعمل ازاي الدوفي؟ اضغط هنا 👆' : 'Besoin d\'aide pour créer votre devis ? Cliquez ici 👆'}
+        </span>
+      </button>
+
+      {/* Guide Modal */}
+      <InvoiceGuideModal open={showGuide} onOpenChange={setShowGuide} />
+
+      {/* Document Type Toggle */}
       <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
         {onDocumentTypeChange ? (
           <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
@@ -672,7 +695,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               checked={documentType === 'facture'}
               onCheckedChange={(checked) => {
                 const newType = checked ? 'facture' : 'devis';
-                // Update doc number prefix without losing the sequential part
                 const currentPrefix = getDocPrefix(documentType);
                 const newPrefix = getDocPrefix(newType);
                 const userPart = docNumber.startsWith(currentPrefix) 
@@ -693,7 +715,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         ) : (
           <div />
         )}
-        <InvoiceGuideModal />
       </div>
 
       {/* Quote Validity Duration Selector - Only for Devis */}

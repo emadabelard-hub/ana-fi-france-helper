@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import AuthModal from '@/components/auth/AuthModal';
 import DocumentTypeModal from '@/components/invoice/DocumentTypeModal';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
+import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 import {
   Dialog,
   DialogContent,

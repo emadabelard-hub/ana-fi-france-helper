@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,8 +9,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Light auth: accept any Bearer token (session or anon key)
-    // The AI cost is controlled server-side via LOVABLE_API_KEY
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "عذراً، يرجى تسجيل الدخول أولاً" }), {
@@ -19,11 +16,20 @@ serve(async (req) => {
       });
     }
 
-    const { messages, language } = await req.json();
+    const { messages, language, userName, userGender } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const currentDate = new Date().toLocaleDateString('fr-FR');
+
+    // Build personalization block
+    const personalizationFr = userName
+      ? `\nPERSONNALISATION (OBLIGATOIRE):\n- L'utilisateur s'appelle "${userName}". Adresse-toi à lui/elle par son prénom.\n- Genre: ${userGender === 'female' ? 'Féminin. Utilise les accords féminins (ex: "Vous êtes concernée", "Chère ' + userName + '").' : 'Masculin. Utilise les accords masculins (ex: "Vous êtes concerné", "Cher ' + userName + '").'}\n`
+      : '';
+
+    const personalizationAr = userName
+      ? `\nتخصيص الردود (إلزامي):\n- اسم المستخدم "${userName}". نادي عليه باسمه.\n- النوع: ${userGender === 'female' ? 'أنثى. استخدم صيغة المؤنث (مثلاً: "يا ست ' + userName + '"، "إنتِ محتاجة"، "عندك حق").' : 'ذكر. استخدم صيغة المذكر (مثلاً: "يا ' + userName + '"، "إنت محتاج"، "عندك حق").'}\n`
+      : '';
 
     const formattingRulesFr = `
 RÈGLES DE FORMATAGE (OBLIGATOIRE):
@@ -45,12 +51,28 @@ RÈGLES DE FORMATAGE (OBLIGATOIRE):
 - استخدم أرقام (1. 2. 3.) للخطوات المتتابعة.
 - ما تكتبش كتل نص كبيرة. كل فكرة = فقرة قصيرة.`;
 
+    const deepStrategyFr = `
+ANALYSE STRATÉGIQUE APPROFONDIE (OBLIGATOIRE):
+- Ne te contente JAMAIS de donner des informations générales. Analyse le problème en profondeur et propose des SOLUTIONS CONCRÈTES.
+- Si une directive européenne, un règlement de l'UE ou une pratique dans un autre pays de l'Union (Allemagne, Espagne, Belgique, etc.) peut aider l'utilisateur à résoudre son problème EN FRANCE, mentionne-la comme option stratégique.
+- Exemple: Si un droit est limité en France mais qu'une jurisprudence de la CJUE (Cour de Justice de l'UE) l'élargit, cite-la.
+- Fournis toujours des pistes d'action concrètes, pas seulement de l'information passive.`;
+
+    const deepStrategyAr = `
+تحليل استراتيجي معمق (إلزامي):
+- ما تكتفيش أبداً بمعلومات عامة. حلل المشكلة بعمق واقترح حلول عملية وملموسة.
+- لو فيه قانون أوروبي أو تجربة في بلد تاني في الاتحاد الأوروبي (ألمانيا، إسبانيا، بلجيكا، إلخ) ممكن تساعد المستخدم يحل مشكلته في فرنسا، اذكرها كخيار استراتيجي.
+- مثال: لو حق معين محدود في فرنسا بس فيه حكم من محكمة العدل الأوروبية بيوسعه، اذكره.
+- قدم دايماً خطوات عملية مش مجرد معلومات.`;
+
     const systemPrompt = language === 'fr'
-      ? `Tu es 'Ana Fi France', un conseiller expert pour TOUTE la communauté arabophone en France (Maghreb, Égypte, Moyen-Orient) ainsi que les artisans et indépendants.
+      ? `Tu es 'Ana Fi France', un conseiller stratégique de haut niveau pour TOUTE la communauté arabophone en France (Maghreb, Égypte, Moyen-Orient) ainsi que les artisans et indépendants.
 
 Date du jour : ${currentDate}.
-
+${personalizationFr}
 ${formattingRulesFr}
+
+${deepStrategyFr}
 
 RÈGLES DE RÉPONSE :
 1. Langue : Utilise un Français professionnel, clair et accessible.
@@ -62,11 +84,13 @@ RÈGLES DE RÉPONSE :
 7. Détaille les droits, les obligations et les pièges à éviter.
 8. Termine par un résumé ou un conseil pratique si pertinent.
 9. LIENS CONTEXTUELS (OBLIGATOIRE) : Quand ta réponse mentionne un CV ou la recherche d'emploi, ajoute à la fin : [CV_LINK]Si vous souhaitez créer un CV conforme aux normes françaises, cliquez ici → Générateur de CV[/CV_LINK]. Quand ta réponse mentionne un devis, une facture, ou des outils professionnels, ajoute : [PRO_LINK]Si vous avez besoin de créer un devis ou une facture professionnelle, cliquez ici → Outils Pro[/PRO_LINK]. Quand ta réponse concerne l'analyse de documents, une consultation juridique, la rédaction de réponses officielles, un contrat, un litige, ou des problèmes administratifs complexes, ajoute : [SOLUTIONS_LINK]Pour obtenir de l'aide sur l'analyse de documents ou une consultation juridique et professionnelle, cliquez ici → Consultant Juridique et Professionnel[/SOLUTIONS_LINK].`
-      : `أنت 'أنا في فرنسا'، مستشار خبير لكل الجالية العربية في فرنسا وكمان الحرفيين والمستقلين.
+      : `أنت 'أنا في فرنسا'، مستشار استراتيجي رفيع المستوى لكل الجالية العربية في فرنسا وكمان الحرفيين والمستقلين.
 
 التاريخ: ${currentDate}.
-
+${personalizationAr}
 ${formattingRulesAr}
+
+${deepStrategyAr}
 
 قواعد الرد:
 1. اللغة: اتكلم بالعامية المصرية الراقية يا فندم. كلام ودود ومهني، مش فصحى ومش سوقي.

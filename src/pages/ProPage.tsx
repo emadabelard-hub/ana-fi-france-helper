@@ -136,31 +136,31 @@ const ProPage = () => {
 
       {/* Settings Link */}
       <Card 
-        className="cursor-pointer hover:bg-muted/50 transition-colors"
+        className="cursor-pointer bg-red-700 hover:bg-red-800 border-red-800 transition-colors"
         onClick={() => navigate('/pro/settings')}
       >
         <CardContent className={cn(
-          "flex items-center gap-4 p-4",
+          "flex items-center gap-6 p-8",
           isRTL && "flex-row-reverse"
         )}>
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-            <Settings className="h-5 w-5 text-muted-foreground" />
+          <div className="w-16 h-16 rounded-full bg-white/15 flex items-center justify-center">
+            <Settings className="h-8 w-8 text-white" />
           </div>
           <div className={cn("flex-1", isRTL && "text-right")}>
             <h3 className={cn(
-              "font-medium text-foreground",
+              "font-bold text-white text-2xl",
               isRTL && "font-cairo"
             )}>
               {t('pro.settings')}
             </h3>
             <p className={cn(
-              "text-xs text-muted-foreground",
+              "text-base text-white/80 font-bold mt-1",
               isRTL && "font-cairo"
             )}>
               {t('pro.settingsDesc')}
             </p>
           </div>
-          <Arrow className="h-4 w-4 text-muted-foreground" />
+          <Arrow className="h-6 w-6 text-white" />
         </CardContent>
       </Card>
 

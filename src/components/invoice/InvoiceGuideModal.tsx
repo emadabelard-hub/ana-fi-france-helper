@@ -226,7 +226,7 @@ const InvoiceGuideModal = ({ open, onOpenChange }: InvoiceGuideModalProps) => {
           {currentStep === steps.length - 1 ? (
             <Button
               onClick={handleClose}
-              className={cn("flex-1 font-black", isRTL && "font-cairo")}
+              className={cn("flex-1 font-black bg-[hsl(220,70%,25%)] hover:bg-[hsl(220,70%,20%)] text-white", isRTL && "font-cairo")}
             >
               {isRTL ? 'فهمت يا معلم! 👍' : 'Compris ! 👍'}
             </Button>

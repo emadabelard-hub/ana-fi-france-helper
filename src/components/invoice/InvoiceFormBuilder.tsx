@@ -666,13 +666,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         onClick={() => setShowGuide(true)}
         className={cn(
           "w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl",
-          "border-2 border-dashed border-foreground/30 bg-foreground/5",
-          "hover:bg-foreground/10 transition-colors cursor-pointer",
-          isRTL && "flex-row-reverse font-cairo"
+          "border-2 border-dashed transition-colors cursor-pointer",
+          isRTL 
+            ? "bg-red-600 border-red-700 hover:bg-red-700 flex-row-reverse font-cairo" 
+            : "bg-green-600 border-green-700 hover:bg-green-700"
         )}
       >
-        <HelpCircle className="h-5 w-5 text-foreground shrink-0" />
-        <span className="text-sm font-black text-foreground">
+        <HelpCircle className="h-5 w-5 text-white shrink-0" />
+        <span className="text-sm font-black text-white">
           {isRTL ? 'عايز تعرف تعمل ازاي الدوفي؟ اضغط هنا 👆' : 'Besoin d\'aide pour créer votre devis ? Cliquez ici 👆'}
         </span>
       </button>

@@ -178,8 +178,6 @@ const ProfilePage = () => {
           </div>
         </section>
 
-        {/* Credits Balance */}
-        <CreditsDisplay showDaily className="mx-auto max-w-sm" />
 
         {/* Admin Dashboard Button - only visible to admins */}
         {isAdmin && (

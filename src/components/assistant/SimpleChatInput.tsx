@@ -43,6 +43,12 @@ const SimpleChatInput = ({
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter always creates a new line, never sends
+            if (e.key === 'Enter') {
+              e.stopPropagation();
+            }
+          }}
           placeholder={placeholder || defaultPlaceholder}
           disabled={isLoading}
           className={cn(

@@ -323,6 +323,12 @@ const ChatInput = ({ onSend, onDocumentAdd, isLoading, isRTL, t, externalDocumen
           placeholder={isRTL ? 'اكتب سؤالك أو أضف مستند...' : 'Écrivez ou ajoutez un document...'}
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter always creates a new line, never sends
+            if (e.key === 'Enter') {
+              e.stopPropagation();
+            }
+          }}
           className={cn(
             "min-h-[44px] max-h-[120px] resize-none flex-1 text-base py-2",
             isRTL && "text-right font-cairo",

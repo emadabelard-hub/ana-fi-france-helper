@@ -218,7 +218,7 @@ const UniversalAdminAssistantPage = () => {
             placeholder={isRTL ? 'اكتب سؤالك أو ابعت سكرينشوت...' : 'Posez votre question ou envoyez une capture...'}
             className={cn("min-h-[44px] max-h-[120px] resize-none text-sm", isRTL && "font-cairo text-right")}
             dir={isRTL ? 'rtl' : 'ltr'}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); } }}
           />
           <Button size="icon" onClick={handleSend} disabled={isLoading || (!input.trim() && !image)} className="shrink-0">
             {isLoading ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}

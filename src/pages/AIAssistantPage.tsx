@@ -336,7 +336,7 @@ const AIAssistantPage = () => {
             dir="auto"
             rows={1}
             onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; }}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); } }}
           />
           <button
             type="button"

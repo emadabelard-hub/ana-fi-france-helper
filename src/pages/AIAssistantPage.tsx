@@ -5,22 +5,50 @@ import { ArrowLeft, Send, Sparkles } from 'lucide-react';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
 const STREAM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
 
+interface UserInfo {
+  name: string;
+  gender: 'male' | 'female';
+}
+
 const AIAssistantPage = () => {
   const { language, isRTL } = useLanguage();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { profile } = useProfile();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [onboardingName, setOnboardingName] = useState('');
+  const [onboardingGender, setOnboardingGender] = useState<'male' | 'female'>('male');
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Auto-fill from profile if available
+  useEffect(() => {
+    if (profile?.full_name) {
+      const firstName = profile.full_name.split(' ')[0];
+      setOnboardingName(firstName);
+    }
+  }, [profile]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleOnboardingSubmit = () => {
+    const name = onboardingName.trim();
+    if (!name) return;
+    setUserInfo({ name, gender: onboardingGender });
+    setShowOnboarding(false);
+  };
 
   const send = async () => {
     const text = input.trim();
@@ -57,9 +85,10 @@ const AIAssistantPage = () => {
         body: JSON.stringify({
           messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
           language: language === 'ar' ? 'ar' : 'fr',
+          userName: userInfo?.name || null,
+          userGender: userInfo?.gender || null,
         }),
       });
-
 
       if (!resp.ok || !resp.body) {
         let errorMsg = language === 'ar' 
@@ -109,12 +138,105 @@ const AIAssistantPage = () => {
     setIsLoading(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    send();
-  };
-
   const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
+
+  // Onboarding screen to collect name & gender
+  if (showOnboarding) {
+    return (
+      <div className="flex flex-col h-[100dvh] bg-background">
+        <header className="flex items-center gap-3 p-4 border-b border-border bg-card shrink-0">
+          <button onClick={() => navigate('/')} className="p-2 rounded-full hover:bg-muted">
+            <ArrowLeft size={20} className={cn("text-foreground", isRTL && "rotate-180")} />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <Sparkles size={18} className="text-primary" />
+            </div>
+            <h1 className={cn("font-bold text-foreground text-lg", isRTL && "font-cairo")}>
+              {isRTL ? 'المساعد الذكي' : 'Assistant IA'}
+            </h1>
+          </div>
+        </header>
+
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="w-full max-w-sm space-y-6">
+            <div className="text-center space-y-2">
+              <Sparkles size={40} className="text-primary mx-auto" />
+              <h2 className={cn("text-xl font-bold text-foreground", isRTL && "font-cairo")}>
+                {isRTL ? 'قبل ما نبدأ يا فندم 🧞' : 'Avant de commencer 🧞'}
+              </h2>
+              <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
+                {isRTL ? 'عشان أقدر أساعدك بشكل أفضل' : 'Pour mieux vous aider'}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className={cn("block text-sm font-bold text-foreground mb-1.5", isRTL && "font-cairo text-right")}>
+                  {isRTL ? 'اسمك الأول' : 'Votre prénom'}
+                </label>
+                <input
+                  type="text"
+                  value={onboardingName}
+                  onChange={e => setOnboardingName(e.target.value)}
+                  placeholder={isRTL ? 'مثلاً: أحمد' : 'Ex: Ahmed'}
+                  className={cn(
+                    "w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground text-sm font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/10",
+                    isRTL && "font-cairo text-right"
+                  )}
+                  dir="auto"
+                  onKeyDown={e => e.key === 'Enter' && handleOnboardingSubmit()}
+                />
+              </div>
+
+              <div>
+                <label className={cn("block text-sm font-bold text-foreground mb-1.5", isRTL && "font-cairo text-right")}>
+                  {isRTL ? 'النوع' : 'Genre'}
+                </label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setOnboardingGender('male')}
+                    className={cn(
+                      "flex-1 py-3 rounded-xl border-2 text-sm font-bold transition-all",
+                      onboardingGender === 'male'
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:border-primary/30"
+                    )}
+                  >
+                    {isRTL ? 'ذكر 👨' : 'Homme 👨'}
+                  </button>
+                  <button
+                    onClick={() => setOnboardingGender('female')}
+                    className={cn(
+                      "flex-1 py-3 rounded-xl border-2 text-sm font-bold transition-all",
+                      onboardingGender === 'female'
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:border-primary/30"
+                    )}
+                  >
+                    {isRTL ? 'أنثى 👩' : 'Femme 👩'}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={handleOnboardingSubmit}
+                disabled={!onboardingName.trim()}
+                className={cn(
+                  "w-full py-3.5 rounded-xl font-bold text-sm transition-all shadow-md",
+                  onboardingName.trim()
+                    ? "bg-primary text-primary-foreground active:scale-95"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                {isRTL ? 'يلا نبدأ! 🚀' : 'C\'est parti ! 🚀'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[100dvh] bg-background">
@@ -139,7 +261,7 @@ const AIAssistantPage = () => {
           <div className="flex flex-col items-center justify-center h-full text-center opacity-60">
             <Sparkles size={40} className="text-primary mb-4" />
             <p className={cn("text-muted-foreground text-lg font-bold", isRTL && "font-cairo")}>
-              {isRTL ? 'شبيك لبيك، اسأل وأنا أجاوب! 🧞' : 'Posez votre question ! 🧞'}
+              {isRTL ? `أهلاً يا ${userInfo?.name || 'فندم'}، اسأل وأنا أجاوب! 🧞` : `Bonjour ${userInfo?.name || ''}, posez votre question ! 🧞`}
             </p>
             <p className={cn("text-muted-foreground text-sm mt-2", isRTL && "font-cairo")}>
               {isRTL ? 'اسأل عن أي حاجة تخص حياتك في فرنسا' : 'Posez vos questions sur la vie en France'}
@@ -214,6 +336,7 @@ const AIAssistantPage = () => {
             dir="auto"
             rows={1}
             onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
           />
           <button
             type="button"

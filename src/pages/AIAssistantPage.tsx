@@ -159,9 +159,11 @@ const AIAssistantPage = () => {
         </header>
 
         <div className="flex-1 flex items-center justify-center p-6">
-          <div className="w-full max-w-sm space-y-6">
+          <div className="w-full max-w-sm space-y-6 animate-fade-in">
             <div className="text-center space-y-2">
-              <Sparkles size={40} className="text-primary mx-auto" />
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-2 animate-[scale-in_0.5s_ease-out]">
+                <Sparkles size={32} className="text-primary" />
+              </div>
               <h2 className={cn("text-xl font-bold text-foreground", isRTL && "font-cairo")}>
                 {isRTL ? 'قبل ما نبدأ يا فندم 🧞' : 'Avant de commencer 🧞'}
               </h2>
@@ -170,7 +172,7 @@ const AIAssistantPage = () => {
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4" style={{ animation: 'fade-in 0.5s ease-out 0.2s both' }}>
               <div>
                 <label className={cn("block text-sm font-bold text-foreground mb-1.5", isRTL && "font-cairo text-right")}>
                   {isRTL ? 'اسمك الأول' : 'Votre prénom'}

@@ -8,15 +8,6 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   {
-    path: '/',
-    icon: Home,
-    labelAr: 'الرئيسية',
-    labelFr: 'Accueil',
-    color: 'text-amber-400',
-    activeBg: 'bg-amber-400/15',
-    dotColor: 'bg-amber-400',
-  },
-  {
     path: '/news',
     icon: Newspaper,
     labelAr: 'أخبار',
@@ -43,6 +34,15 @@ const navItems = [
     activeBg: 'bg-blue-400/15',
     dotColor: 'bg-blue-400',
   },
+  {
+    path: '/',
+    icon: Home,
+    labelAr: 'الرئيسية',
+    labelFr: 'Accueil',
+    color: 'text-amber-400',
+    activeBg: 'bg-amber-400/15',
+    dotColor: 'bg-amber-400',
+  },
 ];
 
 const BottomNavigation = () => {
@@ -64,19 +64,18 @@ const BottomNavigation = () => {
     checkAdminStatus();
   }, [user]);
 
+  const adminItem = {
+    path: '/admin',
+    icon: Shield,
+    labelAr: 'إدارة',
+    labelFr: 'Admin',
+    color: 'text-amber-500',
+    activeBg: 'bg-amber-500/15',
+    dotColor: 'bg-amber-500',
+  };
+
   const allItems = isAdmin
-    ? [
-        ...navItems,
-         {
-           path: '/admin',
-           icon: Shield,
-           labelAr: 'إدارة',
-           labelFr: 'Admin',
-           color: 'text-amber-500',
-           activeBg: 'bg-amber-500/15',
-           dotColor: 'bg-amber-500',
-         },
-      ]
+    ? [adminItem, ...navItems]
     : navItems;
 
   return (

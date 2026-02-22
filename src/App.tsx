@@ -1,4 +1,5 @@
-// App entry point - v2.1
+// App entry point - v2.2 (lazy loading)
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,26 +10,35 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthProvider } from "@/hooks/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
 import GlobalErrorHandler from "@/components/app/GlobalErrorHandler";
-import ProfilePage from "@/pages/ProfilePage";
-import ProPage from "@/pages/ProPage";
-import ProSettingsPage from "@/pages/ProSettingsPage";
-import InvoiceCreatorPage from "@/pages/InvoiceCreatorPage";
-import QuoteToInvoicePage from "@/pages/QuoteToInvoicePage";
-import ProAdminAssistantPage from "@/pages/ProAdminAssistantPage";
-import CVGeneratorPage from "@/pages/CVGeneratorPage";
-import AdminPage from "@/pages/AdminPage";
-import NewsPage from "@/pages/NewsPage";
-import NotFound from "./pages/NotFound";
-import Index from "./pages/Index";
-import AIAssistantPage from "./pages/AIAssistantPage";
-import PremiumConsultationPage from "./pages/PremiumConsultationPage";
-import PeinturePage from "./pages/PeinturePage";
-import ConsultationsPage from "./pages/ConsultationsPage";
-import LanguageSchoolPage from "./pages/LanguageSchoolPage";
-import PaymentSuccessPage from "./pages/PaymentSuccessPage";
-import UniversalAdminAssistantPage from "./pages/UniversalAdminAssistantPage";
-import ServiceRequestPage from "./pages/ServiceRequestPage";
-import LegalPage from "./pages/LegalPage";
+import { Loader2 } from "lucide-react";
+
+// Lazy-loaded pages
+const Index = lazy(() => import("./pages/Index"));
+const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
+const ProPage = lazy(() => import("@/pages/ProPage"));
+const ProSettingsPage = lazy(() => import("@/pages/ProSettingsPage"));
+const InvoiceCreatorPage = lazy(() => import("@/pages/InvoiceCreatorPage"));
+const QuoteToInvoicePage = lazy(() => import("@/pages/QuoteToInvoicePage"));
+const ProAdminAssistantPage = lazy(() => import("@/pages/ProAdminAssistantPage"));
+const CVGeneratorPage = lazy(() => import("@/pages/CVGeneratorPage"));
+const AdminPage = lazy(() => import("@/pages/AdminPage"));
+const NewsPage = lazy(() => import("@/pages/NewsPage"));
+const AIAssistantPage = lazy(() => import("./pages/AIAssistantPage"));
+const PremiumConsultationPage = lazy(() => import("./pages/PremiumConsultationPage"));
+const PeinturePage = lazy(() => import("./pages/PeinturePage"));
+const ConsultationsPage = lazy(() => import("./pages/ConsultationsPage"));
+const LanguageSchoolPage = lazy(() => import("./pages/LanguageSchoolPage"));
+const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
+const UniversalAdminAssistantPage = lazy(() => import("./pages/UniversalAdminAssistantPage"));
+const ServiceRequestPage = lazy(() => import("./pages/ServiceRequestPage"));
+const LegalPage = lazy(() => import("./pages/LegalPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -44,6 +54,7 @@ const App = () => {
             <Sonner />
             <BrowserRouter>
               <MainLayout>
+              <Suspense fallback={<PageLoader />}>
                 <Routes>
                   {/* Home is the main hub */}
                   <Route path="/" element={<Index />} />
@@ -69,6 +80,7 @@ const App = () => {
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+              </Suspense>
               </MainLayout>
             </BrowserRouter>
           </TooltipProvider>

@@ -16,6 +16,7 @@ import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
 import QuoteWizardModal from './QuoteWizardModal';
 import InvoiceGuideModal from './InvoiceGuideModal';
+import FactureGuideModal from './FactureGuideModal';
 import PreFlightChecklistModal from './PreFlightChecklistModal';
 import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
 import { supabase } from '@/integrations/supabase/client';
@@ -674,12 +675,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       >
         <HelpCircle className="h-5 w-5 text-white shrink-0" />
         <span className="text-sm font-black text-white">
-          {isRTL ? 'عايز تعرف تعمل ازاي الدوفي؟ اضغط هنا 👆' : 'Besoin d\'aide pour créer votre devis ? Cliquez ici 👆'}
+          {documentType === 'facture'
+            ? (isRTL ? 'عايز تعرف تعمل فاكتير ازاي؟ اضغط هنا 👈' : 'Besoin d\'aide pour créer votre facture ? Cliquez ici 👆')
+            : (isRTL ? 'عايز تعرف تعمل ازاي الدوفي؟ اضغط هنا 👆' : 'Besoin d\'aide pour créer votre devis ? Cliquez ici 👆')}
         </span>
       </button>
 
       {/* Guide Modal */}
-      <InvoiceGuideModal open={showGuide} onOpenChange={setShowGuide} />
+      {documentType === 'facture' ? (
+        <FactureGuideModal open={showGuide} onOpenChange={setShowGuide} />
+      ) : (
+        <InvoiceGuideModal open={showGuide} onOpenChange={setShowGuide} />
+      )}
 
       {/* Document Type Toggle */}
       <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>

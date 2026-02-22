@@ -79,12 +79,12 @@ const InvoiceGuideModal = ({ open, onOpenChange }: InvoiceGuideModalProps) => {
       title_ar: 'شروط الدفع والضريبة',
       bullets_fr: [
         '💰 Définissez le pourcentage d\'acompte (ex: 30%).',
-        '🏷️ Activez "Auto-entrepreneur TVA" pour mettre la TVA à 0% selon la loi française.',
+        '🏷️ Si vous êtes Auto-entrepreneur, la TVA est de 0% (Franchise en base). Sinon, choisissez le taux applicable.',
         '📅 La validité du devis est configurable (30, 60, 90 jours).',
       ],
       bullets_ar: [
         '💰 حدد نسبة العربون (الأكونت) مثلاً 30%.',
-        '🏷️ فعّل "Auto-entrepreneur TVA" عشان الضريبة تبقى 0% حسب القانون الفرنسي.',
+        '🏷️ للمقاول الذاتي (Auto-entrepreneur)، الضريبة 0% تلقائياً. لغير ذلك، اختر النسبة المناسبة للمشروع.',
         '📅 مدة صلاحية الدوفي تقدر تغيرها (30، 60، 90 يوم).',
       ],
       note_fr: null,

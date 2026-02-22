@@ -62,23 +62,17 @@ const TransactionHistory = () => {
             <div
               key={tx.id}
               className={cn(
-                "flex items-center justify-between py-2 px-3 rounded-xl bg-muted/30",
-                isRTL && "flex-row-reverse"
+                "py-2.5 px-3 rounded-xl bg-muted/30 text-center",
               )}
             >
-              <div className={cn("flex-1", isRTL && "text-right")}>
-                <p className={cn("text-sm font-semibold text-foreground", isRTL && "font-cairo")}>
-                  {tx.service_name}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {new Date(tx.created_at).toLocaleDateString(isRTL ? 'ar' : 'fr-FR', {
-                    day: 'numeric', month: 'short', year: 'numeric'
-                  })}
-                </p>
-              </div>
-              <Badge variant="secondary" className="font-bold text-xs shrink-0">
-                {Number(tx.price_eur)} €
-              </Badge>
+              <p className={cn("text-sm font-semibold text-foreground", isRTL && "font-cairo")}>
+                {tx.service_name}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {new Date(tx.created_at).toLocaleDateString(isRTL ? 'ar' : 'fr-FR', {
+                  day: 'numeric', month: 'short', year: 'numeric'
+                })}
+              </p>
             </div>
           ))}
         </div>

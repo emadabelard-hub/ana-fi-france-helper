@@ -1385,7 +1385,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 isRTL && "font-cairo text-right"
               )}>
                 {isRTL 
-                  ? 'للمقاول الذاتي (Auto-entrepreneur)، الضريبة 0% تلقائياً. لغير ذلك، اختر النسبة المناسبة للمشروع:' 
+                  ? 'لـ أوتو-أونتربرينير (Auto-entrepreneur)، الضريبة 0% تلقائياً. لغير ذلك، اختر النسبة المناسبة للمشروع:' 
                   : 'Si vous êtes Auto-entrepreneur, la TVA est de 0% (Franchise en base). Sinon, choisissez le taux applicable :'}
               </p>
 

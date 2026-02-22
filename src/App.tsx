@@ -28,6 +28,7 @@ import LanguageSchoolPage from "./pages/LanguageSchoolPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import UniversalAdminAssistantPage from "./pages/UniversalAdminAssistantPage";
 import ServiceRequestPage from "./pages/ServiceRequestPage";
+import LegalPage from "./pages/LegalPage";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => {
                   <Route path="/service-request" element={<ServiceRequestPage />} />
                   <Route path="/payment-success" element={<PaymentSuccessPage />} />
                   <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/legal" element={<LegalPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

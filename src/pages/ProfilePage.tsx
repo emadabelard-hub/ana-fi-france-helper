@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, LogOut, User, Loader2, MapPin, Phone, CreditCard, IdCard, Shield, Key } from 'lucide-react';
+import { Save, LogOut, User, Loader2, MapPin, Phone, CreditCard, IdCard, Shield, Key, FileText } from 'lucide-react';
 import ApiKeySettingsModal from '@/components/layout/ApiKeySettingsModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -355,6 +355,17 @@ const ProfilePage = () => {
             <ApiKeySettingsModal open={showApiKey} onOpenChange={setShowApiKey} />
           </>
         )}
+
+        {/* Legal Links */}
+        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <button onClick={() => navigate('/legal')} className="hover:text-primary underline">
+            {isRTL ? 'سياسة الخصوصية' : 'Confidentialité'}
+          </button>
+          <span>•</span>
+          <button onClick={() => navigate('/legal#terms')} className="hover:text-primary underline">
+            {isRTL ? 'شروط الاستخدام' : "Conditions d'utilisation"}
+          </button>
+        </div>
 
         {/* Log Out Button */}
         <Button

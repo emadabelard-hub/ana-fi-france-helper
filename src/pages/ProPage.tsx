@@ -1,25 +1,16 @@
-import { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { PenLine, Settings, ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
-import PurchaseConfirmModal from '@/components/shared/PurchaseConfirmModal';
 
+import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
 const ProPage = () => {
   const { isRTL, t } = useLanguage();
   const navigate = useNavigate();
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
-  const [purchaseModal, setPurchaseModal] = useState<{
-    open: boolean; name: string; key: string; price: number; bundle: boolean; returnPath: string;
-  }>({ open: false, name: '', key: '', price: 0, bundle: false, returnPath: '/' });
-
-  const openPurchase = (name: string, key: string, price: number, returnPath: string, bundle = false) => {
-    setPurchaseModal({ open: true, name, key, price, bundle, returnPath });
-  };
 
   const mainTools = [
     {
@@ -29,7 +20,6 @@ const ProPage = () => {
       description: t('pro.invoicesDesc'),
       path: '/pro/invoice-creator',
       gradient: 'from-emerald-500 to-emerald-600',
-      price: '8 €',
     },
     {
       icon: null,
@@ -39,7 +29,6 @@ const ProPage = () => {
       description: t('pro.quoteToInvoiceDesc'),
       path: '/pro/quote-to-invoice',
       gradient: 'from-amber-500 to-emerald-500',
-      price: '12 €',
     },
   ];
 
@@ -69,19 +58,7 @@ const ProPage = () => {
                 "border-none overflow-hidden",
                 `bg-gradient-to-r ${tool.gradient}`
               )}
-              onClick={() => {
-                if (tool.price) {
-                  openPurchase(
-                    tool.title,
-                    tool.path,
-                    tool.price === '12 €' ? 12 : tool.price === '8 €' ? 8 : 6,
-                    tool.path,
-                    false
-                  );
-                } else {
-                  navigate(tool.path);
-                }
-              }}
+              onClick={() => navigate(tool.path)}
             >
               <CardContent className="p-0">
                 <div className={cn(
@@ -113,20 +90,8 @@ const ProPage = () => {
                     </p>
                   </div>
 
-                  {/* Price badge & Arrow */}
-                  <div className="flex flex-col items-center gap-1">
-                    {tool.price && (
-                      <Badge className="bg-white/25 text-white border-0 text-sm font-black px-3 py-1 backdrop-blur-sm">
-                        {tool.price}
-                      </Badge>
-                    )}
-                    {(tool as any).bundleLabel && (
-                      <span className="text-[10px] font-bold text-white/90 text-center leading-tight max-w-[90px]">
-                        {(tool as any).bundleLabel}
-                      </span>
-                    )}
-                    <Arrow className="h-6 w-6 text-white/60" />
-                  </div>
+                  {/* Arrow */}
+                  <Arrow className="h-6 w-6 text-white/60" />
                 </div>
               </CardContent>
             </Card>
@@ -164,15 +129,6 @@ const ProPage = () => {
         </CardContent>
       </Card>
 
-      <PurchaseConfirmModal
-        open={purchaseModal.open}
-        onOpenChange={(v) => setPurchaseModal(prev => ({ ...prev, open: v }))}
-        serviceName={purchaseModal.name}
-        serviceKey={purchaseModal.key}
-        price={purchaseModal.price}
-        isBundle={purchaseModal.bundle}
-        returnPath={purchaseModal.returnPath}
-      />
     </div>
   );
 };

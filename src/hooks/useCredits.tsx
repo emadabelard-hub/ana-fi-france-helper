@@ -7,8 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 // Credit costs for different actions
 export const CREDIT_COSTS = {
   chat: 0,           // Free
-  invoice_pdf: 10,   // 10 credits per invoice/devis PDF
-  letter_pdf: 5,     // 5 credits per official letter
+  invoice_pdf: 0,    // Free
+  letter_pdf: 0,     // Free
 } as const;
 
 export type CreditAction = keyof typeof CREDIT_COSTS;

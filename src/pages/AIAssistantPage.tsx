@@ -197,24 +197,24 @@ const AIAssistantPage = () => {
                   <button
                     onClick={() => setOnboardingGender('male')}
                     className={cn(
-                      "flex-1 py-3 rounded-xl border-2 text-sm font-bold transition-all",
+                      "flex-1 py-3 rounded-xl border-2 text-2xl transition-all flex items-center justify-center",
                       onboardingGender === 'male'
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-muted-foreground hover:border-primary/30"
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-card hover:border-primary/30"
                     )}
                   >
-                    {isRTL ? 'ذكر 👨' : 'Homme 👨'}
+                    👦
                   </button>
                   <button
                     onClick={() => setOnboardingGender('female')}
                     className={cn(
-                      "flex-1 py-3 rounded-xl border-2 text-sm font-bold transition-all",
+                      "flex-1 py-3 rounded-xl border-2 text-2xl transition-all flex items-center justify-center",
                       onboardingGender === 'female'
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-muted-foreground hover:border-primary/30"
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-card hover:border-primary/30"
                     )}
                   >
-                    {isRTL ? 'أنثى 👩' : 'Femme 👩'}
+                    👩
                   </button>
                 </div>
               </div>

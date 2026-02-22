@@ -1379,6 +1379,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 </div>
               </div>
               
+              {/* Helper text */}
+              <p className={cn(
+                "text-xs text-muted-foreground",
+                isRTL && "font-cairo text-right"
+              )}>
+                {isRTL 
+                  ? 'للمقاول الذاتي (Auto-entrepreneur)، الضريبة 0% تلقائياً. لغير ذلك، اختر النسبة المناسبة للمشروع:' 
+                  : 'Si vous êtes Auto-entrepreneur, la TVA est de 0% (Franchise en base). Sinon, choisissez le taux applicable :'}
+              </p>
+
               {isAutoEntrepreneur ? (
                 <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
                   <p className={cn(
@@ -1392,14 +1402,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className={cn(
-                    "text-xs text-muted-foreground",
-                    isRTL && "font-cairo text-right"
-                  )}>
-                    {isRTL 
-                      ? 'اختار نسبة الـ TVA حسب نوع الشغل:' 
-                      : 'Choisissez le taux selon les travaux:'}
-                  </p>
                   <div className={cn(
                     "flex gap-2 flex-wrap",
                     isRTL && "flex-row-reverse"

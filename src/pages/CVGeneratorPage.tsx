@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import CVFormSection from '@/components/cv/CVFormSection';
 import CVPreview from '@/components/cv/CVPreview';
+import CVGuideModal from '@/components/cv/CVGuideModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Eye, Download, Loader2, Sparkles, Pencil } from 'lucide-react';
@@ -81,6 +82,7 @@ const CVGeneratorPage = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState('edit');
+  const [showGuide, setShowGuide] = useState(false);
 
   const handleTranslate = async () => {
     // Validate minimum required fields before calling API
@@ -160,6 +162,23 @@ const CVGeneratorPage = () => {
 
   return (
     <div className="py-4 space-y-4">
+      {/* Guide Modal */}
+      <CVGuideModal open={showGuide} onOpenChange={setShowGuide} />
+
+      {/* Red Help Banner */}
+      <div
+        onClick={() => setShowGuide(true)}
+        className={cn(
+          "bg-red-600 text-white rounded-xl px-4 py-3 cursor-pointer hover:bg-red-700 transition-colors",
+          "flex items-center justify-center gap-2",
+          isRTL && "font-cairo"
+        )}
+      >
+        <span className="text-sm font-black">
+          {isRTL ? 'عايز تعرف ازاي تعمل السي في؟ اضغط هنا 👈' : 'Comment créer votre CV ? Cliquez ici 👈'}
+        </span>
+      </div>
+
       {/* Header */}
       <section className={cn("text-center", isRTL && "font-cairo")}>
         <h1 className="text-2xl font-bold text-foreground mb-2">

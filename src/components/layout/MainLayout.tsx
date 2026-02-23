@@ -19,8 +19,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       isRTL && "font-cairo"
     )}>
       <Header />
-      {/* pt-20 for compact header, pb-14 for compact bottom nav */}
-      <main className="pt-20 pb-14 px-2">
+      {/* pt-14 for header without tabs, pb-14 for compact bottom nav */}
+      <main className="pt-14 pb-14 px-2">
         {children}
       </main>
       <BottomNavigation />

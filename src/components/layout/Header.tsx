@@ -17,25 +17,6 @@ const Header = () => {
     setLanguage(language === 'fr' ? 'ar' : 'fr');
   };
 
-  // Determine active tab
-  const isConsultationsActive = location.pathname === '/' || location.pathname === '/assistant';
-  const isProActive = location.pathname.startsWith('/pro');
-
-  const tabs = [
-    {
-      id: 'consultations',
-      label: t('header.consultations'),
-      path: '/assistant',
-      isActive: isConsultationsActive,
-    },
-    {
-      id: 'pro',
-      label: t('header.proTools'),
-      path: '/pro',
-      isActive: isProActive,
-    },
-  ];
-
   return (
     <header className={cn(
       "fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground",
@@ -87,28 +68,6 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Tab Navigation - Compact */}
-      <div className={cn(
-        "flex border-t border-primary-foreground/10",
-        isRTL && "flex-row-reverse"
-      )}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => navigate(tab.path)}
-            className={cn(
-              "flex-1 py-2 text-xs font-medium transition-all",
-              "border-b-2",
-              tab.isActive
-                ? "border-accent text-primary-foreground"
-                : "border-transparent text-primary-foreground/60 hover:text-primary-foreground/80",
-              isRTL && "font-cairo"
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
     </header>
   );
 };

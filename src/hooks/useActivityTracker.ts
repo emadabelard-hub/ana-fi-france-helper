@@ -1,0 +1,118 @@
+import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+
+const SESSION_KEY = 'afi_session_id';
+
+function getSessionId(): string {
+  let sid = sessionStorage.getItem(SESSION_KEY);
+  if (!sid) {
+    sid = crypto.randomUUID();
+    sessionStorage.setItem(SESSION_KEY, sid);
+  }
+  return sid;
+}
+
+const PAGE_LABELS: Record<string, string> = {
+  '/': 'الرئيسية',
+  '/home': 'الرئيسية',
+  '/news': 'الأخبار',
+  '/profile': 'حسابي',
+  '/pro': 'أدوات Pro',
+  '/pro/invoice-creator': 'الفاتورة / الدوفي',
+  '/pro/quote-to-invoice': 'تحويل دوفي لفاتورة',
+  '/pro/admin-assistant': 'مساعد إداري Pro',
+  '/pro/cv-generator': 'مُولد CV',
+  '/pro/settings': 'إعدادات Pro',
+  '/pro/peinture': 'دوفي بانتير',
+  '/ai-assistant': 'شبيك لبيك',
+  '/premium-consultation': 'استشارة مميزة',
+  '/consultations': 'استشارات',
+  '/language-school': 'مدرسة اللغة',
+  '/universal-admin-assistant': 'المساعد الإداري',
+  '/service-request': 'طلب خدمة',
+  '/admin': 'لوحة التحكم',
+  '/legal': 'قانوني',
+};
+
+const useActivityTracker = () => {
+  const { pathname } = useLocation();
+  const { user } = useAuth();
+  const enterTimeRef = useRef<number>(Date.now());
+  const lastPageRef = useRef<string>(pathname);
+
+  // Log page view on route change
+  useEffect(() => {
+    const sessionId = getSessionId();
+    const pageLabel = PAGE_LABELS[pathname] || pathname;
+
+    // Send duration for previous page
+    const now = Date.now();
+    const durationSec = Math.round((now - enterTimeRef.current) / 1000);
+    if (lastPageRef.current !== pathname && durationSec > 0) {
+      const prevLabel = PAGE_LABELS[lastPageRef.current] || lastPageRef.current;
+      logActivity('page_exit', prevLabel, sessionId, durationSec);
+    }
+
+    enterTimeRef.current = now;
+    lastPageRef.current = pathname;
+
+    // Log new page view
+    logActivity('page_view', pageLabel, sessionId, null);
+  }, [pathname, user]);
+
+  // Log session end on tab close
+  useEffect(() => {
+    const handleUnload = () => {
+      const sessionId = getSessionId();
+      const durationSec = Math.round((Date.now() - enterTimeRef.current) / 1000);
+      const pageLabel = PAGE_LABELS[lastPageRef.current] || lastPageRef.current;
+
+      // Use sendBeacon for reliable unload logging
+      const payload = JSON.stringify({
+        user_id: user?.id || null,
+        user_email: user?.email || null,
+        is_guest: !user,
+        page: pageLabel,
+        action: 'session_end',
+        session_id: sessionId,
+        duration_seconds: durationSec,
+        metadata: {},
+      });
+
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/user_activity_logs`;
+      navigator.sendBeacon(
+        url + `?apikey=${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        new Blob([payload], { type: 'application/json' })
+      );
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, [user]);
+
+  const logActivity = async (
+    action: string,
+    page: string,
+    sessionId: string,
+    durationSeconds: number | null
+  ) => {
+    try {
+      await supabase.from('user_activity_logs').insert({
+        user_id: user?.id || null,
+        user_email: user?.email || null,
+        is_guest: !user,
+        page,
+        action,
+        session_id: sessionId,
+        duration_seconds: durationSeconds,
+        metadata: {},
+      } as any);
+    } catch {
+      // Silent fail - don't impact UX
+    }
+  };
+};
+
+export default useActivityTracker;

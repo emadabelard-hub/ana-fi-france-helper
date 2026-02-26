@@ -434,6 +434,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          is_guest: boolean | null
+          metadata: Json | null
+          page: string
+          session_id: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          is_guest?: boolean | null
+          metadata?: Json | null
+          page: string
+          session_id?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          is_guest?: boolean | null
+          metadata?: Json | null
+          page?: string
+          session_id?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_feedback: {
         Row: {
           created_at: string

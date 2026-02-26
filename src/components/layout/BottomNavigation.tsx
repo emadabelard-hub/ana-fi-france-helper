@@ -1,9 +1,21 @@
-import { Home, Newspaper, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Home, Newspaper, User, Shield } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 const navItems = [
+  {
+    path: '/news',
+    icon: Newspaper,
+    labelAr: 'الأخبار',
+    labelFr: 'Actualités',
+    color: 'text-red-500',
+    activeBg: 'bg-red-500/15',
+    dotColor: 'bg-red-500',
+  },
   {
     path: '/',
     icon: Home,
@@ -22,26 +34,42 @@ const navItems = [
     activeBg: 'bg-blue-400/15',
     dotColor: 'bg-blue-400',
   },
-  {
-    path: '/news',
-    icon: Newspaper,
-    labelAr: 'الأخبار',
-    labelFr: 'Actualités',
-    color: 'text-red-500',
-    activeBg: 'bg-red-500/15',
-    dotColor: 'bg-red-500',
-  },
 ];
+
+const adminItem = {
+  path: '/admin',
+  icon: Shield,
+  labelAr: 'لوحة التحكم',
+  labelFr: 'Admin',
+  color: 'text-emerald-400',
+  activeBg: 'bg-emerald-400/15',
+  dotColor: 'bg-emerald-400',
+};
 
 const BottomNavigation = () => {
   const { language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) { setIsAdmin(false); return; }
+      try {
+        const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
+        setIsAdmin(data === true);
+      } catch { setIsAdmin(false); }
+    };
+    checkAdmin();
+  }, [user]);
+
+  const items = isAdmin ? [...navItems, adminItem] : navItems;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border safe-area-pb">
       <div className="flex items-center justify-around py-1.5">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const isActive =
             location.pathname === item.path ||
             (item.path === '/' && location.pathname === '/home');

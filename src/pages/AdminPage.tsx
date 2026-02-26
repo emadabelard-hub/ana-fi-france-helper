@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3, Users, MapPin, Receipt, ClipboardList } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3, Users, MapPin, Receipt, ClipboardList, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,6 +16,7 @@ import UsersManager from '@/components/admin/UsersManager';
 import VisitStatsManager from '@/components/admin/VisitStatsManager';
 import TransactionsManager from '@/components/admin/TransactionsManager';
 import ServiceRequestsManager from '@/components/admin/ServiceRequestsManager';
+import AnalyticsManager from '@/components/admin/AnalyticsManager';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();
@@ -166,6 +167,10 @@ const AdminPage = () => {
           </TabsTrigger>
         </TabsList>
         <TabsList className={cn("grid w-full grid-cols-4", isRTL && "direction-rtl")}>
+          <TabsTrigger value="analytics" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
+            <Activity className="h-4 w-4" />
+            {isRTL ? 'تحليلات' : 'Analytics'}
+          </TabsTrigger>
           <TabsTrigger value="transactions" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <Receipt className="h-4 w-4" />
             {isRTL ? 'معاملات' : 'Trans.'}
@@ -178,6 +183,8 @@ const AdminPage = () => {
             <BookOpen className="h-4 w-4" />
             {isRTL ? 'دروس' : 'Leçons'}
           </TabsTrigger>
+        </TabsList>
+        <TabsList className={cn("grid w-full grid-cols-1", isRTL && "direction-rtl")}>
           <TabsTrigger value="questions" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <HelpCircle className="h-4 w-4" />
             {isRTL ? 'أسئلة' : 'Questions'}
@@ -192,6 +199,9 @@ const AdminPage = () => {
         </TabsContent>
         <TabsContent value="visits" className="mt-6">
           <VisitStatsManager isRTL={isRTL} />
+        </TabsContent>
+        <TabsContent value="analytics" className="mt-6">
+          <AnalyticsManager isRTL={isRTL} />
         </TabsContent>
         <TabsContent value="transactions" className="mt-6">
           <TransactionsManager isRTL={isRTL} />

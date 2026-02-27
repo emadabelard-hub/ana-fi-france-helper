@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +12,11 @@ function getSessionId(): string {
     sessionStorage.setItem(SESSION_KEY, sid);
   }
   return sid;
+}
+
+function getDeviceInfo(): string {
+  const w = window.innerWidth;
+  return w < 768 ? 'Mobile' : w < 1024 ? 'Tablette' : 'Desktop';
 }
 
 const PAGE_LABELS: Record<string, string> = {
@@ -42,6 +47,29 @@ const useActivityTracker = () => {
   const enterTimeRef = useRef<number>(Date.now());
   const lastPageRef = useRef<string>(pathname);
 
+  const logActivity = useCallback(async (
+    action: string,
+    page: string,
+    sessionId: string,
+    durationSeconds: number | null
+  ) => {
+    try {
+      await supabase.from('user_activity_logs').insert({
+        user_id: user?.id || null,
+        user_email: user?.email || null,
+        is_guest: !user,
+        page,
+        action,
+        session_id: sessionId,
+        duration_seconds: durationSeconds,
+        device_info: getDeviceInfo(),
+        metadata: {},
+      } as any);
+    } catch {
+      // Silent fail
+    }
+  }, [user]);
+
   // Log page view on route change
   useEffect(() => {
     const sessionId = getSessionId();
@@ -58,9 +86,8 @@ const useActivityTracker = () => {
     enterTimeRef.current = now;
     lastPageRef.current = pathname;
 
-    // Log new page view
     logActivity('page_view', pageLabel, sessionId, null);
-  }, [pathname, user]);
+  }, [pathname, user, logActivity]);
 
   // Log session end on tab close
   useEffect(() => {
@@ -69,7 +96,6 @@ const useActivityTracker = () => {
       const durationSec = Math.round((Date.now() - enterTimeRef.current) / 1000);
       const pageLabel = PAGE_LABELS[lastPageRef.current] || lastPageRef.current;
 
-      // Use sendBeacon for reliable unload logging
       const payload = JSON.stringify({
         user_id: user?.id || null,
         user_email: user?.email || null,
@@ -78,6 +104,7 @@ const useActivityTracker = () => {
         action: 'session_end',
         session_id: sessionId,
         duration_seconds: durationSec,
+        device_info: getDeviceInfo(),
         metadata: {},
       });
 
@@ -92,27 +119,13 @@ const useActivityTracker = () => {
     return () => window.removeEventListener('beforeunload', handleUnload);
   }, [user]);
 
-  const logActivity = async (
-    action: string,
-    page: string,
-    sessionId: string,
-    durationSeconds: number | null
-  ) => {
-    try {
-      await supabase.from('user_activity_logs').insert({
-        user_id: user?.id || null,
-        user_email: user?.email || null,
-        is_guest: !user,
-        page,
-        action,
-        session_id: sessionId,
-        duration_seconds: durationSeconds,
-        metadata: {},
-      } as any);
-    } catch {
-      // Silent fail - don't impact UX
-    }
-  };
+  // Expose a function to log custom feature actions
+  const trackFeatureClick = useCallback((featureName: string) => {
+    const sessionId = getSessionId();
+    logActivity('feature_click', featureName, sessionId, null);
+  }, [logActivity]);
+
+  return { trackFeatureClick };
 };
 
 export default useActivityTracker;

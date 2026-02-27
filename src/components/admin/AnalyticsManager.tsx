@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Users, Clock, Eye, RefreshCw, TrendingUp } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Users, Clock, RefreshCw, Search, Smartphone, Monitor, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface ActivityLog {
   id: string;
@@ -15,30 +15,25 @@ interface ActivityLog {
   duration_seconds: number | null;
   session_id: string | null;
   created_at: string;
+  device_info: string | null;
 }
 
 interface Props {
   isRTL: boolean;
 }
 
-const CHART_COLORS = [
-  'hsl(var(--primary))',
-  'hsl(45, 93%, 47%)',
-  'hsl(0, 84%, 60%)',
-  'hsl(200, 80%, 50%)',
-  'hsl(140, 60%, 45%)',
-  'hsl(280, 60%, 55%)',
-  'hsl(20, 90%, 55%)',
-  'hsl(170, 60%, 45%)',
-];
+const ACTION_LABELS: Record<string, string> = {
+  page_view: 'فتح',
+  page_exit: 'خرج من',
+  session_end: 'أنهى الجلسة',
+  feature_click: 'ضغط على',
+};
 
 const AnalyticsManager = ({ isRTL }: Props) => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeUsers, setActiveUsers] = useState(0);
-  const [popularPages, setPopularPages] = useState<{ name: string; count: number }[]>([]);
-  const [totalToday, setTotalToday] = useState(0);
   const [dateFilter, setDateFilter] = useState<'today' | '7d' | '30d'>('today');
+  const [emailFilter, setEmailFilter] = useState('');
 
   const fetchData = async () => {
     setLoading(true);
@@ -53,44 +48,15 @@ const AnalyticsManager = ({ isRTL }: Props) => {
         fromDate = new Date(now.getTime() - 30 * 86400000);
       }
 
-      // Fetch logs
-      const { data: logsData } = await supabase
+      let query = supabase
         .from('user_activity_logs')
         .select('*')
         .gte('created_at', fromDate.toISOString())
         .order('created_at', { ascending: false })
-        .limit(500) as any;
+        .limit(1000) as any;
 
-      const typedLogs: ActivityLog[] = logsData || [];
-      setLogs(typedLogs);
-
-      // Calculate active users (unique sessions in last 5 minutes)
-      const fiveMinAgo = new Date(now.getTime() - 5 * 60000).toISOString();
-      const recentSessions = new Set(
-        typedLogs
-          .filter((l) => l.created_at >= fiveMinAgo && l.action === 'page_view')
-          .map((l) => l.session_id)
-      );
-      setActiveUsers(recentSessions.size);
-
-      // Popular pages
-      const pageCount: Record<string, number> = {};
-      typedLogs
-        .filter((l) => l.action === 'page_view')
-        .forEach((l) => {
-          pageCount[l.page] = (pageCount[l.page] || 0) + 1;
-        });
-      const sorted = Object.entries(pageCount)
-        .map(([name, count]) => ({ name, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 8);
-      setPopularPages(sorted);
-
-      // Total today
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-      setTotalToday(
-        typedLogs.filter((l) => l.created_at >= todayStart && l.action === 'page_view').length
-      );
+      const { data } = await query;
+      setLogs((data as ActivityLog[]) || []);
     } catch (err) {
       console.error('Analytics fetch error:', err);
     } finally {
@@ -102,29 +68,56 @@ const AnalyticsManager = ({ isRTL }: Props) => {
     fetchData();
   }, [dateFilter]);
 
+  // Derived stats
+  const filteredLogs = useMemo(() => {
+    if (!emailFilter.trim()) return logs;
+    const q = emailFilter.toLowerCase();
+    return logs.filter(l =>
+      l.is_guest ? 'guest'.includes(q) || 'ضيف'.includes(q) : l.user_email?.toLowerCase().includes(q)
+    );
+  }, [logs, emailFilter]);
+
+  const activeUsers = useMemo(() => {
+    const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
+    return new Set(
+      logs.filter(l => l.created_at >= fiveMinAgo && l.action === 'page_view').map(l => l.session_id)
+    ).size;
+  }, [logs]);
+
+  const uniqueUsers = useMemo(() => {
+    return new Set(filteredLogs.map(l => l.user_email || l.session_id)).size;
+  }, [filteredLogs]);
+
   const formatTime = (ts: string) => {
     const d = new Date(ts);
     return d.toLocaleString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
+      day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
     });
   };
 
   const formatDuration = (sec: number | null) => {
-    if (!sec || sec < 1) return '-';
-    if (sec < 60) return `${sec}s`;
-    return `${Math.floor(sec / 60)}m ${sec % 60}s`;
+    if (!sec || sec < 1) return '—';
+    if (sec < 60) return `${sec}ث`;
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return s > 0 ? `${m}د ${s}ث` : `${m}د`;
   };
 
-  const actionLabel = (action: string) => {
-    const map: Record<string, string> = {
-      page_view: '👁️ زيارة',
-      page_exit: '🚪 خروج',
-      session_end: '🔴 إنهاء جلسة',
-    };
-    return map[action] || action;
+  const getActionText = (log: ActivityLog) => {
+    const label = ACTION_LABELS[log.action] || log.action;
+    return `${label} ${log.page}`;
+  };
+
+  const getUserLabel = (log: ActivityLog) => {
+    if (log.is_guest) return 'ضيف';
+    if (!log.user_email) return '—';
+    return log.user_email.split('@')[0];
+  };
+
+  const getDeviceIcon = (device: string | null) => {
+    if (!device) return null;
+    if (device === 'Mobile') return <Smartphone className="h-3.5 w-3.5 text-blue-500" />;
+    return <Monitor className="h-3.5 w-3.5 text-muted-foreground" />;
   };
 
   if (loading) {
@@ -136,18 +129,18 @@ const AnalyticsManager = ({ isRTL }: Props) => {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Date filter + Refresh */}
-      <div className={cn("flex items-center gap-2 flex-wrap", isRTL && "flex-row-reverse")}>
+    <div className="space-y-3" dir="rtl">
+      {/* Controls */}
+      <div className="flex items-center gap-2 flex-wrap flex-row-reverse">
         {(['today', '7d', '30d'] as const).map((f) => (
           <Button
             key={f}
             size="sm"
             variant={dateFilter === f ? 'default' : 'outline'}
             onClick={() => setDateFilter(f)}
-            className={cn("text-xs", isRTL && "font-cairo")}
+            className="text-xs font-cairo"
           >
-            {f === 'today' ? (isRTL ? 'اليوم' : "Aujourd'hui") : f === '7d' ? (isRTL ? '٧ أيام' : '7 jours') : isRTL ? '٣٠ يوم' : '30 jours'}
+            {f === 'today' ? 'اليوم' : f === '7d' ? '٧ أيام' : '٣٠ يوم'}
           </Button>
         ))}
         <Button size="sm" variant="ghost" onClick={fetchData}>
@@ -155,118 +148,111 @@ const AnalyticsManager = ({ isRTL }: Props) => {
         </Button>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Row */}
       <div className="grid grid-cols-3 gap-2">
         <Card>
           <CardContent className="py-3 text-center">
-            <Users className="h-5 w-5 mx-auto text-green-500 mb-1" />
-            <p className={cn("text-2xl font-bold", isRTL && "font-cairo")}>{activeUsers}</p>
-            <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo")}>
-              {isRTL ? 'متصلون الآن' : 'En ligne'}
-            </p>
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <div className="h-2.5 w-2.5 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-[10px] text-muted-foreground font-cairo">متصلون الآن</span>
+            </div>
+            <p className="text-2xl font-bold font-cairo">{activeUsers}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3 text-center">
-            <Eye className="h-5 w-5 mx-auto text-blue-500 mb-1" />
-            <p className={cn("text-2xl font-bold", isRTL && "font-cairo")}>{totalToday}</p>
-            <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo")}>
-              {isRTL ? 'زيارات اليوم' : "Vues aujourd'hui"}
-            </p>
+            <Users className="h-4 w-4 mx-auto text-blue-500 mb-1" />
+            <p className="text-2xl font-bold font-cairo">{uniqueUsers}</p>
+            <p className="text-[10px] text-muted-foreground font-cairo">مستخدم</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3 text-center">
-            <TrendingUp className="h-5 w-5 mx-auto text-amber-500 mb-1" />
-            <p className={cn("text-2xl font-bold", isRTL && "font-cairo")}>{popularPages[0]?.count || 0}</p>
-            <p className={cn("text-[10px] text-muted-foreground truncate", isRTL && "font-cairo")}>
-              {popularPages[0]?.name || '-'}
-            </p>
+            <Clock className="h-4 w-4 mx-auto text-amber-500 mb-1" />
+            <p className="text-2xl font-bold font-cairo">{filteredLogs.length}</p>
+            <p className="text-[10px] text-muted-foreground font-cairo">حركة</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Popular Features Chart */}
-      {popularPages.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className={cn("text-sm", isRTL && "text-right font-cairo")}>
-              {isRTL ? '📊 الأدوات الأكثر استخداماً' : '📊 Outils les plus utilisés'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={popularPages} layout="vertical" margin={{ left: 10, right: 10 }}>
-                <XAxis type="number" hide />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={100}
-                  tick={{ fontSize: 10, fontFamily: 'Cairo' }}
-                />
-                <Tooltip
-                  formatter={(value: number) => [`${value}`, isRTL ? 'زيارات' : 'Visites']}
-                />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                  {popularPages.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
+      {/* Email Filter */}
+      <div className="relative">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="ابحث بالإيميل لتتبع رحلة مستخدم..."
+          value={emailFilter}
+          onChange={(e) => setEmailFilter(e.target.value)}
+          className="pr-9 text-right font-cairo text-sm"
+        />
+        {emailFilter && (
+          <button onClick={() => setEmailFilter('')} className="absolute left-3 top-1/2 -translate-y-1/2">
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
+      </div>
 
-      {/* Activity Log Table */}
+      {/* Live Activity Feed */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className={cn("text-sm", isRTL && "text-right font-cairo")}>
-            {isRTL ? '📋 سجل النشاط التفصيلي' : '📋 Journal d\'activité'}
+          <CardTitle className="text-sm text-right font-cairo flex items-center gap-2 justify-end">
+            <span>📡 بث مباشر للنشاط</span>
+            {!emailFilter && <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="max-h-[400px] overflow-auto">
+          <div className="max-h-[500px] overflow-auto">
             <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-muted">
-                <tr className={cn(isRTL && "text-right")}>
-                  <th className="px-2 py-1.5 font-semibold">{isRTL ? 'الوقت' : 'Heure'}</th>
-                  <th className="px-2 py-1.5 font-semibold">{isRTL ? 'المستخدم' : 'Utilisateur'}</th>
-                  <th className="px-2 py-1.5 font-semibold">{isRTL ? 'الإجراء' : 'Action'}</th>
-                  <th className="px-2 py-1.5 font-semibold">{isRTL ? 'المدة' : 'Durée'}</th>
+              <thead className="sticky top-0 bg-muted z-10">
+                <tr className="text-right">
+                  <th className="px-2 py-2 font-semibold font-cairo">الوقت</th>
+                  <th className="px-2 py-2 font-semibold font-cairo">المستخدم</th>
+                  <th className="px-2 py-2 font-semibold font-cairo">عمل إيه بالظبط؟</th>
+                  <th className="px-2 py-2 font-semibold font-cairo">المدة</th>
+                  <th className="px-2 py-2 font-semibold font-cairo w-8">📱</th>
                 </tr>
               </thead>
               <tbody>
-                {logs.slice(0, 100).map((log) => (
-                  <tr key={log.id} className="border-t border-border hover:bg-muted/50">
-                    <td className="px-2 py-1 whitespace-nowrap">{formatTime(log.created_at)}</td>
-                    <td className="px-2 py-1 truncate max-w-[100px]">
-                      {log.is_guest ? (
-                        <span className="text-muted-foreground">{isRTL ? 'ضيف' : 'Invité'}</span>
-                      ) : (
-                        log.user_email?.split('@')[0] || '—'
-                      )}
+                {filteredLogs.map((log) => (
+                  <tr
+                    key={log.id}
+                    className={cn(
+                      "border-t border-border hover:bg-muted/50 transition-colors",
+                      log.action === 'session_end' && "bg-red-50/50 dark:bg-red-900/10",
+                      log.action === 'feature_click' && "bg-blue-50/50 dark:bg-blue-900/10"
+                    )}
+                  >
+                    <td className="px-2 py-1.5 whitespace-nowrap text-muted-foreground">
+                      {formatTime(log.created_at)}
                     </td>
-                    <td className={cn("px-2 py-1", isRTL && "font-cairo")}>
-                      <span className="font-medium">{actionLabel(log.action)}</span>
-                      <span className="text-muted-foreground mr-1 ml-1">→</span>
-                      <span>{log.page}</span>
+                    <td className="px-2 py-1.5 font-cairo">
+                      <button
+                        className="text-primary hover:underline truncate max-w-[80px] inline-block"
+                        onClick={() => setEmailFilter(log.user_email || '')}
+                        title={log.user_email || 'ضيف'}
+                      >
+                        {getUserLabel(log)}
+                      </button>
                     </td>
-                    <td className="px-2 py-1">
+                    <td className="px-2 py-1.5 font-cairo font-medium">
+                      {getActionText(log)}
+                    </td>
+                    <td className="px-2 py-1.5">
                       <span className={cn(
-                        "inline-flex items-center gap-0.5",
-                        log.duration_seconds && log.duration_seconds > 60 && "text-green-600"
+                        "inline-flex items-center gap-0.5 font-cairo",
+                        log.duration_seconds && log.duration_seconds > 60 && "text-green-600 font-bold"
                       )}>
-                        <Clock className="h-3 w-3" />
                         {formatDuration(log.duration_seconds)}
                       </span>
                     </td>
+                    <td className="px-2 py-1.5 text-center">
+                      {getDeviceIcon(log.device_info)}
+                    </td>
                   </tr>
                 ))}
-                {logs.length === 0 && (
+                {filteredLogs.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="text-center py-8 text-muted-foreground">
-                      {isRTL ? 'لا توجد بيانات بعد' : 'Aucune donnée'}
+                    <td colSpan={5} className="text-center py-8 text-muted-foreground font-cairo">
+                      {emailFilter ? 'لا توجد نتائج لهذا البحث' : 'لا توجد بيانات بعد'}
                     </td>
                   </tr>
                 )}

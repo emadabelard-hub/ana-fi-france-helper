@@ -4,7 +4,7 @@ import BottomNavigation from './BottomNavigation';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import useVisitTracker from '@/hooks/useVisitTracker';
-import useActivityTracker from '@/hooks/useActivityTracker';
+import { ActivityTrackerProvider } from '@/contexts/ActivityTrackerContext';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -13,20 +13,20 @@ interface MainLayoutProps {
 const MainLayout = ({ children }: MainLayoutProps) => {
   const { isRTL } = useLanguage();
   useVisitTracker();
-  useActivityTracker();
 
   return (
-    <div className={cn(
-      "min-h-screen bg-background",
-      isRTL && "font-cairo"
-    )}>
-      <Header />
-      {/* pt-14 for header without tabs, pb-14 for compact bottom nav */}
-      <main className="pt-14 pb-14 px-2">
-        {children}
-      </main>
-      <BottomNavigation />
-    </div>
+    <ActivityTrackerProvider>
+      <div className={cn(
+        "min-h-screen bg-background",
+        isRTL && "font-cairo"
+      )}>
+        <Header />
+        <main className="pt-14 pb-14 px-2">
+          {children}
+        </main>
+        <BottomNavigation />
+      </div>
+    </ActivityTrackerProvider>
   );
 };
 

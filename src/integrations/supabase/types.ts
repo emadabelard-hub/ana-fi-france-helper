@@ -438,6 +438,7 @@ export type Database = {
         Row: {
           action: string
           created_at: string
+          device_info: string | null
           duration_seconds: number | null
           id: string
           is_guest: boolean | null
@@ -450,6 +451,7 @@ export type Database = {
         Insert: {
           action?: string
           created_at?: string
+          device_info?: string | null
           duration_seconds?: number | null
           id?: string
           is_guest?: boolean | null
@@ -462,6 +464,7 @@ export type Database = {
         Update: {
           action?: string
           created_at?: string
+          device_info?: string | null
           duration_seconds?: number | null
           id?: string
           is_guest?: boolean | null

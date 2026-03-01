@@ -6,11 +6,10 @@ import CVPreview from '@/components/cv/CVPreview';
 import CVGuideModal from '@/components/cv/CVGuideModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Eye, Download, Loader2, Sparkles, Pencil } from 'lucide-react';
+import { FileText, Eye, Loader2, Sparkles, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
 
 export interface CVData {
   fullName: string;
@@ -248,24 +247,26 @@ const CVGeneratorPage = () => {
             </Button>
           </div>
 
-          {/* CV Preview */}
+          {/* CV Preview with protection */}
           <div className="bg-muted/30 rounded-lg p-4 overflow-auto">
-            <div className="print-area">
-              <CVPreview ref={cvRef} data={displayData} />
-            </div>
-          </div>
-
-          {/* Export Button */}
-          <div className="mt-4">
-            <Button
-              onClick={handleExportPDF}
-              disabled={!hasData}
-              className="w-full gap-2"
-              size="lg"
+            <ProtectedDocumentWrapper
+              documentType="cv"
+              returnPath="/cv-generator"
+              renderDownloadButton={() => (
+                <Button
+                  onClick={handleExportPDF}
+                  disabled={!hasData}
+                  className="w-full gap-2"
+                  size="lg"
+                >
+                  {isRTL ? '📥 تحميل PDF' : '📥 Télécharger PDF'}
+                </Button>
+              )}
             >
-              <Download className="h-5 w-5" />
-              {isRTL ? '📥 تحميل PDF' : '📥 Télécharger PDF'}
-            </Button>
+              <div className="print-area">
+                <CVPreview ref={cvRef} data={displayData} />
+              </div>
+            </ProtectedDocumentWrapper>
           </div>
         </TabsContent>
       </Tabs>

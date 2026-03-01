@@ -3,14 +3,12 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Download, Coins } from 'lucide-react';
+import { Download } from 'lucide-react';
 import EnvelopeHelper from './EnvelopeHelper';
 import { useToast } from '@/hooks/use-toast';
-import { useCredits, CREDIT_COSTS } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
-import InsufficientCreditsModal from '@/components/shared/InsufficientCreditsModal';
+import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
 
 interface DispatchInfo {
   recipientName?: string;
@@ -38,12 +36,9 @@ const DocumentViewerModal = ({
 }: DocumentViewerModalProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { balance, canAfford, deductCredits, getCost } = useCredits();
   const [isExporting, setIsExporting] = useState(false);
-  const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
   const letterRef = useRef<HTMLDivElement>(null);
-
-  const creditCost = getCost('letter_pdf');
 
   const displayTitle = useMemo(() => {
     if (title?.trim()) return title.trim();
@@ -54,33 +49,8 @@ const DocumentViewerModal = ({
   const handleExportPDF = async () => {
     if (!letterRef.current) return;
 
-    // Check if user is logged in
-    if (!user) {
-      toast({
-        variant: "destructive",
-        title: isRTL ? "تسجيل الدخول مطلوب" : "Connexion requise",
-        description: isRTL 
-          ? "سجل الدخول لتحميل المستندات" 
-          : "Connectez-vous pour télécharger des documents",
-      });
-      return;
-    }
-
-    // Check if user can afford this action
-    if (!canAfford('letter_pdf')) {
-      setShowInsufficientCredits(true);
-      return;
-    }
-
     setIsExporting(true);
     try {
-      // Deduct credits first
-      const success = await deductCredits('letter_pdf');
-      if (!success) {
-        setIsExporting(false);
-        return;
-      }
-
       const canvas = await html2canvas(letterRef.current, {
         backgroundColor: '#ffffff',
         scale: 2,
@@ -146,30 +116,47 @@ const DocumentViewerModal = ({
           {/* Scrollable document body */}
           <main className="flex-1 overflow-y-auto">
             <div className="mx-auto w-full max-w-[900px] px-4 py-6">
-              <div
-                ref={letterRef}
-                dir="ltr"
-                lang="fr"
-                className={cn(
-                  'border border-border rounded-lg shadow-sm',
-                  'bg-background text-foreground',
-                  'px-8 py-10',
+              <ProtectedDocumentWrapper
+                documentType="letter"
+                returnPath="/assistant"
+                isPaid={isPaid}
+                onUnlocked={() => setIsPaid(true)}
+                renderDownloadButton={() => (
+                  <Button onClick={handleExportPDF} disabled={isExporting} className={cn('w-full gap-2', isRTL && 'flex-row-reverse')}>
+                    {isExporting ? (
+                      <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    {isRTL ? 'تحميل PDF' : 'Télécharger PDF'}
+                  </Button>
                 )}
-                style={{
-                  direction: 'ltr',
-                  textAlign: 'justify',
-                  fontFamily: 'Arial, Roboto, sans-serif',
-                }}
               >
-                <div className="whitespace-pre-wrap text-sm leading-relaxed" style={{ textAlign: 'justify' }}>
-                  {documentText}
-                </div>
+                <div
+                  ref={letterRef}
+                  dir="ltr"
+                  lang="fr"
+                  className={cn(
+                    'border border-border rounded-lg shadow-sm',
+                    'bg-background text-foreground',
+                    'px-8 py-10',
+                  )}
+                  style={{
+                    direction: 'ltr',
+                    textAlign: 'justify',
+                    fontFamily: 'Arial, Roboto, sans-serif',
+                  }}
+                >
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed" style={{ textAlign: 'justify' }}>
+                    {documentText}
+                  </div>
 
-                {/* Leave space for signature bottom-right */}
-                <div className="mt-10 flex justify-end">
-                  <div className="h-20 w-64" />
+                  {/* Leave space for signature bottom-right */}
+                  <div className="mt-10 flex justify-end">
+                    <div className="h-20 w-64" />
+                  </div>
                 </div>
-              </div>
+              </ProtectedDocumentWrapper>
 
               {/* Envelope helper */}
               {dispatchInfo?.recipientName && (
@@ -182,38 +169,8 @@ const DocumentViewerModal = ({
               )}
             </div>
           </main>
-
-          {/* Footer actions */}
-          <footer className={cn('border-t border-border bg-background px-4 py-3', isRTL && 'font-cairo')}>
-            <div className={cn('flex items-center justify-end gap-2', isRTL && 'flex-row-reverse')}>
-              <Button onClick={handleExportPDF} disabled={isExporting} className={cn('gap-2', isRTL && 'flex-row-reverse')}>
-                {isExporting ? (
-                  <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                {isRTL ? 'تحميل PDF' : 'Télécharger PDF'}
-                {creditCost > 0 && (
-                  <Badge 
-                    variant="secondary" 
-                    className="ml-1 text-xs px-1.5 py-0 bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
-                  >
-                    <Coins className="h-3 w-3 mr-0.5" />
-                    {creditCost}
-                  </Badge>
-                )}
-              </Button>
-            </div>
-          </footer>
         </div>
       </DialogContent>
-
-      <InsufficientCreditsModal
-        open={showInsufficientCredits}
-        onOpenChange={setShowInsufficientCredits}
-        currentBalance={balance}
-        requiredCredits={creditCost}
-      />
     </Dialog>
   );
 };

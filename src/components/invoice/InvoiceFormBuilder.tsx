@@ -24,6 +24,7 @@ import { saveDraft, loadDraft, clearDraft, loadCloudDraft } from '@/lib/invoiceD
 import { detectMultipleTasks } from '@/lib/smartItemSplit';
 import { useAuth } from '@/hooks/useAuth';
 import { resolveAssetUrls } from '@/lib/storageUtils';
+import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
 
 interface PrefillData {
   clientName?: string;
@@ -1529,14 +1530,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             showArabic={showArabic}
             onToggleArabic={setShowArabic}
             onUpdateInvoice={handleUpdateInvoice}
+            isPaid={false}
           />
-          
-          <div ref={invoiceRef} className="print-area">
-            <InvoiceDisplay 
-              data={invoiceData} 
-              showArabic={showArabic} 
-            />
-          </div>
+
+          <ProtectedDocumentWrapper
+            documentType={documentType}
+            returnPath={`/pro/invoice-creator?type=${documentType}`}
+          >
+            <div ref={invoiceRef} className="print-area">
+              <InvoiceDisplay 
+                data={invoiceData} 
+                showArabic={showArabic} 
+              />
+            </div>
+          </ProtectedDocumentWrapper>
         </div>
       ) : (
         <div className={cn(

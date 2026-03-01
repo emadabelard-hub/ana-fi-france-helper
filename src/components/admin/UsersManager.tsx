@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Users, Loader2, Calendar } from 'lucide-react';
+import { Users, Loader2, Calendar, Globe } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -12,6 +12,7 @@ interface UserProfile {
   updated_at: string;
   credits_balance: number;
   daily_message_count: number;
+  last_ip?: string | null;
 }
 
 interface UsersManagerProps {
@@ -24,8 +25,6 @@ const UsersManager = ({ isRTL }: UsersManagerProps) => {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      // Note: This requires admin privileges via RLS
-      // We fetch from profiles table which contains user info
       const { data, error } = await supabase
         .from('admin_user_list')
         .select('id, user_id, full_name, created_at, updated_at, credits_balance, daily_message_count')
@@ -33,9 +32,37 @@ const UsersManager = ({ isRTL }: UsersManagerProps) => {
 
       if (error) {
         console.error('Error fetching users:', error);
-      } else {
-        setUsers(data || []);
+        setIsLoading(false);
+        return;
       }
+
+      // Fetch last IP for each user from activity logs
+      const usersWithIp: UserProfile[] = [];
+      const userIds = (data || []).map(u => u.user_id).filter(Boolean);
+      
+      let ipMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: ipData } = await supabase
+          .from('user_activity_logs')
+          .select('user_id, ip_address')
+          .in('user_id', userIds)
+          .not('ip_address', 'is', null)
+          .order('created_at', { ascending: false });
+        
+        if (ipData) {
+          for (const row of ipData) {
+            if (row.user_id && row.ip_address && !ipMap[row.user_id]) {
+              ipMap[row.user_id] = row.ip_address;
+            }
+          }
+        }
+      }
+
+      for (const u of (data || [])) {
+        usersWithIp.push({ ...u, last_ip: u.user_id ? ipMap[u.user_id] || null : null } as UserProfile);
+      }
+
+      setUsers(usersWithIp);
       setIsLoading(false);
     };
 
@@ -106,7 +133,13 @@ const UsersManager = ({ isRTL }: UsersManagerProps) => {
                         </p>
                       </div>
                     </div>
-                  <div className={cn("text-right", isRTL && "text-left")}>
+                  <div className={cn("text-right space-y-1", isRTL && "text-left")}>
+                    {user.last_ip && (
+                      <div className={cn("flex items-center gap-1 text-xs text-muted-foreground", isRTL && "flex-row-reverse")}>
+                        <Globe className="h-3 w-3" />
+                        <span className="font-mono">{user.last_ip}</span>
+                      </div>
+                    )}
                     <div className={cn("flex items-center gap-1 text-xs text-muted-foreground", isRTL && "flex-row-reverse")}>
                       <Calendar className="h-3 w-3" />
                       <span>{new Date(user.created_at).toLocaleDateString()}</span>

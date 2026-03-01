@@ -1,14 +1,11 @@
 import { useState } from 'react';
-import { FileText, Image, Copy, Eye, EyeOff, Coins, Share2 } from 'lucide-react';
+import { FileText, Image, Copy, Eye, EyeOff, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
-import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
-import InsufficientCreditsModal from '@/components/shared/InsufficientCreditsModal';
 import SmartReviewModal from './SmartReviewModal';
 import { cn } from '@/lib/utils';
 import html2canvas from 'html2canvas';
@@ -16,6 +13,7 @@ import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import type { InvoiceData } from './InvoiceDisplay';
 import type { LineItem } from './LineItemEditor';
+import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
 
 
 interface SuggestedAddon {
@@ -35,6 +33,7 @@ interface InvoiceActionsProps {
   showArabic: boolean;
   onToggleArabic: (value: boolean) => void;
   onUpdateInvoice?: (updatedData: InvoiceData) => void;
+  isPaid?: boolean;
 }
 
 const InvoiceActions = ({ 
@@ -42,19 +41,16 @@ const InvoiceActions = ({
   invoiceRef, 
   showArabic, 
   onToggleArabic,
-  onUpdateInvoice 
+  onUpdateInvoice,
+  isPaid = false,
 }: InvoiceActionsProps) => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { balance, canAfford, deductCredits, getCost } = useCredits();
-  const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
   const [showSmartReview, setShowSmartReview] = useState(false);
   const [signedPdfBlob, setSignedPdfBlob] = useState<Blob | null>(null);
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-
-  const creditCost = getCost('invoice_pdf');
 
 
   // Generate PDF from signed invoice
@@ -249,10 +245,6 @@ const InvoiceActions = ({
   };
 
   const executeExportPDF = async () => {
-    // Deduct credits first
-    const success = await deductCredits('invoice_pdf');
-    if (!success) return;
-
     window.print();
 
     toast({
@@ -347,21 +339,6 @@ const InvoiceActions = ({
 
   return (
     <div className="space-y-4">
-      <Button
-        onClick={handleWhatsAppShare}
-        disabled={isUploading}
-        className={cn(
-          "w-full py-5",
-          isRTL && "font-cairo flex-row-reverse"
-        )}
-      >
-        <Share2 className="h-5 w-5 mr-2" />
-        {isUploading
-          ? (isRTL ? '⏳ جاري الحفظ...' : '⏳ Sauvegarde...')
-          : (isRTL ? '📲 ابعت بالواتساب' : '📲 Envoyer par WhatsApp')
-        }
-      </Button>
-
       {/* Arabic Toggle */}
       <div className={cn(
         "flex items-center justify-center gap-3 p-3 bg-muted rounded-lg",
@@ -404,55 +381,58 @@ const InvoiceActions = ({
         </p>
       )}
 
-      {/* Export Buttons */}
-      <div className={cn(
-        "flex gap-2",
-        isRTL && "flex-row-reverse"
-      )}>
-        <Button
-          variant="default"
-          size="sm"
-          onClick={handlePDFClick}
-          className={cn("flex-1 relative", isRTL && "flex-row-reverse font-cairo")}
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          {isRTL ? '📄 تحميل PDF' : '📄 Télécharger PDF'}
-          {creditCost > 0 && (
-            <Badge 
-              variant="secondary" 
-              className="ml-2 text-xs px-1.5 py-0"
-            >
-              <Coins className="h-3 w-3 mr-0.5" />
-              {creditCost}
-            </Badge>
-          )}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExportImage}
-          className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
-        >
-          <Image className="h-4 w-4 mr-2" />
-          {isRTL ? '🖼️ حفظ كصورة' : '🖼️ Enregistrer image'}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleCopyText}
-          className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
-        >
-          <Copy className="h-4 w-4 mr-2" />
-          {isRTL ? '📋 نسخ النص' : '📋 Copier texte'}
-        </Button>
-      </div>
+      {/* Payment-gated actions */}
+      {isPaid ? (
+        <>
+          <Button
+            onClick={handleWhatsAppShare}
+            disabled={isUploading}
+            className={cn(
+              "w-full py-5",
+              isRTL && "font-cairo flex-row-reverse"
+            )}
+          >
+            <Share2 className="h-5 w-5 mr-2" />
+            {isUploading
+              ? (isRTL ? '⏳ جاري الحفظ...' : '⏳ Sauvegarde...')
+              : (isRTL ? '📲 ابعت بالواتساب' : '📲 Envoyer par WhatsApp')
+            }
+          </Button>
 
-      <InsufficientCreditsModal
-        open={showInsufficientCredits}
-        onOpenChange={setShowInsufficientCredits}
-        currentBalance={balance}
-        requiredCredits={creditCost}
-      />
+          <div className={cn(
+            "flex gap-2",
+            isRTL && "flex-row-reverse"
+          )}>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handlePDFClick}
+              className={cn("flex-1 relative", isRTL && "flex-row-reverse font-cairo")}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {isRTL ? '📄 تحميل PDF' : '📄 Télécharger PDF'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportImage}
+              className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
+            >
+              <Image className="h-4 w-4 mr-2" />
+              {isRTL ? '🖼️ حفظ كصورة' : '🖼️ Enregistrer image'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyText}
+              className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              {isRTL ? '📋 نسخ النص' : '📋 Copier texte'}
+            </Button>
+          </div>
+        </>
+      ) : null}
 
       <SmartReviewModal
         open={showSmartReview}
@@ -465,7 +445,7 @@ const InvoiceActions = ({
         }
         onConfirm={handleSmartReviewConfirm}
         onCancel={handleSmartReviewCancel}
-        creditCost={creditCost}
+        creditCost={0}
       />
     </div>
   );

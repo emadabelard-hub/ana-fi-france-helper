@@ -16,6 +16,7 @@ interface ActivityLog {
   session_id: string | null;
   created_at: string;
   device_info: string | null;
+  ip_address: string | null;
 }
 
 interface Props {
@@ -203,13 +204,14 @@ const AnalyticsManager = ({ isRTL }: Props) => {
           <div className="max-h-[500px] overflow-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-muted z-10">
-                <tr className="text-right">
-                  <th className="px-2 py-2 font-semibold font-cairo">الوقت</th>
-                  <th className="px-2 py-2 font-semibold font-cairo">المستخدم</th>
-                  <th className="px-2 py-2 font-semibold font-cairo">عمل إيه بالظبط؟</th>
-                  <th className="px-2 py-2 font-semibold font-cairo">المدة</th>
-                  <th className="px-2 py-2 font-semibold font-cairo w-8">📱</th>
-                </tr>
+                 <tr className="text-right">
+                   <th className="px-2 py-2 font-semibold font-cairo">الوقت</th>
+                   <th className="px-2 py-2 font-semibold font-cairo">المستخدم</th>
+                   <th className="px-2 py-2 font-semibold font-cairo">عمل إيه بالظبط؟</th>
+                   <th className="px-2 py-2 font-semibold font-cairo">المدة</th>
+                   <th className="px-2 py-2 font-semibold font-cairo">IP</th>
+                   <th className="px-2 py-2 font-semibold font-cairo w-8">📱</th>
+                 </tr>
               </thead>
               <tbody>
                 {filteredLogs.map((log) => (
@@ -244,6 +246,9 @@ const AnalyticsManager = ({ isRTL }: Props) => {
                         {formatDuration(log.duration_seconds)}
                       </span>
                     </td>
+                    <td className="px-2 py-1.5 text-[10px] text-muted-foreground font-mono">
+                      {log.ip_address || '—'}
+                    </td>
                     <td className="px-2 py-1.5 text-center">
                       {getDeviceIcon(log.device_info)}
                     </td>
@@ -251,7 +256,7 @@ const AnalyticsManager = ({ isRTL }: Props) => {
                 ))}
                 {filteredLogs.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-muted-foreground font-cairo">
+                    <td colSpan={6} className="text-center py-8 text-muted-foreground font-cairo">
                       {emailFilter ? 'لا توجد نتائج لهذا البحث' : 'لا توجد بيانات بعد'}
                     </td>
                   </tr>

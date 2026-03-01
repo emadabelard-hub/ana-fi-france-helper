@@ -1,0 +1,1 @@
+ALTER TABLE public.user_activity_logs ADD COLUMN ip_address text DEFAULT NULL;

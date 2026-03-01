@@ -4,6 +4,21 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
 const SESSION_KEY = 'afi_session_id';
+const IP_KEY = 'afi_user_ip';
+
+async function getUserIp(): Promise<string | null> {
+  const cached = sessionStorage.getItem(IP_KEY);
+  if (cached) return cached;
+  try {
+    const res = await fetch('https://api.ipify.org?format=json');
+    const data = await res.json();
+    if (data?.ip) {
+      sessionStorage.setItem(IP_KEY, data.ip);
+      return data.ip;
+    }
+  } catch { /* silent */ }
+  return null;
+}
 
 function getSessionId(): string {
   let sid = sessionStorage.getItem(SESSION_KEY);
@@ -54,6 +69,7 @@ const useActivityTracker = () => {
     durationSeconds: number | null
   ) => {
     try {
+      const ip = await getUserIp();
       await supabase.from('user_activity_logs').insert({
         user_id: user?.id || null,
         user_email: user?.email || null,
@@ -63,6 +79,7 @@ const useActivityTracker = () => {
         session_id: sessionId,
         duration_seconds: durationSeconds,
         device_info: getDeviceInfo(),
+        ip_address: ip,
         metadata: {},
       } as any);
     } catch {
@@ -96,6 +113,7 @@ const useActivityTracker = () => {
       const durationSec = Math.round((Date.now() - enterTimeRef.current) / 1000);
       const pageLabel = PAGE_LABELS[lastPageRef.current] || lastPageRef.current;
 
+      const ip = sessionStorage.getItem(IP_KEY) || null;
       const payload = JSON.stringify({
         user_id: user?.id || null,
         user_email: user?.email || null,
@@ -105,6 +123,7 @@ const useActivityTracker = () => {
         session_id: sessionId,
         duration_seconds: durationSec,
         device_info: getDeviceInfo(),
+        ip_address: ip,
         metadata: {},
       });
 

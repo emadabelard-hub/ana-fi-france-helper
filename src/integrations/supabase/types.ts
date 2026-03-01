@@ -441,6 +441,7 @@ export type Database = {
           device_info: string | null
           duration_seconds: number | null
           id: string
+          ip_address: string | null
           is_guest: boolean | null
           metadata: Json | null
           page: string
@@ -454,6 +455,7 @@ export type Database = {
           device_info?: string | null
           duration_seconds?: number | null
           id?: string
+          ip_address?: string | null
           is_guest?: boolean | null
           metadata?: Json | null
           page: string
@@ -467,6 +469,7 @@ export type Database = {
           device_info?: string | null
           duration_seconds?: number | null
           id?: string
+          ip_address?: string | null
           is_guest?: boolean | null
           metadata?: Json | null
           page?: string

@@ -354,6 +354,11 @@ const SmartDevisPage = () => {
                 <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
                   {isRTL ? 'اضغط هنا لرفع الصورة أو الملف' : 'Cliquez pour télécharger'}
                 </p>
+                <p className={cn("text-xs text-muted-foreground/70 mt-3 leading-relaxed max-w-sm mx-auto", isRTL && "font-cairo")}>
+                  {isRTL 
+                    ? 'يمكنك تصوير موقع العمل، رفع مخطط هندسي، ملف PDF، أو حتى تصوير قائمة طلبات الزبون المكتوبة بخط اليد؛ وسيقوم الذكاء الاصطناعي بتحليل كل شيء فوراً.'
+                    : 'Photo de chantier, plan, PDF ou liste manuscrite du client — l\'IA analyse tout instantanément.'}
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -379,7 +384,7 @@ const SmartDevisPage = () => {
               <Button
                 onClick={handleAnalyze}
                 disabled={!uploadedImage || isAnalyzing}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-emerald-600 text-white"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
               >
                 {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 <span className={cn("mr-2", isRTL && "font-cairo")}>

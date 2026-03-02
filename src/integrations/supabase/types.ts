@@ -395,6 +395,36 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          status: string
+          user_email: string | null
+          user_id: string
+          user_siret: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          status?: string
+          user_email?: string | null
+          user_id: string
+          user_siret?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          status?: string
+          user_email?: string | null
+          user_id?: string
+          user_siret?: string | null
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           created_at: string

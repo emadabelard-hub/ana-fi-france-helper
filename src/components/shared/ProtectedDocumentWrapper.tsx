@@ -12,7 +12,7 @@ import AuthModal from '@/components/auth/AuthModal';
 interface ProtectedDocumentWrapperProps {
   children: ReactNode;
   /** The document type label for the payment metadata */
-  documentType: 'devis' | 'facture' | 'cv' | 'letter' | 'quote_to_invoice';
+  documentType: 'devis' | 'facture' | 'cv' | 'letter' | 'quote_to_invoice' | 'smart_devis';
   /** Path to return to after payment */
   returnPath: string;
   /** Whether the document has been paid for (unlocked) */
@@ -24,20 +24,13 @@ interface ProtectedDocumentWrapperProps {
   className?: string;
 }
 
-const PRICE_LABELS: Record<string, string> = {
-  cv: '4,00€',
-  devis: '6,00€',
-  facture: '6,00€',
-  quote_to_invoice: '6,00€',
-  letter: '6,00€',
-};
-
-const PRICE_LABELS_AR: Record<string, string> = {
+const PRICE_MAP: Record<string, string> = {
   cv: '4.00€',
-  devis: '5.00€',
-  facture: '5.00€',
-  quote_to_invoice: '5.00€',
-  letter: '5.00€',
+  devis: '6.00€',
+  facture: '6.00€',
+  quote_to_invoice: '6.00€',
+  letter: '6.00€',
+  smart_devis: '14.99€',
 };
 
 /**
@@ -152,8 +145,8 @@ const ProtectedDocumentWrapper = ({
               <Lock className="h-5 w-5" />
             )}
              {isRTL
-               ? `ادفع ${PRICE_LABELS_AR[documentType]} لتحميل النسخة الأصلية 🔒`
-               : `Payer ${PRICE_LABELS[documentType]} pour télécharger l'original 🔒`}
+               ? `ادفع ${PRICE_MAP[documentType]} لتحميل النسخة الأصلية 🔒`
+               : `Payer ${PRICE_MAP[documentType]} pour télécharger l'original 🔒`}
           </Button>
         )}
       </div>

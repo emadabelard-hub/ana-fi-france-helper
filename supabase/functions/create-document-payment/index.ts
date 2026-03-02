@@ -26,6 +26,17 @@ serve(async (req) => {
 
     const { documentType, returnPath } = await req.json();
 
+    // Map document types to their specific Stripe price IDs
+    const priceMap: Record<string, string> = {
+      cv: "price_1T6MOlB9zpCtXcxGdns3wj3f",           // 4.00€
+      devis: "price_1T6MRwB9zpCtXcxGUJPyu1DU",         // 5.00€
+      facture: "price_1T6MS8B9zpCtXcxG1qWx5hvY",       // 5.00€
+      quote_to_invoice: "price_1T6MTcB9zpCtXcxGwBqywodz", // 5.00€
+      letter: "price_1T6MRwB9zpCtXcxGUJPyu1DU",        // 5.00€ (same as devis)
+    };
+
+    const priceId = priceMap[documentType] || priceMap.devis;
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
@@ -41,7 +52,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: "price_1T6JgzB9zpCtXcxGlAbZ7VO7",
+          price: priceId,
           quantity: 1,
         },
       ],

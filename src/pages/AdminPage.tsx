@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3, Users, MapPin, Receipt, ClipboardList, Activity } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3, Users, MapPin, Receipt, ClipboardList, Activity, HeadphonesIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,6 +17,7 @@ import VisitStatsManager from '@/components/admin/VisitStatsManager';
 import TransactionsManager from '@/components/admin/TransactionsManager';
 import ServiceRequestsManager from '@/components/admin/ServiceRequestsManager';
 import AnalyticsManager from '@/components/admin/AnalyticsManager';
+import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();
@@ -184,10 +185,14 @@ const AdminPage = () => {
             {isRTL ? 'دروس' : 'Leçons'}
           </TabsTrigger>
         </TabsList>
-        <TabsList className={cn("grid w-full grid-cols-1", isRTL && "direction-rtl")}>
+        <TabsList className={cn("grid w-full grid-cols-2", isRTL && "direction-rtl")}>
           <TabsTrigger value="questions" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <HelpCircle className="h-4 w-4" />
             {isRTL ? 'أسئلة' : 'Questions'}
+          </TabsTrigger>
+          <TabsTrigger value="support" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
+            <HeadphonesIcon className="h-4 w-4" />
+            {isRTL ? 'تذاكر' : 'Tickets'}
           </TabsTrigger>
         </TabsList>
 
@@ -214,6 +219,9 @@ const AdminPage = () => {
         </TabsContent>
         <TabsContent value="questions" className="mt-6">
           <QuestionsManager isRTL={isRTL} />
+        </TabsContent>
+        <TabsContent value="support" className="mt-6">
+          <SupportTicketsManager isRTL={isRTL} />
         </TabsContent>
       </Tabs>
     </div>

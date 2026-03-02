@@ -1,0 +1,235 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
+import { Loader2, CheckCircle2, Clock, AlertCircle, Eye, Mail, Building2, MessageSquare } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+
+interface SupportTicket {
+  id: string;
+  user_id: string;
+  message: string;
+  user_email: string | null;
+  user_siret: string | null;
+  status: string;
+  created_at: string;
+}
+
+const STATUS_OPTIONS = [
+  { value: 'new', label: 'جديد', labelFr: 'Nouveau', color: 'text-blue-500' },
+  { value: 'in_review', label: 'قيد المراجعة', labelFr: 'En révision', color: 'text-orange-500' },
+  { value: 'resolved', label: 'تم الحل', labelFr: 'Résolu', color: 'text-emerald-500' },
+  { value: 'dismissed', label: 'مرفوض', labelFr: 'Rejeté', color: 'text-red-500' },
+];
+
+const SupportTicketsManager = ({ isRTL }: { isRTL: boolean }) => {
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selected, setSelected] = useState<SupportTicket | null>(null);
+  const [adminNote, setAdminNote] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+
+  useEffect(() => { fetchTickets(); }, []);
+
+  const fetchTickets = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('support_tickets')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Error fetching tickets:', error);
+      toast.error(isRTL ? 'خطأ في تحميل التذاكر' : 'Erreur de chargement');
+    }
+    setTickets((data as SupportTicket[]) || []);
+    setIsLoading(false);
+  };
+
+  const handleStatusChange = async (ticketId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from('support_tickets')
+      .update({ status: newStatus })
+      .eq('id', ticketId);
+    if (error) {
+      toast.error(isRTL ? 'خطأ في التحديث' : 'Erreur de mise à jour');
+      return;
+    }
+    setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
+    if (selected?.id === ticketId) setSelected(prev => prev ? { ...prev, status: newStatus } : null);
+    toast.success(isRTL ? 'تم تحديث الحالة' : 'Statut mis à jour');
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'new': return <AlertCircle size={14} className="text-blue-500" />;
+      case 'in_review': return <Clock size={14} className="text-orange-500" />;
+      case 'resolved': return <CheckCircle2 size={14} className="text-emerald-500" />;
+      case 'dismissed': return <AlertCircle size={14} className="text-red-500" />;
+      default: return <Clock size={14} className="text-muted-foreground" />;
+    }
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'new': return 'default';
+      case 'resolved': return 'secondary';
+      default: return 'outline';
+    }
+  };
+
+  const filteredTickets = filterStatus === 'all' 
+    ? tickets 
+    : tickets.filter(t => t.status === filterStatus);
+
+  const statusCounts = tickets.reduce((acc, t) => {
+    acc[t.status] = (acc[t.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="animate-spin" /></div>;
+
+  if (selected) {
+    return (
+      <div className="space-y-4 animate-fade-in">
+        <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
+          ← {isRTL ? 'رجوع' : 'Retour'}
+        </Button>
+
+        <Card>
+          <CardContent className="p-4 space-y-4">
+            {/* Header with status */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare size={16} className="text-primary" />
+                <span className="font-bold text-sm">{isRTL ? 'تفاصيل التذكرة' : 'Détails du ticket'}</span>
+              </div>
+              <Select value={selected.status} onValueChange={(v) => handleStatusChange(selected.id, v)}>
+                <SelectTrigger className="w-36 h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map(s => (
+                    <SelectItem key={s.value} value={s.value} className="text-xs">
+                      {isRTL ? s.label : s.labelFr}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* User info */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {selected.user_email && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Mail size={12} />
+                  <span className="truncate">{selected.user_email}</span>
+                </div>
+              )}
+              {selected.user_siret && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Building2 size={12} />
+                  <span>{selected.user_siret}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1.5 text-muted-foreground col-span-2">
+                <Clock size={12} />
+                <span>{new Date(selected.created_at).toLocaleString('fr-FR')}</span>
+              </div>
+            </div>
+
+            {/* Message */}
+            <div className="bg-secondary rounded-xl p-4">
+              <p className="text-sm whitespace-pre-wrap leading-relaxed font-cairo" dir="auto">
+                {selected.message}
+              </p>
+            </div>
+
+            {/* Admin note (optional future use) */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground">
+                {isRTL ? 'ملاحظات الأدمين (داخلية)' : 'Notes admin (interne)'}
+              </label>
+              <Textarea
+                value={adminNote}
+                onChange={e => setAdminNote(e.target.value)}
+                placeholder={isRTL ? 'اكتب ملاحظة...' : 'Ajouter une note...'}
+                className="min-h-[60px] text-xs resize-none"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Stats bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <h3 className={cn("text-sm font-bold flex-1", isRTL && "font-cairo text-right")}>
+          {isRTL ? `تذاكر الدعم (${tickets.length})` : `Tickets support (${tickets.length})`}
+        </h3>
+        <div className="flex gap-1">
+          <Badge 
+            variant={filterStatus === 'all' ? 'default' : 'outline'} 
+            className="cursor-pointer text-[10px]"
+            onClick={() => setFilterStatus('all')}
+          >
+            {isRTL ? 'الكل' : 'Tous'} ({tickets.length})
+          </Badge>
+          {STATUS_OPTIONS.map(s => (
+            <Badge 
+              key={s.value}
+              variant={filterStatus === s.value ? 'default' : 'outline'}
+              className="cursor-pointer text-[10px]"
+              onClick={() => setFilterStatus(s.value)}
+            >
+              {isRTL ? s.label : s.labelFr} ({statusCounts[s.value] || 0})
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      {/* Tickets list */}
+      {filteredTickets.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-8">
+          {isRTL ? 'لا توجد تذاكر' : 'Aucun ticket'}
+        </p>
+      ) : (
+        filteredTickets.map(ticket => (
+          <Card 
+            key={ticket.id} 
+            className="cursor-pointer hover:border-primary/30 transition-colors"
+            onClick={() => { setSelected(ticket); setAdminNote(''); }}
+          >
+            <CardContent className="p-3 space-y-1.5">
+              <div className="flex items-start gap-2">
+                {getStatusIcon(ticket.status)}
+                <p className="text-sm flex-1 line-clamp-2 font-cairo" dir="auto">
+                  {ticket.message}
+                </p>
+                <Badge variant={getStatusBadgeVariant(ticket.status) as any} className="text-[10px] shrink-0">
+                  {isRTL 
+                    ? STATUS_OPTIONS.find(s => s.value === ticket.status)?.label || ticket.status
+                    : STATUS_OPTIONS.find(s => s.value === ticket.status)?.labelFr || ticket.status
+                  }
+                </Badge>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                <span>{new Date(ticket.created_at).toLocaleDateString('fr-FR')}</span>
+                {ticket.user_email && <span className="truncate max-w-[150px]">{ticket.user_email}</span>}
+                {ticket.user_siret && <span>SIRET: {ticket.user_siret}</span>}
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
+    </div>
+  );
+};
+
+export default SupportTicketsManager;

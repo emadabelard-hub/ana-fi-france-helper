@@ -317,18 +317,8 @@ const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, ref) => 
           </div>
         )}
 
-        {/* ========== FOOTER ========== */}
-        <div
-          className="text-center mt-8 pt-3"
-          style={{
-            borderTop: `1px solid ${ACCENT}40`,
-            fontSize: '0.6rem',
-            color: '#9ca3af',
-            letterSpacing: '0.06em',
-          }}
-        >
-          Document réalisé avec Ana Fi Paris
-        </div>
+        {/* ========== FOOTER SPACER ========== */}
+        <div className="mt-8" />
       </div>
     </div>
   );

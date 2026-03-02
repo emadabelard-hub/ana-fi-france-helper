@@ -75,11 +75,21 @@ serve(async (req) => {
 Tu analyses des images de chantiers, plans, croquis ou documents pour générer des devis professionnels.
 
 RÈGLES STRICTES:
-1. Pour les PHOTOS de chantier: Applique une marge de sécurité de +10% sur les dimensions estimées
-2. Pour les PLANS/CROQUIS: Lis les dimensions exactes indiquées
-3. Pour les DOCUMENTS/PDF: Extrais les informations textuelles exactes
-4. Toutes les désignations DOIVENT être en français professionnel
-5. Si tu vois des termes arabes, traduis-les en termes techniques français
+1. PRIORITÉ AU TEXTE: Si l'utilisateur a fourni un texte décrivant les travaux, c'est la SOURCE PRINCIPALE pour définir "ce qu'il faut faire". La photo sert uniquement de confirmation visuelle, évaluation de l'état (traces d'usure, humidité...) et estimation des quantités.
+2. Pour les PHOTOS de chantier: Applique une marge de sécurité de +10% sur les dimensions estimées
+3. Pour les PLANS/CROQUIS: Lis les dimensions exactes indiquées
+4. Pour les DOCUMENTS/PDF: Extrais les informations textuelles exactes
+
+ANALYSE BILINGUE (Arabe Égyptien + Français):
+- Le champ "analysis_ar" doit être en arabe égyptien (عامية مصرية) avec les termes techniques artisanaux:
+  * بانتيرة = Peinture
+  * كارلاج = Carrelage
+  * أندوي = Enduit
+  * شانتي = Chantier
+  * فايونس = Faïence
+  * بلاكو = Placo
+  * باركي = Parquet
+- Le champ "analysis_fr" doit être en français professionnel
 
 ANALYSE DEMANDÉE:
 - Identifie le type de travaux visibles
@@ -89,20 +99,22 @@ ANALYSE DEMANDÉE:
 
 Réponds en JSON avec cette structure:
 {
-  "analysis": "Description de ce que tu vois",
+  "analysis_ar": "وصف بالعربي المصري باستخدام المصطلحات الحرفية (بانتيرة، كارلاج، أندوي...)",
+  "analysis_fr": "Description professionnelle en français",
   "estimatedArea": "Surface estimée en m²",
   "inputType": "photo|blueprint|document",
   "suggestedItems": [
     {
       "designation_fr": "Description en français",
-      "designation_ar": "Description en arabe si possible",
+      "designation_ar": "وصف بالعربي",
       "quantity": number,
       "unit": "m²|ml|u|h|forfait",
       "unitPrice": number,
       "category": "materials|labor|transport|cleaning|waste"
     }
   ],
-  "notes": "Remarques importantes"
+  "notes_ar": "ملاحظات مهمة بالعربي",
+  "notes_fr": "Remarques importantes en français"
 }`;
 
       const messages: any[] = [

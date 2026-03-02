@@ -126,10 +126,20 @@ const SmartDevisPage = () => {
       const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', { body });
       if (error) throw error;
       setAnalysisData(data);
-      setChatMessages([{
-        role: 'assistant',
-        content: `✅ **تحليل الصورة:**\n\n${data.analysis || 'تم التحليل'}\n\n${data.estimatedArea ? `📐 المساحة المقدرة: **${data.estimatedArea}**` : ''}\n\n---\nدلوقتي عايز أسألك كام سؤال عشان نعمل الدوفي صح:\n\n1️⃣ **جودة المواد؟** (اقتصادي / عادي / فخم)\n2️⃣ **هل في خصم؟** (نسبة %)\n3️⃣ **نسبة الربح المطلوبة؟** (%)`
-      }]);
+      const analysisAr = data.analysis_ar || data.analysis || 'تم التحليل';
+      const analysisFr = data.analysis_fr || '';
+      const notesAr = data.notes_ar || data.notes || '';
+      const notesFr = data.notes_fr || '';
+      const area = data.estimatedArea ? `📐 المساحة المقدرة: **${data.estimatedArea}**` : '';
+
+      let content = `✅ **تحليل الشانتي:**\n\n${analysisAr}\n\n`;
+      if (area) content += `${area}\n\n`;
+      if (notesAr) content += `📝 ${notesAr}\n\n`;
+      content += `---\n\n🇫🇷 **Analyse professionnelle :**\n\n${analysisFr}\n\n`;
+      if (notesFr) content += `📝 ${notesFr}\n\n`;
+      content += `---\nدلوقتي عايز أسألك كام سؤال عشان نعمل الدوفي صح:\n\n1️⃣ **جودة المواد؟** (اقتصادي / عادي / فخم)\n2️⃣ **هل في خصم؟** (نسبة %)\n3️⃣ **نسبة الربح المطلوبة؟** (%)`;
+
+      setChatMessages([{ role: 'assistant', content }]);
       setStep('chat');
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'خطأ في التحليل', description: err.message });

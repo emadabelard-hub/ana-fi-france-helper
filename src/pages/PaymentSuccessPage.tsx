@@ -3,27 +3,17 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle2, FileText, Home } from 'lucide-react';
-import { useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { CheckCircle2, FileText, Home, Users } from 'lucide-react';
+
+const FACEBOOK_GROUP_URL = 'https://www.facebook.com/groups/'; // TODO: Replace with actual group URL
 
 const PaymentSuccessPage = () => {
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { toast } = useToast();
 
   const returnPath = searchParams.get('return') || '/';
   const price = searchParams.get('price') || '';
-
-  useEffect(() => {
-    toast({
-      title: isRTL ? 'وضع تجريبي' : 'Mode test',
-      description: isRTL
-        ? 'هذه نسخة تجريبية، لم يتم إجراء أي معاملة حقيقية.'
-        : 'Ceci est une version de test, aucune transaction réelle n\'est effectuée.',
-    });
-  }, []);
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
@@ -37,7 +27,6 @@ const PaymentSuccessPage = () => {
           <div className="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center animate-[scale-in_0.5s_ease-out]">
             <CheckCircle2 className="w-14 h-14 text-emerald-500 animate-[bounce-in_0.6s_ease-out_0.2s_both]" />
           </div>
-          {/* Pulse ring */}
           <div className="absolute inset-0 rounded-full bg-emerald-400/20 animate-ping" style={{ animationDuration: '2s', animationIterationCount: '3' }} />
         </div>
 
@@ -68,6 +57,18 @@ const PaymentSuccessPage = () => {
             <FileText className="h-5 w-5" />
             {isRTL ? 'عرض المستند' : 'Voir le document'}
           </Button>
+
+          {/* Facebook Group CTA */}
+          <Button
+            variant="secondary"
+            size="lg"
+            className="w-full gap-2 rounded-2xl text-base font-bold"
+            onClick={() => window.open(FACEBOOK_GROUP_URL, '_blank')}
+          >
+            <Users className="h-5 w-5" />
+            {isRTL ? 'انضم لمجموعتنا على فيسبوك' : 'Rejoignez notre groupe Facebook'}
+          </Button>
+
           <Button
             variant="outline"
             onClick={() => navigate('/')}

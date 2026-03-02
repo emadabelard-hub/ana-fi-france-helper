@@ -32,6 +32,10 @@ interface CompanyFormData {
   code_naf: string;
   ville_immatriculation: string;
   numero_tva: string;
+  assureur_name: string;
+  assureur_address: string;
+  assurance_policy_number: string;
+  assurance_geographic_coverage: string;
 }
 
 const CompanyProfileSection = () => {
@@ -60,6 +64,10 @@ const CompanyProfileSection = () => {
     code_naf: '',
     ville_immatriculation: '',
     numero_tva: '',
+    assureur_name: '',
+    assureur_address: '',
+    assurance_policy_number: '',
+    assurance_geographic_coverage: 'France métropolitaine',
   });
 
   useEffect(() => {
@@ -78,6 +86,10 @@ const CompanyProfileSection = () => {
         code_naf: (profile as any).code_naf || '',
         ville_immatriculation: (profile as any).ville_immatriculation || '',
         numero_tva: (profile as any).numero_tva || '',
+        assureur_name: (profile as any).assureur_name || '',
+        assureur_address: (profile as any).assureur_address || '',
+        assurance_policy_number: (profile as any).assurance_policy_number || '',
+        assurance_geographic_coverage: (profile as any).assurance_geographic_coverage || 'France métropolitaine',
       });
     }
   }, [profile]);
@@ -608,6 +620,70 @@ const CompanyProfileSection = () => {
                 if (formData.numero_tva) parts.push(`TVA : ${formData.numero_tva}`);
                 return parts.join(' - ') || (isRTL ? 'املا الحقول عشان تشوف النص' : 'Remplissez les champs pour voir l\'aperçu');
               })()}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Assurance Décennale Section */}
+      <Card className="border-blue-500/20 bg-blue-500/5">
+        <CardContent className="p-6 space-y-4">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <span className="text-xl">🛡️</span>
+            <CardTitle className={cn("text-lg", isRTL && "font-cairo")}>
+              {isRTL ? 'التأمين العشري (Décennale)' : 'Assurance Décennale'}
+            </CardTitle>
+          </div>
+          <CardDescription className={cn(isRTL && "text-right font-cairo")}>
+            {isRTL
+              ? '⚖️ إجباري في قطاع البناء. لازم يظهر على كل دوفي وفاكتير.'
+              : '⚖️ Obligatoire dans le BTP. Doit figurer sur chaque devis et facture.'}
+          </CardDescription>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'اسم شركة التأمين' : 'Nom de l\'assureur'} *
+              </Label>
+              <Input
+                value={formData.assureur_name}
+                onChange={(e) => handleChange('assureur_name', e.target.value)}
+                placeholder={isRTL ? 'مثال: AXA France' : 'Ex: AXA France'}
+                className={cn(isRTL && "text-right font-cairo")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'عنوان شركة التأمين' : 'Adresse de l\'assureur'}
+              </Label>
+              <Input
+                value={formData.assureur_address}
+                onChange={(e) => handleChange('assureur_address', e.target.value)}
+                placeholder={isRTL ? 'عنوان المقر' : 'Ex: 25 av. Matignon, 75008 Paris'}
+                className={cn(isRTL && "text-right font-cairo")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'رقم البوليصة' : 'N° de police / contrat'} *
+              </Label>
+              <Input
+                value={formData.assurance_policy_number}
+                onChange={(e) => handleChange('assurance_policy_number', e.target.value)}
+                placeholder={isRTL ? 'رقم العقد' : 'Ex: RC-2024-123456'}
+                className={cn("font-mono", isRTL && "text-right")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'التغطية الجغرافية' : 'Couverture géographique'}
+              </Label>
+              <Input
+                value={formData.assurance_geographic_coverage}
+                onChange={(e) => handleChange('assurance_geographic_coverage', e.target.value)}
+                placeholder="France métropolitaine"
+                className={cn(isRTL && "text-right font-cairo")}
+              />
             </div>
           </div>
         </CardContent>

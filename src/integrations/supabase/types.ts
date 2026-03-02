@@ -102,6 +102,10 @@ export type Database = {
         Row: {
           address: string | null
           artisan_signature_url: string | null
+          assurance_geographic_coverage: string | null
+          assurance_policy_number: string | null
+          assureur_address: string | null
+          assureur_name: string | null
           caf_number: string | null
           capital_social: string | null
           code_naf: string | null
@@ -132,6 +136,10 @@ export type Database = {
         Insert: {
           address?: string | null
           artisan_signature_url?: string | null
+          assurance_geographic_coverage?: string | null
+          assurance_policy_number?: string | null
+          assureur_address?: string | null
+          assureur_name?: string | null
           caf_number?: string | null
           capital_social?: string | null
           code_naf?: string | null
@@ -162,6 +170,10 @@ export type Database = {
         Update: {
           address?: string | null
           artisan_signature_url?: string | null
+          assurance_geographic_coverage?: string | null
+          assurance_policy_number?: string | null
+          assureur_address?: string | null
+          assureur_name?: string | null
           caf_number?: string | null
           capital_social?: string | null
           code_naf?: string | null

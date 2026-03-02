@@ -87,14 +87,17 @@ serve(async (req) => {
 
     // Action: analyze_image - Vision analysis of photo/blueprint/document
     if (action === "analyze_image") {
+      const { files } = body;
+
       const systemPrompt = `Tu es un expert en estimation de travaux du bâtiment (BTP) en France.
 Tu analyses des images de chantiers, plans, croquis ou documents pour générer des devis professionnels.
 
 RÈGLES STRICTES:
-1. PRIORITÉ AU TEXTE: Si l'utilisateur a fourni un texte décrivant les travaux, c'est la SOURCE PRINCIPALE pour définir "ce qu'il faut faire". La photo sert uniquement de confirmation visuelle, évaluation de l'état (traces d'usure, humidité...) et estimation des quantités.
-2. Pour les PHOTOS de chantier: Applique une marge de sécurité de +10% sur les dimensions estimées
-3. Pour les PLANS/CROQUIS: Lis les dimensions exactes indiquées
-4. Pour les DOCUMENTS/PDF: Extrais les informations textuelles exactes
+1. PRIORITÉ AU TEXTE: Si l'utilisateur a fourni un texte décrivant les travaux, c'est la SOURCE PRINCIPALE pour définir "ce qu'il faut faire". Les photos/documents servent de confirmation visuelle, évaluation de l'état et estimation des quantités.
+2. MULTI-FICHIER: Tu peux recevoir PLUSIEURS images et/ou PDFs en même temps. Analyse-les TOUS ensemble pour produire UN SEUL devis complet et cohérent. Chaque fichier peut montrer une pièce, un angle, ou un document différent.
+3. Pour les PHOTOS de chantier: Applique une marge de sécurité de +10% sur les dimensions estimées
+4. Pour les PLANS/CROQUIS: Lis les dimensions exactes indiquées
+5. Pour les DOCUMENTS/PDF: Extrais les informations textuelles exactes
 
 ANALYSE BILINGUE (Arabe Égyptien + Français):
 - Le champ "analysis_ar" doit être en arabe égyptien (عامية مصرية) avec les termes techniques artisanaux:
@@ -137,17 +140,39 @@ Réponds en JSON avec cette structure:
         { role: "system", content: systemPrompt },
       ];
 
-      if (imageData) {
-        messages.push({
-          role: "user",
-          content: [
-            { type: "text", text: userMessage || "Analyse cette image et génère un devis détaillé." },
-            {
-              type: "image_url",
-              image_url: { url: imageData.startsWith("data:") ? imageData : `data:${mimeType || 'image/jpeg'};base64,${imageData}` }
+      // Build multi-file content array
+      const hasFiles = Array.isArray(files) && files.length > 0;
+      const hasLegacyImage = !hasFiles && imageData;
+
+      if (hasFiles || hasLegacyImage) {
+        const contentParts: any[] = [
+          { type: "text", text: userMessage || "Analyse ces fichiers et génère un devis détaillé." }
+        ];
+
+        if (hasFiles) {
+          for (const file of files) {
+            if (file.type === 'image' && file.data) {
+              contentParts.push({
+                type: "image_url",
+                image_url: { url: file.data.startsWith("data:") ? file.data : `data:${file.mimeType || 'image/jpeg'};base64,${file.data}` }
+              });
             }
-          ]
-        });
+            // PDFs sent as images if they were converted client-side, otherwise text description
+            if (file.type === 'pdf' && file.data) {
+              contentParts.push({
+                type: "image_url",
+                image_url: { url: file.data.startsWith("data:") ? file.data : `data:${file.mimeType || 'application/pdf'};base64,${file.data}` }
+              });
+            }
+          }
+        } else if (hasLegacyImage) {
+          contentParts.push({
+            type: "image_url",
+            image_url: { url: imageData.startsWith("data:") ? imageData : `data:${mimeType || 'image/jpeg'};base64,${imageData}` }
+          });
+        }
+
+        messages.push({ role: "user", content: contentParts });
       } else {
         messages.push({ role: "user", content: userMessage || "Analyse ce document." });
       }

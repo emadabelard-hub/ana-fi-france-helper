@@ -34,53 +34,94 @@ serve(async (req) => {
       });
     }
 
-    // Use Lovable AI to send a nicely formatted notification
+    // Use Lovable AI to generate email content
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.warn("LOVABLE_API_KEY not set, skipping email generation");
-      return new Response(JSON.stringify({ success: true, email_sent: false, reason: "no_api_key" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    let emailHtml = `<div style="font-family:Arial,sans-serif;direction:rtl;padding:20px;max-width:600px;margin:0 auto;">
+      <div style="background:#f59e0b;padding:16px;border-radius:8px 8px 0 0;text-align:center;">
+        <h2 style="color:#fff;margin:0;">🛠️ رد من فريق نصوح</h2>
+      </div>
+      <div style="background:#ffffff;padding:24px;border:1px solid #e2e8f0;">
+        <p style="color:#374151;"><strong>رسالتك:</strong></p>
+        <p style="background:#f8fafc;padding:12px;border-radius:6px;color:#4b5563;">${original_message}</p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;"/>
+        <p style="color:#374151;"><strong>الرد:</strong></p>
+        <p style="background:#fef3c7;padding:12px;border-radius:6px;color:#1f2937;">${admin_reply}</p>
+      </div>
+      <div style="background:#f9fafb;padding:12px;border-radius:0 0 8px 8px;text-align:center;border:1px solid #e2e8f0;border-top:none;">
+        <p style="color:#9ca3af;font-size:12px;margin:0;">فريق الدعم - نصوح | Ana Fi France</p>
+      </div>
+    </div>`;
+
+    if (LOVABLE_API_KEY) {
+      try {
+        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-lite",
+            messages: [
+              {
+                role: "system",
+                content: `You are an email formatter. Generate a short, professional HTML email in Egyptian Arabic (عامية مصرية) notifying the user that their support ticket received a reply. Use the persona "نصوح" (Nossouh). Keep it warm, brief, and artisan-friendly. Return ONLY the HTML body content (no <html>, <head>, <body> tags). Use inline styles. Use a warm color scheme with #f59e0b as accent.`,
+              },
+              {
+                role: "user",
+                content: `Original message: "${original_message}"\n\nAdmin reply: "${admin_reply}"\n\nGenerate the email HTML.`,
+              },
+            ],
+          }),
+        });
+
+        if (aiResp.ok) {
+          const aiData = await aiResp.json();
+          const generatedHtml = aiData.choices?.[0]?.message?.content;
+          if (generatedHtml) emailHtml = generatedHtml;
+        }
+      } catch (aiError) {
+        console.warn("AI generation failed, using fallback template:", aiError);
+      }
     }
 
-    // Generate email content using AI
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          {
-            role: "system",
-            content: `You are an email formatter. Generate a short, professional HTML email in Egyptian Arabic (عامية مصرية) notifying the user that their support ticket received a reply. Use the persona "نصوح" (Nossouh). Keep it warm, brief, and artisan-friendly. Return ONLY the HTML body content (no <html>, <head>, <body> tags). Use inline styles.`,
-          },
-          {
-            role: "user",
-            content: `Original message: "${original_message}"\n\nAdmin reply: "${admin_reply}"\n\nGenerate the email HTML.`,
-          },
-        ],
-      }),
-    });
+    // Send actual email via Resend
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    let emailSent = false;
 
-    let emailHtml = `<div style="font-family:Arial,sans-serif;direction:rtl;padding:20px;"><h3>🛠️ رد من فريق نصوح</h3><p><strong>رسالتك:</strong> ${original_message}</p><hr/><p><strong>الرد:</strong> ${admin_reply}</p><p style="color:#888;font-size:12px;">فريق الدعم - نصوح</p></div>`;
+    if (RESEND_API_KEY) {
+      try {
+        const resendResp = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: "Ana Fi France <onboarding@resend.dev>",
+            to: [user_email],
+            subject: "🛠️ رد على تذكرتك - نصوح",
+            html: emailHtml,
+          }),
+        });
 
-    if (aiResp.ok) {
-      const aiData = await aiResp.json();
-      const generatedHtml = aiData.choices?.[0]?.message?.content;
-      if (generatedHtml) emailHtml = generatedHtml;
+        if (resendResp.ok) {
+          emailSent = true;
+          console.log(`✅ Email sent to ${user_email} for ticket ${ticket_id}`);
+        } else {
+          const errData = await resendResp.text();
+          console.error(`❌ Resend error [${resendResp.status}]: ${errData}`);
+        }
+      } catch (resendError) {
+        console.error("Resend API call failed:", resendError);
+      }
+    } else {
+      console.warn("RESEND_API_KEY not configured, email not sent");
     }
-
-    // Log the reply for tracking (email sending would require a third-party service)
-    console.log(`Ticket ${ticket_id}: Reply saved. Email would be sent to ${user_email}`);
-    console.log("Email HTML generated successfully");
 
     return new Response(JSON.stringify({ 
       success: true, 
-      email_generated: true,
-      note: "Reply saved to database. Email notification logged." 
+      email_sent: emailSent,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

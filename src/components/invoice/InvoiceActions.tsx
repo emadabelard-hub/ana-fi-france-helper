@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Image, Copy, Eye, EyeOff, Share2, ShieldCheck } from 'lucide-react';
+import { FileText, Image, Copy, Eye, EyeOff, Share2, ShieldCheck, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -440,15 +440,64 @@ const InvoiceActions = ({
               <Image className="h-4 w-4 mr-2" />
               {isRTL ? '🖼️ حفظ كصورة' : '🖼️ Enregistrer image'}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyText}
-              className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              {isRTL ? '📋 نسخ النص' : '📋 Copier texte'}
-            </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopyText}
+            className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            {isRTL ? '📋 نسخ النص' : '📋 Copier texte'}
+          </Button>
+          </div>
+
+          {/* Official Platform Links – Factur-X 2026 */}
+          <div className="mt-4 border border-border rounded-lg p-4 space-y-3 bg-muted/30">
+            <h3 className={cn(
+              "text-sm font-semibold text-foreground",
+              isRTL && "text-right font-cairo"
+            )}>
+              {isRTL ? 'الربط بالمنصات الرسمية (قانون 2026)' : 'Liens vers les plateformes officielles (loi 2026)'}
+            </h3>
+
+            <div className="flex flex-col gap-2">
+              <a
+                href="https://chorus-pro.gouv.fr/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "inline-flex items-center gap-3 w-full px-4 py-3 rounded-md border border-border bg-background text-foreground text-sm font-medium hover:bg-accent/50 transition-colors",
+                  isRTL && "flex-row-reverse font-cairo"
+                )}
+              >
+                <img src="https://chorus-pro.gouv.fr/qualif/assets/images/Logo_RF_quadri.svg" alt="Chorus Pro" className="h-6 w-6 object-contain shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                <span>{isRTL ? 'رفع الفاتورة على Chorus Pro' : 'Déposer la facture sur Chorus Pro'}</span>
+                <ExternalLink className="h-4 w-4 ml-auto shrink-0 text-muted-foreground" />
+              </a>
+
+              <a
+                href="https://www.portail-public-facturation.gouv.fr/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "inline-flex items-center gap-3 w-full px-4 py-3 rounded-md border border-border bg-background text-foreground text-sm font-medium hover:bg-accent/50 transition-colors",
+                  isRTL && "flex-row-reverse font-cairo"
+                )}
+              >
+                <img src="https://www.portail-public-facturation.gouv.fr/assets/images/logo-ppf.svg" alt="PPF" className="h-6 w-6 object-contain shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                <span>{isRTL ? 'إرسال إلى منصة الضرائب (PPF)' : 'Envoyer au Portail Public de Facturation (PPF)'}</span>
+                <ExternalLink className="h-4 w-4 ml-auto shrink-0 text-muted-foreground" />
+              </a>
+            </div>
+
+            <p className={cn(
+              "text-xs text-foreground leading-relaxed",
+              isRTL && "text-right font-cairo"
+            )}>
+              {isRTL
+                ? 'ملحوظة: ملف الـ Factur-X اللي حملته جاهز للرفع مباشرة، السيستم الحكومي هيقرأ البيانات لوحده.'
+                : 'Note : Le fichier Factur-X que vous avez téléchargé est prêt à être déposé directement. Le système gouvernemental lira les données automatiquement.'}
+            </p>
           </div>
         </>
       ) : null}

@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.support-chat]
 verify_jwt = false
+
+[functions.notify-ticket-reply]
+verify_jwt = false

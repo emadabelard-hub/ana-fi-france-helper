@@ -397,27 +397,33 @@ export type Database = {
       }
       support_tickets: {
         Row: {
+          admin_reply: string | null
           created_at: string
           id: string
           message: string
+          replied_at: string | null
           status: string
           user_email: string | null
           user_id: string
           user_siret: string | null
         }
         Insert: {
+          admin_reply?: string | null
           created_at?: string
           id?: string
           message: string
+          replied_at?: string | null
           status?: string
           user_email?: string | null
           user_id: string
           user_siret?: string | null
         }
         Update: {
+          admin_reply?: string | null
           created_at?: string
           id?: string
           message?: string
+          replied_at?: string | null
           status?: string
           user_email?: string | null
           user_id?: string

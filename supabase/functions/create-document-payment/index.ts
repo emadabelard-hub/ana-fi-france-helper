@@ -29,10 +29,10 @@ serve(async (req) => {
     // Map document types to their specific Stripe price IDs
     const priceMap: Record<string, string> = {
       cv: "price_1T6MOlB9zpCtXcxGdns3wj3f",           // 4.00€
-      devis: "price_1T6MRwB9zpCtXcxGUJPyu1DU",         // 5.00€
-      facture: "price_1T6MS8B9zpCtXcxG1qWx5hvY",       // 5.00€
-      quote_to_invoice: "price_1T6MTcB9zpCtXcxGwBqywodz", // 5.00€
-      letter: "price_1T6MRwB9zpCtXcxGUJPyu1DU",        // 5.00€ (same as devis)
+      devis: "price_1T6XyXB9zpCtXcxG4xZ01twf",         // 6.00€
+      facture: "price_1T6XzGB9zpCtXcxGbYkLYllD",       // 6.00€
+      quote_to_invoice: "price_1T6Y1LB9zpCtXcxGP1KG9WyC", // 6.00€
+      letter: "price_1T6XyXB9zpCtXcxG4xZ01twf",        // 6.00€ (same as devis)
       smart_devis: "price_1T6XUMB9zpCtXcxGRtL6A0Jf",   // 14.99€
     };
 

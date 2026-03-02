@@ -8,33 +8,49 @@ const corsHeaders = {
 
 // Arabic construction term dictionary for auto-translation
 const ARABIC_TERMS: Record<string, string> = {
-  'أندوي': 'Enduit',
-  'اندوي': 'Enduit',
-  'بانتيرة': 'Peinture',
-  'بنتيرة': 'Peinture',
-  'بانتور': 'Peinture',
-  'كارلاج': 'Carrelage',
-  'كارولاج': 'Carrelage',
-  'فايونس': 'Faïence',
-  'بلاكو': 'Placo',
-  'بلاكوبلاتر': 'Placoplatre',
-  'كلوازون': 'Cloison',
-  'بوندوز': 'Ponçage',
-  'سوبلاج': 'Soufflage',
-  'بلومبري': 'Plomberie',
-  'اليكتريسيتي': 'Électricité',
-  'باركي': 'Parquet',
-  'ديمونتاج': 'Démontage',
-  'مونتاج': 'Montage',
+  // Enduit
+  'أندوي': 'Enduit', 'اندوي': 'Enduit', 'أندوي': 'Enduit',
+  // Peinture
+  'بانتيرة': 'Peinture', 'بنتيرة': 'Peinture', 'بانتور': 'Peinture', 'بونتير': 'Peinture',
+  // Carrelage / Céramique
+  'كارلاج': 'Carrelage', 'كارولاج': 'Carrelage', 'سيراميك': 'Céramique', 'سيراميك': 'Céramique',
+  // Faïence
+  'فايونس': 'Faïence', 'فيونس': 'Faïence',
+  // Placo / Cloison / Gypse
+  'بلاكو': 'Placo', 'بلاكوبلاتر': 'Placoplatre', 'كلوازون': 'Cloison',
+  'جبس': 'Plâtre / Gypse', 'جيبس': 'Plâtre / Gypse', 'جبسن بورد': 'Plaque de plâtre',
+  // Ponçage / Soufflage
+  'بوندوز': 'Ponçage', 'سوبلاج': 'Soufflage',
+  // Plomberie
+  'بلومبري': 'Plomberie', 'سباكة': 'Plomberie', 'سباكه': 'Plomberie', 'بلومبييه': 'Plomberie',
+  // Électricité
+  'اليكتريسيتي': 'Électricité', 'كهرباء': 'Électricité', 'كهربا': 'Électricité', 'اليكتريك': 'Électricité',
+  // Parquet
+  'باركي': 'Parquet', 'باركيه': 'Parquet',
+  // Démontage / Montage
+  'ديمونتاج': 'Démontage', 'مونتاج': 'Montage',
+  // Nettoyage
   'نيتواياج': 'Nettoyage',
-  'ايزولاسيون': 'Isolation',
-  'ايتانشيتي': 'Étanchéité',
-  'رافالمون': 'Ravalement',
-  'ماسونري': 'Maçonnerie',
-  'مونيزري': 'Menuiserie',
-  'سوس كوش': 'Sous-couche',
-  'فينيسيون': 'Finition',
-  'ديكاباج': 'Décapage',
+  // Isolation
+  'ايزولاسيون': 'Isolation', 'عزل': 'Isolation', 'عزل حراري': 'Isolation thermique', 'عزل صوتي': 'Isolation phonique',
+  // Étanchéité
+  'ايتانشيتي': 'Étanchéité', 'عزل مائي': 'Étanchéité',
+  // Ravalement / Maçonnerie / Menuiserie
+  'رافالمون': 'Ravalement', 'ماسونري': 'Maçonnerie', 'مونيزري': 'Menuiserie',
+  // Sous-couche / Finition / Décapage
+  'سوس كوش': 'Sous-couche', 'فينيسيون': 'Finition', 'ديكاباج': 'Décapage',
+  // Chantier
+  'شانتي': 'Chantier', 'شانتييه': 'Chantier',
+  // Climatisation / Chauffage
+  'كليماتيزاسيون': 'Climatisation', 'تكييف': 'Climatisation', 'شوفاج': 'Chauffage', 'تدفئة': 'Chauffage',
+  // Robinet / Sanitaire
+  'روبيني': 'Robinetterie', 'حنفية': 'Robinetterie', 'سانيتير': 'Sanitaire',
+  // Prise / Interrupteur
+  'بريز': 'Prise électrique', 'انتيريبتور': 'Interrupteur',
+  // Faux plafond
+  'فو بلافون': 'Faux plafond', 'سقف معلق': 'Faux plafond',
+  // Devis
+  'دوفي': 'Devis', 'فاكتير': 'Facture',
 };
 
 function translateArabicTerms(text: string): string {

@@ -3,6 +3,7 @@ import { Camera, PenLine, FileText, User } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import LegalComplianceBanner from '@/components/shared/LegalComplianceBanner';
 
 const Dashboard = () => {
   const { isRTL } = useLanguage();
@@ -49,6 +50,11 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-[80vh] flex flex-col justify-center py-8 px-2">
+      {/* Legal Compliance Banner */}
+      <div className="max-w-md mx-auto w-full">
+        <LegalComplianceBanner />
+      </div>
+
       {/* Welcome Header */}
       <section className="text-center mb-10 font-cairo">
         <h1 className="text-3xl font-bold text-foreground mb-2">

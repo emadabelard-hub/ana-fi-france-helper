@@ -163,6 +163,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       stampUrl: profile.stamp_url,
       headerImageUrl: profile.header_image_url,
     }).then(setSignedUrls);
+    
+    // Auto-populate assurance décennale from profile
+    const p = profile as any;
+    if (p.assureur_name && !assureurName) setAssureurName(p.assureur_name);
+    if (p.assureur_address && !assureurAddress) setAssureurAddress(p.assureur_address);
+    if (p.assurance_policy_number && !policyNumber) setPolicyNumber(p.assurance_policy_number);
+    if (p.assurance_geographic_coverage && !geographicCoverage) setGeographicCoverage(p.assurance_geographic_coverage);
   }, [profile?.logo_url, profile?.artisan_signature_url, profile?.stamp_url, profile?.header_image_url]);
 
   useEffect(() => {

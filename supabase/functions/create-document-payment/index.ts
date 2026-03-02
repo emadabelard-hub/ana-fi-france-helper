@@ -33,6 +33,7 @@ serve(async (req) => {
       facture: "price_1T6MS8B9zpCtXcxG1qWx5hvY",       // 5.00€
       quote_to_invoice: "price_1T6MTcB9zpCtXcxGwBqywodz", // 5.00€
       letter: "price_1T6MRwB9zpCtXcxGUJPyu1DU",        // 5.00€ (same as devis)
+      smart_devis: "price_1T6XUMB9zpCtXcxGRtL6A0Jf",   // 14.99€
     };
 
     const priceId = priceMap[documentType] || priceMap.devis;

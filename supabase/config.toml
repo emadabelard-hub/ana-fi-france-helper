@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.analyze-service-request]
 verify_jwt = false
+
+[functions.smart-devis-analyzer]
+verify_jwt = false

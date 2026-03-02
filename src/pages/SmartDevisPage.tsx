@@ -54,6 +54,7 @@ const SmartDevisPage = () => {
   const [inputType, setInputType] = useState<InputType>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
+  const [pastedText, setPastedText] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
@@ -95,24 +96,36 @@ const SmartDevisPage = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!uploadedImage) return;
+    if (!uploadedImage && !pastedText.trim()) return;
     setIsAnalyzing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', {
-        body: {
-          action: 'analyze_image',
-          imageData: uploadedImage,
-          mimeType: uploadedImage.split(';')[0]?.split(':')[1] || 'image/jpeg',
-          userMessage: inputType === 'blueprint'
-            ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées."
-            : inputType === 'document'
-            ? "Extrais les informations de ce document pour générer un devis."
-            : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité.",
-        },
-      });
+      const baseMessage = inputType === 'blueprint'
+        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées."
+        : inputType === 'document'
+        ? "Extrais les informations de ce document pour générer un devis."
+        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité.";
+
+      const userMessage = pastedText.trim()
+        ? `${baseMessage}\n\nTexte/demande du client:\n${pastedText.trim()}`
+        : baseMessage;
+
+      const body: any = {
+        action: 'analyze_image',
+        userMessage,
+      };
+
+      if (uploadedImage) {
+        body.imageData = uploadedImage;
+        body.mimeType = uploadedImage.split(';')[0]?.split(':')[1] || 'image/jpeg';
+      }
+
+      if (pastedText.trim()) {
+        body.pastedText = pastedText.trim();
+      }
+
+      const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', { body });
       if (error) throw error;
       setAnalysisData(data);
-      // Start chat with analysis summary
       setChatMessages([{
         role: 'assistant',
         content: `✅ **تحليل الصورة:**\n\n${data.analysis || 'تم التحليل'}\n\n${data.estimatedArea ? `📐 المساحة المقدرة: **${data.estimatedArea}**` : ''}\n\n---\nدلوقتي عايز أسألك كام سؤال عشان نعمل الدوفي صح:\n\n1️⃣ **جودة المواد؟** (اقتصادي / عادي / فخم)\n2️⃣ **هل في خصم؟** (نسبة %)\n3️⃣ **نسبة الربح المطلوبة؟** (%)`
@@ -340,7 +353,7 @@ const SmartDevisPage = () => {
             <input
               ref={fileInputRef}
               type="file"
-              accept={inputType === 'document' ? 'image/*,application/pdf' : 'image/*'}
+              accept="image/*,application/pdf"
               className="hidden"
               onChange={handleFileUpload}
             />
@@ -352,7 +365,7 @@ const SmartDevisPage = () => {
               >
                 <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
                 <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
-                  {isRTL ? 'اضغط هنا لرفع الصورة أو الملف' : 'Cliquez pour télécharger'}
+                  {isRTL ? 'اضغط هنا لرفع صورة أو ملف PDF' : 'Cliquez pour télécharger une image ou un PDF'}
                 </p>
                 <p className={cn("text-xs text-muted-foreground/70 mt-3 leading-relaxed max-w-sm mx-auto", isRTL && "font-cairo")}>
                   {isRTL 
@@ -363,7 +376,14 @@ const SmartDevisPage = () => {
             ) : (
               <div className="space-y-3">
                 <div className="relative rounded-xl overflow-hidden border">
-                  <img src={uploadedImage} alt="Preview" className="w-full max-h-64 object-contain bg-muted/30" />
+                  {uploadedFileName.toLowerCase().endsWith('.pdf') ? (
+                    <div className="w-full h-40 flex flex-col items-center justify-center bg-muted/30 gap-2">
+                      <FileText className="h-12 w-12 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground font-medium">{uploadedFileName}</p>
+                    </div>
+                  ) : (
+                    <img src={uploadedImage} alt="Preview" className="w-full max-h-64 object-contain bg-muted/30" />
+                  )}
                   <Button
                     variant="destructive"
                     size="icon"
@@ -373,17 +393,29 @@ const SmartDevisPage = () => {
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground text-center truncate">{uploadedFileName}</p>
               </div>
             )}
 
+            {/* Pasted text area */}
+            <div className="space-y-2">
+              <label className={cn("text-sm font-medium text-muted-foreground", isRTL && "font-cairo block text-right")}>
+                {isRTL ? 'أو الصق هنا طلب الزبون (إيميل، واتساب، SMS...)' : 'Ou collez ici la demande du client (E-mail, WhatsApp, SMS...)'}
+              </label>
+              <Textarea
+                value={pastedText}
+                onChange={(e) => setPastedText(e.target.value)}
+                placeholder={isRTL ? 'الصق النص هنا...' : 'Collez le texte ici...'}
+                className={cn("min-h-[100px] resize-none", isRTL && "text-right font-cairo")}
+              />
+            </div>
+
             <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-              <Button variant="outline" onClick={() => { setStep('select_input'); setUploadedImage(null); }} className="flex-1">
+              <Button variant="outline" onClick={() => { setStep('select_input'); setUploadedImage(null); setPastedText(''); }} className="flex-1">
                 {isRTL ? 'رجوع' : 'Retour'}
               </Button>
               <Button
                 onClick={handleAnalyze}
-                disabled={!uploadedImage || isAnalyzing}
+                disabled={(!uploadedImage && !pastedText.trim()) || isAnalyzing}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
               >
                 {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}

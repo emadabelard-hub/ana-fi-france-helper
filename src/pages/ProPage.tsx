@@ -14,6 +14,15 @@ const ProPage = () => {
 
   const mainTools = [
     {
+      icon: null,
+      customIcon: null,
+      emoji: '🏗️',
+      title: isRTL ? 'تحويل الصور لـ دوفي ذكي' : 'Smart Devis IA',
+      description: isRTL ? 'صوّر الشانتي والذكاء الاصطناعي يعملك الدوفي' : 'Photos → Devis intelligent par IA',
+      path: '/pro/smart-devis',
+      gradient: 'from-blue-600 to-emerald-500',
+    },
+    {
       icon: PenLine,
       emoji: '📄',
       title: t('pro.invoices'),

@@ -6,6 +6,8 @@ import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { compressImage } from '@/lib/imageCompression';
+import { extractTextFromPDF } from '@/lib/pdfExtractor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -180,16 +182,54 @@ const SmartDevisPage = () => {
         userMessage,
       };
 
-      // Send all files as an array
+      // Pre-process files: extract PDF text client-side, compress images
       if (uploadedFiles.length > 0) {
-        body.files = uploadedFiles.map(f => ({
-          data: f.data,
-          mimeType: f.mimeType,
-          name: f.name,
-          type: f.type,
-        }));
-        // Keep backward compat: also send first image as imageData
-        const firstImage = uploadedFiles.find(f => f.type === 'image');
+        const processedFiles: any[] = [];
+        
+        for (const f of uploadedFiles) {
+          if (f.type === 'pdf') {
+            // Extract text from PDF client-side instead of sending raw base64
+            try {
+              const extractedText = await extractTextFromPDF(f.data);
+              processedFiles.push({
+                name: f.name,
+                type: 'pdf',
+                extractedText: extractedText || `[PDF: ${f.name} - impossible d'extraire le texte]`,
+              });
+            } catch (pdfErr) {
+              console.warn(`PDF text extraction failed for ${f.name}, sending as text fallback`);
+              processedFiles.push({
+                name: f.name,
+                type: 'pdf',
+                extractedText: `[PDF: ${f.name} - extraction échouée, fichier scanné probable]`,
+              });
+            }
+          } else {
+            // Compress images before sending
+            try {
+              const compressed = await compressImage(f.data);
+              processedFiles.push({
+                data: compressed,
+                mimeType: 'image/jpeg',
+                name: f.name,
+                type: 'image',
+              });
+            } catch {
+              // Fallback: send original if compression fails
+              processedFiles.push({
+                data: f.data,
+                mimeType: f.mimeType,
+                name: f.name,
+                type: 'image',
+              });
+            }
+          }
+        }
+
+        body.files = processedFiles;
+        
+        // Backward compat: first image as imageData
+        const firstImage = processedFiles.find(f => f.type === 'image' && f.data);
         if (firstImage) {
           body.imageData = firstImage.data;
           body.mimeType = firstImage.mimeType;

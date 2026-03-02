@@ -149,7 +149,7 @@ Réponds en JSON avec cette structure:
           { type: "text", text: userMessage || "Analyse ces fichiers et génère un devis détaillé." }
         ];
 
-        if (hasFiles) {
+      if (hasFiles) {
           for (const file of files) {
             if (file.type === 'image' && file.data) {
               contentParts.push({
@@ -157,12 +157,20 @@ Réponds en JSON avec cette structure:
                 image_url: { url: file.data.startsWith("data:") ? file.data : `data:${file.mimeType || 'image/jpeg'};base64,${file.data}` }
               });
             }
-            // PDFs sent as images if they were converted client-side, otherwise text description
-            if (file.type === 'pdf' && file.data) {
-              contentParts.push({
-                type: "image_url",
-                image_url: { url: file.data.startsWith("data:") ? file.data : `data:${file.mimeType || 'application/pdf'};base64,${file.data}` }
-              });
+            // PDFs: use pre-extracted text (much faster than sending raw base64)
+            if (file.type === 'pdf') {
+              if (file.extractedText) {
+                contentParts.push({
+                  type: "text",
+                  text: `\n--- Contenu du document PDF "${file.name}" ---\n${file.extractedText}\n--- Fin du document ---\n`
+                });
+              } else if (file.data) {
+                // Legacy fallback: send as image_url
+                contentParts.push({
+                  type: "image_url",
+                  image_url: { url: file.data.startsWith("data:") ? file.data : `data:${file.mimeType || 'application/pdf'};base64,${file.data}` }
+                });
+              }
             }
           }
         } else if (hasLegacyImage) {

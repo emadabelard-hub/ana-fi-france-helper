@@ -966,7 +966,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             
             <div className="space-y-2">
               <Label className={cn(isRTL && "font-cairo text-right block")}>
-                {isRTL ? 'رقم SIREN للزبون' : 'SIREN du client'}
+                {isRTL ? 'رقم السجل التجاري (SIREN) للزبون' : 'SIREN du client'}
               </Label>
               <Input
                 value={clientSiren}
@@ -979,7 +979,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 maxLength={9}
               />
               <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
-                {isRTL ? '💡 مطلوب للفوترة الإلكترونية 2026' : '💡 Requis pour la facturation électronique 2026'}
+                {isRTL ? '💡 مطلوب للفاتورة الإلكترونية (Factur-X) 2026' : '💡 Requis pour la facturation électronique 2026'}
               </p>
             </div>
           </div>
@@ -1000,9 +1000,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             onChange={(e) => setNatureOperation(e.target.value as 'service' | 'goods' | 'mixed')}
             className="w-full bg-background border border-border text-foreground text-sm rounded-md focus:ring-primary focus:border-primary p-2"
           >
-            <option value="service">{isRTL ? 'خدمات (Prestation de services)' : 'Prestation de services'}</option>
-            <option value="goods">{isRTL ? 'بيع سلع (Livraison de biens)' : 'Livraison de biens'}</option>
-            <option value="mixed">{isRTL ? 'مختلط (Mixte)' : 'Mixte (services + biens)'}</option>
+            <option value="service">{isRTL ? 'مصنعية فقط (Services)' : 'Prestation de services'}</option>
+            <option value="goods">{isRTL ? 'بيع مواد فقط (Matériaux)' : 'Livraison de biens'}</option>
+            <option value="mixed">{isRTL ? 'مختلط: مواد ومصنعية (Mixte)' : 'Mixte (services + biens)'}</option>
           </select>
         </CardContent>
       </Card>

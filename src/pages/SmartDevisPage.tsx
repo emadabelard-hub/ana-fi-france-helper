@@ -679,9 +679,9 @@ const SmartDevisPage = () => {
                 <Select value={materialQuality} onValueChange={setMaterialQuality}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="eco">🏷️ Éco</SelectItem>
-                    <SelectItem value="standard">⭐ Standard</SelectItem>
-                    <SelectItem value="luxe">💎 Luxe</SelectItem>
+                    <SelectItem value="eco">🏷️ إقتصادي (Éco)</SelectItem>
+                    <SelectItem value="standard">⭐ متوسط (Standard)</SelectItem>
+                    <SelectItem value="luxe">💎 لوكس (Luxe)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

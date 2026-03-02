@@ -12,14 +12,25 @@ export interface InvoiceData {
     phone?: string;
     email?: string;
     decennale?: string;
+    legalStatus?: string;
   };
   client: {
     name: string;
     address: string;
+    siren?: string;
   };
   workSite?: {
     sameAsClient: boolean;
     address?: string;
+  };
+  // Nature of operation
+  natureOperation?: 'service' | 'goods' | 'mixed';
+  // Assurance décennale
+  assuranceDecennale?: {
+    assureurName: string;
+    assureurAddress: string;
+    policyNumber: string;
+    geographicCoverage: string;
   };
   items: Array<{
     designation_fr: string;
@@ -39,9 +50,7 @@ export interface InvoiceData {
   legalMentions?: string;
   legalFooter?: string;
   logoUrl?: string;
-  // Artisan permanent signature (unique signature affichée sur les PDF)
   artisanSignatureUrl?: string;
-  // Stamp (cachet)
   stampUrl?: string;
 }
 
@@ -91,7 +100,12 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             {data.logoUrl && (
               <img src={data.logoUrl} alt="Logo" className="mb-1 object-contain" style={{ maxHeight: '60px', maxWidth: '120px' }} />
             )}
-            <h1 className="text-base font-bold text-primary leading-tight">{data.emitter.name}</h1>
+            <h1 className="text-base font-bold text-primary leading-tight">
+              {data.emitter.name}
+              {data.emitter.legalStatus === 'auto-entrepreneur' && (
+                <span className="text-[9px] font-normal text-gray-500 ml-1">EI</span>
+              )}
+            </h1>
             <p className="text-[10px] text-gray-600 whitespace-pre-line leading-snug">{data.emitter.address}</p>
             <p className="text-[10px] text-gray-600">SIRET: {data.emitter.siret}</p>
             {data.emitter.phone && <p className="text-[10px] text-gray-600">Tél: {data.emitter.phone}</p>}
@@ -122,6 +136,9 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         <h3 className="font-semibold text-gray-700 text-[10px] mb-0.5">CLIENT</h3>
         <p className="font-medium text-[11px] leading-tight">{data.client.name}</p>
         <p className="text-[10px] text-gray-600 whitespace-pre-line leading-snug">{data.client.address}</p>
+        {data.client.siren && (
+          <p className="text-[10px] text-gray-600">SIREN: {data.client.siren}</p>
+        )}
         
         {data.workSite && !data.workSite.sameAsClient && data.workSite.address && (
           <div className="mt-1.5 pt-1.5 border-t border-gray-200">
@@ -130,6 +147,16 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
           </div>
         )}
       </div>
+
+      {/* Nature of Operation */}
+      {data.natureOperation && (
+        <div className="mb-2 text-[9px] text-gray-600">
+          <span className="font-semibold text-gray-700">Nature de l'opération : </span>
+          {data.natureOperation === 'service' ? 'Prestation de services' 
+            : data.natureOperation === 'goods' ? 'Livraison de biens' 
+            : 'Prestation de services et livraison de biens'}
+        </div>
+      )}
 
       {/* Items Table */}
       <div className="mb-3">
@@ -202,7 +229,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
           
           {data.tvaExempt ? (
             <div className="py-1 border-b border-gray-200">
-              <p className="text-[9px] text-gray-500 italic leading-tight">{data.tvaExemptText}</p>
+              <p className="text-[9px] text-gray-500 italic leading-tight">TVA non applicable, art. 293 B du CGI</p>
             </div>
           ) : (
             <div className="flex justify-between py-1 border-b border-gray-200">
@@ -217,6 +244,20 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
           </div>
         </div>
       </div>
+
+      {/* Assurance Décennale (BTP) */}
+      {data.assuranceDecennale && data.assuranceDecennale.assureurName && (
+        <div className="border border-blue-200 bg-blue-50 rounded p-2 mb-3 text-[9px] text-gray-700 space-y-0.5">
+          <p className="font-bold text-blue-800 text-[10px] mb-1">🛡️ Assurance de responsabilité décennale</p>
+          <p>Assurance de responsabilité décennale obligatoire souscrite auprès de :</p>
+          <p className="font-semibold">{data.assuranceDecennale.assureurName}</p>
+          {data.assuranceDecennale.assureurAddress && (
+            <p>{data.assuranceDecennale.assureurAddress}</p>
+          )}
+          <p>N° de police : <span className="font-mono font-semibold">{data.assuranceDecennale.policyNumber}</span></p>
+          <p>Couverture géographique : {data.assuranceDecennale.geographicCoverage}</p>
+        </div>
+      )}
 
       {/* Signature & Stamp Section */}
       <div className="border-t border-gray-300 pt-3 mt-2">
@@ -259,6 +300,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       <div className="border-t border-gray-200 pt-1.5 text-[8px] text-gray-400 space-y-0.5 mt-2">
         <p><strong className="text-gray-500">Conditions de règlement:</strong> {data.paymentTerms}</p>
         {data.legalMentions && <p>{data.legalMentions}</p>}
+        <p className="text-gray-500 font-medium">Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard de paiement (Art. L.441-10 et D.441-5 du Code de commerce).</p>
       </div>
 
       {/* Auto-generated Legal Footer */}

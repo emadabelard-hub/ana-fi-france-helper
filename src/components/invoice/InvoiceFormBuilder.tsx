@@ -74,9 +74,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Form state
   const [clientName, setClientName] = useState('');
   const [clientAddress, setClientAddress] = useState('');
+  const [clientSiren, setClientSiren] = useState('');
   const [workSiteSameAsClient, setWorkSiteSameAsClient] = useState(true);
   const [workSiteAddress, setWorkSiteAddress] = useState('');
   
+  // Nature of operation
+  const [natureOperation, setNatureOperation] = useState<'service' | 'goods' | 'mixed'>('service');
+  
+  // Assurance décennale
+  const [assureurName, setAssureurName] = useState('');
+  const [assureurAddress, setAssureurAddress] = useState('');
+  const [policyNumber, setPolicyNumber] = useState('');
+  const [geographicCoverage, setGeographicCoverage] = useState('France métropolitaine');
   // Travel costs state
   const [includeTravelCosts, setIncludeTravelCosts] = useState(false);
   const [travelDescription, setTravelDescription] = useState('');
@@ -186,6 +195,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         setMoyenPaiement(draft.moyenPaiement || 'virement');
         if (draft.docNumber) setDocNumber(draft.docNumber);
         if (draft.items?.length) setItems(draft.items);
+        // Restore new legal fields
+        if (draft.clientSiren) setClientSiren(draft.clientSiren);
+        if (draft.natureOperation) setNatureOperation(draft.natureOperation);
+        if (draft.assureurName) setAssureurName(draft.assureurName);
+        if (draft.assureurAddress) setAssureurAddress(draft.assureurAddress);
+        if (draft.policyNumber) setPolicyNumber(draft.policyNumber);
+        if (draft.geographicCoverage) setGeographicCoverage(draft.geographicCoverage);
         toast({
           title: isRTL ? '📝 تم استعادة المسودة' : '📝 Brouillon restauré',
           description: isRTL ? 'رجعنالك الشغل اللي كنت بتعمله' : 'Votre travail précédent a été restauré',
@@ -205,6 +221,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         documentType,
         clientName,
         clientAddress,
+        clientSiren,
         workSiteSameAsClient,
         workSiteAddress,
         includeTravelCosts,
@@ -218,10 +235,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         moyenPaiement,
         docNumber,
         items,
+        natureOperation,
+        assureurName,
+        assureurAddress,
+        policyNumber,
+        geographicCoverage,
       });
     }, 1000);
     return () => clearTimeout(timer);
-  }, [draftRestored, documentType, clientName, clientAddress, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acomptePercent, delaiPaiement, moyenPaiement, docNumber, items]);
+  }, [draftRestored, documentType, clientName, clientAddress, clientSiren, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acomptePercent, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage]);
 
   // Handle prefill data from quote-to-invoice conversion
   useEffect(() => {
@@ -335,15 +357,24 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         address: profile?.company_address || '',
         phone: profile?.phone || '',
         email: profile?.email || '',
+        legalStatus: profile?.legal_status || undefined,
       },
       client: {
         name: clientName || 'Client',
         address: clientAddress || '',
+        siren: clientSiren || undefined,
       },
       workSite: {
         sameAsClient: workSiteSameAsClient,
         address: workSiteSameAsClient ? undefined : workSiteAddress,
       },
+      natureOperation,
+      assuranceDecennale: assureurName ? {
+        assureurName,
+        assureurAddress,
+        policyNumber,
+        geographicCoverage,
+      } : undefined,
       items: allItems.map(item => ({
         designation_fr: item.designation_fr,
         designation_ar: item.designation_ar || item.designation_fr,
@@ -925,11 +956,112 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 className={cn(isRTL && "text-right font-cairo")}
               />
             </div>
+            
+            <div className="space-y-2">
+              <Label className={cn(isRTL && "font-cairo text-right block")}>
+                {isRTL ? 'رقم SIREN للزبون' : 'SIREN du client'}
+              </Label>
+              <Input
+                value={clientSiren}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 9);
+                  setClientSiren(val);
+                }}
+                placeholder={isRTL ? '9 أرقام (اختياري)' : '9 chiffres (optionnel)'}
+                className={cn("font-mono", isRTL && "text-right")}
+                maxLength={9}
+              />
+              <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
+                {isRTL ? '💡 مطلوب للفوترة الإلكترونية 2026' : '💡 Requis pour la facturation électronique 2026'}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
-      
-      {/* Work Site Section */}
+
+      {/* Nature of Operation */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <FileText className="h-5 w-5 text-primary" />
+            <h3 className={cn("font-bold", isRTL && "font-cairo")}>
+              {isRTL ? '📦 طبيعة العملية' : '📦 Nature de l\'opération'}
+            </h3>
+          </div>
+          <select
+            value={natureOperation}
+            onChange={(e) => setNatureOperation(e.target.value as 'service' | 'goods' | 'mixed')}
+            className="w-full bg-background border border-border text-foreground text-sm rounded-md focus:ring-primary focus:border-primary p-2"
+          >
+            <option value="service">{isRTL ? 'خدمات (Prestation de services)' : 'Prestation de services'}</option>
+            <option value="goods">{isRTL ? 'بيع سلع (Livraison de biens)' : 'Livraison de biens'}</option>
+            <option value="mixed">{isRTL ? 'مختلط (Mixte)' : 'Mixte (services + biens)'}</option>
+          </select>
+        </CardContent>
+      </Card>
+
+      {/* Assurance Décennale (BTP) */}
+      <Card className="border-blue-500/20 bg-blue-500/5">
+        <CardContent className="p-4 space-y-4">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <HardHat className="h-5 w-5 text-blue-600" />
+            <h3 className={cn("font-bold text-blue-700 dark:text-blue-400", isRTL && "font-cairo")}>
+              {isRTL ? '🛡️ التأمين العشري (Décennale)' : '🛡️ Assurance Décennale'}
+            </h3>
+          </div>
+          <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-cairo")}>
+            {isRTL 
+              ? '⚖️ إجباري في قطاع البناء (BTP). لازم يظهر على كل دوفي وفاكتير.'
+              : '⚖️ Obligatoire dans le BTP. Doit figurer sur chaque devis et facture.'}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                {isRTL ? 'اسم شركة التأمين' : 'Nom de l\'assureur'}
+              </Label>
+              <Input
+                value={assureurName}
+                onChange={(e) => setAssureurName(e.target.value)}
+                placeholder={isRTL ? 'مثال: AXA France' : 'Ex: AXA France'}
+                className={cn("text-sm", isRTL && "text-right font-cairo")}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                {isRTL ? 'عنوان شركة التأمين' : 'Adresse de l\'assureur'}
+              </Label>
+              <Input
+                value={assureurAddress}
+                onChange={(e) => setAssureurAddress(e.target.value)}
+                placeholder={isRTL ? 'عنوان المقر' : 'Ex: 25 av. Matignon, 75008 Paris'}
+                className={cn("text-sm", isRTL && "text-right font-cairo")}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                {isRTL ? 'رقم البوليصة' : 'N° de police'}
+              </Label>
+              <Input
+                value={policyNumber}
+                onChange={(e) => setPolicyNumber(e.target.value)}
+                placeholder={isRTL ? 'رقم العقد' : 'Ex: RC-2024-123456'}
+                className={cn("text-sm font-mono", isRTL && "text-right")}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                {isRTL ? 'التغطية الجغرافية' : 'Couverture géographique'}
+              </Label>
+              <Input
+                value={geographicCoverage}
+                onChange={(e) => setGeographicCoverage(e.target.value)}
+                placeholder="France métropolitaine"
+                className={cn("text-sm", isRTL && "text-right font-cairo")}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardContent className="p-4 space-y-4">
           <div className={cn(

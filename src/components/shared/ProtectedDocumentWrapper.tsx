@@ -12,7 +12,7 @@ import AuthModal from '@/components/auth/AuthModal';
 interface ProtectedDocumentWrapperProps {
   children: ReactNode;
   /** The document type label for the payment metadata */
-  documentType: 'devis' | 'facture' | 'cv' | 'letter';
+  documentType: 'devis' | 'facture' | 'cv' | 'letter' | 'quote_to_invoice';
   /** Path to return to after payment */
   returnPath: string;
   /** Whether the document has been paid for (unlocked) */
@@ -23,6 +23,22 @@ interface ProtectedDocumentWrapperProps {
   renderDownloadButton?: () => ReactNode;
   className?: string;
 }
+
+const PRICE_LABELS: Record<string, string> = {
+  cv: '4,00€',
+  devis: '5,00€',
+  facture: '5,00€',
+  quote_to_invoice: '5,00€',
+  letter: '5,00€',
+};
+
+const PRICE_LABELS_AR: Record<string, string> = {
+  cv: '4.00€',
+  devis: '5.00€',
+  facture: '5.00€',
+  quote_to_invoice: '5.00€',
+  letter: '5.00€',
+};
 
 /**
  * Wraps a document preview with:
@@ -136,9 +152,9 @@ const ProtectedDocumentWrapper = ({
             ) : (
               <Lock className="h-5 w-5" />
             )}
-            {isRTL
-              ? 'ادفع 3.99€ لتحميل النسخة الأصلية 🔒'
-              : 'Payer 3,99€ pour télécharger l\'original 🔒'}
+             {isRTL
+               ? `ادفع ${PRICE_LABELS_AR[documentType]} لتحميل النسخة الأصلية 🔒`
+               : `Payer ${PRICE_LABELS[documentType]} pour télécharger l'original 🔒`}
           </Button>
         )}
       </div>

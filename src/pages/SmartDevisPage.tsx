@@ -18,7 +18,7 @@ import AuthModal from '@/components/auth/AuthModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import {
   ArrowLeft, ArrowRight, Camera, Image as ImageIcon, FileText, Map,
-  Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download
+  Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle
 } from 'lucide-react';
 
 interface LineItem {
@@ -67,6 +67,7 @@ const SmartDevisPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [preferencesCollected, setPreferencesCollected] = useState(false);
+  const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -297,6 +298,39 @@ const SmartDevisPage = () => {
 
   const formatCurrency = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
+  const HELP_GUIDES: Record<string, { title: string; steps: string[] }> = {
+    photo: {
+      title: '📸 ازاي تستخدم خاصية الصور؟',
+      steps: [
+        'صور الشانتي بوضوح — يعني الحيطان، السقف، الأرض.',
+        'السيستم هيعرف لو الحيطة محتاجة وشين بانتيرة أو أندوي من الصورة.',
+        'لو في كارلاج أو فايونس، صور الأرضية كمان.',
+        'اكتب تفاصيل إضافية في الخانة (مثلاً: "الحيطة محتاجة أندوي طبقتين وبانتيرة ساتيني").',
+        'السيستم هيحسب المساحة ويعملك الدوفي تلقائي!',
+      ],
+    },
+    blueprint: {
+      title: '🗺️ ازاي تستخدم خاصية المخططات؟',
+      steps: [
+        'ارفع المخطط أو الكروكي بتاع الشانتي.',
+        'السيستم هيقرأ المقاسات من الرسم.',
+        'لو الرسم فيه أبعاد (مثلاً 3m × 4m)، هيحسب المساحة.',
+        'اكتب في الخانة نوع الشغل اللي عايزه (بانتيرة، كارلاج، جبس...).',
+        'السيستم هيطلعلك دوفي بالأسعار والكميات!',
+      ],
+    },
+    document: {
+      title: '📄 ازاي تستخدم خاصية المستندات؟',
+      steps: [
+        'انسخ كلام الزبون من واتساب أو إيميل وحطه هنا.',
+        'والسيستم هيعملك الدوفي الرسمي بالفرنسي.',
+        'ممكن كمان ترفع PDF لو الزبون بعتلك كراس الشروط.',
+        'السيستم هيحلل الطلب ويطلعلك كل البنود.',
+        'بعدها تقدر تعدل الأسعار وتضيف هامش الربح بتاعك!',
+      ],
+    },
+  };
+
   const INPUT_TYPES = [
     { type: 'photo' as const, icon: Camera, emoji: '📸', title: 'صورة الشانتي', titleFr: 'Photo du chantier', desc: 'صوّر الشغل وأنا أقدّر', gradient: 'from-blue-500 to-blue-600' },
     { type: 'blueprint' as const, icon: Map, emoji: '🗺️', title: 'خريطة أو كروكي', titleFr: 'Plan ou croquis', desc: 'ارفع المخطط وأنا أقرأ المقاسات', gradient: 'from-emerald-500 to-emerald-600' },
@@ -328,25 +362,38 @@ const SmartDevisPage = () => {
             {isRTL ? 'اختار نوع المدخل:' : 'Choisissez le type d\'entrée:'}
           </p>
           {INPUT_TYPES.map(({ type, emoji, title, titleFr, desc, gradient }) => (
-            <Card
-              key={type}
-              className={cn("cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] border-none overflow-hidden", `bg-gradient-to-r ${gradient}`)}
-              onClick={() => handleInputTypeSelect(type)}
-            >
-              <CardContent className="p-0">
-                <div className={cn("flex items-center gap-4 p-5", isRTL && "flex-row-reverse")}>
-                  <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                    <span className="text-2xl">{emoji}</span>
+            <div key={type} className="space-y-1">
+              <Card
+                className={cn("cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] border-none overflow-hidden", `bg-gradient-to-r ${gradient}`)}
+                onClick={() => handleInputTypeSelect(type)}
+              >
+                <CardContent className="p-0">
+                  <div className={cn("flex items-center gap-4 p-5", isRTL && "flex-row-reverse")}>
+                    <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                      <span className="text-2xl">{emoji}</span>
+                    </div>
+                    <div className={cn("flex-1", isRTL && "text-right")}>
+                      <h3 className={cn("text-lg font-bold text-white", isRTL && "font-cairo")}>{title}</h3>
+                      <p className="text-white/70 text-xs">{titleFr}</p>
+                      <p className={cn("text-white/80 text-xs mt-1", isRTL && "font-cairo")}>{desc}</p>
+                    </div>
+                    <Arrow className="h-5 w-5 text-white/60" />
                   </div>
-                  <div className={cn("flex-1", isRTL && "text-right")}>
-                    <h3 className={cn("text-lg font-bold text-white", isRTL && "font-cairo")}>{title}</h3>
-                    <p className="text-white/70 text-xs">{titleFr}</p>
-                    <p className={cn("text-white/80 text-xs mt-1", isRTL && "font-cairo")}>{desc}</p>
-                  </div>
-                  <Arrow className="h-5 w-5 text-white/60" />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+              <button
+                onClick={(e) => { e.stopPropagation(); setHelpGuide(type); }}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full",
+                  "bg-destructive/15 hover:bg-destructive/25 transition-colors",
+                  "text-xs font-cairo text-destructive font-semibold",
+                  isRTL && "flex-row-reverse mr-auto"
+                )}
+              >
+                <HelpCircle className="h-3.5 w-3.5" />
+                <span>تحب اشرح تستخدم الخاصية دي ازاي؟</span>
+              </button>
+            </div>
           ))}
         </div>
       )}
@@ -640,6 +687,37 @@ const SmartDevisPage = () => {
           </div>
         </div>
       )}
+
+      {/* Help Guide Modal */}
+      <Dialog open={!!helpGuide} onOpenChange={(open) => !open && setHelpGuide(null)}>
+        <DialogContent className="max-w-md mx-4 rounded-2xl p-0 overflow-hidden">
+          <div className="bg-destructive/10 p-6 pb-4">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold font-cairo text-center text-foreground">
+                {helpGuide && HELP_GUIDES[helpGuide]?.title}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="p-6 space-y-3" dir="rtl">
+            {helpGuide && HELP_GUIDES[helpGuide]?.steps.map((s, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="w-7 h-7 rounded-full bg-destructive/15 text-destructive flex items-center justify-center font-bold text-sm shrink-0 mt-0.5 font-cairo">
+                  {i + 1}
+                </div>
+                <p className="text-sm font-cairo text-foreground leading-relaxed">{s}</p>
+              </div>
+            ))}
+          </div>
+          <div className="p-6 pt-2">
+            <Button
+              onClick={() => setHelpGuide(null)}
+              className="w-full font-cairo text-base py-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              فهمت خلاص، يلا نبدأ ✅
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AuthModal open={showAuth} onOpenChange={setShowAuth} />
     </div>

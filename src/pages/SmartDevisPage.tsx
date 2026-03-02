@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,13 +13,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import AuthModal from '@/components/auth/AuthModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import {
   ArrowLeft, ArrowRight, Camera, Image as ImageIcon, FileText, Map,
-  Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle
+  Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle, X, Upload
 } from 'lucide-react';
+
+interface UploadedFile {
+  id: string;
+  data: string;
+  name: string;
+  type: 'image' | 'pdf';
+  mimeType: string;
+}
 
 interface LineItem {
   id: string;
@@ -40,6 +48,8 @@ interface ChatMsg {
 type InputType = 'photo' | 'blueprint' | 'document' | null;
 type Step = 'select_input' | 'upload' | 'chat' | 'review';
 
+const MAX_FILES = 10;
+
 const SmartDevisPage = () => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
@@ -52,8 +62,7 @@ const SmartDevisPage = () => {
 
   const [step, setStep] = useState<Step>('select_input');
   const [inputType, setInputType] = useState<InputType>(null);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [uploadedFileName, setUploadedFileName] = useState<string>('');
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [pastedText, setPastedText] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
@@ -68,6 +77,7 @@ const SmartDevisPage = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [preferencesCollected, setPreferencesCollected] = useState(false);
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -81,23 +91,78 @@ const SmartDevisPage = () => {
     setStep('upload');
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ variant: 'destructive', title: 'الملف كبير أوي', description: 'الحد الأقصى 10 ميجا' });
+  const processFiles = useCallback((files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const remaining = MAX_FILES - uploadedFiles.length;
+    if (remaining <= 0) {
+      toast({ variant: 'destructive', title: isRTL ? 'وصلت الحد الأقصى' : 'Limite atteinte', description: isRTL ? `الحد الأقصى ${MAX_FILES} ملفات` : `Maximum ${MAX_FILES} fichiers` });
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setUploadedImage(reader.result as string);
-      setUploadedFileName(file.name);
-    };
-    reader.readAsDataURL(file);
+    const toProcess = fileArray.slice(0, remaining);
+    if (fileArray.length > remaining) {
+      toast({ title: isRTL ? 'تم تجاهل بعض الملفات' : 'Fichiers ignorés', description: isRTL ? `تم قبول ${remaining} ملف فقط` : `Seulement ${remaining} fichier(s) accepté(s)` });
+    }
+
+    toProcess.forEach(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        toast({ variant: 'destructive', title: isRTL ? 'ملف كبير أوي' : 'Fichier trop volumineux', description: `${file.name} > 10MB` });
+        return;
+      }
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      const isImage = file.type.startsWith('image/');
+      if (!isPdf && !isImage) {
+        toast({ variant: 'destructive', title: isRTL ? 'نوع غير مدعوم' : 'Type non supporté', description: file.name });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setUploadedFiles(prev => {
+          if (prev.length >= MAX_FILES) return prev;
+          return [...prev, {
+            id: generateId(),
+            data: reader.result as string,
+            name: file.name,
+            type: isPdf ? 'pdf' : 'image',
+            mimeType: file.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
+          }];
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }, [uploadedFiles.length, toast, isRTL]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    processFiles(files);
+    // Reset input so same files can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const removeFile = (id: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== id));
+  };
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
+    }
+  }, [processFiles]);
+
   const handleAnalyze = async () => {
-    if (!uploadedImage && !pastedText.trim()) return;
+    if (uploadedFiles.length === 0 && !pastedText.trim()) return;
     setIsAnalyzing(true);
     try {
       const baseMessage = inputType === 'blueprint'
@@ -115,9 +180,20 @@ const SmartDevisPage = () => {
         userMessage,
       };
 
-      if (uploadedImage) {
-        body.imageData = uploadedImage;
-        body.mimeType = uploadedImage.split(';')[0]?.split(':')[1] || 'image/jpeg';
+      // Send all files as an array
+      if (uploadedFiles.length > 0) {
+        body.files = uploadedFiles.map(f => ({
+          data: f.data,
+          mimeType: f.mimeType,
+          name: f.name,
+          type: f.type,
+        }));
+        // Keep backward compat: also send first image as imageData
+        const firstImage = uploadedFiles.find(f => f.type === 'image');
+        if (firstImage) {
+          body.imageData = firstImage.data;
+          body.mimeType = firstImage.mimeType;
+        }
       }
 
       if (pastedText.trim()) {
@@ -211,7 +287,6 @@ const SmartDevisPage = () => {
         }
       }
 
-      // Check if ready signal
       if (assistantSoFar.includes('✅') && assistantSoFar.includes('جاهز')) {
         setPreferencesCollected(true);
       }
@@ -284,7 +359,6 @@ const SmartDevisPage = () => {
   const grandTotal = lineItems.reduce((sum, i) => sum + i.total, 0);
 
   const handleSendToInvoice = () => {
-    // Store items in sessionStorage and redirect to invoice creator
     const prefillData = {
       items: lineItems.map(item => ({
         ...item,
@@ -306,7 +380,7 @@ const SmartDevisPage = () => {
         'السيستم هيعرف لو الحيطة محتاجة وشين بانتيرة أو أندوي من الصورة.',
         'لو في كارلاج أو فايونس، صور الأرضية كمان.',
         'اكتب تفاصيل إضافية في الخانة (مثلاً: "الحيطة محتاجة أندوي طبقتين وبانتيرة ساتيني").',
-        'السيستم هيحسب المساحة ويعملك الدوفي تلقائي!',
+        'السيستم هيحسب المساحة ويعمل الدوفي تلقائي!',
       ],
     },
     blueprint: {
@@ -323,7 +397,7 @@ const SmartDevisPage = () => {
       title: '📄 ازاي تستخدم خاصية المستندات؟',
       steps: [
         'انسخ كلام الزبون من واتساب أو إيميل وحطه هنا.',
-        'والسيستم هيعملك الدوفي الرسمي بالفرنسي.',
+        'والسيستم هيعمل الدوفي الرسمي بالفرنسي.',
         'ممكن كمان ترفع PDF لو الزبون بعتلك كراس الشروط.',
         'السيستم هيحلل الطلب ويطلعلك كل البنود.',
         'بعدها تقدر تعدل الأسعار وتضيف هامش الربح بتاعك!',
@@ -398,57 +472,113 @@ const SmartDevisPage = () => {
         </div>
       )}
 
-      {/* Step 2: Upload */}
+      {/* Step 2: Upload (Multi-file) */}
       {step === 'upload' && (
         <Card>
           <CardHeader>
-            <CardTitle className={cn("text-base", isRTL && "text-right font-cairo")}>
-              {isRTL ? 'ارفع الملف' : 'Téléchargez le fichier'}
-            </CardTitle>
+            <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+              <CardTitle className={cn("text-base", isRTL && "text-right font-cairo")}>
+                {isRTL ? 'ارفع الملفات' : 'Téléchargez les fichiers'}
+              </CardTitle>
+              <Badge variant="outline" className="text-xs">
+                {uploadedFiles.length}/{MAX_FILES}
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*,application/pdf"
+              multiple
               className="hidden"
               onChange={handleFileUpload}
             />
 
-            {!uploadedImage ? (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-muted-foreground/30 rounded-xl p-10 text-center cursor-pointer hover:border-primary/50 transition-colors"
-              >
-                <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-                <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
-                  {isRTL ? 'اضغط هنا لرفع صورة أو ملف PDF' : 'Cliquez pour télécharger une image ou un PDF'}
+            {/* Dropzone */}
+            <div
+              onClick={() => uploadedFiles.length < MAX_FILES && fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={cn(
+                "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all",
+                isDragOver
+                  ? "border-primary bg-primary/5 scale-[1.02]"
+                  : "border-muted-foreground/30 hover:border-primary/50",
+                uploadedFiles.length >= MAX_FILES && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <Upload className={cn("h-8 w-8 mx-auto mb-2", isDragOver ? "text-primary" : "text-muted-foreground/50")} />
+              <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
+                {isRTL
+                  ? uploadedFiles.length >= MAX_FILES
+                    ? `وصلت الحد الأقصى (${MAX_FILES} ملفات)`
+                    : 'اسحب الملفات هنا أو اضغط لاختيار صور و PDF'
+                  : uploadedFiles.length >= MAX_FILES
+                    ? `Limite atteinte (${MAX_FILES} fichiers)`
+                    : 'Glissez-déposez ou cliquez pour sélectionner images & PDF'}
+              </p>
+              <p className={cn("text-xs text-muted-foreground/60 mt-1", isRTL && "font-cairo")}>
+                {isRTL ? `حتى ${MAX_FILES} ملفات • الحد الأقصى 10 ميجا لكل ملف` : `Jusqu'à ${MAX_FILES} fichiers • 10 Mo max par fichier`}
+              </p>
+            </div>
+
+            {/* File Gallery */}
+            {uploadedFiles.length > 0 && (
+              <div className="space-y-2">
+                <p className={cn("text-xs font-medium text-muted-foreground", isRTL && "font-cairo text-right")}>
+                  {isRTL ? `📂 الملفات المرفوعة (${uploadedFiles.length})` : `📂 Fichiers uploadés (${uploadedFiles.length})`}
                 </p>
-                <p className={cn("text-xs text-muted-foreground/70 mt-3 leading-relaxed max-w-sm mx-auto", isRTL && "font-cairo")}>
-                  {isRTL 
-                    ? 'يمكنك تصوير موقع العمل، رفع مخطط هندسي، ملف PDF، أو حتى تصوير قائمة طلبات الزبون المكتوبة بخط اليد؛ وسيقوم الذكاء الاصطناعي بتحليل كل شيء فوراً.'
-                    : 'Photo de chantier, plan, PDF ou liste manuscrite du client — l\'IA analyse tout instantanément.'}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="relative rounded-xl overflow-hidden border">
-                  {uploadedFileName.toLowerCase().endsWith('.pdf') ? (
-                    <div className="w-full h-40 flex flex-col items-center justify-center bg-muted/30 gap-2">
-                      <FileText className="h-12 w-12 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground font-medium">{uploadedFileName}</p>
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                  {uploadedFiles.map((file, idx) => (
+                    <div key={file.id} className="relative group">
+                      {file.type === 'image' ? (
+                        <div className="w-full aspect-square rounded-lg overflow-hidden border-2 border-background shadow-sm">
+                          <img
+                            src={file.data}
+                            alt={file.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full aspect-square rounded-lg border-2 border-background shadow-sm bg-muted/30 flex flex-col items-center justify-center gap-1 p-1">
+                          <FileText className="h-6 w-6 text-destructive" />
+                          <span className="text-[8px] text-muted-foreground text-center truncate w-full px-1">
+                            {file.name.length > 12 ? file.name.slice(0, 10) + '...' : file.name}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Remove button */}
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                        onClick={(e) => { e.stopPropagation(); removeFile(file.id); }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                      
+                      {/* Number badge */}
+                      <div className="absolute -bottom-1 -left-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center shadow-sm">
+                        {idx + 1}
+                      </div>
                     </div>
-                  ) : (
-                    <img src={uploadedImage} alt="Preview" className="w-full max-h-64 object-contain bg-muted/30" />
+                  ))}
+                  
+                  {/* Add more button */}
+                  {uploadedFiles.length < MAX_FILES && (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full aspect-square rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+                    >
+                      <Plus className="h-5 w-5 text-muted-foreground/50" />
+                      <span className="text-[9px] text-muted-foreground/50 mt-0.5">
+                        {isRTL ? 'أضف' : 'Ajouter'}
+                      </span>
+                    </div>
                   )}
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-8 w-8"
-                    onClick={() => { setUploadedImage(null); setUploadedFileName(''); }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             )}
@@ -467,12 +597,12 @@ const SmartDevisPage = () => {
             </div>
 
             <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-              <Button variant="outline" onClick={() => { setStep('select_input'); setUploadedImage(null); setPastedText(''); }} className="flex-1">
+              <Button variant="outline" onClick={() => { setStep('select_input'); setUploadedFiles([]); setPastedText(''); }} className="flex-1">
                 {isRTL ? 'رجوع' : 'Retour'}
               </Button>
               <Button
                 onClick={handleAnalyze}
-                disabled={(!uploadedImage && !pastedText.trim()) || isAnalyzing}
+                disabled={(uploadedFiles.length === 0 && !pastedText.trim()) || isAnalyzing}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
               >
                 {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -488,11 +618,25 @@ const SmartDevisPage = () => {
       {/* Step 3: AI Chat */}
       {step === 'chat' && (
         <div className="space-y-3">
-          {/* Uploaded image thumbnail */}
-          {uploadedImage && (
-            <div className="flex justify-center">
-              <img src={uploadedImage} alt="Analyzed" className="h-20 rounded-lg border object-cover" />
-            </div>
+          {/* Uploaded files thumbnails */}
+          {uploadedFiles.length > 0 && (
+            <ScrollArea className="w-full whitespace-nowrap">
+              <div className="flex gap-2 justify-center py-1">
+                {uploadedFiles.map((file) => (
+                  <div key={file.id} className="shrink-0">
+                    {file.type === 'image' ? (
+                      <img src={file.data} alt={file.name} className="h-16 w-16 rounded-lg border object-cover" />
+                    ) : (
+                      <div className="h-16 w-16 rounded-lg border bg-muted/30 flex flex-col items-center justify-center">
+                        <FileText className="h-5 w-5 text-destructive" />
+                        <span className="text-[7px] text-muted-foreground mt-0.5">PDF</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           )}
 
           {/* Chat messages */}
@@ -564,7 +708,7 @@ const SmartDevisPage = () => {
               placeholder={isRTL ? 'اكتب رسالتك...' : 'Votre message...'}
               className={cn("min-h-[44px] max-h-[100px] resize-none text-sm", isRTL && "text-right font-cairo")}
               dir={isRTL ? 'rtl' : 'ltr'}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); /* no send on enter */ } }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); } }}
             />
             <Button size="icon" onClick={handleChatSend} disabled={!chatInput.trim() || isChatLoading} className="shrink-0">
               {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.notify-ticket-reply]
 verify_jwt = false
+
+[functions.notify-admin-ticket]
+verify_jwt = false

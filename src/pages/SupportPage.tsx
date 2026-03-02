@@ -113,13 +113,24 @@ const SupportPage = () => {
     }
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('support_tickets').insert({
+      const { data: ticketData, error } = await supabase.from('support_tickets').insert({
         user_id: user.id,
         message: suggestion.trim(),
         user_email: profile?.email || user.email || null,
         user_siret: profile?.siret || null,
-      });
+      }).select('id').single();
       if (error) throw error;
+
+      // Notify admin(s) about the new ticket
+      supabase.functions.invoke('notify-admin-ticket', {
+        body: {
+          ticketId: ticketData.id,
+          userEmail: profile?.email || user.email || null,
+          userSiret: profile?.siret || null,
+          message: suggestion.trim(),
+        },
+      }).catch(e => console.error('Admin notification failed:', e));
+
       setSubmitted(true);
       setSuggestion('');
       setTimeout(() => setSubmitted(false), 4000);

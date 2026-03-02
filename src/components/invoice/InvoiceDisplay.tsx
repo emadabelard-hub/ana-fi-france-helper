@@ -188,20 +188,20 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
                     }}
                   >
                     <span 
-                      className={`font-medium leading-tight block whitespace-pre-wrap text-left ${isSection ? 'font-bold text-primary' : ''}`}
+                      className={`font-bold leading-tight block whitespace-pre-wrap text-left ${isSection ? 'text-primary' : 'text-gray-800'}`}
                     >
                       {item.designation_fr.includes('\n') 
                         ? (
                           <ul className="list-disc list-inside space-y-0.5 ml-0">
                             {item.designation_fr.split('\n').filter(l => l.trim()).map((line, i) => (
-                              <li key={i} className="text-[10px] leading-snug">{line.trim().replace(/^[-•·]\s*/, '')}</li>
+                              <li key={i} className="text-[10px] leading-snug font-bold">{line.trim().replace(/^[-•·]\s*/, '')}</li>
                             ))}
                           </ul>
                         )
                         : item.designation_fr}
                     </span>
                     {showArabic && item.designation_ar && (
-                      <span className="block text-[8px] text-gray-400 mt-0.5 print:hidden" dir="rtl">
+                      <span className="block text-[8px] text-gray-400 font-normal mt-0.5 leading-snug print:hidden" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
                         {item.designation_ar}
                       </span>
                     )}

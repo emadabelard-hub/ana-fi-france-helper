@@ -124,14 +124,19 @@ Réponds en JSON avec cette structure:
   "inputType": "photo|blueprint|document",
   "suggestedItems": [
     {
-      "designation_fr": "Description en français",
-      "designation_ar": "وصف بالعربي",
+      "designation_fr": "Titre professionnel en français (ex: Dépose faïence existante)",
+      "designation_ar": "الترجمة بالعامية المصرية مع مصطلحات الحرفيين (ex: فك فايونس قديم)",
       "quantity": number,
       "unit": "m²|ml|u|h|forfait",
       "unitPrice": number,
       "category": "materials|labor|transport|cleaning|waste"
     }
   ],
+
+RÈGLE CRITIQUE - BILINGUISME OBLIGATOIRE:
+- Chaque item DOIT avoir designation_fr ET designation_ar remplis. JAMAIS vide.
+- designation_fr = français professionnel du BTP
+- designation_ar = arabe égyptien artisanal (عامية مصرية) avec les termes phonétiques du métier
   "notes_ar": "ملاحظات مهمة بالعربي",
   "notes_fr": "Remarques importantes en français"
 }`;
@@ -293,12 +298,17 @@ POSTES OBLIGATOIRES à inclure:
 Applique la formule:
 Prix final = (Matériaux + Main d'œuvre + Transport + Nettoyage + Évacuation) × (1 + Marge%) × (1 - Remise%)
 
+RÈGLE CRITIQUE - BILINGUISME OBLIGATOIRE:
+- Chaque item DOIT avoir designation_fr ET designation_ar. JAMAIS laisser vide.
+- designation_fr = titre professionnel en français du BTP (ex: "Dépose faïence existante", "Peinture acrylique satinée 2 couches")
+- designation_ar = traduction en arabe égyptien artisanal (عامية مصرية) avec termes phonétiques (ex: "فك فايونس قديم", "بانتيرة ساتيني طبقتين")
+
 Réponds UNIQUEMENT en JSON:
 {
   "items": [
     {
-      "designation_fr": "...",
-      "designation_ar": "...",
+      "designation_fr": "Titre professionnel en français",
+      "designation_ar": "ترجمة بالعامية المصرية",
       "quantity": number,
       "unit": "m²|ml|u|h|forfait",
       "unitPrice": number

@@ -26,10 +26,10 @@ interface ProtectedDocumentWrapperProps {
 
 const PRICE_LABELS: Record<string, string> = {
   cv: '4,00€',
-  devis: '5,00€',
-  facture: '5,00€',
-  quote_to_invoice: '5,00€',
-  letter: '5,00€',
+  devis: '6,00€',
+  facture: '6,00€',
+  quote_to_invoice: '6,00€',
+  letter: '6,00€',
 };
 
 const PRICE_LABELS_AR: Record<string, string> = {

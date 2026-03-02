@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Lock, Eye, EyeOff } from 'lucide-react';
+import { ShieldCheck, Lock, Eye } from 'lucide-react';
 import DocumentWatermark from './DocumentWatermark';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -61,27 +61,7 @@ const ProtectedDocumentWrapper = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
-  const [previewExpired, setPreviewExpired] = useState(false);
-
-  // One-time preview: mark as seen, expire on next mount
-  useEffect(() => {
-    if (isPaid) return;
-    const key = `preview_seen_${documentType}`;
-    const alreadySeen = sessionStorage.getItem(key);
-    if (alreadySeen) {
-      setPreviewExpired(true);
-    } else {
-      sessionStorage.setItem(key, 'true');
-    }
-  }, [isPaid, documentType]);
-
-  // Clear preview lock when payment is confirmed
-  useEffect(() => {
-    if (isPaid) {
-      sessionStorage.removeItem(`preview_seen_${documentType}`);
-      setPreviewExpired(false);
-    }
-  }, [isPaid, documentType]);
+  // Preview expiry removed — users can always see the watermarked preview
 
   // Disable right-click on protected content
   const handleContextMenu = useCallback(
@@ -147,27 +127,9 @@ const ProtectedDocumentWrapper = ({
         )}
         style={!isPaid ? { WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none', userSelect: 'none' } as React.CSSProperties : undefined}
       >
-        {/* Document content or expired placeholder */}
-        {!isPaid && previewExpired ? (
-          <div className="flex flex-col items-center justify-center py-20 px-6 text-center gap-4 bg-muted/30 rounded-lg border border-border min-h-[400px]">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-              <EyeOff className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className={cn("text-lg font-bold text-foreground", isRTL && "font-cairo")}>
-              {isRTL ? 'انتهى وقت المعاينة' : 'Aperçu expiré'}
-            </h3>
-            <p className={cn("text-sm text-muted-foreground max-w-xs", isRTL && "font-cairo")}>
-              {isRTL
-                ? 'لقد شاهدت المعاينة بالفعل. ادفع لتحميل النسخة الأصلية بدون علامة مائية.'
-                : 'Vous avez déjà consulté l\'aperçu. Payez pour télécharger l\'original sans filigrane.'}
-            </p>
-          </div>
-        ) : (
-          <>
-            {children}
-            {!isPaid && <DocumentWatermark />}
-          </>
-        )}
+        {/* Document content — always visible, watermarked when unpaid */}
+        {children}
+        {!isPaid && <DocumentWatermark />}
       </div>
 
       {/* Action buttons */}

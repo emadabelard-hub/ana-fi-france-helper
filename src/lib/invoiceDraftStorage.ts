@@ -11,6 +11,7 @@ export interface InvoiceDraft {
   documentType: 'devis' | 'facture';
   clientName: string;
   clientAddress: string;
+  clientSiren?: string;
   workSiteSameAsClient: boolean;
   workSiteAddress: string;
   includeTravelCosts: boolean;
@@ -32,6 +33,11 @@ export interface InvoiceDraft {
     unitPrice: number;
     total: number;
   }>;
+  natureOperation?: 'service' | 'goods' | 'mixed';
+  assureurName?: string;
+  assureurAddress?: string;
+  policyNumber?: string;
+  geographicCoverage?: string;
   savedAt: number;
 }
 

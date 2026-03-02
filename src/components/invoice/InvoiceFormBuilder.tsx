@@ -38,6 +38,7 @@ interface PrefillData {
     unitPrice: number;
   }>;
   notes?: string;
+  source?: string;
 }
 
 interface InvoiceFormBuilderProps {
@@ -1673,7 +1674,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           />
 
           <ProtectedDocumentWrapper
-            documentType={documentType}
+            documentType={prefillData?.source === 'smart_devis' ? 'smart_devis' : documentType}
             returnPath={`/pro/invoice-creator?type=${documentType}`}
           >
             <div ref={invoiceRef} className="print-area">

@@ -1,7 +1,8 @@
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Lock, Eye } from 'lucide-react';
+import { Lock, Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import DocumentWatermark from './DocumentWatermark';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -125,8 +126,18 @@ const ProtectedDocumentWrapper = ({
         {!isPaid && <DocumentWatermark />}
       </div>
 
+      {/* AI badge for smart devis */}
+      {documentType === 'smart_devis' && !isPaid && (
+        <div className={cn("mt-3 flex justify-center", isRTL && "font-cairo")}>
+          <Badge className="gap-1.5 bg-violet-600/90 hover:bg-violet-600 text-white px-3 py-1 text-xs">
+            <Sparkles className="h-3.5 w-3.5" />
+            {isRTL ? 'تم التحليل بواسطة الذكاء الاصطناعي' : 'Analysé par Intelligence Artificielle'}
+          </Badge>
+        </div>
+      )}
+
       {/* Action buttons */}
-      <div className="mt-4">
+      <div className="mt-3">
         {isPaid && renderDownloadButton ? (
           renderDownloadButton()
         ) : (

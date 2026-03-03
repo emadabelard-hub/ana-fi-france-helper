@@ -60,16 +60,14 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 // Generate document number prefix (locked part)
 const getDocPrefix = (type: 'devis' | 'facture') => {
-  const prefix = type === 'devis' ? 'DEV' : 'FAC';
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `${prefix} ${year}${month} - `;
+  const prefix = type === 'devis' ? 'D' : 'F';
+  const year = new Date().getFullYear();
+  return `${prefix}-${year}-`;
 };
 
-// Generate document number (prefix only, user fills the rest)
+// Generate document number with placeholder counter
 const generateDocNumber = (type: 'devis' | 'facture') => {
-  return getDocPrefix(type);
+  return `${getDocPrefix(type)}001`;
 };
 
 const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeChange }: InvoiceFormBuilderProps) => {

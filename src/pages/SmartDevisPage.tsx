@@ -835,7 +835,7 @@ const SmartDevisPage = () => {
 
           {/* Generate button */}
           <Button
-            className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 text-white font-bold"
+            className="w-full bg-[#1a1a1a] hover:bg-[#333] text-[#c5a028] font-bold border border-[#c5a028]/30"
             onClick={handleGenerateItems}
             disabled={isGenerating}
           >

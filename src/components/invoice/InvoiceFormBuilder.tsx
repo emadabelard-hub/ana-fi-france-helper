@@ -77,6 +77,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const { user } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const invoiceRef = useRef<HTMLDivElement>(null);
   
   // Form state

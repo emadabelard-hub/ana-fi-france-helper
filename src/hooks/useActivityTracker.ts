@@ -70,7 +70,7 @@ const useActivityTracker = () => {
   ) => {
     try {
       const ip = await getUserIp();
-      await supabase.from('user_activity_logs').insert({
+      const { error } = await supabase.from('user_activity_logs').insert({
         user_id: user?.id || null,
         user_email: user?.email || null,
         is_guest: !user,
@@ -82,6 +82,10 @@ const useActivityTracker = () => {
         ip_address: ip,
         metadata: {},
       } as any);
+      if (error) {
+        // Silent fail for analytics - don't propagate
+        console.debug('Activity log skipped:', error.code);
+      }
     } catch {
       // Silent fail
     }

@@ -60,7 +60,41 @@ interface InvoiceDisplayProps {
   showArabic: boolean;
 }
 
+// Arabic translation dictionary for document terms (visual only, not in PDF)
+const AR_LABELS: Record<string, string> = {
+  'Désignation': 'الوصف',
+  'Qté/Unité': 'الكمية / الوحدة',
+  'P.U (€)': 'سعر الوحدة',
+  'Total (€)': 'الإجمالي',
+  'Total HT:': 'المجموع بدون ضريبة',
+  'Total TTC:': 'المجموع شامل الضريبة',
+  'CLIENT': 'الزبون',
+  'DEVIS': 'عرض سعر',
+  'FACTURE': 'فاتورة',
+  'Prestation de services': 'تقديم خدمات',
+  'Livraison de biens': 'توريد بضائع',
+  'Prestation de services et livraison de biens': 'خدمات وتوريد بضائع',
+  'Conditions de règlement:': 'شروط الدفع:',
+  'Le client': 'الزبون',
+  'Le prestataire': 'مقدم الخدمة',
+  'Bon pour accord': 'موافقة',
+  'Date & Signature': 'التاريخ والتوقيع',
+  'Signature & Cachet': 'التوقيع والختم',
+};
+
 const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
+
+  /** Render a French label with optional Arabic subtitle underneath (print:hidden) */
+  const ArSub = ({ fr, className }: { fr: string; className?: string }) => (
+    <>
+      <span className={className}>{fr}</span>
+      {showArabic && AR_LABELS[fr] && (
+        <span className="block text-[7px] text-gray-400 font-normal leading-tight print:hidden" dir="rtl" style={{ fontFamily: 'IBM Plex Sans Arabic, Cairo, sans-serif' }}>
+          {AR_LABELS[fr]}
+        </span>
+      )}
+    </>
+  );
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -115,7 +149,9 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             )}
           </div>
           <div className="text-right">
-            <h2 className="text-lg font-bold text-primary">{data.type}</h2>
+            <h2 className="text-lg font-bold text-primary">
+              <ArSub fr={data.type} />
+            </h2>
             <p className="text-[10px] text-gray-600">N° {data.number}</p>
           </div>
         </div>
@@ -133,7 +169,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
 
       {/* Client Info */}
       <div className="bg-gray-50 p-2 rounded border border-gray-200 mb-3">
-        <h3 className="font-semibold text-gray-700 text-[10px] mb-0.5">CLIENT</h3>
+        <h3 className="font-semibold text-gray-700 text-[10px] mb-0.5"><ArSub fr="CLIENT" /></h3>
         <p className="font-medium text-[11px] leading-tight">{data.client.name}</p>
         <p className="text-[10px] text-gray-600 whitespace-pre-line leading-snug">{data.client.address}</p>
         {data.client.siren && (
@@ -152,9 +188,12 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       {data.natureOperation && (
         <div className="mb-2 text-[9px] text-gray-600">
           <span className="font-semibold text-gray-700">Nature de l'opération : </span>
-          {data.natureOperation === 'service' ? 'Prestation de services' 
-            : data.natureOperation === 'goods' ? 'Livraison de biens' 
-            : 'Prestation de services et livraison de biens'}
+          {(() => {
+            const label = data.natureOperation === 'service' ? 'Prestation de services' 
+              : data.natureOperation === 'goods' ? 'Livraison de biens' 
+              : 'Prestation de services et livraison de biens';
+            return <ArSub fr={label} />;
+          })()}
         </div>
       )}
 
@@ -163,10 +202,10 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         <table className="w-full border-collapse text-[10px]" style={{ tableLayout: 'fixed' }}>
           <thead>
             <tr className="bg-primary text-primary-foreground text-[9px]">
-              <th className="py-1.5 px-1.5 text-left border border-primary/30" style={{ width: '40%', verticalAlign: 'middle' }}>Désignation</th>
-              <th className="py-1.5 px-1 text-center border border-primary/30" style={{ width: '15%', verticalAlign: 'middle' }}>Qté/Unité</th>
-              <th className="py-1.5 px-1.5 text-left border border-primary/30" style={{ width: '20%', verticalAlign: 'middle' }}>P.U (€)</th>
-              <th className="py-1.5 px-1.5 text-left border border-primary/30" style={{ width: '25%', verticalAlign: 'middle' }}>Total (€)</th>
+              <th className="py-1.5 px-1.5 text-left border border-primary/30" style={{ width: '40%', verticalAlign: 'middle' }}><ArSub fr="Désignation" /></th>
+              <th className="py-1.5 px-1 text-center border border-primary/30" style={{ width: '15%', verticalAlign: 'middle' }}><ArSub fr="Qté/Unité" /></th>
+              <th className="py-1.5 px-1.5 text-left border border-primary/30" style={{ width: '20%', verticalAlign: 'middle' }}><ArSub fr="P.U (€)" /></th>
+              <th className="py-1.5 px-1.5 text-left border border-primary/30" style={{ width: '25%', verticalAlign: 'middle' }}><ArSub fr="Total (€)" /></th>
             </tr>
           </thead>
           <tbody>
@@ -223,7 +262,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       <div className="flex justify-end mb-3">
         <div className="w-52">
           <div className="flex justify-between py-1 border-b border-gray-200">
-            <span className="text-gray-600 text-[10px]">Total HT:</span>
+            <span className="text-gray-600 text-[10px]"><ArSub fr="Total HT:" /></span>
             <span className="font-medium text-[10px]">{formatCurrency(data.subtotal)}</span>
           </div>
           
@@ -239,7 +278,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
           )}
           
           <div className="flex justify-between py-1.5 bg-primary text-primary-foreground px-2.5 rounded-b-lg">
-            <span className="font-bold text-[11px]">Total TTC:</span>
+            <span className="font-bold text-[11px]"><ArSub fr="Total TTC:" /></span>
             <span className="font-bold text-[13px]">{formatCurrency(data.total)}</span>
           </div>
         </div>
@@ -264,15 +303,15 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         <div className="flex justify-between items-end">
           {/* Client signature space */}
           <div className="w-40 text-center">
-            <p className="text-[9px] font-medium text-gray-600 mb-0.5">Le client</p>
-            <p className="text-[8px] text-gray-400 mb-1">Bon pour accord</p>
+            <p className="text-[9px] font-medium text-gray-600 mb-0.5"><ArSub fr="Le client" /></p>
+            <p className="text-[8px] text-gray-400 mb-1"><ArSub fr="Bon pour accord" /></p>
             <div className="h-14 border border-dashed border-gray-300 rounded" />
-            <p className="text-[8px] text-gray-400 mt-0.5">Date & Signature</p>
+            <p className="text-[8px] text-gray-400 mt-0.5"><ArSub fr="Date & Signature" /></p>
           </div>
 
           {/* Artisan signature & stamp */}
           <div className="w-44 text-center">
-            <p className="text-[9px] font-medium text-gray-600 mb-0.5">Le prestataire</p>
+            <p className="text-[9px] font-medium text-gray-600 mb-0.5"><ArSub fr="Le prestataire" /></p>
             <p className="text-[8px] text-gray-400 mb-1">Date: {data.date}</p>
 
             {data.artisanSignatureUrl ? (
@@ -291,14 +330,14 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
               <div className="h-10 border border-dashed border-gray-300 rounded" />
             )}
 
-            <p className="text-[8px] text-gray-400 mt-0.5">Signature & Cachet</p>
+            <p className="text-[8px] text-gray-400 mt-0.5"><ArSub fr="Signature & Cachet" /></p>
           </div>
         </div>
       </div>
 
       {/* Footer / Legal Mentions */}
       <div className="border-t border-gray-200 pt-1.5 text-[8px] text-gray-400 space-y-0.5 mt-2">
-        <p><strong className="text-gray-500">Conditions de règlement:</strong> {data.paymentTerms}</p>
+        <p><strong className="text-gray-500"><ArSub fr="Conditions de règlement:" /></strong> {data.paymentTerms}</p>
         {data.legalMentions && <p>{data.legalMentions}</p>}
         <p className="text-gray-500 font-medium">Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard de paiement (Art. L.441-10 et D.441-5 du Code de commerce).</p>
       </div>

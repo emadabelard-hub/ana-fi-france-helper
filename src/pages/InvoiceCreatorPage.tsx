@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+// Version 1.1 - Stable Build
 const InvoiceCreatorPage = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();

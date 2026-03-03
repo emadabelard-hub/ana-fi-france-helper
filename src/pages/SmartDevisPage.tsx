@@ -703,13 +703,13 @@ const SmartDevisPage = () => {
             </div>
 
             <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-              <Button variant="outline" onClick={() => { setStep('select_input'); setUploadedFiles([]); setPastedText(''); }} className="flex-1">
+              <Button variant="outline" onClick={() => { setStep(inputType === 'photo' ? 'photo_guide' : 'select_input'); setUploadedFiles([]); setPastedText(''); }} className="flex-1">
                 {isRTL ? 'رجوع' : 'Retour'}
               </Button>
               <Button
                 onClick={handleAnalyze}
                 disabled={(uploadedFiles.length === 0 && !pastedText.trim()) || isAnalyzing}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                className="flex-1 bg-[#1a1a1a] hover:bg-[#333] text-white font-bold"
               >
                 {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 <span className={cn("mr-2", isRTL && "font-cairo")}>
@@ -717,6 +717,18 @@ const SmartDevisPage = () => {
                 </span>
               </Button>
             </div>
+
+            {/* AI Control Banner in upload step */}
+            {inputType === 'photo' && (
+              <div className={cn("flex items-start gap-3 p-3 rounded-xl border border-[#c5a028]/30 bg-[#c5a028]/5", isRTL && "flex-row-reverse")}>
+                <ShieldCheck className="h-5 w-5 text-[#c5a028] shrink-0 mt-0.5" />
+                <p className={cn("text-[11px] text-muted-foreground leading-relaxed", isRTL && "text-right font-cairo")}>
+                  {isRTL
+                    ? "تقدر تعدل أو تحذف أي بند بعد التحليل. إنت اللي عندك الكلمة الأخيرة."
+                    : "Vous pourrez modifier ou supprimer chaque ligne après l'analyse. Vous gardez le contrôle total."}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

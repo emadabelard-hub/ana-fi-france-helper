@@ -103,6 +103,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Quote validity duration (in days) - default 30 days
   const [validityDuration, setValidityDuration] = useState<15 | 30 | 60 | 90>(30);
   
+  // Invoice due date duration (in days) - default 30 days
+  const [dueDateDays, setDueDateDays] = useState<15 | 30 | 45 | 60>(30);
+  
   // Payment terms state
   const [acomptePercent, setAcomptePercent] = useState<number>(30);
   const [delaiPaiement, setDelaiPaiement] = useState<string>('reception');
@@ -372,7 +375,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         ? new Date(Date.now() + validityDuration * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
         : undefined,
       dueDate: documentType === 'facture'
-        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
+        ? new Date(Date.now() + dueDateDays * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
         : undefined,
       emitter: {
         name: profile?.company_name || 'Votre Entreprise',
@@ -820,6 +823,67 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           <div />
         )}
       </div>
+
+      {/* Invoice Due Date Selector - Only for Facture */}
+      {documentType === 'facture' && (
+        <Card className="border-red-500/20 bg-red-500/5">
+          <CardContent className="p-4 space-y-3">
+            <div className={cn(
+              "flex items-center justify-between gap-4",
+              isRTL && "flex-row-reverse"
+            )}>
+              <div className={cn(
+                "flex items-center gap-2",
+                isRTL && "flex-row-reverse"
+              )}>
+                <Calendar className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <span className={cn(
+                  "font-bold text-red-700 dark:text-red-400 text-sm uppercase tracking-wide",
+                  isRTL && "font-cairo"
+                )}>
+                  {isRTL ? 'أجل الدفع' : "Délai de paiement"}
+                </span>
+              </div>
+              <select 
+                value={dueDateDays} 
+                onChange={(e) => setDueDateDays(parseInt(e.target.value) as 15 | 30 | 45 | 60)}
+                className={cn(
+                  "bg-background border border-border text-foreground text-xs font-bold rounded-lg focus:ring-primary focus:border-primary p-2 uppercase",
+                  isRTL && "font-cairo"
+                )}
+              >
+                <option value="15">{isRTL ? '15 يوم' : '15 Jours'}</option>
+                <option value="30">{isRTL ? '30 يوم (موصى به)' : '30 Jours (Recommandé)'}</option>
+                <option value="45">{isRTL ? '45 يوم' : '45 Jours'}</option>
+                <option value="60">{isRTL ? '60 يوم' : '60 Jours'}</option>
+              </select>
+            </div>
+            
+            <p className={cn(
+              "text-[10px] text-red-600/80 dark:text-red-400/80 leading-tight",
+              isRTL && "text-right font-cairo"
+            )}>
+              {isRTL 
+                ? '💡 نصيحة: 30 يوم هو الحد الأقصى القانوني الافتراضي. يمكن تمديده إلى 45 أو 60 يومًا بالاتفاق.'
+                : '💡 Conseil : 30 jours est le délai légal par défaut. Peut être étendu à 45 ou 60 jours par accord contractuel.'
+              }
+            </p>
+            
+            <div className={cn(
+              "pt-2 border-t border-red-500/10 flex justify-between text-[10px] font-bold text-muted-foreground",
+              isRTL && "flex-row-reverse font-cairo"
+            )}>
+              <span>{isRTL ? `صادرة في : ${new Date().toLocaleDateString('fr-FR')}` : `Émise le : ${new Date().toLocaleDateString('fr-FR')}`}</span>
+              <span className="text-destructive">
+                {isRTL 
+                  ? `أجل الدفع : ${new Date(Date.now() + dueDateDays * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}`
+                  : `Échéance : ${new Date(Date.now() + dueDateDays * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}`
+                }
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quote Validity Duration Selector - Only for Devis */}
       {documentType === 'devis' && (

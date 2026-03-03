@@ -932,7 +932,7 @@ const SmartDevisPage = () => {
           {/* Actions */}
           <div className="space-y-2">
             <Button
-              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold"
+              className="w-full bg-[#c5a028] hover:bg-[#a88720] text-white font-bold"
               onClick={handleSendToInvoice}
             >
               <CheckCircle2 className="h-4 w-4 mr-2" />

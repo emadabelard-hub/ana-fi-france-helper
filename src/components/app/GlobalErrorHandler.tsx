@@ -18,7 +18,12 @@ export default function GlobalErrorHandler() {
         message.includes('row-level security') ||
         message.includes('user_activity_logs') ||
         message.includes('visit_logs') ||
-        message.includes('Failed to fetch');
+        message.includes('invoice_drafts') ||
+        message.includes('Failed to fetch') ||
+        message.includes('storage') ||
+        message.includes('NetworkError') ||
+        message.includes('AbortError') ||
+        message.includes('Load failed');
       
       if (isNonCritical) {
         event.preventDefault();

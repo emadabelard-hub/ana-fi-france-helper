@@ -93,6 +93,35 @@ const DocumentsListPage = () => {
     navigate('/pro/invoice-creator?type=facture&prefill=quote');
   };
 
+  const handleDuplicateDevis = (doc: DocumentRow) => {
+    const docData = doc.document_data || {};
+    const items = docData.items || [];
+    
+    const prefill = {
+      clientName: doc.client_name || docData.client?.name || '',
+      clientAddress: doc.client_address || docData.client?.address || '',
+      clientPhone: docData.client?.phone || '',
+      clientEmail: docData.client?.email || '',
+      clientSiren: docData.client?.siren || '',
+      clientTvaIntra: docData.client?.tvaIntra || '',
+      clientIsB2B: docData.client?.isB2B || false,
+      workSiteAddress: doc.work_site_address || docData.workSite?.address || '',
+      natureOperation: doc.nature_operation || docData.natureOperation || '',
+      items: items.map((item: any) => ({
+        designation_fr: item.designation_fr || '',
+        designation_ar: item.designation_ar || '',
+        quantity: item.quantity || 1,
+        unit: item.unit || 'm²',
+        unitPrice: item.unitPrice || 0,
+      })),
+      notes: docData.legalMentions || '',
+      source: 'devis_duplication',
+    };
+    
+    sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
+    navigate('/pro/invoice-creator?type=devis&prefill=quote');
+  };
+
   const devis = documents.filter(d => d.document_type === 'devis');
   const factures = documents.filter(d => d.document_type === 'facture');
 

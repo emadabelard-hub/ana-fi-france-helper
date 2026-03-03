@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +39,27 @@ const DocumentsListPage = () => {
   const [loading, setLoading] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [periodFilter, setPeriodFilter] = useState<string>('all');
+
+  const filteredDocuments = useMemo(() => {
+    if (periodFilter === 'all') return documents;
+    const now = new Date();
+    let startDate: Date;
+    switch (periodFilter) {
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'quarter':
+        startDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+        break;
+      case 'year':
+        startDate = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        return documents;
+    }
+    return documents.filter(d => new Date(d.created_at) >= startDate);
+  }, [documents, periodFilter]);
 
   const fetchDocuments = async () => {
     if (!user) { setLoading(false); return; }
@@ -122,8 +144,8 @@ const DocumentsListPage = () => {
     navigate('/pro/invoice-creator?type=devis&prefill=quote');
   };
 
-  const devis = documents.filter(d => d.document_type === 'devis');
-  const factures = documents.filter(d => d.document_type === 'facture');
+  const devis = filteredDocuments.filter(d => d.document_type === 'devis');
+  const factures = filteredDocuments.filter(d => d.document_type === 'facture');
 
   const handleExportCSV = () => {
     if (documents.length === 0) return;
@@ -284,11 +306,24 @@ const DocumentsListPage = () => {
               {isRTL ? 'مستنداتي المحاسبية' : 'Mes Documents'}
             </h1>
             <p className={cn("text-xs text-[hsl(0,0%,50%)]", isRTL && "font-cairo")}>
-              {isRTL ? `${documents.length} مستند` : `${documents.length} document${documents.length > 1 ? 's' : ''}`}
+              {isRTL ? `${filteredDocuments.length} مستند` : `${filteredDocuments.length} document${filteredDocuments.length > 1 ? 's' : ''}`}
+              {periodFilter !== 'all' && ` (${periodFilter === 'month' ? (isRTL ? 'هذا الشهر' : 'ce mois') : periodFilter === 'quarter' ? (isRTL ? 'هذا الربع' : 'ce trimestre') : (isRTL ? 'هذه السنة' : 'cette année')})`}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+            <SelectTrigger className="h-8 w-[130px] border-[hsl(45,60%,35%)/0.3] bg-transparent text-[hsl(0,0%,60%)] text-xs">
+              <Filter className="h-3 w-3 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isRTL ? 'الكل' : 'Tout'}</SelectItem>
+              <SelectItem value="month">{isRTL ? 'هذا الشهر' : 'Ce mois'}</SelectItem>
+              <SelectItem value="quarter">{isRTL ? 'هذا الربع' : 'Ce trimestre'}</SelectItem>
+              <SelectItem value="year">{isRTL ? 'هذه السنة' : 'Cette année'}</SelectItem>
+            </SelectContent>
+          </Select>
           {documents.length > 0 && (
             <Button
               size="sm"

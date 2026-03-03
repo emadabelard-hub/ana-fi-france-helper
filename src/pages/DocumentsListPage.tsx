@@ -39,6 +39,27 @@ const DocumentsListPage = () => {
   const [loading, setLoading] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [periodFilter, setPeriodFilter] = useState<string>('all');
+
+  const filteredDocuments = useMemo(() => {
+    if (periodFilter === 'all') return documents;
+    const now = new Date();
+    let startDate: Date;
+    switch (periodFilter) {
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'quarter':
+        startDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+        break;
+      case 'year':
+        startDate = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        return documents;
+    }
+    return documents.filter(d => new Date(d.created_at) >= startDate);
+  }, [documents, periodFilter]);
 
   const fetchDocuments = async () => {
     if (!user) { setLoading(false); return; }

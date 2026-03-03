@@ -91,7 +91,11 @@ const SmartDevisPage = () => {
   const handleInputTypeSelect = (type: InputType) => {
     if (!user) { setShowAuth(true); return; }
     setInputType(type);
-    setStep('upload');
+    if (type === 'photo') {
+      setStep('photo_guide');
+    } else {
+      setStep('upload');
+    }
   };
 
   const processFiles = useCallback((files: FileList | File[]) => {

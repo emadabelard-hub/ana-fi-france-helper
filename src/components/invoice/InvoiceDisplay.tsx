@@ -136,6 +136,9 @@ const AR_LABELS: Record<string, string> = {
 };
 
 const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
+  const photos = data.sitePhotos || [];
+  const totalPhotoPages = photos.length > 0 ? Math.ceil(photos.length / 4) : 0;
+  const totalPages = 1 + totalPhotoPages;
 
   /** Render a French label with optional Arabic subtitle underneath (print:hidden) */
   const ArSub = ({ fr, className }: { fr: string; className?: string }) => (

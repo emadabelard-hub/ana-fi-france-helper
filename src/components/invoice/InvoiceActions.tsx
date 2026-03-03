@@ -52,7 +52,15 @@ const InvoiceActions = ({
   const [signedPdfBlob, setSignedPdfBlob] = useState<Blob | null>(null);
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const handleArabicToggle = (value: boolean) => {
+    onToggleArabic(value);
 
+    if (value) {
+      requestAnimationFrame(() => {
+        invoiceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  };
 
   // Generate PDF from signed invoice with Factur-X XML embedded
   const generateSignedPdf = async () => {
@@ -377,7 +385,7 @@ const InvoiceActions = ({
         <Switch
           id="arabic-toggle"
           checked={showArabic}
-          onCheckedChange={onToggleArabic}
+          onCheckedChange={handleArabicToggle}
         />
       </div>
 

@@ -1988,74 +1988,83 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           
           <Button
             onClick={async () => {
-              const ok = await ensureTranslations();
-              if (!ok) return;
+              try {
+                const ok = await ensureTranslations();
+                if (!ok) return;
 
-              // Comprehensive validation with detailed feedback
-              const missingFields: string[] = [];
-              
-              // Check emitter SIRET (mandatory for legal invoices)
-              if (!profile?.siret || profile.siret.replace(/\s/g, '').length !== 14) {
-                missingFields.push('__SIRET_ERROR__');
-              }
+                // Comprehensive validation with detailed feedback
+                const missingFields: string[] = [];
+                
+                // Check emitter SIRET (mandatory for legal invoices)
+                if (!profile?.siret || profile.siret.replace(/\s/g, '').length !== 14) {
+                  missingFields.push('__SIRET_ERROR__');
+                }
 
-              // Check client name
-              if (!clientName.trim()) {
-                missingFields.push(isRTL ? '👤 اسم الزبون' : '👤 Nom du client');
-              }
-              
-              // Check client address
-              if (!clientAddress.trim()) {
-                missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
-              }
+                // Check client name
+                if (!clientName.trim()) {
+                  missingFields.push(isRTL ? '👤 اسم الزبون' : '👤 Nom du client');
+                }
+                
+                // Check client address
+                if (!clientAddress.trim()) {
+                  missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
+                }
 
-              // Check B2B client SIRET
-              if (clientIsB2B && (!clientSiren || clientSiren.replace(/\s/g, '').length < 9)) {
-                missingFields.push(isRTL ? '🏢 SIRET الزبون (إجباري B2B)' : '🏢 SIRET du client (obligatoire en B2B)');
-              }
-              
-              // Check work site address if different from client
-              if (!workSiteSameAsClient && !workSiteAddress.trim()) {
-                missingFields.push(isRTL ? '🏗️ عنوان الشانتييه' : '🏗️ Adresse du chantier');
-              }
-              
-              // Check line items
-              const hasValidItem = items.some(item => item.designation_fr.trim() && Number(item.unitPrice) > 0);
-              if (!hasValidItem && !(includeTravelCosts && travelPrice > 0)) {
-                missingFields.push(isRTL ? '📋 بند واحد على الأقل بسعره' : '📋 Au moins une prestation avec un prix');
-              }
-              
-              // Show validation errors if any
-              if (missingFields.length > 0) {
+                // Check B2B client SIRET
+                if (clientIsB2B && (!clientSiren || clientSiren.replace(/\s/g, '').length < 9)) {
+                  missingFields.push(isRTL ? '🏢 SIRET الزبون (إجباري B2B)' : '🏢 SIRET du client (obligatoire en B2B)');
+                }
+                
+                // Check work site address if different from client
+                if (!workSiteSameAsClient && !workSiteAddress.trim()) {
+                  missingFields.push(isRTL ? '🏗️ عنوان الشانتييه' : '🏗️ Adresse du chantier');
+                }
+                
+                // Check line items
+                const hasValidItem = items.some(item => item.designation_fr.trim() && Number(item.unitPrice) > 0);
+                if (!hasValidItem && !(includeTravelCosts && travelPrice > 0)) {
+                  missingFields.push(isRTL ? '📋 بند واحد على الأقل بسعره' : '📋 Au moins une prestation avec un prix');
+                }
+                
+                // Show validation errors if any
+                if (missingFields.length > 0) {
+                  toast({
+                    variant: "destructive",
+                    title: isRTL ? "⚠️ في حاجات ناقصة" : "⚠️ Données manquantes",
+                    description: (
+                      <div className="mt-2 space-y-1">
+                        <p className={cn("font-medium", isRTL && "font-cairo text-right")}>
+                          {isRTL ? 'كمّل الخانات دي:' : 'Veuillez compléter:'}
+                        </p>
+                        <ul className={cn("list-none space-y-1 text-sm", isRTL && "text-right")}>
+                          {missingFields.map((field, idx) => (
+                            <li key={idx} className="text-destructive-foreground">
+                              {field === '__SIRET_ERROR__' ? (
+                                <button
+                                  onClick={() => navigate('/pro/settings')}
+                                  className="underline font-semibold hover:opacity-80 text-left"
+                                >
+                                  {isRTL ? '🏢 رقم SIRET بتاعك (14 رقم) — اضغط هنا للتعديل' : '🏢 Votre SIRET (14 chiffres) — Modifier dans Mon Entreprise →'}
+                                </button>
+                              ) : field}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ),
+                  });
+                  return;
+                }
+                
+                setShowChecklist(true);
+              } catch (err) {
+                console.error('Preview validation error:', err);
                 toast({
                   variant: "destructive",
-                  title: isRTL ? "⚠️ في حاجات ناقصة" : "⚠️ Données manquantes",
-                  description: (
-                    <div className="mt-2 space-y-1">
-                      <p className={cn("font-medium", isRTL && "font-cairo text-right")}>
-                        {isRTL ? 'كمّل الخانات دي:' : 'Veuillez compléter:'}
-                      </p>
-                      <ul className={cn("list-none space-y-1 text-sm", isRTL && "text-right")}>
-                        {missingFields.map((field, idx) => (
-                          <li key={idx} className="text-destructive-foreground">
-                            {field === '__SIRET_ERROR__' ? (
-                              <button
-                                onClick={() => navigate('/pro/settings')}
-                                className="underline font-semibold hover:opacity-80 text-left"
-                              >
-                                {isRTL ? '🏢 رقم SIRET بتاعك (14 رقم) — اضغط هنا للتعديل' : '🏢 Votre SIRET (14 chiffres) — Modifier dans Mon Entreprise →'}
-                              </button>
-                            ) : field}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ),
+                  title: isRTL ? "⚠️ خطأ" : "⚠️ Erreur",
+                  description: isRTL ? 'حصل مشكلة. جرب تاني.' : 'Une erreur est survenue. Réessayez.',
                 });
-                return;
               }
-              
-              setShowChecklist(true);
             }}
             className={cn("flex-1", isRTL && "font-cairo")}
           >

@@ -60,6 +60,7 @@ const CompanyProfileSection = () => {
     company_address: '',
     email: '',
     legal_status: 'auto-entrepreneur',
+    tva_exempt: false,
     header_type: 'automatic',
     logo_url: '',
     header_image_url: '',

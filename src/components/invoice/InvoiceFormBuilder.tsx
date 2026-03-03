@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,6 +77,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const { user } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const invoiceRef = useRef<HTMLDivElement>(null);
   
   // Form state
@@ -1975,7 +1977,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               
               // Check emitter SIRET (mandatory for legal invoices)
               if (!profile?.siret || profile.siret.replace(/\s/g, '').length !== 14) {
-                missingFields.push(isRTL ? '🏢 رقم SIRET بتاعك (14 رقم) - روح للإعدادات' : '🏢 Votre SIRET (14 chiffres) — allez dans Mon Entreprise');
+                missingFields.push('__SIRET_ERROR__');
               }
 
               // Check client name
@@ -2016,7 +2018,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                       </p>
                       <ul className={cn("list-none space-y-1 text-sm", isRTL && "text-right")}>
                         {missingFields.map((field, idx) => (
-                          <li key={idx} className="text-destructive-foreground">{field}</li>
+                          <li key={idx} className="text-destructive-foreground">
+                            {field === '__SIRET_ERROR__' ? (
+                              <button
+                                onClick={() => navigate('/pro/settings')}
+                                className="underline font-semibold hover:opacity-80 text-left"
+                              >
+                                {isRTL ? '🏢 رقم SIRET بتاعك (14 رقم) — اضغط هنا للتعديل' : '🏢 Votre SIRET (14 chiffres) — Modifier dans Mon Entreprise →'}
+                              </button>
+                            ) : field}
+                          </li>
                         ))}
                       </ul>
                     </div>

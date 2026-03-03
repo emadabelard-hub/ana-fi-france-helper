@@ -194,6 +194,7 @@ export type Database = {
           siret: string | null
           social_security: string | null
           stamp_url: string | null
+          tva_exempt: boolean
           updated_at: string
           user_id: string
           ville_immatriculation: string | null
@@ -230,6 +231,7 @@ export type Database = {
           siret?: string | null
           social_security?: string | null
           stamp_url?: string | null
+          tva_exempt?: boolean
           updated_at?: string
           user_id: string
           ville_immatriculation?: string | null
@@ -266,6 +268,7 @@ export type Database = {
           siret?: string | null
           social_security?: string | null
           stamp_url?: string | null
+          tva_exempt?: boolean
           updated_at?: string
           user_id?: string
           ville_immatriculation?: string | null

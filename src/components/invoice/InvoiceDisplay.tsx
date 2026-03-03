@@ -353,8 +353,8 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
 
       {/* Assurance Décennale (BTP) */}
       {data.assuranceDecennale && data.assuranceDecennale.assureurName && (
-        <div className="border border-blue-200 bg-blue-50 rounded p-2 mb-3 text-[9px] text-gray-700 space-y-0.5">
-          <p className="font-bold text-blue-800 text-[10px] mb-1">🛡️ Assurance de responsabilité décennale</p>
+        <div className="border border-gray-300 bg-gray-50 rounded p-2 mb-3 text-[9px] text-gray-700 space-y-0.5">
+          <p className="font-bold text-black text-[10px] mb-1">🛡️ Assurance de responsabilité décennale</p>
           <p>Assurance de responsabilité décennale obligatoire souscrite auprès de :</p>
           <p className="font-semibold">{data.assuranceDecennale.assureurName}</p>
           {data.assuranceDecennale.assureurAddress && (

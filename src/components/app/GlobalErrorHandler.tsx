@@ -11,6 +11,21 @@ export default function GlobalErrorHandler() {
 
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      // Ignore non-critical errors (analytics, logging, RLS policy violations)
+      const reason = event.reason;
+      const message = reason?.message || reason?.toString?.() || '';
+      const isNonCritical = 
+        message.includes('row-level security') ||
+        message.includes('user_activity_logs') ||
+        message.includes('visit_logs') ||
+        message.includes('Failed to fetch');
+      
+      if (isNonCritical) {
+        event.preventDefault();
+        console.debug("Non-critical rejection suppressed:", message);
+        return;
+      }
+      
       console.error("Unhandled promise rejection:", event.reason);
       // Prevent default crash behavior
       event.preventDefault();

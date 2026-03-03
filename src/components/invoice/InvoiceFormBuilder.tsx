@@ -341,6 +341,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         const attemptedIds = new Set(newItems.map(item => item.id));
         setTranslationAttemptIds(attemptedIds);
       }
+
+      // Load site photos from Smart Devis
+      if (prefillData.sitePhotos && prefillData.sitePhotos.length > 0) {
+        setSitePhotos(prefillData.sitePhotos);
+      }
       
       toast({
         title: isRTL 

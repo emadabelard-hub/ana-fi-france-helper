@@ -15,12 +15,15 @@ interface DocumentRow {
   document_type: string;
   document_number: string;
   client_name: string;
+  client_address: string | null;
   subtotal_ht: number;
   tva_amount: number;
   total_ttc: number;
   status: string;
   created_at: string;
   nature_operation: string;
+  document_data: any;
+  work_site_address: string | null;
 }
 
 const formatCurrency = (n: number) =>
@@ -41,7 +44,7 @@ const DocumentsListPage = () => {
     setLoading(true);
     const { data, error } = await (supabase
       .from('documents_comptables') as any)
-      .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation')
+      .select('id, document_type, document_number, client_name, client_address, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     if (!error && data) setDocuments(data);
@@ -61,8 +64,31 @@ const DocumentsListPage = () => {
   };
 
   const handleConvertToInvoice = async (doc: DocumentRow) => {
-    // Save to session and navigate to invoice creator as facture
-    const prefill = { clientName: doc.client_name, documentData: doc };
+    // Extract full data from document_data JSON
+    const docData = doc.document_data || {};
+    const items = docData.items || [];
+    
+    const prefill = {
+      clientName: doc.client_name || docData.client?.name || '',
+      clientAddress: doc.client_address || docData.client?.address || '',
+      clientPhone: docData.client?.phone || '',
+      clientEmail: docData.client?.email || '',
+      clientSiren: docData.client?.siren || '',
+      clientTvaIntra: docData.client?.tvaIntra || '',
+      clientIsB2B: docData.client?.isB2B || false,
+      workSiteAddress: doc.work_site_address || docData.workSite?.address || '',
+      natureOperation: doc.nature_operation || docData.natureOperation || '',
+      items: items.map((item: any) => ({
+        designation_fr: item.designation_fr || '',
+        designation_ar: item.designation_ar || '',
+        quantity: item.quantity || 1,
+        unit: item.unit || 'm²',
+        unitPrice: item.unitPrice || 0,
+      })),
+      notes: docData.legalMentions || '',
+      source: 'devis_conversion',
+    };
+    
     sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
     navigate('/pro/invoice-creator?type=facture&prefill=quote');
   };

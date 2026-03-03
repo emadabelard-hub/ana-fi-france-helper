@@ -1237,11 +1237,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </Card>
 
       {/* Assurance Décennale (BTP) */}
-      <Card className="border-blue-500/20 bg-blue-500/5">
+      <Card className="border-gray-500/20 bg-gray-500/5">
         <CardContent className="p-4 space-y-4">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-            <HardHat className="h-5 w-5 text-blue-600" />
-            <h3 className={cn("font-bold text-blue-700 dark:text-blue-400", isRTL && "font-cairo")}>
+            <HardHat className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+            <h3 className={cn("font-bold text-gray-800 dark:text-gray-200", isRTL && "font-cairo")}>
               {isRTL ? '🛡️ التأمين العشري (Décennale)' : '🛡️ Assurance Décennale'}
             </h3>
           </div>

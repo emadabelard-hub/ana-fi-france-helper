@@ -209,8 +209,44 @@ const CompanyProfileSection = () => {
     );
   }
 
+  // Compute missing required fields
+  const missingFields: { label_fr: string; label_ar: string }[] = [];
+  if (!formData.company_name.trim()) missingFields.push({ label_fr: 'Nom de l\'entreprise', label_ar: 'اسم الشركة' });
+  if (!formData.siret || formData.siret.replace(/\D/g, '').length !== 14) missingFields.push({ label_fr: 'SIRET (14 chiffres)', label_ar: 'رقم SIRET (14 رقم)' });
+  if (!formData.company_address.trim()) missingFields.push({ label_fr: 'Adresse du siège', label_ar: 'عنوان المقر' });
+  if (!formData.email.trim()) missingFields.push({ label_fr: 'Email professionnel', label_ar: 'البريد المهني' });
+  if (!formData.assureur_name.trim()) missingFields.push({ label_fr: 'Assurance décennale', label_ar: 'تأمين العشر سنوات' });
+
   return (
     <div className="space-y-6">
+      {/* Missing Fields Banner */}
+      {missingFields.length > 0 && (
+        <Card className="border-amber-500/50 bg-amber-500/10">
+          <CardContent className={cn("p-4", isRTL && "font-cairo")}>
+            <div className={cn("flex items-start gap-3", isRTL && "flex-row-reverse text-right")}>
+              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex-1 space-y-2">
+                <p className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                  {isRTL ? '⚠️ في بيانات ناقصة' : '⚠️ Champs obligatoires manquants'}
+                </p>
+                <ul className={cn("space-y-1", isRTL && "text-right")}>
+                  {missingFields.map((f, i) => (
+                    <li key={i} className="text-xs text-amber-600 dark:text-amber-300 flex items-center gap-1.5" style={isRTL ? { flexDirection: 'row-reverse' } : {}}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                      {isRTL ? f.label_ar : f.label_fr}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80">
+                  {isRTL 
+                    ? 'كمّل البيانات دي عشان تقدر تعمل فواتير ودوفيهات صحيحة'
+                    : 'Complétez ces informations pour pouvoir générer des documents conformes'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {/* Company Info Card */}
       <Card>
         <CardHeader>

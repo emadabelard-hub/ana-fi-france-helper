@@ -184,7 +184,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             }
           });
         }
-        const nextCounter = String(maxCounter + 1).padStart(3, '0');
+        const nextCounter = String(maxCounter + 1);
         const nextNumber = `${prefix}${nextCounter}`;
         setDocNumber(nextNumber);
       });

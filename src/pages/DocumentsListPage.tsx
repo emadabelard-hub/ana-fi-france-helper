@@ -353,6 +353,17 @@ const DocumentsListPage = () => {
         </div>
       </section>
 
+      {/* Search bar */}
+      <div className="relative mb-3 shrink-0">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder={isRTL ? 'بحث بالعميل أو رقم المستند...' : 'Rechercher par client ou n° document...'}
+          className={cn("pl-9 h-9 bg-[hsl(0,0%,10%)] border-[hsl(45,60%,35%)/0.2] text-sm placeholder:text-muted-foreground", isRTL && "pr-9 pl-3 text-right font-cairo")}
+        />
+      </div>
+
       {/* Tabs */}
       <div className="flex-1 overflow-y-auto pb-4">
         <Tabs defaultValue="devis" className="w-full">

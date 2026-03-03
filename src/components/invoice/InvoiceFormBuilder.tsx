@@ -154,6 +154,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Guide modal state
   const [showGuide, setShowGuide] = useState(false);
 
+  // Site photos from Smart Devis
+  const [sitePhotos, setSitePhotos] = useState<Array<{ data: string; name: string }>>([]);
+
   // Translation state
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
   const [typingArabicIds, setTypingArabicIds] = useState<Set<string>>(new Set());

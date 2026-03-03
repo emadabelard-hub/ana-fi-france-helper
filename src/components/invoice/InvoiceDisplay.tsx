@@ -186,7 +186,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             {data.logoUrl && (
               <img src={data.logoUrl} alt="Logo" className="mb-1 object-contain" style={{ maxHeight: '60px', maxWidth: '120px' }} />
             )}
-            <h1 className="text-base font-bold text-primary leading-tight">
+            <h1 className="text-base font-bold text-black leading-tight">
               {data.emitter.name}
               {(data.emitter.legalStatus === 'auto-entrepreneur' || data.emitter.legalStatus === 'ei') && (
                 <span className="text-[9px] font-semibold text-gray-500 ml-1">EI</span>

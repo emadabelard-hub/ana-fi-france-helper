@@ -2018,7 +2018,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                       </p>
                       <ul className={cn("list-none space-y-1 text-sm", isRTL && "text-right")}>
                         {missingFields.map((field, idx) => (
-                          <li key={idx} className="text-destructive-foreground">{field}</li>
+                          <li key={idx} className="text-destructive-foreground">
+                            {field === '__SIRET_ERROR__' ? (
+                              <button
+                                onClick={() => navigate('/pro/settings')}
+                                className="underline font-semibold hover:opacity-80 text-left"
+                              >
+                                {isRTL ? '🏢 رقم SIRET بتاعك (14 رقم) — اضغط هنا للتعديل' : '🏢 Votre SIRET (14 chiffres) — Modifier dans Mon Entreprise →'}
+                              </button>
+                            ) : field}
+                          </li>
                         ))}
                       </ul>
                     </div>

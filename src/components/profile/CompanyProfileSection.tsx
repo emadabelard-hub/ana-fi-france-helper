@@ -85,6 +85,7 @@ const CompanyProfileSection = () => {
         company_address: (profile as any).company_address || '',
         email: (profile as any).email || '',
         legal_status: (profile as any).legal_status || 'auto-entrepreneur',
+        tva_exempt: (profile as any).tva_exempt || false,
         header_type: (profile as any).header_type || 'automatic',
         logo_url: (profile as any).logo_url || '',
         header_image_url: (profile as any).header_image_url || '',

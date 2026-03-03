@@ -2,7 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { PenLine, Settings, ArrowRight, ArrowLeft } from 'lucide-react';
+import { PenLine, Settings, ArrowRight, ArrowLeft, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
@@ -38,6 +38,15 @@ const ProPage = () => {
       description: t('pro.quoteToInvoiceDesc'),
       path: '/pro/quote-to-invoice',
       gradient: 'from-amber-500 to-emerald-500',
+    },
+    {
+      icon: FolderOpen,
+      customIcon: null,
+      emoji: null,
+      title: isRTL ? 'مستنداتي المحاسبية' : 'Mes Documents',
+      description: isRTL ? 'شوف كل الدوفيهات والفواتير اللي عملتها' : 'Consultez vos devis et factures sauvegardés',
+      path: '/pro/documents',
+      gradient: 'from-yellow-600 to-amber-700',
     },
   ];
 

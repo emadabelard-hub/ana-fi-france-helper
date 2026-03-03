@@ -375,6 +375,45 @@ const CompanyProfileSection = () => {
               </p>
             )}
           </div>
+
+          {/* TVA Exemption Checkbox */}
+          <div className={cn(
+            "flex items-start gap-3 p-3 rounded-lg border",
+            formData.tva_exempt && "border-green-500/50 bg-green-500/5",
+            isRTL && "flex-row-reverse"
+          )}>
+            <Checkbox
+              id="tva-exempt"
+              checked={formData.tva_exempt}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, tva_exempt: !!checked }))}
+              className="mt-0.5"
+            />
+            <Label htmlFor="tva-exempt" className={cn("flex-1 cursor-pointer", isRTL && "text-right font-cairo")}>
+              <span className="font-medium text-sm">
+                {isRTL ? 'معفى من ضريبة القيمة المضافة (Art. 293 B)' : 'Exonéré de TVA (Art. 293 B du CGI)'}
+              </span>
+              <p className={cn("text-xs text-muted-foreground mt-1", isRTL && "font-cairo")}>
+                {isRTL
+                  ? 'لو مفعّل، مش هيظهر حقل TVA في الفواتير والدوفيهات'
+                  : 'Si activé, le champ TVA n\'apparaîtra pas sur vos devis et factures'}
+              </p>
+            </Label>
+          </div>
+
+          {/* Numéro TVA - hidden when exempt */}
+          {!formData.tva_exempt && formData.legal_status === 'societe' && (
+            <div className="space-y-2">
+              <Label className={cn("flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>
+                {isRTL ? 'رقم TVA' : 'N° TVA Intracommunautaire'}
+              </Label>
+              <Input
+                value={formData.numero_tva}
+                onChange={(e) => handleChange('numero_tva', e.target.value)}
+                placeholder="FR 12 345678901"
+                className={cn(isRTL && "text-right")}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -517,6 +517,67 @@ const SmartDevisPage = () => {
         </div>
       )}
 
+      {/* Photo Guide Onboarding */}
+      {step === 'photo_guide' && (
+        <div className="space-y-4">
+          <Card className="border-2 border-[#c5a028]/30 bg-gradient-to-br from-background to-[#c5a028]/5 overflow-hidden">
+            <CardHeader className="bg-[#1a1a1a] text-white pb-4">
+              <CardTitle className={cn("text-center text-lg", isRTL && "font-cairo")}>
+                📸 {isRTL ? 'نصائح لصور أفضل' : 'Conseils pour de meilleures photos'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 space-y-4">
+              {[
+                { icon: Maximize, emoji: '🏠', titleFr: 'Vue Large', titleAr: 'صورة شاملة', descFr: 'Prenez une photo de toute la pièce.', descAr: 'صوّر الأوضة كلها من بعيد.' },
+                { icon: SunMedium, emoji: '☀️', titleFr: 'Lumière', titleAr: 'إضاءة كويسة', descFr: 'Assurez-vous que l\'endroit est bien éclairé.', descAr: 'تأكد إن المكان منور كويس.' },
+                { icon: ZoomIn, emoji: '🔍', titleFr: 'Focus Défauts', titleAr: 'صوّر العيوب', descFr: 'Photographiez de près les fissures ou l\'humidité.', descAr: 'صوّر الشروخ والرطوبة عن قرب.' },
+                { icon: Ruler, emoji: '📏', titleFr: 'Échelle', titleAr: 'مقياس', descFr: 'Si possible, montrez un outil de mesure dans le champ.', descAr: 'لو تقدر، حط مسطرة أو مقياس جنب الحاجة.' },
+              ].map((tip, i) => (
+                <div key={i} className={cn("flex items-start gap-4 p-3 rounded-xl bg-card border border-border/50", isRTL && "flex-row-reverse")}>
+                  <div className="w-11 h-11 rounded-lg bg-[#c5a028]/15 flex items-center justify-center shrink-0">
+                    <tip.icon className="h-5 w-5 text-[#c5a028]" />
+                  </div>
+                  <div className={cn("flex-1", isRTL && "text-right")}>
+                    <p className={cn("font-bold text-sm text-foreground", isRTL && "font-cairo")}>
+                      {tip.emoji} {isRTL ? tip.titleAr : tip.titleFr}
+                    </p>
+                    <p className={cn("text-xs text-muted-foreground mt-0.5", isRTL && "font-cairo")}>
+                      {isRTL ? tip.descAr : tip.descFr}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* AI Control Banner */}
+          <div className={cn("flex items-start gap-3 p-4 rounded-xl border-2 border-[#c5a028]/30 bg-[#c5a028]/5", isRTL && "flex-row-reverse")}>
+            <ShieldCheck className="h-6 w-6 text-[#c5a028] shrink-0 mt-0.5" />
+            <p className={cn("text-xs text-foreground leading-relaxed", isRTL && "text-right font-cairo")}>
+              {isRTL
+                ? "الذكاء الاصطناعي هيحلل صورك ويقترح أشغال، لكن إنت اللي عندك الكلمة الأخيرة. تقدر تعدل أو تحذف أي بند قبل التأكيد النهائي."
+                : "L'IA analyse vos photos pour suggérer des travaux, mais VOUS gardez le contrôle total. Vous pourrez modifier ou supprimer chaque ligne avant la validation finale."}
+            </p>
+          </div>
+
+          {/* Navigation */}
+          <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+            <Button variant="outline" onClick={() => { setStep('select_input'); setInputType(null); }} className="flex-1">
+              {isRTL ? 'رجوع' : 'Retour'}
+            </Button>
+            <Button
+              onClick={() => setStep('upload')}
+              className="flex-1 bg-[#1a1a1a] hover:bg-[#333] text-white font-bold"
+            >
+              <Camera className="h-4 w-4 mr-2" />
+              <span className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'فهمت، يلا نبدأ ✅' : 'Compris, commencer ✅'}
+              </span>
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Step 2: Upload (Multi-file) */}
       {step === 'upload' && (
         <Card>

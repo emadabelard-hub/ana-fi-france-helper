@@ -1718,7 +1718,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </Card>
 
           {/* TVA Settings - French Law Compliance */}
-          <Card className="border-blue-500/20 bg-blue-500/5">
+          <Card className="border-gray-500/20 bg-gray-500/5">
             <CardContent className="p-4 space-y-4">
               <div className={cn(
                 "flex items-center justify-between",
@@ -1730,7 +1730,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 )}>
                   <span className="text-xl">💶</span>
                   <h4 className={cn(
-                    "font-bold text-blue-700 dark:text-blue-400",
+                    "font-bold text-gray-800 dark:text-gray-200",
                     isRTL && "font-cairo"
                   )}>
                     {isRTL ? 'الـ TVA (الضريبة)' : 'TVA'}

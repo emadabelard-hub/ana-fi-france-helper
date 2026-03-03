@@ -288,14 +288,27 @@ const DocumentsListPage = () => {
             </p>
           </div>
         </div>
-        <Button
-          size="sm"
-          className="bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold gap-1.5 shrink-0"
-          onClick={() => navigate('/pro/invoice-creator')}
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">{isRTL ? 'جديد' : 'Nouveau'}</span>
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {documents.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-[hsl(45,60%,35%)/0.3] text-[hsl(45,80%,55%)] hover:bg-[hsl(45,80%,55%)/0.1] font-bold gap-1.5"
+              onClick={handleExportCSV}
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">CSV</span>
+            </Button>
+          )}
+          <Button
+            size="sm"
+            className="bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold gap-1.5"
+            onClick={() => navigate('/pro/invoice-creator')}
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">{isRTL ? 'جديد' : 'Nouveau'}</span>
+          </Button>
+        </div>
       </section>
 
       {/* Tabs */}

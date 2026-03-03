@@ -73,27 +73,43 @@ const InvoiceActions = ({
     }
 
     try {
-      const canvas = await html2canvas(invoiceRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-      });
+      // Find all renderable pages (main + annexes)
+      const container = invoiceRef.current.closest('.print-area') || invoiceRef.current.parentElement;
+      const pages = container
+        ? Array.from(container.querySelectorAll('.french-invoice'))
+        : [invoiceRef.current];
 
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      
-      const finalWidth = imgWidth * ratio * 0.95;
-      const finalHeight = imgHeight * ratio * 0.95;
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = 10;
 
-      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+      for (let i = 0; i < pages.length; i++) {
+        if (i > 0) pdf.addPage();
+
+        const canvas = await html2canvas(pages[i] as HTMLElement, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          useCORS: true,
+        });
+
+        // Compress: use JPEG for annexe pages (photos), PNG for main page
+        const isAnnexe = i > 0;
+        const imgFormat = isAnnexe ? 'JPEG' : 'PNG';
+        const imgData = isAnnexe
+          ? canvas.toDataURL('image/jpeg', 0.7)
+          : canvas.toDataURL('image/png');
+
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+
+        const finalWidth = imgWidth * ratio * 0.95;
+        const finalHeight = imgHeight * ratio * 0.95;
+        const x = (pdfWidth - finalWidth) / 2;
+        const y = 10;
+
+        pdf.addImage(imgData, imgFormat, x, y, finalWidth, finalHeight);
+      }
       
       let blob = pdf.output('blob');
 

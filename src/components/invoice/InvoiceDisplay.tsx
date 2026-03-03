@@ -59,6 +59,7 @@ export interface InvoiceData {
   logoUrl?: string;
   artisanSignatureUrl?: string;
   stampUrl?: string;
+  sitePhotos?: Array<{ data: string; name: string }>;
 }
 
 

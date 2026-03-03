@@ -149,6 +149,7 @@ const DocumentsListPage = () => {
     toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export réussi', description: isRTL ? 'تم تحميل ملف CSV' : 'Fichier CSV téléchargé' });
   };
 
+  if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
         <p className={cn("text-muted-foreground", isRTL && "font-cairo")}>

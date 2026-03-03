@@ -1015,8 +1015,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
           <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
-              ? 'حطيت لك السنة والشهر وانت حط الرقم التسلسلي'
-              : "L'année et le mois sont déjà renseignés, vous devez saisir uniquement le numéro après le trait d'union."}
+              ? 'الرقم بيتحط تلقائي. تقدر تعدّله لو عايز.'
+              : "Le numéro est généré automatiquement (compteur indépendant par type). Vous pouvez le modifier."}
           </p>
           <Input
             value={docNumber}

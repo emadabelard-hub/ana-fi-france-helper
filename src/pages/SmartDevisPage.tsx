@@ -909,7 +909,7 @@ const SmartDevisPage = () => {
                     </div>
                     <div>
                       <label className="text-[9px] text-muted-foreground">Total</label>
-                      <div className="h-7 flex items-center text-xs font-bold text-emerald-600">
+                      <div className="h-7 flex items-center text-xs font-bold text-[#c5a028]">
                         {formatCurrency(item.total)}
                       </div>
                     </div>

@@ -60,16 +60,14 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 // Generate document number prefix (locked part)
 const getDocPrefix = (type: 'devis' | 'facture') => {
-  const prefix = type === 'devis' ? 'DEV' : 'FAC';
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `${prefix} ${year}${month} - `;
+  const prefix = type === 'devis' ? 'D' : 'F';
+  const year = new Date().getFullYear();
+  return `${prefix}-${year}-`;
 };
 
-// Generate document number (prefix only, user fills the rest)
+// Generate document number with placeholder counter
 const generateDocNumber = (type: 'devis' | 'facture') => {
-  return getDocPrefix(type);
+  return `${getDocPrefix(type)}001`;
 };
 
 const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeChange }: InvoiceFormBuilderProps) => {
@@ -162,6 +160,35 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const arabicDebounceTimersRef = useRef<Record<string, ReturnType<typeof setTimeout> | undefined>>({});
   const lastTranslatedSourceRef = useRef<Record<string, string | undefined>>({});
   const itemsRef = useRef(items);
+
+  // Auto-increment document number from existing documents
+  useEffect(() => {
+    if (!user) return;
+    const prefix = getDocPrefix(documentType);
+    const year = new Date().getFullYear();
+    const typeFilter = documentType;
+    
+    (supabase.from('documents_comptables') as any)
+      .select('document_number')
+      .eq('user_id', user.id)
+      .eq('document_type', typeFilter)
+      .like('document_number', `${prefix}%`)
+      .then(({ data }: { data: any[] | null }) => {
+        let maxCounter = 0;
+        if (data) {
+          data.forEach((doc: any) => {
+            const num = doc.document_number?.replace(prefix, '');
+            const parsed = parseInt(num, 10);
+            if (!isNaN(parsed) && parsed > maxCounter) {
+              maxCounter = parsed;
+            }
+          });
+        }
+        const nextCounter = String(maxCounter + 1).padStart(3, '0');
+        const nextNumber = `${prefix}${nextCounter}`;
+        setDocNumber(nextNumber);
+      });
+  }, [user, documentType]);
 
   // Signed URLs for company assets (logo, signature, stamp)
   const [signedUrls, setSignedUrls] = useState<{
@@ -988,8 +1015,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
           <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
-              ? 'حطيت لك السنة والشهر وانت حط الرقم التسلسلي'
-              : "L'année et le mois sont déjà renseignés, vous devez saisir uniquement le numéro après le trait d'union."}
+              ? 'الرقم بيتحط تلقائي. تقدر تعدّله لو عايز.'
+              : "Le numéro est généré automatiquement (compteur indépendant par type). Vous pouvez le modifier."}
           </p>
           <Input
             value={docNumber}

@@ -125,7 +125,30 @@ const DocumentsListPage = () => {
   const devis = documents.filter(d => d.document_type === 'devis');
   const factures = documents.filter(d => d.document_type === 'facture');
 
-  if (!user) {
+  const handleExportCSV = () => {
+    if (documents.length === 0) return;
+    const headers = ['Type', 'Numéro', 'Client', 'Date', 'HT (€)', 'TVA (€)', 'TTC (€)', 'Statut'];
+    const rows = documents.map(doc => [
+      doc.document_type === 'devis' ? 'Devis' : 'Facture',
+      doc.document_number,
+      `"${(doc.client_name || '').replace(/"/g, '""')}"`,
+      new Date(doc.created_at).toLocaleDateString('fr-FR'),
+      doc.subtotal_ht.toFixed(2),
+      doc.tva_amount.toFixed(2),
+      doc.total_ttc.toFixed(2),
+      doc.status === 'finalized' ? 'Finalisé' : 'Brouillon',
+    ]);
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `documents_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export réussi', description: isRTL ? 'تم تحميل ملف CSV' : 'Fichier CSV téléchargé' });
+  };
+
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
         <p className={cn("text-muted-foreground", isRTL && "font-cairo")}>

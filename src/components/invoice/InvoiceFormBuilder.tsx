@@ -189,7 +189,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       artisanSignatureUrl: profile.artisan_signature_url,
       stampUrl: profile.stamp_url,
       headerImageUrl: profile.header_image_url,
-    }).then(setSignedUrls);
+    }).then(setSignedUrls).catch(err => {
+      console.warn('Failed to resolve asset URLs:', err);
+    });
     
     // Auto-populate assurance décennale from profile
     const p = profile as any;

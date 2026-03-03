@@ -31,6 +31,9 @@ export interface Profile {
   code_naf: string | null;
   ville_immatriculation: string | null;
   numero_tva: string | null;
+  // Bank details
+  iban: string | null;
+  bic: string | null;
   // Credits & Rate Limiting
   credits_balance: number;
   daily_message_count: number;

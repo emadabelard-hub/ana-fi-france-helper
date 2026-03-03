@@ -36,6 +36,8 @@ interface CompanyFormData {
   assureur_address: string;
   assurance_policy_number: string;
   assurance_geographic_coverage: string;
+  iban: string;
+  bic: string;
 }
 
 const CompanyProfileSection = () => {
@@ -68,6 +70,8 @@ const CompanyProfileSection = () => {
     assureur_address: '',
     assurance_policy_number: '',
     assurance_geographic_coverage: 'France métropolitaine',
+    iban: '',
+    bic: '',
   });
 
   useEffect(() => {
@@ -90,6 +94,8 @@ const CompanyProfileSection = () => {
         assureur_address: (profile as any).assureur_address || '',
         assurance_policy_number: (profile as any).assurance_policy_number || '',
         assurance_geographic_coverage: (profile as any).assurance_geographic_coverage || 'France métropolitaine',
+        iban: (profile as any).iban || '',
+        bic: (profile as any).bic || '',
       });
     }
   }, [profile]);
@@ -620,6 +626,43 @@ const CompanyProfileSection = () => {
                 if (formData.numero_tva) parts.push(`TVA : ${formData.numero_tva}`);
                 return parts.join(' - ') || (isRTL ? 'املا الحقول عشان تشوف النص' : 'Remplissez les champs pour voir l\'aperçu');
               })()}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Coordonnées bancaires */}
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <span className="text-xl">🏦</span>
+            <CardTitle className={cn("text-lg", isRTL && "font-cairo")}>
+              {isRTL ? 'بيانات البنك (IBAN / BIC)' : 'Coordonnées bancaires'}
+            </CardTitle>
+          </div>
+          <CardDescription className={cn(isRTL && "text-right font-cairo")}>
+            {isRTL
+              ? '💡 هتظهر على الفاتورة عشان الزبون يعمل فيرمون (virement) بسهولة'
+              : '💡 Apparaîtront sur vos factures pour faciliter les virements'}
+          </CardDescription>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className={cn(isRTL && "font-cairo")}>IBAN</Label>
+              <Input
+                value={formData.iban}
+                onChange={(e) => handleChange('iban' as any, e.target.value.toUpperCase())}
+                placeholder="FR76 1234 5678 9012 3456 7890 123"
+                className="font-mono text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className={cn(isRTL && "font-cairo")}>BIC / SWIFT</Label>
+              <Input
+                value={formData.bic}
+                onChange={(e) => handleChange('bic' as any, e.target.value.toUpperCase())}
+                placeholder="BNPAFRPP"
+                className="font-mono text-sm"
+              />
             </div>
           </div>
         </CardContent>

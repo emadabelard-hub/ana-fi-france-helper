@@ -5,6 +5,7 @@ export interface InvoiceData {
   number: string;
   date: string;
   validUntil?: string;
+  dueDate?: string;
   emitter: {
     name: string;
     siret: string;
@@ -13,11 +14,17 @@ export interface InvoiceData {
     email?: string;
     decennale?: string;
     legalStatus?: string;
+    iban?: string;
+    bic?: string;
   };
   client: {
     name: string;
     address: string;
     siren?: string;
+    phone?: string;
+    email?: string;
+    tvaIntra?: string;
+    isB2B?: boolean;
   };
   workSite?: {
     sameAsClient: boolean;
@@ -181,8 +188,8 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             )}
             <h1 className="text-base font-bold text-primary leading-tight">
               {data.emitter.name}
-              {data.emitter.legalStatus === 'auto-entrepreneur' && (
-                <span className="text-[9px] font-normal text-gray-500 ml-1">EI</span>
+              {(data.emitter.legalStatus === 'auto-entrepreneur' || data.emitter.legalStatus === 'ei') && (
+                <span className="text-[9px] font-semibold text-gray-500 ml-1">EI</span>
               )}
             </h1>
             <p className="text-[10px] text-gray-600 whitespace-pre-line leading-snug">{data.emitter.address}</p>
@@ -209,6 +216,12 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
               <span className="text-amber-600 font-semibold">⏳ Valide jusqu'au : {data.validUntil}</span>
             </>
           )}
+          {data.type === 'FACTURE' && data.dueDate && (
+            <>
+              <span className="text-gray-300">|</span>
+              <span className="text-red-600 font-semibold">📅 Échéance : {data.dueDate}</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -217,8 +230,13 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         <h3 className="font-semibold text-gray-700 text-[10px] mb-0.5"><ArSub fr="CLIENT" /></h3>
         <p className="font-medium text-[11px] leading-tight">{data.client.name}</p>
         <p className="text-[10px] text-gray-600 whitespace-pre-line leading-snug">{data.client.address}</p>
+        {data.client.phone && <p className="text-[10px] text-gray-600">Tél: {data.client.phone}</p>}
+        {data.client.email && <p className="text-[10px] text-gray-600">Email: {data.client.email}</p>}
         {data.client.siren && (
           <p className="text-[10px] text-gray-600">SIREN: {data.client.siren}</p>
+        )}
+        {data.client.tvaIntra && (
+          <p className="text-[10px] text-gray-600">TVA Intracommunautaire: {data.client.tvaIntra}</p>
         )}
         
         {data.workSite && !data.workSite.sameAsClient && data.workSite.address && (
@@ -380,6 +398,15 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         </div>
       </div>
 
+      {/* Coordonnées bancaires (IBAN / BIC) */}
+      {data.emitter.iban && (
+        <div className="border border-gray-200 rounded p-2 mb-3 text-[9px] text-gray-700 space-y-0.5">
+          <p className="font-bold text-gray-800 text-[10px] mb-1">🏦 Coordonnées bancaires</p>
+          <p>IBAN : <span className="font-mono font-semibold tracking-wider">{data.emitter.iban}</span></p>
+          {data.emitter.bic && <p>BIC : <span className="font-mono font-semibold">{data.emitter.bic}</span></p>}
+        </div>
+      )}
+
       {/* Footer / Legal Mentions */}
       <div className="border-t border-gray-200 pt-1.5 text-[8px] text-gray-400 space-y-0.5 mt-2">
         <p><strong className="text-gray-500"><ArSub fr="Conditions de règlement:" /></strong> {data.paymentTerms}</p>
@@ -393,6 +420,11 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
           <p className="text-[7px] text-gray-400 leading-snug">{data.legalFooter}</p>
         </div>
       )}
+
+      {/* Pagination */}
+      <div className="mt-3 text-center text-[8px] text-gray-400 font-medium">
+        Page 1/1
+      </div>
     </div>
   );
 };

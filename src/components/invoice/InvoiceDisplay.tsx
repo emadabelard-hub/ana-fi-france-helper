@@ -59,6 +59,7 @@ export interface InvoiceData {
   logoUrl?: string;
   artisanSignatureUrl?: string;
   stampUrl?: string;
+  sitePhotos?: Array<{ data: string; name: string }>;
 }
 
 
@@ -135,6 +136,9 @@ const AR_LABELS: Record<string, string> = {
 };
 
 const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
+  const photos = data.sitePhotos || [];
+  const totalPhotoPages = photos.length > 0 ? Math.ceil(photos.length / 4) : 0;
+  const totalPages = 1 + totalPhotoPages;
 
   /** Render a French label with optional Arabic subtitle underneath (print:hidden) */
   const ArSub = ({ fr, className }: { fr: string; className?: string }) => (
@@ -164,6 +168,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
   };
 
   return (
+    <>
     <div 
       dir="ltr"
       lang="fr"
@@ -427,9 +432,72 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
 
       {/* Pagination */}
       <div className="mt-3 text-center text-[8px] text-gray-400 font-medium">
-        Page 1/1
+        Page 1/{totalPages}
       </div>
     </div>
+
+    {/* Photo Annexe Pages */}
+    {photos.length > 0 && Array.from({ length: totalPhotoPages }).map((_, pageIdx) => {
+      const pagePhotos = photos.slice(pageIdx * 4, (pageIdx + 1) * 4);
+      return (
+        <div
+          key={`annexe-${pageIdx}`}
+          dir="ltr"
+          lang="fr"
+          className="french-invoice bg-white text-black rounded-lg shadow-lg max-w-2xl mx-auto mt-6 print:shadow-none print:mt-0 select-none"
+          style={{
+            padding: '1.5cm 1.5cm 2cm 1.5cm',
+            boxSizing: 'border-box',
+            minHeight: 'auto',
+            pageBreakBefore: 'always',
+            WebkitUserSelect: 'none',
+            userSelect: 'none',
+          }}
+          onCopy={(e) => e.preventDefault()}
+          onCut={(e) => e.preventDefault()}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {/* Annexe Header */}
+          <div className="border-b-2 border-black pb-2 mb-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-base font-bold text-black">{data.emitter.name}</h2>
+                <p className="text-[10px] text-gray-600">{data.type} N° {data.number}</p>
+              </div>
+              <div className="text-right">
+                <h3 className="text-sm font-bold text-black">📷 Annexe Photos</h3>
+                <p className="text-[9px] text-gray-500">Photos du chantier / des lieux</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Photo Grid - 2x2 */}
+          <div className="grid grid-cols-2 gap-3">
+            {pagePhotos.map((photo, photoIdx) => (
+              <div key={photoIdx} className="border border-gray-200 rounded-lg overflow-hidden">
+                <img
+                  src={photo.data}
+                  alt={photo.name || `Photo ${pageIdx * 4 + photoIdx + 1}`}
+                  className="w-full h-48 object-cover"
+                  style={{ maxHeight: '200px' }}
+                />
+                <div className="px-2 py-1 bg-gray-50 border-t border-gray-200">
+                  <p className="text-[8px] text-gray-500 truncate">
+                    📸 {photo.name || `Photo ${pageIdx * 4 + photoIdx + 1}`}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer */}
+          <div className="mt-auto pt-4 text-center text-[8px] text-gray-400 font-medium">
+            Page {2 + pageIdx}/{totalPages}
+          </div>
+        </div>
+      );
+    })}
+    </>
   );
 };
 

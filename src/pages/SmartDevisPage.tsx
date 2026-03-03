@@ -404,12 +404,18 @@ const SmartDevisPage = () => {
   const grandTotal = lineItems.reduce((sum, i) => sum + i.total, 0);
 
   const handleSendToInvoice = () => {
+    // Collect image photos for annexe
+    const sitePhotos = uploadedFiles
+      .filter(f => f.type === 'image')
+      .map(f => ({ data: f.data, name: f.name }));
+
     const prefillData = {
       items: lineItems.map(item => ({
         ...item,
         id: generateId(),
       })),
       source: 'smart_devis',
+      sitePhotos,
     };
     sessionStorage.setItem('smartDevisData', JSON.stringify(prefillData));
     navigate('/pro/invoice-creator?type=devis&prefill=smart');

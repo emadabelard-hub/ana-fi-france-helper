@@ -46,6 +46,7 @@ interface PrefillData {
   }>;
   notes?: string;
   source?: string;
+  sitePhotos?: Array<{ data: string; name: string }>;
 }
 
 interface InvoiceFormBuilderProps {
@@ -152,6 +153,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Guide modal state
   const [showGuide, setShowGuide] = useState(false);
+
+  // Site photos from Smart Devis
+  const [sitePhotos, setSitePhotos] = useState<Array<{ data: string; name: string }>>([]);
 
   // Translation state
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
@@ -337,6 +341,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         const attemptedIds = new Set(newItems.map(item => item.id));
         setTranslationAttemptIds(attemptedIds);
       }
+
+      // Load site photos from Smart Devis
+      if (prefillData.sitePhotos && prefillData.sitePhotos.length > 0) {
+        setSitePhotos(prefillData.sitePhotos);
+      }
       
       toast({
         title: isRTL 
@@ -492,6 +501,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         if (p.numero_tva) parts.push(`TVA : ${p.numero_tva}`);
         return parts.length > 1 ? parts.join(' - ') : (p.legal_footer || undefined);
       })(),
+      sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
     };
   };
   

@@ -187,15 +187,26 @@ const DocumentsListPage = () => {
         {/* Actions */}
         <div className={cn("mt-3 flex items-center gap-2 pt-3 border-t border-[hsl(0,0%,18%)]", isRTL && "flex-row-reverse")}>
           {isDevis && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
-              onClick={() => handleConvertToInvoice(doc)}
-            >
-              <ArrowRightLeft className="h-3 w-3" />
-              {isRTL ? 'حوّل لفاتورة' : 'Convertir'}
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
+                onClick={() => handleConvertToInvoice(doc)}
+              >
+                <ArrowRightLeft className="h-3 w-3" />
+                {isRTL ? 'حوّل لفاتورة' : 'Convertir'}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 gap-1"
+                onClick={() => handleDuplicateDevis(doc)}
+              >
+                <Copy className="h-3 w-3" />
+                {isRTL ? 'نسخ' : 'Dupliquer'}
+              </Button>
+            </>
           )}
           <div className="flex-1" />
           <Button

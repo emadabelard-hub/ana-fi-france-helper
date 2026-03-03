@@ -29,7 +29,13 @@ import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapp
 interface PrefillData {
   clientName?: string;
   clientAddress?: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  clientSiren?: string;
+  clientTvaIntra?: string;
+  clientIsB2B?: boolean;
   workSiteAddress?: string;
+  natureOperation?: string;
   items: Array<{
     designation_fr: string;
     designation_ar?: string;
@@ -280,9 +286,27 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       if (prefillData.clientAddress) {
         setClientAddress(prefillData.clientAddress);
       }
+      if (prefillData.clientPhone) {
+        setClientPhone(prefillData.clientPhone);
+      }
+      if (prefillData.clientEmail) {
+        setClientEmail(prefillData.clientEmail);
+      }
+      if (prefillData.clientSiren) {
+        setClientSiren(prefillData.clientSiren);
+      }
+      if (prefillData.clientTvaIntra) {
+        setClientTvaIntra(prefillData.clientTvaIntra);
+      }
+      if (prefillData.clientIsB2B) {
+        setClientIsB2B(prefillData.clientIsB2B);
+      }
       if (prefillData.workSiteAddress) {
         setWorkSiteAddress(prefillData.workSiteAddress);
         setWorkSiteSameAsClient(false);
+      }
+      if (prefillData.natureOperation) {
+        setNatureOperation(prefillData.natureOperation as 'service' | 'goods' | 'mixed');
       }
       
       // Set items
@@ -304,7 +328,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       }
       
       toast({
-        title: isRTL ? '✅ تم ملء البيانات!' : '✅ Données pré-remplies!',
+        title: isRTL 
+          ? (prefillData.source === 'devis_conversion' ? '✅ تم نقل بيانات الدوفي!' : '✅ تم ملء البيانات!')
+          : (prefillData.source === 'devis_conversion' ? '✅ Devis converti en facture!' : '✅ Données pré-remplies!'),
         description: isRTL 
           ? 'راجع البيانات واضغط على معاينة' 
           : 'Vérifiez les données et cliquez sur Aperçu',

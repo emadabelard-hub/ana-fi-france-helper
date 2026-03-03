@@ -290,7 +290,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
                     }}
                   >
                     <span 
-                      className={`font-bold leading-tight block whitespace-pre-wrap text-left ${isSection ? 'text-primary' : 'text-gray-800'}`}
+                      className={`font-bold leading-tight block whitespace-pre-wrap text-left ${isSection ? 'text-black font-extrabold' : 'text-gray-800'}`}
                     >
                       {item.designation_fr.includes('\n') 
                         ? (

@@ -1194,7 +1194,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             {!clientIsB2B && (
               <div className="space-y-2">
                 <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
-                  {isRTL ? 'رقم السجل التجاري (SIREN) للزبون' : 'SIREN du client'}
+                  {isRTL ? 'رقم السجل التجاري (SIREN) للزبون (اختياري)' : 'SIREN du client (optionnel)'}
                 </Label>
                 <Input
                   value={clientSiren}

@@ -180,7 +180,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       onContextMenu={(e) => e.preventDefault()}
     >
       {/* Header */}
-      <div className="border-b-2 border-primary pb-2 mb-2">
+      <div className="border-b-2 border-black pb-2 mb-2">
         <div className="flex justify-between items-start">
           <div>
             {data.logoUrl && (

@@ -161,34 +161,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const lastTranslatedSourceRef = useRef<Record<string, string | undefined>>({});
   const itemsRef = useRef(items);
 
-  // Auto-increment document number from existing documents
+  // No auto-increment: just set the prefix, user fills in the rest
   useEffect(() => {
-    if (!user) return;
     const prefix = getDocPrefix(documentType);
-    const year = new Date().getFullYear();
-    const typeFilter = documentType;
-    
-    (supabase.from('documents_comptables') as any)
-      .select('document_number')
-      .eq('user_id', user.id)
-      .eq('document_type', typeFilter)
-      .like('document_number', `${prefix}%`)
-      .then(({ data }: { data: any[] | null }) => {
-        let maxCounter = 0;
-        if (data) {
-          data.forEach((doc: any) => {
-            const num = doc.document_number?.replace(prefix, '');
-            const parsed = parseInt(num, 10);
-            if (!isNaN(parsed) && parsed > maxCounter) {
-              maxCounter = parsed;
-            }
-          });
-        }
-        const nextCounter = String(maxCounter + 1);
-        const nextNumber = `${prefix}${nextCounter}`;
-        setDocNumber(nextNumber);
-      });
-  }, [user, documentType]);
+    // Only reset if docNumber doesn't already start with the correct prefix
+    if (!docNumber.startsWith(prefix)) {
+      setDocNumber(prefix);
+    }
+  }, [documentType]);
 
   // Signed URLs for company assets (logo, signature, stamp)
   const [signedUrls, setSignedUrls] = useState<{

@@ -48,7 +48,7 @@ interface ChatMsg {
 }
 
 type InputType = 'photo' | 'blueprint' | 'document' | null;
-type Step = 'select_input' | 'upload' | 'chat' | 'review';
+type Step = 'select_input' | 'photo_guide' | 'upload' | 'chat' | 'review';
 
 const MAX_FILES = 10;
 

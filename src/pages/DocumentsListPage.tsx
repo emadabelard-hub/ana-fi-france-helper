@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,26 +41,32 @@ const DocumentsListPage = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const filteredDocuments = useMemo(() => {
-    if (periodFilter === 'all') return documents;
-    const now = new Date();
-    let startDate: Date;
-    switch (periodFilter) {
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        break;
-      case 'quarter':
-        startDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
-        break;
-      case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1);
-        break;
-      default:
-        return documents;
+    let result = documents;
+    // Period filter
+    if (periodFilter !== 'all') {
+      const now = new Date();
+      let startDate: Date;
+      switch (periodFilter) {
+        case 'month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); break;
+        case 'quarter': startDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1); break;
+        case 'year': startDate = new Date(now.getFullYear(), 0, 1); break;
+        default: startDate = new Date(0);
+      }
+      result = result.filter(d => new Date(d.created_at) >= startDate);
     }
-    return documents.filter(d => new Date(d.created_at) >= startDate);
-  }, [documents, periodFilter]);
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(d =>
+        (d.client_name || '').toLowerCase().includes(q) ||
+        (d.document_number || '').toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [documents, periodFilter, searchQuery]);
 
   const fetchDocuments = async () => {
     if (!user) { setLoading(false); return; }
@@ -345,6 +352,17 @@ const DocumentsListPage = () => {
           </Button>
         </div>
       </section>
+
+      {/* Search bar */}
+      <div className="relative mb-3 shrink-0">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder={isRTL ? 'بحث بالعميل أو رقم المستند...' : 'Rechercher par client ou n° document...'}
+          className={cn("pl-9 h-9 bg-[hsl(0,0%,10%)] border-[hsl(45,60%,35%)/0.2] text-sm placeholder:text-muted-foreground", isRTL && "pr-9 pl-3 text-right font-cairo")}
+        />
+      </div>
 
       {/* Tabs */}
       <div className="flex-1 overflow-y-auto pb-4">

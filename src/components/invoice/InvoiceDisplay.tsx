@@ -201,7 +201,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             )}
           </div>
           <div className="text-right">
-            <h2 className="text-lg font-bold text-primary">
+            <h2 className="text-lg font-bold text-black">
               <ArSub fr={data.type} />
             </h2>
             <p className="text-[10px] text-gray-600">N° {data.number}</p>

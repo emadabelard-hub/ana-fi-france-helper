@@ -997,8 +997,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
           <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
-              ? 'الرقم بيتحط تلقائي. تقدر تعدّله لو عايز.'
-              : "Le numéro est généré automatiquement (compteur indépendant par type). Vous pouvez le modifier."}
+              ? 'اكتب رقمك بعد البريفيكس. مثال: D-2026-001'
+              : "Saisissez votre numéro après le préfixe. Ex: D-2026-001"}
           </p>
           <Input
             value={docNumber}

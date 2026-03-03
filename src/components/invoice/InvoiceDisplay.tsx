@@ -62,24 +62,69 @@ interface InvoiceDisplayProps {
 
 // Arabic translation dictionary for document terms (visual only, not in PDF)
 const AR_LABELS: Record<string, string> = {
+  // Table headers
   'Désignation': 'الوصف',
   'Qté/Unité': 'الكمية / الوحدة',
   'P.U (€)': 'سعر الوحدة',
   'Total (€)': 'الإجمالي',
+  // Totals
   'Total HT:': 'المجموع بدون ضريبة',
   'Total TTC:': 'المجموع شامل الضريبة',
+  // Document types
   'CLIENT': 'الزبون',
   'DEVIS': 'عرض سعر',
   'FACTURE': 'فاتورة',
+  // Nature of operation
   'Prestation de services': 'تقديم خدمات',
   'Livraison de biens': 'توريد بضائع',
   'Prestation de services et livraison de biens': 'خدمات وتوريد بضائع',
+  // Signature block
   'Conditions de règlement:': 'شروط الدفع:',
   'Le client': 'الزبون',
   'Le prestataire': 'مقدم الخدمة',
   'Bon pour accord': 'موافقة',
   'Date & Signature': 'التاريخ والتوقيع',
   'Signature & Cachet': 'التوقيع والختم',
+  // Units (unités)
+  'm²': 'متر مربع',
+  'ml': 'متر طولي',
+  'u': 'وحدة',
+  'h': 'ساعة',
+  'j': 'يوم',
+  'f': 'شامل',
+  'forfait': 'مبلغ إجمالي',
+  'lot': 'مجموعة',
+  'kg': 'كيلوغرام',
+  'l': 'لتر',
+  // BTP terms (بناء وأشغال عامة)
+  'Peinture': 'دهان',
+  'Plomberie': 'سباكة',
+  'Électricité': 'كهرباء',
+  'Maçonnerie': 'بناء',
+  'Carrelage': 'بلاط',
+  'Menuiserie': 'نجارة',
+  'Plâtrerie': 'محارة',
+  'Isolation': 'عزل',
+  'Démolition': 'هدم',
+  'Ravalement': 'ترميم واجهات',
+  'Étanchéité': 'عزل مائي',
+  'Toiture': 'أسقف',
+  'Terrassement': 'حفر وتسوية',
+  'Fourniture et pose': 'توريد وتركيب',
+  'Main d\'œuvre': 'مصنعية',
+  'Dépose': 'فك',
+  'Repose': 'إعادة تركيب',
+  'Finitions': 'تشطيبات',
+  'Sous-traitance': 'مقاولة باطن',
+  // Legal mentions (mentions légales)
+  'Acompte': 'عربون',
+  'Solde à la fin des travaux': 'الباقي عند إتمام الأشغال',
+  'Paiement à réception': 'الدفع عند الاستلام',
+  'Paiement à 30 jours': 'الدفع خلال 30 يوم',
+  'Assurance décennale': 'تأمين عشري',
+  'TVA non applicable, art. 293 B du CGI': 'معفى من الضريبة، مادة 293 ب',
+  'Garantie décennale': 'ضمان عشري',
+  'Retenue de garantie': 'ضمان محجوز',
 };
 
 const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {

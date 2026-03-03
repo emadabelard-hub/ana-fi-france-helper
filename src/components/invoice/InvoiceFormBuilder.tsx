@@ -997,8 +997,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
           <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
-              ? 'الرقم بيتحط تلقائي. تقدر تعدّله لو عايز.'
-              : "Le numéro est généré automatiquement (compteur indépendant par type). Vous pouvez le modifier."}
+              ? 'اكتب رقمك بعد البريفيكس. مثال: D-2026-001'
+              : "Saisissez votre numéro après le préfixe. Ex: D-2026-001"}
           </p>
           <Input
             value={docNumber}
@@ -1164,7 +1164,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-2 border-l-2 border-primary/20">
                 <div className="space-y-2">
                   <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
-                    {isRTL ? 'رقم SIRET الزبون' : 'SIRET du client'} *
+                    {isRTL ? 'رقم SIRET الزبون (إجباري)' : 'SIRET du client (obligatoire)'} *
                   </Label>
                   <Input
                     value={clientSiren}
@@ -1194,7 +1194,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             {!clientIsB2B && (
               <div className="space-y-2">
                 <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
-                  {isRTL ? 'رقم السجل التجاري (SIREN) للزبون' : 'SIREN du client'}
+                  {isRTL ? 'رقم السجل التجاري (SIREN) للزبون (اختياري)' : 'SIREN du client (optionnel)'}
                 </Label>
                 <Input
                   value={clientSiren}
@@ -1237,11 +1237,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </Card>
 
       {/* Assurance Décennale (BTP) */}
-      <Card className="border-blue-500/20 bg-blue-500/5">
+      <Card className="border-gray-500/20 bg-gray-500/5">
         <CardContent className="p-4 space-y-4">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-            <HardHat className="h-5 w-5 text-blue-600" />
-            <h3 className={cn("font-bold text-blue-700 dark:text-blue-400", isRTL && "font-cairo")}>
+            <HardHat className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+            <h3 className={cn("font-bold text-gray-800 dark:text-gray-200", isRTL && "font-cairo")}>
               {isRTL ? '🛡️ التأمين العشري (Décennale)' : '🛡️ Assurance Décennale'}
             </h3>
           </div>
@@ -1718,7 +1718,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </Card>
 
           {/* TVA Settings - French Law Compliance */}
-          <Card className="border-blue-500/20 bg-blue-500/5">
+          <Card className="border-gray-500/20 bg-gray-500/5">
             <CardContent className="p-4 space-y-4">
               <div className={cn(
                 "flex items-center justify-between",
@@ -1730,7 +1730,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 )}>
                   <span className="text-xl">💶</span>
                   <h4 className={cn(
-                    "font-bold text-blue-700 dark:text-blue-400",
+                    "font-bold text-gray-800 dark:text-gray-200",
                     isRTL && "font-cairo"
                   )}>
                     {isRTL ? 'الـ TVA (الضريبة)' : 'TVA'}

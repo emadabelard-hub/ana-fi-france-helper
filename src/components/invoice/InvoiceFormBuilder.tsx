@@ -58,16 +58,16 @@ interface InvoiceFormBuilderProps {
 // Generate unique ID
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-// Generate document number prefix (locked part)
+// Generate document number prefix (locked part) - always uses current calendar year
 const getDocPrefix = (type: 'devis' | 'facture') => {
   const prefix = type === 'devis' ? 'D' : 'F';
   const year = new Date().getFullYear();
   return `${prefix}-${year}-`;
 };
 
-// Generate document number with placeholder counter
+// Generate document number with empty suffix (user fills in their own number)
 const generateDocNumber = (type: 'devis' | 'facture') => {
-  return `${getDocPrefix(type)}001`;
+  return `${getDocPrefix(type)}`;
 };
 
 const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeChange }: InvoiceFormBuilderProps) => {
@@ -184,7 +184,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             }
           });
         }
-        const nextCounter = String(maxCounter + 1).padStart(3, '0');
+        const nextCounter = String(maxCounter + 1);
         const nextNumber = `${prefix}${nextCounter}`;
         setDocNumber(nextNumber);
       });

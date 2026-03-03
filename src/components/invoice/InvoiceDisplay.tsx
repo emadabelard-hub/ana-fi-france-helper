@@ -264,11 +264,11 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       <div className="mb-3">
         <table className="w-full border-collapse text-[10px]" style={{ tableLayout: 'fixed' }}>
           <thead>
-            <tr className="bg-primary text-primary-foreground text-[9px]">
-              <th className="py-1.5 px-1.5 text-left border border-primary/30" style={{ width: '40%', verticalAlign: 'middle' }}><ArSub fr="Désignation" /></th>
-              <th className="py-1.5 px-1 text-center border border-primary/30" style={{ width: '15%', verticalAlign: 'middle' }}><ArSub fr="Qté/Unité" /></th>
-              <th className="py-1.5 px-1.5 text-left border border-primary/30" style={{ width: '20%', verticalAlign: 'middle' }}><ArSub fr="P.U (€)" /></th>
-              <th className="py-1.5 px-1.5 text-left border border-primary/30" style={{ width: '25%', verticalAlign: 'middle' }}><ArSub fr="Total (€)" /></th>
+            <tr className="text-[9px]" style={{ backgroundColor: '#1a1a1a', color: '#ffffff' }}>
+              <th className="py-1.5 px-1.5 text-left border border-gray-700" style={{ width: '40%', verticalAlign: 'middle' }}><ArSub fr="Désignation" /></th>
+              <th className="py-1.5 px-1 text-center border border-gray-700" style={{ width: '15%', verticalAlign: 'middle' }}><ArSub fr="Qté/Unité" /></th>
+              <th className="py-1.5 px-1.5 text-left border border-gray-700" style={{ width: '20%', verticalAlign: 'middle' }}><ArSub fr="P.U (€)" /></th>
+              <th className="py-1.5 px-1.5 text-left border border-gray-700" style={{ width: '25%', verticalAlign: 'middle' }}><ArSub fr="Total (€)" /></th>
             </tr>
           </thead>
           <tbody>

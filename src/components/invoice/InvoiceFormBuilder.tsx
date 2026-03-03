@@ -1977,7 +1977,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               
               // Check emitter SIRET (mandatory for legal invoices)
               if (!profile?.siret || profile.siret.replace(/\s/g, '').length !== 14) {
-                missingFields.push(isRTL ? '🏢 رقم SIRET بتاعك (14 رقم) - روح للإعدادات' : '🏢 Votre SIRET (14 chiffres) — allez dans Mon Entreprise');
+                missingFields.push('__SIRET_ERROR__');
               }
 
               // Check client name

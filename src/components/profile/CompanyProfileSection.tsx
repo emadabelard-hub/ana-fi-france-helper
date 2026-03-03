@@ -25,6 +25,7 @@ interface CompanyFormData {
   company_address: string;
   email: string;
   legal_status: 'auto-entrepreneur' | 'societe';
+  tva_exempt: boolean;
   header_type: 'automatic' | 'full_image';
   logo_url: string;
   header_image_url: string;

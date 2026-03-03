@@ -358,8 +358,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       
       toast({
         title: isRTL 
-          ? (prefillData.source === 'devis_conversion' ? '✅ تم نقل بيانات الدوفي!' : '✅ تم ملء البيانات!')
-          : (prefillData.source === 'devis_conversion' ? '✅ Devis converti en facture!' : '✅ Données pré-remplies!'),
+          ? (prefillData.source === 'devis_conversion' ? '✅ تم نقل بيانات الدوفي!' : prefillData.source === 'devis_duplication' ? '✅ تم نسخ الدوفي!' : '✅ تم ملء البيانات!')
+          : (prefillData.source === 'devis_conversion' ? '✅ Devis converti en facture!' : prefillData.source === 'devis_duplication' ? '✅ Devis dupliqué!' : '✅ Données pré-remplies!'),
         description: isRTL 
           ? 'راجع البيانات واضغط على معاينة' 
           : 'Vérifiez les données et cliquez sur Aperçu',

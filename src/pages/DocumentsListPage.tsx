@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -93,6 +93,35 @@ const DocumentsListPage = () => {
     navigate('/pro/invoice-creator?type=facture&prefill=quote');
   };
 
+  const handleDuplicateDevis = (doc: DocumentRow) => {
+    const docData = doc.document_data || {};
+    const items = docData.items || [];
+    
+    const prefill = {
+      clientName: doc.client_name || docData.client?.name || '',
+      clientAddress: doc.client_address || docData.client?.address || '',
+      clientPhone: docData.client?.phone || '',
+      clientEmail: docData.client?.email || '',
+      clientSiren: docData.client?.siren || '',
+      clientTvaIntra: docData.client?.tvaIntra || '',
+      clientIsB2B: docData.client?.isB2B || false,
+      workSiteAddress: doc.work_site_address || docData.workSite?.address || '',
+      natureOperation: doc.nature_operation || docData.natureOperation || '',
+      items: items.map((item: any) => ({
+        designation_fr: item.designation_fr || '',
+        designation_ar: item.designation_ar || '',
+        quantity: item.quantity || 1,
+        unit: item.unit || 'm²',
+        unitPrice: item.unitPrice || 0,
+      })),
+      notes: docData.legalMentions || '',
+      source: 'devis_duplication',
+    };
+    
+    sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
+    navigate('/pro/invoice-creator?type=devis&prefill=quote');
+  };
+
   const devis = documents.filter(d => d.document_type === 'devis');
   const factures = documents.filter(d => d.document_type === 'facture');
 
@@ -158,15 +187,26 @@ const DocumentsListPage = () => {
         {/* Actions */}
         <div className={cn("mt-3 flex items-center gap-2 pt-3 border-t border-[hsl(0,0%,18%)]", isRTL && "flex-row-reverse")}>
           {isDevis && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
-              onClick={() => handleConvertToInvoice(doc)}
-            >
-              <ArrowRightLeft className="h-3 w-3" />
-              {isRTL ? 'حوّل لفاتورة' : 'Convertir'}
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
+                onClick={() => handleConvertToInvoice(doc)}
+              >
+                <ArrowRightLeft className="h-3 w-3" />
+                {isRTL ? 'حوّل لفاتورة' : 'Convertir'}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 gap-1"
+                onClick={() => handleDuplicateDevis(doc)}
+              >
+                <Copy className="h-3 w-3" />
+                {isRTL ? 'نسخ' : 'Dupliquer'}
+              </Button>
+            </>
           )}
           <div className="flex-1" />
           <Button

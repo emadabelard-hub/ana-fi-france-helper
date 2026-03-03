@@ -144,8 +144,8 @@ const DocumentsListPage = () => {
     navigate('/pro/invoice-creator?type=devis&prefill=quote');
   };
 
-  const devis = documents.filter(d => d.document_type === 'devis');
-  const factures = documents.filter(d => d.document_type === 'facture');
+  const devis = filteredDocuments.filter(d => d.document_type === 'devis');
+  const factures = filteredDocuments.filter(d => d.document_type === 'facture');
 
   const handleExportCSV = () => {
     if (documents.length === 0) return;

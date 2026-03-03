@@ -41,6 +41,7 @@ const DocumentsListPage = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const filteredDocuments = useMemo(() => {
     if (periodFilter === 'all') return documents;

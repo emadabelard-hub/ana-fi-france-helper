@@ -75,7 +75,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Form state
   const [clientName, setClientName] = useState('');
   const [clientAddress, setClientAddress] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
   const [clientSiren, setClientSiren] = useState('');
+  const [clientTvaIntra, setClientTvaIntra] = useState('');
+  const [clientIsB2B, setClientIsB2B] = useState(false);
   const [workSiteSameAsClient, setWorkSiteSameAsClient] = useState(true);
   const [workSiteAddress, setWorkSiteAddress] = useState('');
   
@@ -203,8 +207,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         setMoyenPaiement(draft.moyenPaiement || 'virement');
         if (draft.docNumber) setDocNumber(draft.docNumber);
         if (draft.items?.length) setItems(draft.items);
-        // Restore new legal fields
+        // Restore new fields
         if (draft.clientSiren) setClientSiren(draft.clientSiren);
+        if ((draft as any).clientPhone) setClientPhone((draft as any).clientPhone);
+        if ((draft as any).clientEmail) setClientEmail((draft as any).clientEmail);
+        if ((draft as any).clientTvaIntra) setClientTvaIntra((draft as any).clientTvaIntra);
+        if ((draft as any).clientIsB2B) setClientIsB2B((draft as any).clientIsB2B);
         if (draft.natureOperation) setNatureOperation(draft.natureOperation);
         if (draft.assureurName) setAssureurName(draft.assureurName);
         if (draft.assureurAddress) setAssureurAddress(draft.assureurAddress);
@@ -229,7 +237,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         documentType,
         clientName,
         clientAddress,
+        clientPhone,
+        clientEmail,
         clientSiren,
+        clientTvaIntra,
+        clientIsB2B,
         workSiteSameAsClient,
         workSiteAddress,
         includeTravelCosts,
@@ -251,7 +263,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       });
     }, 1000);
     return () => clearTimeout(timer);
-  }, [draftRestored, documentType, clientName, clientAddress, clientSiren, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acomptePercent, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage]);
+  }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acomptePercent, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage]);
 
   // Handle prefill data from quote-to-invoice conversion
   useEffect(() => {
@@ -359,6 +371,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       validUntil: documentType === 'devis' 
         ? new Date(Date.now() + validityDuration * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
         : undefined,
+      dueDate: documentType === 'facture'
+        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
+        : undefined,
       emitter: {
         name: profile?.company_name || 'Votre Entreprise',
         siret: profile?.siret || '',
@@ -366,11 +381,17 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         phone: profile?.phone || '',
         email: profile?.email || '',
         legalStatus: profile?.legal_status || undefined,
+        iban: (profile as any)?.iban || undefined,
+        bic: (profile as any)?.bic || undefined,
       },
       client: {
         name: clientName || 'Client',
         address: clientAddress || '',
         siren: clientSiren || undefined,
+        phone: clientPhone || undefined,
+        email: clientEmail || undefined,
+        tvaIntra: clientTvaIntra || undefined,
+        isB2B: clientIsB2B,
       },
       workSite: {
         sameAsClient: workSiteSameAsClient,
@@ -999,25 +1020,96 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 className={cn(isRTL && "text-right font-cairo")}
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label className={cn(isRTL && "font-cairo text-right block")}>
-                {isRTL ? 'رقم السجل التجاري (SIREN) للزبون' : 'SIREN du client'}
-              </Label>
-              <Input
-                value={clientSiren}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 9);
-                  setClientSiren(val);
-                }}
-                placeholder={isRTL ? '9 أرقام (اختياري)' : '9 chiffres (optionnel)'}
-                className={cn("font-mono", isRTL && "text-right")}
-                maxLength={9}
-              />
-              <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
-                {isRTL ? '💡 مطلوب للفاتورة الإلكترونية (Factur-X) 2026' : '💡 Requis pour la facturation électronique 2026'}
-              </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
+                  {isRTL ? 'تليفون الزبون' : 'Téléphone'}
+                </Label>
+                <Input
+                  value={clientPhone}
+                  onChange={(e) => setClientPhone(e.target.value)}
+                  placeholder="06 12 34 56 78"
+                  className={cn("text-sm", isRTL && "text-right font-cairo")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
+                  {isRTL ? 'إيميل الزبون' : 'Email'}
+                </Label>
+                <Input
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  placeholder="client@email.com"
+                  type="email"
+                  className={cn("text-sm", isRTL && "text-right font-cairo")}
+                />
+              </div>
             </div>
+
+            {/* B2B Toggle */}
+            <div className={cn("flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30", isRTL && "flex-row-reverse")}>
+              <Checkbox
+                id="b2b-toggle"
+                checked={clientIsB2B}
+                onCheckedChange={(checked) => setClientIsB2B(checked === true)}
+              />
+              <Label htmlFor="b2b-toggle" className={cn("text-sm cursor-pointer", isRTL && "font-cairo")}>
+                {isRTL ? '🏢 الزبون ده شركة (B2B)' : '🏢 Client professionnel (B2B)'}
+              </Label>
+            </div>
+            
+            {clientIsB2B && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-2 border-l-2 border-primary/20">
+                <div className="space-y-2">
+                  <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
+                    {isRTL ? 'رقم SIRET الزبون' : 'SIRET du client'} *
+                  </Label>
+                  <Input
+                    value={clientSiren}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 14);
+                      setClientSiren(val);
+                    }}
+                    placeholder={isRTL ? '14 رقم (إجباري B2B)' : '14 chiffres (obligatoire B2B)'}
+                    className={cn("font-mono text-sm", isRTL && "text-right")}
+                    maxLength={14}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
+                    {isRTL ? 'رقم TVA Intracommunautaire' : 'N° TVA Intracommunautaire'}
+                  </Label>
+                  <Input
+                    value={clientTvaIntra}
+                    onChange={(e) => setClientTvaIntra(e.target.value)}
+                    placeholder="FR 12 345678901"
+                    className={cn("font-mono text-sm", isRTL && "text-right")}
+                  />
+                </div>
+              </div>
+            )}
+
+            {!clientIsB2B && (
+              <div className="space-y-2">
+                <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
+                  {isRTL ? 'رقم السجل التجاري (SIREN) للزبون' : 'SIREN du client'}
+                </Label>
+                <Input
+                  value={clientSiren}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 9);
+                    setClientSiren(val);
+                  }}
+                  placeholder={isRTL ? '9 أرقام (اختياري)' : '9 chiffres (optionnel)'}
+                  className={cn("font-mono text-sm", isRTL && "text-right")}
+                  maxLength={9}
+                />
+                <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
+                  {isRTL ? '💡 مطلوب للفاتورة الإلكترونية (Factur-X) 2026' : '💡 Requis pour la facturation électronique 2026'}
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1741,7 +1833,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               clearDraft();
               setClientName('');
               setClientAddress('');
+              setClientPhone('');
+              setClientEmail('');
               setClientSiren('');
+              setClientTvaIntra('');
+              setClientIsB2B(false);
               setWorkSiteSameAsClient(true);
               setWorkSiteAddress('');
               setIncludeTravelCosts(false);
@@ -1787,6 +1883,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               // Comprehensive validation with detailed feedback
               const missingFields: string[] = [];
               
+              // Check emitter SIRET (mandatory for legal invoices)
+              if (!profile?.siret || profile.siret.replace(/\s/g, '').length !== 14) {
+                missingFields.push(isRTL ? '🏢 رقم SIRET بتاعك (14 رقم) - روح للإعدادات' : '🏢 Votre SIRET (14 chiffres) — allez dans Mon Entreprise');
+              }
+
               // Check client name
               if (!clientName.trim()) {
                 missingFields.push(isRTL ? '👤 اسم الزبون' : '👤 Nom du client');
@@ -1795,6 +1896,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               // Check client address
               if (!clientAddress.trim()) {
                 missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
+              }
+
+              // Check B2B client SIRET
+              if (clientIsB2B && (!clientSiren || clientSiren.replace(/\s/g, '').length < 9)) {
+                missingFields.push(isRTL ? '🏢 SIRET الزبون (إجباري B2B)' : '🏢 SIRET du client (obligatoire en B2B)');
               }
               
               // Check work site address if different from client

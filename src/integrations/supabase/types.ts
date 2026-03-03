@@ -169,6 +169,7 @@ export type Database = {
           assurance_policy_number: string | null
           assureur_address: string | null
           assureur_name: string | null
+          bic: string | null
           caf_number: string | null
           capital_social: string | null
           code_naf: string | null
@@ -182,6 +183,7 @@ export type Database = {
           full_name: string | null
           header_image_url: string | null
           header_type: string | null
+          iban: string | null
           id: string
           last_message_date: string | null
           legal_footer: string | null
@@ -203,6 +205,7 @@ export type Database = {
           assurance_policy_number?: string | null
           assureur_address?: string | null
           assureur_name?: string | null
+          bic?: string | null
           caf_number?: string | null
           capital_social?: string | null
           code_naf?: string | null
@@ -216,6 +219,7 @@ export type Database = {
           full_name?: string | null
           header_image_url?: string | null
           header_type?: string | null
+          iban?: string | null
           id?: string
           last_message_date?: string | null
           legal_footer?: string | null
@@ -237,6 +241,7 @@ export type Database = {
           assurance_policy_number?: string | null
           assureur_address?: string | null
           assureur_name?: string | null
+          bic?: string | null
           caf_number?: string | null
           capital_social?: string | null
           code_naf?: string | null
@@ -250,6 +255,7 @@ export type Database = {
           full_name?: string | null
           header_image_url?: string | null
           header_type?: string | null
+          iban?: string | null
           id?: string
           last_message_date?: string | null
           legal_footer?: string | null

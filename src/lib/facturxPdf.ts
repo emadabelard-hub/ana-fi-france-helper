@@ -51,8 +51,9 @@ export function buildFacturXDataFromInvoice(invoiceData: {
   number: string;
   type: string;
   date: string;
-  emitter: { name: string; siret: string; address: string };
-  client: { name: string; address: string; siret?: string };
+  dueDate?: string;
+  emitter: { name: string; siret: string; address: string; iban?: string; bic?: string };
+  client: { name: string; address: string; siret?: string; siren?: string; tvaIntra?: string };
   subtotal: number;
   tvaRate: number;
   tvaAmount: number;

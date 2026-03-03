@@ -12,6 +12,10 @@ export interface InvoiceDraft {
   clientName: string;
   clientAddress: string;
   clientSiren?: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  clientTvaIntra?: string;
+  clientIsB2B?: boolean;
   workSiteSameAsClient: boolean;
   workSiteAddress: string;
   includeTravelCosts: boolean;

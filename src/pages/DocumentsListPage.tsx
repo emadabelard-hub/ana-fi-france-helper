@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -124,6 +124,30 @@ const DocumentsListPage = () => {
 
   const devis = documents.filter(d => d.document_type === 'devis');
   const factures = documents.filter(d => d.document_type === 'facture');
+
+  const handleExportCSV = () => {
+    if (documents.length === 0) return;
+    const headers = ['Type', 'Numéro', 'Client', 'Date', 'HT (€)', 'TVA (€)', 'TTC (€)', 'Statut'];
+    const rows = documents.map(doc => [
+      doc.document_type === 'devis' ? 'Devis' : 'Facture',
+      doc.document_number,
+      `"${(doc.client_name || '').replace(/"/g, '""')}"`,
+      new Date(doc.created_at).toLocaleDateString('fr-FR'),
+      doc.subtotal_ht.toFixed(2),
+      doc.tva_amount.toFixed(2),
+      doc.total_ttc.toFixed(2),
+      doc.status === 'finalized' ? 'Finalisé' : 'Brouillon',
+    ]);
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `documents_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export réussi', description: isRTL ? 'تم تحميل ملف CSV' : 'Fichier CSV téléchargé' });
+  };
 
   if (!user) {
     return (
@@ -264,14 +288,27 @@ const DocumentsListPage = () => {
             </p>
           </div>
         </div>
-        <Button
-          size="sm"
-          className="bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold gap-1.5 shrink-0"
-          onClick={() => navigate('/pro/invoice-creator')}
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">{isRTL ? 'جديد' : 'Nouveau'}</span>
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {documents.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-[hsl(45,60%,35%)/0.3] text-[hsl(45,80%,55%)] hover:bg-[hsl(45,80%,55%)/0.1] font-bold gap-1.5"
+              onClick={handleExportCSV}
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">CSV</span>
+            </Button>
+          )}
+          <Button
+            size="sm"
+            className="bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold gap-1.5"
+            onClick={() => navigate('/pro/invoice-creator')}
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">{isRTL ? 'جديد' : 'Nouveau'}</span>
+          </Button>
+        </div>
       </section>
 
       {/* Tabs */}

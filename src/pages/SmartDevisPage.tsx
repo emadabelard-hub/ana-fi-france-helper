@@ -920,7 +920,7 @@ const SmartDevisPage = () => {
           </div>
 
           {/* Grand Total */}
-          <Card className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white">
+          <Card className="bg-[#1a1a1a] text-white border border-[#c5a028]/40">
             <CardContent className={cn("flex items-center justify-between p-4", isRTL && "flex-row-reverse")}>
               <span className={cn("font-bold text-lg", isRTL && "font-cairo")}>
                 {isRTL ? 'المجموع الكلي HT' : 'Total HT'}

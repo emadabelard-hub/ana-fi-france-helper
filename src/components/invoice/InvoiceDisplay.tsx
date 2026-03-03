@@ -89,7 +89,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
     <>
       <span className={className}>{fr}</span>
       {showArabic && AR_LABELS[fr] && (
-        <span className="block text-[7px] text-gray-400 font-normal leading-tight print:hidden" dir="rtl" style={{ fontFamily: 'IBM Plex Sans Arabic, Cairo, sans-serif' }}>
+        <span className="block text-[9px] text-muted-foreground/90 font-normal leading-tight print:hidden" dir="rtl" style={{ fontFamily: 'IBM Plex Sans Arabic, Cairo, sans-serif' }}>
           {AR_LABELS[fr]}
         </span>
       )}
@@ -240,7 +240,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
                         : item.designation_fr}
                     </span>
                     {showArabic && item.designation_ar && (
-                      <span className="block text-[8px] text-gray-400 font-normal mt-0.5 leading-snug print:hidden" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                      <span className="block text-[9px] text-muted-foreground/90 font-normal mt-0.5 leading-snug print:hidden" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
                         {item.designation_ar}
                       </span>
                     )}

@@ -168,6 +168,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
   };
 
   return (
+    <>
     <div 
       dir="ltr"
       lang="fr"

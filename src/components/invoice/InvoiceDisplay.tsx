@@ -330,8 +330,12 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
           </div>
           
           {data.tvaExempt ? (
-            <div className="py-1 border-b border-gray-200">
-              <p className="text-[9px] text-gray-500 italic leading-tight">TVA non applicable, art. 293 B du CGI</p>
+            <div className="py-1 border-b border-gray-200 space-y-0.5">
+              <div className="flex justify-between">
+                <span className="text-gray-600 text-[10px]">TVA (0%):</span>
+                <span className="font-medium text-[10px]">{formatCurrency(0)}</span>
+              </div>
+              <p className="text-[8px] text-gray-500 italic leading-tight">TVA non applicable, art. 293 B du CGI</p>
             </div>
           ) : (
             <div className="flex justify-between py-1 border-b border-gray-200">

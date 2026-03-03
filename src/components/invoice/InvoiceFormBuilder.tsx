@@ -213,6 +213,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (p.assureur_address && !assureurAddress) setAssureurAddress(p.assureur_address);
     if (p.assurance_policy_number && !policyNumber) setPolicyNumber(p.assurance_policy_number);
     if (p.assurance_geographic_coverage && !geographicCoverage) setGeographicCoverage(p.assurance_geographic_coverage);
+    // Auto-set TVA exemption from profile
+    if (p.tva_exempt) setIsAutoEntrepreneur(true);
   }, [profile?.logo_url, profile?.artisan_signature_url, profile?.stamp_url, profile?.header_image_url]);
 
   useEffect(() => {

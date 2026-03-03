@@ -180,13 +180,13 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       onContextMenu={(e) => e.preventDefault()}
     >
       {/* Header */}
-      <div className="border-b-2 border-primary pb-2 mb-2">
+      <div className="border-b-2 border-black pb-2 mb-2">
         <div className="flex justify-between items-start">
           <div>
             {data.logoUrl && (
               <img src={data.logoUrl} alt="Logo" className="mb-1 object-contain" style={{ maxHeight: '60px', maxWidth: '120px' }} />
             )}
-            <h1 className="text-base font-bold text-primary leading-tight">
+            <h1 className="text-base font-bold text-black leading-tight">
               {data.emitter.name}
               {(data.emitter.legalStatus === 'auto-entrepreneur' || data.emitter.legalStatus === 'ei') && (
                 <span className="text-[9px] font-semibold text-gray-500 ml-1">EI</span>
@@ -201,7 +201,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             )}
           </div>
           <div className="text-right">
-            <h2 className="text-lg font-bold text-primary">
+            <h2 className="text-lg font-bold text-black">
               <ArSub fr={data.type} />
             </h2>
             <p className="text-[10px] text-gray-600">N° {data.number}</p>
@@ -290,7 +290,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
                     }}
                   >
                     <span 
-                      className={`font-bold leading-tight block whitespace-pre-wrap text-left ${isSection ? 'text-primary' : 'text-gray-800'}`}
+                      className={`font-bold leading-tight block whitespace-pre-wrap text-left ${isSection ? 'text-black font-extrabold' : 'text-gray-800'}`}
                     >
                       {item.designation_fr.includes('\n') 
                         ? (
@@ -344,7 +344,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             </div>
           )}
           
-          <div className="flex justify-between py-1.5 bg-primary text-primary-foreground px-2.5 rounded-b-lg">
+          <div className="flex justify-between py-1.5 px-2.5 rounded-b-lg" style={{ backgroundColor: '#1a1a1a', color: '#ffffff' }}>
             <span className="font-bold text-[11px]"><ArSub fr="Total TTC:" /></span>
             <span className="font-bold text-[13px]">{formatCurrency(data.total)}</span>
           </div>
@@ -353,8 +353,8 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
 
       {/* Assurance Décennale (BTP) */}
       {data.assuranceDecennale && data.assuranceDecennale.assureurName && (
-        <div className="border border-blue-200 bg-blue-50 rounded p-2 mb-3 text-[9px] text-gray-700 space-y-0.5">
-          <p className="font-bold text-blue-800 text-[10px] mb-1">🛡️ Assurance de responsabilité décennale</p>
+        <div className="border border-gray-300 bg-gray-50 rounded p-2 mb-3 text-[9px] text-gray-700 space-y-0.5">
+          <p className="font-bold text-black text-[10px] mb-1">🛡️ Assurance de responsabilité décennale</p>
           <p>Assurance de responsabilité décennale obligatoire souscrite auprès de :</p>
           <p className="font-semibold">{data.assuranceDecennale.assureurName}</p>
           {data.assuranceDecennale.assureurAddress && (

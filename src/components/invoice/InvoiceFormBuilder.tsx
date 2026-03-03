@@ -10,7 +10,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw } from 'lucide-react';
 import InvoiceDisplay, { InvoiceData } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
@@ -1722,7 +1722,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </div>
       ) : (
         <div className={cn(
-          "flex gap-3",
+          "flex gap-3 flex-wrap",
           isRTL && "flex-row-reverse"
         )}>
           <Button
@@ -1731,6 +1731,52 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             className={cn(isRTL && "font-cairo")}
           >
             {isRTL ? 'رجوع' : 'Retour'}
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              if (!confirm(isRTL ? 'هل أنت متأكد؟ سيتم حذف جميع البيانات المدخلة.' : 'Réinitialiser le formulaire ? Toutes les données saisies seront perdues.')) return;
+              clearDraft();
+              setClientName('');
+              setClientAddress('');
+              setClientSiren('');
+              setWorkSiteSameAsClient(true);
+              setWorkSiteAddress('');
+              setIncludeTravelCosts(false);
+              setTravelDescription('');
+              setTravelPrice(30);
+              setIsAutoEntrepreneur(false);
+              setSelectedTvaRate(10);
+              setValidityDuration(30);
+              setAcomptePercent(30);
+              setDelaiPaiement('reception');
+              setMoyenPaiement('virement');
+              setDocNumber(generateDocNumber(documentType));
+              setNatureOperation('service');
+              setAssureurName('');
+              setAssureurAddress('');
+              setPolicyNumber('');
+              setGeographicCoverage('France métropolitaine');
+              setItems([{
+                id: generateId(),
+                designation_fr: '',
+                designation_ar: '',
+                quantity: '' as unknown as number,
+                unit: 'm²',
+                unitPrice: '' as unknown as number,
+                total: 0,
+              }]);
+              setShowPreview(false);
+              toast({
+                title: isRTL ? '🗑️ تم إعادة التعيين' : '🗑️ Formulaire réinitialisé',
+              });
+            }}
+            className={cn("text-destructive hover:text-destructive", isRTL && "font-cairo")}
+          >
+            <RotateCcw className="h-4 w-4 mr-1" />
+            {isRTL ? 'مسح الكل' : 'Réinitialiser'}
           </Button>
           
           <Button

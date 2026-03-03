@@ -306,11 +306,24 @@ const DocumentsListPage = () => {
               {isRTL ? 'مستنداتي المحاسبية' : 'Mes Documents'}
             </h1>
             <p className={cn("text-xs text-[hsl(0,0%,50%)]", isRTL && "font-cairo")}>
-              {isRTL ? `${documents.length} مستند` : `${documents.length} document${documents.length > 1 ? 's' : ''}`}
+              {isRTL ? `${filteredDocuments.length} مستند` : `${filteredDocuments.length} document${filteredDocuments.length > 1 ? 's' : ''}`}
+              {periodFilter !== 'all' && ` (${periodFilter === 'month' ? (isRTL ? 'هذا الشهر' : 'ce mois') : periodFilter === 'quarter' ? (isRTL ? 'هذا الربع' : 'ce trimestre') : (isRTL ? 'هذه السنة' : 'cette année')})`}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+            <SelectTrigger className="h-8 w-[130px] border-[hsl(45,60%,35%)/0.3] bg-transparent text-[hsl(0,0%,60%)] text-xs">
+              <Filter className="h-3 w-3 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isRTL ? 'الكل' : 'Tout'}</SelectItem>
+              <SelectItem value="month">{isRTL ? 'هذا الشهر' : 'Ce mois'}</SelectItem>
+              <SelectItem value="quarter">{isRTL ? 'هذا الربع' : 'Ce trimestre'}</SelectItem>
+              <SelectItem value="year">{isRTL ? 'هذه السنة' : 'Cette année'}</SelectItem>
+            </SelectContent>
+          </Select>
           {documents.length > 0 && (
             <Button
               size="sm"

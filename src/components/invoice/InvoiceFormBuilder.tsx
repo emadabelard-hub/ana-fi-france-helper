@@ -122,13 +122,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Invoice preview state
   const [showPreview, setShowPreview] = useState(false);
-  const [showArabic, setShowArabic] = useState(language === 'ar');
+  const [showArabic, setShowArabic] = useState(false);
   const [editingItems, setEditingItems] = useState(false);
-
-  // Sync showArabic with global language toggle
-  useEffect(() => {
-    setShowArabic(language === 'ar');
-  }, [language]);
   
   // Editable document number
   const [docNumber, setDocNumber] = useState(() => generateDocNumber(documentType));

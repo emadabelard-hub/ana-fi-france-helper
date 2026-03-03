@@ -344,7 +344,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             </div>
           )}
           
-          <div className="flex justify-between py-1.5 bg-primary text-primary-foreground px-2.5 rounded-b-lg">
+          <div className="flex justify-between py-1.5 px-2.5 rounded-b-lg" style={{ backgroundColor: '#1a1a1a', color: '#ffffff' }}>
             <span className="font-bold text-[11px]"><ArSub fr="Total TTC:" /></span>
             <span className="font-bold text-[13px]">{formatCurrency(data.total)}</span>
           </div>

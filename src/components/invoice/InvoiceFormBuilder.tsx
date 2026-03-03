@@ -686,7 +686,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Update invoice data from SmartReviewModal
   const handleUpdateInvoice = (updatedData: InvoiceData) => {
-    // Update items from the invoice data
     const newItems: LineItem[] = updatedData.items.map(item => ({
       id: generateId(),
       designation_fr: item.designation_fr,
@@ -697,6 +696,42 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       total: item.total,
     }));
     setItems(newItems);
+  };
+
+  // Save finalized document to documents_comptables
+  const saveToDocumentsComptables = async () => {
+    if (!user) return;
+    const data = buildInvoiceData();
+    try {
+      const { error } = await (supabase.from('documents_comptables') as any).insert({
+        user_id: user.id,
+        document_type: documentType,
+        document_number: data.number,
+        client_name: data.client.name,
+        client_address: data.client.address,
+        work_site_address: data.workSite?.address || '',
+        nature_operation: data.natureOperation || '',
+        subtotal_ht: data.subtotal,
+        tva_rate: data.tvaRate,
+        tva_amount: data.tvaAmount,
+        total_ttc: data.total,
+        tva_exempt: data.tvaExempt,
+        document_data: data,
+        status: 'finalized',
+      });
+      if (error) throw error;
+      toast({
+        title: isRTL ? '✅ تم الحفظ' : '✅ Sauvegardé',
+        description: isRTL ? 'المستند محفوظ في مستنداتك' : 'Document enregistré dans vos documents.',
+      });
+    } catch (e) {
+      console.error('Save error:', e);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'تعذر حفظ المستند' : 'Impossible de sauvegarder le document.',
+      });
+    }
   };
 
   return (
@@ -1773,7 +1808,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         onConfirm={() => {
           setShowChecklist(false);
           setShowPreview(true);
-          clearDraft(); // Draft is no longer needed once preview is shown
+          clearDraft();
+          saveToDocumentsComptables();
         }}
         items={items}
       />

@@ -32,6 +32,69 @@ export type Database = {
         }
         Relationships: []
       }
+      documents_comptables: {
+        Row: {
+          client_address: string | null
+          client_name: string
+          created_at: string
+          document_data: Json
+          document_number: string
+          document_type: string
+          id: string
+          nature_operation: string | null
+          pdf_url: string | null
+          status: string
+          subtotal_ht: number
+          total_ttc: number
+          tva_amount: number
+          tva_exempt: boolean
+          tva_rate: number
+          updated_at: string
+          user_id: string
+          work_site_address: string | null
+        }
+        Insert: {
+          client_address?: string | null
+          client_name?: string
+          created_at?: string
+          document_data?: Json
+          document_number: string
+          document_type?: string
+          id?: string
+          nature_operation?: string | null
+          pdf_url?: string | null
+          status?: string
+          subtotal_ht?: number
+          total_ttc?: number
+          tva_amount?: number
+          tva_exempt?: boolean
+          tva_rate?: number
+          updated_at?: string
+          user_id: string
+          work_site_address?: string | null
+        }
+        Update: {
+          client_address?: string | null
+          client_name?: string
+          created_at?: string
+          document_data?: Json
+          document_number?: string
+          document_type?: string
+          id?: string
+          nature_operation?: string | null
+          pdf_url?: string | null
+          status?: string
+          subtotal_ht?: number
+          total_ttc?: number
+          tva_amount?: number
+          tva_exempt?: boolean
+          tva_rate?: number
+          updated_at?: string
+          user_id?: string
+          work_site_address?: string | null
+        }
+        Relationships: []
+      }
       invoice_drafts: {
         Row: {
           created_at: string

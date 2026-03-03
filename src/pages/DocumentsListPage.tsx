@@ -44,24 +44,29 @@ const DocumentsListPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredDocuments = useMemo(() => {
-    if (periodFilter === 'all') return documents;
-    const now = new Date();
-    let startDate: Date;
-    switch (periodFilter) {
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        break;
-      case 'quarter':
-        startDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
-        break;
-      case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1);
-        break;
-      default:
-        return documents;
+    let result = documents;
+    // Period filter
+    if (periodFilter !== 'all') {
+      const now = new Date();
+      let startDate: Date;
+      switch (periodFilter) {
+        case 'month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); break;
+        case 'quarter': startDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1); break;
+        case 'year': startDate = new Date(now.getFullYear(), 0, 1); break;
+        default: startDate = new Date(0);
+      }
+      result = result.filter(d => new Date(d.created_at) >= startDate);
     }
-    return documents.filter(d => new Date(d.created_at) >= startDate);
-  }, [documents, periodFilter]);
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(d =>
+        (d.client_name || '').toLowerCase().includes(q) ||
+        (d.document_number || '').toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [documents, periodFilter, searchQuery]);
 
   const fetchDocuments = async () => {
     if (!user) { setLoading(false); return; }

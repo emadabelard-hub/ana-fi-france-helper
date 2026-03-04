@@ -28,10 +28,10 @@ const WelcomeModal = () => {
             <span className="text-[#1a1a1a] font-black text-xl italic">AF</span>
           </div>
           <h2 className="text-lg font-black text-white leading-snug">
-            Bienvenue sur Ana Fi France
+            Ana Fi France Pro
           </h2>
           <p className="text-base font-bold font-cairo text-[#c5a028] mt-1">
-            أهلاً بك في أنا في فرنسا — مساعدك المهني الأول
+            أهلاً بك في أنا في فرنسا برو
           </p>
         </div>
 

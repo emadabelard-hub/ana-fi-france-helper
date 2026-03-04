@@ -47,7 +47,14 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate }: Document
   const Icon = tc.icon;
 
   return (
-    <div className="group relative rounded-xl border border-border bg-card p-4 hover:border-accent/40 transition-all duration-300 hover:shadow-[0_0_24px_hsl(var(--accent)/0.08)]">
+  const isOverdue = doc.type === 'facture' && doc.status === 'unpaid';
+
+    <div className={cn(
+      "group relative rounded-xl border bg-card p-4 transition-all duration-300 hover:shadow-[0_0_24px_hsl(var(--accent)/0.08)]",
+      isOverdue 
+        ? "border-red-500/50 hover:border-red-500/70 bg-red-500/[0.03]" 
+        : "border-border hover:border-accent/40"
+    )}>
       {/* Gold accent line */}
       <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-accent to-transparent opacity-40 group-hover:opacity-70 transition-opacity" />
 

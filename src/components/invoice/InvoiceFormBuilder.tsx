@@ -1873,6 +1873,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                     <option value="30jours">{isRTL ? '30 يوم (موصى به)' : '30 jours (recommandé)'}</option>
                     <option value="45jours">{isRTL ? '45 يوم' : '45 jours'}</option>
                     <option value="60jours">{isRTL ? '60 يوم' : '60 jours'}</option>
+                    <option value="echeancier">{isRTL ? 'حسب جدول الدفعات' : 'Selon échéancier'}</option>
                   </select>
                 </div>
 

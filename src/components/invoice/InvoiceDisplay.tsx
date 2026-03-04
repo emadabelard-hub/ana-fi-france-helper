@@ -552,7 +552,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           key={`annexe-${pageIdx}`}
           dir="ltr"
           lang="fr"
-          className="french-invoice bg-white text-black rounded-lg shadow-lg max-w-2xl mx-auto mt-6 print:shadow-none print:mt-0 select-none"
+          className="french-invoice invoice-annexe-page bg-white text-black rounded-lg shadow-lg max-w-2xl mx-auto mt-6 print:shadow-none print:mt-0 print:max-w-none print:rounded-none select-none"
           style={{
             padding: '1.5cm 1.5cm 2cm 1.5cm',
             boxSizing: 'border-box',

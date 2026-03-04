@@ -115,25 +115,30 @@ const Index = () => {
           </button>
         </div>
 
-        {/* BOTTOM SLIM SECTION */}
-        <div className="flex flex-col gap-2 mt-3">
-          {/* شبيك لبيك — Compact bar */}
+        {/* BOTTOM SECTION */}
+        <div className="flex flex-col gap-2.5 mt-4">
+          {/* شبيك لبيك — Elegant card */}
           <button
             onClick={() => handleNavigate('/ai-assistant', 'فتح شبيك لبيك')}
-            className="w-full bg-card/70 px-4 py-2.5 rounded-2xl flex items-center gap-2.5 active:scale-[0.98] transition-all duration-200 border border-border"
+            className="w-full bg-card px-5 py-4 rounded-3xl flex items-center gap-3.5 active:scale-[0.98] transition-all duration-200 border border-[hsl(260,45%,55%)]/20 shadow-[0_4px_20px_-6px_hsl(260_45%_40%/0.25)]"
           >
-            <div className="bg-gradient-to-br from-[hsl(260,45%,55%)] to-[hsl(260,45%,40%)] p-1.5 rounded-lg shrink-0">
-              <Sparkles size={16} className="text-white" />
+            <div className="bg-gradient-to-br from-[hsl(260,55%,55%)] to-[hsl(270,50%,40%)] p-2.5 rounded-xl shrink-0 shadow-lg">
+              <Sparkles size={22} className="text-white" />
             </div>
-            <span className={cn("text-xs font-bold text-foreground flex-1", isRTL ? "text-right font-cairo" : "text-left")}>
-              {isRTL ? 'شبيك لبيك — المساعد الذكي' : 'Assistant IA — Shabik Labik'}
-            </span>
-            <svg className={cn("w-3.5 h-3.5 text-muted-foreground", isRTL && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
+              <span className={cn("text-sm font-bold text-foreground block", isRTL && "font-cairo")}>
+                {isRTL ? 'شبيك لبيك — المساعد الذكي' : 'Assistant IA — Shabik Labik'}
+              </span>
+              <span className={cn("text-xs text-muted-foreground", isRTL && "font-cairo")}>
+                {isRTL ? 'اسألني أي حاجة' : 'Posez-moi une question'}
+              </span>
+            </div>
+            <svg className={cn("w-4 h-4 text-muted-foreground", isRTL && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
 
-          {/* حاجات جديدة — Minimal */}
+          {/* حاجات جديدة */}
           <ComingSoonSection />
         </div>
       </main>

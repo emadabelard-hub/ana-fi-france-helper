@@ -444,7 +444,9 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       {/* Footer / Legal Mentions */}
       <div className="border-t border-gray-200 pt-1.5 text-[8px] text-gray-400 space-y-0.5 mt-2">
         <p><strong className="text-gray-500"><ArSub fr="Conditions de règlement:" /></strong> {data.paymentTerms}</p>
-        <p><strong className="text-gray-500"><ArSub fr="Paiement à réception" /></strong></p>
+        {data.paymentDeadline === 'immediate' && (
+          <p><strong className="text-gray-500">Paiement à réception</strong></p>
+        )}
         {data.legalMentions && <p>{data.legalMentions}</p>}
         <p className="text-gray-500 font-medium">Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard de paiement (Art. L.441-10 et D.441-5 du Code de commerce).</p>
       </div>

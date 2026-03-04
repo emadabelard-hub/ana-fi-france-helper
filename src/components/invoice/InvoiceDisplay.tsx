@@ -279,7 +279,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
       )}
 
-      {/* Items Table */}
+      {/* Items Table - thead repeats on each printed page */}
       <div className="mb-3">
         <table className="w-full border-collapse text-[10px]" style={{ tableLayout: 'fixed' }}>
           <thead>

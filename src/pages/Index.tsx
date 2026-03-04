@@ -70,23 +70,23 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="px-4 pt-4 pb-20 flex flex-col" style={{ minHeight: 'calc(100vh - 90px)' }}>
-        {/* DOMINANT CARDS — fill available space */}
-        <div className="flex flex-col gap-4 flex-1">
+      <main className="px-4 flex flex-col justify-between" style={{ height: 'calc(100vh - 90px)' }}>
+        {/* DOMINANT CARDS — 80% of space */}
+        <div className="flex flex-col gap-5 flex-1 py-4">
 
           {/* Hero: Devis & Factures */}
           <button
             onClick={() => handleNavigate('/pro', 'فتح أدوات Pro (دوفي/فاتورة)')}
-            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-200 border border-primary/25 shadow-[0_12px_40px_-12px_hsl(37_37%_60%/0.3)] flex-[1.4]"
+            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-200 border border-primary/25 shadow-[0_12px_40px_-12px_hsl(37_37%_60%/0.3)] flex-[1.5]"
           >
-            <div className="bg-gradient-to-br from-[hsl(37,50%,55%)] to-[hsl(30,45%,40%)] p-6 rounded-2xl shadow-xl">
-              <Briefcase size={52} className="text-white" />
+            <div className="p-7 rounded-2xl shadow-xl" style={{ background: 'linear-gradient(135deg, #FFD700, #E6B800)' }}>
+              <Briefcase size={56} className="text-white drop-shadow-md" />
             </div>
             <div className="text-center px-6">
               <h3 className={cn("text-2xl font-extrabold leading-snug text-foreground", isRTL && "font-cairo")}>
                 {isRTL ? 'فواتير ودوفيهات' : 'Devis & Factures'}
               </h3>
-              <p className={cn("text-[0.95rem] font-medium text-muted-foreground mt-2 leading-relaxed", isRTL && "font-cairo")}>
+              <p className={cn("text-[0.95rem] font-medium text-muted-foreground mt-2.5 leading-relaxed", isRTL && "font-cairo")}>
                 {isRTL
                   ? 'اعمل الفاكتير والدوفي بتوعك بسهولة أو حوّل الدوفي لفاتورة'
                   : 'Créez vos factures et devis facilement ou convertissez un devis en facture'}
@@ -97,16 +97,16 @@ const Index = () => {
           {/* Smart CV */}
           <button
             onClick={() => handleNavigate('/pro/cv-generator', 'فتح مُولد CV')}
-            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-200 border border-[hsl(210,60%,50%)]/20 shadow-[0_8px_30px_-10px_hsl(210_60%_40%/0.35)] flex-1"
+            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-200 border border-[hsl(195,100%,50%)]/20 shadow-[0_8px_30px_-10px_hsl(195_100%_40%/0.35)] flex-1"
           >
-            <div className="bg-gradient-to-br from-[hsl(210,65%,50%)] to-[hsl(220,60%,38%)] p-5 rounded-2xl shadow-xl">
-              <FileUser size={46} className="text-white" />
+            <div className="p-6 rounded-2xl shadow-xl" style={{ background: 'linear-gradient(135deg, #00BFFF, #0099CC)' }}>
+              <FileUser size={50} className="text-white drop-shadow-md" />
             </div>
             <div className="text-center px-6">
               <h3 className={cn("text-xl font-extrabold leading-snug text-foreground", isRTL && "font-cairo")}>
                 {isRTL ? 'Smart CV' : 'Smart CV'}
               </h3>
-              <p className={cn("text-sm font-medium text-muted-foreground mt-1.5", isRTL && "font-cairo")}>
+              <p className={cn("text-sm font-medium text-muted-foreground mt-2", isRTL && "font-cairo")}>
                 {isRTL
                   ? 'اعمل سي في بالعربي وأنا أطلعهولك بالفرنساوي'
                   : 'Créez votre CV en quelques minutes'}
@@ -115,25 +115,25 @@ const Index = () => {
           </button>
         </div>
 
-        {/* BOTTOM SECTION */}
-        <div className="flex flex-col gap-2.5 mt-4">
-          {/* شبيك لبيك — Elegant card */}
+        {/* BOTTOM SECTION — flush above nav */}
+        <div className="flex flex-col gap-2.5 pb-16">
+          {/* شبيك لبيك — Elegant large card */}
           <button
             onClick={() => handleNavigate('/ai-assistant', 'فتح شبيك لبيك')}
-            className="w-full bg-card px-5 py-4 rounded-3xl flex items-center gap-3.5 active:scale-[0.98] transition-all duration-200 border border-[hsl(260,45%,55%)]/20 shadow-[0_4px_20px_-6px_hsl(260_45%_40%/0.25)]"
+            className="w-full bg-card px-5 py-5 rounded-3xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[hsl(271,76%,53%)]/20 shadow-[0_6px_24px_-6px_hsl(271_76%_40%/0.3)]"
           >
-            <div className="bg-gradient-to-br from-[hsl(260,55%,55%)] to-[hsl(270,50%,40%)] p-2.5 rounded-xl shrink-0 shadow-lg">
-              <Sparkles size={22} className="text-white" />
+            <div className="p-3.5 rounded-2xl shrink-0 shadow-lg" style={{ background: 'linear-gradient(135deg, #8A2BE2, #6A1FB0)' }}>
+              <Sparkles size={28} className="text-white drop-shadow-md" />
             </div>
             <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
-              <span className={cn("text-sm font-bold text-foreground block", isRTL && "font-cairo")}>
+              <span className={cn("text-base font-bold text-foreground block", isRTL && "font-cairo")}>
                 {isRTL ? 'شبيك لبيك — المساعد الذكي' : 'Assistant IA — Shabik Labik'}
               </span>
-              <span className={cn("text-xs text-muted-foreground", isRTL && "font-cairo")}>
+              <span className={cn("text-sm text-muted-foreground mt-0.5 block", isRTL && "font-cairo")}>
                 {isRTL ? 'اسألني أي حاجة' : 'Posez-moi une question'}
               </span>
             </div>
-            <svg className={cn("w-4 h-4 text-muted-foreground", isRTL && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className={cn("w-5 h-5 text-muted-foreground", isRTL && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>

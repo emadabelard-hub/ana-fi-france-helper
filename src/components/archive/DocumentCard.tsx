@@ -32,7 +32,7 @@ const typeConfig = {
 
 const statusConfig = {
   paid: { label: 'Payé', labelAr: 'مدفوع', cls: 'bg-emerald-500/15 text-emerald-400' },
-  unpaid: { label: 'Impayé', labelAr: 'غير مدفوع', cls: 'bg-red-500/15 text-red-400' },
+  unpaid: { label: 'Impayé', labelAr: 'غير مدفوع', cls: 'bg-red-500/15 text-red-400 animate-pulse' },
   pending: { label: 'En attente', labelAr: 'قيد الانتظار', cls: 'bg-amber-500/15 text-amber-400' },
   draft: { label: 'Brouillon', labelAr: 'مسودة', cls: 'bg-muted text-muted-foreground' },
   finalized: { label: 'Finalisé', labelAr: 'نهائي', cls: 'bg-emerald-500/15 text-emerald-400' },
@@ -46,10 +46,22 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate }: Document
   const sc = statusConfig[doc.status];
   const Icon = tc.icon;
 
+  const isOverdue = doc.type === 'facture' && doc.status === 'unpaid';
+
   return (
-    <div className="group relative rounded-xl border border-border bg-card p-4 hover:border-accent/40 transition-all duration-300 hover:shadow-[0_0_24px_hsl(var(--accent)/0.08)]">
-      {/* Gold accent line */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-accent to-transparent opacity-40 group-hover:opacity-70 transition-opacity" />
+    <div className={cn(
+      "group relative rounded-xl border bg-card p-4 transition-all duration-300 hover:shadow-[0_0_24px_hsl(var(--accent)/0.08)]",
+      isOverdue 
+        ? "border-red-500/50 hover:border-red-500/70 bg-red-500/[0.03]" 
+        : "border-border hover:border-accent/40"
+    )}>
+      {/* Accent line - red for overdue, gold otherwise */}
+      <div className={cn(
+        "absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r opacity-40 group-hover:opacity-70 transition-opacity",
+        isOverdue 
+          ? "from-transparent via-red-500 to-transparent" 
+          : "from-transparent via-accent to-transparent"
+      )} />
 
       <div className={cn('flex items-start justify-between gap-3', isRTL && 'flex-row-reverse')}>
         <div className={cn('flex items-center gap-3 flex-1 min-w-0', isRTL && 'flex-row-reverse')}>

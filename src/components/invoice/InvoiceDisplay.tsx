@@ -79,6 +79,7 @@ export interface InvoiceData {
 interface InvoiceDisplayProps {
   data: InvoiceData;
   showArabic: boolean;
+  onConvertToFacture?: () => void;
 }
 
 // Arabic translation dictionary for document terms (visual only, not in PDF)
@@ -148,7 +149,7 @@ const AR_LABELS: Record<string, string> = {
   'Retenue de garantie': 'ضمان محجوز',
 };
 
-const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
+const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplayProps) => {
   const photos = data.sitePhotos || [];
   const totalPhotoPages = photos.length > 0 ? Math.ceil(photos.length / 4) : 0;
   const totalPages = 1 + totalPhotoPages;
@@ -555,10 +556,23 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         </div>
       )}
 
+      {/* Convert to Facture button (Devis only) */}
+      {data.type === 'DEVIS' && onConvertToFacture && (
+        <div className="mt-3 print:hidden">
+          <button
+            onClick={(e) => { e.stopPropagation(); onConvertToFacture(); }}
+            className="w-full py-2.5 rounded-xl text-[11px] font-bold text-white shadow-md flex items-center justify-center gap-2 transition-all hover:opacity-90"
+            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+          >
+            🔄 Convertir ce devis en facture
+          </button>
+        </div>
+      )}
+
       {/* Auto-generated Legal Footer */}
       {data.legalFooter && (
         <div className="mt-3 pt-2 border-t border-gray-300 text-center">
-          <p className="text-[7px] text-gray-400 leading-snug">{data.legalFooter}</p>
+          <p className="text-[7px] text-gray-400 leading-snug whitespace-pre-line">{data.legalFooter}</p>
         </div>
       )}
 

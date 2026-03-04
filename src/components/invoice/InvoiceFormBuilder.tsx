@@ -581,7 +581,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         }
         if (p.code_naf) parts.push(`NAF : ${p.code_naf}`);
         if (p.numero_tva) parts.push(`TVA : ${p.numero_tva}`);
-        return parts.length > 1 ? parts.join(' - ') : (p.legal_footer || undefined);
+        if (isAutoEntrepreneur) parts.push('TVA non applicable, art. 293 B du CGI');
+        return parts.length > 1 ? parts.join(' — ') : (p.legal_footer || undefined);
       })(),
       sitePhotos: (sitePhotos.length > 0 && includePhotosInPdf) ? sitePhotos : undefined,
     };
@@ -2366,7 +2367,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             <div ref={invoiceRef} className="print-area">
               <InvoiceDisplay 
                 data={invoiceData} 
-                showArabic={showArabic} 
+                showArabic={showArabic}
+                onConvertToFacture={documentType === 'devis' && onDocumentTypeChange ? () => {
+                  onDocumentTypeChange('facture');
+                } : undefined}
               />
             </div>
           </ProtectedDocumentWrapper>

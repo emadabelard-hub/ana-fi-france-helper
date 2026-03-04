@@ -474,12 +474,35 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       tvaAmount,
       tvaExempt,
       total: Math.round(total * 100) / 100,
+      paymentDeadline: delaiPaiement === 'immediate' ? 'immediate' : undefined,
+      acomptePercent: acompteEnabled && acompteMode === 'percent' ? acomptePercent : undefined,
+      acompteAmount: (() => {
+        if (!acompteEnabled) return undefined;
+        if (acompteMode === 'percent') return Math.round(total * (acomptePercent / 100) * 100) / 100;
+        return acompteFixedAmount;
+      })(),
+      acompteMode: acompteEnabled ? acompteMode : undefined,
+      netAPayer: (() => {
+        if (!acompteEnabled) return undefined;
+        const acompte = acompteMode === 'percent' 
+          ? Math.round(total * (acomptePercent / 100) * 100) / 100 
+          : acompteFixedAmount;
+        return Math.round((total - acompte) * 100) / 100;
+      })(),
       paymentTerms: (() => {
-        const delaiLabel = delaiPaiement === 'reception' ? 'à réception de facture' : delaiPaiement === '30jours' ? 'à 30 jours' : 'fin de mois';
+        const delaiLabel = delaiPaiement === 'immediate' ? 'à réception' 
+          : delaiPaiement === '15jours' ? 'à 15 jours'
+          : delaiPaiement === '30jours' ? 'à 30 jours' 
+          : delaiPaiement === '45jours' ? 'à 45 jours'
+          : delaiPaiement === '60jours' ? 'à 60 jours'
+          : 'fin de mois';
         const moyenLabel = moyenPaiement === 'virement' ? 'Virement' : moyenPaiement === 'cheque' ? 'Chèque' : 'Espèces';
         let text = '';
-        if (acomptePercent > 0) {
-          text += `Acompte de ${acomptePercent}% à la commande. Solde ${delaiLabel} par ${moyenLabel}.`;
+        if (acompteEnabled && ((acompteMode === 'percent' && acomptePercent > 0) || (acompteMode === 'fixed' && acompteFixedAmount > 0))) {
+          const acompteLabel = acompteMode === 'percent' 
+            ? `${acomptePercent}%` 
+            : `${acompteFixedAmount.toFixed(2)} €`;
+          text += `Acompte de ${acompteLabel} à la commande. Solde ${delaiLabel} par ${moyenLabel}.`;
         } else {
           text += `Paiement ${delaiLabel} par ${moyenLabel}.`;
         }

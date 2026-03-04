@@ -340,8 +340,9 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </table>
       </div>
 
-      {/* Totals + Payment Schedule + Signature — kept together, never split across pages */}
-      <div className="invoice-totals-signature-block flex justify-between items-start mb-3 gap-3" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+      {/* Totals + Signature + Footer — kept together, never split across pages */}
+      <div className="invoice-totals-signature-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+      <div className="flex justify-between items-start mb-3 gap-3">
         {/* Payment Schedule (compact, left side) */}
         {data.paymentMilestones && data.paymentMilestones.length > 0 && (
           <div className="flex-1 max-w-[55%]">

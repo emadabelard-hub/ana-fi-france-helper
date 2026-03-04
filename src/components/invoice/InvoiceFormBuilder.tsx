@@ -2031,16 +2031,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
                 }
 
-                // B2B SIREN/SIRET should not block submission if validation parsing is buggy.
-                // We keep it as a non-blocking warning only.
+                // B2B: SIREN/SIRET is REQUIRED when B2B is checked
                 const clientSirenDigits = clientSiren.replace(/\s/g, '');
-                if (clientIsB2B && clientSirenDigits && ![9, 14].includes(clientSirenDigits.length)) {
-                  toast({
-                    title: isRTL ? 'تنبيه SIREN/SIRET' : 'Alerte SIREN/SIRET',
-                    description: isRTL
-                      ? 'تنسيق رقم الزبون غير قياسي، لكن هنكمّل الإرسال.'
-                      : 'Format SIREN/SIRET client non standard, envoi maintenu.',
-                  });
+                if (clientIsB2B && !clientSirenDigits) {
+                  missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (إجباري B2B)' : '🏢 SIRET du client (obligatoire B2B)');
+                } else if (clientIsB2B && clientSirenDigits && ![9, 14].includes(clientSirenDigits.length)) {
+                  missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (9 أو 14 رقم)' : '🏢 SIRET client invalide (9 ou 14 chiffres)');
                 }
                 
                 // Check work site address if different from client

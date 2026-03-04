@@ -410,7 +410,7 @@ const ProfilePage = () => {
               />
             </div>
             <div className="space-y-2">
-              <FieldLabel icon={Phone} label={isRTL ? 'رقم الهاتف' : 'Téléphone'} isRTL={isRTL} />
+              <FieldLabel icon={Phone} label={isRTL ? 'رقم الهاتف' : 'Téléphone'} isRTL={isRTL} filled={!!formData.phone.trim()} />
               <StyledInput
                 value={formData.phone}
                 onChange={(e) => handleChange('phone', e.target.value)}

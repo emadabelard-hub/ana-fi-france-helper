@@ -467,7 +467,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         ? new Date(Date.now() + validityDuration * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
         : undefined,
       dueDate: (() => {
-        if (delaiPaiement === 'immediate') return undefined;
+        if (delaiPaiement === 'immediate' || delaiPaiement === 'echeancier') return undefined;
         const days = delaiPaiement === '15jours' ? 15 : delaiPaiement === '30jours' ? 30 : delaiPaiement === '45jours' ? 45 : delaiPaiement === '60jours' ? 60 : 30;
         return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR');
       })(),

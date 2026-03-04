@@ -264,8 +264,8 @@
 }
 
 /* ============================================
-   Print Styles - Clean PDF output
-   Hides all UI chrome, shows only the document
+   Print Styles - Clean A4 PDF output
+   Multi-page support with repeating table headers
    ============================================ */
 @media print {
   /* Hide everything by default */
@@ -309,9 +309,9 @@
     print-color-adjust: exact !important;
   }
 
-  /* Clean page setup */
+  /* Clean page setup - A4 with proper margins */
   @page {
-    margin: 1cm;
+    margin: 12mm 15mm 15mm 15mm;
     size: A4;
   }
 
@@ -319,5 +319,41 @@
     background: white !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* Invoice-specific print rules */
+  .french-invoice {
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  /* Repeat table header on every printed page */
+  .french-invoice table thead {
+    display: table-header-group !important;
+  }
+
+  /* Allow table rows to break across pages */
+  .french-invoice table tbody tr {
+    page-break-inside: avoid;
+  }
+
+  /* Keep totals + signature together - NEVER split */
+  .invoice-totals-signature-block {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Keep footer/legal mentions together */
+  .invoice-footer-block {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Annexe pages always start on new page */
+  .invoice-annexe-page {
+    page-break-before: always !important;
   }
 }

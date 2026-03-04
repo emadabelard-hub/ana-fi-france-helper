@@ -186,7 +186,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
     <div 
       dir="ltr"
       lang="fr"
-      className="french-invoice bg-white text-black rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none select-none"
+      className="french-invoice bg-white text-black rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none print:max-w-none print:rounded-none select-none"
       style={{
         padding: '1.5cm 1.5cm 2cm 1.5cm',
         boxSizing: 'border-box',
@@ -279,7 +279,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
       )}
 
-      {/* Items Table */}
+      {/* Items Table - thead repeats on each printed page */}
       <div className="mb-3">
         <table className="w-full border-collapse text-[10px]" style={{ tableLayout: 'fixed' }}>
           <thead>
@@ -340,7 +340,8 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </table>
       </div>
 
-      {/* Totals + Payment Schedule side by side */}
+      {/* Totals + Signature + Footer — kept together, never split across pages */}
+      <div className="invoice-totals-signature-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
       <div className="flex justify-between items-start mb-3 gap-3">
         {/* Payment Schedule (compact, left side) */}
         {data.paymentMilestones && data.paymentMilestones.length > 0 && (
@@ -481,8 +482,8 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
       )}
 
-      {/* Footer / Legal Mentions */}
-      <div className="border-t border-gray-200 pt-1.5 text-[8px] text-gray-400 space-y-0.5 mt-2">
+      {/* Footer / Legal Mentions — kept together */}
+      <div className="invoice-footer-block border-t border-gray-200 pt-1.5 text-[8px] text-gray-400 space-y-0.5 mt-2" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
         <p><strong className="text-gray-500"><ArSub fr="Conditions de règlement:" /></strong> {data.paymentTerms}</p>
         {data.paymentDeadline === 'immediate' && (
           <p><strong className="text-gray-500">Paiement à réception</strong></p>
@@ -490,6 +491,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         {data.legalMentions && <p>{data.legalMentions}</p>}
         <p className="text-gray-500 font-medium">Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard de paiement (Art. L.441-10 et D.441-5 du Code de commerce).</p>
       </div>
+      </div>{/* end invoice-totals-signature-block */}
 
       {/* Online Payment Section - floats in white space, no layout push */}
       {(data.type === 'FACTURE' || data.paymentDeadline === 'immediate') && (
@@ -533,7 +535,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
       {/* Auto-generated Legal Footer */}
       {data.legalFooter && (
-        <div className="mt-3 pt-2 border-t border-gray-300 text-center">
+        <div className="invoice-footer-block mt-3 pt-2 border-t border-gray-300 text-center" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
           <p className="text-[7px] text-gray-400 leading-snug whitespace-pre-line">{data.legalFooter}</p>
         </div>
       )}
@@ -552,7 +554,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           key={`annexe-${pageIdx}`}
           dir="ltr"
           lang="fr"
-          className="french-invoice bg-white text-black rounded-lg shadow-lg max-w-2xl mx-auto mt-6 print:shadow-none print:mt-0 select-none"
+          className="french-invoice invoice-annexe-page bg-white text-black rounded-lg shadow-lg max-w-2xl mx-auto mt-6 print:shadow-none print:mt-0 print:max-w-none print:rounded-none select-none"
           style={{
             padding: '1.5cm 1.5cm 2cm 1.5cm',
             boxSizing: 'border-box',

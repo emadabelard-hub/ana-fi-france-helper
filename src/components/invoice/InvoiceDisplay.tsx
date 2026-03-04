@@ -30,9 +30,7 @@ export interface InvoiceData {
     sameAsClient: boolean;
     address?: string;
   };
-  // Nature of operation
   natureOperation?: 'service' | 'goods' | 'mixed';
-  // Assurance décennale
   assuranceDecennale?: {
     assureurName: string;
     assureurAddress: string;
@@ -54,6 +52,11 @@ export interface InvoiceData {
   tvaExempt: boolean;
   tvaExemptText?: string;
   paymentTerms: string;
+  paymentDeadline?: string;
+  acomptePercent?: number;
+  acompteAmount?: number;
+  acompteMode?: 'percent' | 'fixed';
+  netAPayer?: number;
   legalMentions?: string;
   legalFooter?: string;
   logoUrl?: string;
@@ -221,7 +224,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
               <span className="text-amber-600 font-semibold">⏳ Valide jusqu'au : {data.validUntil}</span>
             </>
           )}
-          {data.type === 'FACTURE' && data.dueDate && (
+          {data.dueDate && (
             <>
               <span className="text-gray-300">|</span>
               <span className="text-red-600 font-semibold">📅 Échéance : {data.dueDate}</span>
@@ -328,7 +331,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
 
       {/* Totals */}
       <div className="flex justify-end mb-3">
-        <div className="w-52">
+        <div className="w-56">
           <div className="flex justify-between py-1 border-b border-gray-200">
             <span className="text-gray-600 text-[10px]"><ArSub fr="Total HT:" /></span>
             <span className="font-medium text-[10px]">{formatCurrency(data.subtotal)}</span>
@@ -353,6 +356,28 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             <span className="font-bold text-[11px]"><ArSub fr="Total TTC:" /></span>
             <span className="font-bold text-[13px]">{formatCurrency(data.total)}</span>
           </div>
+
+          {/* Acompte Breakdown */}
+          {data.acompteAmount && data.acompteAmount > 0 && (
+            <div className="mt-1.5 border border-amber-300 rounded-lg overflow-hidden">
+              <div className="flex justify-between py-1 px-2 bg-amber-50 border-b border-amber-200">
+                <span className="text-amber-700 text-[10px] font-semibold">
+                  <ArSub fr="Acompte" /> {data.acomptePercent ? `(${data.acomptePercent}%)` : ''}
+                </span>
+                <span className="font-bold text-amber-700 text-[10px]">
+                  {formatCurrency(data.acompteAmount)}
+                </span>
+              </div>
+              {data.netAPayer !== undefined && (
+                <div className="flex justify-between py-1.5 px-2 bg-amber-100">
+                  <span className="text-amber-900 text-[10px] font-bold">Net à payer</span>
+                  <span className="font-bold text-amber-900 text-[11px]">
+                    {formatCurrency(data.netAPayer)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -419,20 +444,28 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       {/* Footer / Legal Mentions */}
       <div className="border-t border-gray-200 pt-1.5 text-[8px] text-gray-400 space-y-0.5 mt-2">
         <p><strong className="text-gray-500"><ArSub fr="Conditions de règlement:" /></strong> {data.paymentTerms}</p>
-        <p><strong className="text-gray-500"><ArSub fr="Paiement à réception" /></strong></p>
+        {data.paymentDeadline === 'immediate' && (
+          <p><strong className="text-gray-500">Paiement à réception</strong></p>
+        )}
         {data.legalMentions && <p>{data.legalMentions}</p>}
         <p className="text-gray-500 font-medium">Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard de paiement (Art. L.441-10 et D.441-5 du Code de commerce).</p>
       </div>
 
-      {/* Online Payment Section */}
-      {data.type === 'FACTURE' && (
-        <div className="mt-3 border border-gray-300 rounded-lg p-3 flex items-center justify-between bg-gray-50">
+      {/* Online Payment Section - prominent when immediate payment */}
+      {(data.type === 'FACTURE' || data.paymentDeadline === 'immediate') && (
+        <div className={cn(
+          "border rounded-lg p-3 flex items-center justify-between",
+          data.paymentDeadline === 'immediate'
+            ? "mt-3 border-2 border-amber-400 bg-amber-50"
+            : "mt-3 border-gray-300 bg-gray-50"
+        )}>
           <div className="flex-1">
-            <p className="text-[10px] font-bold text-gray-700 mb-0.5">💳 Paiement en ligne disponible</p>
-            <p className="text-[8px] text-gray-500">Scannez le QR code ou cliquez sur le bouton pour payer cette facture en ligne de manière sécurisée via Stripe.</p>
+            <p className="text-[10px] font-bold text-gray-700 mb-0.5">
+              {data.paymentDeadline === 'immediate' ? '⚡ Paiement immédiat en ligne' : '💳 Paiement en ligne disponible'}
+            </p>
+            <p className="text-[8px] text-gray-500">Scannez le QR code ou cliquez sur le bouton pour payer {data.type === 'FACTURE' ? 'cette facture' : 'ce devis'} en ligne de manière sécurisée.</p>
           </div>
           <div className="flex items-center gap-3 ml-3">
-            {/* QR Code placeholder — will be populated with actual payment link */}
             <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-[7px] text-gray-400 text-center leading-tight">
               QR Code
             </div>
@@ -441,7 +474,6 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
               style={{ background: 'linear-gradient(135deg, #BFA071, #9A7B4F)' }}
               onClick={(e) => {
                 e.stopPropagation();
-                // Payment link will be injected here
               }}
             >
               Payer en ligne

@@ -77,10 +77,10 @@ const Index = () => {
           {/* Hero: Devis & Factures */}
           <button
             onClick={() => handleNavigate('/pro', 'فتح أدوات Pro (دوفي/فاتورة)')}
-            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-4 active:scale-[0.98] transition-all duration-200 border border-primary/25 shadow-[0_12px_40px_-12px_hsl(37_37%_60%/0.3)] flex-[1.3]"
+            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-200 border border-primary/25 shadow-[0_12px_40px_-12px_hsl(37_37%_60%/0.3)] flex-[1.4]"
           >
-            <div className="bg-gradient-to-br from-primary to-primary/60 p-5 rounded-2xl shadow-xl">
-              <Briefcase size={48} className="text-primary-foreground" />
+            <div className="bg-gradient-to-br from-[hsl(37,50%,55%)] to-[hsl(30,45%,40%)] p-6 rounded-2xl shadow-xl">
+              <Briefcase size={52} className="text-white" />
             </div>
             <div className="text-center px-6">
               <h3 className={cn("text-2xl font-extrabold leading-snug text-foreground", isRTL && "font-cairo")}>
@@ -97,10 +97,10 @@ const Index = () => {
           {/* Smart CV */}
           <button
             onClick={() => handleNavigate('/pro/cv-generator', 'فتح مُولد CV')}
-            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-4 active:scale-[0.98] transition-all duration-200 border border-secondary/30 shadow-[0_8px_30px_-10px_hsl(220_40%_20%/0.35)] flex-1"
+            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-200 border border-[hsl(210,60%,50%)]/20 shadow-[0_8px_30px_-10px_hsl(210_60%_40%/0.35)] flex-1"
           >
-            <div className="bg-gradient-to-br from-secondary to-[hsl(220,40%,14%)] p-4 rounded-2xl shadow-xl">
-              <FileUser size={42} className="text-foreground" />
+            <div className="bg-gradient-to-br from-[hsl(210,65%,50%)] to-[hsl(220,60%,38%)] p-5 rounded-2xl shadow-xl">
+              <FileUser size={46} className="text-white" />
             </div>
             <div className="text-center px-6">
               <h3 className={cn("text-xl font-extrabold leading-snug text-foreground", isRTL && "font-cairo")}>

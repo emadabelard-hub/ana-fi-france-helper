@@ -257,6 +257,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         if (draft.assureurAddress) setAssureurAddress(draft.assureurAddress);
         if (draft.policyNumber) setPolicyNumber(draft.policyNumber);
         if (draft.geographicCoverage) setGeographicCoverage(draft.geographicCoverage);
+        if ((draft as any).paymentMilestones?.length) {
+          setPaymentMilestones((draft as any).paymentMilestones);
+          setMilestonesEnabled(true);
+        }
         toast({
           title: isRTL ? '📝 تم استعادة المسودة' : '📝 Brouillon restauré',
           description: isRTL ? 'رجعنالك الشغل اللي كنت بتعمله' : 'Votre travail précédent a été restauré',

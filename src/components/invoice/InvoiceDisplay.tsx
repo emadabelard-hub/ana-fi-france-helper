@@ -79,6 +79,7 @@ export interface InvoiceData {
 interface InvoiceDisplayProps {
   data: InvoiceData;
   showArabic: boolean;
+  onConvertToFacture?: () => void;
 }
 
 // Arabic translation dictionary for document terms (visual only, not in PDF)

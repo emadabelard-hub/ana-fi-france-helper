@@ -70,23 +70,23 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="px-5 pt-6 pb-28 flex flex-col gap-6 min-h-[calc(100vh-120px)]">
-        {/* DOMINANT PRIORITY CARDS — 70-80% of screen */}
-        <div className="flex flex-col gap-6 flex-1">
+      <main className="px-4 pt-4 pb-20 flex flex-col" style={{ minHeight: 'calc(100vh - 90px)' }}>
+        {/* DOMINANT CARDS — fill available space */}
+        <div className="flex flex-col gap-4 flex-1">
 
-          {/* Hero: Devis & Factures — Maximum impact */}
+          {/* Hero: Devis & Factures */}
           <button
             onClick={() => handleNavigate('/pro', 'فتح أدوات Pro (دوفي/فاتورة)')}
-            className="w-full bg-card p-8 rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-200 border border-primary/25 shadow-[0_12px_40px_-12px_hsl(37_37%_60%/0.3)] flex-[1.2] min-h-[200px]"
+            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-4 active:scale-[0.98] transition-all duration-200 border border-primary/25 shadow-[0_12px_40px_-12px_hsl(37_37%_60%/0.3)] flex-[1.3]"
           >
             <div className="bg-gradient-to-br from-primary to-primary/60 p-5 rounded-2xl shadow-xl">
-              <Briefcase size={44} className="text-primary-foreground" />
+              <Briefcase size={48} className="text-primary-foreground" />
             </div>
-            <div className="text-center">
+            <div className="text-center px-6">
               <h3 className={cn("text-2xl font-extrabold leading-snug text-foreground", isRTL && "font-cairo")}>
                 {isRTL ? 'فواتير ودوفيهات' : 'Devis & Factures'}
               </h3>
-              <p className={cn("text-[0.9rem] font-medium text-muted-foreground mt-2 leading-relaxed max-w-[280px] mx-auto", isRTL && "font-cairo")}>
+              <p className={cn("text-[0.95rem] font-medium text-muted-foreground mt-2 leading-relaxed", isRTL && "font-cairo")}>
                 {isRTL
                   ? 'اعمل الفاكتير والدوفي بتوعك بسهولة أو حوّل الدوفي لفاتورة'
                   : 'Créez vos factures et devis facilement ou convertissez un devis en facture'}
@@ -94,15 +94,15 @@ const Index = () => {
             </div>
           </button>
 
-          {/* Smart CV — Large secondary hero */}
+          {/* Smart CV */}
           <button
             onClick={() => handleNavigate('/pro/cv-generator', 'فتح مُولد CV')}
-            className="w-full bg-card p-7 rounded-3xl flex flex-col items-center justify-center gap-4 active:scale-[0.98] transition-all duration-200 border border-secondary/30 shadow-[0_8px_30px_-10px_hsl(220_40%_20%/0.35)] flex-1 min-h-[160px]"
+            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-4 active:scale-[0.98] transition-all duration-200 border border-secondary/30 shadow-[0_8px_30px_-10px_hsl(220_40%_20%/0.35)] flex-1"
           >
             <div className="bg-gradient-to-br from-secondary to-[hsl(220,40%,14%)] p-4 rounded-2xl shadow-xl">
-              <FileUser size={38} className="text-foreground" />
+              <FileUser size={42} className="text-foreground" />
             </div>
-            <div className="text-center">
+            <div className="text-center px-6">
               <h3 className={cn("text-xl font-extrabold leading-snug text-foreground", isRTL && "font-cairo")}>
                 {isRTL ? 'Smart CV' : 'Smart CV'}
               </h3>
@@ -115,24 +115,25 @@ const Index = () => {
           </button>
         </div>
 
-        {/* COMPACT: شبيك لبيك — Slim horizontal bar */}
-        <button
-          onClick={() => handleNavigate('/ai-assistant', 'فتح شبيك لبيك')}
-          className="w-full bg-card/80 px-4 py-3 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-all duration-200 border border-border"
-        >
-          <div className="bg-gradient-to-br from-[hsl(260,45%,55%)] to-[hsl(260,45%,40%)] p-2 rounded-xl shrink-0">
-            <Sparkles size={18} className="text-white" />
-          </div>
-          <span className={cn("text-sm font-bold text-foreground flex-1", isRTL ? "text-right font-cairo" : "text-left")}>
-            {isRTL ? 'شبيك لبيك — المساعد الذكي' : 'Assistant IA — Shabik Labik'}
-          </span>
-          <svg className={cn("w-4 h-4 text-muted-foreground", isRTL && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+        {/* BOTTOM SLIM SECTION */}
+        <div className="flex flex-col gap-2 mt-3">
+          {/* شبيك لبيك — Compact bar */}
+          <button
+            onClick={() => handleNavigate('/ai-assistant', 'فتح شبيك لبيك')}
+            className="w-full bg-card/70 px-4 py-2.5 rounded-2xl flex items-center gap-2.5 active:scale-[0.98] transition-all duration-200 border border-border"
+          >
+            <div className="bg-gradient-to-br from-[hsl(260,45%,55%)] to-[hsl(260,45%,40%)] p-1.5 rounded-lg shrink-0">
+              <Sparkles size={16} className="text-white" />
+            </div>
+            <span className={cn("text-xs font-bold text-foreground flex-1", isRTL ? "text-right font-cairo" : "text-left")}>
+              {isRTL ? 'شبيك لبيك — المساعد الذكي' : 'Assistant IA — Shabik Labik'}
+            </span>
+            <svg className={cn("w-3.5 h-3.5 text-muted-foreground", isRTL && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
 
-        {/* MINIMAL: حاجات جديدة — Thin bottom section */}
-        <div className="pb-2">
+          {/* حاجات جديدة — Minimal */}
           <ComingSoonSection />
         </div>
       </main>

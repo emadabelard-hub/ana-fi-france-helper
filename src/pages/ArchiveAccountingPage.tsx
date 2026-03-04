@@ -27,6 +27,7 @@ const ArchiveAccountingPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [periodFilter, setPeriodFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('all');
+  const [showAddExpense, setShowAddExpense] = useState(false);
 
   // Fetch documents + expenses
   useEffect(() => {

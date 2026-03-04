@@ -122,6 +122,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [delaiPaiement, setDelaiPaiement] = useState<string>('30jours');
   const [moyenPaiement, setMoyenPaiement] = useState<string>('virement');
   
+  // Payment milestones (échéancier)
+  const [paymentMilestones, setPaymentMilestones] = useState<PaymentMilestone[]>([]);
+  const [milestonesEnabled, setMilestonesEnabled] = useState(false);
+  
   // Line items - use empty strings for quantity/price to allow clean input
   const [items, setItems] = useState<LineItem[]>([
     {

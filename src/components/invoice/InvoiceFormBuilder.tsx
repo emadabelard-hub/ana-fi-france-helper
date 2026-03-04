@@ -604,8 +604,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           parts.push(`RCS ${p.ville_immatriculation}`);
         }
         if (p.code_naf) parts.push(`NAF : ${p.code_naf}`);
-        if (p.numero_tva) parts.push(`TVA : ${p.numero_tva}`);
-        if (isAutoEntrepreneur) parts.push('TVA non applicable, art. 293 B du CGI');
+        // Conditional TVA: never show both numero_tva AND exemption mention
+        if (isAutoEntrepreneur || tvaExempt) {
+          parts.push('TVA non applicable, art. 293 B du CGI');
+        } else if (p.numero_tva) {
+          parts.push(`TVA Intracommunautaire : ${p.numero_tva}`);
+        }
         return parts.length > 1 ? parts.join(' — ') : (p.legal_footer || undefined);
       })(),
       sitePhotos: (sitePhotos.length > 0 && includePhotosInPdf) ? sitePhotos : undefined,

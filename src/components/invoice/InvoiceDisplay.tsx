@@ -419,9 +419,36 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       {/* Footer / Legal Mentions */}
       <div className="border-t border-gray-200 pt-1.5 text-[8px] text-gray-400 space-y-0.5 mt-2">
         <p><strong className="text-gray-500"><ArSub fr="Conditions de règlement:" /></strong> {data.paymentTerms}</p>
+        <p><strong className="text-gray-500"><ArSub fr="Paiement à réception" /></strong></p>
         {data.legalMentions && <p>{data.legalMentions}</p>}
         <p className="text-gray-500 font-medium">Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard de paiement (Art. L.441-10 et D.441-5 du Code de commerce).</p>
       </div>
+
+      {/* Online Payment Section */}
+      {data.type === 'FACTURE' && (
+        <div className="mt-3 border border-gray-300 rounded-lg p-3 flex items-center justify-between bg-gray-50">
+          <div className="flex-1">
+            <p className="text-[10px] font-bold text-gray-700 mb-0.5">💳 Paiement en ligne disponible</p>
+            <p className="text-[8px] text-gray-500">Scannez le QR code ou cliquez sur le bouton pour payer cette facture en ligne de manière sécurisée via Stripe.</p>
+          </div>
+          <div className="flex items-center gap-3 ml-3">
+            {/* QR Code placeholder — will be populated with actual payment link */}
+            <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-[7px] text-gray-400 text-center leading-tight">
+              QR Code
+            </div>
+            <button
+              className="px-4 py-2 rounded-xl text-[10px] font-bold text-white shadow-md print:hidden"
+              style={{ background: 'linear-gradient(135deg, #BFA071, #9A7B4F)' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                // Payment link will be injected here
+              }}
+            >
+              Payer en ligne
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Auto-generated Legal Footer */}
       {data.legalFooter && (

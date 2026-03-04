@@ -2366,7 +2366,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             <div ref={invoiceRef} className="print-area">
               <InvoiceDisplay 
                 data={invoiceData} 
-                showArabic={showArabic} 
+                showArabic={showArabic}
+                onConvertToFacture={documentType === 'devis' && onDocumentTypeChange ? () => {
+                  onDocumentTypeChange('facture');
+                } : undefined}
               />
             </div>
           </ProtectedDocumentWrapper>

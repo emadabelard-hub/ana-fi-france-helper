@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
@@ -1179,16 +1180,29 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               </div>
             </div>
 
-            {/* B2B Toggle */}
-            <div className={cn("flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30", isRTL && "flex-row-reverse")}>
-              <Checkbox
-                id="b2b-toggle"
-                checked={clientIsB2B}
-                onCheckedChange={(checked) => setClientIsB2B(checked === true)}
-              />
-              <Label htmlFor="b2b-toggle" className={cn("text-sm cursor-pointer", isRTL && "font-cairo")}>
-                {isRTL ? '🏢 الزبون ده شركة (B2B)' : '🏢 Client professionnel (B2B)'}
+            {/* B2B Radio Buttons */}
+            <div className={cn("p-3 rounded-lg border border-border bg-muted/30 space-y-2", isRTL && "text-right")}>
+              <Label className={cn("text-sm font-bold", isRTL && "font-cairo")}>
+                {isRTL ? '🏢 الزبون ده شركة (B2B)؟' : '🏢 Client professionnel (B2B) ?'}
               </Label>
+              <RadioGroup
+                value={clientIsB2B ? 'yes' : 'no'}
+                onValueChange={(val) => setClientIsB2B(val === 'yes')}
+                className={cn("flex gap-6", isRTL && "flex-row-reverse")}
+              >
+                <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                  <RadioGroupItem value="yes" id="b2b-yes" />
+                  <Label htmlFor="b2b-yes" className={cn("cursor-pointer text-sm", isRTL && "font-cairo")}>
+                    {isRTL ? 'نعم' : 'Oui'}
+                  </Label>
+                </div>
+                <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                  <RadioGroupItem value="no" id="b2b-no" />
+                  <Label htmlFor="b2b-no" className={cn("cursor-pointer text-sm", isRTL && "font-cairo")}>
+                    {isRTL ? 'لا' : 'Non'}
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
             
             {clientIsB2B && (
@@ -2057,6 +2071,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
                 }
 
+                // Validate document number (must have content after prefix)
+                const currentPrefix = getDocPrefix(documentType);
+                const docSuffix = docNumber.startsWith(currentPrefix) ? docNumber.slice(currentPrefix.length).trim() : '';
+                if (!docSuffix) {
+                  missingFields.push(isRTL 
+                    ? (documentType === 'devis' ? '📄 من فضلك ادخل رقم الدوفي' : '📄 من فضلك ادخل رقم الفاتورة')
+                    : (documentType === 'devis' ? '📄 Numéro de devis requis' : '📄 Numéro de facture requis'));
+                }
+
                 // B2B: SIREN/SIRET is REQUIRED when B2B is checked
                 const clientSirenDigits = clientSiren.replace(/\s/g, '');
                 if (clientIsB2B && !clientSirenDigits) {
@@ -2137,11 +2160,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       <PreFlightChecklistModal
         open={showChecklist}
         onOpenChange={setShowChecklist}
-        onConfirm={() => {
+        onConfirm={async () => {
           setShowChecklist(false);
-          setShowPreview(true);
-          clearDraft();
-          saveToDocumentsComptables();
+          try {
+            await saveToDocumentsComptables();
+            clearDraft();
+            setShowPreview(true);
+          } catch (e) {
+            console.error('Final save failed:', e);
+          }
         }}
         items={items}
       />

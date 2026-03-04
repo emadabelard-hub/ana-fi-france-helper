@@ -334,6 +334,44 @@ const ProfilePage = () => {
           </div>
         </div>
 
+        {/* ═══════ Progress Bar ═══════ */}
+        <SectionCard>
+          <div className="p-5 space-y-3">
+            <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+              <h3 className={cn("text-sm font-semibold text-foreground", isRTL ? "font-[IBMPlexSansArabic]" : "font-[Inter]")}>
+                {isRTL ? 'نسبة اكتمال الملف القانوني' : 'Complétude du dossier légal'}
+              </h3>
+              <span className={cn("text-sm font-bold", progressPercent < 50 ? "text-destructive" : progressPercent < 100 ? "text-yellow-500" : "text-green-500")}>
+                {progressPercent}%
+              </span>
+            </div>
+            <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
+              <div
+                className={cn("h-full rounded-full transition-all duration-700 ease-out", progressColor)}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-[IBMPlexSansArabic]")}>
+              {isRTL
+                ? `${mandatoryFields.filter(f => f.filled).length} من ${mandatoryFields.length} حقول مكتملة`
+                : `${mandatoryFields.filter(f => f.filled).length} sur ${mandatoryFields.length} champs complétés`}
+            </p>
+            {progressPercent === 100 && (
+              <div className={cn(
+                "flex items-center gap-2.5 p-3 rounded-xl bg-green-500/10 border border-green-500/30",
+                isRTL && "flex-row-reverse text-right"
+              )}>
+                <PartyPopper className="h-5 w-5 text-green-500 shrink-0" />
+                <p className={cn("text-xs font-semibold text-green-600 dark:text-green-400", isRTL && "font-[IBMPlexSansArabic]")}>
+                  {isRTL
+                    ? 'ملفك القانوني مكتمل وجاهز لإصدار فواتير Factur-X!'
+                    : 'Votre dossier légal est complet et prêt pour émettre des factures Factur-X !'}
+                </p>
+              </div>
+            )}
+          </div>
+        </SectionCard>
+
         {/* ═══════ Admin Dashboard ═══════ */}
         {isAdmin && (
           <SectionCard className="border-accent/30">

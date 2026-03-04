@@ -511,6 +511,22 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Check if form is valid
   const isFormValid = clientName.trim() && items.some(item => item.designation_fr.trim() && item.unitPrice > 0);
+
+  const getTechnicalErrorMessage = (error: unknown) => {
+    const err = error as any;
+    const raw = err?.context?.body || err?.message || err?.error_description || err?.details || err?.hint || String(error);
+
+    if (typeof raw === 'string') {
+      return raw.length > 240 ? `${raw.slice(0, 240)}…` : raw;
+    }
+
+    try {
+      const asText = JSON.stringify(raw);
+      return asText.length > 240 ? `${asText.slice(0, 240)}…` : asText;
+    } catch {
+      return 'Unknown technical error';
+    }
+  };
   
   // Handle item quantity/price change
   const handleItemChange = (id: string, field: keyof LineItem, value: string | number) => {

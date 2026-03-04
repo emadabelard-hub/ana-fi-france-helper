@@ -40,6 +40,9 @@ export interface InvoiceData {
     address?: string;
   };
   natureOperation?: 'service' | 'goods' | 'mixed';
+  descriptionChantier?: string;
+  estimatedStartDate?: string;
+  estimatedDuration?: string;
   assuranceDecennale?: {
     assureurName: string;
     assureurAddress: string;
@@ -269,6 +272,37 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
         )}
 
+        {/* ── OBJET DU DEVIS / DESCRIPTION DU CHANTIER ── */}
+        {data.descriptionChantier && (
+          <div className="mb-2 px-2 py-1.5 rounded border border-gray-200 bg-gray-50">
+            <p className="text-[7pt] font-bold text-gray-700 uppercase tracking-wider mb-0.5">
+              {data.type === 'DEVIS' ? '📝 Objet du devis' : '📝 Objet de la facture'}
+            </p>
+            <p className="text-[8pt] text-gray-700 whitespace-pre-line leading-snug">{data.descriptionChantier}</p>
+          </div>
+        )}
+
+        {/* ── VALIDITÉ DU DEVIS ── */}
+        {data.type === 'DEVIS' && data.validUntil && (
+          <div className="mb-2 px-2 py-1 rounded border border-amber-200 bg-amber-50/50">
+            <p className="text-[8pt] text-amber-800 font-semibold">
+              📅 Ce devis est valable jusqu'au {data.validUntil}.
+              {data.estimatedStartDate && <> — Début estimé des travaux : {data.estimatedStartDate}.</>}
+              {data.estimatedDuration && <> — Durée estimée : {data.estimatedDuration}.</>}
+            </p>
+          </div>
+        )}
+
+        {/* ── Estimated timeline (Facture or Devis without validUntil) ── */}
+        {(data.estimatedStartDate || data.estimatedDuration) && !(data.type === 'DEVIS' && data.validUntil) && (
+          <div className="mb-2 px-2 py-1 rounded border border-gray-200 bg-gray-50">
+            <p className="text-[8pt] text-gray-700 font-medium">
+              {data.estimatedStartDate && <>🚧 Début estimé des travaux : {data.estimatedStartDate}. </>}
+              {data.estimatedDuration && <>⏱️ Durée estimée : {data.estimatedDuration}.</>}
+            </p>
+          </div>
+        )}
+
         {/* ── TABLE DES PRESTATIONS ── */}
         {/* Uses native <table> so thead repeats on every printed page automatically */}
         <table className="w-full border-collapse mb-2" style={{ tableLayout: 'fixed', fontSize: '8pt' }}>
@@ -410,20 +444,42 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             </div>
           </div>
 
-          {/* ── SIGNATURE BLOCK — Last page only (kept with totals) ── */}
-          <div className="border-t border-gray-300 pt-2 mt-1">
-            <p className="text-[7pt] text-gray-500 text-center mb-1.5 font-semibold">Bon pour accord — Date et signature du client</p>
-            <div className="flex justify-between items-end">
-              {/* Client signature space */}
-              <div className="w-36 text-center">
-                <p className="text-[8pt] font-medium text-gray-600 mb-0.5"><ArSub fr="Le client" /></p>
-                <div className="h-12 border border-dashed border-gray-300 rounded" />
-                <p className="text-[7pt] text-gray-400 mt-0.5"><ArSub fr="Date & Signature" /></p>
+          {/* ── ACCEPTANCE & SIGNATURE BLOCK ── */}
+          <div className="border-t-2 border-gray-800 pt-3 mt-2">
+            <h4 className="text-[9pt] font-bold text-black text-center mb-2 uppercase tracking-wider">
+              {data.type === 'DEVIS' ? 'Acceptation du devis' : 'Acceptation de la facture'}
+            </h4>
+            <p className="text-[7pt] text-gray-600 text-center mb-2 italic leading-snug">
+              {data.type === 'DEVIS' 
+                ? 'Le client déclare avoir pris connaissance des conditions ci-dessus et accepte le présent devis.'
+                : 'Le client déclare avoir pris connaissance de la présente facture.'}
+            </p>
+            <p className="text-[8pt] text-gray-700 text-center mb-3 font-semibold">
+              Mention manuscrite : « <span className="italic">Bon pour accord</span> »
+            </p>
+            
+            <div className="flex justify-between items-start gap-4">
+              {/* Client acceptance */}
+              <div className="flex-1 border border-gray-300 rounded-lg p-2">
+                <p className="text-[8pt] font-bold text-gray-700 mb-1 text-center"><ArSub fr="Le client" /></p>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <p className="text-[7pt] text-gray-500 mb-0.5">Nom :</p>
+                    <div className="h-4 border-b border-dotted border-gray-300" />
+                  </div>
+                  <div>
+                    <p className="text-[7pt] text-gray-500 mb-0.5">Date :</p>
+                    <div className="h-4 border-b border-dotted border-gray-300" />
+                  </div>
+                </div>
+                <p className="text-[7pt] text-gray-500 mb-0.5">Signature :</p>
+                <div className="h-14 border border-dashed border-gray-300 rounded" />
               </div>
+              
               {/* Artisan signature & stamp */}
               <div className="w-40 text-center">
-                <p className="text-[8pt] font-medium text-gray-600 mb-0.5"><ArSub fr="Le prestataire" /></p>
-                <p className="text-[7pt] text-gray-400 mb-0.5">Date : {data.date}</p>
+                <p className="text-[8pt] font-bold text-gray-700 mb-1"><ArSub fr="Le prestataire" /></p>
+                <p className="text-[7pt] text-gray-500 mb-0.5">Date : {data.date}</p>
                 {data.artisanSignatureUrl ? (
                   <div className="bg-white border border-gray-200 rounded p-0.5 mb-0.5">
                     <img src={data.artisanSignatureUrl} alt="Signature" className="max-h-10 mx-auto object-contain" />

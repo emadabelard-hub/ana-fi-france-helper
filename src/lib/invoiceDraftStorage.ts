@@ -58,6 +58,9 @@ export interface InvoiceDraft {
   policyNumber?: string;
   geographicCoverage?: string;
   paymentMilestones?: DraftPaymentMilestone[];
+  descriptionChantier?: string;
+  estimatedStartDate?: string;
+  estimatedDuration?: string;
   savedAt: number;
 }
 

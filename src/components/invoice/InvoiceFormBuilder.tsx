@@ -94,6 +94,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Nature of operation
   const [natureOperation, setNatureOperation] = useState<'service' | 'goods' | 'mixed'>('service');
   
+  // Description du chantier / objet du devis
+  const [descriptionChantier, setDescriptionChantier] = useState('');
+  
+  // Estimated start date and duration
+  const [estimatedStartDate, setEstimatedStartDate] = useState('');
+  const [estimatedDuration, setEstimatedDuration] = useState('');
+  
   // Assurance décennale
   const [assureurName, setAssureurName] = useState('');
   const [assureurAddress, setAssureurAddress] = useState('');
@@ -268,6 +275,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           setPaymentMilestones((draft as any).paymentMilestones);
           setMilestonesEnabled(true);
         }
+        if (draft.descriptionChantier) setDescriptionChantier(draft.descriptionChantier);
+        if (draft.estimatedStartDate) setEstimatedStartDate(draft.estimatedStartDate);
+        if (draft.estimatedDuration) setEstimatedDuration(draft.estimatedDuration);
         toast({
           title: isRTL ? '📝 تم استعادة المسودة' : '📝 Brouillon restauré',
           description: isRTL ? 'رجعنالك الشغل اللي كنت بتعمله' : 'Votre travail précédent a été restauré',
@@ -317,10 +327,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         policyNumber,
         geographicCoverage,
         paymentMilestones: milestonesEnabled ? paymentMilestones : undefined,
+        descriptionChantier,
+        estimatedStartDate,
+        estimatedDuration,
       });
     }, 1000);
     return () => clearTimeout(timer);
-  }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled]);
+  }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, estimatedStartDate, estimatedDuration]);
 
   // Handle prefill data from quote-to-invoice conversion
   useEffect(() => {
@@ -495,6 +508,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         address: workSiteSameAsClient ? undefined : workSiteAddress,
       },
       natureOperation,
+      descriptionChantier: descriptionChantier.trim() || undefined,
+      estimatedStartDate: estimatedStartDate.trim() 
+        ? new Date(estimatedStartDate).toLocaleDateString('fr-FR') 
+        : undefined,
+      estimatedDuration: estimatedDuration.trim() || undefined,
       assuranceDecennale: assureurName ? {
         assureurName,
         assureurAddress,
@@ -1365,6 +1383,75 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             <option value="goods">{isRTL ? 'بيع مواد فقط (Matériaux)' : 'Livraison de biens'}</option>
             <option value="mixed">{isRTL ? 'مختلط: مواد ومصنعية (Mixte)' : 'Mixte (services + biens)'}</option>
           </select>
+        </CardContent>
+      </Card>
+
+      {/* Objet du devis / Description du chantier */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <Edit3 className="h-5 w-5 text-primary" />
+            <h3 className={cn("font-bold", isRTL && "font-cairo")}>
+              {isRTL 
+                ? (documentType === 'devis' ? '📝 موضوع الدوفي' : '📝 موضوع الفاتورة')
+                : (documentType === 'devis' ? '📝 Objet du devis' : '📝 Objet de la facture')}
+            </h3>
+          </div>
+          <Textarea
+            value={descriptionChantier}
+            onChange={(e) => setDescriptionChantier(e.target.value)}
+            placeholder={isRTL 
+              ? 'مثال: أعمال دهان كامل للشقة - صالون + 3 غرف + مدخل'
+              : 'Ex: Travaux de peinture complète appartement T3 - Salon, 3 chambres, entrée et couloir'}
+            rows={3}
+            className={cn("text-sm resize-none", isRTL && "text-right font-cairo")}
+          />
+          <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+            {isRTL 
+              ? '💡 وصف مختصر للأشغال - بيظهر على الدوفي/الفاتورة قبل الجدول'
+              : '💡 Description courte des travaux — apparaît sur le document avant le tableau des prestations'}
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Estimated Timeline (Optional) */}
+      <Card className="border-blue-500/20 bg-blue-500/5">
+        <CardContent className="p-4 space-y-3">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <Calendar className="h-5 w-5 text-blue-600" />
+            <h3 className={cn("font-bold text-blue-700 dark:text-blue-400", isRTL && "font-cairo")}>
+              {isRTL ? '🗓️ مواعيد الأشغال (اختياري)' : '🗓️ Calendrier des travaux (optionnel)'}
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                {isRTL ? 'تاريخ بداية الأشغال المقدر' : 'Début estimé des travaux'}
+              </Label>
+              <Input
+                type="date"
+                value={estimatedStartDate}
+                onChange={(e) => setEstimatedStartDate(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                {isRTL ? 'المدة المقدرة' : 'Durée estimée des travaux'}
+              </Label>
+              <Input
+                value={estimatedDuration}
+                onChange={(e) => setEstimatedDuration(e.target.value)}
+                placeholder={isRTL ? 'مثال: 5 أيام' : 'Ex: 5 jours ouvrés'}
+                className={cn("text-sm", isRTL && "text-right font-cairo")}
+              />
+            </div>
+          </div>
+          <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+            {isRTL 
+              ? '💡 اختياري - لو حطيته بيظهر على الدوفي ويبان أكثر احترافية'
+              : '💡 Optionnel — Ces informations apparaîtront sur le document si renseignées'}
+          </p>
         </CardContent>
       </Card>
 

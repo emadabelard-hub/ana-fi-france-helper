@@ -2071,6 +2071,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
                 }
 
+                // Validate document number (must have content after prefix)
+                const currentPrefix = getDocPrefix(documentType);
+                const docSuffix = docNumber.startsWith(currentPrefix) ? docNumber.slice(currentPrefix.length).trim() : '';
+                if (!docSuffix) {
+                  missingFields.push(isRTL 
+                    ? (documentType === 'devis' ? '📄 من فضلك ادخل رقم الدوفي' : '📄 من فضلك ادخل رقم الفاتورة')
+                    : (documentType === 'devis' ? '📄 Numéro de devis requis' : '📄 Numéro de facture requis'));
+                }
+
                 // B2B: SIREN/SIRET is REQUIRED when B2B is checked
                 const clientSirenDigits = clientSiren.replace(/\s/g, '');
                 if (clientIsB2B && !clientSirenDigits) {

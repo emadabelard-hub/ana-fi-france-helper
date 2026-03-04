@@ -275,6 +275,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           setPaymentMilestones((draft as any).paymentMilestones);
           setMilestonesEnabled(true);
         }
+        if (draft.descriptionChantier) setDescriptionChantier(draft.descriptionChantier);
+        if (draft.estimatedStartDate) setEstimatedStartDate(draft.estimatedStartDate);
+        if (draft.estimatedDuration) setEstimatedDuration(draft.estimatedDuration);
         toast({
           title: isRTL ? '📝 تم استعادة المسودة' : '📝 Brouillon restauré',
           description: isRTL ? 'رجعنالك الشغل اللي كنت بتعمله' : 'Votre travail précédent a été restauré',

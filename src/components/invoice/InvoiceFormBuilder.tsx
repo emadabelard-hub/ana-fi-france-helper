@@ -2016,7 +2016,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                           { id: generateId(), label: 'Remise des clés', mode: 'percent', percent: 30 },
                         ]);
                       }
-                      if (checked) setAcompteEnabled(false);
+                      if (checked) {
+                        setAcompteEnabled(false);
+                        setDelaiPaiement('echeancier');
+                      }
                     }}
                   />
                 </div>

@@ -2402,6 +2402,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               setIncludeTravelCosts(false);
               setTravelDescription('');
               setTravelPrice(30);
+              setIncludeWasteCosts(false);
+              setWasteDescription('');
+              setWastePrice(0);
               setIsAutoEntrepreneur(false);
               setSelectedTvaRate(10);
               setValidityDuration(30);

@@ -30,6 +30,10 @@ export interface InvoiceDraft {
   includeTravelCosts: boolean;
   travelDescription: string;
   travelPrice: number;
+  includeWasteCosts?: boolean;
+  wasteDescription?: string;
+  wastePrice?: number;
+  travelPrice: number;
   isAutoEntrepreneur: boolean;
   selectedTvaRate: 5.5 | 10 | 20;
   validityDuration: 15 | 30 | 60 | 90;

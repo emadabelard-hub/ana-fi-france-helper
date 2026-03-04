@@ -401,7 +401,7 @@ const ProfilePage = () => {
               />
             </div>
             <div className="space-y-2">
-              <FieldLabel icon={Briefcase} label={isRTL ? 'المهنة' : 'Métier'} required isRTL={isRTL} />
+              <FieldLabel icon={Briefcase} label={isRTL ? 'المهنة' : 'Métier'} required isRTL={isRTL} filled={isFieldFilled('job')} />
               <StyledInput
                 value={formData.job}
                 onChange={(e) => handleChange('job', e.target.value)}

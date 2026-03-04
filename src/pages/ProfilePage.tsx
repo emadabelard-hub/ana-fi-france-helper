@@ -455,7 +455,7 @@ const ProfilePage = () => {
             </div>
 
             <div className="space-y-2">
-              <FieldLabel icon={Mail} label={isRTL ? 'الإيميل المهني' : 'Email professionnel'} isRTL={isRTL} />
+              <FieldLabel icon={Mail} label={isRTL ? 'الإيميل المهني' : 'Email professionnel'} isRTL={isRTL} filled={isFieldFilled('email')} />
               <StyledInput
                 type="email"
                 value={formData.email}

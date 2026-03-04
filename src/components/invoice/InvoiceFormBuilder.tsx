@@ -492,20 +492,21 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       tvaExempt,
       total: Math.round(total * 100) / 100,
       paymentDeadline: delaiPaiement === 'immediate' ? 'immediate' : undefined,
-      acomptePercent: acompteEnabled && acompteMode === 'percent' ? acomptePercent : undefined,
+      acomptePercent: acompteEnabled && !milestonesEnabled && acompteMode === 'percent' ? acomptePercent : undefined,
       acompteAmount: (() => {
-        if (!acompteEnabled) return undefined;
+        if (milestonesEnabled || !acompteEnabled) return undefined;
         if (acompteMode === 'percent') return Math.round(total * (acomptePercent / 100) * 100) / 100;
         return acompteFixedAmount;
       })(),
-      acompteMode: acompteEnabled ? acompteMode : undefined,
+      acompteMode: acompteEnabled && !milestonesEnabled ? acompteMode : undefined,
       netAPayer: (() => {
-        if (!acompteEnabled) return undefined;
+        if (milestonesEnabled || !acompteEnabled) return undefined;
         const acompte = acompteMode === 'percent' 
           ? Math.round(total * (acomptePercent / 100) * 100) / 100 
           : acompteFixedAmount;
         return Math.round((total - acompte) * 100) / 100;
       })(),
+      paymentMilestones: milestonesEnabled && paymentMilestones.length > 0 ? paymentMilestones : undefined,
       paymentTerms: (() => {
         const delaiLabel = delaiPaiement === 'immediate' ? 'à réception' 
           : delaiPaiement === '15jours' ? 'à 15 jours'
@@ -515,15 +516,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           : 'fin de mois';
         const moyenLabel = moyenPaiement === 'virement' ? 'Virement' : moyenPaiement === 'cheque' ? 'Chèque' : 'Espèces';
         let text = '';
-        if (acompteEnabled && ((acompteMode === 'percent' && acomptePercent > 0) || (acompteMode === 'fixed' && acompteFixedAmount > 0))) {
+        if (milestonesEnabled && paymentMilestones.length > 0) {
+          text += `Paiement selon échéancier (${paymentMilestones.length} étapes). `;
+          text += `Le paiement sera effectué selon l'avancement des travaux. `;
+        } else if (acompteEnabled && ((acompteMode === 'percent' && acomptePercent > 0) || (acompteMode === 'fixed' && acompteFixedAmount > 0))) {
           const acompteLabel = acompteMode === 'percent' 
             ? `${acomptePercent}%` 
             : `${acompteFixedAmount.toFixed(2)} €`;
-          text += `Acompte de ${acompteLabel} à la commande. Solde ${delaiLabel} par ${moyenLabel}.`;
+          text += `Acompte de ${acompteLabel} à la commande. Solde ${delaiLabel} par ${moyenLabel}. `;
         } else {
-          text += `Paiement ${delaiLabel} par ${moyenLabel}.`;
+          text += `Paiement ${delaiLabel} par ${moyenLabel}. `;
         }
-        text += ` En cas de retard : pénalités de 3 fois le taux légal + indemnité forfaitaire de 40€.`;
+        text += `En cas de retard : pénalités de 3 fois le taux légal + indemnité forfaitaire de 40€.`;
         return text;
       })(),
       legalMentions: tvaExempt 

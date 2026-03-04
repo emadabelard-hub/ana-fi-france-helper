@@ -149,7 +149,7 @@ const AR_LABELS: Record<string, string> = {
   'Retenue de garantie': 'ضمان محجوز',
 };
 
-const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
+const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplayProps) => {
   const photos = data.sitePhotos || [];
   const totalPhotoPages = photos.length > 0 ? Math.ceil(photos.length / 4) : 0;
   const totalPages = 1 + totalPhotoPages;

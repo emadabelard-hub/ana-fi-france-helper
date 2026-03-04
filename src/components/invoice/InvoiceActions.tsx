@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Image, Copy, Eye, EyeOff, Share2, ShieldCheck, ExternalLink } from 'lucide-react';
+import { FileText, Image, Copy, Eye, EyeOff, Share2, ShieldCheck, ExternalLink, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -458,19 +458,48 @@ const InvoiceActions = ({
             }
           </Button>
 
-          <div className={cn(
-            "flex gap-2",
-            isRTL && "flex-row-reverse"
-          )}>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handlePDFClick}
-              className={cn("flex-1 relative", isRTL && "flex-row-reverse font-cairo")}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              {isRTL ? '📄 تحميل PDF' : '📄 Télécharger PDF'}
-            </Button>
+          {/* PDF export options */}
+          <div className="space-y-2">
+            <p className={cn("text-xs font-medium text-muted-foreground", isRTL && "text-right font-cairo")}>
+              {isRTL ? '📥 تحميل PDF' : '📥 Télécharger le PDF'}
+            </p>
+            <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePDFClick}
+                className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                {isRTL ? 'PDF كلاسيكي' : 'PDF classique'}
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={async () => {
+                  const blob = await generateSignedPdf();
+                  if (blob) {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `facturx-${invoiceData.type.toLowerCase()}-${invoiceData.number}.pdf`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                    toast({
+                      title: isRTL ? '✅ تم التحميل' : '✅ Téléchargé',
+                      description: isRTL ? 'PDF Factur-X جاهز (EN 16931)' : 'PDF Factur-X conforme EN 16931',
+                    });
+                  }
+                }}
+                className={cn("flex-1 relative", isRTL && "flex-row-reverse font-cairo")}
+              >
+                <ShieldCheck className="h-4 w-4 mr-2" />
+                {isRTL ? 'PDF Factur-X' : 'PDF Factur-X'}
+              </Button>
+            </div>
+          </div>
+
+          <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
             <Button
               variant="outline"
               size="sm"
@@ -480,15 +509,15 @@ const InvoiceActions = ({
               <Image className="h-4 w-4 mr-2" />
               {isRTL ? '🖼️ حفظ كصورة' : '🖼️ Enregistrer image'}
             </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopyText}
-            className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
-          >
-            <Copy className="h-4 w-4 mr-2" />
-            {isRTL ? '📋 نسخ النص' : '📋 Copier texte'}
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyText}
+              className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              {isRTL ? '📋 نسخ النص' : '📋 Copier texte'}
+            </Button>
           </div>
 
           {/* Official Platform Links – Factur-X 2026 */}

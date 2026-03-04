@@ -186,7 +186,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
     <div 
       dir="ltr"
       lang="fr"
-      className="french-invoice bg-white text-black rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none select-none"
+      className="french-invoice bg-white text-black rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none print:max-w-none print:rounded-none select-none"
       style={{
         padding: '1.5cm 1.5cm 2cm 1.5cm',
         boxSizing: 'border-box',

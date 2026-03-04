@@ -1892,7 +1892,33 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
         </CardContent>
       </Card>
-      
+
+      {/* Photo Attachment Toggle - shown only when photos exist */}
+      {sitePhotos.length > 0 && (
+        <Card className="border-amber-500/20 bg-amber-500/5">
+          <CardContent className="p-4 space-y-2">
+            <div className={cn("flex items-center justify-between gap-3", isRTL && "flex-row-reverse")}>
+              <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                <span className="text-lg">📷</span>
+                <Label htmlFor="photo-toggle" className={cn("text-sm font-bold cursor-pointer", isRTL && "font-cairo")}>
+                  {isRTL ? 'هل تحب تضيف الصور في الـ PDF؟' : 'Souhaitez-vous joindre les photos au PDF ?'}
+                </Label>
+              </div>
+              <Switch
+                id="photo-toggle"
+                checked={includePhotosInPdf}
+                onCheckedChange={setIncludePhotosInPdf}
+              />
+            </div>
+            <p className={cn("text-[10px] text-muted-foreground leading-tight", isRTL && "text-right font-cairo")}>
+              {includePhotosInPdf
+                ? (isRTL ? `✅ ${sitePhotos.length} صورة هتتضاف في صفحة "Annexe Photos" بعد الصفحة الرئيسية.` : `✅ ${sitePhotos.length} photo(s) seront ajoutées en annexe (page 2+).`)
+                : (isRTL ? '📊 الصور هتتستخدم بس في تحليل الأسعار، ومش هتظهر في الـ PDF.' : '📊 Les photos seront utilisées uniquement pour l\'analyse IA, sans apparaître dans le PDF.')}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Preview & Actions */}
       {showPreview ? (
         <div className="space-y-4 relative">

@@ -86,6 +86,10 @@ const InvoiceActions = ({
       for (let i = 0; i < pages.length; i++) {
         if (i > 0) pdf.addPage();
 
+        // Wait for all images inside the page to finish loading
+        const imgs = Array.from((pages[i] as HTMLElement).querySelectorAll('img'));
+        await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })));
+
         const canvas = await html2canvas(pages[i] as HTMLElement, {
           backgroundColor: '#ffffff',
           scale: 2,

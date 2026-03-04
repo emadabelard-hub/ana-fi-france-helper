@@ -491,6 +491,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         {data.legalMentions && <p>{data.legalMentions}</p>}
         <p className="text-gray-500 font-medium">Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard de paiement (Art. L.441-10 et D.441-5 du Code de commerce).</p>
       </div>
+      </div>{/* end invoice-totals-signature-block */}
 
       {/* Online Payment Section - floats in white space, no layout push */}
       {(data.type === 'FACTURE' || data.paymentDeadline === 'immediate') && (

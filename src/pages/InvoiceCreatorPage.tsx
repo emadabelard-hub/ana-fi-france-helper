@@ -58,14 +58,19 @@ const InvoiceCreatorPage = () => {
     
     // Check for prefill data from Smart Devis
     if (prefillSource === 'smart') {
-      const storedData = sessionStorage.getItem('smartDevisData');
-      if (storedData) {
-        try {
-          const parsed = JSON.parse(storedData);
-          setPrefillData(parsed);
-          sessionStorage.removeItem('smartDevisData');
-        } catch (e) {
-          console.error('Failed to parse smart devis data:', e);
+      const stateData = (location.state as any)?.smartDevisData;
+      if (stateData) {
+        setPrefillData(stateData);
+      } else {
+        const storedData = sessionStorage.getItem('smartDevisData');
+        if (storedData) {
+          try {
+            const parsed = JSON.parse(storedData);
+            setPrefillData(parsed);
+            sessionStorage.removeItem('smartDevisData');
+          } catch (e) {
+            console.error('Failed to parse smart devis data:', e);
+          }
         }
       }
     }

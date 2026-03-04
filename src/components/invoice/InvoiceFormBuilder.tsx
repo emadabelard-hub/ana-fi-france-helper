@@ -115,8 +115,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [dueDateDays, setDueDateDays] = useState<15 | 30 | 45 | 60>(30);
   
   // Payment terms state
+  const [acompteEnabled, setAcompteEnabled] = useState(false);
   const [acomptePercent, setAcomptePercent] = useState<number>(30);
-  const [delaiPaiement, setDelaiPaiement] = useState<string>('reception');
+  const [acompteMode, setAcompteMode] = useState<'percent' | 'fixed'>('percent');
+  const [acompteFixedAmount, setAcompteFixedAmount] = useState<number>(0);
+  const [delaiPaiement, setDelaiPaiement] = useState<string>('30jours');
   const [moyenPaiement, setMoyenPaiement] = useState<string>('virement');
   
   // Line items - use empty strings for quantity/price to allow clean input

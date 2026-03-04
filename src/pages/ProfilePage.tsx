@@ -441,7 +441,7 @@ const ProfilePage = () => {
             </div>
 
             <div className="space-y-2">
-              <FieldLabel icon={FileText} label={isRTL ? 'رقم السيريت (SIRET)' : 'Numéro SIRET'} isRTL={isRTL} />
+              <FieldLabel icon={FileText} label={isRTL ? 'رقم السيريت (SIRET)' : 'Numéro SIRET'} isRTL={isRTL} filled={isFieldFilled('siret')} />
               <StyledInput
                 value={formData.siret}
                 onChange={(e) => handleChange('siret', e.target.value)}

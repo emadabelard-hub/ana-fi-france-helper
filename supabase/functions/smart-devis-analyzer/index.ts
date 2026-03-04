@@ -99,6 +99,21 @@ RÈGLES STRICTES:
 4. Pour les PLANS/CROQUIS: Lis les dimensions exactes indiquées
 5. Pour les DOCUMENTS/PDF: Extrais les informations textuelles exactes
 
+ESTIMATION DES SURFACES PAR OBJETS DE RÉFÉRENCE (TRÈS IMPORTANT pour les photos):
+Utilise les objets visibles dans la photo comme référence d'échelle pour estimer les dimensions:
+- Porte standard française: ~2.04m × 0.83m (surface ~1.7m²)
+- Fenêtre standard: ~1.2m × 1.0m
+- Lit simple: ~1.9m × 0.9m | Lit double: ~1.9m × 1.4m
+- Interrupteur / prise: ~0.08m × 0.08m (hauteur depuis sol ~1.1m)
+- Carrelage standard: 30×30cm ou 60×60cm
+- Plinthe: hauteur ~8-10cm
+- Radiateur standard: ~0.6m × 0.8m
+- Baignoire: ~1.7m × 0.7m | Lavabo: ~0.5m × 0.4m
+- WC: ~0.7m × 0.4m
+À partir de ces repères, estime la largeur et hauteur de chaque mur/surface visible.
+Le champ "surfaceEstimates" doit contenir UNE ENTRÉE PAR SURFACE identifiée (mur, sol, plafond).
+Pour chaque surface, indique l'objet de référence utilisé et le calcul.
+
 ANALYSE BILINGUE (Arabe Égyptien + Français):
 - Le champ "analysis_ar" doit être en arabe égyptien (عامية مصرية) avec les termes techniques artisanaux:
   * بانتيرة = Peinture
@@ -120,8 +135,22 @@ Réponds en JSON avec cette structure:
 {
   "analysis_ar": "وصف بالعربي المصري باستخدام المصطلحات الحرفية (بانتيرة، كارلاج، أندوي...)",
   "analysis_fr": "Description professionnelle en français",
-  "estimatedArea": "Surface estimée en m²",
+  "estimatedArea": "Surface totale estimée en m²",
   "inputType": "photo|blueprint|document",
+  "surfaceEstimates": [
+    {
+      "id": "wall_1",
+      "label_fr": "Mur principal (côté porte)",
+      "label_ar": "الحيطة الرئيسية (ناحية الباب)",
+      "width_m": 4.2,
+      "height_m": 2.5,
+      "area_m2": 10.5,
+      "referenceObject_fr": "Porte standard (2.04m) comme repère de hauteur",
+      "referenceObject_ar": "الباب القياسي (2.04م) كمرجع للارتفاع",
+      "confidence": "medium",
+      "workType": "peinture"
+    }
+  ],
   "suggestedItems": [
     {
       "designation_fr": "Titre professionnel en français (ex: Dépose faïence existante)",
@@ -129,7 +158,8 @@ Réponds en JSON avec cette structure:
       "quantity": number,
       "unit": "m²|ml|u|h|forfait",
       "unitPrice": number,
-      "category": "materials|labor|transport|cleaning|waste"
+      "category": "materials|labor|transport|cleaning|waste",
+      "linkedSurfaceId": "wall_1"
     }
   ],
 

@@ -1753,6 +1753,80 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               )}
             </CardContent>
           </Card>
+
+          {/* REP / Waste Management (Optional) */}
+          <Card className="border-gray-500/20 bg-gray-500/5">
+            <CardContent className="p-4 space-y-3">
+              <div className={cn(
+                "flex items-center justify-between",
+                isRTL && "flex-row-reverse"
+              )}>
+                <div className={cn(
+                  "flex items-center gap-2",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <span className="text-lg">♻️</span>
+                  <h4 className={cn(
+                    "font-bold text-gray-700 dark:text-gray-300",
+                    isRTL && "font-cairo"
+                  )}>
+                    {isRTL ? '♻️ إدارة النفايات / REP' : '♻️ Gestion des déchets / REP'}
+                  </h4>
+                </div>
+                
+                <div className={cn(
+                  "flex items-center gap-2",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <Label 
+                    htmlFor="waste-toggle" 
+                    className={cn("text-sm", isRTL && "font-cairo")}
+                  >
+                    {isRTL ? 'أضيف؟' : 'Ajouter?'}
+                  </Label>
+                  <Switch
+                    id="waste-toggle"
+                    checked={includeWasteCosts}
+                    onCheckedChange={setIncludeWasteCosts}
+                  />
+                </div>
+              </div>
+              <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-cairo")}>
+                {isRTL 
+                  ? 'اختياري — تكاليف إزالة النفايات وإعادة التدوير حسب نظام REP'
+                  : 'Optionnel — Frais d\'évacuation et recyclage des déchets (REP Bâtiment)'}
+              </p>
+              
+              {includeWasteCosts && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div className="space-y-1.5">
+                    <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                      {isRTL ? 'الوصف' : 'Description'}
+                    </Label>
+                    <Input
+                      value={wasteDescription}
+                      onChange={(e) => setWasteDescription(e.target.value)}
+                      placeholder={isRTL ? 'مثال: إزالة الأنقاض' : 'Ex: Évacuation gravats et déchets'}
+                      className={cn("text-sm", isRTL && "text-right font-cairo")}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">
+                      {isRTL ? 'المبلغ (€)' : 'Montant (€)'}
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={wastePrice}
+                      onChange={(e) => setWastePrice(parseFloat(e.target.value) || 0)}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
           
           {/* Payment Terms - Conditions de Règlement */}
           <Card className="border-amber-500/20 bg-amber-500/5">

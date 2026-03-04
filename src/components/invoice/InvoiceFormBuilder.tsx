@@ -505,7 +505,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         if (p.numero_tva) parts.push(`TVA : ${p.numero_tva}`);
         return parts.length > 1 ? parts.join(' - ') : (p.legal_footer || undefined);
       })(),
-      sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
+      sitePhotos: (sitePhotos.length > 0 && includePhotosInPdf) ? sitePhotos : undefined,
     };
   };
   

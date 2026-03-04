@@ -502,6 +502,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         address: workSiteSameAsClient ? undefined : workSiteAddress,
       },
       natureOperation,
+      descriptionChantier: descriptionChantier.trim() || undefined,
+      estimatedStartDate: estimatedStartDate.trim() || undefined,
+      estimatedDuration: estimatedDuration.trim() || undefined,
       assuranceDecennale: assureurName ? {
         assureurName,
         assureurAddress,

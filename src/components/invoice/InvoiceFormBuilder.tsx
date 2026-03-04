@@ -1192,14 +1192,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               >
                 <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                   <RadioGroupItem value="yes" id="b2b-yes" />
-                  <Label htmlFor="b2b-yes" className={cn("cursor-pointer text-sm", isRTL && "font-cairo")}>
-                    {isRTL ? 'نعم' : 'Oui'}
+                  <Label htmlFor="b2b-yes" className={cn("cursor-pointer text-sm font-cairo")}>
+                    نعم
                   </Label>
                 </div>
                 <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                   <RadioGroupItem value="no" id="b2b-no" />
-                  <Label htmlFor="b2b-no" className={cn("cursor-pointer text-sm", isRTL && "font-cairo")}>
-                    {isRTL ? 'لا' : 'Non'}
+                  <Label htmlFor="b2b-no" className={cn("cursor-pointer text-sm font-cairo")}>
+                    لا
                   </Label>
                 </div>
               </RadioGroup>

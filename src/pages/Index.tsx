@@ -111,23 +111,6 @@ const Index = () => {
           </div>
         </button>
 
-        {/* Position 3: AI Assistant */}
-        <button
-          onClick={() => handleNavigate('/ai-assistant', 'فتح شبيك لبيك')}
-          className="w-full mt-4 bg-gradient-to-br from-[#EDE7F6] to-[#D1C4E9] dark:from-[#1A0A2E] dark:to-[#140820] p-5 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[#B39DDB]/30 dark:border-[#7C3AED]/20 shadow-sm"
-        >
-          <div className="bg-gradient-to-br from-[#7c3aed] to-[#a855f7] p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(124,58,237,0.3)] shrink-0">
-            <Sparkles size={28} className="text-white" />
-          </div>
-          <div className={cn("flex-1 min-w-0", isRTL ? "text-right" : "text-left")}>
-            <h3 className={cn("text-[1.2rem] font-extrabold leading-snug text-black", isRTL && "font-cairo")}>
-              {isRTL ? 'شبيك لبيك' : 'Assistant IA'}
-            </h3>
-            <p className={cn("text-[1rem] font-bold text-black/80 mt-1", isRTL && "font-cairo")}>
-              {isRTL ? 'اسأل أي سؤال وأنا هاجاوبك فوراً يا فندم' : 'Smart : réponses instantanées à toutes vos questions'}
-            </p>
-          </div>
-        </button>
 
         {/* News Card */}
         <button

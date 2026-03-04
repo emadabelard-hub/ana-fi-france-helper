@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, PenLine, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -17,14 +17,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-// Version 1.1 - Stable Build
+// Version 1.1.2 - Stable Build
 const InvoiceCreatorPage = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  
   // Get document type from URL or show modal
   const urlDocType = searchParams.get('type') as 'devis' | 'facture' | null;
   const prefillSource = searchParams.get('prefill');
@@ -58,18 +58,23 @@ const InvoiceCreatorPage = () => {
     
     // Check for prefill data from Smart Devis
     if (prefillSource === 'smart') {
-      const storedData = sessionStorage.getItem('smartDevisData');
-      if (storedData) {
-        try {
-          const parsed = JSON.parse(storedData);
-          setPrefillData(parsed);
-          sessionStorage.removeItem('smartDevisData');
-        } catch (e) {
-          console.error('Failed to parse smart devis data:', e);
+      const stateData = (location.state as any)?.smartDevisData;
+      if (stateData) {
+        setPrefillData(stateData);
+      } else {
+        const storedData = sessionStorage.getItem('smartDevisData');
+        if (storedData) {
+          try {
+            const parsed = JSON.parse(storedData);
+            setPrefillData(parsed);
+            sessionStorage.removeItem('smartDevisData');
+          } catch (e) {
+            console.error('Failed to parse smart devis data:', e);
+          }
         }
       }
     }
-  }, [urlDocType, documentType, prefillSource]);
+  }, [urlDocType, documentType, prefillSource, location.state]);
   
   // Handle document type selection
   const handleTypeSelect = (type: 'devis' | 'facture') => {

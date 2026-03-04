@@ -511,6 +511,22 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Check if form is valid
   const isFormValid = clientName.trim() && items.some(item => item.designation_fr.trim() && item.unitPrice > 0);
+
+  const getTechnicalErrorMessage = (error: unknown) => {
+    const err = error as any;
+    const raw = err?.context?.body || err?.message || err?.error_description || err?.details || err?.hint || String(error);
+
+    if (typeof raw === 'string') {
+      return raw.length > 240 ? `${raw.slice(0, 240)}…` : raw;
+    }
+
+    try {
+      const asText = JSON.stringify(raw);
+      return asText.length > 240 ? `${asText.slice(0, 240)}…` : asText;
+    } catch {
+      return 'Unknown technical error';
+    }
+  };
   
   // Handle item quantity/price change
   const handleItemChange = (id: string, field: keyof LineItem, value: string | number) => {
@@ -798,11 +814,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         description: isRTL ? 'المستند محفوظ في مستنداتك' : 'Document enregistré dans vos documents.',
       });
     } catch (e) {
-      console.error('Save error:', e);
+      const technicalMessage = getTechnicalErrorMessage(e);
+      console.error('Save error (documents_comptables insert):', e);
       toast({
         variant: 'destructive',
-        title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'تعذر حفظ المستند' : 'Impossible de sauvegarder le document.',
+        title: isRTL ? 'خطأ قاعدة البيانات' : 'Erreur base de données',
+        description: technicalMessage,
       });
     }
   };
@@ -2012,9 +2029,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
                 }
 
-                // Check B2B client SIRET
-                if (clientIsB2B && (!clientSiren || clientSiren.replace(/\s/g, '').length < 9)) {
-                  missingFields.push(isRTL ? '🏢 SIRET الزبون (إجباري B2B)' : '🏢 SIRET du client (obligatoire en B2B)');
+                // B2B SIREN/SIRET should not block submission if validation parsing is buggy.
+                // We keep it as a non-blocking warning only.
+                const clientSirenDigits = clientSiren.replace(/\s/g, '');
+                if (clientIsB2B && clientSirenDigits && ![9, 14].includes(clientSirenDigits.length)) {
+                  toast({
+                    title: isRTL ? 'تنبيه SIREN/SIRET' : 'Alerte SIREN/SIRET',
+                    description: isRTL
+                      ? 'تنسيق رقم الزبون غير قياسي، لكن هنكمّل الإرسال.'
+                      : 'Format SIREN/SIRET client non standard, envoi maintenu.',
+                  });
                 }
                 
                 // Check work site address if different from client
@@ -2060,11 +2084,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 
                 setShowChecklist(true);
               } catch (err) {
+                const technicalMessage = getTechnicalErrorMessage(err);
                 console.error('Preview validation error:', err);
                 toast({
                   variant: "destructive",
-                  title: isRTL ? "⚠️ خطأ" : "⚠️ Erreur",
-                  description: isRTL ? 'حصل مشكلة. جرب تاني.' : 'Une erreur est survenue. Réessayez.',
+                  title: isRTL ? "⚠️ خطأ تقني" : "⚠️ Erreur technique",
+                  description: technicalMessage,
                 });
               }
             }}

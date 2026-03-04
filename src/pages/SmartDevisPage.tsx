@@ -404,21 +404,33 @@ const SmartDevisPage = () => {
   const grandTotal = lineItems.reduce((sum, i) => sum + i.total, 0);
 
   const handleSendToInvoice = () => {
-    // Collect image photos for annexe
-    const sitePhotos = uploadedFiles
-      .filter(f => f.type === 'image')
-      .map(f => ({ data: f.data, name: f.name }));
+    try {
+      // Collect image photos for annexe
+      const sitePhotos = uploadedFiles
+        .filter(f => f.type === 'image')
+        .map(f => ({ data: f.data, name: f.name }));
 
-    const prefillData = {
-      items: lineItems.map(item => ({
-        ...item,
-        id: generateId(),
-      })),
-      source: 'smart_devis',
-      sitePhotos,
-    };
-    sessionStorage.setItem('smartDevisData', JSON.stringify(prefillData));
-    navigate('/pro/invoice-creator?type=devis&prefill=smart');
+      const prefillData = {
+        items: lineItems.map(item => ({
+          ...item,
+          id: generateId(),
+        })),
+        source: 'smart_devis',
+        sitePhotos,
+      };
+
+      navigate('/pro/invoice-creator?type=devis&prefill=smart', {
+        state: { smartDevisData: prefillData },
+      });
+    } catch (err: any) {
+      const technicalMessage = err?.message || err?.context?.body || String(err);
+      console.error('[SmartDevis->InvoiceTransfer] Failed to transfer data:', err);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ تقني أثناء التحويل' : 'Erreur technique de transfert',
+        description: technicalMessage,
+      });
+    }
   };
 
   const formatCurrency = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);

@@ -431,7 +431,7 @@ const ProfilePage = () => {
           />
           <FieldGroup>
             <div className="space-y-2">
-              <FieldLabel icon={Building2} label={isRTL ? 'اسم الشركة' : "Nom de l'entreprise"} isRTL={isRTL} />
+              <FieldLabel icon={Building2} label={isRTL ? 'اسم الشركة' : "Nom de l'entreprise"} isRTL={isRTL} filled={!!formData.company_name.trim()} />
               <StyledInput
                 value={formData.company_name}
                 onChange={(e) => handleChange('company_name', e.target.value)}

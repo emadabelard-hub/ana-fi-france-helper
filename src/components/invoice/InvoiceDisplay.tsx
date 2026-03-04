@@ -1,5 +1,14 @@
 import { cn } from '@/lib/utils';
 
+export interface PaymentMilestone {
+  id: string;
+  label: string;
+  mode: 'percent' | 'fixed';
+  percent?: number;
+  amount?: number;
+  targetDate?: string;
+}
+
 export interface InvoiceData {
   type: string;
   number: string;
@@ -57,6 +66,7 @@ export interface InvoiceData {
   acompteAmount?: number;
   acompteMode?: 'percent' | 'fixed';
   netAPayer?: number;
+  paymentMilestones?: PaymentMilestone[];
   legalMentions?: string;
   legalFooter?: string;
   logoUrl?: string;

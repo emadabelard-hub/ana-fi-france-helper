@@ -103,6 +103,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [includeTravelCosts, setIncludeTravelCosts] = useState(false);
   const [travelDescription, setTravelDescription] = useState('');
   const [travelPrice, setTravelPrice] = useState(30);
+  // REP / Waste management state
+  const [includeWasteCosts, setIncludeWasteCosts] = useState(false);
+  const [wasteDescription, setWasteDescription] = useState('');
+  const [wastePrice, setWastePrice] = useState(0);
   
   // TVA state - Auto-entrepreneur franchise de TVA
   const [isAutoEntrepreneur, setIsAutoEntrepreneur] = useState(false);
@@ -235,6 +239,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         setIncludeTravelCosts(draft.includeTravelCosts);
         setTravelDescription(draft.travelDescription || '');
         setTravelPrice(draft.travelPrice || 30);
+        if ((draft as any).includeWasteCosts) setIncludeWasteCosts((draft as any).includeWasteCosts);
+        if ((draft as any).wasteDescription) setWasteDescription((draft as any).wasteDescription);
+        if ((draft as any).wastePrice) setWastePrice((draft as any).wastePrice);
         setIsAutoEntrepreneur(draft.isAutoEntrepreneur);
         setSelectedTvaRate(draft.selectedTvaRate || 10);
         setValidityDuration(draft.validityDuration || 30);
@@ -290,6 +297,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         includeTravelCosts,
         travelDescription,
         travelPrice,
+        includeWasteCosts,
+        wasteDescription,
+        wastePrice,
         isAutoEntrepreneur,
         selectedTvaRate,
         validityDuration,
@@ -310,7 +320,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       });
     }, 1000);
     return () => clearTimeout(timer);
-  }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled]);
+  }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled]);
 
   // Handle prefill data from quote-to-invoice conversion
   useEffect(() => {
@@ -425,6 +435,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         unit: 'forfait',
         unitPrice: travelPrice,
         total: travelPrice,
+      });
+    }
+    
+    // Add waste/REP costs as a line item if enabled
+    if (includeWasteCosts && wastePrice > 0) {
+      allItems.push({
+        id: generateId(),
+        designation_fr: wasteDescription || 'Gestion des déchets / REP',
+        designation_ar: 'إدارة النفايات',
+        quantity: 1,
+        unit: 'forfait',
+        unitPrice: wastePrice,
+        total: wastePrice,
       });
     }
     
@@ -1344,7 +1367,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
             <HardHat className="h-5 w-5 text-gray-700 dark:text-gray-300" />
             <h3 className={cn("font-bold text-gray-800 dark:text-gray-200", isRTL && "font-cairo")}>
-              {isRTL ? '🛡️ التأمين العشري (Décennale)' : '🛡️ Assurance Décennale'}
+              {isRTL ? '🛡️ التأمين العشري و RC Pro' : '🛡️ Assurance Décennale & RC Pro'}
             </h3>
           </div>
           <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-cairo")}>
@@ -1729,6 +1752,80 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                       step="1"
                       value={travelPrice}
                       onChange={(e) => setTravelPrice(parseFloat(e.target.value) || 0)}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* REP / Waste Management (Optional) */}
+          <Card className="border-gray-500/20 bg-gray-500/5">
+            <CardContent className="p-4 space-y-3">
+              <div className={cn(
+                "flex items-center justify-between",
+                isRTL && "flex-row-reverse"
+              )}>
+                <div className={cn(
+                  "flex items-center gap-2",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <span className="text-lg">♻️</span>
+                  <h4 className={cn(
+                    "font-bold text-gray-700 dark:text-gray-300",
+                    isRTL && "font-cairo"
+                  )}>
+                    {isRTL ? '♻️ إدارة النفايات / REP' : '♻️ Gestion des déchets / REP'}
+                  </h4>
+                </div>
+                
+                <div className={cn(
+                  "flex items-center gap-2",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <Label 
+                    htmlFor="waste-toggle" 
+                    className={cn("text-sm", isRTL && "font-cairo")}
+                  >
+                    {isRTL ? 'أضيف؟' : 'Ajouter?'}
+                  </Label>
+                  <Switch
+                    id="waste-toggle"
+                    checked={includeWasteCosts}
+                    onCheckedChange={setIncludeWasteCosts}
+                  />
+                </div>
+              </div>
+              <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-cairo")}>
+                {isRTL 
+                  ? 'اختياري — تكاليف إزالة النفايات وإعادة التدوير حسب نظام REP'
+                  : 'Optionnel — Frais d\'évacuation et recyclage des déchets (REP Bâtiment)'}
+              </p>
+              
+              {includeWasteCosts && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div className="space-y-1.5">
+                    <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                      {isRTL ? 'الوصف' : 'Description'}
+                    </Label>
+                    <Input
+                      value={wasteDescription}
+                      onChange={(e) => setWasteDescription(e.target.value)}
+                      placeholder={isRTL ? 'مثال: إزالة الأنقاض' : 'Ex: Évacuation gravats et déchets'}
+                      className={cn("text-sm", isRTL && "text-right font-cairo")}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">
+                      {isRTL ? 'المبلغ (€)' : 'Montant (€)'}
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={wastePrice}
+                      onChange={(e) => setWastePrice(parseFloat(e.target.value) || 0)}
                       className="text-sm"
                     />
                   </div>
@@ -2305,6 +2402,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               setIncludeTravelCosts(false);
               setTravelDescription('');
               setTravelPrice(30);
+              setIncludeWasteCosts(false);
+              setWasteDescription('');
+              setWastePrice(0);
               setIsAutoEntrepreneur(false);
               setSelectedTvaRate(10);
               setValidityDuration(30);

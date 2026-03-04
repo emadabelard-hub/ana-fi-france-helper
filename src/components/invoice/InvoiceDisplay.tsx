@@ -215,7 +215,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             {data.emitter.phone && <p className="text-[10px] text-gray-600">Tél: {data.emitter.phone}</p>}
             {data.emitter.email && <p className="text-[10px] text-gray-600">Email: {data.emitter.email}</p>}
             {data.emitter.decennale && (
-              <p className="text-[10px] text-gray-600">Assurance Décennale: {data.emitter.decennale}</p>
+              <p className="text-[10px] text-gray-600">Assurance Décennale & RC Pro: {data.emitter.decennale}</p>
             )}
           </div>
           <div className="text-right">
@@ -457,8 +457,8 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
       {/* Assurance Décennale (BTP) */}
       {data.assuranceDecennale && data.assuranceDecennale.assureurName && (
         <div className="border border-gray-300 bg-gray-50 rounded p-2 mb-3 text-[9px] text-gray-700 space-y-0.5">
-          <p className="font-bold text-black text-[10px] mb-1">🛡️ Assurance de responsabilité décennale</p>
-          <p>Assurance de responsabilité décennale obligatoire souscrite auprès de :</p>
+          <p className="font-bold text-black text-[10px] mb-1">🛡️ Assurance Décennale & RC Pro</p>
+          <p>Assurance de responsabilité décennale & RC Pro obligatoire souscrite auprès de :</p>
           <p className="font-semibold">{data.assuranceDecennale.assureurName}</p>
           {data.assuranceDecennale.assureurAddress && (
             <p>{data.assuranceDecennale.assureurAddress}</p>

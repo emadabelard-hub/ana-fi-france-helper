@@ -215,7 +215,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             {data.emitter.phone && <p className="text-[10px] text-gray-600">Tél: {data.emitter.phone}</p>}
             {data.emitter.email && <p className="text-[10px] text-gray-600">Email: {data.emitter.email}</p>}
             {data.emitter.decennale && (
-              <p className="text-[10px] text-gray-600">Assurance Décennale: {data.emitter.decennale}</p>
+              <p className="text-[10px] text-gray-600">Assurance Décennale & RC Pro: {data.emitter.decennale}</p>
             )}
           </div>
           <div className="text-right">

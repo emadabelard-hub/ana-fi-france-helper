@@ -432,6 +432,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       });
     }
     
+    // Add waste/REP costs as a line item if enabled
+    if (includeWasteCosts && wastePrice > 0) {
+      allItems.push({
+        id: generateId(),
+        designation_fr: wasteDescription || 'Gestion des déchets / REP',
+        designation_ar: 'إدارة النفايات',
+        quantity: 1,
+        unit: 'forfait',
+        unitPrice: wastePrice,
+        total: wastePrice,
+      });
+    }
+    
     const subtotal = allItems.reduce((sum, item) => sum + item.total, 0);
     
     // Smart TVA calculation: Auto-entrepreneur = franchise de TVA

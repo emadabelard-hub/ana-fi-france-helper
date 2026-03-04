@@ -575,7 +575,7 @@ const ProfilePage = () => {
           <FieldGroup>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
-                <FieldLabel icon={Building2} label={isRTL ? 'اسم شركة التأمين' : "Nom de l'assureur"} required isRTL={isRTL} />
+                <FieldLabel icon={Building2} label={isRTL ? 'اسم شركة التأمين' : "Nom de l'assureur"} required isRTL={isRTL} filled={isFieldFilled('assureur_name')} />
                 <StyledInput
                   value={formData.assureur_name}
                   onChange={(e) => handleChange('assureur_name', e.target.value)}

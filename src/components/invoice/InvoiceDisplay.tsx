@@ -228,7 +228,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
         
         <div className="flex flex-wrap gap-3 text-[8px] font-bold bg-gray-50 p-1.5 rounded border border-gray-200 mt-2">
-          <span className="text-gray-500">📅 Émis le : {data.date}</span>
+          <span className="text-gray-700 font-extrabold">📅 Date d'émission : {data.date}</span>
           {data.type === 'DEVIS' && data.validUntil && (
             <>
               <span className="text-gray-300">|</span>

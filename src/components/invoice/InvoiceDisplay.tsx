@@ -224,7 +224,7 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
               <span className="text-amber-600 font-semibold">⏳ Valide jusqu'au : {data.validUntil}</span>
             </>
           )}
-          {data.type === 'FACTURE' && data.dueDate && (
+          {data.dueDate && (
             <>
               <span className="text-gray-300">|</span>
               <span className="text-red-600 font-semibold">📅 Échéance : {data.dueDate}</span>

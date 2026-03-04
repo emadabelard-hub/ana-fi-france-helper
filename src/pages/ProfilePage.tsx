@@ -677,7 +677,7 @@ const ProfilePage = () => {
             isRTL && "font-[IBMPlexSansArabic]"
           )}>
           <LogOut className="h-4 w-4" />
-          {isRTL ? "اخرج" : "Se déconnecter"}
+          {isRTL ? "خروج" : "Se déconnecter"}
         </Button>
 
         <DeleteAccountSection />

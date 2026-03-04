@@ -55,11 +55,26 @@ const FieldGroup = ({ children, className }: { children: React.ReactNode; classN
   <div className={cn("px-5 pb-5 space-y-4", className)}>{children}</div>
 );
 
-const FieldLabel = ({ icon: Icon, label, required, isRTL }: { icon: any; label: string; required?: boolean; isRTL: boolean }) => (
+const FieldStatus = ({ filled, isRTL }: { filled: boolean; isRTL: boolean }) => (
+  filled ? (
+    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+  ) : (
+    <span className="inline-flex items-center gap-1 shrink-0">
+      <Circle className="h-3 w-3 text-muted-foreground/40" />
+      <span className={cn("text-[10px] font-medium text-destructive/70", isRTL && "font-[IBMPlexSansArabic]")}>
+        {isRTL ? 'مطلوب' : 'Requis'}
+      </span>
+    </span>
+  )
+);
+
+const FieldLabel = ({ icon: Icon, label, required, isRTL, filled }: { icon: any; label: string; required?: boolean; isRTL: boolean; filled?: boolean }) => (
   <Label className={cn("flex items-center gap-2 text-[13px] font-medium text-foreground/70", isRTL && "flex-row-reverse font-[IBMPlexSansArabic]")}>
     <Icon className="h-3.5 w-3.5 text-primary/50" />
     {label}
     {required && <span className="text-destructive text-xs">*</span>}
+    <span className="flex-1" />
+    {filled !== undefined && <FieldStatus filled={filled} isRTL={isRTL} />}
   </Label>
 );
 

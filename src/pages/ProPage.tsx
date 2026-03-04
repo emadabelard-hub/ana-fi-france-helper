@@ -2,10 +2,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { PenLine, Settings, ArrowRight, ArrowLeft, FolderOpen } from 'lucide-react';
+import { Settings, ArrowRight, ArrowLeft, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
 const ProPage = () => {
   const { isRTL, t } = useLanguage();
   const navigate = useNavigate();

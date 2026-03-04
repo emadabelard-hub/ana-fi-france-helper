@@ -70,8 +70,8 @@ export function buildFacturXDataFromInvoice(invoiceData: {
   // Parse address for postal code and city
   const addressParts = invoiceData.emitter.address?.match(/(\d{5})\s+(.+)$/);
 
-  // Detect TVA number from legal footer
-  const tvaMatch = invoiceData.legalFooter?.match(/TVA\s*:\s*(FR\w+)/i);
+  // Detect TVA number from legal footer (supports both "TVA :" and "TVA Intracommunautaire :")
+  const tvaMatch = invoiceData.legalFooter?.match(/TVA(?:\s+Intracommunautaire)?\s*:\s*(FR[\s\w]+)/i);
 
   // Build line items for BASIC profile
   const lineItems: FacturXLineItem[] = invoiceData.items.map((item, idx) => ({

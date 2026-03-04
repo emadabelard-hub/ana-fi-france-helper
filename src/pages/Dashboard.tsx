@@ -30,8 +30,8 @@ const Dashboard = () => {
     },
     {
       icon: FileText,
-      title: isRTL ? 'فاتورة جديدة' : 'Créer une Facture',
-      subtitle: isRTL ? 'للحرفيين والمستقلين' : 'Pour artisans & indépendants',
+      title: isRTL ? 'فواتير ودوفيهات' : 'Factures & Devis',
+      subtitle: isRTL ? 'اعمل الفاكتير والدوفي بتوعك بسهولة أو حوّل الدوفي لفاتورة' : 'Créez vos factures et devis facilement',
       path: '/pro/invoice-creator',
       gradient: 'from-amber-500 to-orange-500',
       iconBg: 'bg-amber-400/30',

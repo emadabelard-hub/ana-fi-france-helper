@@ -24,7 +24,10 @@ export interface InvoiceDraft {
   isAutoEntrepreneur: boolean;
   selectedTvaRate: 5.5 | 10 | 20;
   validityDuration: 15 | 30 | 60 | 90;
+  acompteEnabled?: boolean;
   acomptePercent: number;
+  acompteMode?: 'percent' | 'fixed';
+  acompteFixedAmount?: number;
   delaiPaiement: string;
   moyenPaiement: string;
   docNumber: string;

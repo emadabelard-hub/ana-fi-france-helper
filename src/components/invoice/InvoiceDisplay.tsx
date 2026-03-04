@@ -481,8 +481,8 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
       )}
 
-      {/* Footer / Legal Mentions */}
-      <div className="border-t border-gray-200 pt-1.5 text-[8px] text-gray-400 space-y-0.5 mt-2">
+      {/* Footer / Legal Mentions — kept together */}
+      <div className="invoice-footer-block border-t border-gray-200 pt-1.5 text-[8px] text-gray-400 space-y-0.5 mt-2" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
         <p><strong className="text-gray-500"><ArSub fr="Conditions de règlement:" /></strong> {data.paymentTerms}</p>
         {data.paymentDeadline === 'immediate' && (
           <p><strong className="text-gray-500">Paiement à réception</strong></p>

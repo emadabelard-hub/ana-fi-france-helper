@@ -520,8 +520,14 @@ const ProfilePage = () => {
                 <StyledInput
                   value={formData.capital_social}
                   onChange={(e) => handleChange('capital_social', e.target.value)}
-                  placeholder="1 000 €"
+                  placeholder={formData.legal_status === 'auto-entrepreneur' ? '0 €' : '1 000 €'}
+                  isRTL={isRTL}
                 />
+                {formData.legal_status === 'auto-entrepreneur' && (
+                  <p className={cn("text-[11px] text-muted-foreground/70 leading-snug", isRTL && "text-right font-[IBMPlexSansArabic]")}>
+                    {isRTL ? 'إذا كنت أوتو انتربرونور فأنت غير معني (0 يورو)' : "Non applicable pour les auto-entrepreneurs (0 €)"}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <FieldLabel icon={FileText} label={isRTL ? 'كود NAF' : 'Code NAF'} isRTL={isRTL} />

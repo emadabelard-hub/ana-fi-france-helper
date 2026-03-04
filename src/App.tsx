@@ -21,6 +21,7 @@ const InvoiceCreatorPage = lazy(() => import("@/pages/InvoiceCreatorPage"));
 const SmartDevisPage = lazy(() => import("@/pages/SmartDevisPage"));
 const QuoteToInvoicePage = lazy(() => import("@/pages/QuoteToInvoicePage"));
 const DocumentsListPage = lazy(() => import("@/pages/DocumentsListPage"));
+const ArchiveAccountingPage = lazy(() => import("@/pages/ArchiveAccountingPage"));
 const ProAdminAssistantPage = lazy(() => import("@/pages/ProAdminAssistantPage"));
 const CVGeneratorPage = lazy(() => import("@/pages/CVGeneratorPage"));
 const AdminPage = lazy(() => import("@/pages/AdminPage"));

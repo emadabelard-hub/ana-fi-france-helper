@@ -239,6 +239,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         setIncludeTravelCosts(draft.includeTravelCosts);
         setTravelDescription(draft.travelDescription || '');
         setTravelPrice(draft.travelPrice || 30);
+        if ((draft as any).includeWasteCosts) setIncludeWasteCosts((draft as any).includeWasteCosts);
+        if ((draft as any).wasteDescription) setWasteDescription((draft as any).wasteDescription);
+        if ((draft as any).wastePrice) setWastePrice((draft as any).wastePrice);
         setIsAutoEntrepreneur(draft.isAutoEntrepreneur);
         setSelectedTvaRate(draft.selectedTvaRate || 10);
         setValidityDuration(draft.validityDuration || 30);

@@ -93,6 +93,7 @@ const SmartDevisPage = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [preferencesCollected, setPreferencesCollected] = useState(false);
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
+  const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {

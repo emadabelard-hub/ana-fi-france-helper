@@ -536,12 +536,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           : delaiPaiement === '30jours' ? 'à 30 jours' 
           : delaiPaiement === '45jours' ? 'à 45 jours'
           : delaiPaiement === '60jours' ? 'à 60 jours'
+          : delaiPaiement === 'echeancier' ? 'selon échéancier'
           : 'fin de mois';
         const moyenLabel = moyenPaiement === 'virement' ? 'Virement' : moyenPaiement === 'cheque' ? 'Chèque' : 'Espèces';
         let text = '';
         if (milestonesEnabled && paymentMilestones.length > 0) {
           text += `Paiement selon échéancier (${paymentMilestones.length} étapes). `;
-          text += `Le paiement sera effectué selon l'avancement des travaux. `;
+          text += `Le paiement sera effectué selon l'avancement des travaux décrit ci-dessus. `;
+          // Smart labeling: if a specific deadline is set alongside the schedule
+          if (delaiPaiement !== 'echeancier' && delaiPaiement !== 'immediate') {
+            const daysLabel = delaiPaiement === '15jours' ? '15' : delaiPaiement === '30jours' ? '30' : delaiPaiement === '45jours' ? '45' : '60';
+            text += `Chaque échéance est due à ${daysLabel} jours après sa date d'appel. `;
+          }
         } else if (acompteEnabled && ((acompteMode === 'percent' && acomptePercent > 0) || (acompteMode === 'fixed' && acompteFixedAmount > 0))) {
           const acompteLabel = acompteMode === 'percent' 
             ? `${acomptePercent}%` 

@@ -2170,7 +2170,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             clearDraft();
             setShowPreview(true);
           } catch (e) {
+            const technicalMessage = getTechnicalErrorMessage(e);
             console.error('Final save failed:', e);
+            toast({
+              variant: 'destructive',
+              title: isRTL ? '⚠️ خطأ تقني' : '⚠️ Erreur technique',
+              description: technicalMessage,
+            });
           }
         }}
         items={items}

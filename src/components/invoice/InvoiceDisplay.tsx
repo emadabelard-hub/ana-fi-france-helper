@@ -249,7 +249,8 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           {data.client.phone && <p className="text-[8pt] text-gray-600">Tél : {data.client.phone}</p>}
           {data.client.email && <p className="text-[8pt] text-gray-600">Email : {data.client.email}</p>}
           {data.client.siren && <p className="text-[8pt] text-gray-600">SIREN : {data.client.siren}</p>}
-          {data.client.tvaIntra && <p className="text-[8pt] text-gray-600">TVA Intra : {data.client.tvaIntra}</p>}
+          {/* Show client TVA intra only when emitter is NOT exempt */}
+          {data.client.tvaIntra && !data.tvaExempt && <p className="text-[8pt] text-gray-600">TVA Intra : {data.client.tvaIntra}</p>}
 
           {data.workSite && !data.workSite.sameAsClient && data.workSite.address && (
             <div className="mt-1 pt-1 border-t border-gray-200">

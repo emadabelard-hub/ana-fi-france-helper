@@ -7,6 +7,7 @@ export interface Profile {
   id: string;
   user_id: string;
   full_name: string | null;
+  job: string | null;
   address: string | null;
   phone: string | null;
   caf_number: string | null;

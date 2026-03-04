@@ -466,7 +466,7 @@ const ProfilePage = () => {
             </div>
 
             <div className="space-y-2">
-              <FieldLabel icon={MapPin} label={isRTL ? 'عنوان المقر' : 'Adresse du siège'} isRTL={isRTL} />
+              <FieldLabel icon={MapPin} label={isRTL ? 'عنوان المقر' : 'Adresse du siège'} isRTL={isRTL} filled={isFieldFilled('company_address')} />
               <StyledInput
                 value={formData.company_address}
                 onChange={(e) => handleChange('company_address', e.target.value)}

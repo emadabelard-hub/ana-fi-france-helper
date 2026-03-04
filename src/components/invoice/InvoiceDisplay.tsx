@@ -503,34 +503,30 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         <p className="text-gray-500 font-medium">Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard de paiement (Art. L.441-10 et D.441-5 du Code de commerce).</p>
       </div>
 
-      {/* Online Payment Section - prominent when immediate payment */}
+      {/* Online Payment Section - floats in white space, no layout push */}
       {(data.type === 'FACTURE' || data.paymentDeadline === 'immediate') && (
         <div className={cn(
-          "border rounded-lg p-3 flex items-center justify-between",
+          "border rounded p-2 mt-2 flex items-center gap-2",
           data.paymentDeadline === 'immediate'
-            ? "mt-3 border-2 border-amber-400 bg-amber-50"
-            : "mt-3 border-gray-300 bg-gray-50"
-        )}>
-          <div className="flex-1">
-            <p className="text-[10px] font-bold text-gray-700 mb-0.5">
-              {data.paymentDeadline === 'immediate' ? '⚡ Paiement immédiat en ligne' : '💳 Paiement en ligne disponible'}
+            ? "border-amber-300 bg-amber-50"
+            : "border-gray-200 bg-gray-50"
+        )} style={{ position: 'relative' }}>
+          <div className="flex-1 min-w-0">
+            <p className="text-[9px] font-bold text-gray-700">
+              {data.paymentDeadline === 'immediate' ? '⚡ Paiement immédiat' : '💳 Paiement en ligne'}
             </p>
-            <p className="text-[8px] text-gray-500">Scannez le QR code ou cliquez sur le bouton pour payer {data.type === 'FACTURE' ? 'cette facture' : 'ce devis'} en ligne de manière sécurisée.</p>
+            <p className="text-[7px] text-gray-500 leading-tight">Scannez le QR code pour payer en ligne.</p>
           </div>
-          <div className="flex items-center gap-3 ml-3">
-            <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-[7px] text-gray-400 text-center leading-tight">
-              QR Code
-            </div>
-            <button
-              className="px-4 py-2 rounded-xl text-[10px] font-bold text-white shadow-md print:hidden"
-              style={{ background: 'linear-gradient(135deg, #BFA071, #9A7B4F)' }}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              Payer en ligne
-            </button>
+          <div className="w-12 h-12 border border-dashed border-gray-300 rounded flex items-center justify-center text-[6px] text-gray-400 text-center leading-tight shrink-0">
+            QR
           </div>
+          <button
+            className="px-3 py-1.5 rounded-lg text-[9px] font-bold text-white shadow-sm print:hidden shrink-0"
+            style={{ background: 'linear-gradient(135deg, #BFA071, #9A7B4F)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            Payer
+          </button>
         </div>
       )}
 

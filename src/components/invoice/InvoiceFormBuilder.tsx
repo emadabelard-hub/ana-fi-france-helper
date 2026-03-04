@@ -1180,16 +1180,29 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               </div>
             </div>
 
-            {/* B2B Toggle */}
-            <div className={cn("flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30", isRTL && "flex-row-reverse")}>
-              <Checkbox
-                id="b2b-toggle"
-                checked={clientIsB2B}
-                onCheckedChange={(checked) => setClientIsB2B(checked === true)}
-              />
-              <Label htmlFor="b2b-toggle" className={cn("text-sm cursor-pointer", isRTL && "font-cairo")}>
-                {isRTL ? '🏢 الزبون ده شركة (B2B)' : '🏢 Client professionnel (B2B)'}
+            {/* B2B Radio Buttons */}
+            <div className={cn("p-3 rounded-lg border border-border bg-muted/30 space-y-2", isRTL && "text-right")}>
+              <Label className={cn("text-sm font-bold", isRTL && "font-cairo")}>
+                {isRTL ? '🏢 الزبون ده شركة (B2B)؟' : '🏢 Client professionnel (B2B) ?'}
               </Label>
+              <RadioGroup
+                value={clientIsB2B ? 'yes' : 'no'}
+                onValueChange={(val) => setClientIsB2B(val === 'yes')}
+                className={cn("flex gap-6", isRTL && "flex-row-reverse")}
+              >
+                <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                  <RadioGroupItem value="yes" id="b2b-yes" />
+                  <Label htmlFor="b2b-yes" className={cn("cursor-pointer text-sm", isRTL && "font-cairo")}>
+                    {isRTL ? 'نعم' : 'Oui'}
+                  </Label>
+                </div>
+                <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                  <RadioGroupItem value="no" id="b2b-no" />
+                  <Label htmlFor="b2b-no" className={cn("cursor-pointer text-sm", isRTL && "font-cairo")}>
+                    {isRTL ? 'لا' : 'Non'}
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
             
             {clientIsB2B && (

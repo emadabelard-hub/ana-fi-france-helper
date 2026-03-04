@@ -28,10 +28,10 @@ const WelcomeModal = () => {
             <span className="text-[#1a1a1a] font-black text-xl italic">AF</span>
           </div>
           <h2 className="text-lg font-black text-white leading-snug">
-            Bienvenue sur Ana Fi France
+            Ana Fi France Pro
           </h2>
           <p className="text-base font-bold font-cairo text-[#c5a028] mt-1">
-            أهلاً بك في أنا في فرنسا — مساعدك المهني الأول
+            أهلاً بك في أنا في فرنسا برو
           </p>
         </div>
 
@@ -40,13 +40,13 @@ const WelcomeModal = () => {
           <div className="flex items-start gap-3 text-left">
             <FileText size={18} className="text-[#c5a028] shrink-0 mt-0.5" />
             <p className="text-sm text-white/90 leading-relaxed">
-              Créez vos Devis et Factures professionnels en quelques clics et gérez votre entreprise en toute simplicité.
+              Créez vos Devis et Factures professionnels en 2 minutes. Un outil complet pour gérer votre entreprise et vos documents administratifs en toute simplicité.
             </p>
           </div>
           <div className="flex items-start gap-3 text-right" dir="rtl">
             <Sparkles size={18} className="text-[#c5a028] shrink-0 mt-0.5" />
             <p className="text-sm text-white/90 leading-relaxed font-cairo">
-              أنشئ دوفيهاتك وفواتيرك الاحترافية بضغطة زر، ونظم شغلك بسهولة وأمان.
+              أنشئ دوفيهاتك وفواتيرك الاحترافية في دقيقتين. أداتك المتكاملة لإدارة شركتك وأوراقك المهنية بكل سهولة وأمان.
             </p>
           </div>
 

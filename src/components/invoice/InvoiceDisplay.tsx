@@ -228,7 +228,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
         
         <div className="flex flex-wrap gap-3 text-[8px] font-bold bg-gray-50 p-1.5 rounded border border-gray-200 mt-2">
-          <span className="text-gray-500">📅 Émis le : {data.date}</span>
+          <span className="text-gray-700 font-extrabold">📅 Date d'émission : {data.date}</span>
           {data.type === 'DEVIS' && data.validUntil && (
             <>
               <span className="text-gray-300">|</span>
@@ -433,19 +433,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
       </div>
 
-      {/* Assurance Décennale (BTP) */}
-      {data.assuranceDecennale && data.assuranceDecennale.assureurName && (
-        <div className="border border-gray-300 bg-gray-50 rounded p-2 mb-3 text-[9px] text-gray-700 space-y-0.5">
-          <p className="font-bold text-black text-[10px] mb-1">🛡️ Assurance Décennale & RC Pro</p>
-          <p>Assurance de responsabilité décennale & RC Pro obligatoire souscrite auprès de :</p>
-          <p className="font-semibold">{data.assuranceDecennale.assureurName}</p>
-          {data.assuranceDecennale.assureurAddress && (
-            <p>{data.assuranceDecennale.assureurAddress}</p>
-          )}
-          <p>N° de police : <span className="font-mono font-semibold">{data.assuranceDecennale.policyNumber}</span></p>
-          <p>Couverture géographique : {data.assuranceDecennale.geographicCoverage}</p>
-        </div>
-      )}
+      {/* Assurance block removed — moved above the keep-together block */}
 
       {/* Signature & Stamp Section */}
       <div className="border-t border-gray-300 pt-3 mt-2">
@@ -582,7 +570,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-base font-bold text-black">{data.emitter.name}</h2>
-                <p className="text-[10px] text-gray-600">{data.type} N° {data.number}</p>
+                <p className="text-[10px] text-gray-600">{data.type} N° {data.number} — {data.date}</p>
               </div>
               <div className="text-right">
                 <h3 className="text-sm font-bold text-black">📷 Annexe Photos</h3>

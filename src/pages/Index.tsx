@@ -70,17 +70,17 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="px-4 flex flex-col justify-between" style={{ height: 'calc(100vh - 90px)' }}>
+      <main className="px-4 flex flex-col justify-between pb-20" style={{ minHeight: 'calc(100vh - 90px)' }}>
         {/* DOMINANT CARDS — 80% of space */}
         <div className="flex flex-col gap-5 flex-1 py-4">
 
           {/* Hero: Devis & Factures */}
           <button
             onClick={() => handleNavigate('/pro', 'فتح أدوات Pro (دوفي/فاتورة)')}
-            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-200 border border-primary/25 shadow-[0_12px_40px_-12px_hsl(37_37%_60%/0.3)] flex-[1.5]"
+            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-6 active:scale-[0.98] transition-all duration-200 border border-primary/25 shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.3)] flex-[1.5] py-10"
           >
-            <div className="p-7 rounded-2xl shadow-xl" style={{ background: 'linear-gradient(135deg, #FFD700, #E6B800)' }}>
-              <Briefcase size={56} className="text-white drop-shadow-md" />
+            <div className="w-24 h-24 rounded-2xl shadow-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FFD700, #E6B800)' }}>
+              <Briefcase size={52} className="text-white drop-shadow-md" />
             </div>
             <div className="text-center px-6">
               <h3 className={cn("text-2xl font-extrabold leading-snug text-foreground", isRTL && "font-cairo")}>
@@ -89,7 +89,7 @@ const Index = () => {
               <p className={cn("text-[0.95rem] font-medium text-muted-foreground mt-2.5 leading-relaxed", isRTL && "font-cairo")}>
                 {isRTL
                   ? 'اعمل الفاكتير والدوفي بتوعك بسهولة أو حوّل الدوفي لفاتورة'
-                  : 'Créez vos factures et devis facilement ou convertissez un devis en facture'}
+                  : 'Créez vos factures et devis facilement'}
               </p>
             </div>
           </button>
@@ -97,10 +97,10 @@ const Index = () => {
           {/* Smart CV */}
           <button
             onClick={() => handleNavigate('/pro/cv-generator', 'فتح مُولد CV')}
-            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-200 border border-[hsl(195,100%,50%)]/20 shadow-[0_8px_30px_-10px_hsl(195_100%_40%/0.35)] flex-1"
+            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-200 border border-[hsl(195,100%,50%)]/20 shadow-[0_8px_30px_-10px_hsl(195_100%_40%/0.35)] flex-1 py-8"
           >
-            <div className="p-6 rounded-2xl shadow-xl" style={{ background: 'linear-gradient(135deg, #00BFFF, #0099CC)' }}>
-              <FileUser size={50} className="text-white drop-shadow-md" />
+            <div className="w-20 h-20 rounded-2xl shadow-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #00BFFF, #0099CC)' }}>
+              <FileUser size={46} className="text-white drop-shadow-md" />
             </div>
             <div className="text-center px-6">
               <h3 className={cn("text-xl font-extrabold leading-snug text-foreground", isRTL && "font-cairo")}>
@@ -116,13 +116,13 @@ const Index = () => {
         </div>
 
         {/* BOTTOM SECTION — flush above nav */}
-        <div className="flex flex-col gap-2.5 pb-16">
+        <div className="flex flex-col gap-3 mt-auto">
           {/* شبيك لبيك — Elegant large card */}
           <button
             onClick={() => handleNavigate('/ai-assistant', 'فتح شبيك لبيك')}
             className="w-full bg-card px-5 py-5 rounded-3xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[hsl(271,76%,53%)]/20 shadow-[0_6px_24px_-6px_hsl(271_76%_40%/0.3)]"
           >
-            <div className="p-3.5 rounded-2xl shrink-0 shadow-lg" style={{ background: 'linear-gradient(135deg, #8A2BE2, #6A1FB0)' }}>
+            <div className="w-14 h-14 rounded-2xl shrink-0 shadow-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8A2BE2, #6A1FB0)' }}>
               <Sparkles size={28} className="text-white drop-shadow-md" />
             </div>
             <div className={cn("flex-1", isRTL ? "text-right" : "text-left")}>
@@ -138,7 +138,7 @@ const Index = () => {
             </svg>
           </button>
 
-          {/* حاجات جديدة */}
+          {/* حاجات جديدة — absolute bottom */}
           <ComingSoonSection />
         </div>
       </main>

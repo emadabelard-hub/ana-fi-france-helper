@@ -392,7 +392,7 @@ const ProfilePage = () => {
           <SectionHeader icon={User} title={isRTL ? 'المعلومات الشخصية' : 'Informations personnelles'} isRTL={isRTL} />
           <FieldGroup>
             <div className="space-y-2">
-              <FieldLabel icon={User} label={isRTL ? 'الاسم الكامل' : 'Nom complet'} isRTL={isRTL} />
+              <FieldLabel icon={User} label={isRTL ? 'الاسم الكامل' : 'Nom complet'} isRTL={isRTL} filled={isFieldFilled('full_name')} />
               <StyledInput
                 value={formData.full_name}
                 onChange={(e) => handleChange('full_name', e.target.value)}

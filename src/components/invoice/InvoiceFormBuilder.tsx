@@ -794,6 +794,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const saveToDocumentsComptables = async () => {
     if (!user) return;
     const data = buildInvoiceData();
+    const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
+
     try {
       const { error } = await (supabase.from('documents_comptables') as any).insert({
         user_id: user.id,
@@ -808,7 +810,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         tva_amount: data.tvaAmount,
         total_ttc: data.total,
         tva_exempt: data.tvaExempt,
-        document_data: data,
+        document_data: documentDataForStorage,
         status: 'finalized',
       });
       if (error) throw error;
@@ -824,6 +826,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         title: isRTL ? 'خطأ قاعدة البيانات' : 'Erreur base de données',
         description: technicalMessage,
       });
+      throw e;
     }
   };
 
@@ -1192,14 +1195,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               >
                 <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                   <RadioGroupItem value="yes" id="b2b-yes" />
-                  <Label htmlFor="b2b-yes" className={cn("cursor-pointer text-sm", isRTL && "font-cairo")}>
-                    {isRTL ? 'نعم' : 'Oui'}
+                  <Label htmlFor="b2b-yes" className={cn("cursor-pointer text-sm font-cairo")}>
+                    نعم
                   </Label>
                 </div>
                 <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                   <RadioGroupItem value="no" id="b2b-no" />
-                  <Label htmlFor="b2b-no" className={cn("cursor-pointer text-sm", isRTL && "font-cairo")}>
-                    {isRTL ? 'لا' : 'Non'}
+                  <Label htmlFor="b2b-no" className={cn("cursor-pointer text-sm font-cairo")}>
+                    لا
                   </Label>
                 </div>
               </RadioGroup>
@@ -2167,7 +2170,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             clearDraft();
             setShowPreview(true);
           } catch (e) {
+            const technicalMessage = getTechnicalErrorMessage(e);
             console.error('Final save failed:', e);
+            toast({
+              variant: 'destructive',
+              title: isRTL ? '⚠️ خطأ تقني' : '⚠️ Erreur technique',
+              description: technicalMessage,
+            });
           }
         }}
         items={items}

@@ -70,6 +70,7 @@ const App = () => {
                   <Route path="/pro/smart-devis" element={<SmartDevisPage />} />
                   <Route path="/pro/quote-to-invoice" element={<QuoteToInvoicePage />} />
                   <Route path="/pro/documents" element={<DocumentsListPage />} />
+                  <Route path="/pro/archive" element={<ArchiveAccountingPage />} />
                   <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />
                   <Route path="/pro/cv-generator" element={<CVGeneratorPage />} />
                   <Route path="/pro/settings" element={<ProSettingsPage />} />

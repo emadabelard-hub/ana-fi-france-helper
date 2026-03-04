@@ -240,6 +240,24 @@ const ProfilePage = () => {
     setIsSaving(false);
   };
 
+  const mandatoryFields = useMemo(() => [
+    { key: 'full_name', filled: !!formData.full_name.trim() },
+    { key: 'job', filled: !!formData.job.trim() },
+    { key: 'siret', filled: formData.siret.length === 14 },
+    { key: 'company_address', filled: !!formData.company_address.trim() },
+    { key: 'email', filled: !!formData.email.trim() },
+    { key: 'assureur_name', filled: !!formData.assureur_name.trim() },
+    { key: 'assurance_policy_number', filled: !!formData.assurance_policy_number.trim() },
+  ], [formData]);
+
+  const progressPercent = useMemo(() => {
+    const filled = mandatoryFields.filter(f => f.filled).length;
+    return Math.round((filled / mandatoryFields.length) * 100);
+  }, [mandatoryFields]);
+
+  const progressColor = progressPercent < 50 ? 'bg-destructive' : progressPercent < 100 ? 'bg-yellow-500' : 'bg-green-500';
+  const isFieldFilled = (key: string) => mandatoryFields.find(f => f.key === key)?.filled ?? false;
+
   const handleSignOut = async () => { await signOut(); };
 
   const userInitial = formData.full_name

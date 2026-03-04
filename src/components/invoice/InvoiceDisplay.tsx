@@ -435,20 +435,37 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               </tr>
             </tbody>
           </table>
-          {/* Reste à payer */}
+
+          {/* Current installment (first milestone) as Net à payer + Total remaining */}
           {(() => {
-            const totalPaid = data.paymentMilestones.reduce((sum, m) => sum + (m.mode === 'percent' ? Math.round(data.total * (m.percent || 0) / 100 * 100) / 100 : (m.amount || 0)), 0);
-            const remaining = Math.round((data.total - totalPaid) * 100) / 100;
-            if (remaining > 0.01) {
-              return (
-                <div className="flex justify-between py-1.5 px-2 mt-1 bg-amber-100 border border-amber-300 rounded-lg">
-                  <span className="text-amber-900 text-[10px] font-bold">Reste à payer</span>
-                  <span className="font-bold text-amber-900 text-[11px] font-mono">{formatCurrency(remaining)}</span>
+            const firstMilestone = data.paymentMilestones[0];
+            const firstAmount = firstMilestone.mode === 'percent' 
+              ? Math.round(data.total * (firstMilestone.percent || 0) / 100 * 100) / 100 
+              : (firstMilestone.amount || 0);
+            const totalScheduled = data.paymentMilestones.reduce((sum, m) => sum + (m.mode === 'percent' ? Math.round(data.total * (m.percent || 0) / 100 * 100) / 100 : (m.amount || 0)), 0);
+            const totalRemaining = Math.round((data.total - firstAmount) * 100) / 100;
+
+            return (
+              <div className="mt-1.5 border border-amber-300 rounded-lg overflow-hidden">
+                <div className="flex justify-between py-1.5 px-2 bg-amber-100">
+                  <div>
+                    <span className="text-amber-900 text-[10px] font-bold block">Net à payer (étape 1)</span>
+                    <span className="text-amber-700 text-[8px]">{firstMilestone.label}</span>
+                  </div>
+                  <span className="font-bold text-amber-900 text-[13px] font-mono">
+                    {formatCurrency(firstAmount)}
+                  </span>
                 </div>
-              );
-            }
-            return null;
+                <div className="flex justify-between py-1 px-2 bg-amber-50 border-t border-amber-200">
+                  <span className="text-amber-600 text-[9px]">Total restant après cette étape</span>
+                  <span className="font-medium text-amber-700 text-[9px] font-mono">
+                    {formatCurrency(totalRemaining)}
+                  </span>
+                </div>
+              </div>
+            );
           })()}
+
           <p className="text-[8px] text-gray-400 mt-1 italic">
             Le paiement sera effectué selon l'avancement des travaux décrit ci-dessus.
           </p>

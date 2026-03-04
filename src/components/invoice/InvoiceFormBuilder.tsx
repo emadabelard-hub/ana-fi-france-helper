@@ -514,7 +514,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       tvaAmount,
       tvaExempt,
       total: Math.round(total * 100) / 100,
-      paymentDeadline: delaiPaiement === 'immediate' ? 'immediate' : undefined,
+      paymentDeadline: delaiPaiement === 'immediate' ? 'immediate' : delaiPaiement === 'echeancier' ? 'echeancier' : undefined,
       acomptePercent: acompteEnabled && !milestonesEnabled && acompteMode === 'percent' ? acomptePercent : undefined,
       acompteAmount: (() => {
         if (milestonesEnabled || !acompteEnabled) return undefined;

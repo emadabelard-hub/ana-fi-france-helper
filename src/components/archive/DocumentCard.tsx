@@ -55,8 +55,13 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate }: Document
         ? "border-red-500/50 hover:border-red-500/70 bg-red-500/[0.03]" 
         : "border-border hover:border-accent/40"
     )}>
-      {/* Gold accent line */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-accent to-transparent opacity-40 group-hover:opacity-70 transition-opacity" />
+      {/* Accent line - red for overdue, gold otherwise */}
+      <div className={cn(
+        "absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r opacity-40 group-hover:opacity-70 transition-opacity",
+        isOverdue 
+          ? "from-transparent via-red-500 to-transparent" 
+          : "from-transparent via-accent to-transparent"
+      )} />
 
       <div className={cn('flex items-start justify-between gap-3', isRTL && 'flex-row-reverse')}>
         <div className={cn('flex items-center gap-3 flex-1 min-w-0', isRTL && 'flex-row-reverse')}>

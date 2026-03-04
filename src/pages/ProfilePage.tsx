@@ -541,7 +541,7 @@ const ProfilePage = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <FieldLabel icon={MapPin} label={isRTL ? 'مدينة RCS' : 'Ville RCS/RM'} isRTL={isRTL} />
+                <FieldLabel icon={MapPin} label={isRTL ? 'مدينة التسجيل (RCS/RM)' : 'Ville d\'immatriculation (RCS/RM)'} isRTL={isRTL} />
                 <StyledInput
                   value={formData.ville_immatriculation}
                   onChange={(e) => handleChange('ville_immatriculation', e.target.value)}

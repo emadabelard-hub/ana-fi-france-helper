@@ -25,8 +25,8 @@ const ProPage = () => {
     {
       icon: PenLine,
       emoji: '📄',
-      title: t('pro.invoices'),
-      description: t('pro.invoicesDesc'),
+      title: isRTL ? 'فواتير ودوفيهات' : 'Factures & Devis',
+      description: isRTL ? 'اعمل الفاكتير والدوفي بتوعك بسهولة أو حوّل الدوفي لفاتورة' : 'Créez vos factures et devis facilement ou convertissez un devis en facture',
       path: '/pro/invoice-creator',
       gradient: 'from-emerald-500 to-emerald-600',
     },

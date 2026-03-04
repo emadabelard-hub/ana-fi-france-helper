@@ -94,6 +94,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Nature of operation
   const [natureOperation, setNatureOperation] = useState<'service' | 'goods' | 'mixed'>('service');
   
+  // Description du chantier / objet du devis
+  const [descriptionChantier, setDescriptionChantier] = useState('');
+  
+  // Estimated start date and duration
+  const [estimatedStartDate, setEstimatedStartDate] = useState('');
+  const [estimatedDuration, setEstimatedDuration] = useState('');
+  
   // Assurance décennale
   const [assureurName, setAssureurName] = useState('');
   const [assureurAddress, setAssureurAddress] = useState('');

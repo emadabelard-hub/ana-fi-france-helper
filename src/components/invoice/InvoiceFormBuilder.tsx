@@ -814,11 +814,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         description: isRTL ? 'المستند محفوظ في مستنداتك' : 'Document enregistré dans vos documents.',
       });
     } catch (e) {
-      console.error('Save error:', e);
+      const technicalMessage = getTechnicalErrorMessage(e);
+      console.error('Save error (documents_comptables insert):', e);
       toast({
         variant: 'destructive',
-        title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'تعذر حفظ المستند' : 'Impossible de sauvegarder le document.',
+        title: isRTL ? 'خطأ قاعدة البيانات' : 'Erreur base de données',
+        description: technicalMessage,
       });
     }
   };

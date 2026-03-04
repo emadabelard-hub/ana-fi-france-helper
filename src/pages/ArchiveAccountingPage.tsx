@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AuthModal from '@/components/auth/AuthModal';
 import FinancialSummary from '@/components/archive/FinancialSummary';
 import DocumentCard, { type DocumentItem } from '@/components/archive/DocumentCard';
+import AddExpenseModal from '@/components/archive/AddExpenseModal';
 
 const ArchiveAccountingPage = () => {
   const { isRTL } = useLanguage();

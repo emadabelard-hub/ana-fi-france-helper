@@ -30,9 +30,7 @@ export interface InvoiceData {
     sameAsClient: boolean;
     address?: string;
   };
-  // Nature of operation
   natureOperation?: 'service' | 'goods' | 'mixed';
-  // Assurance décennale
   assuranceDecennale?: {
     assureurName: string;
     assureurAddress: string;
@@ -54,6 +52,11 @@ export interface InvoiceData {
   tvaExempt: boolean;
   tvaExemptText?: string;
   paymentTerms: string;
+  paymentDeadline?: string;
+  acomptePercent?: number;
+  acompteAmount?: number;
+  acompteMode?: 'percent' | 'fixed';
+  netAPayer?: number;
   legalMentions?: string;
   legalFooter?: string;
   logoUrl?: string;

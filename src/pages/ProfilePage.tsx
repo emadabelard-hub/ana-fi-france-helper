@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, LogOut, User, Loader2, Shield, Key, Building2, FileText, MapPin, Mail, Phone, Upload, Image, Check, AlertCircle, Briefcase, CreditCard, Landmark, ShieldCheck, PenTool, Stamp } from 'lucide-react';
+import { Save, LogOut, User, Loader2, Shield, Key, Building2, FileText, MapPin, Mail, Phone, Upload, Image, Check, AlertCircle, Briefcase, CreditCard, Landmark, ShieldCheck, PenTool, Stamp, CheckCircle2, Circle, PartyPopper } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import ApiKeySettingsModal from '@/components/layout/ApiKeySettingsModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,11 +55,26 @@ const FieldGroup = ({ children, className }: { children: React.ReactNode; classN
   <div className={cn("px-5 pb-5 space-y-4", className)}>{children}</div>
 );
 
-const FieldLabel = ({ icon: Icon, label, required, isRTL }: { icon: any; label: string; required?: boolean; isRTL: boolean }) => (
+const FieldStatus = ({ filled, isRTL }: { filled: boolean; isRTL: boolean }) => (
+  filled ? (
+    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+  ) : (
+    <span className="inline-flex items-center gap-1 shrink-0">
+      <Circle className="h-3 w-3 text-muted-foreground/40" />
+      <span className={cn("text-[10px] font-medium text-destructive/70", isRTL && "font-[IBMPlexSansArabic]")}>
+        {isRTL ? 'مطلوب' : 'Requis'}
+      </span>
+    </span>
+  )
+);
+
+const FieldLabel = ({ icon: Icon, label, required, isRTL, filled }: { icon: any; label: string; required?: boolean; isRTL: boolean; filled?: boolean }) => (
   <Label className={cn("flex items-center gap-2 text-[13px] font-medium text-foreground/70", isRTL && "flex-row-reverse font-[IBMPlexSansArabic]")}>
     <Icon className="h-3.5 w-3.5 text-primary/50" />
     {label}
     {required && <span className="text-destructive text-xs">*</span>}
+    <span className="flex-1" />
+    {filled !== undefined && <FieldStatus filled={filled} isRTL={isRTL} />}
   </Label>
 );
 
@@ -224,6 +240,24 @@ const ProfilePage = () => {
     setIsSaving(false);
   };
 
+  const mandatoryFields = useMemo(() => [
+    { key: 'full_name', filled: !!formData.full_name.trim() },
+    { key: 'job', filled: !!formData.job.trim() },
+    { key: 'siret', filled: formData.siret.length === 14 },
+    { key: 'company_address', filled: !!formData.company_address.trim() },
+    { key: 'email', filled: !!formData.email.trim() },
+    { key: 'assureur_name', filled: !!formData.assureur_name.trim() },
+    { key: 'assurance_policy_number', filled: !!formData.assurance_policy_number.trim() },
+  ], [formData]);
+
+  const progressPercent = useMemo(() => {
+    const filled = mandatoryFields.filter(f => f.filled).length;
+    return Math.round((filled / mandatoryFields.length) * 100);
+  }, [mandatoryFields]);
+
+  const progressColor = progressPercent < 50 ? 'bg-destructive' : progressPercent < 100 ? 'bg-yellow-500' : 'bg-green-500';
+  const isFieldFilled = (key: string) => mandatoryFields.find(f => f.key === key)?.filled ?? false;
+
   const handleSignOut = async () => { await signOut(); };
 
   const userInitial = formData.full_name
@@ -300,6 +334,44 @@ const ProfilePage = () => {
           </div>
         </div>
 
+        {/* ═══════ Progress Bar ═══════ */}
+        <SectionCard>
+          <div className="p-5 space-y-3">
+            <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+              <h3 className={cn("text-sm font-semibold text-foreground", isRTL ? "font-[IBMPlexSansArabic]" : "font-[Inter]")}>
+                {isRTL ? 'نسبة اكتمال الملف القانوني' : 'Complétude du dossier légal'}
+              </h3>
+              <span className={cn("text-sm font-bold", progressPercent < 50 ? "text-destructive" : progressPercent < 100 ? "text-yellow-500" : "text-green-500")}>
+                {progressPercent}%
+              </span>
+            </div>
+            <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
+              <div
+                className={cn("h-full rounded-full transition-all duration-700 ease-out", progressColor)}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-[IBMPlexSansArabic]")}>
+              {isRTL
+                ? `${mandatoryFields.filter(f => f.filled).length} من ${mandatoryFields.length} حقول مكتملة`
+                : `${mandatoryFields.filter(f => f.filled).length} sur ${mandatoryFields.length} champs complétés`}
+            </p>
+            {progressPercent === 100 && (
+              <div className={cn(
+                "flex items-center gap-2.5 p-3 rounded-xl bg-green-500/10 border border-green-500/30",
+                isRTL && "flex-row-reverse text-right"
+              )}>
+                <PartyPopper className="h-5 w-5 text-green-500 shrink-0" />
+                <p className={cn("text-xs font-semibold text-green-600 dark:text-green-400", isRTL && "font-[IBMPlexSansArabic]")}>
+                  {isRTL
+                    ? 'ملفك القانوني مكتمل وجاهز لإصدار فواتير Factur-X!'
+                    : 'Votre dossier légal est complet et prêt pour émettre des factures Factur-X !'}
+                </p>
+              </div>
+            )}
+          </div>
+        </SectionCard>
+
         {/* ═══════ Admin Dashboard ═══════ */}
         {isAdmin && (
           <SectionCard className="border-accent/30">
@@ -320,7 +392,7 @@ const ProfilePage = () => {
           <SectionHeader icon={User} title={isRTL ? 'المعلومات الشخصية' : 'Informations personnelles'} isRTL={isRTL} />
           <FieldGroup>
             <div className="space-y-2">
-              <FieldLabel icon={User} label={isRTL ? 'الاسم الكامل' : 'Nom complet'} isRTL={isRTL} />
+              <FieldLabel icon={User} label={isRTL ? 'الاسم الكامل' : 'Nom complet'} isRTL={isRTL} filled={isFieldFilled('full_name')} />
               <StyledInput
                 value={formData.full_name}
                 onChange={(e) => handleChange('full_name', e.target.value)}
@@ -329,7 +401,7 @@ const ProfilePage = () => {
               />
             </div>
             <div className="space-y-2">
-              <FieldLabel icon={Briefcase} label={isRTL ? 'المهنة' : 'Métier'} required isRTL={isRTL} />
+              <FieldLabel icon={Briefcase} label={isRTL ? 'المهنة' : 'Métier'} required isRTL={isRTL} filled={isFieldFilled('job')} />
               <StyledInput
                 value={formData.job}
                 onChange={(e) => handleChange('job', e.target.value)}
@@ -338,7 +410,7 @@ const ProfilePage = () => {
               />
             </div>
             <div className="space-y-2">
-              <FieldLabel icon={Phone} label={isRTL ? 'رقم الهاتف' : 'Téléphone'} isRTL={isRTL} />
+              <FieldLabel icon={Phone} label={isRTL ? 'رقم الهاتف' : 'Téléphone'} isRTL={isRTL} filled={!!formData.phone.trim()} />
               <StyledInput
                 value={formData.phone}
                 onChange={(e) => handleChange('phone', e.target.value)}
@@ -359,7 +431,7 @@ const ProfilePage = () => {
           />
           <FieldGroup>
             <div className="space-y-2">
-              <FieldLabel icon={Building2} label={isRTL ? 'اسم الشركة' : "Nom de l'entreprise"} isRTL={isRTL} />
+              <FieldLabel icon={Building2} label={isRTL ? 'اسم الشركة' : "Nom de l'entreprise"} isRTL={isRTL} filled={!!formData.company_name.trim()} />
               <StyledInput
                 value={formData.company_name}
                 onChange={(e) => handleChange('company_name', e.target.value)}
@@ -369,7 +441,7 @@ const ProfilePage = () => {
             </div>
 
             <div className="space-y-2">
-              <FieldLabel icon={FileText} label={isRTL ? 'رقم السيريت (SIRET)' : 'Numéro SIRET'} isRTL={isRTL} />
+              <FieldLabel icon={FileText} label={isRTL ? 'رقم السيريت (SIRET)' : 'Numéro SIRET'} isRTL={isRTL} filled={isFieldFilled('siret')} />
               <StyledInput
                 value={formData.siret}
                 onChange={(e) => handleChange('siret', e.target.value)}
@@ -383,7 +455,7 @@ const ProfilePage = () => {
             </div>
 
             <div className="space-y-2">
-              <FieldLabel icon={Mail} label={isRTL ? 'الإيميل المهني' : 'Email professionnel'} isRTL={isRTL} />
+              <FieldLabel icon={Mail} label={isRTL ? 'الإيميل المهني' : 'Email professionnel'} isRTL={isRTL} filled={isFieldFilled('email')} />
               <StyledInput
                 type="email"
                 value={formData.email}
@@ -394,7 +466,7 @@ const ProfilePage = () => {
             </div>
 
             <div className="space-y-2">
-              <FieldLabel icon={MapPin} label={isRTL ? 'عنوان المقر' : 'Adresse du siège'} isRTL={isRTL} />
+              <FieldLabel icon={MapPin} label={isRTL ? 'عنوان المقر' : 'Adresse du siège'} isRTL={isRTL} filled={isFieldFilled('company_address')} />
               <StyledInput
                 value={formData.company_address}
                 onChange={(e) => handleChange('company_address', e.target.value)}
@@ -503,7 +575,7 @@ const ProfilePage = () => {
           <FieldGroup>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
-                <FieldLabel icon={Building2} label={isRTL ? 'اسم شركة التأمين' : "Nom de l'assureur"} required isRTL={isRTL} />
+                <FieldLabel icon={Building2} label={isRTL ? 'اسم شركة التأمين' : "Nom de l'assureur"} required isRTL={isRTL} filled={isFieldFilled('assureur_name')} />
                 <StyledInput
                   value={formData.assureur_name}
                   onChange={(e) => handleChange('assureur_name', e.target.value)}
@@ -521,7 +593,7 @@ const ProfilePage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <FieldLabel icon={FileText} label={isRTL ? 'رقم البوليصة' : 'N° de police'} required isRTL={isRTL} />
+                <FieldLabel icon={FileText} label={isRTL ? 'رقم البوليصة' : 'N° de police'} required isRTL={isRTL} filled={isFieldFilled('assurance_policy_number')} />
                 <StyledInput
                   value={formData.assurance_policy_number}
                   onChange={(e) => handleChange('assurance_policy_number', e.target.value)}

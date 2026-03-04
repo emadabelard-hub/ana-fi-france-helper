@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Image, Copy, Eye, EyeOff, Share2, ShieldCheck, ExternalLink } from 'lucide-react';
+import { FileText, Image, Copy, Eye, EyeOff, Share2, ShieldCheck, ExternalLink, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';

@@ -13,7 +13,7 @@ import { useProfile, Profile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw } from 'lucide-react';
-import InvoiceDisplay, { InvoiceData } from './InvoiceDisplay';
+import InvoiceDisplay, { InvoiceData, PaymentMilestone } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
 import QuoteWizardModal from './QuoteWizardModal';
@@ -121,6 +121,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [acompteFixedAmount, setAcompteFixedAmount] = useState<number>(0);
   const [delaiPaiement, setDelaiPaiement] = useState<string>('30jours');
   const [moyenPaiement, setMoyenPaiement] = useState<string>('virement');
+  
+  // Payment milestones (échéancier)
+  const [paymentMilestones, setPaymentMilestones] = useState<PaymentMilestone[]>([]);
+  const [milestonesEnabled, setMilestonesEnabled] = useState(false);
   
   // Line items - use empty strings for quantity/price to allow clean input
   const [items, setItems] = useState<LineItem[]>([
@@ -253,6 +257,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         if (draft.assureurAddress) setAssureurAddress(draft.assureurAddress);
         if (draft.policyNumber) setPolicyNumber(draft.policyNumber);
         if (draft.geographicCoverage) setGeographicCoverage(draft.geographicCoverage);
+        if ((draft as any).paymentMilestones?.length) {
+          setPaymentMilestones((draft as any).paymentMilestones);
+          setMilestonesEnabled(true);
+        }
         toast({
           title: isRTL ? '📝 تم استعادة المسودة' : '📝 Brouillon restauré',
           description: isRTL ? 'رجعنالك الشغل اللي كنت بتعمله' : 'Votre travail précédent a été restauré',
@@ -298,10 +306,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         assureurAddress,
         policyNumber,
         geographicCoverage,
+        paymentMilestones: milestonesEnabled ? paymentMilestones : undefined,
       });
     }, 1000);
     return () => clearTimeout(timer);
-  }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage]);
+  }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled]);
 
   // Handle prefill data from quote-to-invoice conversion
   useEffect(() => {
@@ -483,20 +492,21 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       tvaExempt,
       total: Math.round(total * 100) / 100,
       paymentDeadline: delaiPaiement === 'immediate' ? 'immediate' : undefined,
-      acomptePercent: acompteEnabled && acompteMode === 'percent' ? acomptePercent : undefined,
+      acomptePercent: acompteEnabled && !milestonesEnabled && acompteMode === 'percent' ? acomptePercent : undefined,
       acompteAmount: (() => {
-        if (!acompteEnabled) return undefined;
+        if (milestonesEnabled || !acompteEnabled) return undefined;
         if (acompteMode === 'percent') return Math.round(total * (acomptePercent / 100) * 100) / 100;
         return acompteFixedAmount;
       })(),
-      acompteMode: acompteEnabled ? acompteMode : undefined,
+      acompteMode: acompteEnabled && !milestonesEnabled ? acompteMode : undefined,
       netAPayer: (() => {
-        if (!acompteEnabled) return undefined;
+        if (milestonesEnabled || !acompteEnabled) return undefined;
         const acompte = acompteMode === 'percent' 
           ? Math.round(total * (acomptePercent / 100) * 100) / 100 
           : acompteFixedAmount;
         return Math.round((total - acompte) * 100) / 100;
       })(),
+      paymentMilestones: milestonesEnabled && paymentMilestones.length > 0 ? paymentMilestones : undefined,
       paymentTerms: (() => {
         const delaiLabel = delaiPaiement === 'immediate' ? 'à réception' 
           : delaiPaiement === '15jours' ? 'à 15 jours'
@@ -506,15 +516,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           : 'fin de mois';
         const moyenLabel = moyenPaiement === 'virement' ? 'Virement' : moyenPaiement === 'cheque' ? 'Chèque' : 'Espèces';
         let text = '';
-        if (acompteEnabled && ((acompteMode === 'percent' && acomptePercent > 0) || (acompteMode === 'fixed' && acompteFixedAmount > 0))) {
+        if (milestonesEnabled && paymentMilestones.length > 0) {
+          text += `Paiement selon échéancier (${paymentMilestones.length} étapes). `;
+          text += `Le paiement sera effectué selon l'avancement des travaux. `;
+        } else if (acompteEnabled && ((acompteMode === 'percent' && acomptePercent > 0) || (acompteMode === 'fixed' && acompteFixedAmount > 0))) {
           const acompteLabel = acompteMode === 'percent' 
             ? `${acomptePercent}%` 
             : `${acompteFixedAmount.toFixed(2)} €`;
-          text += `Acompte de ${acompteLabel} à la commande. Solde ${delaiLabel} par ${moyenLabel}.`;
+          text += `Acompte de ${acompteLabel} à la commande. Solde ${delaiLabel} par ${moyenLabel}. `;
         } else {
-          text += `Paiement ${delaiLabel} par ${moyenLabel}.`;
+          text += `Paiement ${delaiLabel} par ${moyenLabel}. `;
         }
-        text += ` En cas de retard : pénalités de 3 fois le taux légal + indemnité forfaitaire de 40€.`;
+        text += `En cas de retard : pénalités de 3 fois le taux légal + indemnité forfaitaire de 40€.`;
         return text;
       })(),
       legalMentions: tvaExempt 
@@ -1876,6 +1889,153 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                             ? `${(invoiceData.total - invoiceData.total * acomptePercent / 100).toFixed(2)} €`
                             : `${(invoiceData.total - acompteFixedAmount).toFixed(2)} €`
                           }
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Payment Milestones (Échéancier) */}
+              <div className="border border-border rounded-lg p-3 space-y-3">
+                <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                  <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                    <span className="text-lg">📅</span>
+                    <Label htmlFor="milestones-toggle" className={cn("text-sm font-bold cursor-pointer", isRTL && "font-cairo")}>
+                      {isRTL ? 'جدول دفعات متعدد (Échéancier)' : 'Échéancier de paiement'}
+                    </Label>
+                  </div>
+                  <Switch
+                    id="milestones-toggle"
+                    checked={milestonesEnabled}
+                    onCheckedChange={(checked) => {
+                      setMilestonesEnabled(checked);
+                      if (checked && paymentMilestones.length === 0) {
+                        setPaymentMilestones([
+                          { id: generateId(), label: 'Acompte à la commande', mode: 'percent', percent: 30 },
+                          { id: generateId(), label: 'Fin de gros œuvre', mode: 'percent', percent: 40 },
+                          { id: generateId(), label: 'Remise des clés', mode: 'percent', percent: 30 },
+                        ]);
+                      }
+                      if (checked) setAcompteEnabled(false);
+                    }}
+                  />
+                </div>
+
+                {milestonesEnabled && (
+                  <div className="space-y-3 pt-2">
+                    {paymentMilestones.map((milestone, idx) => (
+                      <div key={milestone.id} className="border border-border rounded-md p-2.5 space-y-2 bg-muted/30">
+                        <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                          <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">#{idx + 1}</span>
+                          <Input
+                            value={milestone.label}
+                            onChange={(e) => {
+                              const updated = [...paymentMilestones];
+                              updated[idx] = { ...updated[idx], label: e.target.value };
+                              setPaymentMilestones(updated);
+                            }}
+                            placeholder={isRTL ? 'اسم المرحلة' : 'Nom de l\'étape'}
+                            className="text-sm flex-1"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 shrink-0 text-destructive"
+                            onClick={() => setPaymentMilestones(prev => prev.filter(m => m.id !== milestone.id))}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+                          <select
+                            value={milestone.mode}
+                            onChange={(e) => {
+                              const updated = [...paymentMilestones];
+                              updated[idx] = { ...updated[idx], mode: e.target.value as 'percent' | 'fixed' };
+                              setPaymentMilestones(updated);
+                            }}
+                            className="bg-background border border-border text-foreground text-xs rounded-md p-1.5 w-24"
+                          >
+                            <option value="percent">%</option>
+                            <option value="fixed">€ fixe</option>
+                          </select>
+                          {milestone.mode === 'percent' ? (
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={milestone.percent || ''}
+                              onChange={(e) => {
+                                const updated = [...paymentMilestones];
+                                updated[idx] = { ...updated[idx], percent: parseFloat(e.target.value) || 0 };
+                                setPaymentMilestones(updated);
+                              }}
+                              placeholder="30"
+                              className="text-xs font-mono w-20"
+                            />
+                          ) : (
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={milestone.amount || ''}
+                              onChange={(e) => {
+                                const updated = [...paymentMilestones];
+                                updated[idx] = { ...updated[idx], amount: parseFloat(e.target.value) || 0 };
+                                setPaymentMilestones(updated);
+                              }}
+                              placeholder="500.00"
+                              className="text-xs font-mono w-24"
+                            />
+                          )}
+                          <Input
+                            type="text"
+                            value={milestone.targetDate || ''}
+                            onChange={(e) => {
+                              const updated = [...paymentMilestones];
+                              updated[idx] = { ...updated[idx], targetDate: e.target.value };
+                              setPaymentMilestones(updated);
+                            }}
+                            placeholder={isRTL ? 'تاريخ (اختياري)' : 'Date (optionnel)'}
+                            className="text-xs flex-1"
+                          />
+                        </div>
+                      </div>
+                    ))}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPaymentMilestones(prev => [...prev, { id: generateId(), label: '', mode: 'percent', percent: 0 }])}
+                      className="w-full text-xs"
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      {isRTL ? 'إضافة مرحلة' : 'Ajouter une étape'}
+                    </Button>
+
+                    {/* Summary */}
+                    <div className="p-2 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-[10px] space-y-1">
+                      {paymentMilestones.map((m) => {
+                        const amt = m.mode === 'percent' 
+                          ? (invoiceData.total * (m.percent || 0) / 100).toFixed(2) 
+                          : (m.amount || 0).toFixed(2);
+                        return (
+                          <div key={m.id} className={cn("flex justify-between", isRTL && "flex-row-reverse")}>
+                            <span className="text-amber-700 dark:text-amber-400 truncate">{m.label || '—'}</span>
+                            <span className="font-mono font-bold text-amber-800 dark:text-amber-300">{amt} €</span>
+                          </div>
+                        );
+                      })}
+                      <div className={cn("flex justify-between pt-1 border-t border-amber-300 dark:border-amber-700", isRTL && "flex-row-reverse")}>
+                        <span className="text-amber-900 dark:text-amber-200 font-bold">
+                          {isRTL ? 'الباقي:' : 'Reste:'}
+                        </span>
+                        <span className="font-bold font-mono text-amber-900 dark:text-amber-200">
+                          {(() => {
+                            const totalPaid = paymentMilestones.reduce((sum, m) => sum + (m.mode === 'percent' ? invoiceData.total * (m.percent || 0) / 100 : (m.amount || 0)), 0);
+                            return (invoiceData.total - totalPaid).toFixed(2);
+                          })()} €
                         </span>
                       </div>
                     </div>

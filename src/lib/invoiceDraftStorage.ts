@@ -7,6 +7,15 @@ import { supabase } from '@/integrations/supabase/client';
 
 const DRAFT_KEY = 'invoice_draft_v1';
 
+export interface DraftPaymentMilestone {
+  id: string;
+  label: string;
+  mode: 'percent' | 'fixed';
+  percent?: number;
+  amount?: number;
+  targetDate?: string;
+}
+
 export interface InvoiceDraft {
   documentType: 'devis' | 'facture';
   clientName: string;
@@ -45,6 +54,7 @@ export interface InvoiceDraft {
   assureurAddress?: string;
   policyNumber?: string;
   geographicCoverage?: string;
+  paymentMilestones?: DraftPaymentMilestone[];
   savedAt: number;
 }
 

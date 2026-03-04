@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AuthModal from '@/components/auth/AuthModal';
 import FinancialSummary from '@/components/archive/FinancialSummary';
 import DocumentCard, { type DocumentItem } from '@/components/archive/DocumentCard';
+import AddExpenseModal from '@/components/archive/AddExpenseModal';
 
 const ArchiveAccountingPage = () => {
   const { isRTL } = useLanguage();
@@ -26,6 +27,7 @@ const ArchiveAccountingPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [periodFilter, setPeriodFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('all');
+  const [showAddExpense, setShowAddExpense] = useState(false);
 
   // Fetch documents + expenses
   useEffect(() => {
@@ -323,12 +325,40 @@ const ArchiveAccountingPage = () => {
           size="sm"
           variant="outline"
           className="border-accent/30 text-accent hover:bg-accent/10 font-bold gap-1.5 rounded-full shadow-lg px-4"
-          onClick={() => toast({ title: isRTL ? '🔜 قريباً' : '🔜 Bientôt disponible', description: isRTL ? 'ماسح الإيصالات قيد التطوير' : 'Le scanner de reçus est en cours de développement' })}
+          onClick={() => setShowAddExpense(true)}
         >
           <ScanLine className="h-4 w-4" />
-          <span className={cn('text-xs', isRTL && 'font-cairo')}>{isRTL ? 'مسح إيصال' : 'Scanner reçu'}</span>
+          <span className={cn('text-xs', isRTL && 'font-cairo')}>{isRTL ? 'إضافة مصروف' : 'Ajouter dépense'}</span>
         </Button>
       </div>
+
+      <AddExpenseModal
+        open={showAddExpense}
+        onOpenChange={setShowAddExpense}
+        isRTL={isRTL}
+        userId={user.id}
+        onExpenseAdded={() => {
+          // Re-fetch expenses
+          (supabase.from('expenses') as any)
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .then((res: any) => {
+              if (res.data) {
+                setExpenses(res.data.map((e: any) => ({
+                  id: e.id,
+                  type: 'expense' as const,
+                  number: `EXP-${e.id.slice(0, 6).toUpperCase()}`,
+                  clientName: e.title,
+                  date: new Date(e.expense_date || e.created_at).toLocaleDateString('fr-FR'),
+                  amountHT: e.amount,
+                  amountTTC: e.amount + (e.tva_amount || 0),
+                  status: 'paid' as const,
+                })));
+              }
+            });
+        }}
+      />
     </div>
   );
 };

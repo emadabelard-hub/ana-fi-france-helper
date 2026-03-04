@@ -306,10 +306,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         assureurAddress,
         policyNumber,
         geographicCoverage,
+        paymentMilestones: milestonesEnabled ? paymentMilestones : undefined,
       });
     }, 1000);
     return () => clearTimeout(timer);
-  }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage]);
+  }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled]);
 
   // Handle prefill data from quote-to-invoice conversion
   useEffect(() => {

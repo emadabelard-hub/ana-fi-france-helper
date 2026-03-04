@@ -1738,41 +1738,26 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 </h4>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {/* Acompte */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Délai de paiement */}
                 <div className="space-y-1.5">
                   <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                    {isRTL ? 'المقدم (%)' : 'Acompte (%)'}
-                  </Label>
-                  <select
-                    value={acomptePercent}
-                    onChange={(e) => setAcomptePercent(parseInt(e.target.value))}
-                    className="w-full bg-background border border-border text-foreground text-sm rounded-md focus:ring-primary focus:border-primary p-2"
-                  >
-                    <option value="0">0% - {isRTL ? 'بدون مقدم' : 'Sans acompte'}</option>
-                    <option value="30">30%</option>
-                    <option value="40">40%</option>
-                    <option value="50">50%</option>
-                  </select>
-                </div>
-
-                {/* Délai */}
-                <div className="space-y-1.5">
-                  <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                    {isRTL ? 'مهلة الدفع' : 'Délai de paiement'}
+                    {isRTL ? 'أجل الدفع' : 'Délai de paiement'}
                   </Label>
                   <select
                     value={delaiPaiement}
                     onChange={(e) => setDelaiPaiement(e.target.value)}
                     className="w-full bg-background border border-border text-foreground text-sm rounded-md focus:ring-primary focus:border-primary p-2"
                   >
-                    <option value="reception">{isRTL ? 'عند الاستلام' : 'À réception'}</option>
-                    <option value="30jours">{isRTL ? '30 يوم' : '30 jours'}</option>
-                    <option value="finmois">{isRTL ? 'آخر الشهر' : 'Fin de mois'}</option>
+                    <option value="immediate">{isRTL ? 'الدفع الفوري (عند الاستلام)' : 'Paiement immédiat (à réception)'}</option>
+                    <option value="15jours">{isRTL ? '15 يوم' : '15 jours'}</option>
+                    <option value="30jours">{isRTL ? '30 يوم (موصى به)' : '30 jours (recommandé)'}</option>
+                    <option value="45jours">{isRTL ? '45 يوم' : '45 jours'}</option>
+                    <option value="60jours">{isRTL ? '60 يوم' : '60 jours'}</option>
                   </select>
                 </div>
 
-                {/* Moyen */}
+                {/* Moyen de paiement */}
                 <div className="space-y-1.5">
                   <Label className={cn("text-xs", isRTL && "font-cairo")}>
                     {isRTL ? 'طريقة الدفع' : 'Moyen de paiement'}
@@ -1787,6 +1772,107 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                     <option value="especes">{isRTL ? 'كاش' : 'Espèces'}</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Acompte Toggle */}
+              <div className="border border-border rounded-lg p-3 space-y-3">
+                <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                  <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                    <span className="text-lg">💰</span>
+                    <Label htmlFor="acompte-toggle" className={cn("text-sm font-bold cursor-pointer", isRTL && "font-cairo")}>
+                      {isRTL ? 'إضافة دفعة مقدمة (Acompte)' : 'Ajouter un acompte'}
+                    </Label>
+                  </div>
+                  <Switch
+                    id="acompte-toggle"
+                    checked={acompteEnabled}
+                    onCheckedChange={setAcompteEnabled}
+                  />
+                </div>
+
+                {acompteEnabled && (
+                  <div className="space-y-3 pt-2">
+                    {/* Mode selection */}
+                    <RadioGroup
+                      value={acompteMode}
+                      onValueChange={(val) => setAcompteMode(val as 'percent' | 'fixed')}
+                      className={cn("flex gap-4", isRTL && "flex-row-reverse")}
+                    >
+                      <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                        <RadioGroupItem value="percent" id="acompte-percent" />
+                        <Label htmlFor="acompte-percent" className="cursor-pointer text-sm">
+                          {isRTL ? 'نسبة مئوية (%)' : 'Pourcentage (%)'}
+                        </Label>
+                      </div>
+                      <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                        <RadioGroupItem value="fixed" id="acompte-fixed" />
+                        <Label htmlFor="acompte-fixed" className="cursor-pointer text-sm">
+                          {isRTL ? 'مبلغ محدد (€)' : 'Montant fixe (€)'}
+                        </Label>
+                      </div>
+                    </RadioGroup>
+
+                    {acompteMode === 'percent' ? (
+                      <div className="space-y-1.5">
+                        <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                          {isRTL ? 'المقدم (%)' : 'Acompte (%)'}
+                        </Label>
+                        <select
+                          value={acomptePercent}
+                          onChange={(e) => setAcomptePercent(parseInt(e.target.value))}
+                          className="w-full bg-background border border-border text-foreground text-sm rounded-md focus:ring-primary focus:border-primary p-2"
+                        >
+                          <option value="10">10%</option>
+                          <option value="20">20%</option>
+                          <option value="30">30%</option>
+                          <option value="40">40%</option>
+                          <option value="50">50%</option>
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                          {isRTL ? 'مبلغ المقدم (€)' : 'Montant de l\'acompte (€)'}
+                        </Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={acompteFixedAmount || ''}
+                          onChange={(e) => setAcompteFixedAmount(parseFloat(e.target.value) || 0)}
+                          placeholder="500.00"
+                          className="text-sm font-mono"
+                        />
+                      </div>
+                    )}
+
+                    {/* Acompte preview */}
+                    <div className="p-2 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-[10px]">
+                      <div className={cn("flex justify-between", isRTL && "flex-row-reverse")}>
+                        <span className="text-amber-700 dark:text-amber-400">
+                          {isRTL ? 'مقدم:' : 'Acompte:'}
+                        </span>
+                        <span className="font-bold font-mono text-amber-800 dark:text-amber-300">
+                          {acompteMode === 'percent' 
+                            ? `${(invoiceData.total * acomptePercent / 100).toFixed(2)} € (${acomptePercent}%)`
+                            : `${acompteFixedAmount.toFixed(2)} €`
+                          }
+                        </span>
+                      </div>
+                      <div className={cn("flex justify-between mt-1", isRTL && "flex-row-reverse")}>
+                        <span className="text-amber-700 dark:text-amber-400 font-bold">
+                          {isRTL ? 'الباقي:' : 'Net à payer:'}
+                        </span>
+                        <span className="font-bold font-mono text-amber-900 dark:text-amber-200">
+                          {acompteMode === 'percent'
+                            ? `${(invoiceData.total - invoiceData.total * acomptePercent / 100).toFixed(2)} €`
+                            : `${(invoiceData.total - acompteFixedAmount).toFixed(2)} €`
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Preview of generated text */}

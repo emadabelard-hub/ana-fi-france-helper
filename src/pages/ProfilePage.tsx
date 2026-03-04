@@ -520,8 +520,14 @@ const ProfilePage = () => {
                 <StyledInput
                   value={formData.capital_social}
                   onChange={(e) => handleChange('capital_social', e.target.value)}
-                  placeholder="1 000 €"
+                  placeholder={formData.legal_status === 'auto-entrepreneur' ? '0 €' : '1 000 €'}
+                  isRTL={isRTL}
                 />
+                {formData.legal_status === 'auto-entrepreneur' && (
+                  <p className={cn("text-[11px] text-muted-foreground/70 leading-snug", isRTL && "text-right font-[IBMPlexSansArabic]")}>
+                    {isRTL ? 'إذا كنت أوتو انتربرونور فأنت غير معني (0 يورو)' : "Non applicable pour les auto-entrepreneurs (0 €)"}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <FieldLabel icon={FileText} label={isRTL ? 'كود NAF' : 'Code NAF'} isRTL={isRTL} />
@@ -535,7 +541,7 @@ const ProfilePage = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <FieldLabel icon={MapPin} label={isRTL ? 'مدينة RCS' : 'Ville RCS/RM'} isRTL={isRTL} />
+                <FieldLabel icon={MapPin} label={isRTL ? 'مدينة التسجيل (RCS/RM)' : 'Ville d\'immatriculation (RCS/RM)'} isRTL={isRTL} />
                 <StyledInput
                   value={formData.ville_immatriculation}
                   onChange={(e) => handleChange('ville_immatriculation', e.target.value)}

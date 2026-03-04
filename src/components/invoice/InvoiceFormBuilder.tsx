@@ -2160,11 +2160,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       <PreFlightChecklistModal
         open={showChecklist}
         onOpenChange={setShowChecklist}
-        onConfirm={() => {
+        onConfirm={async () => {
           setShowChecklist(false);
-          setShowPreview(true);
-          clearDraft();
-          saveToDocumentsComptables();
+          try {
+            await saveToDocumentsComptables();
+            clearDraft();
+            setShowPreview(true);
+          } catch (e) {
+            console.error('Final save failed:', e);
+          }
         }}
         items={items}
       />

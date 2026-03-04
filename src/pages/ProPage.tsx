@@ -13,7 +13,6 @@ const ProPage = () => {
   const mainTools = [
     {
       icon: null,
-      customIcon: null,
       emoji: '🏗️',
       title: isRTL ? 'تحويل الصور، الخرائط، الـ PDF، وطلبات الزبون' : 'Smart Devis IA',
       description: isRTL ? 'ارفع طلباتك.. وأنا أعملك الدوفي قبل ما تخلص شرب قهوتك ☕' : 'Photos, plans, PDF → Devis intelligent par IA ☕',
@@ -21,7 +20,7 @@ const ProPage = () => {
       gradient: 'from-blue-600 to-emerald-500',
     },
     {
-      icon: PenLine,
+      icon: null,
       emoji: '📄',
       title: isRTL ? 'فواتير ودوفيهات' : 'Factures & Devis',
       description: isRTL ? 'اعمل الفاكتير والدوفي بتوعك بسهولة أو حوّل الدوفي لفاتورة' : 'Créez vos factures et devis facilement ou convertissez un devis en facture',
@@ -29,17 +28,7 @@ const ProPage = () => {
       gradient: 'from-emerald-500 to-emerald-600',
     },
     {
-      icon: null,
-      customIcon: QuoteToInvoiceIcon,
-      emoji: null,
-      title: t('pro.quoteToInvoice'),
-      description: t('pro.quoteToInvoiceDesc'),
-      path: '/pro/quote-to-invoice',
-      gradient: 'from-amber-500 to-emerald-500',
-    },
-    {
       icon: FolderOpen,
-      customIcon: null,
       emoji: null,
       title: isRTL ? 'مستنداتي المحاسبية' : 'Mes Documents',
       description: isRTL ? 'شوف كل الدوفيهات والفواتير اللي عملتها' : 'Consultez vos devis et factures sauvegardés',

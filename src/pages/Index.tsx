@@ -73,30 +73,11 @@ const Index = () => {
       <main className="px-5 pt-8 pb-32">
         <ComingSoonSection />
 
-        {/* PRIMARY: شبيك لبيك AI Assistant */}
-        <div className="mb-6">
-          <h2 className={cn("text-lg font-black text-foreground mb-4", isRTL ? "font-cairo text-right" : "text-left")}>
-            {isRTL ? '🤝 أنا جاي أساعدك' : '🤝 Je suis là pour t\'aider'}
-          </h2>
-          <button
-            onClick={() => handleNavigate('/ai-assistant', 'فتح شبيك لبيك')}
-            className="w-full bg-gradient-to-br from-[#EDE7F6] to-[#D1C4E9] dark:from-[#1A0A2E] dark:to-[#140820] p-5 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[#B39DDB]/30 dark:border-[#7C3AED]/20 shadow-sm"
-          >
-            <div className="bg-gradient-to-br from-[#7c3aed] to-[#a855f7] p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(124,58,237,0.3)] shrink-0">
-              <Sparkles size={28} className="text-white" />
-            </div>
-            <div className={cn("flex-1 min-w-0", isRTL ? "text-right" : "text-left")}>
-              <h3 className={cn("text-[1.2rem] font-extrabold leading-snug text-black", isRTL && "font-cairo")}>
-                {isRTL ? 'شبيك لبيك' : 'Assistant IA'}
-              </h3>
-              <p className={cn("text-[1rem] font-bold text-black/80 mt-1", isRTL && "font-cairo")}>
-                {isRTL ? 'اسأل أي سؤال وأنا هاجاوبك فوراً يا فندم' : 'Smart : réponses instantanées à toutes vos questions'}
-              </p>
-            </div>
-          </button>
-        </div>
+        <h2 className={cn("text-lg font-black text-foreground mb-4", isRTL ? "font-cairo text-right" : "text-left")}>
+          {isRTL ? '🤝 أنا جاي أساعدك' : '🤝 Je suis là pour t\'aider'}
+        </h2>
 
-        {/* Card - Solutions Pro */}
+        {/* Position 1: Solutions Pro (Devis/Factures) */}
         <div className="flex flex-col gap-4">
           <button
             onClick={() => handleNavigate('/pro', 'فتح أدوات Pro (دوفي/فاتورة)')}
@@ -113,7 +94,7 @@ const Index = () => {
           </button>
         </div>
 
-        {/* CV Maker Card */}
+        {/* Position 2: CV Maker */}
         <button
           onClick={() => handleNavigate('/pro/cv-generator', 'فتح مُولد CV')}
           className="w-full mt-4 bg-gradient-to-br from-[#E8F5E9] to-[#C8E6C9] dark:from-[#0A2A14] dark:to-[#081F0D] p-5 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[#81C784]/30 dark:border-[#22C55E]/20 shadow-sm"
@@ -126,6 +107,24 @@ const Index = () => {
               {isRTL
                 ? 'اعمل سي في بالعربي وأنا أطلعهولك بالفرنساوي'
                 : 'Smart CV en quelques minutes'}
+            </p>
+          </div>
+        </button>
+
+        {/* Position 3: AI Assistant */}
+        <button
+          onClick={() => handleNavigate('/ai-assistant', 'فتح شبيك لبيك')}
+          className="w-full mt-4 bg-gradient-to-br from-[#EDE7F6] to-[#D1C4E9] dark:from-[#1A0A2E] dark:to-[#140820] p-5 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[#B39DDB]/30 dark:border-[#7C3AED]/20 shadow-sm"
+        >
+          <div className="bg-gradient-to-br from-[#7c3aed] to-[#a855f7] p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(124,58,237,0.3)] shrink-0">
+            <Sparkles size={28} className="text-white" />
+          </div>
+          <div className={cn("flex-1 min-w-0", isRTL ? "text-right" : "text-left")}>
+            <h3 className={cn("text-[1.2rem] font-extrabold leading-snug text-black", isRTL && "font-cairo")}>
+              {isRTL ? 'شبيك لبيك' : 'Assistant IA'}
+            </h3>
+            <p className={cn("text-[1rem] font-bold text-black/80 mt-1", isRTL && "font-cairo")}>
+              {isRTL ? 'اسأل أي سؤال وأنا هاجاوبك فوراً يا فندم' : 'Smart : réponses instantanées à toutes vos questions'}
             </p>
           </div>
         </button>

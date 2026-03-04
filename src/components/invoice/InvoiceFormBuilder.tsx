@@ -1348,7 +1348,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
             <HardHat className="h-5 w-5 text-gray-700 dark:text-gray-300" />
             <h3 className={cn("font-bold text-gray-800 dark:text-gray-200", isRTL && "font-cairo")}>
-              {isRTL ? '🛡️ التأمين العشري (Décennale)' : '🛡️ Assurance Décennale'}
+              {isRTL ? '🛡️ التأمين العشري و RC Pro' : '🛡️ Assurance Décennale & RC Pro'}
             </h3>
           </div>
           <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-cairo")}>

@@ -2084,11 +2084,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 
                 setShowChecklist(true);
               } catch (err) {
+                const technicalMessage = getTechnicalErrorMessage(err);
                 console.error('Preview validation error:', err);
                 toast({
                   variant: "destructive",
-                  title: isRTL ? "⚠️ خطأ" : "⚠️ Erreur",
-                  description: isRTL ? 'حصل مشكلة. جرب تاني.' : 'Une erreur est survenue. Réessayez.',
+                  title: isRTL ? "⚠️ خطأ تقني" : "⚠️ Erreur technique",
+                  description: technicalMessage,
                 });
               }
             }}

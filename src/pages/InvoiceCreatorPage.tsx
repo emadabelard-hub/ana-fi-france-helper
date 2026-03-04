@@ -74,7 +74,7 @@ const InvoiceCreatorPage = () => {
         }
       }
     }
-  }, [urlDocType, documentType, prefillSource]);
+  }, [urlDocType, documentType, prefillSource, location.state]);
   
   // Handle document type selection
   const handleTypeSelect = (type: 'devis' | 'facture') => {

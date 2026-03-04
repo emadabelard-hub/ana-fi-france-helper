@@ -112,19 +112,6 @@ const Index = () => {
         </button>
 
 
-        {/* News Card */}
-        <button
-          onClick={() => handleNavigate('/news', 'فتح الأخبار')}
-          className="w-full mt-4 bg-gradient-to-r from-[#FFEBEE] to-[#FFCDD2] dark:from-[#2A0A0A] dark:to-[#1F0808] p-5 rounded-2xl flex items-center justify-center gap-4 text-[#1A1A1C] active:scale-95 transition-all duration-200 border border-[#EF9A9A]/30 dark:border-[#EF4444]/20 shadow-sm"
-        >
-          <div className="bg-gradient-to-br from-[#90CAF9] to-[#42A5F5] dark:from-[#3B82F6] dark:to-[#2563EB] p-4 rounded-2xl shadow-[0_4px_20px_rgba(66,165,245,0.3)] dark:shadow-[0_4px_20px_rgba(59,130,246,0.3)]">
-            <Newspaper size={32} className="text-white" />
-          </div>
-          <h3 className={cn("text-[1.2rem] font-extrabold leading-tight text-center text-black", isRTL && "font-cairo")}>
-            {isRTL ? 'أخبار' : 'Actualités / News'}
-          </h3>
-        </button>
-
         {/* Language School Card */}
         <button
           onClick={() => handleNavigate('/language-school', 'فتح مدرسة اللغة')}

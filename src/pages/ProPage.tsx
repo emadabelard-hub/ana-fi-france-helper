@@ -2,10 +2,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { PenLine, Settings, ArrowRight, ArrowLeft, FolderOpen } from 'lucide-react';
+import { Settings, ArrowRight, ArrowLeft, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-import QuoteToInvoiceIcon from '@/components/pro/QuoteToInvoiceIcon';
 const ProPage = () => {
   const { isRTL, t } = useLanguage();
   const navigate = useNavigate();
@@ -15,7 +13,6 @@ const ProPage = () => {
   const mainTools = [
     {
       icon: null,
-      customIcon: null,
       emoji: '🏗️',
       title: isRTL ? 'تحويل الصور، الخرائط، الـ PDF، وطلبات الزبون' : 'Smart Devis IA',
       description: isRTL ? 'ارفع طلباتك.. وأنا أعملك الدوفي قبل ما تخلص شرب قهوتك ☕' : 'Photos, plans, PDF → Devis intelligent par IA ☕',
@@ -23,7 +20,7 @@ const ProPage = () => {
       gradient: 'from-blue-600 to-emerald-500',
     },
     {
-      icon: PenLine,
+      icon: null,
       emoji: '📄',
       title: isRTL ? 'فواتير ودوفيهات' : 'Factures & Devis',
       description: isRTL ? 'اعمل الفاكتير والدوفي بتوعك بسهولة أو حوّل الدوفي لفاتورة' : 'Créez vos factures et devis facilement ou convertissez un devis en facture',
@@ -31,17 +28,7 @@ const ProPage = () => {
       gradient: 'from-emerald-500 to-emerald-600',
     },
     {
-      icon: null,
-      customIcon: QuoteToInvoiceIcon,
-      emoji: null,
-      title: t('pro.quoteToInvoice'),
-      description: t('pro.quoteToInvoiceDesc'),
-      path: '/pro/quote-to-invoice',
-      gradient: 'from-amber-500 to-emerald-500',
-    },
-    {
       icon: FolderOpen,
-      customIcon: null,
       emoji: null,
       title: isRTL ? 'مستنداتي المحاسبية' : 'Mes Documents',
       description: isRTL ? 'شوف كل الدوفيهات والفواتير اللي عملتها' : 'Consultez vos devis et factures sauvegardés',
@@ -66,7 +53,6 @@ const ProPage = () => {
       <section className="space-y-4">
         {mainTools.map((tool) => {
           const Icon = tool.icon;
-          const CustomIcon = tool.customIcon;
           return (
             <Card
               key={tool.path}
@@ -85,8 +71,8 @@ const ProPage = () => {
                 )}>
                   {/* Icon Circle */}
                   <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-                    {CustomIcon ? (
-                      <CustomIcon className="h-10 w-10" />
+                    {Icon ? (
+                      <Icon className="h-10 w-10 text-white" />
                     ) : (
                       <span className="text-3xl">{tool.emoji}</span>
                     )}

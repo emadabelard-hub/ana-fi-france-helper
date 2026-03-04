@@ -71,8 +71,8 @@ const ProPage = () => {
                 )}>
                   {/* Icon Circle */}
                   <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-                    {CustomIcon ? (
-                      <CustomIcon className="h-10 w-10" />
+                    {Icon ? (
+                      <Icon className="h-10 w-10 text-white" />
                     ) : (
                       <span className="text-3xl">{tool.emoji}</span>
                     )}

@@ -156,6 +156,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
   // Site photos from Smart Devis
   const [sitePhotos, setSitePhotos] = useState<Array<{ data: string; name: string }>>([]);
+  // Whether to include photos in the final PDF (user choice)
+  const [includePhotosInPdf, setIncludePhotosInPdf] = useState(true);
 
   // Translation state
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());

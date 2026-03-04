@@ -53,7 +53,6 @@ const ProPage = () => {
       <section className="space-y-4">
         {mainTools.map((tool) => {
           const Icon = tool.icon;
-          const CustomIcon = tool.customIcon;
           return (
             <Card
               key={tool.path}

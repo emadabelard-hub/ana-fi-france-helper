@@ -22,8 +22,8 @@ const InvoiceCreatorPage = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
+  const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
   
   // Get document type from URL or show modal
   const urlDocType = searchParams.get('type') as 'devis' | 'facture' | null;

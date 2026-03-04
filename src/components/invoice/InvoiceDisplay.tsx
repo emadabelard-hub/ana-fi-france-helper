@@ -40,6 +40,9 @@ export interface InvoiceData {
     address?: string;
   };
   natureOperation?: 'service' | 'goods' | 'mixed';
+  descriptionChantier?: string;
+  estimatedStartDate?: string;
+  estimatedDuration?: string;
   assuranceDecennale?: {
     assureurName: string;
     assureurAddress: string;

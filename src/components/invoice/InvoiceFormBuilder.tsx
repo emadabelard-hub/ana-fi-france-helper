@@ -103,6 +103,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [includeTravelCosts, setIncludeTravelCosts] = useState(false);
   const [travelDescription, setTravelDescription] = useState('');
   const [travelPrice, setTravelPrice] = useState(30);
+  // REP / Waste management state
+  const [includeWasteCosts, setIncludeWasteCosts] = useState(false);
+  const [wasteDescription, setWasteDescription] = useState('');
+  const [wastePrice, setWastePrice] = useState(0);
   
   // TVA state - Auto-entrepreneur franchise de TVA
   const [isAutoEntrepreneur, setIsAutoEntrepreneur] = useState(false);

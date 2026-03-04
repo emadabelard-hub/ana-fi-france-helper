@@ -156,6 +156,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
   // Site photos from Smart Devis
   const [sitePhotos, setSitePhotos] = useState<Array<{ data: string; name: string }>>([]);
+  // Whether to include photos in the final PDF (user choice)
+  const [includePhotosInPdf, setIncludePhotosInPdf] = useState(true);
 
   // Translation state
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
@@ -503,7 +505,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         if (p.numero_tva) parts.push(`TVA : ${p.numero_tva}`);
         return parts.length > 1 ? parts.join(' - ') : (p.legal_footer || undefined);
       })(),
-      sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
+      sitePhotos: (sitePhotos.length > 0 && includePhotosInPdf) ? sitePhotos : undefined,
     };
   };
   
@@ -1890,7 +1892,33 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
         </CardContent>
       </Card>
-      
+
+      {/* Photo Attachment Toggle - shown only when photos exist */}
+      {sitePhotos.length > 0 && (
+        <Card className="border-amber-500/20 bg-amber-500/5">
+          <CardContent className="p-4 space-y-2">
+            <div className={cn("flex items-center justify-between gap-3", isRTL && "flex-row-reverse")}>
+              <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                <span className="text-lg">📷</span>
+                <Label htmlFor="photo-toggle" className={cn("text-sm font-bold cursor-pointer", isRTL && "font-cairo")}>
+                  {isRTL ? 'هل تحب تضيف الصور في الـ PDF؟' : 'Souhaitez-vous joindre les photos au PDF ?'}
+                </Label>
+              </div>
+              <Switch
+                id="photo-toggle"
+                checked={includePhotosInPdf}
+                onCheckedChange={setIncludePhotosInPdf}
+              />
+            </div>
+            <p className={cn("text-[10px] text-muted-foreground leading-tight", isRTL && "text-right font-cairo")}>
+              {includePhotosInPdf
+                ? (isRTL ? `✅ ${sitePhotos.length} صورة هتتضاف في صفحة "Annexe Photos" بعد الصفحة الرئيسية.` : `✅ ${sitePhotos.length} photo(s) seront ajoutées en annexe (page 2+).`)
+                : (isRTL ? '📊 الصور هتتستخدم بس في تحليل الأسعار، ومش هتظهر في الـ PDF.' : '📊 Les photos seront utilisées uniquement pour l\'analyse IA, sans apparaître dans le PDF.')}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Preview & Actions */}
       {showPreview ? (
         <div className="space-y-4 relative">
@@ -2029,16 +2057,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
                 }
 
-                // B2B SIREN/SIRET should not block submission if validation parsing is buggy.
-                // We keep it as a non-blocking warning only.
+                // B2B: SIREN/SIRET is REQUIRED when B2B is checked
                 const clientSirenDigits = clientSiren.replace(/\s/g, '');
-                if (clientIsB2B && clientSirenDigits && ![9, 14].includes(clientSirenDigits.length)) {
-                  toast({
-                    title: isRTL ? 'تنبيه SIREN/SIRET' : 'Alerte SIREN/SIRET',
-                    description: isRTL
-                      ? 'تنسيق رقم الزبون غير قياسي، لكن هنكمّل الإرسال.'
-                      : 'Format SIREN/SIRET client non standard, envoi maintenu.',
-                  });
+                if (clientIsB2B && !clientSirenDigits) {
+                  missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (إجباري B2B)' : '🏢 SIRET du client (obligatoire B2B)');
+                } else if (clientIsB2B && clientSirenDigits && ![9, 14].includes(clientSirenDigits.length)) {
+                  missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (9 أو 14 رقم)' : '🏢 SIRET client invalide (9 ou 14 chiffres)');
                 }
                 
                 // Check work site address if different from client

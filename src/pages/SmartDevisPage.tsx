@@ -248,6 +248,12 @@ const SmartDevisPage = () => {
       const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', { body });
       if (error) throw error;
       setAnalysisData(data);
+
+      // Store surface estimates for editable display
+      if (data.surfaceEstimates && Array.isArray(data.surfaceEstimates)) {
+        setSurfaceEstimates(data.surfaceEstimates);
+      }
+
       const analysisAr = data.analysis_ar || data.analysis || 'تم التحليل';
       const analysisFr = data.analysis_fr || '';
       const notesAr = data.notes_ar || data.notes || '';

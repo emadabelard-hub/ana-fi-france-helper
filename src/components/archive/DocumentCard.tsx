@@ -46,9 +46,9 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate }: Document
   const sc = statusConfig[doc.status];
   const Icon = tc.icon;
 
-  return (
   const isOverdue = doc.type === 'facture' && doc.status === 'unpaid';
 
+  return (
     <div className={cn(
       "group relative rounded-xl border bg-card p-4 transition-all duration-300 hover:shadow-[0_0_24px_hsl(var(--accent)/0.08)]",
       isOverdue 

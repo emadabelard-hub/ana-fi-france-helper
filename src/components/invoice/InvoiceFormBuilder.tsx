@@ -1378,6 +1378,75 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </CardContent>
       </Card>
 
+      {/* Objet du devis / Description du chantier */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <Edit3 className="h-5 w-5 text-primary" />
+            <h3 className={cn("font-bold", isRTL && "font-cairo")}>
+              {isRTL 
+                ? (documentType === 'devis' ? '📝 موضوع الدوفي' : '📝 موضوع الفاتورة')
+                : (documentType === 'devis' ? '📝 Objet du devis' : '📝 Objet de la facture')}
+            </h3>
+          </div>
+          <Textarea
+            value={descriptionChantier}
+            onChange={(e) => setDescriptionChantier(e.target.value)}
+            placeholder={isRTL 
+              ? 'مثال: أعمال دهان كامل للشقة - صالون + 3 غرف + مدخل'
+              : 'Ex: Travaux de peinture complète appartement T3 - Salon, 3 chambres, entrée et couloir'}
+            rows={3}
+            className={cn("text-sm resize-none", isRTL && "text-right font-cairo")}
+          />
+          <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+            {isRTL 
+              ? '💡 وصف مختصر للأشغال - بيظهر على الدوفي/الفاتورة قبل الجدول'
+              : '💡 Description courte des travaux — apparaît sur le document avant le tableau des prestations'}
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Estimated Timeline (Optional) */}
+      <Card className="border-blue-500/20 bg-blue-500/5">
+        <CardContent className="p-4 space-y-3">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <Calendar className="h-5 w-5 text-blue-600" />
+            <h3 className={cn("font-bold text-blue-700 dark:text-blue-400", isRTL && "font-cairo")}>
+              {isRTL ? '🗓️ مواعيد الأشغال (اختياري)' : '🗓️ Calendrier des travaux (optionnel)'}
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                {isRTL ? 'تاريخ بداية الأشغال المقدر' : 'Début estimé des travaux'}
+              </Label>
+              <Input
+                type="date"
+                value={estimatedStartDate}
+                onChange={(e) => setEstimatedStartDate(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", isRTL && "font-cairo")}>
+                {isRTL ? 'المدة المقدرة' : 'Durée estimée des travaux'}
+              </Label>
+              <Input
+                value={estimatedDuration}
+                onChange={(e) => setEstimatedDuration(e.target.value)}
+                placeholder={isRTL ? 'مثال: 5 أيام' : 'Ex: 5 jours ouvrés'}
+                className={cn("text-sm", isRTL && "text-right font-cairo")}
+              />
+            </div>
+          </div>
+          <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+            {isRTL 
+              ? '💡 اختياري - لو حطيته بيظهر على الدوفي ويبان أكثر احترافية'
+              : '💡 Optionnel — Ces informations apparaîtront sur le document si renseignées'}
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Assurance Décennale (BTP) */}
       <Card className="border-gray-500/20 bg-gray-500/5">
         <CardContent className="p-4 space-y-4">

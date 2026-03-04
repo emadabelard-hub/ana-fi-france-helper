@@ -114,6 +114,18 @@ const InvoiceActions = ({
 
         pdf.addImage(imgData, imgFormat, x, y, finalWidth, finalHeight);
       }
+
+      // Add pagination footer on every page: "Devis n° D-2026-1 — Page X / Y"
+      const totalPages = pdf.getNumberOfPages();
+      const docLabel = `${invoiceData.type} n° ${invoiceData.number}`;
+      for (let p = 1; p <= totalPages; p++) {
+        pdf.setPage(p);
+        pdf.setFontSize(8);
+        pdf.setTextColor(150, 150, 150);
+        const footerText = `${docLabel} — Page ${p} / ${totalPages}`;
+        const textWidth = pdf.getTextWidth(footerText);
+        pdf.text(footerText, (pdfWidth - textWidth) / 2, pdfHeight - 6);
+      }
       
       let blob = pdf.output('blob');
 

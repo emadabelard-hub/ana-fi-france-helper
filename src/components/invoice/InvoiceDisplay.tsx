@@ -367,8 +367,8 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
             <span className="font-bold text-[13px]">{formatCurrency(data.total)}</span>
           </div>
 
-          {/* Acompte Breakdown */}
-          {data.acompteAmount && data.acompteAmount > 0 && (
+          {/* Acompte Breakdown (simple) */}
+          {data.acompteAmount && data.acompteAmount > 0 && (!data.paymentMilestones || data.paymentMilestones.length === 0) && (
             <div className="mt-1.5 border border-amber-300 rounded-lg overflow-hidden">
               <div className="flex justify-between py-1 px-2 bg-amber-50 border-b border-amber-200">
                 <span className="text-amber-700 text-[10px] font-semibold">
@@ -390,6 +390,69 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
           )}
         </div>
       </div>
+
+      {/* Payment Schedule Table (Échéancier) */}
+      {data.paymentMilestones && data.paymentMilestones.length > 0 && (
+        <div className="mb-3">
+          <h4 className="text-[10px] font-bold text-black mb-1.5">📅 Échéancier de paiement</h4>
+          <table className="w-full border-collapse text-[9px]" style={{ tableLayout: 'fixed' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#1a1a1a', color: '#ffffff' }}>
+                <th className="py-1 px-1.5 text-left border border-gray-700" style={{ width: '40%' }}>Étape</th>
+                <th className="py-1 px-1.5 text-right border border-gray-700" style={{ width: '20%' }}>%</th>
+                <th className="py-1 px-1.5 text-right border border-gray-700" style={{ width: '20%' }}>Montant</th>
+                <th className="py-1 px-1.5 text-center border border-gray-700" style={{ width: '20%' }}>Date prévue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.paymentMilestones.map((m, i) => {
+                const milestoneAmount = m.mode === 'percent' 
+                  ? Math.round(data.total * (m.percent || 0) / 100 * 100) / 100 
+                  : (m.amount || 0);
+                const milestonePercent = m.mode === 'percent' 
+                  ? (m.percent || 0) 
+                  : Math.round((m.amount || 0) / data.total * 100 * 10) / 10;
+                return (
+                  <tr key={m.id} className={i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                    <td className="py-1 px-1.5 border border-gray-200 font-semibold">{m.label}</td>
+                    <td className="py-1 px-1.5 border border-gray-200 text-right font-mono">{milestonePercent}%</td>
+                    <td className="py-1 px-1.5 border border-gray-200 text-right font-mono font-bold">{formatCurrency(milestoneAmount)}</td>
+                    <td className="py-1 px-1.5 border border-gray-200 text-center text-gray-500">{m.targetDate || '—'}</td>
+                  </tr>
+                );
+              })}
+              {/* Total row */}
+              <tr style={{ backgroundColor: '#1a1a1a', color: '#ffffff' }}>
+                <td className="py-1 px-1.5 border border-gray-700 font-bold">Total</td>
+                <td className="py-1 px-1.5 border border-gray-700 text-right font-mono font-bold">
+                  {data.paymentMilestones.reduce((sum, m) => sum + (m.mode === 'percent' ? (m.percent || 0) : Math.round((m.amount || 0) / data.total * 100 * 10) / 10), 0).toFixed(1)}%
+                </td>
+                <td className="py-1 px-1.5 border border-gray-700 text-right font-mono font-bold">
+                  {formatCurrency(data.paymentMilestones.reduce((sum, m) => sum + (m.mode === 'percent' ? Math.round(data.total * (m.percent || 0) / 100 * 100) / 100 : (m.amount || 0)), 0))}
+                </td>
+                <td className="py-1 px-1.5 border border-gray-700"></td>
+              </tr>
+            </tbody>
+          </table>
+          {/* Reste à payer */}
+          {(() => {
+            const totalPaid = data.paymentMilestones.reduce((sum, m) => sum + (m.mode === 'percent' ? Math.round(data.total * (m.percent || 0) / 100 * 100) / 100 : (m.amount || 0)), 0);
+            const remaining = Math.round((data.total - totalPaid) * 100) / 100;
+            if (remaining > 0.01) {
+              return (
+                <div className="flex justify-between py-1.5 px-2 mt-1 bg-amber-100 border border-amber-300 rounded-lg">
+                  <span className="text-amber-900 text-[10px] font-bold">Reste à payer</span>
+                  <span className="font-bold text-amber-900 text-[11px] font-mono">{formatCurrency(remaining)}</span>
+                </div>
+              );
+            }
+            return null;
+          })()}
+          <p className="text-[8px] text-gray-400 mt-1 italic">
+            Le paiement sera effectué selon l'avancement des travaux décrit ci-dessus.
+          </p>
+        </div>
+      )}
 
       {/* Assurance Décennale (BTP) */}
       {data.assuranceDecennale && data.assuranceDecennale.assureurName && (

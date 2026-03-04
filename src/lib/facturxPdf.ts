@@ -4,7 +4,7 @@
  * conforming to Factur-X / ZUGFeRD standard (PDF/A-3 with embedded XML).
  */
 import { PDFDocument, AFRelationship } from 'pdf-lib';
-import { generateFacturXXml, type FacturXData } from './facturxXml';
+import { generateFacturXXml, type FacturXData, type FacturXLineItem } from './facturxXml';
 
 /**
  * Embed Factur-X XML into an existing PDF blob.
@@ -23,8 +23,10 @@ export async function embedFacturXInPdf(
   const pdfDoc = await PDFDocument.load(pdfBytes);
 
   // Set PDF metadata for Factur-X compliance
+  const hasLines = facturxData.lineItems && facturxData.lineItems.length > 0;
+  const profileLabel = hasLines ? 'Factur-X BASIC' : 'Factur-X MINIMUM';
   pdfDoc.setTitle(`${facturxData.invoiceNumber}`);
-  pdfDoc.setSubject('Factur-X MINIMUM');
+  pdfDoc.setSubject(profileLabel);
   pdfDoc.setCreator('Ana Fi France - Factur-X 2026');
   pdfDoc.setProducer('pdf-lib + Factur-X Generator');
   pdfDoc.setCreationDate(new Date());
@@ -33,7 +35,7 @@ export async function embedFacturXInPdf(
   // Attach the XML file (Factur-X standard requires 'factur-x.xml')
   await pdfDoc.attach(xmlBytes, 'factur-x.xml', {
     mimeType: 'text/xml',
-    description: 'Factur-X XML invoice data (MINIMUM profile)',
+    description: `Factur-X XML invoice data (${profileLabel} profile)`,
     afRelationship: AFRelationship.Data,
     creationDate: new Date(),
     modificationDate: new Date(),
@@ -54,6 +56,7 @@ export function buildFacturXDataFromInvoice(invoiceData: {
   dueDate?: string;
   emitter: { name: string; siret: string; address: string; iban?: string; bic?: string };
   client: { name: string; address: string; siret?: string; siren?: string; tvaIntra?: string };
+  items: Array<{ designation_fr: string; quantity: number; unit: string; unitPrice: number; total: number }>;
   subtotal: number;
   tvaRate: number;
   tvaAmount: number;
@@ -70,9 +73,21 @@ export function buildFacturXDataFromInvoice(invoiceData: {
   // Detect TVA number from legal footer
   const tvaMatch = invoiceData.legalFooter?.match(/TVA\s*:\s*(FR\w+)/i);
 
+  // Build line items for BASIC profile
+  const lineItems: FacturXLineItem[] = invoiceData.items.map((item, idx) => ({
+    lineNumber: idx + 1,
+    description: item.designation_fr,
+    quantity: item.quantity,
+    unit: item.unit,
+    unitPrice: item.unitPrice,
+    lineTotal: item.total,
+    tvaRate: invoiceData.tvaExempt ? 0 : invoiceData.tvaRate,
+    tvaCategoryCode: invoiceData.tvaExempt ? 'E' : 'S',
+  }));
+
   return {
     invoiceNumber: `${invoiceData.type === 'FACTURE' ? 'FA' : 'DE'}-${invoiceData.number}`,
-    typeCode: invoiceData.type === 'FACTURE' ? '380' : '380', // Devis aren't standard in Factur-X, use 380
+    typeCode: invoiceData.type === 'FACTURE' ? '380' : '380',
     issueDate: invoiceData.date,
     sellerName: invoiceData.emitter.name,
     sellerSiret: invoiceData.emitter.siret,
@@ -90,5 +105,7 @@ export function buildFacturXDataFromInvoice(invoiceData: {
     tvaExempt: invoiceData.tvaExempt,
     tvaExemptReason: invoiceData.tvaExemptText,
     paymentTerms: invoiceData.paymentTerms,
+    dueDate: invoiceData.dueDate,
+    lineItems,
   };
 }

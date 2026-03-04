@@ -32,6 +32,19 @@ interface UploadedFile {
   mimeType: string;
 }
 
+interface SurfaceEstimate {
+  id: string;
+  label_fr: string;
+  label_ar: string;
+  width_m: number;
+  height_m: number;
+  area_m2: number;
+  referenceObject_fr: string;
+  referenceObject_ar: string;
+  confidence: string;
+  workType: string;
+}
+
 interface LineItem {
   id: string;
   designation_fr: string;

@@ -340,9 +340,50 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </table>
       </div>
 
-      {/* Totals */}
-      <div className="flex justify-end mb-3">
-        <div className="w-56">
+      {/* Totals + Payment Schedule side by side */}
+      <div className="flex justify-between items-start mb-3 gap-3">
+        {/* Payment Schedule (compact, left side) */}
+        {data.paymentMilestones && data.paymentMilestones.length > 0 && (
+          <div className="flex-1 max-w-[55%]">
+            <p className="text-[8px] font-bold text-black mb-1">📅 Échéancier de paiement</p>
+            {data.paymentMilestones.map((m, i) => {
+              const milestoneAmount = m.mode === 'percent' 
+                ? Math.round(data.total * (m.percent || 0) / 100 * 100) / 100 
+                : (m.amount || 0);
+              const milestonePercent = m.mode === 'percent' 
+                ? (m.percent || 0) 
+                : Math.round((m.amount || 0) / data.total * 100 * 10) / 10;
+              return (
+                <div key={m.id} className="flex justify-between text-[8px] py-0.5 border-b border-gray-100">
+                  <span className="text-gray-700 font-medium truncate mr-2">{m.label}</span>
+                  <span className="font-mono text-gray-600 whitespace-nowrap">{milestonePercent}% — {formatCurrency(milestoneAmount)}</span>
+                </div>
+              );
+            })}
+            {/* First milestone = Net à payer */}
+            {(() => {
+              const first = data.paymentMilestones[0];
+              const firstAmt = first.mode === 'percent' 
+                ? Math.round(data.total * (first.percent || 0) / 100 * 100) / 100 
+                : (first.amount || 0);
+              return (
+                <div className="mt-1 bg-amber-50 border border-amber-200 rounded px-1.5 py-1">
+                  <div className="flex justify-between text-[9px]">
+                    <span className="text-amber-900 font-bold">Net à payer (ét.1)</span>
+                    <span className="font-bold text-amber-900 font-mono">{formatCurrency(firstAmt)}</span>
+                  </div>
+                  <div className="flex justify-between text-[7px] text-amber-600">
+                    <span>Restant</span>
+                    <span className="font-mono">{formatCurrency(Math.round((data.total - firstAmt) * 100) / 100)}</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* Totals block (right side, always) */}
+        <div className="w-52 ml-auto">
           <div className="flex justify-between py-1 border-b border-gray-200">
             <span className="text-gray-600 text-[10px]"><ArSub fr="Total HT:" /></span>
             <span className="font-medium text-[10px]">{formatCurrency(data.subtotal)}</span>
@@ -368,7 +409,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             <span className="font-bold text-[13px]">{formatCurrency(data.total)}</span>
           </div>
 
-          {/* Acompte Breakdown (simple) */}
+          {/* Acompte Breakdown (simple, no milestones) */}
           {data.acompteAmount && data.acompteAmount > 0 && (!data.paymentMilestones || data.paymentMilestones.length === 0) && (
             <div className="mt-1.5 border border-amber-300 rounded-lg overflow-hidden">
               <div className="flex justify-between py-1 px-2 bg-amber-50 border-b border-amber-200">
@@ -391,86 +432,6 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           )}
         </div>
       </div>
-
-      {/* Payment Schedule Table (Échéancier) */}
-      {data.paymentMilestones && data.paymentMilestones.length > 0 && (
-        <div className="mb-3">
-          <h4 className="text-[10px] font-bold text-black mb-1.5">📅 Échéancier de paiement</h4>
-          <table className="w-full border-collapse text-[9px]" style={{ tableLayout: 'fixed' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#1a1a1a', color: '#ffffff' }}>
-                <th className="py-1 px-1.5 text-left border border-gray-700" style={{ width: '40%' }}>Étape</th>
-                <th className="py-1 px-1.5 text-right border border-gray-700" style={{ width: '20%' }}>%</th>
-                <th className="py-1 px-1.5 text-right border border-gray-700" style={{ width: '20%' }}>Montant</th>
-                <th className="py-1 px-1.5 text-center border border-gray-700" style={{ width: '20%' }}>Date prévue</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.paymentMilestones.map((m, i) => {
-                const milestoneAmount = m.mode === 'percent' 
-                  ? Math.round(data.total * (m.percent || 0) / 100 * 100) / 100 
-                  : (m.amount || 0);
-                const milestonePercent = m.mode === 'percent' 
-                  ? (m.percent || 0) 
-                  : Math.round((m.amount || 0) / data.total * 100 * 10) / 10;
-                return (
-                  <tr key={m.id} className={i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                    <td className="py-1 px-1.5 border border-gray-200 font-semibold">{m.label}</td>
-                    <td className="py-1 px-1.5 border border-gray-200 text-right font-mono">{milestonePercent}%</td>
-                    <td className="py-1 px-1.5 border border-gray-200 text-right font-mono font-bold">{formatCurrency(milestoneAmount)}</td>
-                    <td className="py-1 px-1.5 border border-gray-200 text-center text-gray-500">{m.targetDate || '—'}</td>
-                  </tr>
-                );
-              })}
-              {/* Total row */}
-              <tr style={{ backgroundColor: '#1a1a1a', color: '#ffffff' }}>
-                <td className="py-1 px-1.5 border border-gray-700 font-bold">Total</td>
-                <td className="py-1 px-1.5 border border-gray-700 text-right font-mono font-bold">
-                  {data.paymentMilestones.reduce((sum, m) => sum + (m.mode === 'percent' ? (m.percent || 0) : Math.round((m.amount || 0) / data.total * 100 * 10) / 10), 0).toFixed(1)}%
-                </td>
-                <td className="py-1 px-1.5 border border-gray-700 text-right font-mono font-bold">
-                  {formatCurrency(data.paymentMilestones.reduce((sum, m) => sum + (m.mode === 'percent' ? Math.round(data.total * (m.percent || 0) / 100 * 100) / 100 : (m.amount || 0)), 0))}
-                </td>
-                <td className="py-1 px-1.5 border border-gray-700"></td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Current installment (first milestone) as Net à payer + Total remaining */}
-          {(() => {
-            const firstMilestone = data.paymentMilestones[0];
-            const firstAmount = firstMilestone.mode === 'percent' 
-              ? Math.round(data.total * (firstMilestone.percent || 0) / 100 * 100) / 100 
-              : (firstMilestone.amount || 0);
-            const totalScheduled = data.paymentMilestones.reduce((sum, m) => sum + (m.mode === 'percent' ? Math.round(data.total * (m.percent || 0) / 100 * 100) / 100 : (m.amount || 0)), 0);
-            const totalRemaining = Math.round((data.total - firstAmount) * 100) / 100;
-
-            return (
-              <div className="mt-1.5 border border-amber-300 rounded-lg overflow-hidden">
-                <div className="flex justify-between py-1.5 px-2 bg-amber-100">
-                  <div>
-                    <span className="text-amber-900 text-[10px] font-bold block">Net à payer (étape 1)</span>
-                    <span className="text-amber-700 text-[8px]">{firstMilestone.label}</span>
-                  </div>
-                  <span className="font-bold text-amber-900 text-[13px] font-mono">
-                    {formatCurrency(firstAmount)}
-                  </span>
-                </div>
-                <div className="flex justify-between py-1 px-2 bg-amber-50 border-t border-amber-200">
-                  <span className="text-amber-600 text-[9px]">Total restant après cette étape</span>
-                  <span className="font-medium text-amber-700 text-[9px] font-mono">
-                    {formatCurrency(totalRemaining)}
-                  </span>
-                </div>
-              </div>
-            );
-          })()}
-
-          <p className="text-[8px] text-gray-400 mt-1 italic">
-            Le paiement sera effectué selon l'avancement des travaux décrit ci-dessus.
-          </p>
-        </div>
-      )}
 
       {/* Assurance Décennale (BTP) */}
       {data.assuranceDecennale && data.assuranceDecennale.assureurName && (
@@ -542,34 +503,30 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         <p className="text-gray-500 font-medium">Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard de paiement (Art. L.441-10 et D.441-5 du Code de commerce).</p>
       </div>
 
-      {/* Online Payment Section - prominent when immediate payment */}
+      {/* Online Payment Section - floats in white space, no layout push */}
       {(data.type === 'FACTURE' || data.paymentDeadline === 'immediate') && (
         <div className={cn(
-          "border rounded-lg p-3 flex items-center justify-between",
+          "border rounded p-2 mt-2 flex items-center gap-2",
           data.paymentDeadline === 'immediate'
-            ? "mt-3 border-2 border-amber-400 bg-amber-50"
-            : "mt-3 border-gray-300 bg-gray-50"
-        )}>
-          <div className="flex-1">
-            <p className="text-[10px] font-bold text-gray-700 mb-0.5">
-              {data.paymentDeadline === 'immediate' ? '⚡ Paiement immédiat en ligne' : '💳 Paiement en ligne disponible'}
+            ? "border-amber-300 bg-amber-50"
+            : "border-gray-200 bg-gray-50"
+        )} style={{ position: 'relative' }}>
+          <div className="flex-1 min-w-0">
+            <p className="text-[9px] font-bold text-gray-700">
+              {data.paymentDeadline === 'immediate' ? '⚡ Paiement immédiat' : '💳 Paiement en ligne'}
             </p>
-            <p className="text-[8px] text-gray-500">Scannez le QR code ou cliquez sur le bouton pour payer {data.type === 'FACTURE' ? 'cette facture' : 'ce devis'} en ligne de manière sécurisée.</p>
+            <p className="text-[7px] text-gray-500 leading-tight">Scannez le QR code pour payer en ligne.</p>
           </div>
-          <div className="flex items-center gap-3 ml-3">
-            <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-[7px] text-gray-400 text-center leading-tight">
-              QR Code
-            </div>
-            <button
-              className="px-4 py-2 rounded-xl text-[10px] font-bold text-white shadow-md print:hidden"
-              style={{ background: 'linear-gradient(135deg, #BFA071, #9A7B4F)' }}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              Payer en ligne
-            </button>
+          <div className="w-12 h-12 border border-dashed border-gray-300 rounded flex items-center justify-center text-[6px] text-gray-400 text-center leading-tight shrink-0">
+            QR
           </div>
+          <button
+            className="px-3 py-1.5 rounded-lg text-[9px] font-bold text-white shadow-sm print:hidden shrink-0"
+            style={{ background: 'linear-gradient(135deg, #BFA071, #9A7B4F)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            Payer
+          </button>
         </div>
       )}
 

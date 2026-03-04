@@ -368,7 +368,10 @@ const SmartDevisPage = () => {
       const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', {
         body: {
           action: 'generate_items',
-          analysisData,
+          analysisData: {
+            ...analysisData,
+            surfaceEstimates: surfaceEstimates.length > 0 ? surfaceEstimates : analysisData?.surfaceEstimates,
+          },
           materialQuality,
           discountPercent,
           profitMarginPercent,

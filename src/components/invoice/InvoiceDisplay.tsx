@@ -433,19 +433,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
       </div>
 
-      {/* Assurance Décennale (BTP) */}
-      {data.assuranceDecennale && data.assuranceDecennale.assureurName && (
-        <div className="border border-gray-300 bg-gray-50 rounded p-2 mb-3 text-[9px] text-gray-700 space-y-0.5">
-          <p className="font-bold text-black text-[10px] mb-1">🛡️ Assurance Décennale & RC Pro</p>
-          <p>Assurance de responsabilité décennale & RC Pro obligatoire souscrite auprès de :</p>
-          <p className="font-semibold">{data.assuranceDecennale.assureurName}</p>
-          {data.assuranceDecennale.assureurAddress && (
-            <p>{data.assuranceDecennale.assureurAddress}</p>
-          )}
-          <p>N° de police : <span className="font-mono font-semibold">{data.assuranceDecennale.policyNumber}</span></p>
-          <p>Couverture géographique : {data.assuranceDecennale.geographicCoverage}</p>
-        </div>
-      )}
+      {/* Assurance block removed — moved above the keep-together block */}
 
       {/* Signature & Stamp Section */}
       <div className="border-t border-gray-300 pt-3 mt-2">

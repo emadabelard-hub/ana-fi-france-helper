@@ -272,6 +272,37 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
         )}
 
+        {/* ── OBJET DU DEVIS / DESCRIPTION DU CHANTIER ── */}
+        {data.descriptionChantier && (
+          <div className="mb-2 px-2 py-1.5 rounded border border-gray-200 bg-gray-50">
+            <p className="text-[7pt] font-bold text-gray-700 uppercase tracking-wider mb-0.5">
+              {data.type === 'DEVIS' ? '📝 Objet du devis' : '📝 Objet de la facture'}
+            </p>
+            <p className="text-[8pt] text-gray-700 whitespace-pre-line leading-snug">{data.descriptionChantier}</p>
+          </div>
+        )}
+
+        {/* ── VALIDITÉ DU DEVIS ── */}
+        {data.type === 'DEVIS' && data.validUntil && (
+          <div className="mb-2 px-2 py-1 rounded border border-amber-200 bg-amber-50/50">
+            <p className="text-[8pt] text-amber-800 font-semibold">
+              📅 Ce devis est valable jusqu'au {data.validUntil}.
+              {data.estimatedStartDate && <> — Début estimé des travaux : {data.estimatedStartDate}.</>}
+              {data.estimatedDuration && <> — Durée estimée : {data.estimatedDuration}.</>}
+            </p>
+          </div>
+        )}
+
+        {/* ── Estimated timeline (Facture or Devis without validUntil) ── */}
+        {(data.estimatedStartDate || data.estimatedDuration) && !(data.type === 'DEVIS' && data.validUntil) && (
+          <div className="mb-2 px-2 py-1 rounded border border-gray-200 bg-gray-50">
+            <p className="text-[8pt] text-gray-700 font-medium">
+              {data.estimatedStartDate && <>🚧 Début estimé des travaux : {data.estimatedStartDate}. </>}
+              {data.estimatedDuration && <>⏱️ Durée estimée : {data.estimatedDuration}.</>}
+            </p>
+          </div>
+        )}
+
         {/* ── TABLE DES PRESTATIONS ── */}
         {/* Uses native <table> so thead repeats on every printed page automatically */}
         <table className="w-full border-collapse mb-2" style={{ tableLayout: 'fixed', fontSize: '8pt' }}>

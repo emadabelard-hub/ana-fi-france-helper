@@ -234,8 +234,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         setIsAutoEntrepreneur(draft.isAutoEntrepreneur);
         setSelectedTvaRate(draft.selectedTvaRate || 10);
         setValidityDuration(draft.validityDuration || 30);
+        setAcompteEnabled(draft.acompteEnabled ?? false);
         setAcomptePercent(draft.acomptePercent ?? 30);
-        setDelaiPaiement(draft.delaiPaiement || 'reception');
+        setAcompteMode((draft as any).acompteMode || 'percent');
+        setAcompteFixedAmount((draft as any).acompteFixedAmount || 0);
+        setDelaiPaiement(draft.delaiPaiement || '30jours');
         setMoyenPaiement(draft.moyenPaiement || 'virement');
         if (draft.docNumber) setDocNumber(draft.docNumber);
         if (draft.items?.length) setItems(draft.items);

@@ -570,7 +570,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-base font-bold text-black">{data.emitter.name}</h2>
-                <p className="text-[10px] text-gray-600">{data.type} N° {data.number}</p>
+                <p className="text-[10px] text-gray-600">{data.type} N° {data.number} — {data.date}</p>
               </div>
               <div className="text-right">
                 <h3 className="text-sm font-bold text-black">📷 Annexe Photos</h3>

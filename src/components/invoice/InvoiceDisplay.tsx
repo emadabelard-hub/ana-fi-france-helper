@@ -451,15 +451,21 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
         <p className="text-gray-500 font-medium">Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard de paiement (Art. L.441-10 et D.441-5 du Code de commerce).</p>
       </div>
 
-      {/* Online Payment Section */}
-      {data.type === 'FACTURE' && (
-        <div className="mt-3 border border-gray-300 rounded-lg p-3 flex items-center justify-between bg-gray-50">
+      {/* Online Payment Section - prominent when immediate payment */}
+      {(data.type === 'FACTURE' || data.paymentDeadline === 'immediate') && (
+        <div className={cn(
+          "border rounded-lg p-3 flex items-center justify-between",
+          data.paymentDeadline === 'immediate'
+            ? "mt-3 border-2 border-amber-400 bg-amber-50"
+            : "mt-3 border-gray-300 bg-gray-50"
+        )}>
           <div className="flex-1">
-            <p className="text-[10px] font-bold text-gray-700 mb-0.5">💳 Paiement en ligne disponible</p>
-            <p className="text-[8px] text-gray-500">Scannez le QR code ou cliquez sur le bouton pour payer cette facture en ligne de manière sécurisée via Stripe.</p>
+            <p className="text-[10px] font-bold text-gray-700 mb-0.5">
+              {data.paymentDeadline === 'immediate' ? '⚡ Paiement immédiat en ligne' : '💳 Paiement en ligne disponible'}
+            </p>
+            <p className="text-[8px] text-gray-500">Scannez le QR code ou cliquez sur le bouton pour payer {data.type === 'FACTURE' ? 'cette facture' : 'ce devis'} en ligne de manière sécurisée.</p>
           </div>
           <div className="flex items-center gap-3 ml-3">
-            {/* QR Code placeholder — will be populated with actual payment link */}
             <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-[7px] text-gray-400 text-center leading-tight">
               QR Code
             </div>
@@ -468,7 +474,6 @@ const InvoiceDisplay = ({ data, showArabic }: InvoiceDisplayProps) => {
               style={{ background: 'linear-gradient(135deg, #BFA071, #9A7B4F)' }}
               onClick={(e) => {
                 e.stopPropagation();
-                // Payment link will be injected here
               }}
             >
               Payer en ligne

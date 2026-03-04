@@ -794,6 +794,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const saveToDocumentsComptables = async () => {
     if (!user) return;
     const data = buildInvoiceData();
+    const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
+
     try {
       const { error } = await (supabase.from('documents_comptables') as any).insert({
         user_id: user.id,
@@ -808,7 +810,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         tva_amount: data.tvaAmount,
         total_ttc: data.total,
         tva_exempt: data.tvaExempt,
-        document_data: data,
+        document_data: documentDataForStorage,
         status: 'finalized',
       });
       if (error) throw error;
@@ -824,6 +826,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         title: isRTL ? 'خطأ قاعدة البيانات' : 'Erreur base de données',
         description: technicalMessage,
       });
+      throw e;
     }
   };
 

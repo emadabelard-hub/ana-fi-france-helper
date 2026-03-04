@@ -593,7 +593,7 @@ const ProfilePage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <FieldLabel icon={FileText} label={isRTL ? 'رقم البوليصة' : 'N° de police'} required isRTL={isRTL} />
+                <FieldLabel icon={FileText} label={isRTL ? 'رقم البوليصة' : 'N° de police'} required isRTL={isRTL} filled={isFieldFilled('assurance_policy_number')} />
                 <StyledInput
                   value={formData.assurance_policy_number}
                   onChange={(e) => handleChange('assurance_policy_number', e.target.value)}

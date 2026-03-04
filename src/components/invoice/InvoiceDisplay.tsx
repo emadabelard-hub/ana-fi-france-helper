@@ -186,7 +186,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* Running footer — fixed to bottom of every printed page */}
         <div className="invoice-print-footer hidden print:block">
-          {docRef} &nbsp;|&nbsp; {data.emitter.name} — SIRET {data.emitter.siret}
+          {docRef}
         </div>
 
         {/* ── HEADER (Page 1 only) ── */}
@@ -522,7 +522,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           >
             {/* Running footer for annexe pages too */}
             <div className="invoice-print-footer hidden print:block">
-              {docRef} &nbsp;|&nbsp; Annexe — Photos du chantier
+              {docRef} — Annexe
             </div>
 
             {/* Annexe Header */}

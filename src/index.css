@@ -372,6 +372,15 @@
     background: white;
   }
 
+  /* Page counter via @page – works in supporting renderers */
+  @page {
+    @bottom-center {
+      content: "Page " counter(page) " / " counter(pages);
+      font-size: 7pt;
+      color: #999;
+    }
+  }
+
   /* Prevent body content from overlapping the fixed footer */
   .french-invoice {
     padding-bottom: 20mm !important;

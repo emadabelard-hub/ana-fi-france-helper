@@ -32,6 +32,19 @@ interface UploadedFile {
   mimeType: string;
 }
 
+interface SurfaceEstimate {
+  id: string;
+  label_fr: string;
+  label_ar: string;
+  width_m: number;
+  height_m: number;
+  area_m2: number;
+  referenceObject_fr: string;
+  referenceObject_ar: string;
+  confidence: string;
+  workType: string;
+}
+
 interface LineItem {
   id: string;
   designation_fr: string;
@@ -80,6 +93,7 @@ const SmartDevisPage = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [preferencesCollected, setPreferencesCollected] = useState(false);
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
+  const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
@@ -248,6 +262,12 @@ const SmartDevisPage = () => {
       const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', { body });
       if (error) throw error;
       setAnalysisData(data);
+
+      // Store surface estimates for editable display
+      if (data.surfaceEstimates && Array.isArray(data.surfaceEstimates)) {
+        setSurfaceEstimates(data.surfaceEstimates);
+      }
+
       const analysisAr = data.analysis_ar || data.analysis || 'تم التحليل';
       const analysisFr = data.analysis_fr || '';
       const notesAr = data.notes_ar || data.notes || '';
@@ -348,7 +368,10 @@ const SmartDevisPage = () => {
       const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', {
         body: {
           action: 'generate_items',
-          analysisData,
+          analysisData: {
+            ...analysisData,
+            surfaceEstimates: surfaceEstimates.length > 0 ? surfaceEstimates : analysisData?.surfaceEstimates,
+          },
           materialQuality,
           discountPercent,
           profitMarginPercent,
@@ -773,6 +796,84 @@ const SmartDevisPage = () => {
               </div>
               <ScrollBar orientation="horizontal" />
             </ScrollArea>
+          )}
+
+          {/* Surface Estimates (editable) */}
+          {surfaceEstimates.length > 0 && (
+            <Card className="border-2 border-blue-500/20 bg-blue-500/5">
+              <CardHeader className="pb-2 pt-3 px-3">
+                <CardTitle className={cn("text-sm flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>
+                  📐 {isRTL ? 'المساحات المقدرة (عدّل لو محتاج)' : 'Surfaces estimées (modifiables)'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3 space-y-2">
+                {surfaceEstimates.map((se, idx) => (
+                  <div key={se.id || idx} className="rounded-lg border bg-card p-2.5 space-y-1.5">
+                    <div className={cn("flex items-center justify-between gap-2", isRTL && "flex-row-reverse")}>
+                      <p className={cn("text-xs font-semibold text-foreground", isRTL && "font-cairo")}>
+                        {isRTL ? se.label_ar : se.label_fr}
+                      </p>
+                      <Badge variant="outline" className="text-[9px] shrink-0">
+                        {se.workType}
+                      </Badge>
+                    </div>
+                    <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+                      🔍 {isRTL ? se.referenceObject_ar : se.referenceObject_fr}
+                    </p>
+                    <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                      <div className="flex-1">
+                        <label className="text-[9px] text-muted-foreground">{isRTL ? 'عرض (م)' : 'Larg. (m)'}</label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={se.width_m}
+                          onChange={(e) => {
+                            const w = parseFloat(e.target.value) || 0;
+                            setSurfaceEstimates(prev => prev.map((s, i) => i === idx ? { ...s, width_m: w, area_m2: Math.round(w * s.height_m * 10) / 10 } : s));
+                          }}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-[9px] text-muted-foreground">{isRTL ? 'ارتفاع (م)' : 'Haut. (m)'}</label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={se.height_m}
+                          onChange={(e) => {
+                            const h = parseFloat(e.target.value) || 0;
+                            setSurfaceEstimates(prev => prev.map((s, i) => i === idx ? { ...s, height_m: h, area_m2: Math.round(s.width_m * h * 10) / 10 } : s));
+                          }}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-[9px] text-muted-foreground font-semibold">{isRTL ? 'المساحة' : 'Surface'}</label>
+                        <div className="h-7 flex items-center px-2 bg-muted rounded-md text-xs font-bold text-foreground">
+                          {se.area_m2} m²
+                        </div>
+                      </div>
+                    </div>
+                    {se.confidence && (
+                      <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
+                        <span className={cn(
+                          "inline-block w-1.5 h-1.5 rounded-full",
+                          se.confidence === 'high' ? 'bg-green-500' : se.confidence === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
+                        )} />
+                        <span className="text-[9px] text-muted-foreground">
+                          {se.confidence === 'high' ? (isRTL ? 'دقة عالية' : 'Précision élevée') : se.confidence === 'medium' ? (isRTL ? 'دقة متوسطة' : 'Précision moyenne') : (isRTL ? 'دقة منخفضة' : 'Précision faible')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <p className={cn("text-[10px] text-muted-foreground text-center", isRTL && "font-cairo")}>
+                  📏 {isRTL ? `المساحة الإجمالية: ${surfaceEstimates.reduce((s, e) => s + e.area_m2, 0).toFixed(1)} م²` : `Surface totale: ${surfaceEstimates.reduce((s, e) => s + e.area_m2, 0).toFixed(1)} m²`}
+                </p>
+              </CardContent>
+            </Card>
           )}
 
           {/* Chat messages */}

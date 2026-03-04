@@ -533,7 +533,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
       {/* Auto-generated Legal Footer */}
       {data.legalFooter && (
-        <div className="mt-3 pt-2 border-t border-gray-300 text-center">
+        <div className="invoice-footer-block mt-3 pt-2 border-t border-gray-300 text-center" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
           <p className="text-[7px] text-gray-400 leading-snug whitespace-pre-line">{data.legalFooter}</p>
         </div>
       )}

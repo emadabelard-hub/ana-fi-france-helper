@@ -26,7 +26,7 @@ const AdminPage = () => {
   
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  
   const [activeTab, setActiveTab] = useState('stats');
 
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;

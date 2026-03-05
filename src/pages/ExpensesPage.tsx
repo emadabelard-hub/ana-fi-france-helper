@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Receipt, Plus, Search, TrendingUp, TrendingDown, Wallet,
   Trash2, Image as ImageIcon, Loader2, ArrowLeft, Download,
-  Link as LinkIcon, Users, HardHat
+  Link as LinkIcon, Users, HardHat, ChevronDown, ChevronUp
 } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import AuthModal from '@/components/auth/AuthModal';

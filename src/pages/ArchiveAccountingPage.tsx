@@ -336,6 +336,7 @@ const ArchiveAccountingPage = () => {
                   isRTL={isRTL}
                   onDelete={handleDelete}
                   onConvert={doc.type === 'devis' ? handleConvert : undefined}
+                  onOpen={handleOpenDocument}
                 />
               ))
             )}

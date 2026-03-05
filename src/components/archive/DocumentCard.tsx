@@ -22,6 +22,7 @@ interface DocumentCardProps {
   onDelete: (id: string) => void;
   onConvert?: (doc: DocumentItem) => void;
   onDuplicate?: (doc: DocumentItem) => void;
+  onOpen?: (doc: DocumentItem) => void;
 }
 
 const typeConfig = {
@@ -41,20 +42,33 @@ const statusConfig = {
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
-const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate }: DocumentCardProps) => {
+const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen }: DocumentCardProps) => {
   const tc = typeConfig[doc.type];
   const sc = statusConfig[doc.status];
   const Icon = tc.icon;
 
   const isOverdue = doc.type === 'facture' && doc.status === 'unpaid';
+  const isClickable = doc.type !== 'expense' && Boolean(onOpen);
 
   return (
-    <div className={cn(
-      "group relative rounded-xl border bg-card p-4 transition-all duration-300 hover:shadow-[0_0_24px_hsl(var(--accent)/0.08)]",
-      isOverdue 
-        ? "border-red-500/50 hover:border-red-500/70 bg-red-500/[0.03]" 
-        : "border-border hover:border-accent/40"
-    )}>
+    <div
+      className={cn(
+        "group relative rounded-xl border bg-card p-4 transition-all duration-300 hover:shadow-[0_0_24px_hsl(var(--accent)/0.08)]",
+        isOverdue
+          ? "border-red-500/50 hover:border-red-500/70 bg-red-500/[0.03]"
+          : "border-border hover:border-accent/40",
+        isClickable && "cursor-pointer"
+      )}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onClick={isClickable ? () => onOpen?.(doc) : undefined}
+      onKeyDown={isClickable ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen?.(doc);
+        }
+      } : undefined}
+    >
       {/* Accent line - red for overdue, gold otherwise */}
       <div className={cn(
         "absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r opacity-40 group-hover:opacity-70 transition-opacity",

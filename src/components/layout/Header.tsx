@@ -1,19 +1,14 @@
 import { useState, useRef, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
-import { useAuth } from '@/hooks/useAuth';
-import { Sun, Moon, Loader2 } from 'lucide-react';
 import { Sun, Moon, Loader2 } from 'lucide-react';
 
 const Header = () => {
   const { language, setLanguage, isRTL, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const location = useLocation();
   const navigate = useNavigate();
   const [adminLoading, setAdminLoading] = useState(false);
   const tapCountRef = useRef(0);

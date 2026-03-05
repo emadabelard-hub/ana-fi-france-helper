@@ -68,6 +68,7 @@ const ExpensesPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [periodFilter, setPeriodFilter] = useState('all');
+  const [showAccountingMenu, setShowAccountingMenu] = useState(false);
 
   const fetchExpenses = async () => {
     if (!user) return;

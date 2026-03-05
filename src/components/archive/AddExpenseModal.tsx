@@ -129,10 +129,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
   };
 
   const handleSave = async () => {
-    if (!title.trim() || !amount) {
+    if (!title.trim() || !amount || !selectedClientId || !selectedChantierId) {
       toast({
         title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
-        description: isRTL ? 'أدخل العنوان والمبلغ على الأقل' : 'Saisissez au moins le titre et le montant',
+        description: isRTL
+          ? 'العنوان والمبلغ والعميل والشانتييه مطلوبين'
+          : 'Titre, montant, client et chantier sont obligatoires',
         variant: 'destructive',
       });
       return;

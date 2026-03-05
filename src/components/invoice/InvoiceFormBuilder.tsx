@@ -2686,6 +2686,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
                 }
 
+                if (!selectedClientId) {
+                  missingFields.push(isRTL ? '📋 اختيار العميل' : '📋 Sélection du client');
+                }
+
+                if (!selectedChantierId) {
+                  missingFields.push(isRTL ? '🏗️ اختيار الورشة' : '🏗️ Sélection du chantier');
+                }
+
                 // Validate document number (must have content after prefix)
                 const currentPrefix = getDocPrefix(documentType);
                 const docSuffix = docNumber.startsWith(currentPrefix) ? docNumber.slice(currentPrefix.length).trim() : '';

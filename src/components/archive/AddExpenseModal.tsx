@@ -306,6 +306,26 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             </div>
           </div>
 
+          {/* Project Link */}
+          <div className="space-y-1.5">
+            <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
+              {isRTL ? 'ربط بمشروع (اختياري)' : 'Lier à un projet (optionnel)'}
+            </Label>
+            <Select value={selectedDocId} onValueChange={setSelectedDocId}>
+              <SelectTrigger className="bg-background border-border text-sm">
+                <SelectValue placeholder={isRTL ? 'اختر دوفي أو فاتورة' : 'Choisir un devis ou facture'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{isRTL ? 'بدون ربط' : 'Aucun'}</SelectItem>
+                {documents.map(d => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Notes */}
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>

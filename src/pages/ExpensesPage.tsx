@@ -58,6 +58,9 @@ const ExpensesPage = () => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
   const [linkedDocs, setLinkedDocs] = useState<Record<string, LinkedDoc>>({});

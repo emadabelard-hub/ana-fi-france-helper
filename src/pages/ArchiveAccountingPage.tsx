@@ -36,7 +36,7 @@ const ArchiveAccountingPage = () => {
       setLoading(true);
       const [docsRes, expRes] = await Promise.all([
         (supabase.from('documents_comptables') as any)
-          .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address')
+          .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address, chantier_id')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false }),
         (supabase.from('expenses') as any)

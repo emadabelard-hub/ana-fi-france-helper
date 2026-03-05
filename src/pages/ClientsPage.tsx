@@ -1,0 +1,242 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Search, Users, Building2, ArrowLeft, ArrowRight, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import AuthModal from '@/components/auth/AuthModal';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+interface Client {
+  id: string;
+  name: string;
+  siret: string | null;
+  address: string | null;
+  contact_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  created_at: string;
+  chantiers_count?: number;
+}
+
+const ClientsPage = () => {
+  const { isRTL } = useLanguage();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const [form, setForm] = useState({ name: '', siret: '', address: '', contact_name: '', contact_phone: '', contact_email: '' });
+
+  const fetchClients = async () => {
+    if (!user) return;
+    setLoading(true);
+    const { data } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (data) {
+      // Get chantier counts
+      const { data: chantiers } = await supabase
+        .from('chantiers')
+        .select('client_id')
+        .eq('user_id', user.id);
+
+      const counts: Record<string, number> = {};
+      chantiers?.forEach(c => { counts[c.client_id] = (counts[c.client_id] || 0) + 1; });
+
+      setClients(data.map(c => ({ ...c, chantiers_count: counts[c.id] || 0 })));
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchClients(); }, [user]);
+
+  const handleSave = async () => {
+    if (!user || !form.name.trim()) return;
+    if (editingClient) {
+      await supabase.from('clients').update({
+        name: form.name, siret: form.siret || null, address: form.address || null,
+        contact_name: form.contact_name || null, contact_phone: form.contact_phone || null,
+        contact_email: form.contact_email || null,
+      }).eq('id', editingClient.id);
+      toast({ title: isRTL ? 'تم التعديل' : 'Client modifié' });
+    } else {
+      await supabase.from('clients').insert({
+        user_id: user.id, name: form.name, siret: form.siret || null,
+        address: form.address || null, contact_name: form.contact_name || null,
+        contact_phone: form.contact_phone || null, contact_email: form.contact_email || null,
+      });
+      toast({ title: isRTL ? 'تم الإضافة' : 'Client ajouté' });
+    }
+    setShowForm(false);
+    setEditingClient(null);
+    setForm({ name: '', siret: '', address: '', contact_name: '', contact_phone: '', contact_email: '' });
+    fetchClients();
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from('clients').delete().eq('id', id);
+    toast({ title: isRTL ? 'تم الحذف' : 'Client supprimé' });
+    fetchClients();
+  };
+
+  const openEdit = (c: Client) => {
+    setEditingClient(c);
+    setForm({ name: c.name, siret: c.siret || '', address: c.address || '', contact_name: c.contact_name || '', contact_phone: c.contact_phone || '', contact_email: c.contact_email || '' });
+    setShowForm(true);
+  };
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Users className="h-16 w-16 text-muted-foreground/30" />
+        <p className="text-muted-foreground">{isRTL ? 'سجل الدخول لإدارة العملاء' : 'Connectez-vous pour gérer vos clients'}</p>
+        <Button onClick={() => setShowAuth(true)}>{isRTL ? 'تسجيل الدخول' : 'Se connecter'}</Button>
+        <AuthModal open={showAuth} onOpenChange={setShowAuth} />
+      </div>
+    );
+  }
+
+  const filtered = clients.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    (c.siret && c.siret.includes(search))
+  );
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden">
+      {/* Header */}
+      <section className={cn("flex items-center gap-3 py-4 shrink-0", isRTL && "flex-row-reverse")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
+          {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
+        </Button>
+        <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+          <Users className="h-5 w-5 text-primary" />
+        </div>
+        <div className={cn("flex-1", isRTL && "text-right")}>
+          <h1 className={cn("text-lg font-bold text-foreground", isRTL && "font-cairo")}>
+            {isRTL ? 'العملاء' : 'Clients'}
+          </h1>
+          <p className={cn("text-xs text-muted-foreground", isRTL && "font-cairo")}>
+            {isRTL ? `${clients.length} عميل` : `${clients.length} client${clients.length > 1 ? 's' : ''}`}
+          </p>
+        </div>
+        <Button size="sm" onClick={() => { setEditingClient(null); setForm({ name: '', siret: '', address: '', contact_name: '', contact_phone: '', contact_email: '' }); setShowForm(true); }}>
+          <Plus className="h-4 w-4 mr-1" />
+          {isRTL ? 'إضافة' : 'Ajouter'}
+        </Button>
+      </section>
+
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder={isRTL ? 'بحث بالاسم أو SIRET...' : 'Rechercher par nom ou SIRET...'}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* List */}
+      <div className="flex-1 overflow-y-auto space-y-3 pb-4">
+        {loading ? (
+          <div className="text-center py-12 text-muted-foreground animate-pulse">
+            {isRTL ? 'جاري التحميل...' : 'Chargement...'}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12">
+            <Building2 className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+            <p className="text-muted-foreground text-sm">
+              {isRTL ? 'لا يوجد عملاء بعد' : 'Aucun client pour le moment'}
+            </p>
+          </div>
+        ) : (
+          filtered.map(client => (
+            <Card
+              key={client.id}
+              className="cursor-pointer hover:shadow-md transition-all border-border/50"
+              onClick={() => navigate(`/clients/${client.id}`)}
+            >
+              <CardContent className="p-4">
+                <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-lg font-bold text-primary">{client.name.charAt(0).toUpperCase()}</span>
+                  </div>
+                  <div className={cn("flex-1 min-w-0", isRTL && "text-right")}>
+                    <h3 className="font-semibold text-foreground truncate">{client.name}</h3>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                      {client.siret && <span>SIRET: {client.siret}</span>}
+                      {client.chantiers_count! > 0 && (
+                        <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded-full text-[10px] font-medium">
+                          {client.chantiers_count} {isRTL ? 'ورشة' : 'chantier(s)'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); openEdit(client); }}>
+                        <Pencil className="h-4 w-4 mr-2" /> {isRTL ? 'تعديل' : 'Modifier'}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onClick={e => { e.stopPropagation(); handleDelete(client.id); }}>
+                        <Trash2 className="h-4 w-4 mr-2" /> {isRTL ? 'حذف' : 'Supprimer'}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Form Dialog */}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className={cn("max-w-md", isRTL && "font-cairo")}>
+          <DialogHeader>
+            <DialogTitle className={cn(isRTL && "text-right")}>
+              {editingClient
+                ? (isRTL ? 'تعديل العميل' : 'Modifier le client')
+                : (isRTL ? 'إضافة عميل جديد' : 'Nouveau client')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder={isRTL ? 'اسم العميل *' : 'Nom du client *'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            <Input placeholder="SIRET" value={form.siret} onChange={e => setForm(f => ({ ...f, siret: e.target.value }))} />
+            <Input placeholder={isRTL ? 'العنوان' : 'Adresse'} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
+            <Input placeholder={isRTL ? 'جهة الاتصال' : 'Contact'} value={form.contact_name} onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))} />
+            <Input placeholder={isRTL ? 'الهاتف' : 'Téléphone'} value={form.contact_phone} onChange={e => setForm(f => ({ ...f, contact_phone: e.target.value }))} />
+            <Input placeholder="Email" value={form.contact_email} onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))} />
+            <Button className="w-full" onClick={handleSave} disabled={!form.name.trim()}>
+              {editingClient ? (isRTL ? 'حفظ التعديلات' : 'Enregistrer') : (isRTL ? 'إضافة' : 'Ajouter')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default ClientsPage;

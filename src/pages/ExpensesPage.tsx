@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Receipt, Plus, Search, TrendingUp, TrendingDown, Wallet,
   Trash2, Image as ImageIcon, Loader2, ArrowLeft, Download,
-  Link as LinkIcon
+  Link as LinkIcon, Users, HardHat
 } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import AuthModal from '@/components/auth/AuthModal';

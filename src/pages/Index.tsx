@@ -115,42 +115,7 @@ const Index = () => {
           </button>
         </div>
 
-        {/* Clients & Chantiers Row */}
-        <div className="grid grid-cols-2 gap-3 mt-4">
-          <button
-            onClick={() => handleNavigate('/clients', 'فتح العملاء')}
-            className="w-full bg-card rounded-2xl flex flex-col items-center justify-center gap-3 active:scale-[0.98] transition-all duration-200 border border-teal-500/20 shadow-sm py-6"
-          >
-            <div className="w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #14B8A6, #0D9488)' }}>
-              <Users size={28} className="text-white drop-shadow-md" />
-            </div>
-            <div className="text-center">
-              <h3 className={cn("text-base font-bold text-foreground", isRTL && "font-cairo")}>
-                {isRTL ? 'العملاء' : 'Clients'}
-              </h3>
-              <p className={cn("text-[11px] text-muted-foreground mt-0.5", isRTL && "font-cairo")}>
-                {isRTL ? 'إدارة العملاء' : 'Gérer vos clients'}
-              </p>
-            </div>
-          </button>
-
-          <button
-            onClick={() => handleNavigate('/chantiers', 'فتح الورشات')}
-            className="w-full bg-card rounded-2xl flex flex-col items-center justify-center gap-3 active:scale-[0.98] transition-all duration-200 border border-orange-500/20 shadow-sm py-6"
-          >
-            <div className="w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)' }}>
-              <HardHat size={28} className="text-white drop-shadow-md" />
-            </div>
-            <div className="text-center">
-              <h3 className={cn("text-base font-bold text-foreground", isRTL && "font-cairo")}>
-                {isRTL ? 'الورشات' : 'Chantiers'}
-              </h3>
-              <p className={cn("text-[11px] text-muted-foreground mt-0.5", isRTL && "font-cairo")}>
-                {isRTL ? 'تتبع المشاريع' : 'Suivre vos projets'}
-              </p>
-            </div>
-          </button>
-        </div>
+        
 
         {/* BOTTOM SECTION — flush above nav */}
         <div className="flex flex-col gap-3 mt-4">

@@ -965,6 +965,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         tva_exempt: data.tvaExempt,
         document_data: documentDataForStorage,
         status: 'finalized',
+        chantier_id: selectedChantierId || null,
       });
       if (error) throw error;
       toast({

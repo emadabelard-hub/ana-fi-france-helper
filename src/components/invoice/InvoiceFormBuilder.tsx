@@ -411,6 +411,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       if (prefillData.clientIsB2B) {
         setClientIsB2B(prefillData.clientIsB2B);
       }
+      if (prefillData.selectedClientId) {
+        setSelectedClientId(prefillData.selectedClientId);
+      }
+      if (prefillData.selectedChantierId) {
+        setSelectedChantierId(prefillData.selectedChantierId);
+      }
       if (prefillData.workSiteAddress) {
         setWorkSiteAddress(prefillData.workSiteAddress);
         setWorkSiteSameAsClient(false);

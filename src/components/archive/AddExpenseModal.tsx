@@ -82,6 +82,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
     setTitle(''); setAmount(''); setTvaAmount('0'); setCategory('other');
     setExpenseDate(new Date().toISOString().slice(0, 10)); setNotes('');
     setReceiptPreview(null); setReceiptFile(null); setSelectedDocId(preselectedDocumentId || '');
+    setSelectedClientId(''); setSelectedChantierId('');
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {

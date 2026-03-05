@@ -72,6 +72,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const { toast } = useToast();
   
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -79,6 +80,44 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL ? "أدخل الإيميل ديالك" : "Veuillez entrer votre email",
+      });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: isRTL ? "خطأ" : "Erreur",
+          description: error.message,
+        });
+      } else {
+        setResetEmailSent(true);
+        toast({
+          title: isRTL ? "تم الإرسال" : "Email envoyé",
+          description: isRTL
+            ? "تحقق من بريدك الإلكتروني لإعادة تعيين كلمة المرور"
+            : "Vérifiez votre boîte mail pour réinitialiser votre mot de passe",
+        });
+      }
+    } catch (err) {
+      console.error('Forgot password error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleGuestLogin = async () => {
     setIsGuestLoading(true);

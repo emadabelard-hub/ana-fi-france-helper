@@ -164,9 +164,8 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         notes: notes.trim() || null,
         receipt_url: receiptUrl,
         document_id: selectedDocId || null,
+        chantier_id: selectedChantierId || null,
       });
-
-      if (error) throw error;
 
       toast({ title: isRTL ? '✅ تمت إضافة المصروف' : '✅ Dépense ajoutée' });
       resetForm();

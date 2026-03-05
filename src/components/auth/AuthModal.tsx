@@ -199,6 +199,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
               show={showPassword}
               onToggle={() => setShowPassword(!showPassword)}
               placeholder="••••••••"
+              isRTL={isRTL}
             />
             {!isLogin && (
               <p className={cn("text-xs font-bold text-foreground", isRTL && "text-right")}>

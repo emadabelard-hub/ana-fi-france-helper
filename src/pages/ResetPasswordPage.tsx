@@ -32,8 +32,12 @@ const ResetPasswordPage = () => {
 
   useEffect(() => {
     // Listen for PASSWORD_RECOVERY event
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
+        setIsRecovery(true);
+      }
+      // Also detect if user is already logged in via recovery (event fires before mount)
+      if (event === 'SIGNED_IN' && session) {
         setIsRecovery(true);
       }
     });
@@ -43,6 +47,13 @@ const ResetPasswordPage = () => {
     if (hash && hash.includes('type=recovery')) {
       setIsRecovery(true);
     }
+
+    // Also check if there's already an active session (recovery link already consumed)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsRecovery(true);
+      }
+    });
 
     return () => subscription.unsubscribe();
   }, []);

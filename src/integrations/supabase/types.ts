@@ -32,8 +32,89 @@ export type Database = {
         }
         Relationships: []
       }
+      chantiers: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          name: string
+          site_address: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          name: string
+          site_address?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          site_address?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chantiers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          address: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          name: string
+          siret: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          siret?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          siret?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       documents_comptables: {
         Row: {
+          chantier_id: string | null
           client_address: string | null
           client_name: string
           created_at: string
@@ -54,6 +135,7 @@ export type Database = {
           work_site_address: string | null
         }
         Insert: {
+          chantier_id?: string | null
           client_address?: string | null
           client_name?: string
           created_at?: string
@@ -74,6 +156,7 @@ export type Database = {
           work_site_address?: string | null
         }
         Update: {
+          chantier_id?: string | null
           client_address?: string | null
           client_name?: string
           created_at?: string
@@ -93,12 +176,21 @@ export type Database = {
           user_id?: string
           work_site_address?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "documents_comptables_chantier_id_fkey"
+            columns: ["chantier_id"]
+            isOneToOne: false
+            referencedRelation: "chantiers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expenses: {
         Row: {
           amount: number
           category: string
+          chantier_id: string | null
           created_at: string
           document_id: string | null
           expense_date: string
@@ -113,6 +205,7 @@ export type Database = {
         Insert: {
           amount?: number
           category?: string
+          chantier_id?: string | null
           created_at?: string
           document_id?: string | null
           expense_date?: string
@@ -127,6 +220,7 @@ export type Database = {
         Update: {
           amount?: number
           category?: string
+          chantier_id?: string | null
           created_at?: string
           document_id?: string | null
           expense_date?: string
@@ -139,6 +233,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_chantier_id_fkey"
+            columns: ["chantier_id"]
+            isOneToOne: false
+            referencedRelation: "chantiers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "expenses_document_id_fkey"
             columns: ["document_id"]

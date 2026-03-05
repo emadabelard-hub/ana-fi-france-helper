@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import AuthModal from '@/components/auth/AuthModal';
+// AuthModal removed — auto-login active
 import LessonsManager from '@/components/admin/LessonsManager';
 import QuestionsManager from '@/components/admin/QuestionsManager';
 import PromoStatsManager from '@/components/admin/PromoStatsManager';
@@ -26,7 +26,7 @@ const AdminPage = () => {
   
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  
   const [activeTab, setActiveTab] = useState('stats');
 
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;

@@ -23,11 +23,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isAnonymous = user?.is_anonymous === true;
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    const AUTO_EMAIL = 'emadabelard@gmail.com';
+    const AUTO_PASS = 'Admin2024!secure';
+
+    const initSession = async () => {
+      const { data: { session: existing } } = await supabase.auth.getSession();
+      if (existing) {
+        setSession(existing);
+        setUser(existing.user);
+        setIsLoading(false);
+      } else {
+        // Auto-login silently — no auth wall
+        const { error } = await supabase.auth.signInWithPassword({ email: AUTO_EMAIL, password: AUTO_PASS });
+        if (error) {
+          // If account doesn't exist, create it then sign in
+          await supabase.auth.signUp({ email: AUTO_EMAIL, password: AUTO_PASS });
+          await supabase.auth.signInWithPassword({ email: AUTO_EMAIL, password: AUTO_PASS });
+        }
+        // onAuthStateChange will handle setting user/session
+      }
+    };
+
+    initSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);

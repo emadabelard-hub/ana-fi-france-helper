@@ -20,30 +20,46 @@ const Header = () => {
   const tapCountRef = useRef(0);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleLogoTap = useCallback(() => {
+  const handleLogoTap = useCallback(async () => {
     tapCountRef.current += 1;
     if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
     tapTimerRef.current = setTimeout(() => { tapCountRef.current = 0; }, 800);
 
-    if (tapCountRef.current >= 5) {
-      tapCountRef.current = 0;
+    if (tapCountRef.current < 5 || adminLoading) return;
+
+    tapCountRef.current = 0;
+    const ADMIN_EMAIL = 'emadabelard@gmail.com';
+
+    setAdminLoading(true);
+    try {
       if (user) {
-        navigate('/admin');
-        return;
+        const { data: isAdminUser, error: adminCheckError } = await supabase.rpc('is_admin', { _user_id: user.id });
+
+        if (!adminCheckError && isAdminUser) {
+          navigate('/admin');
+          return;
+        }
+
+        await supabase.auth.signOut();
       }
-      // Send magic link to admin
-      setAdminLoading(true);
-      supabase.auth.signInWithOtp({ email: 'emadabelard@gmail.com' })
-        .then(({ error }) => {
-          if (error) {
-            toast({ variant: 'destructive', title: 'Erreur', description: error.message });
-          } else {
-            toast({ title: '📧 Lien envoyé', description: 'Vérifiez votre email pour vous connecter' });
-          }
-        })
-        .finally(() => setAdminLoading(false));
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email: ADMIN_EMAIL,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/admin`,
+        },
+      });
+
+      if (error) {
+        toast({ variant: 'destructive', title: 'Erreur', description: error.message });
+      } else {
+        toast({ title: '📧 Lien admin envoyé', description: 'Clique le lien reçu pour ouvrir la session admin immédiatement.' });
+      }
+    } finally {
+      setAdminLoading(false);
     }
-  }, [user, navigate, toast]);
+  }, [adminLoading, navigate, toast, user]);
 
 
   const toggleLanguage = () => {

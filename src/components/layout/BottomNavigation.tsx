@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Newspaper, User, Shield, HeadphonesIcon } from 'lucide-react';
+import { Home, Newspaper, User, Shield, HeadphonesIcon, Receipt } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,6 +24,15 @@ const navItems = [
     color: 'text-amber-400',
     activeBg: 'bg-amber-400/15',
     dotColor: 'bg-amber-400',
+  },
+  {
+    path: '/expenses',
+    icon: Receipt,
+    labelAr: 'مصاريف',
+    labelFr: 'Dépenses',
+    color: 'text-orange-400',
+    activeBg: 'bg-orange-400/15',
+    dotColor: 'bg-orange-400',
   },
   {
     path: '/support',

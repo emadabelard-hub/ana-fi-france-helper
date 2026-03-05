@@ -100,6 +100,7 @@ export type Database = {
           amount: number
           category: string
           created_at: string
+          document_id: string | null
           expense_date: string
           id: string
           notes: string | null
@@ -113,6 +114,7 @@ export type Database = {
           amount?: number
           category?: string
           created_at?: string
+          document_id?: string | null
           expense_date?: string
           id?: string
           notes?: string | null
@@ -126,6 +128,7 @@ export type Database = {
           amount?: number
           category?: string
           created_at?: string
+          document_id?: string | null
           expense_date?: string
           id?: string
           notes?: string | null
@@ -135,7 +138,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expenses_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents_comptables"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoice_drafts: {
         Row: {

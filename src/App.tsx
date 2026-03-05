@@ -35,6 +35,7 @@ const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
 const UniversalAdminAssistantPage = lazy(() => import("./pages/UniversalAdminAssistantPage"));
 const ServiceRequestPage = lazy(() => import("./pages/ServiceRequestPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
+const ExpensesPage = lazy(() => import("./pages/ExpensesPage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -83,6 +84,7 @@ const App = () => {
                   <Route path="/service-request" element={<ServiceRequestPage />} />
                   <Route path="/payment-success" element={<PaymentSuccessPage />} />
                   <Route path="/support" element={<SupportPage />} />
+                  <Route path="/expenses" element={<ExpensesPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/legal" element={<LegalPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

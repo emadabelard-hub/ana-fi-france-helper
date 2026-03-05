@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ interface AddExpenseModalProps {
   isRTL: boolean;
   userId: string;
   onExpenseAdded: () => void;
+  preselectedDocumentId?: string | null;
 }
 
 const categories = [
@@ -29,13 +30,15 @@ const categories = [
   { value: 'other', labelFr: 'Autre', labelAr: 'أخرى' },
 ];
 
-const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded }: AddExpenseModalProps) => {
+const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, preselectedDocumentId }: AddExpenseModalProps) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [documents, setDocuments] = useState<{ id: string; label: string }[]>([]);
+  const [selectedDocId, setSelectedDocId] = useState<string>(preselectedDocumentId || '');
 
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
@@ -44,10 +47,26 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded }: 
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState('');
 
+  // Load user devis/factures for linking
+  useEffect(() => {
+    if (!open || !userId) return;
+    supabase.from('documents_comptables')
+      .select('id, document_number, client_name')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .then(({ data }) => {
+        setDocuments((data || []).map((d: any) => ({
+          id: d.id,
+          label: `${d.document_number} — ${d.client_name}`,
+        })));
+      });
+  }, [open, userId]);
+
   const resetForm = () => {
     setTitle(''); setAmount(''); setTvaAmount('0'); setCategory('other');
     setExpenseDate(new Date().toISOString().slice(0, 10)); setNotes('');
-    setReceiptPreview(null); setReceiptFile(null);
+    setReceiptPreview(null); setReceiptFile(null); setSelectedDocId(preselectedDocumentId || '');
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,6 +147,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded }: 
         expense_date: expenseDate,
         notes: notes.trim() || null,
         receipt_url: receiptUrl,
+        document_id: selectedDocId || null,
       });
 
       if (error) throw error;
@@ -284,6 +304,26 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded }: 
                 className="bg-background border-border"
               />
             </div>
+          </div>
+
+          {/* Project Link */}
+          <div className="space-y-1.5">
+            <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
+              {isRTL ? 'ربط بمشروع (اختياري)' : 'Lier à un projet (optionnel)'}
+            </Label>
+            <Select value={selectedDocId} onValueChange={setSelectedDocId}>
+              <SelectTrigger className="bg-background border-border text-sm">
+                <SelectValue placeholder={isRTL ? 'اختر دوفي أو فاتورة' : 'Choisir un devis ou facture'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{isRTL ? 'بدون ربط' : 'Aucun'}</SelectItem>
+                {documents.map(d => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Notes */}

@@ -222,6 +222,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 show={showConfirmPassword}
                 onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
                 placeholder="••••••••"
+                isRTL={isRTL}
               />
             </div>
           )}

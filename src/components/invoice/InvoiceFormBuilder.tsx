@@ -37,6 +37,8 @@ interface PrefillData {
   clientSiren?: string;
   clientTvaIntra?: string;
   clientIsB2B?: boolean;
+  selectedClientId?: string;
+  selectedChantierId?: string;
   workSiteAddress?: string;
   natureOperation?: string;
   items: Array<{

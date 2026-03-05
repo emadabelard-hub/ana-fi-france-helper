@@ -59,18 +59,15 @@ const Header = () => {
         "flex items-center justify-between px-3 py-2",
         isRTL && "flex-row-reverse"
       )}>
-        {/* Compact Logo */}
-        <div className={cn(
-          "flex items-center gap-1.5",
-          isRTL && "flex-row-reverse"
-        )}>
+        {/* Compact Logo — 5 taps = admin access */}
+        <div
+          className={cn("flex items-center gap-1.5 cursor-pointer select-none", isRTL && "flex-row-reverse")}
+          onClick={handleLogoTap}
+        >
           <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center">
-            <span className="text-accent-foreground font-bold text-xs">AF</span>
+            {adminLoading ? <Loader2 className="h-3 w-3 animate-spin text-accent-foreground" /> : <span className="text-accent-foreground font-bold text-xs">AF</span>}
           </div>
-          <h1 className={cn(
-            "text-base font-bold",
-            isRTL && "font-cairo"
-          )}>
+          <h1 className={cn("text-base font-bold", isRTL && "font-cairo")}>
             {t('header.appName')}
           </h1>
         </div>

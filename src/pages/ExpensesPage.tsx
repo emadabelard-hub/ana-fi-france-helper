@@ -182,12 +182,8 @@ const ExpensesPage = () => {
       <div className="py-8 text-center">
         <Receipt className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <p className="text-muted-foreground mb-4">
-          {isRTL ? 'سجل الدخول لإدارة المصاريف' : 'Connectez-vous pour gérer vos dépenses'}
+          {isRTL ? 'لا توجد مصاريف بعد' : 'Aucune dépense pour le moment'}
         </p>
-        <Button onClick={() => setShowAuth(true)}>
-          {isRTL ? 'تسجيل الدخول' : 'Se connecter'}
-        </Button>
-        <AuthModal open={showAuth} onOpenChange={setShowAuth} />
       </div>
     );
   }

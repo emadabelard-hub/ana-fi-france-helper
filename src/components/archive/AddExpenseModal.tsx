@@ -363,12 +363,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
               {isRTL ? 'ربط بمستند (اختياري)' : 'Lier à un document (optionnel)'}
             </Label>
-            <Select value={selectedDocId} onValueChange={setSelectedDocId}>
+            <Select value={selectedDocId} onValueChange={(value) => setSelectedDocId(value === 'none' ? '' : value)}>
               <SelectTrigger className="bg-background border-border text-sm">
                 <SelectValue placeholder={isRTL ? 'اختر دوفي أو فاتورة' : 'Choisir un devis ou facture'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{isRTL ? 'بدون ربط' : 'Aucun'}</SelectItem>
+                <SelectItem value="none">{isRTL ? 'بدون ربط' : 'Aucun'}</SelectItem>
                 {documents.map(d => (
                   <SelectItem key={d.id} value={d.id}>
                     {d.label}

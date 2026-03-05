@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Receipt, Plus, Search, TrendingUp, TrendingDown, Wallet,
   Trash2, Image as ImageIcon, Loader2, ArrowLeft, Download,
-  Link as LinkIcon, Users, HardHat, ChevronDown, ChevronUp
+  Link as LinkIcon, Users, HardHat, ChevronDown, ChevronUp, FileText
 } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import AuthModal from '@/components/auth/AuthModal';
@@ -230,7 +230,17 @@ const ExpensesPage = () => {
           </Button>
 
           {showAccountingMenu && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                variant="outline"
+                className="h-12 gap-2"
+                onClick={() => navigate('/pro/documents')}
+              >
+                <FileText className="h-4 w-4 text-primary" />
+                <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
+                  {isRTL ? 'المستندات' : 'Documents'}
+                </span>
+              </Button>
               <Button
                 variant="outline"
                 className="h-12 gap-2"

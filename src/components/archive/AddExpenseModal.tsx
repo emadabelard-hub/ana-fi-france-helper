@@ -167,6 +167,8 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         chantier_id: selectedChantierId || null,
       });
 
+      if (error) throw error;
+
       toast({ title: isRTL ? '✅ تمت إضافة المصروف' : '✅ Dépense ajoutée' });
       resetForm();
       onOpenChange(false);

@@ -39,6 +39,10 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [documents, setDocuments] = useState<{ id: string; label: string }[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<string>(preselectedDocumentId || '');
+  const [clientsList, setClientsList] = useState<{ id: string; name: string }[]>([]);
+  const [chantiersList, setChantiersList] = useState<{ id: string; name: string }[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState('');
+  const [selectedChantierId, setSelectedChantierId] = useState('');
 
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
@@ -61,12 +65,24 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           label: `${d.document_number} — ${d.client_name}`,
         })));
       });
+    // Fetch clients
+    supabase.from('clients').select('id, name').eq('user_id', userId).order('name')
+      .then(({ data }) => setClientsList(data || []));
   }, [open, userId]);
+
+  // Fetch chantiers based on selected client
+  useEffect(() => {
+    if (!selectedClientId || !userId) { setChantiersList([]); return; }
+    supabase.from('chantiers').select('id, name')
+      .eq('user_id', userId).eq('client_id', selectedClientId).order('name')
+      .then(({ data }) => setChantiersList(data || []));
+  }, [selectedClientId, userId]);
 
   const resetForm = () => {
     setTitle(''); setAmount(''); setTvaAmount('0'); setCategory('other');
     setExpenseDate(new Date().toISOString().slice(0, 10)); setNotes('');
     setReceiptPreview(null); setReceiptFile(null); setSelectedDocId(preselectedDocumentId || '');
+    setSelectedClientId(''); setSelectedChantierId('');
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,6 +164,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         notes: notes.trim() || null,
         receipt_url: receiptUrl,
         document_id: selectedDocId || null,
+        chantier_id: selectedChantierId || null,
       });
 
       if (error) throw error;
@@ -306,10 +323,46 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             </div>
           </div>
 
+          {/* Client & Chantier Link */}
+          <div className="space-y-1.5">
+            <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
+              {isRTL ? 'اختر العميل' : 'Sélectionner un client'}
+            </Label>
+            <Select value={selectedClientId} onValueChange={(v) => { setSelectedClientId(v); setSelectedChantierId(''); }}>
+              <SelectTrigger className="bg-background border-border text-sm">
+                <SelectValue placeholder={isRTL ? 'اختر عميل...' : 'Choisir un client...'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{isRTL ? 'بدون' : 'Aucun'}</SelectItem>
+                {clientsList.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {selectedClientId && chantiersList.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
+                {isRTL ? 'اختر الورشة' : 'Sélectionner un chantier'}
+              </Label>
+              <Select value={selectedChantierId} onValueChange={setSelectedChantierId}>
+                <SelectTrigger className="bg-background border-border text-sm">
+                  <SelectValue placeholder={isRTL ? 'اختر ورشة...' : 'Choisir un chantier...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {chantiersList.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Project Link */}
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'ربط بمشروع (اختياري)' : 'Lier à un projet (optionnel)'}
+              {isRTL ? 'ربط بمستند (اختياري)' : 'Lier à un document (optionnel)'}
             </Label>
             <Select value={selectedDocId} onValueChange={setSelectedDocId}>
               <SelectTrigger className="bg-background border-border text-sm">

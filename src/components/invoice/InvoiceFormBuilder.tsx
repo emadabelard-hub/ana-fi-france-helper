@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
@@ -12,7 +13,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw, Users } from 'lucide-react';
 import InvoiceDisplay, { InvoiceData, PaymentMilestone } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
@@ -81,6 +82,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const invoiceRef = useRef<HTMLDivElement>(null);
   
   // Form state
+  const [selectedClientId, setSelectedClientId] = useState('');
+  const [selectedChantierId, setSelectedChantierId] = useState('');
+  const [clientsList, setClientsList] = useState<Array<{ id: string; name: string; address: string | null; contact_phone: string | null; contact_email: string | null; siret: string | null }>>([]);
+  const [chantiersList, setChantiersList] = useState<Array<{ id: string; name: string; site_address: string | null }>>([]);
+  
   const [clientName, setClientName] = useState('');
   const [clientAddress, setClientAddress] = useState('');
   const [clientPhone, setClientPhone] = useState('');
@@ -195,7 +201,48 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     }
   }, [documentType]);
 
-  // Signed URLs for company assets (logo, signature, stamp)
+  // Fetch clients list
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('clients').select('id, name, address, contact_phone, contact_email, siret')
+      .eq('user_id', user.id).order('name').then(({ data }) => {
+        setClientsList(data || []);
+      });
+  }, [user]);
+
+  // Fetch chantiers based on selected client
+  useEffect(() => {
+    if (!user || !selectedClientId) { setChantiersList([]); return; }
+    supabase.from('chantiers').select('id, name, site_address')
+      .eq('user_id', user.id).eq('client_id', selectedClientId).order('name').then(({ data }) => {
+        setChantiersList(data || []);
+      });
+  }, [user, selectedClientId]);
+
+  // Auto-fill client info when selected
+  const handleClientSelect = (clientId: string) => {
+    setSelectedClientId(clientId);
+    setSelectedChantierId('');
+    const client = clientsList.find(c => c.id === clientId);
+    if (client) {
+      setClientName(client.name);
+      setClientAddress(client.address || '');
+      setClientPhone(client.contact_phone || '');
+      setClientEmail(client.contact_email || '');
+      setClientSiren(client.siret || '');
+    }
+  };
+
+  // Auto-fill work site when chantier selected
+  const handleChantierSelect = (chantierId: string) => {
+    setSelectedChantierId(chantierId);
+    const chantier = chantiersList.find(c => c.id === chantierId);
+    if (chantier?.site_address) {
+      setWorkSiteAddress(chantier.site_address);
+      setWorkSiteSameAsClient(false);
+    }
+  };
+
   const [signedUrls, setSignedUrls] = useState<{
     logoUrl: string | null;
     artisanSignatureUrl: string | null;
@@ -918,6 +965,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         tva_exempt: data.tvaExempt,
         document_data: documentDataForStorage,
         status: 'finalized',
+        chantier_id: selectedChantierId || null,
       });
       if (error) throw error;
       toast({
@@ -1216,6 +1264,54 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                     ? 'Auto-entrepreneur (معفى من الـ TVA)'
                     : 'Société (يدفع TVA)'}
                 </span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Client & Chantier Selection */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-4 space-y-4">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <Users className="h-5 w-5 text-primary" />
+            <h3 className={cn("font-bold", isRTL && "font-cairo")}>
+              {isRTL ? '📋 اختر العميل والورشة' : '📋 Sélectionner Client & Chantier'}
+            </h3>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs font-bold text-muted-foreground", isRTL && "text-right block font-cairo")}>
+                {isRTL ? 'اختر العميل' : 'Sélectionner un client'}
+              </Label>
+              <Select value={selectedClientId} onValueChange={handleClientSelect}>
+                <SelectTrigger className="bg-background border-border">
+                  <SelectValue placeholder={isRTL ? 'اختر عميل...' : 'Choisir un client...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientsList.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedClientId && (
+              <div className="space-y-1.5">
+                <Label className={cn("text-xs font-bold text-muted-foreground", isRTL && "text-right block font-cairo")}>
+                  {isRTL ? 'اختر الورشة' : 'Sélectionner un chantier'}
+                </Label>
+                <Select value={selectedChantierId} onValueChange={handleChantierSelect}>
+                  <SelectTrigger className="bg-background border-border">
+                    <SelectValue placeholder={isRTL ? 'اختر ورشة...' : 'Choisir un chantier...'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {chantiersList.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>

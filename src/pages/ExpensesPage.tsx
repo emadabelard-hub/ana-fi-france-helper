@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Receipt, Plus, Search, TrendingUp, TrendingDown, Wallet,
   Trash2, Image as ImageIcon, Loader2, ArrowLeft, Download,
-  Link as LinkIcon
+  Link as LinkIcon, Users, HardHat
 } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import AuthModal from '@/components/auth/AuthModal';
@@ -57,6 +58,7 @@ const ExpensesPage = () => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
   const [linkedDocs, setLinkedDocs] = useState<Record<string, LinkedDoc>>({});
@@ -210,6 +212,30 @@ const ExpensesPage = () => {
             {isRTL ? 'إضافة' : 'Ajouter'}
           </Button>
         </div>
+      </div>
+
+      {/* Quick Access: Clients & Chantiers */}
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          variant="outline"
+          className="h-12 gap-2 border-teal-500/20 hover:bg-teal-500/10 hover:border-teal-500/40"
+          onClick={() => navigate('/clients')}
+        >
+          <Users className="h-4 w-4 text-teal-500" />
+          <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
+            {isRTL ? 'العملاء' : 'Clients'}
+          </span>
+        </Button>
+        <Button
+          variant="outline"
+          className="h-12 gap-2 border-orange-500/20 hover:bg-orange-500/10 hover:border-orange-500/40"
+          onClick={() => navigate('/chantiers')}
+        >
+          <HardHat className="h-4 w-4 text-orange-500" />
+          <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
+            {isRTL ? 'الورشات' : 'Chantiers'}
+          </span>
+        </Button>
       </div>
 
       {/* Summary Cards */}

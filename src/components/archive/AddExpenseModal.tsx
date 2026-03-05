@@ -16,6 +16,7 @@ interface AddExpenseModalProps {
   isRTL: boolean;
   userId: string;
   onExpenseAdded: () => void;
+  preselectedDocumentId?: string | null;
 }
 
 const categories = [

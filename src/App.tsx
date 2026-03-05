@@ -35,6 +35,7 @@ const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
 const UniversalAdminAssistantPage = lazy(() => import("./pages/UniversalAdminAssistantPage"));
 const ServiceRequestPage = lazy(() => import("./pages/ServiceRequestPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
+const ExpensesPage = lazy(() => import("./pages/ExpensesPage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 

@@ -293,7 +293,7 @@ const DocumentsListPage = () => {
             size="sm"
             variant="ghost"
             className="h-7 w-7 p-0 text-[hsl(0,0%,45%)] hover:text-red-400 hover:bg-red-500/10"
-            onClick={() => handleDelete(doc.id)}
+            onClick={(e) => { e.stopPropagation(); handleDelete(doc.id); }}
             disabled={deletingId === doc.id}
           >
             <Trash2 className="h-3.5 w-3.5" />

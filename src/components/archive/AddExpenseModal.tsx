@@ -39,6 +39,10 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [documents, setDocuments] = useState<{ id: string; label: string }[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<string>(preselectedDocumentId || '');
+  const [clientsList, setClientsList] = useState<{ id: string; name: string }[]>([]);
+  const [chantiersList, setChantiersList] = useState<{ id: string; name: string }[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState('');
+  const [selectedChantierId, setSelectedChantierId] = useState('');
 
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');

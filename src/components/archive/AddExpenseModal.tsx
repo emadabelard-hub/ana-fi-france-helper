@@ -166,7 +166,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         notes: notes.trim() || null,
         receipt_url: receiptUrl,
         document_id: selectedDocId || null,
-        chantier_id: selectedChantierId || null,
+        chantier_id: selectedChantierId,
       });
 
       if (error) throw error;

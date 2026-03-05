@@ -96,6 +96,7 @@ const App = () => {
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
                   <Route path="/chantiers" element={<ChantiersPage />} />
                   <Route path="/chantiers/:id" element={<ChantierDetailPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

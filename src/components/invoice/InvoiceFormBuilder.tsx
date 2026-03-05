@@ -201,7 +201,48 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     }
   }, [documentType]);
 
-  // Signed URLs for company assets (logo, signature, stamp)
+  // Fetch clients list
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('clients').select('id, name, address, contact_phone, contact_email, siret')
+      .eq('user_id', user.id).order('name').then(({ data }) => {
+        setClientsList(data || []);
+      });
+  }, [user]);
+
+  // Fetch chantiers based on selected client
+  useEffect(() => {
+    if (!user || !selectedClientId) { setChantiersList([]); return; }
+    supabase.from('chantiers').select('id, name, site_address')
+      .eq('user_id', user.id).eq('client_id', selectedClientId).order('name').then(({ data }) => {
+        setChantiersList(data || []);
+      });
+  }, [user, selectedClientId]);
+
+  // Auto-fill client info when selected
+  const handleClientSelect = (clientId: string) => {
+    setSelectedClientId(clientId);
+    setSelectedChantierId('');
+    const client = clientsList.find(c => c.id === clientId);
+    if (client) {
+      setClientName(client.name);
+      setClientAddress(client.address || '');
+      setClientPhone(client.contact_phone || '');
+      setClientEmail(client.contact_email || '');
+      setClientSiren(client.siret || '');
+    }
+  };
+
+  // Auto-fill work site when chantier selected
+  const handleChantierSelect = (chantierId: string) => {
+    setSelectedChantierId(chantierId);
+    const chantier = chantiersList.find(c => c.id === chantierId);
+    if (chantier?.site_address) {
+      setWorkSiteAddress(chantier.site_address);
+      setWorkSiteSameAsClient(false);
+    }
+  };
+
   const [signedUrls, setSignedUrls] = useState<{
     logoUrl: string | null;
     artisanSignatureUrl: string | null;

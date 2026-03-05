@@ -25,6 +25,7 @@ const ResetPasswordPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
@@ -175,16 +176,29 @@ const ResetPasswordPage = () => {
               <Label htmlFor="confirm-new-password" className={cn("font-bold text-foreground", isRTL && "text-right block")}>
                 {isRTL ? "تأكيد كلمة المرور" : "Confirmer le mot de passe"}
               </Label>
-              <Input
-                id="confirm-new-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                minLength={6}
-                className={cn(isRTL && "text-right")}
-              />
+              <div className="relative">
+                <Input
+                  id="confirm-new-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
+                  className={cn("pr-10", isRTL && "text-right pr-3 pl-10")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className={cn(
+                    "absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors",
+                    isRTL ? "left-3" : "right-3"
+                  )}
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             <Button type="submit" className="w-full font-bold" disabled={isLoading}>

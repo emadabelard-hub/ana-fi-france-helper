@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Receipt, Plus, Search, TrendingUp, TrendingDown, Wallet,
   Trash2, Image as ImageIcon, Loader2, ArrowLeft, Download,
-  Link as LinkIcon, Users, HardHat
+  Link as LinkIcon, Users, HardHat, ChevronDown, ChevronUp
 } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import AuthModal from '@/components/auth/AuthModal';
@@ -68,6 +68,7 @@ const ExpensesPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [periodFilter, setPeriodFilter] = useState('all');
+  const [showAccountingMenu, setShowAccountingMenu] = useState(false);
 
   const fetchExpenses = async () => {
     if (!user) return;
@@ -214,29 +215,46 @@ const ExpensesPage = () => {
         </div>
       </div>
 
-      {/* Quick Access: Clients & Chantiers */}
-      <div className="grid grid-cols-2 gap-2">
-        <Button
-          variant="outline"
-          className="h-12 gap-2 border-teal-500/20 hover:bg-teal-500/10 hover:border-teal-500/40"
-          onClick={() => navigate('/clients')}
-        >
-          <Users className="h-4 w-4 text-teal-500" />
-          <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
-            {isRTL ? 'العملاء' : 'Clients'}
-          </span>
-        </Button>
-        <Button
-          variant="outline"
-          className="h-12 gap-2 border-orange-500/20 hover:bg-orange-500/10 hover:border-orange-500/40"
-          onClick={() => navigate('/chantiers')}
-        >
-          <HardHat className="h-4 w-4 text-orange-500" />
-          <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
-            {isRTL ? 'الورشات' : 'Chantiers'}
-          </span>
-        </Button>
-      </div>
+      {/* Comptabilité submenu */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-3 space-y-3">
+          <Button
+            variant="ghost"
+            className={cn("w-full h-11 justify-between", isRTL && "flex-row-reverse")}
+            onClick={() => setShowAccountingMenu((prev) => !prev)}
+          >
+            <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
+              {isRTL ? 'المحاسبة' : 'Comptabilité'}
+            </span>
+            {showAccountingMenu ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+
+          {showAccountingMenu && (
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                className="h-12 gap-2"
+                onClick={() => navigate('/clients')}
+              >
+                <Users className="h-4 w-4 text-primary" />
+                <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
+                  {isRTL ? 'العملاء' : 'Clients'}
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-12 gap-2"
+                onClick={() => navigate('/chantiers')}
+              >
+                <HardHat className="h-4 w-4 text-primary" />
+                <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
+                  {isRTL ? 'الورشات' : 'Chantiers'}
+                </span>
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-2">

@@ -129,10 +129,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
   };
 
   const handleSave = async () => {
-    if (!title.trim() || !amount) {
+    if (!title.trim() || !amount || !selectedClientId || !selectedChantierId) {
       toast({
         title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
-        description: isRTL ? 'أدخل العنوان والمبلغ على الأقل' : 'Saisissez au moins le titre et le montant',
+        description: isRTL
+          ? 'العنوان والمبلغ والعميل والشانتييه مطلوبين'
+          : 'Titre, montant, client et chantier sont obligatoires',
         variant: 'destructive',
       });
       return;
@@ -164,7 +166,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         notes: notes.trim() || null,
         receipt_url: receiptUrl,
         document_id: selectedDocId || null,
-        chantier_id: selectedChantierId || null,
+        chantier_id: selectedChantierId,
       });
 
       if (error) throw error;
@@ -325,39 +327,36 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
 
           {/* Client & Chantier Link */}
           <div className="space-y-1.5">
-            <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'اختر العميل' : 'Sélectionner un client'}
-            </Label>
-            <Select value={selectedClientId} onValueChange={(v) => { setSelectedClientId(v); setSelectedChantierId(''); }}>
-              <SelectTrigger className="bg-background border-border text-sm">
-                <SelectValue placeholder={isRTL ? 'اختر عميل...' : 'Choisir un client...'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">{isRTL ? 'بدون' : 'Aucun'}</SelectItem>
-                {clientsList.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
+                {isRTL ? 'اختر العميل *' : 'Sélectionner un client *'}
+              </Label>
+              <Select value={selectedClientId} onValueChange={(v) => { setSelectedClientId(v); setSelectedChantierId(''); }}>
+                <SelectTrigger className="bg-background border-border text-sm">
+                  <SelectValue placeholder={isRTL ? 'اختر عميل...' : 'Choisir un client...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientsList.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {selectedClientId && chantiersList.length > 0 && (
-            <div className="space-y-1.5">
-              <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-                {isRTL ? 'اختر الورشة' : 'Sélectionner un chantier'}
-              </Label>
-              <Select value={selectedChantierId} onValueChange={setSelectedChantierId}>
-                <SelectTrigger className="bg-background border-border text-sm">
-                  <SelectValue placeholder={isRTL ? 'اختر ورشة...' : 'Choisir un chantier...'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {chantiersList.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div className="space-y-1.5">
+            <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
+              {isRTL ? 'اختر الورشة *' : 'Sélectionner un chantier *'}
+            </Label>
+            <Select value={selectedChantierId} onValueChange={setSelectedChantierId} disabled={!selectedClientId || chantiersList.length === 0}>
+              <SelectTrigger className="bg-background border-border text-sm">
+                <SelectValue placeholder={isRTL ? 'اختر ورشة...' : 'Choisir un chantier...'} />
+              </SelectTrigger>
+              <SelectContent>
+                {chantiersList.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Project Link */}
           <div className="space-y-1.5">

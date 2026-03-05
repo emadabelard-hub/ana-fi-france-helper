@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Camera, PenLine, FileText, User, Users, HardHat } from 'lucide-react';
+import { Camera, PenLine, FileText, User, Wallet } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -47,22 +47,13 @@ const Dashboard = () => {
       emoji: '👤',
     },
     {
-      icon: Users,
-      title: isRTL ? 'العملاء' : 'Clients',
-      subtitle: isRTL ? 'إدارة عملائك ومعلوماتهم' : 'Gérez vos clients et leurs informations',
-      path: '/clients',
+      icon: Wallet,
+      title: isRTL ? 'المحاسبة' : 'Comptabilité',
+      subtitle: isRTL ? 'المصاريف، العملاء، والورشات في مكان واحد' : 'Dépenses, clients et chantiers au même endroit',
+      path: '/expenses',
       gradient: 'from-cyan-500 to-teal-600',
       iconBg: 'bg-cyan-400/30',
-      emoji: '🤝',
-    },
-    {
-      icon: HardHat,
-      title: isRTL ? 'الورشات' : 'Chantiers',
-      subtitle: isRTL ? 'تتبع كل ورشاتك ومصاريفها' : 'Suivez tous vos chantiers et leur rentabilité',
-      path: '/chantiers',
-      gradient: 'from-orange-500 to-red-500',
-      iconBg: 'bg-orange-400/30',
-      emoji: '🏗️',
+      emoji: '💼',
     },
   ];
 

@@ -36,7 +36,7 @@ const ArchiveAccountingPage = () => {
       setLoading(true);
       const [docsRes, expRes] = await Promise.all([
         (supabase.from('documents_comptables') as any)
-          .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address')
+          .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address, chantier_id')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false }),
         (supabase.from('expenses') as any)
@@ -160,6 +160,39 @@ const ArchiveAccountingPage = () => {
     navigate('/pro/invoice-creator?type=facture&prefill=quote');
   };
 
+
+  const handleOpenDocument = (doc: DocumentItem) => {
+    if (doc.type === 'expense') return;
+    const raw = doc.rawData;
+    if (!raw) return;
+
+    const docData = raw.document_data || {};
+    const items = docData.items || [];
+    const prefill = {
+      clientName: raw.client_name || docData.client?.name || '',
+      clientAddress: raw.client_address || docData.client?.address || '',
+      clientPhone: docData.client?.phone || '',
+      clientEmail: docData.client?.email || '',
+      clientSiren: docData.client?.siren || '',
+      clientTvaIntra: docData.client?.tvaIntra || '',
+      clientIsB2B: docData.client?.isB2B || false,
+      workSiteAddress: raw.work_site_address || docData.workSite?.address || '',
+      natureOperation: raw.nature_operation || docData.natureOperation || '',
+      items: items.map((item: any) => ({
+        designation_fr: item.designation_fr || '',
+        designation_ar: item.designation_ar || '',
+        quantity: item.quantity || 1,
+        unit: item.unit || 'm²',
+        unitPrice: item.unitPrice || 0,
+      })),
+      notes: docData.legalMentions || '',
+      source: 'view_existing',
+      selectedChantierId: raw.chantier_id || '',
+    };
+
+    sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
+    navigate(`/pro/invoice-creator?type=${doc.type}&prefill=quote`);
+  };
   const handleExportCSV = () => {
     if (allItems.length === 0) return;
     const headers = ['Type', 'Numéro', 'Client', 'Date', 'HT (€)', 'TTC (€)', 'Statut'];
@@ -304,6 +337,7 @@ const ArchiveAccountingPage = () => {
                   isRTL={isRTL}
                   onDelete={handleDelete}
                   onConvert={doc.type === 'devis' ? handleConvert : undefined}
+                  onOpen={handleOpenDocument}
                 />
               ))
             )}

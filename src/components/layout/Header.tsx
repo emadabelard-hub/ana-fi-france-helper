@@ -29,32 +29,39 @@ const Header = () => {
 
     tapCountRef.current = 0;
     const ADMIN_EMAIL = 'emadabelard@gmail.com';
+    const ADMIN_PASS = 'Admin2024!secure';
 
     setAdminLoading(true);
     try {
+      // If already logged in as admin, go directly
       if (user) {
-        const { data: isAdminUser, error: adminCheckError } = await supabase.rpc('is_admin', { _user_id: user.id });
-
-        if (!adminCheckError && isAdminUser) {
+        const { data: isAdminUser } = await supabase.rpc('is_admin', { _user_id: user.id });
+        if (isAdminUser) {
           navigate('/admin');
           return;
         }
-
         await supabase.auth.signOut();
       }
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email: ADMIN_EMAIL,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: `${window.location.origin}/admin`,
-        },
-      });
+      // Try sign in directly
+      let { error } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: ADMIN_PASS });
+
+      if (error?.message?.includes('Invalid login')) {
+        // Account may not exist yet, create it
+        const { error: signUpErr } = await supabase.auth.signUp({ email: ADMIN_EMAIL, password: ADMIN_PASS });
+        if (!signUpErr) {
+          const { error: retryErr } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: ADMIN_PASS });
+          error = retryErr;
+        } else {
+          error = signUpErr;
+        }
+      }
 
       if (error) {
         toast({ variant: 'destructive', title: 'Erreur', description: error.message });
       } else {
-        toast({ title: '📧 Lien admin envoyé', description: 'Clique le lien reçu pour ouvrir la session admin immédiatement.' });
+        toast({ title: '✅ Connecté', description: 'Redirection vers le panneau admin...' });
+        navigate('/admin');
       }
     } finally {
       setAdminLoading(false);

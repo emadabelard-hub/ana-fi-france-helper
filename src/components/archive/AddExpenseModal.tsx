@@ -323,10 +323,46 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             </div>
           </div>
 
+          {/* Client & Chantier Link */}
+          <div className="space-y-1.5">
+            <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
+              {isRTL ? 'اختر العميل' : 'Sélectionner un client'}
+            </Label>
+            <Select value={selectedClientId} onValueChange={(v) => { setSelectedClientId(v); setSelectedChantierId(''); }}>
+              <SelectTrigger className="bg-background border-border text-sm">
+                <SelectValue placeholder={isRTL ? 'اختر عميل...' : 'Choisir un client...'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{isRTL ? 'بدون' : 'Aucun'}</SelectItem>
+                {clientsList.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {selectedClientId && chantiersList.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
+                {isRTL ? 'اختر الورشة' : 'Sélectionner un chantier'}
+              </Label>
+              <Select value={selectedChantierId} onValueChange={setSelectedChantierId}>
+                <SelectTrigger className="bg-background border-border text-sm">
+                  <SelectValue placeholder={isRTL ? 'اختر ورشة...' : 'Choisir un chantier...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {chantiersList.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Project Link */}
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'ربط بمشروع (اختياري)' : 'Lier à un projet (optionnel)'}
+              {isRTL ? 'ربط بمستند (اختياري)' : 'Lier à un document (optionnel)'}
             </Label>
             <Select value={selectedDocId} onValueChange={setSelectedDocId}>
               <SelectTrigger className="bg-background border-border text-sm">

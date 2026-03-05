@@ -70,67 +70,11 @@ const AdminPage = () => {
     );
   }
 
-  // Show auth modal if not logged in
-  if (!user) {
+  // Auto-login in progress, show loading
+  if (!user || !isAdmin) {
     return (
-      <div className="py-6 space-y-6">
-        <section className={cn("flex items-center gap-4", isRTL && "flex-row-reverse")}>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
-            <BackArrow className="h-5 w-5" />
-          </Button>
-          <div className={cn("flex-1", isRTL && "text-right")}>
-            <h1 className={cn("text-2xl font-bold text-foreground", isRTL && "font-cairo")}>
-              {isRTL ? 'لوحة الإدارة' : 'Admin Panel'}
-            </h1>
-          </div>
-        </section>
-
-        <Card className="max-w-md mx-auto">
-          <CardContent className={cn("py-8 text-center space-y-4", isRTL && "font-cairo")}>
-            <Shield className="h-16 w-16 mx-auto text-muted-foreground" />
-            <h2 className="text-xl font-semibold">
-              {isRTL ? 'تسجيل الدخول مطلوب' : 'Login Required'}
-            </h2>
-            <p className="text-muted-foreground">
-              {isRTL ? 'يجب تسجيل الدخول للوصول لهذه الصفحة' : 'You must be logged in to access this page'}
-            </p>
-            <Button onClick={() => setShowAuthModal(true)}>
-              {isRTL ? 'تسجيل الدخول' : 'Log In'}
-            </Button>
-          </CardContent>
-        </Card>
-        
-        <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
-      </div>
-    );
-  }
-
-  // Not admin - access denied (server-side check via is_admin RPC)
-  if (!isAdmin) {
-    return (
-      <div className="py-6 space-y-6">
-        <section className={cn("flex items-center gap-4", isRTL && "flex-row-reverse")}>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
-            <BackArrow className="h-5 w-5" />
-          </Button>
-          <div className={cn("flex-1", isRTL && "text-right")}>
-            <h1 className={cn("text-2xl font-bold text-foreground", isRTL && "font-cairo")}>
-              {isRTL ? 'لوحة الإدارة' : 'Admin Panel'}
-            </h1>
-          </div>
-        </section>
-
-        <Card className="max-w-md mx-auto">
-          <CardContent className={cn("py-8 text-center space-y-4", isRTL && "font-cairo")}>
-            <Shield className="h-16 w-16 mx-auto text-muted-foreground" />
-            <h2 className="text-xl font-semibold">
-              {isRTL ? 'الوصول مرفوض' : 'Access Denied'}
-            </h2>
-            <p className="text-muted-foreground">
-              {isRTL ? 'هذه الصفحة للمسؤولين فقط' : 'This page is for administrators only.'}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }

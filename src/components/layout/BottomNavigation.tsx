@@ -26,6 +26,15 @@ const navItems = [
     dotColor: 'bg-amber-400',
   },
   {
+    path: '/expenses',
+    icon: Receipt,
+    labelAr: 'مصاريف',
+    labelFr: 'Dépenses',
+    color: 'text-orange-400',
+    activeBg: 'bg-orange-400/15',
+    dotColor: 'bg-orange-400',
+  },
+  {
     path: '/support',
     icon: HeadphonesIcon,
     labelAr: 'مساعدة',

@@ -37,6 +37,10 @@ const ServiceRequestPage = lazy(() => import("./pages/ServiceRequestPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
 const ExpensesPage = lazy(() => import("./pages/ExpensesPage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
+const ClientsPage = lazy(() => import("./pages/ClientsPage"));
+const ClientDetailPage = lazy(() => import("./pages/ClientDetailPage"));
+const ChantiersPage = lazy(() => import("./pages/ChantiersPage"));
+const ChantierDetailPage = lazy(() => import("./pages/ChantierDetailPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (

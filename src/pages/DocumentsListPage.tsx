@@ -272,7 +272,7 @@ const DocumentsListPage = () => {
                 size="sm"
                 variant="ghost"
                 className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
-                onClick={() => handleConvertToInvoice(doc)}
+                onClick={(e) => { e.stopPropagation(); handleConvertToInvoice(doc); }}
               >
                 <ArrowRightLeft className="h-3 w-3" />
                 {isRTL ? 'حوّل لفاتورة' : 'Convertir'}
@@ -281,7 +281,7 @@ const DocumentsListPage = () => {
                 size="sm"
                 variant="ghost"
                 className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 gap-1"
-                onClick={() => handleDuplicateDevis(doc)}
+                onClick={(e) => { e.stopPropagation(); handleDuplicateDevis(doc); }}
               >
                 <Copy className="h-3 w-3" />
                 {isRTL ? 'نسخ' : 'Dupliquer'}

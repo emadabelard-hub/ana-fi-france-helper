@@ -65,7 +65,18 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           label: `${d.document_number} — ${d.client_name}`,
         })));
       });
+    // Fetch clients
+    supabase.from('clients').select('id, name').eq('user_id', userId).order('name')
+      .then(({ data }) => setClientsList(data || []));
   }, [open, userId]);
+
+  // Fetch chantiers based on selected client
+  useEffect(() => {
+    if (!selectedClientId || !userId) { setChantiersList([]); return; }
+    supabase.from('chantiers').select('id, name')
+      .eq('user_id', userId).eq('client_id', selectedClientId).order('name')
+      .then(({ data }) => setChantiersList(data || []));
+  }, [selectedClientId, userId]);
 
   const resetForm = () => {
     setTitle(''); setAmount(''); setTvaAmount('0'); setCategory('other');

@@ -1,20 +1,14 @@
 import { useState, useRef, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { Sun, Moon, Loader2 } from 'lucide-react';
 
 const Header = () => {
   const { language, setLanguage, isRTL, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const location = useLocation();
   const navigate = useNavigate();
   const [adminLoading, setAdminLoading] = useState(false);
   const tapCountRef = useRef(0);
@@ -25,48 +19,12 @@ const Header = () => {
     if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
     tapTimerRef.current = setTimeout(() => { tapCountRef.current = 0; }, 800);
 
-    if (tapCountRef.current < 5 || adminLoading) return;
+    if (tapCountRef.current < 3 || adminLoading) return; // 3 taps au lieu de 5
 
     tapCountRef.current = 0;
-    const ADMIN_EMAIL = 'emadabelard@gmail.com';
-    const ADMIN_PASS = 'Admin2024!secure';
-
-    setAdminLoading(true);
-    try {
-      // If already logged in as admin, go directly
-      if (user) {
-        const { data: isAdminUser } = await supabase.rpc('is_admin', { _user_id: user.id });
-        if (isAdminUser) {
-          navigate('/admin');
-          return;
-        }
-        await supabase.auth.signOut();
-      }
-
-      // Try sign in directly
-      let { error } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: ADMIN_PASS });
-
-      if (error?.message?.includes('Invalid login')) {
-        // Account may not exist yet, create it
-        const { error: signUpErr } = await supabase.auth.signUp({ email: ADMIN_EMAIL, password: ADMIN_PASS });
-        if (!signUpErr) {
-          const { error: retryErr } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: ADMIN_PASS });
-          error = retryErr;
-        } else {
-          error = signUpErr;
-        }
-      }
-
-      if (error) {
-        toast({ variant: 'destructive', title: 'Erreur', description: error.message });
-      } else {
-        toast({ title: '✅ Connecté', description: 'Redirection vers le panneau admin...' });
-        navigate('/admin');
-      }
-    } finally {
-      setAdminLoading(false);
-    }
-  }, [adminLoading, navigate, toast, user]);
+    // Accès direct à /admin — l'auto-login se fait là-bas
+    navigate('/admin');
+  }, [adminLoading, navigate]);
 
 
   const toggleLanguage = () => {

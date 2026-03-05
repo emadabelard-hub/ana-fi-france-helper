@@ -193,6 +193,7 @@ const ArchiveAccountingPage = () => {
     sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
     navigate(`/pro/invoice-creator?type=${doc.type}&prefill=quote`);
   };
+  const handleExportCSV = () => {
     if (allItems.length === 0) return;
     const headers = ['Type', 'Numéro', 'Client', 'Date', 'HT (€)', 'TTC (€)', 'Statut'];
     const rows = allItems.map(d => [

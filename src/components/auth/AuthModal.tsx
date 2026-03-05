@@ -202,134 +202,206 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
 
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setIsForgotPassword(false); setResetEmailSent(false); } }}>
       <DialogContent className={cn("sm:max-w-md", isRTL && "font-cairo")}>
         <DialogHeader>
           <DialogTitle className={cn(isRTL && "text-right")}>
-            {isLogin 
-              ? (isRTL ? "دخول" : "Connexion")
-              : (isRTL ? "افتح حساب" : "Créer un compte")}
+            {isForgotPassword
+              ? (isRTL ? "نسيت كلمة المرور" : "Mot de passe oublié")
+              : isLogin 
+                ? (isRTL ? "دخول" : "Connexion")
+                : (isRTL ? "افتح حساب" : "Créer un compte")}
           </DialogTitle>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email" className={cn("font-bold text-foreground", isRTL && "text-right block")}>
-              {isRTL ? "الإيميل" : "Email"}
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="exemple@email.com"
-              required
-              className={cn(isRTL && "text-right")}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="password" className={cn("font-bold text-foreground", isRTL && "text-right block")}>
-              {isRTL ? "كلمة المرور" : "Mot de passe"}
-            </Label>
-            <PasswordInput
-              id="password"
-              value={password}
-              onChange={setPassword}
-              show={showPassword}
-              onToggle={() => setShowPassword(!showPassword)}
-              placeholder="••••••••"
-              isRTL={isRTL}
-            />
-            {!isLogin && (
-              <p className={cn("text-xs font-bold text-foreground", isRTL && "text-right")}>
-                {isRTL
-                  ? "يجب أن تحتوي كلمة المرور على رقم وعلامة خاصة (مثل: * ! .)"
-                  : "Doit contenir un chiffre et un caractère spécial (ex: * ! .)"}
+
+        {isForgotPassword ? (
+          resetEmailSent ? (
+            <div className="text-center space-y-4 py-4">
+              <p className="text-foreground font-bold">
+                {isRTL ? "✉️ تحقق من بريدك الإلكتروني" : "✉️ Vérifiez votre boîte mail"}
               </p>
-            )}
-          </div>
-
-          {!isLogin && (
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className={cn("font-bold text-foreground", isRTL && "text-right block")}>
-                {isRTL ? "تأكيد كلمة المرور" : "Confirmer le mot de passe"}
-              </Label>
-              <PasswordInput
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={setConfirmPassword}
-                show={showConfirmPassword}
-                onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
-                placeholder="••••••••"
-                isRTL={isRTL}
-              />
+              <p className="text-sm text-muted-foreground">
+                {isRTL
+                  ? "أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني"
+                  : "Nous avons envoyé un lien de réinitialisation à votre adresse email"}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full font-bold"
+                onClick={() => { setIsForgotPassword(false); setResetEmailSent(false); }}
+              >
+                {isRTL ? "رجوع للدخول" : "Retour à la connexion"}
+              </Button>
             </div>
-          )}
-
-          <Button type="submit" className="w-full font-bold" disabled={isLoading}>
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isLogin 
-              ? (isRTL ? "ادخل" : "Se connecter")
-              : (isRTL ? "افتح حساب" : "Créer un compte")}
-          </Button>
-        </form>
-
-        {/* Guest Mode Button */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              {isRTL ? "أو" : "ou"}
-            </span>
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full font-bold gap-2"
-          onClick={handleGuestLogin}
-          disabled={isGuestLoading}
-        >
-          {isGuestLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <>
-              <UserRound className="h-4 w-4" />
-              {isRTL ? "تجربة سريعة (بدون حساب)" : "Essai rapide (sans compte)"}
-            </>
-          )}
-        </Button>
-
-        <div className="text-center text-sm text-muted-foreground">
-          {isLogin ? (
-            <p>
-              {isRTL ? "معندكش حساب؟" : "Pas encore de compte ?"}{' '}
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {isRTL
+                  ? "أدخل الإيميل ديالك وغادي نرسلو ليك رابط لإعادة تعيين كلمة المرور"
+                  : "Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe"}
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="reset-email" className={cn("font-bold text-foreground", isRTL && "text-right block")}>
+                  {isRTL ? "الإيميل" : "Email"}
+                </Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="exemple@email.com"
+                  required
+                  className={cn(isRTL && "text-right")}
+                />
+              </div>
+              <Button type="submit" className="w-full font-bold" disabled={isLoading}>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  isRTL ? "إرسال رابط التعيين" : "Envoyer le lien"
+                )}
+              </Button>
               <button
                 type="button"
-                onClick={() => { setIsLogin(false); setConfirmPassword(''); }}
-                className="text-primary underline hover:no-underline font-bold"
+                onClick={() => setIsForgotPassword(false)}
+                className="w-full text-center text-sm text-primary underline hover:no-underline font-bold"
               >
-                {isRTL ? "افتح حساب" : "Créer un compte"}
+                {isRTL ? "رجوع للدخول" : "Retour à la connexion"}
               </button>
-            </p>
-          ) : (
-            <p>
-              {isRTL ? "عندك حساب خلاص؟" : "Déjà un compte ?"}{' '}
-              <button
-                type="button"
-                onClick={() => setIsLogin(true)}
-                className="text-primary underline hover:no-underline font-bold"
-              >
-                {isRTL ? "ادخل" : "Se connecter"}
-              </button>
-            </p>
-          )}
-        </div>
+            </form>
+          )
+        ) : (
+          <>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className={cn("font-bold text-foreground", isRTL && "text-right block")}>
+                  {isRTL ? "الإيميل" : "Email"}
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="exemple@email.com"
+                  required
+                  className={cn(isRTL && "text-right")}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password" className={cn("font-bold text-foreground", isRTL && "text-right block")}>
+                  {isRTL ? "كلمة المرور" : "Mot de passe"}
+                </Label>
+                <PasswordInput
+                  id="password"
+                  value={password}
+                  onChange={setPassword}
+                  show={showPassword}
+                  onToggle={() => setShowPassword(!showPassword)}
+                  placeholder="••••••••"
+                  isRTL={isRTL}
+                />
+                {isLogin && (
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPassword(true)}
+                    className={cn("text-xs text-primary underline hover:no-underline font-bold", isRTL && "block text-right")}
+                  >
+                    {isRTL ? "نسيت كلمة المرور؟" : "Mot de passe oublié ?"}
+                  </button>
+                )}
+                {!isLogin && (
+                  <p className={cn("text-xs font-bold text-foreground", isRTL && "text-right")}>
+                    {isRTL
+                      ? "يجب أن تحتوي كلمة المرور على رقم وعلامة خاصة (مثل: * ! .)"
+                      : "Doit contenir un chiffre et un caractère spécial (ex: * ! .)"}
+                  </p>
+                )}
+              </div>
+
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className={cn("font-bold text-foreground", isRTL && "text-right block")}>
+                    {isRTL ? "تأكيد كلمة المرور" : "Confirmer le mot de passe"}
+                  </Label>
+                  <PasswordInput
+                    id="confirmPassword"
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                    show={showConfirmPassword}
+                    onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
+                    placeholder="••••••••"
+                    isRTL={isRTL}
+                  />
+                </div>
+              )}
+
+              <Button type="submit" className="w-full font-bold" disabled={isLoading}>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isLogin 
+                  ? (isRTL ? "ادخل" : "Se connecter")
+                  : (isRTL ? "افتح حساب" : "Créer un compte")}
+              </Button>
+            </form>
+
+            {/* Guest Mode Button */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  {isRTL ? "أو" : "ou"}
+                </span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full font-bold gap-2"
+              onClick={handleGuestLogin}
+              disabled={isGuestLoading}
+            >
+              {isGuestLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <UserRound className="h-4 w-4" />
+                  {isRTL ? "تجربة سريعة (بدون حساب)" : "Essai rapide (sans compte)"}
+                </>
+              )}
+            </Button>
+
+            <div className="text-center text-sm text-muted-foreground">
+              {isLogin ? (
+                <p>
+                  {isRTL ? "معندكش حساب؟" : "Pas encore de compte ?"}{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setIsLogin(false); setConfirmPassword(''); }}
+                    className="text-primary underline hover:no-underline font-bold"
+                  >
+                    {isRTL ? "افتح حساب" : "Créer un compte"}
+                  </button>
+                </p>
+              ) : (
+                <p>
+                  {isRTL ? "عندك حساب خلاص؟" : "Déjà un compte ?"}{' '}
+                  <button
+                    type="button"
+                    onClick={() => setIsLogin(true)}
+                    className="text-primary underline hover:no-underline font-bold"
+                  >
+                    {isRTL ? "ادخل" : "Se connecter"}
+                  </button>
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

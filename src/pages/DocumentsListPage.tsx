@@ -196,7 +196,34 @@ const DocumentsListPage = () => {
     return (
       <div
         key={doc.id}
-        className="group relative rounded-xl border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,12%)] p-4 hover:border-[hsl(45,80%,55%)/0.6] transition-all duration-300 hover:shadow-[0_0_20px_hsl(45,80%,55%,0.1)]"
+        className="group relative rounded-xl border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,12%)] p-4 hover:border-[hsl(45,80%,55%)/0.6] transition-all duration-300 hover:shadow-[0_0_20px_hsl(45,80%,55%,0.1)] cursor-pointer"
+        onClick={() => {
+          // Navigate to invoice creator with the document data pre-loaded for viewing
+          const docData = doc.document_data || {};
+          const items = docData.items || [];
+          const prefill = {
+            clientName: doc.client_name || docData.client?.name || '',
+            clientAddress: doc.client_address || docData.client?.address || '',
+            clientPhone: docData.client?.phone || '',
+            clientEmail: docData.client?.email || '',
+            clientSiren: docData.client?.siren || '',
+            clientTvaIntra: docData.client?.tvaIntra || '',
+            clientIsB2B: docData.client?.isB2B || false,
+            workSiteAddress: doc.work_site_address || docData.workSite?.address || '',
+            natureOperation: doc.nature_operation || docData.natureOperation || '',
+            items: items.map((item: any) => ({
+              designation_fr: item.designation_fr || '',
+              designation_ar: item.designation_ar || '',
+              quantity: item.quantity || 1,
+              unit: item.unit || 'm²',
+              unitPrice: item.unitPrice || 0,
+            })),
+            notes: docData.legalMentions || '',
+            source: 'view_existing',
+          };
+          sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
+          navigate(`/pro/invoice-creator?type=${doc.document_type}&prefill=quote`);
+        }}
       >
         {/* Gold accent line */}
         <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-[hsl(45,80%,55%)] to-transparent opacity-60" />

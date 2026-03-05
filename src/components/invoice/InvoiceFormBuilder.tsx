@@ -1269,6 +1269,54 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
         </CardContent>
       </Card>
+
+      {/* Client & Chantier Selection */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-4 space-y-4">
+          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <Users className="h-5 w-5 text-primary" />
+            <h3 className={cn("font-bold", isRTL && "font-cairo")}>
+              {isRTL ? '📋 اختر العميل والورشة' : '📋 Sélectionner Client & Chantier'}
+            </h3>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs font-bold text-muted-foreground", isRTL && "text-right block font-cairo")}>
+                {isRTL ? 'اختر العميل' : 'Sélectionner un client'}
+              </Label>
+              <Select value={selectedClientId} onValueChange={handleClientSelect}>
+                <SelectTrigger className="bg-background border-border">
+                  <SelectValue placeholder={isRTL ? 'اختر عميل...' : 'Choisir un client...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientsList.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedClientId && (
+              <div className="space-y-1.5">
+                <Label className={cn("text-xs font-bold text-muted-foreground", isRTL && "text-right block font-cairo")}>
+                  {isRTL ? 'اختر الورشة' : 'Sélectionner un chantier'}
+                </Label>
+                <Select value={selectedChantierId} onValueChange={handleChantierSelect}>
+                  <SelectTrigger className="bg-background border-border">
+                    <SelectValue placeholder={isRTL ? 'اختر ورشة...' : 'Choisir un chantier...'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {chantiersList.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
       
       {/* Client Section */}
       <Card>

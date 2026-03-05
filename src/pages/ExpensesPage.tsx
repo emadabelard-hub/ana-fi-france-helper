@@ -230,7 +230,17 @@ const ExpensesPage = () => {
           </Button>
 
           {showAccountingMenu && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                variant="outline"
+                className="h-12 gap-2"
+                onClick={() => navigate('/pro/documents')}
+              >
+                <FileText className="h-4 w-4 text-primary" />
+                <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
+                  {isRTL ? 'المستندات' : 'Documents'}
+                </span>
+              </Button>
               <Button
                 variant="outline"
                 className="h-12 gap-2"

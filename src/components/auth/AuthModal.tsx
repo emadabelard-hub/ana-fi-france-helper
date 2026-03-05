@@ -21,6 +21,50 @@ const validatePassword = (password: string): string | null => {
   return null;
 };
 
+interface PasswordInputProps {
+  id: string;
+  value: string;
+  onChange: (v: string) => void;
+  show: boolean;
+  onToggle: () => void;
+  placeholder: string;
+  isRTL: boolean;
+}
+
+const PasswordInput = ({
+  id,
+  value,
+  onChange,
+  show,
+  onToggle,
+  placeholder,
+  isRTL,
+}: PasswordInputProps) => (
+  <div className="relative">
+    <Input
+      id={id}
+      type={show ? 'text' : 'password'}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      required
+      minLength={6}
+      className={cn("pr-10", isRTL && "text-right pr-3 pl-10")}
+    />
+    <button
+      type="button"
+      onClick={onToggle}
+      className={cn(
+        "absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors",
+        isRTL ? "left-3" : "right-3"
+      )}
+      tabIndex={-1}
+    >
+      {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    </button>
+  </div>
+);
+
 const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const { signIn, signUp, signInAnonymously } = useAuth();
   const { isRTL } = useLanguage();
@@ -116,45 +160,6 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     }
   };
 
-  const PasswordInput = ({
-    id,
-    value,
-    onChange,
-    show,
-    onToggle,
-    placeholder,
-  }: {
-    id: string;
-    value: string;
-    onChange: (v: string) => void;
-    show: boolean;
-    onToggle: () => void;
-    placeholder: string;
-  }) => (
-    <div className="relative">
-      <Input
-        id={id}
-        type={show ? 'text' : 'password'}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        required
-        minLength={6}
-        className={cn("pr-10", isRTL && "text-right pr-3 pl-10")}
-      />
-      <button
-        type="button"
-        onClick={onToggle}
-        className={cn(
-          "absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors",
-          isRTL ? "left-3" : "right-3"
-        )}
-        tabIndex={-1}
-      >
-        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      </button>
-    </div>
-  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -194,6 +199,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
               show={showPassword}
               onToggle={() => setShowPassword(!showPassword)}
               placeholder="••••••••"
+              isRTL={isRTL}
             />
             {!isLogin && (
               <p className={cn("text-xs font-bold text-foreground", isRTL && "text-right")}>
@@ -216,6 +222,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 show={showConfirmPassword}
                 onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
                 placeholder="••••••••"
+                isRTL={isRTL}
               />
             </div>
           )}

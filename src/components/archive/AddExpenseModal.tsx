@@ -30,13 +30,15 @@ const categories = [
   { value: 'other', labelFr: 'Autre', labelAr: 'أخرى' },
 ];
 
-const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded }: AddExpenseModalProps) => {
+const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, preselectedDocumentId }: AddExpenseModalProps) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [documents, setDocuments] = useState<{ id: string; label: string }[]>([]);
+  const [selectedDocId, setSelectedDocId] = useState<string>(preselectedDocumentId || '');
 
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
@@ -45,10 +47,26 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded }: 
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState('');
 
+  // Load user devis/factures for linking
+  useEffect(() => {
+    if (!open || !userId) return;
+    supabase.from('documents_comptables')
+      .select('id, document_number, client_name')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .then(({ data }) => {
+        setDocuments((data || []).map((d: any) => ({
+          id: d.id,
+          label: `${d.document_number} — ${d.client_name}`,
+        })));
+      });
+  }, [open, userId]);
+
   const resetForm = () => {
     setTitle(''); setAmount(''); setTvaAmount('0'); setCategory('other');
     setExpenseDate(new Date().toISOString().slice(0, 10)); setNotes('');
-    setReceiptPreview(null); setReceiptFile(null);
+    setReceiptPreview(null); setReceiptFile(null); setSelectedDocId(preselectedDocumentId || '');
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {

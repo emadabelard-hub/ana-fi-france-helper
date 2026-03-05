@@ -2621,9 +2621,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               setClientSiren('');
               setClientTvaIntra('');
               setClientIsB2B(false);
+              setSelectedClientId('');
+              setSelectedChantierId('');
               setWorkSiteSameAsClient(true);
               setWorkSiteAddress('');
-              setIncludeTravelCosts(false);
               setTravelDescription('');
               setTravelPrice(30);
               setIncludeWasteCosts(false);

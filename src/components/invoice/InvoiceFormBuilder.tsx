@@ -954,8 +954,23 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Save finalized document to documents_comptables
   const saveToDocumentsComptables = async () => {
     if (!user) return;
+
+    if (!selectedClientId || !selectedChantierId) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
+        description: isRTL ? 'اختيار العميل والورشة إجباري' : 'La sélection du client et du chantier est obligatoire',
+      });
+      return;
+    }
+
     const data = buildInvoiceData();
     const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
+    const linkedDocumentData = {
+      ...documentDataForStorage,
+      linkedClientId: selectedClientId,
+      linkedChantierId: selectedChantierId,
+    };
 
     try {
       const { error } = await (supabase.from('documents_comptables') as any).insert({
@@ -971,9 +986,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         tva_amount: data.tvaAmount,
         total_ttc: data.total,
         tva_exempt: data.tvaExempt,
-        document_data: documentDataForStorage,
+        document_data: linkedDocumentData,
         status: 'finalized',
-        chantier_id: selectedChantierId || null,
+        chantier_id: selectedChantierId,
       });
       if (error) throw error;
       toast({

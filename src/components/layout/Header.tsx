@@ -1,16 +1,49 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
-import { Sun, Moon } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Sun, Moon, Loader2 } from 'lucide-react';
 
 const Header = () => {
   const { language, setLanguage, isRTL, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+  const [adminLoading, setAdminLoading] = useState(false);
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleLogoTap = useCallback(() => {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => { tapCountRef.current = 0; }, 800);
+
+    if (tapCountRef.current >= 5) {
+      tapCountRef.current = 0;
+      if (user) {
+        navigate('/admin');
+        return;
+      }
+      // Send magic link to admin
+      setAdminLoading(true);
+      supabase.auth.signInWithOtp({ email: 'emadabelard@gmail.com' })
+        .then(({ error }) => {
+          if (error) {
+            toast({ variant: 'destructive', title: 'Erreur', description: error.message });
+          } else {
+            toast({ title: '📧 Lien envoyé', description: 'Vérifiez votre email pour vous connecter' });
+          }
+        })
+        .finally(() => setAdminLoading(false));
+    }
+  }, [user, navigate, toast]);
 
 
   const toggleLanguage = () => {
@@ -26,18 +59,15 @@ const Header = () => {
         "flex items-center justify-between px-3 py-2",
         isRTL && "flex-row-reverse"
       )}>
-        {/* Compact Logo */}
-        <div className={cn(
-          "flex items-center gap-1.5",
-          isRTL && "flex-row-reverse"
-        )}>
+        {/* Compact Logo — 5 taps = admin access */}
+        <div
+          className={cn("flex items-center gap-1.5 cursor-pointer select-none", isRTL && "flex-row-reverse")}
+          onClick={handleLogoTap}
+        >
           <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center">
-            <span className="text-accent-foreground font-bold text-xs">AF</span>
+            {adminLoading ? <Loader2 className="h-3 w-3 animate-spin text-accent-foreground" /> : <span className="text-accent-foreground font-bold text-xs">AF</span>}
           </div>
-          <h1 className={cn(
-            "text-base font-bold",
-            isRTL && "font-cairo"
-          )}>
+          <h1 className={cn("text-base font-bold", isRTL && "font-cairo")}>
             {t('header.appName')}
           </h1>
         </div>

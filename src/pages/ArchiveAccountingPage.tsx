@@ -220,10 +220,8 @@ const ArchiveAccountingPage = () => {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
         <p className={cn('text-muted-foreground', isRTL && 'font-cairo')}>
-          {isRTL ? 'سجل الدخول لعرض الأرشيف' : 'Connectez-vous pour accéder à l\'archive'}
+          {isRTL ? 'لا توجد وثائق بعد' : 'Aucun document pour le moment'}
         </p>
-        <Button onClick={() => setShowAuth(true)}>{isRTL ? 'تسجيل الدخول' : 'Se connecter'}</Button>
-        <AuthModal open={showAuth} onOpenChange={setShowAuth} />
       </div>
     );
   }

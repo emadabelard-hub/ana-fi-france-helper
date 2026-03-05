@@ -103,7 +103,6 @@ const SmartDevisPage = () => {
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
   const handleInputTypeSelect = (type: InputType) => {
-    if (!user) { setShowAuth(true); return; }
     setInputType(type);
     if (type === 'photo') {
       setStep('photo_guide');

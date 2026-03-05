@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { Sun, Moon, Loader2 } from 'lucide-react';
 import { Sun, Moon, Loader2 } from 'lucide-react';
 
 const Header = () => {

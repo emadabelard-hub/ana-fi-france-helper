@@ -101,7 +101,7 @@ const DocumentsListPage = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchDocuments(); }, [user, isAdmin]);
+  useEffect(() => { fetchDocuments(); }, [user, isAdmin, authLoading]);
 
   useEffect(() => {
     const targetId = (location.state as { openDocumentId?: string } | null)?.openDocumentId;

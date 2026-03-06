@@ -47,8 +47,8 @@ const DocumentsListPage = () => {
   const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      setIsAdmin(false);
+    if (!user || user.is_anonymous) {
+      setIsAdmin(true);
       return;
     }
 

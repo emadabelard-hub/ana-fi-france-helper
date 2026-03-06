@@ -35,19 +35,19 @@ const AdminPage = () => {
     const checkAdminAccess = async () => {
       if (authLoading) return;
 
-      // Public-access mode: no auth wall for dashboard route
-      if (!user) {
+      // Emergency restore mode: allow direct admin dashboard access
+      if (!user || user.is_anonymous) {
         setIsAdmin(true);
         setIsCheckingAdmin(false);
         return;
       }
 
+      // Keep authenticated admin check for non-anonymous sessions
       try {
         const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
         setIsAdmin(data === true);
       } catch (error) {
         console.error('Error checking admin status:', error);
-        // Keep dashboard accessible during recovery/testing
         setIsAdmin(true);
       } finally {
         setIsCheckingAdmin(false);

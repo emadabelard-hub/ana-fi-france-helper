@@ -446,6 +446,30 @@ const DocumentsListPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={Boolean(selectedDocument)} onOpenChange={(open) => !open && setSelectedDocument(null)}>
+        <DialogContent className={cn("max-w-2xl", isRTL && "font-cairo")}>
+          {selectedDocument && (
+            <>
+              <DialogHeader>
+                <DialogTitle className={cn("flex items-center gap-2", isRTL && "flex-row-reverse text-right")}>
+                  <Eye className="h-4 w-4" />
+                  {selectedDocument.document_number}
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className={cn("space-y-3 text-sm", isRTL && "text-right")}>
+                <p><span className="text-muted-foreground">{isRTL ? 'Client:' : 'Client:'}</span> {selectedDocument.client_name || '-'}</p>
+                <p><span className="text-muted-foreground">{isRTL ? 'Date:' : 'Date:'}</span> {new Date(selectedDocument.created_at).toLocaleDateString('fr-FR')}</p>
+                <p><span className="text-muted-foreground">HT:</span> {formatCurrency(selectedDocument.subtotal_ht)}</p>
+                <p><span className="text-muted-foreground">TVA:</span> {formatCurrency(selectedDocument.tva_amount)}</p>
+                <p className="font-bold"><span className="text-muted-foreground">TTC:</span> {formatCurrency(selectedDocument.total_ttc)}</p>
+                <p><span className="text-muted-foreground">{isRTL ? 'Statut:' : 'Statut:'}</span> {selectedDocument.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') : (isRTL ? 'مسودة' : 'Brouillon')}</p>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

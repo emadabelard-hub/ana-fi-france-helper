@@ -72,12 +72,15 @@ serve(async (req) => {
   );
 
   try {
-    // Auth - use getClaims for signing-keys compatibility
+    // Auth (optional): accept both authenticated and public/guest calls
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Authorization required");
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) throw new Error("User not authenticated");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+      if (claimsError || !claimsData?.claims?.sub) {
+        console.warn("Invalid auth token, continuing as public call");
+      }
+    }
 
     const body = await req.json();
     const { action, imageData, mimeType, conversationHistory, userMessage, preferences } = body;

@@ -10,12 +10,23 @@ import AuthModal from '@/components/auth/AuthModal';
 import DocumentTypeModal from '@/components/invoice/DocumentTypeModal';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
+import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 
 // Version 1.1.2 - Stable Build
 const InvoiceCreatorPage = () => {

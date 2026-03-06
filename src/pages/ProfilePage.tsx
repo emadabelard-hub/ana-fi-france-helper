@@ -18,7 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { compressImageFile } from '@/lib/imageCompression';
 import { getSignedAssetUrl } from '@/lib/storageUtils';
-import AuthModal from '@/components/auth/AuthModal';
+import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
 import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
 import ArtisanSignatureSection from '@/components/profile/ArtisanSignatureSection';
 import StampUploadSection from '@/components/profile/StampUploadSection';

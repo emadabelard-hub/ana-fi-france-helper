@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
-// Public restore mode: admin route allowed without hard auth wall
+import { supabase } from '@/integrations/supabase/client';
 // AuthModal removed — auto-login active
 import LessonsManager from '@/components/admin/LessonsManager';
 import QuestionsManager from '@/components/admin/QuestionsManager';

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, LogOut, User, Loader2, Shield, Key, Building2, FileText, MapPin, Mail, Phone, Upload, Image, Check, AlertCircle, Briefcase, CreditCard, Landmark, ShieldCheck, PenTool, Stamp, CheckCircle2, Circle, PartyPopper } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -23,17 +23,21 @@ import ArtisanSignatureSection from '@/components/profile/ArtisanSignatureSectio
 import StampUploadSection from '@/components/profile/StampUploadSection';
 
 /* ─── Reusable styled section card ─── */
-const SectionCard = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn(
-    "rounded-2xl border border-border/40 bg-card shadow-sm overflow-hidden transition-shadow hover:shadow-md",
-    className
-  )}>
+const SectionCard = forwardRef<HTMLDivElement, { children: React.ReactNode; className?: string }>(({ children, className }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "rounded-2xl border border-border/40 bg-card shadow-sm overflow-hidden transition-shadow hover:shadow-md",
+      className,
+    )}
+  >
     {children}
   </div>
-);
+));
+SectionCard.displayName = 'SectionCard';
 
-const SectionHeader = ({ icon: Icon, title, subtitle, isRTL }: { icon: any; title: string; subtitle?: string; isRTL: boolean }) => (
-  <div className={cn("px-5 pt-5 pb-3", isRTL && "text-right")}>
+const SectionHeader = forwardRef<HTMLDivElement, { icon: any; title: string; subtitle?: string; isRTL: boolean }>(({ icon: Icon, title, subtitle, isRTL }, ref) => (
+  <div ref={ref} className={cn("px-5 pt-5 pb-3", isRTL && "text-right")}>
     <div className={cn("flex items-center gap-2.5", isRTL && "flex-row-reverse")}>
       <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
         <Icon className="h-4.5 w-4.5 text-primary" />
@@ -48,11 +52,13 @@ const SectionHeader = ({ icon: Icon, title, subtitle, isRTL }: { icon: any; titl
       </div>
     </div>
   </div>
-);
+));
+SectionHeader.displayName = 'SectionHeader';
 
-const FieldGroup = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn("px-5 pb-5 space-y-4", className)}>{children}</div>
-);
+const FieldGroup = forwardRef<HTMLDivElement, { children: React.ReactNode; className?: string }>(({ children, className }, ref) => (
+  <div ref={ref} className={cn("px-5 pb-5 space-y-4", className)}>{children}</div>
+));
+FieldGroup.displayName = 'FieldGroup';
 
 const FieldStatus = ({ filled, isRTL }: { filled: boolean; isRTL: boolean }) => (
   filled ? (

@@ -28,10 +28,10 @@ const AppSidebar = () => {
       isActive: location.pathname.startsWith('/chantiers'),
     },
     {
-      to: '/expenses',
+      to: '/pro/documents',
       icon: Wallet,
       label: isRTL ? 'المحاسبة' : 'Comptabilité',
-      isActive: location.pathname.startsWith('/expenses') || location.pathname.startsWith('/pro/archive') || location.pathname.startsWith('/pro/documents'),
+      isActive: location.pathname.startsWith('/pro/documents') || location.pathname.startsWith('/pro/archive') || location.pathname.startsWith('/expenses'),
     },
   ];
 

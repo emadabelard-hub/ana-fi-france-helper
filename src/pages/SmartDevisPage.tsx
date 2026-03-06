@@ -181,6 +181,43 @@ const SmartDevisPage = () => {
     }
   }, [processFiles]);
 
+  const invokeAnalyzer = async (payload: any) => {
+    const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', { body: payload });
+    if (!error) return data;
+
+    const msg = String(error?.message || '');
+    const isNetworkLikeError = /failed to send a request|failed to fetch|network|edge function/i.test(msg.toLowerCase());
+    if (!isNetworkLikeError) throw error;
+
+    // Fallback for intermittent mobile/network issues with SDK invoke
+    const streamUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/smart-devis-analyzer`;
+    const session = await supabase.auth.getSession();
+    const accessToken = session.data.session?.access_token;
+
+    const resp = await fetch(streamUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const rawBody = await resp.text();
+    let parsedBody: any = {};
+    try {
+      parsedBody = rawBody ? JSON.parse(rawBody) : {};
+    } catch {
+      parsedBody = { error: rawBody };
+    }
+
+    if (!resp.ok) {
+      throw new Error(parsedBody?.error || rawBody || `HTTP ${resp.status}`);
+    }
+
+    return parsedBody;
+  };
+
   const handleAnalyze = async () => {
     if (uploadedFiles.length === 0 && !pastedText.trim()) return;
     setIsAnalyzing(true);
@@ -203,7 +240,7 @@ const SmartDevisPage = () => {
       // Pre-process files: extract PDF text client-side, compress images
       if (uploadedFiles.length > 0) {
         const processedFiles: any[] = [];
-        
+
         for (const f of uploadedFiles) {
           if (f.type === 'pdf') {
             // Extract text from PDF client-side instead of sending raw base64
@@ -245,7 +282,7 @@ const SmartDevisPage = () => {
         }
 
         body.files = processedFiles;
-        
+
         // Backward compat: first image as imageData
         const firstImage = processedFiles.find(f => f.type === 'image' && f.data);
         if (firstImage) {
@@ -258,8 +295,7 @@ const SmartDevisPage = () => {
         body.pastedText = pastedText.trim();
       }
 
-      const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', { body });
-      if (error) throw error;
+      const data = await invokeAnalyzer(body);
       setAnalysisData(data);
 
       // Store surface estimates for editable display
@@ -283,7 +319,8 @@ const SmartDevisPage = () => {
       setChatMessages([{ role: 'assistant', content }]);
       setStep('chat');
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'خطأ في التحليل', description: err.message });
+      const technicalMessage = err?.context?.body || err?.message || 'Unknown analysis error';
+      toast({ variant: 'destructive', title: 'خطأ في التحليل', description: technicalMessage });
     } finally {
       setIsAnalyzing(false);
     }

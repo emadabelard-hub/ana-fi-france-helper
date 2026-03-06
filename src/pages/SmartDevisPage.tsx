@@ -360,24 +360,39 @@ const SmartDevisPage = () => {
     setIsChatLoading(true);
 
     try {
-      const streamUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/smart-devis-analyzer`;
-      const session = await supabase.auth.getSession();
-      const accessToken = session.data.session?.access_token;
+      const urls = getSmartDevisFunctionUrls();
+      const headers = await getFunctionAuthHeaders();
 
-      const resp = await fetch(streamUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          action: 'chat',
-          conversationHistory: [...chatMessages, userMsg],
-          userMessage: chatInput.trim(),
-        }),
-      });
+      let resp: Response | null = null;
+      let lastError: Error | null = null;
 
-      if (!resp.ok || !resp.body) throw new Error('Stream failed');
+      for (const url of urls) {
+        try {
+          const candidate = await fetch(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              action: 'chat',
+              conversationHistory: [...chatMessages, userMsg],
+              userMessage: chatInput.trim(),
+            }),
+          });
+
+          if (candidate.ok && candidate.body) {
+            resp = candidate;
+            break;
+          }
+
+          const errTxt = await candidate.text();
+          lastError = new Error(errTxt || `HTTP ${candidate.status}`);
+        } catch (e: any) {
+          lastError = e instanceof Error ? e : new Error(String(e));
+        }
+      }
+
+      if (!resp || !resp.body) {
+        throw lastError || new Error('Stream failed');
+      }
 
       let assistantSoFar = '';
       const reader = resp.body.getReader();

@@ -674,7 +674,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const invoiceData = buildInvoiceData();
   
   // Check if form is valid
-  const isFormValid = clientName.trim() && items.some(item => item.designation_fr.trim() && item.unitPrice > 0);
+  const isFormValid = items.some(item => item.designation_fr.trim() && item.unitPrice > 0) || (includeTravelCosts && travelPrice > 0);
 
   const getTechnicalErrorMessage = (error: unknown) => {
     const err = error as any;

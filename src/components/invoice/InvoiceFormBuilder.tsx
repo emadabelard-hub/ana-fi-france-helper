@@ -193,6 +193,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const arabicDebounceTimersRef = useRef<Record<string, ReturnType<typeof setTimeout> | undefined>>({});
   const lastTranslatedSourceRef = useRef<Record<string, string | undefined>>({});
   const itemsRef = useRef(items);
+  const [savingDraft, setSavingDraft] = useState(false);
 
   // No auto-increment: just set the prefix, user fills in the rest
   useEffect(() => {

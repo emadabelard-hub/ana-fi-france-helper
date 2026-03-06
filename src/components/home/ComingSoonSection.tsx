@@ -150,6 +150,6 @@ const ComingSoonSection = forwardRef<HTMLDivElement>((_, ref) => {
       )}
     </div>
   );
-};
+});
 
 export default ComingSoonSection;

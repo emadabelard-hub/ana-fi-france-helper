@@ -132,8 +132,13 @@
     font-family: 'IBM Plex Sans Arabic', sans-serif;
     font-weight: 500;
   }
-}
 
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
 /* Safe area padding for mobile devices */
 @layer utilities {
   .safe-area-pt {

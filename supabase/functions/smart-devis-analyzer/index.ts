@@ -96,6 +96,11 @@ serve(async (req) => {
       const systemPrompt = `Tu es un expert en estimation de travaux du bâtiment (BTP) en France.
 Tu analyses des images de chantiers, plans, croquis ou documents pour générer des devis professionnels.
 
+⛔ RÈGLE STATELESS (PRIORITÉ MAXIMALE):
+- Chaque analyse est INDÉPENDANTE. Tu n'as AUCUNE mémoire des devis précédents.
+- Ignore tout contexte antérieur. Analyse UNIQUEMENT le contenu actuel (texte + images fournis MAINTENANT).
+- Si le sketch/texte mentionne UNIQUEMENT "Parquet", tu génères UNIQUEMENT des lignes Parquet. ZÉRO peinture, ZÉRO carrelage.
+
 ⛔ RÈGLE ZERO-HALLUCINATION (PRIORITÉ ABSOLUE):
 - Tu ne dois JAMAIS inventer, deviner ou ajouter des catégories de travaux non demandées.
 - Mapping 1:1 OBLIGATOIRE: chaque ligne du devis = un travail EXPLICITEMENT demandé.
@@ -330,6 +335,10 @@ Quand tu as toutes les infos, dis "✅ جاهز لتوليد الدوفي" et r�
 
       const systemPrompt = `Tu es un calculateur de devis BTP expert.
 À partir de l'analyse fournie, génère les lignes de devis finales.
+
+⛔ RÈGLE STATELESS (PRIORITÉ MAXIMALE):
+- Cette génération est INDÉPENDANTE. Ignore tout devis ou analyse précédent.
+- Génère UNIQUEMENT à partir des données d'analyse fournies dans CE message.
 
 ⛔ RÈGLE ZERO-HALLUCINATION (PRIORITÉ ABSOLUE):
 - Génère UNIQUEMENT des lignes pour les travaux EXPLICITEMENT présents dans l'analyse.

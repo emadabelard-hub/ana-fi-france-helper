@@ -67,10 +67,9 @@ const PasswordInput = ({
 );
 
 const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
-  if (open) return null;
-
   const { signIn, signUp, signInAnonymously } = useAuth();
   const { isRTL } = useLanguage();
+  const { toast } = useToast();
   
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);

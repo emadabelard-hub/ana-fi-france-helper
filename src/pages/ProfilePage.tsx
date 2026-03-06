@@ -21,7 +21,6 @@ import { getSignedAssetUrl } from '@/lib/storageUtils';
 import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
 import ArtisanSignatureSection from '@/components/profile/ArtisanSignatureSection';
 import StampUploadSection from '@/components/profile/StampUploadSection';
-import StampUploadSection from '@/components/profile/StampUploadSection';
 
 /* ─── Reusable styled section card ─── */
 const SectionCard = ({ children, className }: { children: React.ReactNode; className?: string }) => (

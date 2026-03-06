@@ -13,7 +13,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw, Users } from 'lucide-react';
+import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw, Users, Save } from 'lucide-react';
 import InvoiceDisplay, { InvoiceData, PaymentMilestone } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
@@ -193,6 +193,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const arabicDebounceTimersRef = useRef<Record<string, ReturnType<typeof setTimeout> | undefined>>({});
   const lastTranslatedSourceRef = useRef<Record<string, string | undefined>>({});
   const itemsRef = useRef(items);
+  const [savingDraft, setSavingDraft] = useState(false);
 
   // No auto-increment: just set the prefix, user fills in the rest
   useEffect(() => {
@@ -955,25 +956,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const saveToDocumentsComptables = async () => {
     if (!user) return;
 
-    if (!selectedClientId || !selectedChantierId) {
-      toast({
-        variant: 'destructive',
-        title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
-        description: isRTL ? 'اختيار العميل والورشة إجباري' : 'La sélection du client et du chantier est obligatoire',
-      });
-      return;
-    }
-
     const data = buildInvoiceData();
     const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
     const linkedDocumentData = {
       ...documentDataForStorage,
-      linkedClientId: selectedClientId,
-      linkedChantierId: selectedChantierId,
+      ...(selectedClientId && { linkedClientId: selectedClientId }),
+      ...(selectedChantierId && { linkedChantierId: selectedChantierId }),
     };
 
     try {
-      const { error } = await (supabase.from('documents_comptables') as any).insert({
+      const insertData: any = {
         user_id: user.id,
         document_type: documentType,
         document_number: data.number,
@@ -988,8 +980,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         tva_exempt: data.tvaExempt,
         document_data: linkedDocumentData,
         status: 'finalized',
-        chantier_id: selectedChantierId,
-      });
+      };
+      if (selectedChantierId) insertData.chantier_id = selectedChantierId;
+
+      const { error } = await (supabase.from('documents_comptables') as any).insert(insertData);
       if (error) throw error;
       toast({
         title: isRTL ? '✅ تم الحفظ' : '✅ Sauvegardé',
@@ -1004,6 +998,56 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         description: technicalMessage,
       });
       throw e;
+    }
+  };
+
+  // Save as Draft (مسودة) to documents_comptables with status 'draft'
+  const saveAsDraft = async () => {
+    if (!user) return;
+    setSavingDraft(true);
+    try {
+      const data = buildInvoiceData();
+      const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
+      const linkedDocumentData = {
+        ...documentDataForStorage,
+        ...(selectedClientId && { linkedClientId: selectedClientId }),
+        ...(selectedChantierId && { linkedChantierId: selectedChantierId }),
+      };
+
+      const insertData: any = {
+        user_id: user.id,
+        document_type: documentType,
+        document_number: data.number || generateDocNumber(documentType) + 'DRAFT',
+        client_name: data.client.name || '(مسودة)',
+        client_address: data.client.address || '',
+        work_site_address: data.workSite?.address || '',
+        nature_operation: data.natureOperation || '',
+        subtotal_ht: data.subtotal || 0,
+        tva_rate: data.tvaRate || 0,
+        tva_amount: data.tvaAmount || 0,
+        total_ttc: data.total || 0,
+        tva_exempt: data.tvaExempt || false,
+        document_data: linkedDocumentData,
+        status: 'draft',
+      };
+      if (selectedChantierId) insertData.chantier_id = selectedChantierId;
+
+      const { error } = await (supabase.from('documents_comptables') as any).insert(insertData);
+      if (error) throw error;
+      toast({
+        title: isRTL ? '📝 تم حفظ المسودة' : '📝 Brouillon sauvegardé',
+        description: isRTL ? 'تقدر ترجع تكمله من صفحة المستندات' : 'Vous pouvez le reprendre depuis vos documents.',
+      });
+    } catch (e) {
+      const technicalMessage = getTechnicalErrorMessage(e);
+      console.error('Draft save error:', e);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ في الحفظ' : 'Erreur de sauvegarde',
+        description: technicalMessage,
+      });
+    } finally {
+      setSavingDraft(false);
     }
   };
 
@@ -2669,6 +2713,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             {isRTL ? 'مسح الكل' : 'Réinitialiser'}
           </Button>
           
+          {/* Save as Draft Button */}
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={savingDraft}
+            onClick={saveAsDraft}
+            className={cn(isRTL && "font-cairo")}
+          >
+            {savingDraft ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+            {isRTL ? 'حفظ مسودة' : 'Sauvegarder مسودة'}
+          </Button>
+
           <Button
             onClick={async () => {
               try {

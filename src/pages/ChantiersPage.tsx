@@ -76,7 +76,7 @@ const ChantiersPage = () => {
       setChantiers((ch || []).map(c => ({ ...c, client_name: clientMap[c.client_id] || '' })));
       setLoading(false);
     })();
-  }, [user, isAdmin]);
+  }, [user, isAdmin, authLoading]);
 
   if (!user) {
     return (

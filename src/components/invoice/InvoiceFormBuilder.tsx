@@ -2686,13 +2686,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
                 }
 
-                if (!selectedClientId) {
-                  missingFields.push(isRTL ? '📋 اختيار العميل' : '📋 Sélection du client');
-                }
-
-                if (!selectedChantierId) {
-                  missingFields.push(isRTL ? '🏗️ اختيار الورشة' : '🏗️ Sélection du chantier');
-                }
+                // Client/Chantier selection is optional — if selected, fields are auto-filled
+                // No blocking if not selected, manual entry is allowed
 
                 // Validate document number (must have content after prefix)
                 const currentPrefix = getDocPrefix(documentType);

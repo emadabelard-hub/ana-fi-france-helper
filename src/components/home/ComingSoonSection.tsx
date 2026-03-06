@@ -3,7 +3,7 @@ import { Scale, MonitorSmartphone, Headphones, Paintbrush, GraduationCap, Gift, 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ComingSoonFeature {

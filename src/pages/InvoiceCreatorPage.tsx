@@ -99,12 +99,6 @@ const InvoiceCreatorPage = () => {
     setSearchParams({ type });
   };
   
-  // Handle back to type selection
-  const handleBackToTypeSelection = () => {
-    setDocumentType(null);
-    setShowTypeModal(true);
-    setSearchParams({});
-  };
   
   // Handle navigation back to Pro page (guarded)
   const handleNavigateBack = () => {

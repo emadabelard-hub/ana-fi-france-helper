@@ -40,7 +40,6 @@ const DocumentsListPage = () => {
   const { toast } = useToast();
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAuth, setShowAuth] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');

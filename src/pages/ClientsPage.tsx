@@ -55,7 +55,10 @@ const ClientsPage = () => {
   }, [user]);
 
   const fetchClients = async () => {
-    if (!user) return;
+    if (authLoading || !user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     const clientsQuery = supabase

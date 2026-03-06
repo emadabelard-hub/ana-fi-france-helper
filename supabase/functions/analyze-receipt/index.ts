@@ -116,13 +116,24 @@ serve(async (req) => {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
       console.error("AI gateway fallback error:", response.status, t);
-      throw new Error("AI analysis failed");
+      const today = new Date().toISOString().slice(0, 10);
+      return new Response(JSON.stringify({
+        title: "Dépense reçue",
+        amount: 0,
+        tva_amount: 0,
+        category: "other",
+        date: today,
+        notes: "Analyse automatique indisponible pour cette image. Vérifiez et complétez manuellement.",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    
+
     if (toolCall?.function?.arguments) {
       const extracted = JSON.parse(toolCall.function.arguments);
       return new Response(JSON.stringify(extracted), {
@@ -130,8 +141,16 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: "Could not extract data from receipt" }), {
-      status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const today = new Date().toISOString().slice(0, 10);
+    return new Response(JSON.stringify({
+      title: "Dépense reçue",
+      amount: 0,
+      tva_amount: 0,
+      category: "other",
+      date: today,
+      notes: "Aucune donnée lisible détectée. Vérifiez et complétez manuellement.",
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("analyze-receipt error:", e);

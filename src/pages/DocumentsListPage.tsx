@@ -34,7 +34,7 @@ const formatCurrency = (n: number) =>
 
 const DocumentsListPage = () => {
   const { isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();

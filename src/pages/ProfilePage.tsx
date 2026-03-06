@@ -97,7 +97,6 @@ const ProfilePage = () => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingHeader, setIsUploadingHeader] = useState(false);
   const [siretError, setSiretError] = useState<string | null>(null);

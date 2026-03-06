@@ -40,8 +40,8 @@ const ChantiersPage = () => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      setIsAdmin(false);
+    if (!user || user.is_anonymous) {
+      setIsAdmin(true);
       return;
     }
 

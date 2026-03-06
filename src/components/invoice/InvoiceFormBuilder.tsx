@@ -1293,15 +1293,21 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </CardContent>
       </Card>
 
-      {/* Client & Chantier Selection */}
+      {/* Client & Chantier Selection (Optional - auto-fills fields) */}
+      {clientsList.length > 0 && (
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="p-4 space-y-4">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
             <Users className="h-5 w-5 text-primary" />
             <h3 className={cn("font-bold", isRTL && "font-cairo")}>
-              {isRTL ? '📋 اختر العميل والورشة' : '📋 Sélectionner Client & Chantier'}
+              {isRTL ? '📋 اختر العميل والورشة (اختياري)' : '📋 Sélectionner Client & Chantier (optionnel)'}
             </h3>
           </div>
+          <p className={cn("text-xs text-muted-foreground", isRTL && "font-cairo text-right")}>
+            {isRTL 
+              ? '💡 اختر عميل محفوظ لملء البيانات تلقائياً، أو اكتب يدوياً في الخانات تحت'
+              : '💡 Sélectionnez un client enregistré pour auto-remplir, ou saisissez manuellement ci-dessous'}
+          </p>
           
           <div className="space-y-3">
             <div className="space-y-1.5">
@@ -1320,10 +1326,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               </Select>
             </div>
 
-            {selectedClientId && (
+            {selectedClientId && chantiersList.length > 0 && (
               <div className="space-y-1.5">
                 <Label className={cn("text-xs font-bold text-muted-foreground", isRTL && "text-right block font-cairo")}>
-                  {isRTL ? 'اختر الورشة' : 'Sélectionner un chantier'}
+                  {isRTL ? 'اختر الورشة (اختياري)' : 'Sélectionner un chantier (optionnel)'}
                 </Label>
                 <Select value={selectedChantierId} onValueChange={handleChantierSelect}>
                   <SelectTrigger className="bg-background border-border">
@@ -1340,6 +1346,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
         </CardContent>
       </Card>
+      )}
       
       {/* Client Section */}
       <Card>

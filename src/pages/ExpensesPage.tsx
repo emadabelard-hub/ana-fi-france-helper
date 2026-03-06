@@ -78,10 +78,10 @@ const ExpensesPage = () => {
       return;
     }
 
-    supabase
-      .rpc('is_admin', { _user_id: user.id })
-      .then(({ data }) => setIsAdmin(data === true))
-      .catch(() => setIsAdmin(false));
+    (async () => {
+      const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
+      setIsAdmin(data === true);
+    })();
   }, [user]);
 
   const fetchExpenses = async () => {

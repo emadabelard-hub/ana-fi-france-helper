@@ -674,7 +674,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const invoiceData = buildInvoiceData();
   
   // Check if form is valid
-  const isFormValid = clientName.trim() && items.some(item => item.designation_fr.trim() && item.unitPrice > 0);
+  const isFormValid = items.some(item => item.designation_fr.trim() && item.unitPrice > 0) || (includeTravelCosts && travelPrice > 0);
 
   const getTechnicalErrorMessage = (error: unknown) => {
     const err = error as any;
@@ -1293,15 +1293,21 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </CardContent>
       </Card>
 
-      {/* Client & Chantier Selection */}
+      {/* Client & Chantier Selection (Optional - auto-fills fields) */}
+      {clientsList.length > 0 && (
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="p-4 space-y-4">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
             <Users className="h-5 w-5 text-primary" />
             <h3 className={cn("font-bold", isRTL && "font-cairo")}>
-              {isRTL ? '📋 اختر العميل والورشة' : '📋 Sélectionner Client & Chantier'}
+              {isRTL ? '📋 اختر العميل والورشة (اختياري)' : '📋 Sélectionner Client & Chantier (optionnel)'}
             </h3>
           </div>
+          <p className={cn("text-xs text-muted-foreground", isRTL && "font-cairo text-right")}>
+            {isRTL 
+              ? '💡 اختر عميل محفوظ لملء البيانات تلقائياً، أو اكتب يدوياً في الخانات تحت'
+              : '💡 Sélectionnez un client enregistré pour auto-remplir, ou saisissez manuellement ci-dessous'}
+          </p>
           
           <div className="space-y-3">
             <div className="space-y-1.5">
@@ -1320,10 +1326,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               </Select>
             </div>
 
-            {selectedClientId && (
+            {selectedClientId && chantiersList.length > 0 && (
               <div className="space-y-1.5">
                 <Label className={cn("text-xs font-bold text-muted-foreground", isRTL && "text-right block font-cairo")}>
-                  {isRTL ? 'اختر الورشة' : 'Sélectionner un chantier'}
+                  {isRTL ? 'اختر الورشة (اختياري)' : 'Sélectionner un chantier (optionnel)'}
                 </Label>
                 <Select value={selectedChantierId} onValueChange={handleChantierSelect}>
                   <SelectTrigger className="bg-background border-border">
@@ -1340,6 +1346,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
         </CardContent>
       </Card>
+      )}
       
       {/* Client Section */}
       <Card>
@@ -2671,10 +2678,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 // Comprehensive validation with detailed feedback
                 const missingFields: string[] = [];
                 
-                // Check emitter SIRET (mandatory for legal invoices)
-                if (!profile?.siret || profile.siret.replace(/\s/g, '').length !== 14) {
-                  missingFields.push('__SIRET_ERROR__');
-                }
+                // SIRET warning (non-blocking) — document can still be created
+                // Profile SIRET check is informational only
 
                 // Check client name
                 if (!clientName.trim()) {
@@ -2686,13 +2691,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
                 }
 
-                if (!selectedClientId) {
-                  missingFields.push(isRTL ? '📋 اختيار العميل' : '📋 Sélection du client');
-                }
-
-                if (!selectedChantierId) {
-                  missingFields.push(isRTL ? '🏗️ اختيار الورشة' : '🏗️ Sélection du chantier');
-                }
+                // Client/Chantier selection is optional — if selected, fields are auto-filled
+                // No blocking if not selected, manual entry is allowed
 
                 // Validate document number (must have content after prefix)
                 const currentPrefix = getDocPrefix(documentType);

@@ -85,7 +85,7 @@ const ClientsPage = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchClients(); }, [user, isAdmin]);
+  useEffect(() => { fetchClients(); }, [user, isAdmin, authLoading]);
 
   const handleSave = async () => {
     if (!user || !form.name.trim()) return;

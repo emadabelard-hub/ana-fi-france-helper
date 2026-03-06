@@ -92,7 +92,7 @@ const ArchiveAccountingPage = () => {
       setLoading(false);
     };
     fetchAll();
-  }, [user, isAdmin]);
+  }, [user, isAdmin, authLoading]);
 
   // Combine and filter
   const allItems = useMemo(() => [...documents, ...expenses], [documents, expenses]);

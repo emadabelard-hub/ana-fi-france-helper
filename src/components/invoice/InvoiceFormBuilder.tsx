@@ -2713,6 +2713,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             {isRTL ? 'مسح الكل' : 'Réinitialiser'}
           </Button>
           
+          {/* Save as Draft Button */}
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={savingDraft}
+            onClick={saveAsDraft}
+            className={cn(isRTL && "font-cairo")}
+          >
+            {savingDraft ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+            {isRTL ? 'حفظ مسودة' : 'Sauvegarder مسودة'}
+          </Button>
+
           <Button
             onClick={async () => {
               try {

@@ -286,6 +286,31 @@ const InvoiceCreatorPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Navigation Guard Dialog */}
+      <AlertDialog open={showLeaveDialog} onOpenChange={(open) => !open && cancelLeave()}>
+        <AlertDialogContent className={cn(isRTL && "font-cairo")}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={cn(isRTL && "text-right")}>
+              {isRTL ? '⚠️ تنبيه' : '⚠️ Attention'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className={cn(isRTL && "text-right")}>
+              {isRTL 
+                ? 'عندك تعديلات مش محفوظة. متقلقش، البيانات محفوظة تلقائياً، بس هل أنت متأكد إنك عايز تطلع؟'
+                : 'Attention, vous avez des modifications non enregistrées. Voulez-vous vraiment quitter ?'
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className={cn(isRTL && "flex-row-reverse")}>
+            <AlertDialogCancel onClick={cancelLeave}>
+              {isRTL ? 'لا، كمّل' : 'Non, continuer'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLeave} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isRTL ? 'أيوه، اطلع' : 'Oui, quitter'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

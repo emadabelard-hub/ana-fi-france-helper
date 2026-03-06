@@ -196,7 +196,7 @@ const SmartDevisPage = () => {
   const getFunctionAuthHeaders = async () => {
     const session = await supabase.auth.getSession();
     const accessToken = session.data.session?.access_token;
-    const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 
     return {
       'Content-Type': 'application/json',

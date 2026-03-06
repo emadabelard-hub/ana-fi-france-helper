@@ -38,20 +38,46 @@ const ChantiersPage = () => {
   const [tab, setTab] = useState('active');
   const [showAuth, setShowAuth] = useState(false);
 
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+
+    supabase
+      .rpc('is_admin', { _user_id: user.id })
+      .then(({ data }) => setIsAdmin(data === true))
+      .catch(() => setIsAdmin(false));
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const [{ data: ch }, { data: cl }] = await Promise.all([
-        supabase.from('chantiers').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-        supabase.from('clients').select('id, name').eq('user_id', user.id),
-      ]);
+
+      const chantiersQuery = supabase
+        .from('chantiers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      const clientsQuery = supabase
+        .from('clients')
+        .select('id, name');
+
+      if (!isAdmin) {
+        chantiersQuery.eq('user_id', user.id);
+        clientsQuery.eq('user_id', user.id);
+      }
+
+      const [{ data: ch }, { data: cl }] = await Promise.all([chantiersQuery, clientsQuery]);
       const clientMap: Record<string, string> = {};
       cl?.forEach(c => { clientMap[c.id] = c.name; });
       setChantiers((ch || []).map(c => ({ ...c, client_name: clientMap[c.client_id] || '' })));
       setLoading(false);
     })();
-  }, [user]);
+  }, [user, isAdmin]);
 
   if (!user) {
     return (

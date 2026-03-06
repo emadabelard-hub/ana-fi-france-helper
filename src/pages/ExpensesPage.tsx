@@ -157,16 +157,21 @@ const ExpensesPage = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase
+
+    const invoiceQuery = supabase
       .from('documents_comptables')
       .select('total_ttc')
-      .eq('user_id', user.id)
-      .eq('document_type', 'facture')
-      .then(({ data }) => {
-        const total = (data || []).reduce((s: number, d: any) => s + (d.total_ttc || 0), 0);
-        setInvoicesTotal(total);
-      });
-  }, [user, expenses]);
+      .eq('document_type', 'facture');
+
+    if (!isAdmin) {
+      invoiceQuery.eq('user_id', user.id);
+    }
+
+    invoiceQuery.then(({ data }) => {
+      const total = (data || []).reduce((s: number, d: any) => s + (d.total_ttc || 0), 0);
+      setInvoicesTotal(total);
+    });
+  }, [user, expenses, isAdmin]);
 
   const totalExpenses = useMemo(() =>
     filtered.reduce((s, e) => s + e.amount, 0), [filtered]);

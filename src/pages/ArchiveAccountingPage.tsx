@@ -181,35 +181,7 @@ const ArchiveAccountingPage = () => {
 
   const handleOpenDocument = (doc: DocumentItem) => {
     if (doc.type === 'expense') return;
-    const raw = doc.rawData;
-    if (!raw) return;
-
-    const docData = raw.document_data || {};
-    const items = docData.items || [];
-    const prefill = {
-      clientName: raw.client_name || docData.client?.name || '',
-      clientAddress: raw.client_address || docData.client?.address || '',
-      clientPhone: docData.client?.phone || '',
-      clientEmail: docData.client?.email || '',
-      clientSiren: docData.client?.siren || '',
-      clientTvaIntra: docData.client?.tvaIntra || '',
-      clientIsB2B: docData.client?.isB2B || false,
-      workSiteAddress: raw.work_site_address || docData.workSite?.address || '',
-      natureOperation: raw.nature_operation || docData.natureOperation || '',
-      items: items.map((item: any) => ({
-        designation_fr: item.designation_fr || '',
-        designation_ar: item.designation_ar || '',
-        quantity: item.quantity || 1,
-        unit: item.unit || 'm²',
-        unitPrice: item.unitPrice || 0,
-      })),
-      notes: docData.legalMentions || '',
-      source: 'view_existing',
-      selectedChantierId: raw.chantier_id || '',
-    };
-
-    sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
-    navigate(`/pro/invoice-creator?type=${doc.type}&prefill=quote`);
+    navigate('/pro/documents', { state: { openDocumentId: doc.id } });
   };
   const handleExportCSV = () => {
     if (allItems.length === 0) return;

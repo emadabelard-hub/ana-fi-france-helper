@@ -42,31 +42,49 @@ const ClientsPage = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [form, setForm] = useState({ name: '', siret: '', address: '', contact_name: '', contact_phone: '', contact_email: '' });
 
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+
+    supabase
+      .rpc('is_admin', { _user_id: user.id })
+      .then(({ data }) => setIsAdmin(data === true))
+      .catch(() => setIsAdmin(false));
+  }, [user]);
+
   const fetchClients = async () => {
     if (!user) return;
     setLoading(true);
-    const { data } = await supabase
+
+    const clientsQuery = supabase
       .from('clients')
       .select('*')
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (data) {
-      // Get chantier counts
-      const { data: chantiers } = await supabase
-        .from('chantiers')
-        .select('client_id')
-        .eq('user_id', user.id);
+    const chantiersQuery = supabase
+      .from('chantiers')
+      .select('client_id');
 
+    if (!isAdmin) {
+      clientsQuery.eq('user_id', user.id);
+      chantiersQuery.eq('user_id', user.id);
+    }
+
+    const [{ data }, { data: chantiers }] = await Promise.all([clientsQuery, chantiersQuery]);
+
+    if (data) {
       const counts: Record<string, number> = {};
       chantiers?.forEach(c => { counts[c.client_id] = (counts[c.client_id] || 0) + 1; });
-
       setClients(data.map(c => ({ ...c, chantiers_count: counts[c.id] || 0 })));
     }
     setLoading(false);
   };
 
-  useEffect(() => { fetchClients(); }, [user]);
+  useEffect(() => { fetchClients(); }, [user, isAdmin]);
 
   const handleSave = async () => {
     if (!user || !form.name.trim()) return;

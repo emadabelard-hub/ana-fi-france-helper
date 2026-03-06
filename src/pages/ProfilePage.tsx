@@ -95,7 +95,7 @@ const ProfilePage = () => {
   const { profile, isLoading, updateProfile } = useProfile();
   const navigate = useNavigate();
 
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);

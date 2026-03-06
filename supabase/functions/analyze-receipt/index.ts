@@ -84,7 +84,13 @@ serve(async (req) => {
 
     if (!response.ok) {
       const firstErrorText = await response.text();
-      const canFallback = response.status === 400 && firstErrorText.includes("Unable to process input image");
+      const lowerError = firstErrorText.toLowerCase();
+      const canFallback = response.status === 400 && (
+        lowerError.includes("unable to process input image") ||
+        lowerError.includes("unsupported image") ||
+        lowerError.includes("image_parse_error") ||
+        lowerError.includes("invalid image")
+      );
 
       if (canFallback) {
         response = await callGateway("openai/gpt-5-mini");

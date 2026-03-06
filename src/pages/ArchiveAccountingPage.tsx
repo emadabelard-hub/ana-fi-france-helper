@@ -28,22 +28,40 @@ const ArchiveAccountingPage = () => {
   const [periodFilter, setPeriodFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('all');
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+
+    (async () => {
+      const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
+      setIsAdmin(data === true);
+    })();
+  }, [user]);
 
   // Fetch documents + expenses
   useEffect(() => {
     if (!user) { setLoading(false); return; }
     const fetchAll = async () => {
       setLoading(true);
-      const [docsRes, expRes] = await Promise.all([
-        (supabase.from('documents_comptables') as any)
-          .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address, chantier_id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
-        (supabase.from('expenses') as any)
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
-      ]);
+
+      const docsQuery = (supabase.from('documents_comptables') as any)
+        .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address, chantier_id')
+        .order('created_at', { ascending: false });
+
+      const expensesQuery = (supabase.from('expenses') as any)
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!isAdmin) {
+        docsQuery.eq('user_id', user.id);
+        expensesQuery.eq('user_id', user.id);
+      }
+
+      const [docsRes, expRes] = await Promise.all([docsQuery, expensesQuery]);
 
       if (docsRes.data) {
         setDocuments(docsRes.data.map((d: any) => ({
@@ -75,7 +93,7 @@ const ArchiveAccountingPage = () => {
       setLoading(false);
     };
     fetchAll();
-  }, [user]);
+  }, [user, isAdmin]);
 
   // Combine and filter
   const allItems = useMemo(() => [...documents, ...expenses], [documents, expenses]);
@@ -163,35 +181,7 @@ const ArchiveAccountingPage = () => {
 
   const handleOpenDocument = (doc: DocumentItem) => {
     if (doc.type === 'expense') return;
-    const raw = doc.rawData;
-    if (!raw) return;
-
-    const docData = raw.document_data || {};
-    const items = docData.items || [];
-    const prefill = {
-      clientName: raw.client_name || docData.client?.name || '',
-      clientAddress: raw.client_address || docData.client?.address || '',
-      clientPhone: docData.client?.phone || '',
-      clientEmail: docData.client?.email || '',
-      clientSiren: docData.client?.siren || '',
-      clientTvaIntra: docData.client?.tvaIntra || '',
-      clientIsB2B: docData.client?.isB2B || false,
-      workSiteAddress: raw.work_site_address || docData.workSite?.address || '',
-      natureOperation: raw.nature_operation || docData.natureOperation || '',
-      items: items.map((item: any) => ({
-        designation_fr: item.designation_fr || '',
-        designation_ar: item.designation_ar || '',
-        quantity: item.quantity || 1,
-        unit: item.unit || 'm²',
-        unitPrice: item.unitPrice || 0,
-      })),
-      notes: docData.legalMentions || '',
-      source: 'view_existing',
-      selectedChantierId: raw.chantier_id || '',
-    };
-
-    sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
-    navigate(`/pro/invoice-creator?type=${doc.type}&prefill=quote`);
+    navigate('/pro/documents', { state: { openDocumentId: doc.id } });
   };
   const handleExportCSV = () => {
     if (allItems.length === 0) return;

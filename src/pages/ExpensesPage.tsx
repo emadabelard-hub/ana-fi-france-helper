@@ -70,14 +70,33 @@ const ExpensesPage = () => {
   const [periodFilter, setPeriodFilter] = useState('all');
   const [showAccountingMenu, setShowAccountingMenu] = useState(false);
 
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+
+    (async () => {
+      const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
+      setIsAdmin(data === true);
+    })();
+  }, [user]);
+
   const fetchExpenses = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const { data, error } = await (supabase.from('expenses') as any)
+      const expensesQuery = (supabase.from('expenses') as any)
         .select('*')
-        .eq('user_id', user.id)
         .order('expense_date', { ascending: false });
+
+      if (!isAdmin) {
+        expensesQuery.eq('user_id', user.id);
+      }
+
+      const { data, error } = await expensesQuery;
 
       if (error) throw error;
       setExpenses(data || []);
@@ -104,7 +123,7 @@ const ExpensesPage = () => {
     }
   };
 
-  useEffect(() => { fetchExpenses(); }, [user]);
+  useEffect(() => { fetchExpenses(); }, [user, isAdmin]);
 
   const filtered = useMemo(() => {
     let items = expenses;
@@ -138,16 +157,21 @@ const ExpensesPage = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase
+
+    const invoiceQuery = supabase
       .from('documents_comptables')
       .select('total_ttc')
-      .eq('user_id', user.id)
-      .eq('document_type', 'facture')
-      .then(({ data }) => {
-        const total = (data || []).reduce((s: number, d: any) => s + (d.total_ttc || 0), 0);
-        setInvoicesTotal(total);
-      });
-  }, [user, expenses]);
+      .eq('document_type', 'facture');
+
+    if (!isAdmin) {
+      invoiceQuery.eq('user_id', user.id);
+    }
+
+    invoiceQuery.then(({ data }) => {
+      const total = (data || []).reduce((s: number, d: any) => s + (d.total_ttc || 0), 0);
+      setInvoicesTotal(total);
+    });
+  }, [user, expenses, isAdmin]);
 
   const totalExpenses = useMemo(() =>
     filtered.reduce((s, e) => s + e.amount, 0), [filtered]);

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import AuthModal from '@/components/auth/AuthModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface DocumentRow {
   id: string;
@@ -35,6 +36,7 @@ const DocumentsListPage = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +44,20 @@ const DocumentsListPage = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+
+    (async () => {
+      const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
+      setIsAdmin(data === true);
+    })();
+  }, [user]);
 
   const filteredDocuments = useMemo(() => {
     let result = documents;
@@ -71,22 +87,42 @@ const DocumentsListPage = () => {
   const fetchDocuments = async () => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
-    const { data, error } = await (supabase
+
+    const documentsQuery = (supabase
       .from('documents_comptables') as any)
       .select('id, document_type, document_number, client_name, client_address, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address')
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
+
+    if (!isAdmin) {
+      documentsQuery.eq('user_id', user.id);
+    }
+
+    const { data, error } = await documentsQuery;
     if (!error && data) setDocuments(data);
     setLoading(false);
   };
 
-  useEffect(() => { fetchDocuments(); }, [user]);
+  useEffect(() => { fetchDocuments(); }, [user, isAdmin]);
+
+  useEffect(() => {
+    const targetId = (location.state as { openDocumentId?: string } | null)?.openDocumentId;
+    if (!targetId || documents.length === 0) return;
+
+    const target = documents.find((doc) => doc.id === targetId);
+    if (target) {
+      setSelectedDocument(target);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, location.pathname, documents, navigate]);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     const { error } = await (supabase.from('documents_comptables') as any).delete().eq('id', id);
     if (!error) {
       setDocuments(prev => prev.filter(d => d.id !== id));
+      if (selectedDocument?.id === id) {
+        setSelectedDocument(null);
+      }
       toast({ title: isRTL ? 'تم الحذف' : 'Supprimé', description: isRTL ? 'تم حذف المستند' : 'Document supprimé avec succès.' });
     }
     setDeletingId(null);
@@ -151,6 +187,10 @@ const DocumentsListPage = () => {
     navigate('/pro/invoice-creator?type=devis&prefill=quote');
   };
 
+  const handleOpenDocument = (doc: DocumentRow) => {
+    setSelectedDocument(doc);
+  };
+
   const devis = filteredDocuments.filter(d => d.document_type === 'devis');
   const factures = filteredDocuments.filter(d => d.document_type === 'facture');
 
@@ -197,33 +237,7 @@ const DocumentsListPage = () => {
       <div
         key={doc.id}
         className="group relative rounded-xl border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,12%)] p-4 hover:border-[hsl(45,80%,55%)/0.6] transition-all duration-300 hover:shadow-[0_0_20px_hsl(45,80%,55%,0.1)] cursor-pointer"
-        onClick={() => {
-          // Navigate to invoice creator with the document data pre-loaded for viewing
-          const docData = doc.document_data || {};
-          const items = docData.items || [];
-          const prefill = {
-            clientName: doc.client_name || docData.client?.name || '',
-            clientAddress: doc.client_address || docData.client?.address || '',
-            clientPhone: docData.client?.phone || '',
-            clientEmail: docData.client?.email || '',
-            clientSiren: docData.client?.siren || '',
-            clientTvaIntra: docData.client?.tvaIntra || '',
-            clientIsB2B: docData.client?.isB2B || false,
-            workSiteAddress: doc.work_site_address || docData.workSite?.address || '',
-            natureOperation: doc.nature_operation || docData.natureOperation || '',
-            items: items.map((item: any) => ({
-              designation_fr: item.designation_fr || '',
-              designation_ar: item.designation_ar || '',
-              quantity: item.quantity || 1,
-              unit: item.unit || 'm²',
-              unitPrice: item.unitPrice || 0,
-            })),
-            notes: docData.legalMentions || '',
-            source: 'view_existing',
-          };
-          sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
-          navigate(`/pro/invoice-creator?type=${doc.document_type}&prefill=quote`);
-        }}
+        onClick={() => handleOpenDocument(doc)}
       >
         {/* Gold accent line */}
         <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-[hsl(45,80%,55%)] to-transparent opacity-60" />
@@ -432,6 +446,30 @@ const DocumentsListPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={Boolean(selectedDocument)} onOpenChange={(open) => !open && setSelectedDocument(null)}>
+        <DialogContent className={cn("max-w-2xl", isRTL && "font-cairo")}>
+          {selectedDocument && (
+            <>
+              <DialogHeader>
+                <DialogTitle className={cn("flex items-center gap-2", isRTL && "flex-row-reverse text-right")}>
+                  <Eye className="h-4 w-4" />
+                  {selectedDocument.document_number}
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className={cn("space-y-3 text-sm", isRTL && "text-right")}>
+                <p><span className="text-muted-foreground">{isRTL ? 'Client:' : 'Client:'}</span> {selectedDocument.client_name || '-'}</p>
+                <p><span className="text-muted-foreground">{isRTL ? 'Date:' : 'Date:'}</span> {new Date(selectedDocument.created_at).toLocaleDateString('fr-FR')}</p>
+                <p><span className="text-muted-foreground">HT:</span> {formatCurrency(selectedDocument.subtotal_ht)}</p>
+                <p><span className="text-muted-foreground">TVA:</span> {formatCurrency(selectedDocument.tva_amount)}</p>
+                <p className="font-bold"><span className="text-muted-foreground">TTC:</span> {formatCurrency(selectedDocument.total_ttc)}</p>
+                <p><span className="text-muted-foreground">{isRTL ? 'Statut:' : 'Statut:'}</span> {selectedDocument.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') : (isRTL ? 'مسودة' : 'Brouillon')}</p>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

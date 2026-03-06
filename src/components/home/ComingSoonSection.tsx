@@ -82,7 +82,7 @@ const ComingSoonSection = forwardRef<HTMLDivElement>((_, ref) => {
   }, [user]);
 
   return (
-    <div className="mb-6">
+    <div ref={ref} className="mb-6">
       {/* Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}

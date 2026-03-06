@@ -64,7 +64,7 @@ const features: ComingSoonFeature[] = [
   },
 ];
 
-const ComingSoonSection = () => {
+const ComingSoonSection = forwardRef<HTMLDivElement>((_, ref) => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();

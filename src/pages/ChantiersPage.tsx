@@ -52,7 +52,7 @@ const ChantiersPage = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading || !user) return;
     (async () => {
       setLoading(true);
 

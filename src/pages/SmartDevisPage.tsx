@@ -401,19 +401,18 @@ const SmartDevisPage = () => {
   const handleGenerateItems = async () => {
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', {
-        body: {
-          action: 'generate_items',
-          analysisData: {
-            ...analysisData,
-            surfaceEstimates: surfaceEstimates.length > 0 ? surfaceEstimates : analysisData?.surfaceEstimates,
-          },
-          materialQuality,
-          discountPercent,
-          profitMarginPercent,
+      const payload = {
+        action: 'generate_items',
+        analysisData: {
+          ...analysisData,
+          surfaceEstimates: surfaceEstimates.length > 0 ? surfaceEstimates : analysisData?.surfaceEstimates,
         },
-      });
-      if (error) throw error;
+        materialQuality,
+        discountPercent,
+        profitMarginPercent,
+      };
+
+      const data = await invokeAnalyzer(payload);
 
       const items: LineItem[] = (data.items || data.suggestedItems || []).map((item: any) => ({
         id: generateId(),

@@ -38,7 +38,6 @@ const ClientsPage = () => {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [showAuth, setShowAuth] = useState(false);
   const [form, setForm] = useState({ name: '', siret: '', address: '', contact_name: '', contact_phone: '', contact_email: '' });
 
   const [isAdmin, setIsAdmin] = useState(false);

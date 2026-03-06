@@ -181,41 +181,67 @@ const SmartDevisPage = () => {
     }
   }, [processFiles]);
 
+  const getSmartDevisFunctionUrls = () => {
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '');
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+    const urls = [
+      baseUrl ? `${baseUrl}/functions/v1/smart-devis-analyzer` : null,
+      projectId ? `https://${projectId}.supabase.co/functions/v1/smart-devis-analyzer` : null,
+    ].filter(Boolean) as string[];
+
+    return Array.from(new Set(urls));
+  };
+
+  const getFunctionAuthHeaders = async () => {
+    const session = await supabase.auth.getSession();
+    const accessToken = session.data.session?.access_token;
+    const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+    return {
+      'Content-Type': 'application/json',
+      apikey: publishableKey,
+      Authorization: `Bearer ${accessToken || publishableKey}`,
+      'x-client-info': 'smart-devis-page',
+    };
+  };
+
   const invokeAnalyzer = async (payload: any) => {
     const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', { body: payload });
     if (!error) return data;
 
-    const msg = String(error?.message || '');
-    const isNetworkLikeError = /failed to send a request|failed to fetch|network|edge function/i.test(msg.toLowerCase());
-    if (!isNetworkLikeError) throw error;
+    const urls = getSmartDevisFunctionUrls();
+    const headers = await getFunctionAuthHeaders();
+    let lastError: Error = error instanceof Error ? error : new Error(String(error?.message || 'Invoke error'));
 
-    // Fallback for intermittent mobile/network issues with SDK invoke
-    const streamUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/smart-devis-analyzer`;
-    const session = await supabase.auth.getSession();
-    const accessToken = session.data.session?.access_token;
+    for (const url of urls) {
+      try {
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        });
 
-    const resp = await fetch(streamUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify(payload),
-    });
+        const rawBody = await resp.text();
+        let parsedBody: any = {};
+        try {
+          parsedBody = rawBody ? JSON.parse(rawBody) : {};
+        } catch {
+          parsedBody = { error: rawBody };
+        }
 
-    const rawBody = await resp.text();
-    let parsedBody: any = {};
-    try {
-      parsedBody = rawBody ? JSON.parse(rawBody) : {};
-    } catch {
-      parsedBody = { error: rawBody };
+        if (!resp.ok) {
+          lastError = new Error(parsedBody?.error || rawBody || `HTTP ${resp.status}`);
+          continue;
+        }
+
+        return parsedBody;
+      } catch (fetchErr: any) {
+        lastError = fetchErr instanceof Error ? fetchErr : new Error(String(fetchErr));
+      }
     }
 
-    if (!resp.ok) {
-      throw new Error(parsedBody?.error || rawBody || `HTTP ${resp.status}`);
-    }
-
-    return parsedBody;
+    throw lastError;
   };
 
   const handleAnalyze = async () => {

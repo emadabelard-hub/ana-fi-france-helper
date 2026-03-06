@@ -70,14 +70,33 @@ const ExpensesPage = () => {
   const [periodFilter, setPeriodFilter] = useState('all');
   const [showAccountingMenu, setShowAccountingMenu] = useState(false);
 
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+
+    supabase
+      .rpc('is_admin', { _user_id: user.id })
+      .then(({ data }) => setIsAdmin(data === true))
+      .catch(() => setIsAdmin(false));
+  }, [user]);
+
   const fetchExpenses = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const { data, error } = await (supabase.from('expenses') as any)
+      const expensesQuery = (supabase.from('expenses') as any)
         .select('*')
-        .eq('user_id', user.id)
         .order('expense_date', { ascending: false });
+
+      if (!isAdmin) {
+        expensesQuery.eq('user_id', user.id);
+      }
+
+      const { data, error } = await expensesQuery;
 
       if (error) throw error;
       setExpenses(data || []);
@@ -104,7 +123,7 @@ const ExpensesPage = () => {
     }
   };
 
-  useEffect(() => { fetchExpenses(); }, [user]);
+  useEffect(() => { fetchExpenses(); }, [user, isAdmin]);
 
   const filtered = useMemo(() => {
     let items = expenses;

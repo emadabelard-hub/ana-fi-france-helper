@@ -28,22 +28,40 @@ const ArchiveAccountingPage = () => {
   const [periodFilter, setPeriodFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('all');
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+
+    supabase
+      .rpc('is_admin', { _user_id: user.id })
+      .then(({ data }) => setIsAdmin(data === true))
+      .catch(() => setIsAdmin(false));
+  }, [user]);
 
   // Fetch documents + expenses
   useEffect(() => {
     if (!user) { setLoading(false); return; }
     const fetchAll = async () => {
       setLoading(true);
-      const [docsRes, expRes] = await Promise.all([
-        (supabase.from('documents_comptables') as any)
-          .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address, chantier_id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
-        (supabase.from('expenses') as any)
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
-      ]);
+
+      const docsQuery = (supabase.from('documents_comptables') as any)
+        .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address, chantier_id')
+        .order('created_at', { ascending: false });
+
+      const expensesQuery = (supabase.from('expenses') as any)
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!isAdmin) {
+        docsQuery.eq('user_id', user.id);
+        expensesQuery.eq('user_id', user.id);
+      }
+
+      const [docsRes, expRes] = await Promise.all([docsQuery, expensesQuery]);
 
       if (docsRes.data) {
         setDocuments(docsRes.data.map((d: any) => ({
@@ -75,7 +93,7 @@ const ArchiveAccountingPage = () => {
       setLoading(false);
     };
     fetchAll();
-  }, [user]);
+  }, [user, isAdmin]);
 
   // Combine and filter
   const allItems = useMemo(() => [...documents, ...expenses], [documents, expenses]);

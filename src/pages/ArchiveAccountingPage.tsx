@@ -10,20 +10,19 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import AuthModal from '@/components/auth/AuthModal';
+
 import FinancialSummary from '@/components/archive/FinancialSummary';
 import DocumentCard, { type DocumentItem } from '@/components/archive/DocumentCard';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 
 const ArchiveAccountingPage = () => {
   const { isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [expenses, setExpenses] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAuth, setShowAuth] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [periodFilter, setPeriodFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('all');
@@ -44,7 +43,7 @@ const ArchiveAccountingPage = () => {
 
   // Fetch documents + expenses
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    if (authLoading || !user) { setLoading(false); return; }
     const fetchAll = async () => {
       setLoading(true);
 
@@ -93,7 +92,7 @@ const ArchiveAccountingPage = () => {
       setLoading(false);
     };
     fetchAll();
-  }, [user, isAdmin]);
+  }, [user, isAdmin, authLoading]);
 
   // Combine and filter
   const allItems = useMemo(() => [...documents, ...expenses], [documents, expenses]);
@@ -206,12 +205,18 @@ const ArchiveAccountingPage = () => {
     toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export CSV réussi' });
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+        <p className={cn('text-muted-foreground', isRTL && 'font-cairo')}>Chargement...</p>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-        <p className={cn('text-muted-foreground', isRTL && 'font-cairo')}>
-          {isRTL ? 'لا توجد وثائق بعد' : 'Aucun document pour le moment'}
-        </p>
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+        <p className={cn('text-muted-foreground', isRTL && 'font-cairo')}>Session invitée indisponible.</p>
       </div>
     );
   }

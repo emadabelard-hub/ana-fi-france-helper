@@ -10,7 +10,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import AuthModal from '@/components/auth/AuthModal';
 
 interface ChantierRow {
   id: string;
@@ -30,13 +29,13 @@ const statusColors: Record<string, string> = {
 
 const ChantiersPage = () => {
   const { isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [chantiers, setChantiers] = useState<ChantierRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('active');
-  const [showAuth, setShowAuth] = useState(false);
+  
 
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -53,7 +52,7 @@ const ChantiersPage = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading || !user) return;
     (async () => {
       setLoading(true);
 
@@ -77,15 +76,20 @@ const ChantiersPage = () => {
       setChantiers((ch || []).map(c => ({ ...c, client_name: clientMap[c.client_id] || '' })));
       setLoading(false);
     })();
-  }, [user, isAdmin]);
+  }, [user, isAdmin, authLoading]);
+
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <p className="text-muted-foreground">Chargement...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <HardHat className="h-16 w-16 text-muted-foreground/30" />
-        <p className="text-muted-foreground">{isRTL ? 'سجل الدخول لإدارة الورشات' : 'Connectez-vous pour gérer vos chantiers'}</p>
-        <Button onClick={() => setShowAuth(true)}>{isRTL ? 'تسجيل الدخول' : 'Se connecter'}</Button>
-        <AuthModal open={showAuth} onOpenChange={setShowAuth} />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <p className="text-muted-foreground">Session invitée indisponible.</p>
       </div>
     );
   }

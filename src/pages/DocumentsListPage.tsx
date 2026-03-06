@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import AuthModal from '@/components/auth/AuthModal';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface DocumentRow {
@@ -34,13 +34,12 @@ const formatCurrency = (n: number) =>
 
 const DocumentsListPage = () => {
   const { isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAuth, setShowAuth] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -85,7 +84,7 @@ const DocumentsListPage = () => {
   }, [documents, periodFilter, searchQuery]);
 
   const fetchDocuments = async () => {
-    if (!user) { setLoading(false); return; }
+    if (authLoading || !user) { setLoading(false); return; }
     setLoading(true);
 
     const documentsQuery = (supabase
@@ -102,7 +101,7 @@ const DocumentsListPage = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchDocuments(); }, [user, isAdmin]);
+  useEffect(() => { fetchDocuments(); }, [user, isAdmin, authLoading]);
 
   useEffect(() => {
     const targetId = (location.state as { openDocumentId?: string } | null)?.openDocumentId;
@@ -218,14 +217,18 @@ const DocumentsListPage = () => {
     toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export réussi', description: isRTL ? 'تم تحميل ملف CSV' : 'Fichier CSV téléchargé' });
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+        <p className={cn('text-muted-foreground', isRTL && 'font-cairo')}>Chargement...</p>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-        <p className={cn("text-muted-foreground", isRTL && "font-cairo")}>
-          {isRTL ? 'سجل الدخول لعرض مستنداتك' : 'Connectez-vous pour voir vos documents'}
-        </p>
-        <Button onClick={() => setShowAuth(true)}>{isRTL ? 'تسجيل الدخول' : 'Se connecter'}</Button>
-        <AuthModal open={showAuth} onOpenChange={setShowAuth} />
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+        <p className={cn('text-muted-foreground', isRTL && 'font-cairo')}>Session invitée indisponible.</p>
       </div>
     );
   }

@@ -9,7 +9,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import AuthModal from '@/components/auth/AuthModal';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -31,7 +30,7 @@ interface Client {
 
 const ClientsPage = () => {
   const { isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
@@ -39,7 +38,6 @@ const ClientsPage = () => {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [showAuth, setShowAuth] = useState(false);
   const [form, setForm] = useState({ name: '', siret: '', address: '', contact_name: '', contact_phone: '', contact_email: '' });
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -57,7 +55,10 @@ const ClientsPage = () => {
   }, [user]);
 
   const fetchClients = async () => {
-    if (!user) return;
+    if (authLoading || !user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     const clientsQuery = supabase
@@ -84,7 +85,7 @@ const ClientsPage = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchClients(); }, [user, isAdmin]);
+  useEffect(() => { fetchClients(); }, [user, isAdmin, authLoading]);
 
   const handleSave = async () => {
     if (!user || !form.name.trim()) return;
@@ -121,13 +122,18 @@ const ClientsPage = () => {
     setShowForm(true);
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <p className="text-muted-foreground">{isRTL ? 'Chargement...' : 'Chargement...'}</p>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Users className="h-16 w-16 text-muted-foreground/30" />
-        <p className="text-muted-foreground">{isRTL ? 'سجل الدخول لإدارة العملاء' : 'Connectez-vous pour gérer vos clients'}</p>
-        <Button onClick={() => setShowAuth(true)}>{isRTL ? 'تسجيل الدخول' : 'Se connecter'}</Button>
-        <AuthModal open={showAuth} onOpenChange={setShowAuth} />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <p className="text-muted-foreground">{isRTL ? 'Session invitée indisponible.' : 'Session invitée indisponible.'}</p>
       </div>
     );
   }

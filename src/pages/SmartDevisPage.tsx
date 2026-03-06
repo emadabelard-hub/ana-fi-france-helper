@@ -876,13 +876,22 @@ const SmartDevisPage = () => {
 
           {/* Surface Estimates (editable) */}
           {surfaceEstimates.length > 0 && (
-            <Card className="border-2 border-blue-500/20 bg-blue-500/5">
+            <Card className="border-2 border-amber-500/20 bg-amber-500/5">
               <CardHeader className="pb-2 pt-3 px-3">
                 <CardTitle className={cn("text-sm flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>
                   📐 {isRTL ? 'المساحات المقدرة (عدّل لو محتاج)' : 'Surfaces estimées (modifiables)'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3 space-y-2">
+                {/* Warning: approximate estimation */}
+                <div className={cn("rounded-lg border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 p-2.5", isRTL && "text-right")}>
+                  <p className={cn("text-[11px] font-semibold text-amber-700 dark:text-amber-300 leading-relaxed", isRTL && "font-cairo")}>
+                    ⚠️ {isRTL
+                      ? 'تقدير بصري تقريبي. يرجى التحقق من المساحة أو تعديلها قبل إنشاء الدوفي.'
+                      : 'Estimation visuelle approximative. Veuillez vérifier ou corriger la surface avant de créer le devis.'}
+                  </p>
+                </div>
+
                 {surfaceEstimates.map((se, idx) => (
                   <div key={se.id || idx} className="rounded-lg border bg-card p-2.5 space-y-1.5">
                     <div className={cn("flex items-center justify-between gap-2", isRTL && "flex-row-reverse")}>
@@ -926,10 +935,30 @@ const SmartDevisPage = () => {
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="text-[9px] text-muted-foreground font-semibold">{isRTL ? 'المساحة' : 'Surface'}</label>
-                        <div className="h-7 flex items-center px-2 bg-muted rounded-md text-xs font-bold text-foreground">
-                          {se.area_m2} m²
+                        <label className="text-[9px] text-muted-foreground text-muted-foreground/60">{isRTL ? 'تقدير IA' : 'Estimation IA'}</label>
+                        <div className="h-7 flex items-center px-2 bg-muted rounded-md text-[10px] text-muted-foreground line-through">
+                          {Math.round(se.width_m * se.height_m * 10) / 10} m²
                         </div>
+                      </div>
+                    </div>
+                    {/* Editable "Surface réelle" field */}
+                    <div className={cn("pt-1", isRTL && "text-right")}>
+                      <label className={cn("text-[10px] font-bold text-primary", isRTL && "font-cairo")}>
+                        ✏️ {isRTL ? 'المساحة الفعلية (قابلة للتعديل)' : 'Surface réelle (modifiable)'}
+                      </label>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={se.area_m2}
+                          onChange={(e) => {
+                            const area = parseFloat(e.target.value) || 0;
+                            setSurfaceEstimates(prev => prev.map((s, i) => i === idx ? { ...s, area_m2: area } : s));
+                          }}
+                          className="h-8 text-sm font-bold flex-1 border-primary/40"
+                        />
+                        <span className="text-xs font-bold text-foreground shrink-0">m²</span>
                       </div>
                     </div>
                     {se.confidence && (
@@ -945,8 +974,8 @@ const SmartDevisPage = () => {
                     )}
                   </div>
                 ))}
-                <p className={cn("text-[10px] text-muted-foreground text-center", isRTL && "font-cairo")}>
-                  📏 {isRTL ? `المساحة الإجمالية: ${surfaceEstimates.reduce((s, e) => s + e.area_m2, 0).toFixed(1)} م²` : `Surface totale: ${surfaceEstimates.reduce((s, e) => s + e.area_m2, 0).toFixed(1)} m²`}
+                <p className={cn("text-[10px] text-muted-foreground text-center font-bold", isRTL && "font-cairo")}>
+                  📏 {isRTL ? `المساحة الإجمالية الفعلية: ${surfaceEstimates.reduce((s, e) => s + e.area_m2, 0).toFixed(1)} م²` : `Surface réelle totale: ${surfaceEstimates.reduce((s, e) => s + e.area_m2, 0).toFixed(1)} m²`}
                 </p>
               </CardContent>
             </Card>

@@ -2671,10 +2671,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 // Comprehensive validation with detailed feedback
                 const missingFields: string[] = [];
                 
-                // Check emitter SIRET (mandatory for legal invoices)
-                if (!profile?.siret || profile.siret.replace(/\s/g, '').length !== 14) {
-                  missingFields.push('__SIRET_ERROR__');
-                }
+                // SIRET warning (non-blocking) — document can still be created
+                // Profile SIRET check is informational only
 
                 // Check client name
                 if (!clientName.trim()) {

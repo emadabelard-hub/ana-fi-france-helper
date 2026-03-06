@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import AuthModal from '@/components/auth/AuthModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface DocumentRow {
   id: string;
@@ -35,6 +36,7 @@ const DocumentsListPage = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +44,20 @@ const DocumentsListPage = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+
+    (async () => {
+      const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
+      setIsAdmin(data === true);
+    })();
+  }, [user]);
 
   const filteredDocuments = useMemo(() => {
     let result = documents;
@@ -71,16 +87,22 @@ const DocumentsListPage = () => {
   const fetchDocuments = async () => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
-    const { data, error } = await (supabase
+
+    const documentsQuery = (supabase
       .from('documents_comptables') as any)
       .select('id, document_type, document_number, client_name, client_address, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address')
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
+
+    if (!isAdmin) {
+      documentsQuery.eq('user_id', user.id);
+    }
+
+    const { data, error } = await documentsQuery;
     if (!error && data) setDocuments(data);
     setLoading(false);
   };
 
-  useEffect(() => { fetchDocuments(); }, [user]);
+  useEffect(() => { fetchDocuments(); }, [user, isAdmin]);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);

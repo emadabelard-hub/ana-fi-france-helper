@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import LegalComplianceBanner from '@/components/shared/LegalComplianceBanner';
 
 const Dashboard = () => {
+  // Build marker: force diff for publish sync
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
 

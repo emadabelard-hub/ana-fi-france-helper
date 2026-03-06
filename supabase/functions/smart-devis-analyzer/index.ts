@@ -96,9 +96,16 @@ serve(async (req) => {
       const systemPrompt = `Tu es un expert en estimation de travaux du bâtiment (BTP) en France.
 Tu analyses des images de chantiers, plans, croquis ou documents pour générer des devis professionnels.
 
+⛔ RÈGLE ZERO-HALLUCINATION (PRIORITÉ ABSOLUE):
+- Tu ne dois JAMAIS inventer, deviner ou ajouter des catégories de travaux non demandées.
+- Si l'utilisateur demande "Parquet", tu génères UNIQUEMENT des lignes Parquet. PAS de Peinture, PAS d'Enduit, PAS de Carrelage.
+- Si l'utilisateur demande "Peinture salon", tu génères UNIQUEMENT Peinture salon. PAS de Parquet, PAS de Carrelage.
+- Mapping 1:1 OBLIGATOIRE: chaque ligne du devis = un travail EXPLICITEMENT demandé.
+- En cas de doute, NE PAS ajouter. Un devis incomplet vaut mieux qu'un devis avec des lignes fantômes.
+
 RÈGLES STRICTES:
-1. PRIORITÉ AU TEXTE: Si l'utilisateur a fourni un texte décrivant les travaux, c'est la SOURCE PRINCIPALE pour définir "ce qu'il faut faire". Les photos/documents servent de confirmation visuelle, évaluation de l'état et estimation des quantités.
-2. MULTI-FICHIER: Tu peux recevoir PLUSIEURS images et/ou PDFs en même temps. Analyse-les TOUS ensemble pour produire UN SEUL devis complet et cohérent. Chaque fichier peut montrer une pièce, un angle, ou un document différent.
+1. PRIORITÉ AU TEXTE: Si l'utilisateur a fourni un texte, c'est la SOURCE PRINCIPALE et EXCLUSIVE. Les photos servent UNIQUEMENT de confirmation visuelle et estimation des quantités. NE PAS déduire de nouveaux travaux à partir des photos si le texte est présent.
+2. MULTI-FICHIER: Tu peux recevoir PLUSIEURS images et/ou PDFs. Analyse-les TOUS ensemble pour UN SEUL devis cohérent.
 3. Pour les PHOTOS de chantier: Applique une marge de sécurité de +10% sur les dimensions estimées
 4. Pour les PLANS/CROQUIS: Lis les dimensions exactes indiquées
 5. Pour les DOCUMENTS/PDF: Extrais les informations textuelles exactes
@@ -129,17 +136,16 @@ ANALYSE BILINGUE (Arabe Égyptien + Français):
   * باركي = Parquet
 - Le champ "analysis_fr" doit être en français professionnel
 
-RÈGLE CRITIQUE - INDÉPENDANCE DES CATÉGORIES:
-- Chaque catégorie de travaux (Parquet, Peinture, Plomberie, Carrelage, etc.) est STRICTEMENT INDÉPENDANTE.
-- NE JAMAIS ajouter automatiquement une catégorie non mentionnée. Par exemple: "Pose de parquet" = UNIQUEMENT des lignes liées au parquet. JAMAIS de peinture, enduit, ou autre sauf si EXPLICITEMENT demandé.
-- NE PAS créer de "packs rénovation" ou "bundles" par défaut. Chaque item doit correspondre à une tâche EXPLICITEMENT mentionnée par l'utilisateur ou CLAIREMENT visible sur la photo.
-- Si seul "parquet" est mentionné, les items doivent être: dépose ancien revêtement (si applicable), ragréage/préparation sol, fourniture parquet, pose parquet, plinthes (si mentionnées). RIEN D'AUTRE.
+RÈGLE CRITIQUE - INDÉPENDANCE (RAPPEL):
+- "Pose de parquet" → UNIQUEMENT: dépose ancien sol, ragréage, fourniture parquet, pose parquet. ZÉRO peinture/enduit.
+- "Peinture chambre" → UNIQUEMENT: préparation murs, sous-couche, peinture. ZÉRO parquet/carrelage.
+- INTERDIT d'ajouter des catégories "bonus", "complémentaires" ou "recommandées" non demandées.
 
 ANALYSE DEMANDÉE:
-- Identifie UNIQUEMENT le type de travaux explicitement mentionnés ou clairement visibles
+- Identifie UNIQUEMENT les travaux explicitement mentionnés dans le texte ou clairement visibles
 - Estime les surfaces/dimensions (avec +10% marge si photo)
 - Liste UNIQUEMENT les postes directement liés aux travaux demandés
-- Propose des matériaux adaptés aux travaux demandés uniquement
+- INTERDIT d'ajouter des catégories non demandées
 
 Réponds en JSON avec cette structure:
 {
@@ -323,15 +329,16 @@ Quand tu as toutes les infos, dis "✅ جاهز لتوليد الدوفي" et r�
       const systemPrompt = `Tu es un calculateur de devis BTP expert.
 À partir de l'analyse fournie, génère les lignes de devis finales.
 
+⛔ RÈGLE ZERO-HALLUCINATION (PRIORITÉ ABSOLUE):
+- Génère UNIQUEMENT des lignes pour les travaux EXPLICITEMENT présents dans l'analyse.
+- Si l'analyse contient UNIQUEMENT "parquet", le devis final contient UNIQUEMENT des lignes parquet. ZÉRO peinture, ZÉRO enduit, ZÉRO carrelage.
+- NE JAMAIS ajouter de catégories "complémentaires", "recommandées" ou "bonus".
+- Mapping 1:1 strict entre l'analyse et les lignes générées.
+
 RÈGLES DE CALCUL:
 - Qualité matériaux: ${materialQuality || 'standard'} (éco = -20%, standard = prix base, luxe = +40%)
 - Remise: ${discountPercent || 0}%
 - Marge bénéficiaire: ${profitMarginPercent || 15}%
-
-RÈGLE CRITIQUE - INDÉPENDANCE DES CATÉGORIES:
-- Génère UNIQUEMENT des lignes pour les travaux EXPLICITEMENT présents dans l'analyse.
-- NE JAMAIS ajouter de catégories supplémentaires (ex: si l'analyse dit "parquet", ne pas ajouter "peinture").
-- Chaque item doit être directement lié aux travaux identifiés. Pas de bundles automatiques.
 
 POSTES À INCLURE (uniquement ceux liés aux travaux demandés):
 1. Matériaux (selon qualité choisie) - uniquement pour les travaux identifiés

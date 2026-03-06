@@ -10,7 +10,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import AuthModal from '@/components/auth/AuthModal';
 
 interface ChantierRow {
   id: string;

@@ -72,12 +72,12 @@ serve(async (req) => {
   );
 
   try {
-    // Auth
+    // Auth - use getClaims for signing-keys compatibility
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Authorization required");
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user) throw new Error("User not authenticated");
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) throw new Error("User not authenticated");
 
     const body = await req.json();
     const { action, imageData, mimeType, conversationHistory, userMessage, preferences } = body;

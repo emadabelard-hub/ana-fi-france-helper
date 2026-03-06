@@ -106,9 +106,18 @@ const InvoiceCreatorPage = () => {
     setSearchParams({});
   };
   
-  // Handle navigation back to Pro page
+  // Handle navigation back to Pro page (guarded)
   const handleNavigateBack = () => {
-    navigate('/pro');
+    requestLeave(() => navigate('/pro'));
+  };
+  
+  // Handle back to type selection (guarded)
+  const handleBackToTypeSelection = () => {
+    requestLeave(() => {
+      setDocumentType(null);
+      setShowTypeModal(true);
+      setSearchParams({});
+    });
   };
   
   // Show loading while profile loads

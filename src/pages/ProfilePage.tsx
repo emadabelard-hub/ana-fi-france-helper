@@ -264,28 +264,15 @@ const ProfilePage = () => {
     ? formData.full_name.charAt(0).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || '?';
 
-  /* ─── Unauthenticated state ─── */
+  /* ─── Session bootstrap state ─── */
   if (!user) {
     return (
-      <div className="min-h-screen bg-background py-12 px-4">
-        <div className="max-w-md mx-auto space-y-8">
-          <section className={cn("text-center space-y-5", isRTL && "font-[IBMPlexSansArabic]")}>
-            <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary/30 to-primary/10 border-2 border-primary/20 flex items-center justify-center shadow-lg">
-              <User className="h-12 w-12 text-primary/60" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground font-[Inter]">
-              {isRTL ? 'حسابي' : 'Mon compte'}
-            </h1>
-            <p className={cn("text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed", isRTL && "font-[IBMPlexSansArabic]")}>
-              {isRTL
-                ? "سجّل دخولك عشان تحفظ بياناتك وتستخدمها في الخطابات الإدارية"
-                : "Connectez-vous pour sauvegarder vos informations"}
-            </p>
-            <Button onClick={() => setShowAuthModal(true)} className="h-12 px-10 rounded-xl text-base font-semibold bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/20">
-              {isRTL ? "ادخل حسابك" : "Se connecter"}
-            </Button>
-          </section>
-          <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+      <div className="min-h-screen bg-background py-6 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className={cn("text-sm text-muted-foreground", isRTL && "font-[IBMPlexSansArabic]")}>
+            {isRTL ? 'جاري تهيئة الجلسة...' : 'Initialisation de la session...'}
+          </p>
         </div>
       </div>
     );

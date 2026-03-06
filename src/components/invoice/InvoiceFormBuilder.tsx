@@ -1001,7 +1001,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   };
 
   // Save as Draft (مسودة) to documents_comptables with status 'draft'
-  const [savingDraft, setSavingDraft] = useState(false);
   const saveAsDraft = async () => {
     if (!user) return;
     setSavingDraft(true);

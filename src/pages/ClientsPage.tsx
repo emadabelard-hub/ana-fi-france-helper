@@ -30,7 +30,7 @@ interface Client {
 
 const ClientsPage = () => {
   const { isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);

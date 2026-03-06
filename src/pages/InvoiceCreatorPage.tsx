@@ -10,12 +10,23 @@ import AuthModal from '@/components/auth/AuthModal';
 import DocumentTypeModal from '@/components/invoice/DocumentTypeModal';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
+import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 
 // Version 1.1.2 - Stable Build
 const InvoiceCreatorPage = () => {
@@ -34,6 +45,10 @@ const InvoiceCreatorPage = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [prefillData, setPrefillData] = useState<any>(null);
+  
+  // Navigation guard: block leaving when a document type is selected (form is active)
+  const hasUnsavedWork = !!documentType;
+  const { showLeaveDialog, requestLeave, confirmLeave, cancelLeave } = useNavigationGuard(hasUnsavedWork);
   
   // Sync URL with document type and check for prefill data
   useEffect(() => {
@@ -84,16 +99,19 @@ const InvoiceCreatorPage = () => {
     setSearchParams({ type });
   };
   
-  // Handle back to type selection
-  const handleBackToTypeSelection = () => {
-    setDocumentType(null);
-    setShowTypeModal(true);
-    setSearchParams({});
+  
+  // Handle navigation back to Pro page (guarded)
+  const handleNavigateBack = () => {
+    requestLeave(() => navigate('/pro'));
   };
   
-  // Handle navigation back to Pro page
-  const handleNavigateBack = () => {
-    navigate('/pro');
+  // Handle back to type selection (guarded)
+  const handleBackToTypeSelection = () => {
+    requestLeave(() => {
+      setDocumentType(null);
+      setShowTypeModal(true);
+      setSearchParams({});
+    });
   };
   
   // Show loading while profile loads
@@ -268,6 +286,31 @@ const InvoiceCreatorPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Navigation Guard Dialog */}
+      <AlertDialog open={showLeaveDialog} onOpenChange={(open) => !open && cancelLeave()}>
+        <AlertDialogContent className={cn(isRTL && "font-cairo")}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={cn(isRTL && "text-right")}>
+              {isRTL ? '⚠️ تنبيه' : '⚠️ Attention'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className={cn(isRTL && "text-right")}>
+              {isRTL 
+                ? 'عندك تعديلات مش محفوظة. متقلقش، البيانات محفوظة تلقائياً، بس هل أنت متأكد إنك عايز تطلع؟'
+                : 'Attention, vous avez des modifications non enregistrées. Voulez-vous vraiment quitter ?'
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className={cn(isRTL && "flex-row-reverse")}>
+            <AlertDialogCancel onClick={cancelLeave}>
+              {isRTL ? 'لا، كمّل' : 'Non, continuer'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLeave} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isRTL ? 'أيوه، اطلع' : 'Oui, quitter'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -104,11 +104,25 @@ const DocumentsListPage = () => {
 
   useEffect(() => { fetchDocuments(); }, [user, isAdmin]);
 
+  useEffect(() => {
+    const targetId = (location.state as { openDocumentId?: string } | null)?.openDocumentId;
+    if (!targetId || documents.length === 0) return;
+
+    const target = documents.find((doc) => doc.id === targetId);
+    if (target) {
+      setSelectedDocument(target);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, location.pathname, documents, navigate]);
+
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     const { error } = await (supabase.from('documents_comptables') as any).delete().eq('id', id);
     if (!error) {
       setDocuments(prev => prev.filter(d => d.id !== id));
+      if (selectedDocument?.id === id) {
+        setSelectedDocument(null);
+      }
       toast({ title: isRTL ? 'تم الحذف' : 'Supprimé', description: isRTL ? 'تم حذف المستند' : 'Document supprimé avec succès.' });
     }
     setDeletingId(null);
@@ -173,6 +187,10 @@ const DocumentsListPage = () => {
     navigate('/pro/invoice-creator?type=devis&prefill=quote');
   };
 
+  const handleOpenDocument = (doc: DocumentRow) => {
+    setSelectedDocument(doc);
+  };
+
   const devis = filteredDocuments.filter(d => d.document_type === 'devis');
   const factures = filteredDocuments.filter(d => d.document_type === 'facture');
 
@@ -219,33 +237,7 @@ const DocumentsListPage = () => {
       <div
         key={doc.id}
         className="group relative rounded-xl border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,12%)] p-4 hover:border-[hsl(45,80%,55%)/0.6] transition-all duration-300 hover:shadow-[0_0_20px_hsl(45,80%,55%,0.1)] cursor-pointer"
-        onClick={() => {
-          // Navigate to invoice creator with the document data pre-loaded for viewing
-          const docData = doc.document_data || {};
-          const items = docData.items || [];
-          const prefill = {
-            clientName: doc.client_name || docData.client?.name || '',
-            clientAddress: doc.client_address || docData.client?.address || '',
-            clientPhone: docData.client?.phone || '',
-            clientEmail: docData.client?.email || '',
-            clientSiren: docData.client?.siren || '',
-            clientTvaIntra: docData.client?.tvaIntra || '',
-            clientIsB2B: docData.client?.isB2B || false,
-            workSiteAddress: doc.work_site_address || docData.workSite?.address || '',
-            natureOperation: doc.nature_operation || docData.natureOperation || '',
-            items: items.map((item: any) => ({
-              designation_fr: item.designation_fr || '',
-              designation_ar: item.designation_ar || '',
-              quantity: item.quantity || 1,
-              unit: item.unit || 'm²',
-              unitPrice: item.unitPrice || 0,
-            })),
-            notes: docData.legalMentions || '',
-            source: 'view_existing',
-          };
-          sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
-          navigate(`/pro/invoice-creator?type=${doc.document_type}&prefill=quote`);
-        }}
+        onClick={() => handleOpenDocument(doc)}
       >
         {/* Gold accent line */}
         <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-[hsl(45,80%,55%)] to-transparent opacity-60" />

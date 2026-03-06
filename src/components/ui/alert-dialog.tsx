@@ -8,8 +8,6 @@ const AlertDialog = AlertDialogPrimitive.Root;
 
 const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
 
-const AlertDialogPortal = AlertDialogPrimitive.Portal;
-
 const AlertDialogOverlay = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
@@ -29,7 +27,7 @@ const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
 >(({ className, ...props }, ref) => (
-  <AlertDialogPortal>
+  <AlertDialogPrimitive.Portal>
     <AlertDialogOverlay />
     <AlertDialogPrimitive.Content
       ref={ref}
@@ -39,7 +37,7 @@ const AlertDialogContent = React.forwardRef<
       )}
       {...props}
     />
-  </AlertDialogPortal>
+  </AlertDialogPrimitive.Portal>
 ));
 AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName;
 
@@ -91,7 +89,6 @@ AlertDialogCancel.displayName = AlertDialogPrimitive.Cancel.displayName;
 
 export {
   AlertDialog,
-  AlertDialogPortal,
   AlertDialogOverlay,
   AlertDialogTrigger,
   AlertDialogContent,

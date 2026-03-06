@@ -43,7 +43,7 @@ const ArchiveAccountingPage = () => {
 
   // Fetch documents + expenses
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    if (authLoading || !user) { setLoading(false); return; }
     const fetchAll = async () => {
       setLoading(true);
 

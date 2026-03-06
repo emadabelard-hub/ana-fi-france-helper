@@ -82,6 +82,8 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
 
+  if (open) return null;
+
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {

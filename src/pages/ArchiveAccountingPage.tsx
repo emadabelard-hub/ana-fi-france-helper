@@ -23,7 +23,6 @@ const ArchiveAccountingPage = () => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [expenses, setExpenses] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAuth, setShowAuth] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [periodFilter, setPeriodFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('all');

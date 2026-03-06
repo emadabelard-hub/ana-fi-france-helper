@@ -28,20 +28,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const initSession = async () => {
       const { data: { session: existing } } = await supabase.auth.getSession();
-      if (existing) {
+      
+      // If anonymous session exists, sign out and re-login with real account
+      if (existing?.user?.is_anonymous) {
+        await supabase.auth.signOut();
+        // Fall through to auto-login below
+      } else if (existing) {
         setSession(existing);
         setUser(existing.user);
         setIsLoading(false);
-      } else {
-        // Auto-login silently — no auth wall
-        const { error } = await supabase.auth.signInWithPassword({ email: AUTO_EMAIL, password: AUTO_PASS });
-        if (error) {
-          // If account doesn't exist, create it then sign in
-          await supabase.auth.signUp({ email: AUTO_EMAIL, password: AUTO_PASS });
-          await supabase.auth.signInWithPassword({ email: AUTO_EMAIL, password: AUTO_PASS });
-        }
-        // onAuthStateChange will handle setting user/session
+        return;
       }
+
+      // Auto-login silently — no auth wall
+      const { error } = await supabase.auth.signInWithPassword({ email: AUTO_EMAIL, password: AUTO_PASS });
+      if (error) {
+        // If account doesn't exist, create it then sign in
+        await supabase.auth.signUp({ email: AUTO_EMAIL, password: AUTO_PASS });
+        await supabase.auth.signInWithPassword({ email: AUTO_EMAIL, password: AUTO_PASS });
+      }
+      // onAuthStateChange will handle setting user/session
     };
 
     initSession();

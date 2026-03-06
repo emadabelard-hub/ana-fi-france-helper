@@ -84,7 +84,7 @@ const DocumentsListPage = () => {
   }, [documents, periodFilter, searchQuery]);
 
   const fetchDocuments = async () => {
-    if (!user) { setLoading(false); return; }
+    if (authLoading || !user) { setLoading(false); return; }
     setLoading(true);
 
     const documentsQuery = (supabase

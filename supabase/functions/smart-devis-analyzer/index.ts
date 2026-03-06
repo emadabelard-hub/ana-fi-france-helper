@@ -327,9 +327,14 @@ RÈGLES DE CALCUL:
 - Remise: ${discountPercent || 0}%
 - Marge bénéficiaire: ${profitMarginPercent || 15}%
 
-POSTES OBLIGATOIRES à inclure:
-1. Matériaux (selon qualité choisie)
-2. Main d'œuvre
+RÈGLE CRITIQUE - INDÉPENDANCE DES CATÉGORIES:
+- Génère UNIQUEMENT des lignes pour les travaux EXPLICITEMENT présents dans l'analyse.
+- NE JAMAIS ajouter de catégories supplémentaires (ex: si l'analyse dit "parquet", ne pas ajouter "peinture").
+- Chaque item doit être directement lié aux travaux identifiés. Pas de bundles automatiques.
+
+POSTES À INCLURE (uniquement ceux liés aux travaux demandés):
+1. Matériaux (selon qualité choisie) - uniquement pour les travaux identifiés
+2. Main d'œuvre - uniquement pour les travaux identifiés
 3. Frais de déplacement (forfait)
 4. Nettoyage de chantier (forfait)
 5. Évacuation des déchets (forfait)

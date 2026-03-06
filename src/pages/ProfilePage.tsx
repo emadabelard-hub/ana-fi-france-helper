@@ -96,7 +96,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
 
   const [showApiKey, setShowApiKey] = useState(false);
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);

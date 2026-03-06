@@ -205,12 +205,18 @@ const ArchiveAccountingPage = () => {
     toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export CSV réussi' });
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+        <p className={cn('text-muted-foreground', isRTL && 'font-cairo')}>Chargement...</p>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-        <p className={cn('text-muted-foreground', isRTL && 'font-cairo')}>
-          {isRTL ? 'لا توجد وثائق بعد' : 'Aucun document pour le moment'}
-        </p>
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+        <p className={cn('text-muted-foreground', isRTL && 'font-cairo')}>Session invitée indisponible.</p>
       </div>
     );
   }

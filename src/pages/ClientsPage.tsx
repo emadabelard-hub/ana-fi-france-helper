@@ -122,13 +122,18 @@ const ClientsPage = () => {
     setShowForm(true);
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <p className="text-muted-foreground">{isRTL ? 'Chargement...' : 'Chargement...'}</p>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Users className="h-16 w-16 text-muted-foreground/30" />
-        <p className="text-muted-foreground">{isRTL ? 'سجل الدخول لإدارة العملاء' : 'Connectez-vous pour gérer vos clients'}</p>
-        <Button onClick={() => setShowAuth(true)}>{isRTL ? 'تسجيل الدخول' : 'Se connecter'}</Button>
-        <AuthModal open={showAuth} onOpenChange={setShowAuth} />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <p className="text-muted-foreground">{isRTL ? 'Session invitée indisponible.' : 'Session invitée indisponible.'}</p>
       </div>
     );
   }

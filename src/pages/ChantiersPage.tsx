@@ -78,13 +78,18 @@ const ChantiersPage = () => {
     })();
   }, [user, isAdmin, authLoading]);
 
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <p className="text-muted-foreground">Chargement...</p>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <HardHat className="h-16 w-16 text-muted-foreground/30" />
-        <p className="text-muted-foreground">{isRTL ? 'سجل الدخول لإدارة الورشات' : 'Connectez-vous pour gérer vos chantiers'}</p>
-        <Button onClick={() => setShowAuth(true)}>{isRTL ? 'تسجيل الدخول' : 'Se connecter'}</Button>
-        <AuthModal open={showAuth} onOpenChange={setShowAuth} />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <p className="text-muted-foreground">Session invitée indisponible.</p>
       </div>
     );
   }

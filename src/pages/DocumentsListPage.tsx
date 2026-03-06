@@ -217,14 +217,18 @@ const DocumentsListPage = () => {
     toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export réussi', description: isRTL ? 'تم تحميل ملف CSV' : 'Fichier CSV téléchargé' });
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+        <p className={cn('text-muted-foreground', isRTL && 'font-cairo')}>Chargement...</p>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-        <p className={cn("text-muted-foreground", isRTL && "font-cairo")}>
-          {isRTL ? 'سجل الدخول لعرض مستنداتك' : 'Connectez-vous pour voir vos documents'}
-        </p>
-        <Button onClick={() => setShowAuth(true)}>{isRTL ? 'تسجيل الدخول' : 'Se connecter'}</Button>
-        <AuthModal open={showAuth} onOpenChange={setShowAuth} />
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+        <p className={cn('text-muted-foreground', isRTL && 'font-cairo')}>Session invitée indisponible.</p>
       </div>
     );
   }

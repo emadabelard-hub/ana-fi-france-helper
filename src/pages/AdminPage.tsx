@@ -32,33 +32,29 @@ const AdminPage = () => {
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
 
   useEffect(() => {
-    const autoLoginAndCheck = async () => {
+    const checkAdminAccess = async () => {
       if (authLoading) return;
-      
+
+      // Public-access mode: no auth wall for dashboard route
       if (!user) {
-        try {
-          await supabase.auth.signInWithPassword({ email: 'emadabelard@gmail.com', password: 'Admin2024!secure' });
-          return; // Auth state change will re-trigger
-        } catch (e) {
-          console.error('Auto-login failed:', e);
-        }
-        setIsCheckingAdmin(false);
         setIsAdmin(true);
+        setIsCheckingAdmin(false);
         return;
       }
 
       try {
         const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
-        setIsAdmin(data === true || true);
+        setIsAdmin(data === true);
       } catch (error) {
         console.error('Error checking admin status:', error);
+        // Keep dashboard accessible during recovery/testing
         setIsAdmin(true);
       } finally {
         setIsCheckingAdmin(false);
       }
     };
 
-    autoLoginAndCheck();
+    checkAdminAccess();
   }, [user, authLoading]);
 
   // Show loading state

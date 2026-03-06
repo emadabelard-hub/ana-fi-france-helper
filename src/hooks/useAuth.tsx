@@ -23,40 +23,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isAnonymous = user?.is_anonymous === true;
 
   useEffect(() => {
-    const AUTO_EMAIL = 'emadabelard@gmail.com';
-    const AUTO_PASS = 'Admin2024!secure';
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setIsLoading(false);
+    });
 
     const initSession = async () => {
+      setIsLoading(true);
+
       const { data: { session: existing } } = await supabase.auth.getSession();
-      
-      // If anonymous session exists, sign out and re-login with real account
-      if (existing?.user?.is_anonymous) {
-        await supabase.auth.signOut();
-        // Fall through to auto-login below
-      } else if (existing) {
+      if (existing) {
         setSession(existing);
         setUser(existing.user);
         setIsLoading(false);
         return;
       }
 
-      // Auto-login silently — no auth wall
-      const { error } = await supabase.auth.signInWithPassword({ email: AUTO_EMAIL, password: AUTO_PASS });
+      // Development access: create a guest session silently (no login wall)
+      const { error } = await supabase.auth.signInAnonymously();
       if (error) {
-        // If account doesn't exist, create it then sign in
-        await supabase.auth.signUp({ email: AUTO_EMAIL, password: AUTO_PASS });
-        await supabase.auth.signInWithPassword({ email: AUTO_EMAIL, password: AUTO_PASS });
+        console.error('Anonymous bootstrap failed:', error);
+        setIsLoading(false);
       }
-      // onAuthStateChange will handle setting user/session
+      // onAuthStateChange will finalize state on success
     };
 
     initSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, []);

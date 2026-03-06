@@ -128,11 +128,17 @@ ANALYSE BILINGUE (Arabe Égyptien + Français):
   * باركي = Parquet
 - Le champ "analysis_fr" doit être en français professionnel
 
+RÈGLE CRITIQUE - INDÉPENDANCE DES CATÉGORIES:
+- Chaque catégorie de travaux (Parquet, Peinture, Plomberie, Carrelage, etc.) est STRICTEMENT INDÉPENDANTE.
+- NE JAMAIS ajouter automatiquement une catégorie non mentionnée. Par exemple: "Pose de parquet" = UNIQUEMENT des lignes liées au parquet. JAMAIS de peinture, enduit, ou autre sauf si EXPLICITEMENT demandé.
+- NE PAS créer de "packs rénovation" ou "bundles" par défaut. Chaque item doit correspondre à une tâche EXPLICITEMENT mentionnée par l'utilisateur ou CLAIREMENT visible sur la photo.
+- Si seul "parquet" est mentionné, les items doivent être: dépose ancien revêtement (si applicable), ragréage/préparation sol, fourniture parquet, pose parquet, plinthes (si mentionnées). RIEN D'AUTRE.
+
 ANALYSE DEMANDÉE:
-- Identifie le type de travaux visibles
+- Identifie UNIQUEMENT le type de travaux explicitement mentionnés ou clairement visibles
 - Estime les surfaces/dimensions (avec +10% marge si photo)
-- Liste les postes de travail nécessaires
-- Propose des matériaux adaptés
+- Liste UNIQUEMENT les postes directement liés aux travaux demandés
+- Propose des matériaux adaptés aux travaux demandés uniquement
 
 Réponds en JSON avec cette structure:
 {

@@ -38,6 +38,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          reference_number: string | null
           site_address: string | null
           status: string
           updated_at: string
@@ -48,6 +49,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          reference_number?: string | null
           site_address?: string | null
           status?: string
           updated_at?: string
@@ -58,6 +60,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          reference_number?: string | null
           site_address?: string | null
           status?: string
           updated_at?: string

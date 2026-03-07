@@ -198,7 +198,7 @@ const ClientDetailPage = () => {
         <DialogContent className={cn("max-w-md", isRTL && "font-cairo")}>
           <DialogHeader>
             <DialogTitle className={cn(isRTL && "text-right")}>
-              {editingChantier ? (isRTL ? 'تعديل الورشة' : 'Modifier le chantier') : (isRTL ? 'ورشة جديدة' : 'Nouveau chantier')}
+              {editingChantier ? (isRTL ? 'تعديل المشروع' : 'Modifier le chantier') : (isRTL ? 'مشروع جديد' : 'Nouveau chantier')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">

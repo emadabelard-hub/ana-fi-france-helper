@@ -213,7 +213,7 @@ const ClientDetailPage = () => {
               </SelectContent>
             </Select>
             <Button className="w-full" onClick={handleSave} disabled={!form.name.trim()}>
-              {editingChantier ? (isRTL ? 'حفظ' : 'Enregistrer') : (isRTL ? 'إضافة' : 'Ajouter')}
+              {isRTL ? 'حفظ المشروع' : 'Enregistrer le chantier'}
             </Button>
           </div>
         </DialogContent>

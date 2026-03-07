@@ -24,7 +24,7 @@ const AppSidebar = () => {
     {
       to: '/chantiers',
       icon: HardHat,
-      label: isRTL ? 'الورشات' : 'Chantiers',
+      label: isRTL ? 'مشاريعي (الشانتيات)' : 'Chantiers',
       isActive: location.pathname.startsWith('/chantiers'),
     },
     {

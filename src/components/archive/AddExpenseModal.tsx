@@ -348,7 +348,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             </Label>
             <Select value={selectedChantierId} onValueChange={setSelectedChantierId} disabled={!selectedClientId || chantiersList.length === 0}>
               <SelectTrigger className="bg-background border-border text-sm">
-                <SelectValue placeholder={isRTL ? 'اختر ورشة...' : 'Choisir un chantier...'} />
+                <SelectValue placeholder={isRTL ? 'اختر مشروع...' : 'Choisir un chantier...'} />
               </SelectTrigger>
               <SelectContent>
                 {chantiersList.map(c => (

@@ -58,7 +58,7 @@ const ChantierDetailPage = () => {
     return <div className="text-center py-12 text-muted-foreground">{isRTL ? 'المشروع غير موجود' : 'Chantier introuvable'}</div>;
   }
 
-  const statusLabel = chantier.status === 'active' ? (isRTL ? 'نشط' : 'Actif') : chantier.status === 'completed' ? (isRTL ? 'مكتمل' : 'Terminé') : (isRTL ? 'أرشيف' : 'Archivé');
+  const statusLabel = chantier.status === 'active' ? (isRTL ? 'جاري' : 'En cours') : chantier.status === 'completed' ? (isRTL ? 'مكتمل' : 'Terminé') : chantier.status === 'devis_envoye' ? (isRTL ? 'تقدير مُرسل' : 'Devis envoyé') : (isRTL ? 'أرشيف' : 'Archivé');
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden">

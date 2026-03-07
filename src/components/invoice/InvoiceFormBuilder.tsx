@@ -1377,7 +1377,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 </Label>
                 <Select value={selectedChantierId} onValueChange={handleChantierSelect}>
                   <SelectTrigger className="bg-background border-border">
-                    <SelectValue placeholder={isRTL ? 'اختر ورشة...' : 'Choisir un chantier...'} />
+                    <SelectValue placeholder={isRTL ? 'اختر مشروع...' : 'Choisir un chantier...'} />
                   </SelectTrigger>
                   <SelectContent>
                     {chantiersList.map(c => (

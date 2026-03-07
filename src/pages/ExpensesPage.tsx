@@ -278,7 +278,7 @@ const ExpensesPage = () => {
               >
                 <HardHat className="h-4 w-4 text-primary" />
                 <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
-                  {isRTL ? 'الورشات' : 'Chantiers'}
+                  {isRTL ? 'مشاريعي (الشانتيات)' : 'Chantiers'}
                 </span>
               </Button>
             </div>

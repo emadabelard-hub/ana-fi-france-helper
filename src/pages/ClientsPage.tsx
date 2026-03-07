@@ -214,7 +214,7 @@ const ClientsPage = () => {
                       {client.siret && <span>SIRET: {client.siret}</span>}
                       {client.chantiers_count! > 0 && (
                         <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded-full text-[10px] font-medium">
-                          {client.chantiers_count} {isRTL ? 'ورشة' : 'chantier(s)'}
+                          {client.chantiers_count} {isRTL ? 'مشروع' : 'chantier(s)'}
                         </span>
                       )}
                     </div>

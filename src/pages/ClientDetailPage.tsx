@@ -179,9 +179,11 @@ const ClientDetailPage = () => {
                       <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingChantier(ch); setForm({ name: ch.name, site_address: ch.site_address || '', status: ch.status }); setShowForm(true); }}>
                         <Pencil className="h-4 w-4 mr-2" /> {isRTL ? 'تعديل' : 'Modifier'}
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={e => { e.stopPropagation(); handleDelete(ch.id); }}>
-                        <Trash2 className="h-4 w-4 mr-2" /> {isRTL ? 'حذف' : 'Supprimer'}
-                      </DropdownMenuItem>
+                      {isRealAdmin && (
+                        <DropdownMenuItem className="text-destructive" onClick={e => { e.stopPropagation(); handleDelete(ch.id); }}>
+                          <Trash2 className="h-4 w-4 mr-2" /> {isRTL ? 'حذف' : 'Supprimer'}
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

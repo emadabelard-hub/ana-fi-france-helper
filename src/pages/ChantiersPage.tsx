@@ -35,11 +35,15 @@ const ChantiersPage = () => {
   const { isRTL } = useLanguage();
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [chantiers, setChantiers] = useState<ChantierRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('active');
-  
+  const [showForm, setShowForm] = useState(false);
+  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
+  const [form, setForm] = useState({ name: '', client_id: '', site_address: '', status: 'active' });
+  const [saving, setSaving] = useState(false);
 
   const [isAdmin, setIsAdmin] = useState(false);
 

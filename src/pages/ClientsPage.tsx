@@ -15,6 +15,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import AdminLoginModal from '@/components/auth/AdminLoginModal';
 
 interface Client {
   id: string;

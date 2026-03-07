@@ -118,9 +118,9 @@ const ChantiersPage = () => {
 
       <Tabs value={tab} onValueChange={setTab} className="mb-3">
         <TabsList className="w-full">
-          <TabsTrigger value="active" className="flex-1">{isRTL ? 'نشط' : 'Actifs'}</TabsTrigger>
+          <TabsTrigger value="active" className="flex-1">{isRTL ? 'جاري' : 'En cours'}</TabsTrigger>
           <TabsTrigger value="completed" className="flex-1">{isRTL ? 'مكتمل' : 'Terminés'}</TabsTrigger>
-          <TabsTrigger value="archived" className="flex-1">{isRTL ? 'أرشيف' : 'Archivés'}</TabsTrigger>
+          <TabsTrigger value="devis_envoye" className="flex-1">{isRTL ? 'تقدير مُرسل' : 'Devis envoyé'}</TabsTrigger>
         </TabsList>
       </Tabs>
 

@@ -154,7 +154,7 @@ const ClientDetailPage = () => {
         {chantiers.length === 0 ? (
           <div className="text-center py-8">
             <HardHat className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-            <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد ورشات' : 'Aucun chantier'}</p>
+            <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد مشاريع' : 'Aucun chantier'}</p>
           </div>
         ) : (
           chantiers.map(ch => (

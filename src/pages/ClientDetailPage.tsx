@@ -182,7 +182,7 @@ const ClientDetailPage = () => {
                     {ch.site_address && <p className="text-xs text-muted-foreground truncate mt-0.5">{ch.site_address}</p>}
                   </div>
                   <Badge variant="outline" className={cn("text-[10px] shrink-0", statusColors[ch.status] || '')}>
-                    {ch.status === 'active' ? (isRTL ? 'جاري' : 'En cours') : ch.status === 'completed' ? (isRTL ? 'مكتمل' : 'Terminé') : ch.status === 'devis_envoye' ? (isRTL ? 'تقدير مُرسل' : 'Devis envoyé') : (isRTL ? 'أرشيف' : 'Archivé')}
+                    {isRTL ? (statusLabels[ch.status]?.ar || ch.status) : (statusLabels[ch.status]?.fr || ch.status)}
                   </Badge>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>

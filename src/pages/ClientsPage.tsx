@@ -266,13 +266,11 @@ const ClientsPage = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-};
-
       <AdminLoginModal open={showAdminLogin} onOpenChange={setShowAdminLogin} onSuccess={() => { setIsRealAdmin(true); setShowAdminLogin(false); }} />
     </div>
   );
 };
+
+export default ClientsPage;
 
 export default ClientsPage;

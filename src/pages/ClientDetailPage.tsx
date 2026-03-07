@@ -19,6 +19,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import AdminLoginModal from '@/components/auth/AdminLoginModal';
 
 interface Chantier {
   id: string;

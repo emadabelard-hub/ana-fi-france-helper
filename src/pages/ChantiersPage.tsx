@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HardHat, Search, ArrowLeft, ArrowRight, MapPin } from 'lucide-react';
+import { HardHat, Search, ArrowLeft, ArrowRight, MapPin, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -32,11 +35,15 @@ const ChantiersPage = () => {
   const { isRTL } = useLanguage();
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [chantiers, setChantiers] = useState<ChantierRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('active');
-  
+  const [showForm, setShowForm] = useState(false);
+  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
+  const [form, setForm] = useState({ name: '', client_id: '', site_address: '', status: 'active' });
+  const [saving, setSaving] = useState(false);
 
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -52,32 +59,47 @@ const ChantiersPage = () => {
     })();
   }, [user]);
 
+  const fetchData = async () => {
+    setLoading(true);
+    const chantiersQuery = supabase.from('chantiers').select('*').order('created_at', { ascending: false });
+    const clientsQuery = supabase.from('clients').select('id, name');
+    if (!isAdmin) {
+      chantiersQuery.eq('user_id', user!.id);
+      clientsQuery.eq('user_id', user!.id);
+    }
+    const [{ data: ch }, { data: cl }] = await Promise.all([chantiersQuery, clientsQuery]);
+    const clientMap: Record<string, string> = {};
+    (cl || []).forEach(c => { clientMap[c.id] = c.name; });
+    setClients(cl || []);
+    setChantiers((ch || []).map(c => ({ ...c, client_name: clientMap[c.client_id] || '' })));
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (authLoading || !user) return;
-    (async () => {
-      setLoading(true);
-
-      const chantiersQuery = supabase
-        .from('chantiers')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      const clientsQuery = supabase
-        .from('clients')
-        .select('id, name');
-
-      if (!isAdmin) {
-        chantiersQuery.eq('user_id', user.id);
-        clientsQuery.eq('user_id', user.id);
-      }
-
-      const [{ data: ch }, { data: cl }] = await Promise.all([chantiersQuery, clientsQuery]);
-      const clientMap: Record<string, string> = {};
-      cl?.forEach(c => { clientMap[c.id] = c.name; });
-      setChantiers((ch || []).map(c => ({ ...c, client_name: clientMap[c.client_id] || '' })));
-      setLoading(false);
-    })();
+    fetchData();
   }, [user, isAdmin, authLoading]);
+
+  const handleSave = async () => {
+    if (!user || !form.name.trim() || !form.client_id) return;
+    setSaving(true);
+    const { error } = await supabase.from('chantiers').insert({
+      user_id: user.id,
+      name: form.name.trim(),
+      client_id: form.client_id,
+      site_address: form.site_address.trim() || null,
+      status: form.status,
+    });
+    setSaving(false);
+    if (error) {
+      toast({ title: isRTL ? 'خطأ' : 'Erreur', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: isRTL ? 'تم الحفظ بنجاح' : 'Chantier enregistré avec succès ✓' });
+    setShowForm(false);
+    setForm({ name: '', client_id: '', site_address: '', status: 'active' });
+    fetchData();
+  };
 
   if (authLoading) {
     return (
@@ -115,6 +137,10 @@ const ChantiersPage = () => {
             {isRTL ? `${chantiers.length} مشروع` : `${chantiers.length} chantier${chantiers.length > 1 ? 's' : ''}`}
           </p>
         </div>
+        <Button size="sm" onClick={() => setShowForm(true)} className="shrink-0 gap-1.5">
+          <Plus className="h-4 w-4" />
+          {isRTL ? 'مشروع جديد' : 'Nouveau Projet'}
+        </Button>
       </section>
 
       <Tabs value={tab} onValueChange={setTab} className="mb-3">
@@ -167,6 +193,47 @@ const ChantiersPage = () => {
           ))
         )}
       </div>
+
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{isRTL ? 'مشروع جديد' : 'Nouveau Projet'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'اسم المشروع' : 'Nom du projet'}</label>
+              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Rénovation Cuisine - Client X" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'العميل' : 'Client lié'}</label>
+              <Select value={form.client_id} onValueChange={v => setForm(f => ({ ...f, client_id: v }))}>
+                <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر العميل' : 'Sélectionner un client'} /></SelectTrigger>
+                <SelectContent>
+                  {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'عنوان الموقع' : 'Adresse du chantier'}</label>
+              <Input value={form.site_address} onChange={e => setForm(f => ({ ...f, site_address: e.target.value }))} placeholder="Ex: 12 Rue de Paris, 75015" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'الحالة' : 'Statut'}</label>
+              <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">{isRTL ? 'جاري' : 'En cours'}</SelectItem>
+                  <SelectItem value="completed">{isRTL ? 'مكتمل' : 'Terminé'}</SelectItem>
+                  <SelectItem value="devis_envoye">{isRTL ? 'تقدير مُرسل' : 'Devis envoyé'}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={handleSave} disabled={saving || !form.name.trim() || !form.client_id} className="w-full">
+              {saving ? (isRTL ? 'جاري الحفظ...' : 'Enregistrement...') : (isRTL ? 'حفظ المشروع' : 'Enregistrer le chantier')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

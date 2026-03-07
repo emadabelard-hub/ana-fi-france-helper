@@ -135,7 +135,7 @@ const ChantiersPage = () => {
         ) : filtered.length === 0 ? (
           <div className="text-center py-12">
             <HardHat className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-            <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد ورشات' : 'Aucun chantier'}</p>
+            <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد مشاريع' : 'Aucun chantier'}</p>
           </div>
         ) : (
           filtered.map(ch => (

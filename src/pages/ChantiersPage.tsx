@@ -148,7 +148,10 @@ const ChantiersPage = () => {
                   </div>
                   <div className={cn("flex-1 min-w-0", isRTL && "text-right")}>
                     <h3 className="font-semibold text-foreground text-sm truncate">{ch.name}</h3>
-                    <p className="text-xs text-muted-foreground truncate">{ch.client_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {(ch as any).reference_number && <span className="font-mono text-[10px] mr-1.5">{(ch as any).reference_number}</span>}
+                      {ch.client_name}
+                    </p>
                     {ch.site_address && (
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
                         <MapPin className="h-3 w-3" /> {ch.site_address}

@@ -72,8 +72,9 @@ const ChantierDetailPage = () => {
         </div>
         <div className={cn("flex-1 min-w-0", isRTL && "text-right")}>
           <h1 className={cn("text-lg font-bold text-foreground truncate", isRTL && "font-cairo")}>{chantier.name}</h1>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
             {client && <span>{client.name}</span>}
+            {chantier.reference_number && <Badge variant="secondary" className="text-[10px] font-mono">{chantier.reference_number}</Badge>}
             <Badge variant="outline" className="text-[10px]">{statusLabel}</Badge>
           </div>
         </div>

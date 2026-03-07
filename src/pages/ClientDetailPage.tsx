@@ -166,6 +166,7 @@ const ClientDetailPage = () => {
                   </div>
                   <div className={cn("flex-1 min-w-0", isRTL && "text-right")}>
                     <h3 className="font-semibold text-foreground text-sm truncate">{ch.name}</h3>
+                    {(ch as any).reference_number && <p className="text-[10px] text-muted-foreground font-mono">{(ch as any).reference_number}</p>}
                     {ch.site_address && <p className="text-xs text-muted-foreground truncate mt-0.5">{ch.site_address}</p>}
                   </div>
                   <Badge variant="outline" className={cn("text-[10px] shrink-0", statusColors[ch.status] || '')}>

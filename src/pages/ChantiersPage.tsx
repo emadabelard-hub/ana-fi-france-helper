@@ -128,8 +128,13 @@ const ChantiersPage = () => {
     );
   }
 
+  const tabStatuses: Record<string, string[]> = {
+    etude: ['etude', 'devis_envoye'],
+    en_cours_travaux: ['en_cours_travaux'],
+    facture_envoyee: ['facture_envoyee', 'paiement_attente', 'facture_payee'],
+  };
   const filtered = chantiers.filter(c =>
-    c.status === tab &&
+    (tabStatuses[tab] || []).includes(c.status) &&
     (c.name.toLowerCase().includes(search.toLowerCase()) || (c.client_name || '').toLowerCase().includes(search.toLowerCase()))
   );
 

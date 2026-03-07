@@ -155,10 +155,10 @@ const ChantiersPage = () => {
       </section>
 
       <Tabs value={tab} onValueChange={setTab} className="mb-3">
-        <TabsList className="w-full">
-          <TabsTrigger value="active" className="flex-1">{isRTL ? 'جاري' : 'En cours'}</TabsTrigger>
-          <TabsTrigger value="completed" className="flex-1">{isRTL ? 'مكتمل' : 'Terminés'}</TabsTrigger>
-          <TabsTrigger value="devis_envoye" className="flex-1">{isRTL ? 'تقدير مُرسل' : 'Devis envoyé'}</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-3">
+          <TabsTrigger value="etude" className="text-xs">{isRTL ? 'قيد الدراسة' : 'Étude'}</TabsTrigger>
+          <TabsTrigger value="en_cours_travaux" className="text-xs">{isRTL ? 'قيد التنفيذ' : 'En cours'}</TabsTrigger>
+          <TabsTrigger value="facture_envoyee" className="text-xs">{isRTL ? 'فواتير' : 'Factures'}</TabsTrigger>
         </TabsList>
       </Tabs>
 

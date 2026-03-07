@@ -142,7 +142,7 @@ const ClientDetailPage = () => {
       <div className={cn("flex items-center justify-between mb-3", isRTL && "flex-row-reverse")}>
         <h2 className={cn("text-base font-semibold text-foreground", isRTL && "font-cairo")}>
           <HardHat className="h-4 w-4 inline mr-1.5" />
-          {isRTL ? 'الورشات' : 'Chantiers'} ({chantiers.length})
+          {isRTL ? 'مشاريعي (الشانتيات)' : 'Chantiers'} ({chantiers.length})
         </h2>
         <Button size="sm" variant="outline" onClick={() => { setEditingChantier(null); setForm({ name: '', site_address: '', status: 'active' }); setShowForm(true); }}>
           <Plus className="h-4 w-4 mr-1" /> {isRTL ? 'ورشة جديدة' : 'Nouveau'}

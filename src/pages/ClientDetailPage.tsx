@@ -95,7 +95,7 @@ const ClientDetailPage = () => {
     }
     setShowForm(false);
     setEditingChantier(null);
-    setForm({ name: '', site_address: '', status: 'active' });
+    setForm({ name: '', site_address: '', status: 'etude' });
     fetchData();
   };
 

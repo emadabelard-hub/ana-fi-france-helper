@@ -58,7 +58,20 @@ const ChantierDetailPage = () => {
     return <div className="text-center py-12 text-muted-foreground">{isRTL ? 'المشروع غير موجود' : 'Chantier introuvable'}</div>;
   }
 
-  const statusLabel = chantier.status === 'active' ? (isRTL ? 'جاري' : 'En cours') : chantier.status === 'completed' ? (isRTL ? 'مكتمل' : 'Terminé') : chantier.status === 'devis_envoye' ? (isRTL ? 'تقدير مُرسل' : 'Devis envoyé') : (isRTL ? 'أرشيف' : 'Archivé');
+  const statusLabelMap: Record<string, { fr: string; ar: string }> = {
+    etude: { fr: 'Étude', ar: 'قيد الدراسة' },
+    devis_envoye: { fr: 'Devis envoyé', ar: 'تم ارسال الدوفي' },
+    en_cours_travaux: { fr: 'En cours de travaux', ar: 'قيد التنفيذ' },
+    facture_envoyee: { fr: 'Facture envoyée', ar: 'تم ارسال الفاتورة' },
+    paiement_attente: { fr: 'Paiement en attente', ar: 'فاتورة قيد التحصيل' },
+    facture_payee: { fr: 'Facture payée', ar: 'تم تحصيل الفاتورة' },
+  };
+  const statusColorMap: Record<string, string> = {
+    facture_envoyee: 'bg-blue-500/10 text-blue-600',
+    paiement_attente: 'bg-orange-500/10 text-orange-600',
+    facture_payee: 'bg-green-500/10 text-green-600',
+  };
+  const statusLabel = isRTL ? (statusLabelMap[chantier.status]?.ar || chantier.status) : (statusLabelMap[chantier.status]?.fr || chantier.status);
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden">
@@ -75,7 +88,7 @@ const ChantierDetailPage = () => {
           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
             {client && <span>{client.name}</span>}
             {chantier.reference_number && <Badge variant="secondary" className="text-[10px] font-mono">{chantier.reference_number}</Badge>}
-            <Badge variant="outline" className="text-[10px]">{statusLabel}</Badge>
+            <Badge variant="outline" className={cn("text-[10px]", statusColorMap[chantier.status] || '')}>{statusLabel}</Badge>
           </div>
         </div>
       </section>

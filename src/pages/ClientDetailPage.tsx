@@ -30,9 +30,21 @@ interface Chantier {
 }
 
 const statusColors: Record<string, string> = {
-  active: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  completed: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  archived: 'bg-muted text-muted-foreground border-border',
+  etude: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+  devis_envoye: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+  en_cours_travaux: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  facture_envoyee: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  paiement_attente: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  facture_payee: 'bg-green-500/10 text-green-600 border-green-500/20',
+};
+
+const statusLabels: Record<string, { fr: string; ar: string }> = {
+  etude: { fr: 'Étude', ar: 'قيد الدراسة' },
+  devis_envoye: { fr: 'Devis envoyé', ar: 'تم ارسال الدوفي' },
+  en_cours_travaux: { fr: 'En cours de travaux', ar: 'قيد التنفيذ' },
+  facture_envoyee: { fr: 'Facture envoyée', ar: 'تم ارسال الفاتورة' },
+  paiement_attente: { fr: 'Paiement en attente', ar: 'فاتورة قيد التحصيل' },
+  facture_payee: { fr: 'Facture payée', ar: 'تم تحصيل الفاتورة' },
 };
 
 const ClientDetailPage = () => {
@@ -46,7 +58,7 @@ const ClientDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingChantier, setEditingChantier] = useState<Chantier | null>(null);
-  const [form, setForm] = useState({ name: '', site_address: '', status: 'active' });
+  const [form, setForm] = useState({ name: '', site_address: '', status: 'etude' });
   const [isRealAdmin, setIsRealAdmin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
 
@@ -83,7 +95,7 @@ const ClientDetailPage = () => {
     }
     setShowForm(false);
     setEditingChantier(null);
-    setForm({ name: '', site_address: '', status: 'active' });
+    setForm({ name: '', site_address: '', status: 'etude' });
     fetchData();
   };
 
@@ -170,7 +182,7 @@ const ClientDetailPage = () => {
                     {ch.site_address && <p className="text-xs text-muted-foreground truncate mt-0.5">{ch.site_address}</p>}
                   </div>
                   <Badge variant="outline" className={cn("text-[10px] shrink-0", statusColors[ch.status] || '')}>
-                    {ch.status === 'active' ? (isRTL ? 'جاري' : 'En cours') : ch.status === 'completed' ? (isRTL ? 'مكتمل' : 'Terminé') : ch.status === 'devis_envoye' ? (isRTL ? 'تقدير مُرسل' : 'Devis envoyé') : (isRTL ? 'أرشيف' : 'Archivé')}
+                    {isRTL ? (statusLabels[ch.status]?.ar || ch.status) : (statusLabels[ch.status]?.fr || ch.status)}
                   </Badge>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
@@ -208,9 +220,9 @@ const ClientDetailPage = () => {
             <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">{isRTL ? 'جاري' : 'En cours'}</SelectItem>
-                <SelectItem value="completed">{isRTL ? 'مكتمل' : 'Terminé'}</SelectItem>
-                <SelectItem value="devis_envoye">{isRTL ? 'تقدير مُرسل' : 'Devis envoyé'}</SelectItem>
+                {Object.entries(statusLabels).map(([key, labels]) => (
+                  <SelectItem key={key} value={key}>{isRTL ? labels.ar : labels.fr}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button className="w-full" onClick={handleSave} disabled={!form.name.trim()}>

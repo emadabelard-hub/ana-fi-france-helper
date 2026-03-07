@@ -193,6 +193,47 @@ const ChantiersPage = () => {
           ))
         )}
       </div>
+
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{isRTL ? 'مشروع جديد' : 'Nouveau Projet'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'اسم المشروع' : 'Nom du projet'}</label>
+              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Rénovation Cuisine - Client X" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'العميل' : 'Client lié'}</label>
+              <Select value={form.client_id} onValueChange={v => setForm(f => ({ ...f, client_id: v }))}>
+                <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر العميل' : 'Sélectionner un client'} /></SelectTrigger>
+                <SelectContent>
+                  {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'عنوان الموقع' : 'Adresse du chantier'}</label>
+              <Input value={form.site_address} onChange={e => setForm(f => ({ ...f, site_address: e.target.value }))} placeholder="Ex: 12 Rue de Paris, 75015" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'الحالة' : 'Statut'}</label>
+              <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">{isRTL ? 'جاري' : 'En cours'}</SelectItem>
+                  <SelectItem value="completed">{isRTL ? 'مكتمل' : 'Terminé'}</SelectItem>
+                  <SelectItem value="devis_envoye">{isRTL ? 'تقدير مُرسل' : 'Devis envoyé'}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={handleSave} disabled={saving || !form.name.trim() || !form.client_id} className="w-full">
+              {saving ? (isRTL ? 'جاري الحفظ...' : 'Enregistrement...') : (isRTL ? 'حفظ المشروع' : 'Enregistrer le chantier')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

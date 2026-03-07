@@ -30,9 +30,21 @@ interface Chantier {
 }
 
 const statusColors: Record<string, string> = {
-  active: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  completed: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  archived: 'bg-muted text-muted-foreground border-border',
+  etude: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+  devis_envoye: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+  en_cours_travaux: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  facture_envoyee: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  paiement_attente: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  facture_payee: 'bg-green-500/10 text-green-600 border-green-500/20',
+};
+
+const statusLabels: Record<string, { fr: string; ar: string }> = {
+  etude: { fr: 'Étude', ar: 'قيد الدراسة' },
+  devis_envoye: { fr: 'Devis envoyé', ar: 'تم ارسال الدوفي' },
+  en_cours_travaux: { fr: 'En cours de travaux', ar: 'قيد التنفيذ' },
+  facture_envoyee: { fr: 'Facture envoyée', ar: 'تم ارسال الفاتورة' },
+  paiement_attente: { fr: 'Paiement en attente', ar: 'فاتورة قيد التحصيل' },
+  facture_payee: { fr: 'Facture payée', ar: 'تم تحصيل الفاتورة' },
 };
 
 const ClientDetailPage = () => {

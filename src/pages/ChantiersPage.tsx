@@ -53,7 +53,7 @@ const ChantiersPage = () => {
   const [tab, setTab] = useState('active');
   const [showForm, setShowForm] = useState(false);
   const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
-  const [form, setForm] = useState({ name: '', client_id: '', site_address: '', status: 'active' });
+  const [form, setForm] = useState({ name: '', client_id: '', site_address: '', status: 'etude' });
   const [saving, setSaving] = useState(false);
 
   const [isAdmin, setIsAdmin] = useState(false);

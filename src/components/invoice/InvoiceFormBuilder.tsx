@@ -1373,7 +1373,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             {selectedClientId && chantiersList.length > 0 && (
               <div className="space-y-1.5">
                 <Label className={cn("text-xs font-bold text-muted-foreground", isRTL && "text-right block font-cairo")}>
-                  {isRTL ? 'اختر الورشة (اختياري)' : 'Sélectionner un chantier (optionnel)'}
+                  {isRTL ? 'اختر المشروع (اختياري)' : 'Sélectionner un chantier (optionnel)'}
                 </Label>
                 <Select value={selectedChantierId} onValueChange={handleChantierSelect}>
                   <SelectTrigger className="bg-background border-border">

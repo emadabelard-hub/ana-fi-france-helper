@@ -202,7 +202,7 @@ const ClientDetailPage = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Input placeholder={isRTL ? 'اسم الورشة *' : 'Nom du chantier *'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            <Input placeholder={isRTL ? 'اسم المشروع *' : 'Nom du chantier *'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             <Input placeholder={isRTL ? 'عنوان الموقع' : 'Adresse du site'} value={form.site_address} onChange={e => setForm(f => ({ ...f, site_address: e.target.value }))} />
             <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>

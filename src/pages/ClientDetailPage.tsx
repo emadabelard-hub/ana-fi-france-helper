@@ -57,7 +57,6 @@ const ClientDetailPage = () => {
       setIsRealAdmin(data === true);
     })();
   }, [user]);
-  const [form, setForm] = useState({ name: '', site_address: '', status: 'active' });
 
   const fetchData = async () => {
     if (!user || !id) return;

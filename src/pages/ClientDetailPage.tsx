@@ -218,6 +218,7 @@ const ClientDetailPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <AdminLoginModal open={showAdminLogin} onOpenChange={setShowAdminLogin} onSuccess={() => { setIsRealAdmin(true); setShowAdminLogin(false); }} />
     </div>
   );
 };

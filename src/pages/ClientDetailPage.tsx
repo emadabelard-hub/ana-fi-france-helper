@@ -47,6 +47,17 @@ const ClientDetailPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingChantier, setEditingChantier] = useState<Chantier | null>(null);
   const [form, setForm] = useState({ name: '', site_address: '', status: 'active' });
+  const [isRealAdmin, setIsRealAdmin] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+
+  useEffect(() => {
+    if (!user || user.is_anonymous) { setIsRealAdmin(false); return; }
+    (async () => {
+      const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
+      setIsRealAdmin(data === true);
+    })();
+  }, [user]);
+  const [form, setForm] = useState({ name: '', site_address: '', status: 'active' });
 
   const fetchData = async () => {
     if (!user || !id) return;

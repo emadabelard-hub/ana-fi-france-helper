@@ -88,7 +88,7 @@ const ChantierDetailPage = () => {
           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
             {client && <span>{client.name}</span>}
             {chantier.reference_number && <Badge variant="secondary" className="text-[10px] font-mono">{chantier.reference_number}</Badge>}
-            <Badge variant="outline" className="text-[10px]">{statusLabel}</Badge>
+            <Badge variant="outline" className={cn("text-[10px]", statusColorMap[chantier.status] || '')}>{statusLabel}</Badge>
           </div>
         </div>
       </section>

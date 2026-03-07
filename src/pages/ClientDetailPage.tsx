@@ -220,9 +220,9 @@ const ClientDetailPage = () => {
             <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">{isRTL ? 'جاري' : 'En cours'}</SelectItem>
-                <SelectItem value="completed">{isRTL ? 'مكتمل' : 'Terminé'}</SelectItem>
-                <SelectItem value="devis_envoye">{isRTL ? 'تقدير مُرسل' : 'Devis envoyé'}</SelectItem>
+                {Object.entries(statusLabels).map(([key, labels]) => (
+                  <SelectItem key={key} value={key}>{isRTL ? labels.ar : labels.fr}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button className="w-full" onClick={handleSave} disabled={!form.name.trim()}>

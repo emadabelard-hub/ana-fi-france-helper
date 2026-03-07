@@ -137,6 +137,10 @@ const ChantiersPage = () => {
             {isRTL ? `${chantiers.length} مشروع` : `${chantiers.length} chantier${chantiers.length > 1 ? 's' : ''}`}
           </p>
         </div>
+        <Button size="sm" onClick={() => setShowForm(true)} className="shrink-0 gap-1.5">
+          <Plus className="h-4 w-4" />
+          {isRTL ? 'مشروع جديد' : 'Nouveau Projet'}
+        </Button>
       </section>
 
       <Tabs value={tab} onValueChange={setTab} className="mb-3">

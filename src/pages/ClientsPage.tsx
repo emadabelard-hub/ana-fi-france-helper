@@ -42,16 +42,20 @@ const ClientsPage = () => {
   const [form, setForm] = useState({ name: '', siret: '', address: '', contact_name: '', contact_phone: '', contact_email: '' });
 
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isRealAdmin, setIsRealAdmin] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   useEffect(() => {
     if (!user || user.is_anonymous) {
       setIsAdmin(true);
+      setIsRealAdmin(false);
       return;
     }
 
     (async () => {
       const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
       setIsAdmin(data === true);
+      setIsRealAdmin(data === true);
     })();
   }, [user]);
 

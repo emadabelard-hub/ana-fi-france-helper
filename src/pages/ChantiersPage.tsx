@@ -24,6 +24,7 @@ interface ChantierRow {
 const statusColors: Record<string, string> = {
   active: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
   completed: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  devis_envoye: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   archived: 'bg-muted text-muted-foreground border-border',
 };
 
@@ -109,18 +110,18 @@ const ChantiersPage = () => {
           <HardHat className="h-5 w-5 text-amber-600" />
         </div>
         <div className={cn("flex-1", isRTL && "text-right")}>
-          <h1 className={cn("text-lg font-bold text-foreground", isRTL && "font-cairo")}>{isRTL ? 'الورشات' : 'Chantiers'}</h1>
+          <h1 className={cn("text-lg font-bold text-foreground", isRTL && "font-cairo")}>{isRTL ? 'مشاريعي (الشانتيات)' : 'Chantiers'}</h1>
           <p className={cn("text-xs text-muted-foreground", isRTL && "font-cairo")}>
-            {isRTL ? `${chantiers.length} ورشة` : `${chantiers.length} chantier${chantiers.length > 1 ? 's' : ''}`}
+            {isRTL ? `${chantiers.length} مشروع` : `${chantiers.length} chantier${chantiers.length > 1 ? 's' : ''}`}
           </p>
         </div>
       </section>
 
       <Tabs value={tab} onValueChange={setTab} className="mb-3">
         <TabsList className="w-full">
-          <TabsTrigger value="active" className="flex-1">{isRTL ? 'نشط' : 'Actifs'}</TabsTrigger>
+          <TabsTrigger value="active" className="flex-1">{isRTL ? 'جاري' : 'En cours'}</TabsTrigger>
           <TabsTrigger value="completed" className="flex-1">{isRTL ? 'مكتمل' : 'Terminés'}</TabsTrigger>
-          <TabsTrigger value="archived" className="flex-1">{isRTL ? 'أرشيف' : 'Archivés'}</TabsTrigger>
+          <TabsTrigger value="devis_envoye" className="flex-1">{isRTL ? 'تقدير مُرسل' : 'Devis envoyé'}</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -135,7 +136,7 @@ const ChantiersPage = () => {
         ) : filtered.length === 0 ? (
           <div className="text-center py-12">
             <HardHat className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-            <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد ورشات' : 'Aucun chantier'}</p>
+            <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد مشاريع' : 'Aucun chantier'}</p>
           </div>
         ) : (
           filtered.map(ch => (
@@ -155,7 +156,7 @@ const ChantiersPage = () => {
                     )}
                   </div>
                   <Badge variant="outline" className={cn("text-[10px] shrink-0", statusColors[ch.status] || '')}>
-                    {ch.status === 'active' ? (isRTL ? 'نشط' : 'Actif') : ch.status === 'completed' ? (isRTL ? 'مكتمل' : 'Terminé') : (isRTL ? 'أرشيف' : 'Archivé')}
+                    {ch.status === 'active' ? (isRTL ? 'جاري' : 'En cours') : ch.status === 'completed' ? (isRTL ? 'مكتمل' : 'Terminé') : ch.status === 'devis_envoye' ? (isRTL ? 'تقدير مُرسل' : 'Devis envoyé') : (isRTL ? 'أرشيف' : 'Archivé')}
                   </Badge>
                 </div>
               </CardContent>

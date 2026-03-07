@@ -142,10 +142,10 @@ const ClientDetailPage = () => {
       <div className={cn("flex items-center justify-between mb-3", isRTL && "flex-row-reverse")}>
         <h2 className={cn("text-base font-semibold text-foreground", isRTL && "font-cairo")}>
           <HardHat className="h-4 w-4 inline mr-1.5" />
-          {isRTL ? 'الورشات' : 'Chantiers'} ({chantiers.length})
+          {isRTL ? 'مشاريعي (الشانتيات)' : 'Chantiers'} ({chantiers.length})
         </h2>
         <Button size="sm" variant="outline" onClick={() => { setEditingChantier(null); setForm({ name: '', site_address: '', status: 'active' }); setShowForm(true); }}>
-          <Plus className="h-4 w-4 mr-1" /> {isRTL ? 'ورشة جديدة' : 'Nouveau'}
+          <Plus className="h-4 w-4 mr-1" /> {isRTL ? 'مشروع جديد' : 'Nouveau'}
         </Button>
       </div>
 
@@ -154,7 +154,7 @@ const ClientDetailPage = () => {
         {chantiers.length === 0 ? (
           <div className="text-center py-8">
             <HardHat className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-            <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد ورشات' : 'Aucun chantier'}</p>
+            <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد مشاريع' : 'Aucun chantier'}</p>
           </div>
         ) : (
           chantiers.map(ch => (
@@ -169,7 +169,7 @@ const ClientDetailPage = () => {
                     {ch.site_address && <p className="text-xs text-muted-foreground truncate mt-0.5">{ch.site_address}</p>}
                   </div>
                   <Badge variant="outline" className={cn("text-[10px] shrink-0", statusColors[ch.status] || '')}>
-                    {ch.status === 'active' ? (isRTL ? 'نشط' : 'Actif') : ch.status === 'completed' ? (isRTL ? 'مكتمل' : 'Terminé') : (isRTL ? 'أرشيف' : 'Archivé')}
+                    {ch.status === 'active' ? (isRTL ? 'جاري' : 'En cours') : ch.status === 'completed' ? (isRTL ? 'مكتمل' : 'Terminé') : ch.status === 'devis_envoye' ? (isRTL ? 'تقدير مُرسل' : 'Devis envoyé') : (isRTL ? 'أرشيف' : 'Archivé')}
                   </Badge>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
@@ -198,22 +198,22 @@ const ClientDetailPage = () => {
         <DialogContent className={cn("max-w-md", isRTL && "font-cairo")}>
           <DialogHeader>
             <DialogTitle className={cn(isRTL && "text-right")}>
-              {editingChantier ? (isRTL ? 'تعديل الورشة' : 'Modifier le chantier') : (isRTL ? 'ورشة جديدة' : 'Nouveau chantier')}
+              {editingChantier ? (isRTL ? 'تعديل المشروع' : 'Modifier le chantier') : (isRTL ? 'مشروع جديد' : 'Nouveau chantier')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Input placeholder={isRTL ? 'اسم الورشة *' : 'Nom du chantier *'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            <Input placeholder={isRTL ? 'اسم المشروع *' : 'Nom du chantier *'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             <Input placeholder={isRTL ? 'عنوان الموقع' : 'Adresse du site'} value={form.site_address} onChange={e => setForm(f => ({ ...f, site_address: e.target.value }))} />
             <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">{isRTL ? 'نشط' : 'Actif'}</SelectItem>
+                <SelectItem value="active">{isRTL ? 'جاري' : 'En cours'}</SelectItem>
                 <SelectItem value="completed">{isRTL ? 'مكتمل' : 'Terminé'}</SelectItem>
-                <SelectItem value="archived">{isRTL ? 'أرشيف' : 'Archivé'}</SelectItem>
+                <SelectItem value="devis_envoye">{isRTL ? 'تقدير مُرسل' : 'Devis envoyé'}</SelectItem>
               </SelectContent>
             </Select>
             <Button className="w-full" onClick={handleSave} disabled={!form.name.trim()}>
-              {editingChantier ? (isRTL ? 'حفظ' : 'Enregistrer') : (isRTL ? 'إضافة' : 'Ajouter')}
+              {isRTL ? 'حفظ المشروع' : 'Enregistrer le chantier'}
             </Button>
           </div>
         </DialogContent>

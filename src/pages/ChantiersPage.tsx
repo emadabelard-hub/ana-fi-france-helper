@@ -109,9 +109,9 @@ const ChantiersPage = () => {
           <HardHat className="h-5 w-5 text-amber-600" />
         </div>
         <div className={cn("flex-1", isRTL && "text-right")}>
-          <h1 className={cn("text-lg font-bold text-foreground", isRTL && "font-cairo")}>{isRTL ? 'الورشات' : 'Chantiers'}</h1>
+          <h1 className={cn("text-lg font-bold text-foreground", isRTL && "font-cairo")}>{isRTL ? 'مشاريعي (الشانتيات)' : 'Chantiers'}</h1>
           <p className={cn("text-xs text-muted-foreground", isRTL && "font-cairo")}>
-            {isRTL ? `${chantiers.length} ورشة` : `${chantiers.length} chantier${chantiers.length > 1 ? 's' : ''}`}
+            {isRTL ? `${chantiers.length} مشروع` : `${chantiers.length} chantier${chantiers.length > 1 ? 's' : ''}`}
           </p>
         </div>
       </section>

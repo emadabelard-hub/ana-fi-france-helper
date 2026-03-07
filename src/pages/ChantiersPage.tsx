@@ -59,32 +59,47 @@ const ChantiersPage = () => {
     })();
   }, [user]);
 
+  const fetchData = async () => {
+    setLoading(true);
+    const chantiersQuery = supabase.from('chantiers').select('*').order('created_at', { ascending: false });
+    const clientsQuery = supabase.from('clients').select('id, name');
+    if (!isAdmin) {
+      chantiersQuery.eq('user_id', user!.id);
+      clientsQuery.eq('user_id', user!.id);
+    }
+    const [{ data: ch }, { data: cl }] = await Promise.all([chantiersQuery, clientsQuery]);
+    const clientMap: Record<string, string> = {};
+    (cl || []).forEach(c => { clientMap[c.id] = c.name; });
+    setClients(cl || []);
+    setChantiers((ch || []).map(c => ({ ...c, client_name: clientMap[c.client_id] || '' })));
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (authLoading || !user) return;
-    (async () => {
-      setLoading(true);
-
-      const chantiersQuery = supabase
-        .from('chantiers')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      const clientsQuery = supabase
-        .from('clients')
-        .select('id, name');
-
-      if (!isAdmin) {
-        chantiersQuery.eq('user_id', user.id);
-        clientsQuery.eq('user_id', user.id);
-      }
-
-      const [{ data: ch }, { data: cl }] = await Promise.all([chantiersQuery, clientsQuery]);
-      const clientMap: Record<string, string> = {};
-      cl?.forEach(c => { clientMap[c.id] = c.name; });
-      setChantiers((ch || []).map(c => ({ ...c, client_name: clientMap[c.client_id] || '' })));
-      setLoading(false);
-    })();
+    fetchData();
   }, [user, isAdmin, authLoading]);
+
+  const handleSave = async () => {
+    if (!user || !form.name.trim() || !form.client_id) return;
+    setSaving(true);
+    const { error } = await supabase.from('chantiers').insert({
+      user_id: user.id,
+      name: form.name.trim(),
+      client_id: form.client_id,
+      site_address: form.site_address.trim() || null,
+      status: form.status,
+    });
+    setSaving(false);
+    if (error) {
+      toast({ title: isRTL ? 'خطأ' : 'Erreur', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: isRTL ? 'تم الحفظ بنجاح' : 'Chantier enregistré avec succès ✓' });
+    setShowForm(false);
+    setForm({ name: '', client_id: '', site_address: '', status: 'active' });
+    fetchData();
+  };
 
   if (authLoading) {
     return (

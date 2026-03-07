@@ -15,6 +15,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import AdminLoginModal from '@/components/auth/AdminLoginModal';
 
 interface Client {
   id: string;
@@ -41,16 +42,20 @@ const ClientsPage = () => {
   const [form, setForm] = useState({ name: '', siret: '', address: '', contact_name: '', contact_phone: '', contact_email: '' });
 
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isRealAdmin, setIsRealAdmin] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   useEffect(() => {
     if (!user || user.is_anonymous) {
       setIsAdmin(true);
+      setIsRealAdmin(false);
       return;
     }
 
     (async () => {
       const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
       setIsAdmin(data === true);
+      setIsRealAdmin(data === true);
     })();
   }, [user]);
 
@@ -224,9 +229,11 @@ const ClientsPage = () => {
                       <DropdownMenuItem onClick={e => { e.stopPropagation(); openEdit(client); }}>
                         <Pencil className="h-4 w-4 mr-2" /> {isRTL ? 'تعديل' : 'Modifier'}
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={e => { e.stopPropagation(); handleDelete(client.id); }}>
-                        <Trash2 className="h-4 w-4 mr-2" /> {isRTL ? 'حذف' : 'Supprimer'}
-                      </DropdownMenuItem>
+                      {isRealAdmin && (
+                        <DropdownMenuItem className="text-destructive" onClick={e => { e.stopPropagation(); handleDelete(client.id); }}>
+                          <Trash2 className="h-4 w-4 mr-2" /> {isRTL ? 'حذف' : 'Supprimer'}
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -259,6 +266,7 @@ const ClientsPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <AdminLoginModal open={showAdminLogin} onOpenChange={setShowAdminLogin} onSuccess={() => { setIsRealAdmin(true); setShowAdminLogin(false); }} />
     </div>
   );
 };

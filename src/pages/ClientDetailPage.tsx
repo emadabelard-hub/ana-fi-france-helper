@@ -19,6 +19,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import AdminLoginModal from '@/components/auth/AdminLoginModal';
 
 interface Chantier {
   id: string;
@@ -46,6 +47,16 @@ const ClientDetailPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingChantier, setEditingChantier] = useState<Chantier | null>(null);
   const [form, setForm] = useState({ name: '', site_address: '', status: 'active' });
+  const [isRealAdmin, setIsRealAdmin] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+
+  useEffect(() => {
+    if (!user || user.is_anonymous) { setIsRealAdmin(false); return; }
+    (async () => {
+      const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
+      setIsRealAdmin(data === true);
+    })();
+  }, [user]);
 
   const fetchData = async () => {
     if (!user || !id) return;
@@ -168,9 +179,11 @@ const ClientDetailPage = () => {
                       <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingChantier(ch); setForm({ name: ch.name, site_address: ch.site_address || '', status: ch.status }); setShowForm(true); }}>
                         <Pencil className="h-4 w-4 mr-2" /> {isRTL ? 'تعديل' : 'Modifier'}
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={e => { e.stopPropagation(); handleDelete(ch.id); }}>
-                        <Trash2 className="h-4 w-4 mr-2" /> {isRTL ? 'حذف' : 'Supprimer'}
-                      </DropdownMenuItem>
+                      {isRealAdmin && (
+                        <DropdownMenuItem className="text-destructive" onClick={e => { e.stopPropagation(); handleDelete(ch.id); }}>
+                          <Trash2 className="h-4 w-4 mr-2" /> {isRTL ? 'حذف' : 'Supprimer'}
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -205,6 +218,7 @@ const ClientDetailPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <AdminLoginModal open={showAdminLogin} onOpenChange={setShowAdminLogin} onSuccess={() => { setIsRealAdmin(true); setShowAdminLogin(false); }} />
     </div>
   );
 };

@@ -1344,7 +1344,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
             <Users className="h-5 w-5 text-primary" />
             <h3 className={cn("font-bold", isRTL && "font-cairo")}>
-              {isRTL ? '📋 اختر العميل والورشة (اختياري)' : '📋 Sélectionner Client & Chantier (optionnel)'}
+              {isRTL ? '📋 اختر العميل والمشروع (اختياري)' : '📋 Sélectionner Client & Chantier (optionnel)'}
             </h3>
           </div>
           <p className={cn("text-xs text-muted-foreground", isRTL && "font-cairo text-right")}>

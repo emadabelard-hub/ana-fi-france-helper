@@ -84,8 +84,10 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           id: string
+          is_b2b: boolean
           name: string
           siret: string | null
+          tva_number: string | null
           updated_at: string
           user_id: string
         }
@@ -96,8 +98,10 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           id?: string
+          is_b2b?: boolean
           name: string
           siret?: string | null
+          tva_number?: string | null
           updated_at?: string
           user_id: string
         }
@@ -108,8 +112,10 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           id?: string
+          is_b2b?: boolean
           name?: string
           siret?: string | null
+          tva_number?: string | null
           updated_at?: string
           user_id?: string
         }

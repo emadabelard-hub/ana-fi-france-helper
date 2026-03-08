@@ -271,26 +271,46 @@ const ClientsPage = () => {
           <div className="space-y-3 max-h-[60vh] overflow-y-auto">
             <Input placeholder={isRTL ? 'اسم العميل *' : 'Nom du client *'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             
-            {/* Client Type */}
-            <div className="space-y-1.5">
+            {/* Client Type Toggle */}
+            <div className="space-y-2">
               <label className={cn("text-sm font-medium", isRTL && "font-cairo block text-right")}>
                 {isRTL ? 'الصفة' : 'Statut'}
               </label>
-              <select
-                value={form.client_type}
-                onChange={e => setForm(f => ({ ...f, client_type: e.target.value }))}
-                className="w-full bg-background border border-border text-foreground text-sm rounded-md p-2"
-              >
-                <option value="particulier">{isRTL ? 'شخص عادي (Particulier)' : 'Particulier'}</option>
-                <option value="professionnel">{isRTL ? 'شركة (Professionnel)' : 'Professionnel'}</option>
-              </select>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, client_type: 'particulier' }))}
+                  className={cn(
+                    "flex flex-col items-center gap-1 rounded-lg border-2 p-3 transition-all text-sm",
+                    form.client_type === 'particulier'
+                      ? "border-primary bg-primary/10 text-primary font-semibold"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/40"
+                  )}
+                >
+                  <Users className="h-5 w-5" />
+                  <span>{isRTL ? 'شخص عادي' : 'Particulier'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, client_type: 'professionnel' }))}
+                  className={cn(
+                    "flex flex-col items-center gap-1 rounded-lg border-2 p-3 transition-all text-sm",
+                    form.client_type === 'professionnel'
+                      ? "border-primary bg-primary/10 text-primary font-semibold"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/40"
+                  )}
+                >
+                  <Building2 className="h-5 w-5" />
+                  <span>{isRTL ? 'شركة / مهني' : 'Société / B2B'}</span>
+                </button>
+              </div>
             </div>
 
             {form.client_type === 'professionnel' && (
               <div className="space-y-3 pl-2 border-l-2 border-primary/20">
                 <Input placeholder={isRTL ? 'اسم الشركة (Raison Sociale)' : 'Raison Sociale'} value={form.company_name} onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))} />
-                <Input placeholder={isRTL ? 'SIRET (14 رقم)' : 'SIRET (14 chiffres)'} value={form.siret} onChange={e => setForm(f => ({ ...f, siret: e.target.value.replace(/\D/g, '').slice(0, 14) }))} maxLength={14} className="font-mono" />
-                <Input placeholder={isRTL ? 'رقم TVA (مثال: FR 12 345678901)' : 'N° TVA Intracommunautaire'} value={form.tva_number} onChange={e => setForm(f => ({ ...f, tva_number: e.target.value }))} className="font-mono" />
+                <Input placeholder={isRTL ? 'رقم السجل التجاري SIRET (14 رقم)' : 'SIRET (14 chiffres)'} value={form.siret} onChange={e => setForm(f => ({ ...f, siret: e.target.value.replace(/\D/g, '').slice(0, 14) }))} maxLength={14} className="font-mono" />
+                <Input placeholder={isRTL ? 'رقم الضريبة TVA (مثال: FR 12 345678901)' : 'N° TVA Intracommunautaire'} value={form.tva_number} onChange={e => setForm(f => ({ ...f, tva_number: e.target.value }))} className="font-mono" />
                 <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
                   💡 {isRTL ? 'مطلوب للفاتورة الإلكترونية (Factur-X 2026)' : 'Requis pour la facturation électronique (Factur-X 2026)'}
                 </p>

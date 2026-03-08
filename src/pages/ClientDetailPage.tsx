@@ -169,7 +169,7 @@ const ClientDetailPage = () => {
           <HardHat className="h-4 w-4 inline mr-1.5" />
           {isRTL ? 'مشاريعي (الشانتيات)' : 'Chantiers'} ({chantiers.length})
         </h2>
-        <Button size="sm" variant="outline" onClick={() => { setEditingChantier(null); setForm({ name: '', site_address: '', status: 'active' }); setShowForm(true); }}>
+        <Button size="sm" variant="outline" onClick={() => { setEditingChantier(null); setForm({ name: '', site_address: '', status: 'active', insurance_notes: '' }); setShowForm(true); }}>
           <Plus className="h-4 w-4 mr-1" /> {isRTL ? 'مشروع جديد' : 'Nouveau'}
         </Button>
       </div>

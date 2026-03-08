@@ -245,6 +245,10 @@ const ChantiersPage = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'وثيقة التأمين المرتبطة' : 'Assurance liée (optionnel)'}</label>
+              <Input value={form.insurance_notes} onChange={e => setForm(f => ({ ...f, insurance_notes: e.target.value }))} placeholder={isRTL ? 'رقم البوليصة أو ملاحظة' : 'N° de police ou note'} />
+            </div>
             <Button onClick={handleSave} disabled={saving || !form.name.trim() || !form.client_id} className="w-full">
               {saving ? (isRTL ? 'جاري الحفظ...' : 'Enregistrement...') : (isRTL ? 'حفظ المشروع' : 'Enregistrer le chantier')}
             </Button>

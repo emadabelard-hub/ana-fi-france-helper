@@ -86,7 +86,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Form state
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedChantierId, setSelectedChantierId] = useState('');
-  const [clientsList, setClientsList] = useState<Array<{ id: string; name: string; address: string | null; contact_phone: string | null; contact_email: string | null; siret: string | null }>>([]);
+  const [clientsList, setClientsList] = useState<Array<{ id: string; name: string; address: string | null; contact_phone: string | null; contact_email: string | null; siret: string | null; is_b2b: boolean; tva_number: string | null }>>([]);
   const [chantiersList, setChantiersList] = useState<Array<{ id: string; name: string; site_address: string | null }>>([]);
   
   const [clientName, setClientName] = useState('');

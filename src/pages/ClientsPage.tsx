@@ -20,11 +20,18 @@ import AdminLoginModal from '@/components/auth/AdminLoginModal';
 interface Client {
   id: string;
   name: string;
+  client_type: string;
+  company_name: string | null;
   siret: string | null;
+  tva_number: string | null;
   address: string | null;
+  street: string | null;
+  postal_code: string | null;
+  city: string | null;
   contact_name: string | null;
   contact_phone: string | null;
   contact_email: string | null;
+  is_b2b: boolean;
   created_at: string;
   chantiers_count?: number;
 }

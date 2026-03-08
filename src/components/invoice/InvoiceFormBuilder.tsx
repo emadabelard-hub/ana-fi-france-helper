@@ -207,7 +207,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Fetch clients list
   useEffect(() => {
     if (!user) return;
-    supabase.from('clients').select('id, name, address, contact_phone, contact_email, siret, is_b2b, tva_number')
+    supabase.from('clients').select('id, name, client_type, company_name, address, street, postal_code, city, contact_phone, contact_email, siret, is_b2b, tva_number')
       .eq('user_id', user.id).order('name').then(({ data }) => {
         setClientsList((data as any) || []);
       });

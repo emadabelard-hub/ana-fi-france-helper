@@ -233,6 +233,26 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       setClientPhone(client.contact_phone || '');
       setClientEmail(client.contact_email || '');
       setClientSiren(client.siret || '');
+      setClientIsB2B(client.is_b2b || false);
+      setClientTvaIntra(client.tva_number || '');
+    }
+  };
+
+  // Save B2B info back to client record
+  const saveB2BToClient = async () => {
+    if (!selectedClientId || !user) return;
+    const { error } = await supabase.from('clients').update({
+      is_b2b: clientIsB2B,
+      siret: clientSiren || null,
+      tva_number: clientTvaIntra || null,
+    } as any).eq('id', selectedClientId);
+    if (!error) {
+      toast({ title: isRTL ? 'تم حفظ بيانات الزبون ✓' : 'Infos client mises à jour ✓' });
+      // Refresh clients list
+      supabase.from('clients').select('id, name, address, contact_phone, contact_email, siret, is_b2b, tva_number')
+        .eq('user_id', user.id).order('name').then(({ data }) => {
+          setClientsList((data as any) || []);
+        });
     }
   };
 

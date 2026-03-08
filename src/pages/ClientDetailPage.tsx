@@ -238,6 +238,10 @@ const ClientDetailPage = () => {
                 ))}
               </SelectContent>
             </Select>
+            <Input placeholder={isRTL ? 'وثيقة التأمين المرتبطة (اختياري)' : 'Assurance liée (optionnel)'} value={form.insurance_notes} onChange={e => setForm(f => ({ ...f, insurance_notes: e.target.value }))} />
+            <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
+              💡 {isRTL ? 'لو عندك تأمين خاص بالمشروع ده، اكتبه هنا' : 'Si une assurance spécifique est liée à ce chantier, notez-la ici'}
+            </p>
             <Button className="w-full" onClick={handleSave} disabled={!form.name.trim()}>
               {isRTL ? 'حفظ المشروع' : 'Enregistrer le chantier'}
             </Button>

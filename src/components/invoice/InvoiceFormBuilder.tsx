@@ -228,12 +228,17 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     setSelectedChantierId('');
     const client = clientsList.find(c => c.id === clientId);
     if (client) {
-      setClientName(client.name);
-      setClientAddress(client.address || '');
+      // Use company_name for B2B, else regular name
+      setClientName(client.client_type === 'professionnel' && client.company_name ? client.company_name : client.name);
+      // Build full address from split fields or fallback to legacy address
+      const fullAddress = client.street 
+        ? [client.street, client.postal_code, client.city].filter(Boolean).join(', ')
+        : (client.address || '');
+      setClientAddress(fullAddress);
       setClientPhone(client.contact_phone || '');
       setClientEmail(client.contact_email || '');
       setClientSiren(client.siret || '');
-      setClientIsB2B(client.is_b2b || false);
+      setClientIsB2B(client.is_b2b || client.client_type === 'professionnel');
       setClientTvaIntra(client.tva_number || '');
     }
   };

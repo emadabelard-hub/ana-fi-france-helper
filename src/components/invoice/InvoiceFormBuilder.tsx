@@ -1428,6 +1428,52 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             </h3>
           </div>
           
+          {/* Quick-select dropdowns */}
+          {clientsList.length > 0 && (
+            <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-lg border border-dashed border-primary/30 bg-primary/5")}>
+              <div className="space-y-1.5">
+                <Label className={cn("text-xs font-semibold", isRTL && "font-cairo text-right block")}>
+                  {isRTL ? '📋 اختر عميل مسجل' : '📋 Choisir un client existant'}
+                </Label>
+                <Select value={selectedClientId} onValueChange={handleClientSelect}>
+                  <SelectTrigger className={cn("text-sm", isRTL && "text-right font-cairo")}>
+                    <SelectValue placeholder={isRTL ? '— اختياري —' : '— Optionnel —'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientsList.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className={cn("text-xs font-semibold", isRTL && "font-cairo text-right block")}>
+                  {isRTL ? '🏗️ اختر مشروع مسجل' : '🏗️ Choisir un projet existant'}
+                </Label>
+                <Select 
+                  value={selectedChantierId} 
+                  onValueChange={handleChantierSelect}
+                  disabled={!selectedClientId && chantiersList.length === 0}
+                >
+                  <SelectTrigger className={cn("text-sm", isRTL && "text-right font-cairo")}>
+                    <SelectValue placeholder={
+                      !selectedClientId 
+                        ? (isRTL ? '— اختر عميل أولاً —' : '— Choisir un client d\'abord —')
+                        : chantiersList.length === 0
+                          ? (isRTL ? '— لا توجد مشاريع —' : '— Aucun projet —')
+                          : (isRTL ? '— اختياري —' : '— Optionnel —')
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {chantiersList.map(ch => (
+                      <SelectItem key={ch.id} value={ch.id}>{ch.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
               <Label className={cn(isRTL && "font-cairo text-right block")}>

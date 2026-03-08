@@ -138,7 +138,7 @@ const ClientsPage = () => {
 
   const openEdit = (c: Client) => {
     setEditingClient(c);
-    setForm({ name: c.name, siret: c.siret || '', address: c.address || '', contact_name: c.contact_name || '', contact_phone: c.contact_phone || '', contact_email: c.contact_email || '' });
+    setForm({ name: c.name, client_type: c.client_type || 'particulier', company_name: c.company_name || '', siret: c.siret || '', tva_number: c.tva_number || '', street: c.street || '', postal_code: c.postal_code || '', city: c.city || '', contact_name: c.contact_name || '', contact_phone: c.contact_phone || '', contact_email: c.contact_email || '' });
     setShowForm(true);
   };
 

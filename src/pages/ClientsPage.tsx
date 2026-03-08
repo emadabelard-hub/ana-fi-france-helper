@@ -20,11 +20,18 @@ import AdminLoginModal from '@/components/auth/AdminLoginModal';
 interface Client {
   id: string;
   name: string;
+  client_type: string;
+  company_name: string | null;
   siret: string | null;
+  tva_number: string | null;
   address: string | null;
+  street: string | null;
+  postal_code: string | null;
+  city: string | null;
   contact_name: string | null;
   contact_phone: string | null;
   contact_email: string | null;
+  is_b2b: boolean;
   created_at: string;
   chantiers_count?: number;
 }
@@ -39,7 +46,7 @@ const ClientsPage = () => {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [form, setForm] = useState({ name: '', siret: '', address: '', contact_name: '', contact_phone: '', contact_email: '' });
+  const [form, setForm] = useState({ name: '', client_type: 'particulier', company_name: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' });
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [isRealAdmin, setIsRealAdmin] = useState(false);
@@ -94,24 +101,32 @@ const ClientsPage = () => {
 
   const handleSave = async () => {
     if (!user || !form.name.trim()) return;
+    const composedAddress = [form.street, form.postal_code, form.city].filter(Boolean).join(', ');
+    const payload: any = {
+      name: form.name,
+      client_type: form.client_type,
+      company_name: form.company_name || null,
+      siret: form.siret || null,
+      tva_number: form.tva_number || null,
+      is_b2b: form.client_type === 'professionnel',
+      address: composedAddress || null,
+      street: form.street || null,
+      postal_code: form.postal_code || null,
+      city: form.city || null,
+      contact_name: form.contact_name || null,
+      contact_phone: form.contact_phone || null,
+      contact_email: form.contact_email || null,
+    };
     if (editingClient) {
-      await supabase.from('clients').update({
-        name: form.name, siret: form.siret || null, address: form.address || null,
-        contact_name: form.contact_name || null, contact_phone: form.contact_phone || null,
-        contact_email: form.contact_email || null,
-      }).eq('id', editingClient.id);
+      await supabase.from('clients').update(payload).eq('id', editingClient.id);
       toast({ title: isRTL ? 'تم التعديل' : 'Client modifié' });
     } else {
-      await supabase.from('clients').insert({
-        user_id: user.id, name: form.name, siret: form.siret || null,
-        address: form.address || null, contact_name: form.contact_name || null,
-        contact_phone: form.contact_phone || null, contact_email: form.contact_email || null,
-      });
+      await supabase.from('clients').insert({ ...payload, user_id: user.id });
       toast({ title: isRTL ? 'تم الإضافة' : 'Client ajouté' });
     }
     setShowForm(false);
     setEditingClient(null);
-    setForm({ name: '', siret: '', address: '', contact_name: '', contact_phone: '', contact_email: '' });
+    setForm({ name: '', client_type: 'particulier', company_name: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' });
     fetchClients();
   };
 
@@ -123,7 +138,7 @@ const ClientsPage = () => {
 
   const openEdit = (c: Client) => {
     setEditingClient(c);
-    setForm({ name: c.name, siret: c.siret || '', address: c.address || '', contact_name: c.contact_name || '', contact_phone: c.contact_phone || '', contact_email: c.contact_email || '' });
+    setForm({ name: c.name, client_type: c.client_type || 'particulier', company_name: c.company_name || '', siret: c.siret || '', tva_number: c.tva_number || '', street: c.street || '', postal_code: c.postal_code || '', city: c.city || '', contact_name: c.contact_name || '', contact_phone: c.contact_phone || '', contact_email: c.contact_email || '' });
     setShowForm(true);
   };
 
@@ -166,7 +181,7 @@ const ClientsPage = () => {
             {isRTL ? `${clients.length} عميل` : `${clients.length} client${clients.length > 1 ? 's' : ''}`}
           </p>
         </div>
-        <Button size="sm" onClick={() => { setEditingClient(null); setForm({ name: '', siret: '', address: '', contact_name: '', contact_phone: '', contact_email: '' }); setShowForm(true); }}>
+        <Button size="sm" onClick={() => { setEditingClient(null); setForm({ name: '', client_type: 'particulier', company_name: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' }); setShowForm(true); }}>
           <Plus className="h-4 w-4 mr-1" />
           {isRTL ? 'إضافة' : 'Ajouter'}
         </Button>
@@ -253,10 +268,47 @@ const ClientsPage = () => {
                 : (isRTL ? 'إضافة عميل جديد' : 'Nouveau client')}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
             <Input placeholder={isRTL ? 'اسم العميل *' : 'Nom du client *'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-            <Input placeholder="SIRET" value={form.siret} onChange={e => setForm(f => ({ ...f, siret: e.target.value }))} />
-            <Input placeholder={isRTL ? 'العنوان' : 'Adresse'} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
+            
+            {/* Client Type */}
+            <div className="space-y-1.5">
+              <label className={cn("text-sm font-medium", isRTL && "font-cairo block text-right")}>
+                {isRTL ? 'الصفة' : 'Statut'}
+              </label>
+              <select
+                value={form.client_type}
+                onChange={e => setForm(f => ({ ...f, client_type: e.target.value }))}
+                className="w-full bg-background border border-border text-foreground text-sm rounded-md p-2"
+              >
+                <option value="particulier">{isRTL ? 'شخص عادي (Particulier)' : 'Particulier'}</option>
+                <option value="professionnel">{isRTL ? 'شركة (Professionnel)' : 'Professionnel'}</option>
+              </select>
+            </div>
+
+            {form.client_type === 'professionnel' && (
+              <div className="space-y-3 pl-2 border-l-2 border-primary/20">
+                <Input placeholder={isRTL ? 'اسم الشركة (Raison Sociale)' : 'Raison Sociale'} value={form.company_name} onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))} />
+                <Input placeholder={isRTL ? 'SIRET (14 رقم)' : 'SIRET (14 chiffres)'} value={form.siret} onChange={e => setForm(f => ({ ...f, siret: e.target.value.replace(/\D/g, '').slice(0, 14) }))} maxLength={14} className="font-mono" />
+                <Input placeholder={isRTL ? 'رقم TVA (مثال: FR 12 345678901)' : 'N° TVA Intracommunautaire'} value={form.tva_number} onChange={e => setForm(f => ({ ...f, tva_number: e.target.value }))} className="font-mono" />
+                <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
+                  💡 {isRTL ? 'مطلوب للفاتورة الإلكترونية (Factur-X 2026)' : 'Requis pour la facturation électronique (Factur-X 2026)'}
+                </p>
+              </div>
+            )}
+
+            {/* Split address */}
+            <div className="space-y-1.5">
+              <label className={cn("text-sm font-medium", isRTL && "font-cairo block text-right")}>
+                {isRTL ? 'العنوان الكامل' : 'Adresse complète'}
+              </label>
+              <Input placeholder={isRTL ? 'الشارع (Rue)' : 'Rue'} value={form.street} onChange={e => setForm(f => ({ ...f, street: e.target.value }))} />
+              <div className="grid grid-cols-2 gap-2">
+                <Input placeholder={isRTL ? 'الرمز البريدي' : 'Code Postal'} value={form.postal_code} onChange={e => setForm(f => ({ ...f, postal_code: e.target.value.replace(/\D/g, '').slice(0, 5) }))} maxLength={5} className="font-mono" />
+                <Input placeholder={isRTL ? 'المدينة (Ville)' : 'Ville'} value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
+              </div>
+            </div>
+
             <Input placeholder={isRTL ? 'جهة الاتصال' : 'Contact'} value={form.contact_name} onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))} />
             <Input placeholder={isRTL ? 'الهاتف' : 'Téléphone'} value={form.contact_phone} onChange={e => setForm(f => ({ ...f, contact_phone: e.target.value }))} />
             <Input placeholder="Email" value={form.contact_email} onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))} />

@@ -37,6 +37,7 @@ export type Database = {
           client_id: string
           created_at: string
           id: string
+          insurance_notes: string | null
           name: string
           reference_number: string | null
           site_address: string | null
@@ -48,6 +49,7 @@ export type Database = {
           client_id: string
           created_at?: string
           id?: string
+          insurance_notes?: string | null
           name: string
           reference_number?: string | null
           site_address?: string | null
@@ -59,6 +61,7 @@ export type Database = {
           client_id?: string
           created_at?: string
           id?: string
+          insurance_notes?: string | null
           name?: string
           reference_number?: string | null
           site_address?: string | null
@@ -79,6 +82,9 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          city: string | null
+          client_type: string
+          company_name: string | null
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
@@ -86,13 +92,18 @@ export type Database = {
           id: string
           is_b2b: boolean
           name: string
+          postal_code: string | null
           siret: string | null
+          street: string | null
           tva_number: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           address?: string | null
+          city?: string | null
+          client_type?: string
+          company_name?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
@@ -100,13 +111,18 @@ export type Database = {
           id?: string
           is_b2b?: boolean
           name: string
+          postal_code?: string | null
           siret?: string | null
+          street?: string | null
           tva_number?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string | null
+          city?: string | null
+          client_type?: string
+          company_name?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
@@ -114,7 +130,9 @@ export type Database = {
           id?: string
           is_b2b?: boolean
           name?: string
+          postal_code?: string | null
           siret?: string | null
+          street?: string | null
           tva_number?: string | null
           updated_at?: string
           user_id?: string

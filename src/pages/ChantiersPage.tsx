@@ -53,7 +53,7 @@ const ChantiersPage = () => {
   const [tab, setTab] = useState('etude');
   const [showForm, setShowForm] = useState(false);
   const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
-  const [form, setForm] = useState({ name: '', client_id: '', site_address: '', status: 'etude' });
+  const [form, setForm] = useState({ name: '', client_id: '', site_address: '', status: 'etude', insurance_notes: '' });
   const [saving, setSaving] = useState(false);
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -100,7 +100,8 @@ const ChantiersPage = () => {
       client_id: form.client_id,
       site_address: form.site_address.trim() || null,
       status: form.status,
-    });
+      insurance_notes: form.insurance_notes.trim() || null,
+    } as any);
     setSaving(false);
     if (error) {
       toast({ title: isRTL ? 'خطأ' : 'Erreur', description: error.message, variant: 'destructive' });
@@ -108,7 +109,7 @@ const ChantiersPage = () => {
     }
     toast({ title: isRTL ? 'تم الحفظ بنجاح' : 'Chantier enregistré avec succès ✓' });
     setShowForm(false);
-    setForm({ name: '', client_id: '', site_address: '', status: 'etude' });
+    setForm({ name: '', client_id: '', site_address: '', status: 'etude', insurance_notes: '' });
     fetchData();
   };
 
@@ -243,6 +244,10 @@ const ChantiersPage = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'وثيقة التأمين المرتبطة' : 'Assurance liée (optionnel)'}</label>
+              <Input value={form.insurance_notes} onChange={e => setForm(f => ({ ...f, insurance_notes: e.target.value }))} placeholder={isRTL ? 'رقم البوليصة أو ملاحظة' : 'N° de police ou note'} />
             </div>
             <Button onClick={handleSave} disabled={saving || !form.name.trim() || !form.client_id} className="w-full">
               {saving ? (isRTL ? 'جاري الحفظ...' : 'Enregistrement...') : (isRTL ? 'حفظ المشروع' : 'Enregistrer le chantier')}

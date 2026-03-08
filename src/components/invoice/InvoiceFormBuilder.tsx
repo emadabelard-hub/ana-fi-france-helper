@@ -86,7 +86,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Form state
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedChantierId, setSelectedChantierId] = useState('');
-  const [clientsList, setClientsList] = useState<Array<{ id: string; name: string; address: string | null; contact_phone: string | null; contact_email: string | null; siret: string | null; is_b2b: boolean; tva_number: string | null }>>([]);
+  const [clientsList, setClientsList] = useState<Array<{ id: string; name: string; client_type: string; company_name: string | null; address: string | null; street: string | null; postal_code: string | null; city: string | null; contact_phone: string | null; contact_email: string | null; siret: string | null; is_b2b: boolean; tva_number: string | null }>>([]);
   const [chantiersList, setChantiersList] = useState<Array<{ id: string; name: string; site_address: string | null }>>([]);
   
   const [clientName, setClientName] = useState('');
@@ -207,7 +207,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Fetch clients list
   useEffect(() => {
     if (!user) return;
-    supabase.from('clients').select('id, name, address, contact_phone, contact_email, siret, is_b2b, tva_number')
+    supabase.from('clients').select('id, name, client_type, company_name, address, street, postal_code, city, contact_phone, contact_email, siret, is_b2b, tva_number')
       .eq('user_id', user.id).order('name').then(({ data }) => {
         setClientsList((data as any) || []);
       });
@@ -228,12 +228,17 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     setSelectedChantierId('');
     const client = clientsList.find(c => c.id === clientId);
     if (client) {
-      setClientName(client.name);
-      setClientAddress(client.address || '');
+      // Use company_name for B2B, else regular name
+      setClientName(client.client_type === 'professionnel' && client.company_name ? client.company_name : client.name);
+      // Build full address from split fields or fallback to legacy address
+      const fullAddress = client.street 
+        ? [client.street, client.postal_code, client.city].filter(Boolean).join(', ')
+        : (client.address || '');
+      setClientAddress(fullAddress);
       setClientPhone(client.contact_phone || '');
       setClientEmail(client.contact_email || '');
       setClientSiren(client.siret || '');
-      setClientIsB2B(client.is_b2b || false);
+      setClientIsB2B(client.is_b2b || client.client_type === 'professionnel');
       setClientTvaIntra(client.tva_number || '');
     }
   };
@@ -243,13 +248,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (!selectedClientId || !user) return;
     const { error } = await supabase.from('clients').update({
       is_b2b: clientIsB2B,
+      client_type: clientIsB2B ? 'professionnel' : 'particulier',
       siret: clientSiren || null,
       tva_number: clientTvaIntra || null,
     } as any).eq('id', selectedClientId);
     if (!error) {
       toast({ title: isRTL ? 'تم حفظ بيانات الزبون ✓' : 'Infos client mises à jour ✓' });
-      // Refresh clients list
-      supabase.from('clients').select('id, name, address, contact_phone, contact_email, siret, is_b2b, tva_number')
+      supabase.from('clients').select('id, name, client_type, company_name, address, street, postal_code, city, contact_phone, contact_email, siret, is_b2b, tva_number')
         .eq('user_id', user.id).order('name').then(({ data }) => {
           setClientsList((data as any) || []);
         });

@@ -58,7 +58,7 @@ const ClientDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingChantier, setEditingChantier] = useState<Chantier | null>(null);
-  const [form, setForm] = useState({ name: '', site_address: '', status: 'etude' });
+  const [form, setForm] = useState({ name: '', site_address: '', status: 'etude', insurance_notes: '' });
   const [isRealAdmin, setIsRealAdmin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
 
@@ -87,15 +87,15 @@ const ClientDetailPage = () => {
   const handleSave = async () => {
     if (!user || !id || !form.name.trim()) return;
     if (editingChantier) {
-      await supabase.from('chantiers').update({ name: form.name, site_address: form.site_address || null, status: form.status }).eq('id', editingChantier.id);
+      await supabase.from('chantiers').update({ name: form.name, site_address: form.site_address || null, status: form.status, insurance_notes: form.insurance_notes || null } as any).eq('id', editingChantier.id);
       toast({ title: isRTL ? 'تم التعديل' : 'Chantier modifié' });
     } else {
-      await supabase.from('chantiers').insert({ user_id: user.id, client_id: id, name: form.name, site_address: form.site_address || null, status: form.status });
+      await supabase.from('chantiers').insert({ user_id: user.id, client_id: id, name: form.name, site_address: form.site_address || null, status: form.status, insurance_notes: form.insurance_notes || null } as any);
       toast({ title: isRTL ? 'تم الإضافة' : 'Chantier ajouté' });
     }
     setShowForm(false);
     setEditingChantier(null);
-    setForm({ name: '', site_address: '', status: 'etude' });
+    setForm({ name: '', site_address: '', status: 'etude', insurance_notes: '' });
     fetchData();
   };
 
@@ -126,15 +126,23 @@ const ClientDetailPage = () => {
         <div className={cn("flex-1 min-w-0", isRTL && "text-right")}>
           <h1 className={cn("text-lg font-bold text-foreground truncate", isRTL && "font-cairo")}>{client.name}</h1>
           {client.siret && <p className="text-xs text-muted-foreground">SIRET: {client.siret}</p>}
+          {client.client_type === 'professionnel' && (
+            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">Professionnel</span>
+          )}
         </div>
       </section>
 
       {/* Client Info Card */}
       <Card className="mb-4 border-border/50">
         <CardContent className="p-4 space-y-2 text-sm">
-          {client.address && (
+          {client.company_name && (
             <div className={cn("flex items-center gap-2 text-muted-foreground", isRTL && "flex-row-reverse")}>
-              <MapPin className="h-4 w-4 shrink-0" /> <span>{client.address}</span>
+              <Building2 className="h-4 w-4 shrink-0" /> <span>{client.company_name}</span>
+            </div>
+          )}
+          {(client.street || client.address) && (
+            <div className={cn("flex items-center gap-2 text-muted-foreground", isRTL && "flex-row-reverse")}>
+              <MapPin className="h-4 w-4 shrink-0" /> <span>{client.street ? [client.street, client.postal_code, client.city].filter(Boolean).join(', ') : client.address}</span>
             </div>
           )}
           {client.contact_phone && (
@@ -147,6 +155,11 @@ const ClientDetailPage = () => {
               <Mail className="h-4 w-4 shrink-0" /> <span>{client.contact_email}</span>
             </div>
           )}
+          {client.tva_number && (
+            <div className={cn("flex items-center gap-2 text-muted-foreground", isRTL && "flex-row-reverse")}>
+              <span className="text-xs font-mono">TVA: {client.tva_number}</span>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -156,7 +169,7 @@ const ClientDetailPage = () => {
           <HardHat className="h-4 w-4 inline mr-1.5" />
           {isRTL ? 'مشاريعي (الشانتيات)' : 'Chantiers'} ({chantiers.length})
         </h2>
-        <Button size="sm" variant="outline" onClick={() => { setEditingChantier(null); setForm({ name: '', site_address: '', status: 'active' }); setShowForm(true); }}>
+        <Button size="sm" variant="outline" onClick={() => { setEditingChantier(null); setForm({ name: '', site_address: '', status: 'active', insurance_notes: '' }); setShowForm(true); }}>
           <Plus className="h-4 w-4 mr-1" /> {isRTL ? 'مشروع جديد' : 'Nouveau'}
         </Button>
       </div>
@@ -189,7 +202,7 @@ const ClientDetailPage = () => {
                       <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingChantier(ch); setForm({ name: ch.name, site_address: ch.site_address || '', status: ch.status }); setShowForm(true); }}>
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingChantier(ch); setForm({ name: ch.name, site_address: ch.site_address || '', status: ch.status, insurance_notes: (ch as any).insurance_notes || '' }); setShowForm(true); }}>
                         <Pencil className="h-4 w-4 mr-2" /> {isRTL ? 'تعديل' : 'Modifier'}
                       </DropdownMenuItem>
                       {isRealAdmin && (
@@ -225,6 +238,10 @@ const ClientDetailPage = () => {
                 ))}
               </SelectContent>
             </Select>
+            <Input placeholder={isRTL ? 'وثيقة التأمين المرتبطة (اختياري)' : 'Assurance liée (optionnel)'} value={form.insurance_notes} onChange={e => setForm(f => ({ ...f, insurance_notes: e.target.value }))} />
+            <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
+              💡 {isRTL ? 'لو عندك تأمين خاص بالمشروع ده، اكتبه هنا' : 'Si une assurance spécifique est liée à ce chantier, notez-la ici'}
+            </p>
             <Button className="w-full" onClick={handleSave} disabled={!form.name.trim()}>
               {isRTL ? 'حفظ المشروع' : 'Enregistrer le chantier'}
             </Button>

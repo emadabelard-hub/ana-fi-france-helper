@@ -58,7 +58,7 @@ const ClientDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingChantier, setEditingChantier] = useState<Chantier | null>(null);
-  const [form, setForm] = useState({ name: '', site_address: '', status: 'etude' });
+  const [form, setForm] = useState({ name: '', site_address: '', status: 'etude', insurance_notes: '' });
   const [isRealAdmin, setIsRealAdmin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
 

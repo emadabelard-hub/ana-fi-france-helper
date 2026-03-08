@@ -1357,61 +1357,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </CardContent>
       </Card>
 
-      {/* Client & Chantier Selection (Optional - auto-fills fields) */}
-      {clientsList.length > 0 && (
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="p-4 space-y-4">
-          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-            <Users className="h-5 w-5 text-primary" />
-            <h3 className={cn("font-bold", isRTL && "font-cairo")}>
-              {isRTL ? '📋 اختر العميل والمشروع (اختياري)' : '📋 Sélectionner Client & Chantier (optionnel)'}
-            </h3>
-          </div>
-          <p className={cn("text-xs text-muted-foreground", isRTL && "font-cairo text-right")}>
-            {isRTL 
-              ? '💡 اختر عميل محفوظ لملء البيانات تلقائياً، أو اكتب يدوياً في الخانات تحت'
-              : '💡 Sélectionnez un client enregistré pour auto-remplir, ou saisissez manuellement ci-dessous'}
-          </p>
-          
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label className={cn("text-xs font-bold text-muted-foreground", isRTL && "text-right block font-cairo")}>
-                {isRTL ? 'اختر العميل' : 'Sélectionner un client'}
-              </Label>
-              <Select value={selectedClientId} onValueChange={handleClientSelect}>
-                <SelectTrigger className="bg-background border-border">
-                  <SelectValue placeholder={isRTL ? 'اختر عميل...' : 'Choisir un client...'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientsList.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedClientId && chantiersList.length > 0 && (
-              <div className="space-y-1.5">
-                <Label className={cn("text-xs font-bold text-muted-foreground", isRTL && "text-right block font-cairo")}>
-                  {isRTL ? 'اختر المشروع (اختياري)' : 'Sélectionner un chantier (optionnel)'}
-                </Label>
-                <Select value={selectedChantierId} onValueChange={handleChantierSelect}>
-                  <SelectTrigger className="bg-background border-border">
-                    <SelectValue placeholder={isRTL ? 'اختر مشروع...' : 'Choisir un chantier...'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {chantiersList.map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      )}
-      
       {/* Client Section */}
       <Card>
         <CardContent className="p-4 space-y-4">
@@ -1427,17 +1372,24 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               {isRTL ? '👤 بيانات الزبون' : '👤 Informations client'}
             </h3>
           </div>
-          
-          {/* Quick-select dropdowns */}
-          {clientsList.length > 0 && (
-            <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-lg border border-dashed border-primary/30 bg-primary/5")}>
+
+          {/* Import from existing clients & projects - ALWAYS visible */}
+          <div className={cn("p-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 space-y-3")}>
+            <p className={cn("text-xs font-semibold text-primary", isRTL && "font-cairo text-right")}>
+              {isRTL ? '📋 استيراد من حساباتي' : '📋 Importer depuis mes contacts'}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className={cn("text-xs font-semibold", isRTL && "font-cairo text-right block")}>
-                  {isRTL ? '📋 اختر عميل مسجل' : '📋 Choisir un client existant'}
+                <Label className={cn("text-xs font-semibold text-muted-foreground", isRTL && "font-cairo text-right block")}>
+                  {isRTL ? '👤 اختر عميل مسجل' : '👤 Choisir un client existant'}
                 </Label>
                 <Select value={selectedClientId} onValueChange={handleClientSelect}>
-                  <SelectTrigger className={cn("text-sm", isRTL && "text-right font-cairo")}>
-                    <SelectValue placeholder={isRTL ? '— اختياري —' : '— Optionnel —'} />
+                  <SelectTrigger className={cn("text-sm bg-background", isRTL && "text-right font-cairo")}>
+                    <SelectValue placeholder={
+                      clientsList.length === 0
+                        ? (isRTL ? '— لا يوجد عملاء بعد —' : '— Aucun client enregistré —')
+                        : (isRTL ? '— اختياري —' : '— Optionnel —')
+                    } />
                   </SelectTrigger>
                   <SelectContent>
                     {clientsList.map(c => (
@@ -1447,15 +1399,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className={cn("text-xs font-semibold", isRTL && "font-cairo text-right block")}>
-                  {isRTL ? '🏗️ اختر مشروع مسجل' : '🏗️ Choisir un projet existant'}
+                <Label className={cn("text-xs font-semibold text-muted-foreground", isRTL && "font-cairo text-right block")}>
+                  {isRTL ? '🏗️ الربط بمشروع مسجل' : '🏗️ Lier à un projet existant'}
                 </Label>
                 <Select 
                   value={selectedChantierId} 
                   onValueChange={handleChantierSelect}
-                  disabled={!selectedClientId && chantiersList.length === 0}
+                  disabled={!selectedClientId || chantiersList.length === 0}
                 >
-                  <SelectTrigger className={cn("text-sm", isRTL && "text-right font-cairo")}>
+                  <SelectTrigger className={cn("text-sm bg-background", isRTL && "text-right font-cairo")}>
                     <SelectValue placeholder={
                       !selectedClientId 
                         ? (isRTL ? '— اختر عميل أولاً —' : '— Choisir un client d\'abord —')
@@ -1472,7 +1424,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 </Select>
               </div>
             </div>
-          )}
+            <p className={cn("text-[11px] text-muted-foreground", isRTL && "font-cairo text-right")}>
+              {isRTL ? '💡 الاختيار اختياري — يمكنك الكتابة يدوياً في الخانات تحت' : '💡 Optionnel — vous pouvez aussi saisir manuellement ci-dessous'}
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">

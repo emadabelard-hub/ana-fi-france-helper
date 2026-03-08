@@ -268,10 +268,47 @@ const ClientsPage = () => {
                 : (isRTL ? 'إضافة عميل جديد' : 'Nouveau client')}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
             <Input placeholder={isRTL ? 'اسم العميل *' : 'Nom du client *'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-            <Input placeholder="SIRET" value={form.siret} onChange={e => setForm(f => ({ ...f, siret: e.target.value }))} />
-            <Input placeholder={isRTL ? 'العنوان' : 'Adresse'} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
+            
+            {/* Client Type */}
+            <div className="space-y-1.5">
+              <label className={cn("text-sm font-medium", isRTL && "font-cairo block text-right")}>
+                {isRTL ? 'الصفة' : 'Statut'}
+              </label>
+              <select
+                value={form.client_type}
+                onChange={e => setForm(f => ({ ...f, client_type: e.target.value }))}
+                className="w-full bg-background border border-border text-foreground text-sm rounded-md p-2"
+              >
+                <option value="particulier">{isRTL ? 'شخص عادي (Particulier)' : 'Particulier'}</option>
+                <option value="professionnel">{isRTL ? 'شركة (Professionnel)' : 'Professionnel'}</option>
+              </select>
+            </div>
+
+            {form.client_type === 'professionnel' && (
+              <div className="space-y-3 pl-2 border-l-2 border-primary/20">
+                <Input placeholder={isRTL ? 'اسم الشركة (Raison Sociale)' : 'Raison Sociale'} value={form.company_name} onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))} />
+                <Input placeholder={isRTL ? 'SIRET (14 رقم)' : 'SIRET (14 chiffres)'} value={form.siret} onChange={e => setForm(f => ({ ...f, siret: e.target.value.replace(/\D/g, '').slice(0, 14) }))} maxLength={14} className="font-mono" />
+                <Input placeholder={isRTL ? 'رقم TVA (مثال: FR 12 345678901)' : 'N° TVA Intracommunautaire'} value={form.tva_number} onChange={e => setForm(f => ({ ...f, tva_number: e.target.value }))} className="font-mono" />
+                <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
+                  💡 {isRTL ? 'مطلوب للفاتورة الإلكترونية (Factur-X 2026)' : 'Requis pour la facturation électronique (Factur-X 2026)'}
+                </p>
+              </div>
+            )}
+
+            {/* Split address */}
+            <div className="space-y-1.5">
+              <label className={cn("text-sm font-medium", isRTL && "font-cairo block text-right")}>
+                {isRTL ? 'العنوان الكامل' : 'Adresse complète'}
+              </label>
+              <Input placeholder={isRTL ? 'الشارع (Rue)' : 'Rue'} value={form.street} onChange={e => setForm(f => ({ ...f, street: e.target.value }))} />
+              <div className="grid grid-cols-2 gap-2">
+                <Input placeholder={isRTL ? 'الرمز البريدي' : 'Code Postal'} value={form.postal_code} onChange={e => setForm(f => ({ ...f, postal_code: e.target.value.replace(/\D/g, '').slice(0, 5) }))} maxLength={5} className="font-mono" />
+                <Input placeholder={isRTL ? 'المدينة (Ville)' : 'Ville'} value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
+              </div>
+            </div>
+
             <Input placeholder={isRTL ? 'جهة الاتصال' : 'Contact'} value={form.contact_name} onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))} />
             <Input placeholder={isRTL ? 'الهاتف' : 'Téléphone'} value={form.contact_phone} onChange={e => setForm(f => ({ ...f, contact_phone: e.target.value }))} />
             <Input placeholder="Email" value={form.contact_email} onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))} />

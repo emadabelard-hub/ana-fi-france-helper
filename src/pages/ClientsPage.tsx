@@ -101,24 +101,32 @@ const ClientsPage = () => {
 
   const handleSave = async () => {
     if (!user || !form.name.trim()) return;
+    const composedAddress = [form.street, form.postal_code, form.city].filter(Boolean).join(', ');
+    const payload: any = {
+      name: form.name,
+      client_type: form.client_type,
+      company_name: form.company_name || null,
+      siret: form.siret || null,
+      tva_number: form.tva_number || null,
+      is_b2b: form.client_type === 'professionnel',
+      address: composedAddress || null,
+      street: form.street || null,
+      postal_code: form.postal_code || null,
+      city: form.city || null,
+      contact_name: form.contact_name || null,
+      contact_phone: form.contact_phone || null,
+      contact_email: form.contact_email || null,
+    };
     if (editingClient) {
-      await supabase.from('clients').update({
-        name: form.name, siret: form.siret || null, address: form.address || null,
-        contact_name: form.contact_name || null, contact_phone: form.contact_phone || null,
-        contact_email: form.contact_email || null,
-      }).eq('id', editingClient.id);
+      await supabase.from('clients').update(payload).eq('id', editingClient.id);
       toast({ title: isRTL ? 'تم التعديل' : 'Client modifié' });
     } else {
-      await supabase.from('clients').insert({
-        user_id: user.id, name: form.name, siret: form.siret || null,
-        address: form.address || null, contact_name: form.contact_name || null,
-        contact_phone: form.contact_phone || null, contact_email: form.contact_email || null,
-      });
+      await supabase.from('clients').insert({ ...payload, user_id: user.id });
       toast({ title: isRTL ? 'تم الإضافة' : 'Client ajouté' });
     }
     setShowForm(false);
     setEditingClient(null);
-    setForm({ name: '', siret: '', address: '', contact_name: '', contact_phone: '', contact_email: '' });
+    setForm({ name: '', client_type: 'particulier', company_name: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' });
     fetchClients();
   };
 

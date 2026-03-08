@@ -87,15 +87,15 @@ const ClientDetailPage = () => {
   const handleSave = async () => {
     if (!user || !id || !form.name.trim()) return;
     if (editingChantier) {
-      await supabase.from('chantiers').update({ name: form.name, site_address: form.site_address || null, status: form.status }).eq('id', editingChantier.id);
+      await supabase.from('chantiers').update({ name: form.name, site_address: form.site_address || null, status: form.status, insurance_notes: form.insurance_notes || null } as any).eq('id', editingChantier.id);
       toast({ title: isRTL ? 'تم التعديل' : 'Chantier modifié' });
     } else {
-      await supabase.from('chantiers').insert({ user_id: user.id, client_id: id, name: form.name, site_address: form.site_address || null, status: form.status });
+      await supabase.from('chantiers').insert({ user_id: user.id, client_id: id, name: form.name, site_address: form.site_address || null, status: form.status, insurance_notes: form.insurance_notes || null } as any);
       toast({ title: isRTL ? 'تم الإضافة' : 'Chantier ajouté' });
     }
     setShowForm(false);
     setEditingChantier(null);
-    setForm({ name: '', site_address: '', status: 'etude' });
+    setForm({ name: '', site_address: '', status: 'etude', insurance_notes: '' });
     fetchData();
   };
 

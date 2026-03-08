@@ -86,7 +86,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Form state
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedChantierId, setSelectedChantierId] = useState('');
-  const [clientsList, setClientsList] = useState<Array<{ id: string; name: string; address: string | null; contact_phone: string | null; contact_email: string | null; siret: string | null }>>([]);
+  const [clientsList, setClientsList] = useState<Array<{ id: string; name: string; address: string | null; contact_phone: string | null; contact_email: string | null; siret: string | null; is_b2b: boolean; tva_number: string | null }>>([]);
   const [chantiersList, setChantiersList] = useState<Array<{ id: string; name: string; site_address: string | null }>>([]);
   
   const [clientName, setClientName] = useState('');
@@ -207,9 +207,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Fetch clients list
   useEffect(() => {
     if (!user) return;
-    supabase.from('clients').select('id, name, address, contact_phone, contact_email, siret')
+    supabase.from('clients').select('id, name, address, contact_phone, contact_email, siret, is_b2b, tva_number')
       .eq('user_id', user.id).order('name').then(({ data }) => {
-        setClientsList(data || []);
+        setClientsList((data as any) || []);
       });
   }, [user]);
 
@@ -233,6 +233,26 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       setClientPhone(client.contact_phone || '');
       setClientEmail(client.contact_email || '');
       setClientSiren(client.siret || '');
+      setClientIsB2B(client.is_b2b || false);
+      setClientTvaIntra(client.tva_number || '');
+    }
+  };
+
+  // Save B2B info back to client record
+  const saveB2BToClient = async () => {
+    if (!selectedClientId || !user) return;
+    const { error } = await supabase.from('clients').update({
+      is_b2b: clientIsB2B,
+      siret: clientSiren || null,
+      tva_number: clientTvaIntra || null,
+    } as any).eq('id', selectedClientId);
+    if (!error) {
+      toast({ title: isRTL ? 'تم حفظ بيانات الزبون ✓' : 'Infos client mises à jour ✓' });
+      // Refresh clients list
+      supabase.from('clients').select('id, name, address, contact_phone, contact_email, siret, is_b2b, tva_number')
+        .eq('user_id', user.id).order('name').then(({ data }) => {
+          setClientsList((data as any) || []);
+        });
     }
   };
 
@@ -1485,36 +1505,54 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             </div>
             
             {clientIsB2B && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-2 border-l-2 border-primary/20">
-                <div className="space-y-2">
-                  <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
-                    {isRTL ? 'رقم SIRET الزبون (إجباري)' : 'SIRET du client (obligatoire)'} *
-                  </Label>
-                  <Input
-                    value={clientSiren}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 14);
-                      setClientSiren(val);
-                    }}
-                    placeholder={isRTL ? '14 رقم (إجباري B2B)' : '14 chiffres (obligatoire B2B)'}
-                    className={cn("font-mono text-sm", isRTL && "text-right")}
-                    maxLength={14}
-                  />
+              <div className="space-y-3 pl-2 border-l-2 border-primary/20">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
+                      {isRTL ? 'رقم السجل التجاري (SIREN)' : 'SIREN du client'}
+                    </Label>
+                    <Input
+                      value={clientSiren}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 9);
+                        setClientSiren(val);
+                      }}
+                      placeholder={isRTL ? '9 أرقام (اختياري)' : '9 chiffres (optionnel)'}
+                      className={cn("font-mono text-sm", isRTL && "text-right")}
+                      maxLength={9}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
+                      {isRTL ? 'رقم الضريبة على القيمة المضافة (TVA)' : 'N° TVA Intracommunautaire'}
+                    </Label>
+                    <Input
+                      value={clientTvaIntra}
+                      onChange={(e) => setClientTvaIntra(e.target.value)}
+                      placeholder={isRTL ? 'مثال: FR 12 345678901' : 'Ex: FR 12 345678901'}
+                      className={cn("font-mono text-sm", isRTL && "text-right")}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
-                    {isRTL ? 'رقم TVA Intracommunautaire' : 'N° TVA Intracommunautaire'}
-                  </Label>
-                  <Input
-                    value={clientTvaIntra}
-                    onChange={(e) => setClientTvaIntra(e.target.value)}
-                    placeholder="FR 12 345678901"
-                    className={cn("font-mono text-sm", isRTL && "text-right")}
-                  />
-                </div>
+                <p className={cn("text-[10px] text-muted-foreground flex items-center gap-1", isRTL && "font-cairo text-right flex-row-reverse")}>
+                  <span>💡</span>
+                  <span>{isRTL ? 'مطلوب للفاتورة الإلكترونية (Factur-X 2026)' : 'Requis pour la facturation électronique (Factur-X 2026)'}</span>
+                </p>
+                {selectedClientId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={saveB2BToClient}
+                    className={cn("text-xs gap-1.5", isRTL && "flex-row-reverse font-cairo")}
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    {isRTL ? 'حفظ في ملف الزبون' : 'Sauvegarder dans la fiche client'}
+                  </Button>
+                )}
               </div>
             )}
-
+            
             {!clientIsB2B && (
               <div className="space-y-2">
                 <Label className={cn("text-xs", isRTL && "font-cairo text-right block")}>
@@ -1530,8 +1568,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   className={cn("font-mono text-sm", isRTL && "text-right")}
                   maxLength={9}
                 />
-                <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
-                  {isRTL ? '💡 مطلوب للفاتورة الإلكترونية (Factur-X) 2026' : '💡 Requis pour la facturation électronique 2026'}
+                <p className={cn("text-[10px] text-muted-foreground flex items-center gap-1", isRTL && "font-cairo text-right flex-row-reverse")}>
+                  <span>💡</span>
+                  <span>{isRTL ? 'مطلوب للفاتورة الإلكترونية (Factur-X 2026)' : 'Requis pour la facturation électronique (Factur-X 2026)'}</span>
                 </p>
               </div>
             )}

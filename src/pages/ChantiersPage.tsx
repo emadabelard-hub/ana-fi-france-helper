@@ -100,7 +100,8 @@ const ChantiersPage = () => {
       client_id: form.client_id,
       site_address: form.site_address.trim() || null,
       status: form.status,
-    });
+      insurance_notes: form.insurance_notes.trim() || null,
+    } as any);
     setSaving(false);
     if (error) {
       toast({ title: isRTL ? 'خطأ' : 'Erreur', description: error.message, variant: 'destructive' });

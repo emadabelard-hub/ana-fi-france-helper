@@ -202,7 +202,7 @@ const ClientDetailPage = () => {
                       <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingChantier(ch); setForm({ name: ch.name, site_address: ch.site_address || '', status: ch.status }); setShowForm(true); }}>
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingChantier(ch); setForm({ name: ch.name, site_address: ch.site_address || '', status: ch.status, insurance_notes: (ch as any).insurance_notes || '' }); setShowForm(true); }}>
                         <Pencil className="h-4 w-4 mr-2" /> {isRTL ? 'تعديل' : 'Modifier'}
                       </DropdownMenuItem>
                       {isRealAdmin && (

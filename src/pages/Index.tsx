@@ -77,7 +77,7 @@ const Index = () => {
           {/* Hero: Devis & Factures */}
           <button
             onClick={() => handleNavigate('/pro', 'فتح أدوات Pro (دوفي/فاتورة)')}
-            className="w-full rounded-2xl flex flex-col items-center gap-5 active:scale-[0.98] transition-all duration-200 border border-[hsl(200,60%,80%)] shadow-[0_12px_40px_-12px_hsl(200_60%_70%/0.3)] flex-[2] p-5"
+            className="w-full rounded-2xl flex flex-col items-center gap-5 active:scale-[0.98] transition-all duration-300 border border-[hsl(200,60%,80%)] shadow-[0_12px_40px_-12px_hsl(200_60%_70%/0.3)] hover:shadow-[0_20px_50px_-12px_hsl(200_60%_60%/0.45)] hover:-translate-y-1 flex-[2] p-5 animate-fade-in"
             dir="rtl"
             style={{ background: '#E3F2FD' }}
           >

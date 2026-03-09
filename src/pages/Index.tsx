@@ -77,26 +77,25 @@ const Index = () => {
           {/* Hero: Devis & Factures */}
           <button
             onClick={() => handleNavigate('/pro', 'فتح أدوات Pro (دوفي/فاتورة)')}
-            className="w-full rounded-2xl flex flex-col items-center gap-5 active:scale-[0.98] transition-all duration-300 border border-[hsl(200,60%,80%)] shadow-[0_12px_40px_-12px_hsl(200_60%_70%/0.3)] hover:shadow-[0_20px_50px_-12px_hsl(200_60%_60%/0.45)] hover:-translate-y-1 flex-[2] p-5 animate-fade-in"
+            className="w-full rounded-2xl flex flex-col items-center gap-5 active:scale-[0.98] hover:scale-[1.02] transition-all duration-300 border border-[hsl(200,60%,80%)] dark:border-[hsl(220,40%,30%)] shadow-[0_12px_40px_-12px_hsl(200_60%_70%/0.3)] hover:shadow-[0_20px_50px_-12px_hsl(200_60%_60%/0.45)] hover:-translate-y-1 flex-[2] p-5 animate-fade-in bg-[#E3F2FD] dark:bg-[#0D1B2A]"
             dir="rtl"
-            style={{ background: '#E3F2FD' }}
           >
             <div className="w-20 h-20 rounded-2xl shadow-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #FFD700, #E6B800)' }}>
               <Briefcase size={44} className="text-white drop-shadow-md" />
             </div>
             <div className="text-center w-full font-cairo space-y-2.5">
-              <h3 className="text-[16px] font-bold leading-relaxed flex items-center gap-1.5 justify-center flex-wrap" style={{ color: '#0D1B2A' }}>
+              <h3 className="text-[16px] font-bold leading-relaxed flex items-center gap-1.5 justify-center flex-wrap text-[#0D1B2A] dark:text-white">
                 <ShieldCheck size={20} className="text-emerald-500 shrink-0" />
                 {isRTL
                   ? 'حساباتك في جيبك ودوفيهاتك قانونية 100% 🚀'
                   : 'Vos comptes en poche, devis 100% légaux 🚀'}
               </h3>
-              <p className="text-[16px] font-medium leading-relaxed" style={{ color: '#1B3A5C' }}>
+              <p className="text-[16px] font-medium leading-relaxed text-[#1B3A5C] dark:text-gray-200">
                 {isRTL
                   ? 'اكتب بالعربي وطلّع فاتورة Factur-X في ثانية.'
                   : 'Écrivez en arabe, générez une facture Factur-X en une seconde.'}
               </p>
-              <p className="text-[16px] font-medium leading-relaxed" style={{ color: '#1B3A5C' }}>
+              <p className="text-[16px] font-medium leading-relaxed text-[#1B3A5C] dark:text-gray-200">
                 {isRTL
                   ? 'تفادى الغرامات، ودوس زرار وابعث للمحاسب فوراً!'
                   : 'Évitez les amendes, envoyez au comptable en un clic !'}

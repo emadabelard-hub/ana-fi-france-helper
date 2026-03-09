@@ -151,7 +151,7 @@ const ChantierDetailPage = () => {
         </TabsContent>
         <TabsContent value="expenses" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
           {expenses.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">{isRTL ? 'لا توجد مصاريف مرتبطة' : 'Aucune dépense liée'}</p>
+            <p className="text-center text-sm text-muted-foreground py-8">{isRTL ? 'لا توجد حسابات مرتبطة' : 'Aucune dépense liée'}</p>
           ) : expenses.map(exp => (
             <Card key={exp.id} className="border-border/50">
               <CardContent className="p-3">

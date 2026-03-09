@@ -50,7 +50,7 @@ const Dashboard = () => {
     {
       icon: Wallet,
       title: isRTL ? 'المحاسبة' : 'Comptabilité',
-      subtitle: isRTL ? 'المصاريف، العملاء، والمشاريع في مكان واحد' : 'Dépenses, clients et chantiers au même endroit',
+      subtitle: isRTL ? 'الحسابات، العملاء، والمشاريع في مكان واحد' : 'Dépenses, clients et chantiers au même endroit',
       path: '/expenses',
       gradient: 'from-cyan-500 to-teal-600',
       iconBg: 'bg-cyan-400/30',

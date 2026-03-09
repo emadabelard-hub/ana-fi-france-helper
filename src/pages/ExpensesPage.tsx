@@ -367,7 +367,7 @@ const ExpensesPage = () => {
           <CardContent className="py-12 text-center">
             <Receipt className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
             <p className={cn('text-sm text-muted-foreground', isRTL && 'font-cairo')}>
-              {isRTL ? 'لا توجد مصاريف بعد' : 'Aucune dépense enregistrée'}
+              {isRTL ? 'لا توجد حسابات بعد' : 'Aucune dépense enregistrée'}
             </p>
             <Button
               variant="outline"

@@ -103,7 +103,7 @@ const ChantierDetailPage = () => {
       <div className="grid grid-cols-3 gap-2 mb-4">
         {[
           { label: isRTL ? 'فوترة' : 'Facturé', value: totalFactured, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-          { label: isRTL ? 'مصاريف' : 'Dépenses', value: totalExpenses, icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-500/10' },
+          { label: isRTL ? 'حسابات' : 'Dépenses', value: totalExpenses, icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-500/10' },
           { label: isRTL ? 'الهامش' : 'Marge', value: margin, icon: Wallet, color: margin >= 0 ? 'text-primary' : 'text-red-500', bg: margin >= 0 ? 'bg-primary/10' : 'bg-red-500/10' },
         ].map(c => (
           <Card key={c.label} className="border-border/50">

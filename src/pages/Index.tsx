@@ -107,7 +107,7 @@ const Index = () => {
           {/* Smart CV */}
           <button
             onClick={() => handleNavigate('/pro/cv-generator', 'فتح مُولد CV')}
-            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-300 border border-[hsl(195,100%,50%)]/20 shadow-[0_8px_30px_-10px_hsl(195_100%_40%/0.35)] hover:shadow-[0_16px_40px_-10px_hsl(195_100%_40%/0.5)] hover:-translate-y-1 flex-1 py-8 animate-fade-in"
+            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-300 border border-[hsl(195,100%,50%)]/20 shadow-[0_8px_30px_-10px_hsl(195_100%_40%/0.35)] hover:shadow-[0_16px_40px_-10px_hsl(195_100%_40%/0.5)] hover:-translate-y-1 flex-1 py-8 animate-fade-inw-[0_16px_40px_-10px_hsl(195_100%_40%/0.5)] hover:-translate-y-1 flex-1 py-8 animate-fade-in"
           >
             <div className="w-20 h-20 rounded-2xl shadow-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #00BFFF, #0099CC)' }}>
               <FileUser size={46} className="text-white drop-shadow-md" />
@@ -132,7 +132,7 @@ const Index = () => {
           {/* شبيك لبيك — Elegant large card */}
           <button
             onClick={() => handleNavigate('/ai-assistant', 'فتح شبيك لبيك')}
-            className="w-full bg-card px-5 py-5 rounded-3xl flex items-center gap-4 active:scale-[0.98] transition-all duration-200 border border-[hsl(271,76%,53%)]/20 shadow-[0_6px_24px_-6px_hsl(271_76%_40%/0.3)]"
+            className="w-full bg-car300 border border-[hsl(271,76%,53%)]/20 shadow-[0_6px_24px_-6px_hsl(271_76%_40%/0.3)] hover:shadow-[0_14px_36px_-6px_hsl(271_76%_40%/0.45)] hover:-translate-y-1 animate-fade-inration-200 border border-[hsl(271,76%,53%)]/20 shadow-[0_6px_24px_-6px_hsl(271_76%_40%/0.3)]"
           >
             <div className="w-14 h-14 rounded-2xl shrink-0 shadow-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8A2BE2, #6A1FB0)' }}>
               <Sparkles size={28} className="text-white drop-shadow-md" />

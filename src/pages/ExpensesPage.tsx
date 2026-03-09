@@ -217,7 +217,7 @@ const ExpensesPage = () => {
       {/* Header */}
       <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <h1 className={cn('text-xl font-bold text-foreground', isRTL && 'font-cairo')}>
-          {isRTL ? '💰 إدارة المصاريف' : '💰 Notes de Frais'}
+          {isRTL ? '💰 إدارة الحسابات' : '💰 Notes de Frais'}
         </h1>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={handleExportCSV} className="gap-1">

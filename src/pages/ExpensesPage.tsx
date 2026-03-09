@@ -301,7 +301,7 @@ const ExpensesPage = () => {
           <CardContent className="p-3 text-center">
             <TrendingDown className="h-4 w-4 text-red-400 mx-auto mb-1" />
             <p className="text-[10px] text-muted-foreground font-semibold uppercase">
-              {isRTL ? 'المصاريف' : 'Dépenses'}
+              {isRTL ? 'الحسابات' : 'Dépenses'}
             </p>
             <p className="text-sm font-black text-red-400">{formatCurrency(totalExpenses)}</p>
           </CardContent>

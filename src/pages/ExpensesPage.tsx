@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,14 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Receipt, Plus, Search, TrendingUp, TrendingDown, Wallet,
-  Trash2, Image as ImageIcon, Loader2, ArrowLeft, Download,
+  Trash2, Image as ImageIcon, Loader2, Download,
   Link as LinkIcon, Users, HardHat, ChevronDown, ChevronUp, FileText
 } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
-import AuthModal from '@/components/auth/AuthModal';
+import FinancialDocumentsLog, { type FinancialDocumentsLogRef } from '@/components/archive/FinancialDocumentsLog';
 
 interface ExpenseRow {
   id: string;
@@ -55,16 +54,16 @@ const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
 const ExpensesPage = () => {
-  const { isRTL, t } = useLanguage();
+  const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const docsLogRef = useRef<FinancialDocumentsLogRef>(null);
 
   const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
   const [linkedDocs, setLinkedDocs] = useState<Record<string, LinkedDoc>>({});
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showAuth, setShowAuth] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [periodFilter, setPeriodFilter] = useState('all');
@@ -73,11 +72,7 @@ const ExpensesPage = () => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      setIsAdmin(false);
-      return;
-    }
-
+    if (!user) { setIsAdmin(false); return; }
     (async () => {
       const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
       setIsAdmin(data === true);
@@ -97,11 +92,9 @@ const ExpensesPage = () => {
       }
 
       const { data, error } = await expensesQuery;
-
       if (error) throw error;
       setExpenses(data || []);
 
-      // Fetch linked documents
       const docIds = (data || [])
         .map((e: ExpenseRow) => e.document_id)
         .filter(Boolean) as string[];
@@ -127,11 +120,7 @@ const ExpensesPage = () => {
 
   const filtered = useMemo(() => {
     let items = expenses;
-
-    if (categoryFilter !== 'all') {
-      items = items.filter(e => e.category === categoryFilter);
-    }
-
+    if (categoryFilter !== 'all') items = items.filter(e => e.category === categoryFilter);
     if (periodFilter !== 'all') {
       const now = new Date();
       const cutoff = new Date();
@@ -140,43 +129,30 @@ const ExpensesPage = () => {
       else if (periodFilter === 'year') cutoff.setFullYear(now.getFullYear() - 1);
       items = items.filter(e => new Date(e.expense_date) >= cutoff);
     }
-
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      items = items.filter(e =>
-        e.title.toLowerCase().includes(q) ||
-        (e.notes || '').toLowerCase().includes(q)
-      );
+      items = items.filter(e => e.title.toLowerCase().includes(q) || (e.notes || '').toLowerCase().includes(q));
     }
-
     return items;
   }, [expenses, categoryFilter, periodFilter, searchQuery]);
 
-  // Profit calculation: fetch invoices total and compare
   const [invoicesTotal, setInvoicesTotal] = useState(0);
 
   useEffect(() => {
     if (!user) return;
-
     const invoiceQuery = supabase
       .from('documents_comptables')
       .select('total_ttc')
       .eq('document_type', 'facture');
-
-    if (!isAdmin) {
-      invoiceQuery.eq('user_id', user.id);
-    }
-
+    if (!isAdmin) invoiceQuery.eq('user_id', user.id);
     invoiceQuery.then(({ data }) => {
       const total = (data || []).reduce((s: number, d: any) => s + (d.total_ttc || 0), 0);
       setInvoicesTotal(total);
     });
   }, [user, expenses, isAdmin]);
 
-  const totalExpenses = useMemo(() =>
-    filtered.reduce((s, e) => s + e.amount, 0), [filtered]);
-  const totalTVA = useMemo(() =>
-    filtered.reduce((s, e) => s + e.tva_amount, 0), [filtered]);
+  const totalExpenses = useMemo(() => filtered.reduce((s, e) => s + e.amount, 0), [filtered]);
+  const totalTVA = useMemo(() => filtered.reduce((s, e) => s + e.tva_amount, 0), [filtered]);
   const netProfit = invoicesTotal - totalExpenses;
 
   const handleDelete = async (id: string) => {
@@ -197,8 +173,12 @@ const ExpensesPage = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `depenses_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `comptes_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
+  };
+
+  const scrollToDocuments = () => {
+    docsLogRef.current?.scrollIntoView();
   };
 
   if (!user) {
@@ -251,31 +231,19 @@ const ExpensesPage = () => {
 
           {showAccountingMenu && (
             <div className="grid grid-cols-3 gap-2">
-              <Button
-                variant="outline"
-                className="h-12 gap-2"
-                onClick={() => navigate('/pro/documents')}
-              >
+              <Button variant="outline" className="h-12 gap-2" onClick={() => navigate('/pro/documents')}>
                 <FileText className="h-4 w-4 text-primary" />
                 <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
                   {isRTL ? 'المستندات' : 'Documents'}
                 </span>
               </Button>
-              <Button
-                variant="outline"
-                className="h-12 gap-2"
-                onClick={() => navigate('/clients')}
-              >
+              <Button variant="outline" className="h-12 gap-2" onClick={() => navigate('/clients')}>
                 <Users className="h-4 w-4 text-primary" />
                 <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
                   {isRTL ? 'العملاء' : 'Clients'}
                 </span>
               </Button>
-              <Button
-                variant="outline"
-                className="h-12 gap-2"
-                onClick={() => navigate('/chantiers')}
-              >
+              <Button variant="outline" className="h-12 gap-2" onClick={() => navigate('/chantiers')}>
                 <HardHat className="h-4 w-4 text-primary" />
                 <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
                   {isRTL ? 'مشاريعي (الشانتيات)' : 'Chantiers'}
@@ -286,9 +254,12 @@ const ExpensesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Summary Cards */}
+      {/* Summary Cards - clickable to scroll to documents */}
       <div className="grid grid-cols-3 gap-2">
-        <Card className="border-emerald-500/20 bg-emerald-500/5">
+        <Card
+          className="border-emerald-500/20 bg-emerald-500/5 cursor-pointer hover:border-emerald-500/40 transition-colors"
+          onClick={scrollToDocuments}
+        >
           <CardContent className="p-3 text-center">
             <TrendingUp className="h-4 w-4 text-emerald-400 mx-auto mb-1" />
             <p className="text-[10px] text-muted-foreground font-semibold uppercase">
@@ -306,10 +277,7 @@ const ExpensesPage = () => {
             <p className="text-sm font-black text-red-400">{formatCurrency(totalExpenses)}</p>
           </CardContent>
         </Card>
-        <Card className={cn(
-          'border-accent/20',
-          netProfit >= 0 ? 'bg-accent/5' : 'bg-red-500/5'
-        )}>
+        <Card className={cn('border-accent/20', netProfit >= 0 ? 'bg-accent/5' : 'bg-red-500/5')}>
           <CardContent className="p-3 text-center">
             <Wallet className="h-4 w-4 mx-auto mb-1" style={{ color: netProfit >= 0 ? 'hsl(var(--accent))' : undefined }} />
             <p className="text-[10px] text-muted-foreground font-semibold uppercase">
@@ -369,12 +337,7 @@ const ExpensesPage = () => {
             <p className={cn('text-sm text-muted-foreground', isRTL && 'font-cairo')}>
               {isRTL ? 'لا توجد حسابات بعد' : 'Aucune dépense enregistrée'}
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3 gap-1"
-              onClick={() => setShowAddModal(true)}
-            >
+            <Button variant="outline" size="sm" className="mt-3 gap-1" onClick={() => setShowAddModal(true)}>
               <Plus className="h-3.5 w-3.5" />
               {isRTL ? 'أضف أول مصروف' : 'Ajouter votre première dépense'}
             </Button>
@@ -399,31 +362,23 @@ const ExpensesPage = () => {
                           {isRTL ? cat.ar : cat.fr}
                         </Badge>
                       </div>
-
                       <div className={cn('flex items-center gap-3 text-xs text-muted-foreground', isRTL && 'flex-row-reverse')}>
                         <span>{expense.expense_date}</span>
-                        {expense.tva_amount > 0 && (
-                          <span>TVA: {formatCurrency(expense.tva_amount)}</span>
-                        )}
-                        {expense.receipt_url && (
-                          <ImageIcon className="h-3 w-3 text-accent" />
-                        )}
+                        {expense.tva_amount > 0 && <span>TVA: {formatCurrency(expense.tva_amount)}</span>}
+                        {expense.receipt_url && <ImageIcon className="h-3 w-3 text-accent" />}
                       </div>
-
                       {linkedDoc && (
                         <div className={cn('flex items-center gap-1 mt-1 text-xs text-accent', isRTL && 'flex-row-reverse')}>
                           <LinkIcon className="h-3 w-3" />
                           <span>{linkedDoc.document_number} — {linkedDoc.client_name}</span>
                         </div>
                       )}
-
                       {expense.notes && (
                         <p className={cn('text-xs text-muted-foreground mt-1 truncate', isRTL && 'font-cairo')}>
                           {expense.notes}
                         </p>
                       )}
                     </div>
-
                     <div className="flex flex-col items-end gap-1">
                       <span className="text-base font-black text-red-400">
                         -{formatCurrency(expense.amount)}
@@ -456,6 +411,14 @@ const ExpensesPage = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Financial Documents Log */}
+      <FinancialDocumentsLog
+        ref={docsLogRef}
+        userId={user.id}
+        isAdmin={isAdmin}
+        isRTL={isRTL}
+      />
 
       <AddExpenseModal
         open={showAddModal}

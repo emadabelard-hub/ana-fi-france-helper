@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Sparkles, FileUser } from 'lucide-react';
+import { Briefcase, Sparkles, FileUser, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import WelcomeModal from '@/components/home/WelcomeModal';
@@ -77,19 +77,28 @@ const Index = () => {
           {/* Hero: Devis & Factures */}
           <button
             onClick={() => handleNavigate('/pro', 'فتح أدوات Pro (دوفي/فاتورة)')}
-            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-6 active:scale-[0.98] transition-all duration-200 border border-primary/25 shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.3)] flex-[1.5] py-10"
+            className="w-full bg-card rounded-3xl flex flex-col items-start gap-5 active:scale-[0.98] transition-all duration-200 border border-primary/25 shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.3)] flex-[2] p-5"
+            dir="rtl"
           >
-            <div className="w-24 h-24 rounded-2xl shadow-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FFD700, #E6B800)' }}>
-              <Briefcase size={52} className="text-white drop-shadow-md" />
+            <div className="w-20 h-20 rounded-2xl shadow-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #FFD700, #E6B800)' }}>
+              <Briefcase size={44} className="text-white drop-shadow-md" />
             </div>
-            <div className="text-center px-6">
-              <h3 className={cn("text-2xl font-extrabold leading-snug text-foreground", isRTL && "font-cairo")}>
-                {isRTL ? 'فواتير ودوفيهات' : 'Devis & Factures'}
-              </h3>
-              <p className={cn("text-[0.95rem] font-medium text-muted-foreground mt-2.5 leading-relaxed", isRTL && "font-cairo")}>
+            <div className="text-right w-full font-cairo space-y-2.5">
+              <h3 className="text-[16px] font-bold leading-relaxed text-foreground flex items-center gap-1.5 justify-end flex-wrap">
+                <ShieldCheck size={20} className="text-emerald-500 shrink-0" />
                 {isRTL
-                  ? 'اعمل الفاكتير والدوفي بتوعك بسهولة أو حوّل الدوفي لفاتورة'
-                  : 'Créez vos factures et devis facilement'}
+                  ? 'حساباتك في جيبك ودوفيهاتك قانونية 100% 🚀'
+                  : 'Vos comptes en poche, devis 100% légaux 🚀'}
+              </h3>
+              <p className="text-[16px] font-medium text-muted-foreground leading-relaxed">
+                {isRTL
+                  ? 'اكتب بالعربي وطلّع فاتورة Factur-X في ثانية.'
+                  : 'Écrivez en arabe, générez une facture Factur-X en une seconde.'}
+              </p>
+              <p className="text-[16px] font-medium text-muted-foreground leading-relaxed">
+                {isRTL
+                  ? 'تفادى الغرامات، ودوس زرار وابعث للمحاسب فوراً!'
+                  : 'Évitez les amendes, envoyez au comptable en un clic !'}
               </p>
             </div>
           </button>

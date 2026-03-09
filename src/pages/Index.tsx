@@ -131,7 +131,7 @@ const Index = () => {
           {/* شبيك لبيك — Elegant large card */}
           <button
             onClick={() => handleNavigate('/ai-assistant', 'فتح شبيك لبيك')}
-            className="w-full bg-card rounded-3xl flex items-center gap-4 p-4 active:scale-[0.98] transition-all duration-300 border border-[hsl(271,76%,53%)]/20 shadow-[0_6px_24px_-6px_hsl(271_76%_40%/0.3)] hover:shadow-[0_14px_36px_-6px_hsl(271_76%_40%/0.45)] hover:-translate-y-1 animate-fade-in"
+            className="w-full rounded-2xl flex items-center gap-4 p-4 active:scale-[0.98] transition-all duration-300 border border-[#E1BEE7] shadow-[0_6px_24px_-6px_hsl(271_76%_40%/0.3)] hover:shadow-[0_14px_36px_-6px_hsl(271_76%_40%/0.45)] hover:-translate-y-1 animate-fade-in bg-[#F3E5F5] dark:bg-[#1A0A2E] dark:border-[hsl(271,40%,30%)]"
           >
             <div className="w-14 h-14 rounded-2xl shrink-0 shadow-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8A2BE2, #6A1FB0)' }}>
               <Sparkles size={28} className="text-white drop-shadow-md" />

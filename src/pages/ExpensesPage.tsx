@@ -206,7 +206,7 @@ const ExpensesPage = () => {
       <div className="py-8 text-center">
         <Receipt className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <p className="text-muted-foreground mb-4">
-          {isRTL ? 'لا توجد مصاريف بعد' : 'Aucune dépense pour le moment'}
+          {isRTL ? 'لا توجد حسابات بعد' : 'Aucune dépense pour le moment'}
         </p>
       </div>
     );

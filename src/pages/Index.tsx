@@ -107,7 +107,7 @@ const Index = () => {
           {/* Smart CV */}
           <button
             onClick={() => handleNavigate('/pro/cv-generator', 'فتح مُولد CV')}
-            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-200 border border-[hsl(195,100%,50%)]/20 shadow-[0_8px_30px_-10px_hsl(195_100%_40%/0.35)] flex-1 py-8"
+            className="w-full bg-card rounded-3xl flex flex-col items-center justify-center gap-5 active:scale-[0.98] transition-all duration-300 border border-[hsl(195,100%,50%)]/20 shadow-[0_8px_30px_-10px_hsl(195_100%_40%/0.35)] hover:shadow-[0_16px_40px_-10px_hsl(195_100%_40%/0.5)] hover:-translate-y-1 flex-1 py-8 animate-fade-in"
           >
             <div className="w-20 h-20 rounded-2xl shadow-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #00BFFF, #0099CC)' }}>
               <FileUser size={46} className="text-white drop-shadow-md" />

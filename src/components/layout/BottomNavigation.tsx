@@ -28,7 +28,7 @@ const navItems = [
   {
     path: '/expenses',
     icon: Receipt,
-    labelAr: 'مصاريف',
+    labelAr: 'حسابات',
     labelFr: 'Dépenses',
     color: 'text-orange-400',
     activeBg: 'bg-orange-400/15',

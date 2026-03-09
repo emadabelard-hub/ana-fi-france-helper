@@ -206,7 +206,7 @@ const ExpensesPage = () => {
       <div className="py-8 text-center">
         <Receipt className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <p className="text-muted-foreground mb-4">
-          {isRTL ? 'لا توجد مصاريف بعد' : 'Aucune dépense pour le moment'}
+          {isRTL ? 'لا توجد حسابات بعد' : 'Aucune dépense pour le moment'}
         </p>
       </div>
     );
@@ -217,7 +217,7 @@ const ExpensesPage = () => {
       {/* Header */}
       <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <h1 className={cn('text-xl font-bold text-foreground', isRTL && 'font-cairo')}>
-          {isRTL ? '💰 إدارة المصاريف' : '💰 Notes de Frais'}
+          {isRTL ? '💰 إدارة الحسابات' : '💰 Notes de Frais'}
         </h1>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={handleExportCSV} className="gap-1">
@@ -301,7 +301,7 @@ const ExpensesPage = () => {
           <CardContent className="p-3 text-center">
             <TrendingDown className="h-4 w-4 text-red-400 mx-auto mb-1" />
             <p className="text-[10px] text-muted-foreground font-semibold uppercase">
-              {isRTL ? 'المصاريف' : 'Dépenses'}
+              {isRTL ? 'الحسابات' : 'Dépenses'}
             </p>
             <p className="text-sm font-black text-red-400">{formatCurrency(totalExpenses)}</p>
           </CardContent>
@@ -367,7 +367,7 @@ const ExpensesPage = () => {
           <CardContent className="py-12 text-center">
             <Receipt className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
             <p className={cn('text-sm text-muted-foreground', isRTL && 'font-cairo')}>
-              {isRTL ? 'لا توجد مصاريف بعد' : 'Aucune dépense enregistrée'}
+              {isRTL ? 'لا توجد حسابات بعد' : 'Aucune dépense enregistrée'}
             </p>
             <Button
               variant="outline"

@@ -103,7 +103,7 @@ const ChantierDetailPage = () => {
       <div className="grid grid-cols-3 gap-2 mb-4">
         {[
           { label: isRTL ? 'فوترة' : 'Facturé', value: totalFactured, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-          { label: isRTL ? 'مصاريف' : 'Dépenses', value: totalExpenses, icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-500/10' },
+          { label: isRTL ? 'حسابات' : 'Dépenses', value: totalExpenses, icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-500/10' },
           { label: isRTL ? 'الهامش' : 'Marge', value: margin, icon: Wallet, color: margin >= 0 ? 'text-primary' : 'text-red-500', bg: margin >= 0 ? 'bg-primary/10' : 'bg-red-500/10' },
         ].map(c => (
           <Card key={c.label} className="border-border/50">
@@ -122,7 +122,7 @@ const ChantierDetailPage = () => {
       <Tabs defaultValue="documents" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="w-full shrink-0">
           <TabsTrigger value="documents" className="flex-1 gap-1"><FileText className="h-3.5 w-3.5" />{isRTL ? 'مستندات' : 'Documents'}</TabsTrigger>
-          <TabsTrigger value="expenses" className="flex-1 gap-1"><Receipt className="h-3.5 w-3.5" />{isRTL ? 'مصاريف' : 'Dépenses'}</TabsTrigger>
+          <TabsTrigger value="expenses" className="flex-1 gap-1"><Receipt className="h-3.5 w-3.5" />{isRTL ? 'حسابات' : 'Dépenses'}</TabsTrigger>
         </TabsList>
         <TabsContent value="documents" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
           {documents.length === 0 ? (
@@ -151,7 +151,7 @@ const ChantierDetailPage = () => {
         </TabsContent>
         <TabsContent value="expenses" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
           {expenses.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">{isRTL ? 'لا توجد مصاريف مرتبطة' : 'Aucune dépense liée'}</p>
+            <p className="text-center text-sm text-muted-foreground py-8">{isRTL ? 'لا توجد حسابات مرتبطة' : 'Aucune dépense liée'}</p>
           ) : expenses.map(exp => (
             <Card key={exp.id} className="border-border/50">
               <CardContent className="p-3">

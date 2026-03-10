@@ -52,10 +52,24 @@ const DocumentViewerModal = ({
 
     setIsExporting(true);
     try {
+      // Ensure all images are loaded
+      const imgs = Array.from(letterRef.current.querySelectorAll('img'));
+      await Promise.all(imgs.map(img =>
+        img.complete
+          ? Promise.resolve()
+          : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })
+      ));
+
+      // Wait for layout to settle
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       const canvas = await html2canvas(letterRef.current, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
+        scrollY: -window.scrollY,
+        windowWidth: letterRef.current.scrollWidth,
+        windowHeight: letterRef.current.scrollHeight,
       });
 
       const imgData = canvas.toDataURL('image/png');

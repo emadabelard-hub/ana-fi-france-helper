@@ -92,10 +92,16 @@ const InvoiceActions = ({
         const imgs = Array.from((pages[i] as HTMLElement).querySelectorAll('img'));
         await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })));
 
-        const canvas = await html2canvas(pages[i] as HTMLElement, {
+      // Small delay to let browser finish layout/paint
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const canvas = await html2canvas(pages[i] as HTMLElement, {
           backgroundColor: '#ffffff',
           scale: 2,
           useCORS: true,
+          scrollY: -window.scrollY,
+          windowWidth: (pages[i] as HTMLElement).scrollWidth,
+          windowHeight: (pages[i] as HTMLElement).scrollHeight,
         });
 
         // Compress: use JPEG for annexe pages (photos), PNG for main page
@@ -249,9 +255,121 @@ const InvoiceActions = ({
     URL.revokeObjectURL(url);
   };
 
-  // Open smart review instead of directly exporting
-  const handlePDFClick = () => {
-    window.print();
+  // Generate and download a standard PDF (no Factur-X XML)
+  const handlePDFClick = async () => {
+    if (!invoiceRef.current) return;
+
+    const wasArabic = showArabic;
+    if (wasArabic) {
+      onToggleArabic(false);
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    try {
+      const el = invoiceRef.current;
+
+      // Ensure all images are loaded before capture
+      const imgs = Array.from(el.querySelectorAll('img'));
+      await Promise.all(imgs.map(img =>
+        img.complete
+          ? Promise.resolve()
+          : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })
+      ));
+
+      // Small delay to let browser finish layout/paint
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const canvas = await html2canvas(el, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        scrollY: -window.scrollY,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
+      });
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+
+      const finalWidth = imgWidth * ratio * 0.95;
+      const finalHeight = imgHeight * ratio * 0.95;
+      const x = (pdfWidth - finalWidth) / 2;
+      const y = 5;
+
+      // If content is taller than one page, split across pages
+      const pageContentHeight = pdfHeight - 10; // margins
+      const scaledTotalHeight = (imgHeight / imgWidth) * finalWidth;
+
+      if (scaledTotalHeight <= pageContentHeight) {
+        pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+      } else {
+        // Multi-page: slice the canvas
+        const sliceHeightPx = Math.floor((pageContentHeight / finalWidth) * imgWidth);
+        let yOffset = 0;
+        let pageNum = 0;
+        while (yOffset < imgHeight) {
+          if (pageNum > 0) pdf.addPage();
+          const sliceH = Math.min(sliceHeightPx, imgHeight - yOffset);
+
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = imgWidth;
+          sliceCanvas.height = sliceH;
+          const ctx = sliceCanvas.getContext('2d')!;
+          ctx.drawImage(canvas, 0, yOffset, imgWidth, sliceH, 0, 0, imgWidth, sliceH);
+
+          const sliceData = sliceCanvas.toDataURL('image/png');
+          const sliceRatio = pdfWidth * 0.95 / imgWidth;
+          const sliceFinalW = imgWidth * sliceRatio;
+          const sliceFinalH = sliceH * sliceRatio;
+          pdf.addImage(sliceData, 'PNG', (pdfWidth - sliceFinalW) / 2, 5, sliceFinalW, sliceFinalH);
+
+          yOffset += sliceH;
+          pageNum++;
+        }
+      }
+
+      // Add pagination footer
+      const totalPages = pdf.getNumberOfPages();
+      const docLabel = `${invoiceData.type} n° ${invoiceData.number}`;
+      for (let p = 1; p <= totalPages; p++) {
+        pdf.setPage(p);
+        pdf.setFontSize(8);
+        pdf.setTextColor(150, 150, 150);
+        const footerText = `${docLabel} — Page ${p} / ${totalPages}`;
+        const textWidth = pdf.getTextWidth(footerText);
+        pdf.text(footerText, (pdfWidth - textWidth) / 2, pdfHeight - 6);
+      }
+
+      const blob = pdf.output('blob');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${invoiceData.type.toLowerCase()}-${invoiceData.number}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: isRTL ? '✅ تم التحميل' : '✅ Téléchargé',
+        description: isRTL ? 'تم حفظ ملف PDF' : 'Le fichier PDF a été enregistré',
+      });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'فشل في إنشاء PDF' : 'Échec de la création du PDF',
+      });
+    } finally {
+      if (wasArabic) {
+        onToggleArabic(true);
+      }
+    }
   };
 
   const handleSmartReviewConfirm = async (addons: SuggestedAddon[]) => {
@@ -298,12 +416,7 @@ const InvoiceActions = ({
   };
 
   const executeExportPDF = async () => {
-    window.print();
-
-    toast({
-      title: isRTL ? "تم التحميل" : "Téléchargé",
-      description: isRTL ? "تم حفظ الملف PDF" : "Le fichier PDF a été enregistré",
-    });
+    await handlePDFClick();
   };
 
   const handleExportImage = async () => {

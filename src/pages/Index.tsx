@@ -152,6 +152,9 @@ const Index = () => {
 
           {/* حاجات جديدة — absolute bottom */}
           <ComingSoonSection />
+
+          {/* Trust Shield */}
+          <GDPRTrustBox />
         </div>
       </main>
     </div>

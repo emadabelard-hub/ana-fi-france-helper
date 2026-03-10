@@ -24,7 +24,7 @@ const FinancialSummary = ({ totalIncome, totalExpenses, isRTL }: FinancialSummar
       border: 'border-emerald-500/20',
     },
     {
-      label: isRTL ? 'إجمالي المصاريف' : 'Total Dépenses',
+      label: isRTL ? 'إجمالي الحسابات' : 'Total Dépenses',
       value: totalExpenses,
       icon: TrendingDown,
       color: 'text-red-400',

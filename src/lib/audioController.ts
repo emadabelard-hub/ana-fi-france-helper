@@ -24,7 +24,7 @@ export function isGlobalAudioPlaying(): boolean {
 }
 
 /**
- * Fetch OpenAI TTS audio and play it. Stops any previous audio first.
+ * Fetch Secure AI TTS audio and play it. Stops any previous audio first.
  * Returns a promise that resolves when playback ends (or rejects on error).
  */
 export async function playTTS(text: string, voice = 'nova'): Promise<void> {

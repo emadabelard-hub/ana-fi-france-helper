@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import DocumentQRCode from './DocumentQRCode';
 
 export interface PaymentMilestone {
   id: string;

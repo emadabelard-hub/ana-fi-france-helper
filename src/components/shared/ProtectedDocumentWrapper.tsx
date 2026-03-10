@@ -140,9 +140,23 @@ const ProtectedDocumentWrapper = ({
 
       {/* Action buttons */}
       <div className="mt-3">
-        {isPaid && renderDownloadButton ? (
+      {isPaid && renderDownloadButton ? (
           renderDownloadButton()
+        ) : isPaid ? (
+          /* TRIAL PHASE: Free download fallback when no renderDownloadButton provided */
+          <Button
+            onClick={() => window.print()}
+            size="lg"
+            className={cn(
+              "w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-6 text-base",
+              isRTL && "font-cairo flex-row-reverse"
+            )}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            {isRTL ? 'تحميل النسخة الأصلية (PDF)' : 'Télécharger l\'original (PDF)'}
+          </Button>
         ) : (
+          /* PAYMENT BUTTON — hidden during trial, restore by setting isPaid = _isPaid above */
           <Button
             onClick={handlePayment}
             disabled={isProcessing}

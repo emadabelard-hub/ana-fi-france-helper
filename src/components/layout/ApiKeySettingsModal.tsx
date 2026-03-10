@@ -88,15 +88,15 @@ const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
         <DialogHeader>
           <DialogTitle className={cn("flex items-center gap-2 text-base", isRTL && "flex-row-reverse font-cairo")}>
             <Key size={18} />
-            {isRTL ? 'إعدادات مفتاح الذكاء الاصطناعي' : 'Clé API IA'}
+            {isRTL ? 'إعدادات الذكاء الاصطناعي المؤمن' : 'Clé IA Sécurisée'}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
           <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
             {isRTL 
-              ? 'أدخل مفتاح OpenAI الخاص بك لتفعيل ميزة "اسأل المعلم".'
-              : 'Entrez votre clé OpenAI pour activer "Demander au prof".'}
+              ? 'أدخل مفتاح الذكاء الاصطناعي المؤمن لتفعيل ميزة "اسأل المعلم".'
+              : 'Entrez votre clé IA sécurisée pour activer "Demander au prof".'}
           </p>
           
           <input

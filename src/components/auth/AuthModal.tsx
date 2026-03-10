@@ -8,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Loader2, Eye, EyeOff, UserRound } from 'lucide-react';
+import GDPRTrustBox from '@/components/shared/GDPRTrustBox';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AuthModalProps {
@@ -402,6 +403,9 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 </p>
               )}
             </div>
+
+            {/* GDPR Trust Box */}
+            <GDPRTrustBox />
           </>
         )}
       </DialogContent>

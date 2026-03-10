@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import LegalComplianceBanner from '@/components/shared/LegalComplianceBanner';
+import SecurityBadge from '@/components/shared/SecurityBadge';
 
 const Dashboard = () => {
   // Build marker: force diff for publish sync
@@ -133,6 +134,11 @@ const Dashboard = () => {
           🇫🇷 {isRTL ? 'مساعدك في فرنسا' : 'Votre assistant en France'}
         </p>
       </section>
+
+      {/* Security Badge */}
+      <div className="max-w-md mx-auto w-full px-2">
+        <SecurityBadge />
+      </div>
 
       {/* Hidden Admin Link */}
       <button 

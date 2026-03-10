@@ -34,7 +34,7 @@ const Dashboard = () => {
       icon: FileText,
       title: isRTL ? 'فواتير ودوفيهات' : 'Factures & Devis',
       subtitle: isRTL ? 'اعمل الفاكتير والدوفي بتوعك بسهولة أو حوّل الدوفي لفاتورة' : 'Créez vos factures et devis facilement',
-      path: '/pro/invoice-creator',
+      path: '/document-hub',
       gradient: 'from-amber-500 to-orange-500',
       iconBg: 'bg-amber-400/30',
       emoji: '📄',

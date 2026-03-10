@@ -36,6 +36,7 @@ const UniversalAdminAssistantPage = lazy(() => import("./pages/UniversalAdminAss
 const ServiceRequestPage = lazy(() => import("./pages/ServiceRequestPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
 const ExpensesPage = lazy(() => import("./pages/ExpensesPage"));
+const DocumentHubPage = lazy(() => import("./pages/DocumentHubPage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const ClientsPage = lazy(() => import("./pages/ClientsPage"));
 const ClientDetailPage = lazy(() => import("./pages/ClientDetailPage"));
@@ -90,6 +91,7 @@ const App = () => {
                   <Route path="/payment-success" element={<PaymentSuccessPage />} />
                   <Route path="/support" element={<SupportPage />} />
                   <Route path="/expenses" element={<ExpensesPage />} />
+                  <Route path="/document-hub" element={<DocumentHubPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/legal" element={<LegalPage />} />
                   <Route path="/clients" element={<ClientsPage />} />

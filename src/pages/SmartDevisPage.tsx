@@ -23,6 +23,7 @@ import {
   Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle, X, Upload,
   SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck
 } from 'lucide-react';
+import SecurityBadge from '@/components/shared/SecurityBadge';
 
 interface UploadedFile {
   id: string;
@@ -1206,6 +1207,7 @@ const SmartDevisPage = () => {
       </Dialog>
 
       <AuthModal open={showAuth} onOpenChange={setShowAuth} />
+      <SecurityBadge />
     </div>
   );
 };

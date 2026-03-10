@@ -195,25 +195,19 @@ const DocumentsListPage = () => {
 
   const handleExportCSV = () => {
     if (documents.length === 0) return;
-    const headers = ['Type', 'Numéro', 'Client', 'Date', 'HT (€)', 'TVA (€)', 'TTC (€)', 'Statut'];
-    const rows = documents.map(doc => [
-      doc.document_type === 'devis' ? 'Devis' : 'Facture',
-      doc.document_number,
-      `"${(doc.client_name || '').replace(/"/g, '""')}"`,
-      new Date(doc.created_at).toLocaleDateString('fr-FR'),
-      doc.subtotal_ht.toFixed(2),
-      doc.tva_amount.toFixed(2),
-      doc.total_ttc.toFixed(2),
-      doc.status === 'finalized' ? 'Finalisé' : 'Brouillon',
-    ]);
-    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `documents_${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const csvRows: CsvDocumentRow[] = documents.map(doc => ({
+      date: doc.created_at,
+      type: doc.document_type as 'devis' | 'facture',
+      reference: doc.document_number,
+      clientName: doc.client_name || '',
+      projectName: null,
+      totalHT: doc.subtotal_ht,
+      tvaRate: doc.tva_rate,
+      tvaAmount: doc.tva_amount,
+      totalTTC: doc.total_ttc,
+    }));
+    const csv = generateProfessionalCSV(csvRows);
+    downloadCSV(csv, `documents_${new Date().toISOString().slice(0, 10)}.csv`);
     toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export réussi', description: isRTL ? 'تم تحميل ملف CSV' : 'Fichier CSV téléchargé' });
   };
 

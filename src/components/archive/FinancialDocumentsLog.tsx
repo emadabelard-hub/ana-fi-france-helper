@@ -148,21 +148,19 @@ const FinancialDocumentsLog = forwardRef<FinancialDocumentsLogRef, Props>(({ use
 
   const handleExportDocsCSV = () => {
     if (filtered.length === 0) return;
-    const headers = ['Date;Type;Numéro;Client;Projet;Montant TTC;Statut'];
-    const rows = filtered.map(d => {
-      const date = new Date(d.created_at).toLocaleDateString('fr-FR');
-      const type = d.document_type === 'devis' ? 'Devis' : 'Facture';
-      const project = d.chantier_id ? (chantierMap[d.chantier_id] || '') : '';
-      return `${date};${type};${d.document_number};"${d.client_name}";${project};${d.total_ttc.toFixed(2)};${d.status}`;
-    });
-    const csv = '\uFEFF' + [...headers, ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `documents_financiers_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const csvRows: CsvDocumentRow[] = filtered.map(d => ({
+      date: d.created_at,
+      type: d.document_type as 'devis' | 'facture',
+      reference: d.document_number,
+      clientName: d.client_name || '',
+      projectName: d.chantier_id ? (chantierMap[d.chantier_id] || '') : null,
+      totalHT: null,
+      tvaRate: 0,
+      tvaAmount: null,
+      totalTTC: d.total_ttc,
+    }));
+    const csv = generateProfessionalCSV(csvRows);
+    downloadCSV(csv, `documents_financiers_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   return (

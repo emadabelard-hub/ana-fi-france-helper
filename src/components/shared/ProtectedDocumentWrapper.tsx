@@ -44,11 +44,13 @@ const ProtectedDocumentWrapper = ({
   children,
   documentType,
   returnPath,
-  isPaid = false,
+  isPaid: _isPaid = false,
   onUnlocked,
   renderDownloadButton,
   className,
 }: ProtectedDocumentWrapperProps) => {
+  // TRIAL PHASE: All documents unlocked — set to `_isPaid` to reactivate payments
+  const isPaid = true;
   const { user } = useAuth();
   const { isRTL } = useLanguage();
   const { toast } = useToast();

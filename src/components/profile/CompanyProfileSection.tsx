@@ -40,6 +40,7 @@ interface CompanyFormData {
   assurance_geographic_coverage: string;
   iban: string;
   bic: string;
+  accountant_email: string;
 }
 
 const CompanyProfileSection = () => {

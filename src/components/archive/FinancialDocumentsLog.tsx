@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Receipt, Loader2, ArrowUpDown, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
 
 interface DocRow {
   id: string;

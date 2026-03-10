@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SecurityBadge from '@/components/shared/SecurityBadge';
+import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
 
 interface UnifiedRow {
   id: string;

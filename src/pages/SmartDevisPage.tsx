@@ -1207,6 +1207,7 @@ const SmartDevisPage = () => {
       </Dialog>
 
       <AuthModal open={showAuth} onOpenChange={setShowAuth} />
+      <SecurityBadge />
     </div>
   );
 };

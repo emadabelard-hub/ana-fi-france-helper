@@ -133,7 +133,7 @@ const ArchiveAccountingPage = () => {
 
   // Financial totals
   const totalIncome = useMemo(() =>
-    documents.filter(d => d.type === 'facture').reduce((s, d) => s + d.amountTTC, 0),
+    documents.filter(d => d.type === 'facture' && d.status === 'finalized').reduce((s, d) => s + d.amountTTC, 0),
     [documents]);
   const totalExpenses = useMemo(() =>
     expenses.reduce((s, e) => s + e.amountTTC, 0),

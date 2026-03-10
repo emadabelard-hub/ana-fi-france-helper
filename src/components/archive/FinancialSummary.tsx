@@ -16,7 +16,7 @@ const FinancialSummary = ({ totalIncome, totalExpenses, isRTL }: FinancialSummar
 
   const cards = [
     {
-      label: isRTL ? 'إجمالي المداخيل' : 'Total Revenus',
+      label: isRTL ? 'إجمالي الإيرادات' : 'Total Revenus',
       value: totalIncome,
       icon: TrendingUp,
       color: 'text-emerald-400',

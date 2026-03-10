@@ -92,10 +92,16 @@ const InvoiceActions = ({
         const imgs = Array.from((pages[i] as HTMLElement).querySelectorAll('img'));
         await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })));
 
-        const canvas = await html2canvas(pages[i] as HTMLElement, {
+      // Small delay to let browser finish layout/paint
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const canvas = await html2canvas(pages[i] as HTMLElement, {
           backgroundColor: '#ffffff',
           scale: 2,
           useCORS: true,
+          scrollY: -window.scrollY,
+          windowWidth: (pages[i] as HTMLElement).scrollWidth,
+          windowHeight: (pages[i] as HTMLElement).scrollHeight,
         });
 
         // Compress: use JPEG for annexe pages (photos), PNG for main page

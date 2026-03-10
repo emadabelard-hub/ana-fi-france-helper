@@ -38,7 +38,7 @@ const DocumentHubPage = () => {
           </div>
           <div className={cn('flex-1', isRTL ? 'text-right' : 'text-left')}>
             <h2 className="text-lg font-bold font-cairo mb-1">
-              {isRTL ? 'دوفي ذكي بالذكاء الاصطناعي' : 'Devis IA intelligent'}
+              {isRTL ? 'اعمل الدوفي والفاتورة بالذكاء الاصطناعي وممكن تحول الدوفي لفاتورة في ثواني' : 'Devis & Facture IA — convertissez un devis en facture en secondes'}
             </h2>
             <p className="text-white/85 text-sm font-cairo leading-relaxed">
               {isRTL
@@ -66,7 +66,7 @@ const DocumentHubPage = () => {
           </div>
           <div className={cn('flex-1', isRTL ? 'text-right' : 'text-left')}>
             <h2 className="text-lg font-bold font-cairo mb-1">
-              {isRTL ? 'فواتير ودوفيهات' : 'Factures & Devis'}
+              {isRTL ? 'اعمل بنفسك وبكل سهولة الدوفي والفاتورة وممكن تحول الدوفي لفاتورة في ثواني' : 'Créez facilement vos devis & factures — convertissez en un clic'}
             </h2>
             <p className="text-white/85 text-sm font-cairo leading-relaxed">
               {isRTL

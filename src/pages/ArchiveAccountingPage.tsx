@@ -398,6 +398,16 @@ const ArchiveAccountingPage = () => {
             });
         }}
       />
+      <SendToAccountantModal
+        open={showSendAccountant}
+        onOpenChange={setShowSendAccountant}
+        isRTL={isRTL}
+        userId={user.id}
+        accountantEmail={(profile as any)?.accountant_email}
+        onSent={() => {
+          // Optionally refresh data
+        }}
+      />
     </div>
   );
 };

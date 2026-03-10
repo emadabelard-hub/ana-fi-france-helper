@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SecurityBadge from '@/components/shared/SecurityBadge';
+import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
 
 interface UnifiedRow {
   id: string;
@@ -168,20 +169,19 @@ const ExpensesPage = () => {
 
   const handleExportCSV = () => {
     if (filtered.length === 0) return;
-    const headers = ['Date;Type;Document;Client;Projet;Montant'];
-    const csvRows = filtered.map(r => {
-      const date = new Date(r.date).toLocaleDateString('fr-FR');
-      const type = r.type === 'devis' ? 'Devis' : r.type === 'facture' ? 'Facture' : 'Dépense';
-      return `${date};${type};"${r.label}";"${r.clientName}";"${r.projectName || ''}";${r.amount.toFixed(2)}`;
-    });
-    const csv = '\uFEFF' + [...headers, ...csvRows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `comptes_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const csvRows: CsvDocumentRow[] = filtered.map(r => ({
+      date: r.date,
+      type: r.type,
+      reference: r.label,
+      clientName: r.clientName,
+      projectName: r.projectName,
+      totalHT: null,
+      tvaRate: 0,
+      tvaAmount: null,
+      totalTTC: r.amount,
+    }));
+    const csv = generateProfessionalCSV(csvRows);
+    downloadCSV(csv, `comptes_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   const typeConfig: Record<string, { label: { fr: string; ar: string }; color: string }> = {

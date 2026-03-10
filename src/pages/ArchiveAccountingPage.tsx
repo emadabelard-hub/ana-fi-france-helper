@@ -16,6 +16,7 @@ import DocumentCard, { type DocumentItem } from '@/components/archive/DocumentCa
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SendToAccountantModal from '@/components/archive/SendToAccountantModal';
 import { useProfile } from '@/hooks/useProfile';
+import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
 
 const ArchiveAccountingPage = () => {
   const { isRTL } = useLanguage();
@@ -188,24 +189,19 @@ const ArchiveAccountingPage = () => {
   };
   const handleExportCSV = () => {
     if (allItems.length === 0) return;
-    const headers = ['Type', 'Numéro', 'Client', 'Date', 'HT (€)', 'TTC (€)', 'Statut'];
-    const rows = allItems.map(d => [
-      d.type === 'devis' ? 'Devis' : d.type === 'facture' ? 'Facture' : 'Dépense',
-      d.number,
-      `"${(d.clientName || '').replace(/"/g, '""')}"`,
-      d.date,
-      d.amountHT.toFixed(2),
-      d.amountTTC.toFixed(2),
-      d.status,
-    ]);
-    const csv = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `archive_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const csvRows: CsvDocumentRow[] = allItems.map(d => ({
+      date: d.rawData?.created_at || d.rawData?.expense_date || new Date().toISOString(),
+      type: d.type as 'devis' | 'facture' | 'expense',
+      reference: d.number,
+      clientName: d.clientName || '',
+      projectName: d.rawData?.chantier_id ? '' : null,
+      totalHT: d.amountHT,
+      tvaRate: d.rawData?.tva_rate ?? 0,
+      tvaAmount: d.rawData?.tva_amount ?? 0,
+      totalTTC: d.amountTTC,
+    }));
+    const csv = generateProfessionalCSV(csvRows);
+    downloadCSV(csv, `archive_${new Date().toISOString().slice(0, 10)}.csv`);
     toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export CSV réussi' });
   };
 

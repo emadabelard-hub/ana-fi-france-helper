@@ -134,6 +134,11 @@ const Dashboard = () => {
         </p>
       </section>
 
+      {/* Security Badge */}
+      <div className="max-w-md mx-auto w-full px-2">
+        <SecurityBadge />
+      </div>
+
       {/* Hidden Admin Link */}
       <button 
         onClick={() => navigate('/admin')}

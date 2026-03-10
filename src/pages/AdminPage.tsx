@@ -18,6 +18,7 @@ import TransactionsManager from '@/components/admin/TransactionsManager';
 import ServiceRequestsManager from '@/components/admin/ServiceRequestsManager';
 import AnalyticsManager from '@/components/admin/AnalyticsManager';
 import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
+import ApiStatusIndicator from '@/components/admin/ApiStatusIndicator';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();
@@ -90,6 +91,7 @@ const AdminPage = () => {
               {isRTL ? 'إدارة الدروس والأسئلة' : 'Gérer les leçons et les questions'}
             </p>
         </div>
+        <ApiStatusIndicator isRTL={isRTL} />
       </section>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

@@ -747,6 +747,29 @@ const CompanyProfileSection = () => {
               />
             </div>
           </div>
+
+          {/* Accountant Email */}
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <Label className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'بريد المحاسب' : 'Email du comptable'}
+              </Label>
+            </div>
+            <Input
+              type="email"
+              value={formData.accountant_email}
+              onChange={(e) => handleChange('accountant_email' as any, e.target.value)}
+              placeholder="comptable@example.com"
+              className="font-mono text-sm"
+              dir="ltr"
+            />
+            <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-cairo")}>
+              {isRTL
+                ? '💡 سيتم ملء هذا البريد تلقائيًا عند إرسال المستندات للمحاسب'
+                : '💡 Sera pré-rempli automatiquement lors de l\'envoi au comptable'}
+            </p>
+          </div>
         </CardContent>
       </Card>
 

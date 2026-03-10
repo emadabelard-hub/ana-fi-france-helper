@@ -151,6 +151,7 @@ export type Database = {
           id: string
           nature_operation: string | null
           pdf_url: string | null
+          sent_to_accountant_at: string | null
           status: string
           subtotal_ht: number
           total_ttc: number
@@ -172,6 +173,7 @@ export type Database = {
           id?: string
           nature_operation?: string | null
           pdf_url?: string | null
+          sent_to_accountant_at?: string | null
           status?: string
           subtotal_ht?: number
           total_ttc?: number
@@ -193,6 +195,7 @@ export type Database = {
           id?: string
           nature_operation?: string | null
           pdf_url?: string | null
+          sent_to_accountant_at?: string | null
           status?: string
           subtotal_ht?: number
           total_ttc?: number
@@ -224,6 +227,7 @@ export type Database = {
           id: string
           notes: string | null
           receipt_url: string | null
+          sent_to_accountant_at: string | null
           title: string
           tva_amount: number
           updated_at: string
@@ -239,6 +243,7 @@ export type Database = {
           id?: string
           notes?: string | null
           receipt_url?: string | null
+          sent_to_accountant_at?: string | null
           title: string
           tva_amount?: number
           updated_at?: string
@@ -254,6 +259,7 @@ export type Database = {
           id?: string
           notes?: string | null
           receipt_url?: string | null
+          sent_to_accountant_at?: string | null
           title?: string
           tva_amount?: number
           updated_at?: string
@@ -344,6 +350,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          accountant_email: string | null
           address: string | null
           artisan_signature_url: string | null
           assurance_geographic_coverage: string | null
@@ -382,6 +389,7 @@ export type Database = {
           ville_immatriculation: string | null
         }
         Insert: {
+          accountant_email?: string | null
           address?: string | null
           artisan_signature_url?: string | null
           assurance_geographic_coverage?: string | null
@@ -420,6 +428,7 @@ export type Database = {
           ville_immatriculation?: string | null
         }
         Update: {
+          accountant_email?: string | null
           address?: string | null
           artisan_signature_url?: string | null
           assurance_geographic_coverage?: string | null

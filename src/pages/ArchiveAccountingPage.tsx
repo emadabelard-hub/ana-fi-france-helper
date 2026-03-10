@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Search, Sparkles, FileText, Receipt, ReceiptText, FolderArchive, Download, ScanLine, Filter } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Search, Sparkles, FileText, Receipt, ReceiptText, FolderArchive, Download, ScanLine, Filter, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -14,6 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 import FinancialSummary from '@/components/archive/FinancialSummary';
 import DocumentCard, { type DocumentItem } from '@/components/archive/DocumentCard';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
+import SendToAccountantModal from '@/components/archive/SendToAccountantModal';
+import { useProfile } from '@/hooks/useProfile';
 
 const ArchiveAccountingPage = () => {
   const { isRTL } = useLanguage();
@@ -27,7 +29,9 @@ const ArchiveAccountingPage = () => {
   const [periodFilter, setPeriodFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('all');
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [showSendAccountant, setShowSendAccountant] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { profile } = useProfile();
 
   useEffect(() => {
     if (!user || user.is_anonymous) {
@@ -343,6 +347,14 @@ const ArchiveAccountingPage = () => {
         <Button
           size="sm"
           className="bg-accent text-accent-foreground hover:bg-accent/90 font-bold gap-1.5 rounded-full shadow-lg shadow-accent/20 px-4"
+          onClick={() => setShowSendAccountant(true)}
+        >
+          <Send className="h-4 w-4" />
+          <span className={cn('text-xs', isRTL && 'font-cairo')}>{isRTL ? 'إرسال المستندات للمحاسب' : 'Envoyer au comptable'}</span>
+        </Button>
+        <Button
+          size="sm"
+          className="bg-accent/80 text-accent-foreground hover:bg-accent/70 font-bold gap-1.5 rounded-full shadow-lg shadow-accent/20 px-4"
           onClick={handleExportCSV}
         >
           <Download className="h-4 w-4" />
@@ -384,6 +396,16 @@ const ArchiveAccountingPage = () => {
                 })));
               }
             });
+        }}
+      />
+      <SendToAccountantModal
+        open={showSendAccountant}
+        onOpenChange={setShowSendAccountant}
+        isRTL={isRTL}
+        userId={user.id}
+        accountantEmail={(profile as any)?.accountant_email}
+        onSent={() => {
+          // Optionally refresh data
         }}
       />
     </div>

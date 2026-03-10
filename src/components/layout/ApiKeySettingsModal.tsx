@@ -95,8 +95,8 @@ const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
         <div className="space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
           <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
             {isRTL 
-              ? 'أدخل مفتاح OpenAI الخاص بك لتفعيل ميزة "اسأل المعلم".'
-              : 'Entrez votre clé OpenAI pour activer "Demander au prof".'}
+              ? 'أدخل مفتاح الذكاء الاصطناعي المؤمن لتفعيل ميزة "اسأل المعلم".'
+              : 'Entrez votre clé IA sécurisée pour activer "Demander au prof".'}
           </p>
           
           <input

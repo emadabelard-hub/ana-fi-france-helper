@@ -402,6 +402,9 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 </p>
               )}
             </div>
+
+            {/* GDPR Trust Box */}
+            <GDPRTrustBox />
           </>
         )}
       </DialogContent>

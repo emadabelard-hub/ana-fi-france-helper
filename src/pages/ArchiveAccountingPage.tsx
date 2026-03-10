@@ -347,6 +347,14 @@ const ArchiveAccountingPage = () => {
         <Button
           size="sm"
           className="bg-accent text-accent-foreground hover:bg-accent/90 font-bold gap-1.5 rounded-full shadow-lg shadow-accent/20 px-4"
+          onClick={() => setShowSendAccountant(true)}
+        >
+          <Send className="h-4 w-4" />
+          <span className={cn('text-xs', isRTL && 'font-cairo')}>{isRTL ? 'إرسال المستندات للمحاسب' : 'Envoyer au comptable'}</span>
+        </Button>
+        <Button
+          size="sm"
+          className="bg-accent/80 text-accent-foreground hover:bg-accent/70 font-bold gap-1.5 rounded-full shadow-lg shadow-accent/20 px-4"
           onClick={handleExportCSV}
         >
           <Download className="h-4 w-4" />

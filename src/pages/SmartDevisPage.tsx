@@ -24,7 +24,6 @@ import {
   SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck
 } from 'lucide-react';
 import SecurityBadge from '@/components/shared/SecurityBadge';
-} from 'lucide-react';
 
 interface UploadedFile {
   id: string;

@@ -8,6 +8,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { cn } from '@/lib/utils';
 import AuthModal from '@/components/auth/AuthModal';
 import DocumentTypeModal from '@/components/invoice/DocumentTypeModal';
+import SecurityBadge from '@/components/shared/SecurityBadge';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';

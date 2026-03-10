@@ -15,6 +15,7 @@ import {
   ChevronDown, ChevronUp, Users, HardHat
 } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
+import SecurityBadge from '@/components/shared/SecurityBadge';
 
 interface UnifiedRow {
   id: string;

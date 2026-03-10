@@ -88,7 +88,7 @@ const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
         <DialogHeader>
           <DialogTitle className={cn("flex items-center gap-2 text-base", isRTL && "flex-row-reverse font-cairo")}>
             <Key size={18} />
-            {isRTL ? 'إعدادات مفتاح الذكاء الاصطناعي' : 'Clé API IA'}
+            {isRTL ? 'إعدادات الذكاء الاصطناعي المؤمن' : 'Clé IA Sécurisée'}
           </DialogTitle>
         </DialogHeader>
 

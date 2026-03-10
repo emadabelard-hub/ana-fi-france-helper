@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import LegalComplianceBanner from '@/components/shared/LegalComplianceBanner';
+import SecurityBadge from '@/components/shared/SecurityBadge';
 
 const Dashboard = () => {
   // Build marker: force diff for publish sync

@@ -29,7 +29,9 @@ const ArchiveAccountingPage = () => {
   const [periodFilter, setPeriodFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('all');
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [showSendAccountant, setShowSendAccountant] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { profile } = useProfile();
 
   useEffect(() => {
     if (!user || user.is_anonymous) {

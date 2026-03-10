@@ -35,6 +35,8 @@ export interface Profile {
   // Bank details
   iban: string | null;
   bic: string | null;
+  // Accountant
+  accountant_email: string | null;
   // Credits & Rate Limiting
   credits_balance: number;
   daily_message_count: number;

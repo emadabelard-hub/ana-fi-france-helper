@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import WelcomeModal from '@/components/home/WelcomeModal';
 import ComingSoonSection from '@/components/home/ComingSoonSection';
+import GDPRTrustBox from '@/components/shared/GDPRTrustBox';
 import { useTracker } from '@/contexts/ActivityTrackerContext';
 
 const Index = () => {
@@ -151,6 +152,9 @@ const Index = () => {
 
           {/* حاجات جديدة — absolute bottom */}
           <ComingSoonSection />
+
+          {/* Trust Shield */}
+          <GDPRTrustBox />
         </div>
       </main>
     </div>

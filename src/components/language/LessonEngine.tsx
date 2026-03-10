@@ -135,7 +135,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
       setPlayAllIdx(i);
       setPlayAllPhase('speaking');
 
-      // Step 1: Play via global audio controller (OpenAI Nova)
+      // Step 1: Play via global audio controller (Secure AI TTS)
       try {
         await playTTS(buildTTSText(phrases[i].termFr), 'nova');
       } catch {

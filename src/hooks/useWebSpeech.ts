@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { playTTS, stopGlobalAudio } from '@/lib/audioController';
 
-// ─── TTS (Text-to-Speech) via Global Audio Controller (OpenAI only) ───
+// ─── TTS (Text-to-Speech) via Global Audio Controller (Secure AI) ───
 export function useTTS() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

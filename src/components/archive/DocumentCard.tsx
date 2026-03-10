@@ -28,7 +28,7 @@ interface DocumentCardProps {
 const typeConfig = {
   devis: { icon: FileText, label: 'Devis', labelAr: 'عرض سعر', color: 'text-amber-400', bg: 'bg-amber-500/10' },
   facture: { icon: Receipt, label: 'Facture', labelAr: 'فاتورة', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-  expense: { icon: ReceiptText, label: 'Note de frais', labelAr: 'مصاريف', color: 'text-blue-400', bg: 'bg-blue-500/10' },
+  expense: { icon: ReceiptText, label: 'Note de frais', labelAr: 'حسابات', color: 'text-blue-400', bg: 'bg-blue-500/10' },
 };
 
 const statusConfig = {

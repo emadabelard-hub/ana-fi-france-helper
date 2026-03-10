@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import DocumentQRCode from './DocumentQRCode';
 
 export interface PaymentMilestone {
   id: string;
@@ -214,12 +215,20 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 <p className="text-[8pt] text-gray-600">Assurance Décennale & RC Pro : {data.emitter.decennale}</p>
               )}
             </div>
-            {/* Doc title + number */}
-            <div className="text-right shrink-0">
-              <h2 className="text-[16pt] font-bold text-black leading-none">
-                <ArSub fr={data.type} />
-              </h2>
-              <p className="text-[9pt] text-gray-600 font-medium mt-0.5">N° {data.number}</p>
+            {/* Doc title + number + QR */}
+            <div className="text-right shrink-0 flex items-start gap-2">
+              <div>
+                <h2 className="text-[16pt] font-bold text-black leading-none">
+                  <ArSub fr={data.type} />
+                </h2>
+                <p className="text-[9pt] text-gray-600 font-medium mt-0.5">N° {data.number}</p>
+              </div>
+              <DocumentQRCode
+                documentNumber={data.number}
+                date={data.date}
+                totalTTC={data.total}
+                size={54}
+              />
             </div>
           </div>
 

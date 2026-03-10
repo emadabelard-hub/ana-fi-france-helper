@@ -273,7 +273,7 @@ const ExpensesPage = () => {
               <TrendingDown className="h-5 w-5 text-red-400" />
             </div>
             <p className={cn("text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1", isRTL && "font-cairo")}>
-              {isRTL ? 'إجمالي المصاريف' : 'Total Dépenses'}
+              {isRTL ? 'إجمالي الحسابات' : 'Total Dépenses'}
             </p>
             <p className="text-lg font-black text-red-400">{formatCurrency(totalExpenses)}</p>
           </CardContent>

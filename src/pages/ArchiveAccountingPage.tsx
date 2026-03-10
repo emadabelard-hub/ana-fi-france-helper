@@ -225,7 +225,7 @@ const ArchiveAccountingPage = () => {
     { value: 'all', icon: FolderArchive, label: isRTL ? 'الكل' : 'Tout', count: allItems.length },
     { value: 'devis', icon: FileText, label: isRTL ? 'عروض أسعار' : 'Devis', count: documents.filter(d => d.type === 'devis').length },
     { value: 'factures', icon: Receipt, label: isRTL ? 'فواتير' : 'Factures', count: documents.filter(d => d.type === 'facture').length },
-    { value: 'expenses', icon: ReceiptText, label: isRTL ? 'مصاريف' : 'Dépenses', count: expenses.length },
+    { value: 'expenses', icon: ReceiptText, label: isRTL ? 'حسابات' : 'Dépenses', count: expenses.length },
   ];
 
   const renderEmpty = () => (

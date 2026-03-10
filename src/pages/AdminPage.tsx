@@ -91,6 +91,7 @@ const AdminPage = () => {
               {isRTL ? 'إدارة الدروس والأسئلة' : 'Gérer les leçons et les questions'}
             </p>
         </div>
+        <ApiStatusIndicator isRTL={isRTL} />
       </section>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

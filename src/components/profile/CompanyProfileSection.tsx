@@ -76,6 +76,7 @@ const CompanyProfileSection = () => {
     assurance_geographic_coverage: 'France métropolitaine',
     iban: '',
     bic: '',
+    accountant_email: '',
   });
 
   useEffect(() => {

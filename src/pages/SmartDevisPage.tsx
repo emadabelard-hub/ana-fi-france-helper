@@ -23,6 +23,8 @@ import {
   Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle, X, Upload,
   SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck
 } from 'lucide-react';
+import SecurityBadge from '@/components/shared/SecurityBadge';
+} from 'lucide-react';
 
 interface UploadedFile {
   id: string;

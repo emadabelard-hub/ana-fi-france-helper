@@ -312,6 +312,7 @@ const InvoiceCreatorPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <SecurityBadge />
     </div>
   );
 };

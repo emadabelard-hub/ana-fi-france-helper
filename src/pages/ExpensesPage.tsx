@@ -419,6 +419,9 @@ const ExpensesPage = () => {
         </div>
       )}
 
+      {/* Security Badge */}
+      <SecurityBadge />
+
       <AddExpenseModal
         open={showAddModal}
         onOpenChange={setShowAddModal}

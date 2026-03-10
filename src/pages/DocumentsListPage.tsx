@@ -203,7 +203,7 @@ const DocumentsListPage = () => {
       clientName: doc.client_name || '',
       projectName: null,
       totalHT: doc.subtotal_ht,
-      tvaRate: doc.tva_rate,
+      tvaRate: doc.subtotal_ht > 0 ? ((doc.tva_amount / doc.subtotal_ht) * 100) : 0,
       tvaAmount: doc.tva_amount,
       totalTTC: doc.total_ttc,
     }));

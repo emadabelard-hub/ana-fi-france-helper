@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Search, Sparkles, FileText, Receipt, ReceiptText, FolderArchive, Download, ScanLine, Filter } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Search, Sparkles, FileText, Receipt, ReceiptText, FolderArchive, Download, ScanLine, Filter, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';

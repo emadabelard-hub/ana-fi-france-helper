@@ -262,7 +262,7 @@ const ExpensesPage = () => {
               <TrendingUp className="h-5 w-5 text-emerald-400" />
             </div>
             <p className={cn("text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1", isRTL && "font-cairo")}>
-              {isRTL ? 'إجمالي المداخيل' : 'Total Revenus'}
+              {isRTL ? 'إجمالي الإيرادات' : 'Total Revenus'}
             </p>
             <p className="text-lg font-black text-emerald-400">{formatCurrency(totalIncome)}</p>
           </CardContent>

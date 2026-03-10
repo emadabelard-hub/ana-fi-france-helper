@@ -410,12 +410,7 @@ const InvoiceActions = ({
   };
 
   const executeExportPDF = async () => {
-    window.print();
-
-    toast({
-      title: isRTL ? "تم التحميل" : "Téléchargé",
-      description: isRTL ? "تم حفظ الملف PDF" : "Le fichier PDF a été enregistré",
-    });
+    await handlePDFClick();
   };
 
   const handleExportImage = async () => {

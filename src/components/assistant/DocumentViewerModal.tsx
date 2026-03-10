@@ -37,7 +37,8 @@ const DocumentViewerModal = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
-  const [isPaid, setIsPaid] = useState(false);
+  // TRIAL PHASE: All documents unlocked — revert to useState(false) to reactivate payments
+  const [isPaid, setIsPaid] = useState(true);
   const letterRef = useRef<HTMLDivElement>(null);
 
   const displayTitle = useMemo(() => {

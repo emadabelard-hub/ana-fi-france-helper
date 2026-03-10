@@ -2673,7 +2673,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             showArabic={showArabic}
             onToggleArabic={setShowArabic}
             onUpdateInvoice={handleUpdateInvoice}
-            isPaid={false}
+            isPaid={true} /* TRIAL PHASE: set to false to reactivate payments */
           />
 
           <ProtectedDocumentWrapper

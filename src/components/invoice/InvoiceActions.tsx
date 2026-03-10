@@ -43,7 +43,11 @@ const InvoiceActions = ({
   showArabic, 
   onToggleArabic,
   onUpdateInvoice,
-  isPaid = false,
+  isPaid: _isPaid = false,
+} as any) => {
+  // TRIAL PHASE: All features unlocked — set to `_isPaid` to reactivate payments
+  const isPaid = true;
+  const { isRTL } = useLanguage();
 }: InvoiceActionsProps) => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();

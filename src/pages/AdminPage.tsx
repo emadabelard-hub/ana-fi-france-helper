@@ -81,7 +81,11 @@ const AdminPage = () => {
 
   // Admin access granted
   return (
-    <div className="py-6 space-y-6">
+    <div className="space-y-0">
+      {/* Persistent alert banner */}
+      <AdminAlertBanner isRTL={isRTL} status={apiStatus} message={apiMessage} />
+
+      <div className="py-6 space-y-6">
       <section className={cn("flex items-center gap-4", isRTL && "flex-row-reverse")}>
         <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
           <BackArrow className="h-5 w-5" />
@@ -94,8 +98,13 @@ const AdminPage = () => {
               {isRTL ? 'إدارة الدروس والأسئلة' : 'Gérer les leçons et les questions'}
             </p>
         </div>
-        <ApiStatusIndicator isRTL={isRTL} />
       </section>
+
+      {/* System Health Card */}
+      <SystemHealthCard
+        isRTL={isRTL}
+        onStatusChange={(s, m) => { setApiStatus(s); setApiMessage(m); }}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className={cn("grid w-full grid-cols-3 mb-2", isRTL && "direction-rtl")}>

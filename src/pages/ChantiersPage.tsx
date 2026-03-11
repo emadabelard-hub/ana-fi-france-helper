@@ -110,7 +110,7 @@ const ChantiersPage = () => {
     }
     toast({ title: isRTL ? 'تم الحفظ بنجاح' : 'Chantier enregistré avec succès ✓' });
     setShowForm(false);
-    setForm({ name: '', client_id: '', site_address: '', status: 'etude', insurance_notes: '' });
+    setForm({ name: '', client_id: '', site_address: '', status: 'etude', insurance_notes: '', budget: '' });
     fetchData();
   };
 

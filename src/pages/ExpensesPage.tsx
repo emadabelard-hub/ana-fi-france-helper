@@ -225,6 +225,72 @@ const ExpensesPage = () => {
     downloadCSV(csv, `comptes_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
+  const handleAccountantExport = () => {
+    const BOM = '\uFEFF';
+    const sep = ';';
+    const fmtDate = (d: string) => {
+      const dt = new Date(d);
+      if (isNaN(dt.getTime())) return '';
+      return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
+    };
+    const fmtNum = (n: number) => n.toFixed(2);
+    const clean = (v: string | null | undefined) => (v ?? '').replace(/;/g, ',').replace(/"/g, '');
+
+    const periodLabel = periodFilter === 'month' ? 'Mois' : periodFilter === 'quarter' ? 'Trimestre' : periodFilter === 'year' ? 'Année' : 'Tout';
+
+    // Sheet 1: Invoices (factures finalized/converted)
+    const invoices = filtered.filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted'));
+    const sheet1Header = ['Numéro', 'Date', 'Client', 'Total HT', 'TVA', 'Total TTC', 'Statut'].join(sep);
+    const sheet1Rows = invoices.map(r =>
+      [clean(r.label), fmtDate(r.date), clean(r.clientName), fmtNum(r.amountHT), fmtNum(r.tvaAmount), fmtNum(r.amount), clean(r.status)].join(sep)
+    );
+
+    // Sheet 2: Expenses
+    const expenses = filtered.filter(r => r.type === 'expense');
+    const sheet2Header = ['Date', 'Libellé', 'Total HT', 'TVA', 'Total TTC'].join(sep);
+    const sheet2Rows = expenses.map(r =>
+      [fmtDate(r.date), clean(r.label), fmtNum(r.amountHT), fmtNum(r.tvaAmount), fmtNum(r.amount)].join(sep)
+    );
+
+    // Sheet 3: Tax Summary
+    const preTaxProfit = filteredIncomeHT - filteredExpensesHT - totalURSSAF;
+    const sheet3Header = ['Indicateur', 'Montant (EUR)'].join(sep);
+    const sheet3Rows = [
+      ['Total Revenus HT', fmtNum(filteredIncomeHT)].join(sep),
+      ['Total Dépenses HT', fmtNum(filteredExpensesHT)].join(sep),
+      [`Cotisations URSSAF (${urssafRate}%)`, fmtNum(totalURSSAF)].join(sep),
+      ['TVA Collectée', fmtNum(tvaCollectee)].join(sep),
+      ['TVA Déductible', fmtNum(tvaDeductible)].join(sep),
+      ['TVA Nette à payer', fmtNum(tvaNet)].join(sep),
+      [`Impôt sur les Sociétés estimé (${isRate}%)`, fmtNum(realEstimatedIS)].join(sep),
+      ['Bénéfice Net estimé', fmtNum(netProfit)].join(sep),
+    ];
+
+    // Combine into single CSV with section separators
+    const content = BOM + [
+      `RAPPORT COMPTABLE - Période: ${periodLabel}`,
+      `Date d'export: ${new Date().toLocaleDateString('fr-FR')}`,
+      '',
+      '=== FEUILLE 1: FACTURES ===',
+      sheet1Header,
+      ...sheet1Rows,
+      '',
+      '=== FEUILLE 2: DÉPENSES ===',
+      sheet2Header,
+      ...sheet2Rows,
+      '',
+      '=== FEUILLE 3: SYNTHÈSE FISCALE ===',
+      sheet3Header,
+      ...sheet3Rows,
+    ].join('\n');
+
+    downloadCSV(content, `rapport_comptable_${new Date().toISOString().slice(0,10)}.csv`);
+    toast({
+      title: isRTL ? 'تم التصدير بنجاح' : 'Export réussi',
+      description: isRTL ? 'تم تحميل تقرير المحاسب' : 'Le rapport comptable a été téléchargé',
+    });
+  };
+
   const typeConfig: Record<string, { label: { fr: string; ar: string }; color: string }> = {
     devis: { label: { fr: 'Devis', ar: 'دوفي' }, color: 'bg-blue-500/15 text-blue-400' },
     facture: { label: { fr: 'Facture', ar: 'فاتورة' }, color: 'bg-emerald-500/15 text-emerald-400' },
@@ -394,6 +460,18 @@ const ExpensesPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Accountant Export Button */}
+      <Button
+        className={cn("w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 h-12", isRTL && "flex-row-reverse font-cairo")}
+        onClick={handleAccountantExport}
+        disabled={filtered.length === 0}
+      >
+        <Download className="h-5 w-5" />
+        <span className="text-sm font-bold" style={{ fontSize: '16px' }}>
+          {isRTL ? 'تصدير بيانات المحاسب' : 'Exporter pour le comptable'}
+        </span>
+      </Button>
 
       {/* URSSAF Summary Card */}
       <Card className="border-violet-500/20 bg-violet-500/5">

@@ -163,7 +163,7 @@ const ExpensesPage = () => {
       setTotalIncome(incomeSum);
       setTotalIncomeHT(incomeHTSum);
       setTotalExpenses(expenseSum);
-    } catch (err) {
+    } catch {
       console.error(err);
     } finally {
       setLoading(false);

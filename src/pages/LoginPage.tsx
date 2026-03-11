@@ -28,6 +28,8 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [showResendConfirm, setShowResendConfirm] = useState(false);
+  const [resendingConfirm, setResendingConfirm] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -48,8 +50,8 @@ const LoginPage = () => {
     }
     if (msg.includes('email not confirmed')) {
       return isRTL
-        ? 'الحساب غير مُفعّل بعد. تحقق من بريدك الإلكتروني'
-        : 'Compte non confirmé. Vérifiez votre email.';
+        ? 'الحساب غير مُفعّل بعد. تحقق من بريدك الإلكتروني أو أعد إرسال رابط التأكيد'
+        : 'Compte non confirmé. Vérifiez votre email ou renvoyez le lien.';
     }
     if (msg.includes('user already registered')) {
       return isRTL
@@ -112,6 +114,13 @@ const LoginPage = () => {
         : await signUp(normalizedEmail, password);
 
       if (result.error) {
+        const errMsg = result.error.message.toLowerCase();
+        
+        // If "email not confirmed", try to force-refresh user state first
+        if (errMsg.includes('email not confirmed') && isLogin) {
+          setShowResendConfirm(true);
+        }
+        
         toast({
           variant: "destructive",
           title: isRTL ? "خطأ" : "Erreur",
@@ -228,6 +237,34 @@ const LoginPage = () => {
                   <span className="bg-card px-2 text-muted-foreground">{isRTL ? "أو" : "ou"}</span>
                 </div>
               </div>
+
+              {showResendConfirm && (
+                <Button
+                  variant="secondary"
+                  className="w-full font-bold h-11 text-[16px]"
+                  disabled={resendingConfirm}
+                  onClick={async () => {
+                    if (!email) return;
+                    setResendingConfirm(true);
+                    try {
+                      const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim().toLowerCase() });
+                      toast({
+                        title: error
+                          ? (isRTL ? "خطأ" : "Erreur")
+                          : (isRTL ? "تم الإرسال ✓" : "Lien envoyé ✓"),
+                        description: error
+                          ? error.message
+                          : (isRTL ? "تحقق من بريدك الإلكتروني" : "Vérifiez votre boîte mail"),
+                        variant: error ? "destructive" : "default",
+                      });
+                    } finally {
+                      setResendingConfirm(false);
+                    }
+                  }}
+                >
+                  {resendingConfirm ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRTL ? "إعادة إرسال رابط التأكيد" : "Renvoyer le lien de confirmation")}
+                </Button>
+              )}
 
               <Button variant="outline" className="w-full font-bold gap-2 h-11 text-[16px]" onClick={handleGuestLogin} disabled={isGuestLoading}>
                 {isGuestLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (

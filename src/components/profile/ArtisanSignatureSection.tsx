@@ -98,7 +98,7 @@ const ArtisanSignatureSection = () => {
         .getPublicUrl(fileName);
 
       // Update profile with signature URL
-      await updateProfile({ artisan_signature_url: publicUrl } as any);
+      await updateProfile({ artisan_signature_url: publicUrl });
 
     } catch (error) {
       console.error('Error saving signature:', error);

@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAnonymous: boolean;
+  isAuthenticated: boolean;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInAnonymously: () => Promise<{ error: Error | null }>;
@@ -21,6 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const isAnonymous = user?.is_anonymous === true;
+  const isAuthenticated = !!user && !isAnonymous;
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
@@ -31,6 +33,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const initSession = async () => {
       setIsLoading(true);
+
+      // If user explicitly signed out, don't auto-create anonymous session
+      if (sessionStorage.getItem('explicit_signout') === 'true') {
+        sessionStorage.removeItem('explicit_signout');
+        setIsLoading(false);
+        return;
+      }
 
       const { data: { session: existing } } = await supabase.auth.getSession();
       if (existing) {
@@ -43,7 +52,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Development access: create a guest session silently (no login wall)
       const { error } = await supabase.auth.signInAnonymously();
       if (error) {
-        console.error('Anonymous bootstrap failed:', error);
         setIsLoading(false);
       }
       // onAuthStateChange will finalize state on success
@@ -70,11 +78,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    sessionStorage.setItem('explicit_signout', 'true');
     await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    window.location.href = '/';
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, isAnonymous, signUp, signIn, signInAnonymously, signOut }}>
+    <AuthContext.Provider value={{ user, session, isLoading, isAnonymous, isAuthenticated, signUp, signIn, signInAnonymously, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -357,8 +357,8 @@ const ExpensesPage = () => {
           try {
             blob = await fetchBlob(doc.pdfUrl, 'signed-documents');
             if (!blob) blob = await fetchBlob(doc.pdfUrl, 'company-assets');
-          } catch (e) {
-            console.warn(`Could not fetch stored PDF for ${doc.label}:`, e);
+          } catch {
+            // stored PDF not available
           }
         }
 

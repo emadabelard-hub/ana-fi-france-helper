@@ -255,13 +255,21 @@ const DocumentsListPage = () => {
             </div>
           </div>
 
-          {/* Status badge */}
-          <span className={cn(
-            "text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 uppercase tracking-wider",
-            doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"
-          )}>
-            {doc.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') : (isRTL ? 'مسودة' : 'Brouillon')}
-          </span>
+          {/* Status badges */}
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <span className={cn(
+              "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
+              doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"
+            )}>
+              {doc.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') : (isRTL ? 'مسودة' : 'Brouillon')}
+            </span>
+            {doc.sent_to_accountant_at && (
+              <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 flex items-center gap-1">
+                <SendHorizontal className="h-2.5 w-2.5" />
+                {isRTL ? 'أُرسل للمحاسب' : 'Envoyé'}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Financial row */}

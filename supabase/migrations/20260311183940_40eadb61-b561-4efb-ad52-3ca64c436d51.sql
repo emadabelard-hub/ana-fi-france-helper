@@ -1,0 +1,1 @@
+ALTER TABLE public.chantiers ADD COLUMN budget numeric DEFAULT NULL;

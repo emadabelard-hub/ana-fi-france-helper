@@ -525,8 +525,30 @@ const DocumentsListPage = () => {
                 <p><span className="text-muted-foreground">HT:</span> {formatCurrency(selectedDocument.subtotal_ht)}</p>
                 <p><span className="text-muted-foreground">TVA:</span> {formatCurrency(selectedDocument.tva_amount)}</p>
                 <p className="font-bold"><span className="text-muted-foreground">TTC:</span> {formatCurrency(selectedDocument.total_ttc)}</p>
-                <p><span className="text-muted-foreground">{isRTL ? 'Statut:' : 'Statut:'}</span> {selectedDocument.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') : (isRTL ? 'مسودة' : 'Brouillon')}</p>
+                <p><span className="text-muted-foreground">{isRTL ? 'Statut:' : 'Statut:'}</span> {
+                  selectedDocument.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') :
+                  selectedDocument.status === 'converted' ? (isRTL ? 'تم التحويل' : 'Converti') :
+                  (isRTL ? 'مسودة' : 'Brouillon')
+                }</p>
               </div>
+
+              {/* Convert Devis → Facture button */}
+              {selectedDocument.document_type === 'devis' && selectedDocument.status !== 'converted' && (
+                <div className={cn("pt-3 border-t border-border", isRTL && "text-right")}>
+                  <Button
+                    onClick={() => handleDirectConvert(selectedDocument)}
+                    disabled={converting}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 w-full"
+                  >
+                    {converting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ArrowRightLeft className="h-4 w-4" />
+                    )}
+                    {isRTL ? 'تحويل إلى فاتورة' : 'Convertir en Facture'}
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </DialogContent>

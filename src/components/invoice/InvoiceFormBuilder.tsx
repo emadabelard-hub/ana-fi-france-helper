@@ -70,7 +70,23 @@ const getDocPrefix = (type: 'devis' | 'facture') => {
   return `${prefix}-${year}-`;
 };
 
-// Generate document number with empty suffix (user fills in their own number)
+// Fetch next sequential number from DB (atomic, no gaps, no duplicates)
+const fetchNextDocNumber = async (userId: string, type: 'devis' | 'facture'): Promise<string> => {
+  const year = new Date().getFullYear();
+  const { data, error } = await supabase.rpc('get_next_document_number', {
+    p_user_id: userId,
+    p_document_type: type,
+    p_year: year,
+  });
+  if (error) {
+    console.error('Failed to fetch next doc number:', error);
+    // Fallback to prefix only
+    return getDocPrefix(type);
+  }
+  return data as string;
+};
+
+// Generate document number with empty suffix (fallback for non-logged-in)
 const generateDocNumber = (type: 'devis' | 'facture') => {
   return `${getDocPrefix(type)}`;
 };
@@ -168,6 +184,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Editable document number
   const [docNumber, setDocNumber] = useState(() => generateDocNumber(documentType));
+  const [docNumberLoading, setDocNumberLoading] = useState(false);
   
   // Quote Wizard state
   const [showWizard, setShowWizard] = useState(false);
@@ -195,14 +212,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const itemsRef = useRef(items);
   const [savingDraft, setSavingDraft] = useState(false);
 
-  // No auto-increment: just set the prefix, user fills in the rest
+  // Auto-fetch next sequential number from DB
   useEffect(() => {
+    if (!user) return;
     const prefix = getDocPrefix(documentType);
-    // Only reset if docNumber doesn't already start with the correct prefix
-    if (!docNumber.startsWith(prefix)) {
-      setDocNumber(prefix);
+    // Only auto-fetch if docNumber is just the prefix (not user-edited or already fetched)
+    if (docNumber === prefix || !docNumber.startsWith(prefix) || docNumber === generateDocNumber(documentType)) {
+      setDocNumberLoading(true);
+      fetchNextDocNumber(user.id, documentType).then((num) => {
+        setDocNumber(num);
+        setDocNumberLoading(false);
+      });
     }
-  }, [documentType]);
+  }, [documentType, user]);
 
   // Fetch clients list
   useEffect(() => {
@@ -1132,12 +1154,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               checked={documentType === 'facture'}
               onCheckedChange={(checked) => {
                 const newType = checked ? 'facture' : 'devis';
-                const currentPrefix = getDocPrefix(documentType);
-                const newPrefix = getDocPrefix(newType);
-                const userPart = docNumber.startsWith(currentPrefix) 
-                  ? docNumber.slice(currentPrefix.length) 
-                  : '';
-                setDocNumber(newPrefix + userPart);
+                // Auto-fetch the next number for the new type
+                setDocNumber(getDocPrefix(newType));
                 onDocumentTypeChange(newType);
               }}
             />
@@ -1290,15 +1308,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
           <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
-              ? 'اكتب رقمك بعد البريفيكس. مثال: D-2026-001'
-              : "Saisissez votre numéro après le préfixe. Ex: D-2026-001"}
+              ? 'الرقم بيتولّد تلقائي. تقدر تعدّله لو عايز.'
+              : "Le numéro est généré automatiquement. Vous pouvez le modifier si nécessaire."}
           </p>
           <Input
-            value={docNumber}
+            value={docNumberLoading ? (isRTL ? 'جاري التحميل...' : 'Chargement...') : docNumber}
             onChange={(e) => {
               const prefix = getDocPrefix(documentType);
               const val = e.target.value;
-              // Prevent modifying the locked prefix
               if (val.length < prefix.length) {
                 setDocNumber(prefix);
               } else if (val.startsWith(prefix)) {
@@ -1313,13 +1330,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 setDocNumber(prefix);
               }
             }}
+            disabled={docNumberLoading}
             placeholder={isRTL ? `مثال: ${getDocPrefix(documentType)}001` : `Ex: ${getDocPrefix(documentType)}001`}
             className="font-mono"
           />
           <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
-              ? '💡 تقدر تغيّر الرقم حسب نظام الترقيم بتاعك'
-              : '💡 Vous pouvez personnaliser ce numéro selon votre système de numérotation'}
+              ? '💡 الترقيم تلقائي ومستقل: دوفي وفاتورة كل واحد له عداد خاص'
+              : '💡 Numérotation automatique et indépendante : Devis et Factures ont chacun leur propre compteur'}
           </p>
         </CardContent>
       </Card>

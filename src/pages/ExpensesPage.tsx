@@ -159,6 +159,7 @@ const ExpensesPage = () => {
 
       setRows(unified);
       setTotalIncome(incomeSum);
+      setTotalIncomeHT(incomeHTSum);
       setTotalExpenses(expenseSum);
     } catch (err) {
       console.error(err);

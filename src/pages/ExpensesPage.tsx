@@ -679,13 +679,18 @@ const ExpensesPage = () => {
       </div>
 
       {/* Breakdown under Net Profit */}
-      <div className={cn("px-2 flex items-center gap-1 flex-wrap justify-center", isRTL && "font-cairo flex-row-reverse")}>
-        <span className="text-[10px] text-violet-400 font-semibold">
-          {isRTL ? `بعد خصم الأورساف: ${formatCurrency(totalURSSAF)}` : `URSSAF: ${formatCurrency(totalURSSAF)}`}
+      <div className={cn(
+        "mx-2 rounded-xl bg-muted/60 border border-border/50 px-4 py-3 flex items-center gap-3 flex-wrap justify-center",
+        isRTL && "font-cairo flex-row-reverse"
+      )}>
+        <span className="text-[16px] sm:text-[18px] text-violet-400">
+          {isRTL ? 'بعد خصم الأورساف: ' : 'URSSAF: '}
+          <span className="font-bold">{formatCurrency(totalURSSAF)}</span>
         </span>
-        <span className="text-[10px] text-muted-foreground">|</span>
-        <span className="text-[10px] text-amber-400 font-semibold">
-          {isRTL ? `ضريبة تقديرية: ${formatCurrency(realEstimatedIS)}` : `IS estimé: ${formatCurrency(realEstimatedIS)}`}
+        <span className="text-muted-foreground text-lg">|</span>
+        <span className="text-[16px] sm:text-[18px] text-amber-400">
+          {isRTL ? 'ضريبة تقديرية: ' : 'IS estimé: '}
+          <span className="font-bold">{formatCurrency(realEstimatedIS)}</span>
         </span>
       </div>
 

@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Receipt, Plus, TrendingUp, TrendingDown, Wallet,
   Loader2, Download, Eye, FileText,
-  ChevronDown, ChevronUp, Users, HardHat, Calculator
+  ChevronDown, ChevronUp, Users, HardHat, Calculator, Info
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
@@ -311,13 +312,27 @@ const ExpensesPage = () => {
       {/* TVA Summary Card */}
       <Card className="border-amber-500/20 bg-amber-500/5">
         <CardContent className="p-4">
-          <div className={cn('flex items-center gap-2 mb-3', isRTL && 'flex-row-reverse')}>
+          <div className={cn('flex items-center gap-2 flex-1', isRTL && 'flex-row-reverse')}>
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
               <Calculator className="h-4 w-4 text-amber-400" />
             </div>
             <h3 className={cn('text-sm font-bold text-foreground', isRTL && 'font-cairo')}>
               {isRTL ? '📊 تقرير الضريبة (TVA)' : '📊 Rapport TVA'}
             </h3>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent side={isRTL ? 'left' : 'right'} className="max-w-[240px] text-xs">
+                  <p className={cn(isRTL && 'font-cairo text-right')}>
+                    {isRTL
+                      ? 'هذا هو المبلغ التقديري للضريبة المستحقة للدولة بعد خصم مصاريفك'
+                      : 'Estimation de la TVA due à l\'État après déduction de vos dépenses'}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className={cn('text-center', isRTL && 'font-cairo')}>

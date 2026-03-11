@@ -1067,6 +1067,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         status: 'draft',
       };
       if (selectedChantierId) insertData.chantier_id = selectedChantierId;
+      // Note: drafts allow no chantier for early-stage work
 
       const { error } = await (supabase.from('documents_comptables') as any).insert(insertData);
       if (error) throw error;

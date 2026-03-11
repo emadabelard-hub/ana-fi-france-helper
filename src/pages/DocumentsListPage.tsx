@@ -313,9 +313,13 @@ const DocumentsListPage = () => {
           <div className="flex flex-col items-end gap-1 shrink-0">
             <span className={cn(
               "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
-              doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"
+              doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" :
+              doc.status === 'converted' ? "bg-blue-500/15 text-blue-400" :
+              "bg-amber-500/15 text-amber-400"
             )}>
-              {doc.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') : (isRTL ? 'مسودة' : 'Brouillon')}
+              {doc.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') :
+               doc.status === 'converted' ? (isRTL ? 'تم التحويل' : 'Converti') :
+               (isRTL ? 'مسودة' : 'Brouillon')}
             </span>
             {doc.sent_to_accountant_at && (
               <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 flex items-center gap-1">

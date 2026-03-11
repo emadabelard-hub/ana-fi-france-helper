@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search, SendHorizontal } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search, SendHorizontal, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -47,6 +47,7 @@ const DocumentsListPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
+  const [converting, setConverting] = useState(false);
 
   useEffect(() => {
     if (!user || user.is_anonymous) {
@@ -192,6 +193,59 @@ const DocumentsListPage = () => {
     setSelectedDocument(doc);
   };
 
+  const handleDirectConvert = async (doc: DocumentRow) => {
+    if (!user || converting) return;
+    setConverting(true);
+    try {
+      // 1. Get next facture number
+      const year = new Date().getFullYear();
+      const { data: nextNumber, error: rpcError } = await supabase.rpc('get_next_document_number', {
+        p_user_id: user.id,
+        p_document_type: 'facture',
+        p_year: year,
+      });
+      if (rpcError || !nextNumber) throw rpcError || new Error('Failed to get next number');
+
+      // 2. Build new facture from devis data
+      const docData = doc.document_data || {};
+      const { error: insertError } = await (supabase.from('documents_comptables') as any).insert({
+        user_id: user.id,
+        document_type: 'facture',
+        document_number: nextNumber,
+        client_name: doc.client_name,
+        client_address: doc.client_address,
+        work_site_address: doc.work_site_address,
+        nature_operation: doc.nature_operation,
+        subtotal_ht: doc.subtotal_ht,
+        tva_amount: doc.tva_amount,
+        total_ttc: doc.total_ttc,
+        status: 'draft',
+        document_data: { ...docData, convertedFromDevis: doc.document_number },
+        chantier_id: (doc as any).chantier_id || null,
+      });
+      if (insertError) throw insertError;
+
+      // 3. Mark original devis as converted
+      await (supabase.from('documents_comptables') as any)
+        .update({ status: 'converted' })
+        .eq('id', doc.id);
+
+      toast({
+        title: isRTL ? '✅ تم التحويل' : '✅ Converti',
+        description: isRTL
+          ? `تم إنشاء فاتورة ${nextNumber} من الدوفي ${doc.document_number}`
+          : `Facture ${nextNumber} créée depuis le devis ${doc.document_number}`,
+      });
+
+      setSelectedDocument(null);
+      fetchDocuments();
+    } catch (err: any) {
+      toast({ title: isRTL ? 'خطأ' : 'Erreur', description: err?.message || 'Conversion failed', variant: 'destructive' });
+    } finally {
+      setConverting(false);
+    }
+  };
+
   const devis = filteredDocuments.filter(d => d.document_type === 'devis');
   const factures = filteredDocuments.filter(d => d.document_type === 'facture');
 
@@ -259,9 +313,13 @@ const DocumentsListPage = () => {
           <div className="flex flex-col items-end gap-1 shrink-0">
             <span className={cn(
               "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
-              doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"
+              doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" :
+              doc.status === 'converted' ? "bg-blue-500/15 text-blue-400" :
+              "bg-amber-500/15 text-amber-400"
             )}>
-              {doc.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') : (isRTL ? 'مسودة' : 'Brouillon')}
+              {doc.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') :
+               doc.status === 'converted' ? (isRTL ? 'تم التحويل' : 'Converti') :
+               (isRTL ? 'مسودة' : 'Brouillon')}
             </span>
             {doc.sent_to_accountant_at && (
               <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 flex items-center gap-1">
@@ -471,8 +529,30 @@ const DocumentsListPage = () => {
                 <p><span className="text-muted-foreground">HT:</span> {formatCurrency(selectedDocument.subtotal_ht)}</p>
                 <p><span className="text-muted-foreground">TVA:</span> {formatCurrency(selectedDocument.tva_amount)}</p>
                 <p className="font-bold"><span className="text-muted-foreground">TTC:</span> {formatCurrency(selectedDocument.total_ttc)}</p>
-                <p><span className="text-muted-foreground">{isRTL ? 'Statut:' : 'Statut:'}</span> {selectedDocument.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') : (isRTL ? 'مسودة' : 'Brouillon')}</p>
+                <p><span className="text-muted-foreground">{isRTL ? 'Statut:' : 'Statut:'}</span> {
+                  selectedDocument.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') :
+                  selectedDocument.status === 'converted' ? (isRTL ? 'تم التحويل' : 'Converti') :
+                  (isRTL ? 'مسودة' : 'Brouillon')
+                }</p>
               </div>
+
+              {/* Convert Devis → Facture button */}
+              {selectedDocument.document_type === 'devis' && selectedDocument.status !== 'converted' && (
+                <div className={cn("pt-3 border-t border-border", isRTL && "text-right")}>
+                  <Button
+                    onClick={() => handleDirectConvert(selectedDocument)}
+                    disabled={converting}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 w-full"
+                  >
+                    {converting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ArrowRightLeft className="h-4 w-4" />
+                    )}
+                    {isRTL ? 'تحويل إلى فاتورة' : 'Convertir en Facture'}
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </DialogContent>

@@ -69,7 +69,7 @@ const StampUploadSection = () => {
       const urlParts = currentStampUrl.split('/');
       const filePath = urlParts.slice(-2).join('/');
       await supabase.storage.from('company-assets').remove([filePath]);
-      await updateProfile({ stamp_url: null } as any);
+      await updateProfile({ stamp_url: null });
     } catch (error) {
       console.error('Error deleting stamp:', error);
     } finally {

@@ -32,11 +32,18 @@ export interface Profile {
   code_naf: string | null;
   ville_immatriculation: string | null;
   numero_tva: string | null;
+  // Insurance fields
+  assureur_name: string | null;
+  assureur_address: string | null;
+  assurance_policy_number: string | null;
+  assurance_geographic_coverage: string | null;
   // Bank details
   iban: string | null;
   bic: string | null;
   // Accountant
   accountant_email: string | null;
+  // TVA
+  tva_exempt: boolean;
   // URSSAF
   urssaf_rate: number;
   is_rate: number;

@@ -122,7 +122,7 @@ const ArtisanSignatureSection = () => {
         .remove([filePath]);
 
       // Clear from profile
-      await updateProfile({ artisan_signature_url: null } as any);
+      await updateProfile({ artisan_signature_url: null });
     } catch (error) {
       console.error('Error deleting signature:', error);
     } finally {

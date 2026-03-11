@@ -103,7 +103,7 @@ const ExpensesPage = () => {
       // Documents
       (docsRes.data || []).forEach((d: any) => {
         const ch = d.chantier_id ? chantierMap[d.chantier_id] : null;
-        if (d.document_type === 'facture' && d.status === 'finalized') incomeSum += d.total_ttc || 0;
+        if (d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted')) incomeSum += d.total_ttc || 0;
         unified.push({
           id: d.id,
           date: d.created_at,

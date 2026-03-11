@@ -100,6 +100,7 @@ const App = () => {
                   <Route path="/chantiers" element={<ChantiersPage />} />
                   <Route path="/chantiers/:id" element={<ChantierDetailPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/login" element={<LoginPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

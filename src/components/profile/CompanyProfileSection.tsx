@@ -88,6 +88,7 @@ const CompanyProfileSection = () => {
     iban: '',
     bic: '',
     accountant_email: '',
+    urssaf_rate: '21.2',
   });
 
   useEffect(() => {

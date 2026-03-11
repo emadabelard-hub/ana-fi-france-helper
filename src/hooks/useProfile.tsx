@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +13,6 @@ export interface Profile {
   caf_number: string | null;
   foreigner_number: string | null;
   social_security: string | null;
-  // Company fields
   company_name: string | null;
   siret: string | null;
   company_address: string | null;
@@ -22,50 +21,51 @@ export interface Profile {
   logo_url: string | null;
   header_type: string | null;
   header_image_url: string | null;
-  // Artisan permanent signature
   artisan_signature_url: string | null;
-  // Stamp (cachet)
   stamp_url: string | null;
-  // Legal detail fields
   capital_social: string | null;
   legal_footer: string | null;
   code_naf: string | null;
   ville_immatriculation: string | null;
   numero_tva: string | null;
-  // Bank details
+  assureur_name: string | null;
+  assureur_address: string | null;
+  assurance_policy_number: string | null;
+  assurance_geographic_coverage: string | null;
   iban: string | null;
   bic: string | null;
-  // Accountant
   accountant_email: string | null;
-  // URSSAF
+  tva_exempt: boolean;
   urssaf_rate: number;
   is_rate: number;
-  // Credits & Rate Limiting
   credits_balance: number;
   daily_message_count: number;
   last_message_date: string | null;
-  // Timestamps
   created_at: string;
   updated_at: string;
 }
 
-export const useProfile = () => {
+interface ProfileContextType {
+  profile: Profile | null;
+  isLoading: boolean;
+  updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null | unknown }>;
+  refetch: () => Promise<void>;
+}
+
+const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
+
+export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    } else {
+  const fetchProfile = useCallback(async () => {
+    if (!user) {
       setProfile(null);
       setIsLoading(false);
+      return;
     }
-  }, [user]);
-
-  const fetchProfile = async () => {
-    if (!user) return;
 
     setIsLoading(true);
     try {
@@ -76,15 +76,14 @@ export const useProfile = () => {
         .maybeSingle();
 
       if (error) throw error;
-      
+
       if (!data) {
-        // Create profile if it doesn't exist
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert({ user_id: user.id })
           .select()
           .single();
-        
+
         if (insertError) throw insertError;
         setProfile(newProfile);
       } else {
@@ -95,9 +94,13 @@ export const useProfile = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
-  const updateProfile = async (updates: Partial<Profile>) => {
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  const updateProfile = useCallback(async (updates: Partial<Profile>) => {
     if (!user) return { error: new Error('Not authenticated') };
 
     try {
@@ -109,13 +112,13 @@ export const useProfile = () => {
         .single();
 
       if (error) throw error;
-      
+
       setProfile(data);
       toast({
         title: "Profil mis à jour",
         description: "Vos informations ont été enregistrées avec succès.",
       });
-      
+
       return { error: null };
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -126,7 +129,19 @@ export const useProfile = () => {
       });
       return { error };
     }
-  };
+  }, [user, toast]);
 
-  return { profile, isLoading, updateProfile, refetch: fetchProfile };
+  return (
+    <ProfileContext.Provider value={{ profile, isLoading, updateProfile, refetch: fetchProfile }}>
+      {children}
+    </ProfileContext.Provider>
+  );
+};
+
+export const useProfile = () => {
+  const context = useContext(ProfileContext);
+  if (context === undefined) {
+    throw new Error('useProfile must be used within a ProfileProvider');
+  }
+  return context;
 };

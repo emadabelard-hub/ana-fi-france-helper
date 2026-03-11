@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { ProfileProvider } from "@/hooks/useProfile";
 import MainLayout from "@/components/layout/MainLayout";
 import GlobalErrorHandler from "@/components/app/GlobalErrorHandler";
 import AuthSplashScreen from "@/components/auth/AuthSplashScreen";
@@ -113,16 +114,18 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <LanguageProvider>
-          <ThemeProvider>
-            <TooltipProvider>
-              <GlobalErrorHandler />
-              <Toaster />
-              <Sonner />
-              <AppRoutes />
-            </TooltipProvider>
-          </ThemeProvider>
-        </LanguageProvider>
+        <ProfileProvider>
+          <LanguageProvider>
+            <ThemeProvider>
+              <TooltipProvider>
+                <GlobalErrorHandler />
+                <Toaster />
+                <Sonner />
+                <AppRoutes />
+              </TooltipProvider>
+            </ThemeProvider>
+          </LanguageProvider>
+        </ProfileProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -25,7 +25,7 @@ const ArtisanSignatureSection = () => {
   const [displayUrl, setDisplayUrl] = useState<string | null>(null);
 
   // Get current signature from profile
-  const currentSignatureUrl = (profile as any)?.artisan_signature_url || null;
+  const currentSignatureUrl = profile?.artisan_signature_url || null;
 
   // Resolve signed URL for display
   useEffect(() => {
@@ -98,7 +98,7 @@ const ArtisanSignatureSection = () => {
         .getPublicUrl(fileName);
 
       // Update profile with signature URL
-      await updateProfile({ artisan_signature_url: publicUrl } as any);
+      await updateProfile({ artisan_signature_url: publicUrl });
 
     } catch (error) {
       console.error('Error saving signature:', error);
@@ -122,7 +122,7 @@ const ArtisanSignatureSection = () => {
         .remove([filePath]);
 
       // Clear from profile
-      await updateProfile({ artisan_signature_url: null } as any);
+      await updateProfile({ artisan_signature_url: null });
     } catch (error) {
       console.error('Error deleting signature:', error);
     } finally {

@@ -20,7 +20,7 @@ const StampUploadSection = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [displayUrl, setDisplayUrl] = useState<string | null>(null);
 
-  const currentStampUrl = (profile as any)?.stamp_url || null;
+  const currentStampUrl = profile?.stamp_url || null;
 
   // Resolve signed URL for display
   useEffect(() => {
@@ -54,7 +54,7 @@ const StampUploadSection = () => {
         .from('company-assets')
         .getPublicUrl(fileName);
 
-      await updateProfile({ stamp_url: publicUrl } as any);
+      await updateProfile({ stamp_url: publicUrl });
     } catch (error) {
       console.error('Error uploading stamp:', error);
     } finally {
@@ -69,7 +69,7 @@ const StampUploadSection = () => {
       const urlParts = currentStampUrl.split('/');
       const filePath = urlParts.slice(-2).join('/');
       await supabase.storage.from('company-assets').remove([filePath]);
-      await updateProfile({ stamp_url: null } as any);
+      await updateProfile({ stamp_url: null });
     } catch (error) {
       console.error('Error deleting stamp:', error);
     } finally {

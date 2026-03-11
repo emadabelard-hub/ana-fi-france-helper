@@ -557,7 +557,7 @@ const ExpensesPage = () => {
         title: isRTL ? 'تم تحميل الأرشيف' : 'Archive téléchargée',
         description: isRTL ? `تم تحميل ${filesAdded} ملف(ات) في ملف مضغوط` : `${filesAdded} fichier(s) archivé(s)`,
       });
-    } catch (err) {
+    } catch {
       console.error('Archive error:', err);
       toast({
         variant: 'destructive',

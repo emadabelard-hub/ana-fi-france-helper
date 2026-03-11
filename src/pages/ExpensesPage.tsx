@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Receipt, Plus, TrendingUp, TrendingDown, Wallet,
-  Loader2, Download, Eye, FileText,
+  Loader2, Download, Eye, FileText, Archive,
   ChevronDown, ChevronUp, Users, HardHat, Calculator, Info, Landmark
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';

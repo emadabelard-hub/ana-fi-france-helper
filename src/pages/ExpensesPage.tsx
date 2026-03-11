@@ -934,15 +934,6 @@ const ExpensesPage = () => {
         </div>
       )}
 
-      {/* CSV Export at bottom */}
-      {filtered.length > 0 && (
-        <div className="flex justify-center pt-2">
-          <Button size="sm" variant="outline" onClick={handleExportCSV} className="gap-1.5">
-            <Download className="h-3.5 w-3.5" />
-            {isRTL ? 'تصدير CSV' : 'Exporter CSV'}
-          </Button>
-        </div>
-      )}
 
       {/* Security Badge */}
       <SecurityBadge />

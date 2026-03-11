@@ -52,6 +52,7 @@ interface CompanyFormData {
   bic: string;
   accountant_email: string;
   urssaf_rate: string;
+  is_rate: string;
 }
 
 const CompanyProfileSection = () => {
@@ -89,6 +90,7 @@ const CompanyProfileSection = () => {
     bic: '',
     accountant_email: '',
     urssaf_rate: '21.2',
+    is_rate: '15',
   });
 
   useEffect(() => {
@@ -116,6 +118,7 @@ const CompanyProfileSection = () => {
         bic: (profile as any).bic || '',
         accountant_email: (profile as any).accountant_email || '',
         urssaf_rate: String((profile as any).urssaf_rate ?? 21.2),
+        is_rate: String((profile as any).is_rate ?? 15),
       });
     }
   }, [profile]);
@@ -215,8 +218,8 @@ const CompanyProfileSection = () => {
     if (siretError) return;
     
     setIsSaving(true);
-    const { urssaf_rate, ...rest } = formData;
-    await updateProfile({ ...rest, urssaf_rate: parseFloat(urssaf_rate) || 21.2 } as any);
+    const { urssaf_rate, is_rate, ...rest } = formData;
+    await updateProfile({ ...rest, urssaf_rate: parseFloat(urssaf_rate) || 21.2, is_rate: parseFloat(is_rate) || 15 } as any);
     setIsSaving(false);
   };
 
@@ -808,6 +811,32 @@ const CompanyProfileSection = () => {
               {isRTL
                 ? '💡 النسبة الافتراضية 21.2% للحرفيين. يمكنك تعديلها حسب نشاطك'
                 : '💡 Taux par défaut 21.2% pour les artisans. Modifiable selon votre activité'}
+            </p>
+          </div>
+
+          {/* IS (Corporate Tax) Rate */}
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <span className="text-base">🏢</span>
+              <Label className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'نسبة ضريبة الشركات (%)' : 'Taux IS / Impôt (%)'}
+              </Label>
+            </div>
+            <Input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={formData.is_rate}
+              onChange={(e) => handleChange('is_rate' as any, e.target.value)}
+              placeholder="15"
+              className="font-mono text-sm w-32"
+              dir="ltr"
+            />
+            <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-cairo")}>
+              {isRTL
+                ? '💡 النسبة الافتراضية 15% للشركات الصغيرة. يمكنك تعديلها حسب وضعك الضريبي'
+                : '💡 Taux par défaut 15% pour les petites entreprises. Modifiable selon votre régime fiscal'}
             </p>
           </div>
         </CardContent>

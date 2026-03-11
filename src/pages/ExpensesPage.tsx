@@ -194,13 +194,19 @@ const ExpensesPage = () => {
 
   // URSSAF calculations
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
+  const isRate = (profile as any)?.is_rate ?? 15;
   const filteredIncomeHT = useMemo(() =>
     filtered.filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted')).reduce((s, r) => s + r.amountHT, 0),
     [filtered]);
+  const filteredExpensesHT = useMemo(() =>
+    filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.amountHT, 0),
+    [filtered]);
   const totalURSSAF = filteredIncomeHT * (urssafRate / 100);
+  const estimatedIS = (filteredIncomeHT - filteredExpensesHT - totalURSSAF) * (isRate / 100);
+  const realEstimatedIS = Math.max(0, estimatedIS); // IS can't be negative
 
-  // Real Net Profit = Revenue HT - Expenses - URSSAF
-  const netProfit = filteredIncomeHT - totalExpenses - totalURSSAF;
+  // FINAL Net Profit = Revenue HT - Expenses - URSSAF - Estimated IS
+  const netProfit = filteredIncomeHT - totalExpenses - totalURSSAF - realEstimatedIS;
 
   const handleExportCSV = () => {
     if (filtered.length === 0) return;
@@ -326,6 +332,17 @@ const ExpensesPage = () => {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Breakdown under Net Profit */}
+      <div className={cn("px-2 flex items-center gap-1 flex-wrap justify-center", isRTL && "font-cairo flex-row-reverse")}>
+        <span className="text-[10px] text-violet-400 font-semibold">
+          {isRTL ? `بعد خصم الأورساف: ${formatCurrency(totalURSSAF)}` : `URSSAF: ${formatCurrency(totalURSSAF)}`}
+        </span>
+        <span className="text-[10px] text-muted-foreground">|</span>
+        <span className="text-[10px] text-amber-400 font-semibold">
+          {isRTL ? `ضريبة تقديرية: ${formatCurrency(realEstimatedIS)}` : `IS estimé: ${formatCurrency(realEstimatedIS)}`}
+        </span>
       </div>
 
       {/* TVA Summary Card */}

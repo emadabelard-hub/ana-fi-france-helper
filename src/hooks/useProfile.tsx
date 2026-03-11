@@ -39,6 +39,7 @@ export interface Profile {
   accountant_email: string | null;
   // URSSAF
   urssaf_rate: number;
+  is_rate: number;
   // Credits & Rate Limiting
   credits_balance: number;
   daily_message_count: number;

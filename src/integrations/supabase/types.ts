@@ -403,6 +403,7 @@ export type Database = {
           header_type: string | null
           iban: string | null
           id: string
+          is_rate: number
           job: string | null
           last_message_date: string | null
           legal_footer: string | null
@@ -443,6 +444,7 @@ export type Database = {
           header_type?: string | null
           iban?: string | null
           id?: string
+          is_rate?: number
           job?: string | null
           last_message_date?: string | null
           legal_footer?: string | null
@@ -483,6 +485,7 @@ export type Database = {
           header_type?: string | null
           iban?: string | null
           id?: string
+          is_rate?: number
           job?: string | null
           last_message_date?: string | null
           legal_footer?: string | null

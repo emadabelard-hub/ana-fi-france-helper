@@ -25,7 +25,7 @@ const ArtisanSignatureSection = () => {
   const [displayUrl, setDisplayUrl] = useState<string | null>(null);
 
   // Get current signature from profile
-  const currentSignatureUrl = (profile as any)?.artisan_signature_url || null;
+  const currentSignatureUrl = profile?.artisan_signature_url || null;
 
   // Resolve signed URL for display
   useEffect(() => {

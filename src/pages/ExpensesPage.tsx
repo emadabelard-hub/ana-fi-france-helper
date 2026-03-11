@@ -116,6 +116,8 @@ const ExpensesPage = () => {
           projectId: d.chantier_id || null,
           clientId: clientMap[d.client_name] || null,
           amount: d.total_ttc || 0,
+          tvaAmount: d.tva_amount || 0,
+          status: d.status || null,
           pdfUrl: d.pdf_url || null,
         });
       });

@@ -28,6 +28,8 @@ interface UnifiedRow {
   projectId: string | null;
   clientId: string | null;
   amount: number;
+  tvaAmount: number;
+  status: string | null;
   pdfUrl: string | null;
 }
 

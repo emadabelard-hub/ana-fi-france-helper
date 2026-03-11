@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Receipt, Plus, TrendingUp, TrendingDown, Wallet,
   Loader2, Download, Eye, FileText,
-  ChevronDown, ChevronUp, Users, HardHat, Calculator
+  ChevronDown, ChevronUp, Users, HardHat, Calculator, Info
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';

@@ -18,7 +18,8 @@ import TransactionsManager from '@/components/admin/TransactionsManager';
 import ServiceRequestsManager from '@/components/admin/ServiceRequestsManager';
 import AnalyticsManager from '@/components/admin/AnalyticsManager';
 import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
-import ApiStatusIndicator from '@/components/admin/ApiStatusIndicator';
+import SystemHealthCard from '@/components/admin/SystemHealthCard';
+import AdminAlertBanner from '@/components/admin/AdminAlertBanner';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();
@@ -27,6 +28,8 @@ const AdminPage = () => {
   
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
+  const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'warning' | 'error'>('checking');
+  const [apiMessage, setApiMessage] = useState('');
   
   const [activeTab, setActiveTab] = useState('stats');
 
@@ -78,7 +81,11 @@ const AdminPage = () => {
 
   // Admin access granted
   return (
-    <div className="py-6 space-y-6">
+    <div className="space-y-0">
+      {/* Persistent alert banner */}
+      <AdminAlertBanner isRTL={isRTL} status={apiStatus} message={apiMessage} />
+
+      <div className="py-6 space-y-6">
       <section className={cn("flex items-center gap-4", isRTL && "flex-row-reverse")}>
         <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
           <BackArrow className="h-5 w-5" />
@@ -91,8 +98,13 @@ const AdminPage = () => {
               {isRTL ? 'إدارة الدروس والأسئلة' : 'Gérer les leçons et les questions'}
             </p>
         </div>
-        <ApiStatusIndicator isRTL={isRTL} />
       </section>
+
+      {/* System Health Card */}
+      <SystemHealthCard
+        isRTL={isRTL}
+        onStatusChange={(s, m) => { setApiStatus(s); setApiMessage(m); }}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className={cn("grid w-full grid-cols-3 mb-2", isRTL && "direction-rtl")}>
@@ -166,6 +178,7 @@ const AdminPage = () => {
           <SupportTicketsManager isRTL={isRTL} />
         </TabsContent>
       </Tabs>
+    </div>
     </div>
   );
 };

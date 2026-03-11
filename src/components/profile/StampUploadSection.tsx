@@ -20,7 +20,7 @@ const StampUploadSection = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [displayUrl, setDisplayUrl] = useState<string | null>(null);
 
-  const currentStampUrl = (profile as any)?.stamp_url || null;
+  const currentStampUrl = profile?.stamp_url || null;
 
   // Resolve signed URL for display
   useEffect(() => {

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Receipt, Plus, TrendingUp, TrendingDown, Wallet,
   Loader2, Download, Eye, FileText,
-  ChevronDown, ChevronUp, Users, HardHat
+  ChevronDown, ChevronUp, Users, HardHat, Calculator
 } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SecurityBadge from '@/components/shared/SecurityBadge';

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Receipt, Plus, TrendingUp, TrendingDown, Wallet,
   Loader2, Download, Eye, FileText,
-  ChevronDown, ChevronUp, Users, HardHat
+  ChevronDown, ChevronUp, Users, HardHat, Calculator
 } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SecurityBadge from '@/components/shared/SecurityBadge';
@@ -28,6 +28,8 @@ interface UnifiedRow {
   projectId: string | null;
   clientId: string | null;
   amount: number;
+  tvaAmount: number;
+  status: string | null;
   pdfUrl: string | null;
 }
 
@@ -65,14 +67,14 @@ const ExpensesPage = () => {
       // Fetch documents
       const docsQ = supabase
         .from('documents_comptables')
-        .select('id, document_type, document_number, client_name, total_ttc, created_at, chantier_id, pdf_url')
+        .select('id, document_type, document_number, client_name, total_ttc, tva_amount, status, created_at, chantier_id, pdf_url')
         .order('created_at', { ascending: false });
       if (!isAdmin) docsQ.eq('user_id', user.id);
 
       // Fetch expenses
       const expQ = supabase
         .from('expenses')
-        .select('id, title, amount, expense_date, chantier_id, document_id, created_at')
+        .select('id, title, amount, tva_amount, expense_date, chantier_id, document_id, created_at')
         .order('expense_date', { ascending: false });
       if (!isAdmin) expQ.eq('user_id', user.id);
 
@@ -114,6 +116,8 @@ const ExpensesPage = () => {
           projectId: d.chantier_id || null,
           clientId: clientMap[d.client_name] || null,
           amount: d.total_ttc || 0,
+          tvaAmount: d.tva_amount || 0,
+          status: d.status || null,
           pdfUrl: d.pdf_url || null,
         });
       });
@@ -133,6 +137,8 @@ const ExpensesPage = () => {
           projectId: e.chantier_id || null,
           clientId: ch ? (ch.clientId || null) : null,
           amount: e.amount || 0,
+          tvaAmount: e.tva_amount || 0,
+          status: null,
           pdfUrl: null,
         });
       });
@@ -164,6 +170,15 @@ const ExpensesPage = () => {
     }
     return rows.filter(r => new Date(r.date) >= start);
   }, [rows, periodFilter]);
+
+  // TVA calculations based on period filter
+  const tvaCollectee = useMemo(() =>
+    filtered.filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted')).reduce((s, r) => s + r.tvaAmount, 0),
+    [filtered]);
+  const tvaDeductible = useMemo(() =>
+    filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.tvaAmount, 0),
+    [filtered]);
+  const tvaNet = tvaCollectee - tvaDeductible;
 
   const netProfit = totalIncome - totalExpenses;
 
@@ -293,7 +308,41 @@ const ExpensesPage = () => {
         </Card>
       </div>
 
-      {/* Section title + filter */}
+      {/* TVA Summary Card */}
+      <Card className="border-amber-500/20 bg-amber-500/5">
+        <CardContent className="p-4">
+          <div className={cn('flex items-center gap-2 mb-3', isRTL && 'flex-row-reverse')}>
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+              <Calculator className="h-4 w-4 text-amber-400" />
+            </div>
+            <h3 className={cn('text-sm font-bold text-foreground', isRTL && 'font-cairo')}>
+              {isRTL ? '📊 تقرير الضريبة (TVA)' : '📊 Rapport TVA'}
+            </h3>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className={cn('text-center', isRTL && 'font-cairo')}>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                {isRTL ? 'TVA محصّلة' : 'TVA Collectée'}
+              </p>
+              <p className="text-sm font-black text-emerald-400">{formatCurrency(tvaCollectee)}</p>
+            </div>
+            <div className={cn('text-center', isRTL && 'font-cairo')}>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                {isRTL ? 'TVA قابلة للخصم' : 'TVA Déductible'}
+              </p>
+              <p className="text-sm font-black text-red-400">{formatCurrency(tvaDeductible)}</p>
+            </div>
+            <div className={cn('text-center', isRTL && 'font-cairo')}>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                {isRTL ? 'صافي TVA' : 'TVA Nette'}
+              </p>
+              <p className={cn('text-sm font-black', tvaNet >= 0 ? 'text-amber-400' : 'text-emerald-400')}>
+                {formatCurrency(tvaNet)}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <h2 className={cn('text-base font-bold text-foreground', isRTL && 'font-cairo')}>
           {isRTL ? '📋 آخر العمليات' : '📋 Dernières Opérations'}

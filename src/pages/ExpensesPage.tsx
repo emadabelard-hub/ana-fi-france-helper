@@ -192,7 +192,15 @@ const ExpensesPage = () => {
     [filtered]);
   const tvaNet = tvaCollectee - tvaDeductible;
 
-  const netProfit = totalIncome - totalExpenses;
+  // URSSAF calculations
+  const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
+  const filteredIncomeHT = useMemo(() =>
+    filtered.filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted')).reduce((s, r) => s + r.amountHT, 0),
+    [filtered]);
+  const totalURSSAF = filteredIncomeHT * (urssafRate / 100);
+
+  // Real Net Profit = Revenue HT - Expenses - URSSAF
+  const netProfit = filteredIncomeHT - totalExpenses - totalURSSAF;
 
   const handleExportCSV = () => {
     if (filtered.length === 0) return;

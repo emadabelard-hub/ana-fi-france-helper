@@ -28,6 +28,7 @@ interface DocumentRow {
   nature_operation: string;
   document_data: any;
   work_site_address: string | null;
+  sent_to_accountant_at: string | null;
 }
 
 const formatCurrency = (n: number) =>

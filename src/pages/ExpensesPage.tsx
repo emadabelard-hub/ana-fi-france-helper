@@ -330,8 +330,19 @@ const ExpensesPage = () => {
         return null;
       };
 
-      // --- Collect document PDFs ---
-      const docs = filtered.filter(r => (r.type === 'facture' || r.type === 'devis') && r.pdfUrl);
+      // --- Collect document PDFs (all factures/devis, with or without pdfUrl) ---
+      const docs = filtered.filter(r => r.type === 'facture' || r.type === 'devis');
+      
+      // Fetch full document_data for generating PDFs when no file exists
+      const docIds = docs.map(d => d.id);
+      const { data: fullDocsData } = docIds.length > 0
+        ? await supabase
+            .from('documents_comptables')
+            .select('id, document_number, document_type, client_name, client_address, subtotal_ht, tva_amount, tva_rate, total_ttc, tva_exempt, document_data, created_at, work_site_address, nature_operation')
+            .in('id', docIds)
+        : { data: [] };
+      const fullDocsMap = new Map((fullDocsData || []).map(d => [d.id, d]));
+
       for (const doc of docs) {
         const clientFolder = (doc.clientName || 'Sans_Client').replace(/[\/\\]/g, '_');
         const projectFolder = (doc.projectName || 'Sans_Projet').replace(/[\/\\]/g, '_');
@@ -339,16 +350,107 @@ const ExpensesPage = () => {
         const fileName = `${fmtDate(doc.date)}_${doc.label.replace(/[\/\\]/g, '-')}.pdf`;
         const folderPath = `${clientFolder}/${projectFolder}/${typeFolder}`;
 
-        try {
-          // Try signed-documents bucket first, then company-assets, then direct
-          let blob = await fetchBlob(doc.pdfUrl!, 'signed-documents');
-          if (!blob) blob = await fetchBlob(doc.pdfUrl!, 'company-assets');
-          if (blob && blob.size > 0) {
-            zip.file(`${folderPath}/${fileName}`, blob);
-            filesAdded++;
+        let blob: Blob | null = null;
+
+        // Try fetching existing PDF first
+        if (doc.pdfUrl) {
+          try {
+            blob = await fetchBlob(doc.pdfUrl, 'signed-documents');
+            if (!blob) blob = await fetchBlob(doc.pdfUrl, 'company-assets');
+          } catch (e) {
+            console.warn(`Could not fetch stored PDF for ${doc.label}:`, e);
           }
-        } catch (e) {
-          console.warn(`Could not fetch file for ${doc.label}:`, e);
+        }
+
+        // If no stored PDF, generate one from document data
+        if (!blob || blob.size === 0) {
+          try {
+            const fullDoc = fullDocsMap.get(doc.id);
+            if (fullDoc) {
+              const { jsPDF } = await import('jspdf');
+              const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+              const docData = fullDoc.document_data as any;
+              const items = docData?.items || docData?.lineItems || [];
+              
+              // Header
+              pdf.setFontSize(18);
+              pdf.text(fullDoc.document_type === 'facture' ? 'FACTURE' : 'DEVIS', 105, 20, { align: 'center' });
+              pdf.setFontSize(11);
+              pdf.text(`N° ${fullDoc.document_number}`, 105, 28, { align: 'center' });
+              pdf.text(`Date: ${fmtDate(fullDoc.created_at)}`, 105, 34, { align: 'center' });
+              
+              // Client info
+              pdf.setFontSize(10);
+              pdf.text('Client:', 14, 50);
+              pdf.setFontSize(11);
+              pdf.text(fullDoc.client_name || '-', 14, 56);
+              if (fullDoc.client_address) pdf.text(fullDoc.client_address, 14, 62);
+              if (fullDoc.work_site_address) {
+                pdf.setFontSize(9);
+                pdf.text(`Adresse chantier: ${fullDoc.work_site_address}`, 14, 70);
+              }
+
+              // Items table
+              let y = 80;
+              pdf.setFontSize(9);
+              pdf.setFont(undefined!, 'bold');
+              pdf.text('Description', 14, y);
+              pdf.text('Qté', 110, y, { align: 'right' });
+              pdf.text('Prix unit. HT', 145, y, { align: 'right' });
+              pdf.text('Total HT', 190, y, { align: 'right' });
+              pdf.line(14, y + 1, 196, y + 1);
+              y += 7;
+              pdf.setFont(undefined!, 'normal');
+
+              for (const item of items) {
+                if (y > 260) { pdf.addPage(); y = 20; }
+                const desc = item.description || item.label || '-';
+                const qty = item.quantity ?? item.qty ?? 1;
+                const unit = item.unitPrice ?? item.unit_price ?? item.price ?? 0;
+                const total = qty * unit;
+                pdf.text(desc.substring(0, 55), 14, y);
+                pdf.text(String(qty), 110, y, { align: 'right' });
+                pdf.text(`${Number(unit).toFixed(2)} €`, 145, y, { align: 'right' });
+                pdf.text(`${total.toFixed(2)} €`, 190, y, { align: 'right' });
+                y += 6;
+              }
+
+              // Totals
+              y += 5;
+              pdf.line(120, y, 196, y);
+              y += 6;
+              pdf.setFont(undefined!, 'bold');
+              pdf.text(`Total HT:`, 140, y);
+              pdf.text(`${Number(fullDoc.subtotal_ht).toFixed(2)} €`, 190, y, { align: 'right' });
+              y += 6;
+              if (!fullDoc.tva_exempt) {
+                pdf.setFont(undefined!, 'normal');
+                pdf.text(`TVA (${Number(fullDoc.tva_rate)}%):`, 140, y);
+                pdf.text(`${Number(fullDoc.tva_amount).toFixed(2)} €`, 190, y, { align: 'right' });
+                y += 6;
+              }
+              pdf.setFont(undefined!, 'bold');
+              pdf.setFontSize(11);
+              pdf.text(`Total TTC:`, 140, y);
+              pdf.text(`${Number(fullDoc.total_ttc).toFixed(2)} €`, 190, y, { align: 'right' });
+
+              if (fullDoc.tva_exempt) {
+                y += 10;
+                pdf.setFontSize(8);
+                pdf.setFont(undefined!, 'italic');
+                pdf.text('TVA non applicable, art. 293 B du CGI.', 14, y);
+              }
+
+              blob = pdf.output('blob');
+            }
+          } catch (e) {
+            console.warn(`Could not generate PDF for ${doc.label}:`, e);
+          }
+        }
+
+        if (blob && blob.size > 0) {
+          zip.file(`${folderPath}/${fileName}`, blob);
+          filesAdded++;
         }
       }
 

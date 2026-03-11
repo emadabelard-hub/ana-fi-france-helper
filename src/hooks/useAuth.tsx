@@ -2,17 +2,26 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 
+interface AuthResult {
+  error: Error | null;
+  needsEmailConfirmation?: boolean;
+  isPrimaryAdmin?: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
   isAnonymous: boolean;
   isAuthenticated: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string) => Promise<AuthResult>;
+  signIn: (email: string, password: string) => Promise<AuthResult>;
   signInAnonymously: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
+
+const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

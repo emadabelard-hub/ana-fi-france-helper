@@ -56,6 +56,23 @@ const ChantierDetailPage = () => {
   const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]);
   const margin = totalFactured - totalExpenses;
 
+  const budget = chantier?.budget ? Number(chantier.budget) : null;
+  const budgetPct = budget && budget > 0 ? (totalExpenses / budget) * 100 : null;
+  const budgetAlert: 'red' | 'yellow' | null = budgetPct !== null ? (budgetPct >= 100 ? 'red' : budgetPct >= 80 ? 'yellow' : null) : null;
+
+  const handleSaveBudget = async () => {
+    if (!id) return;
+    const val = budgetInput.trim() ? parseFloat(budgetInput) : null;
+    const { error } = await supabase.from('chantiers').update({ budget: val } as any).eq('id', id);
+    if (error) {
+      toast({ title: isRTL ? 'خطأ' : 'Erreur', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setChantier((prev: any) => ({ ...prev, budget: val }));
+    setEditingBudget(false);
+    toast({ title: isRTL ? 'تم حفظ الميزانية' : 'Budget enregistré ✓' });
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground animate-pulse">{isRTL ? 'جاري التحميل...' : 'Chargement...'}</div>;
   }

@@ -740,25 +740,25 @@ const ExpensesPage = () => {
       </Card>
 
       {/* Export Buttons */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Button
-          className={cn("w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 h-12", isRTL && "flex-row-reverse font-cairo")}
+          className={cn("w-full gap-2.5 bg-primary text-primary-foreground hover:bg-primary/90 h-14 rounded-xl shadow-md", isRTL && "flex-row-reverse font-cairo")}
           onClick={handleAccountantExport}
           disabled={filtered.length === 0}
         >
           <Download className="h-5 w-5" />
-          <span className="font-bold" style={{ fontSize: '14px' }}>
+          <span className="font-bold" style={{ fontSize: '16px' }}>
             {isRTL ? 'تصدير بيانات المحاسب' : 'Export comptable'}
           </span>
         </Button>
         <Button
           variant="outline"
-          className={cn("w-full gap-2 h-12 border-accent/30", isRTL && "flex-row-reverse font-cairo")}
+          className={cn("w-full gap-2.5 h-14 rounded-xl border-2 border-accent/30 shadow-md", isRTL && "flex-row-reverse font-cairo")}
           onClick={handleArchiveDownload}
           disabled={filtered.length === 0 || archiving}
         >
           {archiving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Archive className="h-5 w-5" />}
-          <span className="font-bold" style={{ fontSize: '14px' }}>
+          <span className="font-bold" style={{ fontSize: '16px' }}>
             {isRTL ? 'تحميل أرشيف المستندات' : 'Archive documents'}
           </span>
         </Button>
@@ -934,15 +934,6 @@ const ExpensesPage = () => {
         </div>
       )}
 
-      {/* CSV Export at bottom */}
-      {filtered.length > 0 && (
-        <div className="flex justify-center pt-2">
-          <Button size="sm" variant="outline" onClick={handleExportCSV} className="gap-1.5">
-            <Download className="h-3.5 w-3.5" />
-            {isRTL ? 'تصدير CSV' : 'Exporter CSV'}
-          </Button>
-        </div>
-      )}
 
       {/* Security Badge */}
       <SecurityBadge />

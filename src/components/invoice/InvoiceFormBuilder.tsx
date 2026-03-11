@@ -1308,15 +1308,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
           <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
-              ? 'اكتب رقمك بعد البريفيكس. مثال: D-2026-001'
-              : "Saisissez votre numéro après le préfixe. Ex: D-2026-001"}
+              ? 'الرقم بيتولّد تلقائي. تقدر تعدّله لو عايز.'
+              : "Le numéro est généré automatiquement. Vous pouvez le modifier si nécessaire."}
           </p>
           <Input
-            value={docNumber}
+            value={docNumberLoading ? (isRTL ? 'جاري التحميل...' : 'Chargement...') : docNumber}
             onChange={(e) => {
               const prefix = getDocPrefix(documentType);
               const val = e.target.value;
-              // Prevent modifying the locked prefix
               if (val.length < prefix.length) {
                 setDocNumber(prefix);
               } else if (val.startsWith(prefix)) {
@@ -1331,13 +1330,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 setDocNumber(prefix);
               }
             }}
+            disabled={docNumberLoading}
             placeholder={isRTL ? `مثال: ${getDocPrefix(documentType)}001` : `Ex: ${getDocPrefix(documentType)}001`}
             className="font-mono"
           />
           <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
-              ? '💡 تقدر تغيّر الرقم حسب نظام الترقيم بتاعك'
-              : '💡 Vous pouvez personnaliser ce numéro selon votre système de numérotation'}
+              ? '💡 الترقيم تلقائي ومستقل: دوفي وفاتورة كل واحد له عداد خاص'
+              : '💡 Numérotation automatique et indépendante : Devis et Factures ont chacun leur propre compteur'}
           </p>
         </CardContent>
       </Card>

@@ -12,12 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Receipt, Plus, TrendingUp, TrendingDown, Wallet,
   Loader2, Download, Eye, FileText,
-  ChevronDown, ChevronUp, Users, HardHat, Calculator, Info
+  ChevronDown, ChevronUp, Users, HardHat, Calculator, Info, Landmark
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
+import { useProfile } from '@/hooks/useProfile';
 
 interface UnifiedRow {
   id: string;
@@ -29,6 +30,7 @@ interface UnifiedRow {
   projectId: string | null;
   clientId: string | null;
   amount: number;
+  amountHT: number;
   tvaAmount: number;
   status: string | null;
   pdfUrl: string | null;
@@ -41,6 +43,7 @@ const ExpensesPage = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { profile } = useProfile();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -51,6 +54,7 @@ const ExpensesPage = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [rows, setRows] = useState<UnifiedRow[]>([]);
   const [totalIncome, setTotalIncome] = useState(0);
+  const [totalIncomeHT, setTotalIncomeHT] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
 
   useEffect(() => {
@@ -68,7 +72,7 @@ const ExpensesPage = () => {
       // Fetch documents
       const docsQ = supabase
         .from('documents_comptables')
-        .select('id, document_type, document_number, client_name, total_ttc, tva_amount, status, created_at, chantier_id, pdf_url')
+        .select('id, document_type, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, created_at, chantier_id, pdf_url')
         .order('created_at', { ascending: false });
       if (!isAdmin) docsQ.eq('user_id', user.id);
 
@@ -99,6 +103,7 @@ const ExpensesPage = () => {
       (clRes.data || []).forEach((c: any) => { clientIdMap[c.id] = c.name; });
 
       let incomeSum = 0;
+      let incomeHTSum = 0;
       let expenseSum = 0;
 
       const unified: UnifiedRow[] = [];
@@ -106,7 +111,10 @@ const ExpensesPage = () => {
       // Documents
       (docsRes.data || []).forEach((d: any) => {
         const ch = d.chantier_id ? chantierMap[d.chantier_id] : null;
-        if (d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted')) incomeSum += d.total_ttc || 0;
+        if (d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted')) {
+          incomeSum += d.total_ttc || 0;
+          incomeHTSum += d.subtotal_ht || 0;
+        }
         unified.push({
           id: d.id,
           date: d.created_at,
@@ -117,6 +125,7 @@ const ExpensesPage = () => {
           projectId: d.chantier_id || null,
           clientId: clientMap[d.client_name] || null,
           amount: d.total_ttc || 0,
+          amountHT: d.subtotal_ht || 0,
           tvaAmount: d.tva_amount || 0,
           status: d.status || null,
           pdfUrl: d.pdf_url || null,
@@ -138,6 +147,7 @@ const ExpensesPage = () => {
           projectId: e.chantier_id || null,
           clientId: ch ? (ch.clientId || null) : null,
           amount: e.amount || 0,
+          amountHT: e.amount || 0,
           tvaAmount: e.tva_amount || 0,
           status: null,
           pdfUrl: null,
@@ -149,6 +159,7 @@ const ExpensesPage = () => {
 
       setRows(unified);
       setTotalIncome(incomeSum);
+      setTotalIncomeHT(incomeHTSum);
       setTotalExpenses(expenseSum);
     } catch (err) {
       console.error(err);
@@ -181,7 +192,15 @@ const ExpensesPage = () => {
     [filtered]);
   const tvaNet = tvaCollectee - tvaDeductible;
 
-  const netProfit = totalIncome - totalExpenses;
+  // URSSAF calculations
+  const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
+  const filteredIncomeHT = useMemo(() =>
+    filtered.filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted')).reduce((s, r) => s + r.amountHT, 0),
+    [filtered]);
+  const totalURSSAF = filteredIncomeHT * (urssafRate / 100);
+
+  // Real Net Profit = Revenue HT - Expenses - URSSAF
+  const netProfit = filteredIncomeHT - totalExpenses - totalURSSAF;
 
   const handleExportCSV = () => {
     if (filtered.length === 0) return;
@@ -358,6 +377,55 @@ const ExpensesPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* URSSAF Summary Card */}
+      <Card className="border-violet-500/20 bg-violet-500/5">
+        <CardContent className="p-4">
+          <div className={cn('flex items-center gap-2 flex-1 mb-3', isRTL && 'flex-row-reverse')}>
+            <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+              <Landmark className="h-4 w-4 text-violet-400" />
+            </div>
+            <h3 className={cn('text-sm font-bold text-foreground', isRTL && 'font-cairo')}>
+              {isRTL ? '🏛️ مساهمات الأورساف (URSSAF)' : '🏛️ Cotisations URSSAF'}
+            </h3>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent side={isRTL ? 'left' : 'right'} className="max-w-[240px] text-xs">
+                  <p className={cn(isRTL && 'font-cairo text-right')}>
+                    {isRTL
+                      ? 'هذا هو المبلغ التقديري للمساهمات الاجتماعية بناءً على دخلك الحالي'
+                      : 'Estimation des cotisations sociales basée sur votre revenu actuel'}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className={cn('text-center', isRTL && 'font-cairo')}>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                {isRTL ? 'إيرادات HT' : 'CA HT'}
+              </p>
+              <p className="text-sm font-black text-emerald-400">{formatCurrency(filteredIncomeHT)}</p>
+            </div>
+            <div className={cn('text-center', isRTL && 'font-cairo')}>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                {isRTL ? `النسبة ${urssafRate}%` : `Taux ${urssafRate}%`}
+              </p>
+              <p className="text-sm font-black text-violet-400">{urssafRate}%</p>
+            </div>
+            <div className={cn('text-center', isRTL && 'font-cairo')}>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                {isRTL ? 'المبلغ المستحق' : 'Montant dû'}
+              </p>
+              <p className="text-sm font-black text-violet-400">{formatCurrency(totalURSSAF)}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <h2 className={cn('text-base font-bold text-foreground', isRTL && 'font-cairo')}>
           {isRTL ? '📋 آخر العمليات' : '📋 Dernières Opérations'}

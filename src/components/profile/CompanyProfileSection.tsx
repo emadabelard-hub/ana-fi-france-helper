@@ -51,6 +51,7 @@ interface CompanyFormData {
   iban: string;
   bic: string;
   accountant_email: string;
+  urssaf_rate: string;
 }
 
 const CompanyProfileSection = () => {
@@ -87,6 +88,7 @@ const CompanyProfileSection = () => {
     iban: '',
     bic: '',
     accountant_email: '',
+    urssaf_rate: '21.2',
   });
 
   useEffect(() => {
@@ -113,6 +115,7 @@ const CompanyProfileSection = () => {
         iban: (profile as any).iban || '',
         bic: (profile as any).bic || '',
         accountant_email: (profile as any).accountant_email || '',
+        urssaf_rate: String((profile as any).urssaf_rate ?? 21.2),
       });
     }
   }, [profile]);
@@ -212,7 +215,8 @@ const CompanyProfileSection = () => {
     if (siretError) return;
     
     setIsSaving(true);
-    await updateProfile(formData as any);
+    const { urssaf_rate, ...rest } = formData;
+    await updateProfile({ ...rest, urssaf_rate: parseFloat(urssaf_rate) || 21.2 } as any);
     setIsSaving(false);
   };
 
@@ -778,6 +782,32 @@ const CompanyProfileSection = () => {
               {isRTL
                 ? '💡 سيتم ملء هذا البريد تلقائيًا عند إرسال المستندات للمحاسب'
                 : '💡 Sera pré-rempli automatiquement lors de l\'envoi au comptable'}
+            </p>
+          </div>
+
+          {/* URSSAF Rate */}
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <span className="text-base">🏛️</span>
+              <Label className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'نسبة الأورساف (%)' : 'Taux URSSAF (%)'}
+              </Label>
+            </div>
+            <Input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={formData.urssaf_rate}
+              onChange={(e) => handleChange('urssaf_rate' as any, e.target.value)}
+              placeholder="21.2"
+              className="font-mono text-sm w-32"
+              dir="ltr"
+            />
+            <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-cairo")}>
+              {isRTL
+                ? '💡 النسبة الافتراضية 21.2% للحرفيين. يمكنك تعديلها حسب نشاطك'
+                : '💡 Taux par défaut 21.2% pour les artisans. Modifiable selon votre activité'}
             </p>
           </div>
         </CardContent>

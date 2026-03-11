@@ -415,6 +415,7 @@ export type Database = {
           stamp_url: string | null
           tva_exempt: boolean
           updated_at: string
+          urssaf_rate: number
           user_id: string
           ville_immatriculation: string | null
         }
@@ -454,6 +455,7 @@ export type Database = {
           stamp_url?: string | null
           tva_exempt?: boolean
           updated_at?: string
+          urssaf_rate?: number
           user_id: string
           ville_immatriculation?: string | null
         }
@@ -493,6 +495,7 @@ export type Database = {
           stamp_url?: string | null
           tva_exempt?: boolean
           updated_at?: string
+          urssaf_rate?: number
           user_id?: string
           ville_immatriculation?: string | null
         }

@@ -27,6 +27,7 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   // If already authenticated, redirect home
   if (isAuthenticated) {

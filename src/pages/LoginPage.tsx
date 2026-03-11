@@ -71,10 +71,13 @@ const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
+
     if (!isLogin && password !== confirmPassword) {
       toast({ variant: "destructive", title: isRTL ? "خطأ" : "Erreur", description: isRTL ? "كلمات المرور غير متطابقة" : "Les mots de passe ne correspondent pas" });
       return;
     }
+
     setIsLoading(true);
     try {
       if (isLogin && rememberMe) {
@@ -82,13 +85,43 @@ const LoginPage = () => {
       } else if (isLogin) {
         localStorage.removeItem('remember_session');
       }
-      const { error } = isLogin ? await signIn(email, password) : await signUp(email, password);
-      if (error) {
-        toast({ variant: "destructive", title: isRTL ? "خطأ" : "Erreur", description: error.message });
-      } else {
-        toast({ title: isRTL ? "تمام ✓" : "Succès ✓" });
-        navigate('/', { replace: true });
+
+      const result = isLogin
+        ? await signIn(normalizedEmail, password)
+        : await signUp(normalizedEmail, password);
+
+      if (result.error) {
+        const errorMessage = result.error.message.toLowerCase();
+        let description = result.error.message;
+
+        if (errorMessage.includes('invalid login credentials')) {
+          description = isRTL
+            ? "بيانات الدخول غير صحيحة، تحقق من الإيميل وكلمة المرور أو استخدم استعادة كلمة المرور"
+            : "Identifiants invalides, vérifiez votre email/mot de passe ou utilisez la réinitialisation.";
+        } else if (errorMessage.includes('email not confirmed')) {
+          description = isRTL
+            ? "الحساب غير مُفعّل بعد. تحقق من بريدك لتأكيد الإيميل أو فعّل تأكيد الإيميل من إعدادات المصادقة في Lovable Cloud."
+            : "Compte non confirmé. Vérifiez votre email de confirmation ou activez la confirmation automatique dans les paramètres d'authentification Lovable Cloud.";
+        }
+
+        toast({ variant: "destructive", title: isRTL ? "خطأ" : "Erreur", description });
+        return;
       }
+
+      if (!isLogin && result.needsEmailConfirmation) {
+        toast({
+          title: isRTL ? "تحقق من بريدك" : "Vérifiez votre email",
+          description: isRTL
+            ? "تم إنشاء الحساب. يلزم تأكيد البريد قبل تسجيل الدخول."
+            : "Compte créé. Vous devez confirmer votre email avant la connexion.",
+        });
+        setIsLogin(true);
+        return;
+      }
+
+      toast({ title: isRTL ? "تمام ✓" : "Succès ✓" });
+      const isPrimaryAdmin = normalizedEmail === PRIMARY_ADMIN_EMAIL || result.isPrimaryAdmin === true;
+      navigate(isPrimaryAdmin ? '/accounts' : '/', { replace: true });
     } finally {
       setIsLoading(false);
     }

@@ -18,6 +18,16 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 import ArtisanSignatureSection from './ArtisanSignatureSection';
 import StampUploadSection from './StampUploadSection';
 import { getSignedAssetUrl } from '@/lib/storageUtils';
+import { Switch } from '@/components/ui/switch';
+
+const DailyAlertToggle = () => {
+  const [enabled, setEnabled] = useState(() => localStorage.getItem('daily_balance_alert') === 'true');
+  const handleToggle = (val: boolean) => {
+    setEnabled(val);
+    localStorage.setItem('daily_balance_alert', String(val));
+  };
+  return <Switch checked={enabled} onCheckedChange={handleToggle} />;
+};
 
 interface CompanyFormData {
   company_name: string;

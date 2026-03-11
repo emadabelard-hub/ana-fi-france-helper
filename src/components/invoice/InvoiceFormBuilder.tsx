@@ -70,7 +70,23 @@ const getDocPrefix = (type: 'devis' | 'facture') => {
   return `${prefix}-${year}-`;
 };
 
-// Generate document number with empty suffix (user fills in their own number)
+// Fetch next sequential number from DB (atomic, no gaps, no duplicates)
+const fetchNextDocNumber = async (userId: string, type: 'devis' | 'facture'): Promise<string> => {
+  const year = new Date().getFullYear();
+  const { data, error } = await supabase.rpc('get_next_document_number', {
+    p_user_id: userId,
+    p_document_type: type,
+    p_year: year,
+  });
+  if (error) {
+    console.error('Failed to fetch next doc number:', error);
+    // Fallback to prefix only
+    return getDocPrefix(type);
+  }
+  return data as string;
+};
+
+// Generate document number with empty suffix (fallback for non-logged-in)
 const generateDocNumber = (type: 'devis' | 'facture') => {
   return `${getDocPrefix(type)}`;
 };

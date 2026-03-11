@@ -43,6 +43,7 @@ const ExpensesPage = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { profile } = useProfile();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);

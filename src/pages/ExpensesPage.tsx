@@ -334,6 +334,17 @@ const ExpensesPage = () => {
         </Card>
       </div>
 
+      {/* Breakdown under Net Profit */}
+      <div className={cn("px-2 flex items-center gap-1 flex-wrap justify-center", isRTL && "font-cairo flex-row-reverse")}>
+        <span className="text-[10px] text-violet-400 font-semibold">
+          {isRTL ? `بعد خصم الأورساف: ${formatCurrency(totalURSSAF)}` : `URSSAF: ${formatCurrency(totalURSSAF)}`}
+        </span>
+        <span className="text-[10px] text-muted-foreground">|</span>
+        <span className="text-[10px] text-amber-400 font-semibold">
+          {isRTL ? `ضريبة تقديرية: ${formatCurrency(realEstimatedIS)}` : `IS estimé: ${formatCurrency(realEstimatedIS)}`}
+        </span>
+      </div>
+
       {/* TVA Summary Card */}
       <Card className="border-amber-500/20 bg-amber-500/5">
         <CardContent className="p-4">

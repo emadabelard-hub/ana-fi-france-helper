@@ -346,6 +346,11 @@ const ExpensesPage = () => {
                       <Badge variant="secondary" className={cn('text-[10px] shrink-0', tc.color)}>
                         {isRTL ? tc.label.ar : tc.label.fr}
                       </Badge>
+                      {isOverdue && (
+                        <Badge variant="destructive" className="text-[10px] shrink-0 animate-pulse">
+                          {isRTL ? 'متأخرة' : 'En retard'}
+                        </Badge>
+                      )}
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">

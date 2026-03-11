@@ -247,6 +247,10 @@ const ChantiersPage = () => {
               </Select>
             </div>
             <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'ميزانية المشروع (اختياري)' : 'Budget du projet (optionnel)'}</label>
+              <Input type="number" min="0" step="0.01" value={form.budget} onChange={e => setForm(f => ({ ...f, budget: e.target.value }))} placeholder={isRTL ? 'مثال: 15000' : 'Ex: 15000'} />
+            </div>
+            <div>
               <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'وثيقة التأمين المرتبطة' : 'Assurance liée (optionnel)'}</label>
               <Input value={form.insurance_notes} onChange={e => setForm(f => ({ ...f, insurance_notes: e.target.value }))} placeholder={isRTL ? 'رقم البوليصة أو ملاحظة' : 'N° de police ou note'} />
             </div>

@@ -47,6 +47,7 @@ const DocumentsListPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
+  const [converting, setConverting] = useState(false);
 
   useEffect(() => {
     if (!user || user.is_anonymous) {

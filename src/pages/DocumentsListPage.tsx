@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search, SendHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,6 +28,7 @@ interface DocumentRow {
   nature_operation: string;
   document_data: any;
   work_site_address: string | null;
+  sent_to_accountant_at: string | null;
 }
 
 const formatCurrency = (n: number) =>
@@ -90,7 +91,7 @@ const DocumentsListPage = () => {
 
     const documentsQuery = (supabase
       .from('documents_comptables') as any)
-      .select('id, document_type, document_number, client_name, client_address, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address')
+      .select('id, document_type, document_number, client_name, client_address, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, sent_to_accountant_at')
       .order('created_at', { ascending: false });
 
     if (!isAdmin) {
@@ -254,13 +255,21 @@ const DocumentsListPage = () => {
             </div>
           </div>
 
-          {/* Status badge */}
-          <span className={cn(
-            "text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 uppercase tracking-wider",
-            doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"
-          )}>
-            {doc.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') : (isRTL ? 'مسودة' : 'Brouillon')}
-          </span>
+          {/* Status badges */}
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <span className={cn(
+              "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
+              doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"
+            )}>
+              {doc.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') : (isRTL ? 'مسودة' : 'Brouillon')}
+            </span>
+            {doc.sent_to_accountant_at && (
+              <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 flex items-center gap-1">
+                <SendHorizontal className="h-2.5 w-2.5" />
+                {isRTL ? 'أُرسل للمحاسب' : 'Envoyé'}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Financial row */}

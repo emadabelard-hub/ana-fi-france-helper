@@ -50,8 +50,8 @@ const LoginPage = () => {
     }
     if (msg.includes('email not confirmed')) {
       return isRTL
-        ? 'الحساب غير مُفعّل بعد. تحقق من بريدك الإلكتروني'
-        : 'Compte non confirmé. Vérifiez votre email.';
+        ? 'الحساب غير مُفعّل بعد. تحقق من بريدك الإلكتروني أو أعد إرسال رابط التأكيد'
+        : 'Compte non confirmé. Vérifiez votre email ou renvoyez le lien.';
     }
     if (msg.includes('user already registered')) {
       return isRTL

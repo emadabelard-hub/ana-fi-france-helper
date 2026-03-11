@@ -1154,12 +1154,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               checked={documentType === 'facture'}
               onCheckedChange={(checked) => {
                 const newType = checked ? 'facture' : 'devis';
-                const currentPrefix = getDocPrefix(documentType);
-                const newPrefix = getDocPrefix(newType);
-                const userPart = docNumber.startsWith(currentPrefix) 
-                  ? docNumber.slice(currentPrefix.length) 
-                  : '';
-                setDocNumber(newPrefix + userPart);
+                // Auto-fetch the next number for the new type
+                setDocNumber(getDocPrefix(newType));
                 onDocumentTypeChange(newType);
               }}
             />

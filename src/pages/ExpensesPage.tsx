@@ -308,7 +308,41 @@ const ExpensesPage = () => {
         </Card>
       </div>
 
-      {/* Section title + filter */}
+      {/* TVA Summary Card */}
+      <Card className="border-amber-500/20 bg-amber-500/5">
+        <CardContent className="p-4">
+          <div className={cn('flex items-center gap-2 mb-3', isRTL && 'flex-row-reverse')}>
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+              <Calculator className="h-4 w-4 text-amber-400" />
+            </div>
+            <h3 className={cn('text-sm font-bold text-foreground', isRTL && 'font-cairo')}>
+              {isRTL ? '📊 تقرير الضريبة (TVA)' : '📊 Rapport TVA'}
+            </h3>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className={cn('text-center', isRTL && 'font-cairo')}>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                {isRTL ? 'TVA محصّلة' : 'TVA Collectée'}
+              </p>
+              <p className="text-sm font-black text-emerald-400">{formatCurrency(tvaCollectee)}</p>
+            </div>
+            <div className={cn('text-center', isRTL && 'font-cairo')}>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                {isRTL ? 'TVA قابلة للخصم' : 'TVA Déductible'}
+              </p>
+              <p className="text-sm font-black text-red-400">{formatCurrency(tvaDeductible)}</p>
+            </div>
+            <div className={cn('text-center', isRTL && 'font-cairo')}>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                {isRTL ? 'صافي TVA' : 'TVA Nette'}
+              </p>
+              <p className={cn('text-sm font-black', tvaNet >= 0 ? 'text-amber-400' : 'text-emerald-400')}>
+                {formatCurrency(tvaNet)}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <h2 className={cn('text-base font-bold text-foreground', isRTL && 'font-cairo')}>
           {isRTL ? '📋 آخر العمليات' : '📋 Dernières Opérations'}

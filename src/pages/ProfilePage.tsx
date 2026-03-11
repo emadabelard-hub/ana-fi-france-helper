@@ -162,6 +162,7 @@ const ProfilePage = () => {
         assurance_geographic_coverage: (profile as any).assurance_geographic_coverage || 'France métropolitaine',
         iban: (profile as any).iban || '',
         bic: (profile as any).bic || '',
+        accountant_email: (profile as any).accountant_email || '',
       });
     }
   }, [profile]);

@@ -171,6 +171,15 @@ const ExpensesPage = () => {
     return rows.filter(r => new Date(r.date) >= start);
   }, [rows, periodFilter]);
 
+  // TVA calculations based on period filter
+  const tvaCollectee = useMemo(() =>
+    filtered.filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted')).reduce((s, r) => s + r.tvaAmount, 0),
+    [filtered]);
+  const tvaDeductible = useMemo(() =>
+    filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.tvaAmount, 0),
+    [filtered]);
+  const tvaNet = tvaCollectee - tvaDeductible;
+
   const netProfit = totalIncome - totalExpenses;
 
   const handleExportCSV = () => {

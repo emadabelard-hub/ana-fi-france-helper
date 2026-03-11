@@ -133,6 +133,7 @@ const ProfilePage = () => {
     assurance_geographic_coverage: 'France métropolitaine',
     iban: '',
     bic: '',
+    accountant_email: '',
   });
 
   useEffect(() => {
@@ -161,6 +162,7 @@ const ProfilePage = () => {
         assurance_geographic_coverage: (profile as any).assurance_geographic_coverage || 'France métropolitaine',
         iban: (profile as any).iban || '',
         bic: (profile as any).bic || '',
+        accountant_email: (profile as any).accountant_email || '',
       });
     }
   }, [profile]);
@@ -558,6 +560,24 @@ const ProfilePage = () => {
                 placeholder="BNPAFRPP"
                 className="font-mono text-sm"
               />
+            </div>
+
+            {/* Accountant Email */}
+            <div className="space-y-2 col-span-full pt-2 border-t border-border/30">
+              <FieldLabel icon={Mail} label={isRTL ? 'بريد المحاسب' : 'Email du comptable'} isRTL={isRTL} filled={!!formData.accountant_email?.trim()} />
+              <StyledInput
+                type="email"
+                value={formData.accountant_email}
+                onChange={(e) => handleChange('accountant_email', e.target.value)}
+                placeholder="comptable@example.com"
+                className="font-mono text-sm"
+                dir="ltr"
+              />
+              <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-[IBMPlexSansArabic]")}>
+                {isRTL
+                  ? '💡 سيتم ملء هذا البريد تلقائيًا عند إرسال المستندات للمحاسب'
+                  : '💡 Sera pré-rempli automatiquement lors de l\'envoi au comptable'}
+              </p>
             </div>
           </FieldGroup>
         </SectionCard>

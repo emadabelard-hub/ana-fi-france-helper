@@ -91,7 +91,7 @@ const DocumentsListPage = () => {
 
     const documentsQuery = (supabase
       .from('documents_comptables') as any)
-      .select('id, document_type, document_number, client_name, client_address, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address')
+      .select('id, document_type, document_number, client_name, client_address, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, sent_to_accountant_at')
       .order('created_at', { ascending: false });
 
     if (!isAdmin) {

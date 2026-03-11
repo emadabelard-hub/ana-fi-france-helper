@@ -194,13 +194,19 @@ const ExpensesPage = () => {
 
   // URSSAF calculations
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
+  const isRate = (profile as any)?.is_rate ?? 15;
   const filteredIncomeHT = useMemo(() =>
     filtered.filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted')).reduce((s, r) => s + r.amountHT, 0),
     [filtered]);
+  const filteredExpensesHT = useMemo(() =>
+    filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.amountHT, 0),
+    [filtered]);
   const totalURSSAF = filteredIncomeHT * (urssafRate / 100);
+  const estimatedIS = (filteredIncomeHT - filteredExpensesHT - totalURSSAF) * (isRate / 100);
+  const realEstimatedIS = Math.max(0, estimatedIS); // IS can't be negative
 
-  // Real Net Profit = Revenue HT - Expenses - URSSAF
-  const netProfit = filteredIncomeHT - totalExpenses - totalURSSAF;
+  // FINAL Net Profit = Revenue HT - Expenses - URSSAF - Estimated IS
+  const netProfit = filteredIncomeHT - totalExpenses - totalURSSAF - realEstimatedIS;
 
   const handleExportCSV = () => {
     if (filtered.length === 0) return;

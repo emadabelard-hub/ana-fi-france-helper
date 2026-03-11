@@ -115,6 +115,7 @@ const CompanyProfileSection = () => {
         iban: (profile as any).iban || '',
         bic: (profile as any).bic || '',
         accountant_email: (profile as any).accountant_email || '',
+        urssaf_rate: String((profile as any).urssaf_rate ?? 21.2),
       });
     }
   }, [profile]);

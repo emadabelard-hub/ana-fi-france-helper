@@ -37,6 +37,8 @@ export interface Profile {
   bic: string | null;
   // Accountant
   accountant_email: string | null;
+  // URSSAF
+  urssaf_rate: number;
   // Credits & Rate Limiting
   credits_balance: number;
   daily_message_count: number;

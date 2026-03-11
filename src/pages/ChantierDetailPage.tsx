@@ -29,6 +29,7 @@ const ChantierDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
+  const [showAddExpense, setShowAddExpense] = useState(false);
 
   useEffect(() => {
     if (!user || !id) return;

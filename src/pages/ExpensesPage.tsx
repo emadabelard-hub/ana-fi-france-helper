@@ -74,7 +74,7 @@ const ExpensesPage = () => {
       // Fetch expenses
       const expQ = supabase
         .from('expenses')
-        .select('id, title, amount, expense_date, chantier_id, document_id, created_at')
+        .select('id, title, amount, tva_amount, expense_date, chantier_id, document_id, created_at')
         .order('expense_date', { ascending: false });
       if (!isAdmin) expQ.eq('user_id', user.id);
 

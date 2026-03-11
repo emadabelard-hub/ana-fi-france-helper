@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, HardHat, FileText, Receipt, TrendingUp, TrendingDown, Wallet, MapPin, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, HardHat, FileText, Receipt, TrendingUp, TrendingDown, Wallet, MapPin, AlertTriangle, Plus } from 'lucide-react';
+import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ const ChantierDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
+  const [showAddExpense, setShowAddExpense] = useState(false);
 
   useEffect(() => {
     if (!user || !id) return;
@@ -177,6 +179,28 @@ const ChantierDetailPage = () => {
         </button>
       )}
 
+      {/* Quick Actions */}
+      <div className={cn("flex items-center gap-2 mb-3", isRTL && "flex-row-reverse")}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5 flex-1"
+          onClick={() => navigate('/pro/invoice', { state: { prefill: { clientName: client?.name, chantierId: id, chantierName: chantier.name } } })}
+        >
+          <FileText className="h-3.5 w-3.5 text-primary" />
+          <span className={cn("text-xs font-bold", isRTL && "font-cairo")}>{isRTL ? 'إنشاء فاتورة' : 'Créer Facture'}</span>
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5 flex-1"
+          onClick={() => setShowAddExpense(true)}
+        >
+          <Receipt className="h-3.5 w-3.5 text-red-500" />
+          <span className={cn("text-xs font-bold", isRTL && "font-cairo")}>{isRTL ? 'إضافة مصروف' : 'Ajouter Dépense'}</span>
+        </Button>
+      </div>
+
       {/* Profitability Summary */}
       <div className="grid grid-cols-3 gap-2 mb-4">
         {[
@@ -245,6 +269,19 @@ const ChantierDetailPage = () => {
           ))}
         </TabsContent>
       </Tabs>
+
+      {user && (
+        <AddExpenseModal
+          open={showAddExpense}
+          onOpenChange={setShowAddExpense}
+          isRTL={isRTL}
+          userId={user.id}
+          onExpenseAdded={async () => {
+            const { data: exp } = await supabase.from('expenses').select('*').eq('chantier_id', id!).order('expense_date', { ascending: false });
+            setExpenses(exp || []);
+          }}
+        />
+      )}
     </div>
   );
 };

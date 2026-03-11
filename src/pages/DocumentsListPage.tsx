@@ -193,6 +193,59 @@ const DocumentsListPage = () => {
     setSelectedDocument(doc);
   };
 
+  const handleDirectConvert = async (doc: DocumentRow) => {
+    if (!user || converting) return;
+    setConverting(true);
+    try {
+      // 1. Get next facture number
+      const year = new Date().getFullYear();
+      const { data: nextNumber, error: rpcError } = await supabase.rpc('get_next_document_number', {
+        p_user_id: user.id,
+        p_document_type: 'facture',
+        p_year: year,
+      });
+      if (rpcError || !nextNumber) throw rpcError || new Error('Failed to get next number');
+
+      // 2. Build new facture from devis data
+      const docData = doc.document_data || {};
+      const { error: insertError } = await (supabase.from('documents_comptables') as any).insert({
+        user_id: user.id,
+        document_type: 'facture',
+        document_number: nextNumber,
+        client_name: doc.client_name,
+        client_address: doc.client_address,
+        work_site_address: doc.work_site_address,
+        nature_operation: doc.nature_operation,
+        subtotal_ht: doc.subtotal_ht,
+        tva_amount: doc.tva_amount,
+        total_ttc: doc.total_ttc,
+        status: 'draft',
+        document_data: { ...docData, convertedFromDevis: doc.document_number },
+        chantier_id: (doc as any).chantier_id || null,
+      });
+      if (insertError) throw insertError;
+
+      // 3. Mark original devis as converted
+      await (supabase.from('documents_comptables') as any)
+        .update({ status: 'converted' })
+        .eq('id', doc.id);
+
+      toast({
+        title: isRTL ? '✅ تم التحويل' : '✅ Converti',
+        description: isRTL
+          ? `تم إنشاء فاتورة ${nextNumber} من الدوفي ${doc.document_number}`
+          : `Facture ${nextNumber} créée depuis le devis ${doc.document_number}`,
+      });
+
+      setSelectedDocument(null);
+      fetchDocuments();
+    } catch (err: any) {
+      toast({ title: isRTL ? 'خطأ' : 'Erreur', description: err?.message || 'Conversion failed', variant: 'destructive' });
+    } finally {
+      setConverting(false);
+    }
+  };
+
   const devis = filteredDocuments.filter(d => d.document_type === 'devis');
   const factures = filteredDocuments.filter(d => d.document_type === 'facture');
 

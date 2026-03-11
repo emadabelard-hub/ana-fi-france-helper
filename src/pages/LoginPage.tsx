@@ -157,6 +157,18 @@ const LoginPage = () => {
                     <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" required />
                   </div>
                 )}
+                {isLogin && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <Label htmlFor="rememberMe" className="text-sm cursor-pointer select-none">
+                      {isRTL ? "تذكرني" : "Se souvenir de moi"}
+                    </Label>
+                  </div>
+                )}
                 <Button type="submit" className="w-full font-bold h-12 text-[16px]" disabled={isLoading}>
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                     <>

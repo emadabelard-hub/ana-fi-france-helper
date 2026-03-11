@@ -103,6 +103,7 @@ const ExpensesPage = () => {
       (clRes.data || []).forEach((c: any) => { clientIdMap[c.id] = c.name; });
 
       let incomeSum = 0;
+      let incomeHTSum = 0;
       let expenseSum = 0;
 
       const unified: UnifiedRow[] = [];

@@ -18,7 +18,8 @@ import TransactionsManager from '@/components/admin/TransactionsManager';
 import ServiceRequestsManager from '@/components/admin/ServiceRequestsManager';
 import AnalyticsManager from '@/components/admin/AnalyticsManager';
 import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
-import ApiStatusIndicator from '@/components/admin/ApiStatusIndicator';
+import SystemHealthCard from '@/components/admin/SystemHealthCard';
+import AdminAlertBanner from '@/components/admin/AdminAlertBanner';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();
@@ -27,6 +28,8 @@ const AdminPage = () => {
   
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
+  const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'warning' | 'error'>('checking');
+  const [apiMessage, setApiMessage] = useState('');
   
   const [activeTab, setActiveTab] = useState('stats');
 

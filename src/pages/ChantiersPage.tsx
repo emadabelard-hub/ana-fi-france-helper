@@ -101,6 +101,7 @@ const ChantiersPage = () => {
       site_address: form.site_address.trim() || null,
       status: form.status,
       insurance_notes: form.insurance_notes.trim() || null,
+      budget: form.budget ? parseFloat(form.budget) : null,
     } as any);
     setSaving(false);
     if (error) {

@@ -114,6 +114,13 @@ const LoginPage = () => {
         : await signUp(normalizedEmail, password);
 
       if (result.error) {
+        const errMsg = result.error.message.toLowerCase();
+        
+        // If "email not confirmed", try to force-refresh user state first
+        if (errMsg.includes('email not confirmed') && isLogin) {
+          setShowResendConfirm(true);
+        }
+        
         toast({
           variant: "destructive",
           title: isRTL ? "خطأ" : "Erreur",

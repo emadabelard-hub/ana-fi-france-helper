@@ -103,7 +103,7 @@ const ExpensesPage = () => {
       // Documents
       (docsRes.data || []).forEach((d: any) => {
         const ch = d.chantier_id ? chantierMap[d.chantier_id] : null;
-        if (d.document_type === 'facture' && d.status === 'finalized') incomeSum += d.total_ttc || 0;
+        if (d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted')) incomeSum += d.total_ttc || 0;
         unified.push({
           id: d.id,
           date: d.created_at,
@@ -328,8 +328,9 @@ const ExpensesPage = () => {
       ) : (
         <div className="space-y-2">
           {filtered.map(row => {
-            const tc = typeConfig[row.type];
+          const tc = typeConfig[row.type];
             const date = new Date(row.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+            const isOverdue = row.type === 'facture' && (new Date().getTime() - new Date(row.date).getTime()) > 30 * 24 * 60 * 60 * 1000;
 
             return (
               <Card key={`${row.type}-${row.id}`} className="border-border hover:border-accent/30 transition-colors">
@@ -345,6 +346,11 @@ const ExpensesPage = () => {
                       <Badge variant="secondary" className={cn('text-[10px] shrink-0', tc.color)}>
                         {isRTL ? tc.label.ar : tc.label.fr}
                       </Badge>
+                      {isOverdue && (
+                        <Badge variant="destructive" className="text-[10px] shrink-0 animate-pulse">
+                          {isRTL ? 'متأخرة' : 'En retard'}
+                        </Badge>
+                      )}
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">

@@ -53,7 +53,7 @@ const ChantiersPage = () => {
   const [tab, setTab] = useState('etude');
   const [showForm, setShowForm] = useState(false);
   const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
-  const [form, setForm] = useState({ name: '', client_id: '', site_address: '', status: 'etude', insurance_notes: '' });
+  const [form, setForm] = useState({ name: '', client_id: '', site_address: '', status: 'etude', insurance_notes: '', budget: '' });
   const [saving, setSaving] = useState(false);
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -101,6 +101,7 @@ const ChantiersPage = () => {
       site_address: form.site_address.trim() || null,
       status: form.status,
       insurance_notes: form.insurance_notes.trim() || null,
+      budget: form.budget ? parseFloat(form.budget) : null,
     } as any);
     setSaving(false);
     if (error) {
@@ -109,7 +110,7 @@ const ChantiersPage = () => {
     }
     toast({ title: isRTL ? 'تم الحفظ بنجاح' : 'Chantier enregistré avec succès ✓' });
     setShowForm(false);
-    setForm({ name: '', client_id: '', site_address: '', status: 'etude', insurance_notes: '' });
+    setForm({ name: '', client_id: '', site_address: '', status: 'etude', insurance_notes: '', budget: '' });
     fetchData();
   };
 
@@ -244,6 +245,10 @@ const ChantiersPage = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'ميزانية المشروع (اختياري)' : 'Budget du projet (optionnel)'}</label>
+              <Input type="number" min="0" step="0.01" value={form.budget} onChange={e => setForm(f => ({ ...f, budget: e.target.value }))} placeholder={isRTL ? 'مثال: 15000' : 'Ex: 15000'} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1 block">{isRTL ? 'وثيقة التأمين المرتبطة' : 'Assurance liée (optionnel)'}</label>

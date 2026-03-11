@@ -34,6 +34,7 @@ export type Database = {
       }
       chantiers: {
         Row: {
+          budget: number | null
           client_id: string
           created_at: string
           id: string
@@ -46,6 +47,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          budget?: number | null
           client_id: string
           created_at?: string
           id?: string
@@ -58,6 +60,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          budget?: number | null
           client_id?: string
           created_at?: string
           id?: string

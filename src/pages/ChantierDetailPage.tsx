@@ -1,12 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, HardHat, FileText, Receipt, TrendingUp, TrendingDown, Wallet, MapPin } from 'lucide-react';
+import { ArrowLeft, ArrowRight, HardHat, FileText, Receipt, TrendingUp, TrendingDown, Wallet, MapPin, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -16,12 +19,15 @@ const ChantierDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [chantier, setChantier] = useState<any>(null);
   const [client, setClient] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingBudget, setEditingBudget] = useState(false);
+  const [budgetInput, setBudgetInput] = useState('');
 
   useEffect(() => {
     if (!user || !id) return;
@@ -49,6 +55,23 @@ const ChantierDetailPage = () => {
   );
   const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]);
   const margin = totalFactured - totalExpenses;
+
+  const budget = chantier?.budget ? Number(chantier.budget) : null;
+  const budgetPct = budget && budget > 0 ? (totalExpenses / budget) * 100 : null;
+  const budgetAlert: 'red' | 'yellow' | null = budgetPct !== null ? (budgetPct >= 100 ? 'red' : budgetPct >= 80 ? 'yellow' : null) : null;
+
+  const handleSaveBudget = async () => {
+    if (!id) return;
+    const val = budgetInput.trim() ? parseFloat(budgetInput) : null;
+    const { error } = await supabase.from('chantiers').update({ budget: val } as any).eq('id', id);
+    if (error) {
+      toast({ title: isRTL ? 'خطأ' : 'Erreur', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setChantier((prev: any) => ({ ...prev, budget: val }));
+    setEditingBudget(false);
+    toast({ title: isRTL ? 'تم حفظ الميزانية' : 'Budget enregistré ✓' });
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground animate-pulse">{isRTL ? 'جاري التحميل...' : 'Chargement...'}</div>;
@@ -97,6 +120,61 @@ const ChantierDetailPage = () => {
         <div className={cn("flex items-center gap-1.5 text-xs text-muted-foreground mb-3 px-1", isRTL && "flex-row-reverse")}>
           <MapPin className="h-3.5 w-3.5" /> {chantier.site_address}
         </div>
+      )}
+
+      {/* Budget Alert Banners */}
+      {budgetAlert === 'red' && (
+        <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm font-medium mb-2", isRTL && "flex-row-reverse font-cairo")}>
+          <AlertTriangle className="h-4 w-4 shrink-0 animate-pulse" />
+          <span>{isRTL ? 'خطر: المصاريف تجاوزت الميزانية! الربح في خطر' : 'Danger : Les dépenses dépassent le budget ! Profit en danger'}</span>
+          <Badge variant="destructive" className="text-[10px] shrink-0">{Math.round(budgetPct!)}%</Badge>
+        </div>
+      )}
+      {budgetAlert === 'yellow' && (
+        <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 text-sm font-medium mb-2", isRTL && "flex-row-reverse font-cairo")}>
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>{isRTL ? 'تنبيه: المصاريف اقتربت من الميزانية المحددة' : 'Attention : Les dépenses approchent du budget défini'}</span>
+          <Badge className="text-[10px] shrink-0 bg-amber-500/20 text-amber-600 border-amber-500/30">{Math.round(budgetPct!)}%</Badge>
+        </div>
+      )}
+
+      {/* Budget Section */}
+      {budget !== null && !editingBudget && (
+        <Card className="border-border/50 mb-2">
+          <CardContent className="p-3">
+            <div className={cn("flex items-center justify-between mb-1.5", isRTL && "flex-row-reverse")}>
+              <span className={cn("text-xs font-medium text-muted-foreground", isRTL && "font-cairo")}>{isRTL ? 'ميزانية المشروع' : 'Budget du projet'}</span>
+              <button onClick={() => { setBudgetInput(String(budget)); setEditingBudget(true); }} className="text-[10px] text-accent hover:underline">
+                {isRTL ? 'تعديل' : 'Modifier'}
+              </button>
+            </div>
+            <div className={cn("flex items-center justify-between text-sm mb-1", isRTL && "flex-row-reverse")}>
+              <span className="font-bold text-foreground">{fmt(totalExpenses)} / {fmt(budget)}</span>
+              <span className={cn("text-xs font-bold", budgetPct! >= 100 ? 'text-destructive' : budgetPct! >= 80 ? 'text-amber-500' : 'text-emerald-500')}>{Math.round(budgetPct!)}%</span>
+            </div>
+            <Progress value={Math.min(budgetPct!, 100)} className={cn("h-2", budgetPct! >= 100 ? '[&>div]:bg-destructive' : budgetPct! >= 80 ? '[&>div]:bg-amber-500' : '[&>div]:bg-emerald-500')} />
+          </CardContent>
+        </Card>
+      )}
+      {editingBudget && (
+        <Card className="border-accent/30 mb-2">
+          <CardContent className="p-3 space-y-2">
+            <label className={cn("text-xs font-medium text-muted-foreground", isRTL && "font-cairo")}>{isRTL ? 'ميزانية المشروع (€)' : 'Budget du projet (€)'}</label>
+            <div className="flex gap-2">
+              <Input type="number" min="0" step="0.01" value={budgetInput} onChange={e => setBudgetInput(e.target.value)} className="flex-1" />
+              <Button size="sm" onClick={handleSaveBudget}>{isRTL ? 'حفظ' : 'OK'}</Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditingBudget(false)}>{isRTL ? 'إلغاء' : '✕'}</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {budget === null && !editingBudget && (
+        <button
+          onClick={() => { setBudgetInput(''); setEditingBudget(true); }}
+          className={cn("text-xs text-accent hover:underline mb-2 block", isRTL && "text-right w-full font-cairo")}
+        >
+          {isRTL ? '+ إضافة ميزانية المشروع' : '+ Ajouter un budget'}
+        </button>
       )}
 
       {/* Profitability Summary */}

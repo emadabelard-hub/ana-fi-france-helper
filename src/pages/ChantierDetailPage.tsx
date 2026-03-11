@@ -269,6 +269,19 @@ const ChantierDetailPage = () => {
           ))}
         </TabsContent>
       </Tabs>
+
+      {user && (
+        <AddExpenseModal
+          open={showAddExpense}
+          onOpenChange={setShowAddExpense}
+          isRTL={isRTL}
+          userId={user.id}
+          onExpenseAdded={async () => {
+            const { data: exp } = await supabase.from('expenses').select('*').eq('chantier_id', id!).order('expense_date', { ascending: false });
+            setExpenses(exp || []);
+          }}
+        />
+      )}
     </div>
   );
 };

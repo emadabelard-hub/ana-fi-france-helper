@@ -212,14 +212,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const itemsRef = useRef(items);
   const [savingDraft, setSavingDraft] = useState(false);
 
-  // No auto-increment: just set the prefix, user fills in the rest
+  // Auto-fetch next sequential number from DB
   useEffect(() => {
+    if (!user) return;
     const prefix = getDocPrefix(documentType);
-    // Only reset if docNumber doesn't already start with the correct prefix
-    if (!docNumber.startsWith(prefix)) {
-      setDocNumber(prefix);
+    // Only auto-fetch if docNumber is just the prefix (not user-edited or already fetched)
+    if (docNumber === prefix || !docNumber.startsWith(prefix) || docNumber === generateDocNumber(documentType)) {
+      setDocNumberLoading(true);
+      fetchNextDocNumber(user.id, documentType).then((num) => {
+        setDocNumber(num);
+        setDocNumberLoading(false);
+      });
     }
-  }, [documentType]);
+  }, [documentType, user]);
 
   // Fetch clients list
   useEffect(() => {

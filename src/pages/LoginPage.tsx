@@ -28,6 +28,8 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [showResendConfirm, setShowResendConfirm] = useState(false);
+  const [resendingConfirm, setResendingConfirm] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {

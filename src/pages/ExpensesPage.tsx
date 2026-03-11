@@ -552,17 +552,30 @@ const ExpensesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Accountant Export Button */}
-      <Button
-        className={cn("w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 h-12", isRTL && "flex-row-reverse font-cairo")}
-        onClick={handleAccountantExport}
-        disabled={filtered.length === 0}
-      >
-        <Download className="h-5 w-5" />
-        <span className="text-sm font-bold" style={{ fontSize: '16px' }}>
-          {isRTL ? 'تصدير بيانات المحاسب' : 'Exporter pour le comptable'}
-        </span>
-      </Button>
+      {/* Export Buttons */}
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          className={cn("w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 h-12", isRTL && "flex-row-reverse font-cairo")}
+          onClick={handleAccountantExport}
+          disabled={filtered.length === 0}
+        >
+          <Download className="h-5 w-5" />
+          <span className="font-bold" style={{ fontSize: '14px' }}>
+            {isRTL ? 'تصدير بيانات المحاسب' : 'Export comptable'}
+          </span>
+        </Button>
+        <Button
+          variant="outline"
+          className={cn("w-full gap-2 h-12 border-accent/30", isRTL && "flex-row-reverse font-cairo")}
+          onClick={handleArchiveDownload}
+          disabled={filtered.length === 0 || archiving}
+        >
+          {archiving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Archive className="h-5 w-5" />}
+          <span className="font-bold" style={{ fontSize: '14px' }}>
+            {isRTL ? 'تحميل أرشيف المستندات' : 'Archive documents'}
+          </span>
+        </Button>
+      </div>
 
       {/* URSSAF Summary Card */}
       <Card className="border-violet-500/20 bg-violet-500/5">

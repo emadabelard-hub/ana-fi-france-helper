@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { ProfileProvider } from "@/hooks/useProfile";
 import MainLayout from "@/components/layout/MainLayout";
 import GlobalErrorHandler from "@/components/app/GlobalErrorHandler";
 import AuthSplashScreen from "@/components/auth/AuthSplashScreen";

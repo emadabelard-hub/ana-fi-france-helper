@@ -51,6 +51,7 @@ interface CompanyFormData {
   iban: string;
   bic: string;
   accountant_email: string;
+  urssaf_rate: string;
 }
 
 const CompanyProfileSection = () => {

@@ -54,6 +54,7 @@ const ExpensesPage = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [rows, setRows] = useState<UnifiedRow[]>([]);
   const [totalIncome, setTotalIncome] = useState(0);
+  const [totalIncomeHT, setTotalIncomeHT] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
 
   useEffect(() => {

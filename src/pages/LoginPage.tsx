@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Loader2, Eye, EyeOff, ArrowRight, UserRound } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 
 const LoginPage = () => {
@@ -26,6 +27,7 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   // If already authenticated, redirect home
   if (isAuthenticated) {
@@ -71,6 +73,11 @@ const LoginPage = () => {
     }
     setIsLoading(true);
     try {
+      if (isLogin && rememberMe) {
+        localStorage.setItem('remember_session', 'true');
+      } else if (isLogin) {
+        localStorage.removeItem('remember_session');
+      }
       const { error } = isLogin ? await signIn(email, password) : await signUp(email, password);
       if (error) {
         toast({ variant: "destructive", title: isRTL ? "خطأ" : "Erreur", description: error.message });
@@ -153,6 +160,18 @@ const LoginPage = () => {
                   <div className="space-y-2">
                     <Label className="font-bold">{isRTL ? "تأكيد كلمة المرور" : "Confirmer"}</Label>
                     <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" required />
+                  </div>
+                )}
+                {isLogin && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <Label htmlFor="rememberMe" className="text-sm cursor-pointer select-none">
+                      {isRTL ? "تذكرني" : "Se souvenir de moi"}
+                    </Label>
                   </div>
                 )}
                 <Button type="submit" className="w-full font-bold h-12 text-[16px]" disabled={isLoading}>

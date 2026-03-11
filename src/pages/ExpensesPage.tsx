@@ -371,27 +371,63 @@ const ExpensesPage = () => {
               const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
               const docData = fullDoc.document_data as any;
               const items = docData?.items || docData?.lineItems || [];
+
+              // Company header (top-left)
+              const companyName = profile?.company_name || profile?.full_name || '';
+              const companySiret = profile?.siret || '';
+              const companyAddress = profile?.company_address || profile?.address || '';
+              let headerY = 16;
+              if (companyName) {
+                pdf.setFontSize(13);
+                pdf.setFont(undefined!, 'bold');
+                pdf.text(companyName, 14, headerY);
+                headerY += 6;
+              }
+              if (companySiret) {
+                pdf.setFontSize(9);
+                pdf.setFont(undefined!, 'normal');
+                pdf.text(`SIRET: ${companySiret}`, 14, headerY);
+                headerY += 5;
+              }
+              if (companyAddress) {
+                pdf.setFontSize(9);
+                pdf.setFont(undefined!, 'normal');
+                pdf.text(companyAddress.substring(0, 60), 14, headerY);
+                headerY += 5;
+              }
               
-              // Header
+              // Document title (top-right)
               pdf.setFontSize(18);
-              pdf.text(fullDoc.document_type === 'facture' ? 'FACTURE' : 'DEVIS', 105, 20, { align: 'center' });
+              pdf.setFont(undefined!, 'bold');
+              const docTitle = fullDoc.document_type === 'facture' ? 'FACTURE' : 'DEVIS';
+              pdf.text(docTitle, 196, 16, { align: 'right' });
               pdf.setFontSize(11);
-              pdf.text(`N° ${fullDoc.document_number}`, 105, 28, { align: 'center' });
-              pdf.text(`Date: ${fmtDate(fullDoc.created_at)}`, 105, 34, { align: 'center' });
+              pdf.setFont(undefined!, 'normal');
+              pdf.text(`N° ${fullDoc.document_number}`, 196, 24, { align: 'right' });
+              pdf.text(`Date: ${fmtDate(fullDoc.created_at)}`, 196, 30, { align: 'right' });
+
+              // Separator
+              pdf.setDrawColor(200, 200, 200);
+              pdf.line(14, Math.max(headerY + 2, 36), 196, Math.max(headerY + 2, 36));
               
               // Client info
-              pdf.setFontSize(10);
-              pdf.text('Client:', 14, 50);
+              let clientY = Math.max(headerY + 8, 42);
+              pdf.setFontSize(9);
+              pdf.setFont(undefined!, 'bold');
+              pdf.text('Client:', 14, clientY);
               pdf.setFontSize(11);
-              pdf.text(fullDoc.client_name || '-', 14, 56);
-              if (fullDoc.client_address) pdf.text(fullDoc.client_address, 14, 62);
+              pdf.setFont(undefined!, 'normal');
+              clientY += 6;
+              pdf.text(fullDoc.client_name || '-', 14, clientY);
+              if (fullDoc.client_address) { clientY += 5; pdf.text(fullDoc.client_address, 14, clientY); }
               if (fullDoc.work_site_address) {
+                clientY += 5;
                 pdf.setFontSize(9);
-                pdf.text(`Adresse chantier: ${fullDoc.work_site_address}`, 14, 70);
+                pdf.text(`Adresse chantier: ${fullDoc.work_site_address}`, 14, clientY);
               }
 
               // Items table
-              let y = 80;
+              let y = clientY + 12;
               pdf.setFontSize(9);
               pdf.setFont(undefined!, 'bold');
               pdf.text('Description', 14, y);
@@ -441,10 +477,25 @@ const ExpensesPage = () => {
                 pdf.text('TVA non applicable, art. 293 B du CGI.', 14, y);
               }
 
+              // Footer on every page
+              const pageCount = pdf.getNumberOfPages();
+              for (let p = 1; p <= pageCount; p++) {
+                pdf.setPage(p);
+                pdf.setFontSize(7);
+                pdf.setFont(undefined!, 'normal');
+                pdf.setTextColor(150, 150, 150);
+                const footerText = companyName
+                  ? `Document généré par ${companyName}${companySiret ? ` — SIRET ${companySiret}` : ''}`
+                  : 'Document généré automatiquement';
+                pdf.text(footerText, 105, 290, { align: 'center' });
+                pdf.text(`Page ${p}/${pageCount}`, 196, 290, { align: 'right' });
+                pdf.setTextColor(0, 0, 0);
+              }
+
               blob = pdf.output('blob');
             }
-          } catch (e) {
-            console.warn(`Could not generate PDF for ${doc.label}:`, e);
+          } catch {
+            // PDF generation failed silently
           }
         }
 

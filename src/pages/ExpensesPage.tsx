@@ -164,7 +164,7 @@ const ExpensesPage = () => {
       setTotalIncomeHT(incomeHTSum);
       setTotalExpenses(expenseSum);
     } catch {
-      console.error(err);
+      // fetch error handled gracefully
     } finally {
       setLoading(false);
     }

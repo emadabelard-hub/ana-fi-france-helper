@@ -218,8 +218,8 @@ const CompanyProfileSection = () => {
     if (siretError) return;
     
     setIsSaving(true);
-    const { urssaf_rate, ...rest } = formData;
-    await updateProfile({ ...rest, urssaf_rate: parseFloat(urssaf_rate) || 21.2 } as any);
+    const { urssaf_rate, is_rate, ...rest } = formData;
+    await updateProfile({ ...rest, urssaf_rate: parseFloat(urssaf_rate) || 21.2, is_rate: parseFloat(is_rate) || 15 } as any);
     setIsSaving(false);
   };
 

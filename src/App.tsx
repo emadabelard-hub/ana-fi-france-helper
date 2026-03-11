@@ -94,9 +94,9 @@ const App = () => {
                   <Route path="/expenses" element={<ExpensesPage />} />
                   <Route path="/accounts" element={<ExpensesPage />} />
                   <Route path="/document-hub" element={<DocumentHubPage />} />
+                  <Route path="/admin" element={<AdminPage />} />
                   <Route path="/legal" element={<LegalPage />} />
                   <Route path="/clients" element={<ClientsPage />} />
-                  <Route path="/clients/:id" element={<ClientDetailPage />} />
                   <Route path="/chantiers" element={<ChantiersPage />} />
                   <Route path="/chantiers/:id" element={<ChantierDetailPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />

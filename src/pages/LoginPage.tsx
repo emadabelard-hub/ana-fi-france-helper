@@ -13,10 +13,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 
 const LoginPage = () => {
-  const { signIn, signUp, signInAnonymously, isAuthenticated } = useAuth();
+  const { signIn, signUp, signInAnonymously, isAuthenticated, isLoading: authLoading, user } = useAuth();
   const { isRTL } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
 
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -29,11 +30,14 @@ const LoginPage = () => {
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  // If already authenticated, redirect home
-  if (isAuthenticated) {
-    navigate('/', { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      const isPrimaryAdmin = user?.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL;
+      navigate(isPrimaryAdmin ? '/accounts' : '/', { replace: true });
+    }
+  }, [authLoading, isAuthenticated, navigate, user?.email]);
+
+  if (authLoading) return null;
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();

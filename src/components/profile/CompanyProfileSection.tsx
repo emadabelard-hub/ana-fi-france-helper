@@ -52,6 +52,7 @@ interface CompanyFormData {
   bic: string;
   accountant_email: string;
   urssaf_rate: string;
+  is_rate: string;
 }
 
 const CompanyProfileSection = () => {

@@ -139,6 +139,33 @@ export type Database = {
         }
         Relationships: []
       }
+      document_counters: {
+        Row: {
+          document_type: string
+          id: string
+          last_number: number
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          document_type: string
+          id?: string
+          last_number?: number
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          document_type?: string
+          id?: string
+          last_number?: number
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       documents_comptables: {
         Row: {
           chantier_id: string | null
@@ -883,6 +910,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_next_document_number: {
+        Args: { p_document_type: string; p_user_id: string; p_year: number }
+        Returns: string
+      }
       increment_promo_clicks: {
         Args: { p_promo_id: string }
         Returns: undefined

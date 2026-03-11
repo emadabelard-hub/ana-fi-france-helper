@@ -295,6 +295,95 @@ const ExpensesPage = () => {
     });
   };
 
+  const handleArchiveDownload = async () => {
+    if (!user || filtered.length === 0) return;
+    setArchiving(true);
+    try {
+      const zip = new JSZip();
+      const fmtDate = (d: string) => new Date(d).toISOString().slice(0, 10);
+
+      // Collect files from documents (PDFs)
+      const docs = filtered.filter(r => (r.type === 'facture' || r.type === 'devis') && r.pdfUrl);
+      for (const doc of docs) {
+        const clientFolder = (doc.clientName || 'Sans_Client').replace(/[\/\\]/g, '_');
+        const projectFolder = (doc.projectName || 'Sans_Projet').replace(/[\/\\]/g, '_');
+        const typeFolder = doc.type === 'facture' ? 'Factures' : 'Devis';
+        const fileName = `${fmtDate(doc.date)}_${doc.label.replace(/[\/\\]/g, '-')}.pdf`;
+        const folderPath = `${clientFolder}/${projectFolder}/${typeFolder}`;
+
+        try {
+          // Try to download the PDF
+          const response = await fetch(doc.pdfUrl!);
+          if (response.ok) {
+            const blob = await response.blob();
+            zip.file(`${folderPath}/${fileName}`, blob);
+          }
+        } catch (e) {
+          console.warn(`Could not fetch file for ${doc.label}:`, e);
+        }
+      }
+
+      // Collect expense receipts
+      const expenses = filtered.filter(r => r.type === 'expense');
+      if (expenses.length > 0) {
+        // Fetch expense records with receipt_url
+        const { data: expenseRecords } = await supabase
+          .from('expenses')
+          .select('id, title, expense_date, receipt_url, chantier_id')
+          .in('id', expenses.map(e => e.id));
+
+        for (const exp of (expenseRecords || [])) {
+          if (!exp.receipt_url) continue;
+          const matchRow = expenses.find(e => e.id === exp.id);
+          const clientFolder = (matchRow?.clientName || 'Sans_Client').replace(/[\/\\]/g, '_');
+          const projectFolder = (matchRow?.projectName || 'Sans_Projet').replace(/[\/\\]/g, '_');
+          const ext = exp.receipt_url.split('.').pop()?.split('?')[0] || 'jpg';
+          const fileName = `${fmtDate(exp.expense_date)}_${exp.title.replace(/[\/\\:]/g, '_').slice(0, 40)}.${ext}`;
+
+          try {
+            // For signed storage URLs
+            const { data: signedData } = await supabase.storage
+              .from('expense-receipts')
+              .createSignedUrl(exp.receipt_url.replace(/^.*expense-receipts\//, ''), 120);
+            
+            if (signedData?.signedUrl) {
+              const response = await fetch(signedData.signedUrl);
+              if (response.ok) {
+                const blob = await response.blob();
+                zip.file(`${clientFolder}/${projectFolder}/Depenses/${fileName}`, blob);
+              }
+            }
+          } catch (e) {
+            console.warn(`Could not fetch receipt for ${exp.title}:`, e);
+          }
+        }
+      }
+
+      // Generate and download ZIP
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `archive_comptable_${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: isRTL ? 'تم تحميل الأرشيف' : 'Archive téléchargée',
+        description: isRTL ? 'تم تحميل جميع المستندات في ملف مضغوط' : 'Tous les documents ont été archivés',
+      });
+    } catch (err) {
+      console.error('Archive error:', err);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'فشل تحميل الأرشيف' : 'Échec du téléchargement de l\'archive',
+      });
+    } finally {
+      setArchiving(false);
+    }
+  };
+
   const typeConfig: Record<string, { label: { fr: string; ar: string }; color: string }> = {
     devis: { label: { fr: 'Devis', ar: 'دوفي' }, color: 'bg-blue-500/15 text-blue-400' },
     facture: { label: { fr: 'Facture', ar: 'فاتورة' }, color: 'bg-emerald-500/15 text-emerald-400' },

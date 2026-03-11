@@ -34,11 +34,15 @@ const Header = () => {
   const handleSignOut = async () => {
     setSigningOut(true);
     await signOut();
+    // signOut does hard redirect, no need to reset state
   };
 
   const toggleLanguage = () => {
     setLanguage(language === 'fr' ? 'ar' : 'fr');
   };
+
+  // Don't show auth buttons while loading
+  const showAuthButtons = !isLoading;
 
   return (
     <>
@@ -64,8 +68,8 @@ const Header = () => {
           </div>
 
           <div className={cn("flex items-center gap-1.5", isRTL && "flex-row-reverse")}>
-            {/* Auth Buttons */}
-            {!isLoading && (
+            {/* Dynamic Auth Buttons */}
+            {showAuthButtons && (
               isAuthenticated ? (
                 <Button
                   variant="ghost"
@@ -82,7 +86,7 @@ const Header = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => { setAuthMode('login'); setAuthOpen(true); }}
+                    onClick={() => navigate('/login')}
                     className="rounded-full h-7 px-2 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground text-xs font-bold gap-1"
                   >
                     <LogIn size={14} />
@@ -91,7 +95,7 @@ const Header = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => { setAuthMode('signup'); setAuthOpen(true); }}
+                    onClick={() => navigate('/login')}
                     className="rounded-full h-7 px-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground text-xs font-bold gap-1"
                   >
                     <UserPlus size={14} />

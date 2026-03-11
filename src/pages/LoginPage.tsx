@@ -9,15 +9,15 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Loader2, Eye, EyeOff, ArrowRight, UserRound } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
+
+const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
 
 const LoginPage = () => {
   const { signIn, signUp, signInAnonymously, isAuthenticated, isLoading: authLoading, user } = useAuth();
   const { isRTL } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
 
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -28,8 +28,8 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
 
+  // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
       const isPrimaryAdmin = user?.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL;
@@ -38,6 +38,29 @@ const LoginPage = () => {
   }, [authLoading, isAuthenticated, navigate, user?.email]);
 
   if (authLoading) return null;
+
+  const getErrorMessage = (errorMsg: string): string => {
+    const msg = errorMsg.toLowerCase();
+    if (msg.includes('invalid login credentials')) {
+      return isRTL
+        ? 'خطأ في البريد الإلكتروني أو كلمة المرور'
+        : 'Email ou mot de passe incorrect';
+    }
+    if (msg.includes('email not confirmed')) {
+      return isRTL
+        ? 'الحساب غير مُفعّل بعد. تحقق من بريدك الإلكتروني'
+        : 'Compte non confirmé. Vérifiez votre email.';
+    }
+    if (msg.includes('user already registered')) {
+      return isRTL
+        ? 'هذا البريد مسجل بالفعل. حاول تسجيل الدخول'
+        : 'Cet email est déjà enregistré. Essayez de vous connecter.';
+    }
+    if (msg.includes('password')) {
+      return isRTL ? 'خطأ في كلمة المرور' : 'Erreur de mot de passe';
+    }
+    return errorMsg;
+  };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,37 +97,26 @@ const LoginPage = () => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!isLogin && password !== confirmPassword) {
-      toast({ variant: "destructive", title: isRTL ? "خطأ" : "Erreur", description: isRTL ? "كلمات المرور غير متطابقة" : "Les mots de passe ne correspondent pas" });
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL ? "كلمات المرور غير متطابقة" : "Les mots de passe ne correspondent pas",
+      });
       return;
     }
 
     setIsLoading(true);
     try {
-      if (isLogin && rememberMe) {
-        localStorage.setItem('remember_session', 'true');
-      } else if (isLogin) {
-        localStorage.removeItem('remember_session');
-      }
-
       const result = isLogin
         ? await signIn(normalizedEmail, password)
         : await signUp(normalizedEmail, password);
 
       if (result.error) {
-        const errorMessage = result.error.message.toLowerCase();
-        let description = result.error.message;
-
-        if (errorMessage.includes('invalid login credentials')) {
-          description = isRTL
-            ? "بيانات الدخول غير صحيحة، تحقق من الإيميل وكلمة المرور أو استخدم استعادة كلمة المرور"
-            : "Identifiants invalides, vérifiez votre email/mot de passe ou utilisez la réinitialisation.";
-        } else if (errorMessage.includes('email not confirmed')) {
-          description = isRTL
-            ? "الحساب غير مُفعّل بعد. تحقق من بريدك لتأكيد الإيميل أو فعّل تأكيد الإيميل من إعدادات المصادقة في Lovable Cloud."
-            : "Compte non confirmé. Vérifiez votre email de confirmation ou activez la confirmation automatique dans les paramètres d'authentification Lovable Cloud.";
-        }
-
-        toast({ variant: "destructive", title: isRTL ? "خطأ" : "Erreur", description });
+        toast({
+          variant: "destructive",
+          title: isRTL ? "خطأ" : "Erreur",
+          description: getErrorMessage(result.error.message),
+        });
         return;
       }
 
@@ -113,14 +125,14 @@ const LoginPage = () => {
           title: isRTL ? "تحقق من بريدك" : "Vérifiez votre email",
           description: isRTL
             ? "تم إنشاء الحساب. يلزم تأكيد البريد قبل تسجيل الدخول."
-            : "Compte créé. Vous devez confirmer votre email avant la connexion.",
+            : "Compte créé. Confirmez votre email avant la connexion.",
         });
         setIsLogin(true);
         return;
       }
 
-      toast({ title: isRTL ? "تمام ✓" : "Succès ✓" });
-      const isPrimaryAdmin = normalizedEmail === PRIMARY_ADMIN_EMAIL || result.isPrimaryAdmin === true;
+      toast({ title: isRTL ? "تم الدخول ✓" : "Connexion réussie ✓" });
+      const isPrimaryAdmin = normalizedEmail === PRIMARY_ADMIN_EMAIL;
       navigate(isPrimaryAdmin ? '/accounts' : '/', { replace: true });
     } finally {
       setIsLoading(false);
@@ -155,7 +167,7 @@ const LoginPage = () => {
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
                   <Label className="font-bold">{isRTL ? "الإيميل" : "Email"}</Label>
-                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required />
+                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required className="text-[16px]" />
                 </div>
                 <Button type="submit" className="w-full font-bold" disabled={isLoading}>
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRTL ? "إرسال رابط التعيين" : "Envoyer le lien")}
@@ -170,7 +182,7 @@ const LoginPage = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label className="font-bold">{isRTL ? "الإيميل" : "Email"}</Label>
-                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required />
+                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required className="text-[16px]" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold">{isRTL ? "كلمة المرور" : "Mot de passe"}</Label>
@@ -182,6 +194,7 @@ const LoginPage = () => {
                       placeholder="••••••••"
                       required
                       minLength={6}
+                      className="text-[16px]"
                     />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className={cn("absolute top-1/2 -translate-y-1/2 text-muted-foreground", isRTL ? "left-3" : "right-3")} tabIndex={-1}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -196,19 +209,7 @@ const LoginPage = () => {
                 {!isLogin && (
                   <div className="space-y-2">
                     <Label className="font-bold">{isRTL ? "تأكيد كلمة المرور" : "Confirmer"}</Label>
-                    <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" required />
-                  </div>
-                )}
-                {isLogin && (
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="rememberMe"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked === true)}
-                    />
-                    <Label htmlFor="rememberMe" className="text-sm cursor-pointer select-none">
-                      {isRTL ? "تذكرني" : "Se souvenir de moi"}
-                    </Label>
+                    <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" required className="text-[16px]" />
                   </div>
                 )}
                 <Button type="submit" className="w-full font-bold h-12 text-[16px]" disabled={isLoading}>
@@ -228,7 +229,7 @@ const LoginPage = () => {
                 </div>
               </div>
 
-              <Button variant="outline" className="w-full font-bold gap-2 h-11" onClick={handleGuestLogin} disabled={isGuestLoading}>
+              <Button variant="outline" className="w-full font-bold gap-2 h-11 text-[16px]" onClick={handleGuestLogin} disabled={isGuestLoading}>
                 {isGuestLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                   <>
                     <UserRound className="h-4 w-4" />

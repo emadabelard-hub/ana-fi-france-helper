@@ -813,6 +813,32 @@ const CompanyProfileSection = () => {
                 : '💡 Taux par défaut 21.2% pour les artisans. Modifiable selon votre activité'}
             </p>
           </div>
+
+          {/* IS (Corporate Tax) Rate */}
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <span className="text-base">🏢</span>
+              <Label className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'نسبة ضريبة الشركات (%)' : 'Taux IS / Impôt (%)'}
+              </Label>
+            </div>
+            <Input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={formData.is_rate}
+              onChange={(e) => handleChange('is_rate' as any, e.target.value)}
+              placeholder="15"
+              className="font-mono text-sm w-32"
+              dir="ltr"
+            />
+            <p className={cn("text-xs text-muted-foreground", isRTL && "text-right font-cairo")}>
+              {isRTL
+                ? '💡 النسبة الافتراضية 15% للشركات الصغيرة. يمكنك تعديلها حسب وضعك الضريبي'
+                : '💡 Taux par défaut 15% pour les petites entreprises. Modifiable selon votre régime fiscal'}
+            </p>
+          </div>
         </CardContent>
       </Card>
 

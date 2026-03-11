@@ -837,6 +837,28 @@ const CompanyProfileSection = () => {
         </CardContent>
       </Card>
 
+      {/* Daily Balance Alert Toggle */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className={cn('flex items-center justify-between gap-3', isRTL && 'flex-row-reverse')}>
+            <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+              <Bell className="h-5 w-5 text-primary shrink-0" />
+              <div className={cn(isRTL && 'text-right')}>
+                <p className={cn('text-sm font-medium', isRTL && 'font-cairo')}>
+                  {isRTL ? 'تفعيل التنبيهات اليومية للرصيد' : 'Activer les alertes quotidiennes de solde'}
+                </p>
+                <p className={cn('text-xs text-muted-foreground', isRTL && 'font-cairo')}>
+                  {isRTL
+                    ? 'سيتم إرسال إشعار يومي في حالة انخفاض الرصيد (جاهز للربط مع خدمة البريد)'
+                    : 'Notification quotidienne si le solde est bas (prêt pour intégration email)'}
+                </p>
+              </div>
+            </div>
+            <DailyAlertToggle />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Artisan Signature Section */}
       <ArtisanSignatureSection />
 

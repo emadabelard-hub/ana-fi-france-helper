@@ -328,8 +328,9 @@ const ExpensesPage = () => {
       ) : (
         <div className="space-y-2">
           {filtered.map(row => {
-            const tc = typeConfig[row.type];
+          const tc = typeConfig[row.type];
             const date = new Date(row.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+            const isOverdue = row.type === 'facture' && (new Date().getTime() - new Date(row.date).getTime()) > 30 * 24 * 60 * 60 * 1000;
 
             return (
               <Card key={`${row.type}-${row.id}`} className="border-border hover:border-accent/30 transition-colors">

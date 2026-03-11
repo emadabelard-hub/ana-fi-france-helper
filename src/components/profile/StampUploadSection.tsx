@@ -54,7 +54,7 @@ const StampUploadSection = () => {
         .from('company-assets')
         .getPublicUrl(fileName);
 
-      await updateProfile({ stamp_url: publicUrl } as any);
+      await updateProfile({ stamp_url: publicUrl });
     } catch (error) {
       console.error('Error uploading stamp:', error);
     } finally {

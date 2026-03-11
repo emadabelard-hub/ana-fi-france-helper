@@ -67,7 +67,7 @@ const ExpensesPage = () => {
       // Fetch documents
       const docsQ = supabase
         .from('documents_comptables')
-        .select('id, document_type, document_number, client_name, total_ttc, created_at, chantier_id, pdf_url')
+        .select('id, document_type, document_number, client_name, total_ttc, tva_amount, status, created_at, chantier_id, pdf_url')
         .order('created_at', { ascending: false });
       if (!isAdmin) docsQ.eq('user_id', user.id);
 

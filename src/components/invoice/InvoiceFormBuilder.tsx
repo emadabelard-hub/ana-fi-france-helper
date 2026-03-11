@@ -981,6 +981,17 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const saveToDocumentsComptables = async () => {
     if (!user) return;
 
+    if (!selectedClientId || !selectedChantierId) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
+        description: isRTL
+          ? 'يجب اختيار العميل والمشروع قبل الحفظ'
+          : 'Vous devez sélectionner un client et un projet avant de sauvegarder.',
+      });
+      return;
+    }
+
     const data = buildInvoiceData();
     const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
     const linkedDocumentData = {

@@ -683,12 +683,14 @@ const ExpensesPage = () => {
         "mx-2 rounded-xl bg-muted/60 border border-border/50 px-4 py-3 flex items-center gap-3 flex-wrap justify-center",
         isRTL && "font-cairo flex-row-reverse"
       )}>
-        <span className="text-[16px] sm:text-[18px] text-violet-400">
+        <span className="text-[16px] sm:text-[18px] text-violet-400 inline-flex items-center gap-1.5">
+          <Shield size={18} className="shrink-0" />
           {isRTL ? 'بعد خصم الأورساف: ' : 'URSSAF: '}
           <span className="font-bold">{formatCurrency(totalURSSAF)}</span>
         </span>
         <span className="text-muted-foreground text-lg">|</span>
-        <span className="text-[16px] sm:text-[18px] text-amber-400">
+        <span className="text-[16px] sm:text-[18px] text-amber-400 inline-flex items-center gap-1.5">
+          <Landmark size={18} className="shrink-0" />
           {isRTL ? 'ضريبة تقديرية: ' : 'IS estimé: '}
           <span className="font-bold">{formatCurrency(realEstimatedIS)}</span>
         </span>

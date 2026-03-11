@@ -14,6 +14,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAnonymous: boolean;
   isAuthenticated: boolean;
+  isPrimaryAdmin: boolean;
   signUp: (email: string, password: string) => Promise<AuthResult>;
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signInAnonymously: () => Promise<{ error: Error | null }>;
@@ -32,8 +33,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isAnonymous = user?.is_anonymous === true;
   const isAuthenticated = !!user && !isAnonymous;
+  const isPrimaryAdmin = !!user?.email && normalizeEmail(user.email) === PRIMARY_ADMIN_EMAIL;
 
   useEffect(() => {
+    // CRITICAL: Set up auth listener BEFORE checking session
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
@@ -58,9 +61,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Development access: create a guest session silently (no login wall)
+      // No session found — create anonymous guest session for public access
       const { error } = await supabase.auth.signInAnonymously();
       if (error) {
+        console.warn('Anonymous sign-in failed:', error.message);
         setIsLoading(false);
       }
       // onAuthStateChange will finalize state on success
@@ -71,7 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string): Promise<AuthResult> => {
     const normalizedEmail = normalizeEmail(email);
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
@@ -82,13 +86,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return {
-      error,
+      error: error ?? null,
       needsEmailConfirmation: !error && !data.session,
-      isPrimaryAdmin: data.user?.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL,
+      isPrimaryAdmin: normalizedEmail === PRIMARY_ADMIN_EMAIL,
     };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<AuthResult> => {
     const normalizedEmail = normalizeEmail(email);
     const { data, error } = await supabase.auth.signInWithPassword({
       email: normalizedEmail,
@@ -96,26 +100,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return {
-      error,
-      isPrimaryAdmin: data.user?.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL,
+      error: error ?? null,
+      isPrimaryAdmin: normalizedEmail === PRIMARY_ADMIN_EMAIL,
     };
   };
 
   const signInAnonymously = async () => {
     const { error } = await supabase.auth.signInAnonymously();
-    return { error };
+    return { error: error ?? null };
   };
 
   const signOut = async () => {
+    // Set flag BEFORE sign out to prevent anonymous session re-creation
     sessionStorage.setItem('explicit_signout', 'true');
+    
+    // Sign out from Supabase
     await supabase.auth.signOut();
+    
+    // Clear all local storage to ensure clean state
+    localStorage.clear();
+    sessionStorage.setItem('explicit_signout', 'true'); // Re-set after clear
+    
+    // Reset state
     setUser(null);
     setSession(null);
-    window.location.href = '/';
+    
+    // Hard redirect to login
+    window.location.href = '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, isAnonymous, isAuthenticated, signUp, signIn, signInAnonymously, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, session, isLoading, isAnonymous, isAuthenticated, isPrimaryAdmin,
+      signUp, signIn, signInAnonymously, signOut 
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -9,6 +9,7 @@ interface AdminAuthContextType {
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
+const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
 
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
@@ -16,10 +17,16 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const checkAdminStatus = async (): Promise<boolean> => {
-    if (!user) {
+    if (!user || user.is_anonymous) {
       setIsAdmin(false);
       setIsLoading(false);
       return false;
+    }
+
+    if (user.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL) {
+      setIsAdmin(true);
+      setIsLoading(false);
+      return true;
     }
 
     try {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, FileText, MapPin, Mail, Upload, Image, Loader2, Check, AlertCircle } from 'lucide-react';
+import { Building2, FileText, MapPin, Mail, Upload, Image, Loader2, Check, AlertCircle, Bell } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

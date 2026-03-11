@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import JSZip from 'jszip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Receipt, Plus, TrendingUp, TrendingDown, Wallet,
-  Loader2, Download, Eye, FileText,
+  Loader2, Download, Eye, FileText, Archive,
   ChevronDown, ChevronUp, Users, HardHat, Calculator, Info, Landmark
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -56,6 +57,7 @@ const ExpensesPage = () => {
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalIncomeHT, setTotalIncomeHT] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
+  const [archiving, setArchiving] = useState(false);
 
   useEffect(() => {
     if (!user) { setIsAdmin(false); return; }
@@ -291,6 +293,95 @@ const ExpensesPage = () => {
     });
   };
 
+  const handleArchiveDownload = async () => {
+    if (!user || filtered.length === 0) return;
+    setArchiving(true);
+    try {
+      const zip = new JSZip();
+      const fmtDate = (d: string) => new Date(d).toISOString().slice(0, 10);
+
+      // Collect files from documents (PDFs)
+      const docs = filtered.filter(r => (r.type === 'facture' || r.type === 'devis') && r.pdfUrl);
+      for (const doc of docs) {
+        const clientFolder = (doc.clientName || 'Sans_Client').replace(/[\/\\]/g, '_');
+        const projectFolder = (doc.projectName || 'Sans_Projet').replace(/[\/\\]/g, '_');
+        const typeFolder = doc.type === 'facture' ? 'Factures' : 'Devis';
+        const fileName = `${fmtDate(doc.date)}_${doc.label.replace(/[\/\\]/g, '-')}.pdf`;
+        const folderPath = `${clientFolder}/${projectFolder}/${typeFolder}`;
+
+        try {
+          // Try to download the PDF
+          const response = await fetch(doc.pdfUrl!);
+          if (response.ok) {
+            const blob = await response.blob();
+            zip.file(`${folderPath}/${fileName}`, blob);
+          }
+        } catch (e) {
+          console.warn(`Could not fetch file for ${doc.label}:`, e);
+        }
+      }
+
+      // Collect expense receipts
+      const expenses = filtered.filter(r => r.type === 'expense');
+      if (expenses.length > 0) {
+        // Fetch expense records with receipt_url
+        const { data: expenseRecords } = await supabase
+          .from('expenses')
+          .select('id, title, expense_date, receipt_url, chantier_id')
+          .in('id', expenses.map(e => e.id));
+
+        for (const exp of (expenseRecords || [])) {
+          if (!exp.receipt_url) continue;
+          const matchRow = expenses.find(e => e.id === exp.id);
+          const clientFolder = (matchRow?.clientName || 'Sans_Client').replace(/[\/\\]/g, '_');
+          const projectFolder = (matchRow?.projectName || 'Sans_Projet').replace(/[\/\\]/g, '_');
+          const ext = exp.receipt_url.split('.').pop()?.split('?')[0] || 'jpg';
+          const fileName = `${fmtDate(exp.expense_date)}_${exp.title.replace(/[\/\\:]/g, '_').slice(0, 40)}.${ext}`;
+
+          try {
+            // For signed storage URLs
+            const { data: signedData } = await supabase.storage
+              .from('expense-receipts')
+              .createSignedUrl(exp.receipt_url.replace(/^.*expense-receipts\//, ''), 120);
+            
+            if (signedData?.signedUrl) {
+              const response = await fetch(signedData.signedUrl);
+              if (response.ok) {
+                const blob = await response.blob();
+                zip.file(`${clientFolder}/${projectFolder}/Depenses/${fileName}`, blob);
+              }
+            }
+          } catch (e) {
+            console.warn(`Could not fetch receipt for ${exp.title}:`, e);
+          }
+        }
+      }
+
+      // Generate and download ZIP
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `archive_comptable_${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: isRTL ? 'تم تحميل الأرشيف' : 'Archive téléchargée',
+        description: isRTL ? 'تم تحميل جميع المستندات في ملف مضغوط' : 'Tous les documents ont été archivés',
+      });
+    } catch (err) {
+      console.error('Archive error:', err);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'فشل تحميل الأرشيف' : 'Échec du téléchargement de l\'archive',
+      });
+    } finally {
+      setArchiving(false);
+    }
+  };
+
   const typeConfig: Record<string, { label: { fr: string; ar: string }; color: string }> = {
     devis: { label: { fr: 'Devis', ar: 'دوفي' }, color: 'bg-blue-500/15 text-blue-400' },
     facture: { label: { fr: 'Facture', ar: 'فاتورة' }, color: 'bg-emerald-500/15 text-emerald-400' },
@@ -461,17 +552,30 @@ const ExpensesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Accountant Export Button */}
-      <Button
-        className={cn("w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 h-12", isRTL && "flex-row-reverse font-cairo")}
-        onClick={handleAccountantExport}
-        disabled={filtered.length === 0}
-      >
-        <Download className="h-5 w-5" />
-        <span className="text-sm font-bold" style={{ fontSize: '16px' }}>
-          {isRTL ? 'تصدير بيانات المحاسب' : 'Exporter pour le comptable'}
-        </span>
-      </Button>
+      {/* Export Buttons */}
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          className={cn("w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 h-12", isRTL && "flex-row-reverse font-cairo")}
+          onClick={handleAccountantExport}
+          disabled={filtered.length === 0}
+        >
+          <Download className="h-5 w-5" />
+          <span className="font-bold" style={{ fontSize: '14px' }}>
+            {isRTL ? 'تصدير بيانات المحاسب' : 'Export comptable'}
+          </span>
+        </Button>
+        <Button
+          variant="outline"
+          className={cn("w-full gap-2 h-12 border-accent/30", isRTL && "flex-row-reverse font-cairo")}
+          onClick={handleArchiveDownload}
+          disabled={filtered.length === 0 || archiving}
+        >
+          {archiving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Archive className="h-5 w-5" />}
+          <span className="font-bold" style={{ fontSize: '14px' }}>
+            {isRTL ? 'تحميل أرشيف المستندات' : 'Archive documents'}
+          </span>
+        </Button>
+      </div>
 
       {/* URSSAF Summary Card */}
       <Card className="border-violet-500/20 bg-violet-500/5">

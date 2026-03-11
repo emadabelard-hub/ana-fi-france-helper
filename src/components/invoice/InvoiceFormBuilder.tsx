@@ -184,6 +184,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Editable document number
   const [docNumber, setDocNumber] = useState(() => generateDocNumber(documentType));
+  const [docNumberLoading, setDocNumberLoading] = useState(false);
   
   // Quote Wizard state
   const [showWizard, setShowWizard] = useState(false);

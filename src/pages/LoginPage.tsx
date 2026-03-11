@@ -73,6 +73,11 @@ const LoginPage = () => {
     }
     setIsLoading(true);
     try {
+      if (isLogin && rememberMe) {
+        localStorage.setItem('remember_session', 'true');
+      } else if (isLogin) {
+        localStorage.removeItem('remember_session');
+      }
       const { error } = isLogin ? await signIn(email, password) : await signUp(email, password);
       if (error) {
         toast({ variant: "destructive", title: isRTL ? "خطأ" : "Erreur", description: error.message });

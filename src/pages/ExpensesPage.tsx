@@ -527,8 +527,8 @@ const ExpensesPage = () => {
               zip.file(`${clientFolder}/${projectFolder}/Depenses/${fileName}`, blob);
               filesAdded++;
             }
-          } catch (e) {
-            console.warn(`Could not fetch receipt for ${exp.title}:`, e);
+          } catch {
+            // receipt fetch failed silently
           }
         }
       }

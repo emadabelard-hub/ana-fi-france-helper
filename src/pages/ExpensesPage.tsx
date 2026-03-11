@@ -30,6 +30,7 @@ interface UnifiedRow {
   projectId: string | null;
   clientId: string | null;
   amount: number;
+  amountHT: number;
   tvaAmount: number;
   status: string | null;
   pdfUrl: string | null;

@@ -981,6 +981,17 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const saveToDocumentsComptables = async () => {
     if (!user) return;
 
+    if (!selectedClientId || !selectedChantierId) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
+        description: isRTL
+          ? 'يجب اختيار العميل والمشروع قبل الحفظ'
+          : 'Vous devez sélectionner un client et un projet avant de sauvegarder.',
+      });
+      return;
+    }
+
     const data = buildInvoiceData();
     const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
     const linkedDocumentData = {
@@ -1006,7 +1017,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         document_data: linkedDocumentData,
         status: 'finalized',
       };
-      if (selectedChantierId) insertData.chantier_id = selectedChantierId;
+      insertData.chantier_id = selectedChantierId;
 
       const { error } = await (supabase.from('documents_comptables') as any).insert(insertData);
       if (error) throw error;
@@ -1056,6 +1067,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         status: 'draft',
       };
       if (selectedChantierId) insertData.chantier_id = selectedChantierId;
+      // Note: drafts allow no chantier for early-stage work
 
       const { error } = await (supabase.from('documents_comptables') as any).insert(insertData);
       if (error) throw error;

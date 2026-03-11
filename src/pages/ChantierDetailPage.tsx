@@ -44,7 +44,7 @@ const ChantierDetailPage = () => {
   }, [user, id]);
 
   const totalFactured = useMemo(() =>
-    documents.filter(d => d.document_type === 'facture').reduce((s, d) => s + Number(d.total_ttc || 0), 0),
+    documents.filter(d => d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted')).reduce((s, d) => s + Number(d.total_ttc || 0), 0),
     [documents]
   );
   const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]);

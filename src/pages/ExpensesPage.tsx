@@ -299,8 +299,38 @@ const ExpensesPage = () => {
     try {
       const zip = new JSZip();
       const fmtDate = (d: string) => new Date(d).toISOString().slice(0, 10);
+      let filesAdded = 0;
 
-      // Collect files from documents (PDFs)
+      // Helper: extract storage path from a Supabase URL for a given bucket
+      const extractPath = (url: string, bucket: string): string | null => {
+        const marker = `${bucket}/`;
+        const idx = url.indexOf(marker);
+        if (idx === -1) return null;
+        return url.substring(idx + marker.length).split('?')[0];
+      };
+
+      // Helper: fetch a blob from a URL, trying signed URL first for storage paths
+      const fetchBlob = async (url: string, bucket: string): Promise<Blob | null> => {
+        // Try to extract storage path and create a signed URL
+        const storagePath = extractPath(url, bucket);
+        if (storagePath) {
+          const { data: signedData } = await supabase.storage
+            .from(bucket)
+            .createSignedUrl(storagePath, 300);
+          if (signedData?.signedUrl) {
+            const res = await fetch(signedData.signedUrl);
+            if (res.ok) return await res.blob();
+          }
+        }
+        // Fallback: try direct fetch (for external/public URLs)
+        try {
+          const res = await fetch(url);
+          if (res.ok) return await res.blob();
+        } catch { /* ignore */ }
+        return null;
+      };
+
+      // --- Collect document PDFs ---
       const docs = filtered.filter(r => (r.type === 'facture' || r.type === 'devis') && r.pdfUrl);
       for (const doc of docs) {
         const clientFolder = (doc.clientName || 'Sans_Client').replace(/[\/\\]/g, '_');
@@ -310,51 +340,53 @@ const ExpensesPage = () => {
         const folderPath = `${clientFolder}/${projectFolder}/${typeFolder}`;
 
         try {
-          // Try to download the PDF
-          const response = await fetch(doc.pdfUrl!);
-          if (response.ok) {
-            const blob = await response.blob();
+          // Try signed-documents bucket first, then company-assets, then direct
+          let blob = await fetchBlob(doc.pdfUrl!, 'signed-documents');
+          if (!blob) blob = await fetchBlob(doc.pdfUrl!, 'company-assets');
+          if (blob && blob.size > 0) {
             zip.file(`${folderPath}/${fileName}`, blob);
+            filesAdded++;
           }
         } catch (e) {
           console.warn(`Could not fetch file for ${doc.label}:`, e);
         }
       }
 
-      // Collect expense receipts
-      const expenses = filtered.filter(r => r.type === 'expense');
-      if (expenses.length > 0) {
-        // Fetch expense records with receipt_url
+      // --- Collect expense receipts ---
+      const expenseRows = filtered.filter(r => r.type === 'expense');
+      if (expenseRows.length > 0) {
         const { data: expenseRecords } = await supabase
           .from('expenses')
           .select('id, title, expense_date, receipt_url, chantier_id')
-          .in('id', expenses.map(e => e.id));
+          .in('id', expenseRows.map(e => e.id));
 
         for (const exp of (expenseRecords || [])) {
           if (!exp.receipt_url) continue;
-          const matchRow = expenses.find(e => e.id === exp.id);
+          const matchRow = expenseRows.find(e => e.id === exp.id);
           const clientFolder = (matchRow?.clientName || 'Sans_Client').replace(/[\/\\]/g, '_');
           const projectFolder = (matchRow?.projectName || 'Sans_Projet').replace(/[\/\\]/g, '_');
           const ext = exp.receipt_url.split('.').pop()?.split('?')[0] || 'jpg';
           const fileName = `${fmtDate(exp.expense_date)}_${exp.title.replace(/[\/\\:]/g, '_').slice(0, 40)}.${ext}`;
 
           try {
-            // For signed storage URLs
-            const { data: signedData } = await supabase.storage
-              .from('expense-receipts')
-              .createSignedUrl(exp.receipt_url.replace(/^.*expense-receipts\//, ''), 120);
-            
-            if (signedData?.signedUrl) {
-              const response = await fetch(signedData.signedUrl);
-              if (response.ok) {
-                const blob = await response.blob();
-                zip.file(`${clientFolder}/${projectFolder}/Depenses/${fileName}`, blob);
-              }
+            const blob = await fetchBlob(exp.receipt_url, 'expense-receipts');
+            if (blob && blob.size > 0) {
+              zip.file(`${clientFolder}/${projectFolder}/Depenses/${fileName}`, blob);
+              filesAdded++;
             }
           } catch (e) {
             console.warn(`Could not fetch receipt for ${exp.title}:`, e);
           }
         }
+      }
+
+      if (filesAdded === 0) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'الأرشيف فارغ' : 'Archive vide',
+          description: isRTL ? 'لم يتم العثور على ملفات مرفقة للتحميل' : 'Aucun fichier attaché trouvé',
+        });
+        return;
       }
 
       // Generate and download ZIP
@@ -363,19 +395,21 @@ const ExpensesPage = () => {
       const a = document.createElement('a');
       a.href = url;
       a.download = `archive_comptable_${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
       toast({
         title: isRTL ? 'تم تحميل الأرشيف' : 'Archive téléchargée',
-        description: isRTL ? 'تم تحميل جميع المستندات في ملف مضغوط' : 'Tous les documents ont été archivés',
+        description: isRTL ? `تم تحميل ${filesAdded} ملف(ات) في ملف مضغوط` : `${filesAdded} fichier(s) archivé(s)`,
       });
     } catch (err) {
       console.error('Archive error:', err);
       toast({
         variant: 'destructive',
         title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'فشل تحميل الأرشيف' : 'Échec du téléchargement de l\'archive',
+        description: isRTL ? 'فشل تحميل الأرشيف' : "Échec du téléchargement de l'archive",
       });
     } finally {
       setArchiving(false);

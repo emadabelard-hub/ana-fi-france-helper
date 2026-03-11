@@ -111,7 +111,10 @@ const ExpensesPage = () => {
       // Documents
       (docsRes.data || []).forEach((d: any) => {
         const ch = d.chantier_id ? chantierMap[d.chantier_id] : null;
-        if (d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted')) incomeSum += d.total_ttc || 0;
+        if (d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted')) {
+          incomeSum += d.total_ttc || 0;
+          incomeHTSum += d.subtotal_ht || 0;
+        }
         unified.push({
           id: d.id,
           date: d.created_at,
@@ -122,6 +125,7 @@ const ExpensesPage = () => {
           projectId: d.chantier_id || null,
           clientId: clientMap[d.client_name] || null,
           amount: d.total_ttc || 0,
+          amountHT: d.subtotal_ht || 0,
           tvaAmount: d.tva_amount || 0,
           status: d.status || null,
           pdfUrl: d.pdf_url || null,

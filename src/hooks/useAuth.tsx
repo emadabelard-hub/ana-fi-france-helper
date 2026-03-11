@@ -72,13 +72,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    return { error };
+    const normalizedEmail = normalizeEmail(email);
+    const { data, error } = await supabase.auth.signUp({
+      email: normalizedEmail,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    });
+
+    return {
+      error,
+      needsEmailConfirmation: !error && !data.session,
+      isPrimaryAdmin: data.user?.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL,
+    };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    const normalizedEmail = normalizeEmail(email);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+
+    return {
+      error,
+      isPrimaryAdmin: data.user?.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL,
+    };
   };
 
   const signInAnonymously = async () => {

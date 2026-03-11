@@ -72,6 +72,8 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const { signIn, signUp, signInAnonymously } = useAuth();
   const { isRTL } = useLanguage();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
   
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);

@@ -19,12 +19,15 @@ const ChantierDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [chantier, setChantier] = useState<any>(null);
   const [client, setClient] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingBudget, setEditingBudget] = useState(false);
+  const [budgetInput, setBudgetInput] = useState('');
 
   useEffect(() => {
     if (!user || !id) return;

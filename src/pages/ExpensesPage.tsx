@@ -57,6 +57,9 @@ const ExpensesPage = () => {
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalIncomeHT, setTotalIncomeHT] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
+  const [archiving, setArchiving] = useState(false);
+  const [totalIncomeHT, setTotalIncomeHT] = useState(0);
+  const [totalExpenses, setTotalExpenses] = useState(0);
 
   useEffect(() => {
     if (!user) { setIsAdmin(false); return; }

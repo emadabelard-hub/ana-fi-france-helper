@@ -128,7 +128,7 @@ Tu analyses des images de chantiers, plans, croquis ou documents pour générer 
   * Ragréage → راغرياج (PAS تسوية)
   * Sous-couche → سوكوش (PAS طبقة تحتية)
   * Enduit → أندوي (PAS معجون)
-  * Peinture → بانتيرة (PAS طلاء أو دهان)
+  * Peinture → بنتيرة (PAS طلاء أو دهان أو بانتيرة)
   * Carrelage → كارلاج (PAS بلاط)
   * Faïence → فايونس (PAS قيشاني)
   * Ponçage → بونساج (PAS صنفرة)

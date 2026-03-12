@@ -698,7 +698,8 @@ const SmartDevisPage = () => {
             setStep('select_input');
             setInputType(null);
           } else {
-            navigate('/pro');
+            if (window.history.length > 1) navigate(-1);
+            else navigate('/pro');
           }
         }}>
           {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}

@@ -96,6 +96,7 @@ const SmartDevisPage = () => {
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
   const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | null>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

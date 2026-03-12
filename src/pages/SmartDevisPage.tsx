@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -65,7 +65,24 @@ interface ChatMsg {
 type InputType = 'photo' | 'blueprint' | 'document' | null;
 type Step = 'select_input' | 'photo_guide' | 'upload' | 'chat' | 'review';
 
+interface SmartDevisWizardSnapshot {
+  step: Step;
+  inputType: InputType;
+  uploadedFiles: UploadedFile[];
+  pastedText: string;
+  analysisData: any;
+  chatMessages: ChatMsg[];
+  lineItems: LineItem[];
+  materialQuality: string;
+  discountPercent: number;
+  profitMarginPercent: number;
+  preferencesCollected: boolean;
+  surfaceEstimates: SurfaceEstimate[];
+  materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | null;
+}
+
 const MAX_FILES = 10;
+const SMART_DEVIS_WIZARD_STATE_KEY = 'smartDevisWizardState';
 
 const SmartDevisPage = () => {
   const { isRTL, t } = useLanguage();
@@ -73,9 +90,11 @@ const SmartDevisPage = () => {
   const { profile } = useProfile();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const didRestoreWizardRef = useRef(false);
 
   const [step, setStep] = useState<Step>('select_input');
   const [inputType, setInputType] = useState<InputType>(null);
@@ -103,6 +122,73 @@ const SmartDevisPage = () => {
   }, [chatMessages]);
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
+
+  const buildWizardSnapshot = useCallback((): SmartDevisWizardSnapshot => ({
+    step,
+    inputType,
+    uploadedFiles,
+    pastedText,
+    analysisData,
+    chatMessages,
+    lineItems,
+    materialQuality,
+    discountPercent,
+    profitMarginPercent,
+    preferencesCollected,
+    surfaceEstimates,
+    materialScope,
+  }), [
+    step,
+    inputType,
+    uploadedFiles,
+    pastedText,
+    analysisData,
+    chatMessages,
+    lineItems,
+    materialQuality,
+    discountPercent,
+    profitMarginPercent,
+    preferencesCollected,
+    surfaceEstimates,
+    materialScope,
+  ]);
+
+  useEffect(() => {
+    if (didRestoreWizardRef.current) return;
+
+    const routeState = (location.state as { restoreWizard?: boolean; wizardSnapshot?: SmartDevisWizardSnapshot } | null) ?? null;
+    if (!routeState?.restoreWizard && !routeState?.wizardSnapshot) return;
+
+    let snapshot = routeState?.wizardSnapshot || null;
+
+    if (!snapshot) {
+      try {
+        const raw = sessionStorage.getItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        snapshot = raw ? JSON.parse(raw) : null;
+      } catch {
+        snapshot = null;
+      }
+    }
+
+    if (!snapshot) return;
+
+    didRestoreWizardRef.current = true;
+    setStep(snapshot.step || 'select_input');
+    setInputType(snapshot.inputType ?? null);
+    setUploadedFiles(Array.isArray(snapshot.uploadedFiles) ? snapshot.uploadedFiles : []);
+    setPastedText(snapshot.pastedText || '');
+    setAnalysisData(snapshot.analysisData || null);
+    setChatMessages(Array.isArray(snapshot.chatMessages) ? snapshot.chatMessages : []);
+    setLineItems(Array.isArray(snapshot.lineItems) ? snapshot.lineItems : []);
+    setMaterialQuality(snapshot.materialQuality || 'standard');
+    setDiscountPercent(typeof snapshot.discountPercent === 'number' ? snapshot.discountPercent : 0);
+    setProfitMarginPercent(typeof snapshot.profitMarginPercent === 'number' ? snapshot.profitMarginPercent : 15);
+    setPreferencesCollected(!!snapshot.preferencesCollected);
+    setSurfaceEstimates(Array.isArray(snapshot.surfaceEstimates) ? snapshot.surfaceEstimates : []);
+    setMaterialScope(snapshot.materialScope ?? null);
+
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   const handleInputTypeSelect = (type: InputType) => {
     setInputType(type);
@@ -526,15 +612,24 @@ const SmartDevisPage = () => {
         sitePhotos,
       };
 
-      // Persist to sessionStorage as fallback for navigation state loss
+      const wizardSnapshot = buildWizardSnapshot();
+
+      // Persist data + wizard snapshot as fallback for navigation state loss
       try {
         sessionStorage.setItem('smartDevisData', JSON.stringify(prefillData));
+        sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, JSON.stringify(wizardSnapshot));
       } catch (e) {
         console.warn('Failed to persist smart devis data to sessionStorage:', e);
       }
 
       navigate('/pro/invoice-creator?type=devis&prefill=smart', {
-        state: { smartDevisData: prefillData },
+        state: {
+          smartDevisData: prefillData,
+          smartDevisReturnState: {
+            restoreWizard: true,
+            wizardSnapshot,
+          },
+        },
       });
     } catch (err: any) {
       const technicalMessage = err?.message || err?.context?.body || String(err);
@@ -603,7 +698,8 @@ const SmartDevisPage = () => {
             setStep('select_input');
             setInputType(null);
           } else {
-            navigate('/pro');
+            if (window.history.length > 1) navigate(-1);
+            else navigate('/pro');
           }
         }}>
           {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}

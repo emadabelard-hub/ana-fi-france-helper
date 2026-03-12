@@ -40,6 +40,8 @@ const InvoiceCreatorPage = () => {
   // Get document type from URL or show modal
   const urlDocType = searchParams.get('type') as 'devis' | 'facture' | null;
   const prefillSource = searchParams.get('prefill');
+  const isSmartDevisFlow = prefillSource === 'smart';
+  const smartDevisReturnState = (location.state as { smartDevisReturnState?: { restoreWizard?: boolean; wizardSnapshot?: any } } | null)?.smartDevisReturnState;
   
   const [documentType, setDocumentType] = useState<'devis' | 'facture' | null>(urlDocType);
   const [showTypeModal, setShowTypeModal] = useState(!urlDocType);
@@ -101,9 +103,17 @@ const InvoiceCreatorPage = () => {
   };
   
   
-  // Handle navigation back to Pro page (guarded)
+  // Handle navigation back (guarded)
   const handleNavigateBack = () => {
-    requestLeave(() => navigate('/pro'));
+    requestLeave(() => {
+      if (isSmartDevisFlow) {
+        navigate('/pro/smart-devis', {
+          state: smartDevisReturnState || { restoreWizard: true },
+        });
+        return;
+      }
+      navigate('/pro');
+    });
   };
   
   // Handle back to type selection (guarded)

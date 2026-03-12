@@ -525,6 +525,13 @@ const SmartDevisPage = () => {
         sitePhotos,
       };
 
+      // Persist to sessionStorage as fallback for navigation state loss
+      try {
+        sessionStorage.setItem('smartDevisData', JSON.stringify(prefillData));
+      } catch (e) {
+        console.warn('Failed to persist smart devis data to sessionStorage:', e);
+      }
+
       navigate('/pro/invoice-creator?type=devis&prefill=smart', {
         state: { smartDevisData: prefillData },
       });

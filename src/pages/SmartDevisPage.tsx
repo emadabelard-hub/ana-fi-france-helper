@@ -565,6 +565,17 @@ const SmartDevisPage = () => {
   };
 
   const handleGenerateItems = async () => {
+    if (!materialScope) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'اختيار إجباري' : 'Choix obligatoire',
+        description: isRTL
+          ? 'لازم تختار: فورنيتير + مصنعية أو مصنعية بس قبل توليد الدوفي.'
+          : 'Veuillez choisir "Fourniture + Pose" ou "Main d\'œuvre seule" avant de générer le devis.',
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const payload = {
@@ -576,7 +587,7 @@ const SmartDevisPage = () => {
         materialQuality,
         discountPercent,
         profitMarginPercent,
-        materialScope: materialScope || 'fourniture_et_pose',
+        materialScope,
       };
 
       const data = await invokeAnalyzer(payload);

@@ -408,7 +408,7 @@ const SmartDevisPage = () => {
   useEffect(() => {
     const snapshot = buildWizardSnapshot();
     const hasProgress =
-      snapshot.step !== 'select_input' ||
+      (snapshot.step !== 'select_input' && snapshot.step !== 'ai_intro') ||
       snapshot.uploadedFiles.length > 0 ||
       !!snapshot.pastedText.trim() ||
       !!snapshot.analysisData ||

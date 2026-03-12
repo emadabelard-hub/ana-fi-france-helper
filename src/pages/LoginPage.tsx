@@ -44,22 +44,16 @@ const LoginPage = () => {
   const getErrorMessage = (errorMsg: string): string => {
     const msg = errorMsg.toLowerCase();
     if (msg.includes('invalid login credentials')) {
-      return isRTL
-        ? 'خطأ في البريد الإلكتروني أو كلمة المرور'
-        : 'Email ou mot de passe incorrect';
+      return 'Email ou mot de passe incorrect';
     }
     if (msg.includes('email not confirmed')) {
-      return isRTL
-        ? 'الحساب غير مُفعّل بعد. تحقق من بريدك الإلكتروني أو أعد إرسال رابط التأكيد'
-        : 'Compte non confirmé. Vérifiez votre email ou renvoyez le lien.';
+      return 'Compte non confirmé. Vérifiez votre email ou renvoyez le lien.';
     }
     if (msg.includes('user already registered')) {
-      return isRTL
-        ? 'هذا البريد مسجل بالفعل. حاول تسجيل الدخول'
-        : 'Cet email est déjà enregistré. Essayez de vous connecter.';
+      return 'Cet email est déjà enregistré. Essayez de vous connecter.';
     }
     if (msg.includes('password')) {
-      return isRTL ? 'خطأ في كلمة المرور' : 'Erreur de mot de passe';
+      return 'Erreur de mot de passe';
     }
     return errorMsg;
   };

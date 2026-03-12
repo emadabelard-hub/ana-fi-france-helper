@@ -21,7 +21,7 @@ import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import {
   ArrowLeft, ArrowRight, Camera, Image as ImageIcon, FileText, Map,
   Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle, X, Upload,
-  SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck
+  SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck, RotateCcw
 } from 'lucide-react';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 

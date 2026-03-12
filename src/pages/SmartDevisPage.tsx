@@ -166,6 +166,47 @@ const SmartDevisPage = () => {
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
+  const LABOR_ONLY_FACTOR = 0.55;
+  const REFERENCE_PRICES: Array<{ keywords: string[]; price: number }> = [
+    { keywords: ['peinture', 'بانتيرة', 'بنتيرة'], price: 32 },
+    { keywords: ['enduit', 'أندوي'], price: 26 },
+    { keywords: ['carrelage', 'كارلاج', 'faience', 'faïence', 'فايونس'], price: 58 },
+    { keywords: ['parquet', 'باركيه'], price: 52 },
+    { keywords: ['plomberie', 'سباكة'], price: 68 },
+    { keywords: ['electricite', 'électricité', 'كهرباء'], price: 64 },
+    { keywords: ['placo', 'cloison', 'بلاكو'], price: 42 },
+    { keywords: ['demontage', 'démontage', 'ديمونتاج'], price: 24 },
+    { keywords: ['nettoyage', 'نيتواياج'], price: 18 },
+  ];
+
+  const normalizeText = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  const resolveReferenceUnitPrice = (designation: string, unit: string, scope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null) => {
+    const normalizedDesignation = normalizeText(designation || '');
+    const matched = REFERENCE_PRICES.find((entry) =>
+      entry.keywords.some((keyword) => normalizedDesignation.includes(normalizeText(keyword)))
+    );
+
+    const fallbackByUnit: Record<string, number> = {
+      'm²': 35,
+      ml: 19,
+      u: 95,
+      h: 48,
+      forfait: 240,
+    };
+
+    const withMaterialsBase = matched?.price ?? fallbackByUnit[unit] ?? 35;
+    const scopedPrice = scope === 'main_oeuvre_seule'
+      ? withMaterialsBase * LABOR_ONLY_FACTOR
+      : withMaterialsBase;
+
+    return Math.round(scopedPrice * 100) / 100;
+  };
+
   const buildWizardSnapshot = useCallback((): SmartDevisWizardSnapshot => ({
     step,
     inputType,

@@ -333,6 +333,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   }, [items]);
 
   // --- DRAFT RESTORE on mount (only if no prefillData) ---
+  // CRITICAL: When prefillData exists (e.g. Smart Devis), SKIP draft restore entirely.
+  // This prevents stale ghost data (old drafts) from overwriting fresh analysis results.
   const [draftRestored, setDraftRestored] = useState(false);
   useEffect(() => {
     if (prefillData || draftRestored) return;

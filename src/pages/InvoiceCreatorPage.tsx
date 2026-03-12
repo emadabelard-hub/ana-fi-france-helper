@@ -12,6 +12,8 @@ import SecurityBadge from '@/components/shared/SecurityBadge';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
+import { useToast } from '@/hooks/use-toast';
+import { clearDraft } from '@/lib/invoiceDraftStorage';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +37,7 @@ const InvoiceCreatorPage = () => {
   const { user } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   // Get document type from URL or show modal
@@ -352,18 +355,37 @@ const InvoiceCreatorPage = () => {
             </AlertDialogTitle>
             <AlertDialogDescription className={cn(isRTL && "text-right")}>
               {isRTL 
-                ? 'عندك تعديلات مش محفوظة. متقلقش، البيانات محفوظة تلقائياً، بس هل أنت متأكد إنك عايز تطلع؟'
-                : 'Attention, vous avez des modifications non enregistrées. Voulez-vous vraiment quitter ?'
+                ? 'عندك تعديلات مش محفوظة. تحب تحفظ المسودة قبل ما تطلع؟'
+                : 'Vous avez des modifications non enregistrées. Voulez-vous sauvegarder le brouillon avant de quitter ?'
               }
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className={cn(isRTL && "flex-row-reverse")}>
-            <AlertDialogCancel onClick={cancelLeave}>
-              {isRTL ? 'لا، كمّل' : 'Non, continuer'}
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmLeave} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {isRTL ? 'أيوه، اطلع' : 'Oui, quitter'}
+          <AlertDialogFooter className={cn("flex flex-col gap-2 sm:flex-col", isRTL && "items-stretch")}>
+            <AlertDialogAction 
+              onClick={() => {
+                // Draft is already auto-saved, just confirm and leave
+                toast({
+                  title: isRTL ? '✅ المسودة محفوظة' : '✅ Brouillon sauvegardé',
+                  description: isRTL ? 'تقدر ترجع تكمل في أي وقت' : 'Vous pourrez reprendre à tout moment',
+                });
+                confirmLeave();
+              }} 
+              className="bg-primary text-primary-foreground hover:bg-primary/90 w-full"
+            >
+              {isRTL ? '💾 احفظ المسودة واطلع' : '💾 Sauvegarder et quitter'}
             </AlertDialogAction>
+            <AlertDialogAction 
+              onClick={() => {
+                clearDraft();
+                confirmLeave();
+              }} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full"
+            >
+              {isRTL ? '🗑️ اطلع من غير حفظ' : '🗑️ Quitter sans sauvegarder'}
+            </AlertDialogAction>
+            <AlertDialogCancel onClick={cancelLeave} className="w-full mt-0">
+              {isRTL ? 'لا، كمّل الشغل' : 'Non, continuer'}
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

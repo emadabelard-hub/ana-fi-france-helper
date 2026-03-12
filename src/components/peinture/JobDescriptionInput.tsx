@@ -104,33 +104,33 @@ const JobDescriptionInput: React.FC<JobDescriptionInputProps> = ({
         </div>
 
         {/* Material Buyer */}
-        <div className="space-y-1.5 bg-muted/30 rounded-xl p-3 border border-border/50">
+        <div className="space-y-2.5 bg-muted/30 rounded-xl p-3 border border-border/50">
           <Label className={cn("text-xs font-bold flex items-center gap-1", isRTL && "flex-row-reverse")}>
             <ShoppingCart className="h-3 w-3 text-amber-500" />
             {isFr ? 'Qui achète les matériaux ?' : 'مين اللي هيشتري المواد؟'}
           </Label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setMaterialBuyer('client')}
-              className={cn(
-                "flex-1 text-xs font-bold py-2 px-3 rounded-lg border transition-colors",
-                materialBuyer === 'client'
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background border-border hover:bg-muted"
-              )}
-            >
-              {isFr ? '🏠 Le client' : '🏠 الزبون'}
-            </button>
+          <div className="flex flex-col gap-2.5">
             <button
               onClick={() => setMaterialBuyer('contractor')}
               className={cn(
-                "flex-1 text-xs font-bold py-2 px-3 rounded-lg border transition-colors",
+                "w-full text-sm font-black py-3.5 px-4 rounded-xl border-2 transition-all flex items-center justify-center gap-2",
                 materialBuyer === 'contractor'
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background border-border hover:bg-muted"
+                  ? "bg-primary text-primary-foreground border-primary shadow-md"
+                  : "bg-background border-border hover:bg-muted hover:border-muted-foreground/30"
               )}
             >
-              {isFr ? '🔧 L\'entrepreneur' : '🔧 المقاول'}
+              🔧 {isFr ? 'Les matériaux sont à ma charge' : 'المواد عليّا (المقاول)'}
+            </button>
+            <button
+              onClick={() => setMaterialBuyer('client')}
+              className={cn(
+                "w-full text-sm font-black py-3.5 px-4 rounded-xl border-2 transition-all flex items-center justify-center gap-2",
+                materialBuyer === 'client'
+                  ? "bg-primary text-primary-foreground border-primary shadow-md"
+                  : "bg-background border-border hover:bg-muted hover:border-muted-foreground/30"
+              )}
+            >
+              🏠 {isFr ? 'Le client fournit les matériaux' : 'المواد على الزبون'}
             </button>
           </div>
         </div>

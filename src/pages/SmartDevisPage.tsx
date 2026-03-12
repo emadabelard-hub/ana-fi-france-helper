@@ -825,6 +825,40 @@ const SmartDevisPage = () => {
         .filter(f => f.type === 'image')
         .map(f => ({ data: f.data, name: f.name }));
 
+      // Auto-generate subject line from line items and analysis
+      const generateSubject = (): string => {
+        // Try to use AI-generated subject from analysis
+        if (analysisData?.devis_subject_fr) return analysisData.devis_subject_fr;
+
+        // Fallback: build from work types detected in line items
+        const workTypes = new Set<string>();
+        lineItems.forEach(item => {
+          const fr = (item.designation_fr || '').toLowerCase();
+          if (fr.includes('peinture') || fr.includes('enduit') || fr.includes('sous-couche')) workTypes.add('peinture');
+          else if (fr.includes('carrelage') || fr.includes('faïence') || fr.includes('faience')) workTypes.add('carrelage');
+          else if (fr.includes('parquet') || fr.includes('plinthes')) workTypes.add('parquet');
+          else if (fr.includes('plomberie') || fr.includes('sanitaire') || fr.includes('robinet')) workTypes.add('plomberie');
+          else if (fr.includes('electri') || fr.includes('prise') || fr.includes('interrupteur')) workTypes.add('électricité');
+          else if (fr.includes('placo') || fr.includes('cloison') || fr.includes('faux plafond')) workTypes.add('placo');
+          else if (fr.includes('démontage') || fr.includes('demontage')) workTypes.add('démontage');
+        });
+
+        if (workTypes.size === 0) return 'Travaux de rénovation';
+        const typeLabels: Record<string, string> = {
+          peinture: 'peinture',
+          carrelage: 'carrelage',
+          parquet: 'parquet',
+          plomberie: 'plomberie',
+          électricité: 'électricité',
+          placo: 'placo / cloisons',
+          démontage: 'démontage',
+        };
+        const labels = Array.from(workTypes).map(t => typeLabels[t] || t);
+        return `Travaux de ${labels.join(', ')}`;
+      };
+
+      const autoSubject = generateSubject();
+
       const prefillData = {
         items: lineItems.map(item => ({
           ...item,
@@ -838,6 +872,7 @@ const SmartDevisPage = () => {
         materialScope,
         priceMode: 'reference_fixed',
         sitePhotos,
+        descriptionChantier: autoSubject,
       };
 
       const wizardSnapshot = buildWizardSnapshot();

@@ -1464,6 +1464,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 </Select>
               </div>
             </div>
+            <div className={cn("flex flex-wrap gap-2", isRTL && "flex-row-reverse")}> 
+              <Button type="button" variant="outline" size="sm" onClick={() => navigate('/clients')} className={cn("text-xs", isRTL && "font-cairo")}> 
+                {isRTL ? '➕ إضافة زبون جديد' : '➕ Ajouter un nouveau client'}
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => navigate('/chantiers')} className={cn("text-xs", isRTL && "font-cairo")}> 
+                {isRTL ? '➕ إضافة مشروع جديد' : '➕ Ajouter un nouveau projet'}
+              </Button>
+            </div>
             <p className={cn("text-[11px] text-muted-foreground", isRTL && "font-cairo text-right")}>
               {isRTL ? '💡 الاختيار اختياري — يمكنك الكتابة يدوياً في الخانات تحت' : '💡 Optionnel — vous pouvez aussi saisir manuellement ci-dessous'}
             </p>

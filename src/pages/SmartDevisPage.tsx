@@ -347,7 +347,7 @@ const SmartDevisPage = () => {
       if (notesAr) content += `📝 ${notesAr}\n\n`;
       content += `---\n\n🇫🇷 **Analyse professionnelle :**\n\n${analysisFr}\n\n`;
       if (notesFr) content += `📝 ${notesFr}\n\n`;
-      content += `---\nدابا بغيت نسولك شي أسئلة باش نديرو الدوفي مزيان:\n\n1️⃣ **جودة المواد؟** (اقتصادي / عادي / لوكس)\n2️⃣ **واش كاين شي خصم؟** (نسبة %)\n3️⃣ **شحال بغيتي نسبة الربح؟** (%)`;
+      content += `---\nدلوقتي عايز أسألك كام سؤال عشان نعمل الدوفي صح:\n\n1️⃣ **جودة المواد؟** (اقتصادي / عادي / فخم)\n2️⃣ **هل في خصم؟** (نسبة %)\n3️⃣ **نسبة الربح المطلوبة؟** (%)`;
 
       setChatMessages([{ role: 'assistant', content }]);
       setStep('chat');

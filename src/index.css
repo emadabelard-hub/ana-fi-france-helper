@@ -44,7 +44,8 @@
 
     /* Border/Input */
     --border: 220 10% 20%;
-    --input: 220 12% 16%;
+    --input: 220 12% 18%;
+    --input-foreground: 40 20% 95%;
     --ring: 37 37% 60%;
 
     --radius: 1.5rem;
@@ -96,7 +97,8 @@
     --destructive-foreground: 0 0% 98%;
 
     --border: 220 15% 90%;
-    --input: 220 15% 93%;
+    --input: 220 20% 96%;
+    --input-foreground: 220 25% 8%;
     --ring: 37 37% 50%;
 
     --chat-ai: 220 10% 96%;
@@ -137,6 +139,32 @@
   textarea,
   select {
     font-size: 16px !important;
+  }
+
+  /* Global input field contrast — distinct from page background */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([role="combobox"]),
+  textarea,
+  select,
+  [role="combobox"],
+  [data-slot="input"],
+  .cm-editor {
+    background-color: hsl(var(--input)) !important;
+    color: hsl(var(--input-foreground, var(--foreground))) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: var(--radius, 0.5rem);
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([role="combobox"])::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--muted-foreground)) !important;
+    opacity: 0.7;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([role="combobox"]):focus,
+  textarea:focus,
+  select:focus {
+    border-color: hsl(var(--ring)) !important;
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2) !important;
   }
 }
 /* Safe area padding for mobile devices */

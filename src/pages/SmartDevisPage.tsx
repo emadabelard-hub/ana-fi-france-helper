@@ -457,6 +457,7 @@ const SmartDevisPage = () => {
         materialQuality,
         discountPercent,
         profitMarginPercent,
+        materialScope: materialScope || 'fourniture_et_pose',
       };
 
       const data = await invokeAnalyzer(payload);

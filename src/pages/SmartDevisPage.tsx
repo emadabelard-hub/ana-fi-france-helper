@@ -342,6 +342,7 @@ const SmartDevisPage = () => {
       const area = data.estimatedArea ? `📐 المساحة المقدرة: **${data.estimatedArea}**` : '';
 
       let content = `✅ **تحليل الشانتي:**\n\n${analysisAr}\n\n`;
+
       if (area) content += `${area}\n\n`;
       if (notesAr) content += `📝 ${notesAr}\n\n`;
       content += `---\n\n🇫🇷 **Analyse professionnelle :**\n\n${analysisFr}\n\n`;

@@ -1758,8 +1758,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 placeholder={isRTL ? 'عنوان المقر' : 'Ex: 25 av. Matignon, 75008 Paris'}
                 dir="ltr"
                 lang="fr"
-                className="text-left"
-                className={cn("text-sm", isRTL && "text-right font-cairo")}
+                className="text-left text-sm"
               />
             </div>
             <div className="space-y-1.5">

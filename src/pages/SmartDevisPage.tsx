@@ -723,6 +723,49 @@ const SmartDevisPage = () => {
     }
   };
 
+  const handleHeaderBack = () => {
+    if (step === 'review') {
+      setStep('chat');
+      return;
+    }
+
+    if (step === 'chat') {
+      setStep('upload');
+      return;
+    }
+
+    if (step === 'upload') {
+      setStep(inputType === 'photo' ? 'photo_guide' : 'select_input');
+      return;
+    }
+
+    if (step === 'photo_guide') {
+      setStep('select_input');
+      setInputType(null);
+      return;
+    }
+
+    if (window.history.length > 1) {
+      navigate(-1);
+    }
+  };
+
+  const handleResetAnalysis = () => {
+    setAnalysisData(null);
+    setChatMessages([]);
+    setSurfaceEstimates([]);
+    setLineItems([]);
+    setPreferencesCollected(false);
+    setChatInput('');
+    setStep('upload');
+    toast({
+      title: isRTL ? 'تمت إعادة الضبط' : 'Analyse réinitialisée',
+      description: isRTL
+        ? 'الصور والنص مازالوا محفوظين، تقدر تعيد التحليل.'
+        : 'Vos photos et votre texte sont conservés, vous pouvez relancer l\'analyse.',
+    });
+  };
+
   const formatCurrency = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
   const HELP_GUIDES: Record<string, { title: string; steps: string[] }> = {

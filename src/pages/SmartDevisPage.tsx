@@ -1297,17 +1297,26 @@ const SmartDevisPage = () => {
             </Button>
           </div>
 
-          {/* Generate button */}
-          <Button
-            className="w-full bg-[#1a1a1a] hover:bg-[#333] text-[#c5a028] font-bold border border-[#c5a028]/30"
-            onClick={handleGenerateItems}
-            disabled={isGenerating}
-          >
-            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-            <span className={cn(isRTL && "font-cairo")}>
-              {isRTL ? '🏗️ ولّد الدوفي الذكي' : '🏗️ Générer le Smart Devis'}
-            </span>
-          </Button>
+          {/* Analysis actions */}
+          <div className="space-y-2">
+            <Button variant="outline" className="w-full" onClick={handleResetAnalysis}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              <span className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'إعادة التحليل من الأول' : 'Reset Analysis'}
+              </span>
+            </Button>
+
+            <Button
+              className="w-full bg-[#1a1a1a] hover:bg-[#333] text-[#c5a028] font-bold border border-[#c5a028]/30"
+              onClick={handleGenerateItems}
+              disabled={isGenerating}
+            >
+              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              <span className={cn(isRTL && "font-cairo")}>
+                {isRTL ? '🏗️ ولّد الدوفي الذكي' : '🏗️ Générer le Smart Devis'}
+              </span>
+            </Button>
+          </div>
         </div>
       )}
 

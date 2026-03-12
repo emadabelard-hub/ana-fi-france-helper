@@ -342,11 +342,12 @@ const SmartDevisPage = () => {
       const area = data.estimatedArea ? `📐 المساحة المقدرة: **${data.estimatedArea}**` : '';
 
       let content = `✅ **تحليل الشانتي:**\n\n${analysisAr}\n\n`;
+
       if (area) content += `${area}\n\n`;
       if (notesAr) content += `📝 ${notesAr}\n\n`;
       content += `---\n\n🇫🇷 **Analyse professionnelle :**\n\n${analysisFr}\n\n`;
       if (notesFr) content += `📝 ${notesFr}\n\n`;
-      content += `---\nدلوقتي عايز أسألك كام سؤال عشان نعمل الدوفي صح:\n\n1️⃣ **جودة المواد؟** (اقتصادي / عادي / فخم)\n2️⃣ **هل في خصم؟** (نسبة %)\n3️⃣ **نسبة الربح المطلوبة؟** (%)`;
+      content += `---\nدابا بغيت نسولك شي أسئلة باش نديرو الدوفي مزيان:\n\n1️⃣ **جودة المواد؟** (اقتصادي / عادي / لوكس)\n2️⃣ **واش كاين شي خصم؟** (نسبة %)\n3️⃣ **شحال بغيتي نسبة الربح؟** (%)`;
 
       setChatMessages([{ role: 'assistant', content }]);
       setStep('chat');
@@ -550,41 +551,41 @@ const SmartDevisPage = () => {
 
   const HELP_GUIDES: Record<string, { title: string; steps: string[] }> = {
     photo: {
-      title: '📸 ازاي تستخدم خاصية الصور؟',
+      title: '📸 كيفاش تستعمل خاصية الصور؟',
       steps: [
-        'صور الشانتي بوضوح — يعني الحيطان، السقف، الأرض.',
-        'السيستم هيعرف لو الحيطة محتاجة وشين بانتيرة أو أندوي من الصورة.',
-        'لو في كارلاج أو فايونس، صور الأرضية كمان.',
-        'اكتب تفاصيل إضافية في الخانة (مثلاً: "الحيطة محتاجة أندوي طبقتين وبانتيرة ساتيني").',
-        'السيستم هيقدر المساحة بشكل تقريبي من الصورة، وانت تقدر تعدل المقاسات بسهولة أثناء عمل الدوفي أو الفاتورة.',
+        'صوّر الشانتي بوضوح — يعني الحيوط، السقف، الأرض.',
+        'السيستم غادي يعرف واش الحيط محتاج بنتيرة ولا أندوي من الصورة.',
+        'إلا كان كارلاج ولا فايونس، صوّر الأرضية حتى هي.',
+        'كتب تفاصيل إضافية فالخانة (مثلاً: "الحيط محتاج أندوي طبقتين و بنتيرة ساتيني").',
+        'السيستم غادي يقدّر المساحة تقريبياً من الصورة، و نت تقدر تعدّل المقاسات بسهولة فاش تدير الدوفي.',
       ],
     },
     blueprint: {
-      title: '🗺️ ازاي تستخدم خاصية المخططات؟',
+      title: '🗺️ كيفاش تستعمل خاصية المخططات؟',
       steps: [
-        'ارفع المخطط أو الكروكي بتاع الشانتي.',
-        'السيستم هيقرأ المقاسات من الرسم.',
-        'لو الرسم فيه أبعاد (مثلاً 3m × 4m)، هيحسب المساحة.',
-        'اكتب في الخانة نوع الشغل اللي عايزه (بانتيرة، كارلاج، جبس...).',
-        'السيستم هيطلعلك دوفي بالأسعار والكميات!',
+        'طلّع المخطط ولا الكروكي ديال الشانتي.',
+        'السيستم غادي يقرا المقاسات من الرسم.',
+        'إلا الرسم فيه أبعاد (مثلاً 3m × 4m)، غادي يحسب المساحة.',
+        'كتب فالخانة نوع الخدمة اللي بغيتي (بنتيرة، كارلاج، جبس...).',
+        'السيستم غادي يطلعلك دوفي بالأسعار والكميات!',
       ],
     },
     document: {
-      title: '📄 ازاي تستخدم خاصية المستندات؟',
+      title: '📄 كيفاش تستعمل خاصية المستندات؟',
       steps: [
-        'انسخ كلام الزبون من واتساب أو إيميل وحطه هنا.',
-        'والسيستم هيعمل الدوفي الرسمي بالفرنسي.',
-        'ممكن كمان ترفع PDF لو الزبون بعتلك كراس الشروط.',
-        'السيستم هيحلل الطلب ويطلعلك كل البنود.',
-        'بعدها تقدر تعدل الأسعار وتضيف هامش الربح بتاعك!',
+        'نسخ كلام الزبون من واتساب ولا إيميل وحطو هنا.',
+        'والسيستم غادي يدير الدوفي الرسمي بالفرنسية.',
+        'تقدر حتى تطلّع PDF إلا الزبون بعتلك كراس الشروط.',
+        'السيستم غادي يحلل الطلب ويطلعلك كل البنود.',
+        'من بعد تقدر تعدّل الأسعار وتزيد هامش الربح ديالك!',
       ],
     },
   };
 
   const INPUT_TYPES = [
-    { type: 'photo' as const, icon: Camera, emoji: '📸', title: 'صورة الشانتي', titleFr: 'Photo du chantier', desc: 'صوّر الشغل وأنا أقدّر', gradient: 'from-blue-500 to-blue-600' },
-    { type: 'blueprint' as const, icon: Map, emoji: '🗺️', title: 'خريطة أو كروكي', titleFr: 'Plan ou croquis', desc: 'ارفع المخطط وأنا أقرأ المقاسات', gradient: 'from-emerald-500 to-emerald-600' },
-    { type: 'document' as const, icon: FileText, emoji: '📄', title: 'مستند أو نص', titleFr: 'Document ou texte', desc: 'ارفع PDF أو الصق نص من إيميل', gradient: 'from-amber-500 to-amber-600' },
+    { type: 'photo' as const, icon: Camera, emoji: '📸', title: 'صورة الشانتي', titleFr: 'Photo du chantier', desc: 'صوّر الخدمة وأنا نقدّر', gradient: 'from-blue-500 to-blue-600' },
+    { type: 'blueprint' as const, icon: Map, emoji: '🗺️', title: 'خريطة ولا كروكي', titleFr: 'Plan ou croquis', desc: 'طلّع المخطط وأنا نقرا المقاسات', gradient: 'from-emerald-500 to-emerald-600' },
+    { type: 'document' as const, icon: FileText, emoji: '📄', title: 'مستند ولا نص', titleFr: 'Document ou texte', desc: 'طلّع PDF ولا نسخ نص من إيميل', gradient: 'from-amber-500 to-amber-600' },
   ];
 
   return (
@@ -654,7 +655,7 @@ const SmartDevisPage = () => {
                 )}
               >
                 <HelpCircle className="h-3.5 w-3.5" />
-                <span>تحب اشرح تستخدم الخاصية دي ازاي؟</span>
+                <span>تبغي نشرحلك كيفاش تستعمل هاد الخاصية؟</span>
               </button>
             </div>
           ))}
@@ -699,7 +700,7 @@ const SmartDevisPage = () => {
             <ShieldCheck className="h-6 w-6 text-[#c5a028] shrink-0 mt-0.5" />
             <p className={cn("text-xs text-foreground leading-relaxed", isRTL && "text-right font-cairo")}>
               {isRTL
-                ? "الذكاء الاصطناعي هيحلل صورك ويقترح أشغال، لكن إنت اللي عندك الكلمة الأخيرة. تقدر تعدل أو تحذف أي بند قبل التأكيد النهائي."
+                ? "الذكاء الاصطناعي غادي يحلل الصور ديالك ويقترح أشغال، ولكن نت اللي عندك الكلمة الأخيرة. تقدر تعدّل ولا تحذف أي بند قبل التأكيد النهائي."
                 : "L'IA analyse vos photos pour suggérer des travaux, mais VOUS gardez le contrôle total. Vous pourrez modifier ou supprimer chaque ligne avant la validation finale."}
             </p>
           </div>
@@ -715,7 +716,7 @@ const SmartDevisPage = () => {
             >
               <Camera className="h-4 w-4 mr-2" />
               <span className={cn(isRTL && "font-cairo")}>
-                {isRTL ? 'فهمت، يلا نبدأ ✅' : 'Compris, commencer ✅'}
+                {isRTL ? 'فهمت، يلا نبداو ✅' : 'Compris, commencer ✅'}
               </span>
             </Button>
           </div>
@@ -836,7 +837,7 @@ const SmartDevisPage = () => {
             {/* Material Scope Selector */}
             <div className="space-y-2 bg-muted/30 rounded-xl p-3 border border-border/50">
               <label className={cn("text-sm font-bold flex items-center gap-1.5", isRTL && "flex-row-reverse font-cairo")}>
-                🔧 {isRTL ? 'هل الدوفي يشمل المواد ولا مصنعية بس؟' : 'Souhaitez-vous inclure la fourniture des matériaux ou uniquement la main d\'œuvre ?'}
+                🔧 {isRTL ? 'واش الدوفي يشمل المواد ولا مصنعية بوحدها؟' : 'Souhaitez-vous inclure la fourniture des matériaux ou uniquement la main d\'œuvre ?'}
               </label>
               <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
                 <button
@@ -859,7 +860,7 @@ const SmartDevisPage = () => {
                       : "bg-background border-border hover:bg-muted"
                   )}
                 >
-                  {isRTL ? '🔧 مصنعية بس' : '🔧 Main d\'œuvre seule'}
+                  {isRTL ? '🔧 غير مصنعية' : '🔧 Main d\'œuvre seule'}
                 </button>
               </div>
             </div>
@@ -872,13 +873,13 @@ const SmartDevisPage = () => {
               <Textarea
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
-                placeholder={isRTL ? 'انسخ طلب الزبون أو اكتب تفاصيل الشغلانة هنا (مثلاً: أندوي، بانتيرة، هامش الربح...)' : 'Collez la demande du client ou décrivez les travaux ici (ex: enduit, peinture, marge...)'}
+                placeholder={isRTL ? 'نسخ طلب الزبون ولا كتب تفاصيل الخدمة هنا (مثلاً: أندوي، بنتيرة، هامش الربح...)' : 'Collez la demande du client ou décrivez les travaux ici (ex: enduit, peinture, marge...)'}
                 className={cn("min-h-[100px] resize-none", isRTL && "text-right font-cairo")}
               />
             </div>
 
             <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-              <Button variant="outline" onClick={() => { setStep(inputType === 'photo' ? 'photo_guide' : 'select_input'); setUploadedFiles([]); setPastedText(''); }} className="flex-1">
+              <Button variant="outline" onClick={() => { setStep(inputType === 'photo' ? 'photo_guide' : 'select_input'); }} className="flex-1">
                 {isRTL ? 'رجوع' : 'Retour'}
               </Button>
               <Button
@@ -899,7 +900,7 @@ const SmartDevisPage = () => {
                 <ShieldCheck className="h-5 w-5 text-[#c5a028] shrink-0 mt-0.5" />
                 <p className={cn("text-[11px] text-muted-foreground leading-relaxed", isRTL && "text-right font-cairo")}>
                   {isRTL
-                    ? "تقدر تعدل أو تحذف أي بند بعد التحليل. إنت اللي عندك الكلمة الأخيرة."
+                    ? "تقدر تعدّل ولا تحذف أي بند من بعد التحليل. نت اللي عندك الكلمة الأخيرة."
                     : "Vous pourrez modifier ou supprimer chaque ligne après l'analyse. Vous gardez le contrôle total."}
                 </p>
               </div>
@@ -1257,7 +1258,7 @@ const SmartDevisPage = () => {
               onClick={() => setHelpGuide(null)}
               className="w-full font-cairo text-base py-6 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              فهمت خلاص، يلا نبدأ ✅
+              فهمت، يلا نبداو ✅
             </Button>
           </div>
         </DialogContent>

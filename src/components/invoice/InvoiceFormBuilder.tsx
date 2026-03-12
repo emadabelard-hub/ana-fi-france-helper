@@ -215,9 +215,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Auto-fetch next sequential number from DB
   useEffect(() => {
     if (!user) return;
-    const prefix = getDocPrefix(documentType);
-    // Only auto-fetch if docNumber is just the prefix (not user-edited or already fetched)
-    if (docNumber === prefix || !docNumber.startsWith(prefix) || docNumber === generateDocNumber(documentType)) {
+    const correctPrefix = getDocPrefix(documentType);
+    // Always auto-fetch if docNumber doesn't match the current document type prefix
+    // This ensures D- for devis and F- for facture, never mixed
+    const hasCorrectPrefix = docNumber.startsWith(correctPrefix);
+    const isJustPrefix = docNumber === correctPrefix;
+    const hasSuffix = hasCorrectPrefix && docNumber.length > correctPrefix.length;
+    
+    // Re-fetch if: wrong prefix, just prefix without number, or initial empty state
+    if (!hasCorrectPrefix || isJustPrefix || !hasSuffix) {
       setDocNumberLoading(true);
       fetchNextDocNumber(user.id, documentType).then((num) => {
         setDocNumber(num);
@@ -526,7 +532,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Build invoice data from form
   const buildInvoiceData = (): InvoiceData => {
     // Combine regular items with travel costs if enabled
-    const allItems = [...items.filter(item => item.designation_fr.trim() && item.unitPrice > 0)];
+    const allItems = [...items.filter(item => item.designation_fr.trim() && Number(item.unitPrice) >= 0)];
     
     // Add travel costs as a line item if enabled
     if (includeTravelCosts && travelPrice > 0) {
@@ -990,13 +996,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const saveToDocumentsComptables = async () => {
     if (!user) return;
 
-    if (!selectedClientId || !selectedChantierId) {
+    // Client name is required (either from selection or manual entry)
+    if (!clientName.trim()) {
       toast({
         variant: 'destructive',
         title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
         description: isRTL
-          ? 'يجب اختيار العميل والمشروع قبل الحفظ'
-          : 'Vous devez sélectionner un client et un projet avant de sauvegarder.',
+          ? 'يجب إدخال اسم العميل قبل الحفظ'
+          : 'Vous devez renseigner le nom du client avant de sauvegarder.',
       });
       return;
     }
@@ -1026,7 +1033,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         document_data: linkedDocumentData,
         status: 'finalized',
       };
-      insertData.chantier_id = selectedChantierId;
+      if (selectedChantierId) insertData.chantier_id = selectedChantierId;
 
       const { error } = await (supabase.from('documents_comptables') as any).insert(insertData);
       if (error) throw error;
@@ -2822,8 +2829,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
                 // Auto-generate document number if missing (AI handles this, not the user)
                 const currentPrefix = getDocPrefix(documentType);
-                const docSuffix = docNumber.startsWith(currentPrefix) ? docNumber.slice(currentPrefix.length).trim() : '';
-                if (!docSuffix && user) {
+                const hasValidDocNumber = docNumber.startsWith(currentPrefix) && docNumber.length > currentPrefix.length;
+                if (!hasValidDocNumber && user) {
                   // Auto-fetch and set the number, don't block the user
                   const autoNum = await fetchNextDocNumber(user.id, documentType);
                   setDocNumber(autoNum);

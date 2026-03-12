@@ -221,11 +221,17 @@ const InvoiceCreatorPage = () => {
         {documentType ? (
           <InvoiceFormBuilder 
             documentType={documentType}
-            onBack={handleBackToTypeSelection}
+            onBack={handleFormBack}
             prefillData={prefillData}
             onDocumentTypeChange={(type) => {
               setDocumentType(type);
-              setSearchParams({ type });
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                next.set('type', type);
+                if (isSmartDevisFlow) next.set('prefill', 'smart');
+                else next.delete('prefill');
+                return next;
+              });
             }}
           />
         ) : (

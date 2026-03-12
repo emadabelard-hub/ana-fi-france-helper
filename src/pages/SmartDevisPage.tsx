@@ -728,10 +728,17 @@ const SmartDevisPage = () => {
         const effectiveScope = withMaterial ? 'fourniture_et_pose' : 'main_oeuvre_seule';
         const fixedUnitPrice = resolveReferenceUnitPrice(item.designation_fr || '', unit, effectiveScope);
 
+        // Strip "Fourniture" from designations when material is not included
+        const rawFr = item.designation_fr || '';
+        const rawAr = item.designation_ar || '';
+        const { fr: finalFr, ar: finalAr } = !withMaterial
+          ? stripFourniture(rawFr, rawAr)
+          : { fr: rawFr, ar: rawAr };
+
         return {
           id: generateId(),
-          designation_fr: item.designation_fr || '',
-          designation_ar: item.designation_ar || '',
+          designation_fr: finalFr,
+          designation_ar: finalAr,
           quantity,
           unit,
           unitPrice: fixedUnitPrice,

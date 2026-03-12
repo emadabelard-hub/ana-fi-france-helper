@@ -117,6 +117,38 @@ const SmartDevisPage = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | null>(null);
 
+  const MaterialScopeSelector = ({ compact = false }: { compact?: boolean }) => (
+    <div className={cn("space-y-2 rounded-xl border border-border/50", compact ? "bg-card p-3" : "bg-muted/30 p-3")}>
+      <label className={cn("text-sm font-bold flex items-center gap-1.5", isRTL && "flex-row-reverse font-cairo")}>
+        🔧 {isRTL ? 'الدوفي يشمل المواد ولا مصنعية بس؟' : 'Souhaitez-vous inclure la fourniture des matériaux ou uniquement la main d\'œuvre ?'}
+      </label>
+      <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+        <button
+          onClick={() => setMaterialScope('fourniture_et_pose')}
+          className={cn(
+            "flex-1 text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
+            materialScope === 'fourniture_et_pose'
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background border-border hover:bg-muted"
+          )}
+        >
+          {isRTL ? '🏗️ فورنيتير + مصنعية' : '🏗️ Fourniture + Pose'}
+        </button>
+        <button
+          onClick={() => setMaterialScope('main_oeuvre_seule')}
+          className={cn(
+            "flex-1 text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
+            materialScope === 'main_oeuvre_seule'
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background border-border hover:bg-muted"
+          )}
+        >
+          {isRTL ? '🔧 مصنعية بس' : '🔧 Main d\'œuvre seule'}
+        </button>
+      </div>
+    </div>
+  );
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
@@ -533,6 +565,17 @@ const SmartDevisPage = () => {
   };
 
   const handleGenerateItems = async () => {
+    if (!materialScope) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'اختيار إجباري' : 'Choix obligatoire',
+        description: isRTL
+          ? 'لازم تختار: فورنيتير + مصنعية أو مصنعية بس قبل توليد الدوفي.'
+          : 'Veuillez choisir "Fourniture + Pose" ou "Main d\'œuvre seule" avant de générer le devis.',
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const payload = {
@@ -544,7 +587,7 @@ const SmartDevisPage = () => {
         materialQuality,
         discountPercent,
         profitMarginPercent,
-        materialScope: materialScope || 'fourniture_et_pose',
+        materialScope,
       };
 
       const data = await invokeAnalyzer(payload);
@@ -931,35 +974,7 @@ const SmartDevisPage = () => {
             )}
 
             {/* Material Scope Selector */}
-            <div className="space-y-2 bg-muted/30 rounded-xl p-3 border border-border/50">
-              <label className={cn("text-sm font-bold flex items-center gap-1.5", isRTL && "flex-row-reverse font-cairo")}>
-                🔧 {isRTL ? 'الدوفي يشمل المواد ولا مصنعية بس؟' : 'Souhaitez-vous inclure la fourniture des matériaux ou uniquement la main d\'œuvre ?'}
-              </label>
-              <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-                <button
-                  onClick={() => setMaterialScope('fourniture_et_pose')}
-                  className={cn(
-                    "flex-1 text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
-                    materialScope === 'fourniture_et_pose'
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background border-border hover:bg-muted"
-                  )}
-                >
-                  {isRTL ? '🏗️ فورنيتير + مصنعية' : '🏗️ Fourniture + Pose'}
-                </button>
-                <button
-                  onClick={() => setMaterialScope('main_oeuvre_seule')}
-                  className={cn(
-                    "flex-1 text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
-                    materialScope === 'main_oeuvre_seule'
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background border-border hover:bg-muted"
-                  )}
-                >
-                  {isRTL ? '🔧 مصنعية بس' : '🔧 Main d\'œuvre seule'}
-                </button>
-              </div>
-            </div>
+            <MaterialScopeSelector />
 
             {/* Pasted text area */}
             <div className="space-y-2">
@@ -1165,6 +1180,9 @@ const SmartDevisPage = () => {
               <div ref={chatEndRef} />
             </div>
           </ScrollArea>
+
+          {/* Material Scope Selector */}
+          <MaterialScopeSelector compact />
 
           {/* Preferences quick select */}
           <Card className="p-3">

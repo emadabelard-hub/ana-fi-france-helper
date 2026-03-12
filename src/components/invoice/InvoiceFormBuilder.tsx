@@ -1834,6 +1834,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 value={workSiteAddress}
                 onChange={(e) => setWorkSiteAddress(e.target.value)}
                 placeholder={isRTL ? '45 avenue de Lyon, 69001 Lyon' : '45 avenue de Lyon, 69001 Lyon'}
+                dir="ltr"
+                lang="fr"
+                className="text-left"
                 className={cn(isRTL && "text-right font-cairo")}
               />
               <p className={cn(

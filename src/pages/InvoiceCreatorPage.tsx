@@ -51,7 +51,7 @@ const InvoiceCreatorPage = () => {
   const [prefillData, setPrefillData] = useState<any>(null);
   
   // Navigation guard: block leaving when a document type is selected (form is active)
-  const hasUnsavedWork = !!documentType;
+  const hasUnsavedWork = !!documentType && !isSmartDevisFlow;
   const { showLeaveDialog, requestLeave, confirmLeave, cancelLeave } = useNavigationGuard(hasUnsavedWork);
   
   // Sync URL with document type and check for prefill data

@@ -37,6 +37,7 @@ const InvoiceCreatorPage = () => {
   const { user } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   // Get document type from URL or show modal

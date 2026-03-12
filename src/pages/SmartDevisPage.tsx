@@ -272,7 +272,19 @@ const SmartDevisPage = () => {
     if (didRestoreWizardRef.current) return;
 
     const routeState = (location.state as { restoreWizard?: boolean; wizardSnapshot?: SmartDevisWizardSnapshot } | null) ?? null;
-    let snapshot = routeState?.wizardSnapshot || null;
+
+    // Only restore if explicitly requested (e.g. returning from invoice creator)
+    if (!routeState?.restoreWizard) {
+      // Fresh navigation: clear stale wizard state so we start clean
+      try {
+        localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+      } catch {}
+      didRestoreWizardRef.current = true;
+      return;
+    }
+
+    let snapshot = routeState.wizardSnapshot || null;
 
     if (!snapshot) {
       try {
@@ -295,7 +307,7 @@ const SmartDevisPage = () => {
       (snapshot.lineItems?.length ?? 0) > 0 ||
       snapshot.step !== 'select_input';
 
-    if (!hasProgress && !routeState?.restoreWizard) return;
+    if (!hasProgress) return;
 
     didRestoreWizardRef.current = true;
     setStep(snapshot.step || 'select_input');

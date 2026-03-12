@@ -136,7 +136,7 @@ Tu analyses des images de chantiers, plans, croquis ou documents pour générer 
   * Nettoyage → نيتواياج (PAS تنظيف)
   * Fourniture → فورنيتير (PAS توريد)
   * Main d'œuvre → مصنعية (terme accepté car universel)
-  * Frais de chantier → مصاريف الشانتي
+  * Frais de chantier → مصاريف الشانتي (شانتي JAMAIS شانتييه)
   * Dépannage → داباج (PAS إصلاح)
   * Décapage → ديكاباج (PAS كشط)
 - Le but: le client lit le terme FRANÇAIS écrit en lettres arabes, tel qu'il est PRONONCÉ dans le métier.

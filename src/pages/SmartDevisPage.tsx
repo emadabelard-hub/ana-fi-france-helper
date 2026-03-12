@@ -65,7 +65,7 @@ interface ChatMsg {
 }
 
 type InputType = 'photo' | 'blueprint' | 'document' | null;
-type Step = 'select_input' | 'photo_guide' | 'upload' | 'chat' | 'review';
+type Step = 'ai_intro' | 'select_input' | 'photo_guide' | 'upload' | 'chat' | 'review';
 
 interface SmartDevisWizardSnapshot {
   step: Step;
@@ -159,7 +159,7 @@ const SmartDevisPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const didRestoreWizardRef = useRef(false);
 
-  const [step, setStep] = useState<Step>('select_input');
+  const [step, setStep] = useState<Step>('ai_intro');
   const [inputType, setInputType] = useState<InputType>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [pastedText, setPastedText] = useState<string>('');
@@ -194,7 +194,7 @@ const SmartDevisPage = () => {
   }, []);
 
   const resetWizardState = useCallback(() => {
-    setStep('select_input');
+    setStep('ai_intro');
     setInputType(null);
     setUploadedFiles([]);
     setPastedText('');
@@ -372,7 +372,7 @@ const SmartDevisPage = () => {
       !!snapshot.analysisData ||
       (snapshot.chatMessages?.length ?? 0) > 0 ||
       (snapshot.lineItems?.length ?? 0) > 0 ||
-      snapshot.step !== 'select_input';
+      (snapshot.step !== 'select_input' && snapshot.step !== 'ai_intro');
 
     if (!hasProgress) {
       clearSmartDevisStorage();
@@ -408,7 +408,7 @@ const SmartDevisPage = () => {
   useEffect(() => {
     const snapshot = buildWizardSnapshot();
     const hasProgress =
-      snapshot.step !== 'select_input' ||
+      (snapshot.step !== 'select_input' && snapshot.step !== 'ai_intro') ||
       snapshot.uploadedFiles.length > 0 ||
       !!snapshot.pastedText.trim() ||
       !!snapshot.analysisData ||
@@ -432,7 +432,7 @@ const SmartDevisPage = () => {
       try {
         const snapshot = buildWizardSnapshot();
         const hasProgress =
-          snapshot.step !== 'select_input' ||
+          (snapshot.step !== 'select_input' && snapshot.step !== 'ai_intro') ||
           snapshot.uploadedFiles.length > 0 ||
           !!snapshot.pastedText.trim() ||
           !!snapshot.analysisData ||
@@ -1033,6 +1033,15 @@ const SmartDevisPage = () => {
       return;
     }
 
+    if (step === 'select_input') {
+      setStep('ai_intro');
+      return;
+    }
+
+    if (step === 'ai_intro') {
+      navigate('/pro');
+      return;
+    }
     navigate('/pro');
   };
 
@@ -1144,6 +1153,43 @@ const SmartDevisPage = () => {
           {isRTL ? 'جديد' : 'Nouveau devis'}
         </Button>
       </div>
+
+      {/* AI Intro Screen */}
+      {step === 'ai_intro' && (
+        <div className="flex flex-col items-center justify-center space-y-6 py-6 animate-in fade-in duration-500">
+          {/* AI Icon */}
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+            <Sparkles size={40} className="text-primary" />
+          </div>
+
+          {/* Arabic Text */}
+          <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-sm" dir="rtl">
+            <h2 className="text-lg font-bold font-cairo text-foreground mb-3 text-center">
+              هل تعلم؟ 🤖
+            </h2>
+            <p className="text-base font-cairo text-foreground/90 leading-relaxed text-right" style={{ fontSize: '16px' }}>
+              نوافذ الدردشة لدينا ليست مجرد أداة كتابة، بل هي خبير تقني معك في الشانتي. يمكنك طرح أي سؤال حول الأسعار، النصائح الفنية، أو إدارة المواقع... إنها ذكاء اصطناعي حقيقي يعمل من أجلك.
+            </p>
+          </div>
+
+          {/* French Text */}
+          <div className="bg-muted/50 border border-border/50 rounded-xl p-4 max-w-md w-full">
+            <p className="text-sm text-muted-foreground leading-relaxed text-center" style={{ fontSize: '14px' }}>
+              Nos fenêtres de discussion sont là pour répondre à toutes vos questions concernant vos chantiers (conseils, prix, technique...). C'est une véritable intelligence artificielle à votre service.
+            </p>
+          </div>
+
+          {/* Start Button */}
+          <Button
+            size="lg"
+            className="w-full max-w-md text-lg font-bold font-cairo py-6 rounded-xl"
+            onClick={() => setStep('select_input')}
+          >
+            <Sparkles className="h-5 w-5 ml-2" />
+            ابدأ
+          </Button>
+        </div>
+      )}
 
       {/* Step 1: Select Input Type */}
       {step === 'select_input' && (

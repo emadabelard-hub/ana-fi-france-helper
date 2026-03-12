@@ -752,8 +752,12 @@ const SmartDevisPage = () => {
         items: lineItems.map(item => ({
           ...item,
           id: generateId(),
+          referenceUnitPrice: item.unitPrice,
+          materialsIncluded: materialScope === 'main_oeuvre_seule' ? false : true,
         })),
         source: 'smart_devis',
+        materialScope,
+        priceMode: 'reference_fixed',
         sitePhotos,
       };
 
@@ -761,10 +765,14 @@ const SmartDevisPage = () => {
 
       // Persist data + wizard snapshot as fallback for navigation state loss
       try {
-        sessionStorage.setItem('smartDevisData', JSON.stringify(prefillData));
-        sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, JSON.stringify(wizardSnapshot));
+        const prefillJson = JSON.stringify(prefillData);
+        const snapshotJson = JSON.stringify(wizardSnapshot);
+        sessionStorage.setItem('smartDevisData', prefillJson);
+        localStorage.setItem('smartDevisData', prefillJson);
+        sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, snapshotJson);
+        localStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, snapshotJson);
       } catch (e) {
-        console.warn('Failed to persist smart devis data to sessionStorage:', e);
+        console.warn('Failed to persist smart devis data to storage:', e);
       }
 
       navigate('/pro/invoice-creator?type=devis&prefill=smart', {

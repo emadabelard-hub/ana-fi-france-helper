@@ -208,6 +208,36 @@ const SmartDevisPage = () => {
     return Math.round(scopedPrice * 100) / 100;
   };
 
+  // Strip "Fourniture et pose" → "Pose" when material is excluded
+  const stripFourniture = (fr: string, ar: string): { fr: string; ar: string } => {
+    let cleanFr = fr
+      .replace(/Fourniture\s+et\s+pose\s+d[e']/gi, "Pose d'")
+      .replace(/Fourniture\s+et\s+pose\s+de\s+/gi, 'Pose de ')
+      .replace(/Fourniture\s+et\s+pose/gi, 'Pose')
+      .replace(/fourniture\s*,?\s*/gi, '')
+      .replace(/Fourniture\s+de\s+/gi, '');
+    let cleanAr = ar
+      .replace(/فورنيتير\s*و\s*بوز/g, 'بوز')
+      .replace(/فورنيتير\s*و\s*/g, '')
+      .replace(/فورنيتير/g, '');
+    return { fr: cleanFr.trim(), ar: cleanAr.trim() };
+  };
+
+  // Restore "Fourniture et pose" when toggling material back on
+  const restoreFourniture = (fr: string, ar: string): { fr: string; ar: string } => {
+    let cleanFr = fr;
+    if (/^Pose\s+d[e']/i.test(fr) && !/Fourniture/i.test(fr)) {
+      cleanFr = fr.replace(/^Pose\s+d[e']\s*/i, "Fourniture et pose de ");
+    } else if (/^Pose\s+de\s+/i.test(fr) && !/Fourniture/i.test(fr)) {
+      cleanFr = fr.replace(/^Pose\s+de\s+/i, 'Fourniture et pose de ');
+    }
+    let cleanAr = ar;
+    if (/^بوز\s/.test(ar) && !/فورنيتير/.test(ar)) {
+      cleanAr = 'فورنيتير و ' + ar;
+    }
+    return { fr: cleanFr, ar: cleanAr };
+  };
+
   const buildWizardSnapshot = useCallback((): SmartDevisWizardSnapshot => ({
     step,
     inputType,
@@ -242,7 +272,19 @@ const SmartDevisPage = () => {
     if (didRestoreWizardRef.current) return;
 
     const routeState = (location.state as { restoreWizard?: boolean; wizardSnapshot?: SmartDevisWizardSnapshot } | null) ?? null;
-    let snapshot = routeState?.wizardSnapshot || null;
+
+    // Only restore if explicitly requested (e.g. returning from invoice creator)
+    if (!routeState?.restoreWizard) {
+      // Fresh navigation: clear stale wizard state so we start clean
+      try {
+        localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+      } catch {}
+      didRestoreWizardRef.current = true;
+      return;
+    }
+
+    let snapshot = routeState.wizardSnapshot || null;
 
     if (!snapshot) {
       try {
@@ -265,7 +307,7 @@ const SmartDevisPage = () => {
       (snapshot.lineItems?.length ?? 0) > 0 ||
       snapshot.step !== 'select_input';
 
-    if (!hasProgress && !routeState?.restoreWizard) return;
+    if (!hasProgress) return;
 
     didRestoreWizardRef.current = true;
     setStep(snapshot.step || 'select_input');
@@ -698,10 +740,17 @@ const SmartDevisPage = () => {
         const effectiveScope = withMaterial ? 'fourniture_et_pose' : 'main_oeuvre_seule';
         const fixedUnitPrice = resolveReferenceUnitPrice(item.designation_fr || '', unit, effectiveScope);
 
+        // Strip "Fourniture" from designations when material is not included
+        const rawFr = item.designation_fr || '';
+        const rawAr = item.designation_ar || '';
+        const { fr: finalFr, ar: finalAr } = !withMaterial
+          ? stripFourniture(rawFr, rawAr)
+          : { fr: rawFr, ar: rawAr };
+
         return {
           id: generateId(),
-          designation_fr: item.designation_fr || '',
-          designation_ar: item.designation_ar || '',
+          designation_fr: finalFr,
+          designation_ar: finalAr,
           quantity,
           unit,
           unitPrice: fixedUnitPrice,
@@ -733,15 +782,20 @@ const SmartDevisPage = () => {
 
   const removeItem = (id: string) => setLineItems(prev => prev.filter(i => i.id !== id));
 
-  // Toggle withMaterial for a line item in partiel mode — recalculates price
+  // Toggle withMaterial for a line item in partiel mode — recalculates price + designation
   const toggleItemMaterial = (id: string) => {
     setLineItems(prev => prev.map(item => {
       if (item.id !== id) return item;
       const newWithMaterial = !item.withMaterial;
       const effectiveScope = newWithMaterial ? 'fourniture_et_pose' : 'main_oeuvre_seule';
       const newPrice = resolveReferenceUnitPrice(item.designation_fr, item.unit, effectiveScope);
+      const { fr, ar } = newWithMaterial
+        ? restoreFourniture(item.designation_fr, item.designation_ar)
+        : stripFourniture(item.designation_fr, item.designation_ar);
       return {
         ...item,
+        designation_fr: fr,
+        designation_ar: ar,
         withMaterial: newWithMaterial,
         unitPrice: newPrice,
         total: item.quantity * newPrice,

@@ -83,6 +83,12 @@ interface SmartDevisWizardSnapshot {
   materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null;
 }
 
+interface SmartDevisRouteState {
+  restoreWizard?: boolean;
+  wizardSnapshot?: SmartDevisWizardSnapshot;
+  forceFreshSession?: boolean;
+}
+
 const MAX_FILES = 10;
 const SMART_DEVIS_WIZARD_STATE_KEY = 'smartDevisWizardState';
 const SMART_DEVIS_SKIP_RESTORE_ONCE_KEY = 'smartDevisSkipRestoreOnce';

@@ -65,7 +65,7 @@ interface ChatMsg {
 }
 
 type InputType = 'photo' | 'blueprint' | 'document' | null;
-type Step = 'select_input' | 'photo_guide' | 'upload' | 'chat' | 'review';
+type Step = 'ai_intro' | 'select_input' | 'photo_guide' | 'upload' | 'chat' | 'review';
 
 interface SmartDevisWizardSnapshot {
   step: Step;

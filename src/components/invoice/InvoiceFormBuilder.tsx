@@ -433,43 +433,21 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, estimatedStartDate, estimatedDuration]);
 
   // Handle prefill data from quote-to-invoice conversion
+  // STRICT: Never auto-fill client info. User must select or type manually.
   useEffect(() => {
     if (prefillData) {
-      console.log('Prefilling invoice with extracted data:', prefillData);
+      console.log('Prefilling invoice with extracted data (client fields left empty for manual input):', prefillData);
       
-      // Set client info
-      if (prefillData.clientName) {
-        setClientName(prefillData.clientName);
-      }
-      if (prefillData.clientAddress) {
-        setClientAddress(prefillData.clientAddress);
-      }
-      if (prefillData.clientPhone) {
-        setClientPhone(prefillData.clientPhone);
-      }
-      if (prefillData.clientEmail) {
-        setClientEmail(prefillData.clientEmail);
-      }
-      if (prefillData.clientSiren) {
-        setClientSiren(prefillData.clientSiren);
-      }
-      if (prefillData.clientTvaIntra) {
-        setClientTvaIntra(prefillData.clientTvaIntra);
-      }
-      if (prefillData.clientIsB2B) {
-        setClientIsB2B(prefillData.clientIsB2B);
-      }
-      const canPrefillLinkedEntities = prefillData.source !== 'smart_devis';
-      if (canPrefillLinkedEntities && prefillData.selectedClientId) {
-        setSelectedClientId(prefillData.selectedClientId);
-      }
-      if (canPrefillLinkedEntities && prefillData.selectedChantierId) {
-        setSelectedChantierId(prefillData.selectedChantierId);
-      }
-      if (!canPrefillLinkedEntities) {
-        setSelectedClientId('');
-        setSelectedChantierId('');
-      }
+      // NEVER auto-fill client fields — user must choose or register manually
+      setSelectedClientId('');
+      setSelectedChantierId('');
+      setClientName('');
+      setClientAddress('');
+      setClientPhone('');
+      setClientEmail('');
+      setClientSiren('');
+      setClientTvaIntra('');
+      setClientIsB2B(false);
       if (prefillData.workSiteAddress) {
         setWorkSiteAddress(prefillData.workSiteAddress);
         setWorkSiteSameAsClient(false);

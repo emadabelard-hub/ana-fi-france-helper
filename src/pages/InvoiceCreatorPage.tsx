@@ -40,8 +40,9 @@ const InvoiceCreatorPage = () => {
   // Get document type from URL or show modal
   const urlDocType = searchParams.get('type') as 'devis' | 'facture' | null;
   const prefillSource = searchParams.get('prefill');
-  const isSmartDevisFlow = prefillSource === 'smart';
   const smartDevisReturnState = (location.state as { smartDevisReturnState?: { restoreWizard?: boolean; wizardSnapshot?: any } } | null)?.smartDevisReturnState;
+  const smartDevisDataFromState = (location.state as { smartDevisData?: any } | null)?.smartDevisData;
+  const isSmartDevisFlow = prefillSource === 'smart' || !!smartDevisReturnState || !!smartDevisDataFromState;
   
   const [documentType, setDocumentType] = useState<'devis' | 'facture' | null>(urlDocType);
   const [showTypeModal, setShowTypeModal] = useState(!urlDocType);
@@ -75,7 +76,7 @@ const InvoiceCreatorPage = () => {
     }
     
     // Check for prefill data from Smart Devis
-    if (prefillSource === 'smart') {
+    if (isSmartDevisFlow) {
       const stateData = (location.state as any)?.smartDevisData;
       if (stateData) {
         setPrefillData(stateData);
@@ -92,14 +93,20 @@ const InvoiceCreatorPage = () => {
         }
       }
     }
-  }, [urlDocType, documentType, prefillSource, location.state]);
+  }, [urlDocType, documentType, prefillSource, location.state, isSmartDevisFlow]);
   
   // Handle document type selection
   const handleTypeSelect = (type: 'devis' | 'facture') => {
     setDocumentType(type);
     setShowTypeModal(false);
     // Update URL
-    setSearchParams({ type });
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('type', type);
+      if (isSmartDevisFlow) next.set('prefill', 'smart');
+      else next.delete('prefill');
+      return next;
+    });
   };
   
   
@@ -107,11 +114,21 @@ const InvoiceCreatorPage = () => {
   const handleNavigateBack = () => {
     requestLeave(() => {
       if (isSmartDevisFlow) {
+        if (window.history.length > 1) {
+          navigate(-1);
+          return;
+        }
         navigate('/pro/smart-devis', {
           state: smartDevisReturnState || { restoreWizard: true },
         });
         return;
       }
+
+      if (window.history.length > 1) {
+        navigate(-1);
+        return;
+      }
+
       navigate('/pro');
     });
   };
@@ -123,6 +140,14 @@ const InvoiceCreatorPage = () => {
       setShowTypeModal(true);
       setSearchParams({});
     });
+  };
+
+  const handleFormBack = () => {
+    if (isSmartDevisFlow) {
+      handleNavigateBack();
+      return;
+    }
+    handleBackToTypeSelection();
   };
   
   // Show loading while profile loads

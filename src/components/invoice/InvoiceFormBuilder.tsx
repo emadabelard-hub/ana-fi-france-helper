@@ -459,11 +459,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       if (prefillData.clientIsB2B) {
         setClientIsB2B(prefillData.clientIsB2B);
       }
-      if (prefillData.selectedClientId) {
+      const canPrefillLinkedEntities = prefillData.source !== 'smart_devis';
+      if (canPrefillLinkedEntities && prefillData.selectedClientId) {
         setSelectedClientId(prefillData.selectedClientId);
       }
-      if (prefillData.selectedChantierId) {
+      if (canPrefillLinkedEntities && prefillData.selectedChantierId) {
         setSelectedChantierId(prefillData.selectedChantierId);
+      }
+      if (!canPrefillLinkedEntities) {
+        setSelectedClientId('');
+        setSelectedChantierId('');
       }
       if (prefillData.workSiteAddress) {
         setWorkSiteAddress(prefillData.workSiteAddress);

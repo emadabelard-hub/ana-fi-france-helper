@@ -666,8 +666,8 @@ const SmartDevisPage = () => {
         variant: 'destructive',
         title: isRTL ? 'اختيار إجباري' : 'Choix obligatoire',
         description: isRTL
-          ? 'لازم تختار: فورنيتير + مصنعية أو مصنعية بس قبل توليد الدوفي.'
-          : 'Veuillez choisir "Fourniture + Pose" ou "Main d\'œuvre seule" avant de générer le devis.',
+          ? 'لازم تختار: مواد + مصنعية، مصنعية فقط، أو جزئي قبل توليد الدوفي.'
+          : 'Veuillez choisir "Matériaux inclus", "Main d\'œuvre uniquement" ou "Partiel" avant de générer le devis.',
       });
       return;
     }
@@ -688,16 +688,22 @@ const SmartDevisPage = () => {
 
       const data = await invokeAnalyzer(payload);
 
-      const items: LineItem[] = (data.items || data.suggestedItems || []).map((item: any) => ({
-        id: generateId(),
-        designation_fr: item.designation_fr || '',
-        designation_ar: item.designation_ar || '',
-        quantity: item.quantity || 1,
-        unit: item.unit || 'u',
-        unitPrice: item.unitPrice || 0,
-        total: (item.quantity || 1) * (item.unitPrice || 0),
-        category: item.category,
-      }));
+      const items: LineItem[] = (data.items || data.suggestedItems || []).map((item: any) => {
+        const quantity = Number(item.quantity || 1);
+        const unit = item.unit || 'u';
+        const fixedUnitPrice = resolveReferenceUnitPrice(item.designation_fr || '', unit, materialScope);
+
+        return {
+          id: generateId(),
+          designation_fr: item.designation_fr || '',
+          designation_ar: item.designation_ar || '',
+          quantity,
+          unit,
+          unitPrice: fixedUnitPrice,
+          total: quantity * fixedUnitPrice,
+          category: item.category,
+        };
+      });
 
       setLineItems(items);
       setStep('review');

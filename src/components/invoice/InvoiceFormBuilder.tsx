@@ -336,8 +336,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       if (!draft) draft = loadDraft();
       
       if (draft) {
-        setClientName(draft.clientName || '');
-        setClientAddress(draft.clientAddress || '');
+        // STRICT: Never auto-restore client fields from draft.
+        // User must always select or type client info manually.
+        setClientName('');
+        setClientAddress('');
+        setClientPhone('');
+        setClientEmail('');
+        setClientSiren('');
+        setClientTvaIntra('');
+        setClientIsB2B(false);
+        setSelectedClientId('');
+        setSelectedChantierId('');
+        
         setWorkSiteSameAsClient(draft.workSiteSameAsClient);
         setWorkSiteAddress(draft.workSiteAddress || '');
         setIncludeTravelCosts(draft.includeTravelCosts);
@@ -357,12 +367,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         setMoyenPaiement(draft.moyenPaiement || 'virement');
         if (draft.docNumber) setDocNumber(draft.docNumber);
         if (draft.items?.length) setItems(draft.items);
-        // Restore new fields
-        if (draft.clientSiren) setClientSiren(draft.clientSiren);
-        if ((draft as any).clientPhone) setClientPhone((draft as any).clientPhone);
-        if ((draft as any).clientEmail) setClientEmail((draft as any).clientEmail);
-        if ((draft as any).clientTvaIntra) setClientTvaIntra((draft as any).clientTvaIntra);
-        if ((draft as any).clientIsB2B) setClientIsB2B((draft as any).clientIsB2B);
         if (draft.natureOperation) setNatureOperation(draft.natureOperation);
         if (draft.assureurName) setAssureurName(draft.assureurName);
         if (draft.assureurAddress) setAssureurAddress(draft.assureurAddress);

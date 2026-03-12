@@ -837,7 +837,7 @@ const SmartDevisPage = () => {
             {/* Material Scope Selector */}
             <div className="space-y-2 bg-muted/30 rounded-xl p-3 border border-border/50">
               <label className={cn("text-sm font-bold flex items-center gap-1.5", isRTL && "flex-row-reverse font-cairo")}>
-                🔧 {isRTL ? 'واش الدوفي يشمل المواد ولا مصنعية بوحدها؟' : 'Souhaitez-vous inclure la fourniture des matériaux ou uniquement la main d\'œuvre ?'}
+                🔧 {isRTL ? 'الدوفي يشمل المواد ولا مصنعية بس؟' : 'Souhaitez-vous inclure la fourniture des matériaux ou uniquement la main d\'œuvre ?'}
               </label>
               <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
                 <button

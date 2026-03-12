@@ -347,7 +347,7 @@ const InvoiceCreatorPage = () => {
       </Dialog>
 
       {/* Navigation Guard Dialog */}
-      <AlertDialog open={showLeaveDialog} onOpenChange={(open) => !open && cancelLeave()}>
+      <AlertDialog open={showLeaveDialog}>
         <AlertDialogContent className={cn(isRTL && "font-cairo")}>
           <AlertDialogHeader>
             <AlertDialogTitle className={cn(isRTL && "text-right")}>

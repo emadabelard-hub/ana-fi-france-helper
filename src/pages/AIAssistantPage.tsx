@@ -324,7 +324,7 @@ const AIAssistantPage = () => {
       </div>
 
       {/* Input - positioned above bottom nav */}
-      <div className="p-3 border-t border-border bg-background shrink-0 mb-14" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="p-3 border-t border-border bg-background shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <div className="flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
           <textarea
             value={input}

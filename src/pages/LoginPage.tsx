@@ -149,7 +149,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className={cn("min-h-screen flex items-center justify-center bg-background p-4", isRTL && "font-cairo")} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="ltr">
       <Card className="w-full max-w-md border-border/50 shadow-xl">
         <CardHeader className="text-center space-y-2">
           <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground font-black text-xl mx-auto shadow-lg">
@@ -157,32 +157,32 @@ const LoginPage = () => {
           </div>
           <CardTitle className="text-xl font-bold">
             {isForgotPassword
-              ? (isRTL ? "نسيت كلمة المرور" : "Mot de passe oublié")
+              ? "Mot de passe oublié"
               : isLogin
-                ? (isRTL ? "تسجيل الدخول" : "Connexion")
-                : (isRTL ? "إنشاء حساب" : "Créer un compte")}
+                ? "Connexion"
+                : "Créer un compte"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {isForgotPassword ? (
             resetEmailSent ? (
               <div className="text-center space-y-4">
-                <p className="text-foreground font-bold">✉️ {isRTL ? "تحقق من بريدك الإلكتروني" : "Vérifiez votre boîte mail"}</p>
+                <p className="text-foreground font-bold">✉️ Vérifiez votre boîte mail</p>
                 <Button variant="outline" className="w-full" onClick={() => { setIsForgotPassword(false); setResetEmailSent(false); }}>
-                  {isRTL ? "رجوع" : "Retour"}
+                  Retour
                 </Button>
               </div>
             ) : (
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="font-bold">{isRTL ? "الإيميل" : "Email"}</Label>
-                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required className="text-[16px]" />
+                  <Label className="font-bold">Email</Label>
+                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required className="text-[16px]" dir="ltr" />
                 </div>
                 <Button type="submit" className="w-full font-bold" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRTL ? "إرسال رابط التعيين" : "Envoyer le lien")}
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Envoyer le lien"}
                 </Button>
                 <button type="button" onClick={() => setIsForgotPassword(false)} className="w-full text-center text-sm text-primary underline font-bold">
-                  {isRTL ? "رجوع" : "Retour"}
+                  Retour
                 </button>
               </form>
             )
@@ -190,11 +190,11 @@ const LoginPage = () => {
             <>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="font-bold">{isRTL ? "الإيميل" : "Email"}</Label>
-                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required className="text-[16px]" />
+                  <Label className="font-bold">Email</Label>
+                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required className="text-[16px]" dir="ltr" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-bold">{isRTL ? "كلمة المرور" : "Mot de passe"}</Label>
+                  <Label className="font-bold">Mot de passe</Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? 'text' : 'password'}
@@ -204,28 +204,29 @@ const LoginPage = () => {
                       required
                       minLength={6}
                       className="text-[16px]"
+                      dir="ltr"
                     />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className={cn("absolute top-1/2 -translate-y-1/2 text-muted-foreground", isRTL ? "left-3" : "right-3")} tabIndex={-1}>
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute top-1/2 -translate-y-1/2 text-muted-foreground right-3" tabIndex={-1}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                   {isLogin && (
                     <button type="button" onClick={() => setIsForgotPassword(true)} className="text-xs text-primary underline font-bold">
-                      {isRTL ? "نسيت كلمة المرور؟" : "Mot de passe oublié ?"}
+                      Mot de passe oublié ?
                     </button>
                   )}
                 </div>
                 {!isLogin && (
                   <div className="space-y-2">
-                    <Label className="font-bold">{isRTL ? "تأكيد كلمة المرور" : "Confirmer"}</Label>
-                    <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" required className="text-[16px]" />
+                    <Label className="font-bold">Confirmer</Label>
+                    <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" required className="text-[16px]" dir="ltr" />
                   </div>
                 )}
                 <Button type="submit" className="w-full font-bold h-12 text-[16px]" disabled={isLoading}>
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                     <>
-                      {isLogin ? (isRTL ? "تسجيل الدخول" : "Se connecter") : (isRTL ? "إنشاء حساب" : "Créer un compte")}
-                      <ArrowRight className={cn("h-4 w-4 ml-2", isRTL && "rotate-180 mr-2 ml-0")} />
+                      {isLogin ? "Se connecter" : "Créer un compte"}
+                      <ArrowRight className="h-4 w-4 ml-2" />
                     </>
                   )}
                 </Button>
@@ -234,7 +235,7 @@ const LoginPage = () => {
               <div className="relative">
                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">{isRTL ? "أو" : "ou"}</span>
+                  <span className="bg-card px-2 text-muted-foreground">ou</span>
                 </div>
               </div>
 
@@ -249,12 +250,8 @@ const LoginPage = () => {
                     try {
                       const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim().toLowerCase() });
                       toast({
-                        title: error
-                          ? (isRTL ? "خطأ" : "Erreur")
-                          : (isRTL ? "تم الإرسال ✓" : "Lien envoyé ✓"),
-                        description: error
-                          ? error.message
-                          : (isRTL ? "تحقق من بريدك الإلكتروني" : "Vérifiez votre boîte mail"),
+                        title: error ? "Erreur" : "Lien envoyé ✓",
+                        description: error ? error.message : "Vérifiez votre boîte mail",
                         variant: error ? "destructive" : "default",
                       });
                     } finally {
@@ -262,7 +259,7 @@ const LoginPage = () => {
                     }
                   }}
                 >
-                  {resendingConfirm ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRTL ? "إعادة إرسال رابط التأكيد" : "Renvoyer le lien de confirmation")}
+                  {resendingConfirm ? <Loader2 className="h-4 w-4 animate-spin" /> : "Renvoyer le lien de confirmation"}
                 </Button>
               )}
 
@@ -270,15 +267,15 @@ const LoginPage = () => {
                 {isGuestLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                   <>
                     <UserRound className="h-4 w-4" />
-                    {isRTL ? "تجربة سريعة بدون حساب" : "Essai rapide (sans compte)"}
+                    Essai rapide (sans compte)
                   </>
                 )}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
-                {isLogin ? (isRTL ? "معندكش حساب؟ " : "Pas de compte ? ") : (isRTL ? "عندك حساب؟ " : "Déjà un compte ? ")}
+                {isLogin ? "Pas de compte ? " : "Déjà un compte ? "}
                 <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-primary underline font-bold">
-                  {isLogin ? (isRTL ? "إنشاء حساب" : "Créer un compte") : (isRTL ? "دخول" : "Se connecter")}
+                  {isLogin ? "Créer un compte" : "Se connecter"}
                 </button>
               </p>
             </>

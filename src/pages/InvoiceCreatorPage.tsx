@@ -12,6 +12,8 @@ import SecurityBadge from '@/components/shared/SecurityBadge';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
+import { useToast } from '@/hooks/use-toast';
+import { clearDraft } from '@/lib/invoiceDraftStorage';
 import {
   Dialog,
   DialogContent,

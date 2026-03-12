@@ -51,6 +51,7 @@ interface PrefillData {
   notes?: string;
   source?: string;
   sitePhotos?: Array<{ data: string; name: string }>;
+  descriptionChantier?: string;
 }
 
 interface InvoiceFormBuilderProps {

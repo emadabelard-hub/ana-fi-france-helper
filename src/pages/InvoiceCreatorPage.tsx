@@ -103,9 +103,17 @@ const InvoiceCreatorPage = () => {
   };
   
   
-  // Handle navigation back to Pro page (guarded)
+  // Handle navigation back (guarded)
   const handleNavigateBack = () => {
-    requestLeave(() => navigate('/pro'));
+    requestLeave(() => {
+      if (isSmartDevisFlow) {
+        navigate('/pro/smart-devis', {
+          state: smartDevisReturnState || { restoreWizard: true },
+        });
+        return;
+      }
+      navigate('/pro');
+    });
   };
   
   // Handle back to type selection (guarded)

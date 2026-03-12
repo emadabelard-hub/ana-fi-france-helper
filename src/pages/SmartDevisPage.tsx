@@ -1097,9 +1097,17 @@ const SmartDevisPage = () => {
           {INPUT_TYPES.map(({ type, emoji, title, titleFr, desc, gradient }) => (
             <div key={type} className="space-y-1">
               <Card
-                className={cn("cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] border-none overflow-hidden", `bg-gradient-to-r ${gradient}`)}
+                className={cn("cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] border-none overflow-hidden relative", `bg-gradient-to-r ${gradient}`)}
                 onClick={() => handleInputTypeSelect(type)}
               >
+                {/* جديد Badge */}
+                <span className={cn(
+                  "absolute top-2 font-cairo font-bold text-[11px] px-2.5 py-0.5 rounded-md z-10",
+                  "bg-[#FF9800] text-white dark:bg-[#E53935] dark:text-white shadow-sm",
+                  isRTL ? "left-2" : "right-2"
+                )}>
+                  جديد
+                </span>
                 <CardContent className="p-0">
                   <div className={cn("flex items-center gap-4 p-5", isRTL && "flex-row-reverse")}>
                     <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center shrink-0">

@@ -770,15 +770,20 @@ const SmartDevisPage = () => {
 
   const removeItem = (id: string) => setLineItems(prev => prev.filter(i => i.id !== id));
 
-  // Toggle withMaterial for a line item in partiel mode — recalculates price
+  // Toggle withMaterial for a line item in partiel mode — recalculates price + designation
   const toggleItemMaterial = (id: string) => {
     setLineItems(prev => prev.map(item => {
       if (item.id !== id) return item;
       const newWithMaterial = !item.withMaterial;
       const effectiveScope = newWithMaterial ? 'fourniture_et_pose' : 'main_oeuvre_seule';
       const newPrice = resolveReferenceUnitPrice(item.designation_fr, item.unit, effectiveScope);
+      const { fr, ar } = newWithMaterial
+        ? restoreFourniture(item.designation_fr, item.designation_ar)
+        : stripFourniture(item.designation_fr, item.designation_ar);
       return {
         ...item,
+        designation_fr: fr,
+        designation_ar: ar,
         withMaterial: newWithMaterial,
         unitPrice: newPrice,
         total: item.quantity * newPrice,

@@ -46,28 +46,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initSession = async () => {
       setIsLoading(true);
 
-      // If user explicitly signed out, don't auto-create anonymous session
-      if (sessionStorage.getItem('explicit_signout') === 'true') {
-        sessionStorage.removeItem('explicit_signout');
+      // Safety timeout — never stay on splash screen forever
+      const safetyTimer = setTimeout(() => {
         setIsLoading(false);
-        return;
-      }
+      }, 5000);
 
-      const { data: { session: existing } } = await supabase.auth.getSession();
-      if (existing) {
-        setSession(existing);
-        setUser(existing.user);
-        setIsLoading(false);
-        return;
-      }
+      try {
+        // If user explicitly signed out, don't auto-create anonymous session
+        if (sessionStorage.getItem('explicit_signout') === 'true') {
+          sessionStorage.removeItem('explicit_signout');
+          setIsLoading(false);
+          clearTimeout(safetyTimer);
+          return;
+        }
 
-      // No session found — create anonymous guest session for public access
-      const { error } = await supabase.auth.signInAnonymously();
-      if (error) {
-        console.warn('Anonymous sign-in failed:', error.message);
+        const { data: { session: existing } } = await supabase.auth.getSession();
+        if (existing) {
+          setSession(existing);
+          setUser(existing.user);
+          setIsLoading(false);
+          clearTimeout(safetyTimer);
+          return;
+        }
+
+        // No session found — create anonymous guest session for public access
+        const { error } = await supabase.auth.signInAnonymously();
+        if (error) {
+          console.warn('Anonymous sign-in failed:', error.message);
+          setIsLoading(false);
+          clearTimeout(safetyTimer);
+        }
+        // onAuthStateChange will finalize state on success
+      } catch (err) {
+        console.warn('Auth init failed:', err);
         setIsLoading(false);
+        clearTimeout(safetyTimer);
       }
-      // onAuthStateChange will finalize state on success
     };
 
     initSession();

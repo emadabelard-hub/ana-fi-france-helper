@@ -1080,7 +1080,7 @@ const SmartDevisPage = () => {
             variant="outline"
             size="sm"
             onClick={handleFullReset}
-            className="text-xs font-bold gap-1.5"
+            className="text-xs font-bold gap-1.5 bg-[#FF9800] text-white border-[#FF9800] hover:bg-[#F57C00] hover:text-white dark:bg-[#E53935] dark:text-white dark:border-[#E53935] dark:hover:bg-[#C62828] dark:hover:text-white"
           >
             <Plus className="h-3.5 w-3.5" />
             {isRTL ? 'جديد' : 'Nouveau'}

@@ -110,20 +110,30 @@ const InvoiceCreatorPage = () => {
   };
   
   
+  const buildSmartDevisReturnState = () => {
+    if (smartDevisReturnState) return smartDevisReturnState;
+
+    try {
+      const raw = sessionStorage.getItem('smartDevisWizardState');
+      const wizardSnapshot = raw ? JSON.parse(raw) : null;
+      return wizardSnapshot
+        ? { restoreWizard: true, wizardSnapshot }
+        : { restoreWizard: true };
+    } catch {
+      return { restoreWizard: true };
+    }
+  };
+
   // Handle navigation back (guarded)
   const handleNavigateBack = () => {
-    requestLeave(() => {
-      if (isSmartDevisFlow) {
-        if (window.history.length > 1) {
-          navigate(-1);
-          return;
-        }
-        navigate('/pro/smart-devis', {
-          state: smartDevisReturnState || { restoreWizard: true },
-        });
-        return;
-      }
+    if (isSmartDevisFlow) {
+      navigate('/pro/smart-devis', {
+        state: buildSmartDevisReturnState(),
+      });
+      return;
+    }
 
+    requestLeave(() => {
       if (window.history.length > 1) {
         navigate(-1);
         return;

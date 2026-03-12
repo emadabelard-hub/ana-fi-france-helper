@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 
 /**
  * Prevents accidental navigation away from a page with unsaved changes.
@@ -9,11 +9,13 @@ import { useEffect, useCallback, useState } from 'react';
 export const useNavigationGuard = (shouldBlock: boolean) => {
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const isLeavingRef = useRef(false);
 
   // Browser beforeunload
   useEffect(() => {
     if (!shouldBlock) return;
     const handler = (e: BeforeUnloadEvent) => {
+      if (isLeavingRef.current) return;
       e.preventDefault();
       e.returnValue = '';
     };
@@ -29,6 +31,8 @@ export const useNavigationGuard = (shouldBlock: boolean) => {
     window.history.pushState({ guard: true }, '');
     
     const handlePopState = (e: PopStateEvent) => {
+      // If user confirmed leave, don't block
+      if (isLeavingRef.current) return;
       // Re-push to prevent leaving
       window.history.pushState({ guard: true }, '');
       setShowLeaveDialog(true);
@@ -49,6 +53,7 @@ export const useNavigationGuard = (shouldBlock: boolean) => {
       startX = e.touches[0].clientX;
     };
     const handleTouchMove = (e: TouchEvent) => {
+      if (isLeavingRef.current) return;
       // If swipe started from edge (< 30px), prevent it
       if (startX < 30 || startX > window.innerWidth - 30) {
         e.preventDefault();
@@ -73,6 +78,7 @@ export const useNavigationGuard = (shouldBlock: boolean) => {
   }, [shouldBlock]);
 
   const confirmLeave = useCallback(() => {
+    isLeavingRef.current = true;
     setShowLeaveDialog(false);
     if (pendingAction) {
       pendingAction();

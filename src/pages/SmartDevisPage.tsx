@@ -860,7 +860,7 @@ const SmartDevisPage = () => {
                       : "bg-background border-border hover:bg-muted"
                   )}
                 >
-                  {isRTL ? '🔧 غير مصنعية' : '🔧 Main d\'œuvre seule'}
+                  {isRTL ? '🔧 مصنعية بس' : '🔧 Main d\'œuvre seule'}
                 </button>
               </div>
             </div>

@@ -28,8 +28,8 @@ const navItems = [
   {
     path: '/expenses',
     icon: Receipt,
-    labelAr: 'حسابات',
-    labelFr: 'Dépenses',
+    labelAr: 'حساباتي',
+    labelFr: 'Comptes',
     color: 'text-orange-400',
     activeBg: 'bg-orange-400/15',
     dotColor: 'bg-orange-400',
@@ -90,7 +90,8 @@ const BottomNavigation = () => {
         {items.map((item) => {
           const isActive =
             location.pathname === item.path ||
-            (item.path === '/' && location.pathname === '/home');
+            (item.path === '/' && location.pathname === '/home') ||
+            (item.path === '/expenses' && location.pathname === '/accounts');
           const Icon = item.icon;
 
           return (

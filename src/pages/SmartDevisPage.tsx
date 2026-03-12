@@ -1419,6 +1419,12 @@ const SmartDevisPage = () => {
                 {isRTL ? 'رجوع للدردشة' : 'Retour au chat'}
               </span>
             </Button>
+            <Button variant="outline" className="w-full" onClick={handleResetAnalysis}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              <span className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'إعادة التحليل من الأول' : 'Reset Analysis'}
+              </span>
+            </Button>
           </div>
         </div>
       )}

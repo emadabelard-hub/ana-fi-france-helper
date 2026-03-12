@@ -583,9 +583,9 @@ const SmartDevisPage = () => {
   };
 
   const INPUT_TYPES = [
-    { type: 'photo' as const, icon: Camera, emoji: '📸', title: 'صورة الشانتي', titleFr: 'Photo du chantier', desc: 'صوّر الشغل وأنا أقدّر', gradient: 'from-blue-500 to-blue-600' },
-    { type: 'blueprint' as const, icon: Map, emoji: '🗺️', title: 'خريطة أو كروكي', titleFr: 'Plan ou croquis', desc: 'ارفع المخطط وأنا أقرأ المقاسات', gradient: 'from-emerald-500 to-emerald-600' },
-    { type: 'document' as const, icon: FileText, emoji: '📄', title: 'مستند أو نص', titleFr: 'Document ou texte', desc: 'ارفع PDF أو الصق نص من إيميل', gradient: 'from-amber-500 to-amber-600' },
+    { type: 'photo' as const, icon: Camera, emoji: '📸', title: 'صورة الشانتي', titleFr: 'Photo du chantier', desc: 'صوّر الخدمة وأنا نقدّر', gradient: 'from-blue-500 to-blue-600' },
+    { type: 'blueprint' as const, icon: Map, emoji: '🗺️', title: 'خريطة ولا كروكي', titleFr: 'Plan ou croquis', desc: 'طلّع المخطط وأنا نقرا المقاسات', gradient: 'from-emerald-500 to-emerald-600' },
+    { type: 'document' as const, icon: FileText, emoji: '📄', title: 'مستند ولا نص', titleFr: 'Document ou texte', desc: 'طلّع PDF ولا نسخ نص من إيميل', gradient: 'from-amber-500 to-amber-600' },
   ];
 
   return (

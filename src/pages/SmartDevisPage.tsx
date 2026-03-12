@@ -716,7 +716,7 @@ const SmartDevisPage = () => {
             >
               <Camera className="h-4 w-4 mr-2" />
               <span className={cn(isRTL && "font-cairo")}>
-                {isRTL ? 'فهمت، يلا نبدأ ✅' : 'Compris, commencer ✅'}
+                {isRTL ? 'فهمت، يلا نبداو ✅' : 'Compris, commencer ✅'}
               </span>
             </Button>
           </div>

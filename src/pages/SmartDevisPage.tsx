@@ -1258,7 +1258,7 @@ const SmartDevisPage = () => {
               onClick={() => setHelpGuide(null)}
               className="w-full font-cairo text-base py-6 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              فهمت، يلا نبداو ✅
+              فهمت خلاص، يلا نبدأ ✅
             </Button>
           </div>
         </DialogContent>

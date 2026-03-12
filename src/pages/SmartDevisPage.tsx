@@ -984,6 +984,33 @@ const SmartDevisPage = () => {
     });
   };
 
+  const handleFullReset = () => {
+    setStep('select_input');
+    setInputType(null);
+    setUploadedFiles([]);
+    setPastedText('');
+    setAnalysisData(null);
+    setChatMessages([]);
+    setChatInput('');
+    setLineItems([]);
+    setMaterialQuality('standard');
+    setDiscountPercent(0);
+    setProfitMarginPercent(15);
+    setPreferencesCollected(false);
+    setSurfaceEstimates([]);
+    setMaterialScope(null);
+    try {
+      localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+      sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+      localStorage.removeItem('smartDevisData');
+      sessionStorage.removeItem('smartDevisData');
+    } catch {}
+    toast({
+      title: isRTL ? '🆕 مشروع جديد' : '🆕 Nouveau projet',
+      description: isRTL ? 'تم مسح كل البيانات، ابدأ من الأول' : 'Toutes les données ont été effacées',
+    });
+  };
+
   const formatCurrency = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
   const HELP_GUIDES: Record<string, { title: string; steps: string[] }> = {

@@ -62,7 +62,7 @@ const ProPage = () => {
                 "border-none overflow-hidden",
                 `bg-gradient-to-r ${tool.gradient}`
               )}
-              onClick={() => navigate(tool.path)}
+              onClick={() => navigate(tool.path, tool.path === '/pro/smart-devis' ? { state: { forceFreshSession: true } } : undefined)}
             >
               <CardContent className="p-0">
                 <div className={cn(

@@ -23,7 +23,7 @@ const DocumentHubPage = () => {
       <section className="space-y-5 max-w-md mx-auto w-full">
         {/* Card A — AI Generation */}
         <button
-          onClick={() => navigate('/pro/smart-devis')}
+          onClick={() => navigate('/pro/smart-devis', { state: { forceFreshSession: true } })}
           className={cn(
             'w-full rounded-2xl p-6 text-white',
             'flex items-center gap-5 active:scale-[0.98] hover:scale-[1.02] transition-all duration-300',

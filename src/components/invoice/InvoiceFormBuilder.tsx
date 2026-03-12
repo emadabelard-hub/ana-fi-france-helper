@@ -1835,7 +1835,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 dir="ltr"
                 lang="fr"
                 className="text-left"
-                className={cn(isRTL && "text-right font-cairo")}
               />
               <p className={cn(
                 "text-xs text-muted-foreground",

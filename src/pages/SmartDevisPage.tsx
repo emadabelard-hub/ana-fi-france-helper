@@ -90,9 +90,11 @@ const SmartDevisPage = () => {
   const { profile } = useProfile();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const didRestoreWizardRef = useRef(false);
 
   const [step, setStep] = useState<Step>('select_input');
   const [inputType, setInputType] = useState<InputType>(null);
@@ -120,6 +122,73 @@ const SmartDevisPage = () => {
   }, [chatMessages]);
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
+
+  const buildWizardSnapshot = useCallback((): SmartDevisWizardSnapshot => ({
+    step,
+    inputType,
+    uploadedFiles,
+    pastedText,
+    analysisData,
+    chatMessages,
+    lineItems,
+    materialQuality,
+    discountPercent,
+    profitMarginPercent,
+    preferencesCollected,
+    surfaceEstimates,
+    materialScope,
+  }), [
+    step,
+    inputType,
+    uploadedFiles,
+    pastedText,
+    analysisData,
+    chatMessages,
+    lineItems,
+    materialQuality,
+    discountPercent,
+    profitMarginPercent,
+    preferencesCollected,
+    surfaceEstimates,
+    materialScope,
+  ]);
+
+  useEffect(() => {
+    if (didRestoreWizardRef.current) return;
+
+    const routeState = (location.state as { restoreWizard?: boolean; wizardSnapshot?: SmartDevisWizardSnapshot } | null) ?? null;
+    if (!routeState?.restoreWizard && !routeState?.wizardSnapshot) return;
+
+    let snapshot = routeState?.wizardSnapshot || null;
+
+    if (!snapshot) {
+      try {
+        const raw = sessionStorage.getItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        snapshot = raw ? JSON.parse(raw) : null;
+      } catch {
+        snapshot = null;
+      }
+    }
+
+    if (!snapshot) return;
+
+    didRestoreWizardRef.current = true;
+    setStep(snapshot.step || 'select_input');
+    setInputType(snapshot.inputType ?? null);
+    setUploadedFiles(Array.isArray(snapshot.uploadedFiles) ? snapshot.uploadedFiles : []);
+    setPastedText(snapshot.pastedText || '');
+    setAnalysisData(snapshot.analysisData || null);
+    setChatMessages(Array.isArray(snapshot.chatMessages) ? snapshot.chatMessages : []);
+    setLineItems(Array.isArray(snapshot.lineItems) ? snapshot.lineItems : []);
+    setMaterialQuality(snapshot.materialQuality || 'standard');
+    setDiscountPercent(typeof snapshot.discountPercent === 'number' ? snapshot.discountPercent : 0);
+    setProfitMarginPercent(typeof snapshot.profitMarginPercent === 'number' ? snapshot.profitMarginPercent : 15);
+    setPreferencesCollected(!!snapshot.preferencesCollected);
+    setSurfaceEstimates(Array.isArray(snapshot.surfaceEstimates) ? snapshot.surfaceEstimates : []);
+    setMaterialScope(snapshot.materialScope ?? null);
+
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   const handleInputTypeSelect = (type: InputType) => {
     setInputType(type);

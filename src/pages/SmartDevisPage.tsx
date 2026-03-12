@@ -208,6 +208,36 @@ const SmartDevisPage = () => {
     return Math.round(scopedPrice * 100) / 100;
   };
 
+  // Strip "Fourniture et pose" → "Pose" when material is excluded
+  const stripFourniture = (fr: string, ar: string): { fr: string; ar: string } => {
+    let cleanFr = fr
+      .replace(/Fourniture\s+et\s+pose\s+d[e']/gi, "Pose d'")
+      .replace(/Fourniture\s+et\s+pose\s+de\s+/gi, 'Pose de ')
+      .replace(/Fourniture\s+et\s+pose/gi, 'Pose')
+      .replace(/fourniture\s*,?\s*/gi, '')
+      .replace(/Fourniture\s+de\s+/gi, '');
+    let cleanAr = ar
+      .replace(/فورنيتير\s*و\s*بوز/g, 'بوز')
+      .replace(/فورنيتير\s*و\s*/g, '')
+      .replace(/فورنيتير/g, '');
+    return { fr: cleanFr.trim(), ar: cleanAr.trim() };
+  };
+
+  // Restore "Fourniture et pose" when toggling material back on
+  const restoreFourniture = (fr: string, ar: string): { fr: string; ar: string } => {
+    let cleanFr = fr;
+    if (/^Pose\s+d[e']/i.test(fr) && !/Fourniture/i.test(fr)) {
+      cleanFr = fr.replace(/^Pose\s+d[e']\s*/i, "Fourniture et pose de ");
+    } else if (/^Pose\s+de\s+/i.test(fr) && !/Fourniture/i.test(fr)) {
+      cleanFr = fr.replace(/^Pose\s+de\s+/i, 'Fourniture et pose de ');
+    }
+    let cleanAr = ar;
+    if (/^بوز\s/.test(ar) && !/فورنيتير/.test(ar)) {
+      cleanAr = 'فورنيتير و ' + ar;
+    }
+    return { fr: cleanFr, ar: cleanAr };
+  };
+
   const buildWizardSnapshot = useCallback((): SmartDevisWizardSnapshot => ({
     step,
     inputType,

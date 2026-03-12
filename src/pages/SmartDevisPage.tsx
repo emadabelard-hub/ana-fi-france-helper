@@ -320,29 +320,32 @@ const SmartDevisPage = () => {
   useEffect(() => {
     if (didRestoreWizardRef.current) return;
 
+    const routeState = (location.state as SmartDevisRouteState | null) ?? null;
+    const explicitRestore = routeState?.restoreWizard === true;
+    const forceFreshSession = routeState?.forceFreshSession === true;
+
     try {
       const shouldSkipRestore =
         sessionStorage.getItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY) === '1' ||
         localStorage.getItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY) === '1';
 
-      if (shouldSkipRestore) {
-        sessionStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
-        localStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
-        localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-        sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-        localStorage.removeItem('smartDevisData');
-        sessionStorage.removeItem('smartDevisData');
+      if (shouldSkipRestore || forceFreshSession || !explicitRestore) {
+        clearSmartDevisStorage();
         didRestoreWizardRef.current = true;
-        navigate(location.pathname, { replace: true, state: null });
+        if (location.state) {
+          navigate(location.pathname, { replace: true, state: null });
+        }
         return;
       }
     } catch {
-      // ignore storage access errors
+      clearSmartDevisStorage();
+      didRestoreWizardRef.current = true;
+      if (location.state) {
+        navigate(location.pathname, { replace: true, state: null });
+      }
+      return;
     }
 
-    const routeState = (location.state as { restoreWizard?: boolean; wizardSnapshot?: SmartDevisWizardSnapshot } | null) ?? null;
-
-    // Try to get snapshot from route state first, then localStorage
     let snapshot = routeState?.wizardSnapshot || null;
 
     if (!snapshot) {
@@ -356,9 +359,10 @@ const SmartDevisPage = () => {
       }
     }
 
-    // If no snapshot or no progress, start fresh
     if (!snapshot) {
+      clearSmartDevisStorage();
       didRestoreWizardRef.current = true;
+      navigate(location.pathname, { replace: true, state: null });
       return;
     }
 
@@ -371,16 +375,12 @@ const SmartDevisPage = () => {
       snapshot.step !== 'select_input';
 
     if (!hasProgress) {
-      // No progress to restore — clear stale data
-      try {
-        localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-        sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-      } catch {}
+      clearSmartDevisStorage();
       didRestoreWizardRef.current = true;
+      navigate(location.pathname, { replace: true, state: null });
       return;
     }
 
-    // Restore the wizard state
     didRestoreWizardRef.current = true;
     setStep(snapshot.step || 'select_input');
     setInputType(snapshot.inputType ?? null);
@@ -396,7 +396,6 @@ const SmartDevisPage = () => {
     setSurfaceEstimates(Array.isArray(snapshot.surfaceEstimates) ? snapshot.surfaceEstimates : []);
     setMaterialScope(snapshot.materialScope ?? null);
 
-    // Show restore toast
     toast({
       title: isRTL ? '📝 تم استعادة بياناتك' : '📝 Données restaurées',
       description: isRTL ? 'الشغل اللي كنت شغال عليه رجعلك' : 'Votre travail en cours a été restauré',
@@ -404,7 +403,7 @@ const SmartDevisPage = () => {
     });
 
     navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate, isRTL, toast]);
+  }, [clearSmartDevisStorage, location.pathname, location.state, navigate, isRTL, toast]);
 
   useEffect(() => {
     const snapshot = buildWizardSnapshot();

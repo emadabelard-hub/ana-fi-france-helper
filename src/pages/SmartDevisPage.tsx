@@ -194,7 +194,7 @@ const SmartDevisPage = () => {
   }, []);
 
   const resetWizardState = useCallback(() => {
-    setStep('select_input');
+    setStep('ai_intro');
     setInputType(null);
     setUploadedFiles([]);
     setPastedText('');

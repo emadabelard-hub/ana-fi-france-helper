@@ -163,8 +163,9 @@ ANALYSE DEMANDÉE:
 
 Réponds en JSON avec cette structure:
 {
-  "analysis_ar": "وصف بالعامية المصرية باستخدام المصطلحات الحرفية (بانتيرة، كارلاج، أندوي...)",
+  "analysis_ar": "وصف بالعامية المصرية باستخدام المصطلحات الحرفية (بنتيرة، كارلاج، أندوي...)",
   "analysis_fr": "Description professionnelle en français",
+  "devis_subject_fr": "Objet du devis auto-généré (ex: Travaux de peinture - Appartement 3 pièces)",
   "estimatedArea": "Surface totale estimée en m²",
   "inputType": "photo|blueprint|document",
   "surfaceEstimates": [

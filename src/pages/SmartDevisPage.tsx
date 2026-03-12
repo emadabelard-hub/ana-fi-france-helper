@@ -24,6 +24,7 @@ import {
   SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck, RotateCcw, Package
 } from 'lucide-react';
 import SecurityBadge from '@/components/shared/SecurityBadge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface UploadedFile {
   id: string;
@@ -1604,26 +1605,61 @@ const SmartDevisPage = () => {
                       </div>
                     </div>
                   </div>
-                  {/* Fourniture toggle — always visible for every line */}
+                  {/* Fourniture toggle with price breakdown tooltip */}
                   <div className={cn("flex items-center gap-2 pt-1 border-t border-border/30 mt-2", isRTL && "flex-row-reverse")}>
-                    <button
-                      onClick={() => toggleItemMaterial(item.id)}
-                      className={cn(
-                        "flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-md border transition-colors",
-                        item.withMaterial
-                          ? "bg-primary/15 text-primary border-primary/30"
-                          : "bg-muted text-muted-foreground border-border"
-                      )}
-                    >
-                      <Package className="h-3 w-3" />
-                      {item.withMaterial
-                        ? (isRTL ? '✅ فورنيتير (مواد) داخلة' : '✅ Fourniture incluse')
-                        : (isRTL ? '❌ مصنعية بس' : '❌ Main d\'œuvre seule')
-                      }
-                    </button>
-                    <span className="text-[9px] text-muted-foreground">
-                      {isRTL ? 'اضغط للتغيير' : 'Cliquer pour changer'}
-                    </span>
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => toggleItemMaterial(item.id)}
+                            className={cn(
+                              "flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-md border transition-colors",
+                              item.withMaterial
+                                ? "bg-primary/15 text-primary border-primary/30"
+                                : "bg-muted text-muted-foreground border-border"
+                            )}
+                          >
+                            <Package className="h-3 w-3" />
+                            {item.withMaterial
+                              ? (isRTL ? '✅ فورنيتير (مواد) داخلة' : '✅ Fourniture incluse')
+                              : (isRTL ? '❌ مصنعية بس' : '❌ Main d\'œuvre seule')
+                            }
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs p-3 max-w-[220px]">
+                          {(() => {
+                            const fullPrice = resolveReferenceUnitPrice(item.designation_fr, item.unit, 'fourniture_et_pose');
+                            const laborPrice = resolveReferenceUnitPrice(item.designation_fr, item.unit, 'main_oeuvre_seule');
+                            const materialPrice = Math.round((fullPrice - laborPrice) * 100) / 100;
+                            return (
+                              <div className="space-y-1.5">
+                                <p className="font-bold text-foreground">
+                                  {isRTL ? 'تفصيل السعر' : 'Détail du prix'}
+                                </p>
+                                <div className="flex justify-between gap-3">
+                                  <span className="text-muted-foreground">{isRTL ? '🔧 مصنعية' : '🔧 Main d\'œuvre'}</span>
+                                  <span className="font-semibold">{formatCurrency(laborPrice)}/{item.unit}</span>
+                                </div>
+                                <div className="flex justify-between gap-3">
+                                  <span className="text-muted-foreground">{isRTL ? '📦 مواد' : '📦 Matériaux'}</span>
+                                  <span className="font-semibold">{formatCurrency(materialPrice)}/{item.unit}</span>
+                                </div>
+                                <div className="flex justify-between gap-3 pt-1 border-t border-border/40">
+                                  <span className="text-muted-foreground">{isRTL ? '💰 الكل' : '💰 Total'}</span>
+                                  <span className="font-bold text-primary">{formatCurrency(fullPrice)}/{item.unit}</span>
+                                </div>
+                                <p className="text-[9px] text-muted-foreground pt-1">
+                                  {item.withMaterial
+                                    ? (isRTL ? 'اضغط لإزالة المواد' : 'Cliquer pour retirer les matériaux')
+                                    : (isRTL ? 'اضغط لإضافة المواد' : 'Cliquer pour inclure les matériaux')
+                                  }
+                                </p>
+                              </div>
+                            );
+                          })()}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
               </Card>

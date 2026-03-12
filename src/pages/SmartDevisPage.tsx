@@ -85,6 +85,7 @@ interface SmartDevisWizardSnapshot {
 
 const MAX_FILES = 10;
 const SMART_DEVIS_WIZARD_STATE_KEY = 'smartDevisWizardState';
+const SMART_DEVIS_SKIP_RESTORE_ONCE_KEY = 'smartDevisSkipRestoreOnce';
 
 interface MaterialScopeSelectorProps {
   compact?: boolean;
@@ -282,6 +283,26 @@ const SmartDevisPage = () => {
 
   useEffect(() => {
     if (didRestoreWizardRef.current) return;
+
+    try {
+      const shouldSkipRestore =
+        sessionStorage.getItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY) === '1' ||
+        localStorage.getItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY) === '1';
+
+      if (shouldSkipRestore) {
+        sessionStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
+        localStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
+        localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        localStorage.removeItem('smartDevisData');
+        sessionStorage.removeItem('smartDevisData');
+        didRestoreWizardRef.current = true;
+        navigate(location.pathname, { replace: true, state: null });
+        return;
+      }
+    } catch {
+      // ignore storage access errors
+    }
 
     const routeState = (location.state as { restoreWizard?: boolean; wizardSnapshot?: SmartDevisWizardSnapshot } | null) ?? null;
 
@@ -997,6 +1018,7 @@ const SmartDevisPage = () => {
   };
 
   const handleFullReset = () => {
+    didRestoreWizardRef.current = true;
     setStep('select_input');
     setInputType(null);
     setUploadedFiles([]);
@@ -1016,12 +1038,20 @@ const SmartDevisPage = () => {
       sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
       localStorage.removeItem('smartDevisData');
       sessionStorage.removeItem('smartDevisData');
+      localStorage.setItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY, '1');
+      sessionStorage.setItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY, '1');
     } catch {}
     toast({
       title: isRTL ? '🆕 مشروع جديد' : '🆕 Nouveau projet',
       description: isRTL ? 'تم مسح كل البيانات، ابدأ من الأول' : 'Toutes les données ont été effacées',
     });
-    navigate('/pro/documents');
+    navigate('/pro/documents', { replace: true });
+
+    window.setTimeout(() => {
+      if (window.location.pathname.includes('/pro/smart-devis')) {
+        window.location.assign('/pro/documents');
+      }
+    }, 150);
   };
 
   const formatCurrency = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);

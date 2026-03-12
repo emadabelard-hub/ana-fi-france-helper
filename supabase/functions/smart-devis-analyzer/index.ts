@@ -392,14 +392,14 @@ Prix final = Sous-total × (1 + Marge%) × (1 - Remise%)
 RÈGLE CRITIQUE - BILINGUISME OBLIGATOIRE:
 - Chaque item DOIT avoir designation_fr ET designation_ar. JAMAIS laisser vide.
 - designation_fr = titre professionnel en français du BTP (ex: "Fourniture et pose de parquet stratifié")
-- designation_ar = TRANSLITÉRATION phonétique en darija maghrébine (ex: "فورنيتير و بوز باركيه ستراتيفيي")
+- designation_ar = TRANSLITÉRATION phonétique en عامية مصرية (ex: "فورنيتير و بوز باركيه ستراتيفيي")
 
 Réponds UNIQUEMENT en JSON:
 {
   "items": [
     {
       "designation_fr": "Titre professionnel en français",
-      "designation_ar": "ترجمة بالدارجة المغاربية",
+      "designation_ar": "ترجمة بالعامية المصرية",
       "quantity": number,
       "unit": "m²|ml|u|h|forfait",
       "unitPrice": number

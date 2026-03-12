@@ -900,7 +900,7 @@ const SmartDevisPage = () => {
                 <ShieldCheck className="h-5 w-5 text-[#c5a028] shrink-0 mt-0.5" />
                 <p className={cn("text-[11px] text-muted-foreground leading-relaxed", isRTL && "text-right font-cairo")}>
                   {isRTL
-                    ? "تقدر تعدل أو تحذف أي بند بعد التحليل. إنت اللي عندك الكلمة الأخيرة."
+                    ? "تقدر تعدّل ولا تحذف أي بند من بعد التحليل. نت اللي عندك الكلمة الأخيرة."
                     : "Vous pourrez modifier ou supprimer chaque ligne après l'analyse. Vous gardez le contrôle total."}
                 </p>
               </div>

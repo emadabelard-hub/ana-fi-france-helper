@@ -83,6 +83,12 @@ interface SmartDevisWizardSnapshot {
   materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null;
 }
 
+interface SmartDevisRouteState {
+  restoreWizard?: boolean;
+  wizardSnapshot?: SmartDevisWizardSnapshot;
+  forceFreshSession?: boolean;
+}
+
 const MAX_FILES = 10;
 const SMART_DEVIS_WIZARD_STATE_KEY = 'smartDevisWizardState';
 const SMART_DEVIS_SKIP_RESTORE_ONCE_KEY = 'smartDevisSkipRestoreOnce';
@@ -173,6 +179,36 @@ const SmartDevisPage = () => {
   const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null>(null);
+
+  const clearSmartDevisStorage = useCallback(() => {
+    try {
+      localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+      sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+      localStorage.removeItem('smartDevisData');
+      sessionStorage.removeItem('smartDevisData');
+      localStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
+      sessionStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
+    } catch {
+      // ignore storage access errors
+    }
+  }, []);
+
+  const resetWizardState = useCallback(() => {
+    setStep('select_input');
+    setInputType(null);
+    setUploadedFiles([]);
+    setPastedText('');
+    setAnalysisData(null);
+    setChatMessages([]);
+    setChatInput('');
+    setLineItems([]);
+    setMaterialQuality('standard');
+    setDiscountPercent(0);
+    setProfitMarginPercent(15);
+    setPreferencesCollected(false);
+    setSurfaceEstimates([]);
+    setMaterialScope(null);
+  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -284,29 +320,32 @@ const SmartDevisPage = () => {
   useEffect(() => {
     if (didRestoreWizardRef.current) return;
 
+    const routeState = (location.state as SmartDevisRouteState | null) ?? null;
+    const explicitRestore = routeState?.restoreWizard === true;
+    const forceFreshSession = routeState?.forceFreshSession === true;
+
     try {
       const shouldSkipRestore =
         sessionStorage.getItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY) === '1' ||
         localStorage.getItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY) === '1';
 
-      if (shouldSkipRestore) {
-        sessionStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
-        localStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
-        localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-        sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-        localStorage.removeItem('smartDevisData');
-        sessionStorage.removeItem('smartDevisData');
+      if (shouldSkipRestore || forceFreshSession || !explicitRestore) {
+        clearSmartDevisStorage();
         didRestoreWizardRef.current = true;
-        navigate(location.pathname, { replace: true, state: null });
+        if (location.state) {
+          navigate(location.pathname, { replace: true, state: null });
+        }
         return;
       }
     } catch {
-      // ignore storage access errors
+      clearSmartDevisStorage();
+      didRestoreWizardRef.current = true;
+      if (location.state) {
+        navigate(location.pathname, { replace: true, state: null });
+      }
+      return;
     }
 
-    const routeState = (location.state as { restoreWizard?: boolean; wizardSnapshot?: SmartDevisWizardSnapshot } | null) ?? null;
-
-    // Try to get snapshot from route state first, then localStorage
     let snapshot = routeState?.wizardSnapshot || null;
 
     if (!snapshot) {
@@ -320,9 +359,10 @@ const SmartDevisPage = () => {
       }
     }
 
-    // If no snapshot or no progress, start fresh
     if (!snapshot) {
+      clearSmartDevisStorage();
       didRestoreWizardRef.current = true;
+      navigate(location.pathname, { replace: true, state: null });
       return;
     }
 
@@ -335,16 +375,12 @@ const SmartDevisPage = () => {
       snapshot.step !== 'select_input';
 
     if (!hasProgress) {
-      // No progress to restore — clear stale data
-      try {
-        localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-        sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-      } catch {}
+      clearSmartDevisStorage();
       didRestoreWizardRef.current = true;
+      navigate(location.pathname, { replace: true, state: null });
       return;
     }
 
-    // Restore the wizard state
     didRestoreWizardRef.current = true;
     setStep(snapshot.step || 'select_input');
     setInputType(snapshot.inputType ?? null);
@@ -360,7 +396,6 @@ const SmartDevisPage = () => {
     setSurfaceEstimates(Array.isArray(snapshot.surfaceEstimates) ? snapshot.surfaceEstimates : []);
     setMaterialScope(snapshot.materialScope ?? null);
 
-    // Show restore toast
     toast({
       title: isRTL ? '📝 تم استعادة بياناتك' : '📝 Données restaurées',
       description: isRTL ? 'الشغل اللي كنت شغال عليه رجعلك' : 'Votre travail en cours a été restauré',
@@ -368,7 +403,7 @@ const SmartDevisPage = () => {
     });
 
     navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate, isRTL, toast]);
+  }, [clearSmartDevisStorage, location.pathname, location.state, navigate, isRTL, toast]);
 
   useEffect(() => {
     const snapshot = buildWizardSnapshot();
@@ -1019,28 +1054,16 @@ const SmartDevisPage = () => {
 
   const handleFullReset = () => {
     didRestoreWizardRef.current = true;
-    setStep('select_input');
-    setInputType(null);
-    setUploadedFiles([]);
-    setPastedText('');
-    setAnalysisData(null);
-    setChatMessages([]);
-    setChatInput('');
-    setLineItems([]);
-    setMaterialQuality('standard');
-    setDiscountPercent(0);
-    setProfitMarginPercent(15);
-    setPreferencesCollected(false);
-    setSurfaceEstimates([]);
-    setMaterialScope(null);
+    resetWizardState();
+    clearSmartDevisStorage();
+
     try {
-      localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-      sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-      localStorage.removeItem('smartDevisData');
-      sessionStorage.removeItem('smartDevisData');
       localStorage.setItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY, '1');
       sessionStorage.setItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY, '1');
-    } catch {}
+    } catch {
+      // ignore storage access errors
+    }
+
     toast({
       title: isRTL ? '🆕 مشروع جديد' : '🆕 Nouveau projet',
       description: isRTL ? 'تم مسح كل البيانات، ابدأ من الأول' : 'Toutes les données ont été effacées',
@@ -1111,17 +1134,15 @@ const SmartDevisPage = () => {
           </p>
         </div>
         <Badge variant="secondary" className="text-xs font-bold">14,99€</Badge>
-        {step !== 'select_input' && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleFullReset}
-            className="text-xs font-bold gap-1.5 bg-[#FF9800] text-white border-[#FF9800] hover:bg-[#F57C00] hover:text-white dark:bg-[#E53935] dark:text-white dark:border-[#E53935] dark:hover:bg-[#C62828] dark:hover:text-white"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            {isRTL ? 'جديد' : 'Nouveau'}
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleFullReset}
+          className="text-xs font-bold gap-1.5 border-primary/40 bg-primary/10 hover:bg-primary/20"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          {isRTL ? 'جديد' : 'Nouveau devis'}
+        </Button>
       </div>
 
       {/* Step 1: Select Input Type */}

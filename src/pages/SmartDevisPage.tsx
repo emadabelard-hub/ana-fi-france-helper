@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -65,7 +65,24 @@ interface ChatMsg {
 type InputType = 'photo' | 'blueprint' | 'document' | null;
 type Step = 'select_input' | 'photo_guide' | 'upload' | 'chat' | 'review';
 
+interface SmartDevisWizardSnapshot {
+  step: Step;
+  inputType: InputType;
+  uploadedFiles: UploadedFile[];
+  pastedText: string;
+  analysisData: any;
+  chatMessages: ChatMsg[];
+  lineItems: LineItem[];
+  materialQuality: string;
+  discountPercent: number;
+  profitMarginPercent: number;
+  preferencesCollected: boolean;
+  surfaceEstimates: SurfaceEstimate[];
+  materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | null;
+}
+
 const MAX_FILES = 10;
+const SMART_DEVIS_WIZARD_STATE_KEY = 'smartDevisWizardState';
 
 const SmartDevisPage = () => {
   const { isRTL, t } = useLanguage();

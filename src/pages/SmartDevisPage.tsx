@@ -357,6 +357,29 @@ const SmartDevisPage = () => {
     }
   }, [buildWizardSnapshot]);
 
+  // Force-save on browser close/refresh
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      try {
+        const snapshot = buildWizardSnapshot();
+        const hasProgress =
+          snapshot.step !== 'select_input' ||
+          snapshot.uploadedFiles.length > 0 ||
+          !!snapshot.pastedText.trim() ||
+          !!snapshot.analysisData ||
+          snapshot.chatMessages.length > 0 ||
+          snapshot.lineItems.length > 0;
+        if (hasProgress) {
+          const json = JSON.stringify(snapshot);
+          localStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, json);
+          sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, json);
+        }
+      } catch {}
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [buildWizardSnapshot]);
+
   const handleInputTypeSelect = (type: InputType) => {
     setInputType(type);
     if (type === 'photo') {

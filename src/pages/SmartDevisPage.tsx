@@ -392,6 +392,17 @@ const SmartDevisPage = () => {
   };
 
   const handleAnalyze = async () => {
+    if (!materialScope) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'اختيار إجباري' : 'Choix obligatoire',
+        description: isRTL
+          ? 'لازم تختار: فورنيتير + مصنعية أو مصنعية بس قبل التحليل.'
+          : 'Veuillez choisir "Fourniture + Pose" ou "Main d\'œuvre seule" avant l\'analyse.',
+      });
+      return;
+    }
+
     if (uploadedFiles.length === 0 && !pastedText.trim()) return;
     setIsAnalyzing(true);
     try {

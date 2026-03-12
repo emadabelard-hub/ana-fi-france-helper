@@ -2820,13 +2820,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 // Client/Chantier selection is optional — if selected, fields are auto-filled
                 // No blocking if not selected, manual entry is allowed
 
-                // Validate document number (must have content after prefix)
+                // Auto-generate document number if missing (AI handles this, not the user)
                 const currentPrefix = getDocPrefix(documentType);
                 const docSuffix = docNumber.startsWith(currentPrefix) ? docNumber.slice(currentPrefix.length).trim() : '';
-                if (!docSuffix) {
-                  missingFields.push(isRTL 
-                    ? (documentType === 'devis' ? '📄 من فضلك ادخل رقم الدوفي' : '📄 من فضلك ادخل رقم الفاتورة')
-                    : (documentType === 'devis' ? '📄 Numéro de devis requis' : '📄 Numéro de facture requis'));
+                if (!docSuffix && user) {
+                  // Auto-fetch and set the number, don't block the user
+                  const autoNum = await fetchNextDocNumber(user.id, documentType);
+                  setDocNumber(autoNum);
+                  // Re-check after auto-set — proceed without blocking
                 }
 
                 // B2B: SIREN/SIRET is REQUIRED when B2B is checked

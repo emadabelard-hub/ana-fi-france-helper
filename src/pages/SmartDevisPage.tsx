@@ -1571,29 +1571,27 @@ const SmartDevisPage = () => {
                       </div>
                     </div>
                   </div>
-                  {/* Partiel mode: toggle material per line */}
-                  {materialScope === 'partiel' && (
-                    <div className={cn("flex items-center gap-2 pt-1 border-t border-border/30 mt-2", isRTL && "flex-row-reverse")}>
-                      <button
-                        onClick={() => toggleItemMaterial(item.id)}
-                        className={cn(
-                          "flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-md border transition-colors",
-                          item.withMaterial
-                            ? "bg-primary/15 text-primary border-primary/30"
-                            : "bg-muted text-muted-foreground border-border"
-                        )}
-                      >
-                        <Package className="h-3 w-3" />
-                        {item.withMaterial
-                          ? (isRTL ? '✅ مع الماتريال' : '✅ Fourniture incluse')
-                          : (isRTL ? '❌ بدون ماتريال' : '❌ Sans fourniture')
-                        }
-                      </button>
-                      <span className="text-[9px] text-muted-foreground">
-                        {isRTL ? 'اضغط للتغيير' : 'Cliquer pour changer'}
-                      </span>
-                    </div>
-                  )}
+                  {/* Fourniture toggle — always visible for every line */}
+                  <div className={cn("flex items-center gap-2 pt-1 border-t border-border/30 mt-2", isRTL && "flex-row-reverse")}>
+                    <button
+                      onClick={() => toggleItemMaterial(item.id)}
+                      className={cn(
+                        "flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-md border transition-colors",
+                        item.withMaterial
+                          ? "bg-primary/15 text-primary border-primary/30"
+                          : "bg-muted text-muted-foreground border-border"
+                      )}
+                    >
+                      <Package className="h-3 w-3" />
+                      {item.withMaterial
+                        ? (isRTL ? '✅ فورنيتير (مواد) داخلة' : '✅ Fourniture incluse')
+                        : (isRTL ? '❌ مصنعية بس' : '❌ Main d\'œuvre seule')
+                      }
+                    </button>
+                    <span className="text-[9px] text-muted-foreground">
+                      {isRTL ? 'اضغط للتغيير' : 'Cliquer pour changer'}
+                    </span>
+                  </div>
                 </div>
               </Card>
             ))}

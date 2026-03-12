@@ -873,7 +873,7 @@ const SmartDevisPage = () => {
               <Textarea
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
-                placeholder={isRTL ? 'انسخ طلب الزبون أو اكتب تفاصيل الشغلانة هنا (مثلاً: أندوي، بانتيرة، هامش الربح...)' : 'Collez la demande du client ou décrivez les travaux ici (ex: enduit, peinture, marge...)'}
+                placeholder={isRTL ? 'نسخ طلب الزبون ولا كتب تفاصيل الخدمة هنا (مثلاً: أندوي، بنتيرة، هامش الربح...)' : 'Collez la demande du client ou décrivez les travaux ici (ex: enduit, peinture, marge...)'}
                 className={cn("min-h-[100px] resize-none", isRTL && "text-right font-cairo")}
               />
             </div>

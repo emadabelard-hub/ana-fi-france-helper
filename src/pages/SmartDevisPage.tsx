@@ -24,6 +24,7 @@ import {
   SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck, RotateCcw, Package
 } from 'lucide-react';
 import SecurityBadge from '@/components/shared/SecurityBadge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface UploadedFile {
   id: string;

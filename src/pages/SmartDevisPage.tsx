@@ -180,6 +180,36 @@ const SmartDevisPage = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null>(null);
 
+  const clearSmartDevisStorage = useCallback(() => {
+    try {
+      localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+      sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+      localStorage.removeItem('smartDevisData');
+      sessionStorage.removeItem('smartDevisData');
+      localStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
+      sessionStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
+    } catch {
+      // ignore storage access errors
+    }
+  }, []);
+
+  const resetWizardState = useCallback(() => {
+    setStep('select_input');
+    setInputType(null);
+    setUploadedFiles([]);
+    setPastedText('');
+    setAnalysisData(null);
+    setChatMessages([]);
+    setChatInput('');
+    setLineItems([]);
+    setMaterialQuality('standard');
+    setDiscountPercent(0);
+    setProfitMarginPercent(15);
+    setPreferencesCollected(false);
+    setSurfaceEstimates([]);
+    setMaterialScope(null);
+  }, []);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);

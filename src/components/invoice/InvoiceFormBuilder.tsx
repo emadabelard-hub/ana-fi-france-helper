@@ -488,6 +488,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       if (prefillData.sitePhotos && prefillData.sitePhotos.length > 0) {
         setSitePhotos(prefillData.sitePhotos);
       }
+
+      // Auto-fill subject/description from Smart Devis
+      if (prefillData.descriptionChantier) {
+        setDescriptionChantier(prefillData.descriptionChantier);
+      }
       
       toast({
         title: isRTL 

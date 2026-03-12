@@ -532,7 +532,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Build invoice data from form
   const buildInvoiceData = (): InvoiceData => {
     // Combine regular items with travel costs if enabled
-    const allItems = [...items.filter(item => item.designation_fr.trim() && item.unitPrice > 0)];
+    const allItems = [...items.filter(item => item.designation_fr.trim() && Number(item.unitPrice) >= 0)];
     
     // Add travel costs as a line item if enabled
     if (includeTravelCosts && travelPrice > 0) {

@@ -264,8 +264,8 @@ RÈGLE CRITIQUE - BILINGUISME OBLIGATOIRE:
 
       if (!response.ok) {
         const status = response.status;
-        if (status === 429) return new Response(JSON.stringify({ error: "سمح لينا، السيستم مشغول دابا. عاود من بعد شوية" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        if (status === 402) return new Response(JSON.stringify({ error: "رصيد الذكاء الاصطناعي سالى" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (status === 429) return new Response(JSON.stringify({ error: "عذراً، السيستم مشغول حالياً. حاول مرة تانية بعد شوية" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (status === 402) return new Response(JSON.stringify({ error: "رصيد الذكاء الاصطناعي نفد" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         throw new Error(`AI error: ${status}`);
       }
 

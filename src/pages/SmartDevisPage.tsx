@@ -756,7 +756,7 @@ const SmartDevisPage = () => {
           unitPrice: fixedUnitPrice,
           total: quantity * fixedUnitPrice,
           category: item.category,
-          withMaterial: isPartiel ? withMaterial : undefined,
+          withMaterial,
         };
       });
 

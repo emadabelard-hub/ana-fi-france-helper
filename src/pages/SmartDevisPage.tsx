@@ -817,9 +817,7 @@ const SmartDevisPage = () => {
       return;
     }
 
-    if (window.history.length > 1) {
-      navigate(-1);
-    }
+    navigate('/pro');
   };
 
   const handleResetAnalysis = () => {

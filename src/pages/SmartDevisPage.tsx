@@ -1054,28 +1054,16 @@ const SmartDevisPage = () => {
 
   const handleFullReset = () => {
     didRestoreWizardRef.current = true;
-    setStep('select_input');
-    setInputType(null);
-    setUploadedFiles([]);
-    setPastedText('');
-    setAnalysisData(null);
-    setChatMessages([]);
-    setChatInput('');
-    setLineItems([]);
-    setMaterialQuality('standard');
-    setDiscountPercent(0);
-    setProfitMarginPercent(15);
-    setPreferencesCollected(false);
-    setSurfaceEstimates([]);
-    setMaterialScope(null);
+    resetWizardState();
+    clearSmartDevisStorage();
+
     try {
-      localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-      sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-      localStorage.removeItem('smartDevisData');
-      sessionStorage.removeItem('smartDevisData');
       localStorage.setItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY, '1');
       sessionStorage.setItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY, '1');
-    } catch {}
+    } catch {
+      // ignore storage access errors
+    }
+
     toast({
       title: isRTL ? '🆕 مشروع جديد' : '🆕 Nouveau projet',
       description: isRTL ? 'تم مسح كل البيانات، ابدأ من الأول' : 'Toutes les données ont été effacées',

@@ -78,7 +78,7 @@ interface SmartDevisWizardSnapshot {
   profitMarginPercent: number;
   preferencesCollected: boolean;
   surfaceEstimates: SurfaceEstimate[];
-  materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | null;
+  materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null;
 }
 
 const MAX_FILES = 10;
@@ -115,35 +115,46 @@ const SmartDevisPage = () => {
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
   const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | null>(null);
+  const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null>(null);
 
   const MaterialScopeSelector = ({ compact = false }: { compact?: boolean }) => (
     <div className={cn("space-y-2 rounded-xl border border-border/50", compact ? "bg-card p-3" : "bg-muted/30 p-3")}>
       <label className={cn("text-sm font-bold flex items-center gap-1.5", isRTL && "flex-row-reverse font-cairo")}>
-        🔧 {isRTL ? 'الدوفي يشمل المواد ولا مصنعية بس؟' : 'Souhaitez-vous inclure la fourniture des matériaux ou uniquement la main d\'œuvre ?'}
+        🔧 {isRTL ? 'اختار طريقة التسعير: مواد + مصنعية، مصنعية بس، ولا جزئي؟' : 'Matériaux inclus, Main d\'œuvre uniquement, ou Partiel ?'}
       </label>
-      <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+      <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-2", isRTL && "sm:[direction:rtl]")}>
         <button
           onClick={() => setMaterialScope('fourniture_et_pose')}
           className={cn(
-            "flex-1 text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
+            "text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
             materialScope === 'fourniture_et_pose'
               ? "bg-primary text-primary-foreground border-primary"
               : "bg-background border-border hover:bg-muted"
           )}
         >
-          {isRTL ? '🏗️ فورنيتير + مصنعية' : '🏗️ Fourniture + Pose'}
+          {isRTL ? '🏗️ فورنيتير + مصنعية' : '🏗️ Matériaux inclus'}
         </button>
         <button
           onClick={() => setMaterialScope('main_oeuvre_seule')}
           className={cn(
-            "flex-1 text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
+            "text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
             materialScope === 'main_oeuvre_seule'
               ? "bg-primary text-primary-foreground border-primary"
               : "bg-background border-border hover:bg-muted"
           )}
         >
-          {isRTL ? '🔧 مصنعية بس' : '🔧 Main d\'œuvre seule'}
+          {isRTL ? '🔧 مصنعية بس' : '🔧 Main d\'œuvre'}
+        </button>
+        <button
+          onClick={() => setMaterialScope('partiel')}
+          className={cn(
+            "text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
+            materialScope === 'partiel'
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background border-border hover:bg-muted"
+          )}
+        >
+          {isRTL ? '⚖️ جزئي (لكل بند)' : '⚖️ Partiel (ligne par ligne)'}
         </button>
       </div>
     </div>
@@ -154,6 +165,47 @@ const SmartDevisPage = () => {
   }, [chatMessages]);
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
+
+  const LABOR_ONLY_FACTOR = 0.55;
+  const REFERENCE_PRICES: Array<{ keywords: string[]; price: number }> = [
+    { keywords: ['peinture', 'بانتيرة', 'بنتيرة'], price: 32 },
+    { keywords: ['enduit', 'أندوي'], price: 26 },
+    { keywords: ['carrelage', 'كارلاج', 'faience', 'faïence', 'فايونس'], price: 58 },
+    { keywords: ['parquet', 'باركيه'], price: 52 },
+    { keywords: ['plomberie', 'سباكة'], price: 68 },
+    { keywords: ['electricite', 'électricité', 'كهرباء'], price: 64 },
+    { keywords: ['placo', 'cloison', 'بلاكو'], price: 42 },
+    { keywords: ['demontage', 'démontage', 'ديمونتاج'], price: 24 },
+    { keywords: ['nettoyage', 'نيتواياج'], price: 18 },
+  ];
+
+  const normalizeText = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  const resolveReferenceUnitPrice = (designation: string, unit: string, scope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null) => {
+    const normalizedDesignation = normalizeText(designation || '');
+    const matched = REFERENCE_PRICES.find((entry) =>
+      entry.keywords.some((keyword) => normalizedDesignation.includes(normalizeText(keyword)))
+    );
+
+    const fallbackByUnit: Record<string, number> = {
+      'm²': 35,
+      ml: 19,
+      u: 95,
+      h: 48,
+      forfait: 240,
+    };
+
+    const withMaterialsBase = matched?.price ?? fallbackByUnit[unit] ?? 35;
+    const scopedPrice = scope === 'main_oeuvre_seule'
+      ? withMaterialsBase * LABOR_ONLY_FACTOR
+      : withMaterialsBase;
+
+    return Math.round(scopedPrice * 100) / 100;
+  };
 
   const buildWizardSnapshot = useCallback((): SmartDevisWizardSnapshot => ({
     step,
@@ -193,7 +245,9 @@ const SmartDevisPage = () => {
 
     if (!snapshot) {
       try {
-        const raw = sessionStorage.getItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        const localRaw = localStorage.getItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        const sessionRaw = sessionStorage.getItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        const raw = localRaw || sessionRaw;
         snapshot = raw ? JSON.parse(raw) : null;
       } catch {
         snapshot = null;
@@ -242,7 +296,9 @@ const SmartDevisPage = () => {
 
     try {
       if (hasProgress) {
-        sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, JSON.stringify(snapshot));
+        const snapshotJson = JSON.stringify(snapshot);
+        localStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, snapshotJson);
+        sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, snapshotJson);
       }
     } catch {
       // ignore storage quota errors
@@ -397,8 +453,8 @@ const SmartDevisPage = () => {
         variant: 'destructive',
         title: isRTL ? 'اختيار إجباري' : 'Choix obligatoire',
         description: isRTL
-          ? 'لازم تختار: فورنيتير + مصنعية أو مصنعية بس قبل التحليل.'
-          : 'Veuillez choisir "Fourniture + Pose" ou "Main d\'œuvre seule" avant l\'analyse.',
+          ? 'لازم تختار: مواد + مصنعية، مصنعية فقط، أو جزئي قبل التحليل.'
+          : 'Veuillez choisir "Matériaux inclus", "Main d\'œuvre uniquement" ou "Partiel" avant l\'analyse.',
       });
       return;
     }
@@ -407,8 +463,10 @@ const SmartDevisPage = () => {
     setIsAnalyzing(true);
     try {
       const scopeInstruction = materialScope === 'main_oeuvre_seule'
-        ? "\n\nIMPORTANT: Le client fournit les matériaux lui-même. Chiffre UNIQUEMENT la main d'œuvre (pose, préparation, nettoyage). N'inclus PAS le coût des matériaux dans les prix."
-        : "\n\nLe devis doit inclure la fourniture ET la pose (matériaux + main d'œuvre).";
+        ? "\n\nIMPORTANT: Mode main d'œuvre uniquement. N'inclus jamais le coût des matériaux."
+        : materialScope === 'partiel'
+          ? "\n\nIMPORTANT: Mode partiel. Prépare des lignes claires avec prix de référence stables; la fourniture sera ajustée ligne par ligne dans l'éditeur."
+          : "\n\nIMPORTANT: Mode matériaux inclus + pose.";
 
       const baseMessage = inputType === 'blueprint'
         ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction
@@ -608,8 +666,8 @@ const SmartDevisPage = () => {
         variant: 'destructive',
         title: isRTL ? 'اختيار إجباري' : 'Choix obligatoire',
         description: isRTL
-          ? 'لازم تختار: فورنيتير + مصنعية أو مصنعية بس قبل توليد الدوفي.'
-          : 'Veuillez choisir "Fourniture + Pose" ou "Main d\'œuvre seule" avant de générer le devis.',
+          ? 'لازم تختار: مواد + مصنعية، مصنعية فقط، أو جزئي قبل توليد الدوفي.'
+          : 'Veuillez choisir "Matériaux inclus", "Main d\'œuvre uniquement" ou "Partiel" avant de générer le devis.',
       });
       return;
     }
@@ -630,16 +688,22 @@ const SmartDevisPage = () => {
 
       const data = await invokeAnalyzer(payload);
 
-      const items: LineItem[] = (data.items || data.suggestedItems || []).map((item: any) => ({
-        id: generateId(),
-        designation_fr: item.designation_fr || '',
-        designation_ar: item.designation_ar || '',
-        quantity: item.quantity || 1,
-        unit: item.unit || 'u',
-        unitPrice: item.unitPrice || 0,
-        total: (item.quantity || 1) * (item.unitPrice || 0),
-        category: item.category,
-      }));
+      const items: LineItem[] = (data.items || data.suggestedItems || []).map((item: any) => {
+        const quantity = Number(item.quantity || 1);
+        const unit = item.unit || 'u';
+        const fixedUnitPrice = resolveReferenceUnitPrice(item.designation_fr || '', unit, materialScope);
+
+        return {
+          id: generateId(),
+          designation_fr: item.designation_fr || '',
+          designation_ar: item.designation_ar || '',
+          quantity,
+          unit,
+          unitPrice: fixedUnitPrice,
+          total: quantity * fixedUnitPrice,
+          category: item.category,
+        };
+      });
 
       setLineItems(items);
       setStep('review');
@@ -688,8 +752,12 @@ const SmartDevisPage = () => {
         items: lineItems.map(item => ({
           ...item,
           id: generateId(),
+          referenceUnitPrice: item.unitPrice,
+          materialsIncluded: materialScope === 'main_oeuvre_seule' ? false : true,
         })),
         source: 'smart_devis',
+        materialScope,
+        priceMode: 'reference_fixed',
         sitePhotos,
       };
 
@@ -697,10 +765,14 @@ const SmartDevisPage = () => {
 
       // Persist data + wizard snapshot as fallback for navigation state loss
       try {
-        sessionStorage.setItem('smartDevisData', JSON.stringify(prefillData));
-        sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, JSON.stringify(wizardSnapshot));
+        const prefillJson = JSON.stringify(prefillData);
+        const snapshotJson = JSON.stringify(wizardSnapshot);
+        sessionStorage.setItem('smartDevisData', prefillJson);
+        localStorage.setItem('smartDevisData', prefillJson);
+        sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, snapshotJson);
+        localStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, snapshotJson);
       } catch (e) {
-        console.warn('Failed to persist smart devis data to sessionStorage:', e);
+        console.warn('Failed to persist smart devis data to storage:', e);
       }
 
       navigate('/pro/invoice-creator?type=devis&prefill=smart', {
@@ -745,9 +817,7 @@ const SmartDevisPage = () => {
       return;
     }
 
-    if (window.history.length > 1) {
-      navigate(-1);
-    }
+    navigate('/pro');
   };
 
   const handleResetAnalysis = () => {

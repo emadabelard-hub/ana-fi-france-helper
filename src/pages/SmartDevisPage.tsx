@@ -250,11 +250,15 @@ const SmartDevisPage = () => {
     if (uploadedFiles.length === 0 && !pastedText.trim()) return;
     setIsAnalyzing(true);
     try {
+      const scopeInstruction = materialScope === 'main_oeuvre_seule'
+        ? "\n\nIMPORTANT: Le client fournit les matériaux lui-même. Chiffre UNIQUEMENT la main d'œuvre (pose, préparation, nettoyage). N'inclus PAS le coût des matériaux dans les prix."
+        : "\n\nLe devis doit inclure la fourniture ET la pose (matériaux + main d'œuvre).";
+
       const baseMessage = inputType === 'blueprint'
-        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées."
+        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction
         : inputType === 'document'
-        ? "Extrais les informations de ce document pour générer un devis."
-        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité.";
+        ? "Extrais les informations de ce document pour générer un devis." + scopeInstruction
+        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité." + scopeInstruction;
 
       const userMessage = pastedText.trim()
         ? `${baseMessage}\n\nTexte/demande du client:\n${pastedText.trim()}`

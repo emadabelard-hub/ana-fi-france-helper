@@ -169,7 +169,7 @@ const SmartDevisPage = () => {
 
   const LABOR_ONLY_FACTOR = 0.55;
   const REFERENCE_PRICES: Array<{ keywords: string[]; price: number }> = [
-    { keywords: ['peinture', 'بانتيرة', 'بنتيرة'], price: 32 },
+    { keywords: ['peinture', 'بنتيرة', 'بانتيرة'], price: 32 },
     { keywords: ['enduit', 'أندوي'], price: 26 },
     { keywords: ['carrelage', 'كارلاج', 'faience', 'faïence', 'فايونس'], price: 58 },
     { keywords: ['parquet', 'باركيه'], price: 52 },

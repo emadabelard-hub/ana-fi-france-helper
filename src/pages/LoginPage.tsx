@@ -95,8 +95,8 @@ const LoginPage = () => {
     if (!isLogin && password !== confirmPassword) {
       toast({
         variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "كلمات المرور غير متطابقة" : "Les mots de passe ne correspondent pas",
+        title: "Erreur",
+        description: "Les mots de passe ne correspondent pas",
       });
       return;
     }

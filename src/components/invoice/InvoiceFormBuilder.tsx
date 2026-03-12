@@ -215,9 +215,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Auto-fetch next sequential number from DB
   useEffect(() => {
     if (!user) return;
-    const prefix = getDocPrefix(documentType);
-    // Only auto-fetch if docNumber is just the prefix (not user-edited or already fetched)
-    if (docNumber === prefix || !docNumber.startsWith(prefix) || docNumber === generateDocNumber(documentType)) {
+    const correctPrefix = getDocPrefix(documentType);
+    // Always auto-fetch if docNumber doesn't match the current document type prefix
+    // This ensures D- for devis and F- for facture, never mixed
+    const hasCorrectPrefix = docNumber.startsWith(correctPrefix);
+    const isJustPrefix = docNumber === correctPrefix;
+    const hasSuffix = hasCorrectPrefix && docNumber.length > correctPrefix.length;
+    
+    // Re-fetch if: wrong prefix, just prefix without number, or initial empty state
+    if (!hasCorrectPrefix || isJustPrefix || !hasSuffix) {
       setDocNumberLoading(true);
       fetchNextDocNumber(user.id, documentType).then((num) => {
         setDocNumber(num);

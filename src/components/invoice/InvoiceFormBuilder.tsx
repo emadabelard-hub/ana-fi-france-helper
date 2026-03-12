@@ -1338,7 +1338,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             }}
             disabled={docNumberLoading}
             placeholder={isRTL ? `مثال: ${getDocPrefix(documentType)}001` : `Ex: ${getDocPrefix(documentType)}001`}
-            className="font-mono"
+            className="font-mono text-left"
+            dir="ltr"
+            lang="fr"
           />
           <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL

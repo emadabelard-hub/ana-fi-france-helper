@@ -1068,6 +1068,17 @@ const SmartDevisPage = () => {
           </p>
         </div>
         <Badge variant="secondary" className="text-xs font-bold">14,99€</Badge>
+        {step !== 'select_input' && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleFullReset}
+            className="text-xs font-bold gap-1.5"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {isRTL ? 'جديد' : 'Nouveau'}
+          </Button>
+        )}
       </div>
 
       {/* Step 1: Select Input Type */}

@@ -804,6 +804,7 @@ const SmartDevisPage = () => {
   };
 
   const addItem = () => {
+    const withMaterial = materialScope !== 'main_oeuvre_seule';
     setLineItems(prev => [...prev, {
       id: generateId(),
       designation_fr: '',
@@ -812,7 +813,7 @@ const SmartDevisPage = () => {
       unit: 'u',
       unitPrice: 0,
       total: 0,
-      withMaterial: materialScope === 'partiel' ? false : undefined,
+      withMaterial,
     }]);
   };
 

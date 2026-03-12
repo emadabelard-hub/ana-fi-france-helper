@@ -996,13 +996,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const saveToDocumentsComptables = async () => {
     if (!user) return;
 
-    if (!selectedClientId || !selectedChantierId) {
+    // Client name is required (either from selection or manual entry)
+    if (!clientName.trim()) {
       toast({
         variant: 'destructive',
         title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
         description: isRTL
-          ? 'يجب اختيار العميل والمشروع قبل الحفظ'
-          : 'Vous devez sélectionner un client et un projet avant de sauvegarder.',
+          ? 'يجب إدخال اسم العميل قبل الحفظ'
+          : 'Vous devez renseigner le nom du client avant de sauvegarder.',
       });
       return;
     }

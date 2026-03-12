@@ -1033,7 +1033,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         document_data: linkedDocumentData,
         status: 'finalized',
       };
-      insertData.chantier_id = selectedChantierId;
+      if (selectedChantierId) insertData.chantier_id = selectedChantierId;
 
       const { error } = await (supabase.from('documents_comptables') as any).insert(insertData);
       if (error) throw error;

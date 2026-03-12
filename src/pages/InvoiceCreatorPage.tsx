@@ -51,52 +51,57 @@ const InvoiceCreatorPage = () => {
   const [showTypeModal, setShowTypeModal] = useState(!urlDocType);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
-  const [prefillData, setPrefillData] = useState<any>(null);
-  
-  // Navigation guard: block leaving when a document type is selected (form is active)
-  const hasUnsavedWork = !!documentType && !isSmartDevisFlow;
-  const { showLeaveDialog, requestLeave, confirmLeave, cancelLeave } = useNavigationGuard(hasUnsavedWork);
-  
-  // Sync URL with document type and check for prefill data
-  useEffect(() => {
-    if (urlDocType && !documentType) {
-      setDocumentType(urlDocType);
-      setShowTypeModal(false);
+  // CRITICAL: Initialize prefillData SYNCHRONOUSLY to prevent draft restore race condition.
+  // If we set this in useEffect, InvoiceFormBuilder mounts with prefillData=null,
+  // the draft restore fires first and loads stale data (ghost items like 39m²),
+  // THEN prefillData arrives but may not fully overwrite the stale state.
+  const [prefillData, setPrefillData] = useState<any>(() => {
+    // Smart Devis flow: load from location.state or sessionStorage immediately
+    if (isSmartDevisFlow) {
+      const stateData = (location.state as any)?.smartDevisData;
+      if (stateData) {
+        console.log('[InvoiceCreator] Prefill loaded SYNC from location.state:', stateData.items?.length, 'items');
+        return stateData;
+      }
+      const storedData = sessionStorage.getItem('smartDevisData');
+      if (storedData) {
+        try {
+          const parsed = JSON.parse(storedData);
+          sessionStorage.removeItem('smartDevisData');
+          console.log('[InvoiceCreator] Prefill loaded SYNC from sessionStorage:', parsed.items?.length, 'items');
+          return parsed;
+        } catch (e) {
+          console.error('Failed to parse smart devis data:', e);
+        }
+      }
     }
-    
-    // Check for prefill data from quote-to-invoice
+    // Quote-to-invoice flow
     if (prefillSource === 'quote') {
       const storedData = sessionStorage.getItem('quoteToInvoiceData');
       if (storedData) {
         try {
           const parsed = JSON.parse(storedData);
-          setPrefillData(parsed);
           sessionStorage.removeItem('quoteToInvoiceData');
+          return parsed;
         } catch (e) {
           console.error('Failed to parse prefill data:', e);
         }
       }
     }
-    
-    // Check for prefill data from Smart Devis
-    if (isSmartDevisFlow) {
-      const stateData = (location.state as any)?.smartDevisData;
-      if (stateData) {
-        setPrefillData(stateData);
-      } else {
-        const storedData = sessionStorage.getItem('smartDevisData');
-        if (storedData) {
-          try {
-            const parsed = JSON.parse(storedData);
-            setPrefillData(parsed);
-            sessionStorage.removeItem('smartDevisData');
-          } catch (e) {
-            console.error('Failed to parse smart devis data:', e);
-          }
-        }
-      }
+    return null;
+  });
+  
+  // Navigation guard: block leaving when a document type is selected (form is active)
+  const hasUnsavedWork = !!documentType && !isSmartDevisFlow;
+  const { showLeaveDialog, requestLeave, confirmLeave, cancelLeave } = useNavigationGuard(hasUnsavedWork);
+  
+  // Sync URL with document type (no more prefill loading here — done synchronously above)
+  useEffect(() => {
+    if (urlDocType && !documentType) {
+      setDocumentType(urlDocType);
+      setShowTypeModal(false);
     }
-  }, [urlDocType, documentType, prefillSource, location.state, isSmartDevisFlow]);
+  }, [urlDocType, documentType]);
   
   // Handle document type selection
   const handleTypeSelect = (type: 'devis' | 'facture') => {

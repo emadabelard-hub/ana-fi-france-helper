@@ -445,11 +445,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     return () => clearTimeout(timer);
   }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, estimatedStartDate, estimatedDuration]);
 
-  // Handle prefill data from quote-to-invoice conversion
+  // Handle prefill data from quote-to-invoice conversion or Smart Devis
   // STRICT: Never auto-fill client info. User must select or type manually.
+  // CRITICAL: This effect MUST reliably inject Smart Devis items into the form.
   useEffect(() => {
     if (prefillData) {
-      console.log('Prefilling invoice with extracted data (client fields left empty for manual input):', prefillData);
+      console.log('[InvoiceFormBuilder] Applying prefill data:', prefillData.source, '—', prefillData.items?.length, 'items');
+      
+      // STEP 1: Clear any existing draft to prevent ghost data contamination
+      clearDraft();
       
       // NEVER auto-fill client fields — user must choose or register manually
       setSelectedClientId('');

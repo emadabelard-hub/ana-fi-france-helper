@@ -51,7 +51,7 @@ const InvoiceCreatorPage = () => {
   const [prefillData, setPrefillData] = useState<any>(null);
   
   // Navigation guard: block leaving when a document type is selected (form is active)
-  const hasUnsavedWork = !!documentType;
+  const hasUnsavedWork = !!documentType && !isSmartDevisFlow;
   const { showLeaveDialog, requestLeave, confirmLeave, cancelLeave } = useNavigationGuard(hasUnsavedWork);
   
   // Sync URL with document type and check for prefill data
@@ -110,20 +110,30 @@ const InvoiceCreatorPage = () => {
   };
   
   
+  const buildSmartDevisReturnState = () => {
+    if (smartDevisReturnState) return smartDevisReturnState;
+
+    try {
+      const raw = sessionStorage.getItem('smartDevisWizardState');
+      const wizardSnapshot = raw ? JSON.parse(raw) : null;
+      return wizardSnapshot
+        ? { restoreWizard: true, wizardSnapshot }
+        : { restoreWizard: true };
+    } catch {
+      return { restoreWizard: true };
+    }
+  };
+
   // Handle navigation back (guarded)
   const handleNavigateBack = () => {
-    requestLeave(() => {
-      if (isSmartDevisFlow) {
-        if (window.history.length > 1) {
-          navigate(-1);
-          return;
-        }
-        navigate('/pro/smart-devis', {
-          state: smartDevisReturnState || { restoreWizard: true },
-        });
-        return;
-      }
+    if (isSmartDevisFlow) {
+      navigate('/pro/smart-devis', {
+        state: buildSmartDevisReturnState(),
+      });
+      return;
+    }
 
+    requestLeave(() => {
       if (window.history.length > 1) {
         navigate(-1);
         return;
@@ -251,7 +261,10 @@ const InvoiceCreatorPage = () => {
         open={showTypeModal}
         onOpenChange={(open) => {
           if (!open && !documentType) {
-            // If closing without selection, go back
+            if (isSmartDevisFlow) {
+              navigate('/pro/smart-devis', { state: buildSmartDevisReturnState() });
+              return;
+            }
             navigate('/pro');
           }
           setShowTypeModal(open);

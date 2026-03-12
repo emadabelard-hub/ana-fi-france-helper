@@ -459,11 +459,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       if (prefillData.clientIsB2B) {
         setClientIsB2B(prefillData.clientIsB2B);
       }
-      if (prefillData.selectedClientId) {
+      const canPrefillLinkedEntities = prefillData.source !== 'smart_devis';
+      if (canPrefillLinkedEntities && prefillData.selectedClientId) {
         setSelectedClientId(prefillData.selectedClientId);
       }
-      if (prefillData.selectedChantierId) {
+      if (canPrefillLinkedEntities && prefillData.selectedChantierId) {
         setSelectedChantierId(prefillData.selectedChantierId);
+      }
+      if (!canPrefillLinkedEntities) {
+        setSelectedClientId('');
+        setSelectedChantierId('');
       }
       if (prefillData.workSiteAddress) {
         setWorkSiteAddress(prefillData.workSiteAddress);
@@ -1458,6 +1463,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className={cn("flex flex-wrap gap-2", isRTL && "flex-row-reverse")}> 
+              <Button type="button" variant="outline" size="sm" onClick={() => navigate('/clients')} className={cn("text-xs", isRTL && "font-cairo")}> 
+                {isRTL ? '➕ إضافة زبون جديد' : '➕ Ajouter un nouveau client'}
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => navigate('/chantiers')} className={cn("text-xs", isRTL && "font-cairo")}> 
+                {isRTL ? '➕ إضافة مشروع جديد' : '➕ Ajouter un nouveau projet'}
+              </Button>
             </div>
             <p className={cn("text-[11px] text-muted-foreground", isRTL && "font-cairo text-right")}>
               {isRTL ? '💡 الاختيار اختياري — يمكنك الكتابة يدوياً في الخانات تحت' : '💡 Optionnel — vous pouvez aussi saisir manuellement ci-dessous'}

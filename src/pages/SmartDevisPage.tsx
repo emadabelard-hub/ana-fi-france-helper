@@ -21,7 +21,7 @@ import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import {
   ArrowLeft, ArrowRight, Camera, Image as ImageIcon, FileText, Map,
   Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle, X, Upload,
-  SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck
+  SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck, RotateCcw
 } from 'lucide-react';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 
@@ -189,8 +189,6 @@ const SmartDevisPage = () => {
     if (didRestoreWizardRef.current) return;
 
     const routeState = (location.state as { restoreWizard?: boolean; wizardSnapshot?: SmartDevisWizardSnapshot } | null) ?? null;
-    if (!routeState?.restoreWizard && !routeState?.wizardSnapshot) return;
-
     let snapshot = routeState?.wizardSnapshot || null;
 
     if (!snapshot) {
@@ -203,6 +201,16 @@ const SmartDevisPage = () => {
     }
 
     if (!snapshot) return;
+
+    const hasProgress =
+      (snapshot.uploadedFiles?.length ?? 0) > 0 ||
+      !!snapshot.pastedText ||
+      !!snapshot.analysisData ||
+      (snapshot.chatMessages?.length ?? 0) > 0 ||
+      (snapshot.lineItems?.length ?? 0) > 0 ||
+      snapshot.step !== 'select_input';
+
+    if (!hasProgress && !routeState?.restoreWizard) return;
 
     didRestoreWizardRef.current = true;
     setStep(snapshot.step || 'select_input');
@@ -221,6 +229,25 @@ const SmartDevisPage = () => {
 
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    const snapshot = buildWizardSnapshot();
+    const hasProgress =
+      snapshot.step !== 'select_input' ||
+      snapshot.uploadedFiles.length > 0 ||
+      !!snapshot.pastedText.trim() ||
+      !!snapshot.analysisData ||
+      snapshot.chatMessages.length > 0 ||
+      snapshot.lineItems.length > 0;
+
+    try {
+      if (hasProgress) {
+        sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, JSON.stringify(snapshot));
+      }
+    } catch {
+      // ignore storage quota errors
+    }
+  }, [buildWizardSnapshot]);
 
   const handleInputTypeSelect = (type: InputType) => {
     setInputType(type);
@@ -365,6 +392,17 @@ const SmartDevisPage = () => {
   };
 
   const handleAnalyze = async () => {
+    if (!materialScope) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'اختيار إجباري' : 'Choix obligatoire',
+        description: isRTL
+          ? 'لازم تختار: فورنيتير + مصنعية أو مصنعية بس قبل التحليل.'
+          : 'Veuillez choisir "Fourniture + Pose" ou "Main d\'œuvre seule" avant l\'analyse.',
+      });
+      return;
+    }
+
     if (uploadedFiles.length === 0 && !pastedText.trim()) return;
     setIsAnalyzing(true);
     try {
@@ -685,6 +723,49 @@ const SmartDevisPage = () => {
     }
   };
 
+  const handleHeaderBack = () => {
+    if (step === 'review') {
+      setStep('chat');
+      return;
+    }
+
+    if (step === 'chat') {
+      setStep('upload');
+      return;
+    }
+
+    if (step === 'upload') {
+      setStep(inputType === 'photo' ? 'photo_guide' : 'select_input');
+      return;
+    }
+
+    if (step === 'photo_guide') {
+      setStep('select_input');
+      setInputType(null);
+      return;
+    }
+
+    if (window.history.length > 1) {
+      navigate(-1);
+    }
+  };
+
+  const handleResetAnalysis = () => {
+    setAnalysisData(null);
+    setChatMessages([]);
+    setSurfaceEstimates([]);
+    setLineItems([]);
+    setPreferencesCollected(false);
+    setChatInput('');
+    setStep('upload');
+    toast({
+      title: isRTL ? 'تمت إعادة الضبط' : 'Analyse réinitialisée',
+      description: isRTL
+        ? 'الصور والنص مازالوا محفوظين، تقدر تعيد التحليل.'
+        : 'Vos photos et votre texte sont conservés, vous pouvez relancer l\'analyse.',
+    });
+  };
+
   const formatCurrency = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
   const HELP_GUIDES: Record<string, { title: string; steps: string[] }> = {
@@ -730,21 +811,7 @@ const SmartDevisPage = () => {
     <div className="py-4 space-y-4 max-w-2xl mx-auto">
       {/* Header */}
       <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
-        <Button variant="ghost" size="icon" onClick={() => {
-          if (step === 'review') {
-            setStep('chat');
-          } else if (step === 'chat') {
-            setStep('upload');
-          } else if (step === 'upload') {
-            setStep(inputType === 'photo' ? 'photo_guide' : 'select_input');
-          } else if (step === 'photo_guide') {
-            setStep('select_input');
-            setInputType(null);
-          } else {
-            if (window.history.length > 1) navigate(-1);
-            else navigate('/pro');
-          }
-        }}>
+        <Button variant="ghost" size="icon" onClick={handleHeaderBack}>
           {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
         </Button>
         <div className={cn("flex-1", isRTL && "text-right")}>
@@ -1230,17 +1297,26 @@ const SmartDevisPage = () => {
             </Button>
           </div>
 
-          {/* Generate button */}
-          <Button
-            className="w-full bg-[#1a1a1a] hover:bg-[#333] text-[#c5a028] font-bold border border-[#c5a028]/30"
-            onClick={handleGenerateItems}
-            disabled={isGenerating}
-          >
-            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-            <span className={cn(isRTL && "font-cairo")}>
-              {isRTL ? '🏗️ ولّد الدوفي الذكي' : '🏗️ Générer le Smart Devis'}
-            </span>
-          </Button>
+          {/* Analysis actions */}
+          <div className="space-y-2">
+            <Button variant="outline" className="w-full" onClick={handleResetAnalysis}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              <span className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'إعادة التحليل من الأول' : 'Reset Analysis'}
+              </span>
+            </Button>
+
+            <Button
+              className="w-full bg-[#1a1a1a] hover:bg-[#333] text-[#c5a028] font-bold border border-[#c5a028]/30"
+              onClick={handleGenerateItems}
+              disabled={isGenerating}
+            >
+              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              <span className={cn(isRTL && "font-cairo")}>
+                {isRTL ? '🏗️ ولّد الدوفي الذكي' : '🏗️ Générer le Smart Devis'}
+              </span>
+            </Button>
+          </div>
         </div>
       )}
 
@@ -1341,6 +1417,12 @@ const SmartDevisPage = () => {
               <Edit3 className="h-4 w-4 mr-2" />
               <span className={cn(isRTL && "font-cairo")}>
                 {isRTL ? 'رجوع للدردشة' : 'Retour au chat'}
+              </span>
+            </Button>
+            <Button variant="outline" className="w-full" onClick={handleResetAnalysis}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              <span className={cn(isRTL && "font-cairo")}>
+                {isRTL ? 'إعادة التحليل من الأول' : 'Reset Analysis'}
               </span>
             </Button>
           </div>

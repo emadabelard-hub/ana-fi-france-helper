@@ -15,7 +15,7 @@ const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
 
 const LoginPage = () => {
   const { signIn, signUp, signInAnonymously, isAuthenticated, isLoading: authLoading, user } = useAuth();
-  const { isRTL } = useLanguage();
+  
   const { toast } = useToast();
   const navigate = useNavigate();
 

@@ -1181,6 +1181,9 @@ const SmartDevisPage = () => {
             </div>
           </ScrollArea>
 
+          {/* Material Scope Selector */}
+          <MaterialScopeSelector compact />
+
           {/* Preferences quick select */}
           <Card className="p-3">
             <div className="grid grid-cols-3 gap-2">

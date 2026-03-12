@@ -90,7 +90,8 @@ const BottomNavigation = () => {
         {items.map((item) => {
           const isActive =
             location.pathname === item.path ||
-            (item.path === '/' && location.pathname === '/home');
+            (item.path === '/' && location.pathname === '/home') ||
+            (item.path === '/expenses' && location.pathname === '/accounts');
           const Icon = item.icon;
 
           return (

@@ -1017,6 +1017,7 @@ const SmartDevisPage = () => {
       title: isRTL ? '🆕 مشروع جديد' : '🆕 Nouveau projet',
       description: isRTL ? 'تم مسح كل البيانات، ابدأ من الأول' : 'Toutes les données ont été effacées',
     });
+    navigate('/pro/documents');
   };
 
   const formatCurrency = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);

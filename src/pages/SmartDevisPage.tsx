@@ -245,7 +245,9 @@ const SmartDevisPage = () => {
 
     if (!snapshot) {
       try {
-        const raw = sessionStorage.getItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        const localRaw = localStorage.getItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        const sessionRaw = sessionStorage.getItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        const raw = localRaw || sessionRaw;
         snapshot = raw ? JSON.parse(raw) : null;
       } catch {
         snapshot = null;

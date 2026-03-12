@@ -655,7 +655,7 @@ const SmartDevisPage = () => {
                 )}
               >
                 <HelpCircle className="h-3.5 w-3.5" />
-                <span>تحب اشرح تستخدم الخاصية دي ازاي؟</span>
+                <span>تبغي نشرحلك كيفاش تستعمل هاد الخاصية؟</span>
               </button>
             </div>
           ))}

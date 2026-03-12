@@ -96,6 +96,7 @@ const SmartDevisPage = () => {
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
   const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | null>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -249,11 +250,15 @@ const SmartDevisPage = () => {
     if (uploadedFiles.length === 0 && !pastedText.trim()) return;
     setIsAnalyzing(true);
     try {
+      const scopeInstruction = materialScope === 'main_oeuvre_seule'
+        ? "\n\nIMPORTANT: Le client fournit les matériaux lui-même. Chiffre UNIQUEMENT la main d'œuvre (pose, préparation, nettoyage). N'inclus PAS le coût des matériaux dans les prix."
+        : "\n\nLe devis doit inclure la fourniture ET la pose (matériaux + main d'œuvre).";
+
       const baseMessage = inputType === 'blueprint'
-        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées."
+        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction
         : inputType === 'document'
-        ? "Extrais les informations de ce document pour générer un devis."
-        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité.";
+        ? "Extrais les informations de ce document pour générer un devis." + scopeInstruction
+        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité." + scopeInstruction;
 
       const userMessage = pastedText.trim()
         ? `${baseMessage}\n\nTexte/demande du client:\n${pastedText.trim()}`
@@ -452,6 +457,7 @@ const SmartDevisPage = () => {
         materialQuality,
         discountPercent,
         profitMarginPercent,
+        materialScope: materialScope || 'fourniture_et_pose',
       };
 
       const data = await invokeAnalyzer(payload);
@@ -519,6 +525,13 @@ const SmartDevisPage = () => {
         sitePhotos,
       };
 
+      // Persist to sessionStorage as fallback for navigation state loss
+      try {
+        sessionStorage.setItem('smartDevisData', JSON.stringify(prefillData));
+      } catch (e) {
+        console.warn('Failed to persist smart devis data to sessionStorage:', e);
+      }
+
       navigate('/pro/invoice-creator?type=devis&prefill=smart', {
         state: { smartDevisData: prefillData },
       });
@@ -578,7 +591,20 @@ const SmartDevisPage = () => {
     <div className="py-4 space-y-4 max-w-2xl mx-auto">
       {/* Header */}
       <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
-        <Button variant="ghost" size="icon" onClick={() => navigate('/pro')}>
+        <Button variant="ghost" size="icon" onClick={() => {
+          if (step === 'review') {
+            setStep('chat');
+          } else if (step === 'chat') {
+            setStep('upload');
+          } else if (step === 'upload') {
+            setStep(inputType === 'photo' ? 'photo_guide' : 'select_input');
+          } else if (step === 'photo_guide') {
+            setStep('select_input');
+            setInputType(null);
+          } else {
+            navigate('/pro');
+          }
+        }}>
           {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
         </Button>
         <div className={cn("flex-1", isRTL && "text-right")}>
@@ -807,6 +833,37 @@ const SmartDevisPage = () => {
               </div>
             )}
 
+            {/* Material Scope Selector */}
+            <div className="space-y-2 bg-muted/30 rounded-xl p-3 border border-border/50">
+              <label className={cn("text-sm font-bold flex items-center gap-1.5", isRTL && "flex-row-reverse font-cairo")}>
+                🔧 {isRTL ? 'هل الدوفي يشمل المواد ولا مصنعية بس؟' : 'Souhaitez-vous inclure la fourniture des matériaux ou uniquement la main d\'œuvre ?'}
+              </label>
+              <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+                <button
+                  onClick={() => setMaterialScope('fourniture_et_pose')}
+                  className={cn(
+                    "flex-1 text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
+                    materialScope === 'fourniture_et_pose'
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border hover:bg-muted"
+                  )}
+                >
+                  {isRTL ? '🏗️ فورنيتير + مصنعية' : '🏗️ Fourniture + Pose'}
+                </button>
+                <button
+                  onClick={() => setMaterialScope('main_oeuvre_seule')}
+                  className={cn(
+                    "flex-1 text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
+                    materialScope === 'main_oeuvre_seule'
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border hover:bg-muted"
+                  )}
+                >
+                  {isRTL ? '🔧 مصنعية بس' : '🔧 Main d\'œuvre seule'}
+                </button>
+              </div>
+            </div>
+
             {/* Pasted text area */}
             <div className="space-y-2">
               <label className={cn("text-sm font-medium text-muted-foreground", isRTL && "font-cairo block text-right")}>
@@ -826,7 +883,7 @@ const SmartDevisPage = () => {
               </Button>
               <Button
                 onClick={handleAnalyze}
-                disabled={(uploadedFiles.length === 0 && !pastedText.trim()) || isAnalyzing}
+                disabled={(uploadedFiles.length === 0 && !pastedText.trim()) || isAnalyzing || !materialScope}
                 className="flex-1 bg-[#1a1a1a] hover:bg-[#333] text-white font-bold"
               >
                 {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}

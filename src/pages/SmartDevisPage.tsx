@@ -21,7 +21,7 @@ import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import {
   ArrowLeft, ArrowRight, Camera, Image as ImageIcon, FileText, Map,
   Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle, X, Upload,
-  SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck, RotateCcw
+  SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck, RotateCcw, Package
 } from 'lucide-react';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 
@@ -55,6 +55,7 @@ interface LineItem {
   unitPrice: number;
   total: number;
   category?: string;
+  withMaterial?: boolean; // For 'partiel' mode: user toggles material per line
 }
 
 interface ChatMsg {
@@ -691,7 +692,11 @@ const SmartDevisPage = () => {
       const items: LineItem[] = (data.items || data.suggestedItems || []).map((item: any) => {
         const quantity = Number(item.quantity || 1);
         const unit = item.unit || 'u';
-        const fixedUnitPrice = resolveReferenceUnitPrice(item.designation_fr || '', unit, materialScope);
+        // In partiel mode, default withMaterial to false (user picks per line)
+        const isPartiel = materialScope === 'partiel';
+        const withMaterial = isPartiel ? false : materialScope !== 'main_oeuvre_seule';
+        const effectiveScope = withMaterial ? 'fourniture_et_pose' : 'main_oeuvre_seule';
+        const fixedUnitPrice = resolveReferenceUnitPrice(item.designation_fr || '', unit, effectiveScope);
 
         return {
           id: generateId(),
@@ -702,6 +707,7 @@ const SmartDevisPage = () => {
           unitPrice: fixedUnitPrice,
           total: quantity * fixedUnitPrice,
           category: item.category,
+          withMaterial: isPartiel ? withMaterial : undefined,
         };
       });
 
@@ -727,6 +733,22 @@ const SmartDevisPage = () => {
 
   const removeItem = (id: string) => setLineItems(prev => prev.filter(i => i.id !== id));
 
+  // Toggle withMaterial for a line item in partiel mode — recalculates price
+  const toggleItemMaterial = (id: string) => {
+    setLineItems(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      const newWithMaterial = !item.withMaterial;
+      const effectiveScope = newWithMaterial ? 'fourniture_et_pose' : 'main_oeuvre_seule';
+      const newPrice = resolveReferenceUnitPrice(item.designation_fr, item.unit, effectiveScope);
+      return {
+        ...item,
+        withMaterial: newWithMaterial,
+        unitPrice: newPrice,
+        total: item.quantity * newPrice,
+      };
+    }));
+  };
+
   const addItem = () => {
     setLineItems(prev => [...prev, {
       id: generateId(),
@@ -736,6 +758,7 @@ const SmartDevisPage = () => {
       unit: 'u',
       unitPrice: 0,
       total: 0,
+      withMaterial: materialScope === 'partiel' ? false : undefined,
     }]);
   };
 
@@ -753,7 +776,9 @@ const SmartDevisPage = () => {
           ...item,
           id: generateId(),
           referenceUnitPrice: item.unitPrice,
-          materialsIncluded: materialScope === 'main_oeuvre_seule' ? false : true,
+          materialsIncluded: materialScope === 'partiel'
+            ? (item.withMaterial ?? false)
+            : materialScope !== 'main_oeuvre_seule',
         })),
         source: 'smart_devis',
         materialScope,
@@ -1457,6 +1482,29 @@ const SmartDevisPage = () => {
                       </div>
                     </div>
                   </div>
+                  {/* Partiel mode: toggle material per line */}
+                  {materialScope === 'partiel' && (
+                    <div className={cn("flex items-center gap-2 pt-1 border-t border-border/30 mt-2", isRTL && "flex-row-reverse")}>
+                      <button
+                        onClick={() => toggleItemMaterial(item.id)}
+                        className={cn(
+                          "flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-md border transition-colors",
+                          item.withMaterial
+                            ? "bg-primary/15 text-primary border-primary/30"
+                            : "bg-muted text-muted-foreground border-border"
+                        )}
+                      >
+                        <Package className="h-3 w-3" />
+                        {item.withMaterial
+                          ? (isRTL ? '✅ مع الماتريال' : '✅ Fourniture incluse')
+                          : (isRTL ? '❌ بدون ماتريال' : '❌ Sans fourniture')
+                        }
+                      </button>
+                      <span className="text-[9px] text-muted-foreground">
+                        {isRTL ? 'اضغط للتغيير' : 'Cliquer pour changer'}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </Card>
             ))}

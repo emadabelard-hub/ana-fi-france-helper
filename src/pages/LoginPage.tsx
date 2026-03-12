@@ -67,7 +67,7 @@ const LoginPage = () => {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) {
-        toast({ variant: "destructive", title: isRTL ? "خطأ" : "Erreur", description: error.message });
+        toast({ variant: "destructive", title: "Erreur", description: error.message });
       } else {
         setResetEmailSent(true);
       }

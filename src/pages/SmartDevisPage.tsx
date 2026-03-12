@@ -339,6 +339,7 @@ const SmartDevisPage = () => {
     toast({
       title: isRTL ? '📝 تم استعادة بياناتك' : '📝 Données restaurées',
       description: isRTL ? 'الشغل اللي كنت شغال عليه رجعلك' : 'Votre travail en cours a été restauré',
+      className: 'mt-24 sm:mt-0',
     });
 
     navigate(location.pathname, { replace: true, state: null });

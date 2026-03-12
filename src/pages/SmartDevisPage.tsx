@@ -734,7 +734,7 @@ const SmartDevisPage = () => {
       const items: LineItem[] = (data.items || data.suggestedItems || []).map((item: any) => {
         const quantity = Number(item.quantity || 1);
         const unit = item.unit || 'u';
-        // In partiel mode, default withMaterial to false (user picks per line)
+        // Always set withMaterial based on scope
         const isPartiel = materialScope === 'partiel';
         const withMaterial = isPartiel ? false : materialScope !== 'main_oeuvre_seule';
         const effectiveScope = withMaterial ? 'fourniture_et_pose' : 'main_oeuvre_seule';

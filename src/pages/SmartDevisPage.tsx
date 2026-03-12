@@ -453,8 +453,8 @@ const SmartDevisPage = () => {
         variant: 'destructive',
         title: isRTL ? 'اختيار إجباري' : 'Choix obligatoire',
         description: isRTL
-          ? 'لازم تختار: فورنيتير + مصنعية أو مصنعية بس قبل التحليل.'
-          : 'Veuillez choisir "Fourniture + Pose" ou "Main d\'œuvre seule" avant l\'analyse.',
+          ? 'لازم تختار: مواد + مصنعية، مصنعية فقط، أو جزئي قبل التحليل.'
+          : 'Veuillez choisir "Matériaux inclus", "Main d\'œuvre uniquement" ou "Partiel" avant l\'analyse.',
       });
       return;
     }
@@ -463,8 +463,10 @@ const SmartDevisPage = () => {
     setIsAnalyzing(true);
     try {
       const scopeInstruction = materialScope === 'main_oeuvre_seule'
-        ? "\n\nIMPORTANT: Le client fournit les matériaux lui-même. Chiffre UNIQUEMENT la main d'œuvre (pose, préparation, nettoyage). N'inclus PAS le coût des matériaux dans les prix."
-        : "\n\nLe devis doit inclure la fourniture ET la pose (matériaux + main d'œuvre).";
+        ? "\n\nIMPORTANT: Mode main d'œuvre uniquement. N'inclus jamais le coût des matériaux."
+        : materialScope === 'partiel'
+          ? "\n\nIMPORTANT: Mode partiel. Prépare des lignes claires avec prix de référence stables; la fourniture sera ajustée ligne par ligne dans l'éditeur."
+          : "\n\nIMPORTANT: Mode matériaux inclus + pose.";
 
       const baseMessage = inputType === 'blueprint'
         ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction

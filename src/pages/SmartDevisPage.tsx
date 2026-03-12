@@ -78,7 +78,7 @@ interface SmartDevisWizardSnapshot {
   profitMarginPercent: number;
   preferencesCollected: boolean;
   surfaceEstimates: SurfaceEstimate[];
-  materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | null;
+  materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null;
 }
 
 const MAX_FILES = 10;
@@ -115,35 +115,46 @@ const SmartDevisPage = () => {
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
   const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | null>(null);
+  const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null>(null);
 
   const MaterialScopeSelector = ({ compact = false }: { compact?: boolean }) => (
     <div className={cn("space-y-2 rounded-xl border border-border/50", compact ? "bg-card p-3" : "bg-muted/30 p-3")}>
       <label className={cn("text-sm font-bold flex items-center gap-1.5", isRTL && "flex-row-reverse font-cairo")}>
-        🔧 {isRTL ? 'الدوفي يشمل المواد ولا مصنعية بس؟' : 'Souhaitez-vous inclure la fourniture des matériaux ou uniquement la main d\'œuvre ?'}
+        🔧 {isRTL ? 'اختار طريقة التسعير: مواد + مصنعية، مصنعية بس، ولا جزئي؟' : 'Matériaux inclus, Main d\'œuvre uniquement, ou Partiel ?'}
       </label>
-      <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+      <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-2", isRTL && "sm:[direction:rtl]")}>
         <button
           onClick={() => setMaterialScope('fourniture_et_pose')}
           className={cn(
-            "flex-1 text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
+            "text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
             materialScope === 'fourniture_et_pose'
               ? "bg-primary text-primary-foreground border-primary"
               : "bg-background border-border hover:bg-muted"
           )}
         >
-          {isRTL ? '🏗️ فورنيتير + مصنعية' : '🏗️ Fourniture + Pose'}
+          {isRTL ? '🏗️ فورنيتير + مصنعية' : '🏗️ Matériaux inclus'}
         </button>
         <button
           onClick={() => setMaterialScope('main_oeuvre_seule')}
           className={cn(
-            "flex-1 text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
+            "text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
             materialScope === 'main_oeuvre_seule'
               ? "bg-primary text-primary-foreground border-primary"
               : "bg-background border-border hover:bg-muted"
           )}
         >
-          {isRTL ? '🔧 مصنعية بس' : '🔧 Main d\'œuvre seule'}
+          {isRTL ? '🔧 مصنعية بس' : '🔧 Main d\'œuvre'}
+        </button>
+        <button
+          onClick={() => setMaterialScope('partiel')}
+          className={cn(
+            "text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
+            materialScope === 'partiel'
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background border-border hover:bg-muted"
+          )}
+        >
+          {isRTL ? '⚖️ جزئي (لكل بند)' : '⚖️ Partiel (ligne par ligne)'}
         </button>
       </div>
     </div>

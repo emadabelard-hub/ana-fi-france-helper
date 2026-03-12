@@ -1512,7 +1512,7 @@ const SmartDevisPage = () => {
           </ScrollArea>
 
           {/* Material Scope Selector */}
-          <MaterialScopeSelector compact />
+          <MaterialScopeSelector compact isRTL={isRTL} materialScope={materialScope} setMaterialScope={setMaterialScope} />
 
           {/* Preferences quick select */}
           <Card className="p-3">

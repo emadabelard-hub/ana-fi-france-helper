@@ -163,7 +163,7 @@ ANALYSE DEMANDÉE:
 
 Réponds en JSON avec cette structure:
 {
-  "analysis_ar": "وصف بالدارجة المغربية/المغاربية باستخدام المصطلحات الحرفية (بنتيرة، كارلاج، أندوي...)",
+  "analysis_ar": "وصف بالعامية المصرية باستخدام المصطلحات الحرفية (بانتيرة، كارلاج، أندوي...)",
   "analysis_fr": "Description professionnelle en français",
   "estimatedArea": "Surface totale estimée en m²",
   "inputType": "photo|blueprint|document",
@@ -171,12 +171,12 @@ Réponds en JSON avec cette structure:
     {
       "id": "wall_1",
       "label_fr": "Mur principal (côté porte)",
-      "label_ar": "الحيط الرئيسي (جيهة الباب)",
+      "label_ar": "الحيطة الرئيسية (ناحية الباب)",
       "width_m": 4.2,
       "height_m": 2.5,
       "area_m2": 10.5,
       "referenceObject_fr": "Porte standard (2.04m) comme repère de hauteur",
-      "referenceObject_ar": "الباب القياسي (2.04م) كمرجع ديال الارتفاع",
+      "referenceObject_ar": "الباب القياسي (2.04م) كمرجع للارتفاع",
       "confidence": "medium",
       "workType": "peinture"
     }
@@ -184,7 +184,7 @@ Réponds en JSON avec cette structure:
   "suggestedItems": [
     {
       "designation_fr": "Titre professionnel en français (ex: Dépose faïence existante)",
-      "designation_ar": "الترجمة بالدارجة المغاربية مع مصطلحات الحرفيين (ex: فك فايونس قديم)",
+      "designation_ar": "الترجمة بالعامية المصرية مع مصطلحات الحرفيين (ex: فك فايونس قديم)",
       "quantity": number,
       "unit": "m²|ml|u|h|forfait",
       "unitPrice": number,
@@ -196,8 +196,8 @@ Réponds en JSON avec cette structure:
 RÈGLE CRITIQUE - BILINGUISME OBLIGATOIRE:
 - Chaque item DOIT avoir designation_fr ET designation_ar remplis. JAMAIS vide.
 - designation_fr = français professionnel du BTP
-- designation_ar = darija maghrébine artisanale avec les termes phonétiques du métier
-  "notes_ar": "ملاحظات مهمة بالدارجة",
+- designation_ar = عامية مصرية (arabe égyptien) artisanale avec les termes phonétiques du métier
+  "notes_ar": "ملاحظات مهمة بالعامية المصرية",
   "notes_fr": "Remarques importantes en français"
 }`;
 

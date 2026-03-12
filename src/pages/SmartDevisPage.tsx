@@ -984,6 +984,33 @@ const SmartDevisPage = () => {
     });
   };
 
+  const handleFullReset = () => {
+    setStep('select_input');
+    setInputType(null);
+    setUploadedFiles([]);
+    setPastedText('');
+    setAnalysisData(null);
+    setChatMessages([]);
+    setChatInput('');
+    setLineItems([]);
+    setMaterialQuality('standard');
+    setDiscountPercent(0);
+    setProfitMarginPercent(15);
+    setPreferencesCollected(false);
+    setSurfaceEstimates([]);
+    setMaterialScope(null);
+    try {
+      localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+      sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+      localStorage.removeItem('smartDevisData');
+      sessionStorage.removeItem('smartDevisData');
+    } catch {}
+    toast({
+      title: isRTL ? '🆕 مشروع جديد' : '🆕 Nouveau projet',
+      description: isRTL ? 'تم مسح كل البيانات، ابدأ من الأول' : 'Toutes les données ont été effacées',
+    });
+  };
+
   const formatCurrency = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
   const HELP_GUIDES: Record<string, { title: string; steps: string[] }> = {
@@ -1041,6 +1068,17 @@ const SmartDevisPage = () => {
           </p>
         </div>
         <Badge variant="secondary" className="text-xs font-bold">14,99€</Badge>
+        {step !== 'select_input' && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleFullReset}
+            className="text-xs font-bold gap-1.5"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {isRTL ? 'جديد' : 'Nouveau'}
+          </Button>
+        )}
       </div>
 
       {/* Step 1: Select Input Type */}

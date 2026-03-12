@@ -265,7 +265,8 @@ const InvoiceCreatorPage = () => {
               navigate('/pro/smart-devis', { state: buildSmartDevisReturnState() });
               return;
             }
-            navigate('/pro');
+            // Don't auto-redirect to home — keep the modal open or let user use back button
+            return;
           }
           setShowTypeModal(open);
         }}

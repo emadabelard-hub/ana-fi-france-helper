@@ -878,7 +878,7 @@ const SmartDevisPage = () => {
             </div>
 
             <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-              <Button variant="outline" onClick={() => { setStep(inputType === 'photo' ? 'photo_guide' : 'select_input'); setUploadedFiles([]); setPastedText(''); }} className="flex-1">
+              <Button variant="outline" onClick={() => { setStep(inputType === 'photo' ? 'photo_guide' : 'select_input'); }} className="flex-1">
                 {isRTL ? 'رجوع' : 'Retour'}
               </Button>
               <Button

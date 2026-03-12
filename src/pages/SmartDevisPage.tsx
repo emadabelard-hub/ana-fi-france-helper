@@ -1033,6 +1033,15 @@ const SmartDevisPage = () => {
       return;
     }
 
+    if (step === 'select_input') {
+      setStep('ai_intro');
+      return;
+    }
+
+    if (step === 'ai_intro') {
+      navigate('/pro');
+      return;
+    }
     navigate('/pro');
   };
 

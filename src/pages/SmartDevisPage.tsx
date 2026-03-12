@@ -159,7 +159,7 @@ const SmartDevisPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const didRestoreWizardRef = useRef(false);
 
-  const [step, setStep] = useState<Step>('select_input');
+  const [step, setStep] = useState<Step>('ai_intro');
   const [inputType, setInputType] = useState<InputType>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [pastedText, setPastedText] = useState<string>('');

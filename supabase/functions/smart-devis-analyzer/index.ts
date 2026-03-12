@@ -370,11 +370,11 @@ ${scopeRule}
 - Vérifie chaque item avant de l'ajouter: est-il déjà couvert par une autre ligne?
 
 ⛔ RÈGLE CONSOLIDATION FRAIS:
-- Regroupe déplacement + nettoyage + évacuation en 1 SEULE ligne: "Frais de chantier / مصاريف الشانتي" (فورصة).
+- Regroupe déplacement + nettoyage + évacuation en 1 SEULE ligne: "Frais de chantier / مصاريف الشانتي" (forfait).
 
 ⛔ RÈGLE TRANSLITÉRATION OBLIGATOIRE pour designation_ar:
-- Utilise la translitération phonétique du français en arabe DIALECTE MAROCAIN/MAGHRÉBIN du métier.
-- Parquet→باركيه, Plinthes→بلانت, Primaire→بريمير, Ragréage→راغرياج, Sous-couche→سوكوش, Enduit→أندوي, Peinture→بنتيرة, Carrelage→كارلاج, Faïence→فايونس, Ponçage→بونساج, Démontage→ديمونتاج, Nettoyage→نيتواياج, Fourniture→فورنيتير, Dépannage→داباج, Forfait→فورصة, Crépi→كريبي
+- Utilise la translitération phonétique du français en arabe ÉGYPTIEN (عامية مصرية) du métier.
+- Parquet→باركيه, Plinthes→بلانت, Primaire→بريمير, Ragréage→راغرياج, Sous-couche→سوكوش, Enduit→أندوي, Peinture→بانتيرة, Carrelage→كارلاج, Faïence→فايونس, Ponçage→بونساج, Démontage→ديمونتاج, Nettoyage→نيتواياج, Fourniture→فورنيتير, Dépannage→داباج
 
 RÈGLES DE CALCUL:
 - Qualité matériaux: ${materialQuality || 'standard'} (éco = -20%, standard = prix base, luxe = +40%)

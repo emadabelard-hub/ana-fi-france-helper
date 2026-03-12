@@ -51,6 +51,7 @@ interface PrefillData {
   notes?: string;
   source?: string;
   sitePhotos?: Array<{ data: string; name: string }>;
+  descriptionChantier?: string;
 }
 
 interface InvoiceFormBuilderProps {
@@ -487,6 +488,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       // Load site photos from Smart Devis
       if (prefillData.sitePhotos && prefillData.sitePhotos.length > 0) {
         setSitePhotos(prefillData.sitePhotos);
+      }
+
+      // Auto-fill subject/description from Smart Devis
+      if (prefillData.descriptionChantier) {
+        setDescriptionChantier(prefillData.descriptionChantier);
       }
       
       toast({

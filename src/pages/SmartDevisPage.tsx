@@ -811,21 +811,7 @@ const SmartDevisPage = () => {
     <div className="py-4 space-y-4 max-w-2xl mx-auto">
       {/* Header */}
       <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
-        <Button variant="ghost" size="icon" onClick={() => {
-          if (step === 'review') {
-            setStep('chat');
-          } else if (step === 'chat') {
-            setStep('upload');
-          } else if (step === 'upload') {
-            setStep(inputType === 'photo' ? 'photo_guide' : 'select_input');
-          } else if (step === 'photo_guide') {
-            setStep('select_input');
-            setInputType(null);
-          } else {
-            if (window.history.length > 1) navigate(-1);
-            else navigate('/pro');
-          }
-        }}>
+        <Button variant="ghost" size="icon" onClick={handleHeaderBack}>
           {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
         </Button>
         <div className={cn("flex-1", isRTL && "text-right")}>

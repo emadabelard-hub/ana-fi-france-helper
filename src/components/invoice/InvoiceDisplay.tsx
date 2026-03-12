@@ -472,6 +472,9 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               {/* Client acceptance */}
               <div className="flex-1 border border-gray-300 rounded-lg p-2">
                 <p className="text-[8pt] font-bold text-gray-700 mb-1 text-center"><ArSub fr="Le client" /></p>
+                <p className="text-[8pt] text-gray-800 mb-2" dir="ltr" lang="fr" style={{ direction: 'ltr', textAlign: 'left' }}>
+                  Bon pour accord, date et lieu : ....................................................
+                </p>
                 <div className="grid grid-cols-2 gap-2 mb-2">
                   <div>
                     <p className="text-[7pt] text-gray-500 mb-0.5">Nom :</p>

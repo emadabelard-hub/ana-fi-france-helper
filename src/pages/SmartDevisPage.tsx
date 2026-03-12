@@ -700,7 +700,7 @@ const SmartDevisPage = () => {
             <ShieldCheck className="h-6 w-6 text-[#c5a028] shrink-0 mt-0.5" />
             <p className={cn("text-xs text-foreground leading-relaxed", isRTL && "text-right font-cairo")}>
               {isRTL
-                ? "الذكاء الاصطناعي هيحلل صورك ويقترح أشغال، لكن إنت اللي عندك الكلمة الأخيرة. تقدر تعدل أو تحذف أي بند قبل التأكيد النهائي."
+                ? "الذكاء الاصطناعي غادي يحلل الصور ديالك ويقترح أشغال، ولكن نت اللي عندك الكلمة الأخيرة. تقدر تعدّل ولا تحذف أي بند قبل التأكيد النهائي."
                 : "L'IA analyse vos photos pour suggérer des travaux, mais VOUS gardez le contrôle total. Vous pourrez modifier ou supprimer chaque ligne avant la validation finale."}
             </p>
           </div>

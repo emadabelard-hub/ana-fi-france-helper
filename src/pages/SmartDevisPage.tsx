@@ -85,6 +85,7 @@ interface SmartDevisWizardSnapshot {
 
 const MAX_FILES = 10;
 const SMART_DEVIS_WIZARD_STATE_KEY = 'smartDevisWizardState';
+const SMART_DEVIS_SKIP_RESTORE_ONCE_KEY = 'smartDevisSkipRestoreOnce';
 
 interface MaterialScopeSelectorProps {
   compact?: boolean;

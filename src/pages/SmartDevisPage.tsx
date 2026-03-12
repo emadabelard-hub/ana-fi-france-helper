@@ -284,6 +284,26 @@ const SmartDevisPage = () => {
   useEffect(() => {
     if (didRestoreWizardRef.current) return;
 
+    try {
+      const shouldSkipRestore =
+        sessionStorage.getItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY) === '1' ||
+        localStorage.getItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY) === '1';
+
+      if (shouldSkipRestore) {
+        sessionStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
+        localStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
+        localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        localStorage.removeItem('smartDevisData');
+        sessionStorage.removeItem('smartDevisData');
+        didRestoreWizardRef.current = true;
+        navigate(location.pathname, { replace: true, state: null });
+        return;
+      }
+    } catch {
+      // ignore storage access errors
+    }
+
     const routeState = (location.state as { restoreWizard?: boolean; wizardSnapshot?: SmartDevisWizardSnapshot } | null) ?? null;
 
     // Try to get snapshot from route state first, then localStorage

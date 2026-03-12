@@ -296,7 +296,9 @@ const SmartDevisPage = () => {
 
     try {
       if (hasProgress) {
-        sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, JSON.stringify(snapshot));
+        const snapshotJson = JSON.stringify(snapshot);
+        localStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, snapshotJson);
+        sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, snapshotJson);
       }
     } catch {
       // ignore storage quota errors

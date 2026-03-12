@@ -241,7 +241,7 @@ const AIAssistantPage = () => {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-background">
+    <div className="flex flex-col h-[calc(100dvh-3.5rem-3.5rem)] bg-background">
       {/* Header */}
       <header className="flex items-center gap-3 p-4 border-b border-border bg-card shrink-0">
         <button onClick={() => navigate('/')} className="p-2 rounded-full hover:bg-muted">

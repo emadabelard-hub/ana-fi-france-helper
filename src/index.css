@@ -97,7 +97,8 @@
     --destructive-foreground: 0 0% 98%;
 
     --border: 220 15% 90%;
-    --input: 220 15% 93%;
+    --input: 220 20% 96%;
+    --input-foreground: 220 25% 8%;
     --ring: 37 37% 50%;
 
     --chat-ai: 220 10% 96%;

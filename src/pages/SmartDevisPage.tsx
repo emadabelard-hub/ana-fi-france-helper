@@ -189,8 +189,6 @@ const SmartDevisPage = () => {
     if (didRestoreWizardRef.current) return;
 
     const routeState = (location.state as { restoreWizard?: boolean; wizardSnapshot?: SmartDevisWizardSnapshot } | null) ?? null;
-    if (!routeState?.restoreWizard && !routeState?.wizardSnapshot) return;
-
     let snapshot = routeState?.wizardSnapshot || null;
 
     if (!snapshot) {
@@ -203,6 +201,16 @@ const SmartDevisPage = () => {
     }
 
     if (!snapshot) return;
+
+    const hasProgress =
+      (snapshot.uploadedFiles?.length ?? 0) > 0 ||
+      !!snapshot.pastedText ||
+      !!snapshot.analysisData ||
+      (snapshot.chatMessages?.length ?? 0) > 0 ||
+      (snapshot.lineItems?.length ?? 0) > 0 ||
+      snapshot.step !== 'select_input';
+
+    if (!hasProgress && !routeState?.restoreWizard) return;
 
     didRestoreWizardRef.current = true;
     setStep(snapshot.step || 'select_input');
@@ -221,6 +229,25 @@ const SmartDevisPage = () => {
 
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    const snapshot = buildWizardSnapshot();
+    const hasProgress =
+      snapshot.step !== 'select_input' ||
+      snapshot.uploadedFiles.length > 0 ||
+      !!snapshot.pastedText.trim() ||
+      !!snapshot.analysisData ||
+      snapshot.chatMessages.length > 0 ||
+      snapshot.lineItems.length > 0;
+
+    try {
+      if (hasProgress) {
+        sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, JSON.stringify(snapshot));
+      }
+    } catch {
+      // ignore storage quota errors
+    }
+  }, [buildWizardSnapshot]);
 
   const handleInputTypeSelect = (type: InputType) => {
     setInputType(type);

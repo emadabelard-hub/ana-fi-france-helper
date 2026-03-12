@@ -261,7 +261,10 @@ const InvoiceCreatorPage = () => {
         open={showTypeModal}
         onOpenChange={(open) => {
           if (!open && !documentType) {
-            // If closing without selection, go back
+            if (isSmartDevisFlow) {
+              navigate('/pro/smart-devis', { state: buildSmartDevisReturnState() });
+              return;
+            }
             navigate('/pro');
           }
           setShowTypeModal(open);

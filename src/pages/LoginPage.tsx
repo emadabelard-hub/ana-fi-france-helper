@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+
 import { Loader2, Eye, EyeOff, ArrowRight, UserRound } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 

@@ -372,7 +372,7 @@ const SmartDevisPage = () => {
       !!snapshot.analysisData ||
       (snapshot.chatMessages?.length ?? 0) > 0 ||
       (snapshot.lineItems?.length ?? 0) > 0 ||
-      snapshot.step !== 'select_input';
+      (snapshot.step !== 'select_input' && snapshot.step !== 'ai_intro');
 
     if (!hasProgress) {
       clearSmartDevisStorage();

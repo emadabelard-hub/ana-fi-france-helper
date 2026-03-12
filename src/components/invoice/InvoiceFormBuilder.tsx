@@ -2829,8 +2829,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
                 // Auto-generate document number if missing (AI handles this, not the user)
                 const currentPrefix = getDocPrefix(documentType);
-                const docSuffix = docNumber.startsWith(currentPrefix) ? docNumber.slice(currentPrefix.length).trim() : '';
-                if (!docSuffix && user) {
+                const hasValidDocNumber = docNumber.startsWith(currentPrefix) && docNumber.length > currentPrefix.length;
+                if (!hasValidDocNumber && user) {
                   // Auto-fetch and set the number, don't block the user
                   const autoNum = await fetchNextDocNumber(user.id, documentType);
                   setDocNumber(autoNum);

@@ -1338,7 +1338,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             }}
             disabled={docNumberLoading}
             placeholder={isRTL ? `مثال: ${getDocPrefix(documentType)}001` : `Ex: ${getDocPrefix(documentType)}001`}
-            className="font-mono"
+            className="font-mono text-left"
+            dir="ltr"
+            lang="fr"
           />
           <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
@@ -1499,7 +1501,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 value={clientAddress}
                 onChange={(e) => setClientAddress(e.target.value)}
                 placeholder={isRTL ? '12 rue de Paris, 75001 Paris' : '12 rue de Paris, 75001 Paris'}
-                className={cn(isRTL && "text-right font-cairo")}
+                dir="ltr"
+                lang="fr"
+                className="text-left font-cairo"
               />
             </div>
 
@@ -1752,7 +1756,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 value={assureurAddress}
                 onChange={(e) => setAssureurAddress(e.target.value)}
                 placeholder={isRTL ? 'عنوان المقر' : 'Ex: 25 av. Matignon, 75008 Paris'}
-                className={cn("text-sm", isRTL && "text-right font-cairo")}
+                dir="ltr"
+                lang="fr"
+                className="text-left text-sm"
               />
             </div>
             <div className="space-y-1.5">
@@ -1826,7 +1832,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 value={workSiteAddress}
                 onChange={(e) => setWorkSiteAddress(e.target.value)}
                 placeholder={isRTL ? '45 avenue de Lyon, 69001 Lyon' : '45 avenue de Lyon, 69001 Lyon'}
-                className={cn(isRTL && "text-right font-cairo")}
+                dir="ltr"
+                lang="fr"
+                className="text-left"
               />
               <p className={cn(
                 "text-xs text-muted-foreground",

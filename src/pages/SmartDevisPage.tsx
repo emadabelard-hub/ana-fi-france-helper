@@ -273,18 +273,8 @@ const SmartDevisPage = () => {
 
     const routeState = (location.state as { restoreWizard?: boolean; wizardSnapshot?: SmartDevisWizardSnapshot } | null) ?? null;
 
-    // Only restore if explicitly requested (e.g. returning from invoice creator)
-    if (!routeState?.restoreWizard) {
-      // Fresh navigation: clear stale wizard state so we start clean
-      try {
-        localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-        sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-      } catch {}
-      didRestoreWizardRef.current = true;
-      return;
-    }
-
-    let snapshot = routeState.wizardSnapshot || null;
+    // Try to get snapshot from route state first, then localStorage
+    let snapshot = routeState?.wizardSnapshot || null;
 
     if (!snapshot) {
       try {
@@ -297,7 +287,11 @@ const SmartDevisPage = () => {
       }
     }
 
-    if (!snapshot) return;
+    // If no snapshot or no progress, start fresh
+    if (!snapshot) {
+      didRestoreWizardRef.current = true;
+      return;
+    }
 
     const hasProgress =
       (snapshot.uploadedFiles?.length ?? 0) > 0 ||
@@ -307,8 +301,17 @@ const SmartDevisPage = () => {
       (snapshot.lineItems?.length ?? 0) > 0 ||
       snapshot.step !== 'select_input';
 
-    if (!hasProgress) return;
+    if (!hasProgress) {
+      // No progress to restore — clear stale data
+      try {
+        localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+        sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
+      } catch {}
+      didRestoreWizardRef.current = true;
+      return;
+    }
 
+    // Restore the wizard state
     didRestoreWizardRef.current = true;
     setStep(snapshot.step || 'select_input');
     setInputType(snapshot.inputType ?? null);
@@ -324,8 +327,14 @@ const SmartDevisPage = () => {
     setSurfaceEstimates(Array.isArray(snapshot.surfaceEstimates) ? snapshot.surfaceEstimates : []);
     setMaterialScope(snapshot.materialScope ?? null);
 
+    // Show restore toast
+    toast({
+      title: isRTL ? '📝 تم استعادة بياناتك' : '📝 Données restaurées',
+      description: isRTL ? 'الشغل اللي كنت شغال عليه رجعلك' : 'Votre travail en cours a été restauré',
+    });
+
     navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate]);
+  }, [location.pathname, location.state, navigate, isRTL, toast]);
 
   useEffect(() => {
     const snapshot = buildWizardSnapshot();

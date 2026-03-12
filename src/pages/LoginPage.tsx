@@ -117,7 +117,7 @@ const LoginPage = () => {
         
         toast({
           variant: "destructive",
-          title: isRTL ? "خطأ" : "Erreur",
+          title: "Erreur",
           description: getErrorMessage(result.error.message),
         });
         return;
@@ -125,16 +125,14 @@ const LoginPage = () => {
 
       if (!isLogin && result.needsEmailConfirmation) {
         toast({
-          title: isRTL ? "تحقق من بريدك" : "Vérifiez votre email",
-          description: isRTL
-            ? "تم إنشاء الحساب. يلزم تأكيد البريد قبل تسجيل الدخول."
-            : "Compte créé. Confirmez votre email avant la connexion.",
+          title: "Vérifiez votre email",
+          description: "Compte créé. Confirmez votre email avant la connexion.",
         });
         setIsLogin(true);
         return;
       }
 
-      toast({ title: isRTL ? "تم الدخول ✓" : "Connexion réussie ✓" });
+      toast({ title: "Connexion réussie ✓" });
       const isPrimaryAdmin = normalizedEmail === PRIMARY_ADMIN_EMAIL;
       navigate(isPrimaryAdmin ? '/accounts' : '/', { replace: true });
     } finally {

@@ -963,35 +963,7 @@ const SmartDevisPage = () => {
             )}
 
             {/* Material Scope Selector */}
-            <div className="space-y-2 bg-muted/30 rounded-xl p-3 border border-border/50">
-              <label className={cn("text-sm font-bold flex items-center gap-1.5", isRTL && "flex-row-reverse font-cairo")}>
-                🔧 {isRTL ? 'الدوفي يشمل المواد ولا مصنعية بس؟' : 'Souhaitez-vous inclure la fourniture des matériaux ou uniquement la main d\'œuvre ?'}
-              </label>
-              <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-                <button
-                  onClick={() => setMaterialScope('fourniture_et_pose')}
-                  className={cn(
-                    "flex-1 text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
-                    materialScope === 'fourniture_et_pose'
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background border-border hover:bg-muted"
-                  )}
-                >
-                  {isRTL ? '🏗️ فورنيتير + مصنعية' : '🏗️ Fourniture + Pose'}
-                </button>
-                <button
-                  onClick={() => setMaterialScope('main_oeuvre_seule')}
-                  className={cn(
-                    "flex-1 text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
-                    materialScope === 'main_oeuvre_seule'
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background border-border hover:bg-muted"
-                  )}
-                >
-                  {isRTL ? '🔧 مصنعية بس' : '🔧 Main d\'œuvre seule'}
-                </button>
-              </div>
-            </div>
+            <MaterialScopeSelector />
 
             {/* Pasted text area */}
             <div className="space-y-2">

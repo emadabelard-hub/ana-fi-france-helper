@@ -612,15 +612,24 @@ const SmartDevisPage = () => {
         sitePhotos,
       };
 
-      // Persist to sessionStorage as fallback for navigation state loss
+      const wizardSnapshot = buildWizardSnapshot();
+
+      // Persist data + wizard snapshot as fallback for navigation state loss
       try {
         sessionStorage.setItem('smartDevisData', JSON.stringify(prefillData));
+        sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, JSON.stringify(wizardSnapshot));
       } catch (e) {
         console.warn('Failed to persist smart devis data to sessionStorage:', e);
       }
 
       navigate('/pro/invoice-creator?type=devis&prefill=smart', {
-        state: { smartDevisData: prefillData },
+        state: {
+          smartDevisData: prefillData,
+          smartDevisReturnState: {
+            restoreWizard: true,
+            wizardSnapshot,
+          },
+        },
       });
     } catch (err: any) {
       const technicalMessage = err?.message || err?.context?.body || String(err);

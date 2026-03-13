@@ -57,6 +57,15 @@ const Dashboard = () => {
       iconBg: 'bg-cyan-400/30',
       emoji: '💼',
     },
+    {
+      icon: Settings,
+      title: isRTL ? 'إعدادات الأسعار' : 'Réglages Tarifs',
+      subtitle: isRTL ? 'خصّص أسعارك المرجعية للدوفي الذكي' : 'Personnalisez vos prix de référence',
+      path: '/pro/pricing-settings',
+      gradient: 'from-slate-500 to-slate-700',
+      iconBg: 'bg-slate-400/30',
+      emoji: '⚙️',
+    },
   ];
 
   return (

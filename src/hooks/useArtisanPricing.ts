@@ -24,8 +24,8 @@ export const DEFAULT_PRICING: ArtisanPricing = {
   peinture_mur_full: 30,
   peinture_mur_labor: 16.5,
   nettoyage_forfait: 200,
-  fenetre_full: 65,
-  fenetre_labor: 40,
+  fenetre_full: 60,
+  fenetre_labor: 35,
   sous_couche_full: 12,
   poncage_full: 14,
 };

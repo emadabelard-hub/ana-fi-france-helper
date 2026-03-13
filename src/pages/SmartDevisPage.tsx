@@ -226,11 +226,11 @@ const SmartDevisPage = () => {
     { keywords: ['sous-couche', 'سوكوش', 'سوس كوش'], price: artisanPricing.sous_couche_full },
     { keywords: ['ragréage', 'راغرياج', 'ragreage'], price: 22 },
     { keywords: ['enduit', 'أندوي'], price: artisanPricing.enduit_full, laborPrice: artisanPricing.enduit_labor },
+    // Windows / Doors / Cadres — MUST be before generic 'peinture' to avoid m² override
+    { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries', 'porte', 'portes', 'باب', 'أبواب'], price: artisanPricing.fenetre_full, unit: 'u', laborPrice: artisanPricing.fenetre_labor },
     // Peinture (mur + plafond) — reads from artisan settings
     { keywords: ['plafond', 'سقف', 'بلافون'], price: artisanPricing.peinture_plafond_full, laborPrice: artisanPricing.peinture_plafond_labor },
     { keywords: ['peinture', 'بنتيرة', 'بانتيرة'], price: artisanPricing.peinture_mur_full, laborPrice: artisanPricing.peinture_mur_labor },
-    // Windows / Cadres fenêtres — reads from artisan settings
-    { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'], price: artisanPricing.fenetre_full, unit: 'u', laborPrice: artisanPricing.fenetre_labor },
     // Carrelage / Faïence
     { keywords: ['carrelage', 'كارلاج', 'faience', 'faïence', 'فايونس'], price: 58 },
     { keywords: ['parquet', 'باركيه'], price: 52 },
@@ -274,8 +274,8 @@ const SmartDevisPage = () => {
       scopedPrice = withMaterialsBase;
     }
 
-    // Enforce minimum floors for fenêtres
-    if (matched?.unit === 'u' && matched?.keywords.some(k => ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'].includes(k))) {
+    // Enforce minimum floors for fenêtres/portes (unit-priced items)
+    if (matched?.unit === 'u') {
       if (scope === 'main_oeuvre_seule' && scopedPrice < artisanPricing.fenetre_labor) scopedPrice = artisanPricing.fenetre_labor;
       if (scope !== 'main_oeuvre_seule' && scopedPrice < artisanPricing.fenetre_full) scopedPrice = artisanPricing.fenetre_full;
     }

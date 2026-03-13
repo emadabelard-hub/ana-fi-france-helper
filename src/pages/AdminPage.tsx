@@ -100,6 +100,19 @@ const AdminPage = () => {
         </div>
       </section>
 
+      {/* Quick Actions */}
+      <div className="flex gap-2 flex-wrap">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate('/pro/pricing-settings')}
+          className={cn("gap-2", isRTL && "flex-row-reverse font-cairo")}
+        >
+          <Settings className="h-4 w-4" />
+          {isRTL ? 'إعدادات الأسعار' : 'Réglages Tarifs'}
+        </Button>
+      </div>
+
       {/* System Health Card */}
       <SystemHealthCard
         isRTL={isRTL}

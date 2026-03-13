@@ -274,8 +274,8 @@ const SmartDevisPage = () => {
       scopedPrice = withMaterialsBase;
     }
 
-    // Enforce minimum floors for fenêtres
-    if (matched?.unit === 'u' && matched?.keywords.some(k => ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'].includes(k))) {
+    // Enforce minimum floors for fenêtres/portes (unit-priced items)
+    if (matched?.unit === 'u') {
       if (scope === 'main_oeuvre_seule' && scopedPrice < artisanPricing.fenetre_labor) scopedPrice = artisanPricing.fenetre_labor;
       if (scope !== 'main_oeuvre_seule' && scopedPrice < artisanPricing.fenetre_full) scopedPrice = artisanPricing.fenetre_full;
     }

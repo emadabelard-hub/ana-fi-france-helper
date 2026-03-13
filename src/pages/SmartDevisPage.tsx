@@ -224,29 +224,75 @@ const SmartDevisPage = () => {
 
   // Build keyword→catalog mapping from the new price catalog
   const CATALOG_KEYWORDS: Record<string, { keywords: string[]; catalogCode: string }> = {
-    PT001: { keywords: ['peinture mur', 'peinture blanc', 'بنتيرة', 'بانتيرة', 'peinture'], catalogCode: 'PT001' },
-    PT002: { keywords: ['plafond', 'سقف', 'بلافون', 'peinture plafond'], catalogCode: 'PT002' },
-    PT003: { keywords: ['enduit', 'أندوي', 'preparation', 'préparation', 'lissage', 'ponsage', 'ponçage', 'بونساج', 'sous-couche', 'سوكوش', 'سوس كوش', 'ragréage', 'راغرياج', 'ragreage'], catalogCode: 'PT003' },
-    PT004: { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries', 'porte', 'portes', 'باب', 'أبواب'], catalogCode: 'PT004' },
+    // Maçonnerie
+    MC001: { keywords: ['dalle beton', 'dalle béton', 'dalle armee', 'dalle armée'], catalogCode: 'MC001' },
+    MC002: { keywords: ['parpaing', 'parpaing creux'], catalogCode: 'MC002' },
+    MC003: { keywords: ['chape', 'chape ciment'], catalogCode: 'MC003' },
+    MC004: { keywords: ['mur porteur', 'ouverture mur'], catalogCode: 'MC004' },
+    MC005: { keywords: ['enduit facade', 'enduit exterieur'], catalogCode: 'MC005' },
+    MC006: { keywords: ['demolition', 'démolition', 'ديمونتاج', 'demontage', 'démontage', 'demolition mur'], catalogCode: 'MC006' },
+    MC007: { keywords: ['terrassement'], catalogCode: 'MC007' },
+    // Placo
     PL001: { keywords: ['placo', 'ba13', 'بلاكو'], catalogCode: 'PL001' },
-    PL002: { keywords: ['cloison', 'كلوازون'], catalogCode: 'PL002' },
-    CR001: { keywords: ['carrelage', 'كارلاج'], catalogCode: 'CR001' },
-    CR002: { keywords: ['faience', 'faïence', 'فايونس'], catalogCode: 'CR002' },
+    PL002: { keywords: ['cloison placo', 'cloison isolee', 'كلوازون'], catalogCode: 'PL002' },
+    PL003: { keywords: ['faux plafond', 'faux-plafond'], catalogCode: 'PL003' },
+    PL004: { keywords: ['bande placo', 'bande a joint', 'bande joint'], catalogCode: 'PL004' },
+    PL005: { keywords: ['isolation', 'laine verre', 'laine de verre'], catalogCode: 'PL005' },
+    // Peinture
+    PNT001: { keywords: ['peinture blanche mate', 'peinture mate'], catalogCode: 'PNT001' },
+    PNT002: { keywords: ['peinture satinee', 'peinture satinée', 'peinture blanche satinee'], catalogCode: 'PNT002' },
+    PNT003: { keywords: ['peinture couleur'], catalogCode: 'PNT003' },
+    PNT004: { keywords: ['peinture plafond', 'plafond', 'سقف', 'بلافون'], catalogCode: 'PNT004' },
+    PNT005: { keywords: ['peinture facade', 'peinture exterieure'], catalogCode: 'PNT005' },
+    PNT006: { keywords: ['anti humidite', 'anti-humidite', 'anti humidité'], catalogCode: 'PNT006' },
+    PNT007: { keywords: ['peinture porte', 'peinture bois', 'peinture boiserie'], catalogCode: 'PNT007' },
+    PNT008: { keywords: ['peinture metal', 'peinture métal', 'peinture fer'], catalogCode: 'PNT008' },
+    // Generic peinture fallback (must be AFTER specific PNT codes)
+    PNT_GENERIC: { keywords: ['peinture mur', 'peinture blanc', 'بنتيرة', 'بانتيرة', 'peinture'], catalogCode: 'PNT001' },
+    // Carrelage
+    CR001: { keywords: ['carrelage sol', 'carrelage', 'كارلاج'], catalogCode: 'CR001' },
+    CR002: { keywords: ['faience', 'faïence', 'فايونس', 'faience murale'], catalogCode: 'CR002' },
+    CR003: { keywords: ['ragreage', 'ragréage', 'راغرياج'], catalogCode: 'CR003' },
+    CR004: { keywords: ['depose carrelage', 'dépose carrelage'], catalogCode: 'CR004' },
+    CR005: { keywords: ['carrelage terrasse', 'carrelage exterieur'], catalogCode: 'CR005' },
+    // Parquet
     PQ001: { keywords: ['parquet flottant'], catalogCode: 'PQ001' },
     PQ002: { keywords: ['parquet colle', 'parquet collé', 'parquet', 'باركيه'], catalogCode: 'PQ002' },
+    PQ003: { keywords: ['plinthe parquet', 'pose plinthe'], catalogCode: 'PQ003' },
+    PQ004: { keywords: ['depose parquet', 'dépose parquet'], catalogCode: 'PQ004' },
+    PQ005: { keywords: ['poncage parquet', 'ponçage parquet', 'poncage', 'ponçage', 'بونساج'], catalogCode: 'PQ005' },
+    // Plomberie
     PB001: { keywords: ['wc', 'toilette', 'toilettes'], catalogCode: 'PB001' },
-    PB002: { keywords: ['lavabo', 'évier'], catalogCode: 'PB002' },
-    PB003: { keywords: ['douche', 'baignoire', 'plomberie', 'سباكة'], catalogCode: 'PB003' },
-    EL001: { keywords: ['prise', 'prise electrique'], catalogCode: 'EL001' },
+    PB002: { keywords: ['lavabo', 'évier', 'evier'], catalogCode: 'PB002' },
+    PB003: { keywords: ['douche', 'baignoire', 'سباكة'], catalogCode: 'PB003' },
+    PB004: { keywords: ['fuite', 'reparation fuite', 'réparation fuite'], catalogCode: 'PB004' },
+    PB005: { keywords: ['chauffe eau', 'chauffe-eau', 'ballon eau chaude', 'سخان'], catalogCode: 'PB005' },
+    // Electricité
+    EL001: { keywords: ['prise', 'prise electrique', 'prise murale'], catalogCode: 'EL001' },
     EL002: { keywords: ['interrupteur'], catalogCode: 'EL002' },
-    EL003: { keywords: ['tableau electrique', 'tableau électrique', 'electricite', 'électricité', 'كهرباء'], catalogCode: 'EL003' },
-    MC001: { keywords: ['dalle', 'dalle beton', 'dalle béton'], catalogCode: 'MC001' },
-    MC002: { keywords: ['parpaing', 'maconnerie', 'maçonnerie'], catalogCode: 'MC002' },
-    MC003: { keywords: ['demolition', 'démolition', 'ديمونتاج', 'demontage', 'démontage'], catalogCode: 'MC003' },
-    PS001: { keywords: ['terrassement', 'piscine structure'], catalogCode: 'PS001' },
-    PS002: { keywords: ['liner', 'etancheite', 'étanchéité'], catalogCode: 'PS002' },
-    PS003: { keywords: ['filtration', 'local technique', 'piscine'], catalogCode: 'PS003' },
-    GN001: { keywords: ['nettoyage', 'نيتواياج', 'frais de chantier', 'مصاريف الشانتي'], catalogCode: 'GN001' },
+    EL003: { keywords: ['tableau electrique', 'tableau électrique', 'كهرباء'], catalogCode: 'EL003' },
+    EL004: { keywords: ['luminaire', 'eclairage', 'éclairage', 'plafonnier'], catalogCode: 'EL004' },
+    EL005: { keywords: ['cable electrique', 'câble électrique', 'tirage cable'], catalogCode: 'EL005' },
+    // Menuiserie
+    MN001: { keywords: ['porte interieure', 'porte intérieure', 'pose porte', 'porte', 'باب'], catalogCode: 'MN001' },
+    MN002: { keywords: ['fenetre', 'fenêtre', 'شباك', 'fenetre pvc', 'fenêtre pvc'], catalogCode: 'MN002' },
+    MN003: { keywords: ['placard', 'placard sur mesure', 'dressing'], catalogCode: 'MN003' },
+    MN004: { keywords: ['plinthe bois', 'plinthe'], catalogCode: 'MN004' },
+    // Facade
+    FAC001: { keywords: ['nettoyage facade', 'haute pression', 'karcher'], catalogCode: 'FAC001' },
+    FAC002: { keywords: ['sablage', 'sablage facade'], catalogCode: 'FAC002' },
+    FAC003: { keywords: ['ravalement', 'ravalement facade'], catalogCode: 'FAC003' },
+    // Location
+    LOC001: { keywords: ['echafaudage roulant', 'échafaudage roulant'], catalogCode: 'LOC001' },
+    LOC002: { keywords: ['echafaudage fixe', 'échafaudage fixe', 'echafaudage', 'échafaudage'], catalogCode: 'LOC002' },
+    LOC003: { keywords: ['sableuse', 'location sableuse'], catalogCode: 'LOC003' },
+    LOC004: { keywords: ['ponceuse girafe', 'ponceuse'], catalogCode: 'LOC004' },
+    LOC005: { keywords: ['betonniere', 'bétonnière'], catalogCode: 'LOC005' },
+    LOC006: { keywords: ['nacelle', 'nacelle elevatrice'], catalogCode: 'LOC006' },
+    // General
+    GN_NETTOYAGE: { keywords: ['nettoyage', 'نيتواياج', 'frais de chantier', 'مصاريف الشانتي', 'nettoyage chantier'], catalogCode: 'FAC001' },
+    // Legacy prep keywords for cumulative logic
+    PREP: { keywords: ['enduit', 'أندوي', 'preparation', 'préparation', 'lissage', 'sous-couche', 'سوكوش', 'سوس كوش'], catalogCode: 'CR003' },
   };
 
   // Build REFERENCE_PRICES from catalog for backward-compatible matching
@@ -257,16 +303,32 @@ const SmartDevisPage = () => {
     // PT003 Preparation BEFORE PT001/PT002 painting
     ...((): typeof REFERENCE_PRICES => {
       const orderedCodes = [
-        'PT003', 'PT004', // prep & doors/windows first
-        'PT002', 'PT001', // plafond before generic peinture
-        'PL002', 'PL001', // cloison before generic placo
-        'CR002', 'CR001', // faience before generic carrelage
-        'PQ001', 'PQ002', // parquet flottant before generic
-        'PB001', 'PB002', 'PB003', // plomberie specifics
-        'EL001', 'EL002', 'EL003', // electricite specifics
-        'MC001', 'MC002', 'MC003', // maconnerie
-        'PS001', 'PS002', 'PS003', // piscine
-        'GN001', // general
+        // Prep & specific items first
+        'PREP', 'CR003', 'CR004', 'PQ004', 'PQ005',
+        // Specific peinture before generic
+        'PNT007', 'PNT008', 'PNT006', 'PNT005', 'PNT004', 'PNT003', 'PNT002', 'PNT001',
+        // Placo specifics
+        'PL004', 'PL005', 'PL003', 'PL002', 'PL001',
+        // Carrelage
+        'CR005', 'CR002', 'CR001',
+        // Parquet
+        'PQ003', 'PQ001', 'PQ002',
+        // Plomberie
+        'PB004', 'PB005', 'PB001', 'PB002', 'PB003',
+        // Electricité
+        'EL004', 'EL005', 'EL001', 'EL002', 'EL003',
+        // Menuiserie (specific before generic)
+        'MN002', 'MN003', 'MN004', 'MN001',
+        // Maçonnerie
+        'MC004', 'MC003', 'MC005', 'MC007', 'MC001', 'MC002', 'MC006',
+        // Facade
+        'FAC002', 'FAC003', 'FAC001',
+        // Location
+        'LOC001', 'LOC002', 'LOC003', 'LOC004', 'LOC005', 'LOC006',
+        // Generic peinture fallback (last)
+        'PNT_GENERIC',
+        // General
+        'GN_NETTOYAGE',
       ];
       return orderedCodes.map(code => {
         const meta = CATALOG_KEYWORDS[code];
@@ -301,12 +363,12 @@ const SmartDevisPage = () => {
     const hasPaint = PAINT_KEYWORDS.some(k => normalizedDesignation.includes(normalizeText(k)));
 
     if (hasPrep && hasPaint && unit !== 'u' && unit !== 'forfait') {
-      const pt003 = findCatalogItem('PT003');
-      const pt001 = findCatalogItem('PT001');
-      const prepFull = pt003?.total_price ?? 14;
-      const prepLabor = pt003?.labor_price ?? 10;
-      const paintFull = pt001?.total_price ?? 30;
-      const paintLabor = pt001?.labor_price ?? 20;
+      const cr003 = findCatalogItem('CR003');
+      const pnt001 = findCatalogItem('PNT001');
+      const prepFull = cr003?.total_price ?? 20;
+      const prepLabor = cr003?.labor_price ?? 14;
+      const paintFull = pnt001?.total_price ?? 22;
+      const paintLabor = pnt001?.labor_price ?? 18;
 
       let cumulativePrice: number;
       if (scope === 'main_oeuvre_seule') {
@@ -314,9 +376,9 @@ const SmartDevisPage = () => {
       } else {
         cumulativePrice = prepFull + paintFull;
       }
-      // Enforce minimum floor: 30€/m² (labor) or 44€/m² (full) for combined tasks
-      const minFull = 44; // PT003(14) + PT001(30)
-      const minLabor = 30; // PT003(10) + PT001(20)
+      // Enforce minimum floor: 32€/m² (labor) or 42€/m² (full) for combined tasks
+      const minFull = 42; // CR003(20) + PNT001(22)
+      const minLabor = 32; // CR003(14) + PNT001(18)
       if (scope === 'main_oeuvre_seule' && cumulativePrice < minLabor) cumulativePrice = minLabor;
       if (scope !== 'main_oeuvre_seule' && cumulativePrice < minFull) cumulativePrice = minFull;
 
@@ -346,11 +408,11 @@ const SmartDevisPage = () => {
       scopedPrice = withMaterialsBase;
     }
 
-    // Enforce minimum floors for unit-priced items (PT004 doors/windows)
+    // Enforce minimum floors for unit-priced items (doors/windows - MN001/MN002)
     if (matched?.unit === 'u') {
-      const pt004 = findCatalogItem('PT004');
-      const minLabor = pt004?.labor_price ?? 45;
-      const minFull = pt004?.total_price ?? 60;
+      const mn001 = findCatalogItem('MN001');
+      const minLabor = mn001?.labor_price ?? 180;
+      const minFull = mn001?.total_price ?? 300;
       if (scope === 'main_oeuvre_seule' && scopedPrice < minLabor) scopedPrice = minLabor;
       if (scope !== 'main_oeuvre_seule' && scopedPrice < minFull) scopedPrice = minFull;
     }

@@ -38,9 +38,11 @@ export type Database = {
           code: string
           created_at: string
           description: string
+          equipment_price: number
           id: string
           labor_price: number
           material_price: number
+          subcategory: string
           total_price: number
           unit: string
           updated_at: string
@@ -51,9 +53,11 @@ export type Database = {
           code: string
           created_at?: string
           description: string
+          equipment_price?: number
           id?: string
           labor_price?: number
           material_price?: number
+          subcategory?: string
           total_price?: number
           unit?: string
           updated_at?: string
@@ -64,9 +68,11 @@ export type Database = {
           code?: string
           created_at?: string
           description?: string
+          equipment_price?: number
           id?: string
           labor_price?: number
           material_price?: number
+          subcategory?: string
           total_price?: number
           unit?: string
           updated_at?: string

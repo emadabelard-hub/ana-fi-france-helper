@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Loader2, Settings, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useArtisanPricing, DEFAULT_CATALOG, type PriceCatalogItem } from '@/hooks/useArtisanPricing';
@@ -11,22 +10,26 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const CATEGORY_META: Record<string, { icon: string; labelFr: string; labelAr: string }> = {
-  peinture: { icon: '🎨', labelFr: 'Peinture', labelAr: 'بنتيرة' },
+  maconnerie: { icon: '🏗️', labelFr: 'Maçonnerie', labelAr: 'ماسونري' },
   placo: { icon: '🧱', labelFr: 'Placo', labelAr: 'بلاكو' },
+  peinture: { icon: '🎨', labelFr: 'Peinture', labelAr: 'بنتيرة' },
   carrelage: { icon: '🔲', labelFr: 'Carrelage', labelAr: 'كارلاج' },
   parquet: { icon: '🪵', labelFr: 'Parquet', labelAr: 'باركيه' },
   plomberie: { icon: '🔧', labelFr: 'Plomberie', labelAr: 'سباكة' },
   electricite: { icon: '⚡', labelFr: 'Électricité', labelAr: 'كهرباء' },
-  maconnerie: { icon: '🏗️', labelFr: 'Maçonnerie', labelAr: 'ماسونري' },
-  piscine: { icon: '🏊', labelFr: 'Piscine', labelAr: 'مسبح' },
-  general: { icon: '🧹', labelFr: 'Général', labelAr: 'عام' },
+  menuiserie: { icon: '🚪', labelFr: 'Menuiserie', labelAr: 'نجارة' },
+  facade: { icon: '🏠', labelFr: 'Façade', labelAr: 'واجهة' },
+  location: { icon: '🏗️', labelFr: 'Location Matériel', labelAr: 'إيجار معدات' },
 };
 
 const UNIT_LABELS: Record<string, string> = {
   m2: '€/m²',
   m3: '€/m³',
+  ml: '€/ml',
   unit: '€/u',
   forfait: '€',
+  day: '€/jour',
+  m2_day: '€/m²/j',
 };
 
 const PricingSettingsPage = () => {
@@ -40,13 +43,12 @@ const PricingSettingsPage = () => {
     if (!isLoading) setForm(catalog);
   }, [isLoading, catalog]);
 
-  const updateItem = (code: string, field: 'material_price' | 'labor_price' | 'total_price', value: number) => {
+  const updateItem = (code: string, field: 'material_price' | 'labor_price' | 'equipment_price' | 'total_price', value: number) => {
     setForm(prev => prev.map(item => {
       if (item.code !== code) return item;
       const updated = { ...item, [field]: value };
-      // Auto-calc total when material or labor changes
-      if (field === 'material_price' || field === 'labor_price') {
-        updated.total_price = updated.material_price + updated.labor_price;
+      if (field === 'material_price' || field === 'labor_price' || field === 'equipment_price') {
+        updated.total_price = updated.material_price + updated.labor_price + updated.equipment_price;
       }
       return updated;
     }));
@@ -74,8 +76,9 @@ const PricingSettingsPage = () => {
     );
   }
 
-  // Group by category
   const categories = [...new Set(form.map(i => i.category))];
+  const hasEquipment = (items: PriceCatalogItem[]) => items.some(i => i.equipment_price > 0);
+  const isLocationCategory = (cat: string) => cat === 'location';
 
   return (
     <div className={cn("min-h-screen bg-background pb-24", isRTL && "font-cairo")} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -95,7 +98,7 @@ const PricingSettingsPage = () => {
                 {isFr ? 'Réglages Tarifs' : 'إعدادات التعريفة'}
               </h1>
               <p className={cn("text-sm text-muted-foreground", isRTL && "text-right")}>
-                {isFr ? '23 postes de référence — Matériaux / Main d\'œuvre / Total' : '23 بند مرجعي — مواد / يد عاملة / إجمالي'}
+                {isFr ? `${form.length} postes de référence — Mat. / M.O. / Équip. / Total` : `${form.length} بند مرجعي — مواد / يد عاملة / معدات / إجمالي`}
               </p>
             </div>
           </div>
@@ -104,13 +107,12 @@ const PricingSettingsPage = () => {
 
       {/* Content */}
       <div className="p-4 space-y-4 max-w-lg mx-auto">
-        {/* Info banner */}
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-3">
             <p className={cn("text-xs text-muted-foreground leading-relaxed", isRTL && "text-right")}>
               {isFr
-                ? '💡 Ces tarifs alimentent le Devis Intelligent. Le total se calcule automatiquement (Matériaux + Main d\'œuvre).'
-                : '💡 هذه التعريفة تغذي الدوفي الذكي. الإجمالي يُحسب تلقائيًا (مواد + يد عاملة).'}
+                ? '💡 Ces tarifs alimentent le Devis Intelligent. Le total se calcule automatiquement (Mat. + M.O. + Équip.).'
+                : '💡 هذه التعريفة تغذي الدوفي الذكي. الإجمالي يُحسب تلقائيًا (مواد + يد عاملة + معدات).'}
             </p>
           </CardContent>
         </Card>
@@ -118,6 +120,7 @@ const PricingSettingsPage = () => {
         {categories.map((cat) => {
           const meta = CATEGORY_META[cat] || { icon: '📋', labelFr: cat, labelAr: cat };
           const items = form.filter(i => i.category === cat);
+          const showEquip = hasEquipment(items) || isLocationCategory(cat);
 
           return (
             <Card key={cat}>
@@ -128,49 +131,61 @@ const PricingSettingsPage = () => {
                 )}>
                   <span>{meta.icon}</span>
                   {isFr ? meta.labelFr : meta.labelAr}
+                  <span className="text-[10px] text-muted-foreground font-normal">({items.length})</span>
                 </h3>
 
                 <div className="space-y-3">
                   {/* Column headers */}
-                  <div className="grid grid-cols-12 gap-1 text-[10px] text-muted-foreground font-medium px-1">
-                    <div className="col-span-4">{isFr ? 'Désignation' : 'التسمية'}</div>
-                    <div className="col-span-2 text-center">{isFr ? 'Mat.' : 'مواد'}</div>
-                    <div className="col-span-3 text-center">{isFr ? 'M.O.' : 'يد عاملة'}</div>
-                    <div className="col-span-3 text-center">{isFr ? 'Total' : 'إجمالي'}</div>
+                  <div className={cn(
+                    "grid gap-1 text-[10px] text-muted-foreground font-medium px-1",
+                    showEquip ? "grid-cols-[1fr_50px_50px_50px_60px]" : "grid-cols-[1fr_55px_55px_60px]"
+                  )}>
+                    <div>{isFr ? 'Désignation' : 'التسمية'}</div>
+                    <div className="text-center">{isFr ? 'Mat.' : 'مواد'}</div>
+                    <div className="text-center">{isLocationCategory(cat) ? (isFr ? 'Tarif' : 'تعريفة') : (isFr ? 'M.O.' : 'يد عاملة')}</div>
+                    {showEquip && <div className="text-center">{isFr ? 'Équip.' : 'معدات'}</div>}
+                    <div className="text-center">{isFr ? 'Total' : 'إجمالي'}</div>
                   </div>
 
                   {items.map(item => {
                     const unitLabel = UNIT_LABELS[item.unit] || `€/${item.unit}`;
                     return (
-                      <div key={item.code} className="grid grid-cols-12 gap-1 items-center">
-                        <div className={cn("col-span-4 text-xs", isRTL && "text-right")}>
+                      <div key={item.code} className={cn(
+                        "grid gap-1 items-center",
+                        showEquip ? "grid-cols-[1fr_50px_50px_50px_60px]" : "grid-cols-[1fr_55px_55px_60px]"
+                      )}>
+                        <div className={cn("text-xs", isRTL && "text-right")}>
                           <span className="font-medium">{item.description}</span>
                           <span className="block text-[10px] text-muted-foreground">{item.code} · {unitLabel}</span>
                         </div>
-                        <div className="col-span-2">
+                        <div>
                           <Input
-                            type="number"
-                            min="0"
-                            step="1"
+                            type="number" min="0" step="1"
                             value={item.material_price}
                             onChange={(e) => updateItem(item.code, 'material_price', parseFloat(e.target.value) || 0)}
-                            className="h-8 text-xs text-center px-1"
-                            dir="ltr"
+                            className="h-7 text-[11px] text-center px-1" dir="ltr"
                           />
                         </div>
-                        <div className="col-span-3">
+                        <div>
                           <Input
-                            type="number"
-                            min="0"
-                            step="1"
+                            type="number" min="0" step="1"
                             value={item.labor_price}
                             onChange={(e) => updateItem(item.code, 'labor_price', parseFloat(e.target.value) || 0)}
-                            className="h-8 text-xs text-center px-1"
-                            dir="ltr"
+                            className="h-7 text-[11px] text-center px-1" dir="ltr"
                           />
                         </div>
-                        <div className="col-span-3">
-                          <div className="h-8 flex items-center justify-center text-xs font-bold text-primary bg-primary/5 rounded-md border border-primary/20">
+                        {showEquip && (
+                          <div>
+                            <Input
+                              type="number" min="0" step="1"
+                              value={item.equipment_price}
+                              onChange={(e) => updateItem(item.code, 'equipment_price', parseFloat(e.target.value) || 0)}
+                              className="h-7 text-[11px] text-center px-1" dir="ltr"
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <div className="h-7 flex items-center justify-center text-[11px] font-bold text-primary bg-primary/5 rounded-md border border-primary/20">
                             {item.total_price}€
                           </div>
                         </div>

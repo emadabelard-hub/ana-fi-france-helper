@@ -221,27 +221,66 @@ const SmartDevisPage = () => {
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
   const LABOR_ONLY_FACTOR = 0.55;
-  const REFERENCE_PRICES: Array<{ keywords: string[]; price: number; unit?: string; laborPrice?: number }> = [
-    // Preparation / Ponçage / Sous-couche — reads from artisan settings
-    { keywords: ['ponsage', 'ponçage', 'بونساج'], price: artisanPricing.poncage_full },
-    { keywords: ['sous-couche', 'سوكوش', 'سوس كوش'], price: artisanPricing.sous_couche_full },
-    { keywords: ['ragréage', 'راغرياج', 'ragreage'], price: 22 },
-    { keywords: ['enduit', 'أندوي'], price: artisanPricing.enduit_full, laborPrice: artisanPricing.enduit_labor },
-    // Windows / Doors / Cadres — MUST be before generic 'peinture' to avoid m² override
-    { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries', 'porte', 'portes', 'باب', 'أبواب'], price: artisanPricing.fenetre_full, unit: 'u', laborPrice: artisanPricing.fenetre_labor },
-    // Peinture (mur + plafond) — reads from artisan settings
-    { keywords: ['plafond', 'سقف', 'بلافون'], price: artisanPricing.peinture_plafond_full, laborPrice: artisanPricing.peinture_plafond_labor },
-    { keywords: ['peinture', 'بنتيرة', 'بانتيرة'], price: artisanPricing.peinture_mur_full, laborPrice: artisanPricing.peinture_mur_labor },
-    // Carrelage / Faïence
-    { keywords: ['carrelage', 'كارلاج', 'faience', 'faïence', 'فايونس'], price: 58 },
-    { keywords: ['parquet', 'باركيه'], price: 52 },
-    { keywords: ['plomberie', 'سباكة'], price: 68 },
-    { keywords: ['electricite', 'électricité', 'كهرباء'], price: 64 },
-    { keywords: ['placo', 'cloison', 'بلاكو'], price: 42 },
-    { keywords: ['faux plafond', 'فو بلافون', 'سقف معلق'], price: 48 },
-    { keywords: ['demontage', 'démontage', 'ديمونتاج'], price: 24 },
-    // Nettoyage chantier — reads from artisan settings
-    { keywords: ['nettoyage', 'نيتواياج', 'frais de chantier', 'مصاريف الشانتي'], price: artisanPricing.nettoyage_forfait, unit: 'forfait' },
+
+  // Build keyword→catalog mapping from the new price catalog
+  const CATALOG_KEYWORDS: Record<string, { keywords: string[]; catalogCode: string }> = {
+    PT001: { keywords: ['peinture mur', 'peinture blanc', 'بنتيرة', 'بانتيرة', 'peinture'], catalogCode: 'PT001' },
+    PT002: { keywords: ['plafond', 'سقف', 'بلافون', 'peinture plafond'], catalogCode: 'PT002' },
+    PT003: { keywords: ['enduit', 'أندوي', 'preparation', 'préparation', 'lissage', 'ponsage', 'ponçage', 'بونساج', 'sous-couche', 'سوكوش', 'سوس كوش', 'ragréage', 'راغرياج', 'ragreage'], catalogCode: 'PT003' },
+    PT004: { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries', 'porte', 'portes', 'باب', 'أبواب'], catalogCode: 'PT004' },
+    PL001: { keywords: ['placo', 'ba13', 'بلاكو'], catalogCode: 'PL001' },
+    PL002: { keywords: ['cloison', 'كلوازون'], catalogCode: 'PL002' },
+    CR001: { keywords: ['carrelage', 'كارلاج'], catalogCode: 'CR001' },
+    CR002: { keywords: ['faience', 'faïence', 'فايونس'], catalogCode: 'CR002' },
+    PQ001: { keywords: ['parquet flottant'], catalogCode: 'PQ001' },
+    PQ002: { keywords: ['parquet colle', 'parquet collé', 'parquet', 'باركيه'], catalogCode: 'PQ002' },
+    PB001: { keywords: ['wc', 'toilette', 'toilettes'], catalogCode: 'PB001' },
+    PB002: { keywords: ['lavabo', 'évier'], catalogCode: 'PB002' },
+    PB003: { keywords: ['douche', 'baignoire', 'plomberie', 'سباكة'], catalogCode: 'PB003' },
+    EL001: { keywords: ['prise', 'prise electrique'], catalogCode: 'EL001' },
+    EL002: { keywords: ['interrupteur'], catalogCode: 'EL002' },
+    EL003: { keywords: ['tableau electrique', 'tableau électrique', 'electricite', 'électricité', 'كهرباء'], catalogCode: 'EL003' },
+    MC001: { keywords: ['dalle', 'dalle beton', 'dalle béton'], catalogCode: 'MC001' },
+    MC002: { keywords: ['parpaing', 'maconnerie', 'maçonnerie'], catalogCode: 'MC002' },
+    MC003: { keywords: ['demolition', 'démolition', 'ديمونتاج', 'demontage', 'démontage'], catalogCode: 'MC003' },
+    PS001: { keywords: ['terrassement', 'piscine structure'], catalogCode: 'PS001' },
+    PS002: { keywords: ['liner', 'etancheite', 'étanchéité'], catalogCode: 'PS002' },
+    PS003: { keywords: ['filtration', 'local technique', 'piscine'], catalogCode: 'PS003' },
+    GN001: { keywords: ['nettoyage', 'نيتواياج', 'frais de chantier', 'مصاريف الشانتي'], catalogCode: 'GN001' },
+  };
+
+  // Build REFERENCE_PRICES from catalog for backward-compatible matching
+  const findCatalogItem = (code: string): PriceCatalogItem | undefined => priceCatalog.find(c => c.code === code);
+
+  const REFERENCE_PRICES: Array<{ keywords: string[]; price: number; unit?: string; laborPrice?: number; code: string }> = [
+    // Order matters: specific items first, generic last
+    // PT003 Preparation BEFORE PT001/PT002 painting
+    ...((): typeof REFERENCE_PRICES => {
+      const orderedCodes = [
+        'PT003', 'PT004', // prep & doors/windows first
+        'PT002', 'PT001', // plafond before generic peinture
+        'PL002', 'PL001', // cloison before generic placo
+        'CR002', 'CR001', // faience before generic carrelage
+        'PQ001', 'PQ002', // parquet flottant before generic
+        'PB001', 'PB002', 'PB003', // plomberie specifics
+        'EL001', 'EL002', 'EL003', // electricite specifics
+        'MC001', 'MC002', 'MC003', // maconnerie
+        'PS001', 'PS002', 'PS003', // piscine
+        'GN001', // general
+      ];
+      return orderedCodes.map(code => {
+        const meta = CATALOG_KEYWORDS[code];
+        const item = findCatalogItem(code);
+        if (!meta || !item) return null;
+        return {
+          keywords: meta.keywords,
+          price: item.total_price,
+          laborPrice: item.labor_price,
+          unit: item.unit === 'unit' ? 'u' : (item.unit === 'm2' ? undefined : item.unit),
+          code: item.code,
+        };
+      }).filter(Boolean) as typeof REFERENCE_PRICES;
+    })(),
   ];
 
   const normalizeText = (value: string) =>

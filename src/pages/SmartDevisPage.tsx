@@ -1068,12 +1068,16 @@ const SmartDevisPage = () => {
         console.warn('Failed to persist smart devis data to storage:', e);
       }
 
+      // AUTO-ERASE: Clear the entire chat history once devis is finalized
+      setChatMessages([]);
+      setChatInput('');
+
       navigate('/pro/invoice-creator?type=devis&prefill=smart', {
         state: {
           smartDevisData: prefillData,
           smartDevisReturnState: {
             restoreWizard: true,
-            wizardSnapshot,
+            wizardSnapshot: { ...wizardSnapshot, chatMessages: [] },
           },
         },
       });

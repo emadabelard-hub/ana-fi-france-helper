@@ -1494,7 +1494,7 @@ const SmartDevisPage = () => {
             )}
 
             {/* Material Scope Selector */}
-            <MaterialScopeSelector isRTL={isRTL} materialScope={materialScope} setMaterialScope={setMaterialScope} />
+            <MaterialScopeSelector ref={scopeSelectorRef} isRTL={isRTL} materialScope={materialScope} setMaterialScope={setMaterialScope} />
 
             {/* Pasted text area */}
             <div className="space-y-2">

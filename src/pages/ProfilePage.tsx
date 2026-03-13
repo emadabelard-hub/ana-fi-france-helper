@@ -769,6 +769,9 @@ const ProfilePage = () => {
           {isRTL ? "خروج" : "Se déconnecter"}
         </Button>
 
+        {/* Reset Data */}
+        <ResetDataSection />
+
         <DeleteAccountSection />
 
       </div>

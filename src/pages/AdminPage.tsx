@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3, Users, MapPin, Receipt, ClipboardList, Activity, HeadphonesIcon } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3, Users, MapPin, Receipt, ClipboardList, Activity, HeadphonesIcon, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -99,6 +99,19 @@ const AdminPage = () => {
             </p>
         </div>
       </section>
+
+      {/* Quick Actions */}
+      <div className="flex gap-2 flex-wrap">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate('/pro/pricing-settings')}
+          className={cn("gap-2", isRTL && "flex-row-reverse font-cairo")}
+        >
+          <Settings className="h-4 w-4" />
+          {isRTL ? 'إعدادات الأسعار' : 'Réglages Tarifs'}
+        </Button>
+      </div>
 
       {/* System Health Card */}
       <SystemHealthCard

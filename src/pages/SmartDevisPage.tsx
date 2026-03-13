@@ -1734,13 +1734,15 @@ const SmartDevisPage = () => {
                         value={item.designation_fr}
                         onChange={e => updateItem(item.id, 'designation_fr', e.target.value)}
                         placeholder="Désignation FR"
-                        className="text-xs h-8"
+                        className="text-xs h-auto min-h-[32px] py-1.5"
+                        dir="ltr"
+                        lang="fr"
                       />
                       <Input
                         value={item.designation_ar}
                         onChange={e => updateItem(item.id, 'designation_ar', e.target.value)}
                         placeholder="الوصف بالعربي"
-                        className={cn("text-xs h-8", isRTL && "text-right font-cairo")}
+                        className={cn("text-xs h-auto min-h-[32px] py-1.5", isRTL && "text-right font-cairo")}
                         dir="rtl"
                       />
                     </div>

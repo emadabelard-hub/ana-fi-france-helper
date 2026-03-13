@@ -1,3 +1,4 @@
+// SmartDevisPage - v3.1
 import { useState, useRef, useEffect, useCallback, forwardRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';

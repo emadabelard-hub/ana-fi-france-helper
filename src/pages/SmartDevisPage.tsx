@@ -263,9 +263,15 @@ const SmartDevisPage = () => {
     // If the reference entry specifies a forced unit, use its price directly
     const effectiveUnit = matched?.unit || unit;
     const withMaterialsBase = matched?.price ?? fallbackByUnit[effectiveUnit] ?? 35;
-    const scopedPrice = scope === 'main_oeuvre_seule'
+    let scopedPrice = scope === 'main_oeuvre_seule'
       ? withMaterialsBase * LABOR_ONLY_FACTOR
       : withMaterialsBase;
+
+    // Enforce minimum floors for specific categories
+    if (matched?.unit === 'u' && matched?.keywords.some(k => ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'].includes(k))) {
+      if (scope === 'main_oeuvre_seule' && scopedPrice < 40) scopedPrice = 40;
+      if (scope !== 'main_oeuvre_seule' && scopedPrice < 60) scopedPrice = 60;
+    }
 
     return Math.round(scopedPrice * 100) / 100;
   };

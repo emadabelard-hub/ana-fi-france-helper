@@ -153,6 +153,7 @@ const SmartDevisPage = () => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { pricing: artisanPricing } = useArtisanPricing();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();

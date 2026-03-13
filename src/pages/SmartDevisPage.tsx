@@ -266,14 +266,18 @@ const SmartDevisPage = () => {
     // If the reference entry specifies a forced unit, use its price directly
     const effectiveUnit = matched?.unit || unit;
     const withMaterialsBase = matched?.price ?? fallbackByUnit[effectiveUnit] ?? 35;
-    let scopedPrice = scope === 'main_oeuvre_seule'
-      ? withMaterialsBase * LABOR_ONLY_FACTOR
-      : withMaterialsBase;
+    let scopedPrice: number;
+    if (scope === 'main_oeuvre_seule') {
+      // Use explicit labor price from artisan settings if available, else fallback to factor
+      scopedPrice = matched?.laborPrice ?? (withMaterialsBase * LABOR_ONLY_FACTOR);
+    } else {
+      scopedPrice = withMaterialsBase;
+    }
 
-    // Enforce minimum floors for specific categories
+    // Enforce minimum floors for fenêtres
     if (matched?.unit === 'u' && matched?.keywords.some(k => ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'].includes(k))) {
-      if (scope === 'main_oeuvre_seule' && scopedPrice < 40) scopedPrice = 40;
-      if (scope !== 'main_oeuvre_seule' && scopedPrice < 60) scopedPrice = 60;
+      if (scope === 'main_oeuvre_seule' && scopedPrice < artisanPricing.fenetre_labor) scopedPrice = artisanPricing.fenetre_labor;
+      if (scope !== 'main_oeuvre_seule' && scopedPrice < artisanPricing.fenetre_full) scopedPrice = artisanPricing.fenetre_full;
     }
 
     return Math.round(scopedPrice * 100) / 100;

@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { compressImageFile } from '@/lib/imageCompression';
 import { getSignedAssetUrl } from '@/lib/storageUtils';
 import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
+import ResetDataSection from '@/components/profile/ResetDataSection';
 import ArtisanSignatureSection from '@/components/profile/ArtisanSignatureSection';
 import StampUploadSection from '@/components/profile/StampUploadSection';
 
@@ -768,6 +769,9 @@ const ProfilePage = () => {
           <LogOut className="h-4 w-4" />
           {isRTL ? "خروج" : "Se déconnecter"}
         </Button>
+
+        {/* Reset Data */}
+        <ResetDataSection />
 
         <DeleteAccountSection />
 

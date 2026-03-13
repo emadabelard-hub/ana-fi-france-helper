@@ -32,6 +32,48 @@ export type Database = {
         }
         Relationships: []
       }
+      artisan_price_catalog: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          description: string
+          id: string
+          labor_price: number
+          material_price: number
+          total_price: number
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          code: string
+          created_at?: string
+          description: string
+          id?: string
+          labor_price?: number
+          material_price?: number
+          total_price?: number
+          unit?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          description?: string
+          id?: string
+          labor_price?: number
+          material_price?: number
+          total_price?: number
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       artisan_pricing: {
         Row: {
           created_at: string

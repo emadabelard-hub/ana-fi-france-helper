@@ -408,11 +408,11 @@ const SmartDevisPage = () => {
       scopedPrice = withMaterialsBase;
     }
 
-    // Enforce minimum floors for unit-priced items (PT004 doors/windows)
+    // Enforce minimum floors for unit-priced items (doors/windows - MN001/MN002)
     if (matched?.unit === 'u') {
-      const pt004 = findCatalogItem('PT004');
-      const minLabor = pt004?.labor_price ?? 45;
-      const minFull = pt004?.total_price ?? 60;
+      const mn001 = findCatalogItem('MN001');
+      const minLabor = mn001?.labor_price ?? 180;
+      const minFull = mn001?.total_price ?? 300;
       if (scope === 'main_oeuvre_seule' && scopedPrice < minLabor) scopedPrice = minLabor;
       if (scope !== 'main_oeuvre_seule' && scopedPrice < minFull) scopedPrice = minFull;
     }

@@ -1003,6 +1003,13 @@ const SmartDevisPage = () => {
 
       const wizardSnapshot = buildWizardSnapshot();
 
+      // CRITICAL: Clear any existing invoice draft BEFORE navigating
+      // This prevents stale ghost data from overwriting the fresh Smart Devis results
+      try {
+        localStorage.removeItem('invoiceDraft');
+        sessionStorage.removeItem('invoiceDraft');
+      } catch { /* ignore */ }
+
       // Persist data + wizard snapshot as fallback for navigation state loss
       try {
         const prefillJson = JSON.stringify(prefillData);

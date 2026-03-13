@@ -226,8 +226,8 @@ const SmartDevisPage = () => {
     { keywords: ['enduit', 'أندوي'], price: 16 },
     // Peinture (Pose + Fourniture / Full): 25-35€/m² → base 30
     { keywords: ['peinture', 'بنتيرة', 'بانتيرة'], price: 30 },
-    // Windows / Cadres fenêtres: forfait per unit 50-80€
-    { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres'], price: 65, unit: 'u' },
+    // Windows / Cadres fenêtres: per unit 60-80€ full, min 40€ labor-only
+    { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'], price: 65, unit: 'u' },
     // Carrelage / Faïence
     { keywords: ['carrelage', 'كارلاج', 'faience', 'faïence', 'فايونس'], price: 58 },
     { keywords: ['parquet', 'باركيه'], price: 52 },
@@ -263,9 +263,15 @@ const SmartDevisPage = () => {
     // If the reference entry specifies a forced unit, use its price directly
     const effectiveUnit = matched?.unit || unit;
     const withMaterialsBase = matched?.price ?? fallbackByUnit[effectiveUnit] ?? 35;
-    const scopedPrice = scope === 'main_oeuvre_seule'
+    let scopedPrice = scope === 'main_oeuvre_seule'
       ? withMaterialsBase * LABOR_ONLY_FACTOR
       : withMaterialsBase;
+
+    // Enforce minimum floors for specific categories
+    if (matched?.unit === 'u' && matched?.keywords.some(k => ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'].includes(k))) {
+      if (scope === 'main_oeuvre_seule' && scopedPrice < 40) scopedPrice = 40;
+      if (scope !== 'main_oeuvre_seule' && scopedPrice < 60) scopedPrice = 60;
+    }
 
     return Math.round(scopedPrice * 100) / 100;
   };

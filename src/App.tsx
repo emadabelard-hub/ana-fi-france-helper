@@ -102,6 +102,7 @@ const AppRoutes = () => {
             <Route path="/chantiers" element={<ChantiersPage />} />
             <Route path="/chantiers/:id" element={<ChantierDetailPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/pro/pricing-settings" element={<PricingSettingsPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

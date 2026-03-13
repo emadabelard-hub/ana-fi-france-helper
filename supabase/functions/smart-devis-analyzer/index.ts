@@ -394,6 +394,19 @@ ${scopeRule}
 - Utilise la translitération phonétique du français en arabe ÉGYPTIEN (عامية مصرية) du métier.
 - Parquet→باركيه, Plinthes→بلانت, Primaire→بريمير, Ragréage→راغرياج, Sous-couche→سوكوش, Enduit→أندوي, Peinture→بنتيرة, Carrelage→كارلاج, Faïence→فايونس, Ponçage→بونساج, Démontage→ديمونتاج, Nettoyage→نيتواياج, Fourniture→فورنيتير, Dépannage→داباج, Chantier→شانتي
 
+⛔ MATRICE DE PRIX OBLIGATOIRE (NE JAMAIS INVENTER DE PRIX):
+- Préparation (Ponçage/Enduit/Sous-couche): 12€ à 16€/m²
+- بنتيرة Peinture (Main d'œuvre seule / Pose seule): 15€ à 18€/m²
+- بنتيرة Peinture (Fourniture + Pose / Full): 25€ à 35€/m² selon qualité
+- Cadres fenêtres / Windows: Prix par UNITÉ (u), 50€ à 80€ par fenêtre, JAMAIS au m²
+- Ragréage: 18€ à 25€/m²
+- Nettoyage الشانتي / Frais de chantier: FORFAIT (unit=forfait) minimum 150€ à 300€, JAMAIS 18€
+- Carrelage / Faïence: 45€ à 65€/m²
+- Parquet: 40€ à 60€/m²
+- Faux plafond: 40€ à 55€/m²
+- Démontage: 18€ à 30€/m²
+⚠️ INTERDIT d'appliquer un prix uniforme (ex: 32€) à TOUS les postes. Chaque poste a son propre tarif.
+
 RÈGLES DE CALCUL:
 - Qualité matériaux: ${materialQuality || 'standard'} (éco = -20%, standard = prix base, luxe = +40%)
 - Remise: ${discountPercent || 0}%

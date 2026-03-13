@@ -1868,7 +1868,7 @@ const SmartDevisPage = () => {
                                 : "bg-muted text-muted-foreground border-border"
                             )}
                           >
-                            <Package className="h-3 w-3" />
+                            <Package className="h-4 w-4" />
                             {item.withMaterial
                               ? (isRTL ? '✅ فورنيتير (مواد) داخلة' : '✅ Fourniture incluse')
                               : (isRTL ? '❌ مصنعية بس' : '❌ Main d\'œuvre seule')

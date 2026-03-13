@@ -45,6 +45,7 @@ const ClientDetailPage = lazy(() => import("./pages/ClientDetailPage"));
 const ChantiersPage = lazy(() => import("./pages/ChantiersPage"));
 const ChantierDetailPage = lazy(() => import("./pages/ChantierDetailPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const PricingSettingsPage = lazy(() => import("./pages/PricingSettingsPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 

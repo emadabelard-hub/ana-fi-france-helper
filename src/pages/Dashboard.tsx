@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Camera, PenLine, FileText, User, Wallet } from 'lucide-react';
+import { Camera, PenLine, FileText, User, Wallet, Settings } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -56,6 +56,15 @@ const Dashboard = () => {
       gradient: 'from-cyan-500 to-teal-600',
       iconBg: 'bg-cyan-400/30',
       emoji: '💼',
+    },
+    {
+      icon: Settings,
+      title: isRTL ? 'إعدادات الأسعار' : 'Réglages Tarifs',
+      subtitle: isRTL ? 'خصّص أسعارك المرجعية للدوفي الذكي' : 'Personnalisez vos prix de référence',
+      path: '/pro/pricing-settings',
+      gradient: 'from-slate-500 to-slate-700',
+      iconBg: 'bg-slate-400/30',
+      emoji: '⚙️',
     },
   ];
 

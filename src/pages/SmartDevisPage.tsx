@@ -1661,36 +1661,6 @@ const SmartDevisPage = () => {
             </Card>
           )}
 
-          {/* Chat messages */}
-          <ScrollArea className="h-[45vh] rounded-xl border bg-muted/20 p-3">
-            <div className="space-y-3">
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={cn("flex", msg.role === 'user' ? (isRTL ? 'justify-start' : 'justify-end') : (isRTL ? 'justify-end' : 'justify-start'))}>
-                  <div className={cn(
-                    "max-w-[85%] rounded-2xl px-4 py-3 text-sm",
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-card border shadow-sm'
-                  )}>
-                    {msg.role === 'assistant' ? (
-                      <MarkdownRenderer content={msg.content} isRTL={isRTL} />
-                    ) : (
-                      <p className={cn(isRTL && "font-cairo text-right")} dir={isRTL ? 'rtl' : 'ltr'}>{msg.content}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {isChatLoading && chatMessages[chatMessages.length - 1]?.role !== 'assistant' && (
-                <div className={cn("flex", isRTL ? 'justify-end' : 'justify-start')}>
-                  <div className="bg-card border rounded-2xl px-4 py-3 shadow-sm">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  </div>
-                </div>
-              )}
-              <div ref={chatEndRef} />
-            </div>
-          </ScrollArea>
-
           {/* Material Scope Selector */}
           <MaterialScopeSelector compact isRTL={isRTL} materialScope={materialScope} setMaterialScope={setMaterialScope} />
 
@@ -1725,20 +1695,60 @@ const SmartDevisPage = () => {
             </div>
           </Card>
 
-          {/* Chat input */}
-          <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-            <Textarea
-              value={chatInput}
-              onChange={e => setChatInput(e.target.value)}
-              placeholder={isRTL ? 'اكتب رسالتك...' : 'Votre message...'}
-              className={cn("min-h-[44px] max-h-[100px] resize-none text-sm", isRTL && "text-right font-cairo")}
-              dir={isRTL ? 'rtl' : 'ltr'}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); } }}
-            />
-            <Button size="icon" onClick={handleChatSend} disabled={!chatInput.trim() || isChatLoading} className="shrink-0">
-              {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-          </div>
+          {/* Chat input — positioned BEFORE the thread so user sees it first */}
+          <Card className="p-3 border-2 border-primary/20 bg-primary/5">
+            <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+              <Textarea
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                placeholder={isRTL ? '💬 اكتب سؤالك أو تعديلك هنا...' : '💬 Posez votre question ou ajustement...'}
+                className={cn("min-h-[44px] max-h-[100px] resize-none text-sm bg-background", isRTL && "text-right font-cairo")}
+                dir={isRTL ? 'rtl' : 'ltr'}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
+              />
+              <Button size="icon" onClick={handleChatSend} disabled={!chatInput.trim() || isChatLoading} className="shrink-0 h-11 w-11">
+                {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+            </div>
+          </Card>
+
+          {/* Dedicated Chat Thread — chronological (oldest top, newest bottom) */}
+          <Card className="border border-border/60 overflow-hidden">
+            <div className={cn("px-3 py-2 bg-muted/40 border-b border-border/40 flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span className={cn("text-xs font-semibold text-muted-foreground", isRTL && "font-cairo")}>
+                {isRTL ? `💬 سجل المحادثة (${chatMessages.length} رسالة)` : `💬 Historique (${chatMessages.length} messages)`}
+              </span>
+            </div>
+            <ScrollArea className="h-[50vh] p-3">
+              <div className="space-y-3">
+                {chatMessages.map((msg, i) => (
+                  <div key={i} className={cn("flex", msg.role === 'user' ? (isRTL ? 'justify-start' : 'justify-end') : (isRTL ? 'justify-end' : 'justify-start'))}>
+                    <div className={cn(
+                      "max-w-[85%] rounded-2xl px-4 py-3 text-sm",
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-card border shadow-sm'
+                    )}>
+                      {msg.role === 'assistant' ? (
+                        <MarkdownRenderer content={msg.content} isRTL={isRTL} />
+                      ) : (
+                        <p className={cn(isRTL && "font-cairo text-right")} dir={isRTL ? 'rtl' : 'ltr'}>{msg.content}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {isChatLoading && chatMessages[chatMessages.length - 1]?.role !== 'assistant' && (
+                  <div className={cn("flex", isRTL ? 'justify-end' : 'justify-start')}>
+                    <div className="bg-card border rounded-2xl px-4 py-3 shadow-sm">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+            </ScrollArea>
+          </Card>
 
           {/* Analysis actions */}
           <div className="space-y-2">

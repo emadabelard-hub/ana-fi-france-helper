@@ -249,8 +249,40 @@ const SmartDevisPage = () => {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
 
+  // Keywords for detecting preparation vs finish paint in combined tasks
+  const PREP_KEYWORDS = ['enduit', 'أندوي', 'ponsage', 'ponçage', 'بونساج', 'sous-couche', 'سوكوش', 'سوس كوش', 'ragréage', 'راغرياج', 'ragreage', 'preparation', 'préparation'];
+  const PAINT_KEYWORDS = ['peinture', 'بنتيرة', 'بانتيرة'];
+
   const resolveReferenceUnitPrice = (designation: string, unit: string, scope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null) => {
     const normalizedDesignation = normalizeText(designation || '');
+
+    // --- CUMULATIVE PRICING: detect combined prep + paint tasks ---
+    const hasPrep = PREP_KEYWORDS.some(k => normalizedDesignation.includes(normalizeText(k)));
+    const hasPaint = PAINT_KEYWORDS.some(k => normalizedDesignation.includes(normalizeText(k)));
+
+    if (hasPrep && hasPaint && unit !== 'u' && unit !== 'forfait') {
+      // Combined task: sum prep (enduit) + paint prices
+      const prepFull = artisanPricing.enduit_full;
+      const prepLabor = artisanPricing.enduit_labor;
+      const paintFull = artisanPricing.peinture_mur_full;
+      const paintLabor = artisanPricing.peinture_mur_labor;
+
+      let cumulativePrice: number;
+      if (scope === 'main_oeuvre_seule') {
+        cumulativePrice = prepLabor + paintLabor;
+      } else {
+        cumulativePrice = prepFull + paintFull;
+      }
+      // Enforce minimum floor: 30€/m² (labor) or 40€/m² (full) for combined tasks
+      const minFull = 40;
+      const minLabor = 30;
+      if (scope === 'main_oeuvre_seule' && cumulativePrice < minLabor) cumulativePrice = minLabor;
+      if (scope !== 'main_oeuvre_seule' && cumulativePrice < minFull) cumulativePrice = minFull;
+
+      return Math.round(cumulativePrice * 100) / 100;
+    }
+
+    // --- Standard single-task matching ---
     const matched = REFERENCE_PRICES.find((entry) =>
       entry.keywords.some((keyword) => normalizedDesignation.includes(normalizeText(keyword)))
     );

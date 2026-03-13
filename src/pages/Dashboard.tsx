@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Camera, PenLine, FileText, User, Wallet } from 'lucide-react';
+import { Camera, PenLine, FileText, User, Wallet, Settings } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';

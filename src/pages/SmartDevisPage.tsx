@@ -217,16 +217,26 @@ const SmartDevisPage = () => {
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
   const LABOR_ONLY_FACTOR = 0.55;
-  const REFERENCE_PRICES: Array<{ keywords: string[]; price: number }> = [
-    { keywords: ['peinture', 'بنتيرة', 'بانتيرة'], price: 32 },
-    { keywords: ['enduit', 'أندوي'], price: 26 },
-    { keywords: ['carrelage', 'كارلاج', 'faience', 'faïence', 'فايونس'], price: 58 },
+  const REFERENCE_PRICES: Array<{ keywords: string[]; price: number; unit?: string }> = [
+    // Preparation / Ponçage / Sous-couche: 12-16€/m²
+    { keywords: ['ponsage', 'ponçage', 'بونساج'], price: 14 },
+    { keywords: ['sous-couche', 'سوكوش', 'سوس كوش'], price: 12 },
+    { keywords: ['ragréage', 'راغرياج', 'ragreage'], price: 22 },
+    { keywords: ['enduit', 'أندوي'], price: 16 },
+    // Peinture (Pose + Fourniture / Full): 25-35€/m² → base 30
+    { keywords: ['peinture', 'بنتيرة', 'بانتيرة'], price: 30 },
+    // Windows / Cadres fenêtres: forfait per unit 50-80€
+    { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres'], price: 65, unit: 'u' },
+    // Carrelage / Faïence
+    { keywords: ['carrelage', 'كارلاج', 'faience', 'faïence', 'فايونس'], price: 58 },
     { keywords: ['parquet', 'باركيه'], price: 52 },
     { keywords: ['plomberie', 'سباكة'], price: 68 },
     { keywords: ['electricite', 'électricité', 'كهرباء'], price: 64 },
     { keywords: ['placo', 'cloison', 'بلاكو'], price: 42 },
+    { keywords: ['faux plafond', 'فو بلافون', 'سقف معلق'], price: 48 },
     { keywords: ['demontage', 'démontage', 'ديمونتاج'], price: 24 },
-    { keywords: ['nettoyage', 'نيتواياج'], price: 18 },
+    // Nettoyage chantier: forfait 150-300€ (NEVER per m²)
+    { keywords: ['nettoyage', 'نيتواياج', 'frais de chantier', 'مصاريف الشانتي'], price: 200, unit: 'forfait' },
   ];
 
   const normalizeText = (value: string) =>
@@ -249,7 +259,9 @@ const SmartDevisPage = () => {
       forfait: 240,
     };
 
-    const withMaterialsBase = matched?.price ?? fallbackByUnit[unit] ?? 35;
+    // If the reference entry specifies a forced unit, use its price directly
+    const effectiveUnit = matched?.unit || unit;
+    const withMaterialsBase = matched?.price ?? fallbackByUnit[effectiveUnit] ?? 35;
     const scopedPrice = scope === 'main_oeuvre_seule'
       ? withMaterialsBase * LABOR_ONLY_FACTOR
       : withMaterialsBase;

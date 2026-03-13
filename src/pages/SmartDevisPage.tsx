@@ -303,16 +303,32 @@ const SmartDevisPage = () => {
     // PT003 Preparation BEFORE PT001/PT002 painting
     ...((): typeof REFERENCE_PRICES => {
       const orderedCodes = [
-        'PT003', 'PT004', // prep & doors/windows first
-        'PT002', 'PT001', // plafond before generic peinture
-        'PL002', 'PL001', // cloison before generic placo
-        'CR002', 'CR001', // faience before generic carrelage
-        'PQ001', 'PQ002', // parquet flottant before generic
-        'PB001', 'PB002', 'PB003', // plomberie specifics
-        'EL001', 'EL002', 'EL003', // electricite specifics
-        'MC001', 'MC002', 'MC003', // maconnerie
-        'PS001', 'PS002', 'PS003', // piscine
-        'GN001', // general
+        // Prep & specific items first
+        'PREP', 'CR003', 'CR004', 'PQ004', 'PQ005',
+        // Specific peinture before generic
+        'PNT007', 'PNT008', 'PNT006', 'PNT005', 'PNT004', 'PNT003', 'PNT002', 'PNT001',
+        // Placo specifics
+        'PL004', 'PL005', 'PL003', 'PL002', 'PL001',
+        // Carrelage
+        'CR005', 'CR002', 'CR001',
+        // Parquet
+        'PQ003', 'PQ001', 'PQ002',
+        // Plomberie
+        'PB004', 'PB005', 'PB001', 'PB002', 'PB003',
+        // Electricité
+        'EL004', 'EL005', 'EL001', 'EL002', 'EL003',
+        // Menuiserie (specific before generic)
+        'MN002', 'MN003', 'MN004', 'MN001',
+        // Maçonnerie
+        'MC004', 'MC003', 'MC005', 'MC007', 'MC001', 'MC002', 'MC006',
+        // Facade
+        'FAC002', 'FAC003', 'FAC001',
+        // Location
+        'LOC001', 'LOC002', 'LOC003', 'LOC004', 'LOC005', 'LOC006',
+        // Generic peinture fallback (last)
+        'PNT_GENERIC',
+        // General
+        'GN_NETTOYAGE',
       ];
       return orderedCodes.map(code => {
         const meta = CATALOG_KEYWORDS[code];

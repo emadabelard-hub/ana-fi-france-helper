@@ -1006,8 +1006,8 @@ const SmartDevisPage = () => {
       // CRITICAL: Clear any existing invoice draft BEFORE navigating
       // This prevents stale ghost data from overwriting the fresh Smart Devis results
       try {
-        localStorage.removeItem('invoiceDraft');
-        sessionStorage.removeItem('invoiceDraft');
+        localStorage.removeItem('invoice_draft_v1');
+        sessionStorage.removeItem('invoice_draft_v1');
       } catch { /* ignore */ }
 
       // Persist data + wizard snapshot as fallback for navigation state loss

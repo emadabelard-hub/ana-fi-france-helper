@@ -363,12 +363,12 @@ const SmartDevisPage = () => {
     const hasPaint = PAINT_KEYWORDS.some(k => normalizedDesignation.includes(normalizeText(k)));
 
     if (hasPrep && hasPaint && unit !== 'u' && unit !== 'forfait') {
-      const pt003 = findCatalogItem('PT003');
-      const pt001 = findCatalogItem('PT001');
-      const prepFull = pt003?.total_price ?? 14;
-      const prepLabor = pt003?.labor_price ?? 10;
-      const paintFull = pt001?.total_price ?? 30;
-      const paintLabor = pt001?.labor_price ?? 20;
+      const cr003 = findCatalogItem('CR003');
+      const pnt001 = findCatalogItem('PNT001');
+      const prepFull = cr003?.total_price ?? 20;
+      const prepLabor = cr003?.labor_price ?? 14;
+      const paintFull = pnt001?.total_price ?? 22;
+      const paintLabor = pnt001?.labor_price ?? 18;
 
       let cumulativePrice: number;
       if (scope === 'main_oeuvre_seule') {
@@ -376,9 +376,9 @@ const SmartDevisPage = () => {
       } else {
         cumulativePrice = prepFull + paintFull;
       }
-      // Enforce minimum floor: 30€/m² (labor) or 44€/m² (full) for combined tasks
-      const minFull = 44; // PT003(14) + PT001(30)
-      const minLabor = 30; // PT003(10) + PT001(20)
+      // Enforce minimum floor: 32€/m² (labor) or 42€/m² (full) for combined tasks
+      const minFull = 42; // CR003(20) + PNT001(22)
+      const minLabor = 32; // CR003(14) + PNT001(18)
       if (scope === 'main_oeuvre_seule' && cumulativePrice < minLabor) cumulativePrice = minLabor;
       if (scope !== 'main_oeuvre_seule' && cumulativePrice < minFull) cumulativePrice = minFull;
 

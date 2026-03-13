@@ -1,9 +1,10 @@
-// SmartDevisPage - v3.1
+// SmartDevisPage - v3.2
 import { useState, useRef, useEffect, useCallback, forwardRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useArtisanPricing } from '@/hooks/useArtisanPricing';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -152,6 +153,7 @@ const SmartDevisPage = () => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { pricing: artisanPricing } = useArtisanPricing();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -218,16 +220,17 @@ const SmartDevisPage = () => {
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
   const LABOR_ONLY_FACTOR = 0.55;
-  const REFERENCE_PRICES: Array<{ keywords: string[]; price: number; unit?: string }> = [
-    // Preparation / Ponçage / Sous-couche: 12-16€/m²
-    { keywords: ['ponsage', 'ponçage', 'بونساج'], price: 14 },
-    { keywords: ['sous-couche', 'سوكوش', 'سوس كوش'], price: 12 },
+  const REFERENCE_PRICES: Array<{ keywords: string[]; price: number; unit?: string; laborPrice?: number }> = [
+    // Preparation / Ponçage / Sous-couche — reads from artisan settings
+    { keywords: ['ponsage', 'ponçage', 'بونساج'], price: artisanPricing.poncage_full },
+    { keywords: ['sous-couche', 'سوكوش', 'سوس كوش'], price: artisanPricing.sous_couche_full },
     { keywords: ['ragréage', 'راغرياج', 'ragreage'], price: 22 },
-    { keywords: ['enduit', 'أندوي'], price: 16 },
-    // Peinture (Pose + Fourniture / Full): 25-35€/m² → base 30
-    { keywords: ['peinture', 'بنتيرة', 'بانتيرة'], price: 30 },
-    // Windows / Cadres fenêtres: per unit 60-80€ full, min 40€ labor-only
-    { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'], price: 65, unit: 'u' },
+    { keywords: ['enduit', 'أندوي'], price: artisanPricing.enduit_full, laborPrice: artisanPricing.enduit_labor },
+    // Peinture (mur + plafond) — reads from artisan settings
+    { keywords: ['plafond', 'سقف', 'بلافون'], price: artisanPricing.peinture_plafond_full, laborPrice: artisanPricing.peinture_plafond_labor },
+    { keywords: ['peinture', 'بنتيرة', 'بانتيرة'], price: artisanPricing.peinture_mur_full, laborPrice: artisanPricing.peinture_mur_labor },
+    // Windows / Cadres fenêtres — reads from artisan settings
+    { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'], price: artisanPricing.fenetre_full, unit: 'u', laborPrice: artisanPricing.fenetre_labor },
     // Carrelage / Faïence
     { keywords: ['carrelage', 'كارلاج', 'faience', 'faïence', 'فايونس'], price: 58 },
     { keywords: ['parquet', 'باركيه'], price: 52 },
@@ -236,8 +239,8 @@ const SmartDevisPage = () => {
     { keywords: ['placo', 'cloison', 'بلاكو'], price: 42 },
     { keywords: ['faux plafond', 'فو بلافون', 'سقف معلق'], price: 48 },
     { keywords: ['demontage', 'démontage', 'ديمونتاج'], price: 24 },
-    // Nettoyage chantier: forfait 150-300€ (NEVER per m²)
-    { keywords: ['nettoyage', 'نيتواياج', 'frais de chantier', 'مصاريف الشانتي'], price: 200, unit: 'forfait' },
+    // Nettoyage chantier — reads from artisan settings
+    { keywords: ['nettoyage', 'نيتواياج', 'frais de chantier', 'مصاريف الشانتي'], price: artisanPricing.nettoyage_forfait, unit: 'forfait' },
   ];
 
   const normalizeText = (value: string) =>
@@ -263,14 +266,18 @@ const SmartDevisPage = () => {
     // If the reference entry specifies a forced unit, use its price directly
     const effectiveUnit = matched?.unit || unit;
     const withMaterialsBase = matched?.price ?? fallbackByUnit[effectiveUnit] ?? 35;
-    let scopedPrice = scope === 'main_oeuvre_seule'
-      ? withMaterialsBase * LABOR_ONLY_FACTOR
-      : withMaterialsBase;
+    let scopedPrice: number;
+    if (scope === 'main_oeuvre_seule') {
+      // Use explicit labor price from artisan settings if available, else fallback to factor
+      scopedPrice = matched?.laborPrice ?? (withMaterialsBase * LABOR_ONLY_FACTOR);
+    } else {
+      scopedPrice = withMaterialsBase;
+    }
 
-    // Enforce minimum floors for specific categories
+    // Enforce minimum floors for fenêtres
     if (matched?.unit === 'u' && matched?.keywords.some(k => ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'].includes(k))) {
-      if (scope === 'main_oeuvre_seule' && scopedPrice < 40) scopedPrice = 40;
-      if (scope !== 'main_oeuvre_seule' && scopedPrice < 60) scopedPrice = 60;
+      if (scope === 'main_oeuvre_seule' && scopedPrice < artisanPricing.fenetre_labor) scopedPrice = artisanPricing.fenetre_labor;
+      if (scope !== 'main_oeuvre_seule' && scopedPrice < artisanPricing.fenetre_full) scopedPrice = artisanPricing.fenetre_full;
     }
 
     return Math.round(scopedPrice * 100) / 100;

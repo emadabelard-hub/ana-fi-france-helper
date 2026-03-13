@@ -760,6 +760,19 @@ const ProfilePage = () => {
           </>
         )}
 
+        {/* Pricing Settings */}
+        <SectionCard className="border-border/20">
+          <button onClick={() => navigate('/pro/pricing-settings')} className={cn("flex items-center gap-3 w-full p-4", isRTL ? "flex-row-reverse text-right" : "text-left")}>
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Briefcase className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm text-foreground">{isRTL ? 'إعدادات التعريفة' : 'Réglages Tarifs'}</p>
+              <p className="text-xs text-muted-foreground">{isRTL ? 'خصّص أسعارك المرجعية' : 'Personnalisez vos prix de référence'}</p>
+            </div>
+          </button>
+        </SectionCard>
+
         {/* Log Out */}
         <Button variant="outline" onClick={handleSignOut}
           className={cn(

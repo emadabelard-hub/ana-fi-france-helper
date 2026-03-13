@@ -45,6 +45,7 @@ const ClientDetailPage = lazy(() => import("./pages/ClientDetailPage"));
 const ChantiersPage = lazy(() => import("./pages/ChantiersPage"));
 const ChantierDetailPage = lazy(() => import("./pages/ChantierDetailPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const PricingSettingsPage = lazy(() => import("./pages/PricingSettingsPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -101,6 +102,7 @@ const AppRoutes = () => {
             <Route path="/chantiers" element={<ChantiersPage />} />
             <Route path="/chantiers/:id" element={<ChantierDetailPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/pro/pricing-settings" element={<PricingSettingsPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

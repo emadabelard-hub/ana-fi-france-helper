@@ -226,8 +226,8 @@ const SmartDevisPage = () => {
     { keywords: ['enduit', 'أندوي'], price: 16 },
     // Peinture (Pose + Fourniture / Full): 25-35€/m² → base 30
     { keywords: ['peinture', 'بنتيرة', 'بانتيرة'], price: 30 },
-    // Windows / Cadres fenêtres: forfait per unit 50-80€
-    { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres'], price: 65, unit: 'u' },
+    // Windows / Cadres fenêtres: per unit 60-80€ full, min 40€ labor-only
+    { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'], price: 65, unit: 'u' },
     // Carrelage / Faïence
     { keywords: ['carrelage', 'كارلاج', 'faience', 'faïence', 'فايونس'], price: 58 },
     { keywords: ['parquet', 'باركيه'], price: 52 },

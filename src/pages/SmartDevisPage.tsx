@@ -1515,7 +1515,7 @@ const SmartDevisPage = () => {
               </Button>
               <Button
                 onClick={handleAnalyze}
-                disabled={(uploadedFiles.length === 0 && !pastedText.trim()) || isAnalyzing || !materialScope}
+                disabled={(uploadedFiles.length === 0 && !pastedText.trim()) || isAnalyzing}
                 className="flex-1 bg-[#1a1a1a] hover:bg-[#333] text-white font-bold"
               >
                 {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}

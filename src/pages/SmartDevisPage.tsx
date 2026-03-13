@@ -846,15 +846,27 @@ const SmartDevisPage = () => {
 
       const items: LineItem[] = (data.items || data.suggestedItems || []).map((item: any) => {
         const quantity = Number(item.quantity || 1);
-        const unit = item.unit || 'u';
+        const aiUnit = item.unit || 'u';
         // Always set withMaterial based on scope
         const isPartiel = materialScope === 'partiel';
         const withMaterial = isPartiel ? false : materialScope !== 'main_oeuvre_seule';
         const effectiveScope = withMaterial ? 'fourniture_et_pose' : 'main_oeuvre_seule';
-        const fixedUnitPrice = resolveReferenceUnitPrice(item.designation_fr || '', unit, effectiveScope);
+
+        // Resolve reference price AND forced unit (e.g. nettoyage→forfait, fenêtre→u)
+        const designationFr = item.designation_fr || '';
+        const normalizedDes = normalizeText(designationFr);
+        const matchedRef = REFERENCE_PRICES.find((entry) =>
+          entry.keywords.some((keyword) => normalizedDes.includes(normalizeText(keyword)))
+        );
+        // If reference entry specifies a unit, override AI's unit
+        const unit = matchedRef?.unit || aiUnit;
+        // For forfait items (nettoyage), force quantity=1
+        const effectiveQuantity = (matchedRef?.unit === 'forfait') ? 1 : quantity;
+
+        const fixedUnitPrice = resolveReferenceUnitPrice(designationFr, unit, effectiveScope);
 
         // Strip "Fourniture" from designations when material is not included
-        const rawFr = item.designation_fr || '';
+        const rawFr = designationFr;
         const rawAr = item.designation_ar || '';
         const { fr: finalFr, ar: finalAr } = !withMaterial
           ? stripFourniture(rawFr, rawAr)
@@ -864,10 +876,10 @@ const SmartDevisPage = () => {
           id: generateId(),
           designation_fr: finalFr,
           designation_ar: finalAr,
-          quantity,
+          quantity: effectiveQuantity,
           unit,
           unitPrice: fixedUnitPrice,
-          total: quantity * fixedUnitPrice,
+          total: effectiveQuantity * fixedUnitPrice,
           category: item.category,
           withMaterial,
         };
@@ -990,6 +1002,13 @@ const SmartDevisPage = () => {
       };
 
       const wizardSnapshot = buildWizardSnapshot();
+
+      // CRITICAL: Clear any existing invoice draft BEFORE navigating
+      // This prevents stale ghost data from overwriting the fresh Smart Devis results
+      try {
+        localStorage.removeItem('invoice_draft_v1');
+        sessionStorage.removeItem('invoice_draft_v1');
+      } catch { /* ignore */ }
 
       // Persist data + wizard snapshot as fallback for navigation state loss
       try {
@@ -1722,13 +1741,15 @@ const SmartDevisPage = () => {
                         value={item.designation_fr}
                         onChange={e => updateItem(item.id, 'designation_fr', e.target.value)}
                         placeholder="Désignation FR"
-                        className="text-xs h-8"
+                        className="text-xs h-auto min-h-[32px] py-1.5"
+                        dir="ltr"
+                        lang="fr"
                       />
                       <Input
                         value={item.designation_ar}
                         onChange={e => updateItem(item.id, 'designation_ar', e.target.value)}
                         placeholder="الوصف بالعربي"
-                        className={cn("text-xs h-8", isRTL && "text-right font-cairo")}
+                        className={cn("text-xs h-auto min-h-[32px] py-1.5", isRTL && "text-right font-cairo")}
                         dir="rtl"
                       />
                     </div>

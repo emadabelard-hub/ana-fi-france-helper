@@ -455,6 +455,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       // STEP 1: Clear any existing draft to prevent ghost data contamination
       clearDraft();
       
+      // STEP 2: Force correct document number prefix to prevent F- on Devis
+      // Reset docNumber to just the prefix so the auto-fetch effect re-triggers
+      const correctPrefix = getDocPrefix(documentType);
+      setDocNumber(correctPrefix);
+      
       // NEVER auto-fill client fields — user must choose or register manually
       setSelectedClientId('');
       setSelectedChantierId('');
@@ -510,7 +515,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           : 'Vérifiez les données et cliquez sur Aperçu',
       });
     }
-  }, [prefillData, isRTL, toast]);
+  }, [prefillData, isRTL, toast, documentType]);
 
   const startTranslating = (id: string) => {
     setTranslatingIds(prev => {

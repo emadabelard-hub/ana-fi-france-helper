@@ -144,12 +144,16 @@ const JobDescriptionInput: React.FC<JobDescriptionInputProps> = ({
           </Label>
           <Textarea
             placeholder={isFr
-              ? "Décrivez le chantier en détail : type de travaux, surface, état actuel, nombre de pièces, contraintes particulières..."
-              : "وصّف الشغل بالتفصيل: نوع الشغل، المساحة، الحالة الحالية، عدد الأوض، أي حاجة خاصة..."
+              ? "📝 Décrivez votre chantier ici... type de travaux, surface, état actuel, nombre de pièces..."
+              : "📝 وصّف الشغل بالتفصيل: نوع الشغل، المساحة، الحالة الحالية، عدد الأوض..."
             }
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className={cn("min-h-[140px] text-base font-bold resize-none", isRTL && "text-right")}
+            className={cn(
+              "min-h-[140px] text-base font-bold resize-none transition-all duration-300",
+              "smart-devis-textarea",
+              isRTL && "text-right"
+            )}
             dir={isRTL ? 'rtl' : 'ltr'}
           />
         </div>

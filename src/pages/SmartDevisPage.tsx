@@ -654,11 +654,16 @@ const SmartDevisPage = () => {
     if (!materialScope) {
       toast({
         variant: 'destructive',
-        title: isRTL ? 'اختيار إجباري' : 'Choix obligatoire',
+        title: isRTL ? '⚠️ اختيار إجباري' : '⚠️ Choix obligatoire',
         description: isRTL
-          ? 'لازم تختار: مواد + مصنعية، مصنعية فقط، أو جزئي قبل التحليل.'
-          : 'Veuillez choisir "Matériaux inclus", "Main d\'œuvre uniquement" ou "Partiel" avant l\'analyse.',
+          ? '👆 لازم تختار طريقة التسعير أولاً (فورنيتير + مصنعية، مصنعية بس، أو جزئي) قبل ما تبدأ التحليل!'
+          : 'Veuillez d\'abord choisir le mode de tarification (Fourniture + Pose, Main d\'œuvre seule ou Partiel) avant de lancer l\'analyse !',
       });
+      scopeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scopeSelectorRef.current?.classList.add('ring-2', 'ring-[#d4af37]', 'ring-offset-2');
+      setTimeout(() => {
+        scopeSelectorRef.current?.classList.remove('ring-2', 'ring-[#d4af37]', 'ring-offset-2');
+      }, 3000);
       return;
     }
 

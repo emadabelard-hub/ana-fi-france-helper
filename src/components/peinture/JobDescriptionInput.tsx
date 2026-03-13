@@ -180,7 +180,8 @@ const JobDescriptionInput: React.FC<JobDescriptionInputProps> = ({
           onClick={onAnalyze}
           disabled={!description.trim() || isLoading}
           className={cn(
-            "w-full font-black text-base py-6 bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 hover:from-amber-600 hover:via-yellow-500 hover:to-orange-600 shadow-lg shadow-amber-500/25",
+            "w-full font-black text-base py-6 shadow-lg",
+            "bg-[#d4af37] text-black hover:bg-[#b8962e] border-0",
             !isLoading && description.trim() && "animate-[pulse_2.5s_ease-in-out_infinite]"
           )}
         >

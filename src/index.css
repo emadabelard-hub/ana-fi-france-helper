@@ -169,32 +169,32 @@
 }
 /* Smart Devis Textarea — high-visibility styling */
 .smart-devis-textarea {
-  background-color: hsl(220 15% 16%) !important;
-  border: 1.5px solid hsl(43 76% 52%) !important;
+  background-color: hsl(0 0% 7%) !important;
+  border: 1px solid #d4af37 !important;
   border-radius: 1rem;
 }
 .smart-devis-textarea::placeholder {
-  color: hsl(40 20% 60%) !important;
+  color: hsl(40 20% 55%) !important;
   opacity: 1;
   font-weight: 700;
 }
 .smart-devis-textarea:focus {
-  border-color: hsl(43 76% 56%) !important;
-  box-shadow: 0 0 0 3px hsl(43 76% 52% / 0.2), 0 0 20px hsl(43 76% 52% / 0.1) !important;
+  border-color: #d4af37 !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25), 0 0 16px rgba(212, 175, 55, 0.12) !important;
 }
 
 .light .smart-devis-textarea {
   background-color: hsl(0 0% 100%) !important;
-  border: 1.5px solid hsl(220 15% 82%) !important;
+  border: 1px solid hsl(220 15% 82%) !important;
   box-shadow: inset 0 2px 6px hsl(220 15% 80% / 0.35);
 }
-.light .smart-devis-textarea::placeholder {
-  color: hsl(220 10% 50%) !important;
-  opacity: 1;
-}
 .light .smart-devis-textarea:focus {
-  border-color: hsl(37 37% 50%) !important;
-  box-shadow: inset 0 2px 6px hsl(220 15% 80% / 0.2), 0 0 0 3px hsl(37 37% 50% / 0.15) !important;
+  border-color: #d4af37 !important;
+  box-shadow: inset 0 2px 4px hsl(220 15% 80% / 0.2), 0 0 0 3px rgba(212, 175, 55, 0.18) !important;
+}
+.light .smart-devis-textarea::placeholder {
+  color: hsl(220 10% 45%) !important;
+  opacity: 1;
 }
 
 /* Safe area padding for mobile devices */

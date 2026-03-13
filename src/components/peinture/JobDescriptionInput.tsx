@@ -144,12 +144,16 @@ const JobDescriptionInput: React.FC<JobDescriptionInputProps> = ({
           </Label>
           <Textarea
             placeholder={isFr
-              ? "Décrivez le chantier en détail : type de travaux, surface, état actuel, nombre de pièces, contraintes particulières..."
-              : "وصّف الشغل بالتفصيل: نوع الشغل، المساحة، الحالة الحالية، عدد الأوض، أي حاجة خاصة..."
+              ? "📝 Décrivez votre chantier ici... type de travaux, surface, état actuel, nombre de pièces..."
+              : "📝 وصّف الشغل بالتفصيل: نوع الشغل، المساحة، الحالة الحالية، عدد الأوض..."
             }
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className={cn("min-h-[140px] text-base font-bold resize-none", isRTL && "text-right")}
+            className={cn(
+              "min-h-[140px] text-base font-bold resize-none transition-all duration-300",
+              "smart-devis-textarea",
+              isRTL && "text-right"
+            )}
             dir={isRTL ? 'rtl' : 'ltr'}
           />
         </div>
@@ -175,7 +179,10 @@ const JobDescriptionInput: React.FC<JobDescriptionInputProps> = ({
         <Button
           onClick={onAnalyze}
           disabled={!description.trim() || isLoading}
-          className="w-full font-black text-base py-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+          className={cn(
+            "w-full font-black text-base py-6 bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 hover:from-amber-600 hover:via-yellow-500 hover:to-orange-600 shadow-lg shadow-amber-500/25",
+            !isLoading && description.trim() && "animate-[pulse_2.5s_ease-in-out_infinite]"
+          )}
         >
           {isLoading ? (
             <>

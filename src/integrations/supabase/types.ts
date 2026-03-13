@@ -32,6 +32,60 @@ export type Database = {
         }
         Relationships: []
       }
+      artisan_pricing: {
+        Row: {
+          created_at: string
+          enduit_full: number
+          enduit_labor: number
+          fenetre_full: number
+          fenetre_labor: number
+          id: string
+          nettoyage_forfait: number
+          peinture_mur_full: number
+          peinture_mur_labor: number
+          peinture_plafond_full: number
+          peinture_plafond_labor: number
+          ponçage_full: number
+          sous_couche_full: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enduit_full?: number
+          enduit_labor?: number
+          fenetre_full?: number
+          fenetre_labor?: number
+          id?: string
+          nettoyage_forfait?: number
+          peinture_mur_full?: number
+          peinture_mur_labor?: number
+          peinture_plafond_full?: number
+          peinture_plafond_labor?: number
+          ponçage_full?: number
+          sous_couche_full?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enduit_full?: number
+          enduit_labor?: number
+          fenetre_full?: number
+          fenetre_labor?: number
+          id?: string
+          nettoyage_forfait?: number
+          peinture_mur_full?: number
+          peinture_mur_labor?: number
+          peinture_plafond_full?: number
+          peinture_plafond_labor?: number
+          ponçage_full?: number
+          sous_couche_full?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chantiers: {
         Row: {
           budget: number | null

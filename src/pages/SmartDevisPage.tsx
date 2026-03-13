@@ -1699,23 +1699,6 @@ const SmartDevisPage = () => {
             </div>
           </Card>
 
-          {/* Chat input — positioned BEFORE the thread so user sees it first */}
-          <Card className="p-3 border-2 border-primary/20 bg-primary/5">
-            <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-              <Textarea
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                placeholder={isRTL ? '💬 اكتب سؤالك أو تعديلك هنا...' : '💬 Posez votre question ou ajustement...'}
-                className={cn("min-h-[44px] max-h-[100px] resize-none text-sm bg-background", isRTL && "text-right font-cairo")}
-                dir={isRTL ? 'rtl' : 'ltr'}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
-              />
-              <Button size="icon" onClick={handleChatSend} disabled={!chatInput.trim() || isChatLoading} className="shrink-0 h-11 w-11">
-                {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              </Button>
-            </div>
-          </Card>
-
           {/* Dedicated Chat Thread — chronological (oldest top, newest bottom) */}
           <Card className="border border-border/60 overflow-hidden">
             <div className={cn("px-3 py-2 bg-muted/40 border-b border-border/40 flex items-center gap-2", isRTL && "flex-row-reverse")}>
@@ -1724,7 +1707,7 @@ const SmartDevisPage = () => {
                 {isRTL ? `💬 سجل المحادثة (${chatMessages.length} رسالة)` : `💬 Historique (${chatMessages.length} messages)`}
               </span>
             </div>
-            <ScrollArea className="h-[50vh] p-3">
+            <ScrollArea className="h-[40vh] p-3">
               <div className="space-y-3">
                 {chatMessages.map((msg, i) => (
                   <div key={i} className={cn("flex", msg.role === 'user' ? (isRTL ? 'justify-start' : 'justify-end') : (isRTL ? 'justify-end' : 'justify-start'))}>
@@ -1753,6 +1736,25 @@ const SmartDevisPage = () => {
               </div>
             </ScrollArea>
           </Card>
+
+          {/* Chat input — sticky at bottom, always visible */}
+          <div className="sticky bottom-0 z-10 bg-background pt-2 pb-1">
+            <Card className="p-3 border-2 border-primary/20 bg-primary/5 shadow-lg">
+              <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+                <Textarea
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  placeholder={isRTL ? '💬 اكتب سؤالك أو تعديلك هنا...' : '💬 Posez votre question ou ajustement...'}
+                  className={cn("min-h-[44px] max-h-[100px] resize-none text-sm bg-background", isRTL && "text-right font-cairo")}
+                  dir={isRTL ? 'rtl' : 'ltr'}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
+                />
+                <Button size="icon" onClick={handleChatSend} disabled={!chatInput.trim() || isChatLoading} className="shrink-0 h-11 w-11">
+                  {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                </Button>
+              </div>
+            </Card>
+          </div>
 
           {/* Analysis actions */}
           <div className="space-y-2">

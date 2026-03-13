@@ -220,16 +220,17 @@ const SmartDevisPage = () => {
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
   const LABOR_ONLY_FACTOR = 0.55;
-  const REFERENCE_PRICES: Array<{ keywords: string[]; price: number; unit?: string }> = [
-    // Preparation / Ponçage / Sous-couche: 12-16€/m²
-    { keywords: ['ponsage', 'ponçage', 'بونساج'], price: 14 },
-    { keywords: ['sous-couche', 'سوكوش', 'سوس كوش'], price: 12 },
+  const REFERENCE_PRICES: Array<{ keywords: string[]; price: number; unit?: string; laborPrice?: number }> = [
+    // Preparation / Ponçage / Sous-couche — reads from artisan settings
+    { keywords: ['ponsage', 'ponçage', 'بونساج'], price: artisanPricing.poncage_full },
+    { keywords: ['sous-couche', 'سوكوش', 'سوس كوش'], price: artisanPricing.sous_couche_full },
     { keywords: ['ragréage', 'راغرياج', 'ragreage'], price: 22 },
-    { keywords: ['enduit', 'أندوي'], price: 16 },
-    // Peinture (Pose + Fourniture / Full): 25-35€/m² → base 30
-    { keywords: ['peinture', 'بنتيرة', 'بانتيرة'], price: 30 },
-    // Windows / Cadres fenêtres: per unit 60-80€ full, min 40€ labor-only
-    { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'], price: 65, unit: 'u' },
+    { keywords: ['enduit', 'أندوي'], price: artisanPricing.enduit_full, laborPrice: artisanPricing.enduit_labor },
+    // Peinture (mur + plafond) — reads from artisan settings
+    { keywords: ['plafond', 'سقف', 'بلافون'], price: artisanPricing.peinture_plafond_full, laborPrice: artisanPricing.peinture_plafond_labor },
+    { keywords: ['peinture', 'بنتيرة', 'بانتيرة'], price: artisanPricing.peinture_mur_full, laborPrice: artisanPricing.peinture_mur_labor },
+    // Windows / Cadres fenêtres — reads from artisan settings
+    { keywords: ['fenetre', 'fenêtre', 'cadre', 'شباك', 'cadres', 'menuiserie', 'menuiseries'], price: artisanPricing.fenetre_full, unit: 'u', laborPrice: artisanPricing.fenetre_labor },
     // Carrelage / Faïence
     { keywords: ['carrelage', 'كارلاج', 'faience', 'faïence', 'فايونس'], price: 58 },
     { keywords: ['parquet', 'باركيه'], price: 52 },
@@ -238,8 +239,8 @@ const SmartDevisPage = () => {
     { keywords: ['placo', 'cloison', 'بلاكو'], price: 42 },
     { keywords: ['faux plafond', 'فو بلافون', 'سقف معلق'], price: 48 },
     { keywords: ['demontage', 'démontage', 'ديمونتاج'], price: 24 },
-    // Nettoyage chantier: forfait 150-300€ (NEVER per m²)
-    { keywords: ['nettoyage', 'نيتواياج', 'frais de chantier', 'مصاريف الشانتي'], price: 200, unit: 'forfait' },
+    // Nettoyage chantier — reads from artisan settings
+    { keywords: ['nettoyage', 'نيتواياج', 'frais de chantier', 'مصاريف الشانتي'], price: artisanPricing.nettoyage_forfait, unit: 'forfait' },
   ];
 
   const normalizeText = (value: string) =>

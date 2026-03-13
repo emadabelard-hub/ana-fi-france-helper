@@ -301,11 +301,12 @@ const SmartDevisPage = () => {
     const hasPaint = PAINT_KEYWORDS.some(k => normalizedDesignation.includes(normalizeText(k)));
 
     if (hasPrep && hasPaint && unit !== 'u' && unit !== 'forfait') {
-      // Combined task: sum prep (enduit) + paint prices
-      const prepFull = artisanPricing.enduit_full;
-      const prepLabor = artisanPricing.enduit_labor;
-      const paintFull = artisanPricing.peinture_mur_full;
-      const paintLabor = artisanPricing.peinture_mur_labor;
+      const pt003 = findCatalogItem('PT003');
+      const pt001 = findCatalogItem('PT001');
+      const prepFull = pt003?.total_price ?? 14;
+      const prepLabor = pt003?.labor_price ?? 10;
+      const paintFull = pt001?.total_price ?? 30;
+      const paintLabor = pt001?.labor_price ?? 20;
 
       let cumulativePrice: number;
       if (scope === 'main_oeuvre_seule') {
@@ -313,9 +314,9 @@ const SmartDevisPage = () => {
       } else {
         cumulativePrice = prepFull + paintFull;
       }
-      // Enforce minimum floor: 30€/m² (labor) or 40€/m² (full) for combined tasks
-      const minFull = 40;
-      const minLabor = 30;
+      // Enforce minimum floor: 30€/m² (labor) or 44€/m² (full) for combined tasks
+      const minFull = 44; // PT003(14) + PT001(30)
+      const minLabor = 30; // PT003(10) + PT001(20)
       if (scope === 'main_oeuvre_seule' && cumulativePrice < minLabor) cumulativePrice = minLabor;
       if (scope !== 'main_oeuvre_seule' && cumulativePrice < minFull) cumulativePrice = minFull;
 
@@ -340,16 +341,18 @@ const SmartDevisPage = () => {
     const withMaterialsBase = matched?.price ?? fallbackByUnit[effectiveUnit] ?? 35;
     let scopedPrice: number;
     if (scope === 'main_oeuvre_seule') {
-      // Use explicit labor price from artisan settings if available, else fallback to factor
       scopedPrice = matched?.laborPrice ?? (withMaterialsBase * LABOR_ONLY_FACTOR);
     } else {
       scopedPrice = withMaterialsBase;
     }
 
-    // Enforce minimum floors for fenêtres/portes (unit-priced items)
+    // Enforce minimum floors for unit-priced items (PT004 doors/windows)
     if (matched?.unit === 'u') {
-      if (scope === 'main_oeuvre_seule' && scopedPrice < artisanPricing.fenetre_labor) scopedPrice = artisanPricing.fenetre_labor;
-      if (scope !== 'main_oeuvre_seule' && scopedPrice < artisanPricing.fenetre_full) scopedPrice = artisanPricing.fenetre_full;
+      const pt004 = findCatalogItem('PT004');
+      const minLabor = pt004?.labor_price ?? 45;
+      const minFull = pt004?.total_price ?? 60;
+      if (scope === 'main_oeuvre_seule' && scopedPrice < minLabor) scopedPrice = minLabor;
+      if (scope !== 'main_oeuvre_seule' && scopedPrice < minFull) scopedPrice = minFull;
     }
 
     return Math.round(scopedPrice * 100) / 100;

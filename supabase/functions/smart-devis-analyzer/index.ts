@@ -154,6 +154,19 @@ RÈGLE CRITIQUE - INDÉPENDANCE (RAPPEL):
 - "Peinture chambre" → UNIQUEMENT: préparation murs, sous-couche et peinture. ZÉRO parquet/carrelage.
 - INTERDIT d'ajouter des catégories "bonus", "complémentaires" ou "recommandées" non demandées.
 
+⛔ MATRICE DE PRIX OBLIGATOIRE (NE JAMAIS INVENTER DE PRIX):
+- Préparation (Ponçage/Enduit/Sous-couche): 12€ à 16€/m²
+- بنتيرة Peinture (Main d'œuvre seule / Pose seule): 15€ à 18€/m²
+- بنتيرة Peinture (Fourniture + Pose / Full): 25€ à 35€/m² selon qualité
+- Cadres fenêtres / Windows: Prix par UNITÉ (forfait), 50€ à 80€ par fenêtre, JAMAIS au m²
+- Ragréage: 18€ à 25€/m²
+- Nettoyage الشانتي / Frais de chantier: FORFAIT minimum 150€ à 300€, JAMAIS 18€, JAMAIS au m²
+- Carrelage / Faïence: 45€ à 65€/m²
+- Parquet: 40€ à 60€/m²
+- Faux plafond: 40€ à 55€/m²
+- Démontage: 18€ à 30€/m²
+⚠️ INTERDIT d'appliquer un prix uniforme (ex: 32€) à TOUS les postes. Chaque poste a son propre tarif.
+
 ANALYSE DEMANDÉE:
 - Identifie UNIQUEMENT les travaux explicitement mentionnés dans le texte ou clairement visibles
 - Estime les surfaces/dimensions (avec +10% marge si photo)

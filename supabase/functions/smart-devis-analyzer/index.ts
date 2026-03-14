@@ -386,6 +386,20 @@ ${scopeRule}
 - "Fourniture et pose" = 1 SEULE ligne. NE PAS séparer en "Fourniture" + "Main d'œuvre pose".
 - Chaque tâche identifiée = exactement 1 ligne dans le devis. ZÉRO duplication.
 - Vérifie chaque item avant de l'ajouter: est-il déjà couvert par une autre ligne?
+- INTERDIT de créer deux fois la même ligne (ex: deux "Peinture plafond" ou deux "Peinture murs").
+
+⛔ RÈGLE SURFACES PEINTURE (CRITIQUE - JAMAIS MÉLANGER):
+- La surface PLAFOND = surface au sol de la pièce (longueur × largeur). JAMAIS plus.
+- La surface MURS = périmètre × hauteur (calculée SÉPARÉMENT). JAMAIS additionnée au plafond.
+- Pour les travaux de peinture, génère des lignes SÉPARÉES avec la BONNE surface:
+  * "Peinture plafond" → quantity = surface plafond (= surface au sol)
+  * "Peinture murs" → quantity = surface murs (= périmètre × hauteur)
+  * "Préparation murs (enduit/ponçage)" → quantity = surface murs
+  * "Préparation plafond" → quantity = surface plafond (si nécessaire)
+- NE JAMAIS utiliser la même surface pour murs et plafond.
+- Si l'analyse donne une surface totale sans distinction, calcule:
+  * Surface plafond = surface au sol
+  * Surface murs = (2 × (longueur + largeur)) × hauteur (hauteur standard = 2.5m si non précisée)
 
 ⛔ RÈGLE CONSOLIDATION FRAIS:
 - Regroupe déplacement + nettoyage + évacuation en 1 SEULE ligne: "Frais de chantier / مصاريف الشانتي" (forfait).
@@ -394,36 +408,24 @@ ${scopeRule}
 - Utilise la translitération phonétique du français en arabe ÉGYPTIEN (عامية مصرية) du métier.
 - Parquet→باركيه, Plinthes→بلانت, Primaire→بريمير, Ragréage→راغرياج, Sous-couche→سوكوش, Enduit→أندوي, Peinture→بنتيرة, Carrelage→كارلاج, Faïence→فايونس, Ponçage→بونساج, Démontage→ديمونتاج, Nettoyage→نيتواياج, Fourniture→فورنيتير, Dépannage→داباج, Chantier→شانتي
 
-⛔ MATRICE DE PRIX OBLIGATOIRE (NE JAMAIS INVENTER DE PRIX):
-- Préparation (Ponçage/Enduit/Sous-couche): 12€ à 16€/m²
-- بنتيرة Peinture (Main d'œuvre seule / Pose seule): 15€ à 18€/m²
-- بنتيرة Peinture (Fourniture + Pose / Full): 25€ à 35€/m² selon qualité
-- Cadres fenêtres / Windows: Prix par UNITÉ (u), 50€ à 80€ par fenêtre, JAMAIS au m²
-- Ragréage: 18€ à 25€/m²
-- Nettoyage الشانتي / Frais de chantier: FORFAIT (unit=forfait) minimum 150€ à 300€, JAMAIS 18€
-- Carrelage / Faïence: 45€ à 65€/m²
-- Parquet: 40€ à 60€/m²
-- Faux plafond: 40€ à 55€/m²
-- Démontage: 18€ à 30€/m²
-⚠️ INTERDIT d'appliquer un prix uniforme (ex: 32€) à TOUS les postes. Chaque poste a son propre tarif.
-
-RÈGLES DE CALCUL:
-- Qualité matériaux: ${materialQuality || 'standard'} (éco = -20%, standard = prix base, luxe = +40%)
-- Remise: ${discountPercent || 0}%
-- Marge bénéficiaire: ${profitMarginPercent || 15}%
-
-POSTES À INCLURE:
-1. Fourniture et pose (1 seule ligne par type de travail, inclut matériaux + main d'œuvre)
-2. Préparation si nécessaire (ragréage, sous-couche - 1 ligne)
-3. Frais de chantier (1 seul forfait regroupant déplacement + nettoyage + évacuation)
-
-Applique la formule:
-Prix final = Sous-total × (1 + Marge%) × (1 - Remise%)
+⛔ RÈGLE PRIX (CRITIQUE):
+- NE JAMAIS inventer de prix. Mets unitPrice = 0 pour TOUTES les lignes.
+- Les prix seront remplis automatiquement depuis la base de données interne.
+- Tu dois UNIQUEMENT détecter les travaux, les quantités et les unités.
 
 RÈGLE CRITIQUE - BILINGUISME OBLIGATOIRE:
 - Chaque item DOIT avoir designation_fr ET designation_ar. JAMAIS laisser vide.
 - designation_fr = titre professionnel en français du BTP (ex: "Fourniture et pose de parquet stratifié")
 - designation_ar = TRANSLITÉRATION phonétique en عامية مصرية (ex: "فورنيتير و بوز باركيه ستراتيفيي")
+
+⛔ RÈGLE CODE CATALOGUE:
+- Si tu reconnais le type de travail, ajoute le champ "code" avec le code catalogue correspondant:
+  PNT001=Peinture blanche mate, PNT002=Peinture satinée, PNT003=Peinture couleur, PNT004=Peinture plafond,
+  PNT005=Peinture facade, PNT007=Peinture porte/bois, CR001=Carrelage sol, CR002=Faïence, CR003=Ragréage,
+  PL001=Placo BA13, PL003=Faux plafond, PQ001=Parquet flottant, PQ002=Parquet collé,
+  PB001=WC/toilette, PB002=Lavabo, PB003=Douche, EL001=Prise, EL003=Tableau électrique,
+  MC006=Démolition, GN001=Nettoyage/Frais chantier
+- Si aucun code ne correspond, ne mets pas de champ "code".
 
 Réponds UNIQUEMENT en JSON:
 {
@@ -433,20 +435,11 @@ Réponds UNIQUEMENT en JSON:
       "designation_ar": "ترجمة بالعامية المصرية",
       "quantity": number,
       "unit": "m²|ml|u|h|forfait",
-      "unitPrice": number
+      "unitPrice": 0,
+      "code": "PNT001 (optionnel, si reconnu)"
     }
   ],
-  "summary": {
-    "materialsTotal": number,
-    "laborTotal": number,
-    "transportTotal": number,
-    "cleaningTotal": number,
-    "wasteTotal": number,
-    "subtotal": number,
-    "profitMargin": number,
-    "discount": number,
-    "finalTotal": number
-  }
+  "summary": {}
 }`;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

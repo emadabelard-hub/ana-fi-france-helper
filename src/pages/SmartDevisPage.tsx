@@ -23,7 +23,7 @@ import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import {
   ArrowLeft, ArrowRight, Camera, Image as ImageIcon, FileText, Map,
   Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle, X, Upload,
-  SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck, RotateCcw, Package
+  SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck, RotateCcw, Package, Mic, MicOff
 } from 'lucide-react';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';

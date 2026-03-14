@@ -250,11 +250,11 @@ const SmartDevisPage = () => {
     PLA01: { keywords: ['placo', 'ba13', 'بلاكو'], catalogCode: 'PLA01' },
     PLA02: { keywords: ['bande placo', 'bandes placo', 'bande a joint', 'bande joint'], catalogCode: 'PLA02' },
     PLA03: { keywords: ['faux plafond', 'faux-plafond', 'فو بلافون', 'سقف معلق'], catalogCode: 'PLA03' },
-    // Isolation
-    ISO01: { keywords: ['isolation combles'], catalogCode: 'ISO01' },
-    ISO02: { keywords: ['isolation murs', 'isolation interieur'], catalogCode: 'ISO02' },
-    ISO03: { keywords: ['isolation toiture'], catalogCode: 'ISO03' },
-    ISO04: { keywords: ['isolation plancher'], catalogCode: 'ISO04' },
+    // Placo / Isolation (PLA04-PLA07 replace ISO codes)
+    PLA04: { keywords: ['isolation combles'], catalogCode: 'PLA04' },
+    PLA05: { keywords: ['isolation murs', 'isolation interieur'], catalogCode: 'PLA05' },
+    PLA06: { keywords: ['isolation toiture'], catalogCode: 'PLA06' },
+    PLA07: { keywords: ['isolation plancher'], catalogCode: 'PLA07' },
     // Carrelage
     CAR01: { keywords: ['ragreage', 'ragréage', 'راغرياج'], catalogCode: 'CAR01' },
     CAR02: { keywords: ['carrelage sol', 'carrelage', 'كارلاج'], catalogCode: 'CAR02' },

@@ -65,11 +65,10 @@ const AssistantPage = () => {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const voiceRecorder = useVoiceRecorder(isRTL ? 'ar-EG' : 'fr-FR');
 
   const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
 

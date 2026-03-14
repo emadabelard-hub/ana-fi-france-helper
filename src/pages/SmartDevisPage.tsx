@@ -1124,7 +1124,7 @@ const SmartDevisPage = () => {
     updateItem(id, 'designation_fr', rawValue);
 
     const normalizedCode = rawValue.trim().toUpperCase();
-    const isCode = /^[A-Z]{2,4}\d{3}$/.test(normalizedCode);
+    const isCode = /^[A-Z]{2,4}\d{2,3}$/.test(normalizedCode);
     if (!isCode) return;
 
     const catalogItem = await fetchCatalogByCode(normalizedCode);

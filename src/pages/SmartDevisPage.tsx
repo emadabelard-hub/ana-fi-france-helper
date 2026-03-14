@@ -290,7 +290,8 @@ const SmartDevisPage = () => {
     LOC005: { keywords: ['betonniere', 'bétonnière'], catalogCode: 'LOC005' },
     LOC006: { keywords: ['nacelle', 'nacelle elevatrice'], catalogCode: 'LOC006' },
     // General
-    GN_NETTOYAGE: { keywords: ['nettoyage', 'نيتواياج', 'frais de chantier', 'مصاريف الشانتي', 'nettoyage chantier'], catalogCode: 'FAC001' },
+    GN001: { keywords: ['nettoyage chantier', 'نيتواياج', 'frais de chantier', 'مصاريف الشانتي', 'nettoyage fin de chantier'], catalogCode: 'GN001' },
+    GN_NETTOYAGE: { keywords: ['nettoyage'], catalogCode: 'GN001' },
     // Legacy prep keywords for cumulative logic
     PREP: { keywords: ['enduit', 'أندوي', 'preparation', 'préparation', 'lissage', 'sous-couche', 'سوكوش', 'سوس كوش'], catalogCode: 'CR003' },
   };

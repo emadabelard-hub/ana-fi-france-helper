@@ -1,12 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Send, Sparkles } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Mic, MicOff } from 'lucide-react';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useToast } from '@/hooks/use-toast';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
@@ -29,7 +30,10 @@ const AIAssistantPage = () => {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [onboardingName, setOnboardingName] = useState('');
   const [onboardingGender, setOnboardingGender] = useState<'male' | 'female'>('male');
+  const [isListening, setIsListening] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const { toast } = useToast();
 
   // Auto-fill from profile if available
   useEffect(() => {
@@ -49,6 +53,41 @@ const AIAssistantPage = () => {
     setUserInfo({ name, gender: onboardingGender });
     setShowOnboarding(false);
   };
+
+  // ── Voice Recognition ──
+  const startListening = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      toast({ variant: 'destructive', title: isRTL ? 'غير مدعوم' : 'Non supporté' });
+      return;
+    }
+    const recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = isRTL ? 'ar-EG' : 'fr-FR';
+    recognition.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(transcript);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [isRTL, toast]);
+
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }, []);
+
+  const toggleVoice = useCallback(() => {
+    if (isListening) stopListening();
+    else startListening();
+  }, [isListening, startListening, stopListening]);
 
   const send = async () => {
     const text = input.trim();
@@ -326,6 +365,20 @@ const AIAssistantPage = () => {
       {/* Input - positioned above bottom nav */}
       <div className="p-3 border-t border-border bg-background shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <div className="flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+          {/* Mic button */}
+          <button
+            type="button"
+            onClick={toggleVoice}
+            disabled={isLoading}
+            className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all",
+              isListening
+                ? "bg-blue-500 text-white animate-pulse shadow-lg shadow-blue-500/40"
+                : "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
+            )}
+          >
+            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+          </button>
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -345,7 +398,7 @@ const AIAssistantPage = () => {
             onClick={() => send()}
             disabled={!input.trim() || isLoading}
             className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all",
+              "w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all shrink-0",
               input.trim() && !isLoading
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted-foreground/20 text-muted-foreground"
@@ -354,7 +407,36 @@ const AIAssistantPage = () => {
             <Send size={18} />
           </button>
         </div>
+
+        {/* Subtitle + tags */}
+        <div className="pt-2 pb-1 text-center">
+          <p className="text-xs font-bold text-foreground font-cairo mb-1.5" dir="rtl">
+            اسألني أي حاجة
+          </p>
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {['chantier', 'رخصة', 'برفكتير', 'ماتريال', 'devis', 'travaux'].map((tag) => (
+              <span key={tag} className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* Listening overlay */}
+      {isListening && (
+        <div className="fixed inset-x-0 bottom-32 z-[70] flex justify-center pointer-events-none">
+          <div className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-full shadow-lg animate-bounce">
+            <Mic size={18} />
+            <span className="text-xs font-bold font-cairo">{isRTL ? 'جاري الاستماع...' : 'Écoute en cours...'}</span>
+            <span className="flex gap-0.5">
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

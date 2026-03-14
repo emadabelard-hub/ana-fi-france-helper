@@ -260,6 +260,7 @@ const SmartDevisPage = () => {
     CAR02: { keywords: ['carrelage sol', 'carrelage', 'كارلاج'], catalogCode: 'CAR02' },
     CAR03: { keywords: ['faience', 'faïence', 'فايونس', 'faience murale'], catalogCode: 'CAR03' },
     CAR04: { keywords: ['depose carrelage', 'dépose carrelage'], catalogCode: 'CAR04' },
+    CAR05: { keywords: ['carrelage terrasse', 'pose carrelage terrasse'], catalogCode: 'CAR05' },
     // Parquet
     PAR01: { keywords: ['parquet flottant'], catalogCode: 'PAR01' },
     PAR02: { keywords: ['parquet colle', 'parquet collé', 'parquet', 'باركيه'], catalogCode: 'PAR02' },

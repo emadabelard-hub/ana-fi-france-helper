@@ -447,6 +447,9 @@ const AIAssistantPage = () => {
           </div>
         </div>
       )}
+
+      {/* Room Scanner Modal */}
+      <RoomScannerModal open={showScanner} onClose={() => setShowScanner(false)} isRTL={isRTL} />
     </div>
   );
 };

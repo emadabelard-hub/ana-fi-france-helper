@@ -41,12 +41,11 @@ const AIAssistantPage = () => {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [onboardingName, setOnboardingName] = useState('');
   const [onboardingGender, setOnboardingGender] = useState<'male' | 'female'>('male');
-  const [isListening, setIsListening] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
+  const voiceRecorder = useVoiceRecorder(isRTL ? 'ar-EG' : 'fr-FR');
 
   // Auto-fill from profile if available
   useEffect(() => {

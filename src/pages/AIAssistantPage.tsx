@@ -137,6 +137,7 @@ const AIAssistantPage = () => {
           language: language === 'ar' ? 'ar' : 'fr',
           userName: userInfo?.name || null,
           userGender: userInfo?.gender || null,
+          category: activeCategory,
         }),
       });
 

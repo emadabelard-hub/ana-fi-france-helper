@@ -420,11 +420,21 @@ RÈGLE CRITIQUE - BILINGUISME OBLIGATOIRE:
 
 ⛔ RÈGLE CODE CATALOGUE:
 - Si tu reconnais le type de travail, ajoute le champ "code" avec le code catalogue correspondant:
-  PNT001=Peinture blanche mate, PNT002=Peinture satinée, PNT003=Peinture couleur, PNT004=Peinture plafond,
-  PNT005=Peinture facade, PNT007=Peinture porte/bois, CR001=Carrelage sol, CR002=Faïence, CR003=Ragréage,
-  PL001=Placo BA13, PL003=Faux plafond, PQ001=Parquet flottant, PQ002=Parquet collé,
-  PB001=WC/toilette, PB002=Lavabo, PB003=Douche, EL001=Prise, EL003=Tableau électrique,
-  MC006=Démolition, GN001=Nettoyage/Frais chantier
+  MAC01=dalle béton, MAC02=chape béton, MAC03=mur parpaing, MAC07=ouverture mur porteur, MAC08=démolition mur,
+  PEI01=préparation murs, PEI02=peinture murs, PEI03=préparation plafond, PEI04=peinture plafond, PEI05=peinture façade, PEI06=peinture boiserie,
+  PLA01=placo BA13, PLA02=bandes placo, PLA03=faux plafond, ISO01=isolation combles, ISO02=isolation murs,
+  CAR01=ragréage, CAR02=carrelage sol, CAR03=faïence, CAR04=dépose carrelage,
+  PAR01=parquet flottant, PAR02=parquet collé, PAR03=plinthes, PAR04=ponçage parquet,
+  ELE01=prise, ELE02=interrupteur, ELE03=tableau électrique, ELE04=point lumineux, ELE05=spot LED,
+  PLM01=WC, PLM02=lavabo, PLM03=meuble vasque, PLM04=douche, PLM05=réparation fuite,
+  MEN01=porte intérieure, MEN02=fenêtre PVC, MEN03=placard, MEN04=escalier bois, MEN05=porte entrée, MEN06=baie vitrée, MEN07=volet roulant, MEN08=portail,
+  TOI01=tuiles, TOI02=réparation toiture, TOI03=nettoyage toiture, TOI04=démoussage, TOI05=gouttière,
+  ETA01=étanchéité toiture, ETA02=étanchéité balcon, ETA03=étanchéité sdb,
+  EXT01=clôture grillage, EXT02=clôture panneau, EXT03=terrasse bois, EXT04=dalle terrasse,
+  CH01=radiateur, CH02=chauffe eau, CH03=pompe chaleur, CH04=climatisation,
+  VEN01=VMC simple, VEN02=VMC double,
+  PIS01-PIS15=travaux piscine, LOC01-LOC05=location matériel,
+  CHA01=protection chantier, CHA02=nettoyage chantier, CHA03=transport, CHA04=évacuation gravats
 - Si aucun code ne correspond, ne mets pas de champ "code".
 
 Réponds UNIQUEMENT en JSON:

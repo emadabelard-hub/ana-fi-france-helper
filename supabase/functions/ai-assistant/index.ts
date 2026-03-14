@@ -95,6 +95,7 @@ ANALYSE STRATÉGIQUE APPROFONDIE (OBLIGATOIRE):
 Date du jour : ${currentDate}.
 ${personalizationFr}
 ${formattingRulesFr}
+${categoryCtx}
 
 ${deepStrategyFr}
 

@@ -436,6 +436,14 @@ const AIAssistantPage = () => {
           </button>
         </div>
 
+        {/* Subtitle */}
+        <div className="pt-2 pb-1 text-center">
+          <p className="text-xs font-bold text-foreground font-cairo" dir="rtl">
+            اسألني أي حاجة
+          </p>
+        </div>
+      </div>
+
       {/* Room Scanner Modal */}
       <RoomScannerModal open={showScanner} onClose={() => setShowScanner(false)} isRTL={isRTL} />
     </div>

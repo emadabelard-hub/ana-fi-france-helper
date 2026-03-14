@@ -395,7 +395,7 @@ const SmartDevisPage = () => {
     const normalizedDesignation = normalizeText(designation || '');
     if (!normalizedDesignation) return null;
 
-    const directCodeMatch = normalizedDesignation.match(/\b[a-z]{2,4}\d{3}\b/i);
+    const directCodeMatch = normalizedDesignation.match(/\b[a-z]{2,4}\d{2,3}\b/i);
     if (directCodeMatch?.[0]) {
       return directCodeMatch[0].toUpperCase();
     }

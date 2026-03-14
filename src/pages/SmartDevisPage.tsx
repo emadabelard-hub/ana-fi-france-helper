@@ -236,6 +236,7 @@ const SmartDevisPage = () => {
     MAC07: { keywords: ['mur porteur', 'ouverture mur'], catalogCode: 'MAC07' },
     MAC08: { keywords: ['demolition mur', 'démolition mur', 'demolition', 'démolition', 'ديمونتاج'], catalogCode: 'MAC08' },
     MAC09: { keywords: ['chape liquide'], catalogCode: 'MAC09' },
+    MAC10: { keywords: ['enduit facade', 'enduit façade', 'crepi', 'crépi'], catalogCode: 'MAC10' },
     // Peinture
     PEI01: { keywords: ['preparation murs', 'préparation murs', 'enduit', 'أندوي', 'preparation', 'préparation', 'sous-couche', 'سوكوش'], catalogCode: 'PEI01' },
     PEI02: { keywords: ['peinture murs', 'peinture mur', 'peinture blanche', 'peinture mate', 'بنتيرة', 'بانتيرة', 'peinture'], catalogCode: 'PEI02' },
@@ -243,37 +244,44 @@ const SmartDevisPage = () => {
     PEI04: { keywords: ['peinture plafond', 'بلافون'], catalogCode: 'PEI04' },
     PEI05: { keywords: ['peinture facade', 'peinture façade', 'peinture exterieure'], catalogCode: 'PEI05' },
     PEI06: { keywords: ['peinture boiserie', 'peinture bois', 'peinture porte'], catalogCode: 'PEI06' },
+    PEI07: { keywords: ['enduit rebouchage', 'rebouchage'], catalogCode: 'PEI07' },
+    PEI08: { keywords: ['enduit lissage', 'lissage'], catalogCode: 'PEI08' },
+    PEI09: { keywords: ['poncage murs', 'ponçage murs'], catalogCode: 'PEI09' },
     // Placo
     PLA01: { keywords: ['placo', 'ba13', 'بلاكو'], catalogCode: 'PLA01' },
     PLA02: { keywords: ['bande placo', 'bandes placo', 'bande a joint', 'bande joint'], catalogCode: 'PLA02' },
     PLA03: { keywords: ['faux plafond', 'faux-plafond', 'فو بلافون', 'سقف معلق'], catalogCode: 'PLA03' },
-    // Isolation
-    ISO01: { keywords: ['isolation combles'], catalogCode: 'ISO01' },
-    ISO02: { keywords: ['isolation murs', 'isolation interieur'], catalogCode: 'ISO02' },
-    ISO03: { keywords: ['isolation toiture'], catalogCode: 'ISO03' },
-    ISO04: { keywords: ['isolation plancher'], catalogCode: 'ISO04' },
+    // Placo / Isolation (PLA04-PLA07 replace ISO codes)
+    PLA04: { keywords: ['isolation combles'], catalogCode: 'PLA04' },
+    PLA05: { keywords: ['isolation murs', 'isolation interieur'], catalogCode: 'PLA05' },
+    PLA06: { keywords: ['isolation toiture'], catalogCode: 'PLA06' },
+    PLA07: { keywords: ['isolation plancher'], catalogCode: 'PLA07' },
     // Carrelage
     CAR01: { keywords: ['ragreage', 'ragréage', 'راغرياج'], catalogCode: 'CAR01' },
     CAR02: { keywords: ['carrelage sol', 'carrelage', 'كارلاج'], catalogCode: 'CAR02' },
     CAR03: { keywords: ['faience', 'faïence', 'فايونس', 'faience murale'], catalogCode: 'CAR03' },
     CAR04: { keywords: ['depose carrelage', 'dépose carrelage'], catalogCode: 'CAR04' },
+    CAR05: { keywords: ['carrelage terrasse', 'pose carrelage terrasse'], catalogCode: 'CAR05' },
     // Parquet
     PAR01: { keywords: ['parquet flottant'], catalogCode: 'PAR01' },
     PAR02: { keywords: ['parquet colle', 'parquet collé', 'parquet', 'باركيه'], catalogCode: 'PAR02' },
     PAR03: { keywords: ['plinthe', 'plinthes', 'pose plinthe', 'بلانت'], catalogCode: 'PAR03' },
     PAR04: { keywords: ['poncage parquet', 'ponçage parquet', 'poncage', 'ponçage', 'بونساج'], catalogCode: 'PAR04' },
+    PAR05: { keywords: ['sol vinyle', 'sol pvc', 'lino', 'vinyle'], catalogCode: 'PAR05' },
     // Électricité
     ELE01: { keywords: ['prise', 'prise electrique', 'prise murale', 'بريز'], catalogCode: 'ELE01' },
     ELE02: { keywords: ['interrupteur', 'انتيريبتور'], catalogCode: 'ELE02' },
     ELE03: { keywords: ['tableau electrique', 'tableau électrique', 'كهرباء'], catalogCode: 'ELE03' },
     ELE04: { keywords: ['luminaire', 'eclairage', 'éclairage', 'plafonnier', 'point lumineux'], catalogCode: 'ELE04' },
     ELE05: { keywords: ['spot led', 'spot encastre', 'spot encastré'], catalogCode: 'ELE05' },
+    ELE06: { keywords: ['tirage cable', 'tirage câble', 'cable electrique', 'câble électrique'], catalogCode: 'ELE06' },
     // Plomberie
     PLM01: { keywords: ['wc', 'toilette', 'toilettes'], catalogCode: 'PLM01' },
     PLM02: { keywords: ['lavabo', 'évier', 'evier'], catalogCode: 'PLM02' },
     PLM03: { keywords: ['meuble vasque', 'vasque'], catalogCode: 'PLM03' },
     PLM04: { keywords: ['douche', 'baignoire', 'سباكة'], catalogCode: 'PLM04' },
     PLM05: { keywords: ['fuite', 'reparation fuite', 'réparation fuite'], catalogCode: 'PLM05' },
+    PLM06: { keywords: ['chauffe-eau', 'chauffe eau', 'installation chauffe-eau'], catalogCode: 'PLM06' },
     // Menuiserie
     MEN01: { keywords: ['porte interieure', 'porte intérieure', 'pose porte', 'باب'], catalogCode: 'MEN01' },
     MEN02: { keywords: ['fenetre pvc', 'fenêtre pvc', 'fenetre', 'fenêtre', 'شباك'], catalogCode: 'MEN02' },
@@ -335,7 +343,7 @@ const SmartDevisPage = () => {
     CHA04: { keywords: ['evacuation gravats', 'évacuation gravats', 'frais de chantier', 'مصاريف الشانتي'], catalogCode: 'CHA04' },
     // Generic fallbacks (must be AFTER specific codes)
     GENERIC_NETTOYAGE: { keywords: ['nettoyage'], catalogCode: 'CHA02' },
-    GENERIC_ISOLATION: { keywords: ['isolation', 'عزل'], catalogCode: 'ISO02' },
+    GENERIC_ISOLATION: { keywords: ['isolation', 'عزل'], catalogCode: 'PLA05' },
   };
 
   const parseCatalogItem = (row: any): PriceCatalogItem => ({

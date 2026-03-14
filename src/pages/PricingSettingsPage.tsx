@@ -12,10 +12,9 @@ import { toast } from 'sonner';
 const CATEGORY_META: Record<string, { icon: string; labelFr: string; labelAr: string }> = {
   maconnerie: { icon: '🏗️', labelFr: 'Maçonnerie', labelAr: 'ماسونري' },
   peinture: { icon: '🎨', labelFr: 'Peinture', labelAr: 'بنتيرة' },
-  placo: { icon: '🧱', labelFr: 'Placo', labelAr: 'بلاكو' },
-  isolation: { icon: '🧊', labelFr: 'Isolation', labelAr: 'عزل' },
-  carrelage: { icon: '🔲', labelFr: 'Carrelage', labelAr: 'كارلاج' },
-  parquet: { icon: '🪵', labelFr: 'Parquet', labelAr: 'باركيه' },
+  placo: { icon: '🧱', labelFr: 'Placo / Isolation', labelAr: 'بلاكو / عزل' },
+  carrelage: { icon: '🔲', labelFr: 'Carrelage / Sol', labelAr: 'كارلاج' },
+  parquet: { icon: '🪵', labelFr: 'Parquet / Revêtement', labelAr: 'باركيه' },
   electricite: { icon: '⚡', labelFr: 'Électricité', labelAr: 'كهرباء' },
   plomberie: { icon: '🔧', labelFr: 'Plomberie', labelAr: 'سباكة' },
   menuiserie: { icon: '🚪', labelFr: 'Menuiserie', labelAr: 'نجارة' },
@@ -26,7 +25,7 @@ const CATEGORY_META: Record<string, { icon: string; labelFr: string; labelAr: st
   ventilation: { icon: '💨', labelFr: 'Ventilation', labelAr: 'تهوية' },
   piscine: { icon: '🏊', labelFr: 'Piscine', labelAr: 'مسبح' },
   location: { icon: '🏗️', labelFr: 'Location Matériel', labelAr: 'إيجار معدات' },
-  chantier: { icon: '🧹', labelFr: 'Frais Chantier', labelAr: 'مصاريف الشانتي' },
+  frais_chantier: { icon: '🧹', labelFr: 'Frais Chantier', labelAr: 'مصاريف الشانتي' },
 };
 
 const UNIT_LABELS: Record<string, string> = {

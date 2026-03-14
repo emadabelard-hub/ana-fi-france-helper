@@ -385,20 +385,27 @@ const AIAssistantPage = () => {
 
       {/* Input - positioned above bottom nav */}
       <div className="p-3 border-t border-border bg-background shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-        <div className="flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+        <div className="relative flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+          {/* Voice Recorder Overlay */}
+          <VoiceRecorderOverlay
+            isRecording={voiceRecorder.isRecording}
+            isLocked={voiceRecorder.isLocked}
+            transcript={voiceRecorder.transcript}
+            duration={voiceRecorder.duration}
+            onSend={handleVoiceSend}
+            onCancel={voiceRecorder.cancel}
+            onLock={voiceRecorder.lock}
+            isRTL={isRTL}
+          />
+
           {/* Mic button */}
           <button
             type="button"
-            onClick={toggleVoice}
-            disabled={isLoading}
-            className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all",
-              isListening
-                ? "bg-blue-500 text-white animate-pulse shadow-lg shadow-blue-500/40"
-                : "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
-            )}
+            onClick={handleVoiceMicPress}
+            disabled={isLoading || voiceRecorder.isRecording}
+            className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
           >
-            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+            <Mic size={22} />
           </button>
           <textarea
             value={input}
@@ -428,29 +435,6 @@ const AIAssistantPage = () => {
             <Send size={18} />
           </button>
         </div>
-
-        {/* Subtitle */}
-        <div className="pt-2 pb-1 text-center">
-          <p className="text-xs font-bold text-foreground font-cairo" dir="rtl">
-            اسألني أي حاجة
-          </p>
-        </div>
-      </div>
-
-      {/* Listening overlay */}
-      {isListening && (
-        <div className="fixed inset-x-0 bottom-32 z-[70] flex justify-center pointer-events-none">
-          <div className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-full shadow-lg animate-bounce">
-            <Mic size={18} />
-            <span className="text-xs font-bold font-cairo">{isRTL ? 'جاري الاستماع...' : 'Écoute en cours...'}</span>
-            <span className="flex gap-0.5">
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Room Scanner Modal */}
       <RoomScannerModal open={showScanner} onClose={() => setShowScanner(false)} isRTL={isRTL} />

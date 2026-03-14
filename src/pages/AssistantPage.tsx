@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Brain, Camera, Paperclip, Send, Loader2, Mic, MicOff } from 'lucide-react';
+import { ArrowLeft, Brain, Camera, Paperclip, Send, Loader2, Mic } from 'lucide-react';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import { streamProAdminAssistant } from '@/hooks/useStreamingChat';
 import { useToast } from '@/hooks/use-toast';
 import DocumentActionButtons from '@/components/assistant/DocumentActionButtons';
 import { extractTextFromPDF } from '@/lib/pdfExtractor';
+import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
+import VoiceRecorderOverlay from '@/components/assistant/VoiceRecorderOverlay';
 
 interface Message {
   id: string;

@@ -99,7 +99,7 @@ const AssistantPage = () => {
     if (!text.trim() && !imageData) return;
 
     // Stop voice if active
-    if (isListening) stopListening();
+    if (voiceRecorder.isRecording) voiceRecorder.cancel();
 
     // Check if this is a devis request → route to Smart Devis
     if (text.trim() && isDevisRequest(text)) {

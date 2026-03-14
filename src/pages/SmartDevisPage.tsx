@@ -1100,23 +1100,33 @@ const SmartDevisPage = () => {
 
   const removeItem = (id: string) => setLineItems(prev => prev.filter(i => i.id !== id));
 
-  // Toggle withMaterial for a line item in partiel mode — recalculates price + designation
+  // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
   const toggleItemMaterial = (id: string) => {
     setLineItems(prev => prev.map(item => {
       if (item.id !== id) return item;
+
       const newWithMaterial = !item.withMaterial;
-      const effectiveScope = newWithMaterial ? 'fourniture_et_pose' : 'main_oeuvre_seule';
-      const newPrice = resolveReferenceUnitPrice(item.designation_fr, item.unit, effectiveScope);
+      const detectedCode = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr) || undefined;
+      const catalogItem = detectedCode ? catalogByCode[detectedCode] : undefined;
+      const newPrice = getCatalogUnitPriceByCode(detectedCode, newWithMaterial);
+      const normalizedUnit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : item.unit;
+      const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
+
+      const sourceFr = catalogItem?.description || item.designation_fr;
       const { fr, ar } = newWithMaterial
-        ? restoreFourniture(item.designation_fr, item.designation_ar)
-        : stripFourniture(item.designation_fr, item.designation_ar);
+        ? restoreFourniture(sourceFr, item.designation_ar)
+        : stripFourniture(sourceFr, item.designation_ar);
+
       return {
         ...item,
         designation_fr: fr,
         designation_ar: ar,
+        unit: normalizedUnit,
+        quantity,
         withMaterial: newWithMaterial,
+        catalogCode: detectedCode,
         unitPrice: newPrice,
-        total: item.quantity * newPrice,
+        total: quantity * newPrice,
       };
     }));
   };

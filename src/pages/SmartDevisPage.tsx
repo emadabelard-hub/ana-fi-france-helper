@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { useArtisanPricing, type PriceCatalogItem } from '@/hooks/useArtisanPricing';
+import type { PriceCatalogItem } from '@/hooks/useArtisanPricing';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -58,6 +58,7 @@ interface LineItem {
   unitPrice: number;
   total: number;
   category?: string;
+  catalogCode?: string;
   withMaterial?: boolean; // For 'partiel' mode: user toggles material per line
 }
 
@@ -153,7 +154,7 @@ const SmartDevisPage = () => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { pricing: artisanPricing, catalog: priceCatalog } = useArtisanPricing();
+  
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -183,6 +184,7 @@ const SmartDevisPage = () => {
   const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null>(null);
+  const [catalogByCode, setCatalogByCode] = useState<Record<string, PriceCatalogItem>>({});
 
   const clearSmartDevisStorage = useCallback(() => {
     try {
@@ -296,56 +298,46 @@ const SmartDevisPage = () => {
     PREP: { keywords: ['enduit', 'أندوي', 'preparation', 'préparation', 'lissage', 'sous-couche', 'سوكوش', 'سوس كوش'], catalogCode: 'CR003' },
   };
 
-  // Build REFERENCE_PRICES from catalog for backward-compatible matching
-  const findCatalogItem = (code: string): PriceCatalogItem | undefined => priceCatalog.find(c => c.code === code);
+  const parseCatalogItem = (row: any): PriceCatalogItem => ({
+    code: row.code,
+    category: row.category,
+    subcategory: row.subcategory || '',
+    description: row.description,
+    unit: row.unit,
+    material_price: Number(row.material_price),
+    labor_price: Number(row.labor_price),
+    equipment_price: Number(row.equipment_price || 0),
+    total_price: Number(row.total_price),
+  });
 
-  const REFERENCE_PRICES: Array<{ keywords: string[]; price: number; unit?: string; laborPrice?: number; code: string }> = [
-    // Order matters: specific items first, generic last
-    // PT003 Preparation BEFORE PT001/PT002 painting
-    ...((): typeof REFERENCE_PRICES => {
-      const orderedCodes = [
-        // Prep & specific items first
-        'PREP', 'CR003', 'CR004', 'PQ004', 'PQ005',
-        // Specific peinture before generic
-        'PNT007', 'PNT008', 'PNT006', 'PNT005', 'PNT004', 'PNT003', 'PNT002', 'PNT001',
-        // Placo specifics
-        'PL004', 'PL005', 'PL003', 'PL002', 'PL001',
-        // Carrelage
-        'CR005', 'CR002', 'CR001',
-        // Parquet
-        'PQ003', 'PQ001', 'PQ002',
-        // Plomberie
-        'PB004', 'PB005', 'PB001', 'PB002', 'PB003',
-        // Electricité
-        'EL004', 'EL005', 'EL001', 'EL002', 'EL003',
-        // Menuiserie (specific before generic)
-        'MN002', 'MN003', 'MN004', 'MN001',
-        // Maçonnerie
-        'MC004', 'MC003', 'MC005', 'MC007', 'MC001', 'MC002', 'MC006',
-        // Facade
-        'FAC002', 'FAC003', 'FAC001',
-        // Location
-        'LOC001', 'LOC002', 'LOC003', 'LOC004', 'LOC005', 'LOC006',
-        // Generic peinture fallback (last)
-        'PNT_GENERIC',
-        // General
-        'GN001', 'GN_NETTOYAGE',
-      ];
-      return orderedCodes.map(code => {
-        const meta = CATALOG_KEYWORDS[code];
-        if (!meta) return null;
-        const item = findCatalogItem(meta.catalogCode);
-        if (!item) return null;
-        return {
-          keywords: meta.keywords,
-          price: item.total_price,
-          laborPrice: item.labor_price,
-          unit: item.unit === 'unit' ? 'u' : (item.unit === 'm2' ? undefined : item.unit),
-          code: item.code,
-        };
-      }).filter(Boolean) as typeof REFERENCE_PRICES;
-    })(),
-  ];
+  useEffect(() => {
+    const loadCatalogFromDatabase = async () => {
+      if (!user) {
+        setCatalogByCode({});
+        return;
+      }
+
+      const { data, error } = await (supabase as any)
+        .from('artisan_price_catalog')
+        .select('code, category, subcategory, description, unit, material_price, labor_price, equipment_price, total_price')
+        .eq('user_id', user.id)
+        .order('code');
+
+      if (error || !data) {
+        setCatalogByCode({});
+        return;
+      }
+
+      const nextCatalog: Record<string, PriceCatalogItem> = {};
+      data.forEach((row: any) => {
+        const parsed = parseCatalogItem(row);
+        nextCatalog[parsed.code] = parsed;
+      });
+      setCatalogByCode(nextCatalog);
+    };
+
+    loadCatalogFromDatabase();
+  }, [user]);
 
   const normalizeText = (value: string) =>
     value
@@ -353,72 +345,39 @@ const SmartDevisPage = () => {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
 
-  // Keywords for detecting preparation vs finish paint in combined tasks
-  const PREP_KEYWORDS = ['enduit', 'أندوي', 'ponsage', 'ponçage', 'بونساج', 'sous-couche', 'سوكوش', 'سوس كوش', 'ragréage', 'راغرياج', 'ragreage', 'preparation', 'préparation'];
-  const PAINT_KEYWORDS = ['peinture', 'بنتيرة', 'بانتيرة'];
+  const normalizeCatalogUnit = (unit: string): string => {
+    if (unit === 'unit') return 'u';
+    if (unit === 'm2') return 'm²';
+    return unit || 'u';
+  };
 
-  const resolveReferenceUnitPrice = (designation: string, unit: string, scope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null) => {
+  const detectCatalogCodeFromDesignation = (designation: string): string | null => {
     const normalizedDesignation = normalizeText(designation || '');
+    if (!normalizedDesignation) return null;
 
-    // --- CUMULATIVE PRICING: detect combined prep + paint tasks ---
-    const hasPrep = PREP_KEYWORDS.some(k => normalizedDesignation.includes(normalizeText(k)));
-    const hasPaint = PAINT_KEYWORDS.some(k => normalizedDesignation.includes(normalizeText(k)));
-
-    if (hasPrep && hasPaint && unit !== 'u' && unit !== 'forfait') {
-      const cr003 = findCatalogItem('CR003');
-      const pnt001 = findCatalogItem('PNT001');
-      const prepFull = cr003?.total_price ?? 20;
-      const prepLabor = cr003?.labor_price ?? 14;
-      const paintFull = pnt001?.total_price ?? 22;
-      const paintLabor = pnt001?.labor_price ?? 0;
-
-      let cumulativePrice: number;
-      if (scope === 'main_oeuvre_seule') {
-        cumulativePrice = prepLabor + paintLabor;
-      } else {
-        cumulativePrice = prepFull + paintFull;
-      }
-      // Enforce minimum floor: 32€/m² (labor) or 42€/m² (full) for combined tasks
-      const minFull = 42; // CR003(20) + PNT001(22)
-      const minLabor = 32; // CR003(14) + PNT001(18)
-      if (scope === 'main_oeuvre_seule' && cumulativePrice < minLabor) cumulativePrice = minLabor;
-      if (scope !== 'main_oeuvre_seule' && cumulativePrice < minFull) cumulativePrice = minFull;
-
-      return Math.round(cumulativePrice * 100) / 100;
+    const directCodeMatch = normalizedDesignation.match(/\b[a-z]{2,4}\d{3}\b/i);
+    if (directCodeMatch?.[0]) {
+      return directCodeMatch[0].toUpperCase();
     }
 
-    // --- Standard single-task matching ---
-    const matched = REFERENCE_PRICES.find((entry) =>
+    const foundEntry = Object.values(CATALOG_KEYWORDS).find((entry) =>
       entry.keywords.some((keyword) => normalizedDesignation.includes(normalizeText(keyword)))
     );
 
-    // STRICT: fallback prices MUST come from the catalog, NEVER from hardcoded guesses.
-    // Default fallback = PNT001 (most common task) to avoid hallucinated prices.
-    const pnt001Fallback = findCatalogItem('PNT001');
-    const fallbackTotal = pnt001Fallback?.total_price ?? 22;
-    const fallbackLabor = pnt001Fallback?.labor_price ?? 0;
-
-    // If the reference entry specifies a forced unit, use its price directly
-    const effectiveUnit = matched?.unit || unit;
-    const withMaterialsBase = matched?.price ?? fallbackTotal;
-    let scopedPrice: number;
-    if (scope === 'main_oeuvre_seule') {
-      scopedPrice = matched?.laborPrice ?? fallbackLabor;
-    } else {
-      scopedPrice = withMaterialsBase;
-    }
-
-    // Enforce minimum floors for unit-priced items (doors/windows - MN001/MN002)
-    if (matched?.unit === 'u') {
-      const mn001 = findCatalogItem('MN001');
-      const minLabor = mn001?.labor_price ?? 180;
-      const minFull = mn001?.total_price ?? 300;
-      if (scope === 'main_oeuvre_seule' && scopedPrice < minLabor) scopedPrice = minLabor;
-      if (scope !== 'main_oeuvre_seule' && scopedPrice < minFull) scopedPrice = minFull;
-    }
-
-    return Math.round(scopedPrice * 100) / 100;
+    return foundEntry?.catalogCode ?? null;
   };
+
+  const getCatalogPriceFromItem = (catalogItem: PriceCatalogItem, includeMaterials: boolean): number => {
+    const rawPrice = includeMaterials ? catalogItem.total_price : catalogItem.labor_price;
+    return Math.round(Number(rawPrice) * 100) / 100;
+  };
+
+  const getCatalogUnitPriceByCode = useCallback((catalogCode: string | undefined, includeMaterials: boolean): number => {
+    if (!catalogCode) return 0;
+    const catalogItem = catalogByCode[catalogCode];
+    if (!catalogItem) return 0;
+    return getCatalogPriceFromItem(catalogItem, includeMaterials);
+  }, [catalogByCode]);
 
   // Strip "Fourniture et pose" → "Pose" when material is excluded
   const stripFourniture = (fr: string, ar: string): { fr: string; ar: string } => {
@@ -1000,33 +959,39 @@ const SmartDevisPage = () => {
 
       const data = await invokeAnalyzer(payload);
 
-      const items: LineItem[] = (data.items || data.suggestedItems || []).map((item: any) => {
+      const rawItems = data.items || data.suggestedItems || [];
+      const detectedCodes: string[] = Array.from(
+        new Set(
+          rawItems
+            .map((item: any): string => {
+              const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
+              return explicitCode || detectCatalogCodeFromDesignation(item.designation_fr || '') || '';
+            })
+            .filter((code: string) => code.length > 0)
+        )
+      );
+
+      const catalogRows = await fetchCatalogByCodes(detectedCodes);
+
+      const items: LineItem[] = rawItems.map((item: any) => {
         const quantity = Number(item.quantity || 1);
         const aiUnit = item.unit || 'u';
-        // Always set withMaterial based on scope
         const isPartiel = materialScope === 'partiel';
         const withMaterial = isPartiel ? false : materialScope !== 'main_oeuvre_seule';
-        const effectiveScope = withMaterial ? 'fourniture_et_pose' : 'main_oeuvre_seule';
 
-        // Resolve reference price AND forced unit (e.g. nettoyage→forfait, fenêtre→u)
-        const designationFr = item.designation_fr || '';
-        const normalizedDes = normalizeText(designationFr);
-        const matchedRef = REFERENCE_PRICES.find((entry) =>
-          entry.keywords.some((keyword) => normalizedDes.includes(normalizeText(keyword)))
-        );
-        // If reference entry specifies a unit, override AI's unit
-        const unit = matchedRef?.unit || aiUnit;
-        // For forfait items (nettoyage), force quantity=1
-        const effectiveQuantity = (matchedRef?.unit === 'forfait') ? 1 : quantity;
+        const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
+        const detectedCode = explicitCode || detectCatalogCodeFromDesignation(item.designation_fr || '') || '';
+        const catalogItem = detectedCode ? (catalogRows[detectedCode] || catalogByCode[detectedCode]) : undefined;
 
-        const fixedUnitPrice = resolveReferenceUnitPrice(designationFr, unit, effectiveScope);
+        const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : aiUnit;
+        const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
+        const fixedUnitPrice = catalogItem ? getCatalogPriceFromItem(catalogItem, withMaterial) : 0;
 
-        // Strip "Fourniture" from designations when material is not included
-        const rawFr = designationFr;
-        const rawAr = item.designation_ar || '';
+        const baseFr = catalogItem?.description || item.designation_fr || '';
+        const baseAr = item.designation_ar || '';
         const { fr: finalFr, ar: finalAr } = !withMaterial
-          ? stripFourniture(rawFr, rawAr)
-          : { fr: rawFr, ar: rawAr };
+          ? stripFourniture(baseFr, baseAr)
+          : { fr: baseFr, ar: baseAr };
 
         return {
           id: generateId(),
@@ -1036,7 +1001,8 @@ const SmartDevisPage = () => {
           unit,
           unitPrice: fixedUnitPrice,
           total: effectiveQuantity * fixedUnitPrice,
-          category: item.category,
+          category: catalogItem?.category || item.category,
+          catalogCode: catalogItem?.code || (detectedCode || undefined),
           withMaterial,
         };
       });
@@ -1061,40 +1027,39 @@ const SmartDevisPage = () => {
     }));
   };
 
+  const fetchCatalogByCodes = useCallback(async (codes: string[]): Promise<Record<string, PriceCatalogItem>> => {
+    if (!user || codes.length === 0) return {};
+
+    const uniqueCodes = Array.from(new Set(codes.map(code => code.trim().toUpperCase()).filter(Boolean)));
+    if (uniqueCodes.length === 0) return {};
+
+    const { data, error } = await (supabase as any)
+      .from('artisan_price_catalog')
+      .select('code, category, subcategory, description, unit, material_price, labor_price, equipment_price, total_price')
+      .eq('user_id', user.id)
+      .in('code', uniqueCodes);
+
+    if (error || !data) return {};
+
+    const mapped: Record<string, PriceCatalogItem> = {};
+    data.forEach((row: any) => {
+      const parsed = parseCatalogItem(row);
+      mapped[parsed.code] = parsed;
+    });
+
+    setCatalogByCode(prev => ({ ...prev, ...mapped }));
+    return mapped;
+  }, [user]);
+
   const fetchCatalogByCode = useCallback(async (code: string): Promise<PriceCatalogItem | null> => {
     const normalizedCode = code.trim().toUpperCase();
     if (!normalizedCode) return null;
 
-    // 1) Immediate DB lookup (strict source of truth)
-    if (user) {
-      const { data, error } = await (supabase as any)
-        .from('artisan_price_catalog')
-        .select('code, category, subcategory, description, unit, material_price, labor_price, equipment_price, total_price')
-        .eq('user_id', user.id)
-        .eq('code', normalizedCode)
-        .maybeSingle();
-
-      if (!error && data) {
-        return {
-          code: data.code,
-          category: data.category,
-          subcategory: data.subcategory || '',
-          description: data.description,
-          unit: data.unit,
-          material_price: Number(data.material_price),
-          labor_price: Number(data.labor_price),
-          equipment_price: Number(data.equipment_price || 0),
-          total_price: Number(data.total_price),
-        };
-      }
-    }
-
-    // 2) Strict fallback to loaded catalog only (no guessed price)
-    return priceCatalog.find(item => item.code === normalizedCode) ?? null;
-  }, [priceCatalog, user]);
+    const rows = await fetchCatalogByCodes([normalizedCode]);
+    return rows[normalizedCode] ?? null;
+  }, [fetchCatalogByCodes]);
 
   const onCodeChange = useCallback(async (id: string, rawValue: string) => {
-    // Keep typed value instantly for UX
     updateItem(id, 'designation_fr', rawValue);
 
     const normalizedCode = rawValue.trim().toUpperCase();
@@ -1102,43 +1067,66 @@ const SmartDevisPage = () => {
     if (!isCode) return;
 
     const catalogItem = await fetchCatalogByCode(normalizedCode);
-    if (!catalogItem) return;
-
-    const normalizedUnit = catalogItem.unit === 'unit' ? 'u' : catalogItem.unit;
-    const exactUnitPrice = Number(catalogItem.total_price); // strict lock: exact catalog unit price
 
     setLineItems(prev => prev.map(item => {
       if (item.id !== id) return item;
+
+      if (!catalogItem) {
+        return {
+          ...item,
+          catalogCode: undefined,
+          unitPrice: 0,
+          total: 0,
+        };
+      }
+
+      const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
+      const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
+      const exactUnitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
+      const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
+
       return {
         ...item,
         designation_fr: catalogItem.description,
         unit: normalizedUnit,
+        quantity,
         unitPrice: exactUnitPrice,
         category: catalogItem.category,
-        total: item.quantity * exactUnitPrice,
+        catalogCode: catalogItem.code,
+        total: quantity * exactUnitPrice,
       };
     }));
-  }, [fetchCatalogByCode]);
+  }, [fetchCatalogByCode, materialScope]);
 
   const removeItem = (id: string) => setLineItems(prev => prev.filter(i => i.id !== id));
 
-  // Toggle withMaterial for a line item in partiel mode — recalculates price + designation
+  // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
   const toggleItemMaterial = (id: string) => {
     setLineItems(prev => prev.map(item => {
       if (item.id !== id) return item;
+
       const newWithMaterial = !item.withMaterial;
-      const effectiveScope = newWithMaterial ? 'fourniture_et_pose' : 'main_oeuvre_seule';
-      const newPrice = resolveReferenceUnitPrice(item.designation_fr, item.unit, effectiveScope);
+      const detectedCode = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr) || undefined;
+      const catalogItem = detectedCode ? catalogByCode[detectedCode] : undefined;
+      const newPrice = getCatalogUnitPriceByCode(detectedCode, newWithMaterial);
+      const normalizedUnit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : item.unit;
+      const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
+
+      const sourceFr = catalogItem?.description || item.designation_fr;
       const { fr, ar } = newWithMaterial
-        ? restoreFourniture(item.designation_fr, item.designation_ar)
-        : stripFourniture(item.designation_fr, item.designation_ar);
+        ? restoreFourniture(sourceFr, item.designation_ar)
+        : stripFourniture(sourceFr, item.designation_ar);
+
       return {
         ...item,
         designation_fr: fr,
         designation_ar: ar,
+        unit: normalizedUnit,
+        quantity,
         withMaterial: newWithMaterial,
+        catalogCode: detectedCode,
         unitPrice: newPrice,
-        total: item.quantity * newPrice,
+        total: quantity * newPrice,
       };
     }));
   };
@@ -2040,8 +2028,9 @@ const SmartDevisPage = () => {
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs p-3 max-w-[220px]">
                           {(() => {
-                            const fullPrice = resolveReferenceUnitPrice(item.designation_fr, item.unit, 'fourniture_et_pose');
-                            const laborPrice = resolveReferenceUnitPrice(item.designation_fr, item.unit, 'main_oeuvre_seule');
+                            const detectedCode = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr) || undefined;
+                            const fullPrice = getCatalogUnitPriceByCode(detectedCode, true);
+                            const laborPrice = getCatalogUnitPriceByCode(detectedCode, false);
                             const materialPrice = Math.round((fullPrice - laborPrice) * 100) / 100;
                             return (
                               <div className="space-y-1.5">

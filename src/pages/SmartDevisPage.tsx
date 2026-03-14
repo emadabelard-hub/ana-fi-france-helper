@@ -220,7 +220,7 @@ const SmartDevisPage = () => {
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
-  const LABOR_ONLY_FACTOR = 0.55;
+  // REMOVED LABOR_ONLY_FACTOR - prices now come strictly from catalog labor_price
 
   // Build keyword→catalog mapping from the new price catalog
   const CATALOG_KEYWORDS: Record<string, { keywords: string[]; catalogCode: string }> = {

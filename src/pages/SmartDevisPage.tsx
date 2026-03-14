@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import type { PriceCatalogItem } from '@/hooks/useArtisanPricing';
+import { type PriceCatalogItem, DEFAULT_CATALOG } from '@/hooks/useArtisanPricing';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -358,10 +358,18 @@ const SmartDevisPage = () => {
     total_price: Number(row.total_price),
   });
 
+  // Build default catalog lookup once
+  const defaultCatalogByCode: Record<string, PriceCatalogItem> = (() => {
+    const map: Record<string, PriceCatalogItem> = {};
+    DEFAULT_CATALOG.forEach(item => { map[item.code] = item; });
+    return map;
+  })();
+
   useEffect(() => {
     const loadCatalogFromDatabase = async () => {
       if (!user) {
-        setCatalogByCode({});
+        // No user → use default catalog as fallback
+        setCatalogByCode(defaultCatalogByCode);
         return;
       }
 
@@ -371,8 +379,9 @@ const SmartDevisPage = () => {
         .eq('user_id', user.id)
         .order('code');
 
-      if (error || !data) {
-        setCatalogByCode({});
+      if (error || !data || data.length === 0) {
+        // No user catalog in DB → fallback to DEFAULT_CATALOG
+        setCatalogByCode(defaultCatalogByCode);
         return;
       }
 
@@ -1097,28 +1106,42 @@ const SmartDevisPage = () => {
   };
 
   const fetchCatalogByCodes = useCallback(async (codes: string[]): Promise<Record<string, PriceCatalogItem>> => {
-    if (!user || codes.length === 0) return {};
+    if (codes.length === 0) return {};
 
     const uniqueCodes = Array.from(new Set(codes.map(code => code.trim().toUpperCase()).filter(Boolean)));
     if (uniqueCodes.length === 0) return {};
 
-    const { data, error } = await (supabase as any)
-      .from('artisan_price_catalog')
-      .select('code, category, subcategory, description, unit, material_price, labor_price, equipment_price, total_price')
-      .eq('user_id', user.id)
-      .in('code', uniqueCodes);
+    // Try DB first if user is logged in
+    if (user) {
+      const { data, error } = await (supabase as any)
+        .from('artisan_price_catalog')
+        .select('code, category, subcategory, description, unit, material_price, labor_price, equipment_price, total_price')
+        .eq('user_id', user.id)
+        .in('code', uniqueCodes);
 
-    if (error || !data) return {};
+      if (!error && data && data.length > 0) {
+        const mapped: Record<string, PriceCatalogItem> = {};
+        data.forEach((row: any) => {
+          const parsed = parseCatalogItem(row);
+          mapped[parsed.code] = parsed;
+        });
+        setCatalogByCode(prev => ({ ...prev, ...mapped }));
+        return mapped;
+      }
+    }
 
-    const mapped: Record<string, PriceCatalogItem> = {};
-    data.forEach((row: any) => {
-      const parsed = parseCatalogItem(row);
-      mapped[parsed.code] = parsed;
+    // Fallback: resolve from DEFAULT_CATALOG
+    const fallback: Record<string, PriceCatalogItem> = {};
+    uniqueCodes.forEach(code => {
+      if (defaultCatalogByCode[code]) {
+        fallback[code] = defaultCatalogByCode[code];
+      }
     });
-
-    setCatalogByCode(prev => ({ ...prev, ...mapped }));
-    return mapped;
-  }, [user]);
+    if (Object.keys(fallback).length > 0) {
+      setCatalogByCode(prev => ({ ...prev, ...fallback }));
+    }
+    return fallback;
+  }, [user, defaultCatalogByCode]);
 
   const fetchCatalogByCode = useCallback(async (code: string): Promise<PriceCatalogItem | null> => {
     const normalizedCode = code.trim().toUpperCase();

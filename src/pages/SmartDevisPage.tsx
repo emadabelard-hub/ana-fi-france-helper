@@ -1025,40 +1025,39 @@ const SmartDevisPage = () => {
     }));
   };
 
+  const fetchCatalogByCodes = useCallback(async (codes: string[]): Promise<Record<string, PriceCatalogItem>> => {
+    if (!user || codes.length === 0) return {};
+
+    const uniqueCodes = Array.from(new Set(codes.map(code => code.trim().toUpperCase()).filter(Boolean)));
+    if (uniqueCodes.length === 0) return {};
+
+    const { data, error } = await (supabase as any)
+      .from('artisan_price_catalog')
+      .select('code, category, subcategory, description, unit, material_price, labor_price, equipment_price, total_price')
+      .eq('user_id', user.id)
+      .in('code', uniqueCodes);
+
+    if (error || !data) return {};
+
+    const mapped: Record<string, PriceCatalogItem> = {};
+    data.forEach((row: any) => {
+      const parsed = parseCatalogItem(row);
+      mapped[parsed.code] = parsed;
+    });
+
+    setCatalogByCode(prev => ({ ...prev, ...mapped }));
+    return mapped;
+  }, [user]);
+
   const fetchCatalogByCode = useCallback(async (code: string): Promise<PriceCatalogItem | null> => {
     const normalizedCode = code.trim().toUpperCase();
     if (!normalizedCode) return null;
 
-    // 1) Immediate DB lookup (strict source of truth)
-    if (user) {
-      const { data, error } = await (supabase as any)
-        .from('artisan_price_catalog')
-        .select('code, category, subcategory, description, unit, material_price, labor_price, equipment_price, total_price')
-        .eq('user_id', user.id)
-        .eq('code', normalizedCode)
-        .maybeSingle();
-
-      if (!error && data) {
-        return {
-          code: data.code,
-          category: data.category,
-          subcategory: data.subcategory || '',
-          description: data.description,
-          unit: data.unit,
-          material_price: Number(data.material_price),
-          labor_price: Number(data.labor_price),
-          equipment_price: Number(data.equipment_price || 0),
-          total_price: Number(data.total_price),
-        };
-      }
-    }
-
-    // 2) Strict fallback to loaded catalog only (no guessed price)
-    return priceCatalog.find(item => item.code === normalizedCode) ?? null;
-  }, [priceCatalog, user]);
+    const rows = await fetchCatalogByCodes([normalizedCode]);
+    return rows[normalizedCode] ?? null;
+  }, [fetchCatalogByCodes]);
 
   const onCodeChange = useCallback(async (id: string, rawValue: string) => {
-    // Keep typed value instantly for UX
     updateItem(id, 'designation_fr', rawValue);
 
     const normalizedCode = rawValue.trim().toUpperCase();
@@ -1066,23 +1065,36 @@ const SmartDevisPage = () => {
     if (!isCode) return;
 
     const catalogItem = await fetchCatalogByCode(normalizedCode);
-    if (!catalogItem) return;
-
-    const normalizedUnit = catalogItem.unit === 'unit' ? 'u' : catalogItem.unit;
-    const exactUnitPrice = Number(catalogItem.total_price); // strict lock: exact catalog unit price
 
     setLineItems(prev => prev.map(item => {
       if (item.id !== id) return item;
+
+      if (!catalogItem) {
+        return {
+          ...item,
+          catalogCode: undefined,
+          unitPrice: 0,
+          total: 0,
+        };
+      }
+
+      const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
+      const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
+      const exactUnitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
+      const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
+
       return {
         ...item,
         designation_fr: catalogItem.description,
         unit: normalizedUnit,
+        quantity,
         unitPrice: exactUnitPrice,
         category: catalogItem.category,
-        total: item.quantity * exactUnitPrice,
+        catalogCode: catalogItem.code,
+        total: quantity * exactUnitPrice,
       };
     }));
-  }, [fetchCatalogByCode]);
+  }, [fetchCatalogByCode, materialScope]);
 
   const removeItem = (id: string) => setLineItems(prev => prev.filter(i => i.id !== id));
 

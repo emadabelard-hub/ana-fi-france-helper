@@ -960,9 +960,20 @@ const SmartDevisPage = () => {
       const data = await invokeAnalyzer(payload);
 
       const rawItems = data.items || data.suggestedItems || [];
+      
+      // ===== DEDUPLICATION: Remove duplicate lines by normalized designation =====
+      const seenDesignations = new Set<string>();
+      const deduplicatedItems = rawItems.filter((item: any) => {
+        const normalizedKey = normalizeText(item.designation_fr || '').replace(/\s+/g, ' ').trim();
+        if (!normalizedKey) return true;
+        if (seenDesignations.has(normalizedKey)) return false;
+        seenDesignations.add(normalizedKey);
+        return true;
+      });
+
       const detectedCodes: string[] = Array.from(
         new Set(
-          rawItems
+          deduplicatedItems
             .map((item: any): string => {
               const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
               return explicitCode || detectCatalogCodeFromDesignation(item.designation_fr || '') || '';
@@ -973,7 +984,7 @@ const SmartDevisPage = () => {
 
       const catalogRows = await fetchCatalogByCodes(detectedCodes);
 
-      const items: LineItem[] = rawItems.map((item: any) => {
+      const items: LineItem[] = deduplicatedItems.map((item: any) => {
         const quantity = Number(item.quantity || 1);
         const aiUnit = item.unit || 'u';
         const isPartiel = materialScope === 'partiel';
@@ -985,6 +996,7 @@ const SmartDevisPage = () => {
 
         const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : aiUnit;
         const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
+        // Price strictly from catalog; 0 if not found (user fills manually)
         const fixedUnitPrice = catalogItem ? getCatalogPriceFromItem(catalogItem, withMaterial) : 0;
 
         const baseFr = catalogItem?.description || item.designation_fr || '';
@@ -1007,7 +1019,16 @@ const SmartDevisPage = () => {
         };
       });
 
-      setLineItems(items);
+      // ===== FINAL DEDUP by catalogCode: keep first occurrence only =====
+      const seenCatalogCodes = new Set<string>();
+      const finalItems = items.filter(item => {
+        if (!item.catalogCode) return true;
+        if (seenCatalogCodes.has(item.catalogCode)) return false;
+        seenCatalogCodes.add(item.catalogCode);
+        return true;
+      });
+
+      setLineItems(finalItems);
       setStep('review');
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'خطأ في التوليد', description: err.message });

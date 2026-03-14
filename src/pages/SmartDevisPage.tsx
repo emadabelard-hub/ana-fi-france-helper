@@ -1970,7 +1970,7 @@ const SmartDevisPage = () => {
                     <div className="flex-1 space-y-1">
                       <Input
                         value={item.designation_fr}
-                        onChange={e => updateItem(item.id, 'designation_fr', e.target.value)}
+                        onChange={e => onCodeChange(item.id, e.target.value)}
                         placeholder="Désignation FR"
                         className="text-xs h-auto min-h-[32px] py-1.5"
                         dir="ltr"

@@ -959,33 +959,37 @@ const SmartDevisPage = () => {
 
       const data = await invokeAnalyzer(payload);
 
-      const items: LineItem[] = (data.items || data.suggestedItems || []).map((item: any) => {
+      const rawItems = data.items || data.suggestedItems || [];
+      const detectedCodes = Array.from(new Set(
+        rawItems
+          .map((item: any) => {
+            const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
+            return explicitCode || detectCatalogCodeFromDesignation(item.designation_fr || '') || '';
+          })
+          .filter((code: string) => !!code)
+      ));
+
+      const catalogRows = await fetchCatalogByCodes(detectedCodes);
+
+      const items: LineItem[] = rawItems.map((item: any) => {
         const quantity = Number(item.quantity || 1);
         const aiUnit = item.unit || 'u';
-        // Always set withMaterial based on scope
         const isPartiel = materialScope === 'partiel';
         const withMaterial = isPartiel ? false : materialScope !== 'main_oeuvre_seule';
-        const effectiveScope = withMaterial ? 'fourniture_et_pose' : 'main_oeuvre_seule';
 
-        // Resolve reference price AND forced unit (e.g. nettoyage→forfait, fenêtre→u)
-        const designationFr = item.designation_fr || '';
-        const normalizedDes = normalizeText(designationFr);
-        const matchedRef = REFERENCE_PRICES.find((entry) =>
-          entry.keywords.some((keyword) => normalizedDes.includes(normalizeText(keyword)))
-        );
-        // If reference entry specifies a unit, override AI's unit
-        const unit = matchedRef?.unit || aiUnit;
-        // For forfait items (nettoyage), force quantity=1
-        const effectiveQuantity = (matchedRef?.unit === 'forfait') ? 1 : quantity;
+        const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
+        const detectedCode = explicitCode || detectCatalogCodeFromDesignation(item.designation_fr || '') || '';
+        const catalogItem = detectedCode ? (catalogRows[detectedCode] || catalogByCode[detectedCode]) : undefined;
 
-        const fixedUnitPrice = resolveReferenceUnitPrice(designationFr, unit, effectiveScope);
+        const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : aiUnit;
+        const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
+        const fixedUnitPrice = catalogItem ? getCatalogPriceFromItem(catalogItem, withMaterial) : 0;
 
-        // Strip "Fourniture" from designations when material is not included
-        const rawFr = designationFr;
-        const rawAr = item.designation_ar || '';
+        const baseFr = catalogItem?.description || item.designation_fr || '';
+        const baseAr = item.designation_ar || '';
         const { fr: finalFr, ar: finalAr } = !withMaterial
-          ? stripFourniture(rawFr, rawAr)
-          : { fr: rawFr, ar: rawAr };
+          ? stripFourniture(baseFr, baseAr)
+          : { fr: baseFr, ar: baseAr };
 
         return {
           id: generateId(),
@@ -995,7 +999,8 @@ const SmartDevisPage = () => {
           unit,
           unitPrice: fixedUnitPrice,
           total: effectiveQuantity * fixedUnitPrice,
-          category: item.category,
+          category: catalogItem?.category || item.category,
+          catalogCode: catalogItem?.code || (detectedCode || undefined),
           withMaterial,
         };
       });

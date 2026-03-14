@@ -358,10 +358,18 @@ const SmartDevisPage = () => {
     total_price: Number(row.total_price),
   });
 
+  // Build default catalog lookup once
+  const defaultCatalogByCode: Record<string, PriceCatalogItem> = (() => {
+    const map: Record<string, PriceCatalogItem> = {};
+    DEFAULT_CATALOG.forEach(item => { map[item.code] = item; });
+    return map;
+  })();
+
   useEffect(() => {
     const loadCatalogFromDatabase = async () => {
       if (!user) {
-        setCatalogByCode({});
+        // No user → use default catalog as fallback
+        setCatalogByCode(defaultCatalogByCode);
         return;
       }
 
@@ -371,8 +379,9 @@ const SmartDevisPage = () => {
         .eq('user_id', user.id)
         .order('code');
 
-      if (error || !data) {
-        setCatalogByCode({});
+      if (error || !data || data.length === 0) {
+        // No user catalog in DB → fallback to DEFAULT_CATALOG
+        setCatalogByCode(defaultCatalogByCode);
         return;
       }
 

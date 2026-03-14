@@ -243,6 +243,9 @@ const SmartDevisPage = () => {
     PEI04: { keywords: ['peinture plafond', 'بلافون'], catalogCode: 'PEI04' },
     PEI05: { keywords: ['peinture facade', 'peinture façade', 'peinture exterieure'], catalogCode: 'PEI05' },
     PEI06: { keywords: ['peinture boiserie', 'peinture bois', 'peinture porte'], catalogCode: 'PEI06' },
+    PEI07: { keywords: ['enduit rebouchage', 'rebouchage'], catalogCode: 'PEI07' },
+    PEI08: { keywords: ['enduit lissage', 'lissage'], catalogCode: 'PEI08' },
+    PEI09: { keywords: ['poncage murs', 'ponçage murs'], catalogCode: 'PEI09' },
     // Placo
     PLA01: { keywords: ['placo', 'ba13', 'بلاكو'], catalogCode: 'PLA01' },
     PLA02: { keywords: ['bande placo', 'bandes placo', 'bande a joint', 'bande joint'], catalogCode: 'PLA02' },

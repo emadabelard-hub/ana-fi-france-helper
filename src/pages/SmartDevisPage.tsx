@@ -280,6 +280,7 @@ const SmartDevisPage = () => {
     PLM03: { keywords: ['meuble vasque', 'vasque'], catalogCode: 'PLM03' },
     PLM04: { keywords: ['douche', 'baignoire', 'سباكة'], catalogCode: 'PLM04' },
     PLM05: { keywords: ['fuite', 'reparation fuite', 'réparation fuite'], catalogCode: 'PLM05' },
+    PLM06: { keywords: ['chauffe-eau', 'chauffe eau', 'installation chauffe-eau'], catalogCode: 'PLM06' },
     // Menuiserie
     MEN01: { keywords: ['porte interieure', 'porte intérieure', 'pose porte', 'باب'], catalogCode: 'MEN01' },
     MEN02: { keywords: ['fenetre pvc', 'fenêtre pvc', 'fenetre', 'fenêtre', 'شباك'], catalogCode: 'MEN02' },

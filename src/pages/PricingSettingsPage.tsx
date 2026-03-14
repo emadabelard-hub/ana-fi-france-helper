@@ -11,16 +11,22 @@ import { toast } from 'sonner';
 
 const CATEGORY_META: Record<string, { icon: string; labelFr: string; labelAr: string }> = {
   maconnerie: { icon: '🏗️', labelFr: 'Maçonnerie', labelAr: 'ماسونري' },
-  placo: { icon: '🧱', labelFr: 'Placo', labelAr: 'بلاكو' },
   peinture: { icon: '🎨', labelFr: 'Peinture', labelAr: 'بنتيرة' },
+  placo: { icon: '🧱', labelFr: 'Placo', labelAr: 'بلاكو' },
+  isolation: { icon: '🧊', labelFr: 'Isolation', labelAr: 'عزل' },
   carrelage: { icon: '🔲', labelFr: 'Carrelage', labelAr: 'كارلاج' },
   parquet: { icon: '🪵', labelFr: 'Parquet', labelAr: 'باركيه' },
-  plomberie: { icon: '🔧', labelFr: 'Plomberie', labelAr: 'سباكة' },
   electricite: { icon: '⚡', labelFr: 'Électricité', labelAr: 'كهرباء' },
+  plomberie: { icon: '🔧', labelFr: 'Plomberie', labelAr: 'سباكة' },
   menuiserie: { icon: '🚪', labelFr: 'Menuiserie', labelAr: 'نجارة' },
-  facade: { icon: '🏠', labelFr: 'Façade', labelAr: 'واجهة' },
+  toiture: { icon: '🏠', labelFr: 'Toiture', labelAr: 'سقف' },
+  etancheite: { icon: '💧', labelFr: 'Étanchéité', labelAr: 'عزل مائي' },
+  exterieur: { icon: '🌳', labelFr: 'Extérieur', labelAr: 'خارجي' },
+  chauffage: { icon: '🔥', labelFr: 'Chauffage / Clim', labelAr: 'تدفئة' },
+  ventilation: { icon: '💨', labelFr: 'Ventilation', labelAr: 'تهوية' },
+  piscine: { icon: '🏊', labelFr: 'Piscine', labelAr: 'مسبح' },
   location: { icon: '🏗️', labelFr: 'Location Matériel', labelAr: 'إيجار معدات' },
-  general: { icon: '🧹', labelFr: 'Général', labelAr: 'عام' },
+  chantier: { icon: '🧹', labelFr: 'Frais Chantier', labelAr: 'مصاريف الشانتي' },
 };
 
 const UNIT_LABELS: Record<string, string> = {

@@ -23,7 +23,7 @@ import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import {
   ArrowLeft, ArrowRight, Camera, Image as ImageIcon, FileText, Map,
   Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle, X, Upload,
-  SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck, RotateCcw, Package
+  SunMedium, Maximize, ZoomIn, Ruler, ShieldCheck, RotateCcw, Package, Mic, MicOff
 } from 'lucide-react';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -185,6 +185,40 @@ const SmartDevisPage = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null>(null);
   const [catalogByCode, setCatalogByCode] = useState<Record<string, PriceCatalogItem>>({});
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
+  const voiceRecognitionRef = useRef<any>(null);
+
+  const startVoiceInput = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = isRTL ? 'ar-EG' : 'fr-FR';
+    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => setIsVoiceListening(true);
+    recognition.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          transcript += event.results[i][0].transcript + ' ';
+        }
+      }
+      if (transcript.trim()) {
+        setPastedText(prev => (prev ? prev + ' ' : '') + transcript.trim());
+      }
+    };
+    recognition.onerror = () => { setIsVoiceListening(false); voiceRecognitionRef.current = null; };
+    recognition.onend = () => { setIsVoiceListening(false); voiceRecognitionRef.current = null; };
+    voiceRecognitionRef.current = recognition;
+    recognition.start();
+  }, [isRTL]);
+
+  const stopVoiceInput = useCallback(() => {
+    voiceRecognitionRef.current?.stop();
+    setIsVoiceListening(false);
+    voiceRecognitionRef.current = null;
+  }, []);
 
   const clearSmartDevisStorage = useCallback(() => {
     try {
@@ -1744,12 +1778,35 @@ const SmartDevisPage = () => {
               <label className={cn("text-sm font-medium text-muted-foreground", isRTL && "font-cairo block text-right")}>
                 {isRTL ? 'أو الصق هنا طلب الزبون (إيميل، واتساب، SMS...)' : 'Ou collez ici la demande du client (E-mail, WhatsApp, SMS...)'}
               </label>
-              <Textarea
-                value={pastedText}
-                onChange={(e) => setPastedText(e.target.value)}
-                placeholder={isRTL ? 'انسخ طلب الزبون أو اكتب تفاصيل الشغلانة هنا (مثلاً: أندوي، بنتيرة، هامش الربح...)' : 'Collez la demande du client ou décrivez les travaux ici (ex: enduit, peinture, marge...)'}
-                className={cn("min-h-[100px] resize-none", isRTL && "text-right font-cairo")}
-              />
+              <div className="relative">
+                <Textarea
+                  value={pastedText}
+                  onChange={(e) => setPastedText(e.target.value)}
+                  placeholder={isRTL ? 'انسخ طلب الزبون أو اكتب تفاصيل الشغلانة هنا (مثلاً: أندوي، بنتيرة، هامش الربح...)' : 'Collez la demande du client ou décrivez les travaux ici (ex: enduit, peinture, marge...)'}
+                  className={cn("min-h-[100px] resize-none pr-14", isRTL && "text-right font-cairo pl-14 pr-3")}
+                />
+                {/* Voice input button */}
+                {('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) && (
+                  <Button
+                    type="button"
+                    variant={isVoiceListening ? 'destructive' : 'outline'}
+                    size="icon"
+                    className={cn(
+                      "absolute top-2 h-9 w-9 rounded-full shadow-sm",
+                      isRTL ? "left-2" : "right-2",
+                      isVoiceListening && "animate-pulse"
+                    )}
+                    onClick={isVoiceListening ? stopVoiceInput : startVoiceInput}
+                  >
+                    {isVoiceListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </Button>
+                )}
+              </div>
+              {isVoiceListening && (
+                <p className={cn("text-xs text-destructive font-medium animate-pulse", isRTL && "text-right font-cairo")}>
+                  {isRTL ? '🎙️ بسمعك... اتكلم دلوقتي' : '🎙️ Écoute en cours... Parlez maintenant'}
+                </p>
+              )}
             </div>
 
             <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>

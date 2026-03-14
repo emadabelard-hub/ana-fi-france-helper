@@ -273,6 +273,7 @@ const SmartDevisPage = () => {
     ELE03: { keywords: ['tableau electrique', 'tableau électrique', 'كهرباء'], catalogCode: 'ELE03' },
     ELE04: { keywords: ['luminaire', 'eclairage', 'éclairage', 'plafonnier', 'point lumineux'], catalogCode: 'ELE04' },
     ELE05: { keywords: ['spot led', 'spot encastre', 'spot encastré'], catalogCode: 'ELE05' },
+    ELE06: { keywords: ['tirage cable', 'tirage câble', 'cable electrique', 'câble électrique'], catalogCode: 'ELE06' },
     // Plomberie
     PLM01: { keywords: ['wc', 'toilette', 'toilettes'], catalogCode: 'PLM01' },
     PLM02: { keywords: ['lavabo', 'évier', 'evier'], catalogCode: 'PLM02' },

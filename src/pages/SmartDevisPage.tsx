@@ -184,6 +184,7 @@ const SmartDevisPage = () => {
   const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null>(null);
+  const [catalogByCode, setCatalogByCode] = useState<Record<string, PriceCatalogItem>>({});
 
   const clearSmartDevisStorage = useCallback(() => {
     try {

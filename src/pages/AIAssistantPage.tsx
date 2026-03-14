@@ -66,40 +66,22 @@ const AIAssistantPage = () => {
     setShowOnboarding(false);
   };
 
-  // ── Voice Recognition ──
-  const startListening = useCallback(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) {
+  // ── Voice: handled by useVoiceRecorder hook ──
+  const handleVoiceSend = useCallback(() => {
+    const text = voiceRecorder.stop();
+    if (text.trim()) {
+      setInput(prev => (prev ? prev + ' ' + text : text));
+    }
+  }, [voiceRecorder]);
+
+  const handleVoiceMicPress = useCallback(() => {
+    if (voiceRecorder.isRecording) return;
+    if (!voiceRecorder.isSupported) {
       toast({ variant: 'destructive', title: isRTL ? 'غير مدعوم' : 'Non supporté' });
       return;
     }
-    const recognition = new SR();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = isRTL ? 'ar-EG' : 'fr-FR';
-    recognition.onresult = (event: any) => {
-      let transcript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      setInput(transcript);
-    };
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
-  }, [isRTL, toast]);
-
-  const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-  }, []);
-
-  const toggleVoice = useCallback(() => {
-    if (isListening) stopListening();
-    else startListening();
-  }, [isListening, startListening, stopListening]);
+    voiceRecorder.start();
+  }, [voiceRecorder, isRTL, toast]);
 
   const send = async () => {
     const text = input.trim();

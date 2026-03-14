@@ -960,14 +960,16 @@ const SmartDevisPage = () => {
       const data = await invokeAnalyzer(payload);
 
       const rawItems = data.items || data.suggestedItems || [];
-      const detectedCodes = Array.from(new Set(
-        rawItems
-          .map((item: any) => {
-            const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
-            return explicitCode || detectCatalogCodeFromDesignation(item.designation_fr || '') || '';
-          })
-          .filter((code: string) => !!code)
-      ));
+      const detectedCodes: string[] = Array.from(
+        new Set(
+          rawItems
+            .map((item: any): string => {
+              const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
+              return explicitCode || detectCatalogCodeFromDesignation(item.designation_fr || '') || '';
+            })
+            .filter((code: string) => code.length > 0)
+        )
+      );
 
       const catalogRows = await fetchCatalogByCodes(detectedCodes);
 

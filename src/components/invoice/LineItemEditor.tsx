@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, GripVertical, Sparkles, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,19 @@ const UNIT_OPTIONS = [
   { value: 'forfait', label_display: 'F - فورفيه', label_fr: 'Forfait', label_ar: 'فورفيه' },
   { value: 'ens', label_display: 'Ens - أنسومبل', label_fr: 'Ensemble', label_ar: 'أنسومبل' },
 ];
+
+// Override prices for known item codes (force price, no AI guesswork)
+const LINE_ITEM_CODE_OVERRIDES: Record<string, number> = {
+  PNT001: 22,
+  PB001: 250,
+  GN001: 200,
+};
+
+// Storage key for persistence when the component is visible (retain line items on refresh)
+const LINE_ITEMS_STORAGE_KEY = 'lineItemEditor_items_v1';
+
+// Match code strings like 'PNT001', 'PB001', 'GN001' anywhere in the description
+const CODE_REGEX = /\b(PNT001|PB001|GN001)\b/i;
 
 const PRESET_ITEMS = [
   { 
@@ -91,6 +104,42 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
   // Unit guide modal state
   const [showUnitGuide, setShowUnitGuide] = useState(false);
 
+  // Persist line items locally so refresh/touch doesn't wipe the current work
+  const hasLoadedFromStorageRef = useRef(false);
+
+  useEffect(() => {
+    if (hasLoadedFromStorageRef.current) return;
+    hasLoadedFromStorageRef.current = true;
+
+    try {
+      const raw = localStorage.getItem(LINE_ITEMS_STORAGE_KEY);
+      if (!raw) return;
+      const stored: LineItem[] = JSON.parse(raw);
+      if (stored && stored.length > 0) {
+        // Only restore if the parent hasn't already populated meaningful items
+        const hasMeaningfulItems = items.some(i => i.designation_fr.trim() || i.designation_ar.trim());
+        if (!hasMeaningfulItems) {
+          onItemsChange(stored);
+        }
+      }
+    } catch {
+      // Ignore failures (e.g., invalid JSON)
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LINE_ITEMS_STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // Ignore storage failures (e.g., Safari private mode)
+    }
+  }, [items]);
+
+  const extractLineItemCode = (text: string) => {
+    const match = text?.match(CODE_REGEX);
+    return match ? match[1].toUpperCase() : null;
+  };
+
   const updateItem = (id: string, field: keyof LineItem, value: string | number) => {
     const updatedItems = items.map(item => {
       if (item.id !== id) return item;
@@ -103,11 +152,88 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
         const price = field === 'unitPrice' ? Number(value) : item.unitPrice;
         updated.total = Math.round(qty * price * 100) / 100;
       }
+
+      // Force known item codes to use fixed prices (no hallucinated defaults)
+      if (field === 'designation_fr' || field === 'designation_ar') {
+        const code = extractLineItemCode(String(updated.designation_fr || updated.designation_ar || ''));
+        if (code) {
+          const override = LINE_ITEM_CODE_OVERRIDES[code];
+          if (override !== undefined) {
+            const qty = Number(updated.quantity) || 0;
+            updated.unitPrice = override;
+            updated.total = Math.round(qty * override * 100) / 100;
+          }
+        }
+      }
       
       return updated;
     });
     
     onItemsChange(updatedItems);
+  };
+
+  const applyCodePricing = (item: LineItem, price: number) => {
+    updateItem(item.id, 'unitPrice', price);
+  };
+
+  const fetchPriceFromCatalog = async (code: string): Promise<number> => {
+    try {
+      const { data, error } = await supabase
+        .from('artisan_price_catalog')
+        .select('total_price')
+        .eq('code', code)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data?.total_price ?? 0;
+    } catch (e) {
+      console.warn('Price catalog lookup failed:', e);
+      return 0;
+    }
+  };
+
+  const lookupAndApplyCodePrice = async (item: LineItem) => {
+    const code = extractLineItemCode(item.designation_fr || item.designation_ar || '');
+    if (!code) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'أدخل رمزًا (مثل PNT001) للحصول على السعر' : 'Entrez un code (ex : PNT001) pour obtenir le prix',
+      });
+      return;
+    }
+
+    const override = LINE_ITEM_CODE_OVERRIDES[code];
+    if (override !== undefined) {
+      applyCodePricing(item, override);
+      return;
+    }
+
+    setSuggestingPriceFor(item.id);
+    try {
+      const price = await fetchPriceFromCatalog(code);
+      applyCodePricing(item, price);
+      if (price === 0) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'خطأ' : 'Erreur',
+          description: isRTL ? 'لم أجد السعر في الكتالوج' : 'Prix introuvable dans le catalogue',
+        });
+      } else {
+        toast({
+          title: isRTL ? '💡 تم ضبط السعر' : '💡 Prix appliqué',
+          description: isRTL ? `السعر: ${price}€` : `Prix : ${price}€`,
+        });
+      }
+    } catch (e) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'فشل البحث عن السعر' : 'Échec de la recherche du prix',
+      });
+    } finally {
+      setSuggestingPriceFor(null);
+    }
   };
 
   // Handle focus - select all text
@@ -164,6 +290,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
 
       if (data?.translation) {
         updateItem(item.id, 'designation_fr', data.translation);
+        lookupAndApplyCodePrice({ ...item, designation_fr: data.translation });
         toast({
           title: isRTL ? '✨ تم الترجمة!' : '✨ Traduit!',
           description: isRTL 
@@ -229,34 +356,8 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
     }
 
     setSuggestingPriceFor(item.id);
-    
     try {
-      const { data, error } = await supabase.functions.invoke('invoice-mentor', {
-        body: {
-          action: 'suggest_price',
-          description: item.designation_fr,
-          unit: item.unit,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.suggestedPrice) {
-        updateItem(item.id, 'unitPrice', data.suggestedPrice);
-        toast({
-          title: isRTL ? '💡 سعر مقترح' : '💡 Prix suggéré',
-          description: isRTL 
-            ? `السعر المقترح: ${data.suggestedPrice}€ / ${item.unit}`
-            : `Prix suggéré: ${data.suggestedPrice}€ / ${item.unit}`,
-        });
-      }
-    } catch (error) {
-      console.error('Price suggestion error:', error);
-      toast({
-        variant: "destructive",
-        title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'تعذر اقتراح السعر' : 'Impossible de suggérer un prix',
-      });
+      await lookupAndApplyCodePrice(item);
     } finally {
       setSuggestingPriceFor(null);
     }
@@ -386,6 +487,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                       <Textarea
                         value={item.designation_fr}
                         onChange={(e) => updateItem(item.id, 'designation_fr', e.target.value)}
+                        onBlur={() => lookupAndApplyCodePrice(item)}
                         placeholder={isRTL ? "Peinture salon / Pose carrelage..." : "Peinture salon / Pose carrelage..."}
                         className={cn(
                           "text-sm",

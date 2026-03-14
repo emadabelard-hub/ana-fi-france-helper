@@ -109,7 +109,7 @@ export const buildLegacyPricing = (catalog: PriceCatalogItem[]): ArtisanPricing 
     enduit_full: cr003?.total_price ?? 20,
     enduit_labor: cr003?.labor_price ?? 14,
     peinture_mur_full: pnt001?.total_price ?? 22,
-    peinture_mur_labor: pnt001?.labor_price ?? 18,
+    peinture_mur_labor: pnt001?.labor_price ?? 0,
     peinture_plafond_full: pnt004?.total_price ?? 28,
     peinture_plafond_labor: pnt004?.labor_price ?? 22,
     fenetre_full: pnt007?.total_price ?? 40,

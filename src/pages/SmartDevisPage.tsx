@@ -370,7 +370,7 @@ const SmartDevisPage = () => {
       const prepFull = cr003?.total_price ?? 20;
       const prepLabor = cr003?.labor_price ?? 14;
       const paintFull = pnt001?.total_price ?? 22;
-      const paintLabor = pnt001?.labor_price ?? 18;
+      const paintLabor = pnt001?.labor_price ?? 0;
 
       let cumulativePrice: number;
       if (scope === 'main_oeuvre_seule') {
@@ -396,7 +396,7 @@ const SmartDevisPage = () => {
     // Default fallback = PNT001 (most common task) to avoid hallucinated prices.
     const pnt001Fallback = findCatalogItem('PNT001');
     const fallbackTotal = pnt001Fallback?.total_price ?? 22;
-    const fallbackLabor = pnt001Fallback?.labor_price ?? 18;
+    const fallbackLabor = pnt001Fallback?.labor_price ?? 0;
 
     // If the reference entry specifies a forced unit, use its price directly
     const effectiveUnit = matched?.unit || unit;

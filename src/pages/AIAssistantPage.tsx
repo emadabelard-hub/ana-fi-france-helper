@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Send, Sparkles, Mic, MicOff } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Mic, MicOff, ScanLine } from 'lucide-react';
+import RoomScannerModal from '@/components/scanner/RoomScannerModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +32,7 @@ const AIAssistantPage = () => {
   const [onboardingName, setOnboardingName] = useState('');
   const [onboardingGender, setOnboardingGender] = useState<'male' | 'female'>('male');
   const [isListening, setIsListening] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
@@ -307,6 +309,14 @@ const AIAssistantPage = () => {
             <p className={cn("text-muted-foreground text-sm mt-2", isRTL && "font-cairo")}>
               {isRTL ? 'اسأل عن أي حاجة تخص حياتك في فرنسا' : 'Posez vos questions sur la vie en France'}
             </p>
+            {/* Room Scanner Button */}
+            <button
+              onClick={() => setShowScanner(true)}
+              className="mt-4 px-5 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-bold text-sm flex items-center gap-2 hover:bg-primary/20 active:scale-95 transition-all"
+            >
+              <ScanLine size={18} />
+              {isRTL ? '📐 سكانير الغرفة' : '📐 Scanner la pièce'}
+            </button>
           </div>
         )}
 
@@ -437,6 +447,9 @@ const AIAssistantPage = () => {
           </div>
         </div>
       )}
+
+      {/* Room Scanner Modal */}
+      <RoomScannerModal open={showScanner} onClose={() => setShowScanner(false)} isRTL={isRTL} />
     </div>
   );
 };

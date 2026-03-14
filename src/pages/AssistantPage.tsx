@@ -76,40 +76,22 @@ const AssistantPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ── Voice Recognition ──
-  const startListening = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+  // ── Voice: handled by useVoiceRecorder hook ──
+  const handleVoiceSend = useCallback(() => {
+    const text = voiceRecorder.stop();
+    if (text.trim()) {
+      setInputValue(prev => (prev ? prev + ' ' + text : text));
+    }
+  }, [voiceRecorder]);
+
+  const handleVoiceMicPress = useCallback(() => {
+    if (voiceRecorder.isRecording) return;
+    if (!voiceRecorder.isSupported) {
       toast({ variant: 'destructive', title: isRTL ? 'غير مدعوم' : 'Non supporté', description: isRTL ? 'المتصفح لا يدعم التعرف على الصوت' : 'Navigateur non compatible' });
       return;
     }
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = isRTL ? 'ar-EG' : 'fr-FR';
-    recognition.onresult = (event: any) => {
-      let transcript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      setInputValue(transcript);
-    };
-    recognition.onerror = () => { setIsListening(false); };
-    recognition.onend = () => { setIsListening(false); };
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
-  }, [isRTL, toast]);
-
-  const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-  }, []);
-
-  const toggleVoice = useCallback(() => {
-    if (isListening) stopListening();
-    else startListening();
-  }, [isListening, startListening, stopListening]);
+    voiceRecorder.start();
+  }, [voiceRecorder, isRTL, toast]);
 
   // ── Send Message ──
   const handleSend = async (messageText?: string, imageData?: string) => {

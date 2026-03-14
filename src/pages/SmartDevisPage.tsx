@@ -1061,6 +1061,65 @@ const SmartDevisPage = () => {
     }));
   };
 
+  const fetchCatalogByCode = useCallback(async (code: string): Promise<PriceCatalogItem | null> => {
+    const normalizedCode = code.trim().toUpperCase();
+    if (!normalizedCode) return null;
+
+    // 1) Immediate DB lookup (strict source of truth)
+    if (user) {
+      const { data, error } = await (supabase as any)
+        .from('artisan_price_catalog')
+        .select('code, category, subcategory, description, unit, material_price, labor_price, equipment_price, total_price')
+        .eq('user_id', user.id)
+        .eq('code', normalizedCode)
+        .maybeSingle();
+
+      if (!error && data) {
+        return {
+          code: data.code,
+          category: data.category,
+          subcategory: data.subcategory || '',
+          description: data.description,
+          unit: data.unit,
+          material_price: Number(data.material_price),
+          labor_price: Number(data.labor_price),
+          equipment_price: Number(data.equipment_price || 0),
+          total_price: Number(data.total_price),
+        };
+      }
+    }
+
+    // 2) Strict fallback to loaded catalog only (no guessed price)
+    return priceCatalog.find(item => item.code === normalizedCode) ?? null;
+  }, [priceCatalog, user]);
+
+  const onCodeChange = useCallback(async (id: string, rawValue: string) => {
+    // Keep typed value instantly for UX
+    updateItem(id, 'designation_fr', rawValue);
+
+    const normalizedCode = rawValue.trim().toUpperCase();
+    const isCode = /^[A-Z]{2,4}\d{3}$/.test(normalizedCode);
+    if (!isCode) return;
+
+    const catalogItem = await fetchCatalogByCode(normalizedCode);
+    if (!catalogItem) return;
+
+    const normalizedUnit = catalogItem.unit === 'unit' ? 'u' : catalogItem.unit;
+    const exactUnitPrice = Number(catalogItem.total_price); // strict lock: exact catalog unit price
+
+    setLineItems(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      return {
+        ...item,
+        designation_fr: catalogItem.description,
+        unit: normalizedUnit,
+        unitPrice: exactUnitPrice,
+        category: catalogItem.category,
+        total: item.quantity * exactUnitPrice,
+      };
+    }));
+  }, [fetchCatalogByCode]);
+
   const removeItem = (id: string) => setLineItems(prev => prev.filter(i => i.id !== id));
 
   // Toggle withMaterial for a line item in partiel mode — recalculates price + designation

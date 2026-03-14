@@ -298,56 +298,46 @@ const SmartDevisPage = () => {
     PREP: { keywords: ['enduit', 'أندوي', 'preparation', 'préparation', 'lissage', 'sous-couche', 'سوكوش', 'سوس كوش'], catalogCode: 'CR003' },
   };
 
-  // Build REFERENCE_PRICES from catalog for backward-compatible matching
-  const findCatalogItem = (code: string): PriceCatalogItem | undefined => priceCatalog.find(c => c.code === code);
+  const parseCatalogItem = (row: any): PriceCatalogItem => ({
+    code: row.code,
+    category: row.category,
+    subcategory: row.subcategory || '',
+    description: row.description,
+    unit: row.unit,
+    material_price: Number(row.material_price),
+    labor_price: Number(row.labor_price),
+    equipment_price: Number(row.equipment_price || 0),
+    total_price: Number(row.total_price),
+  });
 
-  const REFERENCE_PRICES: Array<{ keywords: string[]; price: number; unit?: string; laborPrice?: number; code: string }> = [
-    // Order matters: specific items first, generic last
-    // PT003 Preparation BEFORE PT001/PT002 painting
-    ...((): typeof REFERENCE_PRICES => {
-      const orderedCodes = [
-        // Prep & specific items first
-        'PREP', 'CR003', 'CR004', 'PQ004', 'PQ005',
-        // Specific peinture before generic
-        'PNT007', 'PNT008', 'PNT006', 'PNT005', 'PNT004', 'PNT003', 'PNT002', 'PNT001',
-        // Placo specifics
-        'PL004', 'PL005', 'PL003', 'PL002', 'PL001',
-        // Carrelage
-        'CR005', 'CR002', 'CR001',
-        // Parquet
-        'PQ003', 'PQ001', 'PQ002',
-        // Plomberie
-        'PB004', 'PB005', 'PB001', 'PB002', 'PB003',
-        // Electricité
-        'EL004', 'EL005', 'EL001', 'EL002', 'EL003',
-        // Menuiserie (specific before generic)
-        'MN002', 'MN003', 'MN004', 'MN001',
-        // Maçonnerie
-        'MC004', 'MC003', 'MC005', 'MC007', 'MC001', 'MC002', 'MC006',
-        // Facade
-        'FAC002', 'FAC003', 'FAC001',
-        // Location
-        'LOC001', 'LOC002', 'LOC003', 'LOC004', 'LOC005', 'LOC006',
-        // Generic peinture fallback (last)
-        'PNT_GENERIC',
-        // General
-        'GN001', 'GN_NETTOYAGE',
-      ];
-      return orderedCodes.map(code => {
-        const meta = CATALOG_KEYWORDS[code];
-        if (!meta) return null;
-        const item = findCatalogItem(meta.catalogCode);
-        if (!item) return null;
-        return {
-          keywords: meta.keywords,
-          price: item.total_price,
-          laborPrice: item.labor_price,
-          unit: item.unit === 'unit' ? 'u' : (item.unit === 'm2' ? undefined : item.unit),
-          code: item.code,
-        };
-      }).filter(Boolean) as typeof REFERENCE_PRICES;
-    })(),
-  ];
+  useEffect(() => {
+    const loadCatalogFromDatabase = async () => {
+      if (!user) {
+        setCatalogByCode({});
+        return;
+      }
+
+      const { data, error } = await (supabase as any)
+        .from('artisan_price_catalog')
+        .select('code, category, subcategory, description, unit, material_price, labor_price, equipment_price, total_price')
+        .eq('user_id', user.id)
+        .order('code');
+
+      if (error || !data) {
+        setCatalogByCode({});
+        return;
+      }
+
+      const nextCatalog: Record<string, PriceCatalogItem> = {};
+      data.forEach((row: any) => {
+        const parsed = parseCatalogItem(row);
+        nextCatalog[parsed.code] = parsed;
+      });
+      setCatalogByCode(nextCatalog);
+    };
+
+    loadCatalogFromDatabase();
+  }, [user]);
 
   const normalizeText = (value: string) =>
     value
@@ -355,72 +345,39 @@ const SmartDevisPage = () => {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
 
-  // Keywords for detecting preparation vs finish paint in combined tasks
-  const PREP_KEYWORDS = ['enduit', 'أندوي', 'ponsage', 'ponçage', 'بونساج', 'sous-couche', 'سوكوش', 'سوس كوش', 'ragréage', 'راغرياج', 'ragreage', 'preparation', 'préparation'];
-  const PAINT_KEYWORDS = ['peinture', 'بنتيرة', 'بانتيرة'];
+  const normalizeCatalogUnit = (unit: string): string => {
+    if (unit === 'unit') return 'u';
+    if (unit === 'm2') return 'm²';
+    return unit || 'u';
+  };
 
-  const resolveReferenceUnitPrice = (designation: string, unit: string, scope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null) => {
+  const detectCatalogCodeFromDesignation = (designation: string): string | null => {
     const normalizedDesignation = normalizeText(designation || '');
+    if (!normalizedDesignation) return null;
 
-    // --- CUMULATIVE PRICING: detect combined prep + paint tasks ---
-    const hasPrep = PREP_KEYWORDS.some(k => normalizedDesignation.includes(normalizeText(k)));
-    const hasPaint = PAINT_KEYWORDS.some(k => normalizedDesignation.includes(normalizeText(k)));
-
-    if (hasPrep && hasPaint && unit !== 'u' && unit !== 'forfait') {
-      const cr003 = findCatalogItem('CR003');
-      const pnt001 = findCatalogItem('PNT001');
-      const prepFull = cr003?.total_price ?? 20;
-      const prepLabor = cr003?.labor_price ?? 14;
-      const paintFull = pnt001?.total_price ?? 22;
-      const paintLabor = pnt001?.labor_price ?? 0;
-
-      let cumulativePrice: number;
-      if (scope === 'main_oeuvre_seule') {
-        cumulativePrice = prepLabor + paintLabor;
-      } else {
-        cumulativePrice = prepFull + paintFull;
-      }
-      // Enforce minimum floor: 32€/m² (labor) or 42€/m² (full) for combined tasks
-      const minFull = 42; // CR003(20) + PNT001(22)
-      const minLabor = 32; // CR003(14) + PNT001(18)
-      if (scope === 'main_oeuvre_seule' && cumulativePrice < minLabor) cumulativePrice = minLabor;
-      if (scope !== 'main_oeuvre_seule' && cumulativePrice < minFull) cumulativePrice = minFull;
-
-      return Math.round(cumulativePrice * 100) / 100;
+    const directCodeMatch = normalizedDesignation.match(/\b[a-z]{2,4}\d{3}\b/i);
+    if (directCodeMatch?.[0]) {
+      return directCodeMatch[0].toUpperCase();
     }
 
-    // --- Standard single-task matching ---
-    const matched = REFERENCE_PRICES.find((entry) =>
+    const foundEntry = Object.values(CATALOG_KEYWORDS).find((entry) =>
       entry.keywords.some((keyword) => normalizedDesignation.includes(normalizeText(keyword)))
     );
 
-    // STRICT: fallback prices MUST come from the catalog, NEVER from hardcoded guesses.
-    // Default fallback = PNT001 (most common task) to avoid hallucinated prices.
-    const pnt001Fallback = findCatalogItem('PNT001');
-    const fallbackTotal = pnt001Fallback?.total_price ?? 22;
-    const fallbackLabor = pnt001Fallback?.labor_price ?? 0;
-
-    // If the reference entry specifies a forced unit, use its price directly
-    const effectiveUnit = matched?.unit || unit;
-    const withMaterialsBase = matched?.price ?? fallbackTotal;
-    let scopedPrice: number;
-    if (scope === 'main_oeuvre_seule') {
-      scopedPrice = matched?.laborPrice ?? fallbackLabor;
-    } else {
-      scopedPrice = withMaterialsBase;
-    }
-
-    // Enforce minimum floors for unit-priced items (doors/windows - MN001/MN002)
-    if (matched?.unit === 'u') {
-      const mn001 = findCatalogItem('MN001');
-      const minLabor = mn001?.labor_price ?? 180;
-      const minFull = mn001?.total_price ?? 300;
-      if (scope === 'main_oeuvre_seule' && scopedPrice < minLabor) scopedPrice = minLabor;
-      if (scope !== 'main_oeuvre_seule' && scopedPrice < minFull) scopedPrice = minFull;
-    }
-
-    return Math.round(scopedPrice * 100) / 100;
+    return foundEntry?.catalogCode ?? null;
   };
+
+  const getCatalogPriceFromItem = (catalogItem: PriceCatalogItem, includeMaterials: boolean): number => {
+    const rawPrice = includeMaterials ? catalogItem.total_price : catalogItem.labor_price;
+    return Math.round(Number(rawPrice) * 100) / 100;
+  };
+
+  const getCatalogUnitPriceByCode = useCallback((catalogCode: string | undefined, includeMaterials: boolean): number => {
+    if (!catalogCode) return 0;
+    const catalogItem = catalogByCode[catalogCode];
+    if (!catalogItem) return 0;
+    return getCatalogPriceFromItem(catalogItem, includeMaterials);
+  }, [catalogByCode]);
 
   // Strip "Fourniture et pose" → "Pose" when material is excluded
   const stripFourniture = (fr: string, ar: string): { fr: string; ar: string } => {

@@ -333,8 +333,9 @@ const SmartDevisPage = () => {
       ];
       return orderedCodes.map(code => {
         const meta = CATALOG_KEYWORDS[code];
-        const item = findCatalogItem(code);
-        if (!meta || !item) return null;
+        if (!meta) return null;
+        const item = findCatalogItem(meta.catalogCode);
+        if (!item) return null;
         return {
           keywords: meta.keywords,
           price: item.total_price,

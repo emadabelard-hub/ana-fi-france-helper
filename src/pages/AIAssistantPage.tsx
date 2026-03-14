@@ -309,6 +309,14 @@ const AIAssistantPage = () => {
             <p className={cn("text-muted-foreground text-sm mt-2", isRTL && "font-cairo")}>
               {isRTL ? 'اسأل عن أي حاجة تخص حياتك في فرنسا' : 'Posez vos questions sur la vie en France'}
             </p>
+            {/* Room Scanner Button */}
+            <button
+              onClick={() => setShowScanner(true)}
+              className="mt-4 px-5 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-bold text-sm flex items-center gap-2 hover:bg-primary/20 active:scale-95 transition-all"
+            >
+              <ScanLine size={18} />
+              {isRTL ? '📐 سكانير الغرفة' : '📐 Scanner la pièce'}
+            </button>
           </div>
         )}
 

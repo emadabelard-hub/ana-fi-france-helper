@@ -316,13 +316,31 @@ const AIAssistantPage = () => {
             <p className={cn("text-muted-foreground text-lg font-bold", isRTL && "font-cairo")}>
               {isRTL ? `أهلاً يا ${userInfo?.name || 'فندم'}، اسأل وأنا أجاوب! 🧞` : `Bonjour ${userInfo?.name || ''}, posez votre question ! 🧞`}
             </p>
-            <p className={cn("text-muted-foreground text-sm mt-2", isRTL && "font-cairo")}>
-              {isRTL ? 'اسأل عن أي حاجة تخص حياتك في فرنسا' : 'Posez vos questions sur la vie en France'}
+            <p className={cn("text-muted-foreground text-sm mt-2 mb-4", isRTL && "font-cairo")}>
+              {isRTL ? 'اسألني أي حاجة' : 'Posez vos questions'}
             </p>
+            {/* Category Tags */}
+            <div className="flex flex-wrap gap-2 justify-center mb-4">
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.key}
+                  onClick={() => setActiveCategory(prev => prev === cat.key ? null : cat.key)}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-sm font-bold transition-all active:scale-95 border",
+                    activeCategory === cat.key
+                      ? "bg-primary text-primary-foreground border-primary shadow-md"
+                      : "bg-card text-foreground border-border hover:border-primary/40",
+                    isRTL && "font-cairo"
+                  )}
+                >
+                  {cat.emoji} {isRTL ? cat.labelAr : cat.labelFr}
+                </button>
+              ))}
+            </div>
             {/* Room Scanner Button */}
             <button
               onClick={() => setShowScanner(true)}
-              className="mt-4 px-5 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-bold text-sm flex items-center gap-2 hover:bg-primary/20 active:scale-95 transition-all"
+              className="px-5 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-bold text-sm flex items-center gap-2 hover:bg-primary/20 active:scale-95 transition-all"
             >
               <ScanLine size={18} />
               {isRTL ? '📐 سكانير الغرفة' : '📐 Scanner la pièce'}

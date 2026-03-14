@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import EquipmentSuggestions from '@/components/smart-devis/EquipmentSuggestions';
 
 interface UploadedFile {
   id: string;
@@ -2209,6 +2210,18 @@ const SmartDevisPage = () => {
               </Card>
             ))}
           </div>
+
+          {/* Equipment Suggestions */}
+          <EquipmentSuggestions
+            lineItems={lineItems}
+            isRTL={isRTL}
+            onAccept={(suggestion) => {
+              setLineItems(prev => [...prev, {
+                id: generateId(),
+                ...suggestion,
+              }]);
+            }}
+          />
 
           {/* Grand Total */}
           <Card className="bg-[#1a1a1a] text-white border border-[#c5a028]/40">

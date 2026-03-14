@@ -236,6 +236,7 @@ const SmartDevisPage = () => {
     MAC07: { keywords: ['mur porteur', 'ouverture mur'], catalogCode: 'MAC07' },
     MAC08: { keywords: ['demolition mur', 'démolition mur', 'demolition', 'démolition', 'ديمونتاج'], catalogCode: 'MAC08' },
     MAC09: { keywords: ['chape liquide'], catalogCode: 'MAC09' },
+    MAC10: { keywords: ['enduit facade', 'enduit façade', 'crepi', 'crépi'], catalogCode: 'MAC10' },
     // Peinture
     PEI01: { keywords: ['preparation murs', 'préparation murs', 'enduit', 'أندوي', 'preparation', 'préparation', 'sous-couche', 'سوكوش'], catalogCode: 'PEI01' },
     PEI02: { keywords: ['peinture murs', 'peinture mur', 'peinture blanche', 'peinture mate', 'بنتيرة', 'بانتيرة', 'peinture'], catalogCode: 'PEI02' },

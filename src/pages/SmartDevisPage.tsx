@@ -2211,6 +2211,18 @@ const SmartDevisPage = () => {
             ))}
           </div>
 
+          {/* Equipment Suggestions */}
+          <EquipmentSuggestions
+            lineItems={lineItems}
+            isRTL={isRTL}
+            onAccept={(suggestion) => {
+              setLineItems(prev => [...prev, {
+                id: generateId(),
+                ...suggestion,
+              }]);
+            }}
+          />
+
           {/* Grand Total */}
           <Card className="bg-[#1a1a1a] text-white border border-[#c5a028]/40">
             <CardContent className={cn("flex items-center justify-between p-4", isRTL && "flex-row-reverse")}>

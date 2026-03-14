@@ -1442,12 +1442,6 @@ const SmartDevisPage = () => {
       description: isRTL ? 'تم مسح كل البيانات، ابدأ من الأول' : 'Toutes les données ont été effacées',
     });
     navigate('/pro/documents', { replace: true });
-
-    window.setTimeout(() => {
-      if (window.location.pathname.includes('/pro/smart-devis')) {
-        window.location.assign('/pro/documents');
-      }
-    }, 150);
   };
 
   const formatCurrency = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);

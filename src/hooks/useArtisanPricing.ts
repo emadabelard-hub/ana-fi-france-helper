@@ -30,93 +30,149 @@ export interface ArtisanPricing {
 }
 
 export const DEFAULT_CATALOG: PriceCatalogItem[] = [
-  // Maçonnerie
-  { code: 'MC001', category: 'maconnerie', subcategory: 'beton', description: 'dalle beton armee', unit: 'm2', material_price: 45, labor_price: 50, equipment_price: 0, total_price: 95 },
-  { code: 'MC002', category: 'maconnerie', subcategory: 'mur', description: 'pose parpaing creux', unit: 'm2', material_price: 20, labor_price: 40, equipment_price: 0, total_price: 60 },
-  { code: 'MC003', category: 'maconnerie', subcategory: 'chape', description: 'chape ciment', unit: 'm2', material_price: 15, labor_price: 20, equipment_price: 0, total_price: 35 },
-  { code: 'MC004', category: 'maconnerie', subcategory: 'structure', description: 'ouverture mur porteur', unit: 'unit', material_price: 500, labor_price: 700, equipment_price: 0, total_price: 1200 },
-  { code: 'MC005', category: 'maconnerie', subcategory: 'facade', description: 'enduit facade', unit: 'm2', material_price: 12, labor_price: 20, equipment_price: 0, total_price: 32 },
-  { code: 'MC006', category: 'maconnerie', subcategory: 'demolition', description: 'demolition mur brique', unit: 'm2', material_price: 5, labor_price: 25, equipment_price: 0, total_price: 30 },
-  { code: 'MC007', category: 'maconnerie', subcategory: 'terrassement', description: 'terrassement sol', unit: 'm3', material_price: 10, labor_price: 20, equipment_price: 15, total_price: 45 },
-  // Placo
-  { code: 'PL001', category: 'placo', subcategory: 'cloison', description: 'pose placo BA13', unit: 'm2', material_price: 12, labor_price: 35, equipment_price: 0, total_price: 55 },
-  { code: 'PL002', category: 'placo', subcategory: 'cloison', description: 'cloison placo isolée', unit: 'm2', material_price: 25, labor_price: 45, equipment_price: 0, total_price: 70 },
-  { code: 'PL003', category: 'placo', subcategory: 'plafond', description: 'faux plafond placo', unit: 'm2', material_price: 18, labor_price: 47, equipment_price: 0, total_price: 65 },
-  { code: 'PL004', category: 'placo', subcategory: 'finitions', description: 'bande placo', unit: 'm2', material_price: 2, labor_price: 10, equipment_price: 0, total_price: 12 },
-  { code: 'PL005', category: 'placo', subcategory: 'isolation', description: 'isolation laine verre', unit: 'm2', material_price: 8, labor_price: 18, equipment_price: 0, total_price: 26 },
-  // Peinture
-  { code: 'PNT001', category: 'peinture', subcategory: 'mur', description: 'peinture blanche mate', unit: 'm2', material_price: 4, labor_price: 18, equipment_price: 0, total_price: 22 },
-  { code: 'PNT002', category: 'peinture', subcategory: 'mur', description: 'peinture blanche satinée', unit: 'm2', material_price: 5, labor_price: 18, equipment_price: 0, total_price: 23 },
-  { code: 'PNT003', category: 'peinture', subcategory: 'mur', description: 'peinture couleur', unit: 'm2', material_price: 6, labor_price: 18, equipment_price: 0, total_price: 24 },
-  { code: 'PNT004', category: 'peinture', subcategory: 'plafond', description: 'peinture plafond', unit: 'm2', material_price: 6, labor_price: 22, equipment_price: 0, total_price: 28 },
-  { code: 'PNT005', category: 'peinture', subcategory: 'facade', description: 'peinture facade', unit: 'm2', material_price: 8, labor_price: 22, equipment_price: 0, total_price: 30 },
-  { code: 'PNT006', category: 'peinture', subcategory: 'special', description: 'peinture anti humidite', unit: 'm2', material_price: 9, labor_price: 20, equipment_price: 0, total_price: 29 },
-  { code: 'PNT007', category: 'peinture', subcategory: 'boiserie', description: 'peinture porte bois', unit: 'unit', material_price: 10, labor_price: 30, equipment_price: 0, total_price: 40 },
-  { code: 'PNT008', category: 'peinture', subcategory: 'metal', description: 'peinture metal', unit: 'unit', material_price: 8, labor_price: 22, equipment_price: 0, total_price: 30 },
-  // Carrelage
-  { code: 'CR001', category: 'carrelage', subcategory: 'sol', description: 'pose carrelage sol', unit: 'm2', material_price: 30, labor_price: 45, equipment_price: 0, total_price: 75 },
-  { code: 'CR002', category: 'carrelage', subcategory: 'mur', description: 'pose faience murale', unit: 'm2', material_price: 28, labor_price: 42, equipment_price: 0, total_price: 70 },
-  { code: 'CR003', category: 'carrelage', subcategory: 'preparation', description: 'ragreage sol', unit: 'm2', material_price: 6, labor_price: 14, equipment_price: 0, total_price: 20 },
-  { code: 'CR004', category: 'carrelage', subcategory: 'demolition', description: 'depose carrelage', unit: 'm2', material_price: 2, labor_price: 23, equipment_price: 0, total_price: 25 },
-  { code: 'CR005', category: 'carrelage', subcategory: 'exterieur', description: 'pose carrelage terrasse', unit: 'm2', material_price: 35, labor_price: 50, equipment_price: 0, total_price: 85 },
-  // Parquet
-  { code: 'PQ001', category: 'parquet', subcategory: 'sol', description: 'pose parquet flottant', unit: 'm2', material_price: 25, labor_price: 20, equipment_price: 0, total_price: 45 },
-  { code: 'PQ002', category: 'parquet', subcategory: 'sol', description: 'pose parquet colle', unit: 'm2', material_price: 35, labor_price: 30, equipment_price: 0, total_price: 65 },
-  { code: 'PQ003', category: 'parquet', subcategory: 'finitions', description: 'pose plinthe', unit: 'ml', material_price: 3, labor_price: 7, equipment_price: 0, total_price: 10 },
-  { code: 'PQ004', category: 'parquet', subcategory: 'demolition', description: 'depose parquet', unit: 'm2', material_price: 0, labor_price: 20, equipment_price: 0, total_price: 20 },
-  { code: 'PQ005', category: 'parquet', subcategory: 'poncage', description: 'poncage parquet', unit: 'm2', material_price: 5, labor_price: 18, equipment_price: 0, total_price: 23 },
-  // Plomberie
-  { code: 'PB001', category: 'plomberie', subcategory: 'sanitaire', description: 'installation wc', unit: 'unit', material_price: 120, labor_price: 130, equipment_price: 0, total_price: 250 },
-  { code: 'PB002', category: 'plomberie', subcategory: 'sanitaire', description: 'installation lavabo', unit: 'unit', material_price: 90, labor_price: 110, equipment_price: 0, total_price: 200 },
-  { code: 'PB003', category: 'plomberie', subcategory: 'douche', description: 'pose douche', unit: 'unit', material_price: 350, labor_price: 250, equipment_price: 0, total_price: 600 },
-  { code: 'PB004', category: 'plomberie', subcategory: 'reparation', description: 'reparation fuite', unit: 'unit', material_price: 10, labor_price: 110, equipment_price: 0, total_price: 120 },
-  { code: 'PB005', category: 'plomberie', subcategory: 'chauffe_eau', description: 'installation chauffe eau', unit: 'unit', material_price: 250, labor_price: 200, equipment_price: 0, total_price: 450 },
-  // Electricite
-  { code: 'EL001', category: 'electricite', subcategory: 'prise', description: 'prise electrique murale', unit: 'unit', material_price: 15, labor_price: 65, equipment_price: 0, total_price: 80 },
-  { code: 'EL002', category: 'electricite', subcategory: 'interrupteur', description: 'interrupteur simple', unit: 'unit', material_price: 12, labor_price: 48, equipment_price: 0, total_price: 60 },
-  { code: 'EL003', category: 'electricite', subcategory: 'tableau', description: 'tableau electrique', unit: 'unit', material_price: 500, labor_price: 400, equipment_price: 0, total_price: 900 },
-  { code: 'EL004', category: 'electricite', subcategory: 'eclairage', description: 'luminaire plafond', unit: 'unit', material_price: 40, labor_price: 80, equipment_price: 0, total_price: 120 },
-  { code: 'EL005', category: 'electricite', subcategory: 'reseau', description: 'installation cable electrique', unit: 'ml', material_price: 3, labor_price: 8, equipment_price: 0, total_price: 11 },
-  // Menuiserie
-  { code: 'MN001', category: 'menuiserie', subcategory: 'porte', description: 'pose porte interieure', unit: 'unit', material_price: 120, labor_price: 180, equipment_price: 0, total_price: 300 },
-  { code: 'MN002', category: 'menuiserie', subcategory: 'fenetre', description: 'pose fenetre pvc', unit: 'unit', material_price: 300, labor_price: 250, equipment_price: 0, total_price: 550 },
-  { code: 'MN003', category: 'menuiserie', subcategory: 'placard', description: 'placard sur mesure', unit: 'unit', material_price: 350, labor_price: 250, equipment_price: 0, total_price: 600 },
-  { code: 'MN004', category: 'menuiserie', subcategory: 'plinthe', description: 'pose plinthe bois', unit: 'ml', material_price: 5, labor_price: 10, equipment_price: 0, total_price: 15 },
-  // Facade
-  { code: 'FAC001', category: 'facade', subcategory: 'nettoyage', description: 'nettoyage facade haute pression', unit: 'm2', material_price: 2, labor_price: 15, equipment_price: 5, total_price: 22 },
-  { code: 'FAC002', category: 'facade', subcategory: 'sablage', description: 'sablage facade', unit: 'm2', material_price: 4, labor_price: 20, equipment_price: 6, total_price: 30 },
-  { code: 'FAC003', category: 'facade', subcategory: 'ravalement', description: 'ravalement facade', unit: 'm2', material_price: 12, labor_price: 28, equipment_price: 0, total_price: 40 },
-  // Location
-  { code: 'LOC001', category: 'location', subcategory: 'materiel', description: 'echafaudage roulant', unit: 'day', material_price: 45, labor_price: 0, equipment_price: 0, total_price: 45 },
-  { code: 'LOC002', category: 'location', subcategory: 'materiel', description: 'echafaudage fixe', unit: 'm2_day', material_price: 8, labor_price: 0, equipment_price: 0, total_price: 8 },
-  { code: 'LOC003', category: 'location', subcategory: 'materiel', description: 'sableuse', unit: 'day', material_price: 90, labor_price: 0, equipment_price: 0, total_price: 90 },
-  { code: 'LOC004', category: 'location', subcategory: 'materiel', description: 'ponceuse girafe', unit: 'day', material_price: 35, labor_price: 0, equipment_price: 0, total_price: 35 },
-  { code: 'LOC005', category: 'location', subcategory: 'materiel', description: 'betonniere', unit: 'day', material_price: 40, labor_price: 0, equipment_price: 0, total_price: 40 },
-  { code: 'LOC006', category: 'location', subcategory: 'materiel', description: 'nacelle', unit: 'day', material_price: 180, labor_price: 0, equipment_price: 0, total_price: 180 },
-  // Nettoyage général
-  { code: 'GN001', category: 'general', subcategory: 'nettoyage', description: 'nettoyage chantier', unit: 'forfait', material_price: 200, labor_price: 200, equipment_price: 0, total_price: 200 },
+  // ═══ MAÇONNERIE ═══
+  { code: 'MAC01', category: 'maconnerie', subcategory: 'beton', description: 'dalle béton', unit: 'm2', material_price: 50, labor_price: 45, equipment_price: 0, total_price: 95 },
+  { code: 'MAC02', category: 'maconnerie', subcategory: 'chape', description: 'chape béton', unit: 'm2', material_price: 20, labor_price: 25, equipment_price: 0, total_price: 45 },
+  { code: 'MAC03', category: 'maconnerie', subcategory: 'mur', description: 'mur parpaing', unit: 'm2', material_price: 20, labor_price: 40, equipment_price: 0, total_price: 60 },
+  { code: 'MAC04', category: 'maconnerie', subcategory: 'beton', description: 'fondation béton', unit: 'm3', material_price: 70, labor_price: 90, equipment_price: 0, total_price: 160 },
+  { code: 'MAC05', category: 'maconnerie', subcategory: 'beton', description: 'terrasse béton', unit: 'm2', material_price: 55, labor_price: 55, equipment_price: 0, total_price: 110 },
+  { code: 'MAC06', category: 'maconnerie', subcategory: 'structure', description: 'escalier béton', unit: 'unit', material_price: 700, labor_price: 800, equipment_price: 0, total_price: 1500 },
+  { code: 'MAC07', category: 'maconnerie', subcategory: 'structure', description: 'ouverture mur porteur', unit: 'unit', material_price: 500, labor_price: 700, equipment_price: 0, total_price: 1200 },
+  { code: 'MAC08', category: 'maconnerie', subcategory: 'demolition', description: 'démolition mur', unit: 'm2', material_price: 5, labor_price: 35, equipment_price: 0, total_price: 40 },
+  { code: 'MAC09', category: 'maconnerie', subcategory: 'chape', description: 'chape liquide', unit: 'm2', material_price: 25, labor_price: 30, equipment_price: 0, total_price: 55 },
+
+  // ═══ PEINTURE ═══
+  { code: 'PEI01', category: 'peinture', subcategory: 'preparation', description: 'préparation murs', unit: 'm2', material_price: 8, labor_price: 20, equipment_price: 0, total_price: 28 },
+  { code: 'PEI02', category: 'peinture', subcategory: 'mur', description: 'peinture murs', unit: 'm2', material_price: 4, labor_price: 18, equipment_price: 0, total_price: 22 },
+  { code: 'PEI03', category: 'peinture', subcategory: 'preparation', description: 'préparation plafond', unit: 'm2', material_price: 8, labor_price: 20, equipment_price: 0, total_price: 28 },
+  { code: 'PEI04', category: 'peinture', subcategory: 'plafond', description: 'peinture plafond', unit: 'm2', material_price: 4, labor_price: 18, equipment_price: 0, total_price: 22 },
+  { code: 'PEI05', category: 'peinture', subcategory: 'facade', description: 'peinture façade', unit: 'm2', material_price: 10, labor_price: 25, equipment_price: 0, total_price: 35 },
+  { code: 'PEI06', category: 'peinture', subcategory: 'boiserie', description: 'peinture boiserie', unit: 'm2', material_price: 8, labor_price: 22, equipment_price: 0, total_price: 30 },
+
+  // ═══ PLACO / ISOLATION ═══
+  { code: 'PLA01', category: 'placo', subcategory: 'cloison', description: 'pose placo BA13', unit: 'm2', material_price: 12, labor_price: 33, equipment_price: 0, total_price: 45 },
+  { code: 'PLA02', category: 'placo', subcategory: 'finitions', description: 'bandes placo', unit: 'm2', material_price: 2, labor_price: 10, equipment_price: 0, total_price: 12 },
+  { code: 'PLA03', category: 'placo', subcategory: 'plafond', description: 'faux plafond placo', unit: 'm2', material_price: 18, labor_price: 47, equipment_price: 0, total_price: 65 },
+  { code: 'ISO01', category: 'isolation', subcategory: 'combles', description: 'isolation combles', unit: 'm2', material_price: 10, labor_price: 20, equipment_price: 0, total_price: 30 },
+  { code: 'ISO02', category: 'isolation', subcategory: 'murs', description: 'isolation murs intérieur', unit: 'm2', material_price: 15, labor_price: 23, equipment_price: 0, total_price: 38 },
+  { code: 'ISO03', category: 'isolation', subcategory: 'toiture', description: 'isolation toiture', unit: 'm2', material_price: 20, labor_price: 25, equipment_price: 0, total_price: 45 },
+  { code: 'ISO04', category: 'isolation', subcategory: 'plancher', description: 'isolation plancher', unit: 'm2', material_price: 15, labor_price: 20, equipment_price: 0, total_price: 35 },
+
+  // ═══ CARRELAGE ═══
+  { code: 'CAR01', category: 'carrelage', subcategory: 'preparation', description: 'ragréage sol', unit: 'm2', material_price: 6, labor_price: 14, equipment_price: 0, total_price: 20 },
+  { code: 'CAR02', category: 'carrelage', subcategory: 'sol', description: 'pose carrelage sol', unit: 'm2', material_price: 30, labor_price: 45, equipment_price: 0, total_price: 75 },
+  { code: 'CAR03', category: 'carrelage', subcategory: 'mur', description: 'pose faïence murale', unit: 'm2', material_price: 28, labor_price: 42, equipment_price: 0, total_price: 70 },
+  { code: 'CAR04', category: 'carrelage', subcategory: 'demolition', description: 'dépose carrelage', unit: 'm2', material_price: 2, labor_price: 28, equipment_price: 0, total_price: 30 },
+
+  // ═══ PARQUET ═══
+  { code: 'PAR01', category: 'parquet', subcategory: 'sol', description: 'pose parquet flottant', unit: 'm2', material_price: 25, labor_price: 20, equipment_price: 0, total_price: 45 },
+  { code: 'PAR02', category: 'parquet', subcategory: 'sol', description: 'pose parquet collé', unit: 'm2', material_price: 35, labor_price: 30, equipment_price: 0, total_price: 65 },
+  { code: 'PAR03', category: 'parquet', subcategory: 'finitions', description: 'pose plinthes', unit: 'ml', material_price: 3, labor_price: 7, equipment_price: 0, total_price: 10 },
+  { code: 'PAR04', category: 'parquet', subcategory: 'poncage', description: 'ponçage parquet', unit: 'm2', material_price: 5, labor_price: 20, equipment_price: 0, total_price: 25 },
+
+  // ═══ ÉLECTRICITÉ ═══
+  { code: 'ELE01', category: 'electricite', subcategory: 'prise', description: 'prise électrique', unit: 'unit', material_price: 15, labor_price: 65, equipment_price: 0, total_price: 80 },
+  { code: 'ELE02', category: 'electricite', subcategory: 'interrupteur', description: 'interrupteur', unit: 'unit', material_price: 12, labor_price: 48, equipment_price: 0, total_price: 60 },
+  { code: 'ELE03', category: 'electricite', subcategory: 'tableau', description: 'tableau électrique', unit: 'unit', material_price: 500, labor_price: 400, equipment_price: 0, total_price: 900 },
+  { code: 'ELE04', category: 'electricite', subcategory: 'eclairage', description: 'point lumineux plafond', unit: 'unit', material_price: 40, labor_price: 80, equipment_price: 0, total_price: 120 },
+  { code: 'ELE05', category: 'electricite', subcategory: 'eclairage', description: 'spot LED encastré', unit: 'unit', material_price: 30, labor_price: 60, equipment_price: 0, total_price: 90 },
+
+  // ═══ PLOMBERIE ═══
+  { code: 'PLM01', category: 'plomberie', subcategory: 'sanitaire', description: 'installation WC', unit: 'unit', material_price: 120, labor_price: 130, equipment_price: 0, total_price: 250 },
+  { code: 'PLM02', category: 'plomberie', subcategory: 'sanitaire', description: 'installation lavabo', unit: 'unit', material_price: 90, labor_price: 110, equipment_price: 0, total_price: 200 },
+  { code: 'PLM03', category: 'plomberie', subcategory: 'sanitaire', description: 'installation meuble vasque', unit: 'unit', material_price: 80, labor_price: 100, equipment_price: 0, total_price: 180 },
+  { code: 'PLM04', category: 'plomberie', subcategory: 'douche', description: 'installation douche', unit: 'unit', material_price: 350, labor_price: 250, equipment_price: 0, total_price: 600 },
+  { code: 'PLM05', category: 'plomberie', subcategory: 'reparation', description: 'réparation fuite', unit: 'unit', material_price: 10, labor_price: 110, equipment_price: 0, total_price: 120 },
+
+  // ═══ MENUISERIE ═══
+  { code: 'MEN01', category: 'menuiserie', subcategory: 'porte', description: 'pose porte intérieure', unit: 'unit', material_price: 120, labor_price: 180, equipment_price: 0, total_price: 300 },
+  { code: 'MEN02', category: 'menuiserie', subcategory: 'fenetre', description: 'pose fenêtre PVC', unit: 'unit', material_price: 300, labor_price: 250, equipment_price: 0, total_price: 550 },
+  { code: 'MEN03', category: 'menuiserie', subcategory: 'placard', description: 'placard sur mesure', unit: 'unit', material_price: 350, labor_price: 250, equipment_price: 0, total_price: 600 },
+  { code: 'MEN04', category: 'menuiserie', subcategory: 'escalier', description: 'pose escalier bois', unit: 'unit', material_price: 800, labor_price: 700, equipment_price: 0, total_price: 1500 },
+  { code: 'MEN05', category: 'menuiserie', subcategory: 'porte', description: "porte d'entrée", unit: 'unit', material_price: 450, labor_price: 400, equipment_price: 0, total_price: 850 },
+  { code: 'MEN06', category: 'menuiserie', subcategory: 'fenetre', description: 'baie vitrée', unit: 'unit', material_price: 700, labor_price: 500, equipment_price: 0, total_price: 1200 },
+  { code: 'MEN07', category: 'menuiserie', subcategory: 'volet', description: 'volet roulant', unit: 'unit', material_price: 170, labor_price: 150, equipment_price: 0, total_price: 320 },
+  { code: 'MEN08', category: 'menuiserie', subcategory: 'portail', description: 'portail aluminium', unit: 'unit', material_price: 900, labor_price: 700, equipment_price: 0, total_price: 1600 },
+
+  // ═══ TOITURE ═══
+  { code: 'TOI01', category: 'toiture', subcategory: 'couverture', description: 'pose tuiles', unit: 'm2', material_price: 40, labor_price: 50, equipment_price: 0, total_price: 90 },
+  { code: 'TOI02', category: 'toiture', subcategory: 'reparation', description: 'réparation toiture', unit: 'm2', material_price: 25, labor_price: 45, equipment_price: 0, total_price: 70 },
+  { code: 'TOI03', category: 'toiture', subcategory: 'nettoyage', description: 'nettoyage toiture', unit: 'm2', material_price: 3, labor_price: 15, equipment_price: 0, total_price: 18 },
+  { code: 'TOI04', category: 'toiture', subcategory: 'nettoyage', description: 'démoussage toiture', unit: 'm2', material_price: 5, labor_price: 15, equipment_price: 0, total_price: 20 },
+  { code: 'TOI05', category: 'toiture', subcategory: 'gouttiere', description: 'pose gouttière', unit: 'ml', material_price: 20, labor_price: 25, equipment_price: 0, total_price: 45 },
+
+  // ═══ ÉTANCHÉITÉ ═══
+  { code: 'ETA01', category: 'etancheite', subcategory: 'toiture', description: 'étanchéité toiture terrasse', unit: 'm2', material_price: 35, labor_price: 40, equipment_price: 0, total_price: 75 },
+  { code: 'ETA02', category: 'etancheite', subcategory: 'balcon', description: 'étanchéité balcon', unit: 'm2', material_price: 30, labor_price: 35, equipment_price: 0, total_price: 65 },
+  { code: 'ETA03', category: 'etancheite', subcategory: 'sdb', description: 'étanchéité salle de bain', unit: 'm2', material_price: 20, labor_price: 25, equipment_price: 0, total_price: 45 },
+
+  // ═══ EXTÉRIEUR ═══
+  { code: 'EXT01', category: 'exterieur', subcategory: 'cloture', description: 'clôture grillage', unit: 'ml', material_price: 15, labor_price: 25, equipment_price: 0, total_price: 40 },
+  { code: 'EXT02', category: 'exterieur', subcategory: 'cloture', description: 'clôture panneau rigide', unit: 'ml', material_price: 35, labor_price: 40, equipment_price: 0, total_price: 75 },
+  { code: 'EXT03', category: 'exterieur', subcategory: 'terrasse', description: 'terrasse bois', unit: 'm2', material_price: 60, labor_price: 60, equipment_price: 0, total_price: 120 },
+  { code: 'EXT04', category: 'exterieur', subcategory: 'terrasse', description: 'dalle terrasse', unit: 'm2', material_price: 45, labor_price: 50, equipment_price: 0, total_price: 95 },
+
+  // ═══ CHAUFFAGE / CLIM ═══
+  { code: 'CH01', category: 'chauffage', subcategory: 'radiateur', description: 'radiateur eau', unit: 'unit', material_price: 100, labor_price: 150, equipment_price: 0, total_price: 250 },
+  { code: 'CH02', category: 'chauffage', subcategory: 'chauffe_eau', description: 'chauffe eau', unit: 'unit', material_price: 350, labor_price: 300, equipment_price: 0, total_price: 650 },
+  { code: 'CH03', category: 'chauffage', subcategory: 'pac', description: 'pompe à chaleur', unit: 'unit', material_price: 4000, labor_price: 2500, equipment_price: 0, total_price: 6500 },
+  { code: 'CH04', category: 'chauffage', subcategory: 'clim', description: 'climatisation split', unit: 'unit', material_price: 600, labor_price: 600, equipment_price: 0, total_price: 1200 },
+
+  // ═══ VENTILATION ═══
+  { code: 'VEN01', category: 'ventilation', subcategory: 'vmc', description: 'VMC simple flux', unit: 'unit', material_price: 200, labor_price: 250, equipment_price: 0, total_price: 450 },
+  { code: 'VEN02', category: 'ventilation', subcategory: 'vmc', description: 'VMC double flux', unit: 'unit', material_price: 1000, labor_price: 800, equipment_price: 0, total_price: 1800 },
+
+  // ═══ TRAVAUX PISCINE ═══
+  { code: 'PIS01', category: 'piscine', subcategory: 'entretien', description: 'vidange piscine', unit: 'unit', material_price: 50, labor_price: 150, equipment_price: 0, total_price: 200 },
+  { code: 'PIS02', category: 'piscine', subcategory: 'entretien', description: 'nettoyage bassin', unit: 'm2', material_price: 2, labor_price: 8, equipment_price: 0, total_price: 10 },
+  { code: 'PIS03', category: 'piscine', subcategory: 'sablage', description: 'sablage piscine', unit: 'm2', material_price: 15, labor_price: 30, equipment_price: 0, total_price: 45 },
+  { code: 'PIS04', category: 'piscine', subcategory: 'revetement', description: 'résine polyester piscine', unit: 'm2', material_price: 60, labor_price: 80, equipment_price: 0, total_price: 140 },
+  { code: 'PIS05', category: 'piscine', subcategory: 'revetement', description: 'gelcoat piscine', unit: 'm2', material_price: 15, labor_price: 20, equipment_price: 0, total_price: 35 },
+  { code: 'PIS06', category: 'piscine', subcategory: 'revetement', description: 'pose liner piscine', unit: 'm2', material_price: 40, labor_price: 50, equipment_price: 0, total_price: 90 },
+  { code: 'PIS07', category: 'piscine', subcategory: 'revetement', description: 'membrane armée piscine', unit: 'm2', material_price: 55, labor_price: 65, equipment_price: 0, total_price: 120 },
+  { code: 'PIS08', category: 'piscine', subcategory: 'reparation', description: 'réparation fissure piscine', unit: 'unit', material_price: 40, labor_price: 80, equipment_price: 0, total_price: 120 },
+  { code: 'PIS09', category: 'piscine', subcategory: 'equipement', description: 'pompe piscine', unit: 'unit', material_price: 350, labor_price: 250, equipment_price: 0, total_price: 600 },
+  { code: 'PIS10', category: 'piscine', subcategory: 'equipement', description: 'filtration piscine', unit: 'unit', material_price: 400, labor_price: 300, equipment_price: 0, total_price: 700 },
+  { code: 'PIS11', category: 'piscine', subcategory: 'margelle', description: 'pose margelles', unit: 'ml', material_price: 30, labor_price: 40, equipment_price: 0, total_price: 70 },
+  { code: 'PIS12', category: 'piscine', subcategory: 'carrelage', description: 'carrelage piscine', unit: 'm2', material_price: 35, labor_price: 50, equipment_price: 0, total_price: 85 },
+  { code: 'PIS13', category: 'piscine', subcategory: 'equipement', description: 'skimmer piscine', unit: 'unit', material_price: 80, labor_price: 100, equipment_price: 0, total_price: 180 },
+  { code: 'PIS14', category: 'piscine', subcategory: 'equipement', description: 'bonde fond piscine', unit: 'unit', material_price: 70, labor_price: 90, equipment_price: 0, total_price: 160 },
+  { code: 'PIS15', category: 'piscine', subcategory: 'equipement', description: 'projecteur piscine', unit: 'unit', material_price: 100, labor_price: 120, equipment_price: 0, total_price: 220 },
+
+  // ═══ LOCATION MATÉRIEL ═══
+  { code: 'LOC01', category: 'location', subcategory: 'materiel', description: 'location échafaudage', unit: 'day', material_price: 45, labor_price: 0, equipment_price: 0, total_price: 45 },
+  { code: 'LOC02', category: 'location', subcategory: 'materiel', description: 'location sableuse', unit: 'day', material_price: 90, labor_price: 0, equipment_price: 0, total_price: 90 },
+  { code: 'LOC03', category: 'location', subcategory: 'materiel', description: 'location bétonnière', unit: 'day', material_price: 40, labor_price: 0, equipment_price: 0, total_price: 40 },
+  { code: 'LOC04', category: 'location', subcategory: 'materiel', description: 'location mini pelle', unit: 'day', material_price: 250, labor_price: 0, equipment_price: 0, total_price: 250 },
+  { code: 'LOC05', category: 'location', subcategory: 'materiel', description: 'location benne gravats', unit: 'day', material_price: 180, labor_price: 0, equipment_price: 0, total_price: 180 },
+
+  // ═══ FRAIS CHANTIER ═══
+  { code: 'CHA01', category: 'chantier', subcategory: 'protection', description: 'protection chantier', unit: 'forfait', material_price: 40, labor_price: 40, equipment_price: 0, total_price: 80 },
+  { code: 'CHA02', category: 'chantier', subcategory: 'nettoyage', description: 'nettoyage fin chantier', unit: 'forfait', material_price: 30, labor_price: 90, equipment_price: 0, total_price: 120 },
+  { code: 'CHA03', category: 'chantier', subcategory: 'transport', description: 'transport matériaux', unit: 'forfait', material_price: 50, labor_price: 50, equipment_price: 0, total_price: 100 },
+  { code: 'CHA04', category: 'chantier', subcategory: 'evacuation', description: 'évacuation gravats', unit: 'forfait', material_price: 50, labor_price: 100, equipment_price: 0, total_price: 150 },
 ];
 
 // Build legacy pricing from catalog for backward compat
 export const buildLegacyPricing = (catalog: PriceCatalogItem[]): ArtisanPricing => {
   const find = (code: string) => catalog.find(c => c.code === code);
-  const pnt001 = find('PNT001');
-  const pnt004 = find('PNT004');
-  const pnt007 = find('PNT007');
-  const cr003 = find('CR003');
+  const pei02 = find('PEI02');
+  const pei04 = find('PEI04');
+  const pei06 = find('PEI06');
+  const car01 = find('CAR01');
 
   return {
-    enduit_full: cr003?.total_price ?? 20,
-    enduit_labor: cr003?.labor_price ?? 14,
-    peinture_mur_full: pnt001?.total_price ?? 22,
-    peinture_mur_labor: pnt001?.labor_price ?? 0,
-    peinture_plafond_full: pnt004?.total_price ?? 28,
-    peinture_plafond_labor: pnt004?.labor_price ?? 22,
-    fenetre_full: pnt007?.total_price ?? 40,
-    fenetre_labor: pnt007?.labor_price ?? 30,
-    nettoyage_forfait: 200,
-    sous_couche_full: cr003?.total_price ?? 20,
-    poncage_full: find('PQ005')?.total_price ?? 23,
+    enduit_full: car01?.total_price ?? 20,
+    enduit_labor: car01?.labor_price ?? 14,
+    peinture_mur_full: pei02?.total_price ?? 22,
+    peinture_mur_labor: pei02?.labor_price ?? 18,
+    peinture_plafond_full: pei04?.total_price ?? 22,
+    peinture_plafond_labor: pei04?.labor_price ?? 18,
+    fenetre_full: pei06?.total_price ?? 30,
+    fenetre_labor: pei06?.labor_price ?? 22,
+    nettoyage_forfait: 120,
+    sous_couche_full: car01?.total_price ?? 20,
+    poncage_full: find('PAR04')?.total_price ?? 25,
   };
 };
 

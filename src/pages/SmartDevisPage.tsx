@@ -220,7 +220,7 @@ const SmartDevisPage = () => {
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
-  const LABOR_ONLY_FACTOR = 0.55;
+  // REMOVED LABOR_ONLY_FACTOR - prices now come strictly from catalog labor_price
 
   // Build keyword→catalog mapping from the new price catalog
   const CATALOG_KEYWORDS: Record<string, { keywords: string[]; catalogCode: string }> = {
@@ -392,20 +392,18 @@ const SmartDevisPage = () => {
       entry.keywords.some((keyword) => normalizedDesignation.includes(normalizeText(keyword)))
     );
 
-    const fallbackByUnit: Record<string, number> = {
-      'm²': 35,
-      ml: 19,
-      u: 95,
-      h: 48,
-      forfait: 240,
-    };
+    // STRICT: fallback prices MUST come from the catalog, NEVER from hardcoded guesses.
+    // Default fallback = PNT001 (most common task) to avoid hallucinated prices.
+    const pnt001Fallback = findCatalogItem('PNT001');
+    const fallbackTotal = pnt001Fallback?.total_price ?? 22;
+    const fallbackLabor = pnt001Fallback?.labor_price ?? 18;
 
     // If the reference entry specifies a forced unit, use its price directly
     const effectiveUnit = matched?.unit || unit;
-    const withMaterialsBase = matched?.price ?? fallbackByUnit[effectiveUnit] ?? 35;
+    const withMaterialsBase = matched?.price ?? fallbackTotal;
     let scopedPrice: number;
     if (scope === 'main_oeuvre_seule') {
-      scopedPrice = matched?.laborPrice ?? (withMaterialsBase * LABOR_ONLY_FACTOR);
+      scopedPrice = matched?.laborPrice ?? fallbackLabor;
     } else {
       scopedPrice = withMaterialsBase;
     }

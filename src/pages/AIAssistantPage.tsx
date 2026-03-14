@@ -446,18 +446,11 @@ const AIAssistantPage = () => {
           </button>
         </div>
 
-        {/* Subtitle + tags */}
+        {/* Subtitle */}
         <div className="pt-2 pb-1 text-center">
-          <p className="text-xs font-bold text-foreground font-cairo mb-1.5" dir="rtl">
+          <p className="text-xs font-bold text-foreground font-cairo" dir="rtl">
             اسألني أي حاجة
           </p>
-          <div className="flex flex-wrap justify-center gap-1.5">
-            {['chantier', 'رخصة', 'برفكتير', 'ماتريال', 'devis', 'travaux'].map((tag) => (
-              <span key={tag} className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                {tag}
-              </span>
-            ))}
-          </div>
         </div>
       </div>
 

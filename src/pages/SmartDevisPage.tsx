@@ -1744,12 +1744,35 @@ const SmartDevisPage = () => {
               <label className={cn("text-sm font-medium text-muted-foreground", isRTL && "font-cairo block text-right")}>
                 {isRTL ? 'أو الصق هنا طلب الزبون (إيميل، واتساب، SMS...)' : 'Ou collez ici la demande du client (E-mail, WhatsApp, SMS...)'}
               </label>
-              <Textarea
-                value={pastedText}
-                onChange={(e) => setPastedText(e.target.value)}
-                placeholder={isRTL ? 'انسخ طلب الزبون أو اكتب تفاصيل الشغلانة هنا (مثلاً: أندوي، بنتيرة، هامش الربح...)' : 'Collez la demande du client ou décrivez les travaux ici (ex: enduit, peinture, marge...)'}
-                className={cn("min-h-[100px] resize-none", isRTL && "text-right font-cairo")}
-              />
+              <div className="relative">
+                <Textarea
+                  value={pastedText}
+                  onChange={(e) => setPastedText(e.target.value)}
+                  placeholder={isRTL ? 'انسخ طلب الزبون أو اكتب تفاصيل الشغلانة هنا (مثلاً: أندوي، بنتيرة، هامش الربح...)' : 'Collez la demande du client ou décrivez les travaux ici (ex: enduit, peinture, marge...)'}
+                  className={cn("min-h-[100px] resize-none pr-14", isRTL && "text-right font-cairo pl-14 pr-3")}
+                />
+                {/* Voice input button */}
+                {('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) && (
+                  <Button
+                    type="button"
+                    variant={isVoiceListening ? 'destructive' : 'outline'}
+                    size="icon"
+                    className={cn(
+                      "absolute top-2 h-9 w-9 rounded-full shadow-sm",
+                      isRTL ? "left-2" : "right-2",
+                      isVoiceListening && "animate-pulse"
+                    )}
+                    onClick={isVoiceListening ? stopVoiceInput : startVoiceInput}
+                  >
+                    {isVoiceListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </Button>
+                )}
+              </div>
+              {isVoiceListening && (
+                <p className={cn("text-xs text-destructive font-medium animate-pulse", isRTL && "text-right font-cairo")}>
+                  {isRTL ? '🎙️ بسمعك... اتكلم دلوقتي' : '🎙️ Écoute en cours... Parlez maintenant'}
+                </p>
+              )}
             </div>
 
             <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>

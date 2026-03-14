@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Send, Sparkles, Mic, MicOff, ScanLine } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Mic, ScanLine } from 'lucide-react';
 import RoomScannerModal from '@/components/scanner/RoomScannerModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
+import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
+import VoiceRecorderOverlay from '@/components/assistant/VoiceRecorderOverlay';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
@@ -39,12 +41,11 @@ const AIAssistantPage = () => {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [onboardingName, setOnboardingName] = useState('');
   const [onboardingGender, setOnboardingGender] = useState<'male' | 'female'>('male');
-  const [isListening, setIsListening] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
+  const voiceRecorder = useVoiceRecorder(isRTL ? 'ar-EG' : 'fr-FR');
 
   // Auto-fill from profile if available
   useEffect(() => {
@@ -65,40 +66,22 @@ const AIAssistantPage = () => {
     setShowOnboarding(false);
   };
 
-  // ── Voice Recognition ──
-  const startListening = useCallback(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) {
+  // ── Voice: handled by useVoiceRecorder hook ──
+  const handleVoiceSend = useCallback(() => {
+    const text = voiceRecorder.stop();
+    if (text.trim()) {
+      setInput(prev => (prev ? prev + ' ' + text : text));
+    }
+  }, [voiceRecorder]);
+
+  const handleVoiceMicPress = useCallback(() => {
+    if (voiceRecorder.isRecording) return;
+    if (!voiceRecorder.isSupported) {
       toast({ variant: 'destructive', title: isRTL ? 'غير مدعوم' : 'Non supporté' });
       return;
     }
-    const recognition = new SR();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = isRTL ? 'ar-EG' : 'fr-FR';
-    recognition.onresult = (event: any) => {
-      let transcript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      setInput(transcript);
-    };
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
-  }, [isRTL, toast]);
-
-  const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-  }, []);
-
-  const toggleVoice = useCallback(() => {
-    if (isListening) stopListening();
-    else startListening();
-  }, [isListening, startListening, stopListening]);
+    voiceRecorder.start();
+  }, [voiceRecorder, isRTL, toast]);
 
   const send = async () => {
     const text = input.trim();
@@ -402,20 +385,27 @@ const AIAssistantPage = () => {
 
       {/* Input - positioned above bottom nav */}
       <div className="p-3 border-t border-border bg-background shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-        <div className="flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+        <div className="relative flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+          {/* Voice Recorder Overlay */}
+          <VoiceRecorderOverlay
+            isRecording={voiceRecorder.isRecording}
+            isLocked={voiceRecorder.isLocked}
+            transcript={voiceRecorder.transcript}
+            duration={voiceRecorder.duration}
+            onSend={handleVoiceSend}
+            onCancel={voiceRecorder.cancel}
+            onLock={voiceRecorder.lock}
+            isRTL={isRTL}
+          />
+
           {/* Mic button */}
           <button
             type="button"
-            onClick={toggleVoice}
-            disabled={isLoading}
-            className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all",
-              isListening
-                ? "bg-blue-500 text-white animate-pulse shadow-lg shadow-blue-500/40"
-                : "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
-            )}
+            onClick={handleVoiceMicPress}
+            disabled={isLoading || voiceRecorder.isRecording}
+            className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
           >
-            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+            <Mic size={22} />
           </button>
           <textarea
             value={input}
@@ -453,21 +443,6 @@ const AIAssistantPage = () => {
           </p>
         </div>
       </div>
-
-      {/* Listening overlay */}
-      {isListening && (
-        <div className="fixed inset-x-0 bottom-32 z-[70] flex justify-center pointer-events-none">
-          <div className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-full shadow-lg animate-bounce">
-            <Mic size={18} />
-            <span className="text-xs font-bold font-cairo">{isRTL ? 'جاري الاستماع...' : 'Écoute en cours...'}</span>
-            <span className="flex gap-0.5">
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Room Scanner Modal */}
       <RoomScannerModal open={showScanner} onClose={() => setShowScanner(false)} isRTL={isRTL} />

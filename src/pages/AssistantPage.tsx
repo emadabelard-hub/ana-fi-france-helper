@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Brain, Camera, Paperclip, Send, Loader2, Mic, MicOff } from 'lucide-react';
+import { ArrowLeft, Brain, Camera, Paperclip, Send, Loader2, Mic } from 'lucide-react';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import { streamProAdminAssistant } from '@/hooks/useStreamingChat';
 import { useToast } from '@/hooks/use-toast';
 import DocumentActionButtons from '@/components/assistant/DocumentActionButtons';
 import { extractTextFromPDF } from '@/lib/pdfExtractor';
+import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
+import VoiceRecorderOverlay from '@/components/assistant/VoiceRecorderOverlay';
 
 interface Message {
   id: string;
@@ -63,11 +65,10 @@ const AssistantPage = () => {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const voiceRecorder = useVoiceRecorder(isRTL ? 'ar-EG' : 'fr-FR');
 
   const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
 
@@ -75,40 +76,22 @@ const AssistantPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ── Voice Recognition ──
-  const startListening = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+  // ── Voice: handled by useVoiceRecorder hook ──
+  const handleVoiceSend = useCallback(() => {
+    const text = voiceRecorder.stop();
+    if (text.trim()) {
+      setInputValue(prev => (prev ? prev + ' ' + text : text));
+    }
+  }, [voiceRecorder]);
+
+  const handleVoiceMicPress = useCallback(() => {
+    if (voiceRecorder.isRecording) return;
+    if (!voiceRecorder.isSupported) {
       toast({ variant: 'destructive', title: isRTL ? 'غير مدعوم' : 'Non supporté', description: isRTL ? 'المتصفح لا يدعم التعرف على الصوت' : 'Navigateur non compatible' });
       return;
     }
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = isRTL ? 'ar-EG' : 'fr-FR';
-    recognition.onresult = (event: any) => {
-      let transcript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      setInputValue(transcript);
-    };
-    recognition.onerror = () => { setIsListening(false); };
-    recognition.onend = () => { setIsListening(false); };
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
-  }, [isRTL, toast]);
-
-  const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-  }, []);
-
-  const toggleVoice = useCallback(() => {
-    if (isListening) stopListening();
-    else startListening();
-  }, [isListening, startListening, stopListening]);
+    voiceRecorder.start();
+  }, [voiceRecorder, isRTL, toast]);
 
   // ── Send Message ──
   const handleSend = async (messageText?: string, imageData?: string) => {
@@ -116,7 +99,7 @@ const AssistantPage = () => {
     if (!text.trim() && !imageData) return;
 
     // Stop voice if active
-    if (isListening) stopListening();
+    if (voiceRecorder.isRecording) voiceRecorder.cancel();
 
     // Check if this is a devis request → route to Smart Devis
     if (text.trim() && isDevisRequest(text)) {
@@ -322,7 +305,19 @@ const AssistantPage = () => {
 
       {/* INPUT AREA */}
       <div className="fixed left-0 right-0 z-[60] bg-background border-t border-border safe-area-pb" style={{ bottom: '5rem' }}>
-        <div className="mx-3 mt-2 bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="mx-3 mt-2 bg-card border border-border rounded-2xl shadow-sm overflow-hidden relative">
+          {/* Voice Recorder Overlay */}
+          <VoiceRecorderOverlay
+            isRecording={voiceRecorder.isRecording}
+            isLocked={voiceRecorder.isLocked}
+            transcript={voiceRecorder.transcript}
+            duration={voiceRecorder.duration}
+            onSend={handleVoiceSend}
+            onCancel={voiceRecorder.cancel}
+            onLock={voiceRecorder.lock}
+            isRTL={isRTL}
+          />
+
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
@@ -349,17 +344,12 @@ const AssistantPage = () => {
               {/* Voice - Blue Mic Button */}
               <button
                 type="button"
-                onClick={toggleVoice}
-                disabled={isTyping || isExtractingPdf}
-                className={cn(
-                  "p-2 rounded-full transition-all",
-                  isListening
-                    ? "bg-blue-500 text-white animate-pulse shadow-lg shadow-blue-500/40"
-                    : "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
-                )}
+                onClick={handleVoiceMicPress}
+                disabled={isTyping || isExtractingPdf || voiceRecorder.isRecording}
+                className="p-2.5 rounded-full transition-all text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
                 title={isRTL ? '🎤 تكلم' : '🎤 Parler'}
               >
-                {isListening ? <MicOff size={22} /> : <Mic size={22} />}
+                <Mic size={24} />
               </button>
             </div>
 
@@ -394,21 +384,6 @@ const AssistantPage = () => {
           </div>
         </div>
       </div>
-
-      {/* Listening animation overlay */}
-      {isListening && (
-        <div className="fixed inset-x-0 bottom-48 z-[70] flex justify-center pointer-events-none">
-          <div className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-full shadow-lg animate-bounce">
-            <Mic size={18} />
-            <span className="text-xs font-bold font-cairo">{isRTL ? 'جاري الاستماع...' : 'Écoute en cours...'}</span>
-            <span className="flex gap-0.5">
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
-            </span>
-          </div>
-        </div>
-      )}
 
       <style>{`
         .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }

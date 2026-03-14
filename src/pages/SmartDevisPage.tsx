@@ -343,7 +343,7 @@ const SmartDevisPage = () => {
     CHA04: { keywords: ['evacuation gravats', 'évacuation gravats', 'frais de chantier', 'مصاريف الشانتي'], catalogCode: 'CHA04' },
     // Generic fallbacks (must be AFTER specific codes)
     GENERIC_NETTOYAGE: { keywords: ['nettoyage'], catalogCode: 'CHA02' },
-    GENERIC_ISOLATION: { keywords: ['isolation', 'عزل'], catalogCode: 'ISO02' },
+    GENERIC_ISOLATION: { keywords: ['isolation', 'عزل'], catalogCode: 'PLA05' },
   };
 
   const parseCatalogItem = (row: any): PriceCatalogItem => ({

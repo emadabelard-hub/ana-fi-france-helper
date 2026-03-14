@@ -32,6 +32,7 @@ const AIAssistantPage = () => {
   const [onboardingName, setOnboardingName] = useState('');
   const [onboardingGender, setOnboardingGender] = useState<'male' | 'female'>('male');
   const [isListening, setIsListening] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();

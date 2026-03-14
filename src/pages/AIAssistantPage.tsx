@@ -11,6 +11,14 @@ import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
+type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
+
+const CATEGORIES: { key: CategoryKey; emoji: string; labelAr: string; labelFr: string }[] = [
+  { key: 'مهني', emoji: '🔧', labelAr: 'مهني', labelFr: 'Pro' },
+  { key: 'اداري', emoji: '🏛️', labelAr: 'اداري', labelFr: 'Admin' },
+  { key: 'قانوني', emoji: '⚖️', labelAr: 'قانوني', labelFr: 'Juridique' },
+  { key: 'شخصي', emoji: '💡', labelAr: 'شخصي', labelFr: 'Personnel' },
+];
 
 const STREAM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
 

@@ -58,6 +58,7 @@ interface LineItem {
   unitPrice: number;
   total: number;
   category?: string;
+  catalogCode?: string;
   withMaterial?: boolean; // For 'partiel' mode: user toggles material per line
 }
 

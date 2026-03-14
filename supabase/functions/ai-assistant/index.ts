@@ -58,6 +58,30 @@ ANALYSE STRATÉGIQUE APPROFONDIE (OBLIGATOIRE):
 - Exemple: Si un droit est limité en France mais qu'une jurisprudence de la CJUE (Cour de Justice de l'UE) l'élargit, cite-la.
 - Fournis toujours des pistes d'action concrètes, pas seulement de l'information passive.`;
 
+    // Category context injection
+    const categoryContextMap: Record<string, { fr: string; ar: string }> = {
+      'مهني': {
+        fr: `\nCATÉGORIE ACTIVE : PROFESSIONNEL\nL'utilisateur pose des questions sur les travaux, devis, matériaux, chantier, outils professionnels, création d'entreprise, auto-entrepreneur, assurances pro. Concentre-toi sur ce domaine.`,
+        ar: `\nالفئة النشطة: مهني\nالمستخدم بيسأل عن شغل، مقاولات، مواد بناء، ورش، أدوات مهنية، تأسيس شركة، عمل حر، تأمينات مهنية. ركز على المجال ده.`,
+      },
+      'اداري': {
+        fr: `\nCATÉGORIE ACTIVE : ADMINISTRATIF\nL'utilisateur pose des questions sur les démarches administratives, mairie, préfecture, titre de séjour, naturalisation, sécurité sociale, CAF, impôts. Concentre-toi sur ce domaine.`,
+        ar: `\nالفئة النشطة: اداري\nالمستخدم بيسأل عن إجراءات إدارية، البلدية، البريفكتير، الإقامة، الجنسية، الضمان الاجتماعي، الكاف، الضرائب. ركز على المجال ده.`,
+      },
+      'قانوني': {
+        fr: `\nCATÉGORIE ACTIVE : JURIDIQUE\nL'utilisateur pose des questions sur le droit, les contrats, les litiges, les lois du travail, les recours, les avocats, la justice. Concentre-toi sur ce domaine.`,
+        ar: `\nالفئة النشطة: قانوني\nالمستخدم بيسأل عن القانون، العقود، النزاعات، قانون العمل، الطعون، المحامين، القضاء. ركز على المجال ده.`,
+      },
+      'شخصي': {
+        fr: `\nCATÉGORIE ACTIVE : PERSONNEL\nL'utilisateur pose des questions sur l'organisation personnelle, la gestion du temps, les conseils de vie, le bien-être, la famille, le logement personnel. Concentre-toi sur ce domaine.`,
+        ar: `\nالفئة النشطة: شخصي\nالمستخدم بيسأل عن التنظيم الشخصي، إدارة الوقت، نصائح حياتية، الراحة النفسية، العيلة، السكن. ركز على المجال ده.`,
+      },
+    };
+
+    const categoryCtx = category && categoryContextMap[category]
+      ? (language === 'fr' ? categoryContextMap[category].fr : categoryContextMap[category].ar)
+      : '';
+
     const deepStrategyAr = `
 تحليل استراتيجي معمق (إلزامي):
 - ما تكتفيش أبداً بمعلومات عامة. حلل المشكلة بعمق واقترح حلول عملية وملموسة.

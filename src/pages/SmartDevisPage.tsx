@@ -329,7 +329,7 @@ const SmartDevisPage = () => {
         // Generic peinture fallback (last)
         'PNT_GENERIC',
         // General
-        'GN_NETTOYAGE',
+        'GN001', 'GN_NETTOYAGE',
       ];
       return orderedCodes.map(code => {
         const meta = CATALOG_KEYWORDS[code];

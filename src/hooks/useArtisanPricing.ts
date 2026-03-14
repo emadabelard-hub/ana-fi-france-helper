@@ -158,22 +158,22 @@ export const DEFAULT_CATALOG: PriceCatalogItem[] = [
 export const buildLegacyPricing = (catalog: PriceCatalogItem[]): ArtisanPricing => {
   const find = (code: string) => catalog.find(c => c.code === code);
   const pei02 = find('PEI02');
-  const pei04 = find('PEI04');
+  const pei03 = find('PEI03');
+  const pei11 = find('PEI11');
   const pei06 = find('PEI06');
-  const car01 = find('CAR01');
 
   return {
-    enduit_full: car01?.total_price ?? 20,
-    enduit_labor: car01?.labor_price ?? 14,
+    enduit_full: pei06?.total_price ?? 25,
+    enduit_labor: pei06?.labor_price ?? 18,
     peinture_mur_full: pei02?.total_price ?? 22,
     peinture_mur_labor: pei02?.labor_price ?? 18,
-    peinture_plafond_full: pei04?.total_price ?? 22,
-    peinture_plafond_labor: pei04?.labor_price ?? 18,
-    fenetre_full: pei06?.total_price ?? 30,
-    fenetre_labor: pei06?.labor_price ?? 20,
-    nettoyage_forfait: find('CHA02')?.total_price ?? 120,
-    sous_couche_full: car01?.total_price ?? 20,
-    poncage_full: find('PAR04')?.total_price ?? 25,
+    peinture_plafond_full: pei03?.total_price ?? 22,
+    peinture_plafond_labor: pei03?.labor_price ?? 18,
+    fenetre_full: pei11?.total_price ?? 70,
+    fenetre_labor: pei11?.labor_price ?? 50,
+    nettoyage_forfait: find('CHA02')?.total_price ?? 180,
+    sous_couche_full: find('PEI01')?.total_price ?? 28,
+    poncage_full: find('PEI08')?.total_price ?? 10,
   };
 };
 

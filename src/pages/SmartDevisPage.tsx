@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import EquipmentSuggestions from '@/components/smart-devis/EquipmentSuggestions';
 
 interface UploadedFile {
   id: string;

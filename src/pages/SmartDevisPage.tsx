@@ -2028,8 +2028,9 @@ const SmartDevisPage = () => {
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs p-3 max-w-[220px]">
                           {(() => {
-                            const fullPrice = resolveReferenceUnitPrice(item.designation_fr, item.unit, 'fourniture_et_pose');
-                            const laborPrice = resolveReferenceUnitPrice(item.designation_fr, item.unit, 'main_oeuvre_seule');
+                            const detectedCode = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr) || undefined;
+                            const fullPrice = getCatalogUnitPriceByCode(detectedCode, true);
+                            const laborPrice = getCatalogUnitPriceByCode(detectedCode, false);
                             const materialPrice = Math.round((fullPrice - laborPrice) * 100) / 100;
                             return (
                               <div className="space-y-1.5">

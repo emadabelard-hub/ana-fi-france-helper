@@ -93,6 +93,8 @@ export const DEFAULT_CATALOG: PriceCatalogItem[] = [
   { code: 'LOC004', category: 'location', subcategory: 'materiel', description: 'ponceuse girafe', unit: 'day', material_price: 35, labor_price: 0, equipment_price: 0, total_price: 35 },
   { code: 'LOC005', category: 'location', subcategory: 'materiel', description: 'betonniere', unit: 'day', material_price: 40, labor_price: 0, equipment_price: 0, total_price: 40 },
   { code: 'LOC006', category: 'location', subcategory: 'materiel', description: 'nacelle', unit: 'day', material_price: 180, labor_price: 0, equipment_price: 0, total_price: 180 },
+  // Nettoyage général
+  { code: 'GN001', category: 'general', subcategory: 'nettoyage', description: 'nettoyage chantier', unit: 'forfait', material_price: 200, labor_price: 200, equipment_price: 0, total_price: 200 },
 ];
 
 // Build legacy pricing from catalog for backward compat

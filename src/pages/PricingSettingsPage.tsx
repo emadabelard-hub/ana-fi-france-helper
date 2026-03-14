@@ -20,6 +20,7 @@ const CATEGORY_META: Record<string, { icon: string; labelFr: string; labelAr: st
   menuiserie: { icon: '🚪', labelFr: 'Menuiserie', labelAr: 'نجارة' },
   facade: { icon: '🏠', labelFr: 'Façade', labelAr: 'واجهة' },
   location: { icon: '🏗️', labelFr: 'Location Matériel', labelAr: 'إيجار معدات' },
+  general: { icon: '🧹', labelFr: 'Général', labelAr: 'عام' },
 };
 
 const UNIT_LABELS: Record<string, string> = {

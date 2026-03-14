@@ -1786,13 +1786,13 @@ const SmartDevisPage = () => {
                     variant={isVoiceListening ? 'destructive' : 'outline'}
                     size="icon"
                     className={cn(
-                      "absolute top-2 h-9 w-9 rounded-full shadow-sm",
+                      "absolute top-2 h-12 w-12 rounded-full shadow-md border-2",
                       isRTL ? "left-2" : "right-2",
-                      isVoiceListening && "animate-pulse"
+                      isVoiceListening ? "animate-pulse border-destructive" : "border-blue-500 text-blue-500 hover:bg-blue-500/10"
                     )}
                     onClick={isVoiceListening ? stopVoiceInput : startVoiceInput}
                   >
-                    {isVoiceListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    {isVoiceListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
                   </Button>
                 )}
               </div>

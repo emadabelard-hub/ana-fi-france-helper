@@ -266,6 +266,7 @@ const SmartDevisPage = () => {
     PAR02: { keywords: ['parquet colle', 'parquet collé', 'parquet', 'باركيه'], catalogCode: 'PAR02' },
     PAR03: { keywords: ['plinthe', 'plinthes', 'pose plinthe', 'بلانت'], catalogCode: 'PAR03' },
     PAR04: { keywords: ['poncage parquet', 'ponçage parquet', 'poncage', 'ponçage', 'بونساج'], catalogCode: 'PAR04' },
+    PAR05: { keywords: ['sol vinyle', 'sol pvc', 'lino', 'vinyle'], catalogCode: 'PAR05' },
     // Électricité
     ELE01: { keywords: ['prise', 'prise electrique', 'prise murale', 'بريز'], catalogCode: 'ELE01' },
     ELE02: { keywords: ['interrupteur', 'انتيريبتور'], catalogCode: 'ELE02' },

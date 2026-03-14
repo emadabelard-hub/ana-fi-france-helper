@@ -185,6 +185,40 @@ const SmartDevisPage = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null>(null);
   const [catalogByCode, setCatalogByCode] = useState<Record<string, PriceCatalogItem>>({});
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
+  const voiceRecognitionRef = useRef<any>(null);
+
+  const startVoiceInput = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = isRTL ? 'ar-EG' : 'fr-FR';
+    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => setIsVoiceListening(true);
+    recognition.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          transcript += event.results[i][0].transcript + ' ';
+        }
+      }
+      if (transcript.trim()) {
+        setPastedText(prev => (prev ? prev + ' ' : '') + transcript.trim());
+      }
+    };
+    recognition.onerror = () => { setIsVoiceListening(false); voiceRecognitionRef.current = null; };
+    recognition.onend = () => { setIsVoiceListening(false); voiceRecognitionRef.current = null; };
+    voiceRecognitionRef.current = recognition;
+    recognition.start();
+  }, [isRTL]);
+
+  const stopVoiceInput = useCallback(() => {
+    voiceRecognitionRef.current?.stop();
+    setIsVoiceListening(false);
+    voiceRecognitionRef.current = null;
+  }, []);
 
   const clearSmartDevisStorage = useCallback(() => {
     try {

@@ -311,7 +311,7 @@ const SmartDevisPage = () => {
     ELE05: { keywords: ['spot led', 'spot encastre', 'spot encastré'], catalogCode: 'ELE05' },
     ELE06: { keywords: ['tirage cable', 'tirage câble', 'cable electrique', 'câble électrique'], catalogCode: 'ELE06' },
     // Plomberie
-    PLM01: { keywords: ['wc', 'toilette', 'toilettes'], catalogCode: 'PLM01' },
+    PB001: { keywords: ['wc', 'toilette', 'toilettes', 'installation wc'], catalogCode: 'PB001' },
     PLM02: { keywords: ['lavabo', 'évier', 'evier'], catalogCode: 'PLM02' },
     PLM03: { keywords: ['meuble vasque', 'vasque'], catalogCode: 'PLM03' },
     PLM04: { keywords: ['douche', 'baignoire', 'سباكة'], catalogCode: 'PLM04' },

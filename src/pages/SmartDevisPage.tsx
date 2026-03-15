@@ -293,7 +293,7 @@ const SmartDevisPage = () => {
     PLA07: { keywords: ['isolation plancher'], catalogCode: 'PLA07' },
     // Carrelage
     CAR01: { keywords: ['ragreage', 'ragréage', 'راغرياج'], catalogCode: 'CAR01' },
-    CAR02: { keywords: ['carrelage sol', 'carrelage', 'كارلاج'], catalogCode: 'CAR02' },
+    CR001: { keywords: ['carrelage sol', 'pose carrelage sol', 'carrelage', 'كارلاج'], catalogCode: 'CR001' },
     CAR03: { keywords: ['faience', 'faïence', 'فايونس', 'faience murale'], catalogCode: 'CAR03' },
     CAR04: { keywords: ['depose carrelage', 'dépose carrelage'], catalogCode: 'CAR04' },
     CAR05: { keywords: ['carrelage terrasse', 'pose carrelage terrasse'], catalogCode: 'CAR05' },

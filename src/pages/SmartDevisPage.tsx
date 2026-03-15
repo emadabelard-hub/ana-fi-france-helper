@@ -1052,7 +1052,13 @@ const SmartDevisPage = () => {
       const data = await invokeAnalyzer(payload);
 
       const rawItems = data.items || data.suggestedItems || [];
-      
+
+      // ===== STRICT LOCK: if explicit codes are present, we build strictly from codes =====
+      const analysisBlob = JSON.stringify(payload.analysisData || {});
+      const explicitCodesFromAnalysis = Array.from(
+        new Set((analysisBlob.match(/\b[A-Z]{2,4}\d{2,3}\b/g) || []).map((c) => c.toUpperCase()))
+      );
+
       // ===== DEDUPLICATION: Remove duplicate lines by normalized designation =====
       const seenDesignations = new Set<string>();
       const deduplicatedItems = rawItems.filter((item: any) => {
@@ -1074,9 +1080,14 @@ const SmartDevisPage = () => {
         )
       );
 
-      const catalogRows = await fetchCatalogByCodes(detectedCodes);
+      const codesToFetch = explicitCodesFromAnalysis.length > 0 ? explicitCodesFromAnalysis : detectedCodes;
+      const catalogRows = await fetchCatalogByCodes(codesToFetch);
 
-      const items: LineItem[] = deduplicatedItems.map((item: any) => {
+      const sourceItems = explicitCodesFromAnalysis.length > 0
+        ? explicitCodesFromAnalysis.map((code) => ({ code, quantity: 1, unit: 'u', designation_fr: code, designation_ar: '' }))
+        : deduplicatedItems;
+
+      const items: LineItem[] = sourceItems.map((item: any) => {
         const quantity = Number(item.quantity || 1);
         const aiUnit = item.unit || 'u';
         const isPartiel = materialScope === 'partiel';
@@ -1088,7 +1099,6 @@ const SmartDevisPage = () => {
 
         const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : aiUnit;
         const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
-        // Price strictly from catalog; 0 if not found (user fills manually)
         const fixedUnitPrice = catalogItem ? getCatalogPriceFromItem(catalogItem, withMaterial) : 0;
 
         const baseFr = catalogItem?.description || item.designation_fr || '';
@@ -1111,9 +1121,12 @@ const SmartDevisPage = () => {
         };
       });
 
-      // ===== FINAL DEDUP by catalogCode: keep first occurrence only =====
+      // ===== STRICT LOCK: one code = one line. Drop uncoded lines when coded lines exist =====
+      const hasCodedItems = items.some(item => !!item.catalogCode);
+      const codeScopedItems = hasCodedItems ? items.filter(item => !!item.catalogCode) : items;
+
       const seenCatalogCodes = new Set<string>();
-      const finalItems = items.filter(item => {
+      const finalItems = codeScopedItems.filter(item => {
         if (!item.catalogCode) return true;
         if (seenCatalogCodes.has(item.catalogCode)) return false;
         seenCatalogCodes.add(item.catalogCode);

@@ -268,7 +268,7 @@ const SmartDevisPage = () => {
     MAC04: { keywords: ['fondation', 'fondation beton', 'fondation béton'], catalogCode: 'MAC04' },
     MAC05: { keywords: ['terrasse beton', 'terrasse béton'], catalogCode: 'MAC05' },
     MAC06: { keywords: ['escalier beton', 'escalier béton'], catalogCode: 'MAC06' },
-    MAC07: { keywords: ['mur porteur', 'ouverture mur'], catalogCode: 'MAC07' },
+    MC004: { keywords: ['mur porteur', 'ouverture mur porteur', 'ouverture mur'], catalogCode: 'MC004' },
     MAC08: { keywords: ['demolition mur', 'démolition mur', 'demolition', 'démolition', 'ديمونتاج'], catalogCode: 'MAC08' },
     MAC09: { keywords: ['chape liquide'], catalogCode: 'MAC09' },
     MAC10: { keywords: ['enduit facade', 'enduit façade', 'crepi', 'crépi'], catalogCode: 'MAC10' },

@@ -38,18 +38,11 @@ const UNIT_OPTIONS = [
   { value: 'ens', label_display: 'Ens - أنسومبل', label_fr: 'Ensemble', label_ar: 'أنسومبل' },
 ];
 
-// Override prices for known item codes (force price, no AI guesswork)
-const LINE_ITEM_CODE_OVERRIDES: Record<string, number> = {
-  PNT001: 22,
-  PB001: 250,
-  GN001: 200,
-};
-
 // Storage key for persistence when the component is visible (retain line items on refresh)
 const LINE_ITEMS_STORAGE_KEY = 'lineItemEditor_items_v1';
 
-// Match code strings like 'PNT001', 'PB001', 'GN001' anywhere in the description
-const CODE_REGEX = /\b(PNT001|PB001|GN001)\b/i;
+// Match strict catalog codes like MC001, PB001, CR001, MAC01, PLM01, etc.
+const CODE_REGEX = /\b([A-Z]{2,4}\d{2,3})\b/i;
 
 const PRESET_ITEMS = [
   { 

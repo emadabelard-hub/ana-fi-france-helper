@@ -146,18 +146,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
         updated.total = Math.round(qty * price * 100) / 100;
       }
 
-      // Force known item codes to use fixed prices (no hallucinated defaults)
-      if (field === 'designation_fr' || field === 'designation_ar') {
-        const code = extractLineItemCode(String(updated.designation_fr || updated.designation_ar || ''));
-        if (code) {
-          const override = LINE_ITEM_CODE_OVERRIDES[code];
-          if (override !== undefined) {
-            const qty = Number(updated.quantity) || 0;
-            updated.unitPrice = override;
-            updated.total = Math.round(qty * override * 100) / 100;
-          }
-        }
-      }
+      // No local hardcoded pricing overrides: prices must come from catalog lookup only
       
       return updated;
     });

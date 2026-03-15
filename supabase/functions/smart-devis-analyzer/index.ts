@@ -418,23 +418,17 @@ RÈGLE CRITIQUE - BILINGUISME OBLIGATOIRE:
 - designation_fr = titre professionnel en français du BTP (ex: "Fourniture et pose de parquet stratifié")
 - designation_ar = TRANSLITÉRATION phonétique en عامية مصرية (ex: "فورنيتير و بوز باركيه ستراتيفيي")
 
-⛔ RÈGLE CODE CATALOGUE:
-- Si tu reconnais le type de travail, ajoute le champ "code" avec le code catalogue correspondant:
-  MAC01=dalle béton, MAC02=chape béton, MAC03=mur parpaing, MAC07=ouverture mur porteur, MAC08=démolition mur,
-  PEI01=préparation murs, PEI02=peinture murs, PEI03=préparation plafond, PEI04=peinture plafond, PEI05=peinture façade, PEI06=peinture boiserie,
-  PLA01=placo BA13, PLA02=bandes placo, PLA03=faux plafond, ISO01=isolation combles, ISO02=isolation murs,
-  CAR01=ragréage, CAR02=carrelage sol, CAR03=faïence, CAR04=dépose carrelage,
-  PAR01=parquet flottant, PAR02=parquet collé, PAR03=plinthes, PAR04=ponçage parquet,
-  ELE01=prise, ELE02=interrupteur, ELE03=tableau électrique, ELE04=point lumineux, ELE05=spot LED,
-  PLM01=WC, PLM02=lavabo, PLM03=meuble vasque, PLM04=douche, PLM05=réparation fuite,
-  MEN01=porte intérieure, MEN02=fenêtre PVC, MEN03=placard, MEN04=escalier bois, MEN05=porte entrée, MEN06=baie vitrée, MEN07=volet roulant, MEN08=portail,
-  TOI01=tuiles, TOI02=réparation toiture, TOI03=nettoyage toiture, TOI04=démoussage, TOI05=gouttière,
-  ETA01=étanchéité toiture, ETA02=étanchéité balcon, ETA03=étanchéité sdb,
-  EXT01=clôture grillage, EXT02=clôture panneau, EXT03=terrasse bois, EXT04=dalle terrasse,
-  CH01=radiateur, CH02=chauffe eau, CH03=pompe chaleur, CH04=climatisation,
-  VEN01=VMC simple, VEN02=VMC double,
-  PIS01-PIS15=travaux piscine, LOC01-LOC05=location matériel,
-  CHA01=protection chantier, CHA02=nettoyage chantier, CHA03=transport, CHA04=évacuation gravats
+⛔ RÈGLE CODE CATALOGUE (STRICT LOCK):
+- UNE TÂCHE = UNE LIGNE = UN CODE.
+- Si tu reconnais le type de travail, ajoute le champ "code" exact:
+  MC001=dalle béton, MC002=pose parpaing, MC003=démolition mur, MC004=ouverture mur porteur,
+  CR001=pose carrelage sol,
+  PB001=installation WC,
+  PEI01=préparation murs, PEI02=peinture murs, PEI03=préparation plafond, PEI04=peinture plafond,
+  ELE01=prise, ELE02=interrupteur, ELE03=tableau électrique,
+  TOI01=tuiles, TOI02=réparation toiture,
+  CHA01=protection chantier, CHA02=nettoyage chantier, CHA03=transport, CHA04=évacuation gravats.
+- INTERDIT de scinder un travail en sous-lignes (préparation/raccord/test séparés) si un code unique existe.
 - Si aucun code ne correspond, ne mets pas de champ "code".
 
 Réponds UNIQUEMENT en JSON:

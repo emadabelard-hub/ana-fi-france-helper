@@ -38,18 +38,11 @@ const UNIT_OPTIONS = [
   { value: 'ens', label_display: 'Ens - أنسومبل', label_fr: 'Ensemble', label_ar: 'أنسومبل' },
 ];
 
-// Override prices for known item codes (force price, no AI guesswork)
-const LINE_ITEM_CODE_OVERRIDES: Record<string, number> = {
-  PNT001: 22,
-  PB001: 250,
-  GN001: 200,
-};
-
 // Storage key for persistence when the component is visible (retain line items on refresh)
 const LINE_ITEMS_STORAGE_KEY = 'lineItemEditor_items_v1';
 
-// Match code strings like 'PNT001', 'PB001', 'GN001' anywhere in the description
-const CODE_REGEX = /\b(PNT001|PB001|GN001)\b/i;
+// Match strict catalog codes like MC001, PB001, CR001, MAC01, PLM01, etc.
+const CODE_REGEX = /\b([A-Z]{2,4}\d{2,3})\b/i;
 
 const PRESET_ITEMS = [
   { 
@@ -153,18 +146,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
         updated.total = Math.round(qty * price * 100) / 100;
       }
 
-      // Force known item codes to use fixed prices (no hallucinated defaults)
-      if (field === 'designation_fr' || field === 'designation_ar') {
-        const code = extractLineItemCode(String(updated.designation_fr || updated.designation_ar || ''));
-        if (code) {
-          const override = LINE_ITEM_CODE_OVERRIDES[code];
-          if (override !== undefined) {
-            const qty = Number(updated.quantity) || 0;
-            updated.unitPrice = override;
-            updated.total = Math.round(qty * override * 100) / 100;
-          }
-        }
-      }
+      // No local hardcoded pricing overrides: prices must come from catalog lookup only
       
       return updated;
     });
@@ -176,16 +158,28 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
     updateItem(item.id, 'unitPrice', price);
   };
 
-  const fetchPriceFromCatalog = async (code: string): Promise<number> => {
+  const isLaborOnlyLine = (item: LineItem): boolean => {
+    const text = `${item.designation_fr || ''} ${item.designation_ar || ''}`.toLowerCase();
+    return (
+      text.includes('main d\'œuvre') ||
+      text.includes('main d\'oeuvre') ||
+      text.includes('labor only') ||
+      text.includes('pose') ||
+      text.includes('مصنعية')
+    );
+  };
+
+  const fetchPriceFromCatalog = async (code: string, laborOnly: boolean): Promise<number> => {
     try {
       const { data, error } = await supabase
         .from('artisan_price_catalog')
-        .select('total_price')
+        .select('labor_price,total_price')
         .eq('code', code)
         .maybeSingle();
 
       if (error) throw error;
-      return data?.total_price ?? 0;
+      if (!data) return 0;
+      return laborOnly ? Number(data.labor_price ?? 0) : Number(data.total_price ?? 0);
     } catch (e) {
       console.warn('Price catalog lookup failed:', e);
       return 0;
@@ -198,20 +192,15 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
       toast({
         variant: 'destructive',
         title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'أدخل رمزًا (مثل PNT001) للحصول على السعر' : 'Entrez un code (ex : PNT001) pour obtenir le prix',
+        description: isRTL ? 'أدخل رمزًا (مثل MC001 أو PB001) للحصول على السعر' : 'Entrez un code (ex : MC001 ou PB001) pour obtenir le prix',
       });
-      return;
-    }
-
-    const override = LINE_ITEM_CODE_OVERRIDES[code];
-    if (override !== undefined) {
-      applyCodePricing(item, override);
       return;
     }
 
     setSuggestingPriceFor(item.id);
     try {
-      const price = await fetchPriceFromCatalog(code);
+      const laborOnly = isLaborOnlyLine(item);
+      const price = await fetchPriceFromCatalog(code, laborOnly);
       applyCodePricing(item, price);
       if (price === 0) {
         toast({
@@ -222,7 +211,9 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
       } else {
         toast({
           title: isRTL ? '💡 تم ضبط السعر' : '💡 Prix appliqué',
-          description: isRTL ? `السعر: ${price}€` : `Prix : ${price}€`,
+          description: isRTL
+            ? `${laborOnly ? 'مصنعية' : 'فورنيتير + بوز'}: ${price}€`
+            : `${laborOnly ? 'Main d\'œuvre' : 'Fourniture + pose'} : ${price}€`,
         });
       }
     } catch (e) {

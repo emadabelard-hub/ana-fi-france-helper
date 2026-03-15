@@ -268,7 +268,7 @@ const SmartDevisPage = () => {
     MAC04: { keywords: ['fondation', 'fondation beton', 'fondation béton'], catalogCode: 'MAC04' },
     MAC05: { keywords: ['terrasse beton', 'terrasse béton'], catalogCode: 'MAC05' },
     MAC06: { keywords: ['escalier beton', 'escalier béton'], catalogCode: 'MAC06' },
-    MAC07: { keywords: ['mur porteur', 'ouverture mur'], catalogCode: 'MAC07' },
+    MC004: { keywords: ['mur porteur', 'ouverture mur porteur', 'ouverture mur'], catalogCode: 'MC004' },
     MAC08: { keywords: ['demolition mur', 'démolition mur', 'demolition', 'démolition', 'ديمونتاج'], catalogCode: 'MAC08' },
     MAC09: { keywords: ['chape liquide'], catalogCode: 'MAC09' },
     MAC10: { keywords: ['enduit facade', 'enduit façade', 'crepi', 'crépi'], catalogCode: 'MAC10' },
@@ -293,7 +293,7 @@ const SmartDevisPage = () => {
     PLA07: { keywords: ['isolation plancher'], catalogCode: 'PLA07' },
     // Carrelage
     CAR01: { keywords: ['ragreage', 'ragréage', 'راغرياج'], catalogCode: 'CAR01' },
-    CAR02: { keywords: ['carrelage sol', 'carrelage', 'كارلاج'], catalogCode: 'CAR02' },
+    CR001: { keywords: ['carrelage sol', 'pose carrelage sol', 'carrelage', 'كارلاج'], catalogCode: 'CR001' },
     CAR03: { keywords: ['faience', 'faïence', 'فايونس', 'faience murale'], catalogCode: 'CAR03' },
     CAR04: { keywords: ['depose carrelage', 'dépose carrelage'], catalogCode: 'CAR04' },
     CAR05: { keywords: ['carrelage terrasse', 'pose carrelage terrasse'], catalogCode: 'CAR05' },
@@ -311,7 +311,7 @@ const SmartDevisPage = () => {
     ELE05: { keywords: ['spot led', 'spot encastre', 'spot encastré'], catalogCode: 'ELE05' },
     ELE06: { keywords: ['tirage cable', 'tirage câble', 'cable electrique', 'câble électrique'], catalogCode: 'ELE06' },
     // Plomberie
-    PLM01: { keywords: ['wc', 'toilette', 'toilettes'], catalogCode: 'PLM01' },
+    PB001: { keywords: ['wc', 'toilette', 'toilettes', 'installation wc'], catalogCode: 'PB001' },
     PLM02: { keywords: ['lavabo', 'évier', 'evier'], catalogCode: 'PLM02' },
     PLM03: { keywords: ['meuble vasque', 'vasque'], catalogCode: 'PLM03' },
     PLM04: { keywords: ['douche', 'baignoire', 'سباكة'], catalogCode: 'PLM04' },
@@ -461,7 +461,7 @@ const SmartDevisPage = () => {
 
   const getCatalogPriceFromItem = (catalogItem: PriceCatalogItem, includeMaterials: boolean): number => {
     const rawPrice = includeMaterials ? catalogItem.total_price : catalogItem.labor_price;
-    return Math.round(Number(rawPrice) * 100) / 100;
+    return Number(rawPrice);
   };
 
   const getCatalogUnitPriceByCode = useCallback((catalogCode: string | undefined, includeMaterials: boolean): number => {
@@ -1052,7 +1052,13 @@ const SmartDevisPage = () => {
       const data = await invokeAnalyzer(payload);
 
       const rawItems = data.items || data.suggestedItems || [];
-      
+
+      // ===== STRICT LOCK: if explicit codes are present, we build strictly from codes =====
+      const analysisBlob = JSON.stringify(payload.analysisData || {});
+      const explicitCodesFromAnalysis = Array.from(
+        new Set((analysisBlob.match(/\b[A-Z]{2,4}\d{2,3}\b/g) || []).map((c) => c.toUpperCase()))
+      );
+
       // ===== DEDUPLICATION: Remove duplicate lines by normalized designation =====
       const seenDesignations = new Set<string>();
       const deduplicatedItems = rawItems.filter((item: any) => {
@@ -1074,9 +1080,14 @@ const SmartDevisPage = () => {
         )
       );
 
-      const catalogRows = await fetchCatalogByCodes(detectedCodes);
+      const codesToFetch = explicitCodesFromAnalysis.length > 0 ? explicitCodesFromAnalysis : detectedCodes;
+      const catalogRows = await fetchCatalogByCodes(codesToFetch);
 
-      const items: LineItem[] = deduplicatedItems.map((item: any) => {
+      const sourceItems = explicitCodesFromAnalysis.length > 0
+        ? explicitCodesFromAnalysis.map((code) => ({ code, quantity: 1, unit: 'u', designation_fr: code, designation_ar: '' }))
+        : deduplicatedItems;
+
+      const items: LineItem[] = sourceItems.map((item: any) => {
         const quantity = Number(item.quantity || 1);
         const aiUnit = item.unit || 'u';
         const isPartiel = materialScope === 'partiel';
@@ -1088,7 +1099,6 @@ const SmartDevisPage = () => {
 
         const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : aiUnit;
         const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
-        // Price strictly from catalog; 0 if not found (user fills manually)
         const fixedUnitPrice = catalogItem ? getCatalogPriceFromItem(catalogItem, withMaterial) : 0;
 
         const baseFr = catalogItem?.description || item.designation_fr || '';
@@ -1111,9 +1121,12 @@ const SmartDevisPage = () => {
         };
       });
 
-      // ===== FINAL DEDUP by catalogCode: keep first occurrence only =====
+      // ===== STRICT LOCK: one code = one line. Drop uncoded lines when coded lines exist =====
+      const hasCodedItems = items.some(item => !!item.catalogCode);
+      const codeScopedItems = hasCodedItems ? items.filter(item => !!item.catalogCode) : items;
+
       const seenCatalogCodes = new Set<string>();
-      const finalItems = items.filter(item => {
+      const finalItems = codeScopedItems.filter(item => {
         if (!item.catalogCode) return true;
         if (seenCatalogCodes.has(item.catalogCode)) return false;
         seenCatalogCodes.add(item.catalogCode);

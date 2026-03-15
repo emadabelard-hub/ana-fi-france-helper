@@ -461,7 +461,7 @@ const SmartDevisPage = () => {
 
   const getCatalogPriceFromItem = (catalogItem: PriceCatalogItem, includeMaterials: boolean): number => {
     const rawPrice = includeMaterials ? catalogItem.total_price : catalogItem.labor_price;
-    return Math.round(Number(rawPrice) * 100) / 100;
+    return Number(rawPrice);
   };
 
   const getCatalogUnitPriceByCode = useCallback((catalogCode: string | undefined, includeMaterials: boolean): number => {

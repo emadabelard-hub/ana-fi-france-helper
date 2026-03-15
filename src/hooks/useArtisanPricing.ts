@@ -152,6 +152,97 @@ export const DEFAULT_CATALOG: PriceCatalogItem[] = [
   { code: 'CHA02', category: 'frais_chantier', subcategory: 'service', description: 'nettoyage fin chantier', unit: 'forfait', labor_price: 80, material_price: 100, equipment_price: 0, total_price: 180 },
   { code: 'CHA03', category: 'frais_chantier', subcategory: 'service', description: 'transport matériel', unit: 'forfait', labor_price: 40, material_price: 50, equipment_price: 0, total_price: 90 },
   { code: 'CHA04', category: 'frais_chantier', subcategory: 'service', description: 'installation chantier', unit: 'forfait', labor_price: 60, material_price: 60, equipment_price: 0, total_price: 120 },
+
+  // ═══════════════════════════════════════════════
+  // MAÇONNERIE (ajouts)
+  // ═══════════════════════════════════════════════
+  { code: 'MAC15', category: 'maconnerie', subcategory: 'travail', description: 'terrassement', unit: 'm3', labor_price: 20, material_price: 15, equipment_price: 0, total_price: 35 },
+  { code: 'MAC16', category: 'maconnerie', subcategory: 'travail', description: 'fondation béton', unit: 'ml', labor_price: 50, material_price: 40, equipment_price: 0, total_price: 90 },
+  { code: 'MAC17', category: 'maconnerie', subcategory: 'travail', description: 'mur brique', unit: 'm2', labor_price: 40, material_price: 35, equipment_price: 0, total_price: 75 },
+  { code: 'MAC18', category: 'maconnerie', subcategory: 'travail', description: 'mur pierre', unit: 'm2', labor_price: 70, material_price: 50, equipment_price: 0, total_price: 120 },
+  { code: 'MAC19', category: 'maconnerie', subcategory: 'travail', description: 'mur clôture', unit: 'm2', labor_price: 35, material_price: 35, equipment_price: 0, total_price: 70 },
+  { code: 'MAC20', category: 'maconnerie', subcategory: 'travail', description: 'enduit ciment', unit: 'm2', labor_price: 15, material_price: 13, equipment_price: 0, total_price: 28 },
+  { code: 'MAC21', category: 'maconnerie', subcategory: 'travail', description: 'escalier béton', unit: 'unit', labor_price: 1500, material_price: 1000, equipment_price: 0, total_price: 2500 },
+  { code: 'MAC22', category: 'maconnerie', subcategory: 'travail', description: 'seuil béton', unit: 'ml', labor_price: 25, material_price: 20, equipment_price: 0, total_price: 45 },
+  { code: 'MAC23', category: 'maconnerie', subcategory: 'travail', description: 'poteau béton', unit: 'unit', labor_price: 100, material_price: 80, equipment_price: 0, total_price: 180 },
+  { code: 'MAC24', category: 'maconnerie', subcategory: 'travail', description: 'coffrage béton', unit: 'm2', labor_price: 20, material_price: 15, equipment_price: 0, total_price: 35 },
+  { code: 'MAC25', category: 'maconnerie', subcategory: 'travail', description: 'ferraillage dalle', unit: 'm2', labor_price: 10, material_price: 8, equipment_price: 0, total_price: 18 },
+
+  // ═══════════════════════════════════════════════
+  // PEINTURE (ajouts)
+  // ═══════════════════════════════════════════════
+  { code: 'PEI12', category: 'peinture', subcategory: 'travail', description: 'décapage peinture', unit: 'm2', labor_price: 15, material_price: 7, equipment_price: 0, total_price: 22 },
+  { code: 'PEI13', category: 'peinture', subcategory: 'travail', description: 'ravalement façade', unit: 'm2', labor_price: 45, material_price: 30, equipment_price: 0, total_price: 75 },
+  { code: 'PEI14', category: 'peinture', subcategory: 'travail', description: 'peinture piscine', unit: 'm2', labor_price: 20, material_price: 15, equipment_price: 0, total_price: 35 },
+  { code: 'PEI15', category: 'peinture', subcategory: 'travail', description: 'peinture boiserie', unit: 'm2', labor_price: 18, material_price: 10, equipment_price: 0, total_price: 28 },
+  { code: 'PEI16', category: 'peinture', subcategory: 'travail', description: 'peinture métal', unit: 'm2', labor_price: 18, material_price: 12, equipment_price: 0, total_price: 30 },
+
+  // ═══════════════════════════════════════════════
+  // SOL (nouveau)
+  // ═══════════════════════════════════════════════
+  { code: 'SOL01', category: 'sol', subcategory: 'travail', description: 'ponçage parquet', unit: 'm2', labor_price: 15, material_price: 7, equipment_price: 0, total_price: 22 },
+  { code: 'SOL02', category: 'sol', subcategory: 'travail', description: 'vitrification parquet', unit: 'm2', labor_price: 10, material_price: 8, equipment_price: 0, total_price: 18 },
+  { code: 'SOL03', category: 'sol', subcategory: 'travail', description: 'pose sol PVC', unit: 'm2', labor_price: 16, material_price: 12, equipment_price: 0, total_price: 28 },
+  { code: 'SOL04', category: 'sol', subcategory: 'travail', description: 'pose moquette', unit: 'm2', labor_price: 14, material_price: 11, equipment_price: 0, total_price: 25 },
+  { code: 'SOL05', category: 'sol', subcategory: 'travail', description: 'dépose parquet', unit: 'm2', labor_price: 15, material_price: 5, equipment_price: 0, total_price: 20 },
+
+  // ═══════════════════════════════════════════════
+  // PLOMBERIE (ajouts)
+  // ═══════════════════════════════════════════════
+  { code: 'PLM10', category: 'plomberie', subcategory: 'travail', description: 'réseau eau cuivre/PER', unit: 'ml', labor_price: 25, material_price: 20, equipment_price: 0, total_price: 45 },
+
+  // ═══════════════════════════════════════════════
+  // MENUISERIE (ajouts)
+  // ═══════════════════════════════════════════════
+  { code: 'MEN09', category: 'menuiserie', subcategory: 'travail', description: 'pose porte entrée', unit: 'unit', labor_price: 250, material_price: 300, equipment_price: 0, total_price: 550 },
+  { code: 'MEN10', category: 'menuiserie', subcategory: 'travail', description: 'pose volet roulant', unit: 'unit', labor_price: 180, material_price: 200, equipment_price: 0, total_price: 380 },
+
+  // ═══════════════════════════════════════════════
+  // TOITURE (ajouts)
+  // ═══════════════════════════════════════════════
+  { code: 'TOI07', category: 'toiture', subcategory: 'travail', description: 'isolation toiture', unit: 'm2', labor_price: 30, material_price: 30, equipment_price: 0, total_price: 60 },
+  { code: 'TOI08', category: 'toiture', subcategory: 'travail', description: 'étanchéité toiture', unit: 'm2', labor_price: 40, material_price: 35, equipment_price: 0, total_price: 75 },
+
+  // ═══════════════════════════════════════════════
+  // PISCINE (ajouts)
+  // ═══════════════════════════════════════════════
+  { code: 'PIS10', category: 'piscine', subcategory: 'travail', description: 'hydroblasting piscine', unit: 'm2', labor_price: 18, material_price: 10, equipment_price: 0, total_price: 28 },
+  { code: 'PIS11', category: 'piscine', subcategory: 'travail', description: 'réparation fissure piscine', unit: 'ml', labor_price: 30, material_price: 15, equipment_price: 0, total_price: 45 },
+  { code: 'PIS12', category: 'piscine', subcategory: 'travail', description: 'application primaire piscine', unit: 'm2', labor_price: 7, material_price: 5, equipment_price: 0, total_price: 12 },
+
+  // ═══════════════════════════════════════════════
+  // LOCATION MATÉRIEL (ajouts)
+  // ═══════════════════════════════════════════════
+  { code: 'LOC07', category: 'location', subcategory: 'materiel', description: 'location compresseur', unit: 'day', labor_price: 0, material_price: 0, equipment_price: 90, total_price: 90 },
+  { code: 'LOC08', category: 'location', subcategory: 'materiel', description: 'location marteau piqueur', unit: 'day', labor_price: 0, material_price: 0, equipment_price: 60, total_price: 60 },
+  { code: 'LOC09', category: 'location', subcategory: 'materiel', description: 'location scie béton', unit: 'day', labor_price: 0, material_price: 0, equipment_price: 85, total_price: 85 },
+
+  // ═══════════════════════════════════════════════
+  // PETIT MATÉRIEL (nouveau)
+  // ═══════════════════════════════════════════════
+  { code: 'PMA01', category: 'petit_materiel', subcategory: 'materiel', description: 'rouleau peinture', unit: 'unit', labor_price: 0, material_price: 8, equipment_price: 0, total_price: 8 },
+  { code: 'PMA02', category: 'petit_materiel', subcategory: 'materiel', description: 'pinceau peinture', unit: 'unit', labor_price: 0, material_price: 6, equipment_price: 0, total_price: 6 },
+  { code: 'PMA03', category: 'petit_materiel', subcategory: 'materiel', description: 'bac peinture', unit: 'unit', labor_price: 0, material_price: 10, equipment_price: 0, total_price: 10 },
+  { code: 'PMA04', category: 'petit_materiel', subcategory: 'materiel', description: 'taloche', unit: 'unit', labor_price: 0, material_price: 12, equipment_price: 0, total_price: 12 },
+  { code: 'PMA05', category: 'petit_materiel', subcategory: 'materiel', description: 'truelle', unit: 'unit', labor_price: 0, material_price: 15, equipment_price: 0, total_price: 15 },
+  { code: 'PMA06', category: 'petit_materiel', subcategory: 'materiel', description: 'niveau maçon', unit: 'unit', labor_price: 0, material_price: 25, equipment_price: 0, total_price: 25 },
+  { code: 'PMA07', category: 'petit_materiel', subcategory: 'materiel', description: 'règle maçon', unit: 'unit', labor_price: 0, material_price: 35, equipment_price: 0, total_price: 35 },
+  { code: 'PMA08', category: 'petit_materiel', subcategory: 'materiel', description: 'seau maçon', unit: 'unit', labor_price: 0, material_price: 7, equipment_price: 0, total_price: 7 },
+  { code: 'PMA09', category: 'petit_materiel', subcategory: 'materiel', description: 'mélangeur mortier', unit: 'unit', labor_price: 0, material_price: 60, equipment_price: 0, total_price: 60 },
+
+  // ═══════════════════════════════════════════════
+  // MATÉRIAUX (nouveau)
+  // ═══════════════════════════════════════════════
+  { code: 'MAT01', category: 'materiaux', subcategory: 'materiau', description: 'parpaing', unit: 'unit', labor_price: 0, material_price: 2.1, equipment_price: 0, total_price: 2.1 },
+  { code: 'MAT02', category: 'materiaux', subcategory: 'materiau', description: 'brique', unit: 'unit', labor_price: 0, material_price: 1.8, equipment_price: 0, total_price: 1.8 },
+  { code: 'MAT03', category: 'materiaux', subcategory: 'materiau', description: 'ciment sac 25kg', unit: 'unit', labor_price: 0, material_price: 7, equipment_price: 0, total_price: 7 },
+  { code: 'MAT04', category: 'materiaux', subcategory: 'materiau', description: 'sable', unit: 'm3', labor_price: 0, material_price: 45, equipment_price: 0, total_price: 45 },
+  { code: 'MAT05', category: 'materiaux', subcategory: 'materiau', description: 'gravier', unit: 'm3', labor_price: 0, material_price: 55, equipment_price: 0, total_price: 55 },
+  { code: 'MAT06', category: 'materiaux', subcategory: 'materiau', description: 'peinture seau 15L', unit: 'unit', labor_price: 0, material_price: 90, equipment_price: 0, total_price: 90 },
+  { code: 'MAT07', category: 'materiaux', subcategory: 'materiau', description: 'résine piscine kit', unit: 'unit', labor_price: 0, material_price: 180, equipment_price: 0, total_price: 180 },
+  { code: 'MAT08', category: 'materiaux', subcategory: 'materiau', description: 'colle carrelage sac', unit: 'unit', labor_price: 0, material_price: 18, equipment_price: 0, total_price: 18 },
+  { code: 'MAT09', category: 'materiaux', subcategory: 'materiau', description: 'joint carrelage sac', unit: 'unit', labor_price: 0, material_price: 12, equipment_price: 0, total_price: 12 },
+  { code: 'MAT10', category: 'materiaux', subcategory: 'materiau', description: 'laine isolation', unit: 'm2', labor_price: 0, material_price: 6, equipment_price: 0, total_price: 6 },
 ];
 
 // Build legacy pricing from catalog for backward compat

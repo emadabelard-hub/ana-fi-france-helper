@@ -13,12 +13,15 @@ const CATEGORY_META: Record<string, { icon: string; labelFr: string; labelAr: st
   maconnerie: { icon: '🏗️', labelFr: 'Maçonnerie', labelAr: 'ماسونري' },
   peinture: { icon: '🎨', labelFr: 'Peinture', labelAr: 'بنتيرة' },
   carrelage: { icon: '🔲', labelFr: 'Carrelage / Sol', labelAr: 'كارلاج' },
+  sol: { icon: '🪵', labelFr: 'Sol / Parquet', labelAr: 'أرضيات' },
   plomberie: { icon: '🔧', labelFr: 'Plomberie', labelAr: 'سباكة' },
   electricite: { icon: '⚡', labelFr: 'Électricité', labelAr: 'كهرباء' },
   menuiserie: { icon: '🚪', labelFr: 'Menuiserie', labelAr: 'نجارة' },
   toiture: { icon: '🏠', labelFr: 'Toiture', labelAr: 'سقف' },
   piscine: { icon: '🏊', labelFr: 'Piscine', labelAr: 'مسبح' },
   location: { icon: '🏗️', labelFr: 'Location Matériel', labelAr: 'إيجار معدات' },
+  petit_materiel: { icon: '🔨', labelFr: 'Petit Matériel', labelAr: 'معدات صغيرة' },
+  materiaux: { icon: '🧱', labelFr: 'Matériaux', labelAr: 'مواد البناء' },
   frais_chantier: { icon: '🧹', labelFr: 'Frais Chantier', labelAr: 'مصاريف الشانتي' },
 };
 

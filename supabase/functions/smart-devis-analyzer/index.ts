@@ -727,9 +727,12 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
   1. TOUS les éléments détectés par l'analyse initiale (work_plan complet).
   2. Les nouveaux éléments demandés par l'utilisateur (s'ils figurent dans le work_plan mis à jour).
 ⛔ NE JAMAIS omettre une ligne présente dans le work_plan, même si tu l'as déjà générée avant.
+⛔ NE JAMAIS SUPPRIMER de lignes existantes quand l'utilisateur demande un ajout. Garde TOUTES les lignes précédentes et ajoute les nouvelles.
 ⛔ RÈGLE PEINTURE SYSTÉMATIQUE : Si le work_plan contient une étape de peinture/finition,
-  tu DOIS TOUJOURS inclure la ligne "Peinture de finition" (code PNT001, 22€/m²).
-  Ne JAMAIS omettre cette ligne pour un chantier comportant de la peinture.
+  tu DOIS TOUJOURS inclure la ligne de peinture finale. Pour piscine: PIS03 (résine piscine).
+  Pour murs: PNT02 (22€/m²). Ne JAMAIS omettre cette ligne.
+⛔ RÈGLE PRIX CATALOGUE: Les prix sont extraits UNIQUEMENT de la base de données 'إعدادات التعريفة'.
+  NE JAMAIS inventer de prix. Si un code existe dans le catalogue, son prix est ABSOLU.
 
 ═══════════════════════════════════════
   RÈGLE PRIX

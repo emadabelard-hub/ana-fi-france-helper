@@ -840,6 +840,7 @@ Réponds UNIQUEMENT en JSON:
           [/sous[- ]couche/i, "sous_couche"],
           [/primaire\s+(d'?accrochage\s+)?piscine/i, "primaire_piscine"],
           [/primaire\s+(d'?)?accrochage/i, "primaire_accrochage"],
+          [/peinture\s+(de\s+)?finition/i, "peinture_finition"],
           [/preparation\s+(des?\s+)?murs?/i, "preparation_murs"],
           [/preparation\s+(du?\s+)?plafond/i, "preparation_plafond"],
           [/preparation\s+(du?\s+)?support/i, "preparation_support"],

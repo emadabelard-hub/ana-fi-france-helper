@@ -1314,13 +1314,13 @@ const SmartDevisPage = () => {
       if (item.id !== id) return item;
 
       const newWithMaterial = !item.withMaterial;
-      const detectedCode = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr) || undefined;
-      const catalogItem = detectedCode ? catalogByCode[detectedCode] : undefined;
-      const newPrice = getCatalogUnitPriceByCode(detectedCode, newWithMaterial);
+      const explicitCode = item.catalogCode;
+      const catalogItem = explicitCode ? catalogByCode[explicitCode] : undefined;
+      const newPrice = getCatalogUnitPriceByCode(explicitCode, newWithMaterial);
       const normalizedUnit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : item.unit;
       const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
 
-      const sourceFr = catalogItem?.description || item.designation_fr;
+      const sourceFr = item.designation_fr;
       const { fr, ar } = newWithMaterial
         ? restoreFourniture(sourceFr, item.designation_ar)
         : stripFourniture(sourceFr, item.designation_ar);
@@ -1332,7 +1332,7 @@ const SmartDevisPage = () => {
         unit: normalizedUnit,
         quantity,
         withMaterial: newWithMaterial,
-        catalogCode: detectedCode,
+        catalogCode: explicitCode,
         unitPrice: newPrice,
         total: quantity * newPrice,
       };

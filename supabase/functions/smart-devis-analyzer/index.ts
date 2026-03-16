@@ -773,6 +773,30 @@ Réponds UNIQUEMENT en JSON:
         parsed = { items: [], summary: {} };
       }
 
+      const rawItems = Array.isArray(parsed?.items) ? parsed.items : [];
+      const { items: lockedItems, removedItems, workPlanSteps } = enforceWorkPlanLock(rawItems, analysisData);
+      const existingVerification = parsed?.verification && typeof parsed.verification === "object" ? parsed.verification : {};
+      const existingCorrections = Array.isArray(existingVerification.corrections_applied)
+        ? existingVerification.corrections_applied
+        : [];
+
+      parsed = {
+        ...parsed,
+        items: lockedItems,
+        verification: {
+          ...existingVerification,
+          work_plan_lock: true,
+          work_plan_steps_count: workPlanSteps.length,
+          generated_items_before_lock: rawItems.length,
+          generated_items_after_lock: lockedItems.length,
+          forbidden_works_check: removedItems.length === 0,
+          incompatible_works_removed: removedItems.map((item) => item.designation_fr || item.designation_ar || item.code || "unknown"),
+          corrections_applied: removedItems.length > 0
+            ? [...existingCorrections, "Filtrage strict appliqué: seules les lignes correspondant au work_plan ont été conservées."]
+            : existingCorrections,
+        },
+      };
+
       return new Response(JSON.stringify(parsed), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

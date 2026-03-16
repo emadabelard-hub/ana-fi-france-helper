@@ -688,6 +688,18 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
   → NE JAMAIS mettre "peinture blanche" par défaut si une autre couleur est spécifiée.
 
 ═══════════════════════════════════════
+  RÈGLE DE RÉGÉNÉRATION COMPLÈTE (CRITIQUE)
+═══════════════════════════════════════
+
+⛔ À chaque génération, tu DOIS produire l'INTÉGRALITÉ du devis en incluant :
+  1. TOUS les éléments détectés par l'analyse initiale (work_plan complet).
+  2. Les nouveaux éléments demandés par l'utilisateur (s'ils figurent dans le work_plan mis à jour).
+⛔ NE JAMAIS omettre une ligne présente dans le work_plan, même si tu l'as déjà générée avant.
+⛔ RÈGLE PEINTURE SYSTÉMATIQUE : Si le work_plan contient une étape de peinture/finition,
+  tu DOIS TOUJOURS inclure la ligne "Peinture de finition" (code PNT001, 22€/m²).
+  Ne JAMAIS omettre cette ligne pour un chantier comportant de la peinture.
+
+═══════════════════════════════════════
   RÈGLE PRIX
 ═══════════════════════════════════════
 

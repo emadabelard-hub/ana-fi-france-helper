@@ -1114,8 +1114,16 @@ const SmartDevisPage = () => {
       const payload = {
         action: 'generate_items',
         analysisData: {
-          ...analysisData,
+          chantierType: analysisData?.chantierType,
+          renovationType: analysisData?.renovationType,
+          finishColor: analysisData?.finishColor,
+          workPlan_fr: analysisData?.workPlan_fr,
+          workPlan_ar: analysisData?.workPlan_ar,
+          estimatedArea: analysisData?.estimatedArea,
           surfaceEstimates: surfaceEstimates.length > 0 ? surfaceEstimates : analysisData?.surfaceEstimates,
+          materials_fr: analysisData?.materials_fr,
+          materials_ar: analysisData?.materials_ar,
+          diagnostic: analysisData?.diagnostic,
         },
         materialQuality,
         discountPercent,

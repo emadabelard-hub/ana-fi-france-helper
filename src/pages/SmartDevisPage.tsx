@@ -1146,18 +1146,15 @@ const SmartDevisPage = () => {
         return true;
       });
 
-      const detectedCodes: string[] = Array.from(
+      const explicitCodes: string[] = Array.from(
         new Set(
           deduplicatedItems
-            .map((item: any): string => {
-              const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
-              return explicitCode || detectCatalogCodeFromDesignation(item.designation_fr || '') || '';
-            })
+            .map((item: any): string => (typeof item.code === 'string' ? item.code.trim().toUpperCase() : ''))
             .filter((code: string) => code.length > 0)
         )
       );
 
-      const catalogRows = await fetchCatalogByCodes(detectedCodes);
+      const catalogRows = await fetchCatalogByCodes(explicitCodes);
       const sourceItems = deduplicatedItems;
 
       const items: LineItem[] = sourceItems.map((item: any) => {
@@ -1167,14 +1164,13 @@ const SmartDevisPage = () => {
         const withMaterial = isPartiel ? false : materialScope !== 'main_oeuvre_seule';
 
         const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
-        const detectedCode = explicitCode || detectCatalogCodeFromDesignation(item.designation_fr || '') || '';
-        const catalogItem = detectedCode ? (catalogRows[detectedCode] || catalogByCode[detectedCode]) : undefined;
+        const catalogItem = explicitCode ? (catalogRows[explicitCode] || catalogByCode[explicitCode]) : undefined;
 
         const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : aiUnit;
         const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
         const fixedUnitPrice = catalogItem ? getCatalogPriceFromItem(catalogItem, withMaterial) : 0;
 
-        const baseFr = catalogItem?.description || item.designation_fr || '';
+        const baseFr = item.designation_fr || '';
         const baseAr = item.designation_ar || '';
         const { fr: finalFr, ar: finalAr } = !withMaterial
           ? stripFourniture(baseFr, baseAr)
@@ -1188,21 +1184,20 @@ const SmartDevisPage = () => {
           unit,
           unitPrice: fixedUnitPrice,
           total: effectiveQuantity * fixedUnitPrice,
-          category: catalogItem?.category || item.category,
-          catalogCode: catalogItem?.code || (detectedCode || undefined),
+          category: item.category || catalogItem?.category,
+          catalogCode: explicitCode || undefined,
           withMaterial,
         };
       });
 
-      // ===== STRICT LOCK: one code = one line. Drop uncoded lines when coded lines exist =====
-      const hasCodedItems = items.some(item => !!item.catalogCode);
-      const codeScopedItems = hasCodedItems ? items.filter(item => !!item.catalogCode) : items;
+      const seenItemKeys = new Set<string>();
+      const finalItems = items.filter(item => {
+        const labelKey = normalizeText([item.designation_fr, item.designation_ar].filter(Boolean).join(' ')).replace(/\s+/g, ' ').trim();
+        const key = item.catalogCode ? `code:${item.catalogCode}` : `label:${labelKey}`;
 
-      const seenCatalogCodes = new Set<string>();
-      const finalItems = codeScopedItems.filter(item => {
-        if (!item.catalogCode) return true;
-        if (seenCatalogCodes.has(item.catalogCode)) return false;
-        seenCatalogCodes.add(item.catalogCode);
+        if (!labelKey && !item.catalogCode) return false;
+        if (seenItemKeys.has(key)) return false;
+        seenItemKeys.add(key);
         return true;
       });
 

@@ -1111,6 +1111,12 @@ const SmartDevisPage = () => {
 
     setIsGenerating(true);
     try {
+      // Include conversation history so generate_items knows about user-requested additions
+      const chatContext = chatMessages
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .slice(-10) // last 10 messages for context
+        .map(m => ({ role: m.role, content: m.content }));
+
       const payload = {
         action: 'generate_items',
         analysisData: {
@@ -1125,6 +1131,7 @@ const SmartDevisPage = () => {
           materials_ar: analysisData?.materials_ar,
           diagnostic: analysisData?.diagnostic,
         },
+        conversationHistory: chatContext.length > 0 ? chatContext : undefined,
         materialQuality,
         discountPercent,
         profitMarginPercent,

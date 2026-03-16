@@ -145,18 +145,30 @@ function scoreItemAgainstWorkPlanStep(item: GeneratedQuoteItem, step: string): n
 function enforceWorkPlanLock(items: GeneratedQuoteItem[], analysisData: any) {
   const workPlanSteps = extractWorkPlanSteps(analysisData);
 
-  if (!Array.isArray(items) || items.length === 0 || workPlanSteps.length === 0) {
-    return {
-      items: Array.isArray(items) ? items : [],
-      removedItems: [],
-      workPlanSteps,
-    };
+  if (!Array.isArray(items) || items.length === 0) {
+    // Even with no AI items, generate placeholders for every work_plan step
+    const placeholders = workPlanSteps.map((step) => ({
+      designation_fr: step,
+      designation_ar: "",
+      quantity: 1,
+      unit: "forfait",
+      unitPrice: 0,
+      code: "",
+      category: "labor",
+    }));
+    return { items: placeholders, removedItems: [], workPlanSteps };
+  }
+
+  if (workPlanSteps.length === 0) {
+    return { items, removedItems: [], workPlanSteps };
   }
 
   const remaining = items.map((item) => ({ item }));
   const keptItems: GeneratedQuoteItem[] = [];
+  const matchedStepIndices = new Set<number>();
 
-  for (const step of workPlanSteps) {
+  for (let si = 0; si < workPlanSteps.length; si++) {
+    const step = workPlanSteps[si];
     let bestIndex = -1;
     let bestScore = 0;
 
@@ -171,6 +183,24 @@ function enforceWorkPlanLock(items: GeneratedQuoteItem[], analysisData: any) {
     if (bestIndex >= 0) {
       const [match] = remaining.splice(bestIndex, 1);
       keptItems.push(match.item);
+      matchedStepIndices.add(si);
+    }
+  }
+
+  // SAFETY NET: For every work_plan step that has NO matching item,
+  // generate a placeholder so no step is ever lost from the devis
+  for (let si = 0; si < workPlanSteps.length; si++) {
+    if (!matchedStepIndices.has(si)) {
+      const step = workPlanSteps[si];
+      keptItems.push({
+        designation_fr: step,
+        designation_ar: "",
+        quantity: 1,
+        unit: "forfait",
+        unitPrice: 0,
+        code: "",
+        category: "labor",
+      });
     }
   }
 
@@ -601,7 +631,7 @@ Quand tu as toutes les infos, dis "✅ جاهز لتوليد الدوفي" et r�
 
     // Action: generate_items - Final generation with preferences applied
     if (action === "generate_items") {
-      const { analysisData, materialQuality, discountPercent, profitMarginPercent, materialScope } = body;
+      const { analysisData, materialQuality, discountPercent, profitMarginPercent, materialScope, conversationHistory } = body;
 
       const scopeRule = materialScope === 'main_oeuvre_seule'
         ? `\n⛔ RÈGLE SCOPE MATÉRIAUX (CRITIQUE): Le client fournit ses propres matériaux. Chiffre UNIQUEMENT la main d'œuvre (pose, préparation, nettoyage). Les prix ne doivent PAS inclure le coût des matériaux. Utilise "Pose de..." au lieu de "Fourniture et pose de...".`
@@ -752,6 +782,25 @@ Réponds UNIQUEMENT en JSON:
   "summary": {}
 }`;
 
+      // Build messages with conversation history for user additions
+      const aiMessages: any[] = [
+        { role: "system", content: systemPrompt },
+      ];
+
+      // Include conversation history so the AI knows about user-requested additions
+      if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+        for (const msg of conversationHistory) {
+          if (msg.role === 'user' || msg.role === 'assistant') {
+            aiMessages.push({ role: msg.role, content: msg.content });
+          }
+        }
+      }
+
+      aiMessages.push({
+        role: "user",
+        content: `Données d'analyse:\n${JSON.stringify(analysisData)}\n\nGénère le devis final avec TOUTES les étapes du work_plan. Chaque étape du plan de travaux DOIT avoir une ligne correspondante dans le devis. Ne saute aucune étape.`
+      });
+
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -760,10 +809,7 @@ Réponds UNIQUEMENT en JSON:
         },
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: `Données d'analyse:\n${JSON.stringify(analysisData)}\n\nGénère le devis final.` }
-          ],
+          messages: aiMessages,
         }),
       });
 

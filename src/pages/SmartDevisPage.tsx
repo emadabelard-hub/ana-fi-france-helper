@@ -1166,9 +1166,18 @@ const SmartDevisPage = () => {
         const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
         const catalogItem = explicitCode ? (catalogRows[explicitCode] || catalogByCode[explicitCode]) : undefined;
 
-        const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : aiUnit;
+        const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : (item.btpPriceSource === 'btp_price_reference' ? aiUnit : aiUnit);
         const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
-        const fixedUnitPrice = catalogItem ? getCatalogPriceFromItem(catalogItem, withMaterial) : 0;
+
+        // Price priority: 1) artisan catalog  2) BTP reference price  3) "prix à vérifier" (-1)
+        let fixedUnitPrice: number;
+        if (catalogItem) {
+          fixedUnitPrice = getCatalogPriceFromItem(catalogItem, withMaterial);
+        } else if (item.btpPriceSource === 'btp_price_reference' && item.unitPrice > 0) {
+          fixedUnitPrice = Number(item.unitPrice);
+        } else {
+          fixedUnitPrice = -1; // sentinel for "prix à vérifier"
+        }
 
         const baseFr = item.designation_fr || '';
         const baseAr = item.designation_ar || '';
@@ -1183,7 +1192,7 @@ const SmartDevisPage = () => {
           quantity: effectiveQuantity,
           unit,
           unitPrice: fixedUnitPrice,
-          total: effectiveQuantity * fixedUnitPrice,
+          total: fixedUnitPrice > 0 ? effectiveQuantity * fixedUnitPrice : 0,
           category: item.category || catalogItem?.category,
           catalogCode: explicitCode || undefined,
           withMaterial,
@@ -1215,7 +1224,8 @@ const SmartDevisPage = () => {
       if (item.id !== id) return item;
       const updated = { ...item, [field]: value };
       if (field === 'quantity' || field === 'unitPrice') {
-        updated.total = updated.quantity * updated.unitPrice;
+        const price = updated.unitPrice < 0 ? 0 : updated.unitPrice;
+        updated.total = updated.quantity * price;
       }
       return updated;
     }));
@@ -1353,7 +1363,8 @@ const SmartDevisPage = () => {
     }]);
   };
 
-  const grandTotal = lineItems.reduce((sum, i) => sum + i.total, 0);
+  const grandTotal = lineItems.reduce((sum, i) => sum + (i.total > 0 ? i.total : 0), 0);
+  const hasUnverifiedPrices = lineItems.some(i => i.unitPrice < 0);
 
   const handleSendToInvoice = () => {
     try {
@@ -2221,12 +2232,22 @@ const SmartDevisPage = () => {
                     </div>
                     <div>
                       <label className="text-[9px] text-muted-foreground">{isRTL ? 'سعر' : 'P.U.'}</label>
-                      <Input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7" />
+                      {item.unitPrice < 0 ? (
+                        <div className="h-7 flex items-center">
+                          <Input type="number" min={0} step={0.01} value="" placeholder={isRTL ? 'سعر؟' : 'prix?'} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7 border-destructive placeholder:text-destructive/60" />
+                        </div>
+                      ) : (
+                        <Input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7" />
+                      )}
                     </div>
                     <div>
                       <label className="text-[9px] text-muted-foreground">Total</label>
                       <div className="h-7 flex items-center text-xs font-bold text-[#c5a028]">
-                        {formatCurrency(item.total)}
+                        {item.unitPrice < 0 ? (
+                          <span className="text-destructive text-[10px]">{isRTL ? 'سعر للتحقق' : 'prix à vérifier'}</span>
+                        ) : (
+                          formatCurrency(item.total)
+                        )}
                       </div>
                     </div>
                   </div>

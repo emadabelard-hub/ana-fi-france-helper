@@ -134,6 +134,33 @@ export type Database = {
         }
         Relationships: []
       }
+      btp_price_reference: {
+        Row: {
+          categorie: string
+          created_at: string
+          id: string
+          prix_moyen: number
+          travail: string
+          unite: string
+        }
+        Insert: {
+          categorie?: string
+          created_at?: string
+          id?: string
+          prix_moyen?: number
+          travail: string
+          unite?: string
+        }
+        Update: {
+          categorie?: string
+          created_at?: string
+          id?: string
+          prix_moyen?: number
+          travail?: string
+          unite?: string
+        }
+        Relationships: []
+      }
       chantiers: {
         Row: {
           budget: number | null

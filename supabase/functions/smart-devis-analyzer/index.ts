@@ -780,15 +780,173 @@ Réponds UNIQUEMENT en JSON:
         ? existingVerification.corrections_applied
         : [];
 
+      // ═══════════════════════════════════════
+      //   BTP PRICE REFERENCE LOOKUP
+      // ═══════════════════════════════════════
+      // Query the btp_price_reference table to fill in market prices
+      let btpPrices: Record<string, { prix_moyen: number; unite: string }> = {};
+      try {
+        const { data: priceRows, error: priceError } = await supabaseClient
+          .from("btp_price_reference")
+          .select("travail, unite, prix_moyen");
+        
+        if (!priceError && priceRows) {
+          for (const row of priceRows) {
+            btpPrices[row.travail.toLowerCase()] = {
+              prix_moyen: Number(row.prix_moyen),
+              unite: row.unite,
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load btp_price_reference:", e);
+      }
+
+      // Helper: normalize designation to match btp_price_reference keys
+      function matchBtpPrice(designationFr: string): { prix_moyen: number; unite: string } | null {
+        const normalized = (designationFr || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[''`]/g, "'")
+          .trim();
+
+        // Direct key match attempts: build candidate keys from designation
+        const candidates: string[] = [];
+
+        // Try exact normalized match
+        const underscored = normalized.replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+        candidates.push(underscored);
+
+        // Common transformations
+        const mappings: [RegExp, string][] = [
+          [/peinture\s+(des?\s+)?murs?/i, "peinture_murs"],
+          [/peinture\s+(du?\s+)?plafond/i, "peinture_plafond"],
+          [/peinture\s+(de\s+)?facade/i, "peinture_facade"],
+          [/peinture\s+piscine/i, "peinture_piscine"],
+          [/peinture\s+bois(erie)?/i, "peinture_boiserie"],
+          [/sous[- ]couche/i, "sous_couche"],
+          [/primaire\s+(d'?accrochage\s+)?piscine/i, "primaire_piscine"],
+          [/primaire\s+(d'?)?accrochage/i, "primaire_accrochage"],
+          [/preparation\s+(des?\s+)?murs?/i, "preparation_murs"],
+          [/preparation\s+(du?\s+)?plafond/i, "preparation_plafond"],
+          [/preparation\s+(du?\s+)?support/i, "preparation_support"],
+          [/enduit\s+rebouchage/i, "enduit_rebouchage"],
+          [/enduit\s+lissage/i, "enduit_lissage"],
+          [/enduit\s+(de\s+)?facade/i, "enduit_facade"],
+          [/poncage\s+(des?\s+)?murs?/i, "poncage_murs"],
+          [/poncage\s+parquet/i, "poncage_parquet"],
+          [/ragreage/i, "ragreage"],
+          [/decapage\s+piscine/i, "decapage_piscine"],
+          [/decapage/i, "decapage"],
+          [/nettoyage\s+(haute\s+pression|hp)/i, "nettoyage_haute_pression"],
+          [/nettoyage\s+facade/i, "nettoyage_facade"],
+          [/nettoyage\s+toiture/i, "nettoyage_toiture"],
+          [/nettoyage\s+(bassin|piscine)/i, "nettoyage_piscine"],
+          [/nettoyage\s+fin/i, "nettoyage_fin_chantier"],
+          [/carrelage\s+sol/i, "carrelage_sol"],
+          [/carrelage\s+mur/i, "carrelage_mural"],
+          [/carrelage\s+piscine/i, "carrelage_piscine"],
+          [/carrelage\s+terrasse/i, "carrelage_terrasse"],
+          [/faience/i, "faience"],
+          [/depose\s+carrelage/i, "depose_carrelage"],
+          [/dalle\s+beton/i, "dalle_beton"],
+          [/chape\s+beton/i, "chape_beton"],
+          [/mur\s+parpaing/i, "mur_parpaing"],
+          [/demolition\s+mur/i, "demolition_mur"],
+          [/ouverture\s+mur\s+porteur/i, "ouverture_mur_porteur"],
+          [/reparation\s+fissure\s+piscine/i, "reparation_fissure_piscine"],
+          [/reparation\s+fissure/i, "reparation_fissure"],
+          [/reparation\s+des?\s+fissures/i, "reparation_fissures"],
+          [/placo|ba13/i, "placo_ba13"],
+          [/faux[- ]plafond/i, "faux_plafond"],
+          [/bande\s+placo/i, "bande_placo"],
+          [/isolation\s+combles/i, "isolation_combles"],
+          [/isolation\s+murs/i, "isolation_murs"],
+          [/installation\s+wc|toilette/i, "installation_wc"],
+          [/lavabo|evier/i, "lavabo"],
+          [/douche|baignoire/i, "douche"],
+          [/chauffe[- ]eau/i, "chauffe_eau"],
+          [/reparation\s+fuite/i, "reparation_fuite"],
+          [/prise\s+electrique/i, "prise_electrique"],
+          [/interrupteur/i, "interrupteur"],
+          [/tableau\s+electrique/i, "tableau_electrique"],
+          [/point\s+lumineux|luminaire/i, "point_lumineux"],
+          [/spot\s+led/i, "spot_led"],
+          [/porte\s+interieure/i, "porte_interieure"],
+          [/fenetre\s+pvc/i, "fenetre_pvc"],
+          [/volet\s+roulant/i, "volet_roulant"],
+          [/pose\s+tuiles/i, "pose_tuiles"],
+          [/reparation\s+toiture/i, "reparation_toiture"],
+          [/demoussage/i, "demoussage"],
+          [/hydrofuge/i, "traitement_hydrofuge"],
+          [/gouttiere/i, "gouttiere"],
+          [/etancheite\s+terrasse/i, "etancheite_terrasse"],
+          [/etancheite\s+toiture/i, "etancheite_toiture"],
+          [/etancheite\s+(salle\s+de\s+bain|sdb)/i, "etancheite_sdb"],
+          [/parquet\s+flottant/i, "parquet_flottant"],
+          [/parquet\s+colle/i, "parquet_colle"],
+          [/plinthe/i, "plinthe"],
+          [/sol\s+vinyle|sol\s+pvc|lino/i, "sol_vinyle"],
+          [/echafaudage/i, "echafaudage"],
+          [/protection\s+chantier/i, "protection_chantier"],
+          [/evacuation\s+gravats/i, "evacuation_gravats"],
+          [/transport\s+materiaux/i, "transport_materiaux"],
+          [/frais\s+(de\s+)?chantier/i, "frais_chantier"],
+          [/vidange\s+piscine/i, "vidange_piscine"],
+          [/sablage\s+piscine/i, "sablage_piscine"],
+          [/resine\s+(polyester\s+)?piscine/i, "resine_piscine"],
+          [/gelcoat/i, "gelcoat_piscine"],
+          [/margelle/i, "margelle"],
+          [/radiateur/i, "radiateur"],
+          [/climatisation|clim|split/i, "climatisation"],
+          [/pompe\s+a?\s+chaleur/i, "pompe_chaleur"],
+          [/vmc\s+simple/i, "vmc_simple"],
+          [/vmc\s+double/i, "vmc_double"],
+          [/nettoyage/i, "nettoyage_fin_chantier"],
+        ];
+
+        for (const [pattern, key] of mappings) {
+          if (pattern.test(normalized) && btpPrices[key]) {
+            return btpPrices[key];
+          }
+        }
+
+        // Fallback: try underscored key
+        if (btpPrices[underscored]) return btpPrices[underscored];
+
+        return null;
+      }
+
+      // Apply BTP reference prices to items
+      const pricedItems = lockedItems.map((item) => {
+        const btpMatch = matchBtpPrice(item.designation_fr || "");
+        if (btpMatch) {
+          return {
+            ...item,
+            unitPrice: btpMatch.prix_moyen,
+            btpPriceSource: "btp_price_reference",
+          };
+        }
+        // No match → mark as "prix à vérifier"
+        return {
+          ...item,
+          unitPrice: -1, // sentinel: frontend will display "prix à vérifier"
+          btpPriceSource: "not_found",
+        };
+      });
+
       parsed = {
         ...parsed,
-        items: lockedItems,
+        items: pricedItems,
         verification: {
           ...existingVerification,
           work_plan_lock: true,
           work_plan_steps_count: workPlanSteps.length,
           generated_items_before_lock: rawItems.length,
-          generated_items_after_lock: lockedItems.length,
+          generated_items_after_lock: pricedItems.length,
+          btp_prices_matched: pricedItems.filter((i: any) => i.btpPriceSource === "btp_price_reference").length,
+          btp_prices_missing: pricedItems.filter((i: any) => i.btpPriceSource === "not_found").length,
           forbidden_works_check: removedItems.length === 0,
           incompatible_works_removed: removedItems.map((item) => item.designation_fr || item.designation_ar || item.code || "unknown"),
           corrections_applied: removedItems.length > 0

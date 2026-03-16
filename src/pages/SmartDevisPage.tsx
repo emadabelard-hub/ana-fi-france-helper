@@ -1135,13 +1135,8 @@ const SmartDevisPage = () => {
 
       const rawItems = data.items || data.suggestedItems || [];
 
-      // ===== STRICT LOCK: if explicit codes are present, we build strictly from codes =====
-      const analysisBlob = JSON.stringify(payload.analysisData || {});
-      const explicitCodesFromAnalysis = Array.from(
-        new Set((analysisBlob.match(/\b[A-Z]{2,4}\d{2,3}\b/g) || []).map((c) => c.toUpperCase()))
-      );
-
-      // ===== DEDUPLICATION: Remove duplicate lines by normalized designation =====
+      // ===== STRICT LOCK: build ONLY from generate_items output =====
+      // Never reconstruct quote lines from arbitrary codes found elsewhere in the analysis payload.
       const seenDesignations = new Set<string>();
       const deduplicatedItems = rawItems.filter((item: any) => {
         const normalizedKey = normalizeText(item.designation_fr || '').replace(/\s+/g, ' ').trim();
@@ -1162,12 +1157,8 @@ const SmartDevisPage = () => {
         )
       );
 
-      const codesToFetch = explicitCodesFromAnalysis.length > 0 ? explicitCodesFromAnalysis : detectedCodes;
-      const catalogRows = await fetchCatalogByCodes(codesToFetch);
-
-      const sourceItems = explicitCodesFromAnalysis.length > 0
-        ? explicitCodesFromAnalysis.map((code) => ({ code, quantity: 1, unit: 'u', designation_fr: code, designation_ar: '' }))
-        : deduplicatedItems;
+      const catalogRows = await fetchCatalogByCodes(detectedCodes);
+      const sourceItems = deduplicatedItems;
 
       const items: LineItem[] = sourceItems.map((item: any) => {
         const quantity = Number(item.quantity || 1);

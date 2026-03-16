@@ -243,6 +243,48 @@ export const DEFAULT_CATALOG: PriceCatalogItem[] = [
   { code: 'MAT08', category: 'materiaux', subcategory: 'materiau', description: 'colle carrelage sac', unit: 'unit', labor_price: 0, material_price: 18, equipment_price: 0, total_price: 18 },
   { code: 'MAT09', category: 'materiaux', subcategory: 'materiau', description: 'joint carrelage sac', unit: 'unit', labor_price: 0, material_price: 12, equipment_price: 0, total_price: 12 },
   { code: 'MAT10', category: 'materiaux', subcategory: 'materiau', description: 'laine isolation', unit: 'm2', labor_price: 0, material_price: 6, equipment_price: 0, total_price: 6 },
+
+  // ═══════════════════════════════════════════════
+  // LOGISTIQUE & PROTECTION
+  // ═══════════════════════════════════════════════
+  { code: 'LOG01', category: 'frais_chantier', subcategory: 'service', description: 'protection sols et mobilier (Bâche + Adhésif)', unit: 'm2', labor_price: 3, material_price: 3.5, equipment_price: 0, total_price: 6.5 },
+  { code: 'LOG02', category: 'frais_chantier', subcategory: 'service', description: 'installation échafaudage intérieur (>3m)', unit: 'unit', labor_price: 100, material_price: 0, equipment_price: 80, total_price: 180 },
+  { code: 'LOG03', category: 'frais_chantier', subcategory: 'service', description: 'nettoyage fin de chantier (Aspirateur + Lessivage)', unit: 'm2', labor_price: 8, material_price: 4, equipment_price: 0, total_price: 12 },
+  { code: 'LOG04', category: 'frais_chantier', subcategory: 'service', description: 'frais de déplacement et logistique', unit: 'forfait', labor_price: 55, material_price: 40, equipment_price: 0, total_price: 95 },
+
+  // ═══════════════════════════════════════════════
+  // PRÉPARATION & RÉPARATION
+  // ═══════════════════════════════════════════════
+  { code: 'PREP01', category: 'peinture', subcategory: 'travail', description: 'lessivage des supports (Murs/Plafonds)', unit: 'm2', labor_price: 4, material_price: 2, equipment_price: 0, total_price: 6 },
+  { code: 'PREP02', category: 'peinture', subcategory: 'travail', description: 'grattage peinture écaillée et ponçage', unit: 'm2', labor_price: 7, material_price: 2.5, equipment_price: 0, total_price: 9.5 },
+  { code: 'PREP03', category: 'peinture', subcategory: 'travail', description: 'dépose de papier peint (simple/double)', unit: 'm2', labor_price: 9, material_price: 3.5, equipment_price: 0, total_price: 12.5 },
+  { code: 'PREP04', category: 'peinture', subcategory: 'travail', description: 'traitement anti-humidité / moisissures', unit: 'm2', labor_price: 8, material_price: 10, equipment_price: 0, total_price: 18 },
+  { code: 'REP01', category: 'peinture', subcategory: 'travail', description: 'ouverture et pontage de fissure + Calicot', unit: 'ml', labor_price: 10, material_price: 5, equipment_price: 0, total_price: 15 },
+  { code: 'REP02', category: 'peinture', subcategory: 'travail', description: 'enduit de rebouchage (Trous/Fissures)', unit: 'forfait', labor_price: 50, material_price: 35, equipment_price: 0, total_price: 85 },
+  { code: 'REP03', category: 'peinture', subcategory: 'travail', description: 'enduit de lissage complet (2 passes)', unit: 'm2', labor_price: 12, material_price: 7.5, equipment_price: 0, total_price: 19.5 },
+
+  // ═══════════════════════════════════════════════
+  // PEINTURE DE FINITION
+  // ═══════════════════════════════════════════════
+  { code: 'PNT01', category: 'peinture', subcategory: 'travail', description: 'impression / sous-couche isolante', unit: 'm2', labor_price: 5.5, material_price: 4, equipment_price: 0, total_price: 9.5 },
+  { code: 'PNT02', category: 'peinture', subcategory: 'travail', description: 'peinture murs blanc mat (2 couches)', unit: 'm2', labor_price: 14, material_price: 8, equipment_price: 0, total_price: 22 },
+  { code: 'PNT03', category: 'peinture', subcategory: 'travail', description: 'peinture murs satinée / velours (Cuisine/Sdb)', unit: 'm2', labor_price: 16, material_price: 10, equipment_price: 0, total_price: 26 },
+  { code: 'PNT04', category: 'peinture', subcategory: 'travail', description: 'peinture plafonds blanc mat profond', unit: 'm2', labor_price: 18, material_price: 10, equipment_price: 0, total_price: 28 },
+  { code: 'PNT05', category: 'peinture', subcategory: 'travail', description: 'peinture boiseries (Plinthes/Moulures)', unit: 'ml', labor_price: 10, material_price: 6, equipment_price: 0, total_price: 16 },
+
+  // ═══════════════════════════════════════════════
+  // MENUISERIE & MÉTAUX (peinture spéciale)
+  // ═══════════════════════════════════════════════
+  { code: 'SPEC01', category: 'peinture', subcategory: 'travail', description: 'mise en peinture porte (2 faces + chambranle)', unit: 'unit', labor_price: 60, material_price: 35, equipment_price: 0, total_price: 95 },
+  { code: 'SPEC02', category: 'peinture', subcategory: 'travail', description: 'peinture radiateur fonte (Brossage + Peinture)', unit: 'unit', labor_price: 55, material_price: 30, equipment_price: 0, total_price: 85 },
+  { code: 'SPEC03', category: 'peinture', subcategory: 'travail', description: 'peinture tuyauterie apparente', unit: 'ml', labor_price: 5.5, material_price: 3, equipment_price: 0, total_price: 8.5 },
+
+  // ═══════════════════════════════════════════════
+  // TRAVAUX SPÉCIAUX PISCINE
+  // ═══════════════════════════════════════════════
+  { code: 'PSC01', category: 'piscine', subcategory: 'travail', description: 'nettoyage haute pression (Karcher HP)', unit: 'm2', labor_price: 8, material_price: 6, equipment_price: 0, total_price: 14 },
+  { code: 'PSC02', category: 'piscine', subcategory: 'travail', description: 'revêtement époxy spécial piscine', unit: 'm2', labor_price: 20, material_price: 25, equipment_price: 0, total_price: 45 },
+  { code: 'PSC03', category: 'piscine', subcategory: 'travail', description: 'traitement étanchéité support béton', unit: 'm2', labor_price: 18, material_price: 20, equipment_price: 0, total_price: 38 },
 ];
 
 // Build legacy pricing from catalog for backward compat

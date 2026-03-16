@@ -498,42 +498,91 @@ RÈGLE CRITIQUE - BILINGUISME OBLIGATOIRE:
 - designation_fr = titre professionnel en français du BTP (ex: "Fourniture et pose de parquet stratifié")
 - designation_ar = TRANSLITÉRATION phonétique en عامية مصرية (ex: "فورنيتير و بوز باركيه ستراتيفيي")
 
+══════════════════════════════════════════
+  RÈGLE MAPPING MÉTIER PAR TYPE DE CHANTIER (PRIORITÉ MAXIMALE)
+══════════════════════════════════════════
+
+⛔ L'analyse contient un champ "chantierType". Tu DOIS respecter le catalogue correspondant.
+⛔ Il est INTERDIT de mélanger les catalogues. Si chantierType=piscine, AUCUNE ligne mur/façade/intérieur.
+
+🔵 SI chantierType = "piscine":
+  CODES AUTORISÉS UNIQUEMENT:
+  PIS01=nettoyage haute pression bassin, PIS02=décapage ancien revêtement piscine,
+  PIS03=préparation support bassin (ponçage/ragréage), PIS04=réparation support piscine (rebouchage fissures),
+  PIS05=primaire d'accrochage piscine, PIS06=peinture piscine 2 couches (inclure la couleur demandée),
+  PIS07=étanchéité piscine, PIS08=traitement margelles, PIS09=réfection joints bassin,
+  CHA01=protection chantier, CHA02=nettoyage fin de chantier, CHA04=évacuation gravats.
+  
+  CODES INTERDITS pour piscine: PEI01, PEI02, PEI03, PEI04, CR001, MC001-MC004 (sauf si explicitement mur/maçonnerie dans l'analyse).
+  
+  OBLIGATION: Si l'analyse mentionne une couleur de finition (ex: "bleu piscine", "blanc", "gris"),
+  la ligne PIS06 DOIT inclure cette couleur dans designation_fr.
+  Exemple: "Peinture piscine bleue – 2 couches" et NON "Peinture murs blanche".
+
+🟤 SI chantierType = "facade":
+  CODES AUTORISÉS: FAC01=nettoyage façade, FAC02=décapage façade, FAC03=réparation façade (rebouchage),
+  FAC04=enduit façade, FAC05=peinture façade, FAC06=ravalement complet,
+  CHA01, CHA02, CHA03, CHA04.
+  CODES INTERDITS: PEI01-PEI04 (peinture intérieure), PIS01-PIS09.
+
+🟢 SI chantierType = "peinture" ou "renovation" ou "mur":
+  CODES AUTORISÉS: PEI01=préparation murs, PEI02=peinture murs, PEI03=préparation plafond, PEI04=peinture plafond,
+  CHA01, CHA02, CHA04.
+  CODES INTERDITS: PIS01-PIS09 (piscine), FAC01-FAC06 (façade).
+
+🔶 SI chantierType = "toiture":
+  CODES AUTORISÉS: TOI01=tuiles, TOI02=réparation toiture, TOI03=nettoyage toiture, TOI04=traitement hydrofuge,
+  CHA01, CHA02, CHA03, CHA04.
+
+🔷 SI chantierType = "carrelage":
+  CODES AUTORISÉS: CR001=pose carrelage sol, CR002=pose faïence murale, CR003=ragréage sol,
+  CHA01, CHA02, CHA04.
+
+Pour tout autre chantierType: utilise les codes les plus pertinents sans mélanger les catalogues.
+
+══════════════════════════════════════════
+
 ⛔ RÈGLE CODE CATALOGUE (STRICT LOCK):
 - UNE TÂCHE = UNE LIGNE = UN CODE.
-- Si tu reconnais le type de travail, ajoute le champ "code" exact:
-  MC001=dalle béton, MC002=pose parpaing, MC003=démolition mur, MC004=ouverture mur porteur,
-  CR001=pose carrelage sol,
-  PB001=installation WC,
-  PEI01=préparation murs, PEI02=peinture murs, PEI03=préparation plafond, PEI04=peinture plafond,
-  ELE01=prise, ELE02=interrupteur, ELE03=tableau électrique,
-  TOI01=tuiles, TOI02=réparation toiture,
-  CHA01=protection chantier, CHA02=nettoyage chantier, CHA03=transport, CHA04=évacuation gravats.
 - INTERDIT de scinder un travail en sous-lignes (préparation/raccord/test séparés) si un code unique existe.
 - Si aucun code ne correspond, ne mets pas de champ "code".
 
+⛔ RÈGLE COULEUR DE FINITION:
+- Si l'analyse mentionne une couleur (dans diagnostic, materials, workPlan, ou userMessage), 
+  TOUJOURS l'inclure dans la designation_fr de la ligne de peinture/revêtement final.
+- Exemple: "bleu piscine" → "Peinture piscine bleue – 2 couches"
+- Exemple: "blanc cassé" → "Peinture murs blanc cassé – 2 couches"
+- NE JAMAIS mettre "peinture blanche" par défaut si une autre couleur est spécifiée.
+
 ⛔ RÈGLE VÉRIFICATION DU DEVIS (OBLIGATOIRE):
 - Avant de finaliser, vérifie:
+  * Le chantierType de l'analyse et que TOUS les codes sont du bon catalogue
   * Cohérence technique (les travaux sont dans le bon ordre logique)
   * Cohérence des quantités (réalistes par rapport aux surfaces/volumes)
   * Pas de travaux oubliés (préparation, finition, nettoyage)
   * Pas de doublons
+  * La couleur de finition est bien reprise
 - Si une correction est nécessaire, l'appliquer AVANT de générer le JSON final.
 
 Réponds UNIQUEMENT en JSON:
 {
   "items": [
     {
-      "designation_fr": "Titre professionnel en français",
+      "designation_fr": "Titre professionnel en français (avec couleur si applicable)",
       "designation_ar": "ترجمة بالعامية المصرية",
       "quantity": 0,
       "unit": "m²|ml|u|h|forfait",
       "unitPrice": 0,
-      "code": "CODE (optionnel, si reconnu)"
+      "code": "CODE (obligatoire si reconnu dans le catalogue métier)"
     }
   ],
   "verification": {
+    "chantierType": "type détecté",
+    "catalogueUsed": "piscine|facade|peinture|toiture|carrelage|autre",
+    "finishColor": "couleur de finition si mentionnée",
     "technical_coherence": true,
     "quantity_coherence": true,
+    "forbidden_codes_check": true,
     "missing_works": [],
     "corrections_applied": []
   },

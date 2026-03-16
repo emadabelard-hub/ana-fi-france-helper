@@ -844,9 +844,40 @@ Réponds UNIQUEMENT en JSON:
         : [];
 
       // ═══════════════════════════════════════
-      //   BTP PRICE REFERENCE LOOKUP
+      //   ARTISAN PRICE CATALOG LOOKUP (PRIMARY)
       // ═══════════════════════════════════════
-      // Query the btp_price_reference table to fill in market prices
+      // First try the user's personal catalog (إعدادات التعريفة)
+      let artisanPrices: Record<string, { total_price: number; labor_price: number; unit: string }> = {};
+      try {
+        const authHeader2 = req.headers.get("Authorization");
+        if (authHeader2?.startsWith("Bearer ")) {
+          const token2 = authHeader2.replace("Bearer ", "");
+          const { data: userData } = await supabaseClient.auth.getUser(token2);
+          const userId = userData?.user?.id;
+          if (userId) {
+            const { data: catalogRows, error: catalogError } = await supabaseClient
+              .from("artisan_price_catalog")
+              .select("code, total_price, labor_price, unit")
+              .eq("user_id", userId);
+            
+            if (!catalogError && catalogRows) {
+              for (const row of catalogRows) {
+                artisanPrices[row.code.toUpperCase()] = {
+                  total_price: Number(row.total_price),
+                  labor_price: Number(row.labor_price),
+                  unit: row.unit,
+                };
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load artisan_price_catalog:", e);
+      }
+
+      // ═══════════════════════════════════════
+      //   BTP PRICE REFERENCE LOOKUP (FALLBACK)
+      // ═══════════════════════════════════════
       let btpPrices: Record<string, { prix_moyen: number; unite: string }> = {};
       try {
         const { data: priceRows, error: priceError } = await supabaseClient
@@ -874,14 +905,8 @@ Réponds UNIQUEMENT en JSON:
           .replace(/[''`]/g, "'")
           .trim();
 
-        // Direct key match attempts: build candidate keys from designation
-        const candidates: string[] = [];
-
-        // Try exact normalized match
         const underscored = normalized.replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
-        candidates.push(underscored);
 
-        // Common transformations
         const mappings: [RegExp, string][] = [
           [/peinture\s+(des?\s+)?murs?/i, "peinture_murs"],
           [/peinture\s+(du?\s+)?plafond/i, "peinture_plafond"],
@@ -976,29 +1001,85 @@ Réponds UNIQUEMENT en JSON:
           }
         }
 
-        // Fallback: try underscored key
         if (btpPrices[underscored]) return btpPrices[underscored];
 
         return null;
       }
 
-      // Apply BTP reference prices to items
+      // ═══════════════════════════════════════
+      //   POOL SEQUENCE ORDER
+      // ═══════════════════════════════════════
+      const POOL_SEQUENCE_ORDER: Record<string, number> = {
+        'LOG01': 1, 'CHA01': 1, 'CHA04': 1,  // Protection first
+        'PIS05': 2, 'PREP02': 2,               // Scraping/Preparation
+        'PSC01': 3, 'PIS10': 3,                // Cleaning (nettoyage HP)
+        'PIS12': 4, 'PIS06': 4, 'PNT01': 4,   // Primer
+        'PIS03': 5, 'PIS02': 5, 'PSC02': 5,   // Painting/Finishing
+        'PIS09': 5, 'PIS04': 5,               // Étanchéité/carrelage finishing
+        'CHA02': 6, 'LOG03': 6,               // Cleanup last
+      };
+
+      // Apply prices: artisan catalog (by code) → BTP reference (by designation) → not_found
       const pricedItems = lockedItems.map((item) => {
-        const btpMatch = matchBtpPrice(item.designation_fr || "");
-        if (btpMatch) {
+        const itemCode = (item.code || "").trim().toUpperCase();
+        
+        // 1. Try artisan personal catalog by code (PRIMARY SOURCE)
+        if (itemCode && artisanPrices[itemCode]) {
+          let price = materialScope === 'main_oeuvre_seule'
+            ? artisanPrices[itemCode].labor_price
+            : artisanPrices[itemCode].total_price;
+          
+          // Cap nettoyage HP at 15€/m²
+          if ((itemCode === 'PSC01' || itemCode === 'PIS10') && price > 15) {
+            price = 15;
+          }
+          
           return {
             ...item,
-            unitPrice: btpMatch.prix_moyen,
+            unitPrice: price,
+            unit: item.unit || artisanPrices[itemCode].unit,
+            btpPriceSource: "artisan_catalog",
+          };
+        }
+
+        // 2. Fallback: BTP reference by designation
+        const btpMatch = matchBtpPrice(item.designation_fr || "");
+        if (btpMatch) {
+          let price = btpMatch.prix_moyen;
+          
+          // Cap nettoyage HP at 15€/m²
+          const normDesig = (item.designation_fr || "").toLowerCase();
+          if (normDesig.includes("nettoyage") && normDesig.includes("pression") && price > 15) {
+            price = 15;
+          }
+          
+          return {
+            ...item,
+            unitPrice: price,
             btpPriceSource: "btp_price_reference",
           };
         }
-        // No match → mark as "prix à vérifier"
+
+        // 3. No match → mark as "prix à vérifier"
         return {
           ...item,
-          unitPrice: -1, // sentinel: frontend will display "prix à vérifier"
+          unitPrice: -1,
           btpPriceSource: "not_found",
         };
       });
+
+      // Sort pool items by sequence if chantierType is piscine
+      const chantierType = analysisData?.chantierType || "";
+      let sortedItems = pricedItems;
+      if (chantierType === "piscine") {
+        sortedItems = [...pricedItems].sort((a, b) => {
+          const codeA = (a.code || "").trim().toUpperCase();
+          const codeB = (b.code || "").trim().toUpperCase();
+          const orderA = POOL_SEQUENCE_ORDER[codeA] ?? 3; // default middle
+          const orderB = POOL_SEQUENCE_ORDER[codeB] ?? 3;
+          return orderA - orderB;
+        });
+      }
 
       parsed = {
         ...parsed,

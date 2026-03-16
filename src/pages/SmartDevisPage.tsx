@@ -912,18 +912,92 @@ const SmartDevisPage = () => {
         setSurfaceEstimates(data.surfaceEstimates);
       }
 
-      const analysisAr = data.analysis_ar || data.analysis || 'تم التحليل';
+      // ── Build structured 16-step BTP report from JSON fields ──
+      const d = data.diagnostic || {};
+      const area = data.estimatedArea ? `📐 المساحة المقدرة: **${data.estimatedArea} م²**` : '';
+      const chantierType = data.chantierType || '';
+      const confidence = data.confidence || '';
+      const crew = data.estimatedCrew || {};
+
+      let content = `✅ **تقرير خبير الشانتي**\n\n`;
+
+      // 1. Identification
+      if (chantierType) content += `### 1️⃣ نوع الشانتي (Identification)\n${chantierType}\n\n`;
+
+      // 2. Observations
+      if (d.observations_ar) content += `### 2️⃣ الملاحظات (Observations)\n${d.observations_ar}\n\n`;
+
+      // 3. Zone Analysis (from analysis_ar which contains zone details)
+      const analysisAr = data.analysis_ar || data.analysis || '';
+      if (analysisAr) content += `### 3️⃣ التحليل بالتفصيل\n${analysisAr}\n\n`;
+
+      // 4. Diagnostic
+      if (d.observations_fr) content += `### 4️⃣ التشخيص التقني (Diagnostic)\n${d.observations_fr}\n\n`;
+
+      // 5. Causes
+      if (d.causes_ar) content += `### 5️⃣ الأسباب المحتملة\n${d.causes_ar}\n\n`;
+
+      // 6. Degradation Level
+      if (d.degradationLevel) {
+        const levelEmoji = d.degradationLevel === 'critique' ? '🔴' : d.degradationLevel === 'élevé' ? '🟠' : d.degradationLevel === 'moyen' ? '🟡' : '🟢';
+        content += `### 6️⃣ مستوى التدهور\n${levelEmoji} **${d.degradationLevel}**\n\n`;
+      }
+
+      // 7. Work Plan
+      if (data.workPlan_ar) content += `### 7️⃣ خطة الشغل (Plan de travaux)\n${data.workPlan_ar}\n\n`;
+
+      // 8. Quantities / Area
+      if (area) content += `### 8️⃣ تقدير الكميات\n${area}\n\n`;
+
+      // 9. Duration & Crew
+      if (data.estimatedDuration_ar || (crew.workers && crew.days)) {
+        content += `### 9️⃣ المدة والفريق\n`;
+        if (data.estimatedDuration_ar) content += `${data.estimatedDuration_ar}\n`;
+        if (crew.workers && crew.days) content += `👷 ${crew.workers} عمال — 📅 ${crew.days} أيام\n`;
+        content += `\n`;
+      }
+
+      // 10. Materials
+      if (data.materials_ar && Array.isArray(data.materials_ar) && data.materials_ar.length > 0) {
+        content += `### 🔟 المواد المطلوبة\n`;
+        data.materials_ar.forEach((m: string) => { content += `• ${m}\n`; });
+        content += `\n`;
+      }
+
+      // 11. Verification needed
+      if (d.verificationNeeded_ar) content += `### 1️⃣1️⃣ محتاج معاينة في الموقع\n⚠️ ${d.verificationNeeded_ar}\n\n`;
+
+      // 12. Missing info
+      if (data.missingInfo_ar) content += `### 1️⃣2️⃣ معلومات ناقصة\n📋 ${data.missingInfo_ar}\n\n`;
+
+      // 13. Client Summary
+      if (data.clientSummary_ar) content += `### 1️⃣3️⃣ ملخص للعميل\n💬 ${data.clientSummary_ar}\n\n`;
+
+      // 14. Confidence
+      if (confidence) {
+        const confEmoji = confidence === 'élevée' ? '🟢' : confidence === 'moyenne' ? '🟡' : '🔴';
+        content += `### 1️⃣4️⃣ مستوى الثقة\n${confEmoji} **${confidence}**\n\n`;
+      }
+
+      // ── French section ──
+      content += `---\n\n## 🇫🇷 Analyse professionnelle\n\n`;
       const analysisFr = data.analysis_fr || '';
+      if (analysisFr) content += `${analysisFr}\n\n`;
+      if (d.causes_fr) content += `**Causes probables:** ${d.causes_fr}\n\n`;
+      if (data.workPlan_fr) content += `**Plan de travaux:** ${data.workPlan_fr}\n\n`;
+      if (data.estimatedDuration_fr) content += `**Durée estimée:** ${data.estimatedDuration_fr}\n\n`;
+      if (data.materials_fr && Array.isArray(data.materials_fr) && data.materials_fr.length > 0) {
+        content += `**Matériaux:** ${data.materials_fr.join(', ')}\n\n`;
+      }
+      if (data.clientSummary_fr) content += `**Résumé client:** ${data.clientSummary_fr}\n\n`;
+      if (d.verificationNeeded_fr) content += `**⚠️ Vérification requise:** ${d.verificationNeeded_fr}\n\n`;
+      if (data.devisVerification_fr) content += `**Vérification du devis:** ${data.devisVerification_fr}\n\n`;
+
       const notesAr = data.notes_ar || data.notes || '';
       const notesFr = data.notes_fr || '';
-      const area = data.estimatedArea ? `📐 المساحة المقدرة: **${data.estimatedArea}**` : '';
-
-      let content = `✅ **تحليل الشانتي:**\n\n${analysisAr}\n\n`;
-
-      if (area) content += `${area}\n\n`;
       if (notesAr) content += `📝 ${notesAr}\n\n`;
-      content += `---\n\n🇫🇷 **Analyse professionnelle :**\n\n${analysisFr}\n\n`;
       if (notesFr) content += `📝 ${notesFr}\n\n`;
+
       content += `---\nدلوقتي عايز أسألك كام سؤال عشان نعمل الدوفي صح:\n\n1️⃣ **جودة المواد؟** (اقتصادي / عادي / فخم)\n2️⃣ **هل في خصم؟** (نسبة %)\n3️⃣ **نسبة الربح المطلوبة؟** (%)`;
 
       setChatMessages([{ role: 'assistant', content }]);

@@ -486,18 +486,15 @@ ${scopeRule}
   RÈGLE ABSOLUE: LE DEVIS SUIT LE DIAGNOSTIC
 ═══════════════════════════════════════
 
-Le devis DOIT être basé UNIQUEMENT sur:
-• le type de chantier identifié dans l'analyse
-• le sous-type de rénovation (peinture, liner, carrelage, ravalement, etc.)
-• le diagnostic technique
-• le plan de travaux proposé
-• les quantités estimées
-• la couleur de finition si mentionnée
+Le devis DOIT être basé UNIQUEMENT sur le PLAN DE TRAVAUX ("workPlan_fr" / "workPlan_ar") fourni dans l'analyse.
+Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic et les quantités UNIQUEMENT pour qualifier, nommer et quantifier les lignes déjà présentes dans le plan.
 
+⛔ INTERDICTION ABSOLUE: ne JAMAIS ajouter une étape absente du plan de travaux, même si elle est habituelle, logique ou fréquente dans ce type de chantier.
+⛔ Chaque ligne du devis doit correspondre à une étape explicitement mentionnée dans le work plan.
 ⛔ RÈGLE STATELESS: Génère UNIQUEMENT à partir des données d'analyse fournies dans CE message.
-⛔ RÈGLE ZERO-HALLUCINATION: Mapping 1:1 strict. NE JAMAIS ajouter de catégories non présentes dans l'analyse.
+⛔ RÈGLE ZERO-HALLUCINATION: Mapping 1:1 strict entre "workPlan_*" et "items".
 ⛔ RÈGLE ANTI-DOUBLE FACTURATION: "Fourniture et pose" = 1 SEULE ligne.
-⛔ RÈGLE CONSOLIDATION FRAIS: Déplacement + nettoyage + évacuation = 1 ligne "Frais de chantier / مصاريف الشانتي".
+⛔ RÈGLE CONSOLIDATION FRAIS: Déplacement + nettoyage + évacuation = 1 ligne "Frais de chantier / مصاريف الشانتي" SEULEMENT si ce bloc figure déjà dans le work plan.
 
 ═══════════════════════════════════════
   LOGIQUE MÉTIER PAR TYPE DE RÉNOVATION
@@ -505,9 +502,10 @@ Le devis DOIT être basé UNIQUEMENT sur:
 
 ⛔ Il est INTERDIT de mélanger les catalogues.
 ⛔ Le type de rénovation de l'analyse DÉTERMINE les seuls codes autorisés.
+⛔ Les codes ci-dessous sont AUTORISÉS uniquement si l'étape correspondante est explicitement présente dans le work plan.
 
 🔵 SI chantierType = "piscine" ET rénovation = peinture:
-  CODES OBLIGATOIRES (dans cet ordre):
+  CODES AUTORISÉS (si l'étape existe dans le plan):
   CHA01=protection chantier
   PIS01=nettoyage haute pression bassin
   PIS02=décapage ancien revêtement piscine

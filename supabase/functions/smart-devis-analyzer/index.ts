@@ -486,13 +486,13 @@ ${scopeRule}
   RÈGLE ABSOLUE: LE DEVIS SUIT LE DIAGNOSTIC
 ═══════════════════════════════════════
 
-Le devis DOIT être basé UNIQUEMENT sur le PLAN DE TRAVAUX (`workPlan_fr` / `workPlan_ar`) fourni dans l'analyse.
-Tu peux utiliser `chantierType`, `renovationType`, `finishColor`, le diagnostic et les quantités UNIQUEMENT pour qualifier, nommer et quantifier les lignes déjà présentes dans le plan.
+Le devis DOIT être basé UNIQUEMENT sur le PLAN DE TRAVAUX ("workPlan_fr" / "workPlan_ar") fourni dans l'analyse.
+Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic et les quantités UNIQUEMENT pour qualifier, nommer et quantifier les lignes déjà présentes dans le plan.
 
 ⛔ INTERDICTION ABSOLUE: ne JAMAIS ajouter une étape absente du plan de travaux, même si elle est habituelle, logique ou fréquente dans ce type de chantier.
 ⛔ Chaque ligne du devis doit correspondre à une étape explicitement mentionnée dans le work plan.
 ⛔ RÈGLE STATELESS: Génère UNIQUEMENT à partir des données d'analyse fournies dans CE message.
-⛔ RÈGLE ZERO-HALLUCINATION: Mapping 1:1 strict entre `workPlan_*` et `items`.
+⛔ RÈGLE ZERO-HALLUCINATION: Mapping 1:1 strict entre "workPlan_*" et "items".
 ⛔ RÈGLE ANTI-DOUBLE FACTURATION: "Fourniture et pose" = 1 SEULE ligne.
 ⛔ RÈGLE CONSOLIDATION FRAIS: Déplacement + nettoyage + évacuation = 1 ligne "Frais de chantier / مصاريف الشانتي" SEULEMENT si ce bloc figure déjà dans le work plan.
 

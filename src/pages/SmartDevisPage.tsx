@@ -1224,7 +1224,8 @@ const SmartDevisPage = () => {
       if (item.id !== id) return item;
       const updated = { ...item, [field]: value };
       if (field === 'quantity' || field === 'unitPrice') {
-        updated.total = updated.quantity * updated.unitPrice;
+        const price = updated.unitPrice < 0 ? 0 : updated.unitPrice;
+        updated.total = updated.quantity * price;
       }
       return updated;
     }));

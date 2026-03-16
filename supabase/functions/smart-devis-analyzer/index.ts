@@ -1083,15 +1083,18 @@ Réponds UNIQUEMENT en JSON:
 
       parsed = {
         ...parsed,
-        items: pricedItems,
+        items: sortedItems,
         verification: {
           ...existingVerification,
           work_plan_lock: true,
           work_plan_steps_count: workPlanSteps.length,
           generated_items_before_lock: rawItems.length,
-          generated_items_after_lock: pricedItems.length,
-          btp_prices_matched: pricedItems.filter((i: any) => i.btpPriceSource === "btp_price_reference").length,
-          btp_prices_missing: pricedItems.filter((i: any) => i.btpPriceSource === "not_found").length,
+          generated_items_after_lock: sortedItems.length,
+          artisan_prices_matched: sortedItems.filter((i: any) => i.btpPriceSource === "artisan_catalog").length,
+          btp_prices_matched: sortedItems.filter((i: any) => i.btpPriceSource === "btp_price_reference").length,
+          btp_prices_missing: sortedItems.filter((i: any) => i.btpPriceSource === "not_found").length,
+          price_source_priority: "artisan_catalog → btp_price_reference → not_found",
+          pool_sequence_applied: chantierType === "piscine",
           forbidden_works_check: removedItems.length === 0,
           incompatible_works_removed: removedItems.map((item) => item.designation_fr || item.designation_ar || item.code || "unknown"),
           corrections_applied: removedItems.length > 0

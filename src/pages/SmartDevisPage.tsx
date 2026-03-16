@@ -1166,9 +1166,18 @@ const SmartDevisPage = () => {
         const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
         const catalogItem = explicitCode ? (catalogRows[explicitCode] || catalogByCode[explicitCode]) : undefined;
 
-        const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : aiUnit;
+        const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : (item.btpPriceSource === 'btp_price_reference' ? aiUnit : aiUnit);
         const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
-        const fixedUnitPrice = catalogItem ? getCatalogPriceFromItem(catalogItem, withMaterial) : 0;
+
+        // Price priority: 1) artisan catalog  2) BTP reference price  3) "prix à vérifier" (-1)
+        let fixedUnitPrice: number;
+        if (catalogItem) {
+          fixedUnitPrice = getCatalogPriceFromItem(catalogItem, withMaterial);
+        } else if (item.btpPriceSource === 'btp_price_reference' && item.unitPrice > 0) {
+          fixedUnitPrice = Number(item.unitPrice);
+        } else {
+          fixedUnitPrice = -1; // sentinel for "prix à vérifier"
+        }
 
         const baseFr = item.designation_fr || '';
         const baseAr = item.designation_ar || '';
@@ -1183,7 +1192,7 @@ const SmartDevisPage = () => {
           quantity: effectiveQuantity,
           unit,
           unitPrice: fixedUnitPrice,
-          total: effectiveQuantity * fixedUnitPrice,
+          total: fixedUnitPrice > 0 ? effectiveQuantity * fixedUnitPrice : 0,
           category: item.category || catalogItem?.category,
           catalogCode: explicitCode || undefined,
           withMaterial,

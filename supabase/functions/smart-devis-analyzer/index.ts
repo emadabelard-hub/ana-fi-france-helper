@@ -664,15 +664,17 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
 ⛔ Les codes ci-dessous sont AUTORISÉS uniquement si l'étape correspondante est explicitement présente dans le work plan.
 
 🔵 SI chantierType = "piscine" ET rénovation = peinture:
-  CODES AUTORISÉS (si l'étape existe dans le plan):
-  CHA01=protection chantier
-  PIS01=nettoyage haute pression bassin
-  PIS02=décapage ancien revêtement piscine
-  PIS03=préparation support bassin (ponçage/ragréage)
-  PIS04=réparation support piscine (si nécessaire)
-  PIS05=primaire d'accrochage piscine
-  PIS06=peinture piscine 2 couches (INCLURE LA COULEUR DEMANDÉE)
-  CHA02=nettoyage fin de chantier
+  CODES AUTORISÉS (si l'étape existe dans le plan) — RESPECTER CET ORDRE EXACT:
+  1. LOG01/CHA01=protection chantier (TOUJOURS en premier)
+  2. PIS05=décapage / grattage ancien revêtement piscine
+  3. PSC01=nettoyage haute pression bassin (MAX 15€/m², JAMAIS plus)
+  4. PIS12=application primaire d'accrochage piscine
+  5. PIS03=résine / peinture piscine 2 couches (INCLURE LA COULEUR DEMANDÉE) — OBLIGATOIRE
+  6. CHA02/LOG03=nettoyage fin de chantier (TOUJOURS en dernier)
+  
+  ⛔ SÉQUENCE OBLIGATOIRE: Protection → Décapage/Préparation → Nettoyage HP → Primaire → Peinture → Nettoyage fin
+  ⛔ Si le work_plan mentionne une piscine ou un mur → la ligne de peinture finale est OBLIGATOIRE.
+  ⛔ NETTOYAGE HP: Le prix ne doit JAMAIS dépasser 15€/m².
   
   CODES INTERDITS: PEI01-PEI04, FAC01-FAC06, CR001-CR003, TOI01-TOI04
   ⛔ INTERDIT: "peinture murs blanche", "préparation murs", tout poste mur intérieur

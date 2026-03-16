@@ -2231,12 +2231,22 @@ const SmartDevisPage = () => {
                     </div>
                     <div>
                       <label className="text-[9px] text-muted-foreground">{isRTL ? 'سعر' : 'P.U.'}</label>
-                      <Input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7" />
+                      {item.unitPrice < 0 ? (
+                        <div className="h-7 flex items-center">
+                          <Input type="number" min={0} step={0.01} value="" placeholder={isRTL ? 'سعر؟' : 'prix?'} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7 border-destructive placeholder:text-destructive/60" />
+                        </div>
+                      ) : (
+                        <Input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7" />
+                      )}
                     </div>
                     <div>
                       <label className="text-[9px] text-muted-foreground">Total</label>
                       <div className="h-7 flex items-center text-xs font-bold text-[#c5a028]">
-                        {formatCurrency(item.total)}
+                        {item.unitPrice < 0 ? (
+                          <span className="text-destructive text-[10px]">{isRTL ? 'سعر للتحقق' : 'prix à vérifier'}</span>
+                        ) : (
+                          formatCurrency(item.total)
+                        )}
                       </div>
                     </div>
                   </div>

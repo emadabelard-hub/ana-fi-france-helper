@@ -1,12 +1,14 @@
+import React from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Shield, Lock } from 'lucide-react';
 
-const GDPRTrustBox = () => {
+const GDPRTrustBox = React.forwardRef<HTMLDivElement>((_, ref) => {
   const { isRTL } = useLanguage();
 
   return (
     <div
+      ref={ref}
       className={cn(
         "w-full rounded-2xl p-5 mt-5 shadow-lg shadow-[hsl(220,60%,20%)]/20",
         "bg-gradient-to-br from-[hsl(220,60%,25%)] to-[hsl(220,70%,18%)]",
@@ -45,6 +47,8 @@ const GDPRTrustBox = () => {
       </p>
     </div>
   );
-};
+});
+
+GDPRTrustBox.displayName = 'GDPRTrustBox';
 
 export default GDPRTrustBox;

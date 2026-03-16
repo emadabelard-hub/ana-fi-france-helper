@@ -1019,9 +1019,27 @@ Réponds UNIQUEMENT en JSON:
         'CHA02': 6, 'LOG03': 6,               // Cleanup last
       };
 
+      // ═══════════════════════════════════════
+      //   UNIVERSAL CLEANING PRICE CAP (15€/m² MAX)
+      // ═══════════════════════════════════════
+      const NETTOYAGE_MAX_PRICE = 15; // €/m² absolute maximum for any cleaning item
+      
+      function isCleaningItem(item: GeneratedQuoteItem): boolean {
+        const code = (item.code || "").trim().toUpperCase();
+        const desig = (item.designation_fr || "").toLowerCase();
+        const desigAr = (item.designation_ar || "");
+        // Match by code
+        if (['PSC01', 'PIS01', 'PIS10', 'CHA02', 'LOG03'].includes(code)) return true;
+        // Match by designation keywords
+        if (/nettoyage|cleaning|lavage/i.test(desig)) return true;
+        if (/نيتواياج/i.test(desigAr)) return true;
+        return false;
+      }
+
       // Apply prices: artisan catalog (by code) → BTP reference (by designation) → not_found
       const pricedItems = lockedItems.map((item) => {
         const itemCode = (item.code || "").trim().toUpperCase();
+        const isCleaning = isCleaningItem(item);
         
         // 1. Try artisan personal catalog by code (PRIMARY SOURCE)
         if (itemCode && artisanPrices[itemCode]) {
@@ -1029,9 +1047,9 @@ Réponds UNIQUEMENT en JSON:
             ? artisanPrices[itemCode].labor_price
             : artisanPrices[itemCode].total_price;
           
-          // Cap nettoyage HP at 15€/m²
-          if ((itemCode === 'PSC01' || itemCode === 'PIS10') && price > 15) {
-            price = 15;
+          // Cap ALL cleaning items at 15€/m²
+          if (isCleaning && price > NETTOYAGE_MAX_PRICE) {
+            price = NETTOYAGE_MAX_PRICE;
           }
           
           return {
@@ -1047,10 +1065,9 @@ Réponds UNIQUEMENT en JSON:
         if (btpMatch) {
           let price = btpMatch.prix_moyen;
           
-          // Cap nettoyage HP at 15€/m²
-          const normDesig = (item.designation_fr || "").toLowerCase();
-          if (normDesig.includes("nettoyage") && normDesig.includes("pression") && price > 15) {
-            price = 15;
+          // Cap ALL cleaning items at 15€/m²
+          if (isCleaning && price > NETTOYAGE_MAX_PRICE) {
+            price = NETTOYAGE_MAX_PRICE;
           }
           
           return {

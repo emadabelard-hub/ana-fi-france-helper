@@ -65,6 +65,135 @@ function translateArabicTerms(text: string): string {
   return result;
 }
 
+const WORK_PLAN_STOPWORDS = new Set([
+  "de", "du", "des", "la", "le", "les", "et", "ou", "en", "sur", "avec", "pour", "par", "dans", "au", "aux",
+  "the", "a", "an", "and", "or",
+  "مرحلة", "خطوة", "ثم", "مع", "في", "من", "على", "الى", "إلى", "بعد",
+]);
+
+type GeneratedQuoteItem = {
+  designation_fr?: string;
+  designation_ar?: string;
+  quantity?: number;
+  unit?: string;
+  unitPrice?: number;
+  code?: string;
+  category?: string;
+};
+
+function normalizePlannerText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenizePlannerText(value: string): string[] {
+  return normalizePlannerText(value)
+    .split(" ")
+    .map((token) => token.trim())
+    .filter((token) => token.length > 2 && !WORK_PLAN_STOPWORDS.has(token));
+}
+
+function extractWorkPlanSteps(analysisData: any): string[] {
+  const rawWorkPlan = [analysisData?.workPlan_fr, analysisData?.workPlan_ar]
+    .filter((value) => typeof value === "string" && value.trim().length > 0)
+    .join("\n");
+
+  if (!rawWorkPlan.trim()) return [];
+
+  const normalized = rawWorkPlan
+    .replace(/\r/g, "\n")
+    .replace(/[•●▪◦]/g, "\n")
+    .replace(/\s*(?:→|->|=>)\s*/g, "\n")
+    .replace(/(?:^|\n)\s*\d+\s*[\).:-]\s*/g, "\n")
+    .replace(/(?:^|\n)\s*[-–—]\s*/g, "\n");
+
+  const primarySteps = normalized
+    .split(/\n+/)
+    .map((step) => step.trim())
+    .filter(Boolean);
+
+  const fallbackSteps = primarySteps.length <= 1
+    ? normalized.split(/[;,]+/).map((step) => step.trim()).filter(Boolean)
+    : primarySteps;
+
+  return Array.from(new Set(fallbackSteps));
+}
+
+function getItemPlanningText(item: GeneratedQuoteItem): string {
+  return [item.designation_fr, item.designation_ar].filter(Boolean).join(" ");
+}
+
+function scoreItemAgainstWorkPlanStep(item: GeneratedQuoteItem, step: string): number {
+  const itemTokens = Array.from(new Set(tokenizePlannerText(getItemPlanningText(item))));
+  const stepTokens = Array.from(new Set(tokenizePlannerText(step)));
+
+  if (itemTokens.length === 0 || stepTokens.length === 0) return 0;
+
+  const overlap = itemTokens.filter((token) => stepTokens.includes(token));
+  const requiredOverlap = Math.min(itemTokens.length, stepTokens.length) <= 1 ? 1 : 2;
+
+  if (overlap.length < requiredOverlap) return 0;
+
+  return overlap.reduce((score, token) => score + (token.length >= 5 ? 2 : 1), 0);
+}
+
+function enforceWorkPlanLock(items: GeneratedQuoteItem[], analysisData: any) {
+  const workPlanSteps = extractWorkPlanSteps(analysisData);
+
+  if (!Array.isArray(items) || items.length === 0 || workPlanSteps.length === 0) {
+    return {
+      items: Array.isArray(items) ? items : [],
+      removedItems: [],
+      workPlanSteps,
+    };
+  }
+
+  const remaining = items.map((item) => ({ item }));
+  const keptItems: GeneratedQuoteItem[] = [];
+
+  for (const step of workPlanSteps) {
+    let bestIndex = -1;
+    let bestScore = 0;
+
+    remaining.forEach((entry, index) => {
+      const score = scoreItemAgainstWorkPlanStep(entry.item, step);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    });
+
+    if (bestIndex >= 0) {
+      const [match] = remaining.splice(bestIndex, 1);
+      keptItems.push(match.item);
+    }
+  }
+
+  const removedItems = remaining.map((entry) => entry.item);
+  const seenKeys = new Set<string>();
+
+  const deduplicatedItems = keptItems.filter((item) => {
+    const explicitCode = typeof item.code === "string" ? item.code.trim().toUpperCase() : "";
+    const labelKey = normalizePlannerText(getItemPlanningText(item));
+    const key = explicitCode || labelKey;
+
+    if (!key || seenKeys.has(key)) return false;
+    seenKeys.add(key);
+    return true;
+  });
+
+  return {
+    items: deduplicatedItems,
+    removedItems,
+    workPlanSteps,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -643,6 +772,30 @@ Réponds UNIQUEMENT en JSON:
       } catch {
         parsed = { items: [], summary: {} };
       }
+
+      const rawItems = Array.isArray(parsed?.items) ? parsed.items : [];
+      const { items: lockedItems, removedItems, workPlanSteps } = enforceWorkPlanLock(rawItems, analysisData);
+      const existingVerification = parsed?.verification && typeof parsed.verification === "object" ? parsed.verification : {};
+      const existingCorrections = Array.isArray(existingVerification.corrections_applied)
+        ? existingVerification.corrections_applied
+        : [];
+
+      parsed = {
+        ...parsed,
+        items: lockedItems,
+        verification: {
+          ...existingVerification,
+          work_plan_lock: true,
+          work_plan_steps_count: workPlanSteps.length,
+          generated_items_before_lock: rawItems.length,
+          generated_items_after_lock: lockedItems.length,
+          forbidden_works_check: removedItems.length === 0,
+          incompatible_works_removed: removedItems.map((item) => item.designation_fr || item.designation_ar || item.code || "unknown"),
+          corrections_applied: removedItems.length > 0
+            ? [...existingCorrections, "Filtrage strict appliqué: seules les lignes correspondant au work_plan ont été conservées."]
+            : existingCorrections,
+        },
+      };
 
       return new Response(JSON.stringify(parsed), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -449,9 +449,10 @@ Réponds toujours de manière concise et professionnelle, en respectant le forma
         ? `\n⛔ RÈGLE SCOPE MATÉRIAUX (CRITIQUE): Le client fournit ses propres matériaux. Chiffre UNIQUEMENT la main d'œuvre (pose, préparation, nettoyage). Les prix ne doivent PAS inclure le coût des matériaux. Utilise "Pose de..." au lieu de "Fourniture et pose de...".`
         : `\nLe devis inclut fourniture ET pose (matériaux + main d'œuvre).`;
 
-      const systemPrompt = `Tu es un calculateur de devis BTP expert.
-À partir de l'analyse fournie, génère les lignes de devis finales.
+      const systemPrompt = `Tu es un calculateur de devis BTP expert, métreur et économiste de la construction.
+À partir de l'analyse fournie, génère les lignes de devis finales selon les standards professionnels du BTP.
 ${scopeRule}
+
 ⛔ RÈGLE STATELESS (PRIORITÉ MAXIMALE):
 - Cette génération est INDÉPENDANTE. Ignore tout devis ou analyse précédent.
 - Génère UNIQUEMENT à partir des données d'analyse fournies dans CE message.
@@ -510,18 +511,32 @@ RÈGLE CRITIQUE - BILINGUISME OBLIGATOIRE:
 - INTERDIT de scinder un travail en sous-lignes (préparation/raccord/test séparés) si un code unique existe.
 - Si aucun code ne correspond, ne mets pas de champ "code".
 
+⛔ RÈGLE VÉRIFICATION DU DEVIS (OBLIGATOIRE):
+- Avant de finaliser, vérifie:
+  * Cohérence technique (les travaux sont dans le bon ordre logique)
+  * Cohérence des quantités (réalistes par rapport aux surfaces/volumes)
+  * Pas de travaux oubliés (préparation, finition, nettoyage)
+  * Pas de doublons
+- Si une correction est nécessaire, l'appliquer AVANT de générer le JSON final.
+
 Réponds UNIQUEMENT en JSON:
 {
   "items": [
     {
       "designation_fr": "Titre professionnel en français",
       "designation_ar": "ترجمة بالعامية المصرية",
-      "quantity": number,
+      "quantity": 0,
       "unit": "m²|ml|u|h|forfait",
       "unitPrice": 0,
-      "code": "PNT001 (optionnel, si reconnu)"
+      "code": "CODE (optionnel, si reconnu)"
     }
   ],
+  "verification": {
+    "technical_coherence": true,
+    "quantity_coherence": true,
+    "missing_works": [],
+    "corrections_applied": []
+  },
   "summary": {}
 }`;
 

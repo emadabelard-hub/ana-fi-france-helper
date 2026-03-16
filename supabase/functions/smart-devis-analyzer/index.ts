@@ -752,6 +752,25 @@ Réponds UNIQUEMENT en JSON:
   "summary": {}
 }`;
 
+      // Build messages with conversation history for user additions
+      const aiMessages: any[] = [
+        { role: "system", content: systemPrompt },
+      ];
+
+      // Include conversation history so the AI knows about user-requested additions
+      if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+        for (const msg of conversationHistory) {
+          if (msg.role === 'user' || msg.role === 'assistant') {
+            aiMessages.push({ role: msg.role, content: msg.content });
+          }
+        }
+      }
+
+      aiMessages.push({
+        role: "user",
+        content: `Données d'analyse:\n${JSON.stringify(analysisData)}\n\nGénère le devis final avec TOUTES les étapes du work_plan. Chaque étape du plan de travaux DOIT avoir une ligne correspondante dans le devis. Ne saute aucune étape.`
+      });
+
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -760,10 +779,7 @@ Réponds UNIQUEMENT en JSON:
         },
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: `Données d'analyse:\n${JSON.stringify(analysisData)}\n\nGénère le devis final.` }
-          ],
+          messages: aiMessages,
         }),
       });
 

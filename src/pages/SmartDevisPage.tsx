@@ -2583,7 +2583,7 @@ const SmartDevisPage = () => {
                     <div>
                       <label className="text-[9px] text-muted-foreground flex items-center gap-1">
                         Total
-                        {item.isAiEstimate && <Sparkles className="h-2.5 w-2.5 text-amber-500" />}
+                        <Sparkles className="h-2.5 w-2.5 text-amber-500" />
                       </label>
                       <div className="h-7 flex items-center text-xs font-bold text-primary">
                         {fetchingRowIds.has(item.id) ? (

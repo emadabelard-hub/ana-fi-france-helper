@@ -781,7 +781,7 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
 ═══════════════════════════════════════
 
 ⛔ NE JAMAIS inventer de prix. Mets unitPrice = 0 pour TOUTES les lignes.
-⛔ MAXIMUM 8 lignes dans le JSON final. Consolide les tâches similaires.
+✅ PAS DE LIMITE DE LIGNES. Chaque étape du work_plan = une ligne dédiée.
 Les prix seront remplis depuis la base de données interne.
 
 ⛔ RÈGLE CODE CATALOGUE:

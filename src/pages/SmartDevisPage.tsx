@@ -1249,17 +1249,12 @@ const SmartDevisPage = () => {
     }
   }, [lineItems, isRTL, toast, estimatePricesWithAI]);
 
-  // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
+  // Toggle withMaterial for a line item — no catalog, user adjusts price manually or via ✨
   const toggleItemMaterial = (id: string) => {
     setLineItems(prev => prev.map(item => {
       if (item.id !== id) return item;
 
       const newWithMaterial = !item.withMaterial;
-      const explicitCode = item.catalogCode;
-      const catalogItem = explicitCode ? catalogByCode[explicitCode] : undefined;
-      const newPrice = getCatalogUnitPriceByCode(explicitCode, newWithMaterial);
-      const normalizedUnit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : item.unit;
-      const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
 
       const sourceFr = item.designation_fr;
       const { fr, ar } = newWithMaterial
@@ -1270,12 +1265,10 @@ const SmartDevisPage = () => {
         ...item,
         designation_fr: fr,
         designation_ar: ar,
-        unit: normalizedUnit,
-        quantity,
         withMaterial: newWithMaterial,
-        catalogCode: explicitCode,
-        unitPrice: newPrice,
-        total: quantity * newPrice,
+        // Reset price to 0 so user re-fetches via ✨
+        unitPrice: 0,
+        total: 0,
       };
     }));
   };

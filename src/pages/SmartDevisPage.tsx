@@ -981,90 +981,10 @@ const SmartDevisPage = () => {
     }));
   };
 
-  const fetchCatalogByCodes = useCallback(async (codes: string[]): Promise<Record<string, PriceCatalogItem>> => {
-    if (codes.length === 0) return {};
-
-    const uniqueCodes = Array.from(new Set(codes.map(code => code.trim().toUpperCase()).filter(Boolean)));
-    if (uniqueCodes.length === 0) return {};
-
-    // Try DB first if user is logged in
-    if (user) {
-      const { data, error } = await (supabase as any)
-        .from('artisan_price_catalog')
-        .select('code, category, subcategory, description, unit, material_price, labor_price, equipment_price, total_price')
-        .eq('user_id', user.id)
-        .in('code', uniqueCodes);
-
-      if (!error && data && data.length > 0) {
-        const mapped: Record<string, PriceCatalogItem> = {};
-        data.forEach((row: any) => {
-          const parsed = parseCatalogItem(row);
-          mapped[parsed.code] = parsed;
-        });
-        setCatalogByCode(prev => ({ ...prev, ...mapped }));
-        return mapped;
-      }
-    }
-
-    // Fallback: resolve from DEFAULT_CATALOG
-    const fallback: Record<string, PriceCatalogItem> = {};
-    uniqueCodes.forEach(code => {
-      if (defaultCatalogByCode[code]) {
-        fallback[code] = defaultCatalogByCode[code];
-      }
-    });
-    if (Object.keys(fallback).length > 0) {
-      setCatalogByCode(prev => ({ ...prev, ...fallback }));
-    }
-    return fallback;
-  }, [user, defaultCatalogByCode]);
-
-  const fetchCatalogByCode = useCallback(async (code: string): Promise<PriceCatalogItem | null> => {
-    const normalizedCode = code.trim().toUpperCase();
-    if (!normalizedCode) return null;
-
-    const rows = await fetchCatalogByCodes([normalizedCode]);
-    return rows[normalizedCode] ?? null;
-  }, [fetchCatalogByCodes]);
-
+  // Code lookup removed — pricing via شبيك لبيك only
   const onCodeChange = useCallback(async (id: string, rawValue: string) => {
     updateItem(id, 'designation_fr', rawValue);
-
-    const normalizedCode = rawValue.trim().toUpperCase();
-    const isCode = /^[A-Z]{2,4}\d{2,3}$/.test(normalizedCode);
-    if (!isCode) return;
-
-    const catalogItem = await fetchCatalogByCode(normalizedCode);
-
-    setLineItems(prev => prev.map(item => {
-      if (item.id !== id) return item;
-
-      if (!catalogItem) {
-        return {
-          ...item,
-          catalogCode: undefined,
-          unitPrice: 0,
-          total: 0,
-        };
-      }
-
-      const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
-      const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
-      const exactUnitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
-      const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
-
-      return {
-        ...item,
-        designation_fr: catalogItem.description,
-        unit: normalizedUnit,
-        quantity,
-        unitPrice: exactUnitPrice,
-        category: catalogItem.category,
-        catalogCode: catalogItem.code,
-        total: quantity * exactUnitPrice,
-      };
-    }));
-  }, [fetchCatalogByCode, materialScope]);
+  }, []);
 
   const removeItem = (id: string) => setLineItems(prev => prev.filter(i => i.id !== id));
 

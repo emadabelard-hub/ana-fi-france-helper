@@ -182,6 +182,7 @@ const SmartDevisPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFetchingPrices, setIsFetchingPrices] = useState(false);
   const [fetchingRowIds, setFetchingRowIds] = useState<Set<string>>(new Set());
+  const [editingDesignation, setEditingDesignation] = useState<string | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [preferencesCollected, setPreferencesCollected] = useState(false);
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);

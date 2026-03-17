@@ -200,7 +200,7 @@ const SmartDevisPage = () => {
     setProfitMarginPercent(15);
     setPreferencesCollected(false);
     setSurfaceEstimates([]);
-    setMaterialScope(null);
+    // materialScope is now fixed to 'fourniture_et_pose'
   }, []);
 
   useEffect(() => {

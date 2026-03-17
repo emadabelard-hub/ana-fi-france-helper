@@ -2564,7 +2564,7 @@ const SmartDevisPage = () => {
                     <div>
                       <label className="text-[9px] text-muted-foreground flex items-center gap-1">
                         {isRTL ? 'سعر' : 'P.U.'}
-                        {item.isAiEstimate && <Sparkles className="h-2.5 w-2.5 text-amber-500" />}
+                        <Sparkles className="h-2.5 w-2.5 text-amber-500" />
                       </label>
                       {fetchingRowIds.has(item.id) ? (
                         <div className="h-7 flex items-center justify-center bg-muted rounded-md">
@@ -2583,7 +2583,7 @@ const SmartDevisPage = () => {
                     <div>
                       <label className="text-[9px] text-muted-foreground flex items-center gap-1">
                         Total
-                        {item.isAiEstimate && <Sparkles className="h-2.5 w-2.5 text-amber-500" />}
+                        <Sparkles className="h-2.5 w-2.5 text-amber-500" />
                       </label>
                       <div className="h-7 flex items-center text-xs font-bold text-primary">
                         {fetchingRowIds.has(item.id) ? (
@@ -2694,11 +2694,11 @@ const SmartDevisPage = () => {
 
           {/* Pricing Hierarchy Note */}
           <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/30", isRTL && "flex-row-reverse")}>
-            <Sparkles className="h-4 w-4 text-primary shrink-0" />
-            <p className={cn("text-xs text-primary", isRTL && "font-cairo text-right")}>
+            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+            <p className={cn("text-xs text-primary font-bold", isRTL && "font-cairo text-right")}>
               {isRTL
-                ? 'الأسعار: 📋 الكتالوغ أولاً ← ✨ شبيك لبيك (تقدير السوق الفرنسي) كبديل'
-                : 'Prix : 📋 Catalogue en priorité → ✨ Shubbaik Lubbaik (estimation marché) en complément'}
+                ? '✨ الأسعار مقدرة من شبيك لبيك (السوق الفرنسي)'
+                : '✨ Prix estimés par Shubbaik Lubbaik (marché français)'}
             </p>
           </div>
 

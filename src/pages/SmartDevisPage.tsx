@@ -758,21 +758,6 @@ const SmartDevisPage = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!materialScope) {
-      toast({
-        variant: 'destructive',
-        title: isRTL ? '⚠️ اختيار إجباري' : '⚠️ Choix obligatoire',
-        description: isRTL
-          ? '👆 لازم تختار طريقة التسعير أولاً (فورنيتير + مصنعية، مصنعية بس، أو جزئي) قبل ما تبدأ التحليل!'
-          : 'Veuillez d\'abord choisir le mode de tarification (Fourniture + Pose, Main d\'œuvre seule ou Partiel) avant de lancer l\'analyse !',
-      });
-      scopeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      scopeSelectorRef.current?.classList.add('ring-2', 'ring-[#d4af37]', 'ring-offset-2');
-      setTimeout(() => {
-        scopeSelectorRef.current?.classList.remove('ring-2', 'ring-[#d4af37]', 'ring-offset-2');
-      }, 3000);
-      return;
-    }
 
     if (uploadedFiles.length === 0 && !pastedText.trim()) return;
     setIsAnalyzing(true);

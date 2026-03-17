@@ -98,59 +98,7 @@ const MAX_FILES = 10;
 const SMART_DEVIS_WIZARD_STATE_KEY = 'smartDevisWizardState';
 const SMART_DEVIS_SKIP_RESTORE_ONCE_KEY = 'smartDevisSkipRestoreOnce';
 
-interface MaterialScopeSelectorProps {
-  compact?: boolean;
-  isRTL: boolean;
-  materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null;
-  setMaterialScope: (v: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel') => void;
-}
-
-const MaterialScopeSelector = forwardRef<HTMLDivElement, MaterialScopeSelectorProps>(
-  ({ compact = false, isRTL, materialScope, setMaterialScope }, ref) => (
-    <div ref={ref} className={cn("space-y-2 rounded-xl border border-border/50", compact ? "bg-card p-3" : "bg-muted/30 p-3")}>
-      <label className={cn("text-sm font-bold flex items-center gap-1.5", isRTL && "flex-row-reverse font-cairo")}>
-        🔧 {isRTL ? 'اختار طريقة التسعير: مواد + مصنعية، مصنعية بس، ولا جزئي؟' : 'Matériaux inclus, Main d\'œuvre uniquement, ou Partiel ?'}
-      </label>
-      <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-2", isRTL && "sm:[direction:rtl]")}>
-        <button
-          onClick={() => setMaterialScope('fourniture_et_pose')}
-          className={cn(
-            "text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
-            materialScope === 'fourniture_et_pose'
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-background border-border hover:bg-muted"
-          )}
-        >
-          {isRTL ? '🏗️ فورنيتير + مصنعية' : '🏗️ Matériaux inclus'}
-        </button>
-        <button
-          onClick={() => setMaterialScope('main_oeuvre_seule')}
-          className={cn(
-            "text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
-            materialScope === 'main_oeuvre_seule'
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-background border-border hover:bg-muted"
-          )}
-        >
-          {isRTL ? '🔧 مصنعية بس' : '🔧 Main d\'œuvre'}
-        </button>
-        <button
-          onClick={() => setMaterialScope('partiel')}
-          className={cn(
-            "text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
-            materialScope === 'partiel'
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-background border-border hover:bg-muted"
-          )}
-        >
-          {isRTL ? '⚖️ جزئي (لكل بند)' : '⚖️ Partiel (ligne par ligne)'}
-        </button>
-      </div>
-    </div>
-  )
-);
-
-MaterialScopeSelector.displayName = 'MaterialScopeSelector';
+// MaterialScopeSelector removed — Shubbaik Lubbaik is the sole pricing authority
 
 const SmartDevisPage = () => {
   const { isRTL, t } = useLanguage();
@@ -164,7 +112,7 @@ const SmartDevisPage = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const didRestoreWizardRef = useRef(false);
-  const scopeSelectorRef = useRef<HTMLDivElement>(null);
+  // scopeSelectorRef removed — MaterialScopeSelector no longer exists
 
   const [step, setStep] = useState<Step>('ai_intro');
   const [inputType, setInputType] = useState<InputType>(null);
@@ -188,7 +136,7 @@ const SmartDevisPage = () => {
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
   const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null>(null);
+  const [materialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel'>('fourniture_et_pose');
   const [catalogByCode, setCatalogByCode] = useState<Record<string, PriceCatalogItem>>({});
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const voiceRecognitionRef = useRef<any>(null);
@@ -252,7 +200,7 @@ const SmartDevisPage = () => {
     setProfitMarginPercent(15);
     setPreferencesCollected(false);
     setSurfaceEstimates([]);
-    setMaterialScope(null);
+    // materialScope is now fixed to 'fourniture_et_pose'
   }, []);
 
   useEffect(() => {
@@ -612,7 +560,7 @@ const SmartDevisPage = () => {
     setProfitMarginPercent(typeof snapshot.profitMarginPercent === 'number' ? snapshot.profitMarginPercent : 15);
     setPreferencesCollected(!!snapshot.preferencesCollected);
     setSurfaceEstimates(Array.isArray(snapshot.surfaceEstimates) ? snapshot.surfaceEstimates : []);
-    setMaterialScope(snapshot.materialScope ?? null);
+    // materialScope is fixed to 'fourniture_et_pose' — no restore needed
 
     toast({
       title: isRTL ? '📝 تم استعادة بياناتك' : '📝 Données restaurées',
@@ -810,21 +758,6 @@ const SmartDevisPage = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!materialScope) {
-      toast({
-        variant: 'destructive',
-        title: isRTL ? '⚠️ اختيار إجباري' : '⚠️ Choix obligatoire',
-        description: isRTL
-          ? '👆 لازم تختار طريقة التسعير أولاً (فورنيتير + مصنعية، مصنعية بس، أو جزئي) قبل ما تبدأ التحليل!'
-          : 'Veuillez d\'abord choisir le mode de tarification (Fourniture + Pose, Main d\'œuvre seule ou Partiel) avant de lancer l\'analyse !',
-      });
-      scopeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      scopeSelectorRef.current?.classList.add('ring-2', 'ring-[#d4af37]', 'ring-offset-2');
-      setTimeout(() => {
-        scopeSelectorRef.current?.classList.remove('ring-2', 'ring-[#d4af37]', 'ring-offset-2');
-      }, 3000);
-      return;
-    }
 
     if (uploadedFiles.length === 0 && !pastedText.trim()) return;
     setIsAnalyzing(true);
@@ -1146,16 +1079,6 @@ const SmartDevisPage = () => {
   };
 
   const handleGenerateItems = async () => {
-    if (!materialScope) {
-      toast({
-        variant: 'destructive',
-        title: isRTL ? 'اختيار إجباري' : 'Choix obligatoire',
-        description: isRTL
-          ? 'لازم تختار: مواد + مصنعية، مصنعية فقط، أو جزئي قبل توليد الدوفي.'
-          : 'Veuillez choisir "Matériaux inclus", "Main d\'œuvre uniquement" ou "Partiel" avant de générer le devis.',
-      });
-      return;
-    }
 
     setIsGenerating(true);
     try {
@@ -2112,8 +2035,7 @@ const SmartDevisPage = () => {
               </div>
             )}
 
-            {/* Material Scope Selector */}
-            <MaterialScopeSelector ref={scopeSelectorRef} isRTL={isRTL} materialScope={materialScope} setMaterialScope={setMaterialScope} />
+            {/* MaterialScopeSelector removed — Shubbaik Lubbaik is the sole pricing authority */}
 
             {/* Pasted text area */}
             <div className="space-y-2">
@@ -2313,8 +2235,7 @@ const SmartDevisPage = () => {
             </Card>
           )}
 
-          {/* Material Scope Selector */}
-          <MaterialScopeSelector compact isRTL={isRTL} materialScope={materialScope} setMaterialScope={setMaterialScope} />
+          {/* MaterialScopeSelector removed — Shubbaik Lubbaik is the sole pricing authority */}
 
           {/* Preferences quick select */}
           <Card className="p-3">
@@ -2460,13 +2381,8 @@ const SmartDevisPage = () => {
           </Button>
           <p className={cn("text-[10px] text-muted-foreground text-center", isRTL && "font-cairo")}>
             {isRTL
-              ? materialScope === 'main_oeuvre_seule'
-                ? '🔧 سيجلب أسعار المصنعية فقط (بدون مواد)'
-                : '🏗️ سيجلب أسعار المواد + المصنعية'
-              : materialScope === 'main_oeuvre_seule'
-                ? '🔧 Récupère uniquement les prix Main d\'œuvre'
-                : '🏗️ Récupère les prix Fourniture + Pose'
-            }
+              ? '🏗️ شبيك لبيك هيجيب الأسعار من السوق الفرنسي'
+              : '🏗️ Shubbaik Lubbaik récupère les prix du marché français'}
           </p>
 
           <div className="space-y-3">
@@ -2530,7 +2446,8 @@ const SmartDevisPage = () => {
                           <SelectItem value="ml">ml</SelectItem>
                           <SelectItem value="u">u</SelectItem>
                           <SelectItem value="h">h</SelectItem>
-                          <SelectItem value="forfait">forfait</SelectItem>
+                          <SelectItem value="Ens">Ens</SelectItem>
+                          <SelectItem value="j">j</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

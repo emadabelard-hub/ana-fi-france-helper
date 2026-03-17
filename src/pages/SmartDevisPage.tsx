@@ -1363,6 +1363,51 @@ const SmartDevisPage = () => {
 
   const removeItem = (id: string) => setLineItems(prev => prev.filter(i => i.id !== id));
 
+  // AI price estimation fallback — calls edge function for items without catalog match
+  const estimatePricesWithAI = useCallback(async (items: LineItem[]): Promise<Record<string, { unitPrice: number; unit?: string }>> => {
+    if (items.length === 0) return {};
+    try {
+      const payload = items.map(item => ({
+        id: item.id,
+        designation_fr: item.designation_fr,
+        designation_ar: item.designation_ar,
+        unit: item.unit,
+        quantity: item.quantity,
+        laborOnly: item.withMaterial === false || materialScope === 'main_oeuvre_seule',
+      }));
+
+      const token = user
+        ? (await supabase.auth.getSession()).data.session?.access_token
+        : null;
+
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/estimate-price`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ items: payload }),
+      });
+
+      if (!resp.ok) {
+        console.error('AI price estimation failed:', resp.status);
+        return {};
+      }
+
+      const data = await resp.json();
+      const result: Record<string, { unitPrice: number; unit?: string }> = {};
+      (data.prices || []).forEach((p: any) => {
+        if (p.id && typeof p.unitPrice === 'number' && p.unitPrice > 0) {
+          result[p.id] = { unitPrice: Math.round(p.unitPrice), unit: p.unit };
+        }
+      });
+      return result;
+    } catch (err) {
+      console.error('AI estimation error:', err);
+      return {};
+    }
+  }, [materialScope, user]);
+
   // "Shubbaik Lubbaik" — fetch prices from catalog for all items based on material toggle
   const handleFetchAIPrices = useCallback(async () => {
     setIsFetchingPrices(true);
@@ -1377,43 +1422,57 @@ const SmartDevisPage = () => {
       // Fetch catalog data for all codes at once
       const catalogRows = await fetchCatalogByCodes(uniqueCodes);
 
-      setLineItems(prev => prev.map(item => {
-        // Skip items that already have a manually set price > 0
-        // (manual override protection — only fill if price is still 0)
+      // First pass: fill from catalog, collect items needing AI estimation
+      const itemsNeedingAI: LineItem[] = [];
+
+      const firstPassItems = lineItems.map(item => {
         if (item.unitPrice > 0) return item;
 
         const code = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr);
-        if (!code) {
-          // No catalog match — mark as "prix à vérifier"
-          return { ...item, unitPrice: -1, total: 0 };
+        if (code) {
+          const normalizedCode = code.toUpperCase();
+          const catalogItem = catalogRows[normalizedCode] || catalogByCode[normalizedCode];
+          if (catalogItem) {
+            const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
+            const unitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
+            const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
+            const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
+            return {
+              ...item, unitPrice, total: unitPrice > 0 ? quantity * unitPrice : 0,
+              catalogCode: normalizedCode, unit: normalizedUnit, quantity, isAiEstimate: false,
+            };
+          }
         }
 
-        const normalizedCode = code.toUpperCase();
-        const catalogItem = catalogRows[normalizedCode] || catalogByCode[normalizedCode];
-        if (!catalogItem) {
-          return { ...item, unitPrice: -1, total: 0 };
-        }
+        // No catalog match → queue for AI estimation
+        itemsNeedingAI.push(item);
+        return item; // unchanged for now
+      });
 
-        const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
-        const unitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
-        const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
-        const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
-
-        return {
-          ...item,
-          unitPrice,
-          total: unitPrice > 0 ? quantity * unitPrice : 0,
-          catalogCode: normalizedCode,
-          unit: normalizedUnit,
-          quantity,
-        };
-      }));
+      // Second pass: AI estimation for unmatched items
+      if (itemsNeedingAI.length > 0) {
+        const aiPrices = await estimatePricesWithAI(itemsNeedingAI);
+        const finalItems = firstPassItems.map(item => {
+          if (item.unitPrice > 0) return item;
+          const aiPrice = aiPrices[item.id];
+          if (aiPrice) {
+            const unitPrice = aiPrice.unitPrice;
+            return {
+              ...item, unitPrice, total: unitPrice * item.quantity, isAiEstimate: true,
+            };
+          }
+          return { ...item, unitPrice: 0, total: 0, isAiEstimate: false };
+        });
+        setLineItems(finalItems);
+      } else {
+        setLineItems(firstPassItems);
+      }
 
       toast({
         title: isRTL ? '✅ تم ملء الأسعار' : '✅ Prix remplis',
         description: isRTL
-          ? 'الأسعار تم جلبها من إعدادات التعريفة. تقدر تعدل أي سعر يدوياً.'
-          : 'Les prix ont été chargés depuis vos tarifs. Vous pouvez modifier manuellement.',
+          ? 'الأسعار تم جلبها. ✨ = تقدير ذكي. تقدر تعدل أي سعر يدوياً.'
+          : 'Prix chargés. ✨ = estimation IA. Modifiable manuellement.',
       });
     } catch (err: any) {
       toast({
@@ -1424,7 +1483,7 @@ const SmartDevisPage = () => {
     } finally {
       setIsFetchingPrices(false);
     }
-  }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast]);
+  }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast, estimatePricesWithAI]);
 
   // Per-row AI price fetch — fetches price for a single row
   const handleFetchSingleRowPrice = useCallback(async (itemId: string) => {
@@ -1433,52 +1492,52 @@ const SmartDevisPage = () => {
       const item = lineItems.find(i => i.id === itemId);
       if (!item) return;
 
+      // Try catalog first
       const code = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr);
-      if (!code) {
-        setLineItems(prev => prev.map(i => i.id !== itemId ? i : { ...i, unitPrice: -1, total: 0 }));
-        toast({
-          variant: 'destructive',
-          title: isRTL ? '❌ لم يتم العثور على سعر' : '❌ Prix introuvable',
-          description: isRTL ? 'هاد البند ما عندوش كود في الكاتالوغ. عدّل السعر يدوياً.' : 'Aucun code catalogue trouvé. Saisissez le prix manuellement.',
-        });
-        return;
+      if (code) {
+        const normalizedCode = code.toUpperCase();
+        const catalogRows = await fetchCatalogByCodes([normalizedCode]);
+        const catalogItem = catalogRows[normalizedCode] || catalogByCode[normalizedCode];
+
+        if (catalogItem) {
+          const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
+          const unitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
+          const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
+          const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
+
+          setLineItems(prev => prev.map(i => i.id !== itemId ? i : {
+            ...i, unitPrice, total: unitPrice > 0 ? quantity * unitPrice : 0,
+            catalogCode: normalizedCode, unit: normalizedUnit, quantity, isAiEstimate: false,
+          }));
+          toast({
+            title: isRTL ? '✅ تم جلب السعر' : '✅ Prix récupéré',
+            description: `${catalogItem.description}: ${unitPrice}€/${normalizedUnit}`,
+          });
+          return;
+        }
       }
 
-      const normalizedCode = code.toUpperCase();
-      const catalogRows = await fetchCatalogByCodes([normalizedCode]);
-      const catalogItem = catalogRows[normalizedCode] || catalogByCode[normalizedCode];
+      // No catalog match → AI estimation fallback
+      const aiPrices = await estimatePricesWithAI([item]);
+      const aiPrice = aiPrices[item.id];
 
-      if (!catalogItem) {
-        setLineItems(prev => prev.map(i => i.id !== itemId ? i : { ...i, unitPrice: -1, total: 0 }));
+      if (aiPrice && aiPrice.unitPrice > 0) {
+        setLineItems(prev => prev.map(i => i.id !== itemId ? i : {
+          ...i, unitPrice: aiPrice.unitPrice,
+          total: aiPrice.unitPrice * i.quantity,
+          isAiEstimate: true,
+        }));
         toast({
-          variant: 'destructive',
-          title: isRTL ? '❌ سعر غير متوفر' : '❌ Prix non disponible',
-          description: isRTL ? `الكود ${normalizedCode} غير موجود في التعريفة.` : `Code ${normalizedCode} non trouvé dans le catalogue.`,
+          title: isRTL ? '✨ سعر تقديري من شبيك لبيك' : '✨ Prix estimé par Shubbaik Lubbaik',
+          description: `${item.designation_fr}: ~${aiPrice.unitPrice}€/${item.unit}`,
         });
-        return;
+      } else {
+        setLineItems(prev => prev.map(i => i.id !== itemId ? i : { ...i, unitPrice: 0, total: 0 }));
+        toast({
+          title: isRTL ? '⚠️ عدّل السعر يدوياً' : '⚠️ Saisissez le prix manuellement',
+          description: isRTL ? 'لم نتمكن من تقدير السعر' : 'Estimation non disponible',
+        });
       }
-
-      const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
-      const unitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
-      const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
-      const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
-
-      setLineItems(prev => prev.map(i => {
-        if (i.id !== itemId) return i;
-        return {
-          ...i,
-          unitPrice,
-          total: unitPrice > 0 ? quantity * unitPrice : 0,
-          catalogCode: normalizedCode,
-          unit: normalizedUnit,
-          quantity,
-        };
-      }));
-
-      toast({
-        title: isRTL ? '✅ تم جلب السعر' : '✅ Prix récupéré',
-        description: `${catalogItem.description}: ${unitPrice}€/${normalizedUnit}`,
-      });
     } catch (err: any) {
       toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: err.message });
     } finally {
@@ -1488,7 +1547,7 @@ const SmartDevisPage = () => {
         return next;
       });
     }
-  }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast]);
+  }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast, estimatePricesWithAI]);
 
   // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
   const toggleItemMaterial = (id: string) => {

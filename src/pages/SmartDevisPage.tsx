@@ -112,7 +112,7 @@ const SmartDevisPage = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const didRestoreWizardRef = useRef(false);
-  const scopeSelectorRef = useRef<HTMLDivElement>(null);
+  // scopeSelectorRef removed — MaterialScopeSelector no longer exists
 
   const [step, setStep] = useState<Step>('ai_intro');
   const [inputType, setInputType] = useState<InputType>(null);

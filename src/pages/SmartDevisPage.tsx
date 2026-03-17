@@ -2035,8 +2035,7 @@ const SmartDevisPage = () => {
               </div>
             )}
 
-            {/* Material Scope Selector */}
-            <MaterialScopeSelector ref={scopeSelectorRef} isRTL={isRTL} materialScope={materialScope} setMaterialScope={setMaterialScope} />
+            {/* MaterialScopeSelector removed — Shubbaik Lubbaik is the sole pricing authority */}
 
             {/* Pasted text area */}
             <div className="space-y-2">

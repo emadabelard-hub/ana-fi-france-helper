@@ -2235,8 +2235,7 @@ const SmartDevisPage = () => {
             </Card>
           )}
 
-          {/* Material Scope Selector */}
-          <MaterialScopeSelector compact isRTL={isRTL} materialScope={materialScope} setMaterialScope={setMaterialScope} />
+          {/* MaterialScopeSelector removed — Shubbaik Lubbaik is the sole pricing authority */}
 
           {/* Preferences quick select */}
           <Card className="p-3">

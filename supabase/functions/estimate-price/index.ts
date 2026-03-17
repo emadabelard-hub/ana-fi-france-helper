@@ -40,8 +40,8 @@ RÈGLES STRICTES :
 - Pour "main d'oeuvre seule" : donne UNIQUEMENT le coût de la main d'oeuvre sans matériaux
 - Pour "fourniture et pose" : donne le prix total incluant matériaux + main d'oeuvre
 - Réponds UNIQUEMENT avec un JSON valide, pas de texte avant ni après
-- Format: { "prices": [ { "id": "xxx", "unitPrice": 35.00, "unit": "m²" } ] }
-- Les prix doivent être en euros, par unité spécifiée
+- Format: { "prices": [ { "id": "<EXACT ITEM ID FROM INPUT>", "unitPrice": 35, "unit": "m²" } ] }
+- CRITICAL: The "id" field must be the EXACT same string as the Item ID provided in the input. Do NOT use the description or any other value.
 - Arrondis au nombre entier le plus proche
 - Si une tâche est un forfait, donne le prix forfaitaire total
 

@@ -947,8 +947,9 @@ const SmartDevisPage = () => {
       });
 
       const seenItemKeys = new Set<string>();
+      const normalizeForKey = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
       const finalItems = items.filter(item => {
-        const labelKey = normalizeText([item.designation_fr, item.designation_ar].filter(Boolean).join(' ')).replace(/\s+/g, ' ').trim();
+        const labelKey = normalizeForKey([item.designation_fr, item.designation_ar].filter(Boolean).join(' '));
         const key = item.catalogCode ? `code:${item.catalogCode}` : `label:${labelKey}`;
 
         if (!labelKey && !item.catalogCode) return false;

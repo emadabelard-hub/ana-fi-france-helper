@@ -182,6 +182,7 @@ const SmartDevisPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFetchingPrices, setIsFetchingPrices] = useState(false);
   const [fetchingRowIds, setFetchingRowIds] = useState<Set<string>>(new Set());
+  const [editingDesignation, setEditingDesignation] = useState<string | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [preferencesCollected, setPreferencesCollected] = useState(false);
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
@@ -2391,21 +2392,41 @@ const SmartDevisPage = () => {
                   <div className={cn("flex items-start gap-2", isRTL && "flex-row-reverse")}>
                     <Badge variant="secondary" className="shrink-0 text-[10px]">{idx + 1}</Badge>
                     <div className="flex-1 space-y-1">
-                      <Input
-                        value={item.designation_fr}
-                        onChange={e => onCodeChange(item.id, e.target.value)}
-                        placeholder="Désignation FR"
-                        className="text-xs h-auto min-h-[32px] py-1.5"
-                        dir="ltr"
-                        lang="fr"
-                      />
-                      <Input
-                        value={item.designation_ar}
-                        onChange={e => updateItem(item.id, 'designation_ar', e.target.value)}
-                        placeholder="الوصف بالعربي"
-                        className={cn("text-xs h-auto min-h-[32px] py-1.5", isRTL && "text-right font-cairo")}
-                        dir="rtl"
-                      />
+                      {/* Bilingual display: Bold French + Italic Arabic */}
+                      {editingDesignation !== item.id ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditingDesignation(item.id)}
+                          className="w-full text-left p-2 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-muted/30 transition-colors min-h-[48px]"
+                        >
+                          <p className="text-xs font-bold text-foreground leading-tight" dir="ltr" lang="fr">
+                            {item.designation_fr || <span className="text-muted-foreground italic">Désignation FR</span>}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground italic mt-0.5 font-cairo leading-tight" dir="rtl">
+                            {item.designation_ar || <span className="text-muted-foreground/50">الوصف بالعامية</span>}
+                          </p>
+                        </button>
+                      ) : (
+                        <div className="space-y-1 p-1 rounded-lg border border-primary/30 bg-muted/20">
+                          <Input
+                            value={item.designation_fr}
+                            onChange={e => onCodeChange(item.id, e.target.value)}
+                            placeholder="Désignation FR"
+                            className="text-xs h-auto min-h-[32px] py-1.5 font-bold"
+                            dir="ltr"
+                            lang="fr"
+                            autoFocus
+                            onBlur={() => setTimeout(() => setEditingDesignation(null), 200)}
+                          />
+                          <Input
+                            value={item.designation_ar}
+                            onChange={e => updateItem(item.id, 'designation_ar', e.target.value)}
+                            placeholder="الوصف بالعامية"
+                            className={cn("text-xs h-auto min-h-[32px] py-1.5 italic", isRTL && "text-right font-cairo")}
+                            dir="rtl"
+                          />
+                        </div>
+                      )}
                     </div>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => removeItem(item.id)}>
                       <Trash2 className="h-3 w-3" />

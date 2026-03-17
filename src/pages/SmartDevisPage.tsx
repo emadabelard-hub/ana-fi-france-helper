@@ -1409,20 +1409,83 @@ const SmartDevisPage = () => {
     }
   }, [materialScope, user]);
 
-  // "Shubbaik Lubbaik" — TEST MODE: AI-only pricing, bypass catalog entirely
+  // Helper: Try to resolve price from catalog using semantic keyword match
+  const resolveFromCatalog = useCallback((item: LineItem): { unitPrice: number; catalogCode: string; catalogItem: PriceCatalogItem } | null => {
+    // Step 1: Try explicit catalog code on the item
+    if (item.catalogCode) {
+      const cat = catalogByCode[item.catalogCode];
+      if (cat) {
+        const includeMat = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
+        let price = getCatalogPriceFromItem(cat, includeMat);
+        // 50/50 split: if labor-only but labor_price is 0, use total_price / 2
+        if (!includeMat && price === 0 && cat.total_price > 0) {
+          price = Math.round(cat.total_price / 2);
+        }
+        if (price > 0) return { unitPrice: price, catalogCode: cat.code, catalogItem: cat };
+      }
+    }
+
+    // Step 2: Semantic keyword match on designation
+    const detectedCode = detectCatalogCodeFromDesignation(
+      [item.designation_fr, item.designation_ar].filter(Boolean).join(' ')
+    );
+    if (detectedCode) {
+      const cat = catalogByCode[detectedCode];
+      if (cat) {
+        const includeMat = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
+        let price = getCatalogPriceFromItem(cat, includeMat);
+        if (!includeMat && price === 0 && cat.total_price > 0) {
+          price = Math.round(cat.total_price / 2);
+        }
+        if (price > 0) return { unitPrice: price, catalogCode: cat.code, catalogItem: cat };
+      }
+    }
+
+    return null;
+  }, [catalogByCode, materialScope]);
+
+  // "Shubbaik Lubbaik" — PRODUCTION: Catalog semantic match → AI estimation fallback
   const handleFetchAIPrices = useCallback(async () => {
     setIsFetchingPrices(true);
     try {
-      const itemsToEstimate = lineItems.filter(item => item.unitPrice === 0 || !item.unitPrice);
-      if (itemsToEstimate.length === 0) {
+      const itemsNeedingPrice = lineItems.filter(item => item.unitPrice === 0 || !item.unitPrice);
+      if (itemsNeedingPrice.length === 0) {
         toast({ title: isRTL ? '✅ الأسعار موجودة' : '✅ Prix déjà remplis' });
         setIsFetchingPrices(false);
         return;
       }
 
-      const aiPrices = await estimatePricesWithAI(itemsToEstimate);
+      // Step A: Resolve from catalog (semantic match)
+      const stillNeedAI: LineItem[] = [];
+      const catalogUpdates: LineItem[] = [];
+
+      for (const item of itemsNeedingPrice) {
+        const catalogMatch = resolveFromCatalog(item);
+        if (catalogMatch) {
+          catalogUpdates.push({
+            ...item,
+            unitPrice: catalogMatch.unitPrice,
+            total: catalogMatch.unitPrice * item.quantity,
+            catalogCode: catalogMatch.catalogCode,
+            isAiEstimate: false,
+          });
+        } else {
+          stillNeedAI.push(item);
+        }
+      }
+
+      // Step B: AI estimation for remaining items
+      let aiPrices: Record<string, { unitPrice: number; unit?: string }> = {};
+      if (stillNeedAI.length > 0) {
+        aiPrices = await estimatePricesWithAI(stillNeedAI);
+      }
+
       const updatedItems = lineItems.map(item => {
         if (item.unitPrice > 0) return item;
+        // Check catalog updates
+        const catUpdate = catalogUpdates.find(u => u.id === item.id);
+        if (catUpdate) return catUpdate;
+        // Check AI prices
         const aiPrice = aiPrices[item.id];
         if (aiPrice && aiPrice.unitPrice > 0) {
           return {
@@ -1434,11 +1497,13 @@ const SmartDevisPage = () => {
       });
       setLineItems(updatedItems);
 
+      const catalogCount = catalogUpdates.length;
+      const aiCount = Object.keys(aiPrices).length;
       toast({
         title: isRTL ? '✅ تم ملء الأسعار' : '✅ Prix remplis',
         description: isRTL
-          ? '✨ أسعار تقديرية من شبيك لبيك. تقدر تعدل أي سعر يدوياً.'
-          : '✨ Prix estimés par Shubbaik Lubbaik. Modifiable manuellement.',
+          ? `📋 ${catalogCount} من الكتالوغ — ✨ ${aiCount} تقديرات شبيك لبيك`
+          : `📋 ${catalogCount} du catalogue — ✨ ${aiCount} estimations Shubbaik Lubbaik`,
       });
     } catch (err: any) {
       toast({
@@ -1449,16 +1514,32 @@ const SmartDevisPage = () => {
     } finally {
       setIsFetchingPrices(false);
     }
-  }, [lineItems, materialScope, isRTL, toast, estimatePricesWithAI]);
+  }, [lineItems, materialScope, isRTL, toast, estimatePricesWithAI, resolveFromCatalog]);
 
-  // Per-row AI price fetch — TEST MODE: AI-only, no catalog lookup
+  // Per-row price fetch: Catalog → AI fallback
   const handleFetchSingleRowPrice = useCallback(async (itemId: string) => {
     setFetchingRowIds(prev => new Set(prev).add(itemId));
     try {
       const item = lineItems.find(i => i.id === itemId);
       if (!item) return;
 
-      // Direct AI estimation — no catalog lookup
+      // Step A: Try catalog semantic match
+      const catalogMatch = resolveFromCatalog(item);
+      if (catalogMatch) {
+        setLineItems(prev => prev.map(i => i.id !== itemId ? i : {
+          ...i, unitPrice: catalogMatch.unitPrice,
+          total: catalogMatch.unitPrice * i.quantity,
+          catalogCode: catalogMatch.catalogCode,
+          isAiEstimate: false,
+        }));
+        toast({
+          title: isRTL ? '📋 سعر من الكتالوغ' : '📋 Prix du catalogue',
+          description: `${item.designation_fr}: ${catalogMatch.unitPrice}€/${item.unit}`,
+        });
+        return;
+      }
+
+      // Step B: AI estimation fallback
       const aiPrices = await estimatePricesWithAI([item]);
       const aiPrice = aiPrices[item.id];
 
@@ -1487,7 +1568,7 @@ const SmartDevisPage = () => {
         return next;
       });
     }
-  }, [lineItems, materialScope, isRTL, toast, estimatePricesWithAI]);
+  }, [lineItems, materialScope, isRTL, toast, estimatePricesWithAI, resolveFromCatalog]);
 
   // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
   const toggleItemMaterial = (id: string) => {
@@ -2581,13 +2662,13 @@ const SmartDevisPage = () => {
             }}
           />
 
-          {/* Test Mode Note */}
-          <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30", isRTL && "flex-row-reverse")}>
-            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-            <p className={cn("text-xs text-amber-600 dark:text-amber-400", isRTL && "font-cairo text-right")}>
+          {/* Pricing Hierarchy Note */}
+          <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/30", isRTL && "flex-row-reverse")}>
+            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+            <p className={cn("text-xs text-primary", isRTL && "font-cairo text-right")}>
               {isRTL
-                ? 'وضع الاختبار: الأسعار مقدرة من شبيك لبيك (السوق الفرنسي)'
-                : 'Mode Test : Prix estimés par Shubbaik Lubbaik (Marché Français)'}
+                ? 'الأسعار: 📋 الكتالوغ أولاً ← ✨ شبيك لبيك (تقدير السوق الفرنسي) كبديل'
+                : 'Prix : 📋 Catalogue en priorité → ✨ Shubbaik Lubbaik (estimation marché) en complément'}
             </p>
           </div>
 

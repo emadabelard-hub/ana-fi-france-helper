@@ -646,7 +646,7 @@ ${scopeRule}
   RÈGLE NOMBRE DE LIGNES (CRITIQUE)
 ═══════════════════════════════════════
 
-⛔ MAXIMUM 7 à 8 lignes de devis. Pas plus. JAMAIS plus de 8.
+⛔ MAXIMUM 8 à 10 lignes de devis. Pas plus. JAMAIS plus de 10.
 ⛔ Consolide les petites tâches similaires en une seule ligne.
 ⛔ Garde uniquement les tâches ESSENTIELLES et DISTINCTES.
 ⛔ NE JAMAIS générer de tâches redondantes ou non-essentielles.

@@ -1011,6 +1011,47 @@ const SmartDevisPage = () => {
     }
   };
 
+  // ── Parse chat messages for prices and auto-fill devis table ──
+  const parseChatPricesAndApply = useCallback((text: string) => {
+    if (!text || lineItems.length === 0) return;
+
+    // Detect patterns like: "CODE = XX€", "CODE: XX€/m²", "prix de CODE est XX€"
+    const pricePatterns = [
+      /\b([A-Z]{2,4}\d{2,3})\s*[=:→]\s*(\d+(?:[.,]\d+)?)\s*€/gi,
+      /\b([A-Z]{2,4}\d{2,3})\s+(?:à|a|=)\s+(\d+(?:[.,]\d+)?)\s*€/gi,
+      /prix\s+(?:de\s+)?([A-Z]{2,4}\d{2,3})\s*[=:]\s*(\d+(?:[.,]\d+)?)/gi,
+    ];
+
+    const detectedPrices: Record<string, number> = {};
+
+    for (const pattern of pricePatterns) {
+      let match;
+      while ((match = pattern.exec(text)) !== null) {
+        const code = match[1].toUpperCase();
+        const price = parseFloat(match[2].replace(',', '.'));
+        if (code && price > 0) {
+          detectedPrices[code] = price;
+        }
+      }
+    }
+
+    if (Object.keys(detectedPrices).length === 0) return;
+
+    setLineItems(prev => prev.map(item => {
+      const code = item.catalogCode?.toUpperCase();
+      if (!code || !detectedPrices[code]) return item;
+      // Don't overwrite manually set prices
+      if (item.unitPrice > 0) return item;
+
+      const newPrice = detectedPrices[code];
+      return {
+        ...item,
+        unitPrice: newPrice,
+        total: item.quantity * newPrice,
+      };
+    }));
+  }, [lineItems.length]);
+
   const handleChatSend = async () => {
     if (!chatInput.trim() || isChatLoading) return;
     const userMsg: ChatMsg = { role: 'user', content: chatInput.trim() };
@@ -1091,6 +1132,9 @@ const SmartDevisPage = () => {
       if (assistantSoFar.includes('✅') && assistantSoFar.includes('جاهز')) {
         setPreferencesCollected(true);
       }
+
+      // ── AUTO-POPULATE: Parse assistant message for price mentions and apply to devis table ──
+      parseChatPricesAndApply(assistantSoFar);
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'خطأ', description: err.message });
     } finally {

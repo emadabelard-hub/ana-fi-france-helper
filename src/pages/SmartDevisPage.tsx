@@ -98,59 +98,7 @@ const MAX_FILES = 10;
 const SMART_DEVIS_WIZARD_STATE_KEY = 'smartDevisWizardState';
 const SMART_DEVIS_SKIP_RESTORE_ONCE_KEY = 'smartDevisSkipRestoreOnce';
 
-interface MaterialScopeSelectorProps {
-  compact?: boolean;
-  isRTL: boolean;
-  materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null;
-  setMaterialScope: (v: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel') => void;
-}
-
-const MaterialScopeSelector = forwardRef<HTMLDivElement, MaterialScopeSelectorProps>(
-  ({ compact = false, isRTL, materialScope, setMaterialScope }, ref) => (
-    <div ref={ref} className={cn("space-y-2 rounded-xl border border-border/50", compact ? "bg-card p-3" : "bg-muted/30 p-3")}>
-      <label className={cn("text-sm font-bold flex items-center gap-1.5", isRTL && "flex-row-reverse font-cairo")}>
-        🔧 {isRTL ? 'اختار طريقة التسعير: مواد + مصنعية، مصنعية بس، ولا جزئي؟' : 'Matériaux inclus, Main d\'œuvre uniquement, ou Partiel ?'}
-      </label>
-      <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-2", isRTL && "sm:[direction:rtl]")}>
-        <button
-          onClick={() => setMaterialScope('fourniture_et_pose')}
-          className={cn(
-            "text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
-            materialScope === 'fourniture_et_pose'
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-background border-border hover:bg-muted"
-          )}
-        >
-          {isRTL ? '🏗️ فورنيتير + مصنعية' : '🏗️ Matériaux inclus'}
-        </button>
-        <button
-          onClick={() => setMaterialScope('main_oeuvre_seule')}
-          className={cn(
-            "text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
-            materialScope === 'main_oeuvre_seule'
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-background border-border hover:bg-muted"
-          )}
-        >
-          {isRTL ? '🔧 مصنعية بس' : '🔧 Main d\'œuvre'}
-        </button>
-        <button
-          onClick={() => setMaterialScope('partiel')}
-          className={cn(
-            "text-xs font-bold py-3 px-3 rounded-lg border transition-colors",
-            materialScope === 'partiel'
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-background border-border hover:bg-muted"
-          )}
-        >
-          {isRTL ? '⚖️ جزئي (لكل بند)' : '⚖️ Partiel (ligne par ligne)'}
-        </button>
-      </div>
-    </div>
-  )
-);
-
-MaterialScopeSelector.displayName = 'MaterialScopeSelector';
+// MaterialScopeSelector removed — Shubbaik Lubbaik is the sole pricing authority
 
 const SmartDevisPage = () => {
   const { isRTL, t } = useLanguage();

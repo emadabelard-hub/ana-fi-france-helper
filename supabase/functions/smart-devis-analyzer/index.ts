@@ -797,7 +797,7 @@ Avant de finaliser, vérifier:
 ✅ Le sous-type de rénovation est respecté (pas de mélange)
 ✅ Cohérence technique (travaux dans le bon ordre)
 ✅ Cohérence des quantités (réalistes)
-✅ Pas de doublons — MAXIMUM 8 lignes
+✅ Pas de doublons — chaque étape du work_plan a exactement 1 ligne
 ✅ La couleur de finition est reprise dans la designation_fr
 ✅ Aucun travail incompatible (ex: "peinture murs" pour un chantier piscine)
 ✅ Chaque designation_ar est en argot artisan égyptien, PAS en arabe littéraire

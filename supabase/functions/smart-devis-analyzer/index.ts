@@ -1077,52 +1077,12 @@ Réponds UNIQUEMENT en JSON:
         return false;
       }
 
-      // Apply prices: artisan catalog (by code) → BTP reference (by designation) → not_found
+      // STRICT PRICING CONTROL: All prices start at 0. User triggers pricing manually via ✨ button.
       const pricedItems = lockedItems.map((item) => {
-        const itemCode = (item.code || "").trim().toUpperCase();
-        const isCleaning = isCleaningItem(item);
-        
-        // 1. Try artisan personal catalog by code (PRIMARY SOURCE)
-        if (itemCode && artisanPrices[itemCode]) {
-          let price = materialScope === 'main_oeuvre_seule'
-            ? artisanPrices[itemCode].labor_price
-            : artisanPrices[itemCode].total_price;
-          
-          // Cap ALL cleaning items at 15€/m²
-          if (isCleaning && price > NETTOYAGE_MAX_PRICE) {
-            price = NETTOYAGE_MAX_PRICE;
-          }
-          
-          return {
-            ...item,
-            unitPrice: price,
-            unit: item.unit || artisanPrices[itemCode].unit,
-            btpPriceSource: "artisan_catalog",
-          };
-        }
-
-        // 2. Fallback: BTP reference by designation
-        const btpMatch = matchBtpPrice(item.designation_fr || "");
-        if (btpMatch) {
-          let price = btpMatch.prix_moyen;
-          
-          // Cap ALL cleaning items at 15€/m²
-          if (isCleaning && price > NETTOYAGE_MAX_PRICE) {
-            price = NETTOYAGE_MAX_PRICE;
-          }
-          
-          return {
-            ...item,
-            unitPrice: price,
-            btpPriceSource: "btp_price_reference",
-          };
-        }
-
-        // 3. No match → mark as "prix à vérifier"
         return {
           ...item,
-          unitPrice: -1,
-          btpPriceSource: "not_found",
+          unitPrice: 0,
+          btpPriceSource: "manual_trigger_required",
         };
       });
 

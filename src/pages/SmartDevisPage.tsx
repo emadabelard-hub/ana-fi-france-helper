@@ -908,38 +908,21 @@ const SmartDevisPage = () => {
       const rawItems = data.items || data.suggestedItems || [];
 
       // ===== STRICT LOCK: build ONLY from generate_items output =====
-      // Never reconstruct quote lines from arbitrary codes found elsewhere in the analysis payload.
+      const rawItems = data.items || data.suggestedItems || [];
       const seenDesignations = new Set<string>();
+      const normalizeForDedup = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
       const deduplicatedItems = rawItems.filter((item: any) => {
-        const normalizedKey = normalizeText(item.designation_fr || '').replace(/\s+/g, ' ').trim();
+        const normalizedKey = normalizeForDedup(item.designation_fr || '');
         if (!normalizedKey) return true;
         if (seenDesignations.has(normalizedKey)) return false;
         seenDesignations.add(normalizedKey);
         return true;
       });
 
-      const explicitCodes: string[] = Array.from(
-        new Set(
-          deduplicatedItems
-            .map((item: any): string => (typeof item.code === 'string' ? item.code.trim().toUpperCase() : ''))
-            .filter((code: string) => code.length > 0)
-        )
-      );
-
-      const catalogRows = await fetchCatalogByCodes(explicitCodes);
-      const sourceItems = deduplicatedItems;
-
-      const items: LineItem[] = sourceItems.map((item: any) => {
+      const items: LineItem[] = deduplicatedItems.map((item: any) => {
         const quantity = Number(item.quantity || 1);
         const aiUnit = item.unit || 'u';
-        const isPartiel = materialScope === 'partiel';
-        const withMaterial = isPartiel ? false : materialScope !== 'main_oeuvre_seule';
-
-        const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
-        const catalogItem = explicitCode ? (catalogRows[explicitCode] || catalogByCode[explicitCode]) : undefined;
-
-        const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : (item.btpPriceSource === 'btp_price_reference' ? aiUnit : aiUnit);
-        const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
+        const withMaterial = materialScope !== 'main_oeuvre_seule';
 
         const baseFr = item.designation_fr || '';
         const baseAr = item.designation_ar || '';
@@ -952,12 +935,12 @@ const SmartDevisPage = () => {
           id: generateId(),
           designation_fr: finalFr,
           designation_ar: finalAr,
-          quantity: effectiveQuantity,
-          unit,
+          quantity,
+          unit: aiUnit,
           unitPrice: 0,
           total: 0,
-          category: item.category || catalogItem?.category,
-          catalogCode: explicitCode || undefined,
+          category: item.category,
+          catalogCode: typeof item.code === 'string' ? item.code.trim().toUpperCase() : undefined,
           withMaterial,
           isAiEstimate: false,
         };

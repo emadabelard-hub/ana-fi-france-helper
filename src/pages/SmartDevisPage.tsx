@@ -2560,6 +2560,16 @@ const SmartDevisPage = () => {
             }}
           />
 
+          {/* Test Mode Note */}
+          <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30", isRTL && "flex-row-reverse")}>
+            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+            <p className={cn("text-xs text-amber-600 dark:text-amber-400", isRTL && "font-cairo text-right")}>
+              {isRTL
+                ? 'وضع الاختبار: الأسعار مقدرة من شبيك لبيك (السوق الفرنسي)'
+                : 'Mode Test : Prix estimés par Shubbaik Lubbaik (Marché Français)'}
+            </p>
+          </div>
+
           {/* Grand Total */}
           <Card className="bg-[#1a1a1a] text-white border border-[#c5a028]/40">
             <CardContent className={cn("flex items-center justify-between p-4", isRTL && "flex-row-reverse")}>

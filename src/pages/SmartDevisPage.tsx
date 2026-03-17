@@ -905,8 +905,6 @@ const SmartDevisPage = () => {
 
       const data = await invokeAnalyzer(payload);
 
-      const rawItems = data.items || data.suggestedItems || [];
-
       // ===== STRICT LOCK: build ONLY from generate_items output =====
       const rawItems = data.items || data.suggestedItems || [];
       const seenDesignations = new Set<string>();

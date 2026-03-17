@@ -560,7 +560,7 @@ const SmartDevisPage = () => {
     setProfitMarginPercent(typeof snapshot.profitMarginPercent === 'number' ? snapshot.profitMarginPercent : 15);
     setPreferencesCollected(!!snapshot.preferencesCollected);
     setSurfaceEstimates(Array.isArray(snapshot.surfaceEstimates) ? snapshot.surfaceEstimates : []);
-    setMaterialScope(snapshot.materialScope ?? null);
+    // materialScope is fixed to 'fourniture_et_pose' — no restore needed
 
     toast({
       title: isRTL ? '📝 تم استعادة بياناتك' : '📝 Données restaurées',

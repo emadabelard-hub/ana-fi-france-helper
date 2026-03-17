@@ -744,6 +744,14 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
 🔷 SI chantierType = "carrelage":
   CODES AUTORISÉS: CR001-CR003, CHA01, CHA02, CHA04
 
+🛁 SI chantierType = "salle_de_bain" ou "salle de bain" ou "bathroom":
+  CODES AUTORISÉS: CR001-CR003 (carrelage sol/mur), PLB01-PLB09 (plomberie/sanitaire), 
+    DEM01 (démolition), CHA01, CHA02, CHA04, PEI01-PEI04 (peinture plafond si applicable)
+  CODES INTERDITS: PIS01-PIS12, FAC01-FAC06, TOI01-TOI04
+  UNITÉS: m² pour carrelage et préparation, Ens ou U pour plomberie et nettoyage
+  ⛔ INTERDIT: toute référence à "piscine", "206m²", "bassin", "liner", "résine piscine"
+  ⛔ Les surfaces doivent correspondre aux dimensions de la salle de bain UNIQUEMENT
+
 ═══════════════════════════════════════
   RÈGLES SURFACES PEINTURE
 ═══════════════════════════════════════

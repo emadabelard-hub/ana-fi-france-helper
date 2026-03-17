@@ -2381,13 +2381,8 @@ const SmartDevisPage = () => {
           </Button>
           <p className={cn("text-[10px] text-muted-foreground text-center", isRTL && "font-cairo")}>
             {isRTL
-              ? materialScope === 'main_oeuvre_seule'
-                ? '🔧 سيجلب أسعار المصنعية فقط (بدون مواد)'
-                : '🏗️ سيجلب أسعار المواد + المصنعية'
-              : materialScope === 'main_oeuvre_seule'
-                ? '🔧 Récupère uniquement les prix Main d\'œuvre'
-                : '🏗️ Récupère les prix Fourniture + Pose'
-            }
+              ? '🏗️ شبيك لبيك هيجيب الأسعار من السوق الفرنسي'
+              : '🏗️ Shubbaik Lubbaik récupère les prix du marché français'}
           </p>
 
           <div className="space-y-3">

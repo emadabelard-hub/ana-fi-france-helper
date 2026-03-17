@@ -2367,10 +2367,10 @@ const SmartDevisPage = () => {
             ) : (
               <Sparkles className="h-5 w-5 mr-2" />
             )}
-            <span className={cn(isRTL && "font-cairo")}>
+             <span className={cn(isRTL && "font-cairo")}>
               {isFetchingPrices
                 ? (isRTL ? '⏳ جاري جلب الأسعار...' : '⏳ Chargement des prix...')
-                : (isRTL ? '🪄 شبيك لبيك — جيب الأسعار' : '🪄 Shubbaik Lubbaik — Obtenir les prix')
+                : (isRTL ? '🪄 شبيك لبيك — جيب كل الأسعار' : '🪄 Shubbaik Lubbaik — Tous les prix')
               }
             </span>
           </Button>

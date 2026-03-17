@@ -807,8 +807,8 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
 ⛔ RÈGLE PEINTURE SYSTÉMATIQUE : Si le work_plan contient une étape de peinture/finition,
   tu DOIS TOUJOURS inclure la ligne de peinture finale. Pour piscine: PIS03 (résine piscine).
   Pour murs: PNT02 (22€/m²). Ne JAMAIS omettre cette ligne.
-⛔ RÈGLE PRIX CATALOGUE: Les prix sont extraits UNIQUEMENT de la base de données 'إعدادات التعريفة'.
-  NE JAMAIS inventer de prix. Si un code existe dans le catalogue, son prix est ABSOLU.
+⛔ RÈGLE PRIX: Les prix sont déterminés UNIQUEMENT par شبيك لبيك (prix du marché français).
+   NE JAMAIS inventer de prix. Mets unitPrice = 0. L'utilisateur déclenche la tarification via le bouton ✨.
 
 ═══════════════════════════════════════
   RÈGLE PRIX

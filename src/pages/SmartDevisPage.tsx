@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { type PriceCatalogItem, DEFAULT_CATALOG } from '@/hooks/useArtisanPricing';
+// Catalog removed — pricing via شبيك لبيك only
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -137,7 +137,7 @@ const SmartDevisPage = () => {
   const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [materialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel'>('fourniture_et_pose');
-  const [catalogByCode, setCatalogByCode] = useState<Record<string, PriceCatalogItem>>({});
+  // catalogByCode removed — pricing via شبيك لبيك only
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const voiceRecognitionRef = useRef<any>(null);
 
@@ -209,219 +209,13 @@ const SmartDevisPage = () => {
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
-  // REMOVED LABOR_ONLY_FACTOR - prices now come strictly from catalog labor_price
-
-  // Build keyword→catalog mapping from the complete price catalog
-  const CATALOG_KEYWORDS: Record<string, { keywords: string[]; catalogCode: string }> = {
-    // Maçonnerie
-    MAC01: { keywords: ['dalle beton', 'dalle béton', 'dalle armee', 'dalle armée'], catalogCode: 'MAC01' },
-    MAC02: { keywords: ['chape beton', 'chape béton', 'chape ciment'], catalogCode: 'MAC02' },
-    MAC03: { keywords: ['mur parpaing', 'parpaing'], catalogCode: 'MAC03' },
-    MAC04: { keywords: ['fondation', 'fondation beton', 'fondation béton'], catalogCode: 'MAC04' },
-    MAC05: { keywords: ['terrasse beton', 'terrasse béton'], catalogCode: 'MAC05' },
-    MAC06: { keywords: ['escalier beton', 'escalier béton'], catalogCode: 'MAC06' },
-    MC004: { keywords: ['mur porteur', 'ouverture mur porteur', 'ouverture mur'], catalogCode: 'MC004' },
-    MAC08: { keywords: ['demolition mur', 'démolition mur', 'demolition', 'démolition', 'ديمونتاج'], catalogCode: 'MAC08' },
-    MAC09: { keywords: ['chape liquide'], catalogCode: 'MAC09' },
-    MAC10: { keywords: ['enduit facade', 'enduit façade', 'crepi', 'crépi'], catalogCode: 'MAC10' },
-    // Peinture
-    PEI01: { keywords: ['preparation murs', 'préparation murs', 'enduit', 'أندوي', 'preparation', 'préparation', 'sous-couche', 'سوكوش'], catalogCode: 'PEI01' },
-    PEI02: { keywords: ['peinture murs', 'peinture mur', 'peinture blanche', 'peinture mate', 'بنتيرة', 'بانتيرة', 'peinture'], catalogCode: 'PEI02' },
-    PEI03: { keywords: ['preparation plafond', 'préparation plafond'], catalogCode: 'PEI03' },
-    PEI04: { keywords: ['peinture plafond', 'بلافون'], catalogCode: 'PEI04' },
-    PEI05: { keywords: ['peinture facade', 'peinture façade', 'peinture exterieure'], catalogCode: 'PEI05' },
-    PEI06: { keywords: ['peinture boiserie', 'peinture bois', 'peinture porte'], catalogCode: 'PEI06' },
-    PEI07: { keywords: ['enduit rebouchage', 'rebouchage'], catalogCode: 'PEI07' },
-    PEI08: { keywords: ['enduit lissage', 'lissage'], catalogCode: 'PEI08' },
-    PEI09: { keywords: ['poncage murs', 'ponçage murs'], catalogCode: 'PEI09' },
-    // Placo
-    PLA01: { keywords: ['placo', 'ba13', 'بلاكو'], catalogCode: 'PLA01' },
-    PLA02: { keywords: ['bande placo', 'bandes placo', 'bande a joint', 'bande joint'], catalogCode: 'PLA02' },
-    PLA03: { keywords: ['faux plafond', 'faux-plafond', 'فو بلافون', 'سقف معلق'], catalogCode: 'PLA03' },
-    // Placo / Isolation (PLA04-PLA07 replace ISO codes)
-    PLA04: { keywords: ['isolation combles'], catalogCode: 'PLA04' },
-    PLA05: { keywords: ['isolation murs', 'isolation interieur'], catalogCode: 'PLA05' },
-    PLA06: { keywords: ['isolation toiture'], catalogCode: 'PLA06' },
-    PLA07: { keywords: ['isolation plancher'], catalogCode: 'PLA07' },
-    // Carrelage
-    CAR01: { keywords: ['ragreage', 'ragréage', 'راغرياج'], catalogCode: 'CAR01' },
-    CR001: { keywords: ['carrelage sol', 'pose carrelage sol', 'carrelage', 'كارلاج'], catalogCode: 'CR001' },
-    CAR03: { keywords: ['faience', 'faïence', 'فايونس', 'faience murale'], catalogCode: 'CAR03' },
-    CAR04: { keywords: ['depose carrelage', 'dépose carrelage'], catalogCode: 'CAR04' },
-    CAR05: { keywords: ['carrelage terrasse', 'pose carrelage terrasse'], catalogCode: 'CAR05' },
-    // Parquet
-    PAR01: { keywords: ['parquet flottant'], catalogCode: 'PAR01' },
-    PAR02: { keywords: ['parquet colle', 'parquet collé', 'parquet', 'باركيه'], catalogCode: 'PAR02' },
-    PAR03: { keywords: ['plinthe', 'plinthes', 'pose plinthe', 'بلانت'], catalogCode: 'PAR03' },
-    PAR04: { keywords: ['poncage parquet', 'ponçage parquet', 'poncage', 'ponçage', 'بونساج'], catalogCode: 'PAR04' },
-    PAR05: { keywords: ['sol vinyle', 'sol pvc', 'lino', 'vinyle'], catalogCode: 'PAR05' },
-    // Électricité
-    ELE01: { keywords: ['prise', 'prise electrique', 'prise murale', 'بريز'], catalogCode: 'ELE01' },
-    ELE02: { keywords: ['interrupteur', 'انتيريبتور'], catalogCode: 'ELE02' },
-    ELE03: { keywords: ['tableau electrique', 'tableau électrique', 'كهرباء'], catalogCode: 'ELE03' },
-    ELE04: { keywords: ['luminaire', 'eclairage', 'éclairage', 'plafonnier', 'point lumineux'], catalogCode: 'ELE04' },
-    ELE05: { keywords: ['spot led', 'spot encastre', 'spot encastré'], catalogCode: 'ELE05' },
-    ELE06: { keywords: ['tirage cable', 'tirage câble', 'cable electrique', 'câble électrique'], catalogCode: 'ELE06' },
-    // Plomberie
-    PB001: { keywords: ['wc', 'toilette', 'toilettes', 'installation wc'], catalogCode: 'PB001' },
-    PLM02: { keywords: ['lavabo', 'évier', 'evier'], catalogCode: 'PLM02' },
-    PLM03: { keywords: ['meuble vasque', 'vasque'], catalogCode: 'PLM03' },
-    PLM04: { keywords: ['douche', 'baignoire', 'سباكة'], catalogCode: 'PLM04' },
-    PLM05: { keywords: ['fuite', 'reparation fuite', 'réparation fuite'], catalogCode: 'PLM05' },
-    PLM06: { keywords: ['chauffe-eau', 'chauffe eau', 'installation chauffe-eau'], catalogCode: 'PLM06' },
-    // Menuiserie
-    MEN01: { keywords: ['porte interieure', 'porte intérieure', 'pose porte', 'باب'], catalogCode: 'MEN01' },
-    MEN02: { keywords: ['fenetre pvc', 'fenêtre pvc', 'fenetre', 'fenêtre', 'شباك'], catalogCode: 'MEN02' },
-    MEN03: { keywords: ['placard', 'placard sur mesure', 'dressing'], catalogCode: 'MEN03' },
-    MEN04: { keywords: ['escalier bois'], catalogCode: 'MEN04' },
-    MEN05: { keywords: ["porte d'entree", "porte d'entrée", 'porte entree'], catalogCode: 'MEN05' },
-    MEN06: { keywords: ['baie vitree', 'baie vitrée'], catalogCode: 'MEN06' },
-    MEN07: { keywords: ['volet roulant', 'volet'], catalogCode: 'MEN07' },
-    MEN08: { keywords: ['portail', 'portail aluminium'], catalogCode: 'MEN08' },
-    // Toiture
-    TOI01: { keywords: ['pose tuiles', 'tuiles'], catalogCode: 'TOI01' },
-    TOI02: { keywords: ['reparation toiture', 'réparation toiture'], catalogCode: 'TOI02' },
-    TOI03: { keywords: ['nettoyage toiture'], catalogCode: 'TOI03' },
-    TOI04: { keywords: ['demoussage', 'démoussage'], catalogCode: 'TOI04' },
-    TOI05: { keywords: ['gouttiere', 'gouttière', 'pose gouttiere'], catalogCode: 'TOI05' },
-    // Étanchéité
-    ETA01: { keywords: ['etancheite toiture', 'étanchéité toiture', 'etancheite terrasse', 'étanchéité terrasse'], catalogCode: 'ETA01' },
-    ETA02: { keywords: ['etancheite balcon', 'étanchéité balcon'], catalogCode: 'ETA02' },
-    ETA03: { keywords: ['etancheite salle de bain', 'étanchéité salle de bain', 'etancheite sdb'], catalogCode: 'ETA03' },
-    // Extérieur
-    EXT01: { keywords: ['cloture grillage', 'clôture grillage'], catalogCode: 'EXT01' },
-    EXT02: { keywords: ['cloture panneau', 'clôture panneau'], catalogCode: 'EXT02' },
-    EXT03: { keywords: ['terrasse bois'], catalogCode: 'EXT03' },
-    EXT04: { keywords: ['dalle terrasse'], catalogCode: 'EXT04' },
-    // Chauffage / Clim
-    CH01: { keywords: ['radiateur'], catalogCode: 'CH01' },
-    CH02: { keywords: ['chauffe eau', 'chauffe-eau', 'ballon eau chaude', 'سخان'], catalogCode: 'CH02' },
-    CH03: { keywords: ['pompe a chaleur', 'pompe à chaleur', 'pac'], catalogCode: 'CH03' },
-    CH04: { keywords: ['climatisation', 'clim', 'split', 'تكييف'], catalogCode: 'CH04' },
-    // Ventilation
-    VEN01: { keywords: ['vmc simple', 'vmc simple flux'], catalogCode: 'VEN01' },
-    VEN02: { keywords: ['vmc double', 'vmc double flux'], catalogCode: 'VEN02' },
-    // Piscine
-    PIS01: { keywords: ['vidange piscine'], catalogCode: 'PIS01' },
-    PIS02: { keywords: ['nettoyage bassin', 'nettoyage piscine'], catalogCode: 'PIS02' },
-    PIS03: { keywords: ['sablage piscine'], catalogCode: 'PIS03' },
-    PIS04: { keywords: ['resine polyester', 'résine polyester', 'resine piscine'], catalogCode: 'PIS04' },
-    PIS05: { keywords: ['gelcoat'], catalogCode: 'PIS05' },
-    PIS06: { keywords: ['liner piscine', 'pose liner'], catalogCode: 'PIS06' },
-    PIS07: { keywords: ['membrane armee', 'membrane armée'], catalogCode: 'PIS07' },
-    PIS08: { keywords: ['fissure piscine', 'reparation fissure piscine'], catalogCode: 'PIS08' },
-    PIS09: { keywords: ['pompe piscine'], catalogCode: 'PIS09' },
-    PIS10: { keywords: ['filtration piscine'], catalogCode: 'PIS10' },
-    PIS11: { keywords: ['margelle', 'margelles'], catalogCode: 'PIS11' },
-    PIS12: { keywords: ['carrelage piscine'], catalogCode: 'PIS12' },
-    PIS13: { keywords: ['skimmer'], catalogCode: 'PIS13' },
-    PIS14: { keywords: ['bonde fond', 'bonde de fond'], catalogCode: 'PIS14' },
-    PIS15: { keywords: ['projecteur piscine'], catalogCode: 'PIS15' },
-    // Location
-    LOC01: { keywords: ['echafaudage', 'échafaudage', 'location echafaudage'], catalogCode: 'LOC01' },
-    LOC02: { keywords: ['sableuse', 'location sableuse'], catalogCode: 'LOC02' },
-    LOC03: { keywords: ['betonniere', 'bétonnière'], catalogCode: 'LOC03' },
-    LOC04: { keywords: ['mini pelle', 'minipelle'], catalogCode: 'LOC04' },
-    LOC05: { keywords: ['benne gravats', 'benne'], catalogCode: 'LOC05' },
-    // Frais chantier
-    CHA01: { keywords: ['protection chantier'], catalogCode: 'CHA01' },
-    CHA02: { keywords: ['nettoyage chantier', 'نيتواياج', 'nettoyage fin', 'nettoyage fin de chantier'], catalogCode: 'CHA02' },
-    CHA03: { keywords: ['transport materiaux', 'transport matériaux'], catalogCode: 'CHA03' },
-    CHA04: { keywords: ['evacuation gravats', 'évacuation gravats', 'frais de chantier', 'مصاريف الشانتي'], catalogCode: 'CHA04' },
-    // Generic fallbacks (must be AFTER specific codes)
-    GENERIC_NETTOYAGE: { keywords: ['nettoyage'], catalogCode: 'CHA02' },
-    GENERIC_ISOLATION: { keywords: ['isolation', 'عزل'], catalogCode: 'PLA05' },
-  };
-
-  const parseCatalogItem = (row: any): PriceCatalogItem => ({
-    code: row.code,
-    category: row.category,
-    subcategory: row.subcategory || '',
-    description: row.description,
-    unit: row.unit,
-    material_price: Number(row.material_price),
-    labor_price: Number(row.labor_price),
-    equipment_price: Number(row.equipment_price || 0),
-    total_price: Number(row.total_price),
-  });
-
-  // Build default catalog lookup once
-  const defaultCatalogByCode: Record<string, PriceCatalogItem> = (() => {
-    const map: Record<string, PriceCatalogItem> = {};
-    DEFAULT_CATALOG.forEach(item => { map[item.code] = item; });
-    return map;
-  })();
-
-  useEffect(() => {
-    const loadCatalogFromDatabase = async () => {
-      if (!user) {
-        // No user → use default catalog as fallback
-        setCatalogByCode(defaultCatalogByCode);
-        return;
-      }
-
-      const { data, error } = await (supabase as any)
-        .from('artisan_price_catalog')
-        .select('code, category, subcategory, description, unit, material_price, labor_price, equipment_price, total_price')
-        .eq('user_id', user.id)
-        .order('code');
-
-      if (error || !data || data.length === 0) {
-        // No user catalog in DB → fallback to DEFAULT_CATALOG
-        setCatalogByCode(defaultCatalogByCode);
-        return;
-      }
-
-      const nextCatalog: Record<string, PriceCatalogItem> = {};
-      data.forEach((row: any) => {
-        const parsed = parseCatalogItem(row);
-        nextCatalog[parsed.code] = parsed;
-      });
-      setCatalogByCode(nextCatalog);
-    };
-
-    loadCatalogFromDatabase();
-  }, [user]);
-
-  const normalizeText = (value: string) =>
-    value
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+  // CATALOG & BTP REFERENCE REMOVED — All pricing via شبيك لبيك (✨) only
 
   const normalizeCatalogUnit = (unit: string): string => {
     if (unit === 'unit') return 'u';
     if (unit === 'm2') return 'm²';
     return unit || 'u';
   };
-
-  const detectCatalogCodeFromDesignation = (designation: string): string | null => {
-    const normalizedDesignation = normalizeText(designation || '');
-    if (!normalizedDesignation) return null;
-
-    const directCodeMatch = normalizedDesignation.match(/\b[a-z]{2,4}\d{2,3}\b/i);
-    if (directCodeMatch?.[0]) {
-      return directCodeMatch[0].toUpperCase();
-    }
-
-    const foundEntry = Object.values(CATALOG_KEYWORDS).find((entry) =>
-      entry.keywords.some((keyword) => normalizedDesignation.includes(normalizeText(keyword)))
-    );
-
-    return foundEntry?.catalogCode ?? null;
-  };
-
-  const getCatalogPriceFromItem = (catalogItem: PriceCatalogItem, includeMaterials: boolean): number => {
-    const rawPrice = includeMaterials ? catalogItem.total_price : catalogItem.labor_price;
-    return Number(rawPrice);
-  };
-
-  const getCatalogUnitPriceByCode = useCallback((catalogCode: string | undefined, includeMaterials: boolean): number => {
-    if (!catalogCode) return 0;
-    const catalogItem = catalogByCode[catalogCode];
-    if (!catalogItem) return 0;
-    return getCatalogPriceFromItem(catalogItem, includeMaterials);
-  }, [catalogByCode]);
 
   // Strip "Fourniture et pose" → "Pose" when material is excluded
   const stripFourniture = (fr: string, ar: string): { fr: string; ar: string } => {
@@ -1111,41 +905,22 @@ const SmartDevisPage = () => {
 
       const data = await invokeAnalyzer(payload);
 
-      const rawItems = data.items || data.suggestedItems || [];
-
       // ===== STRICT LOCK: build ONLY from generate_items output =====
-      // Never reconstruct quote lines from arbitrary codes found elsewhere in the analysis payload.
+      const rawItems = data.items || data.suggestedItems || [];
       const seenDesignations = new Set<string>();
+      const normalizeForDedup = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
       const deduplicatedItems = rawItems.filter((item: any) => {
-        const normalizedKey = normalizeText(item.designation_fr || '').replace(/\s+/g, ' ').trim();
+        const normalizedKey = normalizeForDedup(item.designation_fr || '');
         if (!normalizedKey) return true;
         if (seenDesignations.has(normalizedKey)) return false;
         seenDesignations.add(normalizedKey);
         return true;
       });
 
-      const explicitCodes: string[] = Array.from(
-        new Set(
-          deduplicatedItems
-            .map((item: any): string => (typeof item.code === 'string' ? item.code.trim().toUpperCase() : ''))
-            .filter((code: string) => code.length > 0)
-        )
-      );
-
-      const catalogRows = await fetchCatalogByCodes(explicitCodes);
-      const sourceItems = deduplicatedItems;
-
-      const items: LineItem[] = sourceItems.map((item: any) => {
+      const items: LineItem[] = deduplicatedItems.map((item: any) => {
         const quantity = Number(item.quantity || 1);
         const aiUnit = item.unit || 'u';
-        const isPartiel = materialScope === 'partiel';
-        const withMaterial = isPartiel ? false : materialScope !== 'main_oeuvre_seule';
-
-        const explicitCode = typeof item.code === 'string' ? item.code.trim().toUpperCase() : '';
-        const catalogItem = explicitCode ? (catalogRows[explicitCode] || catalogByCode[explicitCode]) : undefined;
-
-        const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : (item.btpPriceSource === 'btp_price_reference' ? aiUnit : aiUnit);
-        const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
+        const withMaterial = materialScope !== 'main_oeuvre_seule';
 
         const baseFr = item.designation_fr || '';
         const baseAr = item.designation_ar || '';
@@ -1158,20 +933,21 @@ const SmartDevisPage = () => {
           id: generateId(),
           designation_fr: finalFr,
           designation_ar: finalAr,
-          quantity: effectiveQuantity,
-          unit,
+          quantity,
+          unit: aiUnit,
           unitPrice: 0,
           total: 0,
-          category: item.category || catalogItem?.category,
-          catalogCode: explicitCode || undefined,
+          category: item.category,
+          catalogCode: typeof item.code === 'string' ? item.code.trim().toUpperCase() : undefined,
           withMaterial,
           isAiEstimate: false,
         };
       });
 
       const seenItemKeys = new Set<string>();
+      const normalizeForKey = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
       const finalItems = items.filter(item => {
-        const labelKey = normalizeText([item.designation_fr, item.designation_ar].filter(Boolean).join(' ')).replace(/\s+/g, ' ').trim();
+        const labelKey = normalizeForKey([item.designation_fr, item.designation_ar].filter(Boolean).join(' '));
         const key = item.catalogCode ? `code:${item.catalogCode}` : `label:${labelKey}`;
 
         if (!labelKey && !item.catalogCode) return false;
@@ -1203,90 +979,10 @@ const SmartDevisPage = () => {
     }));
   };
 
-  const fetchCatalogByCodes = useCallback(async (codes: string[]): Promise<Record<string, PriceCatalogItem>> => {
-    if (codes.length === 0) return {};
-
-    const uniqueCodes = Array.from(new Set(codes.map(code => code.trim().toUpperCase()).filter(Boolean)));
-    if (uniqueCodes.length === 0) return {};
-
-    // Try DB first if user is logged in
-    if (user) {
-      const { data, error } = await (supabase as any)
-        .from('artisan_price_catalog')
-        .select('code, category, subcategory, description, unit, material_price, labor_price, equipment_price, total_price')
-        .eq('user_id', user.id)
-        .in('code', uniqueCodes);
-
-      if (!error && data && data.length > 0) {
-        const mapped: Record<string, PriceCatalogItem> = {};
-        data.forEach((row: any) => {
-          const parsed = parseCatalogItem(row);
-          mapped[parsed.code] = parsed;
-        });
-        setCatalogByCode(prev => ({ ...prev, ...mapped }));
-        return mapped;
-      }
-    }
-
-    // Fallback: resolve from DEFAULT_CATALOG
-    const fallback: Record<string, PriceCatalogItem> = {};
-    uniqueCodes.forEach(code => {
-      if (defaultCatalogByCode[code]) {
-        fallback[code] = defaultCatalogByCode[code];
-      }
-    });
-    if (Object.keys(fallback).length > 0) {
-      setCatalogByCode(prev => ({ ...prev, ...fallback }));
-    }
-    return fallback;
-  }, [user, defaultCatalogByCode]);
-
-  const fetchCatalogByCode = useCallback(async (code: string): Promise<PriceCatalogItem | null> => {
-    const normalizedCode = code.trim().toUpperCase();
-    if (!normalizedCode) return null;
-
-    const rows = await fetchCatalogByCodes([normalizedCode]);
-    return rows[normalizedCode] ?? null;
-  }, [fetchCatalogByCodes]);
-
+  // Code lookup removed — pricing via شبيك لبيك only
   const onCodeChange = useCallback(async (id: string, rawValue: string) => {
     updateItem(id, 'designation_fr', rawValue);
-
-    const normalizedCode = rawValue.trim().toUpperCase();
-    const isCode = /^[A-Z]{2,4}\d{2,3}$/.test(normalizedCode);
-    if (!isCode) return;
-
-    const catalogItem = await fetchCatalogByCode(normalizedCode);
-
-    setLineItems(prev => prev.map(item => {
-      if (item.id !== id) return item;
-
-      if (!catalogItem) {
-        return {
-          ...item,
-          catalogCode: undefined,
-          unitPrice: 0,
-          total: 0,
-        };
-      }
-
-      const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
-      const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
-      const exactUnitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
-      const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
-
-      return {
-        ...item,
-        designation_fr: catalogItem.description,
-        unit: normalizedUnit,
-        quantity,
-        unitPrice: exactUnitPrice,
-        category: catalogItem.category,
-        catalogCode: catalogItem.code,
-        total: quantity * exactUnitPrice,
-      };
-    }));
-  }, [fetchCatalogByCode, materialScope]);
+  }, []);
 
   const removeItem = (id: string) => setLineItems(prev => prev.filter(i => i.id !== id));
 
@@ -1335,40 +1031,7 @@ const SmartDevisPage = () => {
     }
   }, [materialScope, user]);
 
-  // Helper: Try to resolve price from catalog using semantic keyword match
-  const resolveFromCatalog = useCallback((item: LineItem): { unitPrice: number; catalogCode: string; catalogItem: PriceCatalogItem } | null => {
-    // Step 1: Try explicit catalog code on the item
-    if (item.catalogCode) {
-      const cat = catalogByCode[item.catalogCode];
-      if (cat) {
-        const includeMat = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
-        let price = getCatalogPriceFromItem(cat, includeMat);
-        // 50/50 split: if labor-only but labor_price is 0, use total_price / 2
-        if (!includeMat && price === 0 && cat.total_price > 0) {
-          price = Math.round(cat.total_price / 2);
-        }
-        if (price > 0) return { unitPrice: price, catalogCode: cat.code, catalogItem: cat };
-      }
-    }
-
-    // Step 2: Semantic keyword match on designation
-    const detectedCode = detectCatalogCodeFromDesignation(
-      [item.designation_fr, item.designation_ar].filter(Boolean).join(' ')
-    );
-    if (detectedCode) {
-      const cat = catalogByCode[detectedCode];
-      if (cat) {
-        const includeMat = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
-        let price = getCatalogPriceFromItem(cat, includeMat);
-        if (!includeMat && price === 0 && cat.total_price > 0) {
-          price = Math.round(cat.total_price / 2);
-        }
-        if (price > 0) return { unitPrice: price, catalogCode: cat.code, catalogItem: cat };
-      }
-    }
-
-    return null;
-  }, [catalogByCode, materialScope]);
+  // resolveFromCatalog removed — pricing via شبيك لبيك only
 
   // "Shubbaik Lubbaik" — tarification via شبيك لبيك uniquement
   const handleFetchAIPrices = useCallback(async () => {
@@ -1455,17 +1118,12 @@ const SmartDevisPage = () => {
     }
   }, [lineItems, isRTL, toast, estimatePricesWithAI]);
 
-  // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
+  // Toggle withMaterial for a line item — no catalog, user adjusts price manually or via ✨
   const toggleItemMaterial = (id: string) => {
     setLineItems(prev => prev.map(item => {
       if (item.id !== id) return item;
 
       const newWithMaterial = !item.withMaterial;
-      const explicitCode = item.catalogCode;
-      const catalogItem = explicitCode ? catalogByCode[explicitCode] : undefined;
-      const newPrice = getCatalogUnitPriceByCode(explicitCode, newWithMaterial);
-      const normalizedUnit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : item.unit;
-      const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
 
       const sourceFr = item.designation_fr;
       const { fr, ar } = newWithMaterial
@@ -1476,12 +1134,10 @@ const SmartDevisPage = () => {
         ...item,
         designation_fr: fr,
         designation_ar: ar,
-        unit: normalizedUnit,
-        quantity,
         withMaterial: newWithMaterial,
-        catalogCode: explicitCode,
-        unitPrice: newPrice,
-        total: quantity * newPrice,
+        // Reset price to 0 so user re-fetches via ✨
+        unitPrice: 0,
+        total: 0,
       };
     }));
   };
@@ -2498,37 +2154,17 @@ const SmartDevisPage = () => {
                           </button>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs p-3 max-w-[220px]">
-                          {(() => {
-                            const detectedCode = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr) || undefined;
-                            const fullPrice = getCatalogUnitPriceByCode(detectedCode, true);
-                            const laborPrice = getCatalogUnitPriceByCode(detectedCode, false);
-                            const materialPrice = Math.round((fullPrice - laborPrice) * 100) / 100;
-                            return (
-                              <div className="space-y-1.5">
-                                <p className="font-bold text-foreground">
-                                  {isRTL ? 'تفصيل السعر' : 'Détail du prix'}
-                                </p>
-                                <div className="flex justify-between gap-3">
-                                  <span className="text-muted-foreground">{isRTL ? '🔧 مصنعية' : '🔧 Main d\'œuvre'}</span>
-                                  <span className="font-semibold">{formatCurrency(laborPrice)}/{item.unit}</span>
-                                </div>
-                                <div className="flex justify-between gap-3">
-                                  <span className="text-muted-foreground">{isRTL ? '📦 مواد' : '📦 Matériaux'}</span>
-                                  <span className="font-semibold">{formatCurrency(materialPrice)}/{item.unit}</span>
-                                </div>
-                                <div className="flex justify-between gap-3 pt-1 border-t border-border/40">
-                                  <span className="text-muted-foreground">{isRTL ? '💰 الكل' : '💰 Total'}</span>
-                                  <span className="font-bold text-primary">{formatCurrency(fullPrice)}/{item.unit}</span>
-                                </div>
-                                <p className="text-[9px] text-muted-foreground pt-1">
-                                  {item.withMaterial
-                                    ? (isRTL ? 'اضغط لإزالة المواد' : 'Cliquer pour retirer les matériaux')
-                                    : (isRTL ? 'اضغط لإضافة المواد' : 'Cliquer pour inclure les matériaux')
-                                  }
-                                </p>
-                              </div>
-                            );
-                          })()}
+                          <div className="space-y-1.5">
+                            <p className="font-bold text-foreground">
+                              {isRTL ? 'فورنيتير / مصنعية' : 'Fourniture / Main d\'œuvre'}
+                            </p>
+                            <p className="text-[9px] text-muted-foreground">
+                              {item.withMaterial
+                                ? (isRTL ? 'اضغط لإزالة المواد — السعر هيتصفّر واضغط ✨ تاني' : 'Cliquer pour retirer les matériaux — le prix sera remis à 0')
+                                : (isRTL ? 'اضغط لإضافة المواد — السعر هيتصفّر واضغط ✨ تاني' : 'Cliquer pour inclure les matériaux — le prix sera remis à 0')
+                              }
+                            </p>
+                          </div>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>

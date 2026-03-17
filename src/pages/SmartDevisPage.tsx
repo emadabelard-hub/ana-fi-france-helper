@@ -1224,29 +1224,19 @@ const SmartDevisPage = () => {
         const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : (item.btpPriceSource === 'btp_price_reference' ? aiUnit : aiUnit);
         const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
 
-        // Use prices from edge function (catalog/BTP reference) if available
-        const edgeFunctionPrice = typeof item.unitPrice === 'number' && item.unitPrice > 0 ? item.unitPrice : 0;
-        const priceSource = item.btpPriceSource || '';
-        const isFromCatalog = priceSource === 'artisan_catalog' || priceSource === 'btp_price_reference';
-
-        const baseFr = item.designation_fr || '';
-        const baseAr = item.designation_ar || '';
-        const { fr: finalFr, ar: finalAr } = !withMaterial
-          ? stripFourniture(baseFr, baseAr)
-          : { fr: baseFr, ar: baseAr };
-
+        // STRICT PRICING CONTROL: All prices initialize to 0. User triggers pricing via ✨ button.
         return {
           id: generateId(),
           designation_fr: finalFr,
           designation_ar: finalAr,
           quantity: effectiveQuantity,
           unit,
-          unitPrice: edgeFunctionPrice,
-          total: effectiveQuantity * edgeFunctionPrice,
+          unitPrice: 0,
+          total: 0,
           category: item.category || catalogItem?.category,
           catalogCode: explicitCode || undefined,
           withMaterial,
-          isAiEstimate: !isFromCatalog && edgeFunctionPrice > 0,
+          isAiEstimate: false,
         };
       });
 

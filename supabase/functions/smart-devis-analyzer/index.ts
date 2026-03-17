@@ -677,6 +677,13 @@ Utilise CE dictionnaire pour le mapping:
 - Plomberie → designation_fr: "Travaux de plomberie" / designation_ar: "سباكة وتوصيلات مية"
 - Électricité → designation_fr: "Travaux d'électricité" / designation_ar: "كهربا وتوصيلات"
 - Frais chantier → designation_fr: "Frais de chantier" / designation_ar: "مصاريف الشانتي"
+- Préparation supports → designation_fr: "Préparation des supports" / designation_ar: "تجهيز الحوائط مية مية"
+- Dépose ancien carrelage → designation_fr: "Dépose ancien carrelage" / designation_ar: "تكسير الكارلاج القديم وشيله"
+- Pose carrelage sol → designation_fr: "Pose carrelage sol" / designation_ar: "تركيب كارلاج الأرضية"
+- Pose faïence murale → designation_fr: "Pose faïence murale" / designation_ar: "تركيب فايونس الحيطان"
+- Étanchéité → designation_fr: "Étanchéité zone humide" / designation_ar: "عزل مية (إيطونشيتي)"
+- Installation sanitaires → designation_fr: "Installation appareils sanitaires" / designation_ar: "تركيب الأطقم (حوض وحنفيات)"
+- Ragréage sol → designation_fr: "Ragréage du sol" / designation_ar: "راغرياج (تسوية الأرضية)"
 
 ⛔ RÈGLE: La designation_ar DOIT être en argot artisan égyptien (Ammiya), PAS en arabe littéraire.
 ⛔ Utilise des translitérations phonétiques: Parquet→باركيه, Primaire→بريمير, Ragréage→راغرياج, 
@@ -692,7 +699,8 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
 
 ⛔ INTERDICTION ABSOLUE: ne JAMAIS ajouter une étape absente du plan de travaux, même si elle est habituelle, logique ou fréquente dans ce type de chantier.
 ⛔ Chaque ligne du devis doit correspondre à une étape explicitement mentionnée dans le work plan.
-⛔ RÈGLE STATELESS: Génère UNIQUEMENT à partir des données d'analyse fournies dans CE message.
+⛔ RÈGLE STATELESS: Génère UNIQUEMENT à partir des données d'analyse fournies dans CE message. IGNORE tout contexte de projets précédents.
+⛔ RÈGLE ANTI-CONTAMINATION: Si l'analyse dit "salle de bain" ou "bathroom", NE JAMAIS injecter des termes de piscine (206m², bassin, liner, résine piscine). Chaque projet est ISOLÉ.
 ⛔ RÈGLE ZERO-HALLUCINATION: Mapping 1:1 strict entre "workPlan_*" et "items".
 ⛔ RÈGLE ANTI-DOUBLE FACTURATION: "Fourniture et pose" = 1 SEULE ligne.
 ⛔ RÈGLE CONSOLIDATION FRAIS: Déplacement + nettoyage + évacuation = 1 ligne "Frais de chantier / مصاريف الشانتي" SEULEMENT si ce bloc figure déjà dans le work plan.
@@ -743,6 +751,14 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
 
 🔷 SI chantierType = "carrelage":
   CODES AUTORISÉS: CR001-CR003, CHA01, CHA02, CHA04
+
+🛁 SI chantierType = "salle_de_bain" ou "salle de bain" ou "bathroom":
+  CODES AUTORISÉS: CR001-CR003 (carrelage sol/mur), PLB01-PLB09 (plomberie/sanitaire), 
+    DEM01 (démolition), CHA01, CHA02, CHA04, PEI01-PEI04 (peinture plafond si applicable)
+  CODES INTERDITS: PIS01-PIS12, FAC01-FAC06, TOI01-TOI04
+  UNITÉS: m² pour carrelage et préparation, Ens ou U pour plomberie et nettoyage
+  ⛔ INTERDIT: toute référence à "piscine", "206m²", "bassin", "liner", "résine piscine"
+  ⛔ Les surfaces doivent correspondre aux dimensions de la salle de bain UNIQUEMENT
 
 ═══════════════════════════════════════
   RÈGLES SURFACES PEINTURE
@@ -810,7 +826,7 @@ Réponds UNIQUEMENT en JSON:
       "designation_fr": "Titre professionnel (avec couleur si applicable)",
       "designation_ar": "ترجمة بالعامية المصرية (argot artisan)",
       "quantity": 0,
-      "unit": "m²|ml|u|h|forfait",
+      "unit": "m²|ml|u|h|Ens",
       "unitPrice": 0,
       "code": "CODE catalogue métier"
     }

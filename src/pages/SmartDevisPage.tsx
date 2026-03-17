@@ -1091,7 +1091,9 @@ const SmartDevisPage = () => {
       if (assistantSoFar.includes('✅') && assistantSoFar.includes('جاهز')) {
         setPreferencesCollected(true);
       }
-    } catch (err: any) {
+
+      // ── AUTO-POPULATE: Parse assistant message for price mentions and apply to devis table ──
+      parseChatPricesAndApply(assistantSoFar);
       toast({ variant: 'destructive', title: 'خطأ', description: err.message });
     } finally {
       setIsChatLoading(false);

@@ -646,13 +646,11 @@ ${scopeRule}
   RÈGLE NOMBRE DE LIGNES (CRITIQUE)
 ═══════════════════════════════════════
 
-⛔ MAXIMUM 8 à 10 lignes de devis. Pas plus. JAMAIS plus de 10.
-⛔ Consolide les petites tâches similaires en une seule ligne.
-⛔ Garde uniquement les tâches ESSENTIELLES et DISTINCTES.
-⛔ NE JAMAIS générer de tâches redondantes ou non-essentielles.
-⛔ ANTI-DUPLICATION STRICTE: Si l'image montre 'peinture écaillée' ET 'surfaces sales', 
-   NE PAS créer deux lignes séparées. Grouper sous 'Ponçage & Nettoyage des surfaces'.
-⛔ NE JAMAIS répéter une tâche dans le tableau.
+✅ MAPPAGE DYNAMIQUE 1:1: Chaque étape du work_plan DOIT avoir SA PROPRE ligne dans le devis.
+✅ Si le work_plan a 6 étapes → 6 lignes. Si 10 étapes → 10 lignes. AUCUNE limite artificielle.
+⛔ NE JAMAIS fusionner deux étapes DISTINCTES du work_plan en une seule ligne.
+⛔ ANTI-DUPLICATION: NE JAMAIS répéter la même tâche. Chaque ligne = une étape unique.
+⛔ Si deux étapes sont vraiment identiques (doublon dans le work_plan), n'en garder qu'une.
 
 ═══════════════════════════════════════
   DICTIONNAIRE ARTISAN BILINGUE (OBLIGATOIRE)

@@ -826,7 +826,7 @@ Réponds UNIQUEMENT en JSON:
       "designation_fr": "Titre professionnel (avec couleur si applicable)",
       "designation_ar": "ترجمة بالعامية المصرية (argot artisan)",
       "quantity": 0,
-      "unit": "m²|ml|u|h|forfait",
+      "unit": "m²|ml|u|h|Ens",
       "unitPrice": 0,
       "code": "CODE catalogue métier"
     }

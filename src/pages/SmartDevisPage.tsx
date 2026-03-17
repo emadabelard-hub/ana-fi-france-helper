@@ -1254,30 +1254,7 @@ const SmartDevisPage = () => {
       setLineItems(finalItems);
       setStep('review');
 
-      // Auto-trigger AI estimation for items still without prices
-      const itemsNeedingPrice = finalItems.filter(i => !i.unitPrice || i.unitPrice <= 0);
-      if (itemsNeedingPrice.length > 0) {
-        try {
-          const aiPrices = await estimatePricesWithAI(itemsNeedingPrice);
-          if (Object.keys(aiPrices).length > 0) {
-            setLineItems(prev => prev.map(item => {
-              if (item.unitPrice > 0) return item;
-              const aiPrice = aiPrices[item.id];
-              if (aiPrice && aiPrice.unitPrice > 0) {
-                return {
-                  ...item,
-                  unitPrice: aiPrice.unitPrice,
-                  total: aiPrice.unitPrice * item.quantity,
-                  isAiEstimate: true,
-                };
-              }
-              return item;
-            }));
-          }
-        } catch (aiErr) {
-          console.warn('Auto AI price estimation failed:', aiErr);
-        }
-      }
+      // STRICT PRICING CONTROL: No auto-fill. Prices stay at 0 until user clicks ✨ button.
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'خطأ في التوليد', description: err.message });
     } finally {

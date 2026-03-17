@@ -2412,7 +2412,7 @@ const SmartDevisPage = () => {
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
-                  <div className="grid grid-cols-4 gap-1.5">
+                    <div className="grid grid-cols-4 gap-1.5">
                     <div>
                       <label className="text-[9px] text-muted-foreground">{isRTL ? 'كمية' : 'Qté'}</label>
                       <Input type="number" min={0} step={0.1} value={item.quantity} onChange={e => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)} className="text-xs h-7" />
@@ -2432,18 +2432,32 @@ const SmartDevisPage = () => {
                     </div>
                     <div>
                       <label className="text-[9px] text-muted-foreground">{isRTL ? 'سعر' : 'P.U.'}</label>
-                      {item.unitPrice < 0 ? (
-                        <div className="h-7 flex items-center">
-                          <Input type="number" min={0} step={0.01} value="" placeholder={isRTL ? 'سعر؟' : 'prix?'} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7 border-destructive placeholder:text-destructive/60" />
-                        </div>
-                      ) : (
-                        <Input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7" />
-                      )}
+                      <div className="flex items-center gap-0.5">
+                        {fetchingRowIds.has(item.id) ? (
+                          <div className="h-7 flex-1 flex items-center justify-center bg-muted rounded-md">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                          </div>
+                        ) : item.unitPrice < 0 ? (
+                          <Input type="number" min={0} step={0.01} value="" placeholder={isRTL ? 'سعر؟' : 'prix?'} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7 flex-1 border-destructive placeholder:text-destructive/60" />
+                        ) : (
+                          <Input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7 flex-1" />
+                        )}
+                        <button
+                          onClick={() => handleFetchSingleRowPrice(item.id)}
+                          disabled={fetchingRowIds.has(item.id)}
+                          className="h-7 w-7 shrink-0 flex items-center justify-center rounded-md bg-primary/10 hover:bg-primary/20 text-primary transition-colors disabled:opacity-50"
+                          title={isRTL ? 'شبيك لبيك — جيب السعر' : 'Shubbaik Lubbaik — Obtenir le prix'}
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <label className="text-[9px] text-muted-foreground">Total</label>
-                      <div className="h-7 flex items-center text-xs font-bold text-[#c5a028]">
-                        {item.unitPrice < 0 ? (
+                      <div className="h-7 flex items-center text-xs font-bold text-primary">
+                        {fetchingRowIds.has(item.id) ? (
+                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                        ) : item.unitPrice < 0 ? (
                           <span className="text-destructive text-[10px]">{isRTL ? 'سعر للتحقق' : 'prix à vérifier'}</span>
                         ) : (
                           formatCurrency(item.total)

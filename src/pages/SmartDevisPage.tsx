@@ -61,6 +61,7 @@ interface LineItem {
   category?: string;
   catalogCode?: string;
   withMaterial?: boolean; // For 'partiel' mode: user toggles material per line
+  isAiEstimate?: boolean; // True when price was estimated by AI, not from catalog
 }
 
 interface ChatMsg {

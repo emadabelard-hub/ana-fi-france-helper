@@ -846,7 +846,7 @@ Réponds UNIQUEMENT en JSON:
 
       aiMessages.push({
         role: "user",
-        content: `Données d'analyse:\n${JSON.stringify(analysisData)}\n\nGénère le devis final avec TOUTES les étapes du work_plan. Chaque étape du plan de travaux DOIT avoir une ligne correspondante dans le devis. Ne saute aucune étape.`
+        content: `Données d'analyse:\n${JSON.stringify(analysisData)}\n\nRÈGLE CRITIQUE: Génère le devis final avec 100% de couverture du work_plan.\n- Chaque étape du plan de travaux (workPlan_fr / workPlan_ar) DOIT avoir UNE ligne correspondante dans le devis.\n- Ne saute AUCUNE étape. Si l'analyse mentionne une tâche, elle DOIT apparaître dans le tableau.\n- Analyse = Table. Pas d'exception.\n- Inclus les quantités réalistes basées sur estimatedArea et surfaceEstimates.`
       });
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

@@ -2491,26 +2491,39 @@ const SmartDevisPage = () => {
                       </Select>
                     </div>
                     <div>
-                      <label className="text-[9px] text-muted-foreground">{isRTL ? 'سعر' : 'P.U.'}</label>
+                      <label className="text-[9px] text-muted-foreground flex items-center gap-1">
+                        {isRTL ? 'سعر' : 'P.U.'}
+                        {item.isAiEstimate && <Sparkles className="h-2.5 w-2.5 text-amber-500" />}
+                      </label>
                       {fetchingRowIds.has(item.id) ? (
                         <div className="h-7 flex items-center justify-center bg-muted rounded-md">
                           <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
                         </div>
-                      ) : item.unitPrice < 0 ? (
-                        <Input type="number" min={0} step={0.01} value="" placeholder={isRTL ? 'سعر؟' : 'prix?'} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7 border-destructive placeholder:text-destructive/60" />
                       ) : (
-                        <Input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7" />
+                        <Input type="number" min={0} step={0.01} value={item.unitPrice > 0 ? item.unitPrice : ''} placeholder={isRTL ? 'سعر؟' : 'prix?'} onChange={e => {
+                          updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0);
+                          // Clear AI estimate flag when manually edited
+                          if (item.isAiEstimate) {
+                            setLineItems(prev => prev.map(i => i.id === item.id ? { ...i, isAiEstimate: false } : i));
+                          }
+                        }} className={cn("text-xs h-7", item.isAiEstimate && "border-amber-400/50 bg-amber-50/30")} />
                       )}
                     </div>
                     <div>
-                      <label className="text-[9px] text-muted-foreground">Total</label>
+                      <label className="text-[9px] text-muted-foreground flex items-center gap-1">
+                        Total
+                        {item.isAiEstimate && <Sparkles className="h-2.5 w-2.5 text-amber-500" />}
+                      </label>
                       <div className="h-7 flex items-center text-xs font-bold text-primary">
                         {fetchingRowIds.has(item.id) ? (
                           <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                        ) : item.unitPrice < 0 ? (
-                          <span className="text-destructive text-[10px]">{isRTL ? 'سعر للتحقق' : 'prix à vérifier'}</span>
+                        ) : item.unitPrice > 0 ? (
+                          <span className="flex items-center gap-0.5">
+                            {item.isAiEstimate && <span className="text-amber-500 text-[9px]">~</span>}
+                            {formatCurrency(item.total)}
+                          </span>
                         ) : (
-                          formatCurrency(item.total)
+                          <span className="text-muted-foreground text-[10px]">—</span>
                         )}
                       </div>
                     </div>

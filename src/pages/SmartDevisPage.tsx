@@ -2529,7 +2529,7 @@ const SmartDevisPage = () => {
                     </div>
                   </div>
                   {/* Per-row Shubbaik Lubbaik button */}
-                  {(item.unitPrice === 0 || item.unitPrice < 0) && (
+                  {(item.unitPrice === 0) && (
                     <button
                       onClick={() => handleFetchSingleRowPrice(item.id)}
                       disabled={fetchingRowIds.has(item.id)}

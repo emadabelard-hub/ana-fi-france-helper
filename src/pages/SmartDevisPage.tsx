@@ -180,6 +180,7 @@ const SmartDevisPage = () => {
   const [profitMarginPercent, setProfitMarginPercent] = useState<number>(15);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFetchingPrices, setIsFetchingPrices] = useState(false);
+  const [fetchingRowIds, setFetchingRowIds] = useState<Set<string>>(new Set());
   const [showAuth, setShowAuth] = useState(false);
   const [preferencesCollected, setPreferencesCollected] = useState(false);
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
@@ -1424,6 +1425,70 @@ const SmartDevisPage = () => {
     }
   }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast]);
 
+  // Per-row AI price fetch — fetches price for a single row
+  const handleFetchSingleRowPrice = useCallback(async (itemId: string) => {
+    setFetchingRowIds(prev => new Set(prev).add(itemId));
+    try {
+      const item = lineItems.find(i => i.id === itemId);
+      if (!item) return;
+
+      const code = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr);
+      if (!code) {
+        setLineItems(prev => prev.map(i => i.id !== itemId ? i : { ...i, unitPrice: -1, total: 0 }));
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '❌ لم يتم العثور على سعر' : '❌ Prix introuvable',
+          description: isRTL ? 'هاد البند ما عندوش كود في الكاتالوغ. عدّل السعر يدوياً.' : 'Aucun code catalogue trouvé. Saisissez le prix manuellement.',
+        });
+        return;
+      }
+
+      const normalizedCode = code.toUpperCase();
+      const catalogRows = await fetchCatalogByCodes([normalizedCode]);
+      const catalogItem = catalogRows[normalizedCode] || catalogByCode[normalizedCode];
+
+      if (!catalogItem) {
+        setLineItems(prev => prev.map(i => i.id !== itemId ? i : { ...i, unitPrice: -1, total: 0 }));
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '❌ سعر غير متوفر' : '❌ Prix non disponible',
+          description: isRTL ? `الكود ${normalizedCode} غير موجود في التعريفة.` : `Code ${normalizedCode} non trouvé dans le catalogue.`,
+        });
+        return;
+      }
+
+      const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
+      const unitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
+      const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
+      const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
+
+      setLineItems(prev => prev.map(i => {
+        if (i.id !== itemId) return i;
+        return {
+          ...i,
+          unitPrice,
+          total: unitPrice > 0 ? quantity * unitPrice : 0,
+          catalogCode: normalizedCode,
+          unit: normalizedUnit,
+          quantity,
+        };
+      }));
+
+      toast({
+        title: isRTL ? '✅ تم جلب السعر' : '✅ Prix récupéré',
+        description: `${catalogItem.description}: ${unitPrice}€/${normalizedUnit}`,
+      });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: err.message });
+    } finally {
+      setFetchingRowIds(prev => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
+      });
+    }
+  }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast]);
+
   // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
   const toggleItemMaterial = (id: string) => {
     setLineItems(prev => prev.map(item => {
@@ -2302,10 +2367,10 @@ const SmartDevisPage = () => {
             ) : (
               <Sparkles className="h-5 w-5 mr-2" />
             )}
-            <span className={cn(isRTL && "font-cairo")}>
+             <span className={cn(isRTL && "font-cairo")}>
               {isFetchingPrices
                 ? (isRTL ? '⏳ جاري جلب الأسعار...' : '⏳ Chargement des prix...')
-                : (isRTL ? '🪄 شبيك لبيك — جيب الأسعار' : '🪄 Shubbaik Lubbaik — Obtenir les prix')
+                : (isRTL ? '🪄 شبيك لبيك — جيب كل الأسعار' : '🪄 Shubbaik Lubbaik — Tous les prix')
               }
             </span>
           </Button>
@@ -2347,7 +2412,7 @@ const SmartDevisPage = () => {
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
-                  <div className="grid grid-cols-4 gap-1.5">
+                    <div className="grid grid-cols-4 gap-1.5">
                     <div>
                       <label className="text-[9px] text-muted-foreground">{isRTL ? 'كمية' : 'Qté'}</label>
                       <Input type="number" min={0} step={0.1} value={item.quantity} onChange={e => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)} className="text-xs h-7" />
@@ -2367,18 +2432,32 @@ const SmartDevisPage = () => {
                     </div>
                     <div>
                       <label className="text-[9px] text-muted-foreground">{isRTL ? 'سعر' : 'P.U.'}</label>
-                      {item.unitPrice < 0 ? (
-                        <div className="h-7 flex items-center">
-                          <Input type="number" min={0} step={0.01} value="" placeholder={isRTL ? 'سعر؟' : 'prix?'} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7 border-destructive placeholder:text-destructive/60" />
-                        </div>
-                      ) : (
-                        <Input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7" />
-                      )}
+                      <div className="flex items-center gap-0.5">
+                        {fetchingRowIds.has(item.id) ? (
+                          <div className="h-7 flex-1 flex items-center justify-center bg-muted rounded-md">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                          </div>
+                        ) : item.unitPrice < 0 ? (
+                          <Input type="number" min={0} step={0.01} value="" placeholder={isRTL ? 'سعر؟' : 'prix?'} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7 flex-1 border-destructive placeholder:text-destructive/60" />
+                        ) : (
+                          <Input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7 flex-1" />
+                        )}
+                        <button
+                          onClick={() => handleFetchSingleRowPrice(item.id)}
+                          disabled={fetchingRowIds.has(item.id)}
+                          className="h-7 w-7 shrink-0 flex items-center justify-center rounded-md bg-primary/10 hover:bg-primary/20 text-primary transition-colors disabled:opacity-50"
+                          title={isRTL ? 'شبيك لبيك — جيب السعر' : 'Shubbaik Lubbaik — Obtenir le prix'}
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <label className="text-[9px] text-muted-foreground">Total</label>
-                      <div className="h-7 flex items-center text-xs font-bold text-[#c5a028]">
-                        {item.unitPrice < 0 ? (
+                      <div className="h-7 flex items-center text-xs font-bold text-primary">
+                        {fetchingRowIds.has(item.id) ? (
+                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                        ) : item.unitPrice < 0 ? (
                           <span className="text-destructive text-[10px]">{isRTL ? 'سعر للتحقق' : 'prix à vérifier'}</span>
                         ) : (
                           formatCurrency(item.total)

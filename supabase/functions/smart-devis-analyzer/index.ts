@@ -99,9 +99,9 @@ function tokenizePlannerText(value: string): string[] {
 }
 
 function extractWorkPlanSteps(analysisData: any): string[] {
-  const rawWorkPlan = [analysisData?.workPlan_fr, analysisData?.workPlan_ar]
-    .filter((value) => typeof value === "string" && value.trim().length > 0)
-    .join("\n");
+  const rawWorkPlan = typeof analysisData?.workPlan_fr === "string" && analysisData.workPlan_fr.trim().length > 0
+    ? analysisData.workPlan_fr
+    : (typeof analysisData?.workPlan_ar === "string" ? analysisData.workPlan_ar : "");
 
   if (!rawWorkPlan.trim()) return [];
 

@@ -1370,7 +1370,7 @@ const SmartDevisPage = () => {
     return null;
   }, [catalogByCode, materialScope]);
 
-  // "Shubbaik Lubbaik" — PRODUCTION: Catalog semantic match → AI estimation fallback
+  // "Shubbaik Lubbaik" — tarification via شبيك لبيك uniquement
   const handleFetchAIPrices = useCallback(async () => {
     setIsFetchingPrices(true);
     try {
@@ -1381,55 +1381,30 @@ const SmartDevisPage = () => {
         return;
       }
 
-      // Step A: Resolve from catalog (semantic match)
-      const stillNeedAI: LineItem[] = [];
-      const catalogUpdates: LineItem[] = [];
-
-      for (const item of itemsNeedingPrice) {
-        const catalogMatch = resolveFromCatalog(item);
-        if (catalogMatch) {
-          catalogUpdates.push({
-            ...item,
-            unitPrice: catalogMatch.unitPrice,
-            total: catalogMatch.unitPrice * item.quantity,
-            catalogCode: catalogMatch.catalogCode,
-            isAiEstimate: false,
-          });
-        } else {
-          stillNeedAI.push(item);
-        }
-      }
-
-      // Step B: AI estimation for remaining items
-      let aiPrices: Record<string, { unitPrice: number; unit?: string }> = {};
-      if (stillNeedAI.length > 0) {
-        aiPrices = await estimatePricesWithAI(stillNeedAI);
-      }
+      const aiPrices = await estimatePricesWithAI(itemsNeedingPrice);
 
       const updatedItems = lineItems.map(item => {
         if (item.unitPrice > 0) return item;
-        // Check catalog updates
-        const catUpdate = catalogUpdates.find(u => u.id === item.id);
-        if (catUpdate) return catUpdate;
-        // Check AI prices
         const aiPrice = aiPrices[item.id];
         if (aiPrice && aiPrice.unitPrice > 0) {
           return {
-            ...item, unitPrice: aiPrice.unitPrice,
-            total: aiPrice.unitPrice * item.quantity, isAiEstimate: true,
+            ...item,
+            unitPrice: aiPrice.unitPrice,
+            total: aiPrice.unitPrice * item.quantity,
+            isAiEstimate: true,
           };
         }
         return item;
       });
+
       setLineItems(updatedItems);
 
-      const catalogCount = catalogUpdates.length;
       const aiCount = Object.keys(aiPrices).length;
       toast({
         title: isRTL ? '✅ تم ملء الأسعار' : '✅ Prix remplis',
         description: isRTL
-          ? `📋 ${catalogCount} من الكتالوغ — ✨ ${aiCount} تقديرات شبيك لبيك`
-          : `📋 ${catalogCount} du catalogue — ✨ ${aiCount} estimations Shubbaik Lubbaik`,
+          ? `✨ ${aiCount} أسعار من شبيك لبيك`
+          : `✨ ${aiCount} prix depuis Shubbaik Lubbaik`,
       });
     } catch (err: any) {
       toast({
@@ -1440,38 +1415,22 @@ const SmartDevisPage = () => {
     } finally {
       setIsFetchingPrices(false);
     }
-  }, [lineItems, materialScope, isRTL, toast, estimatePricesWithAI, resolveFromCatalog]);
+  }, [lineItems, isRTL, toast, estimatePricesWithAI]);
 
-  // Per-row price fetch: Catalog → AI fallback
+  // Per-row price fetch: شبيك لبيك uniquement
   const handleFetchSingleRowPrice = useCallback(async (itemId: string) => {
     setFetchingRowIds(prev => new Set(prev).add(itemId));
     try {
       const item = lineItems.find(i => i.id === itemId);
       if (!item) return;
 
-      // Step A: Try catalog semantic match
-      const catalogMatch = resolveFromCatalog(item);
-      if (catalogMatch) {
-        setLineItems(prev => prev.map(i => i.id !== itemId ? i : {
-          ...i, unitPrice: catalogMatch.unitPrice,
-          total: catalogMatch.unitPrice * i.quantity,
-          catalogCode: catalogMatch.catalogCode,
-          isAiEstimate: false,
-        }));
-        toast({
-          title: isRTL ? '📋 سعر من الكتالوغ' : '📋 Prix du catalogue',
-          description: `${item.designation_fr}: ${catalogMatch.unitPrice}€/${item.unit}`,
-        });
-        return;
-      }
-
-      // Step B: AI estimation fallback
       const aiPrices = await estimatePricesWithAI([item]);
       const aiPrice = aiPrices[item.id];
 
       if (aiPrice && aiPrice.unitPrice > 0) {
         setLineItems(prev => prev.map(i => i.id !== itemId ? i : {
-          ...i, unitPrice: aiPrice.unitPrice,
+          ...i,
+          unitPrice: aiPrice.unitPrice,
           total: aiPrice.unitPrice * i.quantity,
           isAiEstimate: true,
         }));
@@ -1494,7 +1453,7 @@ const SmartDevisPage = () => {
         return next;
       });
     }
-  }, [lineItems, materialScope, isRTL, toast, estimatePricesWithAI, resolveFromCatalog]);
+  }, [lineItems, isRTL, toast, estimatePricesWithAI]);
 
   // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
   const toggleItemMaterial = (id: string) => {

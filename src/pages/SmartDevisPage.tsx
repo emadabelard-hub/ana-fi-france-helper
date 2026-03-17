@@ -1450,39 +1450,14 @@ const SmartDevisPage = () => {
     }
   }, [lineItems, materialScope, isRTL, toast, estimatePricesWithAI]);
 
-  // Per-row AI price fetch — fetches price for a single row
+  // Per-row AI price fetch — TEST MODE: AI-only, no catalog lookup
   const handleFetchSingleRowPrice = useCallback(async (itemId: string) => {
     setFetchingRowIds(prev => new Set(prev).add(itemId));
     try {
       const item = lineItems.find(i => i.id === itemId);
       if (!item) return;
 
-      // Try catalog first
-      const code = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr);
-      if (code) {
-        const normalizedCode = code.toUpperCase();
-        const catalogRows = await fetchCatalogByCodes([normalizedCode]);
-        const catalogItem = catalogRows[normalizedCode] || catalogByCode[normalizedCode];
-
-        if (catalogItem) {
-          const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
-          const unitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
-          const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
-          const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
-
-          setLineItems(prev => prev.map(i => i.id !== itemId ? i : {
-            ...i, unitPrice, total: unitPrice > 0 ? quantity * unitPrice : 0,
-            catalogCode: normalizedCode, unit: normalizedUnit, quantity, isAiEstimate: false,
-          }));
-          toast({
-            title: isRTL ? '✅ تم جلب السعر' : '✅ Prix récupéré',
-            description: `${catalogItem.description}: ${unitPrice}€/${normalizedUnit}`,
-          });
-          return;
-        }
-      }
-
-      // No catalog match → AI estimation fallback
+      // Direct AI estimation — no catalog lookup
       const aiPrices = await estimatePricesWithAI([item]);
       const aiPrice = aiPrices[item.id];
 
@@ -1493,11 +1468,10 @@ const SmartDevisPage = () => {
           isAiEstimate: true,
         }));
         toast({
-          title: isRTL ? '✨ سعر تقديري من شبيك لبيك' : '✨ Prix estimé par Shubbaik Lubbaik',
+          title: isRTL ? '✨ سعر من شبيك لبيك' : '✨ Prix Shubbaik Lubbaik',
           description: `${item.designation_fr}: ~${aiPrice.unitPrice}€/${item.unit}`,
         });
       } else {
-        setLineItems(prev => prev.map(i => i.id !== itemId ? i : { ...i, unitPrice: 0, total: 0 }));
         toast({
           title: isRTL ? '⚠️ عدّل السعر يدوياً' : '⚠️ Saisissez le prix manuellement',
           description: isRTL ? 'لم نتمكن من تقدير السعر' : 'Estimation non disponible',
@@ -1512,7 +1486,7 @@ const SmartDevisPage = () => {
         return next;
       });
     }
-  }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast, estimatePricesWithAI]);
+  }, [lineItems, materialScope, isRTL, toast, estimatePricesWithAI]);
 
   // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
   const toggleItemMaterial = (id: string) => {

@@ -2662,13 +2662,13 @@ const SmartDevisPage = () => {
             }}
           />
 
-          {/* Test Mode Note */}
-          <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30", isRTL && "flex-row-reverse")}>
-            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-            <p className={cn("text-xs text-amber-600 dark:text-amber-400", isRTL && "font-cairo text-right")}>
+          {/* Pricing Hierarchy Note */}
+          <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/30", isRTL && "flex-row-reverse")}>
+            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+            <p className={cn("text-xs text-primary", isRTL && "font-cairo text-right")}>
               {isRTL
-                ? 'وضع الاختبار: الأسعار مقدرة من شبيك لبيك (السوق الفرنسي)'
-                : 'Mode Test : Prix estimés par Shubbaik Lubbaik (Marché Français)'}
+                ? 'الأسعار: 📋 الكتالوغ أولاً ← ✨ شبيك لبيك (تقدير السوق الفرنسي) كبديل'
+                : 'Prix : 📋 Catalogue en priorité → ✨ Shubbaik Lubbaik (estimation marché) en complément'}
             </p>
           </div>
 

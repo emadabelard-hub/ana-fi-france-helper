@@ -677,6 +677,13 @@ Utilise CE dictionnaire pour le mapping:
 - Plomberie → designation_fr: "Travaux de plomberie" / designation_ar: "سباكة وتوصيلات مية"
 - Électricité → designation_fr: "Travaux d'électricité" / designation_ar: "كهربا وتوصيلات"
 - Frais chantier → designation_fr: "Frais de chantier" / designation_ar: "مصاريف الشانتي"
+- Préparation supports → designation_fr: "Préparation des supports" / designation_ar: "تجهيز الحوائط مية مية"
+- Dépose ancien carrelage → designation_fr: "Dépose ancien carrelage" / designation_ar: "تكسير الكارلاج القديم وشيله"
+- Pose carrelage sol → designation_fr: "Pose carrelage sol" / designation_ar: "تركيب كارلاج الأرضية"
+- Pose faïence murale → designation_fr: "Pose faïence murale" / designation_ar: "تركيب فايونس الحيطان"
+- Étanchéité → designation_fr: "Étanchéité zone humide" / designation_ar: "عزل مية (إيطونشيتي)"
+- Installation sanitaires → designation_fr: "Installation appareils sanitaires" / designation_ar: "تركيب الأطقم (حوض وحنفيات)"
+- Ragréage sol → designation_fr: "Ragréage du sol" / designation_ar: "راغرياج (تسوية الأرضية)"
 
 ⛔ RÈGLE: La designation_ar DOIT être en argot artisan égyptien (Ammiya), PAS en arabe littéraire.
 ⛔ Utilise des translitérations phonétiques: Parquet→باركيه, Primaire→بريمير, Ragréage→راغرياج, 

@@ -136,7 +136,7 @@ const SmartDevisPage = () => {
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
   const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null>(null);
+  const [materialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel'>('fourniture_et_pose');
   const [catalogByCode, setCatalogByCode] = useState<Record<string, PriceCatalogItem>>({});
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const voiceRecognitionRef = useRef<any>(null);

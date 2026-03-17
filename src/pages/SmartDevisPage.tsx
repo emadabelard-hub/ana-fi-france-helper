@@ -1094,16 +1094,6 @@ const SmartDevisPage = () => {
   };
 
   const handleGenerateItems = async () => {
-    if (!materialScope) {
-      toast({
-        variant: 'destructive',
-        title: isRTL ? 'اختيار إجباري' : 'Choix obligatoire',
-        description: isRTL
-          ? 'لازم تختار: مواد + مصنعية، مصنعية فقط، أو جزئي قبل توليد الدوفي.'
-          : 'Veuillez choisir "Matériaux inclus", "Main d\'œuvre uniquement" ou "Partiel" avant de générer le devis.',
-      });
-      return;
-    }
 
     setIsGenerating(true);
     try {

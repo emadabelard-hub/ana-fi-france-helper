@@ -2156,37 +2156,17 @@ const SmartDevisPage = () => {
                           </button>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs p-3 max-w-[220px]">
-                          {(() => {
-                            const detectedCode = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr) || undefined;
-                            const fullPrice = getCatalogUnitPriceByCode(detectedCode, true);
-                            const laborPrice = getCatalogUnitPriceByCode(detectedCode, false);
-                            const materialPrice = Math.round((fullPrice - laborPrice) * 100) / 100;
-                            return (
-                              <div className="space-y-1.5">
-                                <p className="font-bold text-foreground">
-                                  {isRTL ? 'تفصيل السعر' : 'Détail du prix'}
-                                </p>
-                                <div className="flex justify-between gap-3">
-                                  <span className="text-muted-foreground">{isRTL ? '🔧 مصنعية' : '🔧 Main d\'œuvre'}</span>
-                                  <span className="font-semibold">{formatCurrency(laborPrice)}/{item.unit}</span>
-                                </div>
-                                <div className="flex justify-between gap-3">
-                                  <span className="text-muted-foreground">{isRTL ? '📦 مواد' : '📦 Matériaux'}</span>
-                                  <span className="font-semibold">{formatCurrency(materialPrice)}/{item.unit}</span>
-                                </div>
-                                <div className="flex justify-between gap-3 pt-1 border-t border-border/40">
-                                  <span className="text-muted-foreground">{isRTL ? '💰 الكل' : '💰 Total'}</span>
-                                  <span className="font-bold text-primary">{formatCurrency(fullPrice)}/{item.unit}</span>
-                                </div>
-                                <p className="text-[9px] text-muted-foreground pt-1">
-                                  {item.withMaterial
-                                    ? (isRTL ? 'اضغط لإزالة المواد' : 'Cliquer pour retirer les matériaux')
-                                    : (isRTL ? 'اضغط لإضافة المواد' : 'Cliquer pour inclure les matériaux')
-                                  }
-                                </p>
-                              </div>
-                            );
-                          })()}
+                          <div className="space-y-1.5">
+                            <p className="font-bold text-foreground">
+                              {isRTL ? 'فورنيتير / مصنعية' : 'Fourniture / Main d\'œuvre'}
+                            </p>
+                            <p className="text-[9px] text-muted-foreground">
+                              {item.withMaterial
+                                ? (isRTL ? 'اضغط لإزالة المواد — السعر هيتصفّر واضغط ✨ تاني' : 'Cliquer pour retirer les matériaux — le prix sera remis à 0')
+                                : (isRTL ? 'اضغط لإضافة المواد — السعر هيتصفّر واضغط ✨ تاني' : 'Cliquer pour inclure les matériaux — le prix sera remis à 0')
+                              }
+                            </p>
+                          </div>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>

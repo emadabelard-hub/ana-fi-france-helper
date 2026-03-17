@@ -1408,71 +1408,36 @@ const SmartDevisPage = () => {
     }
   }, [materialScope, user]);
 
-  // "Shubbaik Lubbaik" — fetch prices from catalog for all items based on material toggle
+  // "Shubbaik Lubbaik" — TEST MODE: AI-only pricing, bypass catalog entirely
   const handleFetchAIPrices = useCallback(async () => {
     setIsFetchingPrices(true);
     try {
-      // Collect all catalog codes from line items
-      const codesToFetch = lineItems
-        .map(item => item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr))
-        .filter((code): code is string => !!code);
-
-      const uniqueCodes = Array.from(new Set(codesToFetch.map(c => c.toUpperCase())));
-
-      // Fetch catalog data for all codes at once
-      const catalogRows = await fetchCatalogByCodes(uniqueCodes);
-
-      // First pass: fill from catalog, collect items needing AI estimation
-      const itemsNeedingAI: LineItem[] = [];
-
-      const firstPassItems = lineItems.map(item => {
-        if (item.unitPrice > 0) return item;
-
-        const code = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr);
-        if (code) {
-          const normalizedCode = code.toUpperCase();
-          const catalogItem = catalogRows[normalizedCode] || catalogByCode[normalizedCode];
-          if (catalogItem) {
-            const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
-            const unitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
-            const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
-            const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
-            return {
-              ...item, unitPrice, total: unitPrice > 0 ? quantity * unitPrice : 0,
-              catalogCode: normalizedCode, unit: normalizedUnit, quantity, isAiEstimate: false,
-            };
-          }
-        }
-
-        // No catalog match → queue for AI estimation
-        itemsNeedingAI.push(item);
-        return item; // unchanged for now
-      });
-
-      // Second pass: AI estimation for unmatched items
-      if (itemsNeedingAI.length > 0) {
-        const aiPrices = await estimatePricesWithAI(itemsNeedingAI);
-        const finalItems = firstPassItems.map(item => {
-          if (item.unitPrice > 0) return item;
-          const aiPrice = aiPrices[item.id];
-          if (aiPrice) {
-            const unitPrice = aiPrice.unitPrice;
-            return {
-              ...item, unitPrice, total: unitPrice * item.quantity, isAiEstimate: true,
-            };
-          }
-          return { ...item, unitPrice: 0, total: 0, isAiEstimate: false };
-        });
-        setLineItems(finalItems);
-      } else {
-        setLineItems(firstPassItems);
+      const itemsToEstimate = lineItems.filter(item => item.unitPrice === 0 || !item.unitPrice);
+      if (itemsToEstimate.length === 0) {
+        toast({ title: isRTL ? '✅ الأسعار موجودة' : '✅ Prix déjà remplis' });
+        setIsFetchingPrices(false);
+        return;
       }
+
+      const aiPrices = await estimatePricesWithAI(itemsToEstimate);
+      const updatedItems = lineItems.map(item => {
+        if (item.unitPrice > 0) return item;
+        const aiPrice = aiPrices[item.id];
+        if (aiPrice && aiPrice.unitPrice > 0) {
+          return {
+            ...item, unitPrice: aiPrice.unitPrice,
+            total: aiPrice.unitPrice * item.quantity, isAiEstimate: true,
+          };
+        }
+        return item;
+      });
+      setLineItems(updatedItems);
 
       toast({
         title: isRTL ? '✅ تم ملء الأسعار' : '✅ Prix remplis',
         description: isRTL
-          ? 'الأسعار تم جلبها. ✨ = تقدير ذكي. تقدر تعدل أي سعر يدوياً.'
-          : 'Prix chargés. ✨ = estimation IA. Modifiable manuellement.',
+          ? '✨ أسعار تقديرية من شبيك لبيك. تقدر تعدل أي سعر يدوياً.'
+          : '✨ Prix estimés par Shubbaik Lubbaik. Modifiable manuellement.',
       });
     } catch (err: any) {
       toast({
@@ -1483,41 +1448,16 @@ const SmartDevisPage = () => {
     } finally {
       setIsFetchingPrices(false);
     }
-  }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast, estimatePricesWithAI]);
+  }, [lineItems, materialScope, isRTL, toast, estimatePricesWithAI]);
 
-  // Per-row AI price fetch — fetches price for a single row
+  // Per-row AI price fetch — TEST MODE: AI-only, no catalog lookup
   const handleFetchSingleRowPrice = useCallback(async (itemId: string) => {
     setFetchingRowIds(prev => new Set(prev).add(itemId));
     try {
       const item = lineItems.find(i => i.id === itemId);
       if (!item) return;
 
-      // Try catalog first
-      const code = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr);
-      if (code) {
-        const normalizedCode = code.toUpperCase();
-        const catalogRows = await fetchCatalogByCodes([normalizedCode]);
-        const catalogItem = catalogRows[normalizedCode] || catalogByCode[normalizedCode];
-
-        if (catalogItem) {
-          const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
-          const unitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
-          const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
-          const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
-
-          setLineItems(prev => prev.map(i => i.id !== itemId ? i : {
-            ...i, unitPrice, total: unitPrice > 0 ? quantity * unitPrice : 0,
-            catalogCode: normalizedCode, unit: normalizedUnit, quantity, isAiEstimate: false,
-          }));
-          toast({
-            title: isRTL ? '✅ تم جلب السعر' : '✅ Prix récupéré',
-            description: `${catalogItem.description}: ${unitPrice}€/${normalizedUnit}`,
-          });
-          return;
-        }
-      }
-
-      // No catalog match → AI estimation fallback
+      // Direct AI estimation — no catalog lookup
       const aiPrices = await estimatePricesWithAI([item]);
       const aiPrice = aiPrices[item.id];
 
@@ -1528,11 +1468,10 @@ const SmartDevisPage = () => {
           isAiEstimate: true,
         }));
         toast({
-          title: isRTL ? '✨ سعر تقديري من شبيك لبيك' : '✨ Prix estimé par Shubbaik Lubbaik',
+          title: isRTL ? '✨ سعر من شبيك لبيك' : '✨ Prix Shubbaik Lubbaik',
           description: `${item.designation_fr}: ~${aiPrice.unitPrice}€/${item.unit}`,
         });
       } else {
-        setLineItems(prev => prev.map(i => i.id !== itemId ? i : { ...i, unitPrice: 0, total: 0 }));
         toast({
           title: isRTL ? '⚠️ عدّل السعر يدوياً' : '⚠️ Saisissez le prix manuellement',
           description: isRTL ? 'لم نتمكن من تقدير السعر' : 'Estimation non disponible',
@@ -1547,7 +1486,7 @@ const SmartDevisPage = () => {
         return next;
       });
     }
-  }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast, estimatePricesWithAI]);
+  }, [lineItems, materialScope, isRTL, toast, estimatePricesWithAI]);
 
   // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
   const toggleItemMaterial = (id: string) => {
@@ -2620,6 +2559,16 @@ const SmartDevisPage = () => {
               }]);
             }}
           />
+
+          {/* Test Mode Note */}
+          <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30", isRTL && "flex-row-reverse")}>
+            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+            <p className={cn("text-xs text-amber-600 dark:text-amber-400", isRTL && "font-cairo text-right")}>
+              {isRTL
+                ? 'وضع الاختبار: الأسعار مقدرة من شبيك لبيك (السوق الفرنسي)'
+                : 'Mode Test : Prix estimés par Shubbaik Lubbaik (Marché Français)'}
+            </p>
+          </div>
 
           {/* Grand Total */}
           <Card className="bg-[#1a1a1a] text-white border border-[#c5a028]/40">

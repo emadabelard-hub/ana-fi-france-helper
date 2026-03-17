@@ -30,7 +30,7 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const itemDescriptions = items.map((item, i) =>
-      `${i + 1}. "${item.designation_fr}" (${item.designation_ar}) — unité: ${item.unit}, qté: ${item.quantity}, ${item.laborOnly ? 'MAIN D\'OEUVRE SEULE (pas de fourniture)' : 'FOURNITURE ET POSE (matériaux + main d\'oeuvre)'}`
+      `Item ID="${item.id}" : "${item.designation_fr}" (${item.designation_ar}) — unité: ${item.unit}, qté: ${item.quantity}, ${item.laborOnly ? 'MAIN D\'OEUVRE SEULE (pas de fourniture)' : 'FOURNITURE ET POSE (matériaux + main d\'oeuvre)'}`
     ).join("\n");
 
     const systemPrompt = `Tu es un expert métreur/chiffreur BTP en France. Tu connais parfaitement les prix du marché français 2024-2025 pour tous les corps de métier du bâtiment.

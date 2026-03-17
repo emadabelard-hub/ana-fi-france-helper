@@ -179,6 +179,7 @@ const SmartDevisPage = () => {
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [profitMarginPercent, setProfitMarginPercent] = useState<number>(15);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isFetchingPrices, setIsFetchingPrices] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [preferencesCollected, setPreferencesCollected] = useState(false);
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
@@ -1176,16 +1177,7 @@ const SmartDevisPage = () => {
         const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : (item.btpPriceSource === 'btp_price_reference' ? aiUnit : aiUnit);
         const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
 
-        // Price priority: 1) artisan catalog  2) BTP reference price  3) "prix à vérifier" (-1)
-        let fixedUnitPrice: number;
-        if (catalogItem) {
-          fixedUnitPrice = getCatalogPriceFromItem(catalogItem, withMaterial);
-        } else if (item.btpPriceSource === 'btp_price_reference' && item.unitPrice > 0) {
-          fixedUnitPrice = Number(item.unitPrice);
-        } else {
-          fixedUnitPrice = -1; // sentinel for "prix à vérifier"
-        }
-
+        // INTERACTIVE MODE: Leave unit price EMPTY (0) — user clicks "Shubbaik Lubbaik" to fill prices
         const baseFr = item.designation_fr || '';
         const baseAr = item.designation_ar || '';
         const { fr: finalFr, ar: finalAr } = !withMaterial
@@ -1198,8 +1190,8 @@ const SmartDevisPage = () => {
           designation_ar: finalAr,
           quantity: effectiveQuantity,
           unit,
-          unitPrice: fixedUnitPrice,
-          total: fixedUnitPrice > 0 ? effectiveQuantity * fixedUnitPrice : 0,
+          unitPrice: 0,
+          total: 0,
           category: item.category || catalogItem?.category,
           catalogCode: explicitCode || undefined,
           withMaterial,
@@ -1324,6 +1316,69 @@ const SmartDevisPage = () => {
   }, [fetchCatalogByCode, materialScope]);
 
   const removeItem = (id: string) => setLineItems(prev => prev.filter(i => i.id !== id));
+
+  // "Shubbaik Lubbaik" — fetch prices from catalog for all items based on material toggle
+  const handleFetchAIPrices = useCallback(async () => {
+    setIsFetchingPrices(true);
+    try {
+      // Collect all catalog codes from line items
+      const codesToFetch = lineItems
+        .map(item => item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr))
+        .filter((code): code is string => !!code);
+
+      const uniqueCodes = Array.from(new Set(codesToFetch.map(c => c.toUpperCase())));
+
+      // Fetch catalog data for all codes at once
+      const catalogRows = await fetchCatalogByCodes(uniqueCodes);
+
+      setLineItems(prev => prev.map(item => {
+        // Skip items that already have a manually set price > 0
+        // (manual override protection — only fill if price is still 0)
+        if (item.unitPrice > 0) return item;
+
+        const code = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr);
+        if (!code) {
+          // No catalog match — mark as "prix à vérifier"
+          return { ...item, unitPrice: -1, total: 0 };
+        }
+
+        const normalizedCode = code.toUpperCase();
+        const catalogItem = catalogRows[normalizedCode] || catalogByCode[normalizedCode];
+        if (!catalogItem) {
+          return { ...item, unitPrice: -1, total: 0 };
+        }
+
+        const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
+        const unitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
+        const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
+        const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
+
+        return {
+          ...item,
+          unitPrice,
+          total: unitPrice > 0 ? quantity * unitPrice : 0,
+          catalogCode: normalizedCode,
+          unit: normalizedUnit,
+          quantity,
+        };
+      }));
+
+      toast({
+        title: isRTL ? '✅ تم ملء الأسعار' : '✅ Prix remplis',
+        description: isRTL
+          ? 'الأسعار تم جلبها من إعدادات التعريفة. تقدر تعدل أي سعر يدوياً.'
+          : 'Les prix ont été chargés depuis vos tarifs. Vous pouvez modifier manuellement.',
+      });
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: err.message || 'Failed to fetch prices',
+      });
+    } finally {
+      setIsFetchingPrices(false);
+    }
+  }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast]);
 
   // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
   const toggleItemMaterial = (id: string) => {
@@ -2191,6 +2246,35 @@ const SmartDevisPage = () => {
               {isRTL ? 'أضف' : 'Ajouter'}
             </Button>
           </div>
+
+          {/* Shubbaik Lubbaik — AI Price Fetch Button */}
+          <Button
+            onClick={handleFetchAIPrices}
+            disabled={isFetchingPrices}
+            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-base py-5 rounded-xl shadow-lg"
+          >
+            {isFetchingPrices ? (
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+            ) : (
+              <Sparkles className="h-5 w-5 mr-2" />
+            )}
+            <span className={cn(isRTL && "font-cairo")}>
+              {isFetchingPrices
+                ? (isRTL ? '⏳ جاري جلب الأسعار...' : '⏳ Chargement des prix...')
+                : (isRTL ? '🪄 شبيك لبيك — جيب الأسعار' : '🪄 Shubbaik Lubbaik — Obtenir les prix')
+              }
+            </span>
+          </Button>
+          <p className={cn("text-[10px] text-muted-foreground text-center", isRTL && "font-cairo")}>
+            {isRTL
+              ? materialScope === 'main_oeuvre_seule'
+                ? '🔧 سيجلب أسعار المصنعية فقط (بدون مواد)'
+                : '🏗️ سيجلب أسعار المواد + المصنعية'
+              : materialScope === 'main_oeuvre_seule'
+                ? '🔧 Récupère uniquement les prix Main d\'œuvre'
+                : '🏗️ Récupère les prix Fourniture + Pose'
+            }
+          </p>
 
           <div className="space-y-3">
             {lineItems.map((item, idx) => (

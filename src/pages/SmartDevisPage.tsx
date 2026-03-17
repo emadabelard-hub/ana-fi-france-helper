@@ -2247,6 +2247,35 @@ const SmartDevisPage = () => {
             </Button>
           </div>
 
+          {/* Shubbaik Lubbaik — AI Price Fetch Button */}
+          <Button
+            onClick={handleFetchAIPrices}
+            disabled={isFetchingPrices}
+            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-base py-5 rounded-xl shadow-lg"
+          >
+            {isFetchingPrices ? (
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+            ) : (
+              <Sparkles className="h-5 w-5 mr-2" />
+            )}
+            <span className={cn(isRTL && "font-cairo")}>
+              {isFetchingPrices
+                ? (isRTL ? '⏳ جاري جلب الأسعار...' : '⏳ Chargement des prix...')
+                : (isRTL ? '🪄 شبيك لبيك — جيب الأسعار' : '🪄 Shubbaik Lubbaik — Obtenir les prix')
+              }
+            </span>
+          </Button>
+          <p className={cn("text-[10px] text-muted-foreground text-center", isRTL && "font-cairo")}>
+            {isRTL
+              ? materialScope === 'main_oeuvre_seule'
+                ? '🔧 سيجلب أسعار المصنعية فقط (بدون مواد)'
+                : '🏗️ سيجلب أسعار المواد + المصنعية'
+              : materialScope === 'main_oeuvre_seule'
+                ? '🔧 Récupère uniquement les prix Main d\'œuvre'
+                : '🏗️ Récupère les prix Fourniture + Pose'
+            }
+          </p>
+
           <div className="space-y-3">
             {lineItems.map((item, idx) => (
               <Card key={item.id} className="p-3">

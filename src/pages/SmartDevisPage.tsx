@@ -1224,6 +1224,12 @@ const SmartDevisPage = () => {
         const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : (item.btpPriceSource === 'btp_price_reference' ? aiUnit : aiUnit);
         const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
 
+        const baseFr = item.designation_fr || '';
+        const baseAr = item.designation_ar || '';
+        const { fr: finalFr, ar: finalAr } = !withMaterial
+          ? stripFourniture(baseFr, baseAr)
+          : { fr: baseFr, ar: baseAr };
+
         // STRICT PRICING CONTROL: All prices initialize to 0. User triggers pricing via ✨ button.
         return {
           id: generateId(),

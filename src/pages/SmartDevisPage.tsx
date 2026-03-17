@@ -2698,7 +2698,7 @@ const SmartDevisPage = () => {
             <p className={cn("text-xs text-primary font-bold", isRTL && "font-cairo text-right")}>
               {isRTL
                 ? '✨ الأسعار مقدرة من شبيك لبيك (السوق الفرنسي)'
-                : 'Prix : 📋 Catalogue en priorité → ✨ Shubbaik Lubbaik (estimation marché) en complément'}
+                : '✨ Prix estimés par Shubbaik Lubbaik (marché français)'}
             </p>
           </div>
 

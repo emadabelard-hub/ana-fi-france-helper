@@ -1595,7 +1595,7 @@ const SmartDevisPage = () => {
   };
 
   const grandTotal = lineItems.reduce((sum, i) => sum + (i.total > 0 ? i.total : 0), 0);
-  const hasUnverifiedPrices = lineItems.some(i => i.unitPrice < 0);
+  const hasUnverifiedPrices = lineItems.some(i => i.unitPrice <= 0);
 
   const handleSendToInvoice = () => {
     try {

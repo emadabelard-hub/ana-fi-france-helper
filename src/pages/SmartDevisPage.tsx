@@ -1033,40 +1033,7 @@ const SmartDevisPage = () => {
     }
   }, [materialScope, user]);
 
-  // Helper: Try to resolve price from catalog using semantic keyword match
-  const resolveFromCatalog = useCallback((item: LineItem): { unitPrice: number; catalogCode: string; catalogItem: PriceCatalogItem } | null => {
-    // Step 1: Try explicit catalog code on the item
-    if (item.catalogCode) {
-      const cat = catalogByCode[item.catalogCode];
-      if (cat) {
-        const includeMat = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
-        let price = getCatalogPriceFromItem(cat, includeMat);
-        // 50/50 split: if labor-only but labor_price is 0, use total_price / 2
-        if (!includeMat && price === 0 && cat.total_price > 0) {
-          price = Math.round(cat.total_price / 2);
-        }
-        if (price > 0) return { unitPrice: price, catalogCode: cat.code, catalogItem: cat };
-      }
-    }
-
-    // Step 2: Semantic keyword match on designation
-    const detectedCode = detectCatalogCodeFromDesignation(
-      [item.designation_fr, item.designation_ar].filter(Boolean).join(' ')
-    );
-    if (detectedCode) {
-      const cat = catalogByCode[detectedCode];
-      if (cat) {
-        const includeMat = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
-        let price = getCatalogPriceFromItem(cat, includeMat);
-        if (!includeMat && price === 0 && cat.total_price > 0) {
-          price = Math.round(cat.total_price / 2);
-        }
-        if (price > 0) return { unitPrice: price, catalogCode: cat.code, catalogItem: cat };
-      }
-    }
-
-    return null;
-  }, [catalogByCode, materialScope]);
+  // resolveFromCatalog removed — pricing via شبيك لبيك only
 
   // "Shubbaik Lubbaik" — tarification via شبيك لبيك uniquement
   const handleFetchAIPrices = useCallback(async () => {

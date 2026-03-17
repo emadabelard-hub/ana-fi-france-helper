@@ -2432,25 +2432,15 @@ const SmartDevisPage = () => {
                     </div>
                     <div>
                       <label className="text-[9px] text-muted-foreground">{isRTL ? 'سعر' : 'P.U.'}</label>
-                      <div className="flex items-center gap-0.5">
-                        {fetchingRowIds.has(item.id) ? (
-                          <div className="h-7 flex-1 flex items-center justify-center bg-muted rounded-md">
-                            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                          </div>
-                        ) : item.unitPrice < 0 ? (
-                          <Input type="number" min={0} step={0.01} value="" placeholder={isRTL ? 'سعر؟' : 'prix?'} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7 flex-1 border-destructive placeholder:text-destructive/60" />
-                        ) : (
-                          <Input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7 flex-1" />
-                        )}
-                        <button
-                          onClick={() => handleFetchSingleRowPrice(item.id)}
-                          disabled={fetchingRowIds.has(item.id)}
-                          className="h-7 w-7 shrink-0 flex items-center justify-center rounded-md bg-primary/10 hover:bg-primary/20 text-primary transition-colors disabled:opacity-50"
-                          title={isRTL ? 'شبيك لبيك — جيب السعر' : 'Shubbaik Lubbaik — Obtenir le prix'}
-                        >
-                          <Sparkles className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                      {fetchingRowIds.has(item.id) ? (
+                        <div className="h-7 flex items-center justify-center bg-muted rounded-md">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                        </div>
+                      ) : item.unitPrice < 0 ? (
+                        <Input type="number" min={0} step={0.01} value="" placeholder={isRTL ? 'سعر؟' : 'prix?'} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7 border-destructive placeholder:text-destructive/60" />
+                      ) : (
+                        <Input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="text-xs h-7" />
+                      )}
                     </div>
                     <div>
                       <label className="text-[9px] text-muted-foreground">Total</label>
@@ -2465,6 +2455,25 @@ const SmartDevisPage = () => {
                       </div>
                     </div>
                   </div>
+                  {/* Per-row Shubbaik Lubbaik button */}
+                  {(item.unitPrice === 0 || item.unitPrice < 0) && (
+                    <button
+                      onClick={() => handleFetchSingleRowPrice(item.id)}
+                      disabled={fetchingRowIds.has(item.id)}
+                      className={cn(
+                        "w-full flex items-center justify-center gap-2 py-2 mt-1.5 rounded-lg text-xs font-bold font-cairo transition-all",
+                        "bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20",
+                        "disabled:opacity-50"
+                      )}
+                    >
+                      {fetchingRowIds.has(item.id) ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5" />
+                      )}
+                      {isRTL ? '✨ شبيك لبيك — جيب السعر' : '✨ Shubbaik Lubbaik — Prix'}
+                    </button>
+                  )}
                   {/* Fourniture toggle with price breakdown tooltip */}
                   <div className={cn("flex items-center gap-2 pt-1 border-t border-border/30 mt-2", isRTL && "flex-row-reverse")}>
                     <TooltipProvider delayDuration={200}>

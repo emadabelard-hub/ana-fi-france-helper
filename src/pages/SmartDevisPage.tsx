@@ -1224,7 +1224,11 @@ const SmartDevisPage = () => {
         const unit = catalogItem ? normalizeCatalogUnit(catalogItem.unit) : (item.btpPriceSource === 'btp_price_reference' ? aiUnit : aiUnit);
         const effectiveQuantity = unit === 'forfait' ? 1 : quantity;
 
-        // INTERACTIVE MODE: Leave unit price EMPTY (0) — user clicks "Shubbaik Lubbaik" to fill prices
+        // Use prices from edge function (catalog/BTP reference) if available
+        const edgeFunctionPrice = typeof item.unitPrice === 'number' && item.unitPrice > 0 ? item.unitPrice : 0;
+        const priceSource = item.btpPriceSource || '';
+        const isFromCatalog = priceSource === 'artisan_catalog' || priceSource === 'btp_price_reference';
+
         const baseFr = item.designation_fr || '';
         const baseAr = item.designation_ar || '';
         const { fr: finalFr, ar: finalAr } = !withMaterial
@@ -1237,11 +1241,12 @@ const SmartDevisPage = () => {
           designation_ar: finalAr,
           quantity: effectiveQuantity,
           unit,
-          unitPrice: 0,
-          total: 0,
+          unitPrice: edgeFunctionPrice,
+          total: effectiveQuantity * edgeFunctionPrice,
           category: item.category || catalogItem?.category,
           catalogCode: explicitCode || undefined,
           withMaterial,
+          isAiEstimate: !isFromCatalog && edgeFunctionPrice > 0,
         };
       });
 
@@ -1258,6 +1263,31 @@ const SmartDevisPage = () => {
 
       setLineItems(finalItems);
       setStep('review');
+
+      // Auto-trigger AI estimation for items still without prices
+      const itemsNeedingPrice = finalItems.filter(i => !i.unitPrice || i.unitPrice <= 0);
+      if (itemsNeedingPrice.length > 0) {
+        try {
+          const aiPrices = await estimatePricesWithAI(itemsNeedingPrice);
+          if (Object.keys(aiPrices).length > 0) {
+            setLineItems(prev => prev.map(item => {
+              if (item.unitPrice > 0) return item;
+              const aiPrice = aiPrices[item.id];
+              if (aiPrice && aiPrice.unitPrice > 0) {
+                return {
+                  ...item,
+                  unitPrice: aiPrice.unitPrice,
+                  total: aiPrice.unitPrice * item.quantity,
+                  isAiEstimate: true,
+                };
+              }
+              return item;
+            }));
+          }
+        } catch (aiErr) {
+          console.warn('Auto AI price estimation failed:', aiErr);
+        }
+      }
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'خطأ في التوليد', description: err.message });
     } finally {

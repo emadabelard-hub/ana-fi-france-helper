@@ -1094,6 +1094,7 @@ const SmartDevisPage = () => {
 
       // ── AUTO-POPULATE: Parse assistant message for price mentions and apply to devis table ──
       parseChatPricesAndApply(assistantSoFar);
+    } catch (err: any) {
       toast({ variant: 'destructive', title: 'خطأ', description: err.message });
     } finally {
       setIsChatLoading(false);

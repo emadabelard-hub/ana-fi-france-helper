@@ -2564,7 +2564,7 @@ const SmartDevisPage = () => {
                     <div>
                       <label className="text-[9px] text-muted-foreground flex items-center gap-1">
                         {isRTL ? 'سعر' : 'P.U.'}
-                        {item.isAiEstimate && <Sparkles className="h-2.5 w-2.5 text-amber-500" />}
+                        <Sparkles className="h-2.5 w-2.5 text-amber-500" />
                       </label>
                       {fetchingRowIds.has(item.id) ? (
                         <div className="h-7 flex items-center justify-center bg-muted rounded-md">

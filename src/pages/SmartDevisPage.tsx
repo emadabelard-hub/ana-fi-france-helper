@@ -2446,7 +2446,8 @@ const SmartDevisPage = () => {
                           <SelectItem value="ml">ml</SelectItem>
                           <SelectItem value="u">u</SelectItem>
                           <SelectItem value="h">h</SelectItem>
-                          <SelectItem value="forfait">forfait</SelectItem>
+                          <SelectItem value="Ens">Ens</SelectItem>
+                          <SelectItem value="j">j</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

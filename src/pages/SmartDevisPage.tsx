@@ -179,6 +179,7 @@ const SmartDevisPage = () => {
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [profitMarginPercent, setProfitMarginPercent] = useState<number>(15);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isFetchingPrices, setIsFetchingPrices] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [preferencesCollected, setPreferencesCollected] = useState(false);
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);

@@ -1317,6 +1317,69 @@ const SmartDevisPage = () => {
 
   const removeItem = (id: string) => setLineItems(prev => prev.filter(i => i.id !== id));
 
+  // "Shubbaik Lubbaik" — fetch prices from catalog for all items based on material toggle
+  const handleFetchAIPrices = useCallback(async () => {
+    setIsFetchingPrices(true);
+    try {
+      // Collect all catalog codes from line items
+      const codesToFetch = lineItems
+        .map(item => item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr))
+        .filter((code): code is string => !!code);
+
+      const uniqueCodes = Array.from(new Set(codesToFetch.map(c => c.toUpperCase())));
+
+      // Fetch catalog data for all codes at once
+      const catalogRows = await fetchCatalogByCodes(uniqueCodes);
+
+      setLineItems(prev => prev.map(item => {
+        // Skip items that already have a manually set price > 0
+        // (manual override protection — only fill if price is still 0)
+        if (item.unitPrice > 0) return item;
+
+        const code = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr);
+        if (!code) {
+          // No catalog match — mark as "prix à vérifier"
+          return { ...item, unitPrice: -1, total: 0 };
+        }
+
+        const normalizedCode = code.toUpperCase();
+        const catalogItem = catalogRows[normalizedCode] || catalogByCode[normalizedCode];
+        if (!catalogItem) {
+          return { ...item, unitPrice: -1, total: 0 };
+        }
+
+        const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
+        const unitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
+        const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
+        const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
+
+        return {
+          ...item,
+          unitPrice,
+          total: unitPrice > 0 ? quantity * unitPrice : 0,
+          catalogCode: normalizedCode,
+          unit: normalizedUnit,
+          quantity,
+        };
+      }));
+
+      toast({
+        title: isRTL ? '✅ تم ملء الأسعار' : '✅ Prix remplis',
+        description: isRTL
+          ? 'الأسعار تم جلبها من إعدادات التعريفة. تقدر تعدل أي سعر يدوياً.'
+          : 'Les prix ont été chargés depuis vos tarifs. Vous pouvez modifier manuellement.',
+      });
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: err.message || 'Failed to fetch prices',
+      });
+    } finally {
+      setIsFetchingPrices(false);
+    }
+  }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast]);
+
   // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
   const toggleItemMaterial = (id: string) => {
     setLineItems(prev => prev.map(item => {

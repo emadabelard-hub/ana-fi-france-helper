@@ -692,7 +692,8 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
 
 ⛔ INTERDICTION ABSOLUE: ne JAMAIS ajouter une étape absente du plan de travaux, même si elle est habituelle, logique ou fréquente dans ce type de chantier.
 ⛔ Chaque ligne du devis doit correspondre à une étape explicitement mentionnée dans le work plan.
-⛔ RÈGLE STATELESS: Génère UNIQUEMENT à partir des données d'analyse fournies dans CE message.
+⛔ RÈGLE STATELESS: Génère UNIQUEMENT à partir des données d'analyse fournies dans CE message. IGNORE tout contexte de projets précédents.
+⛔ RÈGLE ANTI-CONTAMINATION: Si l'analyse dit "salle de bain" ou "bathroom", NE JAMAIS injecter des termes de piscine (206m², bassin, liner, résine piscine). Chaque projet est ISOLÉ.
 ⛔ RÈGLE ZERO-HALLUCINATION: Mapping 1:1 strict entre "workPlan_*" et "items".
 ⛔ RÈGLE ANTI-DOUBLE FACTURATION: "Fourniture et pose" = 1 SEULE ligne.
 ⛔ RÈGLE CONSOLIDATION FRAIS: Déplacement + nettoyage + évacuation = 1 ligne "Frais de chantier / مصاريف الشانتي" SEULEMENT si ce bloc figure déjà dans le work plan.

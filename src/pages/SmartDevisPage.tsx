@@ -1425,6 +1425,70 @@ const SmartDevisPage = () => {
     }
   }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast]);
 
+  // Per-row AI price fetch — fetches price for a single row
+  const handleFetchSingleRowPrice = useCallback(async (itemId: string) => {
+    setFetchingRowIds(prev => new Set(prev).add(itemId));
+    try {
+      const item = lineItems.find(i => i.id === itemId);
+      if (!item) return;
+
+      const code = item.catalogCode || detectCatalogCodeFromDesignation(item.designation_fr);
+      if (!code) {
+        setLineItems(prev => prev.map(i => i.id !== itemId ? i : { ...i, unitPrice: -1, total: 0 }));
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '❌ لم يتم العثور على سعر' : '❌ Prix introuvable',
+          description: isRTL ? 'هاد البند ما عندوش كود في الكاتالوغ. عدّل السعر يدوياً.' : 'Aucun code catalogue trouvé. Saisissez le prix manuellement.',
+        });
+        return;
+      }
+
+      const normalizedCode = code.toUpperCase();
+      const catalogRows = await fetchCatalogByCodes([normalizedCode]);
+      const catalogItem = catalogRows[normalizedCode] || catalogByCode[normalizedCode];
+
+      if (!catalogItem) {
+        setLineItems(prev => prev.map(i => i.id !== itemId ? i : { ...i, unitPrice: -1, total: 0 }));
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '❌ سعر غير متوفر' : '❌ Prix non disponible',
+          description: isRTL ? `الكود ${normalizedCode} غير موجود في التعريفة.` : `Code ${normalizedCode} non trouvé dans le catalogue.`,
+        });
+        return;
+      }
+
+      const includeMaterials = item.withMaterial ?? materialScope !== 'main_oeuvre_seule';
+      const unitPrice = getCatalogPriceFromItem(catalogItem, includeMaterials);
+      const normalizedUnit = normalizeCatalogUnit(catalogItem.unit);
+      const quantity = normalizedUnit === 'forfait' ? 1 : item.quantity;
+
+      setLineItems(prev => prev.map(i => {
+        if (i.id !== itemId) return i;
+        return {
+          ...i,
+          unitPrice,
+          total: unitPrice > 0 ? quantity * unitPrice : 0,
+          catalogCode: normalizedCode,
+          unit: normalizedUnit,
+          quantity,
+        };
+      }));
+
+      toast({
+        title: isRTL ? '✅ تم جلب السعر' : '✅ Prix récupéré',
+        description: `${catalogItem.description}: ${unitPrice}€/${normalizedUnit}`,
+      });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: err.message });
+    } finally {
+      setFetchingRowIds(prev => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
+      });
+    }
+  }, [lineItems, catalogByCode, materialScope, isRTL, fetchCatalogByCodes, toast]);
+
   // Toggle withMaterial for a line item in partiel mode — recalculates price from DB catalog only
   const toggleItemMaterial = (id: string) => {
     setLineItems(prev => prev.map(item => {

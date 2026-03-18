@@ -239,9 +239,13 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
       const token = authHeader.replace("Bearer ", "");
-      const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
-      if (claimsError || !claimsData?.claims?.sub) {
-        console.warn("Invalid auth token, continuing as public call");
+      try {
+        const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+        if (userError || !userData?.user) {
+          console.warn("Invalid auth token, continuing as public call");
+        }
+      } catch (authErr) {
+        console.warn("Auth check failed, continuing as public call:", authErr);
       }
     }
 

@@ -948,19 +948,12 @@ const SmartDevisPage = () => {
 
       const data = await invokeAnalyzer(payload);
 
-      // ===== STRICT LOCK: build ONLY from generate_items output =====
-      const rawItems = data.items || data.suggestedItems || [];
-      const seenDesignations = new Set<string>();
-      const normalizeForDedup = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
-      const deduplicatedItems = rawItems.filter((item: any) => {
-        const normalizedKey = normalizeForDedup(item.designation_fr || '');
-        if (!normalizedKey) return true;
-        if (seenDesignations.has(normalizedKey)) return false;
-        seenDesignations.add(normalizedKey);
-        return true;
-      });
+      // ===== STRICT LOCK: transmit items literally, in order, with no deduplication =====
+      const rawItems = Array.isArray(data.items) && data.items.length > 0
+        ? data.items
+        : (Array.isArray(data.suggestedItems) ? data.suggestedItems : []);
 
-      const items: LineItem[] = deduplicatedItems.map((item: any) => {
+      const items: LineItem[] = rawItems.map((item: any) => {
         const parsedQuantity = Number(item.quantity);
         const quantity = Number.isFinite(parsedQuantity) ? parsedQuantity : 1;
         const aiUnit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'Ens';
@@ -972,7 +965,6 @@ const SmartDevisPage = () => {
           ? stripFourniture(baseFr, baseAr)
           : { fr: baseFr, ar: baseAr };
 
-        // STRICT PRICING CONTROL: All prices initialize to 0. User triggers pricing via ✨ button.
         return {
           id: generateId(),
           designation_fr: finalFr,
@@ -988,19 +980,7 @@ const SmartDevisPage = () => {
         };
       });
 
-      const seenItemKeys = new Set<string>();
-      const normalizeForKey = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
-      const finalItems = items.filter(item => {
-        const labelKey = normalizeForKey([item.designation_fr, item.designation_ar].filter(Boolean).join(' '));
-        const key = item.catalogCode ? `code:${item.catalogCode}` : `label:${labelKey}`;
-
-        if (!labelKey && !item.catalogCode) return false;
-        if (seenItemKeys.has(key)) return false;
-        seenItemKeys.add(key);
-        return true;
-      });
-
-      setLineItems(finalItems);
+      setLineItems(items);
       setStep('review');
 
       // STRICT PRICING CONTROL: No auto-fill. Prices stay at 0 until user clicks ✨ button.

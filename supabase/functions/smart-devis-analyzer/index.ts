@@ -480,7 +480,7 @@ Réponds en JSON avec cette structure:
               if (file.extractedText) {
                 contentParts.push({
                   type: "text",
-                  text: `\n--- Contenu du document PDF "${file.name}" ---\n${file.extractedText}\n--- Fin du document ---\n`
+                  text: "\n--- Contenu du document PDF " + file.name + " ---\n" + file.extractedText + "\n--- Fin du document ---\n"
                 });
               } else if (file.data) {
                 // Legacy fallback: send as image_url

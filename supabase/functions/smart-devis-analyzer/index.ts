@@ -885,9 +885,14 @@ Réponds UNIQUEMENT en JSON:
         }
       }
 
+      // Build the reference list from suggestedItems so the AI has the EXACT list to reproduce
+      const suggestedItemsRef = Array.isArray(analysisData?.suggestedItems) && analysisData.suggestedItems.length > 0
+        ? `\n\n═══════════════════════════════════════\n  LISTE DE RÉFÉRENCE OBLIGATOIRE (suggestedItems de l'analyse initiale)\n═══════════════════════════════════════\n⛔ Tu DOIS reproduire CHAQUE item de cette liste dans ton JSON final. Aucun ne doit manquer.\n${JSON.stringify(analysisData.suggestedItems, null, 2)}`
+        : '';
+
       aiMessages.push({
         role: "user",
-        content: `Données d'analyse:\n${JSON.stringify(analysisData)}\n\nRÈGLE CRITIQUE: Génère le devis final avec 100% de couverture du work_plan.\n- Chaque étape du plan de travaux (workPlan_fr / workPlan_ar) DOIT avoir UNE ligne correspondante dans le devis.\n- Ne saute AUCUNE étape. Si l'analyse mentionne une tâche, elle DOIT apparaître dans le tableau.\n- Analyse = Table. Pas d'exception.\n- Inclus les quantités réalistes basées sur estimatedArea et surfaceEstimates.`
+        content: `Données d'analyse:\n${JSON.stringify(analysisData)}${suggestedItemsRef}\n\nRÈGLE CRITIQUE: Génère le devis final avec 100% de couverture du work_plan ET des suggestedItems.\n- Chaque étape du plan de travaux (workPlan_fr / workPlan_ar) DOIT avoir UNE ligne correspondante dans le devis.\n- Chaque item de suggestedItems DOIT être reproduit dans le JSON final.\n- Ne saute AUCUNE étape. Si l'analyse mentionne une tâche, elle DOIT apparaître dans le tableau.\n- Analyse = Table. Pas d'exception.\n- Inclus les quantités réalistes basées sur estimatedArea et surfaceEstimates.`
       });
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

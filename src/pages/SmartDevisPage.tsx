@@ -924,6 +924,7 @@ const SmartDevisPage = () => {
           materials_fr: analysisData?.materials_fr,
           materials_ar: analysisData?.materials_ar,
           diagnostic: analysisData?.diagnostic,
+          suggestedItems: analysisData?.suggestedItems,
         },
         conversationHistory: chatContext.length > 0 ? chatContext : undefined,
         materialQuality,

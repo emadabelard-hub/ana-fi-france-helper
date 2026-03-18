@@ -926,6 +926,29 @@ Réponds UNIQUEMENT en JSON:
       }
 
       const rawItems = Array.isArray(parsed?.items) ? parsed.items : [];
+      
+      // SAFETY: If AI returned fewer items than suggestedItems from the analysis,
+      // merge missing ones to ensure 1:1 mapping
+      const originalSuggested = Array.isArray(analysisData?.suggestedItems) ? analysisData.suggestedItems : [];
+      if (originalSuggested.length > rawItems.length) {
+        const existingFrKeys = new Set(rawItems.map((it: any) => normalizePlannerText(it.designation_fr || '')));
+        for (const suggested of originalSuggested) {
+          const key = normalizePlannerText(suggested.designation_fr || '');
+          if (key && !existingFrKeys.has(key)) {
+            rawItems.push({
+              designation_fr: suggested.designation_fr || '',
+              designation_ar: suggested.designation_ar || '',
+              quantity: suggested.quantity || 1,
+              unit: suggested.unit || 'Ens',
+              unitPrice: 0,
+              code: suggested.code || '',
+              category: suggested.category || 'labor',
+            });
+            existingFrKeys.add(key);
+          }
+        }
+      }
+      
       const { items: lockedItems, removedItems, workPlanSteps } = enforceWorkPlanLock(rawItems, analysisData);
       const existingVerification = parsed?.verification && typeof parsed.verification === "object" ? parsed.verification : {};
       const existingCorrections = Array.isArray(existingVerification.corrections_applied)

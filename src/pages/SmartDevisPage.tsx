@@ -514,8 +514,13 @@ const SmartDevisPage = () => {
   };
 
   const invokeAnalyzer = async (payload: any) => {
+    console.log('[SmartDevis] invokeAnalyzer: trying supabase.functions.invoke...');
     const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', { body: payload });
-    if (!error) return data;
+    if (!error) {
+      console.log('[SmartDevis] invokeAnalyzer: SDK invoke succeeded');
+      return data;
+    }
+    console.warn('[SmartDevis] invokeAnalyzer: SDK invoke failed:', error?.message, '- trying fallback URLs');
 
     const urls = getSmartDevisFunctionUrls();
     const headers = await getFunctionAuthHeaders();
@@ -552,7 +557,7 @@ const SmartDevisPage = () => {
   };
 
   const handleAnalyze = async () => {
-
+    console.log('[SmartDevis] handleAnalyze called, files:', uploadedFiles.length, 'text:', pastedText.trim().length);
     if (uploadedFiles.length === 0 && !pastedText.trim()) return;
     setIsAnalyzing(true);
     try {
@@ -635,7 +640,10 @@ const SmartDevisPage = () => {
         body.pastedText = pastedText.trim();
       }
 
+      console.log('[SmartDevis] Invoking analyzer with action:', body.action);
       const data = await invokeAnalyzer(body);
+      console.log('[SmartDevis] Analysis response keys:', data ? Object.keys(data) : 'null');
+      console.log('[SmartDevis] suggestedItems count:', Array.isArray(data?.suggestedItems) ? data.suggestedItems.length : 0);
       setAnalysisData(data);
 
       // Store surface estimates for editable display

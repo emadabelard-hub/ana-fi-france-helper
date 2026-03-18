@@ -514,8 +514,13 @@ const SmartDevisPage = () => {
   };
 
   const invokeAnalyzer = async (payload: any) => {
+    console.log('[SmartDevis] invokeAnalyzer: trying supabase.functions.invoke...');
     const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', { body: payload });
-    if (!error) return data;
+    if (!error) {
+      console.log('[SmartDevis] invokeAnalyzer: SDK invoke succeeded');
+      return data;
+    }
+    console.warn('[SmartDevis] invokeAnalyzer: SDK invoke failed:', error?.message, '- trying fallback URLs');
 
     const urls = getSmartDevisFunctionUrls();
     const headers = await getFunctionAuthHeaders();

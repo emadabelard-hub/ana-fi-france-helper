@@ -452,7 +452,7 @@ Réponds en JSON avec cette structure:
   },
   "notes_ar": "ملاحظات مهمة",
   "notes_fr": "Remarques importantes"
-}
+}`;
 
       const messages: any[] = [
         { role: "system", content: systemPrompt },
@@ -472,7 +472,7 @@ Réponds en JSON avec cette structure:
             if (file.type === 'image' && file.data) {
               contentParts.push({
                 type: "image_url",
-                image_url: { url: file.data.startsWith("data:") ? file.data : `data:${file.mimeType || 'image/jpeg'};base64,${file.data}` }
+                image_url: { url: file.data.startsWith("data:") ? file.data : "data:" + (file.mimeType || "image/jpeg") + ";base64," + file.data }
               });
             }
             // PDFs: use pre-extracted text (much faster than sending raw base64)
@@ -480,13 +480,13 @@ Réponds en JSON avec cette structure:
               if (file.extractedText) {
                 contentParts.push({
                   type: "text",
-                  text: `\n--- Contenu du document PDF "${file.name}" ---\n${file.extractedText}\n--- Fin du document ---\n`
+                  text: "\n--- Contenu du document PDF " + file.name + " ---\n" + file.extractedText + "\n--- Fin du document ---\n"
                 });
               } else if (file.data) {
                 // Legacy fallback: send as image_url
                 contentParts.push({
                   type: "image_url",
-                  image_url: { url: file.data.startsWith("data:") ? file.data : `data:${file.mimeType || 'application/pdf'};base64,${file.data}` }
+                  image_url: { url: file.data.startsWith("data:") ? file.data : "data:" + (file.mimeType || "application/pdf") + ";base64," + file.data }
                 });
               }
             }
@@ -494,7 +494,7 @@ Réponds en JSON avec cette structure:
         } else if (hasLegacyImage) {
           contentParts.push({
             type: "image_url",
-            image_url: { url: imageData.startsWith("data:") ? imageData : `data:${mimeType || 'image/jpeg'};base64,${imageData}` }
+            image_url: { url: imageData.startsWith("data:") ? imageData : "data:" + (mimeType || "image/jpeg") + ";base64," + imageData }
           });
         }
 
@@ -506,7 +506,7 @@ Réponds en JSON avec cette structure:
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: "Bearer " + LOVABLE_API_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -519,7 +519,7 @@ Réponds en JSON avec cette structure:
         const status = response.status;
         if (status === 429) return new Response(JSON.stringify({ error: "عذراً، السيستم مشغول حالياً. حاول مرة تانية بعد شوية" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         if (status === 402) return new Response(JSON.stringify({ error: "رصيد الذكاء الاصطناعي نفد" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        throw new Error(`AI error: ${status}`);
+        throw new Error("AI error: " + status);
       }
 
       const aiData = await response.json();
@@ -541,7 +541,7 @@ Réponds en JSON avec cette structure:
 
     // Action: chat - Interactive context gathering
     if (action === "chat") {
-      const systemPrompt = `أنت شبيك لبيك 🧞‍♂️ - خبير BTP فرنسي متخصص في تحليل المشاريع وتوليد الدوفيهات الاحترافية.
+      const systemPrompt = `أنت شبيك لبيك - خبير BTP فرنسي متخصص في تحليل المشاريع وتوليد الدوفيهات الاحترافية.
 أنت بتجمع بين خبير بناء، مدير شانتي، وخبير تكاليف.
 
 ═══════════════════════════════════════
@@ -618,7 +618,7 @@ FORMAT DE RAPPORT:
 - تخترع شغل مش مطلوب
 
 لما تخلص التحليل وتعرض قائمة الأعمال، قول:
-"✅ التحليل خلص! دوس على زر 'إنشاء الدوفي' عشان القائمة دي تتحول لجدول الدوفي. والأسعار هيجيبها شبيك لبيك 🧞‍♂️ لما تدوس على ✨"`;
+"✅ التحليل خلص! دوس على زر 'إنشاء الدوفي' عشان القائمة دي تتحول لجدول الدوفي. والأسعار هيجيبها شبيك لبيك  لما تدوس على ✨"`;
 
 
       const messages: any[] = [
@@ -634,7 +634,7 @@ FORMAT DE RAPPORT:
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: "Bearer " + LOVABLE_API_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -648,7 +648,7 @@ FORMAT DE RAPPORT:
         const status = response.status;
         if (status === 429) return new Response(JSON.stringify({ error: "السيستم مشغول، حاول تاني" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         if (status === 402) return new Response(JSON.stringify({ error: "رصيد الذكاء الاصطناعي نفد" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        throw new Error(`AI error: ${status}`);
+        throw new Error("AI error: " + status);
       }
 
       return new Response(response.body, {
@@ -885,15 +885,20 @@ Réponds UNIQUEMENT en JSON:
         }
       }
 
+      // Build the reference list from suggestedItems so the AI has the EXACT list to reproduce
+      const suggestedItemsRef = Array.isArray(analysisData?.suggestedItems) && analysisData.suggestedItems.length > 0
+        ? "\n\n=======================================\n  LISTE DE REFERENCE OBLIGATOIRE (suggestedItems de l'analyse initiale)\n=======================================\n Tu DOIS reproduire CHAQUE item de cette liste dans ton JSON final. Aucun ne doit manquer.\n" + JSON.stringify(analysisData.suggestedItems, null, 2)
+        : '';
+
       aiMessages.push({
         role: "user",
-        content: `Données d'analyse:\n${JSON.stringify(analysisData)}\n\nRÈGLE CRITIQUE: Génère le devis final avec 100% de couverture du work_plan.\n- Chaque étape du plan de travaux (workPlan_fr / workPlan_ar) DOIT avoir UNE ligne correspondante dans le devis.\n- Ne saute AUCUNE étape. Si l'analyse mentionne une tâche, elle DOIT apparaître dans le tableau.\n- Analyse = Table. Pas d'exception.\n- Inclus les quantités réalistes basées sur estimatedArea et surfaceEstimates.`
+        content: "Donnees d'analyse:\n" + JSON.stringify(analysisData) + suggestedItemsRef + "\n\nREGLE CRITIQUE: Genere le devis final avec 100% de couverture du work_plan ET des suggestedItems.\n- Chaque etape du plan de travaux (workPlan_fr / workPlan_ar) DOIT avoir UNE ligne correspondante dans le devis.\n- Chaque item de suggestedItems DOIT etre reproduit dans le JSON final.\n- Ne saute AUCUNE etape. Si l'analyse mentionne une tache, elle DOIT apparaitre dans le tableau.\n- Analyse = Table. Pas d'exception.\n- Inclus les quantites realistes basees sur estimatedArea et surfaceEstimates."
       });
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: "Bearer " + LOVABLE_API_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -906,7 +911,7 @@ Réponds UNIQUEMENT en JSON:
         const status = response.status;
         if (status === 429) return new Response(JSON.stringify({ error: "السيستم مشغول" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         if (status === 402) return new Response(JSON.stringify({ error: "الرصيد نفد" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        throw new Error(`AI error: ${status}`);
+        throw new Error("AI error: " + status);
       }
 
       const aiData = await response.json();
@@ -921,6 +926,29 @@ Réponds UNIQUEMENT en JSON:
       }
 
       const rawItems = Array.isArray(parsed?.items) ? parsed.items : [];
+      
+      // SAFETY: If AI returned fewer items than suggestedItems from the analysis,
+      // merge missing ones to ensure 1:1 mapping
+      const originalSuggested = Array.isArray(analysisData?.suggestedItems) ? analysisData.suggestedItems : [];
+      if (originalSuggested.length > rawItems.length) {
+        const existingFrKeys = new Set(rawItems.map((it: any) => normalizePlannerText(it.designation_fr || '')));
+        for (const suggested of originalSuggested) {
+          const key = normalizePlannerText(suggested.designation_fr || '');
+          if (key && !existingFrKeys.has(key)) {
+            rawItems.push({
+              designation_fr: suggested.designation_fr || '',
+              designation_ar: suggested.designation_ar || '',
+              quantity: suggested.quantity || 1,
+              unit: suggested.unit || 'Ens',
+              unitPrice: 0,
+              code: suggested.code || '',
+              category: suggested.category || 'labor',
+            });
+            existingFrKeys.add(key);
+          }
+        }
+      }
+      
       const { items: lockedItems, removedItems, workPlanSteps } = enforceWorkPlanLock(rawItems, analysisData);
       const existingVerification = parsed?.verification && typeof parsed.verification === "object" ? parsed.verification : {};
       const existingCorrections = Array.isArray(existingVerification.corrections_applied)

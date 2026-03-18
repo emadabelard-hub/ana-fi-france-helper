@@ -519,7 +519,7 @@ Réponds en JSON avec cette structure:
         const status = response.status;
         if (status === 429) return new Response(JSON.stringify({ error: "عذراً، السيستم مشغول حالياً. حاول مرة تانية بعد شوية" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         if (status === 402) return new Response(JSON.stringify({ error: "رصيد الذكاء الاصطناعي نفد" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        throw new Error(`AI error: ${status}`);
+        throw new Error("AI error: " + status);
       }
 
       const aiData = await response.json();

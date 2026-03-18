@@ -486,7 +486,7 @@ Réponds en JSON avec cette structure:
                 // Legacy fallback: send as image_url
                 contentParts.push({
                   type: "image_url",
-                  image_url: { url: file.data.startsWith("data:") ? file.data : `data:${file.mimeType || 'application/pdf'};base64,${file.data}` }
+                  image_url: { url: file.data.startsWith("data:") ? file.data : "data:" + (file.mimeType || "application/pdf") + ";base64," + file.data }
                 });
               }
             }

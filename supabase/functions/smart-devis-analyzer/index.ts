@@ -181,6 +181,76 @@ function getItemPlanningText(item: GeneratedQuoteItem): string {
   return [item.designation_fr, item.designation_ar].filter(Boolean).join(" ");
 }
 
+type LiteralSuggestedItem = {
+  designation_fr: string;
+  designation_ar: string;
+  quantity?: number;
+  unit?: string;
+  code?: string;
+  category?: string;
+};
+
+function parseLiteralQuantity(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value.trim().replace(",", "."));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+}
+
+function getLiteralSuggestedItems(analysisData: any): LiteralSuggestedItem[] {
+  const source = Array.isArray(analysisData?.suggestedItems) ? analysisData.suggestedItems : [];
+  return source
+    .map((item: any) => ({
+      designation_fr: typeof item?.designation_fr === "string" ? item.designation_fr.trim() : "",
+      designation_ar: typeof item?.designation_ar === "string" ? item.designation_ar.trim() : "",
+      quantity: parseLiteralQuantity(item?.quantity),
+      unit: typeof item?.unit === "string" ? item.unit.trim() : "",
+      code: typeof item?.code === "string" ? item.code.trim() : "",
+      category: typeof item?.category === "string" ? item.category.trim() : "",
+    }))
+    .filter((item) => item.designation_fr || item.designation_ar);
+}
+
+function buildLiteralSuggestedItem(literalItem: LiteralSuggestedItem): GeneratedQuoteItem {
+  const designationFr = literalItem.designation_fr || "";
+  const literalArabic = literalItem.designation_ar || "";
+
+  return {
+    designation_fr: designationFr,
+    designation_ar: !isMissingArabicDesignation(literalArabic)
+      ? literalArabic
+      : getFallbackArabicDesignation(designationFr, literalArabic),
+    quantity: literalItem.quantity ?? 1,
+    unit: literalItem.unit || "Ens",
+    unitPrice: 0,
+    code: literalItem.code || "",
+    category: literalItem.category || "labor",
+  };
+}
+
+function applyLiteralSuggestedItem(item: GeneratedQuoteItem, literalItem?: LiteralSuggestedItem): GeneratedQuoteItem {
+  const literalFr = typeof literalItem?.designation_fr === "string" ? literalItem.designation_fr.trim() : "";
+  const literalArabic = typeof literalItem?.designation_ar === "string" ? literalItem.designation_ar.trim() : "";
+  const existingArabic = typeof item.designation_ar === "string" ? item.designation_ar.trim() : "";
+  const resolvedFr = literalFr || (typeof item.designation_fr === "string" ? item.designation_fr.trim() : "");
+
+  return {
+    ...item,
+    designation_fr: resolvedFr,
+    designation_ar: !isMissingArabicDesignation(literalArabic)
+      ? literalArabic
+      : (!isMissingArabicDesignation(existingArabic)
+        ? existingArabic
+        : getFallbackArabicDesignation(resolvedFr, literalArabic)),
+    quantity: literalItem?.quantity ?? item.quantity ?? 1,
+    unit: literalItem?.unit || item.unit || "Ens",
+    code: (typeof item.code === "string" && item.code.trim()) ? item.code.trim() : (literalItem?.code || ""),
+    category: (typeof item.category === "string" && item.category.trim()) ? item.category.trim() : (literalItem?.category || "labor"),
+  };
+}
+
 function scoreItemAgainstWorkPlanStep(item: GeneratedQuoteItem, step: string): number {
   const itemTokens = Array.from(new Set(tokenizePlannerText(getItemPlanningText(item))));
   const stepTokens = Array.from(new Set(tokenizePlannerText(step)));
@@ -198,14 +268,19 @@ function scoreItemAgainstWorkPlanStep(item: GeneratedQuoteItem, step: string): n
 function enforceWorkPlanLock(items: GeneratedQuoteItem[], analysisData: any) {
   const workPlanSteps = extractWorkPlanSteps(analysisData);
   const workPlanArabicSteps = extractWorkPlanArabicSteps(analysisData);
+  const literalSuggestedItems = getLiteralSuggestedItems(analysisData);
+  const literalSteps = literalSuggestedItems.map((item) => item.designation_fr || item.designation_ar).filter(Boolean);
+
+  if ((!Array.isArray(items) || items.length === 0) && literalSuggestedItems.length > 0) {
+    return { items: literalSuggestedItems.map(buildLiteralSuggestedItem), removedItems: [], workPlanSteps: literalSteps };
+  }
 
   if (!Array.isArray(items) || items.length === 0) {
-    const placeholders = workPlanSteps.map((step, index) => ({
+    const placeholders = workPlanSteps.map((step, index) => buildLiteralSuggestedItem({
       designation_fr: step,
-      designation_ar: getFallbackArabicDesignation(step, workPlanArabicSteps[index]),
+      designation_ar: workPlanArabicSteps[index] || "",
       quantity: 1,
-      unit: "forfait",
-      unitPrice: 0,
+      unit: "Ens",
       code: "",
       category: "labor",
     }));
@@ -213,7 +288,9 @@ function enforceWorkPlanLock(items: GeneratedQuoteItem[], analysisData: any) {
   }
 
   if (workPlanSteps.length === 0) {
-    return { items, removedItems: [], workPlanSteps };
+    return literalSuggestedItems.length > 0
+      ? { items: literalSuggestedItems.map(buildLiteralSuggestedItem), removedItems: [], workPlanSteps: literalSteps }
+      : { items, removedItems: [], workPlanSteps };
   }
 
   const remaining = items.map((item) => ({ item }));
@@ -222,6 +299,7 @@ function enforceWorkPlanLock(items: GeneratedQuoteItem[], analysisData: any) {
 
   for (let si = 0; si < workPlanSteps.length; si++) {
     const step = workPlanSteps[si];
+    const literalItem = literalSuggestedItems[si];
     let bestIndex = -1;
     let bestScore = 0;
 
@@ -235,12 +313,12 @@ function enforceWorkPlanLock(items: GeneratedQuoteItem[], analysisData: any) {
 
     if (bestIndex >= 0) {
       const [match] = remaining.splice(bestIndex, 1);
-      keptItems.push({
+      keptItems.push(applyLiteralSuggestedItem({
         ...match.item,
         designation_ar: isMissingArabicDesignation(match.item.designation_ar)
-          ? getFallbackArabicDesignation(match.item.designation_fr || step, workPlanArabicSteps[si])
+          ? getFallbackArabicDesignation(match.item.designation_fr || step, workPlanArabicSteps[si] || literalItem?.designation_ar)
           : (typeof match.item.designation_ar === "string" ? match.item.designation_ar.trim() : ""),
-      });
+      }, literalItem));
       matchedStepIndices.add(si);
     }
   }
@@ -248,15 +326,15 @@ function enforceWorkPlanLock(items: GeneratedQuoteItem[], analysisData: any) {
   for (let si = 0; si < workPlanSteps.length; si++) {
     if (!matchedStepIndices.has(si)) {
       const step = workPlanSteps[si];
-      keptItems.push({
+      keptItems.push(applyLiteralSuggestedItem({
         designation_fr: step,
         designation_ar: getFallbackArabicDesignation(step, workPlanArabicSteps[si]),
         quantity: 1,
-        unit: "forfait",
+        unit: "Ens",
         unitPrice: 0,
         code: "",
         category: "labor",
-      });
+      }, literalSuggestedItems[si]));
     }
   }
 
@@ -279,6 +357,7 @@ function enforceWorkPlanLock(items: GeneratedQuoteItem[], analysisData: any) {
     workPlanSteps,
   };
 }
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -412,8 +491,9 @@ Exemples de types de rénovation:
 - À la fin de l'analyse, affiche une liste finale numérotée: 1, 2, 3...
 - Un seul travail par ligne. Interdiction de regrouper plusieurs tâches.
 - Chaque ligne doit reprendre exactement un travail du plan.
-- Chaque ligne doit contenir le français technique, puis l'arabe égyptien, puis l'unité correspondante.
-- Les quantités mesurables doivent rester exactes dans suggestedItems et ne jamais être converties en Ens ou forfait.
+- Chaque ligne doit contenir le français technique, puis l'arabe égyptien, puis la quantité, puis l'unité correspondante.
+- La quantité est OBLIGATOIRE pour CHAQUE ligne, même pour Ens / U / j.
+- Les quantités mesurables doivent rester exactes dans suggestedItems et ne jamais être converties, simplifiées ou recalculées.
 
 ═══════════════════════════════════════
   VÉRIFICATION AUTOMATIQUE (OBLIGATOIRE)
@@ -649,16 +729,16 @@ FORMAT DE RAPPORT:
 
 📋 **قائمة الأعمال المحددة / Liste des travaux:**
 
-كل شغلانة في سطر منفصل بالفرنساوي والعربي مع الوحدة:
+كل شغلانة في سطر منفصل بالفرنساوي والعربي مع الكمية والوحدة:
 
-- **Protection du chantier** (تأمين الموقع وفرش المشمعات) → Ens
-- **Nettoyage Haute Pression** (غسلة صاروخ بضغط مية عالي) → m²
-- **Ponçage et Grattage** (صنفرة ميتة وتفتيح مسام) → m²
-- **Application Primaire** (وش بريمير عشان الدهان يكلبش) → m²
-- **Peinture 2 couches** (وشين بنتيرة) → m²
-- **Nettoyage final** (نضافة نهائية وتسليم) → Ens
+- **Protection du chantier** (تأمين الموقع وفرش المشمعات) → 1 Ens
+- **Nettoyage Haute Pression** (غسلة صاروخ بضغط مية عالي) → 146 m²
+- **Ponçage et Grattage** (صنفرة ميتة وتفتيح مسام) → 146 m²
+- **Application Primaire** (وش بريمير عشان الدهان يكلبش) → 146 m²
+- **Peinture 2 couches** (وشين بنتيرة) → 146 m²
+- **Nettoyage final** (نضافة نهائية وتسليم) → 1 Ens
 
-⛔ كل سطر لازم يبين الوحدة: m² أو h (ساعة) أو U (وحدة) أو Ens (مجموعة) أو j (يوم شغل) حسب السوق الفرنسي
+⛔ كل سطر لازم يبين الكمية + الوحدة: m² أو h (ساعة) أو U (وحدة) أو Ens (مجموعة) أو j (يوم شغل) حسب السوق الفرنسي
 ⛔ ممنوع سطر بالعربي من غير الفرنساوي فوقيه
 ⛔ ممنوع تجمع شغلانتين في سطر واحد
 ⛔ الأسعار هيحددها شبيك لبيك لما المستخدم يدوس على زر ✨
@@ -998,8 +1078,8 @@ Réponds UNIQUEMENT en JSON:
             rawItems.push({
               designation_fr: suggested.designation_fr || '',
               designation_ar: suggested.designation_ar || '',
-              quantity: suggested.quantity || 1,
-              unit: suggested.unit || 'Ens',
+              quantity: parseLiteralQuantity(suggested.quantity) ?? 1,
+              unit: typeof suggested.unit === 'string' && suggested.unit.trim() ? suggested.unit.trim() : 'Ens',
               unitPrice: 0,
               code: suggested.code || '',
               category: suggested.category || 'labor',

@@ -98,11 +98,7 @@ function tokenizePlannerText(value: string): string[] {
     .filter((token) => token.length > 2 && !WORK_PLAN_STOPWORDS.has(token));
 }
 
-function extractWorkPlanSteps(analysisData: any): string[] {
-  const rawWorkPlan = typeof analysisData?.workPlan_fr === "string" && analysisData.workPlan_fr.trim().length > 0
-    ? analysisData.workPlan_fr
-    : (typeof analysisData?.workPlan_ar === "string" ? analysisData.workPlan_ar : "");
-
+function extractOrderedWorkPlanSteps(rawWorkPlan: string): string[] {
   if (!rawWorkPlan.trim()) return [];
 
   const normalized = rawWorkPlan
@@ -122,6 +118,63 @@ function extractWorkPlanSteps(analysisData: any): string[] {
     : primarySteps;
 
   return Array.from(new Set(fallbackSteps));
+}
+
+function extractWorkPlanSteps(analysisData: any): string[] {
+  const rawWorkPlan = typeof analysisData?.workPlan_fr === "string" && analysisData.workPlan_fr.trim().length > 0
+    ? analysisData.workPlan_fr
+    : (typeof analysisData?.workPlan_ar === "string" ? analysisData.workPlan_ar : "");
+
+  return extractOrderedWorkPlanSteps(rawWorkPlan);
+}
+
+function extractWorkPlanArabicSteps(analysisData: any): string[] {
+  const rawWorkPlanAr = typeof analysisData?.workPlan_ar === "string" ? analysisData.workPlan_ar : "";
+  return extractOrderedWorkPlanSteps(rawWorkPlanAr);
+}
+
+const ARABIC_DESIGNATION_FALLBACKS: Array<{ pattern: RegExp; value: string }> = [
+  { pattern: /protection.*chantier|protection du chantier/i, value: "تأمين الموقع وفرش المشمعات" },
+  { pattern: /vidange/i, value: "تفضية المية وتجهيز الأرضية" },
+  { pattern: /nettoyage.*haute.*pression|nettoyage.*hp|lavage/i, value: "غسلة صاروخ بضغط مية عالي" },
+  { pattern: /fissures?|points faibles|rebouchage/i, value: "تلقيط الشروخ ومعالجة المناطق الضعيفة" },
+  { pattern: /pon[çc]age|grattage|d[ée]capage/i, value: "صنفرة ميتة وتفتيح مسام وتلقيط مرمات" },
+  { pattern: /primaire/i, value: "وش بريمير (أساس) عشان الدهان يكلبش" },
+  { pattern: /sous[\s-]?couche/i, value: "سوكوش (وش تحضيري)" },
+  { pattern: /enduit/i, value: "أندوي تلقيط وسد الشروخ" },
+  { pattern: /peinture.*plafond/i, value: "وشين بنتيرة سقف" },
+  { pattern: /peinture.*mur|murale/i, value: "وشين بنتيرة حيطان" },
+  { pattern: /peinture.*epoxy/i, value: "وش دهان إيبوكسي وتشطيب" },
+  { pattern: /peinture/i, value: "وش دهان وتشطيب" },
+  { pattern: /pose.*fa[iï]ence|fa[iï]ence/i, value: "تركيب فايونس الحيطان" },
+  { pattern: /carrelage.*sol/i, value: "تركيب كارلاج الأرضية" },
+  { pattern: /carrelage/i, value: "تركيب كارلاج" },
+  { pattern: /[ée]tanch[ée]it[ée]/i, value: "عزل مية (إيطونشيتي)" },
+  { pattern: /plomberie|sanitaires?/i, value: "سباكة وتركيب الأطقم" },
+  { pattern: /[ée]lectricit[ée]/i, value: "كهربا وتوصيلات" },
+  { pattern: /nettoyage final|remise des cl[ée]s/i, value: "تسليم الموقع عالمفتاح ونضافة الرواتش" },
+  { pattern: /frais de chantier/i, value: "مصاريف الشانتي" },
+];
+
+function isMissingArabicDesignation(value?: string): boolean {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  return !normalized || [
+    "الوصف بالعامية",
+    "وصف بالعامية",
+    "ترجمة بالعامية المصرية",
+    "ترجمة بالعامية المصرية (argot artisan)",
+  ].includes(normalized);
+}
+
+function getFallbackArabicDesignation(stepFr: string, stepAr?: string): string {
+  const explicitArabic = typeof stepAr === "string" ? stepAr.trim() : "";
+  if (explicitArabic) return explicitArabic;
+
+  const sourceFr = typeof stepFr === "string" ? stepFr.trim() : "";
+  if (!sourceFr) return "";
+
+  const match = ARABIC_DESIGNATION_FALLBACKS.find(({ pattern }) => pattern.test(sourceFr));
+  return match?.value ?? "";
 }
 
 function getItemPlanningText(item: GeneratedQuoteItem): string {
@@ -144,12 +197,12 @@ function scoreItemAgainstWorkPlanStep(item: GeneratedQuoteItem, step: string): n
 
 function enforceWorkPlanLock(items: GeneratedQuoteItem[], analysisData: any) {
   const workPlanSteps = extractWorkPlanSteps(analysisData);
+  const workPlanArabicSteps = extractWorkPlanArabicSteps(analysisData);
 
   if (!Array.isArray(items) || items.length === 0) {
-    // Even with no AI items, generate placeholders for every work_plan step
-    const placeholders = workPlanSteps.map((step) => ({
+    const placeholders = workPlanSteps.map((step, index) => ({
       designation_fr: step,
-      designation_ar: "",
+      designation_ar: getFallbackArabicDesignation(step, workPlanArabicSteps[index]),
       quantity: 1,
       unit: "forfait",
       unitPrice: 0,
@@ -182,19 +235,22 @@ function enforceWorkPlanLock(items: GeneratedQuoteItem[], analysisData: any) {
 
     if (bestIndex >= 0) {
       const [match] = remaining.splice(bestIndex, 1);
-      keptItems.push(match.item);
+      keptItems.push({
+        ...match.item,
+        designation_ar: isMissingArabicDesignation(match.item.designation_ar)
+          ? getFallbackArabicDesignation(match.item.designation_fr || step, workPlanArabicSteps[si])
+          : (typeof match.item.designation_ar === "string" ? match.item.designation_ar.trim() : ""),
+      });
       matchedStepIndices.add(si);
     }
   }
 
-  // SAFETY NET: For every work_plan step that has NO matching item,
-  // generate a placeholder so no step is ever lost from the devis
   for (let si = 0; si < workPlanSteps.length; si++) {
     if (!matchedStepIndices.has(si)) {
       const step = workPlanSteps[si];
       keptItems.push({
         designation_fr: step,
-        designation_ar: "",
+        designation_ar: getFallbackArabicDesignation(step, workPlanArabicSteps[si]),
         quantity: 1,
         unit: "forfait",
         unitPrice: 0,

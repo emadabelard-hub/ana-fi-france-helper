@@ -2242,7 +2242,8 @@ const SmartDevisPage = () => {
                   </div>
                 </div>
               </Card>
-            ))}
+              );
+            })}
           </div>
 
           {/* Equipment Suggestions */}

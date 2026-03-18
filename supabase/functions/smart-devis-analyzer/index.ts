@@ -452,7 +452,7 @@ Réponds en JSON avec cette structure:
   },
   "notes_ar": "ملاحظات مهمة",
   "notes_fr": "Remarques importantes"
-}
+}`;
 
       const messages: any[] = [
         { role: "system", content: systemPrompt },

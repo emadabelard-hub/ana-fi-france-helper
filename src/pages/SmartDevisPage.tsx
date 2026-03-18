@@ -635,7 +635,10 @@ const SmartDevisPage = () => {
         body.pastedText = pastedText.trim();
       }
 
+      console.log('[SmartDevis] Invoking analyzer with action:', body.action);
       const data = await invokeAnalyzer(body);
+      console.log('[SmartDevis] Analysis response keys:', data ? Object.keys(data) : 'null');
+      console.log('[SmartDevis] suggestedItems count:', Array.isArray(data?.suggestedItems) ? data.suggestedItems.length : 0);
       setAnalysisData(data);
 
       // Store surface estimates for editable display

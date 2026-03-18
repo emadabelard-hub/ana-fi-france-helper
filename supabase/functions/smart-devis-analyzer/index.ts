@@ -494,7 +494,7 @@ Réponds en JSON avec cette structure:
         } else if (hasLegacyImage) {
           contentParts.push({
             type: "image_url",
-            image_url: { url: imageData.startsWith("data:") ? imageData : `data:${mimeType || 'image/jpeg'};base64,${imageData}` }
+            image_url: { url: imageData.startsWith("data:") ? imageData : "data:" + (mimeType || "image/jpeg") + ";base64," + imageData }
           });
         }
 

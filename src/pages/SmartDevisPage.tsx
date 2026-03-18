@@ -2039,7 +2039,40 @@ const SmartDevisPage = () => {
           </p>
 
           <div className="space-y-3">
-            {lineItems.map((item, idx) => (
+            {lineItems.map((item, idx) => {
+              const rawArabic = typeof item.designation_ar === 'string' ? item.designation_ar.trim() : '';
+              const normalizedFrench = (item.designation_fr || '').trim().toLowerCase();
+              const hasArabicPlaceholder = !rawArabic || ['الوصف بالعامية', 'وصف بالعامية', 'ترجمة بالعامية المصرية'].includes(rawArabic);
+              const shouldResolveArabic = hasArabicPlaceholder && !!normalizedFrench;
+              const suggestedArabic = shouldResolveArabic && Array.isArray(analysisData?.suggestedItems)
+                ? (() => {
+                    const match = analysisData.suggestedItems.find((candidate: any) => {
+                      const candidateFrench = typeof candidate?.designation_fr === 'string'
+                        ? candidate.designation_fr.trim().toLowerCase()
+                        : '';
+                      return candidateFrench && (
+                        candidateFrench === normalizedFrench ||
+                        candidateFrench.includes(normalizedFrench) ||
+                        normalizedFrench.includes(candidateFrench)
+                      );
+                    });
+                    return typeof match?.designation_ar === 'string' ? match.designation_ar.trim() : '';
+                  })()
+                : '';
+              const workPlanArabicSteps = shouldResolveArabic && typeof analysisData?.workPlan_ar === 'string'
+                ? analysisData.workPlan_ar
+                    .replace(/\r/g, '\n')
+                    .replace(/[•●▪◦]/g, '\n')
+                    .replace(/\s*(?:→|->|=>)\s*/g, '\n')
+                    .replace(/(?:^|\n)\s*\d+\s*[\).:-]\s*/g, '\n')
+                    .replace(/(?:^|\n)\s*[-–—]\s*/g, '\n')
+                    .split(/\n+/)
+                    .map((step: string) => step.trim())
+                    .filter(Boolean)
+                : [];
+              const resolvedArabic = rawArabic || suggestedArabic || workPlanArabicSteps[idx] || '';
+
+              return (
               <Card key={item.id} className="p-3">
                 <div className="space-y-2">
                   <div className={cn("flex items-start gap-2", isRTL && "flex-row-reverse")}>
@@ -2056,7 +2089,7 @@ const SmartDevisPage = () => {
                             {item.designation_fr || <span className="text-muted-foreground italic">Désignation FR</span>}
                           </p>
                           <p className="text-[11px] text-muted-foreground italic mt-0.5 font-cairo leading-tight" dir="rtl">
-                            {item.designation_ar || <span className="text-muted-foreground/50">الوصف بالعامية</span>}
+                            {resolvedArabic || <span className="text-muted-foreground/50">الوصف بالعامية</span>}
                           </p>
                         </button>
                       ) : (
@@ -2072,7 +2105,7 @@ const SmartDevisPage = () => {
                             onBlur={() => setTimeout(() => setEditingDesignation(null), 200)}
                           />
                           <Input
-                            value={item.designation_ar}
+                            value={resolvedArabic}
                             onChange={e => updateItem(item.id, 'designation_ar', e.target.value)}
                             placeholder="الوصف بالعامية"
                             className={cn("text-xs h-auto min-h-[32px] py-1.5 italic", isRTL && "text-right font-cairo")}

@@ -472,7 +472,7 @@ Réponds en JSON avec cette structure:
             if (file.type === 'image' && file.data) {
               contentParts.push({
                 type: "image_url",
-                image_url: { url: file.data.startsWith("data:") ? file.data : `data:${file.mimeType || 'image/jpeg'};base64,${file.data}` }
+                image_url: { url: file.data.startsWith("data:") ? file.data : "data:" + (file.mimeType || "image/jpeg") + ";base64," + file.data }
               });
             }
             // PDFs: use pre-extracted text (much faster than sending raw base64)

@@ -541,7 +541,7 @@ Réponds en JSON avec cette structure:
 
     // Action: chat - Interactive context gathering
     if (action === "chat") {
-      const systemPrompt = `أنت شبيك لبيك 🧞‍♂️ - خبير BTP فرنسي متخصص في تحليل المشاريع وتوليد الدوفيهات الاحترافية.
+      const systemPrompt = "أنت شبيك لبيك - خبير BTP فرنسي متخصص في تحليل المشاريع وتوليد الدوفيهات الاحترافية.\n" +
 أنت بتجمع بين خبير بناء، مدير شانتي، وخبير تكاليف.
 
 ═══════════════════════════════════════

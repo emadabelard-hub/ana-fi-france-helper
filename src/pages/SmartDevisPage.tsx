@@ -662,6 +662,9 @@ const SmartDevisPage = () => {
         .map((item: any) => ({
           designation_fr: typeof item?.designation_fr === 'string' ? item.designation_fr.trim() : '',
           designation_ar: typeof item?.designation_ar === 'string' ? item.designation_ar.trim() : '',
+          quantity: typeof item?.quantity === 'number' && Number.isFinite(item.quantity)
+            ? item.quantity
+            : (typeof item?.quantity === 'string' && item.quantity.trim() !== '' ? item.quantity.trim() : ''),
           unit: typeof item?.unit === 'string' ? item.unit.trim() : '',
         }))
         .filter((item: any) => item.designation_fr || item.designation_ar);
@@ -731,8 +734,9 @@ const SmartDevisPage = () => {
         normalizedSuggestedItems.forEach((item: any, index: number) => {
           const fr = item.designation_fr ? `**${item.designation_fr}**` : '**Travail à confirmer**';
           const ar = item.designation_ar ? `_${item.designation_ar}_` : '_لازم يتأكد في المعاينة_';
+          const quantity = item.quantity !== '' ? item.quantity : 1;
           const unit = item.unit || 'Ens';
-          content += `${index + 1}. ${fr}\n   ${ar} → ${unit}\n`;
+          content += `${index + 1}. ${fr}\n   ${ar} → ${quantity} ${unit}\n`;
         });
         content += `\n✅ التحليل خلص! الخطوط دي هتدخل سطر بسطر في جدول الدوفي لما تدوس على زر إنشاء الدوفي. الأسعار هتفضل 0.00 لحد ما تدوس على ✨.\n\n`;
       }
@@ -752,8 +756,9 @@ const SmartDevisPage = () => {
         normalizedSuggestedItems.forEach((item: any, index: number) => {
           const fr = item.designation_fr || 'Travail à confirmer';
           const ar = item.designation_ar || 'À confirmer sur site';
+          const quantity = item.quantity !== '' ? item.quantity : 1;
           const unit = item.unit || 'Ens';
-          content += `${index + 1}. ${fr}\n   ${ar} → ${unit}\n`;
+          content += `${index + 1}. ${fr}\n   ${ar} → ${quantity} ${unit}\n`;
         });
         content += `\n`;
       }
@@ -956,8 +961,9 @@ const SmartDevisPage = () => {
       });
 
       const items: LineItem[] = deduplicatedItems.map((item: any) => {
-        const quantity = Number(item.quantity || 1);
-        const aiUnit = item.unit || 'u';
+        const parsedQuantity = Number(item.quantity);
+        const quantity = Number.isFinite(parsedQuantity) ? parsedQuantity : 1;
+        const aiUnit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'Ens';
         const withMaterial = materialScope !== 'main_oeuvre_seule';
 
         const baseFr = item.designation_fr || '';
@@ -2130,6 +2136,7 @@ const SmartDevisPage = () => {
                         <SelectContent>
                           <SelectItem value="m²">m²</SelectItem>
                           <SelectItem value="ml">ml</SelectItem>
+                          <SelectItem value="U">U</SelectItem>
                           <SelectItem value="u">u</SelectItem>
                           <SelectItem value="h">h</SelectItem>
                           <SelectItem value="Ens">Ens</SelectItem>

@@ -552,7 +552,7 @@ const SmartDevisPage = () => {
   };
 
   const handleAnalyze = async () => {
-
+    console.log('[SmartDevis] handleAnalyze called, files:', uploadedFiles.length, 'text:', pastedText.trim().length);
     if (uploadedFiles.length === 0 && !pastedText.trim()) return;
     setIsAnalyzing(true);
     try {

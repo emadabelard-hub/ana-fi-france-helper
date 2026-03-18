@@ -649,6 +649,14 @@ const SmartDevisPage = () => {
       const chantierType = data.chantierType || '';
       const confidence = data.confidence || '';
       const crew = data.estimatedCrew || {};
+      const suggestedItems = Array.isArray(data.suggestedItems) ? data.suggestedItems : [];
+      const normalizedSuggestedItems = suggestedItems
+        .map((item: any) => ({
+          designation_fr: typeof item?.designation_fr === 'string' ? item.designation_fr.trim() : '',
+          designation_ar: typeof item?.designation_ar === 'string' ? item.designation_ar.trim() : '',
+          unit: typeof item?.unit === 'string' ? item.unit.trim() : '',
+        }))
+        .filter((item: any) => item.designation_fr || item.designation_ar);
 
       let content = `✅ **تقرير خبير الشانتي**\n\n`;
 
@@ -710,6 +718,17 @@ const SmartDevisPage = () => {
         content += `### 1️⃣4️⃣ مستوى الثقة\n${confEmoji} **${confidence}**\n\n`;
       }
 
+      if (normalizedSuggestedItems.length > 0) {
+        content += `### 1️⃣5️⃣ قائمة الأعمال المحددة / Liste des travaux\n`;
+        normalizedSuggestedItems.forEach((item: any, index: number) => {
+          const fr = item.designation_fr ? `**${item.designation_fr}**` : '**Travail à confirmer**';
+          const ar = item.designation_ar ? `_${item.designation_ar}_` : '_لازم يتأكد في المعاينة_';
+          const unit = item.unit || 'Ens';
+          content += `${index + 1}. ${fr}\n   ${ar} → ${unit}\n`;
+        });
+        content += `\n✅ التحليل خلص! الخطوط دي هتدخل سطر بسطر في جدول الدوفي لما تدوس على زر إنشاء الدوفي. الأسعار هتفضل 0.00 لحد ما تدوس على ✨.\n\n`;
+      }
+
       // ── French section ──
       content += `---\n\n## 🇫🇷 Analyse professionnelle\n\n`;
       const analysisFr = data.analysis_fr || '';
@@ -719,6 +738,16 @@ const SmartDevisPage = () => {
       if (data.estimatedDuration_fr) content += `**Durée estimée:** ${data.estimatedDuration_fr}\n\n`;
       if (data.materials_fr && Array.isArray(data.materials_fr) && data.materials_fr.length > 0) {
         content += `**Matériaux:** ${data.materials_fr.join(', ')}\n\n`;
+      }
+      if (normalizedSuggestedItems.length > 0) {
+        content += `**Liste des travaux à intégrer au devis :**\n`;
+        normalizedSuggestedItems.forEach((item: any, index: number) => {
+          const fr = item.designation_fr || 'Travail à confirmer';
+          const ar = item.designation_ar || 'À confirmer sur site';
+          const unit = item.unit || 'Ens';
+          content += `${index + 1}. ${fr}\n   ${ar} → ${unit}\n`;
+        });
+        content += `\n`;
       }
       if (data.clientSummary_fr) content += `**Résumé client:** ${data.clientSummary_fr}\n\n`;
       if (d.verificationNeeded_fr) content += `**⚠️ Vérification requise:** ${d.verificationNeeded_fr}\n\n`;

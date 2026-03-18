@@ -348,6 +348,13 @@ Exemples de types de rénovation:
 1️⃣4️⃣ NIVEAU DE CONFIANCE
 - confiance élevée / moyenne / faible
 
+1️⃣5️⃣ LISTE FINALE DES TRAVAUX (OBLIGATOIRE)
+- À la fin de l'analyse, affiche une liste finale numérotée: 1, 2, 3...
+- Un seul travail par ligne. Interdiction de regrouper plusieurs tâches.
+- Chaque ligne doit reprendre exactement un travail du plan.
+- Chaque ligne doit contenir le français technique, puis l'arabe égyptien, puis l'unité correspondante.
+- Les quantités mesurables doivent rester exactes dans suggestedItems et ne jamais être converties en Ens ou forfait.
+
 ═══════════════════════════════════════
   VÉRIFICATION AUTOMATIQUE (OBLIGATOIRE)
 ═══════════════════════════════════════
@@ -357,7 +364,8 @@ Avant d'afficher le résultat, vérifier que:
 ✅ Les travaux correspondent au type de rénovation identifié
 ✅ Aucun travail incompatible n'est présent
 ✅ Les quantités sont réalistes
-✅ Les prix sont cohérents avec le marché BTP français
+✅ La liste finale des travaux est affichée en format numéroté 1, 2, 3...
+✅ Chaque item de suggestedItems correspond à UNE ligne future du devis
 Si une incohérence est détectée → corriger automatiquement.
 
 ═══════════════════════════════════════
@@ -367,8 +375,9 @@ Si une incohérence est détectée → corriger automatiquement.
 ⛔ RÈGLE STATELESS: Chaque analyse est INDÉPENDANTE. Ignore tout contexte antérieur.
 ⛔ RÈGLE ZERO-HALLUCINATION: NE JAMAIS inventer de travaux non demandés. Mapping 1:1 obligatoire.
 ⛔ RÈGLE ANTI-DOUBLE FACTURATION: "Fourniture et pose" = 1 SEULE ligne.
-⛔ RÈGLE CONSOLIDATION FRAIS: Regroupe déplacement + nettoyage + évacuation en UNE ligne "Frais de chantier".
-⛔ RÈGLE PRIX: NE JAMAIS inventer de prix. Les prix seront remplis depuis la base de données.
+⛔ RÈGLE CONSOLIDATION FRAIS: Regroupe déplacement + nettoyage + évacuation en UNE ligne "Frais de chantier" seulement si ce poste existe réellement.
+⛔ RÈGLE PRIX: NE JAMAIS inventer de prix. unitPrice doit toujours être 0.
+⛔ RÈGLE PRÉSENTATION: La liste finale des travaux doit être visible à la fin de l'analyse, numérotée, un travail par ligne.
 
 SOURCES D'ANALYSE: photos, croquis, plans techniques, descriptions textuelles.
 PHOTOS: Marge +10%. PLANS/CROQUIS: Dimensions exactes. PDF: Extraire le texte.
@@ -427,7 +436,7 @@ Réponds en JSON avec cette structure:
       "designation_fr": "Titre professionnel (avec couleur si applicable)",
       "designation_ar": "ترجمة بالعامية المصرية",
       "quantity": 0,
-      "unit": "m²|ml|u|h|forfait",
+      "unit": "m²|ml|U|h|Ens|j",
       "unitPrice": 0,
       "category": "materials|labor|transport|cleaning|waste",
       "linkedSurfaceId": "zone_1"
@@ -443,7 +452,7 @@ Réponds en JSON avec cette structure:
   },
   "notes_ar": "ملاحظات مهمة",
   "notes_fr": "Remarques importantes"
-}`;
+}
 
       const messages: any[] = [
         { role: "system", content: systemPrompt },

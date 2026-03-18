@@ -911,7 +911,7 @@ Réponds UNIQUEMENT en JSON:
         const status = response.status;
         if (status === 429) return new Response(JSON.stringify({ error: "السيستم مشغول" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         if (status === 402) return new Response(JSON.stringify({ error: "الرصيد نفد" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        throw new Error(`AI error: ${status}`);
+        throw new Error("AI error: " + status);
       }
 
       const aiData = await response.json();

@@ -799,6 +799,32 @@ FORMAT DE RAPPORT:
     // Action: generate_items - Final generation with preferences applied
     if (action === "generate_items") {
       const { analysisData, materialQuality, discountPercent, profitMarginPercent, materialScope, conversationHistory } = body;
+      const literalSuggestedItems = getLiteralSuggestedItems(analysisData);
+
+      if (literalSuggestedItems.length > 0) {
+        const passthroughItems = literalSuggestedItems.map((literalItem) => ({
+          ...buildLiteralSuggestedItem(literalItem),
+          code: literalItem.code || "",
+          category: literalItem.category || "labor",
+          unitPrice: 0,
+          btpPriceSource: "literal_suggested_items",
+        }));
+
+        return new Response(JSON.stringify({
+          items: passthroughItems,
+          verification: {
+            chantierType: analysisData?.chantierType || null,
+            renovationType: analysisData?.renovationType || null,
+            literal_passthrough: true,
+            generated_from_suggested_items: passthroughItems.length,
+            pricing_source: "shubbaik_lubbaik_only",
+            corrections_applied: [],
+          },
+          summary: {},
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       const scopeRule = materialScope === 'main_oeuvre_seule'
         ? `\n⛔ RÈGLE SCOPE MATÉRIAUX (CRITIQUE): Le client fournit ses propres matériaux. Chiffre UNIQUEMENT la main d'œuvre (pose, préparation, nettoyage). Les prix ne doivent PAS inclure le coût des matériaux. Utilise "Pose de..." au lieu de "Fourniture et pose de...".`

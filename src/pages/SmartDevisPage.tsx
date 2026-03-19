@@ -217,76 +217,7 @@ const SmartDevisPage = () => {
     return unit || 'u';
   };
 
-  // Service-only tasks — never prefix regardless of mode
-  const SERVICE_ONLY = /^(Dépose|Démontage|Évacuation|Nettoyage|Lessivage|Ponçage|Protection|Bâchage|Diagnostic|Préparation du chantier|Installation de chantier|Remise des clés)/i;
-
-  // Material trades eligible for prefixing
-  const MATERIAL_TRADES = /^(Parquet|Papier\s*peint|Peinture|Électricité|Plinthes?|Sanitaire|Étanchéité|Carrelage|Faïence|Revêtement|Enduit|Sous-couche|Primaire|Placo|Isolation|Sol|Pose\s+de\s+)/i;
-
-  // Clean any existing prefix to get a bare designation
-  const stripAllPrefixes = (fr: string, ar: string): { fr: string; ar: string } => {
-    let cleanFr = fr
-      .replace(/Fourniture\s+et\s+pose\s+d[e']\s*/gi, '')
-      .replace(/Fourniture\s+et\s+pose\s+de\s+/gi, '')
-      .replace(/Fourniture\s+et\s+pose\s+/gi, '')
-      .replace(/Main\s+d['']œuvre\s+pour\s+/gi, '')
-      .replace(/Pose\s+d[e']\s*/gi, '')
-      .replace(/Pose\s+de\s+/gi, '')
-      .replace(/Fourniture\s+de\s+/gi, '')
-      .replace(/fourniture\s*,?\s*/gi, '');
-    let cleanAr = ar
-      .replace(/فورنيتير\s*و\s*بوز\s*/g, '')
-      .replace(/فورنيتير\s*و\s*/g, '')
-      .replace(/فورنيتير\s*/g, '')
-      .replace(/توفير\s*وتركيب\s*/g, '')
-      .replace(/تركيب\s*/g, '');
-    return { fr: cleanFr.trim(), ar: cleanAr.trim() };
-  };
-
-  // Apply the correct prefix based on material mode
-  const applyDesignationPrefix = (fr: string, ar: string, withMaterial: boolean): { fr: string; ar: string } => {
-    const trimmedFr = fr.trim();
-    // Service tasks — never touch
-    if (SERVICE_ONLY.test(trimmedFr)) return { fr, ar };
-
-    // Strip any existing prefix to avoid duplication (e.g. "pose de pose de")
-    const { fr: bareFr, ar: bareAr } = stripAllPrefixes(trimmedFr, ar);
-    if (!bareFr) return { fr, ar };
-
-    // Only prefix material-related trades
-    if (!MATERIAL_TRADES.test(trimmedFr) && !MATERIAL_TRADES.test(bareFr)) {
-      return { fr, ar };
-    }
-
-    const lowerFirst = bareFr.charAt(0).toLowerCase() + bareFr.slice(1);
-
-    if (withMaterial) {
-      // "Fourniture et pose de..." / "توفير وتركيب..."
-      const prefixedFr = `Fourniture et pose de ${lowerFirst}`;
-      const prefixedAr = `توفير وتركيب ${bareAr}`.trim();
-      return { fr: prefixedFr, ar: prefixedAr };
-    } else {
-      // "Pose de..." / "تركيب..."
-      const prefixedFr = `Pose de ${lowerFirst}`;
-      const prefixedAr = `تركيب ${bareAr}`.trim();
-      return { fr: prefixedFr, ar: prefixedAr };
-    }
-  };
-
-  // Strip "Fourniture et pose" → "Pose" when material is excluded (kept for toggle compatibility)
-  const stripFourniture = (fr: string, ar: string): { fr: string; ar: string } => {
-    return applyDesignationPrefix(fr, ar, false);
-  };
-
-  // Restore "Fourniture et pose" when toggling material back on
-  const restoreFourniture = (fr: string, ar: string): { fr: string; ar: string } => {
-    return applyDesignationPrefix(fr, ar, true);
-  };
-
-  // Auto-prefix "Fourniture et pose de" for material trades, skip pure service tasks
-  const prefixFournitureEtPose = (fr: string, ar: string): { fr: string; ar: string } => {
-    return applyDesignationPrefix(fr, ar, true);
-  };
+  // RULE: Display AI text verbatim — no prefixing, no stripping, no modification
 
   const buildWizardSnapshot = useCallback((): SmartDevisWizardSnapshot => ({
     step,

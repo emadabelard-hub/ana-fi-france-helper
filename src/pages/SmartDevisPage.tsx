@@ -2120,7 +2120,7 @@ const SmartDevisPage = () => {
           {/* Review Header — WhatsApp style */}
           <div className="shrink-0 border-b border-border bg-background/95 backdrop-blur-sm px-3 py-2 safe-area-pt">
             <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
-              <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => setStep('chat')}>
+              <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => setStep('material_choice')}>
                 {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
               </Button>
               <div className={cn("flex items-center gap-2 flex-1 min-w-0", isRTL && "flex-row-reverse")}>

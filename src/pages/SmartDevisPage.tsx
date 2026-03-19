@@ -1112,22 +1112,13 @@ const SmartDevisPage = () => {
     }
   }, [lineItems, isRTL, toast, estimatePricesWithAI]);
 
-  // Toggle withMaterial for a line item — no catalog, user adjusts price manually or via ✨
+  // Toggle withMaterial for a line item — designation stays verbatim from AI
   const toggleItemMaterial = (id: string) => {
     setLineItems(prev => prev.map(item => {
       if (item.id !== id) return item;
-
       const newWithMaterial = !item.withMaterial;
-
-      const sourceFr = item.designation_fr;
-      const { fr, ar } = newWithMaterial
-        ? restoreFourniture(sourceFr, item.designation_ar)
-        : stripFourniture(sourceFr, item.designation_ar);
-
       return {
         ...item,
-        designation_fr: fr,
-        designation_ar: ar,
         withMaterial: newWithMaterial,
         // Reset price to 0 so user re-fetches via ✨
         unitPrice: 0,

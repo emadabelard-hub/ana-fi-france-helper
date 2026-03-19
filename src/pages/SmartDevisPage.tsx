@@ -948,7 +948,7 @@ const SmartDevisPage = () => {
         
         // Look up user's material choice for this item
         const key = `${(item.designation_fr || '').trim().toLowerCase()}|${(item.designation_ar || '').trim()}`;
-        const withMaterial = materialChoices.get(key) ?? (effectiveScope !== 'main_oeuvre_seule');
+        const withMaterial = key in materialChoices ? materialChoices[key] : (effectiveScope !== 'main_oeuvre_seule');
 
         // Pass AI text verbatim — no prefix modification
         const finalFr = item.designation_fr || '';

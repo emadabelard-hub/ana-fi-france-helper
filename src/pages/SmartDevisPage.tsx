@@ -931,13 +931,9 @@ const SmartDevisPage = () => {
         const aiUnit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'Ens';
         const withMaterial = materialScope !== 'main_oeuvre_seule';
 
-        const baseFr = item.designation_fr || '';
-        const baseAr = item.designation_ar || '';
-        const { fr: materialFr, ar: materialAr } = !withMaterial
-          ? stripFourniture(baseFr, baseAr)
-          : prefixFournitureEtPose(baseFr, baseAr);
-        const finalFr = materialFr;
-        const finalAr = materialAr;
+        // Pass AI text verbatim — no prefix modification
+        const finalFr = item.designation_fr || '';
+        const finalAr = item.designation_ar || '';
 
         return {
           id: generateId(),

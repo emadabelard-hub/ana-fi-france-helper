@@ -2077,6 +2077,18 @@ const SmartDevisPage = () => {
                       الماتريال على الزبون
                     </button>
                   </div>
+
+                  {/* Material choice indicator */}
+                  {item.withMaterial && (
+                    <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3" dir="ltr">
+                      <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                        ✅ Fourniture et pose : {item.designation_fr}
+                      </p>
+                      <p className="text-xs text-emerald-600 dark:text-emerald-500 font-cairo mt-1 leading-relaxed" dir="rtl">
+                        ✅ توريد وتركيب : {item.designation_ar}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

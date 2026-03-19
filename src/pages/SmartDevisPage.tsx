@@ -888,6 +888,19 @@ const SmartDevisPage = () => {
 
   const handleGenerateItems = async () => {
 
+    // Set materialScope based on user's per-item choices from material_choice step
+    const allWith = lineItems.every(i => i.withMaterial);
+    const noneWith = lineItems.every(i => !i.withMaterial);
+    if (allWith) setMaterialScope('fourniture_et_pose');
+    else if (noneWith) setMaterialScope('main_oeuvre_seule');
+    else setMaterialScope('partiel');
+
+    // Preserve material choices made by user
+    const materialChoices = new Map(lineItems.map(i => [
+      `${(i.designation_fr || '').trim().toLowerCase()}|${(i.designation_ar || '').trim()}`,
+      i.withMaterial ?? true
+    ]));
+
     setIsGenerating(true);
     try {
       // Include conversation history so generate_items knows about user-requested additions
@@ -895,6 +908,8 @@ const SmartDevisPage = () => {
         .filter(m => m.role === 'user' || m.role === 'assistant')
         .slice(-10) // last 10 messages for context
         .map(m => ({ role: m.role, content: m.content }));
+
+      const effectiveScope = allWith ? 'fourniture_et_pose' : noneWith ? 'main_oeuvre_seule' : 'partiel';
 
       const payload = {
         action: 'generate_items',
@@ -915,7 +930,7 @@ const SmartDevisPage = () => {
         materialQuality,
         discountPercent,
         profitMarginPercent,
-        materialScope,
+        materialScope: effectiveScope,
       };
 
       const data = await invokeAnalyzer(payload);
@@ -929,7 +944,10 @@ const SmartDevisPage = () => {
         const parsedQuantity = Number(item.quantity);
         const quantity = Number.isFinite(parsedQuantity) ? parsedQuantity : 1;
         const aiUnit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'Ens';
-        const withMaterial = materialScope !== 'main_oeuvre_seule';
+        
+        // Look up user's material choice for this item
+        const key = `${(item.designation_fr || '').trim().toLowerCase()}|${(item.designation_ar || '').trim()}`;
+        const withMaterial = materialChoices.get(key) ?? (effectiveScope !== 'main_oeuvre_seule');
 
         // Pass AI text verbatim — no prefix modification
         const finalFr = item.designation_fr || '';

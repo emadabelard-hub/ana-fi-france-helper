@@ -2077,6 +2077,18 @@ const SmartDevisPage = () => {
                       الماتريال على الزبون
                     </button>
                   </div>
+
+                  {/* Material choice indicator */}
+                  {item.withMaterial && (
+                    <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3" dir="ltr">
+                      <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                        ✅ Fourniture et pose : {item.designation_fr}
+                      </p>
+                      <p className="text-xs text-emerald-600 dark:text-emerald-500 font-cairo mt-1 leading-relaxed" dir="rtl">
+                        ✅ توريد وتركيب : {item.designation_ar}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -2108,7 +2120,7 @@ const SmartDevisPage = () => {
           {/* Review Header — WhatsApp style */}
           <div className="shrink-0 border-b border-border bg-background/95 backdrop-blur-sm px-3 py-2 safe-area-pt">
             <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
-              <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => setStep('chat')}>
+              <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => setStep('material_choice')}>
                 {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
               </Button>
               <div className={cn("flex items-center gap-2 flex-1 min-w-0", isRTL && "flex-row-reverse")}>

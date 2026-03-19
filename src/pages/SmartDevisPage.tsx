@@ -1359,7 +1359,7 @@ const SmartDevisPage = () => {
   return (
     <div className={cn(
       "max-w-2xl mx-auto",
-      step === 'chat'
+      (step === 'chat' || step === 'review')
         ? "fixed inset-0 z-40 flex flex-col bg-background"
         : "py-4 space-y-4"
     )}>

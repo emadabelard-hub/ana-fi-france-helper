@@ -1917,7 +1917,29 @@ const SmartDevisPage = () => {
               {analysisData && !isGenerating && (
                 <div className="py-4">
                   <button
-                    onClick={handleGenerateItems}
+                    onClick={() => {
+                      // Extract items from analysisData for material choice screen
+                      const suggested = Array.isArray(analysisData?.suggestedItems) ? analysisData.suggestedItems : [];
+                      const preItems: LineItem[] = suggested.map((item: any) => {
+                        const parsedQuantity = Number(item.quantity);
+                        const quantity = Number.isFinite(parsedQuantity) ? parsedQuantity : 1;
+                        const aiUnit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'Ens';
+                        return {
+                          id: generateId(),
+                          designation_fr: item.designation_fr || '',
+                          designation_ar: item.designation_ar || '',
+                          quantity,
+                          unit: aiUnit,
+                          unitPrice: 0,
+                          total: 0,
+                          category: item.category,
+                          withMaterial: true, // default: material on artisan
+                          isAiEstimate: false,
+                        };
+                      });
+                      setLineItems(preItems);
+                      setStep('material_choice');
+                    }}
                     disabled={isGenerating}
                     className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all text-black font-bold text-2xl font-cairo shadow-lg flex items-center justify-center gap-3"
                   >

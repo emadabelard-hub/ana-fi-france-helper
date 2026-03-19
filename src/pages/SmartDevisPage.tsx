@@ -896,10 +896,11 @@ const SmartDevisPage = () => {
     else setMaterialScope('partiel');
 
     // Preserve material choices made by user
-    const materialChoices = new Map(lineItems.map(i => [
-      `${(i.designation_fr || '').trim().toLowerCase()}|${(i.designation_ar || '').trim()}`,
-      i.withMaterial ?? true
-    ]));
+    const materialChoices: Record<string, boolean> = {};
+    lineItems.forEach(i => {
+      const key = `${(i.designation_fr || '').trim().toLowerCase()}|${(i.designation_ar || '').trim()}`;
+      materialChoices[key] = i.withMaterial ?? true;
+    });
 
     setIsGenerating(true);
     try {

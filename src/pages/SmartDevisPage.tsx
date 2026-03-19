@@ -1359,12 +1359,12 @@ const SmartDevisPage = () => {
   return (
     <div className={cn(
       "max-w-2xl mx-auto",
-      step === 'chat'
+      (step === 'chat' || step === 'review')
         ? "fixed inset-0 z-40 flex flex-col bg-background"
         : "py-4 space-y-4"
     )}>
       {/* Header — hidden during full-screen chat */}
-      {step !== 'chat' && (
+      {step !== 'chat' && step !== 'review' && (
       <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
         <Button variant="ghost" size="icon" onClick={handleHeaderBack}>
           {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
@@ -1908,6 +1908,23 @@ const SmartDevisPage = () => {
                   </div>
                 </div>
               )}
+              {/* Green كمل button — appears after analysis data is available */}
+              {analysisData && !isGenerating && (
+                <div className="py-4">
+                  <button
+                    onClick={handleGenerateItems}
+                    disabled={isGenerating}
+                    className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all text-black font-bold text-2xl font-cairo shadow-lg flex items-center justify-center gap-3"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-7 w-7" />
+                    )}
+                    كمل
+                  </button>
+                </div>
+              )}
               <div ref={chatEndRef} />
             </div>
           </div>
@@ -1928,16 +1945,7 @@ const SmartDevisPage = () => {
                   {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
-              <Button
-                className="w-full bg-[#1a1a1a] hover:bg-[#333] text-[#c5a028] font-bold border border-[#c5a028]/30 rounded-xl"
-                onClick={handleGenerateItems}
-                disabled={isGenerating}
-              >
-                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                <span className={cn(isRTL && "font-cairo")}>
-                  {isRTL ? '🏗️ ولّد الدوفي الذكي' : '🏗️ Générer le Smart Devis'}
-                </span>
-              </Button>
+              {/* Generate button removed — replaced by green كمل button in messages area */}
             </div>
           </div>
         </>
@@ -1945,16 +1953,36 @@ const SmartDevisPage = () => {
 
       {/* Step 4: Review & Edit */}
       {step === 'review' && (
-        <div className="space-y-4">
-          <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
-            <h2 className={cn("text-lg font-bold", isRTL && "font-cairo")}>
-              {isRTL ? '📋 مراجعة وتعديل البنود' : '📋 Revue & Modification'}
-            </h2>
-            <Button variant="outline" size="sm" onClick={addItem}>
-              <Plus className="h-4 w-4 mr-1" />
-              {isRTL ? 'أضف' : 'Ajouter'}
-            </Button>
+        <>
+          {/* Review Header — WhatsApp style */}
+          <div className="shrink-0 border-b border-border bg-background/95 backdrop-blur-sm px-3 py-2 safe-area-pt">
+            <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
+              <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => setStep('chat')}>
+                {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
+              </Button>
+              <div className={cn("flex items-center gap-2 flex-1 min-w-0", isRTL && "flex-row-reverse")}>
+                <div className="h-9 w-9 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                </div>
+                <div className={cn("min-w-0", isRTL && "text-right")}>
+                  <p className={cn("text-sm font-bold text-foreground truncate", isRTL && "font-cairo")}>
+                    {isRTL ? '📋 مراجعة وتعديل البنود' : '📋 Revue & Modification'}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {isRTL ? `${lineItems.length} بند` : `${lineItems.length} lignes`}
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={addItem} className="shrink-0">
+                <Plus className="h-4 w-4 mr-1" />
+                {isRTL ? 'أضف' : 'Ajouter'}
+              </Button>
+            </div>
           </div>
+
+          {/* Review content — scrollable */}
+          <div className="flex-1 overflow-y-auto px-3 py-3">
+            <div className="max-w-2xl mx-auto space-y-4">
 
           {/* Shubbaik Lubbaik — AI Price Fetch Button */}
           <Button
@@ -2235,7 +2263,7 @@ const SmartDevisPage = () => {
             <Button variant="outline" className="w-full" onClick={() => setStep('chat')}>
               <Edit3 className="h-4 w-4 mr-2" />
               <span className={cn(isRTL && "font-cairo")}>
-                {isRTL ? 'رجوع للدردشة' : 'Retour au chat'}
+                {isRTL ? 'رجوع للتحليل' : 'Retour à l\'analyse'}
               </span>
             </Button>
             <Button variant="outline" className="w-full" onClick={handleResetAnalysis}>
@@ -2245,7 +2273,9 @@ const SmartDevisPage = () => {
               </span>
             </Button>
           </div>
-        </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Help Guide Modal */}

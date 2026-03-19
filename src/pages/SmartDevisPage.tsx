@@ -1396,8 +1396,14 @@ const SmartDevisPage = () => {
   ];
 
   return (
-    <div className="py-4 space-y-4 max-w-2xl mx-auto">
-      {/* Header */}
+    <div className={cn(
+      "max-w-2xl mx-auto",
+      step === 'chat'
+        ? "fixed inset-0 z-40 flex flex-col bg-background"
+        : "py-4 space-y-4"
+    )}>
+      {/* Header — hidden during full-screen chat */}
+      {step !== 'chat' && (
       <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
         <Button variant="ghost" size="icon" onClick={handleHeaderBack}>
           {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
@@ -1421,6 +1427,7 @@ const SmartDevisPage = () => {
           {isRTL ? 'جديد' : 'Nouveau devis'}
         </Button>
       </div>
+      )}
 
       {/* AI Intro Screen */}
       {step === 'ai_intro' && (
@@ -1743,248 +1750,236 @@ const SmartDevisPage = () => {
         </Card>
       )}
 
-      {/* Step 3: AI Chat */}
+      {/* Step 3: AI Chat — Full-screen layout */}
       {step === 'chat' && (
-        <div className="space-y-3">
-          {/* Uploaded files thumbnails */}
-          {uploadedFiles.length > 0 && (
-            <ScrollArea className="w-full whitespace-nowrap">
-              <div className="flex gap-2 justify-center py-1">
-                {uploadedFiles.map((file) => (
-                  <div key={file.id} className="shrink-0">
-                    {file.type === 'image' ? (
-                      <img src={file.data} alt={file.name} className="h-16 w-16 rounded-lg border object-cover" />
-                    ) : (
-                      <div className="h-16 w-16 rounded-lg border bg-muted/30 flex flex-col items-center justify-center">
-                        <FileText className="h-5 w-5 text-destructive" />
-                        <span className="text-[7px] text-muted-foreground mt-0.5">PDF</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
-          )}
-
-          {/* Surface Estimates (editable) */}
-          {surfaceEstimates.length > 0 && (
-            <Card className="border-2 border-amber-500/20 bg-amber-500/5">
-              <CardHeader className="pb-2 pt-3 px-3">
-                <CardTitle className={cn("text-sm flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>
-                  📐 {isRTL ? 'المساحات المقدرة (عدّل لو محتاج)' : 'Surfaces estimées (modifiables)'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 pb-3 space-y-2">
-                {/* Warning: approximate estimation */}
-                <div className={cn("rounded-lg border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 p-2.5", isRTL && "text-right")}>
-                  <p className={cn("text-[11px] font-semibold text-amber-700 dark:text-amber-300 leading-relaxed", isRTL && "font-cairo")}>
-                    ⚠️ {isRTL
-                      ? 'تقدير بصري تقريبي. يرجى التحقق من المساحة أو تعديلها قبل إنشاء الدوفي.'
-                      : 'Estimation visuelle approximative. Veuillez vérifier ou corriger la surface avant de créer le devis.'}
+        <>
+          {/* Chat Header */}
+          <div className="shrink-0 border-b border-border bg-background/95 backdrop-blur-sm px-3 py-2 safe-area-pt">
+            <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
+              <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={handleHeaderBack}>
+                {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
+              </Button>
+              <div className={cn("flex items-center gap-2 flex-1 min-w-0", isRTL && "flex-row-reverse")}>
+                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                </div>
+                <div className={cn("min-w-0", isRTL && "text-right")}>
+                  <p className={cn("text-sm font-bold text-foreground truncate", isRTL && "font-cairo")}>
+                    {isRTL ? 'شبيك لبيك ✨' : 'Shubbaik Lubbaik ✨'}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {isRTL ? `${chatMessages.length} رسالة` : `${chatMessages.length} messages`}
                   </p>
                 </div>
-
-                {surfaceEstimates.map((se, idx) => (
-                  <div key={se.id || idx} className="rounded-lg border bg-card p-2.5 space-y-1.5">
-                    <div className={cn("flex items-center justify-between gap-2", isRTL && "flex-row-reverse")}>
-                      <p className={cn("text-xs font-semibold text-foreground", isRTL && "font-cairo")}>
-                        {isRTL ? se.label_ar : se.label_fr}
-                      </p>
-                      <Badge variant="outline" className="text-[9px] shrink-0">
-                        {se.workType}
-                      </Badge>
-                    </div>
-                    <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
-                      🔍 {isRTL ? se.referenceObject_ar : se.referenceObject_fr}
-                    </p>
-                    <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-                      <div className="flex-1">
-                        <label className="text-[9px] text-muted-foreground">{isRTL ? 'عرض (م)' : 'Larg. (m)'}</label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          value={se.width_m}
-                          onChange={(e) => {
-                            const w = parseFloat(e.target.value) || 0;
-                            setSurfaceEstimates(prev => prev.map((s, i) => i === idx ? { ...s, width_m: w, area_m2: Math.round(w * s.height_m * 10) / 10 } : s));
-                          }}
-                          className="h-7 text-xs"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label className="text-[9px] text-muted-foreground">{isRTL ? 'ارتفاع (م)' : 'Haut. (m)'}</label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          value={se.height_m}
-                          onChange={(e) => {
-                            const h = parseFloat(e.target.value) || 0;
-                            setSurfaceEstimates(prev => prev.map((s, i) => i === idx ? { ...s, height_m: h, area_m2: Math.round(s.width_m * h * 10) / 10 } : s));
-                          }}
-                          className="h-7 text-xs"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label className="text-[9px] text-muted-foreground text-muted-foreground/60">{isRTL ? 'تقدير IA' : 'Estimation IA'}</label>
-                        <div className="h-7 flex items-center px-2 bg-muted rounded-md text-[10px] text-muted-foreground line-through">
-                          {Math.round(se.width_m * se.height_m * 10) / 10} m²
-                        </div>
-                      </div>
-                    </div>
-                    {/* Editable "Surface réelle" field */}
-                    <div className={cn("pt-1", isRTL && "text-right")}>
-                      <label className={cn("text-[10px] font-bold text-primary", isRTL && "font-cairo")}>
-                        ✏️ {isRTL ? 'المساحة الفعلية (قابلة للتعديل)' : 'Surface réelle (modifiable)'}
-                      </label>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          value={se.area_m2}
-                          onChange={(e) => {
-                            const area = parseFloat(e.target.value) || 0;
-                            setSurfaceEstimates(prev => prev.map((s, i) => i === idx ? { ...s, area_m2: area } : s));
-                          }}
-                          className="h-8 text-sm font-bold flex-1 border-primary/40"
-                        />
-                        <span className="text-xs font-bold text-foreground shrink-0">m²</span>
-                      </div>
-                    </div>
-                    {se.confidence && (
-                      <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
-                        <span className={cn(
-                          "inline-block w-1.5 h-1.5 rounded-full",
-                          se.confidence === 'high' ? 'bg-green-500' : se.confidence === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
-                        )} />
-                        <span className="text-[9px] text-muted-foreground">
-                          {se.confidence === 'high' ? (isRTL ? 'دقة عالية' : 'Précision élevée') : se.confidence === 'medium' ? (isRTL ? 'دقة متوسطة' : 'Précision moyenne') : (isRTL ? 'دقة منخفضة' : 'Précision faible')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <p className={cn("text-[10px] text-muted-foreground text-center font-bold", isRTL && "font-cairo")}>
-                  📏 {isRTL ? `المساحة الإجمالية الفعلية: ${surfaceEstimates.reduce((s, e) => s + e.area_m2, 0).toFixed(1)} م²` : `Surface réelle totale: ${surfaceEstimates.reduce((s, e) => s + e.area_m2, 0).toFixed(1)} m²`}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* MaterialScopeSelector removed — Shubbaik Lubbaik is the sole pricing authority */}
-
-          {/* Preferences quick select */}
-          <Card className="p-3">
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className={cn("text-[10px] font-medium text-muted-foreground block mb-1", isRTL && "text-right font-cairo")}>
-                  {isRTL ? 'جودة المواد' : 'Qualité'}
-                </label>
-                <Select value={materialQuality} onValueChange={setMaterialQuality}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="eco">🏷️ إقتصادي (Éco)</SelectItem>
-                    <SelectItem value="standard">⭐ متوسط (Standard)</SelectItem>
-                    <SelectItem value="luxe">💎 لوكس (Luxe)</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
-              <div>
-                <label className={cn("text-[10px] font-medium text-muted-foreground block mb-1", isRTL && "text-right font-cairo")}>
-                  {isRTL ? 'خصم %' : 'Remise %'}
-                </label>
-                <Input type="number" min={0} max={50} value={discountPercent} onChange={e => setDiscountPercent(Number(e.target.value))} className="h-8 text-xs" />
-              </div>
-              <div>
-                <label className={cn("text-[10px] font-medium text-muted-foreground block mb-1", isRTL && "text-right font-cairo")}>
-                  {isRTL ? 'ربح %' : 'Marge %'}
-                </label>
-                <Input type="number" min={0} max={100} value={profitMarginPercent} onChange={e => setProfitMarginPercent(Number(e.target.value))} className="h-8 text-xs" />
-              </div>
+              <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={handleResetAnalysis}>
+                <RotateCcw className="h-4 w-4 text-muted-foreground" />
+              </Button>
             </div>
-          </Card>
-
-          {/* Dedicated Chat Thread — chronological (oldest top, newest bottom) */}
-          <Card className="border border-border/60 overflow-hidden">
-            <div className={cn("px-3 py-2 bg-muted/40 border-b border-border/40 flex items-center gap-2", isRTL && "flex-row-reverse")}>
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              <span className={cn("text-xs font-semibold text-muted-foreground", isRTL && "font-cairo")}>
-                {isRTL ? `💬 سجل المحادثة (${chatMessages.length} رسالة)` : `💬 Historique (${chatMessages.length} messages)`}
-              </span>
-            </div>
-            <ScrollArea className="h-[40vh] p-3">
-              <div className="space-y-3">
-                {chatMessages.map((msg, i) => (
-                  <div key={i} className={cn("flex", msg.role === 'user' ? (isRTL ? 'justify-start' : 'justify-end') : (isRTL ? 'justify-end' : 'justify-start'))}>
-                    <div className={cn(
-                      "max-w-[85%] rounded-2xl px-4 py-3 text-sm",
-                      msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-card border shadow-sm'
-                    )}>
-                      {msg.role === 'assistant' ? (
-                        <MarkdownRenderer content={msg.content} isRTL={isRTL} />
+            {uploadedFiles.length > 0 && (
+              <ScrollArea className="w-full whitespace-nowrap mt-2">
+                <div className="flex gap-1.5 py-0.5">
+                  {uploadedFiles.map((file) => (
+                    <div key={file.id} className="shrink-0">
+                      {file.type === 'image' ? (
+                        <img src={file.data} alt={file.name} className="h-10 w-10 rounded-lg border object-cover" />
                       ) : (
-                        <p className={cn(isRTL && "font-cairo text-right")} dir={isRTL ? 'rtl' : 'ltr'}>{msg.content}</p>
+                        <div className="h-10 w-10 rounded-lg border bg-muted/30 flex flex-col items-center justify-center">
+                          <FileText className="h-3.5 w-3.5 text-destructive" />
+                        </div>
                       )}
                     </div>
+                  ))}
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            )}
+          </div>
+
+          {/* Messages area — scrollable */}
+          <div className="flex-1 overflow-y-auto px-3 py-3">
+            <div className="max-w-2xl mx-auto space-y-3">
+              {/* Surface Estimates */}
+              {surfaceEstimates.length > 0 && (
+                <Card className="border border-amber-500/20 bg-amber-500/5">
+                  <CardHeader className="pb-2 pt-3 px-3">
+                    <CardTitle className={cn("text-sm flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>
+                      📐 {isRTL ? 'المساحات المقدرة (عدّل لو محتاج)' : 'Surfaces estimées (modifiables)'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-3 pb-3 space-y-2">
+                    <div className={cn("rounded-lg border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 p-2.5", isRTL && "text-right")}>
+                      <p className={cn("text-[11px] font-semibold text-amber-700 dark:text-amber-300 leading-relaxed", isRTL && "font-cairo")}>
+                        ⚠️ {isRTL
+                          ? 'تقدير بصري تقريبي. يرجى التحقق من المساحة أو تعديلها قبل إنشاء الدوفي.'
+                          : 'Estimation visuelle approximative. Veuillez vérifier ou corriger la surface avant de créer le devis.'}
+                      </p>
+                    </div>
+                    {surfaceEstimates.map((se, idx) => (
+                      <div key={se.id || idx} className="rounded-lg border bg-card p-2.5 space-y-1.5">
+                        <div className={cn("flex items-center justify-between gap-2", isRTL && "flex-row-reverse")}>
+                          <p className={cn("text-xs font-semibold text-foreground", isRTL && "font-cairo")}>{isRTL ? se.label_ar : se.label_fr}</p>
+                          <Badge variant="outline" className="text-[9px] shrink-0">{se.workType}</Badge>
+                        </div>
+                        <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+                          🔍 {isRTL ? se.referenceObject_ar : se.referenceObject_fr}
+                        </p>
+                        <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                          <div className="flex-1">
+                            <label className="text-[9px] text-muted-foreground">{isRTL ? 'عرض (م)' : 'Larg. (m)'}</label>
+                            <Input type="number" step="0.1" min="0" value={se.width_m}
+                              onChange={(e) => { const w = parseFloat(e.target.value) || 0; setSurfaceEstimates(prev => prev.map((s, i) => i === idx ? { ...s, width_m: w, area_m2: Math.round(w * s.height_m * 10) / 10 } : s)); }}
+                              className="h-7 text-xs" />
+                          </div>
+                          <div className="flex-1">
+                            <label className="text-[9px] text-muted-foreground">{isRTL ? 'ارتفاع (م)' : 'Haut. (m)'}</label>
+                            <Input type="number" step="0.1" min="0" value={se.height_m}
+                              onChange={(e) => { const h = parseFloat(e.target.value) || 0; setSurfaceEstimates(prev => prev.map((s, i) => i === idx ? { ...s, height_m: h, area_m2: Math.round(s.width_m * h * 10) / 10 } : s)); }}
+                              className="h-7 text-xs" />
+                          </div>
+                          <div className="flex-1">
+                            <label className="text-[9px] text-muted-foreground text-muted-foreground/60">{isRTL ? 'تقدير IA' : 'Estimation IA'}</label>
+                            <div className="h-7 flex items-center px-2 bg-muted rounded-md text-[10px] text-muted-foreground line-through">
+                              {Math.round(se.width_m * se.height_m * 10) / 10} m²
+                            </div>
+                          </div>
+                        </div>
+                        <div className={cn("pt-1", isRTL && "text-right")}>
+                          <label className={cn("text-[10px] font-bold text-primary", isRTL && "font-cairo")}>
+                            ✏️ {isRTL ? 'المساحة الفعلية (قابلة للتعديل)' : 'Surface réelle (modifiable)'}
+                          </label>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <Input type="number" step="0.1" min="0" value={se.area_m2}
+                              onChange={(e) => { const area = parseFloat(e.target.value) || 0; setSurfaceEstimates(prev => prev.map((s, i) => i === idx ? { ...s, area_m2: area } : s)); }}
+                              className="h-8 text-sm font-bold flex-1 border-primary/40" />
+                            <span className="text-xs font-bold text-foreground shrink-0">m²</span>
+                          </div>
+                        </div>
+                        {se.confidence && (
+                          <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
+                            <span className={cn("inline-block w-1.5 h-1.5 rounded-full",
+                              se.confidence === 'high' ? 'bg-green-500' : se.confidence === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
+                            )} />
+                            <span className="text-[9px] text-muted-foreground">
+                              {se.confidence === 'high' ? (isRTL ? 'دقة عالية' : 'Précision élevée') : se.confidence === 'medium' ? (isRTL ? 'دقة متوسطة' : 'Précision moyenne') : (isRTL ? 'دقة منخفضة' : 'Précision faible')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <p className={cn("text-[10px] text-muted-foreground text-center font-bold", isRTL && "font-cairo")}>
+                      📏 {isRTL ? `المساحة الإجمالية الفعلية: ${surfaceEstimates.reduce((s, e) => s + e.area_m2, 0).toFixed(1)} م²` : `Surface réelle totale: ${surfaceEstimates.reduce((s, e) => s + e.area_m2, 0).toFixed(1)} m²`}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Preferences */}
+              <Card className="p-3">
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className={cn("text-[10px] font-medium text-muted-foreground block mb-1", isRTL && "text-right font-cairo")}>{isRTL ? 'جودة المواد' : 'Qualité'}</label>
+                    <Select value={materialQuality} onValueChange={setMaterialQuality}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="eco">🏷️ إقتصادي (Éco)</SelectItem>
+                        <SelectItem value="standard">⭐ متوسط (Standard)</SelectItem>
+                        <SelectItem value="luxe">💎 لوكس (Luxe)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                ))}
-                {isChatLoading && chatMessages[chatMessages.length - 1]?.role !== 'assistant' && (
-                  <div className={cn("flex", isRTL ? 'justify-end' : 'justify-start')}>
-                    <div className="bg-card border rounded-2xl px-4 py-3 shadow-sm">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <div>
+                    <label className={cn("text-[10px] font-medium text-muted-foreground block mb-1", isRTL && "text-right font-cairo")}>{isRTL ? 'خصم %' : 'Remise %'}</label>
+                    <Input type="number" min={0} max={50} value={discountPercent} onChange={e => setDiscountPercent(Number(e.target.value))} className="h-8 text-xs" />
+                  </div>
+                  <div>
+                    <label className={cn("text-[10px] font-medium text-muted-foreground block mb-1", isRTL && "text-right font-cairo")}>{isRTL ? 'ربح %' : 'Marge %'}</label>
+                    <Input type="number" min={0} max={100} value={profitMarginPercent} onChange={e => setProfitMarginPercent(Number(e.target.value))} className="h-8 text-xs" />
+                  </div>
+                </div>
+              </Card>
+
+              {/* Chat messages */}
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={cn("flex", msg.role === 'user' ? (isRTL ? 'justify-start' : 'justify-end') : (isRTL ? 'justify-end' : 'justify-start'))}>
+                  {msg.role === 'assistant' && !isRTL && (
+                    <div className="shrink-0 mr-2 mt-1">
+                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                    </div>
+                  )}
+                  <div className={cn(
+                    "max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm",
+                    msg.role === 'user'
+                      ? 'bg-primary text-primary-foreground rounded-br-sm'
+                      : 'bg-card text-card-foreground border border-border/60 rounded-bl-sm'
+                  )}>
+                    {msg.role === 'assistant' ? (
+                      <MarkdownRenderer content={msg.content} isRTL={isRTL} />
+                    ) : (
+                      <p className={cn("leading-relaxed", isRTL && "font-cairo text-right")} dir={isRTL ? 'rtl' : 'ltr'}>{msg.content}</p>
+                    )}
+                    <p className={cn("text-[9px] mt-1.5 opacity-50", msg.role === 'user' ? 'text-right' : 'text-left')}>
+                      {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  {msg.role === 'assistant' && isRTL && (
+                    <div className="shrink-0 ml-2 mt-1">
+                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {isChatLoading && chatMessages[chatMessages.length - 1]?.role !== 'assistant' && (
+                <div className={cn("flex items-center gap-2", isRTL ? 'justify-end flex-row-reverse' : 'justify-start')}>
+                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <div className="bg-card border border-border/60 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '75ms' }} />
+                      <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                     </div>
                   </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-            </ScrollArea>
-          </Card>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+          </div>
 
-          {/* Chat input — sticky at bottom, always visible */}
-          <div className="sticky bottom-0 z-10 bg-background pt-2 pb-1">
-            <Card className="p-3 border-2 border-primary/20 bg-primary/5 shadow-lg">
-              <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+          {/* Bottom bar — input + generate */}
+          <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm px-3 pt-2 pb-3 safe-area-pb">
+            <div className="max-w-2xl mx-auto space-y-2">
+              <div className={cn("flex gap-2 items-end", isRTL && "flex-row-reverse")}>
                 <Textarea
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
                   placeholder={isRTL ? '💬 اكتب سؤالك أو تعديلك هنا...' : '💬 Posez votre question ou ajustement...'}
-                  className={cn("min-h-[44px] max-h-[100px] resize-none text-sm bg-background", isRTL && "text-right font-cairo")}
+                  className={cn("min-h-[44px] max-h-[100px] resize-none text-sm bg-muted/50 border-border/60 rounded-2xl", isRTL && "text-right font-cairo")}
                   dir={isRTL ? 'rtl' : 'ltr'}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
                 />
-                <Button size="icon" onClick={handleChatSend} disabled={!chatInput.trim() || isChatLoading} className="shrink-0 h-11 w-11">
+                <Button size="icon" onClick={handleChatSend} disabled={!chatInput.trim() || isChatLoading} className="shrink-0 h-11 w-11 rounded-full">
                   {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
-            </Card>
+              <Button
+                className="w-full bg-[#1a1a1a] hover:bg-[#333] text-[#c5a028] font-bold border border-[#c5a028]/30 rounded-xl"
+                onClick={handleGenerateItems}
+                disabled={isGenerating}
+              >
+                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                <span className={cn(isRTL && "font-cairo")}>
+                  {isRTL ? '🏗️ ولّد الدوفي الذكي' : '🏗️ Générer le Smart Devis'}
+                </span>
+              </Button>
+            </div>
           </div>
-
-          {/* Analysis actions */}
-          <div className="space-y-2">
-            <Button variant="outline" className="w-full" onClick={handleResetAnalysis}>
-              <RotateCcw className="h-4 w-4 mr-2" />
-              <span className={cn(isRTL && "font-cairo")}>
-                {isRTL ? 'إعادة التحليل من الأول' : 'Reset Analysis'}
-              </span>
-            </Button>
-
-            <Button
-              className="w-full bg-[#1a1a1a] hover:bg-[#333] text-[#c5a028] font-bold border border-[#c5a028]/30"
-              onClick={handleGenerateItems}
-              disabled={isGenerating}
-            >
-              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              <span className={cn(isRTL && "font-cairo")}>
-                {isRTL ? '🏗️ ولّد الدوفي الذكي' : '🏗️ Générer le Smart Devis'}
-              </span>
-            </Button>
-          </div>
-        </div>
+        </>
       )}
 
       {/* Step 4: Review & Edit */}

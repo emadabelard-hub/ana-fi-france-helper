@@ -1908,6 +1908,23 @@ const SmartDevisPage = () => {
                   </div>
                 </div>
               )}
+              {/* Green كمل button — appears after analysis data is available */}
+              {analysisData && !isGenerating && (
+                <div className="py-4">
+                  <button
+                    onClick={handleGenerateItems}
+                    disabled={isGenerating}
+                    className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all text-black font-bold text-2xl font-cairo shadow-lg flex items-center justify-center gap-3"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-7 w-7" />
+                    )}
+                    كمل
+                  </button>
+                </div>
+              )}
               <div ref={chatEndRef} />
             </div>
           </div>

@@ -1402,7 +1402,8 @@ const SmartDevisPage = () => {
         ? "fixed inset-0 z-40 flex flex-col bg-background"
         : "py-4 space-y-4"
     )}>
-      {/* Header */}
+      {/* Header — hidden during full-screen chat */}
+      {step !== 'chat' && (
       <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
         <Button variant="ghost" size="icon" onClick={handleHeaderBack}>
           {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
@@ -1426,6 +1427,7 @@ const SmartDevisPage = () => {
           {isRTL ? 'جديد' : 'Nouveau devis'}
         </Button>
       </div>
+      )}
 
       {/* AI Intro Screen */}
       {step === 'ai_intro' && (

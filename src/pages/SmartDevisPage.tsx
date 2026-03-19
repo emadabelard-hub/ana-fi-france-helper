@@ -247,6 +247,26 @@ const SmartDevisPage = () => {
     return { fr: cleanFr, ar: cleanAr };
   };
 
+  // Auto-prefix "Fourniture et pose de" for material trades, skip pure service tasks
+  const prefixFournitureEtPose = (fr: string, ar: string): { fr: string; ar: string } => {
+    // Pure service tasks — never prefix
+    const SERVICE_ONLY = /^(Dépose|Démontage|Évacuation|Nettoyage|Lessivage|Ponçage|Protection|Bâchage|Préparation du chantier|Installation de chantier|Remise des clés)/i;
+    if (SERVICE_ONLY.test(fr.trim())) return { fr, ar };
+
+    // Already has the prefix — skip
+    if (/Fourniture/i.test(fr)) return { fr, ar };
+
+    // Material trades that should get the prefix
+    const MATERIAL_TRADES = /^(Parquet|Papier\s*peint|Peinture|Électricité|Plinthes?|Sanitaire|Étanchéité|Carrelage|Faïence|Revêtement|Enduit|Sous-couche|Primaire|Pose\s+de\s+)/i;
+    if (MATERIAL_TRADES.test(fr.trim())) {
+      const prefixedFr = `Fourniture et pose de ${fr.trim().charAt(0).toLowerCase()}${fr.trim().slice(1)}`;
+      const prefixedAr = /فورنيتير/.test(ar) ? ar : `فورنيتير و بوز ${ar}`.trim();
+      return { fr: prefixedFr, ar: prefixedAr };
+    }
+
+    return { fr, ar };
+  };
+
   const buildWizardSnapshot = useCallback((): SmartDevisWizardSnapshot => ({
     step,
     inputType,

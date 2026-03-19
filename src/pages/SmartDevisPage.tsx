@@ -1248,6 +1248,11 @@ const SmartDevisPage = () => {
 
   const handleHeaderBack = () => {
     if (step === 'review') {
+      setStep('material_choice');
+      return;
+    }
+
+    if (step === 'material_choice') {
       setStep('chat');
       return;
     }

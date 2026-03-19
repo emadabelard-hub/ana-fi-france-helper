@@ -1953,16 +1953,36 @@ const SmartDevisPage = () => {
 
       {/* Step 4: Review & Edit */}
       {step === 'review' && (
-        <div className="space-y-4">
-          <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
-            <h2 className={cn("text-lg font-bold", isRTL && "font-cairo")}>
-              {isRTL ? '📋 مراجعة وتعديل البنود' : '📋 Revue & Modification'}
-            </h2>
-            <Button variant="outline" size="sm" onClick={addItem}>
-              <Plus className="h-4 w-4 mr-1" />
-              {isRTL ? 'أضف' : 'Ajouter'}
-            </Button>
+        <>
+          {/* Review Header — WhatsApp style */}
+          <div className="shrink-0 border-b border-border bg-background/95 backdrop-blur-sm px-3 py-2 safe-area-pt">
+            <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
+              <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => setStep('chat')}>
+                {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
+              </Button>
+              <div className={cn("flex items-center gap-2 flex-1 min-w-0", isRTL && "flex-row-reverse")}>
+                <div className="h-9 w-9 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                </div>
+                <div className={cn("min-w-0", isRTL && "text-right")}>
+                  <p className={cn("text-sm font-bold text-foreground truncate", isRTL && "font-cairo")}>
+                    {isRTL ? '📋 مراجعة وتعديل البنود' : '📋 Revue & Modification'}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {isRTL ? `${lineItems.length} بند` : `${lineItems.length} lignes`}
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={addItem} className="shrink-0">
+                <Plus className="h-4 w-4 mr-1" />
+                {isRTL ? 'أضف' : 'Ajouter'}
+              </Button>
+            </div>
           </div>
+
+          {/* Review content — scrollable */}
+          <div className="flex-1 overflow-y-auto px-3 py-3">
+            <div className="max-w-2xl mx-auto space-y-4">
 
           {/* Shubbaik Lubbaik — AI Price Fetch Button */}
           <Button

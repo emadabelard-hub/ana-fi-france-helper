@@ -981,9 +981,11 @@ const SmartDevisPage = () => {
 
         const baseFr = item.designation_fr || '';
         const baseAr = item.designation_ar || '';
-        const { fr: finalFr, ar: finalAr } = !withMaterial
+        const { fr: materialFr, ar: materialAr } = !withMaterial
           ? stripFourniture(baseFr, baseAr)
-          : { fr: baseFr, ar: baseAr };
+          : prefixFournitureEtPose(baseFr, baseAr);
+        const finalFr = materialFr;
+        const finalAr = materialAr;
 
         return {
           id: generateId(),

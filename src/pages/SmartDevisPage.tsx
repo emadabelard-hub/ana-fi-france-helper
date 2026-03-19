@@ -2263,7 +2263,7 @@ const SmartDevisPage = () => {
             <Button variant="outline" className="w-full" onClick={() => setStep('chat')}>
               <Edit3 className="h-4 w-4 mr-2" />
               <span className={cn(isRTL && "font-cairo")}>
-                {isRTL ? 'رجوع للدردشة' : 'Retour au chat'}
+                {isRTL ? 'رجوع للتحليل' : 'Retour à l\'analyse'}
               </span>
             </Button>
             <Button variant="outline" className="w-full" onClick={handleResetAnalysis}>
@@ -2273,7 +2273,9 @@ const SmartDevisPage = () => {
               </span>
             </Button>
           </div>
-        </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Help Guide Modal */}

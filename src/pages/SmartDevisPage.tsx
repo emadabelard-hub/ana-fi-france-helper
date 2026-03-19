@@ -1364,7 +1364,7 @@ const SmartDevisPage = () => {
         : "py-4 space-y-4"
     )}>
       {/* Header — hidden during full-screen chat */}
-      {step !== 'chat' && (
+      {step !== 'chat' && step !== 'review' && (
       <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
         <Button variant="ghost" size="icon" onClick={handleHeaderBack}>
           {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}

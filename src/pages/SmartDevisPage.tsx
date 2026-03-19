@@ -1396,7 +1396,12 @@ const SmartDevisPage = () => {
   ];
 
   return (
-    <div className="py-4 space-y-4 max-w-2xl mx-auto">
+    <div className={cn(
+      "max-w-2xl mx-auto",
+      step === 'chat'
+        ? "fixed inset-0 z-40 flex flex-col bg-background"
+        : "py-4 space-y-4"
+    )}>
       {/* Header */}
       <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
         <Button variant="ghost" size="icon" onClick={handleHeaderBack}>

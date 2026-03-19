@@ -1945,16 +1945,7 @@ const SmartDevisPage = () => {
                   {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
-              <Button
-                className="w-full bg-[#1a1a1a] hover:bg-[#333] text-[#c5a028] font-bold border border-[#c5a028]/30 rounded-xl"
-                onClick={handleGenerateItems}
-                disabled={isGenerating}
-              >
-                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                <span className={cn(isRTL && "font-cairo")}>
-                  {isRTL ? '🏗️ ولّد الدوفي الذكي' : '🏗️ Générer le Smart Devis'}
-                </span>
-              </Button>
+              {/* Generate button removed — replaced by green كمل button in messages area */}
             </div>
           </div>
         </>

@@ -70,7 +70,7 @@ interface ChatMsg {
 }
 
 type InputType = 'photo' | 'blueprint' | 'document' | null;
-type Step = 'ai_intro' | 'select_input' | 'photo_guide' | 'upload' | 'chat' | 'review';
+type Step = 'ai_intro' | 'select_input' | 'photo_guide' | 'upload' | 'chat' | 'material_choice' | 'review';
 
 interface SmartDevisWizardSnapshot {
   step: Step;
@@ -136,7 +136,7 @@ const SmartDevisPage = () => {
   const [helpGuide, setHelpGuide] = useState<'photo' | 'blueprint' | 'document' | null>(null);
   const [surfaceEstimates, setSurfaceEstimates] = useState<SurfaceEstimate[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [materialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel'>('fourniture_et_pose');
+  const [materialScope, setMaterialScope] = useState<'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel'>('fourniture_et_pose');
   // catalogByCode removed — pricing via شبيك لبيك only
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const voiceRecognitionRef = useRef<any>(null);
@@ -888,6 +888,20 @@ const SmartDevisPage = () => {
 
   const handleGenerateItems = async () => {
 
+    // Set materialScope based on user's per-item choices from material_choice step
+    const allWith = lineItems.every(i => i.withMaterial);
+    const noneWith = lineItems.every(i => !i.withMaterial);
+    if (allWith) setMaterialScope('fourniture_et_pose');
+    else if (noneWith) setMaterialScope('main_oeuvre_seule');
+    else setMaterialScope('partiel');
+
+    // Preserve material choices made by user
+    const materialChoices: Record<string, boolean> = {};
+    lineItems.forEach(i => {
+      const key = `${(i.designation_fr || '').trim().toLowerCase()}|${(i.designation_ar || '').trim()}`;
+      materialChoices[key] = i.withMaterial ?? true;
+    });
+
     setIsGenerating(true);
     try {
       // Include conversation history so generate_items knows about user-requested additions
@@ -895,6 +909,8 @@ const SmartDevisPage = () => {
         .filter(m => m.role === 'user' || m.role === 'assistant')
         .slice(-10) // last 10 messages for context
         .map(m => ({ role: m.role, content: m.content }));
+
+      const effectiveScope = allWith ? 'fourniture_et_pose' : noneWith ? 'main_oeuvre_seule' : 'partiel';
 
       const payload = {
         action: 'generate_items',
@@ -915,7 +931,7 @@ const SmartDevisPage = () => {
         materialQuality,
         discountPercent,
         profitMarginPercent,
-        materialScope,
+        materialScope: effectiveScope,
       };
 
       const data = await invokeAnalyzer(payload);
@@ -929,7 +945,10 @@ const SmartDevisPage = () => {
         const parsedQuantity = Number(item.quantity);
         const quantity = Number.isFinite(parsedQuantity) ? parsedQuantity : 1;
         const aiUnit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'Ens';
-        const withMaterial = materialScope !== 'main_oeuvre_seule';
+        
+        // Look up user's material choice for this item
+        const key = `${(item.designation_fr || '').trim().toLowerCase()}|${(item.designation_ar || '').trim()}`;
+        const withMaterial = key in materialChoices ? materialChoices[key] : (effectiveScope !== 'main_oeuvre_seule');
 
         // Pass AI text verbatim — no prefix modification
         const finalFr = item.designation_fr || '';
@@ -1248,6 +1267,11 @@ const SmartDevisPage = () => {
 
   const handleHeaderBack = () => {
     if (step === 'review') {
+      setStep('material_choice');
+      return;
+    }
+
+    if (step === 'material_choice') {
       setStep('chat');
       return;
     }
@@ -1359,12 +1383,12 @@ const SmartDevisPage = () => {
   return (
     <div className={cn(
       "max-w-2xl mx-auto",
-      (step === 'chat' || step === 'review')
+      (step === 'chat' || step === 'review' || step === 'material_choice')
         ? "fixed inset-0 z-40 flex flex-col bg-background"
         : "py-4 space-y-4"
     )}>
       {/* Header — hidden during full-screen chat */}
-      {step !== 'chat' && step !== 'review' && (
+      {step !== 'chat' && step !== 'review' && step !== 'material_choice' && (
       <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
         <Button variant="ghost" size="icon" onClick={handleHeaderBack}>
           {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
@@ -1912,7 +1936,29 @@ const SmartDevisPage = () => {
               {analysisData && !isGenerating && (
                 <div className="py-4">
                   <button
-                    onClick={handleGenerateItems}
+                    onClick={() => {
+                      // Extract items from analysisData for material choice screen
+                      const suggested = Array.isArray(analysisData?.suggestedItems) ? analysisData.suggestedItems : [];
+                      const preItems: LineItem[] = suggested.map((item: any) => {
+                        const parsedQuantity = Number(item.quantity);
+                        const quantity = Number.isFinite(parsedQuantity) ? parsedQuantity : 1;
+                        const aiUnit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'Ens';
+                        return {
+                          id: generateId(),
+                          designation_fr: item.designation_fr || '',
+                          designation_ar: item.designation_ar || '',
+                          quantity,
+                          unit: aiUnit,
+                          unitPrice: 0,
+                          total: 0,
+                          category: item.category,
+                          withMaterial: true, // default: material on artisan
+                          isAiEstimate: false,
+                        };
+                      });
+                      setLineItems(preItems);
+                      setStep('material_choice');
+                    }}
                     disabled={isGenerating}
                     className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all text-black font-bold text-2xl font-cairo shadow-lg flex items-center justify-center gap-3"
                   >
@@ -1946,6 +1992,111 @@ const SmartDevisPage = () => {
                 </Button>
               </div>
               {/* Generate button removed — replaced by green كمل button in messages area */}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Step: Material Choice — WhatsApp style */}
+      {step === 'material_choice' && (
+        <>
+          {/* Header */}
+          <div className="shrink-0 border-b border-border bg-background/95 backdrop-blur-sm px-3 py-2 safe-area-pt">
+            <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
+              <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => setStep('chat')}>
+                {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
+              </Button>
+              <div className={cn("flex items-center gap-2 flex-1 min-w-0", isRTL && "flex-row-reverse")}>
+                <div className="h-9 w-9 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
+                  <Package className="h-4 w-4 text-emerald-500" />
+                </div>
+                <div className={cn("min-w-0", isRTL && "text-right")}>
+                  <p className={cn("text-sm font-bold text-foreground truncate", isRTL && "font-cairo")}>
+                    تحليل
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-cairo">
+                    {`${lineItems.length} بند`}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Scrollable items list */}
+          <div className="flex-1 overflow-y-auto px-3 py-3">
+            <div className="max-w-2xl mx-auto space-y-4">
+              {lineItems.map((item, idx) => (
+                <div key={item.id} className="rounded-2xl border border-border bg-card p-4 space-y-3 shadow-sm">
+                  {/* Item number + quantity/unit */}
+                  <div className="flex items-center justify-between" dir="rtl">
+                    <Badge variant="secondary" className="text-sm font-bold font-cairo px-3 py-1">
+                      {idx + 1}
+                    </Badge>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-cairo">
+                      <span className="font-bold text-foreground">{item.quantity}</span>
+                      <span>-</span>
+                      <span className="font-bold text-foreground">{item.unit}</span>
+                    </div>
+                  </div>
+
+                  {/* French designation — bold, clear */}
+                  <p className="text-base font-bold text-foreground leading-relaxed" dir="ltr" lang="fr">
+                    {item.designation_fr || 'Désignation'}
+                  </p>
+
+                  {/* Arabic designation — ammiya */}
+                  <p className="text-sm text-muted-foreground font-cairo leading-relaxed" dir="rtl">
+                    {item.designation_ar || 'الوصف بالعامية'}
+                  </p>
+
+                  {/* Material choice buttons — green & blue side by side */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    {/* Green button: material on artisan (with materials) */}
+                    <button
+                      onClick={() => updateItem(item.id, 'withMaterial', true)}
+                      className={cn(
+                        "py-3 px-2 rounded-xl font-bold font-cairo text-sm transition-all border-2 flex items-center justify-center text-center leading-tight",
+                        item.withMaterial
+                          ? "bg-emerald-500 text-white border-emerald-600 shadow-md scale-[1.02]"
+                          : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                      )}
+                    >
+                      الماتريال عليك
+                    </button>
+
+                    {/* Blue button: material on client (labor only) */}
+                    <button
+                      onClick={() => updateItem(item.id, 'withMaterial', false)}
+                      className={cn(
+                        "py-3 px-2 rounded-xl font-bold font-cairo text-sm transition-all border-2 flex items-center justify-center text-center leading-tight",
+                        !item.withMaterial
+                          ? "bg-blue-500 text-white border-blue-600 shadow-md scale-[1.02]"
+                          : "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30 hover:bg-blue-500/20"
+                      )}
+                    >
+                      الماتريال على الزبون
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom CTA */}
+          <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm px-3 pt-3 pb-4 safe-area-pb">
+            <div className="max-w-2xl mx-auto">
+              <button
+                onClick={handleGenerateItems}
+                disabled={isGenerating}
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-[0.98] transition-all text-white font-bold text-xl font-cairo shadow-lg flex items-center justify-center gap-3"
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <Sparkles className="h-6 w-6" />
+                )}
+                تعالى نعمل الدوفي
+              </button>
             </div>
           </div>
         </>

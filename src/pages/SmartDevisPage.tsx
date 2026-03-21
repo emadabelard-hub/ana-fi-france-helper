@@ -236,6 +236,7 @@ const SmartDevisPage = () => {
     preferencesCollected,
     surfaceEstimates,
     materialScope,
+    qualityTier,
   }), [
     step,
     inputType,

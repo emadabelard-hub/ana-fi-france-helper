@@ -2338,42 +2338,18 @@ const SmartDevisPage = () => {
                         ? '✨ Shubbaik Lubbaik — visible sous la ligne'
                         : '✨ Shubbaik Lubbaik — Prix'}
                   </button>
-                  {/* Fourniture toggle with price breakdown tooltip */}
+                  {/* Material choice indicator + Edit button */}
                   <div className={cn("flex items-center gap-2 pt-1 border-t border-border/30 mt-2", isRTL && "flex-row-reverse")}>
-                    <TooltipProvider delayDuration={200}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => toggleItemMaterial(item.id)}
-                            className={cn(
-                              "flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-md border transition-colors",
-                              item.withMaterial
-                                ? "bg-primary/15 text-primary border-primary/30"
-                                : "bg-muted text-muted-foreground border-border"
-                            )}
-                          >
-                            <Package className="h-4 w-4" />
-                            {item.withMaterial
-                              ? (isRTL ? '✅ فورنيتير (مواد) داخلة' : '✅ Fourniture incluse')
-                              : (isRTL ? '❌ مصنعية بس' : '❌ Main d\'œuvre seule')
-                            }
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="text-xs p-3 max-w-[220px]">
-                          <div className="space-y-1.5">
-                            <p className="font-bold text-foreground">
-                              {isRTL ? 'فورنيتير / مصنعية' : 'Fourniture / Main d\'œuvre'}
-                            </p>
-                            <p className="text-[9px] text-muted-foreground">
-                              {item.withMaterial
-                                ? (isRTL ? 'اضغط لإزالة المواد — السعر هيتصفّر واضغط ✨ تاني' : 'Cliquer pour retirer les matériaux — le prix sera remis à 0')
-                                : (isRTL ? 'اضغط لإضافة المواد — السعر هيتصفّر واضغط ✨ تاني' : 'Cliquer pour inclure les matériaux — le prix sera remis à 0')
-                              }
-                            </p>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <button
+                      onClick={() => {
+                        // Go back to material_choice step to edit
+                        setStep('material_choice');
+                      }}
+                      className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white border-0 transition-colors font-cairo"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                      تعديل
+                    </button>
                   </div>
                 </div>
               </Card>

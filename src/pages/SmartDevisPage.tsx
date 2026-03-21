@@ -1693,7 +1693,39 @@ const SmartDevisPage = () => {
               </div>
             )}
 
-            {/* MaterialScopeSelector removed — Shubbaik Lubbaik is the sole pricing authority */}
+            {/* Quality Tier Selector */}
+            <div className="space-y-2">
+              <label className={cn("text-sm font-medium text-foreground", isRTL && "font-cairo block text-right")}>
+                {isRTL ? '🎯 اختار مستوى الجودة:' : '🎯 Choisissez le niveau de qualité:'}
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: 'standard' as QualityTier, emoji: '🔧', labelAr: 'ستاندار', labelFr: 'Standard', descAr: 'مواد اقتصادية', descFr: 'Économique', border: 'border-muted-foreground/40', bg: 'bg-muted/30' },
+                  { value: 'pro' as QualityTier, emoji: '⭐', labelAr: 'برو', labelFr: 'Pro', descAr: 'جودة احترافية', descFr: 'Professionnel', border: 'border-primary/50', bg: 'bg-primary/5' },
+                  { value: 'luxury' as QualityTier, emoji: '💎', labelAr: 'لوكس', labelFr: 'Luxury', descAr: 'مواد فاخرة', descFr: 'Haut de gamme', border: 'border-[#c5a028]/50', bg: 'bg-[#c5a028]/5' },
+                ]).map(tier => (
+                  <button
+                    key={tier.value}
+                    type="button"
+                    onClick={() => setQualityTier(tier.value)}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all",
+                      qualityTier === tier.value
+                        ? `${tier.border} ${tier.bg} ring-2 ring-offset-1 ring-primary/30 scale-[1.02]`
+                        : "border-border hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <span className="text-2xl">{tier.emoji}</span>
+                    <span className={cn("text-sm font-bold text-foreground", isRTL && "font-cairo")}>
+                      {isRTL ? tier.labelAr : tier.labelFr}
+                    </span>
+                    <span className={cn("text-[10px] text-muted-foreground leading-tight text-center", isRTL && "font-cairo")}>
+                      {isRTL ? tier.descAr : tier.descFr}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Pasted text area */}
             <div className="space-y-2">

@@ -127,6 +127,7 @@ const SmartDevisPage = () => {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [materialQuality, setMaterialQuality] = useState<string>('standard');
+  const [qualityTier, setQualityTier] = useState<QualityTier>('standard');
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [profitMarginPercent, setProfitMarginPercent] = useState<number>(15);
   const [isGenerating, setIsGenerating] = useState(false);

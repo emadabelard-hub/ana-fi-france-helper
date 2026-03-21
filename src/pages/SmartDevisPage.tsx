@@ -943,7 +943,7 @@ const SmartDevisPage = () => {
         ? data.items
         : (Array.isArray(data.suggestedItems) ? data.suggestedItems : []);
 
-      const items: LineItem[] = rawItems.map((item: any) => {
+      const items: LineItem[] = rawItems.map((item: any, idx: number) => {
         const parsedQuantity = Number(item.quantity);
         const quantity = Number.isFinite(parsedQuantity) ? parsedQuantity : 1;
         const aiUnit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'Ens';

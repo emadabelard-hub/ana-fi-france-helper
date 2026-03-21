@@ -199,6 +199,7 @@ const SmartDevisPage = () => {
     setChatInput('');
     setLineItems([]);
     setMaterialQuality('standard');
+    setQualityTier('standard');
     setDiscountPercent(0);
     setProfitMarginPercent(15);
     setPreferencesCollected(false);

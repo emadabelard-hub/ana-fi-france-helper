@@ -895,11 +895,13 @@ const SmartDevisPage = () => {
     else if (noneWith) setMaterialScope('main_oeuvre_seule');
     else setMaterialScope('partiel');
 
-    // Preserve material choices made by user
-    const materialChoices: Record<string, boolean> = {};
-    lineItems.forEach(i => {
+    // Preserve material choices made by user — by index for exact transmission
+    const materialChoicesByIndex: Record<number, boolean> = {};
+    const materialChoicesByKey: Record<string, boolean> = {};
+    lineItems.forEach((i, idx) => {
+      materialChoicesByIndex[idx] = i.withMaterial ?? true;
       const key = `${(i.designation_fr || '').trim().toLowerCase()}|${(i.designation_ar || '').trim()}`;
-      materialChoices[key] = i.withMaterial ?? true;
+      materialChoicesByKey[key] = i.withMaterial ?? true;
     });
 
     setIsGenerating(true);

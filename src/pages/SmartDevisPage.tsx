@@ -833,6 +833,7 @@ const SmartDevisPage = () => {
               action: 'chat',
               conversationHistory: [...chatMessages, userMsg],
               userMessage: chatInput.trim(),
+              qualityTier,
             }),
           });
 

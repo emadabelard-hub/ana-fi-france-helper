@@ -512,14 +512,6 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             </div>
           </div>
 
-          {/* ── BANK DETAILS ── */}
-          {data.emitter.iban && (
-            <div className="border border-gray-200 rounded px-2 py-1.5 mt-2 text-[8pt] text-gray-700 space-y-0">
-              <p className="font-bold text-gray-800 text-[8pt] mb-0.5">🏦 Coordonnées bancaires</p>
-              <p>IBAN : <span className="font-mono font-semibold tracking-wider">{data.emitter.iban}</span></p>
-              {data.emitter.bic && <p>BIC : <span className="font-mono font-semibold">{data.emitter.bic}</span></p>}
-            </div>
-          )}
 
           {/* ── PAYMENT CONDITIONS & LEGAL ── */}
           <div className="invoice-footer-block border-t border-gray-200 pt-1 mt-2 text-[7pt] text-gray-500 space-y-0.5">
@@ -564,10 +556,16 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
         )}
 
-        {/* Auto-generated Legal Footer — single line */}
-        {data.legalFooter && (
+        {/* Auto-generated Legal Footer with IBAN — single line */}
+        {(data.legalFooter || data.emitter.iban) && (
           <div className="invoice-footer-block mt-2 pt-1.5 border-t border-gray-300 text-center" style={{ pageBreakInside: 'avoid' }}>
-            <p className="text-[6pt] text-gray-400 leading-snug whitespace-pre-line">{data.legalFooter}</p>
+            {data.legalFooter && <p className="text-[6pt] text-gray-400 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
+            {data.emitter.iban && (
+              <p className="text-[7pt] text-gray-500 mt-0.5">
+                🏦 IBAN : <span className="font-mono font-semibold tracking-wider">{data.emitter.iban}</span>
+                {data.emitter.bic && <> — BIC : <span className="font-mono font-semibold">{data.emitter.bic}</span></>}
+              </p>
+            )}
           </div>
         )}
 

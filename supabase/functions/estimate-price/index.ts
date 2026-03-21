@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { items } = await req.json() as {
+    const { items, qualityTier } = await req.json() as {
       items: Array<{
         id: string;
         designation_fr: string;
@@ -18,6 +18,7 @@ serve(async (req) => {
         quantity: number;
         laborOnly: boolean;
       }>;
+      qualityTier?: 'standard' | 'pro' | 'luxury';
     };
 
     if (!items || items.length === 0) {
@@ -29,16 +30,42 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    const tier = qualityTier || 'standard';
+
     const itemDescriptions = items.map((item, i) =>
       `Item ID="${item.id}" : "${item.designation_fr}" (${item.designation_ar}) — unité: ${item.unit}, qté: ${item.quantity}, ${item.laborOnly ? 'MAIN D\'OEUVRE SEULE (pas de fourniture)' : 'FOURNITURE ET POSE (matériaux + main d\'oeuvre)'}`
     ).join("\n");
 
+    const tierPricingRules: Record<string, string> = {
+      standard: `🎯 GAMME STANDARD (Entrée de gamme):
+- Matériaux économiques, premiers prix du marché
+- Peinture: marques distributeur (entrée de gamme)
+- Carrelage: gamme basique (grès cérame standard)
+- Plomberie: équipements fonctionnels sans marque premium
+- Applique les prix BAS des fourchettes de référence`,
+      pro: `🎯 GAMME PRO (Qualité professionnelle):
+- Matériaux de qualité professionnelle, marques reconnues
+- Peinture: Tollens, Zolpan, V33 Pro
+- Carrelage: gamme intermédiaire qualité (grès cérame rectifié)
+- Plomberie: marques Grohe, Jacob Delafon
+- Applique les prix MÉDIANS des fourchettes de référence`,
+      luxury: `🎯 GAMME LUXURY (Haut de gamme):
+- Matériaux premium, marques luxe
+- Peinture: Farrow & Ball, Little Greene, Ressource
+- Carrelage: grand format, imitation marbre, Marazzi premium
+- Plomberie: Hansgrohe Axor, Duravit, Villeroy & Boch
+- Applique les prix HAUTS des fourchettes (+20-40% au-dessus du standard)`,
+    };
+
     const systemPrompt = `Tu es شبيك لبيك, l'expert métreur/chiffreur BTP qui représente l'Artisan (المعلم). Tu connais parfaitement les prix du marché français 2024-2025 pour tous les corps de métier du bâtiment. Ton objectif est que les devis soient techniquement parfaits et rentables pour l'artisan.
+
+${tierPricingRules[tier]}
 
 RÈGLES STRICTES :
 - Donne des prix réalistes du marché français (prix artisan, pas prix grand public)
-- Pour "main d'oeuvre seule" : donne UNIQUEMENT le coût de la main d'oeuvre sans matériaux
-- Pour "fourniture et pose" : donne le prix total incluant matériaux + main d'oeuvre
+- ADAPTE les prix à la GAMME DE QUALITÉ choisie ci-dessus
+- Pour "main d'oeuvre seule" : donne UNIQUEMENT le coût de la main d'oeuvre sans matériaux (la main d'œuvre ne change pas selon la gamme)
+- Pour "fourniture et pose" : donne le prix total incluant matériaux + main d'oeuvre (les matériaux varient selon la gamme)
 - Réponds UNIQUEMENT avec un JSON valide, pas de texte avant ni après
 - Format: { "prices": [ { "id": "<EXACT ITEM ID FROM INPUT>", "unitPrice": 35, "unit": "m²" } ] }
 - CRITICAL: The "id" field must be the EXACT same string as the Item ID provided in the input. Do NOT use the description or any other value.
@@ -51,7 +78,7 @@ RÈGLES STRICTES :
 
 ✍️ VOCABULAIRE NOBLE : Utilise les termes techniques précis (ex: "Ratissage", "Impression hydrofuge", "Dégrossissage").
 
-Références marché France (indicatif) :
+Références marché France (indicatif, gamme STANDARD) :
 - Peinture murs : 22-35€/m² (F+P), 12-18€/m² (MO)
 - Carrelage sol : 40-65€/m² (F+P), 25-45€/m² (MO)
 - Enduit / Ratissage : 15-25€/m² (F+P), 8-14€/m² (MO)
@@ -60,7 +87,8 @@ Références marché France (indicatif) :
 - Nettoyage chantier : 5-15€/m²
 - Démolition mur : 30-60€/m²
 - Impression hydrofuge : 8-15€/m²
-- Dégrossissage : 12-22€/m²`;
+- Dégrossissage : 12-22€/m²
+NOTE: Pour gamme PRO, majorer de +15-25%. Pour gamme LUXURY, majorer de +40-60%.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

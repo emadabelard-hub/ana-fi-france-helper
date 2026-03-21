@@ -71,6 +71,7 @@ interface ChatMsg {
 
 type InputType = 'photo' | 'blueprint' | 'document' | null;
 type Step = 'ai_intro' | 'select_input' | 'photo_guide' | 'upload' | 'chat' | 'material_choice' | 'review';
+type QualityTier = 'standard' | 'pro' | 'luxury';
 
 interface SmartDevisWizardSnapshot {
   step: Step;
@@ -86,6 +87,7 @@ interface SmartDevisWizardSnapshot {
   preferencesCollected: boolean;
   surfaceEstimates: SurfaceEstimate[];
   materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null;
+  qualityTier: QualityTier;
 }
 
 interface SmartDevisRouteState {
@@ -125,6 +127,7 @@ const SmartDevisPage = () => {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [materialQuality, setMaterialQuality] = useState<string>('standard');
+  const [qualityTier, setQualityTier] = useState<QualityTier>('standard');
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [profitMarginPercent, setProfitMarginPercent] = useState<number>(15);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -196,6 +199,7 @@ const SmartDevisPage = () => {
     setChatInput('');
     setLineItems([]);
     setMaterialQuality('standard');
+    setQualityTier('standard');
     setDiscountPercent(0);
     setProfitMarginPercent(15);
     setPreferencesCollected(false);
@@ -233,6 +237,7 @@ const SmartDevisPage = () => {
     preferencesCollected,
     surfaceEstimates,
     materialScope,
+    qualityTier,
   }), [
     step,
     inputType,
@@ -247,6 +252,7 @@ const SmartDevisPage = () => {
     preferencesCollected,
     surfaceEstimates,
     materialScope,
+    qualityTier,
   ]);
 
   useEffect(() => {
@@ -322,6 +328,7 @@ const SmartDevisPage = () => {
     setChatMessages(Array.isArray(snapshot.chatMessages) ? snapshot.chatMessages : []);
     setLineItems(Array.isArray(snapshot.lineItems) ? snapshot.lineItems : []);
     setMaterialQuality(snapshot.materialQuality || 'standard');
+    setQualityTier((snapshot as any).qualityTier || 'standard');
     setDiscountPercent(typeof snapshot.discountPercent === 'number' ? snapshot.discountPercent : 0);
     setProfitMarginPercent(typeof snapshot.profitMarginPercent === 'number' ? snapshot.profitMarginPercent : 15);
     setPreferencesCollected(!!snapshot.preferencesCollected);
@@ -539,11 +546,18 @@ const SmartDevisPage = () => {
           ? "\n\nIMPORTANT: Mode partiel. Prépare des lignes claires avec prix de référence stables; la fourniture sera ajustée ligne par ligne dans l'éditeur."
           : "\n\nIMPORTANT: Mode matériaux inclus + pose.";
 
+      const tierLabels: Record<QualityTier, string> = {
+        standard: 'GAMME STANDARD (entrée de gamme, matériaux économiques, finitions basiques)',
+        pro: 'GAMME PRO (matériaux de qualité professionnelle, finitions soignées, marques reconnues)',
+        luxury: 'GAMME LUXURY (matériaux haut de gamme, finitions luxueuses, marques premium)',
+      };
+      const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ CHOISIE: ${tierLabels[qualityTier]}. Adapte TOUTES les recommandations de matériaux, les descriptions techniques et les estimations de prix à cette gamme. Les matériaux proposés doivent correspondre au niveau de qualité choisi.`;
+
       const baseMessage = inputType === 'blueprint'
-        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction
+        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction + tierInstruction
         : inputType === 'document'
-        ? "Extrais les informations de ce document pour générer un devis." + scopeInstruction
-        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité." + scopeInstruction;
+        ? "Extrais les informations de ce document pour générer un devis." + scopeInstruction + tierInstruction
+        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité." + scopeInstruction + tierInstruction;
 
       const userMessage = pastedText.trim()
         ? `${baseMessage}\n\nTexte/demande du client:\n${pastedText.trim()}`
@@ -819,6 +833,7 @@ const SmartDevisPage = () => {
               action: 'chat',
               conversationHistory: [...chatMessages, userMsg],
               userMessage: chatInput.trim(),
+              qualityTier,
             }),
           });
 
@@ -931,6 +946,7 @@ const SmartDevisPage = () => {
         },
         conversationHistory: chatContext.length > 0 ? chatContext : undefined,
         materialQuality,
+        qualityTier,
         discountPercent,
         profitMarginPercent,
         materialScope: effectiveScope,
@@ -1026,7 +1042,7 @@ const SmartDevisPage = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ items: payload }),
+        body: JSON.stringify({ items: payload, qualityTier }),
       });
 
       if (!resp.ok) {
@@ -1677,7 +1693,39 @@ const SmartDevisPage = () => {
               </div>
             )}
 
-            {/* MaterialScopeSelector removed — Shubbaik Lubbaik is the sole pricing authority */}
+            {/* Quality Tier Selector */}
+            <div className="space-y-2">
+              <label className={cn("text-sm font-medium text-foreground", isRTL && "font-cairo block text-right")}>
+                {isRTL ? '🎯 اختار مستوى الجودة:' : '🎯 Choisissez le niveau de qualité:'}
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: 'standard' as QualityTier, emoji: '🔧', labelAr: 'ستاندار', labelFr: 'Standard', descAr: 'مواد اقتصادية', descFr: 'Économique', border: 'border-muted-foreground/40', bg: 'bg-muted/30' },
+                  { value: 'pro' as QualityTier, emoji: '⭐', labelAr: 'برو', labelFr: 'Pro', descAr: 'جودة احترافية', descFr: 'Professionnel', border: 'border-primary/50', bg: 'bg-primary/5' },
+                  { value: 'luxury' as QualityTier, emoji: '💎', labelAr: 'لوكس', labelFr: 'Luxury', descAr: 'مواد فاخرة', descFr: 'Haut de gamme', border: 'border-[#c5a028]/50', bg: 'bg-[#c5a028]/5' },
+                ]).map(tier => (
+                  <button
+                    key={tier.value}
+                    type="button"
+                    onClick={() => setQualityTier(tier.value)}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all",
+                      qualityTier === tier.value
+                        ? `${tier.border} ${tier.bg} ring-2 ring-offset-1 ring-primary/30 scale-[1.02]`
+                        : "border-border hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <span className="text-2xl">{tier.emoji}</span>
+                    <span className={cn("text-sm font-bold text-foreground", isRTL && "font-cairo")}>
+                      {isRTL ? tier.labelAr : tier.labelFr}
+                    </span>
+                    <span className={cn("text-[10px] text-muted-foreground leading-tight text-center", isRTL && "font-cairo")}>
+                      {isRTL ? tier.descAr : tier.descFr}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Pasted text area */}
             <div className="space-y-2">

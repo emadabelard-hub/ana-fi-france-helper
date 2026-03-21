@@ -1209,14 +1209,21 @@ const SmartDevisPage = () => {
       const autoSubject = generateSubject();
 
       const prefillData = {
-        items: lineItems.map(item => ({
-          ...item,
-          id: generateId(),
-          referenceUnitPrice: item.unitPrice,
-          materialsIncluded: materialScope === 'partiel'
+        items: lineItems.map(item => {
+          const isMaterial = materialScope === 'partiel'
             ? (item.withMaterial ?? false)
-            : materialScope !== 'main_oeuvre_seule',
-        })),
+            : materialScope !== 'main_oeuvre_seule';
+          const prefixFr = isMaterial ? 'Fourniture et pose : ' : "Main d'œuvre uniquement : ";
+          const prefixAr = isMaterial ? 'توريد وتركيب : ' : 'مصنعية فقط : ';
+          return {
+            ...item,
+            id: generateId(),
+            designation_fr: `${prefixFr}${item.designation_fr || ''}`,
+            designation_ar: `${prefixAr}${item.designation_ar || ''}`,
+            referenceUnitPrice: item.unitPrice,
+            materialsIncluded: isMaterial,
+          };
+        }),
         source: 'smart_devis',
         materialScope,
         priceMode: 'reference_fixed',

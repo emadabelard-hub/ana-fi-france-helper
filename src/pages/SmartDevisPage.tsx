@@ -2220,10 +2220,20 @@ const SmartDevisPage = () => {
                           className="w-full text-left p-2 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-muted/30 transition-colors min-h-[48px]"
                         >
                           <p className="text-xs font-bold text-foreground leading-tight" dir="ltr" lang="fr">
-                            {item.designation_fr || <span className="text-muted-foreground italic">Désignation FR</span>}
+                            {item.withMaterial === true
+                              ? `Fourniture et pose : ${item.designation_fr || ''}`
+                              : item.withMaterial === false
+                                ? `Main d'œuvre uniquement : ${item.designation_fr || ''}`
+                                : (item.designation_fr || <span className="text-muted-foreground italic">Désignation FR</span>)
+                            }
                           </p>
                           <p className="text-[11px] text-muted-foreground italic mt-0.5 font-cairo leading-tight" dir="rtl">
-                            {resolvedArabic || <span className="text-muted-foreground/50">الوصف بالعامية</span>}
+                            {item.withMaterial === true
+                              ? `توريد وتركيب : ${resolvedArabic || ''}`
+                              : item.withMaterial === false
+                                ? `مصنعية فقط : ${resolvedArabic || ''}`
+                                : (resolvedArabic || <span className="text-muted-foreground/50">الوصف بالعامية</span>)
+                            }
                           </p>
                         </button>
                       ) : (

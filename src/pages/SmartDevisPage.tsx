@@ -1042,7 +1042,7 @@ const SmartDevisPage = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ items: payload }),
+        body: JSON.stringify({ items: payload, qualityTier }),
       });
 
       if (!resp.ok) {

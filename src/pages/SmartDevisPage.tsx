@@ -2024,9 +2024,9 @@ const SmartDevisPage = () => {
 
           {/* Scrollable items list */}
           <div className="flex-1 overflow-y-auto px-3 py-3">
-            <div className="max-w-2xl mx-auto space-y-4">
+            <div className="max-w-2xl mx-auto space-y-6">
               {lineItems.map((item, idx) => (
-                <div key={item.id} className="rounded-2xl border border-border bg-card p-4 space-y-3 shadow-sm">
+                <div key={item.id} className="rounded-2xl border border-border bg-card p-4 space-y-4 shadow-sm">
                   {/* Item number + quantity/unit */}
                   <div className="flex items-center justify-between" dir="rtl">
                     <Badge variant="secondary" className="text-sm font-bold font-cairo px-3 py-1">
@@ -2039,56 +2039,57 @@ const SmartDevisPage = () => {
                     </div>
                   </div>
 
-                  {/* French designation — bold, clear */}
-                  <p className="text-base font-bold text-foreground leading-relaxed" dir="ltr" lang="fr">
-                    {item.designation_fr || 'Désignation'}
-                  </p>
-
-                  {/* Arabic designation — ammiya */}
-                  <p className="text-sm text-muted-foreground font-cairo leading-relaxed" dir="rtl">
-                    {item.designation_ar || 'الوصف بالعامية'}
-                  </p>
-
-                  {/* Material choice buttons — green & blue side by side */}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    {/* Green button: material on artisan (with materials) */}
-                    <button
-                      onClick={() => updateItem(item.id, 'withMaterial', true)}
-                      className={cn(
-                        "py-3 px-2 rounded-xl font-bold font-cairo text-sm transition-all border-2 flex items-center justify-center text-center leading-tight",
-                        item.withMaterial
-                          ? "bg-emerald-500 text-white border-emerald-600 shadow-md scale-[1.02]"
-                          : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
-                      )}
-                    >
-                      الماتريال عليك
-                    </button>
-
-                    {/* Blue button: material on client (labor only) */}
+                  {/* === Option A: Main d'œuvre uniquement (Green) === */}
+                  <div className={cn(
+                    "rounded-xl border-2 p-3 space-y-2 transition-all",
+                    item.withMaterial === false
+                      ? "border-emerald-500 bg-emerald-500/10"
+                      : "border-border bg-muted/30"
+                  )}>
+                    <p className="text-sm font-bold text-foreground leading-relaxed" dir="ltr" lang="fr">
+                      Main d'œuvre uniquement : {item.designation_fr || 'Désignation'}
+                    </p>
+                    <p className="text-sm text-muted-foreground font-cairo leading-relaxed" dir="rtl">
+                      مصنعية فقط : {item.designation_ar || 'الوصف بالعامية'}
+                    </p>
                     <button
                       onClick={() => updateItem(item.id, 'withMaterial', false)}
                       className={cn(
-                        "py-3 px-2 rounded-xl font-bold font-cairo text-sm transition-all border-2 flex items-center justify-center text-center leading-tight",
-                        !item.withMaterial
-                          ? "bg-blue-500 text-white border-blue-600 shadow-md scale-[1.02]"
-                          : "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30 hover:bg-blue-500/20"
+                        "w-full py-3 rounded-xl font-bold font-cairo text-base transition-all",
+                        item.withMaterial === false
+                          ? "bg-emerald-500 text-white shadow-md"
+                          : "bg-emerald-500/80 text-white hover:bg-emerald-500"
                       )}
                     >
-                      الماتريال على الزبون
+                      {item.withMaterial === false ? '✅ اختار' : 'اختار'}
                     </button>
                   </div>
 
-                  {/* Material choice indicator */}
-                  {item.withMaterial && (
-                    <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3" dir="ltr">
-                      <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 leading-relaxed">
-                        ✅ Fourniture et pose : {item.designation_fr}
-                      </p>
-                      <p className="text-xs text-emerald-600 dark:text-emerald-500 font-cairo mt-1 leading-relaxed" dir="rtl">
-                        ✅ توريد وتركيب : {item.designation_ar}
-                      </p>
-                    </div>
-                  )}
+                  {/* === Option B: Fourniture et pose (Blue) === */}
+                  <div className={cn(
+                    "rounded-xl border-2 p-3 space-y-2 transition-all",
+                    item.withMaterial === true
+                      ? "border-blue-500 bg-blue-500/10"
+                      : "border-border bg-muted/30"
+                  )}>
+                    <p className="text-sm font-bold text-foreground leading-relaxed" dir="ltr" lang="fr">
+                      Fourniture et pose : {item.designation_fr || 'Désignation'}
+                    </p>
+                    <p className="text-sm text-muted-foreground font-cairo leading-relaxed" dir="rtl">
+                      توريد وتركيب : {item.designation_ar || 'الوصف بالعامية'}
+                    </p>
+                    <button
+                      onClick={() => updateItem(item.id, 'withMaterial', true)}
+                      className={cn(
+                        "w-full py-3 rounded-xl font-bold font-cairo text-base transition-all",
+                        item.withMaterial === true
+                          ? "bg-blue-500 text-white shadow-md"
+                          : "bg-blue-500/80 text-white hover:bg-blue-500"
+                      )}
+                    >
+                      {item.withMaterial === true ? '✅ اختار' : 'اختار'}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -556,10 +556,16 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
         )}
 
-        {/* Auto-generated Legal Footer — single line */}
-        {data.legalFooter && (
+        {/* Auto-generated Legal Footer with IBAN — single line */}
+        {(data.legalFooter || data.emitter.iban) && (
           <div className="invoice-footer-block mt-2 pt-1.5 border-t border-gray-300 text-center" style={{ pageBreakInside: 'avoid' }}>
-            <p className="text-[6pt] text-gray-400 leading-snug whitespace-pre-line">{data.legalFooter}</p>
+            {data.legalFooter && <p className="text-[6pt] text-gray-400 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
+            {data.emitter.iban && (
+              <p className="text-[7pt] text-gray-500 mt-0.5">
+                🏦 IBAN : <span className="font-mono font-semibold tracking-wider">{data.emitter.iban}</span>
+                {data.emitter.bic && <> — BIC : <span className="font-mono font-semibold">{data.emitter.bic}</span></>}
+              </p>
+            )}
           </div>
         )}
 

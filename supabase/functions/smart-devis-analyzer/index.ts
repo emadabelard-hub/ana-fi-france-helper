@@ -402,6 +402,7 @@ serve(async (req) => {
       const { files } = body;
 
       const systemPrompt = `Tu es شبيك لبيك, l'expert qui représente l'Artisan (المعلم). Tu es propre, extrêmement professionnel et tu possèdes une expertise terrain indiscutable. Ton objectif est de conseiller l'artisan pour que ses devis soient techniquement parfaits et rentables.
+${tierInstruction}
 
 LANGUE:
 - Si l'utilisateur écrit en français → répondre en français professionnel.

@@ -948,9 +948,11 @@ const SmartDevisPage = () => {
         const quantity = Number.isFinite(parsedQuantity) ? parsedQuantity : 1;
         const aiUnit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'Ens';
         
-        // Look up user's material choice for this item
+        // Look up user's material choice — prefer index match, fallback to text key
         const key = `${(item.designation_fr || '').trim().toLowerCase()}|${(item.designation_ar || '').trim()}`;
-        const withMaterial = key in materialChoices ? materialChoices[key] : (effectiveScope !== 'main_oeuvre_seule');
+        const withMaterial = idx in materialChoicesByIndex
+          ? materialChoicesByIndex[idx]
+          : (key in materialChoicesByKey ? materialChoicesByKey[key] : (effectiveScope !== 'main_oeuvre_seule'));
 
         // Pass AI text verbatim — no prefix modification
         const finalFr = item.designation_fr || '';

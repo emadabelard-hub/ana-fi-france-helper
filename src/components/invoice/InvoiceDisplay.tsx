@@ -512,14 +512,6 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             </div>
           </div>
 
-          {/* ── BANK DETAILS ── */}
-          {data.emitter.iban && (
-            <div className="border border-gray-200 rounded px-2 py-1.5 mt-2 text-[8pt] text-gray-700 space-y-0">
-              <p className="font-bold text-gray-800 text-[8pt] mb-0.5">🏦 Coordonnées bancaires</p>
-              <p>IBAN : <span className="font-mono font-semibold tracking-wider">{data.emitter.iban}</span></p>
-              {data.emitter.bic && <p>BIC : <span className="font-mono font-semibold">{data.emitter.bic}</span></p>}
-            </div>
-          )}
 
           {/* ── PAYMENT CONDITIONS & LEGAL ── */}
           <div className="invoice-footer-block border-t border-gray-200 pt-1 mt-2 text-[7pt] text-gray-500 space-y-0.5">

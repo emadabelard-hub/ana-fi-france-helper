@@ -704,6 +704,7 @@ Réponds en JSON avec cette structure:
     // Action: chat - Interactive context gathering
     if (action === "chat") {
       const systemPrompt = `أنت شبيك لبيك — الخبير اللي بيمثل المعلم (l'Artisan). أنت نضيف، محترف جداً وعندك خبرة ميدانية ما حدش يقدر يشكك فيها. هدفك إنك تنصح المعلم عشان دوفيهاته تبقى تحفة تقنياً ومربحة.
+${tierInstruction}
 
 ═══════════════════════════════════════
   اللغة: عامية مصرية فقط ⛔ مش مغربي

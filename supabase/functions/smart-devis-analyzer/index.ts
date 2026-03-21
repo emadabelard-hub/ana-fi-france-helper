@@ -869,6 +869,7 @@ FORMAT DE RAPPORT:
 
       const systemPrompt = `Tu es شبيك لبيك, l'expert qui représente l'Artisan (المعلم). Tu es propre, extrêmement professionnel et tu possèdes une expertise terrain indiscutable.
 À partir de l'analyse fournie, génère les lignes de devis finales selon les standards professionnels du BTP.
+${tierInstruction}
 
 🧠 PHASAGE DU CHANTIER: Structure TOUJOURS les travaux selon l'ordre logique du métier:
   1. Préparation: Protection, nettoyage et mise à nu des supports.

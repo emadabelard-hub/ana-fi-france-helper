@@ -546,11 +546,18 @@ const SmartDevisPage = () => {
           ? "\n\nIMPORTANT: Mode partiel. Prépare des lignes claires avec prix de référence stables; la fourniture sera ajustée ligne par ligne dans l'éditeur."
           : "\n\nIMPORTANT: Mode matériaux inclus + pose.";
 
+      const tierLabels: Record<QualityTier, string> = {
+        standard: 'GAMME STANDARD (entrée de gamme, matériaux économiques, finitions basiques)',
+        pro: 'GAMME PRO (matériaux de qualité professionnelle, finitions soignées, marques reconnues)',
+        luxury: 'GAMME LUXURY (matériaux haut de gamme, finitions luxueuses, marques premium)',
+      };
+      const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ CHOISIE: ${tierLabels[qualityTier]}. Adapte TOUTES les recommandations de matériaux, les descriptions techniques et les estimations de prix à cette gamme. Les matériaux proposés doivent correspondre au niveau de qualité choisi.`;
+
       const baseMessage = inputType === 'blueprint'
-        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction
+        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction + tierInstruction
         : inputType === 'document'
-        ? "Extrais les informations de ce document pour générer un devis." + scopeInstruction
-        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité." + scopeInstruction;
+        ? "Extrais les informations de ce document pour générer un devis." + scopeInstruction + tierInstruction
+        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité." + scopeInstruction + tierInstruction;
 
       const userMessage = pastedText.trim()
         ? `${baseMessage}\n\nTexte/demande du client:\n${pastedText.trim()}`

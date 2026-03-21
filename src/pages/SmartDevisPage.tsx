@@ -895,11 +895,13 @@ const SmartDevisPage = () => {
     else if (noneWith) setMaterialScope('main_oeuvre_seule');
     else setMaterialScope('partiel');
 
-    // Preserve material choices made by user
-    const materialChoices: Record<string, boolean> = {};
-    lineItems.forEach(i => {
+    // Preserve material choices made by user — by index for exact transmission
+    const materialChoicesByIndex: Record<number, boolean> = {};
+    const materialChoicesByKey: Record<string, boolean> = {};
+    lineItems.forEach((i, idx) => {
+      materialChoicesByIndex[idx] = i.withMaterial ?? true;
       const key = `${(i.designation_fr || '').trim().toLowerCase()}|${(i.designation_ar || '').trim()}`;
-      materialChoices[key] = i.withMaterial ?? true;
+      materialChoicesByKey[key] = i.withMaterial ?? true;
     });
 
     setIsGenerating(true);
@@ -941,14 +943,16 @@ const SmartDevisPage = () => {
         ? data.items
         : (Array.isArray(data.suggestedItems) ? data.suggestedItems : []);
 
-      const items: LineItem[] = rawItems.map((item: any) => {
+      const items: LineItem[] = rawItems.map((item: any, idx: number) => {
         const parsedQuantity = Number(item.quantity);
         const quantity = Number.isFinite(parsedQuantity) ? parsedQuantity : 1;
         const aiUnit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'Ens';
         
-        // Look up user's material choice for this item
+        // Look up user's material choice — prefer index match, fallback to text key
         const key = `${(item.designation_fr || '').trim().toLowerCase()}|${(item.designation_ar || '').trim()}`;
-        const withMaterial = key in materialChoices ? materialChoices[key] : (effectiveScope !== 'main_oeuvre_seule');
+        const withMaterial = idx in materialChoicesByIndex
+          ? materialChoicesByIndex[idx]
+          : (key in materialChoicesByKey ? materialChoicesByKey[key] : (effectiveScope !== 'main_oeuvre_seule'));
 
         // Pass AI text verbatim — no prefix modification
         const finalFr = item.designation_fr || '';

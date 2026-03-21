@@ -328,6 +328,7 @@ const SmartDevisPage = () => {
     setChatMessages(Array.isArray(snapshot.chatMessages) ? snapshot.chatMessages : []);
     setLineItems(Array.isArray(snapshot.lineItems) ? snapshot.lineItems : []);
     setMaterialQuality(snapshot.materialQuality || 'standard');
+    setQualityTier((snapshot as any).qualityTier || 'standard');
     setDiscountPercent(typeof snapshot.discountPercent === 'number' ? snapshot.discountPercent : 0);
     setProfitMarginPercent(typeof snapshot.profitMarginPercent === 'number' ? snapshot.profitMarginPercent : 15);
     setPreferencesCollected(!!snapshot.preferencesCollected);

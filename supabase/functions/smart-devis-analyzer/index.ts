@@ -385,7 +385,14 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { action, imageData, mimeType, conversationHistory, userMessage, preferences } = body;
+    const { action, imageData, mimeType, conversationHistory, userMessage, preferences, qualityTier } = body;
+    const tier = qualityTier || 'standard';
+    const tierLabels: Record<string, string> = {
+      standard: 'GAMME STANDARD — matériaux économiques, entrée de gamme, finitions basiques',
+      pro: 'GAMME PRO — matériaux de qualité professionnelle, marques reconnues, finitions soignées',
+      luxury: 'GAMME LUXURY — matériaux haut de gamme, finitions luxueuses, marques premium',
+    };
+    const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ: ${tierLabels[tier]}. Adapte tes recommandations de matériaux et tes descriptions à cette gamme.`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("AI service not configured");

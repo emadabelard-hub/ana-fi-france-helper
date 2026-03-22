@@ -1691,14 +1691,18 @@ Réponds UNIQUEMENT en JSON:
         return isST ? [10, 50] : [25, 90];
       }
 
-      function computeGuardrailedPrice(item: GeneratedQuoteItem, aiPrice: number, isST: boolean, qualityProfileRef: { materialFactor: number; targetRatio: number }, itemCount: number): number {
+      function getTierBandMain(rule: PricingTradeRule, currentTier: string, isST: boolean): [number, number] {
+        if (isST) return rule.sousTrait;
+        if (currentTier === 'luxury') return rule.luxury;
+        if (currentTier === 'pro') return rule.pro;
+        return rule.standard;
+      }
+
+      function computeGuardrailedPrice(item: GeneratedQuoteItem, aiPrice: number, isST: boolean, qualityProfileRef: { targetRatio: number }, itemCount: number): number {
         const rule = detectPricingRule(item);
         if (rule?.isLogistic && isST) return 0;
 
-        let [baseMin, baseMax] = rule ? (isST ? rule.sousTrait : rule.direct) : getFallbackBandForUnit(item.unit || 'Ens', isST);
-        const matFactor = isST ? 1.0 : qualityProfileRef.materialFactor;
-        baseMin *= matFactor;
-        baseMax *= matFactor;
+        let [baseMin, baseMax] = rule ? getTierBandMain(rule, tier, isST) : getFallbackBandForUnit(item.unit || 'Ens', isST);
 
         const qty = typeof item.quantity === 'number' ? item.quantity : 1;
         const volFactor = getVolumeFactor(qty);

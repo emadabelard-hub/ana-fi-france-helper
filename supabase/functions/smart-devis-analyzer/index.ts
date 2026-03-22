@@ -466,8 +466,8 @@ serve(async (req) => {
     };
     const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ: ${tierLabels[tier]}. Adapte tes recommandations de matériaux et tes descriptions à cette gamme.`;
     const projectTypeInstruction = pType === 'sous_traitance'
-      ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE. Logique: Main d'œuvre seule. Le prix cible = 45-50% du tarif Client Direct. Protection et Nettoyage = masqués ou à 0.00€. Regrouper les étapes techniques en UNE ligne "Main d'œuvre : [Métier] - Pose Seule".`
-      : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Logique: Prix plein (Matériel + Main d'œuvre + Marge 15%). Format "Pack Fourniture & Pose". AUCUN prix à 0€. Barèmes: Électricité ~300€/point, Peinture ~45€/m², Placo ~125€/m², Parquet ~110€/m².`;
+      ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE. Logique: Main d'œuvre seule. Le prix cible = 45-50% du tarif Client Direct PRO. Protection et Nettoyage = masqués ou à 0.00€. Regrouper les étapes techniques en UNE ligne "Main d'œuvre : [Métier] - Pose Seule".`
+      : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Logique: Prix plein (Matériel + Main d'œuvre + Marge 15%). Format "Pack Fourniture & Pose". AUCUN prix à 0€.\nBarèmes 2026 (HT): Peinture ~40-85€/m², Électricité ~180-450€/point, Plomberie ~600-3000€/pack, Placo ~80-160€/m², Sols ~80-220€/m², Ravalement ~60-250€/m², Toiture ~150-550€/m², Maçonnerie ~100-450€/m², Menuiserie ~650-2500€/U, Démolition ~450-1500€/m³.`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("AI service not configured");

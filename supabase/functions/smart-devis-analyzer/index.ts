@@ -496,10 +496,29 @@ LANGUE:
   2. Traitement: Consolidation et assainissement (anti-salpêtre, rebouchage, ragréage).
   3. Finition: Mise en peinture et finitions soignées.
 
+💰 MATRICE DE PRIX MAÎTRE (HT par unité, Marché Français 2026):
+| Corps d'état | Unité | Standard | PRO | Luxe |
+| Peinture (Murs/Plafonds) | m² | 40€ | 60€ | 85€+ |
+| Électricité (Pack Point) | Point | 180€ | 300€ | 450€+ |
+| Plomberie (Sanitaire) | Pack | 600€ | 1,000€ | 3,000€+ |
+| Maçonnerie / Gros Œuvre | m²/m³ | 100€ | 220€ | 450€+ |
+| Menuiserie (Fenêtres/Portes) | U | 650€ (PVC) | 1,150€ (Alu) | 2,500€+ (Bois) |
+| Placo / Isolation INT | m² | 80€ | 125€ | 160€+ |
+| Sols (Carrelage/Parquet) | m² | 80€ | 130€ | 220€+ |
+| Ravalement (Façade + Échaf.) | m² | 60€ | 120€ | 250€+ |
+| Toiture (Couverture/Zinguerie) | m² | 150€ | 300€ | 550€+ |
+| Démolition (Incl. Gravats) | m³/m | 450€ | 850€ | 1,500€ |
+
+🏗️ INTELLIGENCE PAR CORPS D'ÉTAT:
+- Ravalement: TOUJOURS inclure l'échafaudage dans le prix bundlé.
+- Électricité: Un "Point" DOIT inclure câblage, gaine et l'appareil (Prise/Interrupteur).
+- Maçonnerie: Pour "Mur Porteur", inclure l'IPN et l'étude structurelle dans le prix.
+- Plomberie: "Pack Douche" DOIT inclure receveur, paroi vitrée, mitigeur et étanchéité (SPEC).
+
 💰 INTELLIGENCE DES PRIX:
 - Évalue la complexité réelle (accès, hauteur, état de dégradation) et ajuste les tarifs.
-- RÈGLE PETITES SURFACES: Pour tout chantier de moins de 10 m², applique systématiquement une tarification au forfait ou un prix unitaire plus élevé pour couvrir les frais fixes.
-- FORFAIT MINIMUM: Si le total du devis est inférieur à 1000€ HT pour une rénovation en Client Direct, applique un forfait minimum de 1500€ HT.
+- RÈGLE PETITES SURFACES: Pour tout chantier < 10 m², tarification au forfait ou prix unitaire majoré.
+- FORFAIT MINIMUM: Si total < 1000€ HT en Client Direct → forfait minimum 1500€ HT.
 
 📐 CALIBRATION DIMENSIONNELLE:
 - Surface Plafond = Surface au sol (A).
@@ -510,7 +529,7 @@ LANGUE:
 - INTERDIT de lister les étapes de préparation (Ponçage, Impression, Sous-couche) comme lignes séparées avec prix.
 - Action: Les regrouper dans UNE seule ligne à forte valeur:
   ❌ Mauvais: (Ponçage 5€ + Impression 10€ + Peinture 10€)
-  ✅ Bon: "Prestation complète de Peinture (Préparation + 2 couches)" → 45€/m²
+  ✅ Bon: "Prestation complète de Peinture (Préparation + 2 couches)" → 60€/m² PRO
 
 OBJECTIF:
 Produire un rapport technique complet permettant de comprendre l'état du chantier, identifier les travaux nécessaires, estimer les quantités, estimer la durée et générer un devis professionnel réaliste.

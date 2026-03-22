@@ -1716,6 +1716,13 @@ Réponds UNIQUEMENT en JSON:
 
       applyAntiStackingPricing(pricedItems, isSousTraitance);
 
+      // ═══════════════════════════════════════
+      //   CONSOLIDATE PAINTING — merge prep into main line (Direct Client)
+      // ═══════════════════════════════════════
+      const consolidatedItems = consolidatePaintingItems(pricedItems, detectPricingRule, isSousTraitance, tier);
+      // Replace pricedItems reference for downstream use
+      const finalPricedItems = consolidatedItems;
+
       const NETTOYAGE_MAX_PRICE = 15;
       function isCleaningItem(item: GeneratedQuoteItem): boolean {
         const code = (item.code || "").trim().toUpperCase();

@@ -72,6 +72,7 @@ interface ChatMsg {
 type InputType = 'photo' | 'blueprint' | 'document' | null;
 type Step = 'ai_intro' | 'select_input' | 'photo_guide' | 'upload' | 'chat' | 'material_choice' | 'review';
 type QualityTier = 'standard' | 'pro' | 'luxury';
+type ProjectType = 'direct' | 'sous_traitance';
 
 interface SmartDevisWizardSnapshot {
   step: Step;
@@ -88,6 +89,7 @@ interface SmartDevisWizardSnapshot {
   surfaceEstimates: SurfaceEstimate[];
   materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null;
   qualityTier: QualityTier;
+  projectType: ProjectType;
 }
 
 interface SmartDevisRouteState {
@@ -128,6 +130,7 @@ const SmartDevisPage = () => {
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [materialQuality, setMaterialQuality] = useState<string>('standard');
   const [qualityTier, setQualityTier] = useState<QualityTier>('standard');
+  const [projectType, setProjectType] = useState<ProjectType>('direct');
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [profitMarginPercent, setProfitMarginPercent] = useState<number>(15);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -200,6 +203,7 @@ const SmartDevisPage = () => {
     setLineItems([]);
     setMaterialQuality('standard');
     setQualityTier('standard');
+    setProjectType('direct');
     setDiscountPercent(0);
     setProfitMarginPercent(15);
     setPreferencesCollected(false);
@@ -238,6 +242,7 @@ const SmartDevisPage = () => {
     surfaceEstimates,
     materialScope,
     qualityTier,
+    projectType,
   }), [
     step,
     inputType,
@@ -253,6 +258,7 @@ const SmartDevisPage = () => {
     surfaceEstimates,
     materialScope,
     qualityTier,
+    projectType,
   ]);
 
   useEffect(() => {
@@ -329,6 +335,7 @@ const SmartDevisPage = () => {
     setLineItems(Array.isArray(snapshot.lineItems) ? snapshot.lineItems : []);
     setMaterialQuality(snapshot.materialQuality || 'standard');
     setQualityTier((snapshot as any).qualityTier || 'standard');
+    setProjectType((snapshot as any).projectType || 'direct');
     setDiscountPercent(typeof snapshot.discountPercent === 'number' ? snapshot.discountPercent : 0);
     setProfitMarginPercent(typeof snapshot.profitMarginPercent === 'number' ? snapshot.profitMarginPercent : 15);
     setPreferencesCollected(!!snapshot.preferencesCollected);
@@ -553,11 +560,15 @@ const SmartDevisPage = () => {
       };
       const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ CHOISIE: ${tierLabels[qualityTier]}. Adapte TOUTES les recommandations de matériaux, les descriptions techniques et les estimations de prix à cette gamme. Les matériaux proposés doivent correspondre au niveau de qualité choisi.`;
 
+      const projectTypeInstruction = projectType === 'sous_traitance'
+        ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE. Ce devis est destiné à un donneur d'ordres (entreprise générale), PAS un client final. Applique des tarifs de sous-traitance : prix compétitifs, marges réduites (-15 à -25% par rapport au prix client final). Pas de marge de confort, prix serrés mais rentables.`
+        : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Ce devis est destiné au client final (particulier ou professionnel). Applique les tarifs normaux du marché avec les marges standard de l'artisan.`;
+
       const baseMessage = inputType === 'blueprint'
-        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction + tierInstruction
+        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction + tierInstruction + projectTypeInstruction
         : inputType === 'document'
-        ? "Extrais les informations de ce document pour générer un devis." + scopeInstruction + tierInstruction
-        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité." + scopeInstruction + tierInstruction;
+        ? "Extrais les informations de ce document pour générer un devis." + scopeInstruction + tierInstruction + projectTypeInstruction
+        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité." + scopeInstruction + tierInstruction + projectTypeInstruction;
 
       const userMessage = pastedText.trim()
         ? `${baseMessage}\n\nTexte/demande du client:\n${pastedText.trim()}`
@@ -834,6 +845,7 @@ const SmartDevisPage = () => {
               conversationHistory: [...chatMessages, userMsg],
               userMessage: chatInput.trim(),
               qualityTier,
+              projectType,
             }),
           });
 
@@ -947,6 +959,7 @@ const SmartDevisPage = () => {
         conversationHistory: chatContext.length > 0 ? chatContext : undefined,
         materialQuality,
         qualityTier,
+        projectType,
         discountPercent,
         profitMarginPercent,
         materialScope: effectiveScope,
@@ -1042,7 +1055,7 @@ const SmartDevisPage = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ items: payload, qualityTier }),
+        body: JSON.stringify({ items: payload, qualityTier, projectType }),
       });
 
       if (!resp.ok) {
@@ -1721,6 +1734,39 @@ const SmartDevisPage = () => {
                     </span>
                     <span className={cn("text-[10px] text-muted-foreground leading-tight text-center", isRTL && "font-cairo")}>
                       {isRTL ? tier.descAr : tier.descFr}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Project Type Selector */}
+            <div className="space-y-2">
+              <label className={cn("text-sm font-medium text-foreground", isRTL && "font-cairo block text-right")}>
+                {isRTL ? '🏗️ نوع المشروع:' : '🏗️ Type de projet:'}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { value: 'direct' as ProjectType, emoji: '🤝', labelAr: 'زبون مباشر', labelFr: 'Client direct', descAr: 'أسعار السوق العادية', descFr: 'Prix marché standard', border: 'border-primary/50', bg: 'bg-primary/5' },
+                  { value: 'sous_traitance' as ProjectType, emoji: '🏢', labelAr: 'مقاولة باطنة', labelFr: 'Sous-traitance', descAr: 'أسعار تنافسية', descFr: 'Prix compétitifs', border: 'border-orange-500/50', bg: 'bg-orange-500/5' },
+                ]).map(pt => (
+                  <button
+                    key={pt.value}
+                    type="button"
+                    onClick={() => setProjectType(pt.value)}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all",
+                      projectType === pt.value
+                        ? `${pt.border} ${pt.bg} ring-2 ring-offset-1 ring-primary/30 scale-[1.02]`
+                        : "border-border hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <span className="text-2xl">{pt.emoji}</span>
+                    <span className={cn("text-sm font-bold text-foreground", isRTL && "font-cairo")}>
+                      {isRTL ? pt.labelAr : pt.labelFr}
+                    </span>
+                    <span className={cn("text-[10px] text-muted-foreground leading-tight text-center", isRTL && "font-cairo")}>
+                      {isRTL ? pt.descAr : pt.descFr}
                     </span>
                   </button>
                 ))}

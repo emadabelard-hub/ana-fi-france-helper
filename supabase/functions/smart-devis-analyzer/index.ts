@@ -385,14 +385,18 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { action, imageData, mimeType, conversationHistory, userMessage, preferences, qualityTier } = body;
+    const { action, imageData, mimeType, conversationHistory, userMessage, preferences, qualityTier, projectType } = body;
     const tier = qualityTier || 'standard';
+    const pType = projectType || 'direct';
     const tierLabels: Record<string, string> = {
       standard: 'GAMME STANDARD — matériaux économiques, entrée de gamme, finitions basiques',
       pro: 'GAMME PRO — matériaux de qualité professionnelle, marques reconnues, finitions soignées',
       luxury: 'GAMME LUXURY — matériaux haut de gamme, finitions luxueuses, marques premium',
     };
     const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ: ${tierLabels[tier]}. Adapte tes recommandations de matériaux et tes descriptions à cette gamme.`;
+    const projectTypeInstruction = pType === 'sous_traitance'
+      ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE pour un donneur d'ordres (entreprise générale). Les tarifs doivent être compétitifs avec des marges réduites (-15% à -25% vs client direct). Prix serrés mais rentables.`
+      : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT (particulier ou professionnel). Tarifs normaux du marché avec marges artisan standard.`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("AI service not configured");
@@ -403,6 +407,7 @@ serve(async (req) => {
 
       const systemPrompt = `Tu es شبيك لبيك, l'expert qui représente l'Artisan (المعلم). Tu es propre, extrêmement professionnel et tu possèdes une expertise terrain indiscutable. Ton objectif est de conseiller l'artisan pour que ses devis soient techniquement parfaits et rentables.
 ${tierInstruction}
+${projectTypeInstruction}
 
 ⛔ RÈGLE CRITIQUE — MARCHÉ FRANÇAIS UNIQUEMENT:
 - Tous les prix, tarifs et références de coûts sont EXCLUSIVEMENT basés sur le marché BTP FRANÇAIS (France métropolitaine, 2024-2025).
@@ -710,8 +715,8 @@ Réponds en JSON avec cette structure:
     if (action === "chat") {
       const systemPrompt = `أنت شبيك لبيك — الخبير اللي بيمثل المعلم (l'Artisan). أنت نضيف، محترف جداً وعندك خبرة ميدانية ما حدش يقدر يشكك فيها. هدفك إنك تنصح المعلم عشان دوفيهاته تبقى تحفة تقنياً ومربحة.
 ${tierInstruction}
+${projectTypeInstruction}
 
-═══════════════════════════════════════
   اللغة: عامية مصرية فقط ⛔ مش مغربي
   الأسعار: السوق الفرنسي فقط ⛔ مش مصري
 ═══════════════════════════════════════
@@ -877,6 +882,7 @@ FORMAT DE RAPPORT:
       const systemPrompt = `Tu es شبيك لبيك, l'expert qui représente l'Artisan (المعلم). Tu es propre, extrêmement professionnel et tu possèdes une expertise terrain indiscutable.
 À partir de l'analyse fournie, génère les lignes de devis finales selon les standards professionnels du BTP.
 ${tierInstruction}
+${projectTypeInstruction}
 ⛔ MARCHÉ FRANÇAIS UNIQUEMENT: Tous les prix sont basés sur le marché BTP français. Ne JAMAIS mentionner le marché égyptien.
 
 🧠 PHASAGE DU CHANTIER: Structure TOUJOURS les travaux selon l'ordre logique du métier:

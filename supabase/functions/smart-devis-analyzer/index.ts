@@ -1719,6 +1719,11 @@ Réponds UNIQUEMENT en JSON:
           });
         }
       }
+
+      parsed = {
+        ...parsed,
+        items: sortedItems,
+        devis_subject_fr: devisSubject,
         verification: {
           ...existingVerification,
           work_plan_lock: true,

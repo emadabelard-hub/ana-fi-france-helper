@@ -850,23 +850,168 @@ FORMAT DE RAPPORT:
       const { analysisData, materialQuality, discountPercent, profitMarginPercent, materialScope, conversationHistory } = body;
       const literalSuggestedItems = getLiteralSuggestedItems(analysisData);
 
+      // ═══════════════════════════════════════
+      //   FAST PATH: literal suggestedItems exist → apply pricing guardrails directly
+      //   NO LONGER bypasses pricing — شبيك لبيك prices everything inline
+      // ═══════════════════════════════════════
       if (literalSuggestedItems.length > 0) {
         const passthroughItems = literalSuggestedItems.map((literalItem) => ({
           ...buildLiteralSuggestedItem(literalItem),
           code: literalItem.code || "",
           category: literalItem.category || "labor",
-          unitPrice: 0,
+          unitPrice: 0, // Will be overridden by guardrails below
           btpPriceSource: "literal_suggested_items",
         }));
 
+        // ── Apply the SAME pricing guardrails as the AI path ──
+        // (Moved inline pricing logic to a shared section below)
+        // We skip the AI call but still apply guardrails
+        const lockedItems = passthroughItems;
+        const isSousTraitance = pType === 'sous_traitance';
+
+        // ── PRICING GUARDRAILS (shared) ──
+        const PRICING_RULES_FAST: Array<{
+          keywords: string[];
+          stackGroup?: string;
+          isPrep: boolean;
+          isLogistic: boolean;
+          direct: [number, number];
+          sousTrait: [number, number];
+        }> = [
+          { keywords: ["peinture mur", "peinture murs", "peinture acrylique", "peinture 2 couches", "murale"], stackGroup: "peinture_murs", isPrep: false, isLogistic: false, direct: [22, 35], sousTrait: [8, 14] },
+          { keywords: ["plafond", "plafonds", "peinture plafond"], stackGroup: "peinture_plafonds", isPrep: false, isLogistic: false, direct: [25, 38], sousTrait: [10, 16] },
+          { keywords: ["sous-couche", "sous couche", "impression", "primaire", "بريمير", "سوكوش"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [6, 12], sousTrait: [3, 6] },
+          { keywords: ["poncage", "ponçage", "decapage", "décapage", "بونساج", "ديكاباج"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [5, 12], sousTrait: [3, 7] },
+          { keywords: ["ratissage", "enduit", "rebouchage", "lissage", "أندوي"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [12, 22], sousTrait: [6, 12] },
+          { keywords: ["boiserie", "huisserie", "porte", "fenetre", "fenêtre", "volet", "plinthe"], isPrep: false, isLogistic: false, direct: [18, 32], sousTrait: [8, 15] },
+          { keywords: ["hydrofuge", "humidité", "salpetre", "salpêtre"], isPrep: false, isLogistic: false, direct: [8, 16], sousTrait: [4, 9] },
+          { keywords: ["carrelage sol", "sol carrelage", "carrelage", "gres", "grès", "كارلاج"], stackGroup: "carrelage_sol", isPrep: false, isLogistic: false, direct: [40, 65], sousTrait: [18, 35] },
+          { keywords: ["faience", "faïence", "carrelage mural", "فايونس"], stackGroup: "faience", isPrep: false, isLogistic: false, direct: [45, 75], sousTrait: [20, 40] },
+          { keywords: ["ragreage", "ragréage", "chape", "nivellement", "راغرياج"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, direct: [10, 30], sousTrait: [6, 18] },
+          { keywords: ["joint", "joints", "jointement"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, direct: [4, 10], sousTrait: [3, 6] },
+          { keywords: ["depose", "dépose", "demolition", "démolition", "piquage", "تكسير"], isPrep: true, isLogistic: false, direct: [12, 40], sousTrait: [8, 25] },
+          { keywords: ["wc", "toilette", "lavabo", "vasque", "evier", "douche", "baignoire", "sanitaire", "سباكة"], stackGroup: "sanitaire", isPrep: false, isLogistic: false, direct: [120, 600], sousTrait: [50, 180] },
+          { keywords: ["tuyau", "tuyauterie", "raccord", "alimentation", "evacuation eau"], stackGroup: "sanitaire", isPrep: true, isLogistic: false, direct: [15, 80], sousTrait: [8, 40] },
+          { keywords: ["prise", "interrupteur", "point lumineux", "spot", "luminaire", "كهربا"], stackGroup: "elec_point", isPrep: false, isLogistic: false, direct: [60, 180], sousTrait: [25, 80] },
+          { keywords: ["tableau electrique", "tableau électrique", "disjoncteur"], isPrep: false, isLogistic: false, direct: [250, 1500], sousTrait: [120, 600] },
+          { keywords: ["cable", "câble", "cablage", "câblage", "saignee", "saignée", "goulotte"], stackGroup: "elec_point", isPrep: true, isLogistic: false, direct: [8, 30], sousTrait: [4, 15] },
+          { keywords: ["placo", "placoplatre", "cloison", "ba13", "doublage"], isPrep: false, isLogistic: false, direct: [35, 65], sousTrait: [15, 30] },
+          { keywords: ["faux plafond", "faux-plafond", "plafond suspendu"], isPrep: false, isLogistic: false, direct: [40, 80], sousTrait: [18, 38] },
+          { keywords: ["protection chantier", "protection", "bache", "bâche", "تأمين الموقع"], isPrep: false, isLogistic: true, direct: [3, 8], sousTrait: [0, 0] },
+          { keywords: ["nettoyage", "evacuation", "évacuation", "gravats", "نيتواياج", "نضافة"], isPrep: false, isLogistic: true, direct: [3, 50], sousTrait: [0, 0] },
+          { keywords: ["peinture piscine", "résine piscine", "epoxy piscine", "إيبوكسي"], isPrep: false, isLogistic: false, direct: [20, 45], sousTrait: [10, 25] },
+          { keywords: ["nettoyage haute pression", "nettoyage hp", "غسلة صاروخ"], isPrep: false, isLogistic: false, direct: [5, 15], sousTrait: [3, 10] },
+        ];
+
+        const QUALITY_PROFILES_FAST: Record<string, { materialFactor: number; targetRatio: number }> = {
+          standard: { materialFactor: 1.0, targetRatio: 0.35 },
+          pro: { materialFactor: 1.15, targetRatio: 0.45 },
+          luxury: { materialFactor: 1.35, targetRatio: 0.55 },
+        };
+
+        function normFast(v: string): string { return v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+        function incAnyFast(text: string, kws: string[]): boolean { return kws.some(kw => text.includes(normFast(kw))); }
+        function detectRuleFast(item: any): any {
+          const text = normFast(`${item.designation_fr || ''} ${item.designation_ar || ''}`);
+          for (const rule of PRICING_RULES_FAST) { if (incAnyFast(text, rule.keywords)) return rule; }
+          return null;
+        }
+        function getVolFast(q: number): number {
+          if (q >= 200) return 0.85; if (q >= 100) return 0.90; if (q >= 50) return 0.95;
+          if (q > 0 && q < 10) return 1.18; if (q >= 10 && q < 20) return 1.10; return 1.0;
+        }
+        function getDiffFast(item: any): number {
+          const text = normFast(`${item.designation_fr || ''} ${item.designation_ar || ''}`);
+          let f = 1.0;
+          if (incAnyFast(text, ["hauteur", "echafaudage", "échafaudage", "escalier"])) f += 0.10;
+          if (incAnyFast(text, ["etroit", "étroit", "difficile", "acces", "accès"])) f += 0.08;
+          if (incAnyFast(text, ["humidite", "humidité", "salpetre", "salpêtre", "fissure"])) f += 0.05;
+          return Math.min(f, 1.30);
+        }
+        function getFloorFast(unit: string, isST: boolean): number {
+          const u = (unit || '').toLowerCase();
+          if (u === "m²" || u === "m2") return isST ? 3 : 8;
+          if (u === "ml") return isST ? 4 : 10;
+          if (u === "u") return isST ? 20 : 50;
+          if (u === "j") return isST ? 180 : 280;
+          if (u === "ens") return isST ? 30 : 80;
+          return 3;
+        }
+        function fallbackBandFast(unit: string, isST: boolean): [number, number] {
+          const u = (unit || '').toLowerCase();
+          if (u === "m²" || u === "m2") return isST ? [5, 16] : [12, 38];
+          if (u === "ml") return isST ? [6, 14] : [12, 28];
+          if (u === "u") return isST ? [25, 120] : [60, 300];
+          if (u === "j") return isST ? [180, 320] : [280, 450];
+          if (u === "ens") return isST ? [40, 150] : [90, 300];
+          return isST ? [10, 50] : [25, 90];
+        }
+
+        const qpFast = QUALITY_PROFILES_FAST[tier] || QUALITY_PROFILES_FAST.standard;
+
+        const pricedFast = lockedItems.map((item: any) => {
+          const rule = detectRuleFast(item);
+          if (rule?.isLogistic && isSousTraitance) return { ...item, unitPrice: 0, btpPriceSource: "shubbaik_lubbaik_inline" };
+
+          let [bMin, bMax] = rule ? (isSousTraitance ? rule.sousTrait : rule.direct) : fallbackBandFast(item.unit || 'Ens', isSousTraitance);
+          const matF = isSousTraitance ? 1.0 : qpFast.materialFactor;
+          bMin *= matF; bMax *= matF;
+          const qty = typeof item.quantity === 'number' ? item.quantity : 1;
+          const vF = getVolFast(qty);
+          bMin *= vF; bMax *= vF;
+          const dF = getDiffFast(item);
+          bMin *= dF; bMax *= Math.min(dF, 1.15);
+          const bundleF = lockedItems.length >= 12 ? 0.95 : lockedItems.length >= 8 ? 0.97 : 1.0;
+          bMin *= bundleF; bMax *= bundleF;
+          const floor = getFloorFast(item.unit || 'Ens', isSousTraitance);
+          bMin = Math.max(bMin, floor);
+          bMax = Math.max(bMax, bMin * 1.08);
+          const target = bMin + (bMax - bMin) * qpFast.targetRatio;
+          return { ...item, unitPrice: Math.round(target), btpPriceSource: "shubbaik_lubbaik_inline" };
+        });
+
+        // Anti-stacking
+        const stackMapFast = new Map<string, { hasMain: boolean; prepIndices: number[] }>();
+        pricedFast.forEach((item: any, idx: number) => {
+          const rule = detectRuleFast(item);
+          if (!rule || !rule.stackGroup) return;
+          if (!stackMapFast.has(rule.stackGroup)) stackMapFast.set(rule.stackGroup, { hasMain: false, prepIndices: [] });
+          const entry = stackMapFast.get(rule.stackGroup)!;
+          if (rule.isPrep) entry.prepIndices.push(idx);
+          else entry.hasMain = true;
+        });
+        for (const [, entry] of stackMapFast) {
+          if (!entry.hasMain) continue;
+          for (const idx of entry.prepIndices) { pricedFast[idx].unitPrice = 0; }
+        }
+
+        // Nettoyage cap
+        pricedFast.forEach((item: any) => {
+          const desig = (item.designation_fr || "").toLowerCase();
+          const desigAr = (item.designation_ar || "");
+          if ((/nettoyage|lavage/i.test(desig) || /نيتواياج/i.test(desigAr)) && item.unitPrice > 15) {
+            item.unitPrice = 15;
+          }
+        });
+
+        // Generate devis subject
+        const chantierTypeFast = analysisData?.chantierType || "";
+        const areaFast = analysisData?.estimatedArea || "";
+        const devisSubjectFast = areaFast
+          ? `Travaux de ${chantierTypeFast || 'rénovation'} — ${areaFast} m²`
+          : `Travaux de ${chantierTypeFast || 'rénovation'}`;
+
         return new Response(JSON.stringify({
-          items: passthroughItems,
+          items: pricedFast,
+          devis_subject_fr: devisSubjectFast,
           verification: {
             chantierType: analysisData?.chantierType || null,
             renovationType: analysisData?.renovationType || null,
             literal_passthrough: true,
-            generated_from_suggested_items: passthroughItems.length,
-            pricing_source: "shubbaik_lubbaik_only",
+            generated_from_suggested_items: pricedFast.length,
+            pricing_source: "shubbaik_lubbaik_inline",
+            contract_type: pType,
+            quality_tier: tier,
             corrections_applied: [],
           },
           summary: {},

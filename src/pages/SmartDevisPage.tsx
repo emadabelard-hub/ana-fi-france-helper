@@ -845,6 +845,7 @@ const SmartDevisPage = () => {
               conversationHistory: [...chatMessages, userMsg],
               userMessage: chatInput.trim(),
               qualityTier,
+              projectType,
             }),
           });
 

@@ -41,7 +41,7 @@ const TRADE_RULES: TradeRule[] = [
   // ─── PEINTURE ───
   {
     label: "Peinture murs",
-    keywords: ["peinture mur", "murs", "mur", "peinture acrylique", "peinture glycero"],
+    keywords: ["peinture mur", "peinture murs", "peinture acrylique", "peinture glycero", "2 couches mur", "peinture 2 couches"],
     trade: "peinture", stackGroup: "peinture_murs", isPrep: false, isLogistic: false,
     units: ["m²"], direct: [22, 35], sousTrait: [8, 14],
   },

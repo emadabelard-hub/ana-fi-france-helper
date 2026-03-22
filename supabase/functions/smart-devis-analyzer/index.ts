@@ -1161,14 +1161,8 @@ FORMAT DE RAPPORT:
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
-            contract_type: pType,
-            quality_tier: tier,
-            corrections_applied: [],
-          },
-          summary: {},
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+
+
       }
 
       const scopeRule = materialScope === 'main_oeuvre_seule'

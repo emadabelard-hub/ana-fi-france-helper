@@ -1527,7 +1527,7 @@ Réponds UNIQUEMENT en JSON:
         return Math.round(target);
       }
 
-      function applyAntiStackingPricing(pricedList: Array<GeneratedQuoteItem & { unitPrice: number }>): void {
+      function applyAntiStackingPricing(pricedList: Array<GeneratedQuoteItem & { unitPrice: number }>, isST: boolean): void {
         const stackMap = new Map<string, { hasMain: boolean; prepIndices: number[] }>();
         pricedList.forEach((item, idx) => {
           const rule = detectPricingRule(item);
@@ -1540,7 +1540,10 @@ Réponds UNIQUEMENT en JSON:
         for (const [, entry] of stackMap) {
           if (!entry.hasMain) continue;
           for (const idx of entry.prepIndices) {
-            pricedList[idx].unitPrice = 0;
+            if (isST) {
+              pricedList[idx].unitPrice = 0;
+            }
+            // Direct Client: prep items keep their bundled price — NO ZERO PRICES
           }
         }
       }

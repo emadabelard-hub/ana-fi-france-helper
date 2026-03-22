@@ -1008,12 +1008,56 @@ FORMAT DE RAPPORT:
           }
         });
 
-        // Generate devis subject
-        const chantierTypeFast = analysisData?.chantierType || "";
+        // ═══════════════════════════════════════
+        //   DYNAMIC SUBJECT — "Devis : [Trade] - [Total m²]"
+        // ═══════════════════════════════════════
+        const TRADE_SUBJECT_MAP: Record<string, string> = {
+          peinture: 'Peinture', piscine: 'Rénovation piscine', facade: 'Ravalement de façade',
+          carrelage: 'Carrelage', electricite: 'Mise aux normes électriques', électricité: 'Mise aux normes électriques',
+          plomberie: 'Plomberie', maconnerie: 'Maçonnerie', toiture: 'Toiture',
+          isolation: 'Isolation', renovation: 'Rénovation', mur: 'Peinture intérieure',
+          salle_de_bain: 'Rénovation salle de bain', parquet: 'Pose de parquet', placo: 'Cloisons et doublage',
+        };
+
+        // Identify dominant trade from highest-priced item
+        let dominantTrade = analysisData?.chantierType || 'rénovation';
+        let maxTotal = 0;
+        pricedFast.forEach((item: any) => {
+          const itemTotal = (item.unitPrice || 0) * (item.quantity || 1);
+          if (itemTotal > maxTotal) {
+            maxTotal = itemTotal;
+            const rule = detectRuleFast(item);
+            if (rule) {
+              const kw = rule.keywords[0] || '';
+              for (const [key, label] of Object.entries(TRADE_SUBJECT_MAP)) {
+                if (kw.includes(key) || (item.designation_fr || '').toLowerCase().includes(key)) {
+                  dominantTrade = key;
+                  break;
+                }
+              }
+            }
+          }
+        });
+
+        const tradeLabel = TRADE_SUBJECT_MAP[dominantTrade] || dominantTrade.charAt(0).toUpperCase() + dominantTrade.slice(1);
         const areaFast = analysisData?.estimatedArea || "";
-        const devisSubjectFast = areaFast
-          ? `Travaux de ${chantierTypeFast || 'rénovation'} — ${areaFast} m²`
-          : `Travaux de ${chantierTypeFast || 'rénovation'}`;
+        const areaStr = areaFast ? ` - ${areaFast} m²` : '';
+        const devisSubjectFast = `Devis : ${tradeLabel}${areaStr}`;
+
+        // ═══════════════════════════════════════
+        //   MINIMUM FORFAIT — 1500€ for Direct Client
+        // ═══════════════════════════════════════
+        if (!isSousTraitance) {
+          const totalHT = pricedFast.reduce((sum: number, it: any) => sum + (it.unitPrice || 0) * (it.quantity || 1), 0);
+          if (totalHT > 0 && totalHT < 1500) {
+            const scaleFactor = 1500 / totalHT;
+            pricedFast.forEach((item: any) => {
+              if (item.unitPrice > 0) {
+                item.unitPrice = Math.round(item.unitPrice * scaleFactor);
+              }
+            });
+          }
+        }
 
         return new Response(JSON.stringify({
           items: pricedFast,

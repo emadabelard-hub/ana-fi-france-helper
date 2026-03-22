@@ -258,6 +258,7 @@ const SmartDevisPage = () => {
     surfaceEstimates,
     materialScope,
     qualityTier,
+    projectType,
   ]);
 
   useEffect(() => {

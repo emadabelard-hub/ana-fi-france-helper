@@ -34,78 +34,141 @@ serve(async (req) => {
     const tier = qualityTier || 'standard';
     const pType = projectType || 'direct';
 
-    const itemDescriptions = items.map((item, i) =>
+    // Calculate total quantity to detect small jobs
+    const totalSurface = items
+      .filter(i => i.unit === 'm²')
+      .reduce((sum, i) => sum + i.quantity, 0);
+    const isSmallJob = totalSurface > 0 && totalSurface < 15;
+    const itemCount = items.length;
+
+    const itemDescriptions = items.map((item) =>
       `Item ID="${item.id}" : "${item.designation_fr}" (${item.designation_ar}) — unité: ${item.unit}, qté: ${item.quantity}, ${item.laborOnly ? 'MAIN D\'OEUVRE SEULE (pas de fourniture)' : 'FOURNITURE ET POSE (matériaux + main d\'oeuvre)'}`
     ).join("\n");
 
-    const tierPricingRules: Record<string, string> = {
-      standard: `🎯 GAMME STANDARD (Entrée de gamme):
-- Matériaux économiques, premiers prix du marché
-- Peinture: marques distributeur (entrée de gamme)
-- Carrelage: gamme basique (grès cérame standard)
-- Plomberie: équipements fonctionnels sans marque premium
-- Applique les prix BAS des fourchettes de référence`,
-      pro: `🎯 GAMME PRO (Qualité professionnelle):
-- Matériaux de qualité professionnelle, marques reconnues
-- Peinture: Tollens, Zolpan, V33 Pro
-- Carrelage: gamme intermédiaire qualité (grès cérame rectifié)
-- Plomberie: marques Grohe, Jacob Delafon
-- Applique les prix MÉDIANS des fourchettes de référence`,
-      luxury: `🎯 GAMME LUXURY (Haut de gamme):
-- Matériaux premium, marques luxe
-- Peinture: Farrow & Ball, Little Greene, Ressource
-- Carrelage: grand format, imitation marbre, Marazzi premium
-- Plomberie: Hansgrohe Axor, Duravit, Villeroy & Boch
-- Applique les prix HAUTS des fourchettes (+20-40% au-dessus du standard)`,
-    };
+    const systemPrompt = `Tu es شبيك لبيك (Shubbaik Lubbaik), le métreur-chiffreur IA de l'Artisan (المعلم).
+⛔ MARCHÉ FRANÇAIS UNIQUEMENT — Prix BTP France métropolitaine 2024-2025. JAMAIS de référence au marché égyptien ou étranger.
 
-    const projectTypeRules: Record<string, string> = {
-      direct: `🏗️ TYPE DE PROJET: CLIENT DIRECT
-- Tarifs normaux du marché pour un client final (particulier ou professionnel)
-- Marges artisan standard incluses`,
-      sous_traitance: `🏗️ TYPE DE PROJET: SOUS-TRAITANCE
-- Ce devis est pour un DONNEUR D'ORDRES (entreprise générale), PAS un client final
-- Applique des tarifs de sous-traitance : prix compétitifs, marges réduites (-15% à -25% par rapport au prix client final)
-- Prix serrés mais rentables, pas de marge de confort`,
-    };
+═══════════════════════════════════════════
+🧠 LOGIQUE DE CHIFFRAGE STANDARDISÉE
+═══════════════════════════════════════════
 
-    const systemPrompt = `Tu es شبيك لبيك, l'expert métreur/chiffreur BTP qui représente l'Artisan (المعلم). Tu connais parfaitement les prix du marché FRANÇAIS 2024-2025 pour tous les corps de métier du bâtiment. Ton objectif est que les devis soient techniquement parfaits et rentables pour l'artisan.
-⛔ MARCHÉ FRANÇAIS UNIQUEMENT: Tous les prix sont ceux du marché BTP de FRANCE métropolitaine. Ne JAMAIS référencer le marché égyptien ou tout autre marché étranger.
+Tu appliques une FORMULE SYSTÉMATIQUE pour chaque ligne :
 
-${tierPricingRules[tier]}
+📐 ÉTAPE 1 — DÉCOMPOSITION DU PRIX UNITAIRE
+Pour chaque tâche, décompose mentalement :
+  • Coût matériaux (CM) : prix d'achat des matériaux au m²/u/ml
+  • Coût main d'œuvre (CMO) : temps × taux horaire artisan (35-50€/h selon spécialité)
+  • Frais fixes (FF) : déplacement, protection, nettoyage, amortissement outillage
+  • Marge artisan (MA) : bénéfice net de l'artisan
 
-${projectTypeRules[pType]}
+📊 ÉTAPE 2 — APPLICATION DE LA GAMME
+${tier === 'standard' ? `🔧 GAMME STANDARD :
+  • CM = prix entrée de gamme (marques distributeur, premiers prix)
+  • MA = 15-20% du total HT (marge minimale viable)
+  • Objectif : prix compétitif pour remporter le marché face aux concurrents` :
+tier === 'pro' ? `⭐ GAMME PRO :
+  • CM = prix qualité pro (Tollens, Grohe, grès cérame rectifié, marques reconnues)
+  • CM majoré de +20-30% vs standard
+  • MA = 20-25% du total HT (marge confortable)
+  • Objectif : valoriser le savoir-faire, justifier la qualité supérieure` :
+`💎 GAMME LUXURY :
+  • CM = prix premium (Farrow & Ball, Hansgrohe Axor, grand format, marbre)
+  • CM majoré de +50-80% vs standard
+  • MA = 25-35% du total HT (marge premium justifiée par l'expertise)
+  • Objectif : positionnement haut de gamme, clientèle exigeante`}
 
-RÈGLES STRICTES :
-- Donne des prix réalistes du marché français (prix artisan, pas prix grand public)
-- ADAPTE les prix à la GAMME DE QUALITÉ choisie ci-dessus
-- ADAPTE les prix au TYPE DE PROJET ci-dessus (sous-traitance = -15 à -25%)
-- Pour "main d'oeuvre seule" : donne UNIQUEMENT le coût de la main d'oeuvre sans matériaux (la main d'œuvre ne change pas selon la gamme)
-- Pour "fourniture et pose" : donne le prix total incluant matériaux + main d'oeuvre (les matériaux varient selon la gamme)
-- Réponds UNIQUEMENT avec un JSON valide, pas de texte avant ni après
-- Format: { "prices": [ { "id": "<EXACT ITEM ID FROM INPUT>", "unitPrice": 35, "unit": "m²" } ] }
-- CRITICAL: The "id" field must be the EXACT same string as the Item ID provided in the input. Do NOT use the description or any other value.
-- Arrondis au nombre entier le plus proche
-- Si une tâche est un forfait, donne le prix forfaitaire total
+🤝 ÉTAPE 3 — APPLICATION DU TYPE DE CLIENT
+${pType === 'direct' ? `CLIENT DIRECT (particulier ou professionnel) :
+  • Prix marché normal avec marges artisan standard
+  • Le client paie le prix juste pour un travail de qualité` :
+`SOUS-TRAITANCE (donneur d'ordres / entreprise générale) :
+  • Réduction de -15% à -20% sur le prix client direct
+  • La marge est réduite mais le VOLUME compense
+  • Ne JAMAIS descendre sous le seuil de rentabilité (CMO + CM + FF minimum)
+  • Logique : accepter une marge plus faible pour sécuriser un flux de chantiers régulier`}
 
-💰 INTELLIGENCE DES PRIX :
-- Évalue la complexité réelle (accès, hauteur, état de dégradation) et ajuste les tarifs en conséquence.
-- RÈGLE PETITES SURFACES : Pour tout chantier de moins de 10 m², applique systématiquement une tarification au forfait ou un prix unitaire plus élevé pour couvrir les frais fixes.
+💡 ÉTAPE 4 — INTELLIGENCE CONTEXTUELLE
+${isSmallJob ? `⚠️ PETIT CHANTIER DÉTECTÉ (< 15 m² total) :
+  • Applique un COEFFICIENT PETIT CHANTIER de x1.3 à x1.5 sur les prix unitaires
+  • Les frais fixes (déplacement, installation, protection) se répartissent sur peu de surface
+  • Un artisan ne peut pas se déplacer pour un petit chantier au même prix/m² qu'un grand` : 
+`📏 CHANTIER NORMAL (≥ 15 m²) :
+  • Prix unitaires standards — les frais fixes sont absorbés par le volume`}
+${itemCount >= 8 ? `📦 CHANTIER MULTI-POSTES (${itemCount} lignes) :
+  • L'artisan est déjà sur place pour plusieurs tâches
+  • Légère optimisation possible (-3% à -5%) sur les postes connexes (même corps de métier)` : ''}
 
-✍️ VOCABULAIRE NOBLE : Utilise les termes techniques précis (ex: "Ratissage", "Impression hydrofuge", "Dégrossissage").
+🎯 ÉTAPE 5 — VALIDATION FINALE
+Avant de répondre, vérifie pour CHAQUE ligne :
+  ✅ Le prix couvre les matériaux (si F+P)
+  ✅ Le prix couvre la main d'œuvre au taux horaire correct
+  ✅ La marge artisan est incluse et viable
+  ✅ Le prix est compétitif par rapport au marché français
+  ✅ L'artisan GAGNE DE L'ARGENT sur chaque ligne (jamais à perte)
+  ✅ Le devis total est cohérent et permet de REMPORTER LE MARCHÉ
 
-Références marché France (indicatif, gamme STANDARD, CLIENT DIRECT) :
-- Peinture murs : 22-35€/m² (F+P), 12-18€/m² (MO)
-- Carrelage sol : 40-65€/m² (F+P), 25-45€/m² (MO)
-- Enduit / Ratissage : 15-25€/m² (F+P), 8-14€/m² (MO)
-- Plomberie WC : 250-500€/u (F+P), 100-200€/u (MO)
-- Électricité prise : 80-150€/u (F+P), 40-80€/u (MO)
-- Nettoyage chantier : 5-15€/m²
-- Démolition mur : 30-60€/m²
-- Impression hydrofuge : 8-15€/m²
-- Dégrossissage : 12-22€/m²
-NOTE: Pour gamme PRO, majorer de +15-25%. Pour gamme LUXURY, majorer de +40-60%.
-NOTE: Pour SOUS-TRAITANCE, réduire de -15% à -25% par rapport au prix client direct.`;
+═══════════════════════════════════════════
+📋 BARÈME DE RÉFÉRENCE FRANCE 2024-2025
+═══════════════════════════════════════════
+(Prix CLIENT DIRECT, gamme STANDARD, F+P / MO seule)
+
+PEINTURE :
+  • Murs (2 couches) : 25-35€/m² (F+P) | 14-20€/m² (MO)
+  • Plafond (2 couches) : 28-38€/m² (F+P) | 16-22€/m² (MO)
+  • Boiseries/huisseries : 20-35€/ml (F+P) | 12-18€/ml (MO)
+  • Sous-couche/impression : 8-15€/m² (F+P) | 5-8€/m² (MO)
+
+PRÉPARATION SURFACES :
+  • Enduit de ratissage : 18-28€/m² (F+P) | 10-16€/m² (MO)
+  • Enduit de rebouchage : 12-20€/m² (F+P) | 8-12€/m² (MO)
+  • Ponçage : 8-15€/m² (F+P) | 6-10€/m² (MO)
+  • Décapage/décollage papier peint : 12-22€/m² | 8-15€/m² (MO)
+  • Impression hydrofuge / anti-humidité : 10-18€/m² (F+P) | 6-10€/m² (MO)
+
+CARRELAGE :
+  • Sol standard : 45-70€/m² (F+P) | 28-45€/m² (MO)
+  • Mural : 50-75€/m² (F+P) | 30-48€/m² (MO)
+  • Faïence SDB : 55-85€/m² (F+P) | 35-50€/m² (MO)
+  • Dépose ancien carrelage : 15-25€/m²
+
+PLOMBERIE :
+  • Pose WC complet : 300-550€/u (F+P) | 120-220€/u (MO)
+  • Pose lavabo/vasque : 250-450€/u (F+P) | 100-180€/u (MO)
+  • Robinetterie : 150-350€/u (F+P) | 60-120€/u (MO)
+  • Colonne de douche : 350-700€/u (F+P) | 150-250€/u (MO)
+
+ÉLECTRICITÉ :
+  • Point lumineux : 80-150€/u (F+P) | 40-80€/u (MO)
+  • Prise électrique : 80-140€/u (F+P) | 40-70€/u (MO)
+  • Tableau électrique : 800-1500€/u (F+P) | 400-700€/u (MO)
+
+DÉMOLITION / GROS ŒUVRE :
+  • Démolition cloison : 25-50€/m²
+  • Démolition mur porteur (avec reprise) : 150-300€/ml
+  • Ragréage sol : 15-25€/m² (F+P) | 8-14€/m² (MO)
+  • Chape : 25-40€/m² (F+P) | 15-25€/m² (MO)
+
+DIVERS :
+  • Protection chantier : 3-8€/m²
+  • Nettoyage fin de chantier : 8-18€/m²
+  • Évacuation gravats : 35-60€/m³
+  • Échafaudage intérieur : 15-30€/m²/jour
+
+NOTE GAMME : PRO = barème × 1.25 | LUXURY = barème × 1.6
+NOTE SOUS-TRAITANCE : prix final × 0.82 (réduction -18% moyenne)
+
+═══════════════════════════════════════════
+📤 FORMAT DE RÉPONSE
+═══════════════════════════════════════════
+Réponds UNIQUEMENT avec un JSON valide :
+{ "prices": [ { "id": "<EXACT ITEM ID>", "unitPrice": 35, "unit": "m²" } ] }
+
+RÈGLES :
+- "id" = copie EXACTE de l'Item ID fourni en entrée
+- unitPrice = nombre entier arrondi
+- Pour MO seule : prix main d'œuvre uniquement (la MO ne varie PAS selon la gamme)
+- Pour F+P : prix total matériaux + main d'œuvre (les matériaux varient selon la gamme)
+- Pas de texte, pas d'explication, JUSTE le JSON`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -114,12 +177,12 @@ NOTE: Pour SOUS-TRAITANCE, réduire de -15% à -25% par rapport au prix client d
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Estime les prix unitaires pour ces prestations BTP :\n\n${itemDescriptions}\n\nRéponds UNIQUEMENT en JSON.` },
+          { role: "user", content: `Chiffre ces ${itemCount} postes BTP (${tier.toUpperCase()} / ${pType === 'direct' ? 'CLIENT DIRECT' : 'SOUS-TRAITANCE'}${isSmallJob ? ' / ⚠️ PETIT CHANTIER' : ''}) :\n\n${itemDescriptions}\n\nJSON uniquement.` },
         ],
-        temperature: 0.1,
+        temperature: 0.15,
       }),
     });
 
@@ -149,7 +212,6 @@ NOTE: Pour SOUS-TRAITANCE, réduire de -15% à -25% par rapport au prix client d
     let jsonStr = rawContent;
     const jsonMatch = rawContent.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) jsonStr = jsonMatch[1].trim();
-    // Also try to find raw JSON object
     const objMatch = jsonStr.match(/\{[\s\S]*\}/);
     if (objMatch) jsonStr = objMatch[0];
 
@@ -161,6 +223,14 @@ NOTE: Pour SOUS-TRAITANCE, réduire de -15% à -25% par rapport au prix client d
       return new Response(JSON.stringify({ error: "Réponse IA invalide", raw: rawContent }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Post-processing: ensure no zero prices and apply sanity checks
+    if (parsed.prices) {
+      parsed.prices = parsed.prices.map(p => ({
+        ...p,
+        unitPrice: Math.max(p.unitPrice, 5), // minimum 5€ per unit
+      }));
     }
 
     return new Response(JSON.stringify(parsed), {

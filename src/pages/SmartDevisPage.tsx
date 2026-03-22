@@ -560,6 +560,10 @@ const SmartDevisPage = () => {
       };
       const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ CHOISIE: ${tierLabels[qualityTier]}. Adapte TOUTES les recommandations de matériaux, les descriptions techniques et les estimations de prix à cette gamme. Les matériaux proposés doivent correspondre au niveau de qualité choisi.`;
 
+      const projectTypeInstruction = projectType === 'sous_traitance'
+        ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE. Ce devis est destiné à un donneur d'ordres (entreprise générale), PAS un client final. Applique des tarifs de sous-traitance : prix compétitifs, marges réduites (-15 à -25% par rapport au prix client final). Pas de marge de confort, prix serrés mais rentables.`
+        : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Ce devis est destiné au client final (particulier ou professionnel). Applique les tarifs normaux du marché avec les marges standard de l'artisan.`;
+
       const baseMessage = inputType === 'blueprint'
         ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction + tierInstruction
         : inputType === 'document'

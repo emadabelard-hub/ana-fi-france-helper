@@ -315,13 +315,13 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
         )}
 
-        {/* ── OBJET DU DEVIS / DESCRIPTION DU CHANTIER ── */}
-        {data.descriptionChantier && (
+        {/* ── OBJET DU DEVIS / DESCRIPTION DU CHANTIER (Dynamic) ── */}
+        {dynamicSubject && (
           <div className="mb-2 px-2 py-1.5 rounded border border-gray-200 bg-gray-50">
             <p className="text-[7pt] font-bold text-gray-700 uppercase tracking-wider mb-0.5">
               {data.type === 'DEVIS' ? '📝 Objet du devis' : '📝 Objet de la facture'}
             </p>
-            <p className="text-[8pt] text-gray-700 whitespace-pre-line leading-snug">{data.descriptionChantier}</p>
+            <p className="text-[8pt] text-gray-700 whitespace-pre-line leading-snug font-semibold">{dynamicSubject}</p>
           </div>
         )}
 

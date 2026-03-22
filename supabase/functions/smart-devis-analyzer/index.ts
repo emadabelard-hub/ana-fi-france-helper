@@ -1138,15 +1138,29 @@ FORMAT DE RAPPORT:
           }
         }
 
+        // ═══════════════════════════════════════
+        //   CONSOLIDATE PAINTING — merge prep into main line
+        // ═══════════════════════════════════════
+        const consolidatedFast = consolidatePaintingItems(pricedFast, detectRuleFast, isSousTraitance, tier);
+
         return new Response(JSON.stringify({
-          items: pricedFast,
+          items: consolidatedFast,
           devis_subject_fr: devisSubjectFast,
           verification: {
             chantierType: analysisData?.chantierType || null,
             renovationType: analysisData?.renovationType || null,
             literal_passthrough: true,
-            generated_from_suggested_items: pricedFast.length,
+            generated_from_suggested_items: consolidatedFast.length,
             pricing_source: "shubbaik_lubbaik_inline",
+            contract_type: pType,
+            quality_tier: tier,
+            painting_consolidated: true,
+            corrections_applied: [],
+          },
+          summary: {},
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
             contract_type: pType,
             quality_tier: tier,
             corrections_applied: [],

@@ -390,13 +390,13 @@ serve(async (req) => {
     const pType = projectType || 'direct';
     const tierLabels: Record<string, string> = {
       standard: 'GAMME STANDARD — matériaux économiques, entrée de gamme, finitions basiques',
-      pro: 'GAMME PRO — matériaux de qualité professionnelle, marques reconnues, finitions soignées',
-      luxury: 'GAMME LUXURY — matériaux haut de gamme, finitions luxueuses, marques premium',
+      pro: 'GAMME PRO — matériaux de qualité professionnelle, marques reconnues, finitions soignées (+15-25%)',
+      luxury: 'GAMME LUXURY — matériaux haut de gamme, finitions luxueuses, marques premium (+40-60%)',
     };
     const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ: ${tierLabels[tier]}. Adapte tes recommandations de matériaux et tes descriptions à cette gamme.`;
     const projectTypeInstruction = pType === 'sous_traitance'
-      ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE pour un donneur d'ordres (entreprise générale). Les tarifs doivent être compétitifs avec des marges réduites (-15% à -25% vs client direct). Prix serrés mais rentables.`
-      : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT (particulier ou professionnel). Tarifs normaux du marché avec marges artisan standard.`;
+      ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE. Logique: Main d'œuvre seule. Le prix cible = 45-50% du tarif Client Direct. Protection et Nettoyage = masqués ou à 0.00€. Regrouper les étapes techniques en UNE ligne "Main d'œuvre : [Métier] - Pose Seule".`
+      : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Logique: Prix plein (Matériel + Main d'œuvre + Marge 15%). Format "Pack Fourniture & Pose". AUCUN prix à 0€. Barèmes: Électricité ~300€/point, Peinture ~45€/m², Placo ~125€/m², Parquet ~110€/m².`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("AI service not configured");

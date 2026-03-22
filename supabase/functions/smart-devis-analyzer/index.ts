@@ -1243,7 +1243,8 @@ ${tier === 'standard' ? 'Base compétitive. Viser le bas de la fourchette.' : ''
 ${tier === 'pro' ? 'Matériaux qualité pro. Viser le milieu de la fourchette (+15%).' : ''}
 ${tier === 'luxury' ? 'Matériaux haut de gamme. Viser le haut de la fourchette (+35%).' : ''}
 
-ANTI-STACKING: Si peinture + ponçage + sous-couche → le prix peinture INCLUT la prépa. Les lignes prépa = prix très bas (3-5€/m²) ou 0€.
+ANTI-STACKING:
+${pType === 'sous_traitance' ? `Si peinture + ponçage + sous-couche → les lignes prépa = 0€ (absorbées par la finition).` : `DIRECT CLIENT: AUCUN PRIX À 0€. Les lignes prépa gardent un prix bas mais > 0 (bundled dans le pack Fourniture+Pose). Ex: ponçage 5€/m², sous-couche 6€/m².`}
 Même logique: carrelage + ragréage + joints = 1 pack. Électricité + câblage = 1 pack.
 
 VOLUME: > 100 unités = -10%. > 200 = -15%. < 10m² = +18%.

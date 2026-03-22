@@ -1044,16 +1044,74 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
 ⛔ RÈGLE PEINTURE SYSTÉMATIQUE : Si le work_plan contient une étape de peinture/finition,
   tu DOIS TOUJOURS inclure la ligne de peinture finale. Pour piscine: PIS03 (résine piscine).
   Pour murs: PNT02 (22€/m²). Ne JAMAIS omettre cette ligne.
-⛔ RÈGLE PRIX: Les prix sont déterminés UNIQUEMENT par شبيك لبيك (prix du marché français).
-   NE JAMAIS inventer de prix. Mets unitPrice = 0. L'utilisateur déclenche la tarification via le bouton ✨.
 
 ═══════════════════════════════════════
-  RÈGLE PRIX
+  RÈGLE PRIX — شبيك لبيك CHIFFRE DIRECTEMENT
 ═══════════════════════════════════════
 
-⛔ NE JAMAIS inventer de prix. Mets unitPrice = 0 pour TOUTES les lignes.
-✅ PAS DE LIMITE DE LIGNES. Chaque étape du work_plan = une ligne dédiée.
-Les prix seront remplis depuis la base de données interne.
+✅ Tu es شبيك لبيك, tu CHIFFRES chaque ligne avec un unitPrice réaliste du marché BTP français 2024-2025.
+✅ Le prix doit refléter le TYPE DE CONTRAT et la GAMME DE QUALITÉ.
+✅ NE JAMAIS mettre unitPrice = 0. Chaque ligne doit avoir un prix > 0.
+
+BARÈMES FRANCE 2024-2025:
+${pType === 'sous_traitance' ? `
+SOUS-TRAITANCE (Main d'œuvre seule):
+- Peinture murs MO: 8-14€/m²
+- Peinture plafonds MO: 10-16€/m²
+- Sous-couche/impression MO: 3-6€/m²
+- Ponçage/décapage MO: 3-7€/m²
+- Ratissage/enduit MO: 6-12€/m²
+- Carrelage sol MO: 18-35€/m²
+- Faïence MO: 20-40€/m²
+- Ragréage MO: 6-18€/m²
+- Électricité point MO: 25-80€/u
+- Plomberie sanitaire MO: 50-180€/u
+- Placo/cloison MO: 15-30€/m²
+- Dépose MO: 8-25€/m²
+- Protection/Nettoyage: 0€ (supprimé en sous-traitance)
+` : `
+CLIENT DIRECT (Fourniture + Pose):
+- Peinture murs F+P: 22-35€/m²
+- Peinture plafonds F+P: 25-38€/m²
+- Sous-couche/impression F+P: 6-12€/m²
+- Ponçage/décapage F+P: 5-12€/m²
+- Ratissage/enduit F+P: 12-22€/m²
+- Carrelage sol F+P: 40-65€/m²
+- Faïence F+P: 45-75€/m²
+- Ragréage F+P: 10-30€/m²
+- Électricité point F+P: 60-180€/u
+- Plomberie sanitaire F+P: 120-600€/u
+- Placo/cloison F+P: 35-65€/m²
+- Dépose: 12-40€/m²
+- Protection: 3-8€/m²
+- Nettoyage: 3-15€/m²
+`}
+
+GAMME: ${tier.toUpperCase()}
+${tier === 'standard' ? 'Base compétitive. Viser le bas de la fourchette.' : ''}
+${tier === 'pro' ? 'Matériaux qualité pro. Viser le milieu de la fourchette (+15%).' : ''}
+${tier === 'luxury' ? 'Matériaux haut de gamme. Viser le haut de la fourchette (+35%).' : ''}
+
+ANTI-STACKING: Si peinture + ponçage + sous-couche → le prix peinture INCLUT la prépa. Les lignes prépa = prix très bas (3-5€/m²) ou 0€.
+Même logique: carrelage + ragréage + joints = 1 pack. Électricité + câblage = 1 pack.
+
+VOLUME: > 100 unités = -10%. > 200 = -15%. < 10m² = +18%.
+DIFFICULTÉ: Hauteur/échafaudage/accès difficile = +10-15%.
+
+═══════════════════════════════════════
+  OBJET DU DEVIS (OBLIGATOIRE)
+═══════════════════════════════════════
+
+Tu DOIS générer un champ "devis_subject_fr" décrivant l'objet du devis de manière claire et professionnelle.
+Exemples:
+- "Travaux de peinture — Appartement 3 pièces, 75m²"
+- "Rénovation salle de bain — Dépose, carrelage et plomberie"
+- "Ravalement de façade — Nettoyage HP et peinture, 120m²"
+- "Peinture piscine — Décapage et application résine époxy bleue, 146m²"
+
+Le sujet doit inclure: le type de travaux, le lieu/pièce si connu, et la surface totale estimée.
+
+═══════════════════════════════════════
 
 ⛔ RÈGLE CODE CATALOGUE:
 - UNE TÂCHE = UNE LIGNE = UN CODE.
@@ -1072,17 +1130,19 @@ Avant de finaliser, vérifier:
 ✅ La couleur de finition est reprise dans la designation_fr
 ✅ Aucun travail incompatible (ex: "peinture murs" pour un chantier piscine)
 ✅ Chaque designation_ar est en argot artisan égyptien, PAS en arabe littéraire
+✅ Chaque unitPrice est > 0 et réaliste pour le marché français
 Si correction nécessaire → l'appliquer AVANT de générer le JSON.
 
 Réponds UNIQUEMENT en JSON:
 {
+  "devis_subject_fr": "Objet du devis clair et professionnel",
   "items": [
     {
       "designation_fr": "Titre professionnel (avec couleur si applicable)",
       "designation_ar": "ترجمة بالعامية المصرية (argot artisan)",
       "quantity": 0,
       "unit": "m²|ml|u|h|Ens",
-      "unitPrice": 0,
+      "unitPrice": 28,
       "code": "CODE catalogue métier"
     }
   ],
@@ -1098,7 +1158,6 @@ Réponds UNIQUEMENT en JSON:
   },
   "summary": {}
 }`;
-
       // Build messages with conversation history for user additions
       const aiMessages: any[] = [
         { role: "system", content: systemPrompt },
@@ -1184,72 +1243,223 @@ Réponds UNIQUEMENT en JSON:
         : [];
 
       // ═══════════════════════════════════════
-      //   PRICING: شبيك لبيك ONLY (AI estimation)
+      //   PRICING GUARDRAILS — شبيك لبيك inline pricing
       // ═══════════════════════════════════════
-      // No catalog or BTP reference lookups — all prices come from شبيك لبيك (✨ button)
+
+      type PricingTradeRule = {
+        keywords: string[];
+        stackGroup?: string;
+        isPrep: boolean;
+        isLogistic: boolean;
+        direct: [number, number];
+        sousTrait: [number, number];
+      };
+
+      const PRICING_RULES: PricingTradeRule[] = [
+        { keywords: ["peinture mur", "peinture murs", "peinture acrylique", "peinture 2 couches", "murale"], stackGroup: "peinture_murs", isPrep: false, isLogistic: false, direct: [22, 35], sousTrait: [8, 14] },
+        { keywords: ["plafond", "plafonds", "peinture plafond"], stackGroup: "peinture_plafonds", isPrep: false, isLogistic: false, direct: [25, 38], sousTrait: [10, 16] },
+        { keywords: ["sous-couche", "sous couche", "impression", "primaire", "بريمير", "سوكوش"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [6, 12], sousTrait: [3, 6] },
+        { keywords: ["poncage", "ponçage", "decapage", "décapage", "décollage", "بونساج", "ديكاباج"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [5, 12], sousTrait: [3, 7] },
+        { keywords: ["ratissage", "enduit", "rebouchage", "lissage", "أندوي"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [12, 22], sousTrait: [6, 12] },
+        { keywords: ["boiserie", "huisserie", "porte", "fenetre", "fenêtre", "volet", "plinthe"], isPrep: false, isLogistic: false, direct: [18, 32], sousTrait: [8, 15] },
+        { keywords: ["hydrofuge", "humidité", "salpetre", "salpêtre"], isPrep: false, isLogistic: false, direct: [8, 16], sousTrait: [4, 9] },
+        { keywords: ["carrelage sol", "sol carrelage", "carrelage", "gres", "grès", "كارلاج"], stackGroup: "carrelage_sol", isPrep: false, isLogistic: false, direct: [40, 65], sousTrait: [18, 35] },
+        { keywords: ["faience", "faïence", "carrelage mural", "فايونس"], stackGroup: "faience", isPrep: false, isLogistic: false, direct: [45, 75], sousTrait: [20, 40] },
+        { keywords: ["ragreage", "ragréage", "chape", "nivellement", "راغرياج"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, direct: [10, 30], sousTrait: [6, 18] },
+        { keywords: ["joint", "joints", "jointement"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, direct: [4, 10], sousTrait: [3, 6] },
+        { keywords: ["depose", "dépose", "demolition", "démolition", "piquage", "تكسير"], isPrep: true, isLogistic: false, direct: [12, 40], sousTrait: [8, 25] },
+        { keywords: ["wc", "toilette", "lavabo", "vasque", "evier", "douche", "baignoire", "sanitaire", "سباكة"], stackGroup: "sanitaire", isPrep: false, isLogistic: false, direct: [120, 600], sousTrait: [50, 180] },
+        { keywords: ["tuyau", "tuyauterie", "raccord", "alimentation", "evacuation eau"], stackGroup: "sanitaire", isPrep: true, isLogistic: false, direct: [15, 80], sousTrait: [8, 40] },
+        { keywords: ["prise", "interrupteur", "point lumineux", "spot", "luminaire", "كهربا"], stackGroup: "elec_point", isPrep: false, isLogistic: false, direct: [60, 180], sousTrait: [25, 80] },
+        { keywords: ["tableau electrique", "tableau électrique", "disjoncteur"], isPrep: false, isLogistic: false, direct: [250, 1500], sousTrait: [120, 600] },
+        { keywords: ["cable", "câble", "cablage", "câblage", "saignee", "saignée", "goulotte"], stackGroup: "elec_point", isPrep: true, isLogistic: false, direct: [8, 30], sousTrait: [4, 15] },
+        { keywords: ["placo", "placoplatre", "cloison", "ba13", "doublage"], isPrep: false, isLogistic: false, direct: [35, 65], sousTrait: [15, 30] },
+        { keywords: ["faux plafond", "faux-plafond", "plafond suspendu"], isPrep: false, isLogistic: false, direct: [40, 80], sousTrait: [18, 38] },
+        { keywords: ["protection chantier", "protection", "bache", "bâche", "تأمين الموقع"], isPrep: false, isLogistic: true, direct: [3, 8], sousTrait: [0, 0] },
+        { keywords: ["nettoyage", "evacuation", "évacuation", "gravats", "نيتواياج", "نضافة"], isPrep: false, isLogistic: true, direct: [3, 50], sousTrait: [0, 0] },
+        { keywords: ["peinture piscine", "résine piscine", "epoxy piscine", "إيبوكسي"], isPrep: false, isLogistic: false, direct: [20, 45], sousTrait: [10, 25] },
+        { keywords: ["nettoyage haute pression", "nettoyage hp", "غسلة صاروخ"], isPrep: false, isLogistic: false, direct: [5, 15], sousTrait: [3, 10] },
+      ];
+
+      const QUALITY_PROFILES: Record<string, { materialFactor: number; targetRatio: number }> = {
+        standard: { materialFactor: 1.0, targetRatio: 0.35 },
+        pro: { materialFactor: 1.15, targetRatio: 0.45 },
+        luxury: { materialFactor: 1.35, targetRatio: 0.55 },
+      };
+
+      function normalizeForPricing(value: string): string {
+        return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      }
+
+      function includesAnyPricing(text: string, keywords: string[]): boolean {
+        return keywords.some(kw => text.includes(normalizeForPricing(kw)));
+      }
+
+      function detectPricingRule(item: GeneratedQuoteItem): PricingTradeRule | null {
+        const text = normalizeForPricing(`${item.designation_fr || ''} ${item.designation_ar || ''}`);
+        for (const rule of PRICING_RULES) {
+          if (includesAnyPricing(text, rule.keywords)) return rule;
+        }
+        return null;
+      }
+
+      function getVolumeFactor(quantity: number): number {
+        if (quantity >= 200) return 0.85;
+        if (quantity >= 100) return 0.90;
+        if (quantity >= 50) return 0.95;
+        if (quantity > 0 && quantity < 10) return 1.18;
+        if (quantity >= 10 && quantity < 20) return 1.10;
+        return 1.0;
+      }
+
+      function getDifficultyFactor(item: GeneratedQuoteItem): number {
+        const text = normalizeForPricing(`${item.designation_fr || ''} ${item.designation_ar || ''}`);
+        let f = 1.0;
+        if (includesAnyPricing(text, ["hauteur", "echafaudage", "échafaudage", "escalier"])) f += 0.10;
+        if (includesAnyPricing(text, ["etroit", "étroit", "difficile", "acces", "accès"])) f += 0.08;
+        if (includesAnyPricing(text, ["humidite", "humidité", "salpetre", "salpêtre", "fissure"])) f += 0.05;
+        return Math.min(f, 1.30);
+      }
+
+      function getUnitFloor(unit: string, isST: boolean): number {
+        const u = (unit || '').toLowerCase();
+        if (u === "m²" || u === "m2") return isST ? 3 : 8;
+        if (u === "ml") return isST ? 4 : 10;
+        if (u === "u") return isST ? 20 : 50;
+        if (u === "j") return isST ? 180 : 280;
+        if (u === "ens") return isST ? 30 : 80;
+        return 3;
+      }
+
+      function getFallbackBandForUnit(unit: string, isST: boolean): [number, number] {
+        const u = (unit || '').toLowerCase();
+        if (u === "m²" || u === "m2") return isST ? [5, 16] : [12, 38];
+        if (u === "ml") return isST ? [6, 14] : [12, 28];
+        if (u === "u") return isST ? [25, 120] : [60, 300];
+        if (u === "j") return isST ? [180, 320] : [280, 450];
+        if (u === "ens") return isST ? [40, 150] : [90, 300];
+        return isST ? [10, 50] : [25, 90];
+      }
+
+      function computeGuardrailedPrice(item: GeneratedQuoteItem, aiPrice: number, isST: boolean, qualityProfileRef: { materialFactor: number; targetRatio: number }, itemCount: number): number {
+        const rule = detectPricingRule(item);
+        if (rule?.isLogistic && isST) return 0;
+
+        let [baseMin, baseMax] = rule ? (isST ? rule.sousTrait : rule.direct) : getFallbackBandForUnit(item.unit || 'Ens', isST);
+        const matFactor = isST ? 1.0 : qualityProfileRef.materialFactor;
+        baseMin *= matFactor;
+        baseMax *= matFactor;
+
+        const qty = typeof item.quantity === 'number' ? item.quantity : 1;
+        const volFactor = getVolumeFactor(qty);
+        baseMin *= volFactor;
+        baseMax *= volFactor;
+
+        const diffFactor = getDifficultyFactor(item);
+        baseMin *= diffFactor;
+        baseMax *= Math.min(diffFactor, 1.15);
+
+        const bundleFactor = itemCount >= 12 ? 0.95 : itemCount >= 8 ? 0.97 : 1.0;
+        baseMin *= bundleFactor;
+        baseMax *= bundleFactor;
+
+        const floor = getUnitFloor(item.unit || 'Ens', isST);
+        baseMin = Math.max(baseMin, floor);
+        baseMax = Math.max(baseMax, baseMin * 1.08);
+
+        const target = baseMin + (baseMax - baseMin) * qualityProfileRef.targetRatio;
+
+        if (Number.isFinite(aiPrice) && aiPrice > 0) {
+          if (aiPrice >= baseMin * 0.75 && aiPrice <= baseMax * 1.15) {
+            return Math.round(aiPrice * 0.25 + target * 0.75);
+          }
+        }
+        return Math.round(target);
+      }
+
+      function applyAntiStackingPricing(pricedList: Array<GeneratedQuoteItem & { unitPrice: number }>): void {
+        const stackMap = new Map<string, { hasMain: boolean; prepIndices: number[] }>();
+        pricedList.forEach((item, idx) => {
+          const rule = detectPricingRule(item);
+          if (!rule || !rule.stackGroup) return;
+          if (!stackMap.has(rule.stackGroup)) stackMap.set(rule.stackGroup, { hasMain: false, prepIndices: [] });
+          const entry = stackMap.get(rule.stackGroup)!;
+          if (rule.isPrep) entry.prepIndices.push(idx);
+          else entry.hasMain = true;
+        });
+        for (const [, entry] of stackMap) {
+          if (!entry.hasMain) continue;
+          for (const idx of entry.prepIndices) {
+            pricedList[idx].unitPrice = 0;
+          }
+        }
+      }
+
+      const isSousTraitance = pType === 'sous_traitance';
+      const qualityProfile = QUALITY_PROFILES[tier] || QUALITY_PROFILES.standard;
+
+      const pricedItems = lockedItems.map((item) => {
+        const aiPrice = typeof item.unitPrice === 'number' ? item.unitPrice : 0;
+        const guardrailedPrice = computeGuardrailedPrice(item, aiPrice, isSousTraitance, qualityProfile, lockedItems.length);
+        return { ...item, unitPrice: guardrailedPrice, btpPriceSource: "shubbaik_lubbaik_inline" };
+      });
+
+      applyAntiStackingPricing(pricedItems);
+
+      const NETTOYAGE_MAX_PRICE = 15;
+      function isCleaningItem(item: GeneratedQuoteItem): boolean {
+        const code = (item.code || "").trim().toUpperCase();
+        const desig = (item.designation_fr || "").toLowerCase();
+        const desigAr = (item.designation_ar || "");
+        if (['PSC01', 'PIS01', 'PIS10', 'CHA02', 'LOG03'].includes(code)) return true;
+        if (/nettoyage|cleaning|lavage/i.test(desig)) return true;
+        if (/نيتواياج/i.test(desigAr)) return true;
+        return false;
+      }
+      pricedItems.forEach(item => {
+        if (isCleaningItem(item) && typeof item.unitPrice === 'number' && item.unitPrice > NETTOYAGE_MAX_PRICE) {
+          item.unitPrice = NETTOYAGE_MAX_PRICE;
+        }
+      });
 
       // ═══════════════════════════════════════
       //   POOL SEQUENCE ORDER
       // ═══════════════════════════════════════
       const POOL_SEQUENCE_ORDER: Record<string, number> = {
-        'LOG01': 1, 'CHA01': 1, 'CHA04': 1,  // Protection first
-        'PIS05': 2, 'PREP02': 2,               // Scraping/Preparation
-        'PSC01': 3, 'PIS10': 3,                // Cleaning (nettoyage HP)
-        'PIS12': 4, 'PIS06': 4, 'PNT01': 4,   // Primer
-        'PIS03': 5, 'PIS02': 5, 'PSC02': 5,   // Painting/Finishing
-        'PIS09': 5, 'PIS04': 5,               // Étanchéité/carrelage finishing
-        'CHA02': 6, 'LOG03': 6,               // Cleanup last
+        'LOG01': 1, 'CHA01': 1, 'CHA04': 1,
+        'PIS05': 2, 'PREP02': 2,
+        'PSC01': 3, 'PIS10': 3,
+        'PIS12': 4, 'PIS06': 4, 'PNT01': 4,
+        'PIS03': 5, 'PIS02': 5, 'PSC02': 5,
+        'PIS09': 5, 'PIS04': 5,
+        'CHA02': 6, 'LOG03': 6,
       };
 
-      // ═══════════════════════════════════════
-      //   UNIVERSAL CLEANING PRICE CAP (15€/m² MAX)
-      // ═══════════════════════════════════════
-      const NETTOYAGE_MAX_PRICE = 15; // €/m² absolute maximum for any cleaning item
-      
-      function isCleaningItem(item: GeneratedQuoteItem): boolean {
-        const code = (item.code || "").trim().toUpperCase();
-        const desig = (item.designation_fr || "").toLowerCase();
-        const desigAr = (item.designation_ar || "");
-        // Match by code
-        if (['PSC01', 'PIS01', 'PIS10', 'CHA02', 'LOG03'].includes(code)) return true;
-        // Match by designation keywords
-        if (/nettoyage|cleaning|lavage/i.test(desig)) return true;
-        if (/نيتواياج/i.test(desigAr)) return true;
-        return false;
-      }
-
-      // STRICT PRICING CONTROL: All prices start at 0. User triggers pricing manually via ✨ button.
-      const pricedItems = lockedItems.map((item) => {
-        return {
-          ...item,
-          unitPrice: 0,
-          btpPriceSource: "manual_trigger_required",
-        };
-      });
-
-      // Sort pool items by sequence if chantierType is piscine
       const chantierType = analysisData?.chantierType || "";
       let sortedItems = pricedItems;
       if (chantierType === "piscine") {
         sortedItems = [...pricedItems].sort((a, b) => {
           const codeA = (a.code || "").trim().toUpperCase();
           const codeB = (b.code || "").trim().toUpperCase();
-          const orderA = POOL_SEQUENCE_ORDER[codeA] ?? 3; // default middle
-          const orderB = POOL_SEQUENCE_ORDER[codeB] ?? 3;
-          return orderA - orderB;
+          return (POOL_SEQUENCE_ORDER[codeA] ?? 3) - (POOL_SEQUENCE_ORDER[codeB] ?? 3);
         });
       }
+
+      const devisSubject = typeof parsed?.devis_subject_fr === 'string' && parsed.devis_subject_fr.trim()
+        ? parsed.devis_subject_fr.trim()
+        : null;
 
       parsed = {
         ...parsed,
         items: sortedItems,
+        devis_subject_fr: devisSubject,
         verification: {
           ...existingVerification,
           work_plan_lock: true,
           work_plan_steps_count: workPlanSteps.length,
           generated_items_before_lock: rawItems.length,
           generated_items_after_lock: sortedItems.length,
-          pricing_source: "shubbaik_lubbaik_only",
+          pricing_source: "shubbaik_lubbaik_inline",
           pool_sequence_applied: chantierType === "piscine",
           forbidden_works_check: removedItems.length === 0,
           incompatible_works_removed: removedItems.map((item) => item.designation_fr || item.designation_ar || item.code || "unknown"),

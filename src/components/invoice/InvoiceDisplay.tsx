@@ -146,8 +146,41 @@ const AR_LABELS: Record<string, string> = {
 const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplayProps) => {
   const photos = data.sitePhotos || [];
   const totalPhotoPages = photos.length > 0 ? Math.ceil(photos.length / 4) : 0;
-  // We can't know actual page count at render time for flowing content, so show doc ref only
   const docRef = `${data.type} N° ${data.number}`;
+
+  // ── Dynamic "Objet du devis" based on highest-priced item trade ──
+  const dynamicSubject = (() => {
+    if (data.descriptionChantier) return data.descriptionChantier;
+    if (!data.items || data.items.length === 0) return '';
+    const TRADE_KEYWORDS: Record<string, string> = {
+      'peinture': 'Travaux de peinture',
+      'carrelage': 'Travaux de carrelage',
+      'plomberie': 'Travaux de plomberie',
+      'électricité': 'Mise aux normes électriques',
+      'electri': 'Mise aux normes électriques',
+      'maçonnerie': 'Travaux de maçonnerie',
+      'démolition': 'Travaux de démolition',
+      'isolation': 'Travaux d\'isolation',
+      'plâtr': 'Travaux de plâtrerie',
+      'menuiserie': 'Travaux de menuiserie',
+      'ravalement': 'Ravalement de façade',
+      'étanchéité': 'Travaux d\'étanchéité',
+      'toiture': 'Travaux de toiture',
+      'terrassement': 'Travaux de terrassement',
+    };
+    const highestItem = [...data.items].sort((a, b) => b.total - a.total)[0];
+    const desc = highestItem.designation_fr.toLowerCase();
+    for (const [keyword, label] of Object.entries(TRADE_KEYWORDS)) {
+      if (desc.includes(keyword)) return label;
+    }
+    return 'Travaux de rénovation';
+  })();
+
+  // ── Assurance décennale info for header & footer ──
+  const assurance = data.assuranceDecennale;
+  const assuranceHeaderLine = assurance?.assureurName && assurance?.policyNumber
+    ? `Assurance Décennale : ${assurance.assureurName} — N° ${assurance.policyNumber}`
+    : data.emitter.decennale || '';
 
   const ArSub = ({ fr, className }: { fr: string; className?: string }) => (
     <>

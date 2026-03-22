@@ -878,27 +878,36 @@ FORMAT DE RAPPORT:
           direct: [number, number];
           sousTrait: [number, number];
         }> = [
-          { keywords: ["peinture mur", "peinture murs", "peinture acrylique", "peinture 2 couches", "murale"], stackGroup: "peinture_murs", isPrep: false, isLogistic: false, direct: [22, 35], sousTrait: [8, 14] },
-          { keywords: ["plafond", "plafonds", "peinture plafond"], stackGroup: "peinture_plafonds", isPrep: false, isLogistic: false, direct: [25, 38], sousTrait: [10, 16] },
+          // === PEINTURE (bundled ~45€/m² Direct) ===
+          { keywords: ["peinture mur", "peinture murs", "peinture acrylique", "peinture 2 couches", "murale", "prestation complete", "prestation complète"], stackGroup: "peinture_murs", isPrep: false, isLogistic: false, direct: [35, 55], sousTrait: [14, 22] },
+          { keywords: ["plafond", "plafonds", "peinture plafond"], stackGroup: "peinture_plafonds", isPrep: false, isLogistic: false, direct: [38, 58], sousTrait: [16, 24] },
           { keywords: ["sous-couche", "sous couche", "impression", "primaire", "بريمير", "سوكوش"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [6, 12], sousTrait: [3, 6] },
           { keywords: ["poncage", "ponçage", "decapage", "décapage", "بونساج", "ديكاباج"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [5, 12], sousTrait: [3, 7] },
           { keywords: ["ratissage", "enduit", "rebouchage", "lissage", "أندوي"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [12, 22], sousTrait: [6, 12] },
           { keywords: ["boiserie", "huisserie", "porte", "fenetre", "fenêtre", "volet", "plinthe"], isPrep: false, isLogistic: false, direct: [18, 32], sousTrait: [8, 15] },
           { keywords: ["hydrofuge", "humidité", "salpetre", "salpêtre"], isPrep: false, isLogistic: false, direct: [8, 16], sousTrait: [4, 9] },
-          { keywords: ["carrelage sol", "sol carrelage", "carrelage", "gres", "grès", "كارلاج"], stackGroup: "carrelage_sol", isPrep: false, isLogistic: false, direct: [40, 65], sousTrait: [18, 35] },
-          { keywords: ["faience", "faïence", "carrelage mural", "فايونس"], stackGroup: "faience", isPrep: false, isLogistic: false, direct: [45, 75], sousTrait: [20, 40] },
+          // === CARRELAGE ===
+          { keywords: ["carrelage sol", "sol carrelage", "carrelage", "gres", "grès", "كارلاج"], stackGroup: "carrelage_sol", isPrep: false, isLogistic: false, direct: [55, 85], sousTrait: [22, 38] },
+          { keywords: ["faience", "faïence", "carrelage mural", "فايونس"], stackGroup: "faience", isPrep: false, isLogistic: false, direct: [60, 90], sousTrait: [25, 45] },
           { keywords: ["ragreage", "ragréage", "chape", "nivellement", "راغرياج"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, direct: [10, 30], sousTrait: [6, 18] },
           { keywords: ["joint", "joints", "jointement"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, direct: [4, 10], sousTrait: [3, 6] },
           { keywords: ["depose", "dépose", "demolition", "démolition", "piquage", "تكسير"], isPrep: true, isLogistic: false, direct: [12, 40], sousTrait: [8, 25] },
-          { keywords: ["wc", "toilette", "lavabo", "vasque", "evier", "douche", "baignoire", "sanitaire", "سباكة"], stackGroup: "sanitaire", isPrep: false, isLogistic: false, direct: [120, 600], sousTrait: [50, 180] },
+          // === PLOMBERIE / SANITAIRE ===
+          { keywords: ["wc", "toilette", "lavabo", "vasque", "evier", "douche", "baignoire", "sanitaire", "سباكة"], stackGroup: "sanitaire", isPrep: false, isLogistic: false, direct: [150, 650], sousTrait: [60, 200] },
           { keywords: ["tuyau", "tuyauterie", "raccord", "alimentation", "evacuation eau"], stackGroup: "sanitaire", isPrep: true, isLogistic: false, direct: [15, 80], sousTrait: [8, 40] },
-          { keywords: ["prise", "interrupteur", "point lumineux", "spot", "luminaire", "كهربا"], stackGroup: "elec_point", isPrep: false, isLogistic: false, direct: [60, 180], sousTrait: [25, 80] },
-          { keywords: ["tableau electrique", "tableau électrique", "disjoncteur"], isPrep: false, isLogistic: false, direct: [250, 1500], sousTrait: [120, 600] },
+          // === ÉLECTRICITÉ (~300€/point Direct) ===
+          { keywords: ["prise", "interrupteur", "point lumineux", "spot", "luminaire", "كهربا", "electricite", "électricité", "point electrique", "point électrique"], stackGroup: "elec_point", isPrep: false, isLogistic: false, direct: [220, 380], sousTrait: [100, 180] },
+          { keywords: ["tableau electrique", "tableau électrique", "disjoncteur"], isPrep: false, isLogistic: false, direct: [350, 1800], sousTrait: [150, 700] },
           { keywords: ["cable", "câble", "cablage", "câblage", "saignee", "saignée", "goulotte"], stackGroup: "elec_point", isPrep: true, isLogistic: false, direct: [8, 30], sousTrait: [4, 15] },
-          { keywords: ["placo", "placoplatre", "cloison", "ba13", "doublage"], isPrep: false, isLogistic: false, direct: [35, 65], sousTrait: [15, 30] },
-          { keywords: ["faux plafond", "faux-plafond", "plafond suspendu"], isPrep: false, isLogistic: false, direct: [40, 80], sousTrait: [18, 38] },
+          // === PLACO (~125€/m² Direct) ===
+          { keywords: ["placo", "placoplatre", "cloison", "ba13", "doublage"], isPrep: false, isLogistic: false, direct: [95, 155], sousTrait: [40, 70] },
+          { keywords: ["faux plafond", "faux-plafond", "plafond suspendu"], isPrep: false, isLogistic: false, direct: [80, 140], sousTrait: [35, 60] },
+          // === PARQUET (~110€/m² Direct) ===
+          { keywords: ["parquet", "باركيه", "parquet contrecolle", "parquet contrecollé", "parquet flottant", "parquet massif"], isPrep: false, isLogistic: false, direct: [85, 140], sousTrait: [30, 50] },
+          // === LOGISTIQUE ===
           { keywords: ["protection chantier", "protection", "bache", "bâche", "تأمين الموقع"], isPrep: false, isLogistic: true, direct: [3, 8], sousTrait: [0, 0] },
           { keywords: ["nettoyage", "evacuation", "évacuation", "gravats", "نيتواياج", "نضافة"], isPrep: false, isLogistic: true, direct: [3, 50], sousTrait: [0, 0] },
+          // === PISCINE ===
           { keywords: ["peinture piscine", "résine piscine", "epoxy piscine", "إيبوكسي"], isPrep: false, isLogistic: false, direct: [20, 45], sousTrait: [10, 25] },
           { keywords: ["nettoyage haute pression", "nettoyage hp", "غسلة صاروخ"], isPrep: false, isLogistic: false, direct: [5, 15], sousTrait: [3, 10] },
         ];

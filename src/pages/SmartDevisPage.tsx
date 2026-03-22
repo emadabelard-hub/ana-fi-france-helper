@@ -959,6 +959,7 @@ const SmartDevisPage = () => {
         conversationHistory: chatContext.length > 0 ? chatContext : undefined,
         materialQuality,
         qualityTier,
+        projectType,
         discountPercent,
         profitMarginPercent,
         materialScope: effectiveScope,

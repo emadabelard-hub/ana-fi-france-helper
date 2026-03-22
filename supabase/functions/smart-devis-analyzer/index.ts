@@ -970,7 +970,7 @@ FORMAT DE RAPPORT:
           return { ...item, unitPrice: Math.round(target), btpPriceSource: "shubbaik_lubbaik_inline" };
         });
 
-        // Anti-stacking
+        // Anti-stacking: Direct Client = keep bundled low price (never 0), Sous-traitance = zero out prep
         const stackMapFast = new Map<string, { hasMain: boolean; prepIndices: number[] }>();
         pricedFast.forEach((item: any, idx: number) => {
           const rule = detectRuleFast(item);
@@ -982,7 +982,12 @@ FORMAT DE RAPPORT:
         });
         for (const [, entry] of stackMapFast) {
           if (!entry.hasMain) continue;
-          for (const idx of entry.prepIndices) { pricedFast[idx].unitPrice = 0; }
+          for (const idx of entry.prepIndices) {
+            if (isSousTraitance) {
+              pricedFast[idx].unitPrice = 0;
+            }
+            // Direct Client: prep is BUNDLED into main item price — keep existing price, no zeroing
+          }
         }
 
         // Nettoyage cap

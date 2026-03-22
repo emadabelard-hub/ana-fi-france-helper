@@ -565,10 +565,10 @@ const SmartDevisPage = () => {
         : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Ce devis est destiné au client final (particulier ou professionnel). Applique les tarifs normaux du marché avec les marges standard de l'artisan.`;
 
       const baseMessage = inputType === 'blueprint'
-        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction + tierInstruction
+        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction + tierInstruction + projectTypeInstruction
         : inputType === 'document'
-        ? "Extrais les informations de ce document pour générer un devis." + scopeInstruction + tierInstruction
-        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité." + scopeInstruction + tierInstruction;
+        ? "Extrais les informations de ce document pour générer un devis." + scopeInstruction + tierInstruction + projectTypeInstruction
+        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité." + scopeInstruction + tierInstruction + projectTypeInstruction;
 
       const userMessage = pastedText.trim()
         ? `${baseMessage}\n\nTexte/demande du client:\n${pastedText.trim()}`

@@ -326,7 +326,7 @@ function buildAdjustedBand(
 function applyAntiStacking(
   items: EstimateItem[],
   prices: Map<string, number>,
-  qualityTier: QualityTier,
+  _qualityTier: QualityTier,
   projectType: ProjectType,
 ): void {
   // Find all paint items (m² based)
@@ -337,21 +337,22 @@ function applyAntiStacking(
 
   if (paintItems.length === 0) return;
 
-  // Find preparation items that overlap with painting
+  // When painting is present, prep items (ponçage, sous-couche, enduit) are 
+  // INCLUDED in the paint pack price. Their standalone price should be 
+  // reduced to a minimal technical supplement only.
   for (const item of items) {
     const rule = detectRule(item);
     if (!rule || !STACKING_ABSORB_CATEGORIES.has(rule.category)) continue;
     if (!["m²", "m2"].includes(item.unit.toLowerCase())) continue;
 
-    // This is a prep item (ponçage, sous-couche, enduit) alongside painting
-    // Reduce its price to a minimal "standalone" rate since paint pack includes it
     const currentPrice = prices.get(item.id);
     if (currentPrice === undefined) continue;
 
     const isST = projectType === "sous_traitance" || item.laborOnly;
-    // Pack discount: prep items should be minimal when paint is present
-    const packRate = isST ? 0.45 : 0.5;
-    const reduced = roundPrice(currentPrice * packRate);
+    // Aggressive pack absorption: prep is already in paint price
+    // Only charge a small technical supplement
+    const maxPrepPrice = isST ? 5 : 8; // €/m² max when paint is present
+    const reduced = Math.min(currentPrice, maxPrepPrice);
     const floor = getUnitFloor(item, projectType);
     prices.set(item.id, Math.max(reduced, floor));
   }

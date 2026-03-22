@@ -5,6 +5,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ═══════════════════════════════════════════════════════════════
+//  TYPES
+// ═══════════════════════════════════════════════════════════════
+
 type QualityTier = "standard" | "pro" | "luxury";
 type ProjectType = "direct" | "sous_traitance";
 
@@ -17,150 +21,198 @@ type EstimateItem = {
   laborOnly: boolean;
 };
 
-type PriceBand = { min: number; max: number; source: string };
-type AdjustedBand = PriceBand & { target: number };
-
-type PriceRule = {
+type TradeRule = {
   label: string;
   keywords: string[];
-  category: string;
+  trade: string;           // corps d'état
+  stackGroup?: string;     // anti-stacking group key
+  isPrep: boolean;         // is this a preparatory task?
+  isLogistic: boolean;     // protection/nettoyage → auto-remove in sous-traitance
+  direct: [number, number];     // F+P price range
+  sousTrait: [number, number];  // MO-only price range
   units?: string[];
-  direct: [number, number];   // F+P client direct
-  sousTrait: [number, number]; // MO seule sous-traitance
 };
 
-// ─── QUALITY PROFILES ───
-// Standard = base compétitive, Pro = matériaux meilleurs, Luxury = premium
-const QUALITY_PROFILE: Record<QualityTier, {
-  materialFactor: number;
-  directTargetRatio: number;
-  laborTargetRatio: number;
-}> = {
-  standard: { materialFactor: 1, directTargetRatio: 0.35, laborTargetRatio: 0.40 },
-  pro:      { materialFactor: 1.15, directTargetRatio: 0.45, laborTargetRatio: 0.42 },
-  luxury:   { materialFactor: 1.35, directTargetRatio: 0.55, laborTargetRatio: 0.45 },
-};
+// ═══════════════════════════════════════════════════════════════
+//  [1] SCOPE ANALYSIS — Trade detection & calibration
+// ═══════════════════════════════════════════════════════════════
 
-// ─── PRICE RULES (France 2024-2025) ───
-// RULE: Peinture sous-traitance MAX 18€/m² — Peinture direct MAX 45€/m²
-// RULE: NO STACKING — ponçage + sous-couche + peinture = 1 pack price
-const PRICE_RULES: PriceRule[] = [
+const TRADE_RULES: TradeRule[] = [
+  // ─── PEINTURE ───
   {
-    label: "Peinture murs (pack complet)",
-    keywords: ["peinture mur", "murs", "mur", "peinture acrylique"],
-    category: "peinture",
-    units: ["m²"],
-    direct: [22, 35],
-    sousTrait: [10, 18],
+    label: "Peinture murs",
+    keywords: ["peinture mur", "murs", "mur", "peinture acrylique", "peinture glycero"],
+    trade: "peinture", stackGroup: "peinture_murs", isPrep: false, isLogistic: false,
+    units: ["m²"], direct: [22, 35], sousTrait: [8, 14],
   },
   {
-    label: "Peinture plafonds (pack complet)",
-    keywords: ["plafond", "plafonds"],
-    category: "peinture",
-    units: ["m²"],
-    direct: [25, 38],
-    sousTrait: [12, 18],
+    label: "Peinture plafonds",
+    keywords: ["plafond", "plafonds", "peinture plafond"],
+    trade: "peinture", stackGroup: "peinture_plafonds", isPrep: false, isLogistic: false,
+    units: ["m²"], direct: [25, 38], sousTrait: [10, 16],
   },
   {
     label: "Sous-couche / impression",
-    keywords: ["sous-couche", "sous couche", "impression"],
-    category: "preparation",
-    units: ["m²"],
-    direct: [6, 12],
-    sousTrait: [4, 7],
+    keywords: ["sous-couche", "sous couche", "impression", "primaire"],
+    trade: "peinture", stackGroup: "peinture_murs", isPrep: true, isLogistic: false,
+    units: ["m²"], direct: [6, 12], sousTrait: [3, 6],
   },
   {
     label: "Ponçage / décollage",
     keywords: ["poncage", "ponçage", "decapage", "décapage", "papier peint", "decollage", "décollage"],
-    category: "preparation",
-    units: ["m²"],
-    direct: [6, 14],
-    sousTrait: [4, 9],
+    trade: "peinture", stackGroup: "peinture_murs", isPrep: true, isLogistic: false,
+    units: ["m²"], direct: [5, 12], sousTrait: [3, 7],
   },
   {
     label: "Ratissage / enduit",
-    keywords: ["ratissage", "enduit", "rebouchage", "lissage"],
-    category: "preparation",
-    units: ["m²"],
-    direct: [14, 25],
-    sousTrait: [8, 14],
+    keywords: ["ratissage", "enduit", "rebouchage", "lissage", "dégrossissage"],
+    trade: "peinture", stackGroup: "peinture_murs", isPrep: true, isLogistic: false,
+    units: ["m²"], direct: [12, 22], sousTrait: [6, 12],
   },
   {
     label: "Boiseries / huisseries",
     keywords: ["boiserie", "huisserie", "porte", "fenetre", "fenêtre", "volet", "plinthe"],
-    category: "boiserie",
-    units: ["ml", "u"],
-    direct: [18, 32],
-    sousTrait: [10, 16],
+    trade: "peinture", isPrep: false, isLogistic: false,
+    units: ["ml", "u"], direct: [18, 32], sousTrait: [8, 15],
   },
   {
     label: "Traitement humidité",
     keywords: ["hydrofuge", "anti humidite", "anti-humidite", "humidité", "humidite", "salpetre", "salpêtre"],
-    category: "traitement",
-    units: ["m²"],
-    direct: [8, 16],
-    sousTrait: [5, 9],
+    trade: "peinture", isPrep: false, isLogistic: false,
+    units: ["m²"], direct: [8, 16], sousTrait: [4, 9],
   },
+
+  // ─── CARRELAGE / FAIENCE ───
   {
     label: "Carrelage sol",
-    keywords: ["carrelage sol", "sol carrelage", "carrelage"],
-    category: "carrelage",
-    units: ["m²"],
-    direct: [40, 65],
-    sousTrait: [22, 40],
+    keywords: ["carrelage sol", "sol carrelage", "carrelage", "gres", "grès"],
+    trade: "carrelage", stackGroup: "carrelage_sol", isPrep: false, isLogistic: false,
+    units: ["m²"], direct: [40, 65], sousTrait: [18, 35],
   },
   {
     label: "Faïence murale",
     keywords: ["faience", "faïence", "carrelage mural", "mural"],
-    category: "carrelage",
-    units: ["m²"],
-    direct: [45, 75],
-    sousTrait: [25, 45],
-  },
-  {
-    label: "Dépose / démolition",
-    keywords: ["depose", "dépose", "demolition", "démolition", "depose ancien", "piquage"],
-    category: "demolition",
-    direct: [12, 40],
-    sousTrait: [8, 28],
+    trade: "carrelage", stackGroup: "faience", isPrep: false, isLogistic: false,
+    units: ["m²"], direct: [45, 75], sousTrait: [20, 40],
   },
   {
     label: "Ragréage / chape",
-    keywords: ["ragreage", "ragréage", "chape"],
-    category: "sol",
-    units: ["m²"],
-    direct: [12, 35],
-    sousTrait: [7, 20],
+    keywords: ["ragreage", "ragréage", "chape", "nivellement"],
+    trade: "carrelage", stackGroup: "carrelage_sol", isPrep: true, isLogistic: false,
+    units: ["m²"], direct: [10, 30], sousTrait: [6, 18],
   },
+  {
+    label: "Joints carrelage",
+    keywords: ["joint", "joints", "jointement", "jointoiement"],
+    trade: "carrelage", stackGroup: "carrelage_sol", isPrep: true, isLogistic: false,
+    units: ["m²"], direct: [4, 10], sousTrait: [3, 6],
+  },
+
+  // ─── DEMOLITION / DEPOSE ───
+  {
+    label: "Dépose / démolition",
+    keywords: ["depose", "dépose", "demolition", "démolition", "piquage", "depose ancien"],
+    trade: "demolition", isPrep: true, isLogistic: false,
+    direct: [12, 40], sousTrait: [8, 25],
+  },
+
+  // ─── PLOMBERIE / SANITAIRE ───
   {
     label: "WC / sanitaire",
-    keywords: ["wc", "toilette", "lavabo", "vasque", "evier", "évier", "robinetterie", "colonne de douche", "douche"],
-    category: "plomberie",
-    units: ["u", "ens"],
-    direct: [120, 600],
-    sousTrait: [50, 200],
+    keywords: ["wc", "toilette", "lavabo", "vasque", "evier", "évier", "robinetterie", "colonne de douche", "douche", "baignoire", "bidet"],
+    trade: "plomberie", stackGroup: "sanitaire", isPrep: false, isLogistic: false,
+    units: ["u", "ens"], direct: [120, 600], sousTrait: [50, 180],
   },
   {
-    label: "Électricité",
-    keywords: ["prise", "interrupteur", "point lumineux", "tableau electrique", "tableau électrique", "luminaire"],
-    category: "electricite",
-    units: ["u", "ens"],
-    direct: [60, 1200],
-    sousTrait: [30, 550],
+    label: "Tuyauterie / raccordement",
+    keywords: ["tuyau", "tuyauterie", "raccord", "raccordement", "alimentation", "evacuation eau", "évacuation eau", "siphon", "vanne"],
+    trade: "plomberie", stackGroup: "sanitaire", isPrep: true, isLogistic: false,
+    units: ["ml", "u", "ens"], direct: [15, 80], sousTrait: [8, 40],
+  },
+
+  // ─── ELECTRICITE ───
+  {
+    label: "Électricité point",
+    keywords: ["prise", "interrupteur", "point lumineux", "spot", "luminaire", "va-et-vient", "va et vient"],
+    trade: "electricite", stackGroup: "elec_point", isPrep: false, isLogistic: false,
+    units: ["u"], direct: [60, 180], sousTrait: [25, 80],
   },
   {
-    label: "Protection / nettoyage",
-    keywords: ["protection chantier", "nettoyage", "evacuation", "évacuation", "gravats", "bache", "bâche"],
-    category: "divers",
-    direct: [3, 50],
-    sousTrait: [2, 35],
+    label: "Tableau électrique",
+    keywords: ["tableau electrique", "tableau électrique", "differentiel", "disjoncteur"],
+    trade: "electricite", isPrep: false, isLogistic: false,
+    units: ["u", "ens"], direct: [250, 1500], sousTrait: [120, 600],
+  },
+  {
+    label: "Câblage / saignée",
+    keywords: ["cable", "câble", "cablage", "câblage", "saignee", "saignée", "goulotte", "gaine"],
+    trade: "electricite", stackGroup: "elec_point", isPrep: true, isLogistic: false,
+    units: ["ml", "u"], direct: [8, 30], sousTrait: [4, 15],
+  },
+
+  // ─── MENUISERIE ───
+  {
+    label: "Pose porte",
+    keywords: ["pose porte", "bloc porte", "porte interieure", "porte intérieure"],
+    trade: "menuiserie", isPrep: false, isLogistic: false,
+    units: ["u"], direct: [150, 450], sousTrait: [60, 180],
+  },
+  {
+    label: "Pose fenêtre",
+    keywords: ["pose fenetre", "pose fenêtre", "fenetre pvc", "fenêtre pvc", "double vitrage"],
+    trade: "menuiserie", isPrep: false, isLogistic: false,
+    units: ["u"], direct: [200, 800], sousTrait: [80, 250],
+  },
+
+  // ─── PLATRERIE ───
+  {
+    label: "Placo / cloison",
+    keywords: ["placo", "placoplatre", "cloison", "ba13", "doublage"],
+    trade: "platrerie", isPrep: false, isLogistic: false,
+    units: ["m²"], direct: [35, 65], sousTrait: [15, 30],
+  },
+  {
+    label: "Faux plafond",
+    keywords: ["faux plafond", "faux-plafond", "plafond suspendu", "dalles plafond"],
+    trade: "platrerie", isPrep: false, isLogistic: false,
+    units: ["m²"], direct: [40, 80], sousTrait: [18, 38],
+  },
+
+  // ─── LOGISTIQUE (auto-supprimé en sous-traitance) ───
+  {
+    label: "Protection chantier",
+    keywords: ["protection chantier", "protection", "bache", "bâche", "film plastique"],
+    trade: "logistique", isPrep: false, isLogistic: true,
+    direct: [3, 8], sousTrait: [0, 0],
+  },
+  {
+    label: "Nettoyage / évacuation",
+    keywords: ["nettoyage", "evacuation", "évacuation", "gravats", "dechets", "déchets", "nettoyage fin de chantier"],
+    trade: "logistique", isPrep: false, isLogistic: true,
+    direct: [3, 50], sousTrait: [0, 0],
   },
 ];
 
-// ─── ANTI-STACKING CATEGORIES ───
-// Items in these categories should NOT stack on top of peinture
-const STACKING_ABSORB_CATEGORIES = new Set(["preparation"]);
-const PAINT_CATEGORIES = new Set(["peinture"]);
+// ═══════════════════════════════════════════════════════════════
+//  [2] CONTRACT MULTIPLIERS
+// ═══════════════════════════════════════════════════════════════
+//  Direct = 1.0 (full price: materials + labor + protection + margin)
+//  Sous-traitance = 0.4 to 0.5 (MO only, ~50-60% discount)
+//  → Each trade rule already has separate direct/sousTrait ranges
+//  → Logistic items auto-removed for sous-traitance
+
+const QUALITY_PROFILE: Record<QualityTier, {
+  materialFactor: number;   // only applies to direct (F+P)
+  targetRatio: number;      // where in the band to target (0=min, 1=max)
+}> = {
+  standard: { materialFactor: 1.0, targetRatio: 0.35 },
+  pro:      { materialFactor: 1.15, targetRatio: 0.45 },
+  luxury:   { materialFactor: 1.35, targetRatio: 0.55 },
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  UTILITY FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
 
 function normalizeText(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -170,208 +222,193 @@ function includesAny(text: string, keywords: string[]): boolean {
   return keywords.some((kw) => text.includes(normalizeText(kw)));
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.min(Math.max(v, lo), hi);
 }
 
-function roundPrice(value: number): number {
-  return Math.round(value);
+function roundPrice(v: number): number {
+  return Math.round(v);
 }
 
-// ─── DETECT RULE FOR AN ITEM ───
-function detectRule(item: EstimateItem): PriceRule | null {
+function detectRule(item: EstimateItem): TradeRule | null {
   const text = normalizeText(`${item.designation_fr} ${item.designation_ar}`);
-  for (const rule of PRICE_RULES) {
+  for (const rule of TRADE_RULES) {
     const unitOk = !rule.units || rule.units.map(u => u.toLowerCase()).includes(item.unit.toLowerCase());
     if (unitOk && includesAny(text, rule.keywords)) return rule;
   }
   return null;
 }
 
-// ─── UNIT FLOOR (never go below) ───
-function getUnitFloor(item: EstimateItem, projectType: ProjectType): number {
-  const isST = projectType === "sous_traitance" || item.laborOnly;
-  const u = item.unit.toLowerCase();
-  if (u === "m²" || u === "m2") return isST ? 4 : 10;
-  if (u === "ml") return isST ? 6 : 12;
-  if (u === "u") return isST ? 25 : 60;
-  if (u === "m³" || u === "m3") return 25;
-  if (u === "j") return isST ? 200 : 280;
-  if (u === "ens") return isST ? 40 : 100;
-  return 3;
-}
+// ═══════════════════════════════════════════════════════════════
+//  [3] ANTI-STACKING — Merge prep into main task pack
+// ═══════════════════════════════════════════════════════════════
+//  Rule: If a main task AND its prep tasks share the same stackGroup,
+//  the prep tasks get absorbed (price → 0 or near-zero supplement).
+//  Examples:
+//    Peinture (main) + Ponçage + Sous-couche (prep) → pack price on paint only
+//    Carrelage (main) + Ragréage + Joints (prep) → pack price on carrelage only
+//    Electricité point (main) + Câblage (prep) → pack price on point only
 
-// ─── FALLBACK BAND ───
-function getFallbackBand(item: EstimateItem, projectType: ProjectType): PriceBand {
-  const isST = projectType === "sous_traitance" || item.laborOnly;
-  const u = item.unit.toLowerCase();
-  if (u === "m²" || u === "m2") {
-    return isST
-      ? { min: 6, max: 18, source: "fallback m² MO" }
-      : { min: 15, max: 40, source: "fallback m² F+P" };
-  }
-  if (u === "ml") {
-    return isST
-      ? { min: 8, max: 16, source: "fallback ml MO" }
-      : { min: 14, max: 30, source: "fallback ml F+P" };
-  }
-  if (u === "u") {
-    return isST
-      ? { min: 30, max: 150, source: "fallback u MO" }
-      : { min: 80, max: 350, source: "fallback u F+P" };
-  }
-  if (u === "m³" || u === "m3") return { min: 30, max: 60, source: "fallback m³" };
-  if (u === "j") return isST
-    ? { min: 200, max: 350, source: "fallback j MO" }
-    : { min: 280, max: 450, source: "fallback j F+P" };
-  if (u === "ens") {
-    return isST
-      ? { min: 50, max: 180, source: "fallback ens MO" }
-      : { min: 120, max: 350, source: "fallback ens F+P" };
-  }
-  return isST
-    ? { min: 15, max: 60, source: "fallback generic MO" }
-    : { min: 30, max: 100, source: "fallback generic F+P" };
-}
-
-// ─── REFERENCE BAND ───
-function getReferenceBand(item: EstimateItem, projectType: ProjectType): PriceBand {
-  const rule = detectRule(item);
-  if (!rule) return getFallbackBand(item, projectType);
-
-  const isST = projectType === "sous_traitance" || item.laborOnly;
-  const [min, max] = isST ? rule.sousTrait : rule.direct;
-  return { min, max, source: rule.label };
-}
-
-// ─── SMALL JOB FACTOR ───
-function getSmallJobFactor(totalSurface: number, itemCount: number): number {
-  if (totalSurface > 0 && totalSurface < 10) return 1.18;
-  if (totalSurface >= 10 && totalSurface < 20) return 1.08;
-  if (totalSurface === 0 && itemCount <= 2) return 1.05;
-  return 1;
-}
-
-// ─── BUNDLE FACTOR ───
-function getBundleFactor(itemCount: number): number {
-  if (itemCount >= 12) return 0.95;
-  if (itemCount >= 8) return 0.97;
-  if (itemCount >= 5) return 0.985;
-  return 1;
-}
-
-// ─── COMPLEXITY FACTOR ───
-function getComplexityFactor(item: EstimateItem): number {
-  const text = normalizeText(`${item.designation_fr} ${item.designation_ar}`);
-  let f = 1;
-  if (includesAny(text, ["plafond", "hauteur", "echafaudage", "échafaudage", "escalier"])) f += 0.04;
-  if (includesAny(text, ["hydrofuge", "humidite", "humidité", "salpetre", "salpêtre", "fissure"])) f += 0.05;
-  if (includesAny(text, ["faience", "faïence", "grand format", "rectifie", "rectifié"])) f += 0.04;
-  if (includesAny(text, ["depose", "dépose", "demolition", "démolition"])) f += 0.04;
-  return Math.min(f, 1.12);
-}
-
-// ─── BUILD ADJUSTED BAND ───
-function buildAdjustedBand(
-  item: EstimateItem,
-  qualityTier: QualityTier,
-  projectType: ProjectType,
-  totalSurface: number,
-  itemCount: number,
-): AdjustedBand {
-  const reference = getReferenceBand(item, projectType);
-  const quality = QUALITY_PROFILE[qualityTier];
-  const isST = projectType === "sous_traitance" || item.laborOnly;
-
-  // Material factor only applies to direct (F+P)
-  const materialFactor = isST ? 1 : quality.materialFactor;
-  const smallJobFactor = getSmallJobFactor(totalSurface, itemCount);
-  const bundleFactor = getBundleFactor(itemCount);
-  const complexityFactor = getComplexityFactor(item);
-
-  let min = reference.min * materialFactor * smallJobFactor * bundleFactor;
-  let max = reference.max * materialFactor * smallJobFactor * bundleFactor * complexityFactor;
-
-  // Enforce unit floor
-  const floor = getUnitFloor(item, projectType);
-  min = Math.max(min, floor);
-  max = Math.max(max, min * 1.10);
-
-  // ─── HARD CAPS (Step 3 guardrails) ───
-  const rule = detectRule(item);
-  if (rule && PAINT_CATEGORIES.has(rule.category)) {
-    const u = item.unit.toLowerCase();
-    if (u === "m²" || u === "m2") {
-      if (isST) {
-        // Sous-traitance peinture: MAX 18€/m²
-        max = Math.min(max, 18 * quality.materialFactor);
-        min = Math.min(min, max * 0.7);
-      } else {
-        // Direct peinture: MAX 45€/m²
-        max = Math.min(max, 45 * quality.materialFactor);
-        min = Math.min(min, max * 0.65);
-      }
-    }
-  }
-
-  const ratio = isST ? quality.laborTargetRatio : quality.directTargetRatio;
-  const target = min + (max - min) * ratio;
-
-  return { min, max, target, source: reference.source };
-}
-
-// ─── ANTI-STACKING LOGIC ───
-// Detect if devis has both painting AND preparation items on the same unit
-// If so, reduce preparation prices significantly (they're included in the paint pack)
 function applyAntiStacking(
   items: EstimateItem[],
   prices: Map<string, number>,
-  _qualityTier: QualityTier,
-  projectType: ProjectType,
 ): void {
-  // Find all paint items (m² based)
-  const paintItems = items.filter(i => {
-    const rule = detectRule(i);
-    return rule && PAINT_CATEGORIES.has(rule.category) && ["m²", "m2"].includes(i.unit.toLowerCase());
-  });
+  // Build a map: stackGroup → { hasMain, prepItemIds[] }
+  const stackMap = new Map<string, { hasMain: boolean; prepIds: string[] }>();
 
-  if (paintItems.length === 0) return;
-
-  // When painting is present, prep items (ponçage, sous-couche, enduit) are 
-  // INCLUDED in the paint pack price. Their standalone price should be 
-  // reduced to a minimal technical supplement only.
   for (const item of items) {
     const rule = detectRule(item);
-    if (!rule || !STACKING_ABSORB_CATEGORIES.has(rule.category)) continue;
-    if (!["m²", "m2"].includes(item.unit.toLowerCase())) continue;
+    if (!rule || !rule.stackGroup) continue;
 
-    const currentPrice = prices.get(item.id);
-    if (currentPrice === undefined) continue;
+    if (!stackMap.has(rule.stackGroup)) {
+      stackMap.set(rule.stackGroup, { hasMain: false, prepIds: [] });
+    }
+    const entry = stackMap.get(rule.stackGroup)!;
 
-    const isST = projectType === "sous_traitance" || item.laborOnly;
-    // Aggressive pack absorption: prep is already in paint price
-    // Only charge a small technical supplement
-    const maxPrepPrice = isST ? 5 : 8; // €/m² max when paint is present
-    const reduced = Math.min(currentPrice, maxPrepPrice);
-    const floor = getUnitFloor(item, projectType);
-    prices.set(item.id, Math.max(reduced, floor));
+    if (rule.isPrep) {
+      entry.prepIds.push(item.id);
+    } else {
+      entry.hasMain = true;
+    }
+  }
+
+  // For each group where main task exists, zero out prep tasks
+  for (const [_group, entry] of stackMap) {
+    if (!entry.hasMain) continue;
+    for (const prepId of entry.prepIds) {
+      // Prep is absorbed into the main task pack → price = 0
+      prices.set(prepId, 0);
+    }
   }
 }
 
-// ─── COMPETITIVE PRICE BLENDING ───
-function getCompetitivePrice(aiPrice: number | undefined, band: AdjustedBand): number {
-  if (!Number.isFinite(aiPrice)) return roundPrice(band.target);
+// ═══════════════════════════════════════════════════════════════
+//  [4] VOLUME & DIFFICULTY — Economy of scale + surcharges
+// ═══════════════════════════════════════════════════════════════
 
-  const safe = aiPrice as number;
-  // If AI price is wildly out of range, use our target
-  if (safe < band.min * 0.80 || safe > band.max * 1.10) {
-    return roundPrice(band.target);
+function getVolumeFactor(quantity: number): number {
+  // Economy of scale: > 100 units → -10%, > 200 → -15%
+  if (quantity >= 200) return 0.85;
+  if (quantity >= 100) return 0.90;
+  if (quantity >= 50) return 0.95;
+  // Small jobs: < 10 units → +18%, < 20 → +10%
+  if (quantity > 0 && quantity < 10) return 1.18;
+  if (quantity >= 10 && quantity < 20) return 1.10;
+  return 1.0;
+}
+
+function getDifficultyFactor(item: EstimateItem): number {
+  const text = normalizeText(`${item.designation_fr} ${item.designation_ar}`);
+  let f = 1.0;
+  // Height / scaffolding → +10%
+  if (includesAny(text, ["hauteur", "echafaudage", "échafaudage", "escalier", "cage d'escalier"])) f += 0.10;
+  // Tight spaces → +8%
+  if (includesAny(text, ["etroit", "étroit", "difficile", "acces", "accès", "sous pente", "sous-pente"])) f += 0.08;
+  // Humidity / treatment → +5%
+  if (includesAny(text, ["humidite", "humidité", "salpetre", "salpêtre", "fissure", "moisissure"])) f += 0.05;
+  // Night work → +15%
+  if (includesAny(text, ["nuit", "nocturne", "travail de nuit"])) f += 0.15;
+  // Large format tiles → +5%
+  if (includesAny(text, ["grand format", "rectifie", "rectifié", "60x60", "80x80", "120"])) f += 0.05;
+
+  return Math.min(f, 1.30); // Cap at +30%
+}
+
+function getBundleFactor(itemCount: number): number {
+  if (itemCount >= 12) return 0.95;
+  if (itemCount >= 8) return 0.97;
+  return 1.0;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PRICE CALCULATION
+// ═══════════════════════════════════════════════════════════════
+
+function getUnitFloor(unit: string, isST: boolean): number {
+  const u = unit.toLowerCase();
+  if (u === "m²" || u === "m2") return isST ? 3 : 8;
+  if (u === "ml") return isST ? 4 : 10;
+  if (u === "u") return isST ? 20 : 50;
+  if (u === "m³" || u === "m3") return 20;
+  if (u === "j") return isST ? 180 : 280;
+  if (u === "ens") return isST ? 30 : 80;
+  return 3;
+}
+
+function getFallbackBand(item: EstimateItem, isST: boolean): [number, number] {
+  const u = item.unit.toLowerCase();
+  if (u === "m²" || u === "m2") return isST ? [5, 16] : [12, 38];
+  if (u === "ml") return isST ? [6, 14] : [12, 28];
+  if (u === "u") return isST ? [25, 120] : [60, 300];
+  if (u === "m³" || u === "m3") return [25, 55];
+  if (u === "j") return isST ? [180, 320] : [280, 450];
+  if (u === "ens") return isST ? [40, 150] : [90, 300];
+  return isST ? [10, 50] : [25, 90];
+}
+
+function computeGuardrailedPrice(
+  item: EstimateItem,
+  aiPrice: number | undefined,
+  qualityTier: QualityTier,
+  projectType: ProjectType,
+  itemCount: number,
+): number {
+  const rule = detectRule(item);
+  const isST = projectType === "sous_traitance" || item.laborOnly;
+  const quality = QUALITY_PROFILE[qualityTier];
+
+  // If logistic item in sous-traitance → price = 0
+  if (rule?.isLogistic && isST) return 0;
+
+  // Get base range
+  let [baseMin, baseMax] = rule
+    ? (isST ? rule.sousTrait : rule.direct)
+    : getFallbackBand(item, isST);
+
+  // Apply quality material factor (only for direct/F+P)
+  const matFactor = isST ? 1.0 : quality.materialFactor;
+  baseMin *= matFactor;
+  baseMax *= matFactor;
+
+  // Apply volume factor
+  const volFactor = getVolumeFactor(item.quantity);
+  baseMin *= volFactor;
+  baseMax *= volFactor;
+
+  // Apply difficulty factor
+  const diffFactor = getDifficultyFactor(item);
+  baseMin *= diffFactor;
+  baseMax *= Math.min(diffFactor, 1.15); // don't blow up the max too much
+
+  // Apply bundle discount
+  const bundleFactor = getBundleFactor(itemCount);
+  baseMin *= bundleFactor;
+  baseMax *= bundleFactor;
+
+  // Enforce floor
+  const floor = getUnitFloor(item.unit, isST);
+  baseMin = Math.max(baseMin, floor);
+  baseMax = Math.max(baseMax, baseMin * 1.08);
+
+  // Target within the band
+  const target = baseMin + (baseMax - baseMin) * quality.targetRatio;
+
+  // Blend with AI price (if valid)
+  if (Number.isFinite(aiPrice)) {
+    const safe = aiPrice as number;
+    if (safe >= baseMin * 0.75 && safe <= baseMax * 1.15) {
+      // AI price is reasonable → blend 25% AI + 75% our calculation
+      const blended = safe * 0.25 + target * 0.75;
+      return roundPrice(clamp(blended, baseMin, baseMax));
+    }
   }
 
-  // Blend: 30% AI + 70% our calculation (our rules dominate)
-  const blended = safe * 0.30 + band.target * 0.70;
-  return roundPrice(clamp(blended, band.min, band.max));
+  return roundPrice(target);
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  EDGE FUNCTION HANDLER
+// ═══════════════════════════════════════════════════════════════
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -392,54 +429,72 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const tier = qualityTier || "standard";
-    const pType = projectType || "direct";
+    const tier: QualityTier = qualityTier || "standard";
+    const pType: ProjectType = projectType || "direct";
     const isSousTraitance = pType === "sous_traitance";
-
-    const totalSurface = items
-      .filter((i) => ["m²", "m2"].includes(i.unit.toLowerCase()))
-      .reduce((sum, i) => sum + i.quantity, 0);
     const itemCount = items.length;
-    const isSmallJob = totalSurface > 0 && totalSurface < 15;
 
-    // ─── BUILD AI PROMPT ───
-    const itemDescriptions = items.map((item) =>
-      `Item ID="${item.id}" : "${item.designation_fr}" (${item.designation_ar}) — unité: ${item.unit}, qté: ${item.quantity}, ${item.laborOnly ? "MAIN D'OEUVRE SEULE" : "FOURNITURE ET POSE"}`
+    // ─── Filter out logistic items for sous-traitance ───
+    const pricingItems = isSousTraitance
+      ? items.filter(i => { const r = detectRule(i); return !r?.isLogistic; })
+      : items;
+
+    // ─── Build AI prompt ───
+    const itemDescriptions = pricingItems.map((item) =>
+      `ID="${item.id}": "${item.designation_fr}" (${item.designation_ar}) — ${item.unit}, qté: ${item.quantity}, ${item.laborOnly ? "MO SEULE" : "F+P"}`
     ).join("\n");
 
-    const contractContext = isSousTraitance
-      ? `⚠️ CONTRAT SOUS-TRAITANCE : Tu es sous-traitant. Les prix sont MAIN D'OEUVRE SEULE.
-Le total doit être environ 50% moins cher que le tarif client direct.
-PLAFOND ABSOLU peinture : 18€/m² max (standard), incluant ponçage + impression + 2 couches.`
-      : `CONTRAT CLIENT DIRECT : Tu es l'entreprise principale. Prix FOURNITURE + POSE.
-PLAFOND peinture : 45€/m² max (standard), incluant préparation + impression + 2 couches.`;
+    const contractDesc = isSousTraitance
+      ? `SOUS-TRAITANCE (مقاول باطن):
+- Prix = MAIN D'OEUVRE SEULE (مصنعية فقط)
+- Réduction ~50-60% par rapport au prix client direct
+- NE PAS inclure les matériaux, protection, ni nettoyage
+- Plafond peinture MO : 14€/m² standard`
+      : `CLIENT DIRECT (عميل مباشر):
+- Prix = FOURNITURE + POSE (توريد وتركيب)
+- Inclure : matériaux + MO + protection + marge
+- Plafond peinture F+P : 35€/m² standard`;
 
-    const systemPrompt = `Tu es شبيك لبيك (Shubbaik Lubbaik), métreur-chiffreur IA pour artisans BTP en France.
+    const systemPrompt = `Tu es شبيك لبيك, métreur-chiffreur IA multi-métiers pour artisans BTP en France.
 
-${contractContext}
+CONTRAT: ${contractDesc}
 
-GAMME : ${tier.toUpperCase()}
-${tier === "standard" ? "Prix d'entrée compétitifs. Marge artisan ~15-20%." : ""}
-${tier === "pro" ? "Matériaux de meilleure qualité. Hausse matériaux +12-18% vs standard. MO identique." : ""}
-${tier === "luxury" ? "Matériaux premium. Hausse matériaux +30-40% vs standard. MO identique." : ""}
+GAMME: ${tier.toUpperCase()}
+${tier === "standard" ? "Base compétitive. Matériaux entrée de gamme." : ""}
+${tier === "pro" ? "Matériaux moyenne gamme (+15%). MO identique." : ""}
+${tier === "luxury" ? "Matériaux haut de gamme (+35%). MO identique." : ""}
 
-RÈGLES CRITIQUES :
-1. PAS DE STACKING : Si le devis contient ponçage + sous-couche + peinture, le prix de la peinture INCLUT DÉJÀ la préparation. Les lignes de préparation doivent avoir un prix MINIMAL (supplément technique uniquement).
-2. Surface sol A → Surface murs ≈ A × 3 (pour vérification cohérence).
-3. PLAFONDS de prix STRICTS par unité et par type de contrat.
-4. Prix COMPÉTITIFS : l'artisan doit gagner le marché TOUT en gagnant de l'argent.
-5. Cohérence globale : le total du devis doit être réaliste pour un artisan français.
+RÈGLES CRITIQUES:
+1. ANTI-STACKING: Si peinture + ponçage + sous-couche sont dans le devis, le prix de la peinture INCLUT la prépa. Les lignes prépa = 0€.
+   Même logique pour: carrelage + ragréage + joints = 1 pack. Électricité + câblage = 1 pack.
+2. VOLUME: > 100 unités = -10%. > 200 = -15%. < 10m² = +18%.
+3. DIFFICULTÉ: Hauteur/échafaudage/accès difficile = +10-15% sur MO.
+4. ${isSousTraitance ? "SUPPRIMER toute ligne Protection/Nettoyage → prix 0€." : ""}
 
-BARÈMES DE RÉFÉRENCE (Standard, Client Direct) :
-- Peinture murs : 22-35€/m² F+P | 10-18€/m² MO
-- Peinture plafonds : 25-38€/m² F+P | 12-18€/m² MO
-- Sous-couche : 6-12€/m² F+P | 4-7€/m² MO
-- Ratissage/enduit : 14-25€/m² F+P | 8-14€/m² MO
-- Carrelage sol : 40-65€/m² F+P | 22-40€/m² MO
-- Faïence : 45-75€/m² F+P | 25-45€/m² MO
+BARÈMES FRANCE 2024-2025 (Standard):
+${isSousTraitance ? `
+- Peinture murs MO: 8-14€/m²
+- Peinture plafonds MO: 10-16€/m²
+- Carrelage sol MO: 18-35€/m²
+- Faïence MO: 20-40€/m²
+- Électricité point MO: 25-80€/u
+- Plomberie sanitaire MO: 50-180€/u
+- Placo/cloison MO: 15-30€/m²
+- Dépose MO: 8-25€/m²`
+: `
+- Peinture murs F+P: 22-35€/m²
+- Peinture plafonds F+P: 25-38€/m²
+- Carrelage sol F+P: 40-65€/m²
+- Faïence F+P: 45-75€/m²
+- Électricité point F+P: 60-180€/u
+- Plomberie sanitaire F+P: 120-600€/u
+- Placo/cloison F+P: 35-65€/m²
+- Dépose: 12-40€/m²
+- Protection: 3-8€/m²`}
 
-FORMAT : JSON uniquement
-{ "prices": [ { "id": "<EXACT ITEM ID>", "unitPrice": 28, "unit": "m²" } ] }`;
+FORMAT: JSON uniquement
+{ "prices": [ { "id": "<ID>", "unitPrice": 28, "unit": "m²" } ] }
+Lignes absorbées par anti-stacking → unitPrice: 0`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -451,16 +506,16 @@ FORMAT : JSON uniquement
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Chiffre ces ${itemCount} postes (${tier.toUpperCase()} / ${isSousTraitance ? "SOUS-TRAITANCE MO SEULE" : "CLIENT DIRECT F+P"}${isSmallJob ? " / PETIT CHANTIER" : ""}) :\n\n${itemDescriptions}\n\nJSON uniquement.` },
+          { role: "user", content: `Chiffre ${pricingItems.length} postes (${tier} / ${isSousTraitance ? "SOUS-TRAITANCE" : "CLIENT DIRECT"}):\n\n${itemDescriptions}\n\nJSON.` },
         ],
-        temperature: 0.12,
+        temperature: 0.10,
       }),
     });
 
     if (!response.ok) {
       const status = response.status;
       if (status === 429) {
-        return new Response(JSON.stringify({ error: "Service surchargé, réessayez dans un instant." }), {
+        return new Response(JSON.stringify({ error: "Service surchargé, réessayez." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -490,48 +545,37 @@ FORMAT : JSON uniquement
     try {
       parsed = JSON.parse(jsonStr);
     } catch {
-      console.error("Failed to parse AI price response:", rawContent);
+      console.error("Failed to parse AI response:", rawContent);
       return new Response(JSON.stringify({ error: "Réponse IA invalide", raw: rawContent }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const itemMap = new Map(items.map((item) => [item.id, item]));
-
     // ─── POST-PROCESSING: Apply guardrails ───
-    const priceMap = new Map<string, number>();
-
+    const aiPriceMap = new Map<string, number>();
     if (parsed.prices) {
-      // First pass: compute guardrailed prices
-      for (const priceLine of parsed.prices) {
-        const sourceItem = itemMap.get(priceLine.id);
-        if (!sourceItem) {
-          priceMap.set(priceLine.id, Math.max(priceLine.unitPrice, 3));
-          continue;
-        }
-        const band = buildAdjustedBand(sourceItem, tier, pType, totalSurface, itemCount);
-        priceMap.set(priceLine.id, getCompetitivePrice(priceLine.unitPrice, band));
-      }
-
-      // Fill missing items
-      for (const item of items) {
-        if (priceMap.has(item.id)) continue;
-        const band = buildAdjustedBand(item, tier, pType, totalSurface, itemCount);
-        priceMap.set(item.id, getCompetitivePrice(undefined, band));
-      }
-
-      // Second pass: apply anti-stacking
-      applyAntiStacking(items, priceMap, tier, pType);
-
-      // Rebuild prices array
-      parsed.prices = items.map(item => ({
-        id: item.id,
-        unit: item.unit,
-        unitPrice: priceMap.get(item.id) || 0,
-      }));
+      for (const p of parsed.prices) aiPriceMap.set(p.id, p.unitPrice);
     }
 
-    return new Response(JSON.stringify(parsed), {
+    const priceMap = new Map<string, number>();
+
+    // Compute guardrailed price for every item
+    for (const item of items) {
+      const aiPrice = aiPriceMap.get(item.id);
+      priceMap.set(item.id, computeGuardrailedPrice(item, aiPrice, tier, pType, itemCount));
+    }
+
+    // Apply anti-stacking (zeroes out prep items when main task exists)
+    applyAntiStacking(items, priceMap);
+
+    // Build final response
+    const finalPrices = items.map(item => ({
+      id: item.id,
+      unit: item.unit,
+      unitPrice: priceMap.get(item.id) || 0,
+    }));
+
+    return new Response(JSON.stringify({ prices: finalPrices }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

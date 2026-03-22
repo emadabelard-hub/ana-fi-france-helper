@@ -1755,7 +1755,7 @@ Réponds UNIQUEMENT en JSON:
       const chantierType = analysisData?.chantierType || "";
       let sortedItems = finalPricedItems;
       if (chantierType === "piscine") {
-        sortedItems = [...pricedItems].sort((a, b) => {
+        sortedItems = [...finalPricedItems].sort((a, b) => {
           const codeA = (a.code || "").trim().toUpperCase();
           const codeB = (b.code || "").trim().toUpperCase();
           return (POOL_SEQUENCE_ORDER[codeA] ?? 3) - (POOL_SEQUENCE_ORDER[codeB] ?? 3);

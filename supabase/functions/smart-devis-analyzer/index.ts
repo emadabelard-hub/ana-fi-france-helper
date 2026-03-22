@@ -1733,7 +1733,7 @@ Réponds UNIQUEMENT en JSON:
         if (/نيتواياج/i.test(desigAr)) return true;
         return false;
       }
-      pricedItems.forEach(item => {
+      finalPricedItems.forEach(item => {
         if (isCleaningItem(item) && typeof item.unitPrice === 'number' && item.unitPrice > NETTOYAGE_MAX_PRICE) {
           item.unitPrice = NETTOYAGE_MAX_PRICE;
         }
@@ -1753,7 +1753,7 @@ Réponds UNIQUEMENT en JSON:
       };
 
       const chantierType = analysisData?.chantierType || "";
-      let sortedItems = pricedItems;
+      let sortedItems = finalPricedItems;
       if (chantierType === "piscine") {
         sortedItems = [...pricedItems].sort((a, b) => {
           const codeA = (a.code || "").trim().toUpperCase();

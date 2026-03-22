@@ -335,6 +335,7 @@ const SmartDevisPage = () => {
     setLineItems(Array.isArray(snapshot.lineItems) ? snapshot.lineItems : []);
     setMaterialQuality(snapshot.materialQuality || 'standard');
     setQualityTier((snapshot as any).qualityTier || 'standard');
+    setProjectType((snapshot as any).projectType || 'direct');
     setDiscountPercent(typeof snapshot.discountPercent === 'number' ? snapshot.discountPercent : 0);
     setProfitMarginPercent(typeof snapshot.profitMarginPercent === 'number' ? snapshot.profitMarginPercent : 15);
     setPreferencesCollected(!!snapshot.preferencesCollected);

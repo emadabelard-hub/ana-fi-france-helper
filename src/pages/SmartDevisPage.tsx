@@ -1010,7 +1010,7 @@ const SmartDevisPage = () => {
       setLineItems(items);
       setStep('review');
 
-      // Prices are now pre-filled by شبيك لبيك inline — no need to wait for ✨ button
+      // Prices are now pre-filled by شبيك لبيك inline — no separate estimate-price call needed
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'خطأ في التوليد', description: err.message });
     } finally {

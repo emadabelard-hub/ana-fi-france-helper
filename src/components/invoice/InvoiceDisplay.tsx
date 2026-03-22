@@ -244,8 +244,10 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               <p className="text-[8pt] text-gray-600 whitespace-pre-line leading-snug">{data.emitter.address}</p>
               {data.emitter.phone && <p className="text-[8pt] text-gray-600">Tél : {data.emitter.phone}</p>}
               {data.emitter.email && <p className="text-[8pt] text-gray-600">Email : {data.emitter.email}</p>}
-              {assuranceHeaderLine && (
-                <p className="text-[8pt] text-gray-600">{assuranceHeaderLine}</p>
+              {assuranceHeaderLine ? (
+                <p className="text-[8pt] text-gray-700 font-semibold mt-0.5">{assuranceHeaderLine}</p>
+              ) : (
+                <p className="text-[8pt] text-gray-400 italic mt-0.5">Assurance Décennale : —</p>
               )}
             </div>
             {/* Doc title + number + QR */}

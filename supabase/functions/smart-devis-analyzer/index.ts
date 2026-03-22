@@ -90,8 +90,8 @@ type GeneratedQuoteItem = {
 const PAINT_STACK_GROUPS = ['peinture_murs', 'peinture_plafonds'];
 const BUNDLED_MAX_PRICE: Record<string, Record<string, number>> = {
   standard: { 'm²': 45 },
-  pro:      { 'm²': 55 },
-  luxury:   { 'm²': 60 },
+  pro:      { 'm²': 65 },
+  luxury:   { 'm²': 90 },
 };
 
 function consolidatePaintingItems(

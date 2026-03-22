@@ -203,6 +203,7 @@ const SmartDevisPage = () => {
     setLineItems([]);
     setMaterialQuality('standard');
     setQualityTier('standard');
+    setProjectType('direct');
     setDiscountPercent(0);
     setProfitMarginPercent(15);
     setPreferencesCollected(false);

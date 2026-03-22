@@ -79,7 +79,78 @@ type GeneratedQuoteItem = {
   unitPrice?: number;
   code?: string;
   category?: string;
+  btpPriceSource?: string;
 };
+
+// ═══════════════════════════════════════
+//   PAINTING CONSOLIDATION — Anti-Stacking v2
+//   Merges prep (ponçage, enduit, sous-couche) INTO the main painting row
+//   so the final devis has ONE line per surface type, not 4-5 fragmented rows.
+// ═══════════════════════════════════════
+const PAINT_STACK_GROUPS = ['peinture_murs', 'peinture_plafonds'];
+const BUNDLED_MAX_PRICE: Record<string, Record<string, number>> = {
+  standard: { 'm²': 45 },
+  pro:      { 'm²': 55 },
+  luxury:   { 'm²': 60 },
+};
+
+function consolidatePaintingItems(
+  items: GeneratedQuoteItem[],
+  detectRuleFn: (item: GeneratedQuoteItem) => any,
+  isSousTraitance: boolean,
+  qualityTier: string,
+): GeneratedQuoteItem[] {
+  if (isSousTraitance) return items;
+
+  const groups = new Map<string, { mainIdx: number | null; prepIndices: number[] }>();
+  items.forEach((item, idx) => {
+    const rule = detectRuleFn(item);
+    if (!rule?.stackGroup || !PAINT_STACK_GROUPS.includes(rule.stackGroup)) return;
+    if (!groups.has(rule.stackGroup)) groups.set(rule.stackGroup, { mainIdx: null, prepIndices: [] });
+    const g = groups.get(rule.stackGroup)!;
+    if (rule.isPrep) g.prepIndices.push(idx);
+    else if (g.mainIdx === null) g.mainIdx = idx;
+  });
+
+  const removedIndices = new Set<number>();
+
+  for (const [groupKey, g] of groups) {
+    if (g.mainIdx === null || g.prepIndices.length === 0) continue;
+
+    const mainItem = items[g.mainIdx];
+    const mainQty = typeof mainItem.quantity === 'number' ? mainItem.quantity : 1;
+    const mainPrice = typeof mainItem.unitPrice === 'number' ? mainItem.unitPrice : 0;
+
+    let prepTotal = 0;
+    for (const idx of g.prepIndices) {
+      const p = items[idx];
+      const pQty = typeof p.quantity === 'number' ? p.quantity : 1;
+      const pPrice = typeof p.unitPrice === 'number' ? p.unitPrice : 0;
+      prepTotal += pPrice * pQty;
+      removedIndices.add(idx);
+    }
+
+    const addedPerUnit = mainQty > 0 ? Math.round(prepTotal / mainQty) : 0;
+    let newUnitPrice = mainPrice + addedPerUnit;
+
+    const cap = BUNDLED_MAX_PRICE[qualityTier]?.['m²'] ?? BUNDLED_MAX_PRICE.pro['m²'];
+    const unit = (mainItem.unit || '').toLowerCase();
+    if ((unit === 'm²' || unit === 'm2') && newUnitPrice > cap) {
+      newUnitPrice = cap;
+    }
+
+    const isMurs = groupKey === 'peinture_murs';
+    mainItem.unitPrice = newUnitPrice;
+    mainItem.designation_fr = isMurs
+      ? 'Prestation complète de Peinture murale (Préparation + Sous-couche + 2 couches)'
+      : 'Prestation complète de Peinture plafond (Préparation + Sous-couche + 2 couches)';
+    mainItem.designation_ar = isMurs
+      ? 'بنتيرة حيطان كاملة (تجهيز + سوكوش + وشين)'
+      : 'بنتيرة سقف كاملة (تجهيز + سوكوش + وشين)';
+  }
+
+  return items.filter((_, idx) => !removedIndices.has(idx));
+}
 
 function normalizePlannerText(value: string): string {
   return value
@@ -1067,23 +1138,31 @@ FORMAT DE RAPPORT:
           }
         }
 
+        // ═══════════════════════════════════════
+        //   CONSOLIDATE PAINTING — merge prep into main line
+        // ═══════════════════════════════════════
+        const consolidatedFast = consolidatePaintingItems(pricedFast, detectRuleFast, isSousTraitance, tier);
+
         return new Response(JSON.stringify({
-          items: pricedFast,
+          items: consolidatedFast,
           devis_subject_fr: devisSubjectFast,
           verification: {
             chantierType: analysisData?.chantierType || null,
             renovationType: analysisData?.renovationType || null,
             literal_passthrough: true,
-            generated_from_suggested_items: pricedFast.length,
+            generated_from_suggested_items: consolidatedFast.length,
             pricing_source: "shubbaik_lubbaik_inline",
             contract_type: pType,
             quality_tier: tier,
+            painting_consolidated: true,
             corrections_applied: [],
           },
           summary: {},
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+
+
       }
 
       const scopeRule = materialScope === 'main_oeuvre_seule'
@@ -1631,6 +1710,13 @@ Réponds UNIQUEMENT en JSON:
 
       applyAntiStackingPricing(pricedItems, isSousTraitance);
 
+      // ═══════════════════════════════════════
+      //   CONSOLIDATE PAINTING — merge prep into main line (Direct Client)
+      // ═══════════════════════════════════════
+      const consolidatedItems = consolidatePaintingItems(pricedItems, detectPricingRule, isSousTraitance, tier);
+      // Replace pricedItems reference for downstream use
+      const finalPricedItems = consolidatedItems;
+
       const NETTOYAGE_MAX_PRICE = 15;
       function isCleaningItem(item: GeneratedQuoteItem): boolean {
         const code = (item.code || "").trim().toUpperCase();
@@ -1641,7 +1727,7 @@ Réponds UNIQUEMENT en JSON:
         if (/نيتواياج/i.test(desigAr)) return true;
         return false;
       }
-      pricedItems.forEach(item => {
+      finalPricedItems.forEach(item => {
         if (isCleaningItem(item) && typeof item.unitPrice === 'number' && item.unitPrice > NETTOYAGE_MAX_PRICE) {
           item.unitPrice = NETTOYAGE_MAX_PRICE;
         }
@@ -1661,9 +1747,9 @@ Réponds UNIQUEMENT en JSON:
       };
 
       const chantierType = analysisData?.chantierType || "";
-      let sortedItems = pricedItems;
+      let sortedItems = finalPricedItems;
       if (chantierType === "piscine") {
-        sortedItems = [...pricedItems].sort((a, b) => {
+        sortedItems = [...finalPricedItems].sort((a, b) => {
           const codeA = (a.code || "").trim().toUpperCase();
           const codeB = (b.code || "").trim().toUpperCase();
           return (POOL_SEQUENCE_ORDER[codeA] ?? 3) - (POOL_SEQUENCE_ORDER[codeB] ?? 3);

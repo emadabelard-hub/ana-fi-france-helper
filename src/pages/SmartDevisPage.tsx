@@ -735,7 +735,7 @@ const SmartDevisPage = () => {
           const unit = item.unit || 'Ens';
           content += `${index + 1}. ${fr}\n   ${ar} → ${quantity} ${unit}\n`;
         });
-        content += `\n✅ التحليل خلص! الخطوط دي هتدخل سطر بسطر في جدول الدوفي لما تدوس على زر إنشاء الدوفي. الأسعار هتفضل 0.00 لحد ما تدوس على ✨.\n\n`;
+        content += `\n✅ التحليل خلص! الخطوط دي هتدخل سطر بسطر في جدول الدوفي لما تدوس على زر إنشاء الدوفي. شبيك لبيك هيحسب الأسعار تلقائياً ✨.\n\n`;
       }
 
       // ── French section ──
@@ -1010,7 +1010,7 @@ const SmartDevisPage = () => {
       setLineItems(items);
       setStep('review');
 
-      // Prices are now pre-filled by شبيك لبيك inline — no need to wait for ✨ button
+      // Prices are now pre-filled by شبيك لبيك inline — no separate estimate-price call needed
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'خطأ في التوليد', description: err.message });
     } finally {

@@ -1201,7 +1201,8 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
 
 ✅ Tu es شبيك لبيك, tu CHIFFRES chaque ligne avec un unitPrice réaliste du marché BTP français 2024-2025.
 ✅ Le prix doit refléter le TYPE DE CONTRAT et la GAMME DE QUALITÉ.
-✅ NE JAMAIS mettre unitPrice = 0. Chaque ligne doit avoir un prix > 0.
+✅ NE JAMAIS mettre unitPrice = 0 en mode CLIENT DIRECT. Tous les items doivent être BUNDLED (Fourniture + Pose) avec un prix > 0.
+✅ En mode SOUS-TRAITANCE uniquement: les lignes prépa absorbées par la finition principale peuvent être à 0€.
 
 BARÈMES FRANCE 2024-2025:
 ${pType === 'sous_traitance' ? `

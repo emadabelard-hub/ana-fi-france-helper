@@ -1557,7 +1557,7 @@ Réponds UNIQUEMENT en JSON:
         return { ...item, unitPrice: guardrailedPrice, btpPriceSource: "shubbaik_lubbaik_inline" };
       });
 
-      applyAntiStackingPricing(pricedItems);
+      applyAntiStackingPricing(pricedItems, isSousTraitance);
 
       const NETTOYAGE_MAX_PRICE = 15;
       function isCleaningItem(item: GeneratedQuoteItem): boolean {

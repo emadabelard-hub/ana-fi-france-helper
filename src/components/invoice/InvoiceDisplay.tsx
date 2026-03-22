@@ -146,8 +146,41 @@ const AR_LABELS: Record<string, string> = {
 const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplayProps) => {
   const photos = data.sitePhotos || [];
   const totalPhotoPages = photos.length > 0 ? Math.ceil(photos.length / 4) : 0;
-  // We can't know actual page count at render time for flowing content, so show doc ref only
   const docRef = `${data.type} N° ${data.number}`;
+
+  // ── Dynamic "Objet du devis" based on highest-priced item trade ──
+  const dynamicSubject = (() => {
+    if (data.descriptionChantier) return data.descriptionChantier;
+    if (!data.items || data.items.length === 0) return '';
+    const TRADE_KEYWORDS: Record<string, string> = {
+      'peinture': 'Travaux de peinture',
+      'carrelage': 'Travaux de carrelage',
+      'plomberie': 'Travaux de plomberie',
+      'électricité': 'Mise aux normes électriques',
+      'electri': 'Mise aux normes électriques',
+      'maçonnerie': 'Travaux de maçonnerie',
+      'démolition': 'Travaux de démolition',
+      'isolation': 'Travaux d\'isolation',
+      'plâtr': 'Travaux de plâtrerie',
+      'menuiserie': 'Travaux de menuiserie',
+      'ravalement': 'Ravalement de façade',
+      'étanchéité': 'Travaux d\'étanchéité',
+      'toiture': 'Travaux de toiture',
+      'terrassement': 'Travaux de terrassement',
+    };
+    const highestItem = [...data.items].sort((a, b) => b.total - a.total)[0];
+    const desc = highestItem.designation_fr.toLowerCase();
+    for (const [keyword, label] of Object.entries(TRADE_KEYWORDS)) {
+      if (desc.includes(keyword)) return label;
+    }
+    return 'Travaux de rénovation';
+  })();
+
+  // ── Assurance décennale info for header & footer ──
+  const assurance = data.assuranceDecennale;
+  const assuranceHeaderLine = assurance?.assureurName && assurance?.policyNumber
+    ? `Assurance Décennale : ${assurance.assureurName} — N° ${assurance.policyNumber}`
+    : data.emitter.decennale || '';
 
   const ArSub = ({ fr, className }: { fr: string; className?: string }) => (
     <>
@@ -207,12 +240,12 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                   <span className="text-[8pt] font-semibold text-gray-500 ml-1">EI</span>
                 )}
               </h1>
+              <p className="text-[8pt] text-gray-600 font-semibold">SIRET : {data.emitter.siret}</p>
               <p className="text-[8pt] text-gray-600 whitespace-pre-line leading-snug">{data.emitter.address}</p>
-              <p className="text-[8pt] text-gray-600">SIRET : {data.emitter.siret}</p>
               {data.emitter.phone && <p className="text-[8pt] text-gray-600">Tél : {data.emitter.phone}</p>}
               {data.emitter.email && <p className="text-[8pt] text-gray-600">Email : {data.emitter.email}</p>}
-              {data.emitter.decennale && (
-                <p className="text-[8pt] text-gray-600">Assurance Décennale & RC Pro : {data.emitter.decennale}</p>
+              {assuranceHeaderLine && (
+                <p className="text-[8pt] text-gray-600">{assuranceHeaderLine}</p>
               )}
             </div>
             {/* Doc title + number + QR */}
@@ -282,13 +315,13 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
         )}
 
-        {/* ── OBJET DU DEVIS / DESCRIPTION DU CHANTIER ── */}
-        {data.descriptionChantier && (
+        {/* ── OBJET DU DEVIS / DESCRIPTION DU CHANTIER (Dynamic) ── */}
+        {dynamicSubject && (
           <div className="mb-2 px-2 py-1.5 rounded border border-gray-200 bg-gray-50">
             <p className="text-[7pt] font-bold text-gray-700 uppercase tracking-wider mb-0.5">
               {data.type === 'DEVIS' ? '📝 Objet du devis' : '📝 Objet de la facture'}
             </p>
-            <p className="text-[8pt] text-gray-700 whitespace-pre-line leading-snug">{data.descriptionChantier}</p>
+            <p className="text-[8pt] text-gray-700 whitespace-pre-line leading-snug font-semibold">{dynamicSubject}</p>
           </div>
         )}
 
@@ -557,7 +590,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         )}
 
         {/* Auto-generated Legal Footer with IBAN — single line */}
-        {(data.legalFooter || data.emitter.iban) && (
+        {(data.legalFooter || data.emitter.iban || assuranceHeaderLine) && (
           <div className="invoice-footer-block mt-2 pt-1.5 border-t border-gray-300 text-center" style={{ pageBreakInside: 'avoid' }}>
             {data.legalFooter && <p className="text-[6pt] text-gray-400 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
             {data.emitter.iban && (
@@ -566,6 +599,13 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 {data.emitter.bic && <> — BIC : <span className="font-mono font-semibold">{data.emitter.bic}</span></>}
               </p>
             )}
+            {/* Fixed legal compliance footer — 8pt */}
+            <p className="text-[8pt] text-gray-500 mt-1 leading-snug">
+              {assuranceHeaderLine
+                ? `${assuranceHeaderLine} — Zone : ${assurance?.geographicCoverage || 'France Métropolitaine'}.`
+                : 'Assurance Décennale souscrite pour la zone France Métropolitaine.'}
+              {data.type === 'DEVIS' && ' Validité du devis : 30 jours.'}
+            </p>
           </div>
         )}
 

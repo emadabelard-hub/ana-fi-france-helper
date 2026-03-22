@@ -590,7 +590,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         )}
 
         {/* Auto-generated Legal Footer with IBAN — single line */}
-        {(data.legalFooter || data.emitter.iban) && (
+        {(data.legalFooter || data.emitter.iban || assuranceHeaderLine) && (
           <div className="invoice-footer-block mt-2 pt-1.5 border-t border-gray-300 text-center" style={{ pageBreakInside: 'avoid' }}>
             {data.legalFooter && <p className="text-[6pt] text-gray-400 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
             {data.emitter.iban && (
@@ -599,6 +599,13 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 {data.emitter.bic && <> — BIC : <span className="font-mono font-semibold">{data.emitter.bic}</span></>}
               </p>
             )}
+            {/* Fixed legal compliance footer — 8pt */}
+            <p className="text-[8pt] text-gray-500 mt-1 leading-snug">
+              {assuranceHeaderLine
+                ? `${assuranceHeaderLine} — Zone : ${assurance?.geographicCoverage || 'France Métropolitaine'}.`
+                : 'Assurance Décennale souscrite pour la zone France Métropolitaine.'}
+              {data.type === 'DEVIS' && ' Validité du devis : 30 jours.'}
+            </p>
           </div>
         )}
 

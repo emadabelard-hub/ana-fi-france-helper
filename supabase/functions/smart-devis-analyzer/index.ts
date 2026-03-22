@@ -385,14 +385,18 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { action, imageData, mimeType, conversationHistory, userMessage, preferences, qualityTier } = body;
+    const { action, imageData, mimeType, conversationHistory, userMessage, preferences, qualityTier, projectType } = body;
     const tier = qualityTier || 'standard';
+    const pType = projectType || 'direct';
     const tierLabels: Record<string, string> = {
       standard: 'GAMME STANDARD — matériaux économiques, entrée de gamme, finitions basiques',
       pro: 'GAMME PRO — matériaux de qualité professionnelle, marques reconnues, finitions soignées',
       luxury: 'GAMME LUXURY — matériaux haut de gamme, finitions luxueuses, marques premium',
     };
     const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ: ${tierLabels[tier]}. Adapte tes recommandations de matériaux et tes descriptions à cette gamme.`;
+    const projectTypeInstruction = pType === 'sous_traitance'
+      ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE pour un donneur d'ordres (entreprise générale). Les tarifs doivent être compétitifs avec des marges réduites (-15% à -25% vs client direct). Prix serrés mais rentables.`
+      : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT (particulier ou professionnel). Tarifs normaux du marché avec marges artisan standard.`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("AI service not configured");

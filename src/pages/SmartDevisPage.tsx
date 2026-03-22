@@ -72,6 +72,7 @@ interface ChatMsg {
 type InputType = 'photo' | 'blueprint' | 'document' | null;
 type Step = 'ai_intro' | 'select_input' | 'photo_guide' | 'upload' | 'chat' | 'material_choice' | 'review';
 type QualityTier = 'standard' | 'pro' | 'luxury';
+type ProjectType = 'direct' | 'sous_traitance';
 
 interface SmartDevisWizardSnapshot {
   step: Step;

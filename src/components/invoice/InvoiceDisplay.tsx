@@ -240,12 +240,12 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                   <span className="text-[8pt] font-semibold text-gray-500 ml-1">EI</span>
                 )}
               </h1>
+              <p className="text-[8pt] text-gray-600 font-semibold">SIRET : {data.emitter.siret}</p>
               <p className="text-[8pt] text-gray-600 whitespace-pre-line leading-snug">{data.emitter.address}</p>
-              <p className="text-[8pt] text-gray-600">SIRET : {data.emitter.siret}</p>
               {data.emitter.phone && <p className="text-[8pt] text-gray-600">Tél : {data.emitter.phone}</p>}
               {data.emitter.email && <p className="text-[8pt] text-gray-600">Email : {data.emitter.email}</p>}
-              {data.emitter.decennale && (
-                <p className="text-[8pt] text-gray-600">Assurance Décennale & RC Pro : {data.emitter.decennale}</p>
+              {assuranceHeaderLine && (
+                <p className="text-[8pt] text-gray-600">{assuranceHeaderLine}</p>
               )}
             </div>
             {/* Doc title + number + QR */}

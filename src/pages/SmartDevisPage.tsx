@@ -1740,6 +1740,39 @@ const SmartDevisPage = () => {
               </div>
             </div>
 
+            {/* Project Type Selector */}
+            <div className="space-y-2">
+              <label className={cn("text-sm font-medium text-foreground", isRTL && "font-cairo block text-right")}>
+                {isRTL ? '🏗️ نوع المشروع:' : '🏗️ Type de projet:'}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { value: 'direct' as ProjectType, emoji: '🤝', labelAr: 'زبون مباشر', labelFr: 'Client direct', descAr: 'أسعار السوق العادية', descFr: 'Prix marché standard', border: 'border-primary/50', bg: 'bg-primary/5' },
+                  { value: 'sous_traitance' as ProjectType, emoji: '🏢', labelAr: 'مقاولة باطنة', labelFr: 'Sous-traitance', descAr: 'أسعار تنافسية', descFr: 'Prix compétitifs', border: 'border-orange-500/50', bg: 'bg-orange-500/5' },
+                ]).map(pt => (
+                  <button
+                    key={pt.value}
+                    type="button"
+                    onClick={() => setProjectType(pt.value)}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all",
+                      projectType === pt.value
+                        ? `${pt.border} ${pt.bg} ring-2 ring-offset-1 ring-primary/30 scale-[1.02]`
+                        : "border-border hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <span className="text-2xl">{pt.emoji}</span>
+                    <span className={cn("text-sm font-bold text-foreground", isRTL && "font-cairo")}>
+                      {isRTL ? pt.labelAr : pt.labelFr}
+                    </span>
+                    <span className={cn("text-[10px] text-muted-foreground leading-tight text-center", isRTL && "font-cairo")}>
+                      {isRTL ? pt.descAr : pt.descFr}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Pasted text area */}
             <div className="space-y-2">
               <label className={cn("text-sm font-medium text-muted-foreground", isRTL && "font-cairo block text-right")}>

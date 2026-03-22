@@ -59,14 +59,27 @@ serve(async (req) => {
 - Applique les prix HAUTS des fourchettes (+20-40% au-dessus du standard)`,
     };
 
+    const projectTypeRules: Record<string, string> = {
+      direct: `🏗️ TYPE DE PROJET: CLIENT DIRECT
+- Tarifs normaux du marché pour un client final (particulier ou professionnel)
+- Marges artisan standard incluses`,
+      sous_traitance: `🏗️ TYPE DE PROJET: SOUS-TRAITANCE
+- Ce devis est pour un DONNEUR D'ORDRES (entreprise générale), PAS un client final
+- Applique des tarifs de sous-traitance : prix compétitifs, marges réduites (-15% à -25% par rapport au prix client final)
+- Prix serrés mais rentables, pas de marge de confort`,
+    };
+
     const systemPrompt = `Tu es شبيك لبيك, l'expert métreur/chiffreur BTP qui représente l'Artisan (المعلم). Tu connais parfaitement les prix du marché FRANÇAIS 2024-2025 pour tous les corps de métier du bâtiment. Ton objectif est que les devis soient techniquement parfaits et rentables pour l'artisan.
 ⛔ MARCHÉ FRANÇAIS UNIQUEMENT: Tous les prix sont ceux du marché BTP de FRANCE métropolitaine. Ne JAMAIS référencer le marché égyptien ou tout autre marché étranger.
 
 ${tierPricingRules[tier]}
 
+${projectTypeRules[pType]}
+
 RÈGLES STRICTES :
 - Donne des prix réalistes du marché français (prix artisan, pas prix grand public)
 - ADAPTE les prix à la GAMME DE QUALITÉ choisie ci-dessus
+- ADAPTE les prix au TYPE DE PROJET ci-dessus (sous-traitance = -15 à -25%)
 - Pour "main d'oeuvre seule" : donne UNIQUEMENT le coût de la main d'oeuvre sans matériaux (la main d'œuvre ne change pas selon la gamme)
 - Pour "fourniture et pose" : donne le prix total incluant matériaux + main d'oeuvre (les matériaux varient selon la gamme)
 - Réponds UNIQUEMENT avec un JSON valide, pas de texte avant ni après
@@ -81,7 +94,7 @@ RÈGLES STRICTES :
 
 ✍️ VOCABULAIRE NOBLE : Utilise les termes techniques précis (ex: "Ratissage", "Impression hydrofuge", "Dégrossissage").
 
-Références marché France (indicatif, gamme STANDARD) :
+Références marché France (indicatif, gamme STANDARD, CLIENT DIRECT) :
 - Peinture murs : 22-35€/m² (F+P), 12-18€/m² (MO)
 - Carrelage sol : 40-65€/m² (F+P), 25-45€/m² (MO)
 - Enduit / Ratissage : 15-25€/m² (F+P), 8-14€/m² (MO)
@@ -91,7 +104,8 @@ Références marché France (indicatif, gamme STANDARD) :
 - Démolition mur : 30-60€/m²
 - Impression hydrofuge : 8-15€/m²
 - Dégrossissage : 12-22€/m²
-NOTE: Pour gamme PRO, majorer de +15-25%. Pour gamme LUXURY, majorer de +40-60%.`;
+NOTE: Pour gamme PRO, majorer de +15-25%. Pour gamme LUXURY, majorer de +40-60%.
+NOTE: Pour SOUS-TRAITANCE, réduire de -15% à -25% par rapport au prix client direct.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

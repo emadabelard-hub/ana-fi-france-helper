@@ -89,6 +89,7 @@ interface SmartDevisWizardSnapshot {
   surfaceEstimates: SurfaceEstimate[];
   materialScope: 'fourniture_et_pose' | 'main_oeuvre_seule' | 'partiel' | null;
   qualityTier: QualityTier;
+  projectType: ProjectType;
 }
 
 interface SmartDevisRouteState {

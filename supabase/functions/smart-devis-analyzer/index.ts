@@ -90,8 +90,8 @@ type GeneratedQuoteItem = {
 const PAINT_STACK_GROUPS = ['peinture_murs', 'peinture_plafonds'];
 const BUNDLED_MAX_PRICE: Record<string, Record<string, number>> = {
   standard: { 'm²': 45 },
-  pro:      { 'm²': 55 },
-  luxury:   { 'm²': 60 },
+  pro:      { 'm²': 65 },
+  luxury:   { 'm²': 90 },
 };
 
 function consolidatePaintingItems(
@@ -466,8 +466,8 @@ serve(async (req) => {
     };
     const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ: ${tierLabels[tier]}. Adapte tes recommandations de matériaux et tes descriptions à cette gamme.`;
     const projectTypeInstruction = pType === 'sous_traitance'
-      ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE. Logique: Main d'œuvre seule. Le prix cible = 45-50% du tarif Client Direct. Protection et Nettoyage = masqués ou à 0.00€. Regrouper les étapes techniques en UNE ligne "Main d'œuvre : [Métier] - Pose Seule".`
-      : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Logique: Prix plein (Matériel + Main d'œuvre + Marge 15%). Format "Pack Fourniture & Pose". AUCUN prix à 0€. Barèmes: Électricité ~300€/point, Peinture ~45€/m², Placo ~125€/m², Parquet ~110€/m².`;
+      ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE. Logique: Main d'œuvre seule. Le prix cible = 45-50% du tarif Client Direct PRO. Protection et Nettoyage = masqués ou à 0.00€. Regrouper les étapes techniques en UNE ligne "Main d'œuvre : [Métier] - Pose Seule".`
+      : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Logique: Prix plein (Matériel + Main d'œuvre + Marge 15%). Format "Pack Fourniture & Pose". AUCUN prix à 0€.\nBarèmes 2026 (HT): Peinture ~40-85€/m², Électricité ~180-450€/point, Plomberie ~600-3000€/pack, Placo ~80-160€/m², Sols ~80-220€/m², Ravalement ~60-250€/m², Toiture ~150-550€/m², Maçonnerie ~100-450€/m², Menuiserie ~650-2500€/U, Démolition ~450-1500€/m³.`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("AI service not configured");
@@ -496,10 +496,29 @@ LANGUE:
   2. Traitement: Consolidation et assainissement (anti-salpêtre, rebouchage, ragréage).
   3. Finition: Mise en peinture et finitions soignées.
 
+💰 MATRICE DE PRIX MAÎTRE (HT par unité, Marché Français 2026):
+| Corps d'état | Unité | Standard | PRO | Luxe |
+| Peinture (Murs/Plafonds) | m² | 40€ | 60€ | 85€+ |
+| Électricité (Pack Point) | Point | 180€ | 300€ | 450€+ |
+| Plomberie (Sanitaire) | Pack | 600€ | 1,000€ | 3,000€+ |
+| Maçonnerie / Gros Œuvre | m²/m³ | 100€ | 220€ | 450€+ |
+| Menuiserie (Fenêtres/Portes) | U | 650€ (PVC) | 1,150€ (Alu) | 2,500€+ (Bois) |
+| Placo / Isolation INT | m² | 80€ | 125€ | 160€+ |
+| Sols (Carrelage/Parquet) | m² | 80€ | 130€ | 220€+ |
+| Ravalement (Façade + Échaf.) | m² | 60€ | 120€ | 250€+ |
+| Toiture (Couverture/Zinguerie) | m² | 150€ | 300€ | 550€+ |
+| Démolition (Incl. Gravats) | m³/m | 450€ | 850€ | 1,500€ |
+
+🏗️ INTELLIGENCE PAR CORPS D'ÉTAT:
+- Ravalement: TOUJOURS inclure l'échafaudage dans le prix bundlé.
+- Électricité: Un "Point" DOIT inclure câblage, gaine et l'appareil (Prise/Interrupteur).
+- Maçonnerie: Pour "Mur Porteur", inclure l'IPN et l'étude structurelle dans le prix.
+- Plomberie: "Pack Douche" DOIT inclure receveur, paroi vitrée, mitigeur et étanchéité (SPEC).
+
 💰 INTELLIGENCE DES PRIX:
 - Évalue la complexité réelle (accès, hauteur, état de dégradation) et ajuste les tarifs.
-- RÈGLE PETITES SURFACES: Pour tout chantier de moins de 10 m², applique systématiquement une tarification au forfait ou un prix unitaire plus élevé pour couvrir les frais fixes.
-- FORFAIT MINIMUM: Si le total du devis est inférieur à 1000€ HT pour une rénovation en Client Direct, applique un forfait minimum de 1500€ HT.
+- RÈGLE PETITES SURFACES: Pour tout chantier < 10 m², tarification au forfait ou prix unitaire majoré.
+- FORFAIT MINIMUM: Si total < 1000€ HT en Client Direct → forfait minimum 1500€ HT.
 
 📐 CALIBRATION DIMENSIONNELLE:
 - Surface Plafond = Surface au sol (A).
@@ -510,7 +529,7 @@ LANGUE:
 - INTERDIT de lister les étapes de préparation (Ponçage, Impression, Sous-couche) comme lignes séparées avec prix.
 - Action: Les regrouper dans UNE seule ligne à forte valeur:
   ❌ Mauvais: (Ponçage 5€ + Impression 10€ + Peinture 10€)
-  ✅ Bon: "Prestation complète de Peinture (Préparation + 2 couches)" → 45€/m²
+  ✅ Bon: "Prestation complète de Peinture (Préparation + 2 couches)" → 60€/m² PRO
 
 OBJECTIF:
 Produire un rapport technique complet permettant de comprendre l'état du chantier, identifier les travaux nécessaires, estimer les quantités, estimer la durée et générer un devis professionnel réaliste.
@@ -948,61 +967,78 @@ FORMAT DE RAPPORT:
         const lockedItems = passthroughItems;
         const isSousTraitance = pType === 'sous_traitance';
 
-        // ── PRICING GUARDRAILS (shared) ──
-        const PRICING_RULES_FAST: Array<{
+        // ── PRICING GUARDRAILS (shared) — Ultimate BTP Master Matrix 2026 ──
+        type TieredRuleFast = {
           keywords: string[];
           stackGroup?: string;
           isPrep: boolean;
           isLogistic: boolean;
-          direct: [number, number];
+          standard: [number, number];
+          pro: [number, number];
+          luxury: [number, number];
           sousTrait: [number, number];
-        }> = [
-          // === PEINTURE (bundled ~45€/m² Direct) ===
-          { keywords: ["peinture mur", "peinture murs", "peinture acrylique", "peinture 2 couches", "murale", "prestation complete", "prestation complète"], stackGroup: "peinture_murs", isPrep: false, isLogistic: false, direct: [35, 55], sousTrait: [14, 22] },
-          { keywords: ["plafond", "plafonds", "peinture plafond"], stackGroup: "peinture_plafonds", isPrep: false, isLogistic: false, direct: [38, 58], sousTrait: [16, 24] },
-          { keywords: ["sous-couche", "sous couche", "impression", "primaire", "بريمير", "سوكوش"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [6, 12], sousTrait: [3, 6] },
-          { keywords: ["poncage", "ponçage", "decapage", "décapage", "بونساج", "ديكاباج"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [5, 12], sousTrait: [3, 7] },
-          { keywords: ["ratissage", "enduit", "rebouchage", "lissage", "أندوي"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [12, 22], sousTrait: [6, 12] },
-          { keywords: ["boiserie", "huisserie", "porte", "fenetre", "fenêtre", "volet", "plinthe"], isPrep: false, isLogistic: false, direct: [18, 32], sousTrait: [8, 15] },
-          { keywords: ["hydrofuge", "humidité", "salpetre", "salpêtre"], isPrep: false, isLogistic: false, direct: [8, 16], sousTrait: [4, 9] },
-          // === CARRELAGE ===
-          { keywords: ["carrelage sol", "sol carrelage", "carrelage", "gres", "grès", "كارلاج"], stackGroup: "carrelage_sol", isPrep: false, isLogistic: false, direct: [55, 85], sousTrait: [22, 38] },
-          { keywords: ["faience", "faïence", "carrelage mural", "فايونس"], stackGroup: "faience", isPrep: false, isLogistic: false, direct: [60, 90], sousTrait: [25, 45] },
-          { keywords: ["ragreage", "ragréage", "chape", "nivellement", "راغرياج"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, direct: [10, 30], sousTrait: [6, 18] },
-          { keywords: ["joint", "joints", "jointement"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, direct: [4, 10], sousTrait: [3, 6] },
-          { keywords: ["depose", "dépose", "demolition", "démolition", "piquage", "تكسير"], isPrep: true, isLogistic: false, direct: [12, 40], sousTrait: [8, 25] },
-          // === PLOMBERIE / SANITAIRE ===
-          { keywords: ["wc", "toilette", "lavabo", "vasque", "evier", "douche", "baignoire", "sanitaire", "سباكة"], stackGroup: "sanitaire", isPrep: false, isLogistic: false, direct: [150, 650], sousTrait: [60, 200] },
-          { keywords: ["tuyau", "tuyauterie", "raccord", "alimentation", "evacuation eau"], stackGroup: "sanitaire", isPrep: true, isLogistic: false, direct: [15, 80], sousTrait: [8, 40] },
-          // === ÉLECTRICITÉ (~300€/point Direct) ===
-          { keywords: ["prise", "interrupteur", "point lumineux", "spot", "luminaire", "كهربا", "electricite", "électricité", "point electrique", "point électrique"], stackGroup: "elec_point", isPrep: false, isLogistic: false, direct: [220, 380], sousTrait: [100, 180] },
-          { keywords: ["tableau electrique", "tableau électrique", "disjoncteur"], isPrep: false, isLogistic: false, direct: [350, 1800], sousTrait: [150, 700] },
-          { keywords: ["cable", "câble", "cablage", "câblage", "saignee", "saignée", "goulotte"], stackGroup: "elec_point", isPrep: true, isLogistic: false, direct: [8, 30], sousTrait: [4, 15] },
-          // === PLACO (~125€/m² Direct) ===
-          { keywords: ["placo", "placoplatre", "cloison", "ba13", "doublage"], isPrep: false, isLogistic: false, direct: [95, 155], sousTrait: [40, 70] },
-          { keywords: ["faux plafond", "faux-plafond", "plafond suspendu"], isPrep: false, isLogistic: false, direct: [80, 140], sousTrait: [35, 60] },
-          // === PARQUET (~110€/m² Direct) ===
-          { keywords: ["parquet", "باركيه", "parquet contrecolle", "parquet contrecollé", "parquet flottant", "parquet massif"], isPrep: false, isLogistic: false, direct: [85, 140], sousTrait: [30, 50] },
+        };
+        const PRICING_RULES_FAST: TieredRuleFast[] = [
+          // === PEINTURE (Standard 40€, PRO 60€, Luxe 85€/m²) ===
+          { keywords: ["peinture mur", "peinture murs", "peinture acrylique", "peinture 2 couches", "murale", "prestation complete", "prestation complète"], stackGroup: "peinture_murs", isPrep: false, isLogistic: false, standard: [35, 45], pro: [50, 70], luxury: [75, 95], sousTrait: [22, 32] },
+          { keywords: ["plafond", "plafonds", "peinture plafond"], stackGroup: "peinture_plafonds", isPrep: false, isLogistic: false, standard: [38, 48], pro: [52, 72], luxury: [78, 98], sousTrait: [24, 34] },
+          { keywords: ["sous-couche", "sous couche", "impression", "primaire", "بريمير", "سوكوش"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, standard: [5, 10], pro: [8, 14], luxury: [10, 18], sousTrait: [3, 6] },
+          { keywords: ["poncage", "ponçage", "decapage", "décapage", "بونساج", "ديكاباج"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, standard: [4, 10], pro: [6, 14], luxury: [8, 18], sousTrait: [3, 7] },
+          { keywords: ["ratissage", "enduit", "rebouchage", "lissage", "أندوي"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, standard: [10, 18], pro: [14, 24], luxury: [18, 30], sousTrait: [6, 12] },
+          { keywords: ["boiserie", "huisserie", "porte", "fenetre", "fenêtre", "volet", "plinthe"], isPrep: false, isLogistic: false, standard: [15, 25], pro: [22, 35], luxury: [30, 50], sousTrait: [8, 15] },
+          { keywords: ["hydrofuge", "humidité", "salpetre", "salpêtre"], isPrep: false, isLogistic: false, standard: [6, 12], pro: [10, 18], luxury: [14, 24], sousTrait: [4, 9] },
+          // === CARRELAGE / SOLS (Standard 80€, PRO 130€, Luxe 220€/m²) ===
+          { keywords: ["carrelage sol", "sol carrelage", "carrelage", "gres", "grès", "كارلاج"], stackGroup: "carrelage_sol", isPrep: false, isLogistic: false, standard: [65, 95], pro: [110, 150], luxury: [185, 255], sousTrait: [45, 72] },
+          { keywords: ["faience", "faïence", "carrelage mural", "فايونس"], stackGroup: "faience", isPrep: false, isLogistic: false, standard: [70, 100], pro: [115, 155], luxury: [190, 260], sousTrait: [48, 75] },
+          { keywords: ["ragreage", "ragréage", "chape", "nivellement", "راغرياج"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, standard: [8, 20], pro: [12, 30], luxury: [18, 40], sousTrait: [6, 16] },
+          { keywords: ["joint", "joints", "jointement"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, standard: [3, 8], pro: [5, 12], luxury: [8, 16], sousTrait: [3, 6] },
+          { keywords: ["depose", "dépose", "demolition", "démolition", "piquage", "تكسير"], isPrep: true, isLogistic: false, standard: [10, 30], pro: [18, 45], luxury: [25, 60], sousTrait: [8, 22] },
+          // === PLOMBERIE / SANITAIRE (Standard 600€, PRO 1000€, Luxe 3000€/pack) ===
+          { keywords: ["wc", "toilette", "lavabo", "vasque", "evier", "douche", "baignoire", "sanitaire", "سباكة"], stackGroup: "sanitaire", isPrep: false, isLogistic: false, standard: [450, 750], pro: [800, 1200], luxury: [2200, 3800], sousTrait: [350, 550] },
+          { keywords: ["tuyau", "tuyauterie", "raccord", "alimentation", "evacuation eau"], stackGroup: "sanitaire", isPrep: true, isLogistic: false, standard: [12, 50], pro: [20, 80], luxury: [30, 120], sousTrait: [8, 36] },
+          // === ÉLECTRICITÉ (Standard 180€, PRO 300€, Luxe 450€/point) ===
+          { keywords: ["prise", "interrupteur", "point lumineux", "spot", "luminaire", "كهربا", "electricite", "électricité", "point electrique", "point électrique"], stackGroup: "elec_point", isPrep: false, isLogistic: false, standard: [150, 210], pro: [250, 350], luxury: [380, 520], sousTrait: [110, 160] },
+          { keywords: ["tableau electrique", "tableau électrique", "disjoncteur"], isPrep: false, isLogistic: false, standard: [300, 600], pro: [500, 1200], luxury: [800, 2000], sousTrait: [220, 540] },
+          { keywords: ["cable", "câble", "cablage", "câblage", "saignee", "saignée", "goulotte"], stackGroup: "elec_point", isPrep: true, isLogistic: false, standard: [6, 15], pro: [10, 25], luxury: [15, 35], sousTrait: [4, 12] },
+          // === PLACO / ISOLATION (Standard 80€, PRO 125€, Luxe 160€/m²) ===
+          { keywords: ["placo", "placoplatre", "cloison", "ba13", "doublage"], isPrep: false, isLogistic: false, standard: [65, 95], pro: [105, 145], luxury: [140, 180], sousTrait: [45, 68] },
+          { keywords: ["faux plafond", "faux-plafond", "plafond suspendu"], isPrep: false, isLogistic: false, standard: [60, 90], pro: [100, 140], luxury: [130, 170], sousTrait: [42, 65] },
+          // === PARQUET / SOLS (Standard 80€, PRO 130€, Luxe 220€/m²) ===
+          { keywords: ["parquet", "باركيه", "parquet contrecolle", "parquet contrecollé", "parquet flottant", "parquet massif", "stratifie", "stratifié"], isPrep: false, isLogistic: false, standard: [65, 95], pro: [110, 150], luxury: [185, 255], sousTrait: [45, 72] },
+          // === RAVALEMENT (Standard 60€, PRO 120€, Luxe 250€/m² — inclut échafaudage) ===
+          { keywords: ["ravalement", "facade", "façade", "echafaudage", "échafaudage"], isPrep: false, isLogistic: false, standard: [48, 72], pro: [100, 140], luxury: [210, 290], sousTrait: [42, 66] },
+          // === TOITURE (Standard 150€, PRO 300€, Luxe 550€/m²) ===
+          { keywords: ["toiture", "couverture", "tuile", "ardoise", "zinguerie"], isPrep: false, isLogistic: false, standard: [120, 180], pro: [250, 350], luxury: [460, 640], sousTrait: [110, 160] },
+          // === MAÇONNERIE (Standard 100€, PRO 220€, Luxe 450€/m²) ===
+          { keywords: ["maconnerie", "maçonnerie", "mur porteur", "ipn", "linteau", "chainage", "fondation"], isPrep: false, isLogistic: false, standard: [80, 120], pro: [180, 260], luxury: [380, 520], sousTrait: [80, 120] },
+          // === MENUISERIE (Standard 650€, PRO 1150€, Luxe 2500€/U) ===
+          { keywords: ["menuiserie", "baie vitree", "baie vitrée", "volet roulant"], isPrep: false, isLogistic: false, standard: [500, 800], pro: [950, 1350], luxury: [2000, 3000], sousTrait: [400, 620] },
           // === LOGISTIQUE ===
-          { keywords: ["protection chantier", "protection", "bache", "bâche", "تأمين الموقع"], isPrep: false, isLogistic: true, direct: [3, 8], sousTrait: [0, 0] },
-          { keywords: ["nettoyage", "evacuation", "évacuation", "gravats", "نيتواياج", "نضافة"], isPrep: false, isLogistic: true, direct: [3, 50], sousTrait: [0, 0] },
+          { keywords: ["protection chantier", "protection", "bache", "bâche", "تأمين الموقع"], isPrep: false, isLogistic: true, standard: [3, 8], pro: [3, 8], luxury: [3, 8], sousTrait: [0, 0] },
+          { keywords: ["nettoyage", "evacuation", "évacuation", "gravats", "نيتواياج", "نضافة"], isPrep: false, isLogistic: true, standard: [3, 50], pro: [3, 50], luxury: [3, 50], sousTrait: [0, 0] },
           // === PISCINE ===
-          { keywords: ["peinture piscine", "résine piscine", "epoxy piscine", "إيبوكسي"], isPrep: false, isLogistic: false, direct: [20, 45], sousTrait: [10, 25] },
-          { keywords: ["nettoyage haute pression", "nettoyage hp", "غسلة صاروخ"], isPrep: false, isLogistic: false, direct: [5, 15], sousTrait: [3, 10] },
+          { keywords: ["peinture piscine", "résine piscine", "epoxy piscine", "إيبوكسي"], isPrep: false, isLogistic: false, standard: [20, 35], pro: [30, 50], luxury: [45, 70], sousTrait: [10, 25] },
+          { keywords: ["nettoyage haute pression", "nettoyage hp", "غسلة صاروخ"], isPrep: false, isLogistic: false, standard: [5, 12], pro: [8, 18], luxury: [12, 25], sousTrait: [3, 10] },
         ];
 
-        const QUALITY_PROFILES_FAST: Record<string, { materialFactor: number; targetRatio: number }> = {
-          standard: { materialFactor: 1.0, targetRatio: 0.35 },
-          pro: { materialFactor: 1.15, targetRatio: 0.45 },
-          luxury: { materialFactor: 1.35, targetRatio: 0.55 },
+        const QUALITY_PROFILES_FAST: Record<string, { targetRatio: number }> = {
+          standard: { targetRatio: 0.50 },
+          pro: { targetRatio: 0.50 },
+          luxury: { targetRatio: 0.50 },
         };
 
         function normFast(v: string): string { return v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
         function incAnyFast(text: string, kws: string[]): boolean { return kws.some(kw => text.includes(normFast(kw))); }
-        function detectRuleFast(item: any): any {
+        function detectRuleFast(item: any): TieredRuleFast | null {
           const text = normFast(`${item.designation_fr || ''} ${item.designation_ar || ''}`);
           for (const rule of PRICING_RULES_FAST) { if (incAnyFast(text, rule.keywords)) return rule; }
           return null;
+        }
+        function getTierBandFast(rule: TieredRuleFast, currentTier: string, isST: boolean): [number, number] {
+          if (isST) return rule.sousTrait;
+          if (currentTier === 'luxury') return rule.luxury;
+          if (currentTier === 'pro') return rule.pro;
+          return rule.standard;
         }
         function getVolFast(q: number): number {
           if (q >= 200) return 0.85; if (q >= 100) return 0.90; if (q >= 50) return 0.95;
@@ -1041,9 +1077,7 @@ FORMAT DE RAPPORT:
           const rule = detectRuleFast(item);
           if (rule?.isLogistic && isSousTraitance) return { ...item, unitPrice: 0, btpPriceSource: "shubbaik_lubbaik_inline" };
 
-          let [bMin, bMax] = rule ? (isSousTraitance ? rule.sousTrait : rule.direct) : fallbackBandFast(item.unit || 'Ens', isSousTraitance);
-          const matF = isSousTraitance ? 1.0 : qpFast.materialFactor;
-          bMin *= matF; bMax *= matF;
+          let [bMin, bMax] = rule ? getTierBandFast(rule, tier, isSousTraitance) : fallbackBandFast(item.unit || 'Ens', isSousTraitance);
           const qty = typeof item.quantity === 'number' ? item.quantity : 1;
           const vF = getVolFast(qty);
           bMin *= vF; bMax *= vF;
@@ -1180,9 +1214,14 @@ ${projectTypeInstruction}
   2. Traitement: Consolidation et assainissement (anti-salpêtre, rebouchage).
   3. Finition: Mise en peinture et finitions soignées.
 
-💰 INTELLIGENCE DES PRIX:
-- Ajuste les tarifs selon la difficulté réelle (accès, hauteur, état de dégradation).
-- RÈGLE PETITES SURFACES: Pour tout chantier < 10 m², applique une tarification au forfait ou un prix unitaire plus élevé pour couvrir les frais fixes.
+💰 MATRICE DE PRIX MAÎTRE 2026 (HT):
+Peinture ~40-85€/m², Électricité ~180-450€/point, Plomberie ~600-3000€/pack,
+Placo ~80-160€/m², Sols ~80-220€/m², Ravalement ~60-250€/m², Toiture ~150-550€/m²,
+Maçonnerie ~100-450€/m², Menuiserie ~650-2500€/U, Démolition ~450-1500€/m³.
+- Ravalement: TOUJOURS inclure échafaudage. Électricité: "Point" = câblage+gaine+appareil.
+- Maçonnerie "Mur Porteur": inclure IPN. Plomberie "Pack Douche": inclure receveur+paroi+mitigeur+SPEC.
+- Ajuste selon difficulté (accès, hauteur, dégradation).
+- RÈGLE PETITES SURFACES: Chantier < 10 m² → forfait ou prix majoré.
 
 ✍️ VOCABULAIRE NOBLE: Utilise les termes techniques précis du bâtiment (ex: "Ratissage", "Impression hydrofuge", "Dégrossissage"). Libellé direct, clair et professionnel.
 ${scopeRule}
@@ -1535,7 +1574,7 @@ Réponds UNIQUEMENT en JSON:
         : [];
 
       // ═══════════════════════════════════════
-      //   PRICING GUARDRAILS — شبيك لبيك inline pricing
+      //   PRICING GUARDRAILS — Ultimate BTP Master Matrix 2026
       // ═══════════════════════════════════════
 
       type PricingTradeRule = {
@@ -1543,49 +1582,59 @@ Réponds UNIQUEMENT en JSON:
         stackGroup?: string;
         isPrep: boolean;
         isLogistic: boolean;
-        direct: [number, number];
+        standard: [number, number];
+        pro: [number, number];
+        luxury: [number, number];
         sousTrait: [number, number];
       };
 
       const PRICING_RULES: PricingTradeRule[] = [
-        // === PEINTURE (bundled: prep absorbed into main line price) ===
-        { keywords: ["peinture mur", "peinture murs", "peinture acrylique", "peinture 2 couches", "murale", "prestation complete de peinture", "prestation complète de peinture"], stackGroup: "peinture_murs", isPrep: false, isLogistic: false, direct: [35, 55], sousTrait: [14, 22] },
-        { keywords: ["plafond", "plafonds", "peinture plafond"], stackGroup: "peinture_plafonds", isPrep: false, isLogistic: false, direct: [38, 58], sousTrait: [16, 24] },
-        { keywords: ["sous-couche", "sous couche", "impression", "primaire", "بريمير", "سوكوش"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [6, 12], sousTrait: [3, 6] },
-        { keywords: ["poncage", "ponçage", "decapage", "décapage", "décollage", "بونساج", "ديكاباج"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [5, 12], sousTrait: [3, 7] },
-        { keywords: ["ratissage", "enduit", "rebouchage", "lissage", "أندوي"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, direct: [12, 22], sousTrait: [6, 12] },
-        { keywords: ["boiserie", "huisserie", "porte", "fenetre", "fenêtre", "volet", "plinthe"], isPrep: false, isLogistic: false, direct: [18, 32], sousTrait: [8, 15] },
-        { keywords: ["hydrofuge", "humidité", "salpetre", "salpêtre"], isPrep: false, isLogistic: false, direct: [8, 16], sousTrait: [4, 9] },
-        // === CARRELAGE ===
-        { keywords: ["carrelage sol", "sol carrelage", "carrelage", "gres", "grès", "كارلاج"], stackGroup: "carrelage_sol", isPrep: false, isLogistic: false, direct: [55, 85], sousTrait: [22, 38] },
-        { keywords: ["faience", "faïence", "carrelage mural", "فايونس"], stackGroup: "faience", isPrep: false, isLogistic: false, direct: [60, 90], sousTrait: [25, 45] },
-        { keywords: ["ragreage", "ragréage", "chape", "nivellement", "راغرياج"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, direct: [10, 30], sousTrait: [6, 18] },
-        { keywords: ["joint", "joints", "jointement"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, direct: [4, 10], sousTrait: [3, 6] },
-        { keywords: ["depose", "dépose", "demolition", "démolition", "piquage", "تكسير"], isPrep: true, isLogistic: false, direct: [12, 40], sousTrait: [8, 25] },
-        // === PLOMBERIE / SANITAIRE ===
-        { keywords: ["wc", "toilette", "lavabo", "vasque", "evier", "douche", "baignoire", "sanitaire", "سباكة"], stackGroup: "sanitaire", isPrep: false, isLogistic: false, direct: [150, 650], sousTrait: [60, 200] },
-        { keywords: ["tuyau", "tuyauterie", "raccord", "alimentation", "evacuation eau"], stackGroup: "sanitaire", isPrep: true, isLogistic: false, direct: [15, 80], sousTrait: [8, 40] },
-        // === ÉLECTRICITÉ (~300€/point Direct) ===
-        { keywords: ["prise", "interrupteur", "point lumineux", "spot", "luminaire", "كهربا", "electricite", "électricité", "point electrique", "point électrique"], stackGroup: "elec_point", isPrep: false, isLogistic: false, direct: [220, 380], sousTrait: [100, 180] },
-        { keywords: ["tableau electrique", "tableau électrique", "disjoncteur"], isPrep: false, isLogistic: false, direct: [350, 1800], sousTrait: [150, 700] },
-        { keywords: ["cable", "câble", "cablage", "câblage", "saignee", "saignée", "goulotte"], stackGroup: "elec_point", isPrep: true, isLogistic: false, direct: [8, 30], sousTrait: [4, 15] },
-        // === PLACO (~125€/m² Direct) ===
-        { keywords: ["placo", "placoplatre", "cloison", "ba13", "doublage"], isPrep: false, isLogistic: false, direct: [95, 155], sousTrait: [40, 70] },
-        { keywords: ["faux plafond", "faux-plafond", "plafond suspendu"], isPrep: false, isLogistic: false, direct: [80, 140], sousTrait: [35, 60] },
-        // === PARQUET (~110€/m² Direct) ===
-        { keywords: ["parquet", "باركيه", "parquet contrecolle", "parquet contrecollé", "parquet flottant", "parquet massif"], isPrep: false, isLogistic: false, direct: [85, 140], sousTrait: [30, 50] },
+        // === PEINTURE (Standard 40€, PRO 60€, Luxe 85€/m²) ===
+        { keywords: ["peinture mur", "peinture murs", "peinture acrylique", "peinture 2 couches", "murale", "prestation complete de peinture", "prestation complète de peinture"], stackGroup: "peinture_murs", isPrep: false, isLogistic: false, standard: [35, 45], pro: [50, 70], luxury: [75, 95], sousTrait: [22, 32] },
+        { keywords: ["plafond", "plafonds", "peinture plafond"], stackGroup: "peinture_plafonds", isPrep: false, isLogistic: false, standard: [38, 48], pro: [52, 72], luxury: [78, 98], sousTrait: [24, 34] },
+        { keywords: ["sous-couche", "sous couche", "impression", "primaire", "بريمير", "سوكوش"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, standard: [5, 10], pro: [8, 14], luxury: [10, 18], sousTrait: [3, 6] },
+        { keywords: ["poncage", "ponçage", "decapage", "décapage", "décollage", "بونساج", "ديكاباج"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, standard: [4, 10], pro: [6, 14], luxury: [8, 18], sousTrait: [3, 7] },
+        { keywords: ["ratissage", "enduit", "rebouchage", "lissage", "أندوي"], stackGroup: "peinture_murs", isPrep: true, isLogistic: false, standard: [10, 18], pro: [14, 24], luxury: [18, 30], sousTrait: [6, 12] },
+        { keywords: ["boiserie", "huisserie", "porte", "fenetre", "fenêtre", "volet", "plinthe"], isPrep: false, isLogistic: false, standard: [15, 25], pro: [22, 35], luxury: [30, 50], sousTrait: [8, 15] },
+        { keywords: ["hydrofuge", "humidité", "salpetre", "salpêtre"], isPrep: false, isLogistic: false, standard: [6, 12], pro: [10, 18], luxury: [14, 24], sousTrait: [4, 9] },
+        // === CARRELAGE / SOLS (Standard 80€, PRO 130€, Luxe 220€/m²) ===
+        { keywords: ["carrelage sol", "sol carrelage", "carrelage", "gres", "grès", "كارلاج"], stackGroup: "carrelage_sol", isPrep: false, isLogistic: false, standard: [65, 95], pro: [110, 150], luxury: [185, 255], sousTrait: [45, 72] },
+        { keywords: ["faience", "faïence", "carrelage mural", "فايونس"], stackGroup: "faience", isPrep: false, isLogistic: false, standard: [70, 100], pro: [115, 155], luxury: [190, 260], sousTrait: [48, 75] },
+        { keywords: ["ragreage", "ragréage", "chape", "nivellement", "راغرياج"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, standard: [8, 20], pro: [12, 30], luxury: [18, 40], sousTrait: [6, 16] },
+        { keywords: ["joint", "joints", "jointement"], stackGroup: "carrelage_sol", isPrep: true, isLogistic: false, standard: [3, 8], pro: [5, 12], luxury: [8, 16], sousTrait: [3, 6] },
+        { keywords: ["depose", "dépose", "demolition", "démolition", "piquage", "تكسير"], isPrep: true, isLogistic: false, standard: [10, 30], pro: [18, 45], luxury: [25, 60], sousTrait: [8, 22] },
+        // === PLOMBERIE / SANITAIRE (Standard 600€, PRO 1000€, Luxe 3000€/pack) ===
+        { keywords: ["wc", "toilette", "lavabo", "vasque", "evier", "douche", "baignoire", "sanitaire", "سباكة"], stackGroup: "sanitaire", isPrep: false, isLogistic: false, standard: [450, 750], pro: [800, 1200], luxury: [2200, 3800], sousTrait: [350, 550] },
+        { keywords: ["tuyau", "tuyauterie", "raccord", "alimentation", "evacuation eau"], stackGroup: "sanitaire", isPrep: true, isLogistic: false, standard: [12, 50], pro: [20, 80], luxury: [30, 120], sousTrait: [8, 36] },
+        // === ÉLECTRICITÉ (Standard 180€, PRO 300€, Luxe 450€/point) ===
+        { keywords: ["prise", "interrupteur", "point lumineux", "spot", "luminaire", "كهربا", "electricite", "électricité", "point electrique", "point électrique"], stackGroup: "elec_point", isPrep: false, isLogistic: false, standard: [150, 210], pro: [250, 350], luxury: [380, 520], sousTrait: [110, 160] },
+        { keywords: ["tableau electrique", "tableau électrique", "disjoncteur"], isPrep: false, isLogistic: false, standard: [300, 600], pro: [500, 1200], luxury: [800, 2000], sousTrait: [220, 540] },
+        { keywords: ["cable", "câble", "cablage", "câblage", "saignee", "saignée", "goulotte"], stackGroup: "elec_point", isPrep: true, isLogistic: false, standard: [6, 15], pro: [10, 25], luxury: [15, 35], sousTrait: [4, 12] },
+        // === PLACO / ISOLATION (Standard 80€, PRO 125€, Luxe 160€/m²) ===
+        { keywords: ["placo", "placoplatre", "cloison", "ba13", "doublage"], isPrep: false, isLogistic: false, standard: [65, 95], pro: [105, 145], luxury: [140, 180], sousTrait: [45, 68] },
+        { keywords: ["faux plafond", "faux-plafond", "plafond suspendu"], isPrep: false, isLogistic: false, standard: [60, 90], pro: [100, 140], luxury: [130, 170], sousTrait: [42, 65] },
+        // === PARQUET / SOLS (Standard 80€, PRO 130€, Luxe 220€/m²) ===
+        { keywords: ["parquet", "باركيه", "parquet contrecolle", "parquet contrecollé", "parquet flottant", "parquet massif", "stratifie", "stratifié"], isPrep: false, isLogistic: false, standard: [65, 95], pro: [110, 150], luxury: [185, 255], sousTrait: [45, 72] },
+        // === RAVALEMENT (Standard 60€, PRO 120€, Luxe 250€/m² — inclut échafaudage) ===
+        { keywords: ["ravalement", "facade", "façade", "echafaudage", "échafaudage"], isPrep: false, isLogistic: false, standard: [48, 72], pro: [100, 140], luxury: [210, 290], sousTrait: [42, 66] },
+        // === TOITURE (Standard 150€, PRO 300€, Luxe 550€/m²) ===
+        { keywords: ["toiture", "couverture", "tuile", "ardoise", "zinguerie"], isPrep: false, isLogistic: false, standard: [120, 180], pro: [250, 350], luxury: [460, 640], sousTrait: [110, 160] },
+        // === MAÇONNERIE (Standard 100€, PRO 220€, Luxe 450€/m²) ===
+        { keywords: ["maconnerie", "maçonnerie", "mur porteur", "ipn", "linteau", "chainage", "fondation"], isPrep: false, isLogistic: false, standard: [80, 120], pro: [180, 260], luxury: [380, 520], sousTrait: [80, 120] },
+        // === MENUISERIE (Standard 650€, PRO 1150€, Luxe 2500€/U) ===
+        { keywords: ["menuiserie", "baie vitree", "baie vitrée", "volet roulant"], isPrep: false, isLogistic: false, standard: [500, 800], pro: [950, 1350], luxury: [2000, 3000], sousTrait: [400, 620] },
         // === LOGISTIQUE ===
-        { keywords: ["protection chantier", "protection", "bache", "bâche", "تأمين الموقع"], isPrep: false, isLogistic: true, direct: [3, 8], sousTrait: [0, 0] },
-        { keywords: ["nettoyage", "evacuation", "évacuation", "gravats", "نيتواياج", "نضافة"], isPrep: false, isLogistic: true, direct: [3, 50], sousTrait: [0, 0] },
+        { keywords: ["protection chantier", "protection", "bache", "bâche", "تأمين الموقع"], isPrep: false, isLogistic: true, standard: [3, 8], pro: [3, 8], luxury: [3, 8], sousTrait: [0, 0] },
+        { keywords: ["nettoyage", "evacuation", "évacuation", "gravats", "نيتواياج", "نضافة"], isPrep: false, isLogistic: true, standard: [3, 50], pro: [3, 50], luxury: [3, 50], sousTrait: [0, 0] },
         // === PISCINE ===
-        { keywords: ["peinture piscine", "résine piscine", "epoxy piscine", "إيبوكسي"], isPrep: false, isLogistic: false, direct: [20, 45], sousTrait: [10, 25] },
-        { keywords: ["nettoyage haute pression", "nettoyage hp", "غسلة صاروخ"], isPrep: false, isLogistic: false, direct: [5, 15], sousTrait: [3, 10] },
+        { keywords: ["peinture piscine", "résine piscine", "epoxy piscine", "إيبوكسي"], isPrep: false, isLogistic: false, standard: [20, 35], pro: [30, 50], luxury: [45, 70], sousTrait: [10, 25] },
+        { keywords: ["nettoyage haute pression", "nettoyage hp", "غسلة صاروخ"], isPrep: false, isLogistic: false, standard: [5, 12], pro: [8, 18], luxury: [12, 25], sousTrait: [3, 10] },
       ];
 
-      const QUALITY_PROFILES: Record<string, { materialFactor: number; targetRatio: number }> = {
-        standard: { materialFactor: 1.0, targetRatio: 0.35 },
-        pro: { materialFactor: 1.15, targetRatio: 0.45 },
-        luxury: { materialFactor: 1.35, targetRatio: 0.55 },
+      const QUALITY_PROFILES: Record<string, { targetRatio: number }> = {
+        standard: { targetRatio: 0.50 },
+        pro: { targetRatio: 0.50 },
+        luxury: { targetRatio: 0.50 },
       };
 
       function normalizeForPricing(value: string): string {
@@ -1642,14 +1691,18 @@ Réponds UNIQUEMENT en JSON:
         return isST ? [10, 50] : [25, 90];
       }
 
-      function computeGuardrailedPrice(item: GeneratedQuoteItem, aiPrice: number, isST: boolean, qualityProfileRef: { materialFactor: number; targetRatio: number }, itemCount: number): number {
+      function getTierBandMain(rule: PricingTradeRule, currentTier: string, isST: boolean): [number, number] {
+        if (isST) return rule.sousTrait;
+        if (currentTier === 'luxury') return rule.luxury;
+        if (currentTier === 'pro') return rule.pro;
+        return rule.standard;
+      }
+
+      function computeGuardrailedPrice(item: GeneratedQuoteItem, aiPrice: number, isST: boolean, qualityProfileRef: { targetRatio: number }, itemCount: number): number {
         const rule = detectPricingRule(item);
         if (rule?.isLogistic && isST) return 0;
 
-        let [baseMin, baseMax] = rule ? (isST ? rule.sousTrait : rule.direct) : getFallbackBandForUnit(item.unit || 'Ens', isST);
-        const matFactor = isST ? 1.0 : qualityProfileRef.materialFactor;
-        baseMin *= matFactor;
-        baseMax *= matFactor;
+        let [baseMin, baseMax] = rule ? getTierBandMain(rule, tier, isST) : getFallbackBandForUnit(item.unit || 'Ens', isST);
 
         const qty = typeof item.quantity === 'number' ? item.quantity : 1;
         const volFactor = getVolumeFactor(qty);

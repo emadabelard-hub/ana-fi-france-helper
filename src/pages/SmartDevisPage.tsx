@@ -993,19 +993,24 @@ const SmartDevisPage = () => {
           designation_ar: finalAr,
           quantity,
           unit: aiUnit,
-          unitPrice: 0,
-          total: 0,
+          unitPrice: typeof item.unitPrice === 'number' && item.unitPrice > 0 ? item.unitPrice : 0,
+          total: (typeof item.unitPrice === 'number' && item.unitPrice > 0 ? item.unitPrice : 0) * quantity,
           category: item.category,
           catalogCode: typeof item.code === 'string' ? item.code.trim().toUpperCase() : undefined,
           withMaterial,
-          isAiEstimate: false,
+          isAiEstimate: typeof item.unitPrice === 'number' && item.unitPrice > 0,
         };
       });
+
+      // Store devis_subject_fr from AI if available
+      if (data.devis_subject_fr) {
+        setAnalysisData((prev: any) => prev ? { ...prev, devis_subject_fr: data.devis_subject_fr } : prev);
+      }
 
       setLineItems(items);
       setStep('review');
 
-      // STRICT PRICING CONTROL: No auto-fill. Prices stay at 0 until user clicks ✨ button.
+      // Prices are now pre-filled by شبيك لبيك inline — no need to wait for ✨ button
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'خطأ في التوليد', description: err.message });
     } finally {

@@ -1214,9 +1214,14 @@ ${projectTypeInstruction}
   2. Traitement: Consolidation et assainissement (anti-salpêtre, rebouchage).
   3. Finition: Mise en peinture et finitions soignées.
 
-💰 INTELLIGENCE DES PRIX:
-- Ajuste les tarifs selon la difficulté réelle (accès, hauteur, état de dégradation).
-- RÈGLE PETITES SURFACES: Pour tout chantier < 10 m², applique une tarification au forfait ou un prix unitaire plus élevé pour couvrir les frais fixes.
+💰 MATRICE DE PRIX MAÎTRE 2026 (HT):
+Peinture ~40-85€/m², Électricité ~180-450€/point, Plomberie ~600-3000€/pack,
+Placo ~80-160€/m², Sols ~80-220€/m², Ravalement ~60-250€/m², Toiture ~150-550€/m²,
+Maçonnerie ~100-450€/m², Menuiserie ~650-2500€/U, Démolition ~450-1500€/m³.
+- Ravalement: TOUJOURS inclure échafaudage. Électricité: "Point" = câblage+gaine+appareil.
+- Maçonnerie "Mur Porteur": inclure IPN. Plomberie "Pack Douche": inclure receveur+paroi+mitigeur+SPEC.
+- Ajuste selon difficulté (accès, hauteur, dégradation).
+- RÈGLE PETITES SURFACES: Chantier < 10 m² → forfait ou prix majoré.
 
 ✍️ VOCABULAIRE NOBLE: Utilise les termes techniques précis du bâtiment (ex: "Ratissage", "Impression hydrofuge", "Dégrossissage"). Libellé direct, clair et professionnel.
 ${scopeRule}

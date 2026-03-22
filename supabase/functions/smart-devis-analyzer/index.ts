@@ -1044,16 +1044,74 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
 ⛔ RÈGLE PEINTURE SYSTÉMATIQUE : Si le work_plan contient une étape de peinture/finition,
   tu DOIS TOUJOURS inclure la ligne de peinture finale. Pour piscine: PIS03 (résine piscine).
   Pour murs: PNT02 (22€/m²). Ne JAMAIS omettre cette ligne.
-⛔ RÈGLE PRIX: Les prix sont déterminés UNIQUEMENT par شبيك لبيك (prix du marché français).
-   NE JAMAIS inventer de prix. Mets unitPrice = 0. L'utilisateur déclenche la tarification via le bouton ✨.
 
 ═══════════════════════════════════════
-  RÈGLE PRIX
+  RÈGLE PRIX — شبيك لبيك CHIFFRE DIRECTEMENT
 ═══════════════════════════════════════
 
-⛔ NE JAMAIS inventer de prix. Mets unitPrice = 0 pour TOUTES les lignes.
-✅ PAS DE LIMITE DE LIGNES. Chaque étape du work_plan = une ligne dédiée.
-Les prix seront remplis depuis la base de données interne.
+✅ Tu es شبيك لبيك, tu CHIFFRES chaque ligne avec un unitPrice réaliste du marché BTP français 2024-2025.
+✅ Le prix doit refléter le TYPE DE CONTRAT et la GAMME DE QUALITÉ.
+✅ NE JAMAIS mettre unitPrice = 0. Chaque ligne doit avoir un prix > 0.
+
+BARÈMES FRANCE 2024-2025:
+${pType === 'sous_traitance' ? `
+SOUS-TRAITANCE (Main d'œuvre seule):
+- Peinture murs MO: 8-14€/m²
+- Peinture plafonds MO: 10-16€/m²
+- Sous-couche/impression MO: 3-6€/m²
+- Ponçage/décapage MO: 3-7€/m²
+- Ratissage/enduit MO: 6-12€/m²
+- Carrelage sol MO: 18-35€/m²
+- Faïence MO: 20-40€/m²
+- Ragréage MO: 6-18€/m²
+- Électricité point MO: 25-80€/u
+- Plomberie sanitaire MO: 50-180€/u
+- Placo/cloison MO: 15-30€/m²
+- Dépose MO: 8-25€/m²
+- Protection/Nettoyage: 0€ (supprimé en sous-traitance)
+` : `
+CLIENT DIRECT (Fourniture + Pose):
+- Peinture murs F+P: 22-35€/m²
+- Peinture plafonds F+P: 25-38€/m²
+- Sous-couche/impression F+P: 6-12€/m²
+- Ponçage/décapage F+P: 5-12€/m²
+- Ratissage/enduit F+P: 12-22€/m²
+- Carrelage sol F+P: 40-65€/m²
+- Faïence F+P: 45-75€/m²
+- Ragréage F+P: 10-30€/m²
+- Électricité point F+P: 60-180€/u
+- Plomberie sanitaire F+P: 120-600€/u
+- Placo/cloison F+P: 35-65€/m²
+- Dépose: 12-40€/m²
+- Protection: 3-8€/m²
+- Nettoyage: 3-15€/m²
+`}
+
+GAMME: ${tier.toUpperCase()}
+${tier === 'standard' ? 'Base compétitive. Viser le bas de la fourchette.' : ''}
+${tier === 'pro' ? 'Matériaux qualité pro. Viser le milieu de la fourchette (+15%).' : ''}
+${tier === 'luxury' ? 'Matériaux haut de gamme. Viser le haut de la fourchette (+35%).' : ''}
+
+ANTI-STACKING: Si peinture + ponçage + sous-couche → le prix peinture INCLUT la prépa. Les lignes prépa = prix très bas (3-5€/m²) ou 0€.
+Même logique: carrelage + ragréage + joints = 1 pack. Électricité + câblage = 1 pack.
+
+VOLUME: > 100 unités = -10%. > 200 = -15%. < 10m² = +18%.
+DIFFICULTÉ: Hauteur/échafaudage/accès difficile = +10-15%.
+
+═══════════════════════════════════════
+  OBJET DU DEVIS (OBLIGATOIRE)
+═══════════════════════════════════════
+
+Tu DOIS générer un champ "devis_subject_fr" décrivant l'objet du devis de manière claire et professionnelle.
+Exemples:
+- "Travaux de peinture — Appartement 3 pièces, 75m²"
+- "Rénovation salle de bain — Dépose, carrelage et plomberie"
+- "Ravalement de façade — Nettoyage HP et peinture, 120m²"
+- "Peinture piscine — Décapage et application résine époxy bleue, 146m²"
+
+Le sujet doit inclure: le type de travaux, le lieu/pièce si connu, et la surface totale estimée.
+
+═══════════════════════════════════════
 
 ⛔ RÈGLE CODE CATALOGUE:
 - UNE TÂCHE = UNE LIGNE = UN CODE.
@@ -1072,17 +1130,19 @@ Avant de finaliser, vérifier:
 ✅ La couleur de finition est reprise dans la designation_fr
 ✅ Aucun travail incompatible (ex: "peinture murs" pour un chantier piscine)
 ✅ Chaque designation_ar est en argot artisan égyptien, PAS en arabe littéraire
+✅ Chaque unitPrice est > 0 et réaliste pour le marché français
 Si correction nécessaire → l'appliquer AVANT de générer le JSON.
 
 Réponds UNIQUEMENT en JSON:
 {
+  "devis_subject_fr": "Objet du devis clair et professionnel",
   "items": [
     {
       "designation_fr": "Titre professionnel (avec couleur si applicable)",
       "designation_ar": "ترجمة بالعامية المصرية (argot artisan)",
       "quantity": 0,
       "unit": "m²|ml|u|h|Ens",
-      "unitPrice": 0,
+      "unitPrice": 28,
       "code": "CODE catalogue métier"
     }
   ],
@@ -1098,7 +1158,6 @@ Réponds UNIQUEMENT en JSON:
   },
   "summary": {}
 }`;
-
       // Build messages with conversation history for user additions
       const aiMessages: any[] = [
         { role: "system", content: systemPrompt },

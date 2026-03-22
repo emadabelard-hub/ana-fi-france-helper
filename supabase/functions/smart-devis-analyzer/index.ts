@@ -1662,14 +1662,55 @@ Réponds UNIQUEMENT en JSON:
         });
       }
 
-      const devisSubject = typeof parsed?.devis_subject_fr === 'string' && parsed.devis_subject_fr.trim()
+      // ═══════════════════════════════════════
+      //   DYNAMIC SUBJECT — "Devis : [Trade] - [Total m²]"
+      // ═══════════════════════════════════════
+      const TRADE_SUBJECT_MAP_MAIN: Record<string, string> = {
+        peinture: 'Peinture', piscine: 'Rénovation piscine', facade: 'Ravalement de façade',
+        carrelage: 'Carrelage', electricite: 'Mise aux normes électriques', électricité: 'Mise aux normes électriques',
+        plomberie: 'Plomberie', maconnerie: 'Maçonnerie', toiture: 'Toiture',
+        isolation: 'Isolation', renovation: 'Rénovation', mur: 'Peinture intérieure',
+        salle_de_bain: 'Rénovation salle de bain', parquet: 'Pose de parquet', placo: 'Cloisons et doublage',
+      };
+
+      // Use AI-generated subject if available, otherwise build from highest-priced item
+      let devisSubject = typeof parsed?.devis_subject_fr === 'string' && parsed.devis_subject_fr.trim()
         ? parsed.devis_subject_fr.trim()
         : null;
 
-      parsed = {
-        ...parsed,
-        items: sortedItems,
-        devis_subject_fr: devisSubject,
+      if (!devisSubject) {
+        let maxItemTotal = 0;
+        let dominantTradeMain = analysisData?.chantierType || 'rénovation';
+        sortedItems.forEach((item: any) => {
+          const itemT = (item.unitPrice || 0) * (item.quantity || 1);
+          if (itemT > maxItemTotal) {
+            maxItemTotal = itemT;
+            const desig = (item.designation_fr || '').toLowerCase();
+            for (const key of Object.keys(TRADE_SUBJECT_MAP_MAIN)) {
+              if (desig.includes(key)) { dominantTradeMain = key; break; }
+            }
+          }
+        });
+        const tradeLabelMain = TRADE_SUBJECT_MAP_MAIN[dominantTradeMain] || dominantTradeMain.charAt(0).toUpperCase() + dominantTradeMain.slice(1);
+        const areaMain = analysisData?.estimatedArea || "";
+        const areaStrMain = areaMain ? ` - ${areaMain} m²` : '';
+        devisSubject = `Devis : ${tradeLabelMain}${areaStrMain}`;
+      }
+
+      // ═══════════════════════════════════════
+      //   MINIMUM FORFAIT — 1500€ for Direct Client
+      // ═══════════════════════════════════════
+      if (!isSousTraitance) {
+        const totalHTMain = sortedItems.reduce((sum: number, it: any) => sum + (it.unitPrice || 0) * (it.quantity || 1), 0);
+        if (totalHTMain > 0 && totalHTMain < 1500) {
+          const scaleFactorMain = 1500 / totalHTMain;
+          sortedItems.forEach((item: any) => {
+            if (item.unitPrice > 0) {
+              item.unitPrice = Math.round(item.unitPrice * scaleFactorMain);
+            }
+          });
+        }
+      }
         verification: {
           ...existingVerification,
           work_plan_lock: true,

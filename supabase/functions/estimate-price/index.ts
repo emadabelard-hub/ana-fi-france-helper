@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { items, qualityTier } = await req.json() as {
+    const { items, qualityTier, projectType } = await req.json() as {
       items: Array<{
         id: string;
         designation_fr: string;
@@ -19,6 +19,7 @@ serve(async (req) => {
         laborOnly: boolean;
       }>;
       qualityTier?: 'standard' | 'pro' | 'luxury';
+      projectType?: 'direct' | 'sous_traitance';
     };
 
     if (!items || items.length === 0) {

@@ -970,7 +970,7 @@ FORMAT DE RAPPORT:
           return { ...item, unitPrice: Math.round(target), btpPriceSource: "shubbaik_lubbaik_inline" };
         });
 
-        // Anti-stacking
+        // Anti-stacking: Direct Client = keep bundled low price (never 0), Sous-traitance = zero out prep
         const stackMapFast = new Map<string, { hasMain: boolean; prepIndices: number[] }>();
         pricedFast.forEach((item: any, idx: number) => {
           const rule = detectRuleFast(item);
@@ -982,7 +982,12 @@ FORMAT DE RAPPORT:
         });
         for (const [, entry] of stackMapFast) {
           if (!entry.hasMain) continue;
-          for (const idx of entry.prepIndices) { pricedFast[idx].unitPrice = 0; }
+          for (const idx of entry.prepIndices) {
+            if (isSousTraitance) {
+              pricedFast[idx].unitPrice = 0;
+            }
+            // Direct Client: prep is BUNDLED into main item price — keep existing price, no zeroing
+          }
         }
 
         // Nettoyage cap
@@ -1196,7 +1201,8 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
 
 ✅ Tu es شبيك لبيك, tu CHIFFRES chaque ligne avec un unitPrice réaliste du marché BTP français 2024-2025.
 ✅ Le prix doit refléter le TYPE DE CONTRAT et la GAMME DE QUALITÉ.
-✅ NE JAMAIS mettre unitPrice = 0. Chaque ligne doit avoir un prix > 0.
+✅ NE JAMAIS mettre unitPrice = 0 en mode CLIENT DIRECT. Tous les items doivent être BUNDLED (Fourniture + Pose) avec un prix > 0.
+✅ En mode SOUS-TRAITANCE uniquement: les lignes prépa absorbées par la finition principale peuvent être à 0€.
 
 BARÈMES FRANCE 2024-2025:
 ${pType === 'sous_traitance' ? `
@@ -1237,7 +1243,8 @@ ${tier === 'standard' ? 'Base compétitive. Viser le bas de la fourchette.' : ''
 ${tier === 'pro' ? 'Matériaux qualité pro. Viser le milieu de la fourchette (+15%).' : ''}
 ${tier === 'luxury' ? 'Matériaux haut de gamme. Viser le haut de la fourchette (+35%).' : ''}
 
-ANTI-STACKING: Si peinture + ponçage + sous-couche → le prix peinture INCLUT la prépa. Les lignes prépa = prix très bas (3-5€/m²) ou 0€.
+ANTI-STACKING:
+${pType === 'sous_traitance' ? `Si peinture + ponçage + sous-couche → les lignes prépa = 0€ (absorbées par la finition).` : `DIRECT CLIENT: AUCUN PRIX À 0€. Les lignes prépa gardent un prix bas mais > 0 (bundled dans le pack Fourniture+Pose). Ex: ponçage 5€/m², sous-couche 6€/m².`}
 Même logique: carrelage + ragréage + joints = 1 pack. Électricité + câblage = 1 pack.
 
 VOLUME: > 100 unités = -10%. > 200 = -15%. < 10m² = +18%.
@@ -1522,7 +1529,7 @@ Réponds UNIQUEMENT en JSON:
         return Math.round(target);
       }
 
-      function applyAntiStackingPricing(pricedList: Array<GeneratedQuoteItem & { unitPrice: number }>): void {
+      function applyAntiStackingPricing(pricedList: Array<GeneratedQuoteItem & { unitPrice: number }>, isST: boolean): void {
         const stackMap = new Map<string, { hasMain: boolean; prepIndices: number[] }>();
         pricedList.forEach((item, idx) => {
           const rule = detectPricingRule(item);
@@ -1535,7 +1542,10 @@ Réponds UNIQUEMENT en JSON:
         for (const [, entry] of stackMap) {
           if (!entry.hasMain) continue;
           for (const idx of entry.prepIndices) {
-            pricedList[idx].unitPrice = 0;
+            if (isST) {
+              pricedList[idx].unitPrice = 0;
+            }
+            // Direct Client: prep items keep their bundled price — NO ZERO PRICES
           }
         }
       }
@@ -1549,7 +1559,7 @@ Réponds UNIQUEMENT en JSON:
         return { ...item, unitPrice: guardrailedPrice, btpPriceSource: "shubbaik_lubbaik_inline" };
       });
 
-      applyAntiStackingPricing(pricedItems);
+      applyAntiStackingPricing(pricedItems, isSousTraitance);
 
       const NETTOYAGE_MAX_PRICE = 15;
       function isCleaningItem(item: GeneratedQuoteItem): boolean {

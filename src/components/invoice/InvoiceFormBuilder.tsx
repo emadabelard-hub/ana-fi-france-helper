@@ -695,7 +695,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       })(),
       legalMentions: tvaExempt 
         ? 'TVA non applicable, article 293 B du CGI'
-        : undefined,
+        : isSousTraitanceTva
+          ? 'Autoliquidation de la TVA – article 283 du CGI'
+          : undefined,
       // Inject signed URLs for artisan's permanent signature, stamp, and logo
       artisanSignatureUrl: signedUrls.artisanSignatureUrl || undefined,
       stampUrl: signedUrls.stampUrl || undefined,

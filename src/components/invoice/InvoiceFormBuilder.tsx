@@ -369,7 +369,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         if ((draft as any).includeWasteCosts) setIncludeWasteCosts((draft as any).includeWasteCosts);
         if ((draft as any).wasteDescription) setWasteDescription((draft as any).wasteDescription);
         if ((draft as any).wastePrice) setWastePrice((draft as any).wastePrice);
-        setIsAutoEntrepreneur(draft.isAutoEntrepreneur);
+        // Don't restore isAutoEntrepreneur from draft — always derive from live profile
+        // setIsAutoEntrepreneur(draft.isAutoEntrepreneur);
         setSelectedTvaRate(draft.selectedTvaRate || 10);
         setValidityDuration(draft.validityDuration || 30);
         setAcompteEnabled(draft.acompteEnabled ?? false);

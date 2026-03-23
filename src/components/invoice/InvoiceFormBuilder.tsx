@@ -725,6 +725,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         // Conditional TVA: never show both numero_tva AND exemption mention
         if (isAutoEntrepreneur || tvaExempt) {
           parts.push('TVA non applicable, art. 293 B du CGI');
+        } else if (isSousTraitanceTva) {
+          parts.push('Autoliquidation de la TVA – art. 283 du CGI');
         } else if (p.numero_tva) {
           parts.push(`TVA Intracommunautaire : ${p.numero_tva}`);
         }

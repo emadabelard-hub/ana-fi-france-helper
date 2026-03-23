@@ -581,10 +581,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     
     const subtotal = allItems.reduce((sum, item) => sum + item.total, 0);
     
-    // Smart TVA calculation: Auto-entrepreneur = franchise de TVA
+    // Smart TVA calculation: Auto-entrepreneur = franchise de TVA, Sous-traitance = autoliquidation
     const tvaExempt = isAutoEntrepreneur;
-    const tvaRate = tvaExempt ? 0 : selectedTvaRate;
-    const tvaAmount = tvaExempt ? 0 : Math.round(subtotal * (tvaRate / 100) * 100) / 100;
+    const isSousTraitanceTva = !isAutoEntrepreneur && projectTvaType === 'sous_traitance';
+    const tvaRate = tvaExempt || isSousTraitanceTva ? 0 : (projectTvaType === 'logement' ? 10 : 20);
+    const tvaAmount = (tvaExempt || isSousTraitanceTva) ? 0 : Math.round(subtotal * (tvaRate / 100) * 100) / 100;
     const total = subtotal + tvaAmount;
     
     return {

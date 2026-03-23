@@ -2713,6 +2713,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               )}>
                 TVA non applicable, art. 293 B du CGI
               </div>
+            ) : invoiceData.tvaRate === 0 ? (
+              <div className={cn(
+                "text-xs text-amber-600 dark:text-amber-400 italic",
+                isRTL && "text-right font-cairo"
+              )}>
+                Autoliquidation de la TVA – art. 283 du CGI
+              </div>
             ) : (
               <div className={cn(
                 "flex justify-between text-sm",

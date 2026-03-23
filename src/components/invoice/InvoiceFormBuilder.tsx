@@ -327,10 +327,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (p.assurance_policy_number && !policyNumber) setPolicyNumber(p.assurance_policy_number);
     if (p.assurance_geographic_coverage && !geographicCoverage) setGeographicCoverage(p.assurance_geographic_coverage);
     // Auto-set TVA exemption from profile (auto-entrepreneur or tva_exempt flag)
-    if (p.tva_exempt || p.legal_status === 'auto-entrepreneur') {
-      setIsAutoEntrepreneur(true);
-    }
-  }, [profile?.logo_url, profile?.artisan_signature_url, profile?.stamp_url, profile?.header_image_url]);
+    // ALWAYS re-evaluate on legal_status change (e.g. user switched from AE to SARL)
+    const isAE = p.tva_exempt || p.legal_status === 'auto-entrepreneur';
+    setIsAutoEntrepreneur(isAE);
+  }, [profile?.logo_url, profile?.artisan_signature_url, profile?.stamp_url, profile?.header_image_url, profile?.legal_status, profile?.tva_exempt]);
 
   useEffect(() => {
     itemsRef.current = items;
@@ -369,7 +369,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         if ((draft as any).includeWasteCosts) setIncludeWasteCosts((draft as any).includeWasteCosts);
         if ((draft as any).wasteDescription) setWasteDescription((draft as any).wasteDescription);
         if ((draft as any).wastePrice) setWastePrice((draft as any).wastePrice);
-        setIsAutoEntrepreneur(draft.isAutoEntrepreneur);
+        // Don't restore isAutoEntrepreneur from draft — always derive from live profile
+        // setIsAutoEntrepreneur(draft.isAutoEntrepreneur);
         setSelectedTvaRate(draft.selectedTvaRate || 10);
         setValidityDuration(draft.validityDuration || 30);
         setAcompteEnabled(draft.acompteEnabled ?? false);

@@ -143,6 +143,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // TVA state - Auto-entrepreneur franchise de TVA
   const [isAutoEntrepreneur, setIsAutoEntrepreneur] = useState(false);
   const [selectedTvaRate, setSelectedTvaRate] = useState<5.5 | 10 | 20>(10);
+  // Project type for automatic TVA calculation (non auto-entrepreneur)
+  const [projectTvaType, setProjectTvaType] = useState<'logement' | 'local_pro' | 'sous_traitance'>('logement');
   
   // Quote validity duration (in days) - default 30 days
   const [validityDuration, setValidityDuration] = useState<15 | 30 | 60 | 90>(30);

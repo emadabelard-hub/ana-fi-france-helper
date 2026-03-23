@@ -143,6 +143,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // TVA state - Auto-entrepreneur franchise de TVA
   const [isAutoEntrepreneur, setIsAutoEntrepreneur] = useState(false);
   const [selectedTvaRate, setSelectedTvaRate] = useState<5.5 | 10 | 20>(10);
+  // Project type for automatic TVA calculation (non auto-entrepreneur)
+  const [projectTvaType, setProjectTvaType] = useState<'logement' | 'local_pro' | 'sous_traitance'>('logement');
   
   // Quote validity duration (in days) - default 30 days
   const [validityDuration, setValidityDuration] = useState<15 | 30 | 60 | 90>(30);
@@ -324,8 +326,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (p.assureur_address && !assureurAddress) setAssureurAddress(p.assureur_address);
     if (p.assurance_policy_number && !policyNumber) setPolicyNumber(p.assurance_policy_number);
     if (p.assurance_geographic_coverage && !geographicCoverage) setGeographicCoverage(p.assurance_geographic_coverage);
-    // Auto-set TVA exemption from profile
-    if (p.tva_exempt) setIsAutoEntrepreneur(true);
+    // Auto-set TVA exemption from profile (auto-entrepreneur or tva_exempt flag)
+    if (p.tva_exempt || p.legal_status === 'auto-entrepreneur') {
+      setIsAutoEntrepreneur(true);
+    }
   }, [profile?.logo_url, profile?.artisan_signature_url, profile?.stamp_url, profile?.header_image_url]);
 
   useEffect(() => {
@@ -579,10 +583,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     
     const subtotal = allItems.reduce((sum, item) => sum + item.total, 0);
     
-    // Smart TVA calculation: Auto-entrepreneur = franchise de TVA
+    // Smart TVA calculation: Auto-entrepreneur = franchise de TVA, Sous-traitance = autoliquidation
     const tvaExempt = isAutoEntrepreneur;
-    const tvaRate = tvaExempt ? 0 : selectedTvaRate;
-    const tvaAmount = tvaExempt ? 0 : Math.round(subtotal * (tvaRate / 100) * 100) / 100;
+    const isSousTraitanceTva = !isAutoEntrepreneur && projectTvaType === 'sous_traitance';
+    const tvaRate = tvaExempt || isSousTraitanceTva ? 0 : (projectTvaType === 'logement' ? 10 : 20);
+    const tvaAmount = (tvaExempt || isSousTraitanceTva) ? 0 : Math.round(subtotal * (tvaRate / 100) * 100) / 100;
     const total = subtotal + tvaAmount;
     
     return {
@@ -692,7 +697,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       })(),
       legalMentions: tvaExempt 
         ? 'TVA non applicable, article 293 B du CGI'
-        : undefined,
+        : isSousTraitanceTva
+          ? 'Autoliquidation de la TVA – article 283 du CGI'
+          : undefined,
       // Inject signed URLs for artisan's permanent signature, stamp, and logo
       artisanSignatureUrl: signedUrls.artisanSignatureUrl || undefined,
       stampUrl: signedUrls.stampUrl || undefined,
@@ -720,6 +727,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         // Conditional TVA: never show both numero_tva AND exemption mention
         if (isAutoEntrepreneur || tvaExempt) {
           parts.push('TVA non applicable, art. 293 B du CGI');
+        } else if (isSousTraitanceTva) {
+          parts.push('Autoliquidation de la TVA – art. 283 du CGI');
         } else if (p.numero_tva) {
           parts.push(`TVA Intracommunautaire : ${p.numero_tva}`);
         }
@@ -2561,88 +2570,129 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   </h4>
                 </div>
                 
-                <div className={cn(
-                  "flex items-center gap-2",
-                  isRTL && "flex-row-reverse"
-                )}>
-                  <Label 
-                    htmlFor="auto-entrepreneur-toggle" 
-                    className={cn("text-xs", isRTL && "font-cairo")}
-                  >
-                    {isRTL ? 'أوطو أنتروبرونور؟' : 'Auto-entrepreneur?'}
-                  </Label>
-                  <Switch
-                    id="auto-entrepreneur-toggle"
-                    checked={isAutoEntrepreneur}
-                    onCheckedChange={setIsAutoEntrepreneur}
-                  />
-                </div>
+                {/* Auto-entrepreneur badge (read-only from profile) */}
+                {isAutoEntrepreneur && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-700 dark:text-green-400 font-medium">
+                    Auto-entrepreneur
+                  </span>
+                )}
               </div>
-              
-              {/* Helper text */}
-              <p className={cn(
-                "text-xs text-muted-foreground",
-                isRTL && "font-cairo text-right"
-              )}>
-                {isRTL 
-                  ? 'لـ أوتو-أونتربرينير (Auto-entrepreneur)، الضريبة 0% تلقائياً. لغير ذلك، اختر النسبة المناسبة للمشروع:' 
-                  : 'Si vous êtes Auto-entrepreneur, la TVA est de 0% (Franchise en base). Sinon, choisissez le taux applicable :'}
-              </p>
 
               {isAutoEntrepreneur ? (
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                  <p className={cn(
-                    "text-sm text-green-700 dark:text-green-400",
-                    isRTL && "font-cairo text-right"
-                  )}>
-                    ✅ {isRTL 
-                      ? 'TVA = 0% - هيتكتب تلقائي: "TVA non applicable, art. 293 B du CGI"' 
-                      : 'TVA = 0% - Mention légale ajoutée automatiquement'}
-                  </p>
+                /* RULE 1: Auto-entrepreneur = locked 0% TVA */
+                <div className="space-y-2">
+                  <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <p className={cn(
+                      "text-sm text-green-700 dark:text-green-400 font-medium",
+                      isRTL && "font-cairo text-right"
+                    )}>
+                      🔒 {isRTL 
+                        ? 'TVA = 0% — مقفول تلقائي' 
+                        : 'TVA = 0% — Verrouillé automatiquement'}
+                    </p>
+                    <p className={cn(
+                      "text-xs text-green-600 dark:text-green-500 mt-1",
+                      isRTL && "font-cairo text-right"
+                    )}>
+                      {isRTL
+                        ? '"TVA non applicable – article 293 B du CGI" هتتكتب تلقائي في الدوكيمون'
+                        : 'Mention légale "TVA non applicable – article 293 B du CGI" ajoutée automatiquement'}
+                    </p>
+                  </div>
                 </div>
               ) : (
+                /* RULE 2 & 3: Non auto-entrepreneur = project type selector */
                 <div className="space-y-3">
+                  <p className={cn(
+                    "text-xs text-muted-foreground",
+                    isRTL && "font-cairo text-right"
+                  )}>
+                    {isRTL 
+                      ? 'اختر نوع المشروع وهنحسبلك الضريبة تلقائي:' 
+                      : 'Sélectionnez le type de projet, la TVA sera calculée automatiquement :'}
+                  </p>
+
                   <div className={cn(
                     "flex gap-2 flex-wrap",
                     isRTL && "flex-row-reverse"
                   )}>
                     <Button
                       type="button"
-                      variant={selectedTvaRate === 5.5 ? "default" : "outline"}
+                      variant={projectTvaType === 'logement' ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setSelectedTvaRate(5.5)}
-                      className="flex-1 min-w-[80px]"
+                      onClick={() => setProjectTvaType('logement')}
+                      className="flex-1 min-w-[100px]"
                     >
-                      <span className="font-bold">5,5%</span>
-                      <span className="text-xs ml-1 opacity-70">
-                        {isRTL ? '(عزل حراري)' : '(énergétique)'}
+                      <span className="text-base mr-1">🏠</span>
+                      <span className="font-bold">
+                        {isRTL ? 'سكن' : 'Logement'}
                       </span>
                     </Button>
                     <Button
                       type="button"
-                      variant={selectedTvaRate === 10 ? "default" : "outline"}
+                      variant={projectTvaType === 'local_pro' ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setSelectedTvaRate(10)}
-                      className="flex-1 min-w-[80px]"
+                      onClick={() => setProjectTvaType('local_pro')}
+                      className="flex-1 min-w-[100px]"
                     >
-                      <span className="font-bold">10%</span>
-                      <span className="text-xs ml-1 opacity-70">
-                        {isRTL ? '(تجديد)' : '(rénovation)'}
+                      <span className="text-base mr-1">🏢</span>
+                      <span className="font-bold">
+                        {isRTL ? 'محل مهني' : 'Local pro'}
                       </span>
                     </Button>
                     <Button
                       type="button"
-                      variant={selectedTvaRate === 20 ? "default" : "outline"}
+                      variant={projectTvaType === 'sous_traitance' ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setSelectedTvaRate(20)}
-                      className="flex-1 min-w-[80px]"
+                      onClick={() => setProjectTvaType('sous_traitance')}
+                      className="flex-1 min-w-[100px]"
                     >
-                      <span className="font-bold">20%</span>
-                      <span className="text-xs ml-1 opacity-70">
-                        {isRTL ? '(بناء جديد)' : '(neuf)'}
+                      <span className="text-base mr-1">🤝</span>
+                      <span className="font-bold">
+                        {isRTL ? 'مقاولة باطن' : 'Sous-traitance'}
                       </span>
                     </Button>
                   </div>
+
+                  {/* Computed TVA result (read-only) */}
+                  <div className={cn(
+                    "p-3 rounded-lg border",
+                    projectTvaType === 'sous_traitance' 
+                      ? "bg-amber-500/10 border-amber-500/20" 
+                      : "bg-primary/10 border-primary/20"
+                  )}>
+                    <p className={cn(
+                      "text-sm font-medium",
+                      projectTvaType === 'sous_traitance' 
+                        ? "text-amber-700 dark:text-amber-400"
+                        : "text-primary",
+                      isRTL && "font-cairo text-right"
+                    )}>
+                      {projectTvaType === 'logement' && (isRTL ? '📊 TVA = 10% (تجديد سكني)' : '📊 TVA = 10% (rénovation logement)')}
+                      {projectTvaType === 'local_pro' && (isRTL ? '📊 TVA = 20% (محل مهني / بناء جديد)' : '📊 TVA = 20% (local professionnel / neuf)')}
+                      {projectTvaType === 'sous_traitance' && (isRTL ? '📊 TVA = 0% (مقاولة باطن — Autoliquidation)' : '📊 TVA = 0% (Autoliquidation – art. 283 du CGI)')}
+                    </p>
+                    <p className={cn(
+                      "text-xs text-muted-foreground mt-1",
+                      isRTL && "font-cairo text-right"
+                    )}>
+                      {isRTL ? 'TVA محسوبة تلقائياً حسب نوع المشروع' : 'TVA calculée automatiquement selon le type de projet'}
+                    </p>
+                  </div>
+
+                  {/* RULE 5: Coherence alert - logement + B2B client */}
+                  {projectTvaType === 'logement' && clientIsB2B && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+                      <p className={cn(
+                        "text-xs text-destructive font-medium",
+                        isRTL && "font-cairo text-right"
+                      )}>
+                        ⚠️ {isRTL 
+                          ? 'الزبون شركة والمشروع سكن — تأكد إن الشانتي فعلاً سكن وإلا اختار "محل مهني"'
+                          : 'Le client est une entreprise mais le projet est un logement — vérifiez si le chantier est bien un logement'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -2664,6 +2714,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 isRTL && "text-right font-cairo"
               )}>
                 TVA non applicable, art. 293 B du CGI
+              </div>
+            ) : invoiceData.tvaRate === 0 ? (
+              <div className={cn(
+                "text-xs text-amber-600 dark:text-amber-400 italic",
+                isRTL && "text-right font-cairo"
+              )}>
+                Autoliquidation de la TVA – art. 283 du CGI
               </div>
             ) : (
               <div className={cn(

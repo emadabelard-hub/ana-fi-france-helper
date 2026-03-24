@@ -286,27 +286,26 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
 
         {/* ── CLIENT ── */}
-        <div className="bg-gray-50 px-2 py-1.5 rounded border border-gray-200 mb-2">
-          <h3 className="font-semibold text-gray-700 text-[8pt] mb-0.5 uppercase tracking-wider"><ArSub fr="CLIENT" /></h3>
+        <div className="bg-gray-50 px-2 py-1 rounded border border-gray-200 mb-1.5">
+          <h3 className="font-semibold text-gray-700 text-[7pt] mb-0.5 uppercase tracking-wider"><ArSub fr="CLIENT" /></h3>
           <p className="font-medium text-[9pt] leading-tight">{data.client.name}</p>
           <p className="text-[8pt] text-gray-600 whitespace-pre-line leading-snug">{data.client.address}</p>
-          {data.client.phone && <p className="text-[8pt] text-gray-600">Tél : {data.client.phone}</p>}
-          {data.client.email && <p className="text-[8pt] text-gray-600">Email : {data.client.email}</p>}
-          {data.client.siren && <p className="text-[8pt] text-gray-600">SIREN : {data.client.siren}</p>}
-          {/* Show client TVA intra only when emitter is NOT exempt */}
-          {data.client.tvaIntra && !data.tvaExempt && <p className="text-[8pt] text-gray-600">TVA Intra : {data.client.tvaIntra}</p>}
+          {data.client.phone && <p className="text-[7pt] text-gray-600">Tél : {data.client.phone}</p>}
+          {data.client.email && <p className="text-[7pt] text-gray-600">Email : {data.client.email}</p>}
+          {data.client.siren && <p className="text-[7pt] text-gray-600">SIREN : {data.client.siren}</p>}
+          {data.client.tvaIntra && !data.tvaExempt && <p className="text-[7pt] text-gray-600">TVA Intra : {data.client.tvaIntra}</p>}
 
           {data.workSite && !data.workSite.sameAsClient && data.workSite.address && (
-            <div className="mt-1 pt-1 border-t border-gray-200">
+            <div className="mt-0.5 pt-0.5 border-t border-gray-200">
               <p className="text-[7pt] font-semibold text-gray-500 uppercase">📍 Adresse du chantier</p>
-              <p className="text-[8pt] text-gray-600 whitespace-pre-line leading-snug">{data.workSite.address}</p>
+              <p className="text-[7pt] text-gray-600 whitespace-pre-line leading-snug">{data.workSite.address}</p>
             </div>
           )}
         </div>
 
         {/* Nature of Operation */}
         {data.natureOperation && (
-          <div className="mb-2 text-[8pt] text-gray-600">
+          <div className="mb-1.5 text-[7pt] text-gray-600">
             <span className="font-semibold text-gray-700">Nature de l'opération : </span>
             {(() => {
               const label = data.natureOperation === 'service' ? 'Prestation de services'
@@ -319,7 +318,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* ── OBJET DU DEVIS / DESCRIPTION DU CHANTIER (Dynamic) ── */}
         {dynamicSubject && (
-          <div className="mb-2 px-2 py-1.5 rounded border border-gray-200 bg-gray-50">
+          <div className="mb-1.5 px-2 py-1 rounded border border-gray-200 bg-gray-50">
             <p className="text-[7pt] font-bold text-gray-700 uppercase tracking-wider mb-0.5">
               {data.type === 'DEVIS' ? '📝 Objet du devis' : '📝 Objet de la facture'}
             </p>
@@ -329,8 +328,8 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* ── VALIDITÉ DU DEVIS ── */}
         {data.type === 'DEVIS' && data.validUntil && (
-          <div className="mb-2 px-2 py-1 rounded border border-amber-200 bg-amber-50/50">
-            <p className="text-[8pt] text-amber-800 font-semibold">
+          <div className="mb-1.5 px-2 py-1 rounded border border-amber-200 bg-amber-50/50">
+            <p className="text-[7pt] text-amber-800 font-semibold">
               📅 Ce devis est valable jusqu'au {data.validUntil}.
               {data.estimatedStartDate && <> — Début estimé des travaux : {data.estimatedStartDate}.</>}
               {data.estimatedDuration && <> — Durée estimée : {data.estimatedDuration}.</>}
@@ -340,8 +339,8 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* ── Estimated timeline (Facture or Devis without validUntil) ── */}
         {(data.estimatedStartDate || data.estimatedDuration) && !(data.type === 'DEVIS' && data.validUntil) && (
-          <div className="mb-2 px-2 py-1 rounded border border-gray-200 bg-gray-50">
-            <p className="text-[8pt] text-gray-700 font-medium">
+          <div className="mb-1.5 px-2 py-1 rounded border border-gray-200 bg-gray-50">
+            <p className="text-[7pt] text-gray-700 font-medium">
               {data.estimatedStartDate && <>🚧 Début estimé des travaux : {data.estimatedStartDate}. </>}
               {data.estimatedDuration && <>⏱️ Durée estimée : {data.estimatedDuration}.</>}
             </p>

@@ -202,7 +202,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   // Common container styles for A4 simulation
   const pageContainerClass = "french-invoice bg-white text-black rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none print:max-w-none print:rounded-none select-none";
   const pageContainerStyle: React.CSSProperties = {
-    padding: '10mm 12mm 16mm 12mm',
+    padding: '8mm 10mm 14mm 10mm',
     boxSizing: 'border-box',
     minHeight: 'auto',
     fontSize: '9pt',
@@ -227,12 +227,12 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
 
         {/* ── HEADER (Page 1 only) ── */}
-        <div className="pb-2 mb-2" style={{ borderBottom: '2pt solid #1a1a1a' }}>
-          <div className="flex justify-between items-start gap-4">
+        <div className="pb-1.5 mb-1.5" style={{ borderBottom: '2pt solid #1a1a1a' }}>
+          <div className="flex justify-between items-start gap-3">
             {/* Emitter */}
             <div className="flex-1 min-w-0">
               {data.logoUrl && (
-                <img src={data.logoUrl} alt="Logo" className="mb-1 object-contain" style={{ maxHeight: '50px', maxWidth: '110px' }} />
+                <img src={data.logoUrl} alt="Logo" className="mb-0.5 object-contain" style={{ maxHeight: '40px', maxWidth: '100px' }} />
               )}
               <h1 className="text-[12pt] font-bold text-black leading-tight">
                 {data.emitter.name}
@@ -351,12 +351,26 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         {/* ── TABLE DES PRESTATIONS ── */}
         {/* Uses native <table> so thead repeats on every printed page automatically */}
         <table className="w-full border-collapse mb-2" style={{ tableLayout: 'fixed', fontSize: '8pt' }}>
-          <thead>
+          <colgroup>
+            <col style={{ width: '55%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '13%' }} />
+          </colgroup>
+          <thead style={{ display: 'table-header-group' }}>
             <tr style={{ backgroundColor: '#1a1a1a', color: '#ffffff' }}>
-              <th className="py-1 px-1.5 text-left border border-gray-700 text-[8pt] font-semibold" style={{ width: '44%' }}><ArSub fr="Désignation" /></th>
-              <th className="py-1 px-1 text-center border border-gray-700 text-[8pt] font-semibold" style={{ width: '12%' }}><ArSub fr="Qté/Unité" /></th>
-              <th className="py-1 px-1 text-right border border-gray-700 text-[8pt] font-semibold" style={{ width: '20%' }}><ArSub fr="P.U (€)" /></th>
-              <th className="py-1 px-1 text-right border border-gray-700 text-[8pt] font-semibold" style={{ width: '24%' }}><ArSub fr="Total (€)" /></th>
+              <th className="py-1.5 px-2 text-left border border-gray-700 text-[8pt] font-semibold">
+                <ArSub fr="Désignation" />
+              </th>
+              <th className="py-1.5 px-1 text-center border border-gray-700 text-[8pt] font-semibold">Qté</th>
+              <th className="py-1.5 px-1 text-center border border-gray-700 text-[8pt] font-semibold">Unité</th>
+              <th className="py-1.5 px-1 text-right border border-gray-700 text-[8pt] font-semibold">
+                <ArSub fr="P.U (€)" />
+              </th>
+              <th className="py-1.5 px-1 text-right border border-gray-700 text-[8pt] font-semibold">
+                <ArSub fr="Total (€)" />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -366,12 +380,23 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 item.unit.toLowerCase() === 'f';
 
               return (
-                <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                <tr
+                  key={index}
+                  className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}
+                  style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}
+                >
                   <td
-                    className="py-0.5 px-1.5 border border-gray-200"
-                    style={{ verticalAlign: 'top', ...(isSection && index > 0 ? { paddingTop: '14px' } : {}) }}
+                    className="py-1 px-2 border border-gray-200"
+                    style={{
+                      verticalAlign: 'top',
+                      whiteSpace: 'normal',
+                      wordWrap: 'break-word',
+                      overflowWrap: 'break-word',
+                      overflow: 'hidden',
+                      ...(isSection && index > 0 ? { paddingTop: '14px' } : {}),
+                    }}
                   >
-                    <span className={`font-semibold leading-snug block whitespace-pre-wrap text-left ${isSection ? 'text-black font-bold' : 'text-gray-800'}`}>
+                    <span className={`leading-snug block text-left ${isSection ? 'text-black font-bold' : 'text-gray-800 font-semibold'}`}>
                       {item.designation_fr.includes('\n')
                         ? (
                           <ul className="list-disc list-inside space-y-0 ml-0">
@@ -388,12 +413,18 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                       </span>
                     )}
                   </td>
-                  <td className="py-0.5 px-1 text-center border border-gray-200" style={{ verticalAlign: 'middle' }}>
-                    <span className="font-semibold block leading-tight">{item.quantity}</span>
-                    <span className="text-[7pt] text-gray-400 block">{item.unit}</span>
+                  <td className="py-1 px-1 text-center border border-gray-200 font-semibold" style={{ verticalAlign: 'middle' }}>
+                    {item.quantity}
                   </td>
-                  <td className="py-0.5 px-1 text-right border border-gray-200 font-medium" style={{ verticalAlign: 'middle' }}>{formatNumber(item.unitPrice)}</td>
-                  <td className="py-0.5 px-1 text-right border border-gray-200 font-bold" style={{ verticalAlign: 'middle' }}>{formatNumber(item.total)}</td>
+                  <td className="py-1 px-1 text-center border border-gray-200 text-[7pt] text-gray-500" style={{ verticalAlign: 'middle' }}>
+                    {item.unit}
+                  </td>
+                  <td className="py-1 px-1 text-right border border-gray-200 font-medium" style={{ verticalAlign: 'middle' }}>
+                    {formatNumber(item.unitPrice)}
+                  </td>
+                  <td className="py-1 px-1 text-right border border-gray-200 font-bold" style={{ verticalAlign: 'middle' }}>
+                    {formatNumber(item.total)}
+                  </td>
                 </tr>
               );
             })}

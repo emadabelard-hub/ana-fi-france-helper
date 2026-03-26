@@ -5,6 +5,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Disable pull-to-refresh globally — only home page re-enables it */
+html, body {
+  overscroll-behavior-y: contain;
+}
+
 /* Ana Fi France - Deep Dark Professional Theme
    Primary: Navy Blue | Accent: Gold | Dark Mode First
    All colors MUST be HSL.

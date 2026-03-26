@@ -446,7 +446,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                     ? Math.round(data.total * (first.percent || 0) / 100 * 100) / 100
                     : (first.amount || 0);
                   return (
-                    <div className="mt-3 rounded-md px-3 py-2" style={{ backgroundColor: '#f8f5f0', border: '1px solid #e8e2d8' }}>
+                    <div className="mt-3 rounded-md px-3 py-2" style={{ backgroundColor: '#f5f5f5', border: '1px solid #e5e5e5' }}>
                       <div className="flex justify-between text-[8.5pt]">
                         <span className="text-gray-700 font-bold">Net à payer (ét.1)</span>
                         <span className="font-bold text-gray-900">{formatCurrency(firstAmt)}</span>
@@ -484,22 +484,22 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               {/* Thin divider before TTC */}
               <div style={{ borderBottom: '2px solid #d1d5db', margin: '4px 0' }} />
               {/* TTC — clean highlight */}
-              <div className="flex justify-between items-center py-2.5 px-3 rounded-md" style={{ backgroundColor: '#f7f7f5' }}>
+              <div className="flex justify-between items-center py-2.5 px-3 rounded-md" style={{ backgroundColor: '#f3f4f6' }}>
                 <span className="font-bold text-[10pt] text-gray-900"><ArSub fr="Total TTC:" /></span>
                 <span className="font-extrabold text-[14pt] text-gray-900">{formatCurrency(data.total)}</span>
               </div>
 
               {/* Simple acompte (no milestones) */}
               {data.acompteAmount && data.acompteAmount > 0 && (!data.paymentMilestones || data.paymentMilestones.length === 0) && (
-                <div className="mt-3 rounded-md overflow-hidden" style={{ border: '1px solid #e0dcd4' }}>
-                  <div className="flex justify-between py-1.5 px-3" style={{ backgroundColor: '#f8f5f0' }}>
+                <div className="mt-3 rounded-md overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
+                  <div className="flex justify-between py-1.5 px-3" style={{ backgroundColor: '#f5f5f5' }}>
                     <span className="text-gray-600 text-[8pt] font-semibold">
                       <ArSub fr="Acompte" /> {data.acomptePercent ? `(${data.acomptePercent}%)` : ''}
                     </span>
                     <span className="font-bold text-gray-700 text-[8pt]">{formatCurrency(data.acompteAmount)}</span>
                   </div>
                   {data.netAPayer !== undefined && (
-                    <div className="flex justify-between py-2 px-3" style={{ backgroundColor: '#f3f0ea' }}>
+                    <div className="flex justify-between py-2 px-3" style={{ backgroundColor: '#efefef' }}>
                       <span className="text-gray-800 text-[9pt] font-bold">Net à payer</span>
                       <span className="font-bold text-gray-900 text-[11pt]">{formatCurrency(data.netAPayer)}</span>
                     </div>

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Briefcase, Sparkles, FileUser, ShieldCheck, Wallet, Building2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';

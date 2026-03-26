@@ -325,7 +325,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
 
         {/* ── TABLE DES PRESTATIONS ── */}
-        <table className="w-full border-collapse mb-5" style={{ tableLayout: 'fixed', fontSize: '8.5pt' }}>
+        <table className="w-full border-collapse mb-8" style={{ tableLayout: 'fixed', fontSize: '8.5pt' }}>
           <colgroup>
             <col style={{ width: '55%' }} />
             <col style={{ width: '10%' }} />
@@ -335,28 +335,32 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </colgroup>
           <thead style={{ display: 'table-header-group' }}>
             <tr style={{ backgroundColor: '#f3f4f6' }}>
-              <th className="py-2 px-2.5 text-left text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-2.5 px-3 text-left text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
                 <ArSub fr="Désignation" />
               </th>
-              <th className="py-2 px-1 text-center text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-2.5 px-1 text-center text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
                 <ArSub fr="Qté" />
               </th>
-              <th className="py-2 px-1 text-center text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-2.5 px-1 text-center text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
                 <ArSub fr="Unité" />
               </th>
-              <th className="py-2 px-1 text-right text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-2.5 px-2.5 text-right text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
                 <ArSub fr="P.U HT" />
               </th>
-              <th className="py-2 px-1 text-right text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-2.5 px-2.5 text-right text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
                 <ArSub fr="Total HT" />
               </th>
             </tr>
           </thead>
           <tbody>
             {data.items.map((item, index) => {
-              const isSection = item.designation_fr.toUpperCase().startsWith('ZONE') ||
-                item.unit.toLowerCase() === 'forfait' ||
-                item.unit.toLowerCase() === 'f';
+              const designLower = item.designation_fr.toLowerCase();
+              const isSectionTitle = item.designation_fr.toUpperCase().startsWith('ZONE') ||
+                ['fourniture et pose', 'main d\'œuvre', 'dépose', 'repose', 'finitions', 'sous-traitance',
+                 'peinture', 'plomberie', 'électricité', 'maçonnerie', 'carrelage', 'menuiserie',
+                 'plâtrerie', 'isolation', 'démolition', 'ravalement', 'étanchéité', 'toiture', 'terrassement']
+                  .some(kw => designLower.startsWith(kw)) ||
+                (item.quantity === 0 && item.unitPrice === 0);
 
               return (
                 <tr
@@ -368,7 +372,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                   }}
                 >
                   <td
-                    className="py-1.5 px-2.5"
+                    className="py-2 px-3"
                     style={{
                       verticalAlign: 'top',
                       whiteSpace: 'normal',
@@ -376,36 +380,42 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                       overflowWrap: 'break-word',
                       overflow: 'hidden',
                       borderBottom: '1px solid #f0f0f0',
-                      ...(isSection && index > 0 ? { paddingTop: '12px' } : {}),
+                      ...(isSectionTitle && index > 0 ? { paddingTop: '14px' } : {}),
                     }}
                   >
-                    <span className={`leading-snug block text-left ${isSection ? 'text-gray-900 font-bold' : 'text-gray-700'}`}>
-                      {item.designation_fr.includes('\n')
-                        ? (
-                          <ul className="list-disc list-inside space-y-0 ml-0">
-                            {item.designation_fr.split('\n').filter(l => l.trim()).map((line, i) => (
-                              <li key={i} className="text-[8pt] leading-snug">{line.trim().replace(/^[-•·]\s*/, '')}</li>
-                            ))}
-                          </ul>
-                        )
-                        : item.designation_fr}
-                    </span>
+                    {isSectionTitle ? (
+                      <span className="block text-left text-[9pt] font-bold text-gray-900 uppercase tracking-wide leading-snug">
+                        {item.designation_fr}
+                      </span>
+                    ) : (
+                      <span className="leading-snug block text-left text-gray-700">
+                        {item.designation_fr.includes('\n')
+                          ? (
+                            <ul className="list-disc list-inside space-y-0 ml-0">
+                              {item.designation_fr.split('\n').filter(l => l.trim()).map((line, i) => (
+                                <li key={i} className="text-[8pt] leading-snug">{line.trim().replace(/^[-•·]\s*/, '')}</li>
+                              ))}
+                            </ul>
+                          )
+                          : item.designation_fr}
+                      </span>
+                    )}
                     {showArabic && item.designation_ar && (
                       <span className="block text-[7pt] text-gray-400 mt-0.5 leading-snug print:hidden" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
                         {item.designation_ar}
                       </span>
                     )}
                   </td>
-                  <td className="py-1.5 px-1 text-center text-gray-700" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                  <td className="py-2 px-1 text-center text-gray-700" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
                     {item.quantity}
                   </td>
-                  <td className="py-1.5 px-1 text-center text-[7.5pt] text-gray-500" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                  <td className="py-2 px-1 text-center text-[7.5pt] text-gray-500" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
                     {item.unit}
                   </td>
-                  <td className="py-1.5 px-1 text-right text-gray-700" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                  <td className="py-2 px-2.5 text-right text-gray-700 tabular-nums" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
                     {formatNumber(item.unitPrice)} €
                   </td>
-                  <td className="py-1.5 px-1 text-right font-semibold text-gray-900" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                  <td className="py-2 px-2.5 text-right font-semibold text-gray-900 tabular-nums" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
                     {formatNumber(item.total)} €
                   </td>
                 </tr>
@@ -419,7 +429,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         <div className="invoice-totals-signature-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
 
           {/* Totals row: schedule left, amounts right */}
-          <div className="flex justify-between items-start mb-6 gap-6 mt-2">
+          <div className="flex justify-between items-start mb-8 gap-6 mt-4">
             {/* Payment Schedule (compact, left side) */}
             {data.paymentMilestones && data.paymentMilestones.length > 0 && (
               <div className="flex-1 max-w-[48%]">
@@ -510,9 +520,9 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* ── PAYMENT CONDITIONS — bullet points, clean ── */}
-          <div className="mb-5 text-[8pt] text-gray-500">
-            <p className="text-gray-600 font-semibold mb-1.5"><ArSub fr="Conditions de règlement:" /></p>
-            <ul className="space-y-1 ml-1">
+          <div className="mb-6 mt-2 text-[8pt] text-gray-500">
+            <p className="text-gray-600 font-semibold mb-2"><ArSub fr="Conditions de règlement:" /></p>
+            <ul className="space-y-1.5 ml-1">
               <li>• {data.paymentTerms}</li>
               {data.paymentDeadline === 'immediate' && (
                 <li className="text-gray-600 font-medium">• Paiement à réception de la facture.</li>
@@ -523,7 +533,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* ── ACCEPTANCE & SIGNATURE — compact horizontal layout ── */}
-          <div className="pt-4 mt-1" style={{ borderTop: '1px solid #ebebeb' }}>
+          <div className="pt-5 mt-3" style={{ borderTop: '1px solid #e5e7eb' }}>
             <h4 className="text-[8.5pt] font-bold text-gray-700 text-center mb-1.5">
               {data.type === 'DEVIS' ? 'Acceptation du devis' : 'Acceptation de la facture'}
             </h4>
@@ -538,7 +548,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
             <div className="flex justify-between items-start gap-4">
               {/* Client acceptance */}
-              <div className="flex-1 rounded p-2" style={{ border: '1px solid #ebebeb' }}>
+              <div className="flex-1 rounded p-2.5" style={{ border: '1px solid #e8e8e8' }}>
                 <p className="text-[7.5pt] font-bold text-gray-500 mb-1 text-center"><ArSub fr="Le client" /></p>
                 <div className="grid grid-cols-2 gap-2 mb-1.5">
                   <div>
@@ -551,7 +561,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                   </div>
                 </div>
                 <p className="text-[6.5pt] text-gray-400 mb-0.5">Signature :</p>
-                <div className="h-10 rounded" style={{ border: '1px dashed #ddd' }} />
+                <div className="h-10 rounded" style={{ border: '1px dashed #d5d5d5' }} />
               </div>
 
               {/* Artisan signature & stamp — smaller */}
@@ -559,18 +569,18 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 <p className="text-[7.5pt] font-bold text-gray-500 mb-1"><ArSub fr="Le prestataire" /></p>
                 <p className="text-[6.5pt] text-gray-400 mb-1">Date : {data.date}</p>
                 {data.artisanSignatureUrl ? (
-                  <div className="rounded p-0.5 mb-1" style={{ border: '1px solid #ebebeb' }}>
+                  <div className="rounded p-0.5 mb-1" style={{ border: '1px solid #e8e8e8' }}>
                     <img src={data.artisanSignatureUrl} alt="Signature" className="max-h-8 mx-auto object-contain" />
                   </div>
                 ) : (
-                  <div className="h-8 rounded mb-1" style={{ border: '1px dashed #ddd' }} />
+                  <div className="h-8 rounded mb-1" style={{ border: '1px dashed #d5d5d5' }} />
                 )}
                 {data.stampUrl ? (
-                  <div className="rounded p-0.5 mx-auto" style={{ border: '1px solid #ebebeb', width: '80px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div className="rounded p-0.5 mx-auto" style={{ border: '1px solid #e8e8e8', width: '80px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <img src={data.stampUrl} alt="Cachet" style={{ maxWidth: '72px', maxHeight: '35px', objectFit: 'contain' }} />
                   </div>
                 ) : (
-                  <div className="h-7 rounded" style={{ border: '1px dashed #ddd' }} />
+                  <div className="h-7 rounded" style={{ border: '1px dashed #d5d5d5' }} />
                 )}
                 <p className="text-[6pt] text-gray-400 mt-0.5"><ArSub fr="Signature & Cachet" /></p>
               </div>
@@ -581,15 +591,15 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* Online Payment Section */}
         {(data.type === 'FACTURE' || data.paymentDeadline === 'immediate') && (
-          <div className="rounded-md px-3 py-2 mt-5 flex items-center gap-3 print:hidden" style={{ border: '1px solid #ebebeb', backgroundColor: '#fafafa' }}>
+          <div className="rounded-md px-4 py-3 mt-6 flex items-center gap-3 print:hidden" style={{ border: '1px solid #e5e7eb', backgroundColor: '#fafafa' }}>
             <div className="flex-1 min-w-0">
-              <p className="text-[8pt] font-bold text-gray-700">
+              <p className="text-[8.5pt] font-bold text-gray-700">
                 {data.paymentDeadline === 'immediate' ? 'Paiement immédiat' : 'Paiement en ligne'}
               </p>
-              <p className="text-[7pt] text-gray-500 leading-tight">Scannez le QR code pour payer en ligne.</p>
+              <p className="text-[7pt] text-gray-500 leading-tight mt-0.5">Scannez le QR code pour payer en ligne.</p>
             </div>
             <div className="w-10 h-10 rounded flex items-center justify-center text-[6pt] text-gray-400 text-center leading-tight shrink-0" style={{ border: '1px dashed #d1d5db' }}>QR</div>
-            <button className="px-3 py-1.5 rounded-md text-[8pt] font-bold text-white shadow-sm shrink-0" style={{ backgroundColor: '#10b981' }} onClick={(e) => e.stopPropagation()}>Payer</button>
+            <button className="px-4 py-2 rounded-md text-[8.5pt] font-bold text-white shadow-sm shrink-0" style={{ backgroundColor: '#059669' }} onClick={(e) => e.stopPropagation()}>Payer</button>
           </div>
         )}
 
@@ -608,7 +618,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* Legal Footer — discreet, light grey */}
         {(data.legalFooter || data.emitter.iban || assuranceHeaderLine) && (
-          <div className="invoice-footer-block mt-6 pt-3 text-center" style={{ borderTop: '1px solid #ebebeb', pageBreakInside: 'avoid' }}>
+          <div className="invoice-footer-block mt-8 pt-4 text-center" style={{ borderTop: '1px solid #e5e7eb', pageBreakInside: 'avoid' }}>
             {data.legalFooter && <p className="text-[6pt] text-gray-300 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
             {data.emitter.iban && (
               <p className="text-[6.5pt] text-gray-400 mt-0.5">

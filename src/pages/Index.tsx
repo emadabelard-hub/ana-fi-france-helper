@@ -12,6 +12,16 @@ const Index = () => {
   const navigate = useNavigate();
   const { trackFeatureClick } = useTracker();
 
+  // Allow pull-to-refresh only on home page
+  useEffect(() => {
+    document.documentElement.style.overscrollBehaviorY = 'auto';
+    document.body.style.overscrollBehaviorY = 'auto';
+    return () => {
+      document.documentElement.style.overscrollBehaviorY = 'contain';
+      document.body.style.overscrollBehaviorY = 'contain';
+    };
+  }, []);
+
   const handleNavigate = (path: string, featureName: string) => {
     trackFeatureClick(featureName);
     navigate(path);

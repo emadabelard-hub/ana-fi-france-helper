@@ -415,40 +415,43 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </table>
 
         {/* ── TOTALS + SIGNATURE + LEGAL — Never split across pages ── */}
+        {/* ── TOTALS + SIGNATURE + LEGAL — Never split across pages ── */}
         <div className="invoice-totals-signature-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
 
           {/* Totals row: schedule left, amounts right */}
-          <div className="flex justify-between items-start mb-5 gap-4">
+          <div className="flex justify-between items-start mb-6 gap-6 mt-2">
             {/* Payment Schedule (compact, left side) */}
             {data.paymentMilestones && data.paymentMilestones.length > 0 && (
-              <div className="flex-1 max-w-[50%]">
-                <p className="text-[8pt] font-bold text-gray-700 mb-1">Échéancier de paiement</p>
-                {data.paymentMilestones.map((m) => {
-                  const milestoneAmount = m.mode === 'percent'
-                    ? Math.round(data.total * (m.percent || 0) / 100 * 100) / 100
-                    : (m.amount || 0);
-                  const milestonePercent = m.mode === 'percent'
-                    ? (m.percent || 0)
-                    : Math.round((m.amount || 0) / data.total * 100 * 10) / 10;
-                  return (
-                    <div key={m.id} className="flex justify-between text-[8pt] py-0.5" style={{ borderBottom: '1px solid #f0f0f0' }}>
-                      <span className="text-gray-600 truncate mr-2">{m.label}</span>
-                      <span className="text-gray-700 whitespace-nowrap font-medium">{milestonePercent}% — {formatCurrency(milestoneAmount)}</span>
-                    </div>
-                  );
-                })}
+              <div className="flex-1 max-w-[48%]">
+                <p className="text-[8pt] font-bold text-gray-700 mb-2">Échéancier de paiement</p>
+                <ul className="space-y-1">
+                  {data.paymentMilestones.map((m) => {
+                    const milestoneAmount = m.mode === 'percent'
+                      ? Math.round(data.total * (m.percent || 0) / 100 * 100) / 100
+                      : (m.amount || 0);
+                    const milestonePercent = m.mode === 'percent'
+                      ? (m.percent || 0)
+                      : Math.round((m.amount || 0) / data.total * 100 * 10) / 10;
+                    return (
+                      <li key={m.id} className="flex justify-between text-[8pt] py-1" style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        <span className="text-gray-600 truncate mr-2">• {m.label}</span>
+                        <span className="text-gray-700 whitespace-nowrap font-medium">{milestonePercent}% — {formatCurrency(milestoneAmount)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
                 {(() => {
                   const first = data.paymentMilestones[0];
                   const firstAmt = first.mode === 'percent'
                     ? Math.round(data.total * (first.percent || 0) / 100 * 100) / 100
                     : (first.amount || 0);
                   return (
-                    <div className="mt-2 rounded-md px-2 py-1.5" style={{ backgroundColor: '#fef3c7' }}>
-                      <div className="flex justify-between text-[8pt]">
-                        <span className="text-amber-800 font-bold">Net à payer (ét.1)</span>
-                        <span className="font-bold text-amber-800">{formatCurrency(firstAmt)}</span>
+                    <div className="mt-3 rounded-md px-3 py-2" style={{ backgroundColor: '#f8f5f0', border: '1px solid #e8e2d8' }}>
+                      <div className="flex justify-between text-[8.5pt]">
+                        <span className="text-gray-700 font-bold">Net à payer (ét.1)</span>
+                        <span className="font-bold text-gray-900">{formatCurrency(firstAmt)}</span>
                       </div>
-                      <div className="flex justify-between text-[7pt] text-amber-600 mt-0.5">
+                      <div className="flex justify-between text-[7pt] text-gray-500 mt-1">
                         <span>Restant</span>
                         <span>{formatCurrency(Math.round((data.total - firstAmt) * 100) / 100)}</span>
                       </div>
@@ -459,44 +462,46 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             )}
 
             {/* Totals block — right aligned */}
-            <div className="w-52 ml-auto">
-              <div className="flex justify-between py-1.5" style={{ borderBottom: '1px solid #e5e7eb' }}>
+            <div className="w-56 ml-auto">
+              <div className="flex justify-between py-2" style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <span className="text-gray-500 text-[8.5pt]"><ArSub fr="Total HT:" /></span>
-                <span className="text-gray-800 text-[8.5pt] font-medium">{formatCurrency(data.subtotal)}</span>
+                <span className="text-gray-800 text-[9pt] font-medium">{formatCurrency(data.subtotal)}</span>
               </div>
               {data.tvaExempt ? (
-                <div className="py-1.5" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <div className="py-2" style={{ borderBottom: '1px solid #e5e7eb' }}>
                   <div className="flex justify-between">
                     <span className="text-gray-500 text-[8.5pt]">TVA (0%) :</span>
-                    <span className="text-gray-800 text-[8.5pt] font-medium">{formatCurrency(0)}</span>
+                    <span className="text-gray-800 text-[9pt] font-medium">{formatCurrency(0)}</span>
                   </div>
                   <p className="text-[7pt] text-gray-400 italic leading-tight mt-0.5">TVA non applicable, art. 293 B du CGI</p>
                 </div>
               ) : (
-                <div className="flex justify-between py-1.5" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <div className="flex justify-between py-2" style={{ borderBottom: '1px solid #e5e7eb' }}>
                   <span className="text-gray-500 text-[8.5pt]">TVA ({data.tvaRate}%) :</span>
-                  <span className="text-gray-800 text-[8.5pt] font-medium">{formatCurrency(data.tvaAmount)}</span>
+                  <span className="text-gray-800 text-[9pt] font-medium">{formatCurrency(data.tvaAmount)}</span>
                 </div>
               )}
-              {/* TTC — highlighted with subtle background */}
-              <div className="flex justify-between items-center py-2 px-2.5 rounded-md mt-1" style={{ backgroundColor: '#f0f0f0' }}>
+              {/* Thin divider before TTC */}
+              <div style={{ borderBottom: '2px solid #d1d5db', margin: '4px 0' }} />
+              {/* TTC — clean highlight */}
+              <div className="flex justify-between items-center py-2.5 px-3 rounded-md" style={{ backgroundColor: '#f7f7f5' }}>
                 <span className="font-bold text-[10pt] text-gray-900"><ArSub fr="Total TTC:" /></span>
-                <span className="font-extrabold text-[13pt] text-gray-900">{formatCurrency(data.total)}</span>
+                <span className="font-extrabold text-[14pt] text-gray-900">{formatCurrency(data.total)}</span>
               </div>
 
               {/* Simple acompte (no milestones) */}
               {data.acompteAmount && data.acompteAmount > 0 && (!data.paymentMilestones || data.paymentMilestones.length === 0) && (
-                <div className="mt-2 rounded-md overflow-hidden" style={{ border: '1px solid #fcd34d' }}>
-                  <div className="flex justify-between py-1 px-2" style={{ backgroundColor: '#fef9c3' }}>
-                    <span className="text-amber-700 text-[8pt] font-semibold">
+                <div className="mt-3 rounded-md overflow-hidden" style={{ border: '1px solid #e0dcd4' }}>
+                  <div className="flex justify-between py-1.5 px-3" style={{ backgroundColor: '#f8f5f0' }}>
+                    <span className="text-gray-600 text-[8pt] font-semibold">
                       <ArSub fr="Acompte" /> {data.acomptePercent ? `(${data.acomptePercent}%)` : ''}
                     </span>
-                    <span className="font-bold text-amber-700 text-[8pt]">{formatCurrency(data.acompteAmount)}</span>
+                    <span className="font-bold text-gray-700 text-[8pt]">{formatCurrency(data.acompteAmount)}</span>
                   </div>
                   {data.netAPayer !== undefined && (
-                    <div className="flex justify-between py-1.5 px-2" style={{ backgroundColor: '#fef3c7' }}>
-                      <span className="text-amber-900 text-[8.5pt] font-bold">Net à payer</span>
-                      <span className="font-bold text-amber-900 text-[10pt]">{formatCurrency(data.netAPayer)}</span>
+                    <div className="flex justify-between py-2 px-3" style={{ backgroundColor: '#f3f0ea' }}>
+                      <span className="text-gray-800 text-[9pt] font-bold">Net à payer</span>
+                      <span className="font-bold text-gray-900 text-[11pt]">{formatCurrency(data.netAPayer)}</span>
                     </div>
                   )}
                 </div>
@@ -504,67 +509,70 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             </div>
           </div>
 
-          {/* ── PAYMENT CONDITIONS — simple text ── */}
-          <div className="mb-4 text-[8pt] text-gray-500 space-y-0.5">
-            <p><span className="text-gray-600 font-semibold"><ArSub fr="Conditions de règlement:" /></span> {data.paymentTerms}</p>
-            {data.paymentDeadline === 'immediate' && (
-              <p className="text-gray-600 font-medium">Paiement à réception de la facture.</p>
-            )}
-            {data.legalMentions && <p>{data.legalMentions}</p>}
-            <p className="text-gray-400 text-[7pt]">Indemnité forfaitaire de 40 € pour frais de recouvrement en cas de retard de paiement (Art. L.441-10 et D.441-5 du Code de commerce).</p>
+          {/* ── PAYMENT CONDITIONS — bullet points, clean ── */}
+          <div className="mb-5 text-[8pt] text-gray-500">
+            <p className="text-gray-600 font-semibold mb-1.5"><ArSub fr="Conditions de règlement:" /></p>
+            <ul className="space-y-1 ml-1">
+              <li>• {data.paymentTerms}</li>
+              {data.paymentDeadline === 'immediate' && (
+                <li className="text-gray-600 font-medium">• Paiement à réception de la facture.</li>
+              )}
+              {data.legalMentions && <li>• {data.legalMentions}</li>}
+              <li className="text-gray-400 text-[7pt]">• Indemnité forfaitaire de 40 € pour frais de recouvrement en cas de retard (Art. L.441-10 du Code de commerce).</li>
+            </ul>
           </div>
 
-          {/* ── ACCEPTANCE & SIGNATURE — clean, minimal borders ── */}
-          <div className="pt-4 mt-2" style={{ borderTop: '1px solid #e5e7eb' }}>
-            <h4 className="text-[9pt] font-bold text-gray-800 text-center mb-2">
+          {/* ── ACCEPTANCE & SIGNATURE — compact horizontal layout ── */}
+          <div className="pt-4 mt-1" style={{ borderTop: '1px solid #ebebeb' }}>
+            <h4 className="text-[8.5pt] font-bold text-gray-700 text-center mb-1.5">
               {data.type === 'DEVIS' ? 'Acceptation du devis' : 'Acceptation de la facture'}
             </h4>
-            <p className="text-[7pt] text-gray-500 text-center mb-1.5 italic leading-snug">
+            <p className="text-[7pt] text-gray-400 text-center mb-1 italic leading-snug">
               {data.type === 'DEVIS'
                 ? 'Le client déclare avoir pris connaissance des conditions ci-dessus et accepte le présent devis.'
                 : 'Le client déclare avoir pris connaissance de la présente facture.'}
             </p>
-            <p className="text-[8pt] text-gray-600 text-center mb-3">
+            <p className="text-[7.5pt] text-gray-500 text-center mb-3">
               Mention manuscrite : « <span className="italic font-medium">Bon pour accord</span> »
             </p>
 
-            <div className="flex justify-between items-start gap-5">
+            <div className="flex justify-between items-start gap-4">
               {/* Client acceptance */}
-              <div className="flex-1 rounded-md p-2.5" style={{ border: '1px solid #e5e7eb' }}>
-                <p className="text-[8pt] font-bold text-gray-600 mb-1.5 text-center"><ArSub fr="Le client" /></p>
-                <div className="grid grid-cols-2 gap-3 mb-2">
+              <div className="flex-1 rounded p-2" style={{ border: '1px solid #ebebeb' }}>
+                <p className="text-[7.5pt] font-bold text-gray-500 mb-1 text-center"><ArSub fr="Le client" /></p>
+                <div className="grid grid-cols-2 gap-2 mb-1.5">
                   <div>
-                    <p className="text-[7pt] text-gray-400 mb-0.5">Nom :</p>
-                    <div className="h-4" style={{ borderBottom: '1px dotted #d1d5db' }} />
+                    <p className="text-[6.5pt] text-gray-400 mb-0.5">Nom :</p>
+                    <div className="h-3.5" style={{ borderBottom: '1px dotted #d1d5db' }} />
                   </div>
                   <div>
-                    <p className="text-[7pt] text-gray-400 mb-0.5">Date :</p>
-                    <div className="h-4" style={{ borderBottom: '1px dotted #d1d5db' }} />
+                    <p className="text-[6.5pt] text-gray-400 mb-0.5">Date :</p>
+                    <div className="h-3.5" style={{ borderBottom: '1px dotted #d1d5db' }} />
                   </div>
                 </div>
-                <p className="text-[7pt] text-gray-400 mb-0.5">Signature :</p>
-                <div className="h-12 rounded" style={{ border: '1px dashed #d1d5db' }} />
+                <p className="text-[6.5pt] text-gray-400 mb-0.5">Signature :</p>
+                <div className="h-10 rounded" style={{ border: '1px dashed #ddd' }} />
               </div>
 
-              {/* Artisan signature & stamp — compact */}
-              <div className="w-36 text-center">
-                <p className="text-[8pt] font-bold text-gray-600 mb-1.5"><ArSub fr="Le prestataire" /></p>
-                <p className="text-[7pt] text-gray-400 mb-1">Date : {data.date}</p>
+              {/* Artisan signature & stamp — smaller */}
+              <div className="w-32 text-center">
+                <p className="text-[7.5pt] font-bold text-gray-500 mb-1"><ArSub fr="Le prestataire" /></p>
+                <p className="text-[6.5pt] text-gray-400 mb-1">Date : {data.date}</p>
                 {data.artisanSignatureUrl ? (
-                  <div className="rounded p-0.5 mb-1" style={{ border: '1px solid #e5e7eb' }}>
-                    <img src={data.artisanSignatureUrl} alt="Signature" className="max-h-10 mx-auto object-contain" />
+                  <div className="rounded p-0.5 mb-1" style={{ border: '1px solid #ebebeb' }}>
+                    <img src={data.artisanSignatureUrl} alt="Signature" className="max-h-8 mx-auto object-contain" />
                   </div>
                 ) : (
-                  <div className="h-10 rounded mb-1" style={{ border: '1px dashed #d1d5db' }} />
+                  <div className="h-8 rounded mb-1" style={{ border: '1px dashed #ddd' }} />
                 )}
                 {data.stampUrl ? (
-                  <div className="rounded p-0.5 mx-auto" style={{ border: '1px solid #e5e7eb', width: '90px', height: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src={data.stampUrl} alt="Cachet" style={{ maxWidth: '80px', maxHeight: '40px', objectFit: 'contain' }} />
+                  <div className="rounded p-0.5 mx-auto" style={{ border: '1px solid #ebebeb', width: '80px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img src={data.stampUrl} alt="Cachet" style={{ maxWidth: '72px', maxHeight: '35px', objectFit: 'contain' }} />
                   </div>
                 ) : (
-                  <div className="h-8 rounded" style={{ border: '1px dashed #d1d5db' }} />
+                  <div className="h-7 rounded" style={{ border: '1px dashed #ddd' }} />
                 )}
-                <p className="text-[6pt] text-gray-400 mt-1"><ArSub fr="Signature & Cachet" /></p>
+                <p className="text-[6pt] text-gray-400 mt-0.5"><ArSub fr="Signature & Cachet" /></p>
               </div>
             </div>
           </div>
@@ -573,7 +581,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* Online Payment Section */}
         {(data.type === 'FACTURE' || data.paymentDeadline === 'immediate') && (
-          <div className="rounded-md px-3 py-2 mt-4 flex items-center gap-3 print:hidden" style={{ border: '1px solid #e5e7eb', backgroundColor: '#fafafa' }}>
+          <div className="rounded-md px-3 py-2 mt-5 flex items-center gap-3 print:hidden" style={{ border: '1px solid #ebebeb', backgroundColor: '#fafafa' }}>
             <div className="flex-1 min-w-0">
               <p className="text-[8pt] font-bold text-gray-700">
                 {data.paymentDeadline === 'immediate' ? 'Paiement immédiat' : 'Paiement en ligne'}
@@ -587,7 +595,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* Convert to Facture button */}
         {data.type === 'DEVIS' && onConvertToFacture && (
-          <div className="mt-3 print:hidden">
+          <div className="mt-4 print:hidden">
             <button
               onClick={(e) => { e.stopPropagation(); onConvertToFacture(); }}
               className="w-full py-2.5 rounded-lg text-[10pt] font-bold text-white shadow-md flex items-center justify-center gap-2 transition-all hover:opacity-90"
@@ -598,17 +606,17 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
         )}
 
-        {/* Legal Footer with IBAN */}
+        {/* Legal Footer — discreet, light grey */}
         {(data.legalFooter || data.emitter.iban || assuranceHeaderLine) && (
-          <div className="invoice-footer-block mt-5 pt-3 text-center" style={{ borderTop: '1px solid #e5e7eb', pageBreakInside: 'avoid' }}>
-            {data.legalFooter && <p className="text-[6.5pt] text-gray-400 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
+          <div className="invoice-footer-block mt-6 pt-3 text-center" style={{ borderTop: '1px solid #ebebeb', pageBreakInside: 'avoid' }}>
+            {data.legalFooter && <p className="text-[6pt] text-gray-300 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
             {data.emitter.iban && (
-              <p className="text-[7pt] text-gray-500 mt-0.5">
+              <p className="text-[6.5pt] text-gray-400 mt-0.5">
                 IBAN : <span className="font-mono font-medium tracking-wider">{data.emitter.iban}</span>
                 {data.emitter.bic && <> — BIC : <span className="font-mono font-medium">{data.emitter.bic}</span></>}
               </p>
             )}
-            <p className="text-[7pt] text-gray-400 mt-1 leading-snug">
+            <p className="text-[6pt] text-gray-300 mt-1 leading-snug">
               {assuranceHeaderLine
                 ? `${assuranceHeaderLine} — Zone : ${assurance?.geographicCoverage || 'France Métropolitaine'}.`
                 : 'Assurance Décennale souscrite pour la zone France Métropolitaine.'}

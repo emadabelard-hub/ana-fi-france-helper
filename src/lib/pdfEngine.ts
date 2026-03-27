@@ -189,8 +189,17 @@ html, body {
   color: inherit;
 }
 
-/* End-block: totals + conditions + signature + IBAN — NEVER split */
+/* End-block: ALLOW natural splitting across pages.
+   Only keep small sub-blocks together (totals row, signature row, IBAN row). */
 [data-pdf-section="end-block"] {
+  /* intentionally NO page-break-inside: avoid — let Chrome flow naturally */
+}
+
+/* Keep individual small sub-blocks together */
+.invoice-totals-row,
+.invoice-signature-block,
+.invoice-iban-block,
+.invoice-conditions-block {
   page-break-inside: avoid !important;
   break-inside: avoid !important;
 }

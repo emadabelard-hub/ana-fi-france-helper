@@ -37,6 +37,26 @@ interface InvoiceActionsProps {
   isPaid?: boolean;
 }
 
+type PdfChunkPlan =
+  | {
+      kind: 'section';
+      key: string;
+      element: HTMLElement;
+      heightPx: number;
+    }
+  | {
+      kind: 'table';
+      key: string;
+      sourceTable: HTMLTableElement;
+      rows: HTMLTableRowElement[];
+      heightPx: number;
+    };
+
+interface PdfPagePlan {
+  chunks: PdfChunkPlan[];
+  usedPx: number;
+}
+
 const InvoiceActions = ({ 
   invoiceData, 
   invoiceRef, 
@@ -54,6 +74,378 @@ const InvoiceActions = ({
   const [signedPdfBlob, setSignedPdfBlob] = useState<Blob | null>(null);
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  const waitForImages = async (root: ParentNode) => {
+    const images = Array.from(root.querySelectorAll('img'));
+    await Promise.all(
+      images.map((img) =>
+        img.complete
+          ? Promise.resolve()
+          : new Promise<void>((resolve) => {
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+            })
+      )
+    );
+  };
+
+  const waitForLayout = (delay = 80) => new Promise((resolve) => setTimeout(resolve, delay));
+
+  const captureCanvas = async (element: HTMLElement) => {
+    await waitForImages(element);
+    await waitForLayout();
+
+    const width = Math.max(Math.ceil(element.scrollWidth), 1);
+    const height = Math.max(Math.ceil(element.scrollHeight), 1);
+
+    return html2canvas(element, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true,
+      scrollX: 0,
+      scrollY: -window.scrollY,
+      width,
+      height,
+      windowWidth: width,
+      windowHeight: height,
+    });
+  };
+
+  const renderTableChunk = async (sourceTable: HTMLTableElement, rows: HTMLTableRowElement[], contentWidthPx: number) => {
+    const mount = document.createElement('div');
+    mount.className = 'french-invoice pdf-render-mode';
+    mount.style.position = 'fixed';
+    mount.style.left = '-100000px';
+    mount.style.top = '0';
+    mount.style.width = `${Math.ceil(contentWidthPx)}px`;
+    mount.style.margin = '0';
+    mount.style.padding = '0';
+    mount.style.background = '#ffffff';
+    mount.style.boxSizing = 'border-box';
+    mount.style.zIndex = '-1';
+
+    const tableClone = sourceTable.cloneNode(false) as HTMLTableElement;
+    tableClone.style.width = '100%';
+    tableClone.style.margin = '0';
+    tableClone.style.borderCollapse = 'collapse';
+
+    const colgroup = sourceTable.querySelector('colgroup');
+    const thead = sourceTable.querySelector('thead');
+
+    if (colgroup) tableClone.appendChild(colgroup.cloneNode(true));
+    if (thead) tableClone.appendChild(thead.cloneNode(true));
+
+    const tbody = document.createElement('tbody');
+    rows.forEach((row) => tbody.appendChild(row.cloneNode(true)));
+    tableClone.appendChild(tbody);
+    mount.appendChild(tableClone);
+    document.body.appendChild(mount);
+
+    try {
+      return await captureCanvas(mount);
+    } finally {
+      document.body.removeChild(mount);
+    }
+  };
+
+  const createMainPagePlan = (
+    mainPage: HTMLElement,
+    contentWidthMm: number,
+    maxContentHeightMm: number,
+    sectionGapMm: number,
+  ) => {
+    const computed = window.getComputedStyle(mainPage);
+    const contentWidthPx =
+      mainPage.getBoundingClientRect().width -
+      parseFloat(computed.paddingLeft || '0') -
+      parseFloat(computed.paddingRight || '0');
+
+    const pxPerMm = contentWidthPx / contentWidthMm;
+    const maxPagePx = maxContentHeightMm * pxPerMm;
+    const gapPx = sectionGapMm * pxPerMm;
+
+    const sectionElements = Array.from(mainPage.querySelectorAll('[data-pdf-section]')) as HTMLElement[];
+    const sectionMap = new Map(sectionElements.map((section) => [section.dataset.pdfSection ?? '', section]));
+    const tableElement = sectionMap.get('table') as HTMLTableElement | undefined;
+
+    const preTableSections = ['header', 'client', 'objet']
+      .map((key) => sectionMap.get(key))
+      .filter(Boolean) as HTMLElement[];
+
+    const postTableSections = ['bloc-total', 'bloc-conditions', 'bloc-signature', 'footer']
+      .map((key) => sectionMap.get(key))
+      .filter(Boolean) as HTMLElement[];
+
+    const pages: PdfPagePlan[] = [{ chunks: [], usedPx: 0 }];
+
+    const currentPage = () => pages[pages.length - 1];
+    const startNewPage = () => pages.push({ chunks: [], usedPx: 0 });
+
+    const addChunk = (chunk: PdfChunkPlan) => {
+      let page = currentPage();
+      const gap = page.chunks.length > 0 ? gapPx : 0;
+      if (page.chunks.length > 0 && page.usedPx + gap + chunk.heightPx > maxPagePx) {
+        startNewPage();
+        page = currentPage();
+      }
+
+      page.usedPx += (page.chunks.length > 0 ? gapPx : 0) + chunk.heightPx;
+      page.chunks.push(chunk);
+    };
+
+    preTableSections.forEach((section) => {
+      addChunk({
+        kind: 'section',
+        key: section.dataset.pdfSection || 'section',
+        element: section,
+        heightPx: section.getBoundingClientRect().height,
+      });
+    });
+
+    if (tableElement) {
+      const tableHead = tableElement.querySelector('thead') as HTMLElement | null;
+      const tableHeaderHeightPx = tableHead?.getBoundingClientRect().height ?? 0;
+      const allRows = Array.from(tableElement.querySelectorAll('tbody tr')) as HTMLTableRowElement[];
+      const rowHeights = new Map(allRows.map((row) => [row, row.getBoundingClientRect().height]));
+
+      const postTableHeightPx = postTableSections.reduce((sum, section) => sum + section.getBoundingClientRect().height, 0);
+      const postTableGapPx = gapPx * Math.max(postTableSections.length - 1, 0);
+      const minTargetLastPagePx = Math.min(
+        maxPagePx,
+        Math.max(maxPagePx * 0.8, postTableHeightPx + postTableGapPx + tableHeaderHeightPx),
+      );
+
+      let reservedStart = allRows.length;
+      let reservedRowsHeightPx = 0;
+
+      while (
+        reservedStart > 0 &&
+        postTableHeightPx +
+          postTableGapPx +
+          tableHeaderHeightPx +
+          reservedRowsHeightPx <
+          minTargetLastPagePx
+      ) {
+        reservedStart -= 1;
+        reservedRowsHeightPx += rowHeights.get(allRows[reservedStart]) ?? 0;
+      }
+
+      const leadingRows = allRows.slice(0, reservedStart);
+      const reservedRows = allRows.slice(reservedStart);
+
+      const queueTableRows = (rows: HTMLTableRowElement[], prefix: string) => {
+        let rowIndex = 0;
+        let chunkIndex = 0;
+
+        while (rowIndex < rows.length) {
+          let page = currentPage();
+          let availablePx = maxPagePx - page.usedPx - (page.chunks.length > 0 ? gapPx : 0);
+
+          if (availablePx <= tableHeaderHeightPx && page.chunks.length > 0) {
+            startNewPage();
+            page = currentPage();
+            availablePx = maxPagePx;
+          }
+
+          const chunkRows: HTMLTableRowElement[] = [];
+          let chunkHeightPx = tableHeaderHeightPx;
+
+          while (rowIndex < rows.length) {
+            const nextRow = rows[rowIndex];
+            const nextHeight = rowHeights.get(nextRow) ?? nextRow.getBoundingClientRect().height;
+            const projectedHeight = chunkHeightPx + nextHeight;
+
+            if (projectedHeight <= availablePx || chunkRows.length === 0) {
+              chunkRows.push(nextRow);
+              chunkHeightPx = projectedHeight;
+              rowIndex += 1;
+            } else {
+              break;
+            }
+          }
+
+          addChunk({
+            kind: 'table',
+            key: `${prefix}-${chunkIndex}`,
+            sourceTable: tableElement,
+            rows: chunkRows,
+            heightPx: chunkHeightPx,
+          });
+          chunkIndex += 1;
+        }
+      };
+
+      queueTableRows(leadingRows, 'table-main');
+
+      const reservedPackageHeightPx =
+        (reservedRows.length > 0 ? tableHeaderHeightPx + reservedRowsHeightPx + gapPx : 0) +
+        postTableHeightPx +
+        postTableGapPx;
+
+      if (
+        reservedRows.length > 0 &&
+        reservedPackageHeightPx <= maxPagePx &&
+        currentPage().chunks.length > 0 &&
+        currentPage().usedPx + gapPx + reservedPackageHeightPx > maxPagePx
+      ) {
+        startNewPage();
+      }
+
+      queueTableRows(reservedRows, 'table-tail');
+    }
+
+    postTableSections.forEach((section) => {
+      addChunk({
+        kind: 'section',
+        key: section.dataset.pdfSection || 'section',
+        element: section,
+        heightPx: section.getBoundingClientRect().height,
+      });
+    });
+
+    if (pages.length > 1) {
+      const lastPage = pages[pages.length - 1];
+      const previousPage = pages[pages.length - 2];
+      const minLastPagePx = maxPagePx * 0.8;
+      const minPreviousPagePx = maxPagePx * 0.65;
+
+      while (lastPage.usedPx < minLastPagePx && previousPage.chunks.length > 0) {
+        const candidate = previousPage.chunks[previousPage.chunks.length - 1];
+        if (candidate.kind !== 'table') break;
+
+        const previousGapReduction = previousPage.chunks.length > 1 ? gapPx : 0;
+        const nextGapIncrease = lastPage.chunks.length > 0 ? gapPx : 0;
+        const nextUsedPx = lastPage.usedPx + nextGapIncrease + candidate.heightPx;
+        const previousUsedPx = previousPage.usedPx - candidate.heightPx - previousGapReduction;
+
+        if (nextUsedPx > maxPagePx || (previousPage.chunks.length > 1 && previousUsedPx < minPreviousPagePx)) {
+          break;
+        }
+
+        previousPage.chunks.pop();
+        previousPage.usedPx = previousUsedPx;
+        lastPage.chunks.unshift(candidate);
+        lastPage.usedPx = nextUsedPx;
+      }
+
+      if (previousPage.chunks.length === 0) {
+        pages.splice(pages.length - 2, 1);
+      }
+    }
+
+    return { pages, contentWidthPx };
+  };
+
+  const buildPdfBlob = async ({ embedFacturX = false }: { embedFacturX?: boolean } = {}) => {
+    if (!invoiceRef.current) return null;
+
+    const wasArabic = showArabic;
+    if (wasArabic) {
+      onToggleArabic(false);
+      await waitForLayout(150);
+    }
+
+    try {
+      const container = invoiceRef.current.closest('.print-area') || invoiceRef.current.parentElement;
+      const allInvoicePages = container
+        ? Array.from(container.querySelectorAll('.french-invoice'))
+        : [invoiceRef.current];
+
+      allInvoicePages.forEach((page) => (page as HTMLElement).classList.add('pdf-render-mode'));
+      await waitForLayout(150);
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const MARGIN = 10;
+      const CONTENT_WIDTH = pdfWidth - MARGIN * 2;
+      const MAX_CONTENT_HEIGHT = pdfHeight - MARGIN * 2;
+      const SECTION_GAP = 2;
+
+      const mainPage = allInvoicePages[0] as HTMLElement;
+      const { pages, contentWidthPx } = createMainPagePlan(mainPage, CONTENT_WIDTH, MAX_CONTENT_HEIGHT, SECTION_GAP);
+
+      const renderChunk = async (chunk: PdfChunkPlan) => {
+        if (chunk.kind === 'table') {
+          return renderTableChunk(chunk.sourceTable, chunk.rows, contentWidthPx);
+        }
+        return captureCanvas(chunk.element);
+      };
+
+      for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
+        if (pageIndex > 0) pdf.addPage();
+
+        let currentY = MARGIN;
+        for (let chunkIndex = 0; chunkIndex < pages[pageIndex].chunks.length; chunkIndex += 1) {
+          const chunk = pages[pageIndex].chunks[chunkIndex];
+          const canvas = await renderChunk(chunk);
+          const heightMm = (canvas.height * CONTENT_WIDTH) / canvas.width;
+          const imageData = canvas.toDataURL('image/png');
+          pdf.addImage(imageData, 'PNG', MARGIN, currentY, CONTENT_WIDTH, heightMm);
+          currentY += heightMm + (chunkIndex < pages[pageIndex].chunks.length - 1 ? SECTION_GAP : 0);
+        }
+      }
+
+      for (let index = 1; index < allInvoicePages.length; index += 1) {
+        pdf.addPage();
+        const annexePage = allInvoicePages[index] as HTMLElement;
+        const canvas = await captureCanvas(annexePage);
+        const rawHeightMm = (canvas.height * CONTENT_WIDTH) / canvas.width;
+        const fittedHeightMm = Math.min(rawHeightMm, MAX_CONTENT_HEIGHT);
+        const fittedWidthMm = rawHeightMm > MAX_CONTENT_HEIGHT
+          ? CONTENT_WIDTH * (MAX_CONTENT_HEIGHT / rawHeightMm)
+          : CONTENT_WIDTH;
+        const xOffset = MARGIN + (CONTENT_WIDTH - fittedWidthMm) / 2;
+
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', xOffset, MARGIN, fittedWidthMm, fittedHeightMm);
+      }
+
+      const totalPages = pdf.getNumberOfPages();
+      const docLabel = `${invoiceData.type} n° ${invoiceData.number}`;
+      for (let p = 1; p <= totalPages; p += 1) {
+        pdf.setPage(p);
+        pdf.setFontSize(8);
+        pdf.setTextColor(150, 150, 150);
+        const footerText = `${docLabel} — Page ${p} / ${totalPages}`;
+        const textWidth = pdf.getTextWidth(footerText);
+        pdf.text(footerText, (pdfWidth - textWidth) / 2, pdfHeight - 6);
+      }
+
+      let blob = pdf.output('blob');
+
+      if (embedFacturX) {
+        try {
+          const facturxData = buildFacturXDataFromInvoice(invoiceData);
+          blob = await embedFacturXInPdf(blob, facturxData);
+          console.log('✅ Factur-X XML embedded successfully');
+        } catch (fxError) {
+          console.warn('⚠️ Factur-X embedding failed, using standard PDF:', fxError);
+        }
+      }
+
+      setSignedPdfBlob(blob);
+
+      if (embedFacturX && user) {
+        await uploadSignedPdf(blob);
+      }
+
+      return blob;
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      return null;
+    } finally {
+      const container = invoiceRef.current?.closest('.print-area') || invoiceRef.current?.parentElement;
+      const allPages = container
+        ? Array.from(container.querySelectorAll('.french-invoice'))
+        : invoiceRef.current ? [invoiceRef.current] : [];
+      allPages.forEach((page) => (page as HTMLElement).classList.remove('pdf-render-mode'));
+
+      if (wasArabic) {
+        onToggleArabic(true);
+      }
+    }
+  };
+
   const handleArabicToggle = (value: boolean) => {
     onToggleArabic(value);
 
@@ -66,156 +458,7 @@ const InvoiceActions = ({
 
   // Generate PDF from signed invoice with Factur-X XML embedded
   const generateSignedPdf = async () => {
-    if (!invoiceRef.current) return null;
-
-    const wasArabic = showArabic;
-    if (wasArabic) {
-      onToggleArabic(false);
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    try {
-      const container = invoiceRef.current.closest('.print-area') || invoiceRef.current.parentElement;
-      const allInvoicePages = container
-        ? Array.from(container.querySelectorAll('.french-invoice'))
-        : [invoiceRef.current];
-
-      // Switch to PDF render mode
-      allInvoicePages.forEach(p => (p as HTMLElement).classList.add('pdf-render-mode'));
-      await new Promise(resolve => setTimeout(resolve, 150));
-
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const MARGIN = 10;
-      const CONTENT_WIDTH = pdfWidth - MARGIN * 2;
-      const MAX_CONTENT_HEIGHT = pdfHeight - MARGIN * 2;
-      const SECTION_GAP = 2;
-
-      let currentY = MARGIN;
-
-      const captureAndPlace = async (el: HTMLElement, isAnnexe = false) => {
-        const imgs = Array.from(el.querySelectorAll('img'));
-        await Promise.all(imgs.map(img =>
-          img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })
-        ));
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        const canvas = await html2canvas(el, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-          useCORS: true,
-          scrollY: -window.scrollY,
-          windowWidth: 794,
-          windowHeight: el.scrollHeight,
-        });
-
-        const heightMM = (canvas.height / 2) * (CONTENT_WIDTH / (canvas.width / 2));
-        const remaining = MAX_CONTENT_HEIGHT - (currentY - MARGIN);
-
-        if (heightMM > remaining && currentY > MARGIN + 1) {
-          pdf.addPage();
-          currentY = MARGIN;
-        }
-
-        const imgFormat = isAnnexe ? 'JPEG' : 'PNG';
-        const imgData = isAnnexe
-          ? canvas.toDataURL('image/jpeg', 0.7)
-          : canvas.toDataURL('image/png');
-
-        pdf.addImage(imgData, imgFormat, MARGIN, currentY, CONTENT_WIDTH, heightMM);
-        currentY += heightMM + SECTION_GAP;
-      };
-
-      // Main invoice — section-based
-      const mainPage = allInvoicePages[0] as HTMLElement;
-      const sections = Array.from(mainPage.querySelectorAll('[data-pdf-section]')) as HTMLElement[];
-
-      if (sections.length > 0) {
-        for (const section of sections) {
-          if (section.classList.contains('print:hidden') || section.closest('.print\\:hidden')) continue;
-          await captureAndPlace(section);
-        }
-      } else {
-        await captureAndPlace(mainPage);
-      }
-
-      // Annexe pages — each on its own page, photos filling space
-      for (let i = 1; i < allInvoicePages.length; i++) {
-        pdf.addPage();
-        currentY = MARGIN;
-        
-        const annexePage = allInvoicePages[i] as HTMLElement;
-        const imgs = Array.from(annexePage.querySelectorAll('img'));
-        await Promise.all(imgs.map(img =>
-          img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })
-        ));
-        await new Promise(resolve => setTimeout(resolve, 150));
-        
-        const canvas = await html2canvas(annexePage, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-          useCORS: true,
-          scrollY: -window.scrollY,
-          windowWidth: 794,
-          windowHeight: annexePage.scrollHeight,
-        });
-        
-        const heightMM = (canvas.height / 2) * (CONTENT_WIDTH / (canvas.width / 2));
-        const fitHeight = Math.min(heightMM, MAX_CONTENT_HEIGHT);
-        const fitWidth = heightMM > MAX_CONTENT_HEIGHT
-          ? CONTENT_WIDTH * (MAX_CONTENT_HEIGHT / heightMM)
-          : CONTENT_WIDTH;
-        const xOffset = MARGIN + (CONTENT_WIDTH - fitWidth) / 2;
-        
-        const imgData = canvas.toDataURL('image/jpeg', 0.85);
-        pdf.addImage(imgData, 'JPEG', xOffset, MARGIN, fitWidth, fitHeight);
-      }
-
-      // Pagination footer
-      const totalPages = pdf.getNumberOfPages();
-      const docLabel = `${invoiceData.type} n° ${invoiceData.number}`;
-      for (let p = 1; p <= totalPages; p++) {
-        pdf.setPage(p);
-        pdf.setFontSize(8);
-        pdf.setTextColor(150, 150, 150);
-        const footerText = `${docLabel} — Page ${p} / ${totalPages}`;
-        const textWidth = pdf.getTextWidth(footerText);
-        pdf.text(footerText, (pdfWidth - textWidth) / 2, pdfHeight - 6);
-      }
-      
-      let blob = pdf.output('blob');
-
-      // Embed Factur-X XML
-      try {
-        const facturxData = buildFacturXDataFromInvoice(invoiceData);
-        blob = await embedFacturXInPdf(blob, facturxData);
-        console.log('✅ Factur-X XML embedded successfully');
-      } catch (fxError) {
-        console.warn('⚠️ Factur-X embedding failed, using standard PDF:', fxError);
-      }
-
-      setSignedPdfBlob(blob);
-
-      if (user) {
-        await uploadSignedPdf(blob);
-      }
-
-      return blob;
-    } catch (error) {
-      console.error('PDF generation error:', error);
-    } finally {
-      const container = invoiceRef.current?.closest('.print-area') || invoiceRef.current?.parentElement;
-      const allPages = container
-        ? Array.from(container.querySelectorAll('.french-invoice'))
-        : invoiceRef.current ? [invoiceRef.current] : [];
-      allPages.forEach(p => (p as HTMLElement).classList.remove('pdf-render-mode'));
-
-      if (wasArabic) {
-        onToggleArabic(true);
-      }
-    }
-    return null;
+    return buildPdfBlob({ embedFacturX: true });
   };
 
   // Upload signed PDF to Supabase storage
@@ -311,130 +554,17 @@ const InvoiceActions = ({
 
   // Generate and download a standard PDF (no Factur-X XML)
   const handlePDFClick = async () => {
-    if (!invoiceRef.current) return;
-
-    const wasArabic = showArabic;
-    if (wasArabic) {
-      onToggleArabic(false);
-      await new Promise(resolve => setTimeout(resolve, 300));
+    const blob = await buildPdfBlob();
+    if (!blob) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'فشل في إنشاء PDF' : 'Échec de la création du PDF',
+      });
+      return;
     }
 
     try {
-      const container = invoiceRef.current.closest('.print-area') || invoiceRef.current.parentElement;
-      const allInvoicePages = container
-        ? Array.from(container.querySelectorAll('.french-invoice'))
-        : [invoiceRef.current];
-
-      // Switch to PDF render mode
-      allInvoicePages.forEach(p => (p as HTMLElement).classList.add('pdf-render-mode'));
-      await new Promise(resolve => setTimeout(resolve, 150));
-
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const MARGIN = 10;
-      const CONTENT_WIDTH = pdfWidth - MARGIN * 2;
-      const MAX_CONTENT_HEIGHT = pdfHeight - MARGIN * 2;
-      const SECTION_GAP = 2; // mm between sections
-
-      let currentY = MARGIN;
-      let pageStarted = true; // first page already exists
-
-      // Helper to capture and place a section
-      const captureAndPlace = async (el: HTMLElement) => {
-        // Wait for images
-        const imgs = Array.from(el.querySelectorAll('img'));
-        await Promise.all(imgs.map(img =>
-          img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })
-        ));
-
-        const canvas = await html2canvas(el, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-          useCORS: true,
-          scrollY: -window.scrollY,
-          windowWidth: 794,
-          windowHeight: el.scrollHeight,
-        });
-
-        const heightMM = (canvas.height / 2) * (CONTENT_WIDTH / (canvas.width / 2));
-        const remaining = MAX_CONTENT_HEIGHT - (currentY - MARGIN);
-
-        // If section doesn't fit and we're not at the top, new page
-        if (heightMM > remaining && currentY > MARGIN + 1) {
-          pdf.addPage();
-          currentY = MARGIN;
-        }
-
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', MARGIN, currentY, CONTENT_WIDTH, heightMM);
-        currentY += heightMM + SECTION_GAP;
-      };
-
-      // Process main invoice page using sections
-      const mainPage = allInvoicePages[0] as HTMLElement;
-      const sections = Array.from(mainPage.querySelectorAll('[data-pdf-section]')) as HTMLElement[];
-
-      if (sections.length > 0) {
-        // Section-based capture — avoids cutting content
-        for (const section of sections) {
-          // Skip print:hidden elements
-          if (section.classList.contains('print:hidden') || section.closest('.print\\:hidden')) continue;
-          await captureAndPlace(section);
-        }
-      } else {
-        // Fallback: capture whole page if no sections found
-        await captureAndPlace(mainPage);
-      }
-
-      // Process annexe pages — each on its own page, photos filling the space
-      for (let i = 1; i < allInvoicePages.length; i++) {
-        pdf.addPage();
-        currentY = MARGIN;
-        
-        const annexePage = allInvoicePages[i] as HTMLElement;
-        const imgs = Array.from(annexePage.querySelectorAll('img'));
-        await Promise.all(imgs.map(img =>
-          img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })
-        ));
-        await new Promise(resolve => setTimeout(resolve, 150));
-        
-        const canvas = await html2canvas(annexePage, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-          useCORS: true,
-          scrollY: -window.scrollY,
-          windowWidth: 794,
-          windowHeight: annexePage.scrollHeight,
-        });
-        
-        const heightMM = (canvas.height / 2) * (CONTENT_WIDTH / (canvas.width / 2));
-        const fitHeight = Math.min(heightMM, MAX_CONTENT_HEIGHT);
-        const fitWidth = heightMM > MAX_CONTENT_HEIGHT
-          ? CONTENT_WIDTH * (MAX_CONTENT_HEIGHT / heightMM)
-          : CONTENT_WIDTH;
-        const xOffset = MARGIN + (CONTENT_WIDTH - fitWidth) / 2;
-        
-        const imgData = canvas.toDataURL('image/jpeg', 0.85);
-        pdf.addImage(imgData, 'JPEG', xOffset, MARGIN, fitWidth, fitHeight);
-      }
-
-      // Remove near-empty pages (less than 30% content)
-      // Note: jsPDF doesn't support page removal, so we prevent them upstream
-
-      // Add pagination footer
-      const totalPages = pdf.getNumberOfPages();
-      const docLabel = `${invoiceData.type} n° ${invoiceData.number}`;
-      for (let p = 1; p <= totalPages; p++) {
-        pdf.setPage(p);
-        pdf.setFontSize(8);
-        pdf.setTextColor(150, 150, 150);
-        const footerText = `${docLabel} — Page ${p} / ${totalPages}`;
-        const textWidth = pdf.getTextWidth(footerText);
-        pdf.text(footerText, (pdfWidth - textWidth) / 2, pdfHeight - 6);
-      }
-
-      const blob = pdf.output('blob');
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -447,21 +577,12 @@ const InvoiceActions = ({
         description: isRTL ? 'تم حفظ ملف PDF' : 'Le fichier PDF a été enregistré',
       });
     } catch (error) {
-      console.error('PDF generation error:', error);
+      console.error('PDF download error:', error);
       toast({
         variant: 'destructive',
         title: isRTL ? 'خطأ' : 'Erreur',
         description: isRTL ? 'فشل في إنشاء PDF' : 'Échec de la création du PDF',
       });
-    } finally {
-      const container = invoiceRef.current?.closest('.print-area') || invoiceRef.current?.parentElement;
-      const allPages = container
-        ? Array.from(container.querySelectorAll('.french-invoice'))
-        : invoiceRef.current ? [invoiceRef.current] : [];
-      allPages.forEach(p => (p as HTMLElement).classList.remove('pdf-render-mode'));
-      if (wasArabic) {
-        onToggleArabic(true);
-      }
     }
   };
 

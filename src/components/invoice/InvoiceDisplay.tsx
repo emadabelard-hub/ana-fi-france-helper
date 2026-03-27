@@ -439,10 +439,10 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* ── TOTALS + SIGNATURE + LEGAL — Never split across pages ── */}
         {/* ── TOTALS + SIGNATURE + LEGAL — Never split across pages ── */}
-        <div data-pdf-section="totals-signature" className="invoice-totals-signature-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+        <div className="invoice-totals-signature-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
 
           {/* Totals row: schedule left, amounts right */}
-          <div className="flex justify-between items-start mb-4 gap-4 mt-2">
+          <div data-pdf-section="bloc-total" className="pdf-keep-together flex justify-between items-start mb-4 gap-4 mt-2" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
             {/* Payment Schedule (compact, left side) */}
             {data.paymentMilestones && data.paymentMilestones.length > 0 && (
               <div className="flex-1 max-w-[48%]">
@@ -533,7 +533,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* ── PAYMENT CONDITIONS — bullet points, clean ── */}
-          <div className="mb-4 mt-1 text-[7pt] text-gray-500">
+          <div data-pdf-section="bloc-conditions" className="pdf-keep-together mb-4 mt-1 text-[7pt] text-gray-500" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
             <p className="text-gray-600 font-semibold mb-1"><ArSub fr="Conditions de règlement:" /></p>
             <ul className="space-y-0.5 ml-1">
               <li>• {data.paymentTerms}</li>
@@ -546,7 +546,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* ── ACCEPTANCE & SIGNATURE — compact horizontal layout ── */}
-          <div className="pt-3 mt-2" style={{ borderTop: '1px solid #e5e7eb' }}>
+          <div data-pdf-section="bloc-signature" className="pdf-keep-together pt-3 mt-2" style={{ borderTop: '1px solid #e5e7eb', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
             <h4 className="text-[7.5pt] font-bold text-gray-700 text-center mb-0.5">
               {data.type === 'DEVIS' ? 'Acceptation du devis' : 'Acceptation de la facture'}
             </h4>
@@ -604,7 +604,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* Online Payment Section */}
         {(data.type === 'FACTURE' || data.paymentDeadline === 'immediate') && (
-          <div className="rounded-md px-4 py-3 mt-6 flex items-center gap-3 print:hidden" style={{ border: '1px solid #e5e7eb', backgroundColor: '#fafafa' }}>
+          <div className="no-print rounded-md px-4 py-3 mt-6 flex items-center gap-3 print:hidden" style={{ border: '1px solid #e5e7eb', backgroundColor: '#fafafa' }}>
             <div className="flex-1 min-w-0">
               <p className="text-[8.5pt] font-bold text-gray-700">
                 {data.paymentDeadline === 'immediate' ? 'Paiement immédiat' : 'Paiement en ligne'}
@@ -618,7 +618,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* Convert to Facture button */}
         {data.type === 'DEVIS' && onConvertToFacture && (
-          <div className="mt-4 print:hidden">
+          <div className="no-print mt-4 print:hidden">
             <button
               onClick={(e) => { e.stopPropagation(); onConvertToFacture(); }}
               className="w-full py-2.5 rounded-lg text-[10pt] font-bold text-white shadow-md flex items-center justify-center gap-2 transition-all hover:opacity-90"
@@ -649,25 +649,25 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         )}
 
         {/* Page reference (screen only) */}
-        <div className="mt-3 text-center text-[7pt] text-gray-400 print:hidden">
+        <div className="no-print mt-3 text-center text-[7pt] text-gray-400 print:hidden">
           {docRef}
         </div>
       </div>
 
-      {/* ===== ANNEXE PAGES — Site Photos (2 per page for larger display) ===== */}
+      {/* ===== ANNEXE PAGES — Site Photos full-page ===== */}
       {photos.length > 0 && (() => {
-        const PHOTOS_PER_PAGE = 2;
+        const PHOTOS_PER_PAGE = 1;
         const annexePages = Math.ceil(photos.length / PHOTOS_PER_PAGE);
         return Array.from({ length: annexePages }).map((_, pageIdx) => {
           const pagePhotos = photos.slice(pageIdx * PHOTOS_PER_PAGE, (pageIdx + 1) * PHOTOS_PER_PAGE);
-          const isSinglePhoto = pagePhotos.length === 1;
+          const photo = pagePhotos[0];
           return (
             <div
               key={`annexe-${pageIdx}`}
               dir="ltr"
               lang="fr"
               className={cn(pageContainerClass, "invoice-annexe-page mt-6 print:mt-0")}
-              style={{ ...pageContainerStyle, pageBreakBefore: 'always' }}
+              style={{ ...pageContainerStyle, pageBreakBefore: 'always', display: 'flex', flexDirection: 'column', minHeight: '277mm' }}
               {...preventCopy}
             >
               <div className="invoice-print-footer hidden print:block">
@@ -682,22 +682,18 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 <h3 className="text-[10pt] font-bold text-gray-700">Annexe {annexePages > 1 ? `${pageIdx + 1}/${annexePages}` : ''} — Photos du chantier</h3>
               </div>
 
-              <div className={cn(
-                isSinglePhoto ? "annexe-photo-single flex flex-col items-center" : "annexe-photo-grid grid grid-cols-1 gap-4"
-              )}>
-                {pagePhotos.map((photo, photoIdx) => (
-                  <div key={photoIdx} className="rounded-md overflow-hidden w-full" style={{ border: '1px solid #e5e7eb' }}>
-                    <img
-                      src={photo.data}
-                      alt={photo.name || `Photo ${pageIdx * PHOTOS_PER_PAGE + photoIdx + 1}`}
-                      className="w-full object-contain"
-                      style={{ maxHeight: isSinglePhoto ? '900px' : '460px', backgroundColor: '#fafafa' }}
-                    />
-                    <div className="px-3 py-1.5" style={{ backgroundColor: '#fafafa', borderTop: '1px solid #f0f0f0' }}>
-                      <p className="text-[8pt] text-gray-600">{photo.name || `Photo ${pageIdx * PHOTOS_PER_PAGE + photoIdx + 1}`}</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="annexe-photo-single flex-1 flex flex-col justify-start">
+                <div className="annexe-photo-media flex-1 flex items-start justify-center overflow-hidden rounded-md" style={{ border: '1px solid #e5e7eb', padding: '6mm', backgroundColor: '#ffffff' }}>
+                  <img
+                    src={photo.data}
+                    alt={photo.name || `Photo ${pageIdx + 1}`}
+                    className="w-full h-full object-contain"
+                    style={{ width: '100%', maxHeight: '232mm', objectFit: 'contain', objectPosition: 'center top', backgroundColor: '#fafafa' }}
+                  />
+                </div>
+                <div className="px-3 py-1.5 mt-2" style={{ backgroundColor: '#fafafa', border: '1px solid #f0f0f0' }}>
+                  <p className="text-[8pt] text-gray-600">{photo.name || `Photo ${pageIdx + 1}`}</p>
+                </div>
               </div>
             </div>
           );

@@ -500,10 +500,9 @@ html, body {
     /* no page-break-inside: avoid — prevents large gaps */
   }
 
-  /* Keep footer/legal mentions together */
+  /* Keep small footer block together */
   .invoice-footer-block {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+    /* allowed to split if needed — Chrome handles naturally */
   }
 
   /* Annexe pages always start on new page */

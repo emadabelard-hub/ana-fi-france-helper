@@ -436,7 +436,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         <div data-pdf-section="end-block" className="invoice-totals-signature-block">
 
           {/* Totals row: schedule left, amounts right */}
-          <div className="pdf-keep-together flex justify-between items-start mb-4 gap-4 mt-2">
+          <div className="invoice-totals-row pdf-keep-together flex justify-between items-start mb-4 gap-4 mt-2">
             {/* Payment Schedule (compact, left side) */}
             {data.paymentMilestones && data.paymentMilestones.length > 0 && (
               <div className="flex-1 max-w-[48%]">
@@ -527,7 +527,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* ── PAYMENT CONDITIONS — bullet points, clean ── */}
-          <div className="pdf-keep-together mb-4 mt-1 text-[7pt] text-gray-500">
+          <div className="invoice-conditions-block pdf-keep-together mb-4 mt-1 text-[7pt] text-gray-500">
             <p className="text-gray-600 font-semibold mb-1"><ArSub fr="Conditions de règlement:" /></p>
             <ul className="space-y-0.5 ml-1">
               <li>• {data.paymentTerms}</li>
@@ -540,7 +540,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* ── ACCEPTANCE & SIGNATURE — compact horizontal layout ── */}
-          <div className="pdf-keep-together pt-3 mt-2" style={{ borderTop: '1px solid #e5e7eb' }}>
+          <div className="invoice-signature-block pdf-keep-together pt-3 mt-2" style={{ borderTop: '1px solid #e5e7eb' }}>
             <h4 className="text-[7.5pt] font-bold text-gray-700 text-center mb-0.5">
               {data.type === 'DEVIS' ? 'Acceptation du devis' : 'Acceptation de la facture'}
             </h4>
@@ -596,7 +596,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
           {/* Legal Footer — inside end-block so it's never isolated */}
           {(data.legalFooter || data.emitter.iban || assuranceHeaderLine) && (
-            <div className="invoice-footer-block mt-2 pt-1.5 text-center" style={{ borderTop: '1px solid #e5e7eb' }}>
+            <div className="invoice-iban-block invoice-footer-block mt-2 pt-1.5 text-center" style={{ borderTop: '1px solid #e5e7eb' }}>
               {data.legalFooter && <p className="text-[6pt] text-gray-300 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
               {data.emitter.iban && (
                 <p className="text-[6.5pt] text-gray-400 mt-0.5">

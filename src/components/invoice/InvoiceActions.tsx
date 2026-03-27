@@ -9,12 +9,12 @@ import { useAuth } from '@/hooks/useAuth';
 import SmartReviewModal from './SmartReviewModal';
 import { cn } from '@/lib/utils';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import type { InvoiceData } from './InvoiceDisplay';
 import type { LineItem } from './LineItemEditor';
 import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
 import { embedFacturXInPdf, buildFacturXDataFromInvoice } from '@/lib/facturxPdf';
+import { buildPdfFromContainer, waitForLayout, captureCanvas } from '@/lib/pdfEngine';
 
 
 interface SuggestedAddon {

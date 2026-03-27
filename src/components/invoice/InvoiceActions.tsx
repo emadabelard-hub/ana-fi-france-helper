@@ -81,6 +81,10 @@ const InvoiceActions = ({
         ? Array.from(container.querySelectorAll('.french-invoice'))
         : [invoiceRef.current];
 
+      // Switch to PDF render mode — clean A4, no mobile UI
+      pages.forEach(p => (p as HTMLElement).classList.add('pdf-render-mode'));
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -88,20 +92,21 @@ const InvoiceActions = ({
       for (let i = 0; i < pages.length; i++) {
         if (i > 0) pdf.addPage();
 
+        const pageEl = pages[i] as HTMLElement;
         // Wait for all images inside the page to finish loading
-        const imgs = Array.from((pages[i] as HTMLElement).querySelectorAll('img'));
+        const imgs = Array.from(pageEl.querySelectorAll('img'));
         await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })));
 
-      // Small delay to let browser finish layout/paint
-      await new Promise(resolve => setTimeout(resolve, 200));
+        // Small delay to let browser finish layout/paint
+        await new Promise(resolve => setTimeout(resolve, 200));
 
-      const canvas = await html2canvas(pages[i] as HTMLElement, {
+        const canvas = await html2canvas(pageEl, {
           backgroundColor: '#ffffff',
           scale: 2,
           useCORS: true,
           scrollY: -window.scrollY,
-          windowWidth: (pages[i] as HTMLElement).scrollWidth,
-          windowHeight: (pages[i] as HTMLElement).scrollHeight,
+          windowWidth: 794,
+          windowHeight: pageEl.scrollHeight,
         });
 
         // Compress: use JPEG for annexe pages (photos), PNG for main page
@@ -179,6 +184,13 @@ const InvoiceActions = ({
     } catch (error) {
       console.error('PDF generation error:', error);
     } finally {
+      // Remove PDF render mode
+      const container = invoiceRef.current?.closest('.print-area') || invoiceRef.current?.parentElement;
+      const allPages = container
+        ? Array.from(container.querySelectorAll('.french-invoice'))
+        : invoiceRef.current ? [invoiceRef.current] : [];
+      allPages.forEach(p => (p as HTMLElement).classList.remove('pdf-render-mode'));
+
       if (wasArabic) {
         onToggleArabic(true);
       }
@@ -290,6 +302,10 @@ const InvoiceActions = ({
     try {
       const el = invoiceRef.current;
 
+      // Switch to PDF render mode
+      el.classList.add('pdf-render-mode');
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Ensure all images are loaded before capture
       const imgs = Array.from(el.querySelectorAll('img'));
       await Promise.all(imgs.map(img =>
@@ -306,7 +322,7 @@ const InvoiceActions = ({
         scale: 2,
         useCORS: true,
         scrollY: -window.scrollY,
-        windowWidth: el.scrollWidth,
+        windowWidth: 794,
         windowHeight: el.scrollHeight,
       });
 
@@ -384,6 +400,8 @@ const InvoiceActions = ({
         description: isRTL ? 'فشل في إنشاء PDF' : 'Échec de la création du PDF',
       });
     } finally {
+      // Remove PDF render mode
+      invoiceRef.current?.classList.remove('pdf-render-mode');
       if (wasArabic) {
         onToggleArabic(true);
       }

@@ -59,6 +59,10 @@ export interface InvoiceData {
     total: number;
   }>;
   subtotal: number;
+  discountType?: 'percent' | 'fixed';
+  discountValue?: number;
+  discountAmount?: number;
+  subtotalAfterDiscount?: number;
   tvaRate: number;
   tvaAmount: number;
   total: number;
@@ -479,11 +483,28 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             )}
 
             {/* Totals block — right aligned */}
-            <div className="w-48 ml-auto">
+            <div className="w-52 ml-auto">
               <div className="flex justify-between py-1.5" style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <span className="text-gray-500 text-[7.5pt]"><ArSub fr="Total HT:" /></span>
                 <span className="text-gray-800 text-[8pt] font-medium tabular-nums">{formatCurrency(data.subtotal)}</span>
               </div>
+
+              {/* Discount line */}
+              {data.discountAmount && data.discountAmount > 0 && (
+                <>
+                  <div className="flex justify-between py-1.5" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <span className="text-gray-500 text-[7.5pt]">
+                      Remise {data.discountType === 'percent' ? `(${data.discountValue}%)` : ''} :
+                    </span>
+                    <span className="text-red-600 text-[8pt] font-medium tabular-nums">- {formatCurrency(data.discountAmount)}</span>
+                  </div>
+                  <div className="flex justify-between py-1.5" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <span className="text-gray-500 text-[7.5pt]">Total après remise :</span>
+                    <span className="text-gray-800 text-[8pt] font-semibold tabular-nums">{formatCurrency(data.subtotalAfterDiscount ?? data.subtotal)}</span>
+                  </div>
+                </>
+              )}
+
               {data.tvaExempt ? (
                 <div className="py-1.5" style={{ borderBottom: '1px solid #e5e7eb' }}>
                   <div className="flex justify-between">

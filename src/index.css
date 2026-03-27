@@ -237,9 +237,15 @@ html, body {
 /* Hide interactive / screen-only elements */
 .pdf-render-mode .print\:hidden,
 .pdf-render-mode [class*="print:hidden"],
+.pdf-render-mode .no-print,
 .pdf-render-mode button,
 .pdf-render-mode [role="button"] {
   display: none !important;
+}
+
+.pdf-render-mode .pdf-keep-together {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
 }
 
 /* Annexe pages in PDF mode — photos fill the page */
@@ -257,6 +263,17 @@ html, body {
 .pdf-render-mode .annexe-photo-grid {
   gap: 8px !important;
 }
+.pdf-render-mode .annexe-photo-single {
+  min-height: calc(297mm - 34mm) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+.pdf-render-mode .annexe-photo-media {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+}
 .pdf-render-mode .annexe-photo-grid img {
   height: auto !important;
   max-height: 480px !important;
@@ -265,10 +282,11 @@ html, body {
 }
 /* Single photo annexe fills page */
 .pdf-render-mode .annexe-photo-single img {
-  height: auto !important;
-  max-height: 900px !important;
+  height: 100% !important;
+  max-height: 235mm !important;
   width: 100% !important;
   object-fit: contain !important;
+  object-position: center top !important;
 }
 
 /* Safe area padding for mobile devices */

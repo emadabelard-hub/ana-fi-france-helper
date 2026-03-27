@@ -210,40 +210,35 @@ const CVGeneratorPage = () => {
         );
       } else {
         // Multi-page: slice the canvas
-        let remainingHeight = canvas.height;
-        let position = 0;
-        const pageCanvasHeight = (pageHeight * canvas.width) / imgWidth;
+        const usableHeight = pageHeight - margin * 2;
+        const sliceHeightPx = Math.floor((usableHeight / usableWidth) * canvas.width);
+        let yOffset = 0;
+        let pageNum = 0;
 
-        while (remainingHeight > 0) {
-          const sliceHeight = Math.min(pageCanvasHeight, remainingHeight);
+        while (yOffset < canvas.height) {
+          if (pageNum > 0) pdf.addPage();
+          const sliceH = Math.min(sliceHeightPx, canvas.height - yOffset);
 
           const pageCanvas = document.createElement('canvas');
           pageCanvas.width = canvas.width;
-          pageCanvas.height = sliceHeight;
+          pageCanvas.height = sliceH;
           const ctx = pageCanvas.getContext('2d');
           if (ctx) {
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-            ctx.drawImage(
-              canvas,
-              0, position,
-              canvas.width, sliceHeight,
-              0, 0,
-              canvas.width, sliceHeight
-            );
+            ctx.drawImage(canvas, 0, yOffset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
           }
 
-          const sliceImgHeight = (sliceHeight * imgWidth) / canvas.width;
-          if (position > 0) pdf.addPage();
+          const sliceFinalH = (sliceH * usableWidth) / canvas.width;
           pdf.addImage(
             pageCanvas.toDataURL('image/jpeg', 0.95),
             'JPEG',
-            0, 0,
-            imgWidth, sliceImgHeight
+            margin, margin,
+            usableWidth, sliceFinalH
           );
 
-          remainingHeight -= sliceHeight;
-          position += sliceHeight;
+          yOffset += sliceH;
+          pageNum++;
         }
       }
 

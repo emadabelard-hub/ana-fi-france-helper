@@ -512,21 +512,6 @@ html, body {
     page-break-before: always !important;
   }
 
-  /* Running footer on every printed page */
-  .invoice-print-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    text-align: center;
-    font-size: 7pt;
-    color: #999;
-    border-top: 0.5pt solid #ddd;
-    padding-top: 3pt;
-    padding-bottom: 2pt;
-    background: white;
-  }
-
   /* Page counter via @page – works in supporting renderers */
   @page {
     @bottom-center {
@@ -536,8 +521,4 @@ html, body {
     }
   }
 
-  /* Prevent body content from overlapping the fixed footer */
-  .french-invoice {
-    padding-bottom: 20mm !important;
-  }
 }

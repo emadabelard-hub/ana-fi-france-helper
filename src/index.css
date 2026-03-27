@@ -202,6 +202,61 @@ html, body {
   opacity: 1;
 }
 
+/* ============================================
+   PDF Render Mode
+   Applied temporarily during html2canvas capture
+   to produce a clean, professional A4 document
+   without mobile UI artifacts.
+   ============================================ */
+.pdf-render-mode.french-invoice {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: none !important;
+  max-width: none !important;
+  width: 794px !important;          /* ≈ 210mm at 96dpi */
+  min-height: 1122px !important;    /* ≈ 297mm at 96dpi */
+  padding: 20mm 15mm 18mm 15mm !important;
+  margin: 0 !important;
+  background: #ffffff !important;
+  font-size: 9pt !important;
+  line-height: 1.5 !important;
+}
+
+/* Larger, clearer typography for print */
+.pdf-render-mode h1 { font-size: 12pt !important; }
+.pdf-render-mode h2 { font-size: 14pt !important; }
+.pdf-render-mode h3 { font-size: 11pt !important; }
+
+/* Table: slightly larger text for A4 readability */
+.pdf-render-mode table { font-size: 8.5pt !important; }
+.pdf-render-mode th { font-size: 8pt !important; }
+
+/* Totals block: bump up */
+.pdf-render-mode .invoice-totals-signature-block { font-size: 9pt !important; }
+
+/* Hide interactive / screen-only elements */
+.pdf-render-mode .print\\:hidden,
+.pdf-render-mode [class*="print:hidden"] {
+  display: none !important;
+}
+
+/* Annexe pages in PDF mode */
+.pdf-render-mode.invoice-annexe-page {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: none !important;
+  max-width: none !important;
+  width: 794px !important;
+  margin: 0 !important;
+  padding: 15mm !important;
+}
+
+/* Photos fill more space in PDF */
+.pdf-render-mode .grid img {
+  height: 240px !important;
+  object-fit: cover;
+}
+
 /* Safe area padding for mobile devices */
 @layer utilities {
   .safe-area-pt {

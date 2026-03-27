@@ -37,26 +37,6 @@ interface InvoiceActionsProps {
   isPaid?: boolean;
 }
 
-type PdfChunkPlan =
-  | {
-      kind: 'section';
-      key: string;
-      element: HTMLElement;
-      heightPx: number;
-    }
-  | {
-      kind: 'table';
-      key: string;
-      sourceTable: HTMLTableElement;
-      rows: HTMLTableRowElement[];
-      heightPx: number;
-    };
-
-interface PdfPagePlan {
-  chunks: PdfChunkPlan[];
-  usedPx: number;
-}
-
 const InvoiceActions = ({ 
   invoiceData, 
   invoiceRef, 
@@ -75,199 +55,6 @@ const InvoiceActions = ({
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const waitForImages = async (root: ParentNode) => {
-    const images = Array.from(root.querySelectorAll('img'));
-    await Promise.all(
-      images.map((img) =>
-        img.complete
-          ? Promise.resolve()
-          : new Promise<void>((resolve) => {
-              img.onload = () => resolve();
-              img.onerror = () => resolve();
-            })
-      )
-    );
-  };
-
-  const waitForLayout = (delay = 80) => new Promise((resolve) => setTimeout(resolve, delay));
-
-  const captureCanvas = async (element: HTMLElement) => {
-    await waitForImages(element);
-    await waitForLayout();
-
-    const width = Math.max(Math.ceil(element.scrollWidth), 1);
-    const height = Math.max(Math.ceil(element.scrollHeight), 1);
-
-    return html2canvas(element, {
-      backgroundColor: '#ffffff',
-      scale: 2,
-      useCORS: true,
-      scrollX: 0,
-      scrollY: -window.scrollY,
-      width,
-      height,
-      windowWidth: width,
-      windowHeight: height,
-    });
-  };
-
-  const renderTableChunk = async (sourceTable: HTMLTableElement, rows: HTMLTableRowElement[], contentWidthPx: number) => {
-    const mount = document.createElement('div');
-    mount.className = 'french-invoice pdf-render-mode';
-    mount.style.position = 'fixed';
-    mount.style.left = '-100000px';
-    mount.style.top = '0';
-    mount.style.width = `${Math.ceil(contentWidthPx)}px`;
-    mount.style.margin = '0';
-    mount.style.padding = '0';
-    mount.style.background = '#ffffff';
-    mount.style.boxSizing = 'border-box';
-    mount.style.zIndex = '-1';
-
-    const tableClone = sourceTable.cloneNode(false) as HTMLTableElement;
-    tableClone.style.width = '100%';
-    tableClone.style.margin = '0';
-    tableClone.style.borderCollapse = 'collapse';
-
-    const colgroup = sourceTable.querySelector('colgroup');
-    const thead = sourceTable.querySelector('thead');
-
-    if (colgroup) tableClone.appendChild(colgroup.cloneNode(true));
-    if (thead) tableClone.appendChild(thead.cloneNode(true));
-
-    const tbody = document.createElement('tbody');
-    rows.forEach((row) => tbody.appendChild(row.cloneNode(true)));
-    tableClone.appendChild(tbody);
-    mount.appendChild(tableClone);
-    document.body.appendChild(mount);
-
-    try {
-      return await captureCanvas(mount);
-    } finally {
-      document.body.removeChild(mount);
-    }
-  };
-
-  /**
-   * Natural-flow page plan: content flows top-to-bottom across pages.
-   * No forced page breaks. Table starts right after header on page 1.
-   * Only rule: don't split a single table row or an insecable block.
-   */
-  const createMainPagePlan = (
-    mainPage: HTMLElement,
-    contentWidthMm: number,
-    maxContentHeightMm: number,
-    sectionGapMm: number,
-  ) => {
-    const computed = window.getComputedStyle(mainPage);
-    const contentWidthPx =
-      mainPage.getBoundingClientRect().width -
-      parseFloat(computed.paddingLeft || '0') -
-      parseFloat(computed.paddingRight || '0');
-
-    const pxPerMm = contentWidthPx / contentWidthMm;
-    const maxPagePx = maxContentHeightMm * pxPerMm;
-    const gapPx = sectionGapMm * pxPerMm;
-
-    // Collect all sections in DOM order
-    const sectionElements = Array.from(mainPage.querySelectorAll('[data-pdf-section]')) as HTMLElement[];
-    const tableElement = sectionElements.find(
-      (el) => el.dataset.pdfSection === 'table',
-    ) as HTMLTableElement | undefined;
-
-    const pages: PdfPagePlan[] = [{ chunks: [], usedPx: 0 }];
-
-    const currentPage = () => pages[pages.length - 1];
-    const startNewPage = () => pages.push({ chunks: [], usedPx: 0 });
-
-    const addChunk = (chunk: PdfChunkPlan) => {
-      let page = currentPage();
-      const gap = page.chunks.length > 0 ? gapPx : 0;
-      const needed = gap + chunk.heightPx;
-      const remaining = maxPagePx - page.usedPx;
-
-      // If adding this chunk would overflow AND the page already has content,
-      // start a new page. Never allow content to be cut off.
-      if (needed > remaining && page.chunks.length > 0) {
-        startNewPage();
-        page = currentPage();
-      }
-      page.usedPx += (page.chunks.length > 0 ? gapPx : 0) + chunk.heightPx;
-      page.chunks.push(chunk);
-    };
-
-    // Process sections in DOM order — table rows are inlined naturally
-    for (const section of sectionElements) {
-      const key = section.dataset.pdfSection || 'section';
-
-      if (key === 'table' && tableElement) {
-        // Split table into row chunks that fit remaining space
-        const tableHead = tableElement.querySelector('thead') as HTMLElement | null;
-        const tableHeaderHeightPx = tableHead?.getBoundingClientRect().height ?? 0;
-        const allRows = Array.from(tableElement.querySelectorAll('tbody tr')) as HTMLTableRowElement[];
-
-        let rowIndex = 0;
-        let chunkIndex = 0;
-
-        while (rowIndex < allRows.length) {
-          let page = currentPage();
-          let availablePx = maxPagePx - page.usedPx - (page.chunks.length > 0 ? gapPx : 0);
-
-          // If not even a header fits, go to next page
-          if (availablePx <= tableHeaderHeightPx && page.chunks.length > 0) {
-            startNewPage();
-            page = currentPage();
-            availablePx = maxPagePx;
-          }
-
-          const chunkRows: HTMLTableRowElement[] = [];
-          let chunkHeightPx = tableHeaderHeightPx;
-
-          while (rowIndex < allRows.length) {
-            const row = allRows[rowIndex];
-            const rowHeight = row.getBoundingClientRect().height;
-            const projected = chunkHeightPx + rowHeight;
-
-            // Always add at least one row per chunk
-            if (projected <= availablePx || chunkRows.length === 0) {
-              chunkRows.push(row);
-              chunkHeightPx = projected;
-              rowIndex += 1;
-            } else {
-              break;
-            }
-          }
-
-          addChunk({
-            kind: 'table',
-            key: `table-${chunkIndex}`,
-            sourceTable: tableElement,
-            rows: chunkRows,
-            heightPx: chunkHeightPx,
-          });
-          chunkIndex += 1;
-        }
-      } else if (key !== 'table') {
-        const sectionHeight = section.getBoundingClientRect().height;
-
-        // If a section is taller than a full page, we still add it
-        // (it will overflow but there's no way to split a non-table block)
-        // Otherwise, treat it as an insecable block
-        addChunk({
-          kind: 'section',
-          key,
-          element: section,
-          heightPx: sectionHeight,
-        });
-      }
-    }
-
-    // Remove any empty pages (shouldn't happen, but safety net)
-    const cleanPages = pages.filter((p) => p.chunks.length > 0);
-
-    return { pages: cleanPages.length > 0 ? cleanPages : pages, contentWidthPx };
-  };
-
   const buildPdfBlob = async ({ embedFacturX = false }: { embedFacturX?: boolean } = {}) => {
     if (!invoiceRef.current) return null;
 
@@ -279,71 +66,11 @@ const InvoiceActions = ({
 
     try {
       const container = invoiceRef.current.closest('.print-area') || invoiceRef.current.parentElement;
-      const allInvoicePages = container
-        ? Array.from(container.querySelectorAll('.french-invoice'))
-        : [invoiceRef.current];
+      if (!container) return null;
 
-      allInvoicePages.forEach((page) => (page as HTMLElement).classList.add('pdf-render-mode'));
-      await waitForLayout(150);
-
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const MARGIN = 10;
-      const CONTENT_WIDTH = pdfWidth - MARGIN * 2;
-      const MAX_CONTENT_HEIGHT = pdfHeight - MARGIN * 2;
-      const SECTION_GAP = 2;
-
-      const mainPage = allInvoicePages[0] as HTMLElement;
-      const { pages, contentWidthPx } = createMainPagePlan(mainPage, CONTENT_WIDTH, MAX_CONTENT_HEIGHT, SECTION_GAP);
-
-      const renderChunk = async (chunk: PdfChunkPlan) => {
-        if (chunk.kind === 'table') {
-          return renderTableChunk(chunk.sourceTable, chunk.rows, contentWidthPx);
-        }
-        return captureCanvas(chunk.element);
-      };
-
-      for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
-        if (pageIndex > 0) pdf.addPage();
-
-        let currentY = MARGIN;
-        for (let chunkIndex = 0; chunkIndex < pages[pageIndex].chunks.length; chunkIndex += 1) {
-          const chunk = pages[pageIndex].chunks[chunkIndex];
-          const canvas = await renderChunk(chunk);
-          const heightMm = (canvas.height * CONTENT_WIDTH) / canvas.width;
-          const imageData = canvas.toDataURL('image/png');
-          pdf.addImage(imageData, 'PNG', MARGIN, currentY, CONTENT_WIDTH, heightMm);
-          currentY += heightMm + (chunkIndex < pages[pageIndex].chunks.length - 1 ? SECTION_GAP : 0);
-        }
-      }
-
-      for (let index = 1; index < allInvoicePages.length; index += 1) {
-        pdf.addPage();
-        const annexePage = allInvoicePages[index] as HTMLElement;
-        const canvas = await captureCanvas(annexePage);
-        const rawHeightMm = (canvas.height * CONTENT_WIDTH) / canvas.width;
-        const fittedHeightMm = Math.min(rawHeightMm, MAX_CONTENT_HEIGHT);
-        const fittedWidthMm = rawHeightMm > MAX_CONTENT_HEIGHT
-          ? CONTENT_WIDTH * (MAX_CONTENT_HEIGHT / rawHeightMm)
-          : CONTENT_WIDTH;
-        const xOffset = MARGIN + (CONTENT_WIDTH - fittedWidthMm) / 2;
-
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', xOffset, MARGIN, fittedWidthMm, fittedHeightMm);
-      }
-
-      const totalPages = pdf.getNumberOfPages();
-      const docLabel = `${invoiceData.type} n° ${invoiceData.number}`;
-      for (let p = 1; p <= totalPages; p += 1) {
-        pdf.setPage(p);
-        pdf.setFontSize(8);
-        pdf.setTextColor(150, 150, 150);
-        const footerText = `${docLabel} — Page ${p} / ${totalPages}`;
-        const textWidth = pdf.getTextWidth(footerText);
-        pdf.text(footerText, (pdfWidth - textWidth) / 2, pdfHeight - 6);
-      }
-
-      let blob = pdf.output('blob');
+      let blob = await buildPdfFromContainer(container as HTMLElement, {
+        footerLabel: `${invoiceData.type} n° ${invoiceData.number}`,
+      });
 
       if (embedFacturX) {
         try {
@@ -366,12 +93,6 @@ const InvoiceActions = ({
       console.error('PDF generation error:', error);
       return null;
     } finally {
-      const container = invoiceRef.current?.closest('.print-area') || invoiceRef.current?.parentElement;
-      const allPages = container
-        ? Array.from(container.querySelectorAll('.french-invoice'))
-        : invoiceRef.current ? [invoiceRef.current] : [];
-      allPages.forEach((page) => (page as HTMLElement).classList.remove('pdf-render-mode'));
-
       if (wasArabic) {
         onToggleArabic(true);
       }

@@ -67,6 +67,12 @@ export const captureCanvas = async (element: HTMLElement, scale = 2) => {
   });
 };
 
+const validateChunkHeight = (heightPx: number, maxPagePx: number, label: string) => {
+  if (heightPx > maxPagePx) {
+    throw new Error(`PDF ENGINE: bloc trop grand pour tenir sur une page (${label})`);
+  }
+};
+
 /**
  * Render a subset of table rows (with thead) into an off-screen clone and capture.
  */
@@ -205,6 +211,7 @@ export async function buildPdfFromContainer(
 
     // 1) Header sections
     for (const el of beforeTable) {
+      validateChunkHeight(el.getBoundingClientRect().height, maxPagePx, el.dataset.pdfSection || 'section');
       placeBlock({
         type: 'section',
         element: el,
@@ -233,6 +240,7 @@ export async function buildPdfFromContainer(
 
         while (ri < rows.length) {
           const rowH = rows[ri].getBoundingClientRect().height;
+          validateChunkHeight(theadH + rowH, maxPagePx, `table-row-${ri}`);
           // Always include at least one row per batch to avoid infinite loop
           if (batchH + rowH > avail && batch.length > 0) break;
           batch.push(rows[ri]);
@@ -253,13 +261,14 @@ export async function buildPdfFromContainer(
 
       // VALIDATION: ensure no rows were lost
       if (placedRowCount !== totalRowCount) {
-        console.error(`PDF ENGINE: Row count mismatch! Expected ${totalRowCount}, placed ${placedRowCount}`);
+        throw new Error(`PDF ENGINE: Row count mismatch! Expected ${totalRowCount}, placed ${placedRowCount}`);
       }
     }
 
     // 3) End-block (totaux + conditions + signature + IBAN) — insecable group
     if (afterTable.length > 0) {
       const totalEndH = afterTable.reduce((s, el) => s + el.getBoundingClientRect().height + gapPx, 0);
+      validateChunkHeight(totalEndH, maxPagePx, 'end-block');
 
       // If end-block doesn't fit on current page and page has content → new page
       if (totalEndH > remaining() - gap() && cur().chunks.length > 0) {

@@ -125,7 +125,7 @@ async function inlineLocalImages(html: string): Promise<string> {
 
   let result = html;
   for (const { original, replacement } of replacements) {
-    result = result.replaceAll(original, replacement);
+    result = result.split(original).join(replacement);
   }
   return result;
 }

@@ -384,12 +384,27 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                     }}
                   >
                     {isSectionTitle ? (
-                      <span className="block text-left text-[9pt] font-bold text-gray-900 uppercase tracking-wide leading-snug">
+                      <span className="block text-left text-[9pt] font-bold text-gray-900 tracking-wide leading-snug">
                         {item.designation_fr}
                       </span>
                     ) : (
                       <span className="leading-snug block text-left text-gray-700">
-                        {item.designation_fr.includes('\n')
+                        {(() => {
+                          const text = item.designation_fr;
+                          // Bold the first phrase/segment for hierarchy
+                          const dashIdx = text.indexOf(' - ');
+                          const colonIdx = text.indexOf(' : ');
+                          const splitIdx = dashIdx >= 0 && (colonIdx < 0 || dashIdx < colonIdx) ? dashIdx : colonIdx;
+                          if (splitIdx > 0 && !text.includes('\n')) {
+                            return (
+                              <>
+                                <span className="font-semibold text-gray-800">{text.slice(0, splitIdx)}</span>
+                                {text.slice(splitIdx)}
+                              </>
+                            );
+                          }
+                          return null;
+                        })() || (item.designation_fr.includes('\n')
                           ? (
                             <ul className="list-disc list-inside space-y-0 ml-0">
                               {item.designation_fr.split('\n').filter(l => l.trim()).map((line, i) => (
@@ -397,7 +412,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                               ))}
                             </ul>
                           )
-                          : item.designation_fr}
+                          : item.designation_fr)}
                       </span>
                     )}
                     {showArabic && item.designation_ar && (
@@ -493,25 +508,25 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               )}
               {/* Thin divider before TTC */}
               <div style={{ borderBottom: '2px solid #d1d5db', margin: '4px 0' }} />
-              {/* TTC — clean highlight */}
-              <div className="flex justify-between items-center py-2.5 px-3 rounded-md" style={{ backgroundColor: '#f3f4f6' }}>
-                <span className="font-bold text-[10pt] text-gray-900"><ArSub fr="Total TTC:" /></span>
-                <span className="font-extrabold text-[14pt] text-gray-900">{formatCurrency(data.total)}</span>
+              {/* TTC — prominent highlight */}
+              <div className="flex justify-between items-center py-3 px-3.5 rounded-md" style={{ backgroundColor: '#f0f1f3' }}>
+                <span className="font-bold text-[10.5pt] text-gray-900"><ArSub fr="Total TTC:" /></span>
+                <span className="font-extrabold text-[16pt] text-gray-900 tabular-nums">{formatCurrency(data.total)}</span>
               </div>
 
               {/* Simple acompte (no milestones) */}
               {data.acompteAmount && data.acompteAmount > 0 && (!data.paymentMilestones || data.paymentMilestones.length === 0) && (
-                <div className="mt-3 rounded-md overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
-                  <div className="flex justify-between py-1.5 px-3" style={{ backgroundColor: '#f5f5f5' }}>
+                  <div className="mt-3 rounded-md overflow-hidden" style={{ border: '1px solid #d1d5db' }}>
+                   <div className="flex justify-between py-1.5 px-3" style={{ backgroundColor: '#f5f5f5' }}>
                     <span className="text-gray-600 text-[8pt] font-semibold">
                       <ArSub fr="Acompte" /> {data.acomptePercent ? `(${data.acomptePercent}%)` : ''}
                     </span>
-                    <span className="font-bold text-gray-700 text-[8pt]">{formatCurrency(data.acompteAmount)}</span>
+                    <span className="font-bold text-gray-700 text-[8pt] tabular-nums">{formatCurrency(data.acompteAmount)}</span>
                   </div>
                   {data.netAPayer !== undefined && (
-                    <div className="flex justify-between py-2 px-3" style={{ backgroundColor: '#efefef' }}>
-                      <span className="text-gray-800 text-[9pt] font-bold">Net à payer</span>
-                      <span className="font-bold text-gray-900 text-[11pt]">{formatCurrency(data.netAPayer)}</span>
+                    <div className="flex justify-between py-2.5 px-3" style={{ backgroundColor: '#e8eaed' }}>
+                      <span className="text-gray-900 text-[9.5pt] font-extrabold">Net à payer</span>
+                      <span className="font-extrabold text-gray-900 text-[12pt] tabular-nums">{formatCurrency(data.netAPayer)}</span>
                     </div>
                   )}
                 </div>
@@ -533,8 +548,8 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* ── ACCEPTANCE & SIGNATURE — compact horizontal layout ── */}
-          <div className="pt-5 mt-3" style={{ borderTop: '1px solid #e5e7eb' }}>
-            <h4 className="text-[8.5pt] font-bold text-gray-700 text-center mb-1.5">
+          <div className="pt-4 mt-3" style={{ borderTop: '1px solid #e5e7eb' }}>
+            <h4 className="text-[8.5pt] font-bold text-gray-700 text-center mb-1">
               {data.type === 'DEVIS' ? 'Acceptation du devis' : 'Acceptation de la facture'}
             </h4>
             <p className="text-[7pt] text-gray-400 text-center mb-1 italic leading-snug">
@@ -561,7 +576,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                   </div>
                 </div>
                 <p className="text-[6.5pt] text-gray-400 mb-0.5">Signature :</p>
-                <div className="h-10 rounded" style={{ border: '1px dashed #d5d5d5' }} />
+                <div className="h-8 rounded" style={{ border: '1px dashed #d5d5d5' }} />
               </div>
 
               {/* Artisan signature & stamp — smaller */}
@@ -599,7 +614,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               <p className="text-[7pt] text-gray-500 leading-tight mt-0.5">Scannez le QR code pour payer en ligne.</p>
             </div>
             <div className="w-10 h-10 rounded flex items-center justify-center text-[6pt] text-gray-400 text-center leading-tight shrink-0" style={{ border: '1px dashed #d1d5db' }}>QR</div>
-            <button className="px-4 py-2 rounded-md text-[8.5pt] font-bold text-white shadow-sm shrink-0" style={{ backgroundColor: '#059669' }} onClick={(e) => e.stopPropagation()}>Payer</button>
+            <button className="px-5 py-2.5 rounded-lg text-[9pt] font-bold text-white shadow-sm shrink-0 transition-colors hover:opacity-90" style={{ backgroundColor: '#059669' }} onClick={(e) => e.stopPropagation()}>Payer</button>
           </div>
         )}
 

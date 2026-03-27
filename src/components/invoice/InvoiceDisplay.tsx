@@ -647,25 +647,6 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
         )}
 
-        {/* Legal Footer — discreet, light grey */}
-        {(data.legalFooter || data.emitter.iban || assuranceHeaderLine) && (
-          <div data-pdf-section="footer" className="invoice-footer-block mt-2 pt-1.5 text-center" style={{ borderTop: '1px solid #e5e7eb' }}>
-            {data.legalFooter && <p className="text-[6pt] text-gray-300 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
-            {data.emitter.iban && (
-              <p className="text-[6.5pt] text-gray-400 mt-0.5">
-                IBAN : <span className="font-mono font-medium tracking-wider">{data.emitter.iban}</span>
-                {data.emitter.bic && <> — BIC : <span className="font-mono font-medium">{data.emitter.bic}</span></>}
-              </p>
-            )}
-            <p className="text-[6pt] text-gray-300 mt-1 leading-snug">
-              {assuranceHeaderLine
-                ? `${assuranceHeaderLine} — Zone : ${assurance?.geographicCoverage || 'France Métropolitaine'}.`
-                : 'Assurance Décennale souscrite pour la zone France Métropolitaine.'}
-              {data.type === 'DEVIS' && ' Validité du devis : 30 jours.'}
-            </p>
-          </div>
-        )}
-
         {/* Page reference (screen only) */}
         <div className="no-print mt-3 text-center text-[7pt] text-gray-400 print:hidden">
           {docRef}

@@ -202,6 +202,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Unit Guide state
   const [showUnitGuide, setShowUnitGuide] = useState(false);
+  const [unitGuideTargetItemId, setUnitGuideTargetItemId] = useState<string | null>(null);
   
   // Guide modal state
   const [showGuide, setShowGuide] = useState(false);

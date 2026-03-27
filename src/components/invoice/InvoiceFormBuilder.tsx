@@ -2063,7 +2063,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                       <Label className={cn("text-xs", isRTL && "font-cairo")}>
                         {isRTL ? 'الوحدة' : 'Unité'}
                       </Label>
-                      {index === 0 && <UnitGuideButton onClick={() => setShowUnitGuide(true)} />}
+                      {index === 0 && <UnitGuideButton onClick={() => { setUnitGuideTargetItemId(item.id); setShowUnitGuide(true); }} />}
                     </div>
                     <Input
                       value={item.unit}
@@ -3106,6 +3106,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       <UnitGuideModal
         open={showUnitGuide}
         onOpenChange={setShowUnitGuide}
+        onSelectUnit={(unitValue) => {
+          if (unitGuideTargetItemId) {
+            handleItemChange(unitGuideTargetItemId, 'unit', unitValue);
+          }
+          setUnitGuideTargetItemId(null);
+        }}
       />
     </div>
   );

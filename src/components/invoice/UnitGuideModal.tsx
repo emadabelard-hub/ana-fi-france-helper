@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 interface UnitGuideModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSelectUnit?: (unitValue: string) => void;
 }
 
 const UNIT_GUIDE = [
@@ -77,7 +78,17 @@ const UNIT_GUIDE = [
   },
 ];
 
-const UnitGuideModal = ({ open, onOpenChange }: UnitGuideModalProps) => {
+// Map guide codes to LineItemEditor unit values
+const UNIT_CODE_TO_VALUE: Record<string, string> = {
+  'm²': 'm²',
+  'ml': 'ml',
+  'U': 'u',
+  'H': 'h',
+  'J': 'jour',
+  'Forfait': 'forfait',
+};
+
+const UnitGuideModal = ({ open, onOpenChange, onSelectUnit }: UnitGuideModalProps) => {
   const { isRTL } = useLanguage();
 
   return (
@@ -109,11 +120,20 @@ const UnitGuideModal = ({ open, onOpenChange }: UnitGuideModalProps) => {
           {UNIT_GUIDE.map((unit) => (
             <div
               key={unit.code}
+              role={onSelectUnit ? "button" : undefined}
+              tabIndex={onSelectUnit ? 0 : undefined}
+              onClick={() => {
+                if (onSelectUnit) {
+                  onSelectUnit(UNIT_CODE_TO_VALUE[unit.code] || unit.code.toLowerCase());
+                  onOpenChange(false);
+                }
+              }}
               className={cn(
                 "flex items-center gap-4 p-3 rounded-2xl border",
                 unit.bgColor,
                 unit.borderColor,
-                isRTL && "flex-row-reverse"
+                isRTL && "flex-row-reverse",
+                onSelectUnit && "cursor-pointer hover:ring-2 hover:ring-primary/40 transition-shadow active:scale-[0.98]"
               )}
             >
               <div className={cn(

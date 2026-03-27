@@ -82,6 +82,11 @@ function collectAllCSS(): string {
   for (const sheet of document.styleSheets) {
     try {
       for (const rule of sheet.cssRules) {
+        // Skip @media print rules — they contain "visibility: hidden"
+        // which hides all content. Our PDF overrides handle print styling.
+        if (rule instanceof CSSMediaRule && rule.conditionText === 'print') {
+          continue;
+        }
         rules.push(rule.cssText);
       }
     } catch (_e) {

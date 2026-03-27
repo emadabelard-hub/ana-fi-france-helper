@@ -200,11 +200,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
   const pageContainerClass = "french-invoice bg-white text-gray-900 rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none print:max-w-none print:rounded-none select-none";
   const pageContainerStyle: React.CSSProperties = {
-    padding: '8mm 10mm 10mm 10mm',
+    padding: '10mm 12mm 12mm 12mm',
     boxSizing: 'border-box',
     minHeight: 'auto',
-    fontSize: '8pt',
-    lineHeight: '1.45',
+    fontSize: '9pt',
+    lineHeight: '1.5',
     fontFamily: 'Arial, "Helvetica Neue", sans-serif',
     WebkitUserSelect: 'none',
     userSelect: 'none',

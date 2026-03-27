@@ -346,6 +346,10 @@ const InvoiceActions = ({
       ),
       '',
       `Total HT: ${invoiceData.subtotal}€`,
+      ...(invoiceData.discountAmount && invoiceData.discountAmount > 0 ? [
+        `Remise${invoiceData.discountType === 'percent' ? ` (${invoiceData.discountValue}%)` : ''}: -${invoiceData.discountAmount}€`,
+        `Total après remise: ${invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal}€`,
+      ] : []),
       invoiceData.tvaExempt 
         ? invoiceData.tvaExemptText 
         : `TVA (${invoiceData.tvaRate}%): ${invoiceData.tvaAmount}€`,

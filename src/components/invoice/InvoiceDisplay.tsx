@@ -441,7 +441,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         <div data-pdf-section="bloc-totals-signature" className="invoice-totals-signature-block">
 
           {/* Totals row: schedule left, amounts right */}
-          <div data-pdf-section="bloc-total" className="pdf-keep-together flex justify-between items-start mb-4 gap-4 mt-2" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+          <div className="pdf-keep-together flex justify-between items-start mb-4 gap-4 mt-2">
             {/* Payment Schedule (compact, left side) */}
             {data.paymentMilestones && data.paymentMilestones.length > 0 && (
               <div className="flex-1 max-w-[48%]">
@@ -532,7 +532,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* ── PAYMENT CONDITIONS — bullet points, clean ── */}
-          <div data-pdf-section="bloc-conditions" className="pdf-keep-together mb-4 mt-1 text-[7pt] text-gray-500" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+          <div className="pdf-keep-together mb-4 mt-1 text-[7pt] text-gray-500">
             <p className="text-gray-600 font-semibold mb-1"><ArSub fr="Conditions de règlement:" /></p>
             <ul className="space-y-0.5 ml-1">
               <li>• {data.paymentTerms}</li>
@@ -545,7 +545,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* ── ACCEPTANCE & SIGNATURE — compact horizontal layout ── */}
-          <div data-pdf-section="bloc-signature" className="pdf-keep-together pt-3 mt-2" style={{ borderTop: '1px solid #e5e7eb', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+          <div className="pdf-keep-together pt-3 mt-2" style={{ borderTop: '1px solid #e5e7eb' }}>
             <h4 className="text-[7.5pt] font-bold text-gray-700 text-center mb-0.5">
               {data.type === 'DEVIS' ? 'Acceptation du devis' : 'Acceptation de la facture'}
             </h4>

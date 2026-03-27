@@ -495,10 +495,9 @@ html, body {
     page-break-inside: avoid;
   }
 
-  /* Keep totals + signature together - NEVER split */
+  /* Allow totals block to split across pages naturally */
   .invoice-totals-signature-block {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+    /* no page-break-inside: avoid — prevents large gaps */
   }
 
   /* Keep footer/legal mentions together */

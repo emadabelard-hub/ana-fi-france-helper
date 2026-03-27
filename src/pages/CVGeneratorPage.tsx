@@ -366,11 +366,20 @@ const CVGeneratorPage = () => {
               renderDownloadButton={() => (
                 <Button
                   onClick={handleExportPDF}
-                  disabled={!hasData}
+                  disabled={!isCvReady || isExporting}
                   className="w-full gap-2"
                   size="lg"
                 >
-                  {isRTL ? '📥 تحميل PDF' : '📥 Télécharger PDF'}
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      {isRTL ? 'جاري إنشاء PDF...' : 'Génération du PDF...'}
+                    </>
+                  ) : (
+                    <>
+                      {isRTL ? '📥 تحميل PDF' : '📥 Télécharger PDF'}
+                    </>
+                  )}
                 </Button>
               )}
             >

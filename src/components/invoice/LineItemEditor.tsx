@@ -96,6 +96,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
   const [pendingTranslation, setPendingTranslation] = useState<Set<string>>(new Set());
   // Unit guide modal state
   const [showUnitGuide, setShowUnitGuide] = useState(false);
+  const [unitGuideTargetItemId, setUnitGuideTargetItemId] = useState<string | null>(null);
 
   // Persist line items locally so refresh/touch doesn't wipe the current work
   const hasLoadedFromStorageRef = useRef(false);
@@ -396,7 +397,16 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
   return (
     <div className="space-y-4">
       {/* Unit Guide Modal */}
-      <UnitGuideModal open={showUnitGuide} onOpenChange={setShowUnitGuide} />
+      <UnitGuideModal
+        open={showUnitGuide}
+        onOpenChange={setShowUnitGuide}
+        onSelectUnit={(unitValue) => {
+          if (unitGuideTargetItemId) {
+            updateItem(unitGuideTargetItemId, 'unit', unitValue);
+          }
+          setUnitGuideTargetItemId(null);
+        }}
+      />
 
       {/* Quick Add Presets */}
       <div className="space-y-2">
@@ -526,7 +536,10 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                           {isRTL ? 'الوحدة' : 'Unité'}
                         </Label>
                         {index === 0 && (
-                          <UnitGuideButton onClick={() => setShowUnitGuide(true)} />
+                          <UnitGuideButton onClick={() => {
+                            setUnitGuideTargetItemId(item.id);
+                            setShowUnitGuide(true);
+                          }} />
                         )}
                       </div>
                       <Select

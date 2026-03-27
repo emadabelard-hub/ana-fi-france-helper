@@ -302,6 +302,10 @@ const InvoiceActions = ({
     try {
       const el = invoiceRef.current;
 
+      // Switch to PDF render mode
+      el.classList.add('pdf-render-mode');
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Ensure all images are loaded before capture
       const imgs = Array.from(el.querySelectorAll('img'));
       await Promise.all(imgs.map(img =>
@@ -318,7 +322,7 @@ const InvoiceActions = ({
         scale: 2,
         useCORS: true,
         scrollY: -window.scrollY,
-        windowWidth: el.scrollWidth,
+        windowWidth: 794,
         windowHeight: el.scrollHeight,
       });
 
@@ -396,6 +400,8 @@ const InvoiceActions = ({
         description: isRTL ? 'فشل في إنشاء PDF' : 'Échec de la création du PDF',
       });
     } finally {
+      // Remove PDF render mode
+      invoiceRef.current?.classList.remove('pdf-render-mode');
       if (wasArabic) {
         onToggleArabic(true);
       }

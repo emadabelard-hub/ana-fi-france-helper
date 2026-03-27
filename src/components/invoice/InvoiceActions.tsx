@@ -184,6 +184,13 @@ const InvoiceActions = ({
     } catch (error) {
       console.error('PDF generation error:', error);
     } finally {
+      // Remove PDF render mode
+      const container = invoiceRef.current?.closest('.print-area') || invoiceRef.current?.parentElement;
+      const allPages = container
+        ? Array.from(container.querySelectorAll('.french-invoice'))
+        : invoiceRef.current ? [invoiceRef.current] : [];
+      allPages.forEach(p => (p as HTMLElement).classList.remove('pdf-render-mode'));
+
       if (wasArabic) {
         onToggleArabic(true);
       }

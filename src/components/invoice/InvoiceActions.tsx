@@ -75,82 +75,79 @@ const InvoiceActions = ({
     }
 
     try {
-      // Find all renderable pages (main + annexes)
       const container = invoiceRef.current.closest('.print-area') || invoiceRef.current.parentElement;
-      const pages = container
+      const allInvoicePages = container
         ? Array.from(container.querySelectorAll('.french-invoice'))
         : [invoiceRef.current];
 
-      // Switch to PDF render mode — clean A4, no mobile UI
-      pages.forEach(p => (p as HTMLElement).classList.add('pdf-render-mode'));
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Switch to PDF render mode
+      allInvoicePages.forEach(p => (p as HTMLElement).classList.add('pdf-render-mode'));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+      const MARGIN = 10;
+      const CONTENT_WIDTH = pdfWidth - MARGIN * 2;
+      const MAX_CONTENT_HEIGHT = pdfHeight - MARGIN * 2;
+      const SECTION_GAP = 2;
 
-      for (let i = 0; i < pages.length; i++) {
-        if (i > 0) pdf.addPage();
+      let currentY = MARGIN;
 
-        const pageEl = pages[i] as HTMLElement;
-        // Wait for all images inside the page to finish loading
-        const imgs = Array.from(pageEl.querySelectorAll('img'));
-        await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })));
+      const captureAndPlace = async (el: HTMLElement, isAnnexe = false) => {
+        const imgs = Array.from(el.querySelectorAll('img'));
+        await Promise.all(imgs.map(img =>
+          img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })
+        ));
+        await new Promise(resolve => setTimeout(resolve, 100));
 
-        // Small delay to let browser finish layout/paint
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        const canvas = await html2canvas(pageEl, {
+        const canvas = await html2canvas(el, {
           backgroundColor: '#ffffff',
           scale: 2,
           useCORS: true,
           scrollY: -window.scrollY,
           windowWidth: 794,
-          windowHeight: pageEl.scrollHeight,
+          windowHeight: el.scrollHeight,
         });
 
-        // Compress: use JPEG for annexe pages (photos), PNG for main page
-        const isAnnexe = i > 0;
+        const heightMM = (canvas.height / 2) * (CONTENT_WIDTH / (canvas.width / 2));
+        const remaining = MAX_CONTENT_HEIGHT - (currentY - MARGIN);
+
+        if (heightMM > remaining && currentY > MARGIN + 1) {
+          pdf.addPage();
+          currentY = MARGIN;
+        }
+
         const imgFormat = isAnnexe ? 'JPEG' : 'PNG';
         const imgData = isAnnexe
           ? canvas.toDataURL('image/jpeg', 0.7)
           : canvas.toDataURL('image/png');
 
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
+        pdf.addImage(imgData, imgFormat, MARGIN, currentY, CONTENT_WIDTH, heightMM);
+        currentY += heightMM + SECTION_GAP;
+      };
 
-        // Scale to fill page width with small margins
-        const margin = 5; // mm
-        const usableWidth = pdfWidth - margin * 2;
-        const scaledHeight = (imgHeight * usableWidth) / imgWidth;
+      // Main invoice — section-based
+      const mainPage = allInvoicePages[0] as HTMLElement;
+      const sections = Array.from(mainPage.querySelectorAll('[data-pdf-section]')) as HTMLElement[];
 
-        if (scaledHeight <= pdfHeight - margin * 2) {
-          pdf.addImage(imgData, imgFormat, margin, margin, usableWidth, scaledHeight);
-        } else {
-          // Multi-page slicing for tall content
-          const sliceHeightPx = Math.floor(((pdfHeight - margin * 2) / usableWidth) * imgWidth);
-          let yOffset = 0;
-          let isFirst = true;
-          while (yOffset < imgHeight) {
-            if (!isFirst) pdf.addPage();
-            isFirst = false;
-            const sliceH = Math.min(sliceHeightPx, imgHeight - yOffset);
-            const sliceCanvas = document.createElement('canvas');
-            sliceCanvas.width = imgWidth;
-            sliceCanvas.height = sliceH;
-            const ctx = sliceCanvas.getContext('2d')!;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, imgWidth, sliceH);
-            ctx.drawImage(canvas, 0, yOffset, imgWidth, sliceH, 0, 0, imgWidth, sliceH);
-            const sliceData = sliceCanvas.toDataURL(isAnnexe ? 'image/jpeg' : 'image/png', isAnnexe ? 0.7 : undefined);
-            const sliceFinalH = (sliceH * usableWidth) / imgWidth;
-            pdf.addImage(sliceData, imgFormat, margin, margin, usableWidth, sliceFinalH);
-            yOffset += sliceH;
-          }
+      if (sections.length > 0) {
+        for (const section of sections) {
+          if (section.classList.contains('print:hidden') || section.closest('.print\\:hidden')) continue;
+          await captureAndPlace(section);
         }
+      } else {
+        await captureAndPlace(mainPage);
       }
 
-      // Add pagination footer on every page: "Devis n° D-2026-1 — Page X / Y"
+      // Annexe pages
+      for (let i = 1; i < allInvoicePages.length; i++) {
+        pdf.addPage();
+        currentY = MARGIN;
+        await captureAndPlace(allInvoicePages[i] as HTMLElement, true);
+      }
+
+      // Pagination footer
       const totalPages = pdf.getNumberOfPages();
       const docLabel = `${invoiceData.type} n° ${invoiceData.number}`;
       for (let p = 1; p <= totalPages; p++) {
@@ -164,7 +161,7 @@ const InvoiceActions = ({
       
       let blob = pdf.output('blob');
 
-      // Embed Factur-X XML for invoices and quotes
+      // Embed Factur-X XML
       try {
         const facturxData = buildFacturXDataFromInvoice(invoiceData);
         blob = await embedFacturXInPdf(blob, facturxData);
@@ -175,7 +172,6 @@ const InvoiceActions = ({
 
       setSignedPdfBlob(blob);
 
-      // Upload to storage
       if (user) {
         await uploadSignedPdf(blob);
       }
@@ -184,7 +180,6 @@ const InvoiceActions = ({
     } catch (error) {
       console.error('PDF generation error:', error);
     } finally {
-      // Remove PDF render mode
       const container = invoiceRef.current?.closest('.print-area') || invoiceRef.current?.parentElement;
       const allPages = container
         ? Array.from(container.querySelectorAll('.french-invoice'))
@@ -300,72 +295,78 @@ const InvoiceActions = ({
     }
 
     try {
-      const el = invoiceRef.current;
+      const container = invoiceRef.current.closest('.print-area') || invoiceRef.current.parentElement;
+      const allInvoicePages = container
+        ? Array.from(container.querySelectorAll('.french-invoice'))
+        : [invoiceRef.current];
 
       // Switch to PDF render mode
-      el.classList.add('pdf-render-mode');
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Ensure all images are loaded before capture
-      const imgs = Array.from(el.querySelectorAll('img'));
-      await Promise.all(imgs.map(img =>
-        img.complete
-          ? Promise.resolve()
-          : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })
-      ));
-
-      // Small delay to let browser finish layout/paint
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      const canvas = await html2canvas(el, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        scrollY: -window.scrollY,
-        windowWidth: 794,
-        windowHeight: el.scrollHeight,
-      });
+      allInvoicePages.forEach(p => (p as HTMLElement).classList.add('pdf-render-mode'));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+      const MARGIN = 10;
+      const CONTENT_WIDTH = pdfWidth - MARGIN * 2;
+      const MAX_CONTENT_HEIGHT = pdfHeight - MARGIN * 2;
+      const SECTION_GAP = 2; // mm between sections
 
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
+      let currentY = MARGIN;
+      let pageStarted = true; // first page already exists
 
-      // Scale to fill page width with small margins
-      const margin = 5; // mm
-      const usableWidth = pdfWidth - margin * 2;
-      const scaledHeight = (imgHeight * usableWidth) / imgWidth;
-      const usableHeight = pdfHeight - margin * 2;
+      // Helper to capture and place a section
+      const captureAndPlace = async (el: HTMLElement) => {
+        // Wait for images
+        const imgs = Array.from(el.querySelectorAll('img'));
+        await Promise.all(imgs.map(img =>
+          img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })
+        ));
 
-      if (scaledHeight <= usableHeight) {
-        pdf.addImage(imgData, 'PNG', margin, margin, usableWidth, scaledHeight);
-      } else {
-        // Multi-page: slice the canvas
-        const sliceHeightPx = Math.floor((usableHeight / usableWidth) * imgWidth);
-        let yOffset = 0;
-        let pageNum = 0;
-        while (yOffset < imgHeight) {
-          if (pageNum > 0) pdf.addPage();
-          const sliceH = Math.min(sliceHeightPx, imgHeight - yOffset);
+        const canvas = await html2canvas(el, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          useCORS: true,
+          scrollY: -window.scrollY,
+          windowWidth: 794,
+          windowHeight: el.scrollHeight,
+        });
 
-          const sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = imgWidth;
-          sliceCanvas.height = sliceH;
-          const ctx = sliceCanvas.getContext('2d')!;
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, imgWidth, sliceH);
-          ctx.drawImage(canvas, 0, yOffset, imgWidth, sliceH, 0, 0, imgWidth, sliceH);
+        const heightMM = (canvas.height / 2) * (CONTENT_WIDTH / (canvas.width / 2));
+        const remaining = MAX_CONTENT_HEIGHT - (currentY - MARGIN);
 
-          const sliceData = sliceCanvas.toDataURL('image/png');
-          const sliceFinalH = (sliceH * usableWidth) / imgWidth;
-          pdf.addImage(sliceData, 'PNG', margin, margin, usableWidth, sliceFinalH);
-
-          yOffset += sliceH;
-          pageNum++;
+        // If section doesn't fit and we're not at the top, new page
+        if (heightMM > remaining && currentY > MARGIN + 1) {
+          pdf.addPage();
+          currentY = MARGIN;
         }
+
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', MARGIN, currentY, CONTENT_WIDTH, heightMM);
+        currentY += heightMM + SECTION_GAP;
+      };
+
+      // Process main invoice page using sections
+      const mainPage = allInvoicePages[0] as HTMLElement;
+      const sections = Array.from(mainPage.querySelectorAll('[data-pdf-section]')) as HTMLElement[];
+
+      if (sections.length > 0) {
+        // Section-based capture — avoids cutting content
+        for (const section of sections) {
+          // Skip print:hidden elements
+          if (section.classList.contains('print:hidden') || section.closest('.print\\:hidden')) continue;
+          await captureAndPlace(section);
+        }
+      } else {
+        // Fallback: capture whole page if no sections found
+        await captureAndPlace(mainPage);
+      }
+
+      // Process annexe pages (each as full page)
+      for (let i = 1; i < allInvoicePages.length; i++) {
+        pdf.addPage();
+        currentY = MARGIN;
+        await captureAndPlace(allInvoicePages[i] as HTMLElement);
       }
 
       // Add pagination footer
@@ -400,8 +401,11 @@ const InvoiceActions = ({
         description: isRTL ? 'فشل في إنشاء PDF' : 'Échec de la création du PDF',
       });
     } finally {
-      // Remove PDF render mode
-      invoiceRef.current?.classList.remove('pdf-render-mode');
+      const container = invoiceRef.current?.closest('.print-area') || invoiceRef.current?.parentElement;
+      const allPages = container
+        ? Array.from(container.querySelectorAll('.french-invoice'))
+        : invoiceRef.current ? [invoiceRef.current] : [];
+      allPages.forEach(p => (p as HTMLElement).classList.remove('pdf-render-mode'));
       if (wasArabic) {
         onToggleArabic(true);
       }

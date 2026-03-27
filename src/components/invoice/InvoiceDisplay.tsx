@@ -227,7 +227,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
 
         {/* ── HEADER — Clean, no borders ── */}
-        <div className="flex justify-between items-start mb-4">
+        <div data-pdf-section="header" className="flex justify-between items-start mb-4">
           {/* Left: Logo + Company */}
           <div className="flex-1 min-w-0">
             {data.logoUrl && (
@@ -266,7 +266,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
 
         {/* ── COMPANY & CLIENT — 2-column, no boxes ── */}
-        <div className="flex justify-between gap-4 mb-3">
+        <div data-pdf-section="client" className="flex justify-between gap-4 mb-3">
           {/* Dates */}
           <div className="flex-1">
             <div className="text-[7pt] text-gray-500 space-y-0">
@@ -305,7 +305,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
 
         {/* ── OBJET + NATURE — simple text + thin divider ── */}
-        <div className="mb-3">
+        <div data-pdf-section="objet" className="mb-3">
           {data.natureOperation && (
             <p className="text-[7pt] text-gray-500 mb-0.5">
               Nature de l'opération : <span className="text-gray-700 font-medium">
@@ -324,7 +324,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
 
         {/* ── TABLE DES PRESTATIONS ── */}
-        <table className="w-full border-collapse mb-4" style={{ tableLayout: 'fixed', fontSize: '7.5pt' }}>
+        <table data-pdf-section="table" className="w-full border-collapse mb-4" style={{ tableLayout: 'fixed', fontSize: '7.5pt' }}>
           <colgroup>
             <col style={{ width: '55%' }} />
             <col style={{ width: '10%' }} />
@@ -440,7 +440,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* ── TOTALS + SIGNATURE + LEGAL — Never split across pages ── */}
         {/* ── TOTALS + SIGNATURE + LEGAL — Never split across pages ── */}
-        <div className="invoice-totals-signature-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+        <div data-pdf-section="totals-signature" className="invoice-totals-signature-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
 
           {/* Totals row: schedule left, amounts right */}
           <div className="flex justify-between items-start mb-4 gap-4 mt-2">
@@ -632,7 +632,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* Legal Footer — discreet, light grey */}
         {(data.legalFooter || data.emitter.iban || assuranceHeaderLine) && (
-          <div className="invoice-footer-block mt-5 pt-3 text-center" style={{ borderTop: '1px solid #e5e7eb', pageBreakInside: 'avoid' }}>
+          <div data-pdf-section="footer" className="invoice-footer-block mt-5 pt-3 text-center" style={{ borderTop: '1px solid #e5e7eb', pageBreakInside: 'avoid' }}>
             {data.legalFooter && <p className="text-[6pt] text-gray-300 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
             {data.emitter.iban && (
               <p className="text-[6.5pt] text-gray-400 mt-0.5">

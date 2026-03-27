@@ -2,11 +2,13 @@
  * Universal PDF Engine — Stable, reusable PDF generation for devis, factures, CV, etc.
  *
  * Architecture:
- *   1. HTML sections are annotated with `data-pdf-section="<key>"` attributes
- *   2. The engine collects sections in DOM order and plans pages top-to-bottom
- *   3. Tables are automatically chunked by rows to fit available space
- *   4. Critical blocks (totaux, signature, conditions, paiement) are insecable
- *   5. No page is ever left empty
+ *   1. HTML sections annotated with `data-pdf-section="<key>"`
+ *   2. Sections collected in DOM order, flowed top-to-bottom
+ *   3. Tables split by rows (only dynamic element)
+ *   4. End-block (totaux+conditions+signature+IBAN) is insecable
+ *   5. No page is EVER left empty
+ *   6. Annexes always start on a new page
+ *   7. Footer integrated in flow, never absolute
  *
  * Usage:
  *   import { buildPdfFromContainer } from '@/lib/pdfEngine';
@@ -28,19 +30,14 @@ export interface PdfPage {
 }
 
 export interface PdfEngineOptions {
-  /** Margin in mm (default 10) */
   marginMm?: number;
-  /** Gap between sections in mm (default 2) */
   sectionGapMm?: number;
-  /** Footer label e.g. "Devis n° D-001" (optional) */
   footerLabel?: string;
-  /** html2canvas scale (default 2) */
   scale?: number;
-  /** CSS class added to container during render (default 'pdf-render-mode') */
   renderModeClass?: string;
 }
 
-// ─── Internal helpers ────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export const waitForImages = async (root: ParentNode) => {
   const images = Array.from(root.querySelectorAll('img'));
@@ -124,10 +121,11 @@ export const renderTableChunk = async (
 // ─── Page Planning ───────────────────────────────────────────────────────────
 
 /**
- * Natural-flow page planner.
- * Content flows top-to-bottom. Tables are split by rows.
- * Non-table sections are insecable blocks — if they don't fit, they move to the next page.
- * No page is left empty.
+ * Natural-flow page planner with strict rules:
+ * - Table rows split across pages (only dynamic element)
+ * - All other sections are insecable blocks
+ * - End-block checked BEFORE placement: if not enough space → new page BEFORE
+ * - No page is ever left empty
  */
 export function createPagePlan(
   mainPage: HTMLElement,
@@ -148,92 +146,138 @@ export function createPagePlan(
   const sectionElements = Array.from(mainPage.querySelectorAll('[data-pdf-section]')) as HTMLElement[];
   const tableElement = sectionElements.find((el) => el.dataset.pdfSection === 'table') as HTMLTableElement | undefined;
 
+  // Separate sections into: before-table, table, after-table
+  const beforeTable: HTMLElement[] = [];
+  const afterTable: HTMLElement[] = [];
+  let foundTable = false;
+
+  for (const el of sectionElements) {
+    const key = el.dataset.pdfSection || '';
+    if (key === 'table') {
+      foundTable = true;
+      continue;
+    }
+    if (!foundTable) {
+      beforeTable.push(el);
+    } else {
+      afterTable.push(el);
+    }
+  }
+
   const pages: PdfPage[] = [{ chunks: [], usedPx: 0 }];
   const currentPage = () => pages[pages.length - 1];
   const startNewPage = () => pages.push({ chunks: [], usedPx: 0 });
 
-  const addChunk = (chunk: PdfChunk) => {
-    let page = currentPage();
-    const gap = page.chunks.length > 0 ? gapPx : 0;
-    const needed = gap + chunk.heightPx;
-    const remaining = maxPagePx - page.usedPx;
+  const getRemainingPx = () => maxPagePx - currentPage().usedPx;
+  const getGapPx = () => (currentPage().chunks.length > 0 ? gapPx : 0);
 
-    if (needed > remaining && page.chunks.length > 0) {
+  const placeChunk = (chunk: PdfChunk) => {
+    const gap = getGapPx();
+    const needed = gap + chunk.heightPx;
+    const remaining = getRemainingPx();
+
+    // If doesn't fit and page is not empty → new page
+    if (needed > remaining && currentPage().chunks.length > 0) {
       startNewPage();
-      page = currentPage();
     }
-    page.usedPx += (page.chunks.length > 0 ? gapPx : 0) + chunk.heightPx;
+
+    const page = currentPage();
+    const actualGap = page.chunks.length > 0 ? gapPx : 0;
+    page.usedPx += actualGap + chunk.heightPx;
     page.chunks.push(chunk);
   };
 
-  for (const section of sectionElements) {
-    const key = section.dataset.pdfSection || 'section';
+  // ── Place header sections (before table) ──
+  for (const section of beforeTable) {
+    placeChunk({
+      kind: 'section',
+      key: section.dataset.pdfSection || 'section',
+      element: section,
+      heightPx: section.getBoundingClientRect().height,
+    });
+  }
 
-    if (key === 'table' && tableElement) {
-      const tableHead = tableElement.querySelector('thead') as HTMLElement | null;
-      const tableHeaderHeightPx = tableHead?.getBoundingClientRect().height ?? 0;
-      const allRows = Array.from(tableElement.querySelectorAll('tbody tr')) as HTMLTableRowElement[];
+  // ── Place table rows ──
+  if (tableElement) {
+    const tableHead = tableElement.querySelector('thead') as HTMLElement | null;
+    const tableHeaderHeightPx = tableHead?.getBoundingClientRect().height ?? 0;
+    const allRows = Array.from(tableElement.querySelectorAll('tbody tr')) as HTMLTableRowElement[];
 
-      let rowIndex = 0;
-      let chunkIndex = 0;
+    let rowIndex = 0;
+    let chunkIndex = 0;
+
+    while (rowIndex < allRows.length) {
+      let availablePx = getRemainingPx() - getGapPx();
+
+      // If not enough room even for header + 1 row, start new page
+      if (availablePx <= tableHeaderHeightPx && currentPage().chunks.length > 0) {
+        startNewPage();
+        availablePx = maxPagePx;
+      }
+
+      const chunkRows: HTMLTableRowElement[] = [];
+      let chunkHeightPx = tableHeaderHeightPx;
 
       while (rowIndex < allRows.length) {
-        let page = currentPage();
-        let availablePx = maxPagePx - page.usedPx - (page.chunks.length > 0 ? gapPx : 0);
+        const row = allRows[rowIndex];
+        const rowHeight = row.getBoundingClientRect().height;
+        const projected = chunkHeightPx + rowHeight;
 
-        if (availablePx <= tableHeaderHeightPx && page.chunks.length > 0) {
-          startNewPage();
-          page = currentPage();
-          availablePx = maxPagePx;
+        // Always include at least 1 row per chunk
+        if (projected <= availablePx || chunkRows.length === 0) {
+          chunkRows.push(row);
+          chunkHeightPx = projected;
+          rowIndex += 1;
+        } else {
+          break;
         }
-
-        const chunkRows: HTMLTableRowElement[] = [];
-        let chunkHeightPx = tableHeaderHeightPx;
-
-        while (rowIndex < allRows.length) {
-          const row = allRows[rowIndex];
-          const rowHeight = row.getBoundingClientRect().height;
-          const projected = chunkHeightPx + rowHeight;
-
-          if (projected <= availablePx || chunkRows.length === 0) {
-            chunkRows.push(row);
-            chunkHeightPx = projected;
-            rowIndex += 1;
-          } else {
-            break;
-          }
-        }
-
-        addChunk({
-          kind: 'table',
-          key: `table-${chunkIndex}`,
-          sourceTable: tableElement,
-          rows: chunkRows,
-          heightPx: chunkHeightPx,
-        });
-        chunkIndex += 1;
       }
-    } else if (key !== 'table') {
-      addChunk({
-        kind: 'section',
-        key,
-        element: section,
-        heightPx: section.getBoundingClientRect().height,
+
+      placeChunk({
+        kind: 'table',
+        key: `table-${chunkIndex}`,
+        sourceTable: tableElement,
+        rows: chunkRows,
+        heightPx: chunkHeightPx,
       });
+      chunkIndex += 1;
     }
   }
 
+  // ── Place end-block sections (after table) ──
+  // These are critical blocks: if they don't fit, they go to next page together
+  // First, calculate total height of all after-table sections
+  const afterChunks: PdfChunk[] = afterTable.map((section) => ({
+    kind: 'section' as const,
+    key: section.dataset.pdfSection || 'section',
+    element: section,
+    heightPx: section.getBoundingClientRect().height,
+  }));
+
+  // Check if ALL end-block sections fit on current page
+  const totalEndBlockHeight = afterChunks.reduce(
+    (sum, c) => sum + c.heightPx + gapPx, 0
+  );
+
+  const remainingBeforeEnd = getRemainingPx() - getGapPx();
+
+  // If end-block doesn't fit AND page has content → new page before end-block
+  if (totalEndBlockHeight > remainingBeforeEnd && currentPage().chunks.length > 0) {
+    startNewPage();
+  }
+
+  // Now place each end-block chunk
+  for (const chunk of afterChunks) {
+    placeChunk(chunk);
+  }
+
+  // Clean: remove empty pages
   const cleanPages = pages.filter((p) => p.chunks.length > 0);
   return { pages: cleanPages.length > 0 ? cleanPages : pages, contentWidthPx };
 }
 
 // ─── Main Builder ────────────────────────────────────────────────────────────
 
-/**
- * Build a PDF blob from a container element.
- * The container should have one or more `.french-invoice` pages inside.
- * The first page is paginated via the block planner; subsequent pages are annexes.
- */
 export async function buildPdfFromContainer(
   container: HTMLElement,
   options: PdfEngineOptions = {},
@@ -260,7 +304,7 @@ export async function buildPdfFromContainer(
     const CONTENT_WIDTH = pdfWidth - marginMm * 2;
     const MAX_CONTENT_HEIGHT = pdfHeight - marginMm * 2;
 
-    // Plan and render main page
+    // ── Plan and render main page (first .french-invoice) ──
     const mainPage = allPages[0];
     const { pages, contentWidthPx } = createPagePlan(mainPage, CONTENT_WIDTH, MAX_CONTENT_HEIGHT, sectionGapMm);
 
@@ -275,16 +319,18 @@ export async function buildPdfFromContainer(
       if (pageIndex > 0) pdf.addPage();
 
       let currentY = marginMm;
-      for (let ci = 0; ci < pages[pageIndex].chunks.length; ci++) {
-        const chunk = pages[pageIndex].chunks[ci];
+      const pageChunks = pages[pageIndex].chunks;
+
+      for (let ci = 0; ci < pageChunks.length; ci++) {
+        const chunk = pageChunks[ci];
         const canvas = await renderChunk(chunk);
         const heightMm = (canvas.height * CONTENT_WIDTH) / canvas.width;
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', marginMm, currentY, CONTENT_WIDTH, heightMm);
-        currentY += heightMm + (ci < pages[pageIndex].chunks.length - 1 ? sectionGapMm : 0);
+        currentY += heightMm + (ci < pageChunks.length - 1 ? sectionGapMm : 0);
       }
     }
 
-    // Render annexe pages (full-page captures)
+    // ── Render annexe pages (full-page captures) ──
     for (let i = 1; i < allPages.length; i++) {
       pdf.addPage();
       const annexePage = allPages[i];
@@ -298,7 +344,7 @@ export async function buildPdfFromContainer(
       pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', xOffset, marginMm, fittedWidthMm, fittedHeightMm);
     }
 
-    // Add page footer
+    // ── Page footer labels ──
     if (footerLabel) {
       const totalPages = pdf.getNumberOfPages();
       for (let p = 1; p <= totalPages; p++) {

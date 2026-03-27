@@ -147,7 +147,6 @@ const AR_LABELS: Record<string, string> = {
 const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplayProps) => {
   const photos = data.sitePhotos || [];
   const docRef = `${data.type} N° ${data.number}`;
-  const docRef = `${data.type} N° ${data.number}`;
 
   // ── Dynamic "Objet du devis" based on highest-priced item trade ──
   const dynamicSubject = (() => {

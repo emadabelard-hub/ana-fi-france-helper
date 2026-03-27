@@ -212,11 +212,13 @@ export async function buildPdfFromContainer(
       });
     }
 
-    // 2) Table rows — split across pages
+    // 2) Table rows — split across pages (NO row is ever skipped)
     if (tableEl) {
       const thead = tableEl.querySelector('thead') as HTMLElement | null;
       const theadH = thead?.getBoundingClientRect().height ?? 0;
       const rows = Array.from(tableEl.querySelectorAll('tbody tr')) as HTMLTableRowElement[];
+      const totalRowCount = rows.length;
+      let placedRowCount = 0;
 
       let ri = 0;
       while (ri < rows.length) {
@@ -231,18 +233,27 @@ export async function buildPdfFromContainer(
 
         while (ri < rows.length) {
           const rowH = rows[ri].getBoundingClientRect().height;
+          // Always include at least one row per batch to avoid infinite loop
           if (batchH + rowH > avail && batch.length > 0) break;
           batch.push(rows[ri]);
           batchH += rowH;
           ri++;
         }
 
-        placeBlock({
-          type: 'tableRows',
-          sourceTable: tableEl,
-          rows: batch,
-          heightPx: batchH,
-        });
+        if (batch.length > 0) {
+          placedRowCount += batch.length;
+          placeBlock({
+            type: 'tableRows',
+            sourceTable: tableEl,
+            rows: batch,
+            heightPx: batchH,
+          });
+        }
+      }
+
+      // VALIDATION: ensure no rows were lost
+      if (placedRowCount !== totalRowCount) {
+        console.error(`PDF ENGINE: Row count mismatch! Expected ${totalRowCount}, placed ${placedRowCount}`);
       }
     }
 

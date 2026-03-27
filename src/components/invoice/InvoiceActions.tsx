@@ -183,11 +183,12 @@ const InvoiceActions = ({
     const addChunk = (chunk: PdfChunkPlan) => {
       let page = currentPage();
       const gap = page.chunks.length > 0 ? gapPx : 0;
-      const wouldOverflow = page.usedPx + gap + chunk.heightPx > maxPagePx;
-      // Small blocks (<20% of page height) should NEVER create a new page alone
-      // They stay on the current page even if they slightly overflow
-      const isSmallBlock = chunk.heightPx < maxPagePx * 0.2;
-      if (page.chunks.length > 0 && wouldOverflow && !isSmallBlock) {
+      const needed = gap + chunk.heightPx;
+      const remaining = maxPagePx - page.usedPx;
+
+      // If adding this chunk would overflow AND the page already has content,
+      // start a new page. Never allow content to be cut off.
+      if (needed > remaining && page.chunks.length > 0) {
         startNewPage();
         page = currentPage();
       }

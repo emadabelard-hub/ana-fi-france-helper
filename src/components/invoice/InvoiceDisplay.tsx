@@ -437,9 +437,8 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </tbody>
         </table>
 
-        {/* ── TOTALS + SIGNATURE + LEGAL — Never split across pages ── */}
-        {/* ── TOTALS + SIGNATURE + LEGAL — Never split across pages ── */}
-        <div className="invoice-totals-signature-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+        {/* ── TOTALS + SIGNATURE + LEGAL — grouped as single PDF section ── */}
+        <div data-pdf-section="bloc-totals-signature" className="invoice-totals-signature-block">
 
           {/* Totals row: schedule left, amounts right */}
           <div data-pdf-section="bloc-total" className="pdf-keep-together flex justify-between items-start mb-4 gap-4 mt-2" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>

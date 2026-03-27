@@ -146,7 +146,6 @@ const AR_LABELS: Record<string, string> = {
 
 const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplayProps) => {
   const photos = data.sitePhotos || [];
-  const totalPhotoPages = photos.length > 0 ? Math.ceil(photos.length / 4) : 0;
   const docRef = `${data.type} N° ${data.number}`;
 
   // ── Dynamic "Objet du devis" based on highest-priced item trade ──
@@ -201,11 +200,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
   const pageContainerClass = "french-invoice bg-white text-gray-900 rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none print:max-w-none print:rounded-none select-none";
   const pageContainerStyle: React.CSSProperties = {
-    padding: '8mm 10mm 10mm 10mm',
+    padding: '10mm 12mm 12mm 12mm',
     boxSizing: 'border-box',
     minHeight: 'auto',
-    fontSize: '8pt',
-    lineHeight: '1.45',
+    fontSize: '9pt',
+    lineHeight: '1.5',
     fontFamily: 'Arial, "Helvetica Neue", sans-serif',
     WebkitUserSelect: 'none',
     userSelect: 'none',
@@ -655,48 +654,55 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
       </div>
 
-      {/* ===== ANNEXE PAGES — Site Photos ===== */}
-      {photos.length > 0 && Array.from({ length: totalPhotoPages }).map((_, pageIdx) => {
-        const pagePhotos = photos.slice(pageIdx * 4, (pageIdx + 1) * 4);
-        return (
-          <div
-            key={`annexe-${pageIdx}`}
-            dir="ltr"
-            lang="fr"
-            className={cn(pageContainerClass, "invoice-annexe-page mt-6 print:mt-0")}
-            style={{ ...pageContainerStyle, pageBreakBefore: 'always' }}
-            {...preventCopy}
-          >
-            <div className="invoice-print-footer hidden print:block">
-              {docRef} — Annexe
-            </div>
-
-            <div className="flex justify-between items-center mb-4 pb-2" style={{ borderBottom: '1px solid #e5e7eb' }}>
-              <div>
-                <h2 className="text-[11pt] font-bold text-gray-900">{data.emitter.name}</h2>
-                <p className="text-[8pt] text-gray-500">{docRef} — {data.date}</p>
+      {/* ===== ANNEXE PAGES — Site Photos (2 per page for larger display) ===== */}
+      {photos.length > 0 && (() => {
+        const PHOTOS_PER_PAGE = 2;
+        const annexePages = Math.ceil(photos.length / PHOTOS_PER_PAGE);
+        return Array.from({ length: annexePages }).map((_, pageIdx) => {
+          const pagePhotos = photos.slice(pageIdx * PHOTOS_PER_PAGE, (pageIdx + 1) * PHOTOS_PER_PAGE);
+          const isSinglePhoto = pagePhotos.length === 1;
+          return (
+            <div
+              key={`annexe-${pageIdx}`}
+              dir="ltr"
+              lang="fr"
+              className={cn(pageContainerClass, "invoice-annexe-page mt-6 print:mt-0")}
+              style={{ ...pageContainerStyle, pageBreakBefore: 'always' }}
+              {...preventCopy}
+            >
+              <div className="invoice-print-footer hidden print:block">
+                {docRef} — Annexe {pageIdx + 1}
               </div>
-              <h3 className="text-[10pt] font-bold text-gray-700">Annexe — Photos du chantier</h3>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {pagePhotos.map((photo, photoIdx) => (
-                <div key={photoIdx} className="rounded-md overflow-hidden" style={{ border: '1px solid #e5e7eb' }}>
-                  <img
-                    src={photo.data}
-                    alt={photo.name || `Photo ${pageIdx * 4 + photoIdx + 1}`}
-                    className="w-full object-cover"
-                    style={{ height: '180px' }}
-                  />
-                  <div className="px-2 py-1" style={{ backgroundColor: '#fafafa', borderTop: '1px solid #f0f0f0' }}>
-                    <p className="text-[7pt] text-gray-500 truncate">{photo.name || `Photo ${pageIdx * 4 + photoIdx + 1}`}</p>
-                  </div>
+              <div className="flex justify-between items-center mb-3 pb-2" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <div>
+                  <h2 className="text-[11pt] font-bold text-gray-900">{data.emitter.name}</h2>
+                  <p className="text-[8pt] text-gray-500">{docRef} — {data.date}</p>
                 </div>
-              ))}
+                <h3 className="text-[10pt] font-bold text-gray-700">Annexe {annexePages > 1 ? `${pageIdx + 1}/${annexePages}` : ''} — Photos du chantier</h3>
+              </div>
+
+              <div className={cn(
+                isSinglePhoto ? "annexe-photo-single flex flex-col items-center" : "annexe-photo-grid grid grid-cols-1 gap-4"
+              )}>
+                {pagePhotos.map((photo, photoIdx) => (
+                  <div key={photoIdx} className="rounded-md overflow-hidden w-full" style={{ border: '1px solid #e5e7eb' }}>
+                    <img
+                      src={photo.data}
+                      alt={photo.name || `Photo ${pageIdx * PHOTOS_PER_PAGE + photoIdx + 1}`}
+                      className="w-full object-contain"
+                      style={{ maxHeight: isSinglePhoto ? '900px' : '460px', backgroundColor: '#fafafa' }}
+                    />
+                    <div className="px-3 py-1.5" style={{ backgroundColor: '#fafafa', borderTop: '1px solid #f0f0f0' }}>
+                      <p className="text-[8pt] text-gray-600">{photo.name || `Photo ${pageIdx * PHOTOS_PER_PAGE + photoIdx + 1}`}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        });
+      })()}
     </>
   );
 };

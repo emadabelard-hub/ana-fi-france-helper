@@ -140,11 +140,36 @@ const InvoiceActions = ({
         await captureAndPlace(mainPage);
       }
 
-      // Annexe pages
+      // Annexe pages — each on its own page, photos filling space
       for (let i = 1; i < allInvoicePages.length; i++) {
         pdf.addPage();
         currentY = MARGIN;
-        await captureAndPlace(allInvoicePages[i] as HTMLElement, true);
+        
+        const annexePage = allInvoicePages[i] as HTMLElement;
+        const imgs = Array.from(annexePage.querySelectorAll('img'));
+        await Promise.all(imgs.map(img =>
+          img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })
+        ));
+        await new Promise(resolve => setTimeout(resolve, 150));
+        
+        const canvas = await html2canvas(annexePage, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          useCORS: true,
+          scrollY: -window.scrollY,
+          windowWidth: 794,
+          windowHeight: annexePage.scrollHeight,
+        });
+        
+        const heightMM = (canvas.height / 2) * (CONTENT_WIDTH / (canvas.width / 2));
+        const fitHeight = Math.min(heightMM, MAX_CONTENT_HEIGHT);
+        const fitWidth = heightMM > MAX_CONTENT_HEIGHT
+          ? CONTENT_WIDTH * (MAX_CONTENT_HEIGHT / heightMM)
+          : CONTENT_WIDTH;
+        const xOffset = MARGIN + (CONTENT_WIDTH - fitWidth) / 2;
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        pdf.addImage(imgData, 'JPEG', xOffset, MARGIN, fitWidth, fitHeight);
       }
 
       // Pagination footer
@@ -362,12 +387,40 @@ const InvoiceActions = ({
         await captureAndPlace(mainPage);
       }
 
-      // Process annexe pages (each as full page)
+      // Process annexe pages — each on its own page, photos filling the space
       for (let i = 1; i < allInvoicePages.length; i++) {
         pdf.addPage();
         currentY = MARGIN;
-        await captureAndPlace(allInvoicePages[i] as HTMLElement);
+        
+        const annexePage = allInvoicePages[i] as HTMLElement;
+        const imgs = Array.from(annexePage.querySelectorAll('img'));
+        await Promise.all(imgs.map(img =>
+          img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })
+        ));
+        await new Promise(resolve => setTimeout(resolve, 150));
+        
+        const canvas = await html2canvas(annexePage, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          useCORS: true,
+          scrollY: -window.scrollY,
+          windowWidth: 794,
+          windowHeight: annexePage.scrollHeight,
+        });
+        
+        const heightMM = (canvas.height / 2) * (CONTENT_WIDTH / (canvas.width / 2));
+        const fitHeight = Math.min(heightMM, MAX_CONTENT_HEIGHT);
+        const fitWidth = heightMM > MAX_CONTENT_HEIGHT
+          ? CONTENT_WIDTH * (MAX_CONTENT_HEIGHT / heightMM)
+          : CONTENT_WIDTH;
+        const xOffset = MARGIN + (CONTENT_WIDTH - fitWidth) / 2;
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        pdf.addImage(imgData, 'JPEG', xOffset, MARGIN, fitWidth, fitHeight);
       }
+
+      // Remove near-empty pages (less than 30% content)
+      // Note: jsPDF doesn't support page removal, so we prevent them upstream
 
       // Add pagination footer
       const totalPages = pdf.getNumberOfPages();

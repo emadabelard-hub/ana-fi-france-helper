@@ -376,7 +376,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                       whiteSpace: 'normal',
                       wordWrap: 'break-word',
                       overflowWrap: 'break-word',
-                      overflow: 'hidden',
+                      overflow: 'visible',
                       borderBottom: '1px solid #f0f0f0',
                       ...(isSectionTitle && index > 0 ? { paddingTop: '10px' } : {}),
                     }}

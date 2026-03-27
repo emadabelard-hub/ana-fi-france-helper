@@ -81,6 +81,10 @@ const InvoiceActions = ({
         ? Array.from(container.querySelectorAll('.french-invoice'))
         : [invoiceRef.current];
 
+      // Switch to PDF render mode — clean A4, no mobile UI
+      pages.forEach(p => (p as HTMLElement).classList.add('pdf-render-mode'));
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -88,20 +92,21 @@ const InvoiceActions = ({
       for (let i = 0; i < pages.length; i++) {
         if (i > 0) pdf.addPage();
 
+        const pageEl = pages[i] as HTMLElement;
         // Wait for all images inside the page to finish loading
-        const imgs = Array.from((pages[i] as HTMLElement).querySelectorAll('img'));
+        const imgs = Array.from(pageEl.querySelectorAll('img'));
         await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })));
 
-      // Small delay to let browser finish layout/paint
-      await new Promise(resolve => setTimeout(resolve, 200));
+        // Small delay to let browser finish layout/paint
+        await new Promise(resolve => setTimeout(resolve, 200));
 
-      const canvas = await html2canvas(pages[i] as HTMLElement, {
+        const canvas = await html2canvas(pageEl, {
           backgroundColor: '#ffffff',
           scale: 2,
           useCORS: true,
           scrollY: -window.scrollY,
-          windowWidth: (pages[i] as HTMLElement).scrollWidth,
-          windowHeight: (pages[i] as HTMLElement).scrollHeight,
+          windowWidth: 794,
+          windowHeight: pageEl.scrollHeight,
         });
 
         // Compress: use JPEG for annexe pages (photos), PNG for main page

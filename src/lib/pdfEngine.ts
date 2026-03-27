@@ -151,12 +151,37 @@ ${css}
   margin: ${marginMm}mm;
 }
 
+/* Force light-mode colors so text is visible on white background */
+:root {
+  --background: 0 0% 100% !important;
+  --foreground: 220 25% 10% !important;
+  --card: 0 0% 100% !important;
+  --card-foreground: 220 25% 10% !important;
+  --popover: 0 0% 100% !important;
+  --popover-foreground: 220 25% 10% !important;
+  --muted: 220 14% 96% !important;
+  --muted-foreground: 220 10% 40% !important;
+  --border: 220 13% 87% !important;
+  --primary: 37 37% 50% !important;
+  --primary-foreground: 0 0% 100% !important;
+  --secondary: 220 14% 96% !important;
+  --secondary-foreground: 220 25% 10% !important;
+  --accent: 37 37% 50% !important;
+  --accent-foreground: 220 25% 10% !important;
+}
+
 html, body {
   margin: 0 !important;
   padding: 0 !important;
-  background: white !important;
+  background: #ffffff !important;
+  color: #1a1d24 !important;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
+}
+
+/* Force all text to dark color */
+*, *::before, *::after {
+  color: inherit;
 }
 
 /* End-block: totals + conditions + signature + IBAN — NEVER split */

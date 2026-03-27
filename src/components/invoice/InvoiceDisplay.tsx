@@ -412,7 +412,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                               ))}
                             </ul>
                           )
-                          : item.designation_fr))}
+                          : item.designation_fr)}
                       </span>
                     )}
                     {showArabic && item.designation_ar && (

@@ -146,7 +146,7 @@ const AR_LABELS: Record<string, string> = {
 
 const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplayProps) => {
   const photos = data.sitePhotos || [];
-  const totalPhotoPages = photos.length > 0 ? Math.ceil(photos.length / 4) : 0;
+  const docRef = `${data.type} N° ${data.number}`;
   const docRef = `${data.type} N° ${data.number}`;
 
   // ── Dynamic "Objet du devis" based on highest-priced item trade ──

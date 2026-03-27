@@ -196,17 +196,17 @@ const CVGeneratorPage = () => {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210;
       const pageHeight = 297;
+      const margin = 5;
+      const usableWidth = pageWidth - margin * 2;
 
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgHeight = (canvas.height * usableWidth) / canvas.width;
 
-      // If content fits in one page
-      if (imgHeight <= pageHeight) {
+      if (imgHeight <= pageHeight - margin * 2) {
         pdf.addImage(
           canvas.toDataURL('image/jpeg', 0.95),
           'JPEG',
-          0, 0,
-          imgWidth, imgHeight
+          margin, margin,
+          usableWidth, imgHeight
         );
       } else {
         // Multi-page: slice the canvas

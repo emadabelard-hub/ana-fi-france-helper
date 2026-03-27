@@ -267,11 +267,13 @@ export async function buildPdfFromContainer(
 
     // 3) End-block (totaux + conditions + signature + IBAN) — insecable group
     if (afterTable.length > 0) {
-      const totalEndH = afterTable.reduce((s, el) => s + el.getBoundingClientRect().height + gapPx, 0);
-      validateChunkHeight(totalEndH, maxPagePx, 'end-block');
+      // Precise height: sum of elements + gaps BETWEEN them (not after the last one)
+      const endHeights = afterTable.map(el => el.getBoundingClientRect().height);
+      const totalEndH = endHeights.reduce((s, h) => s + h, 0) + gapPx * Math.max(0, afterTable.length - 1);
 
-      // If end-block doesn't fit on current page and page has content → new page
-      if (totalEndH > remaining() - gap() && cur().chunks.length > 0) {
+      // ONLY move to next page if it truly doesn't fit — never waste space
+      const spaceNeeded = totalEndH + gap();
+      if (spaceNeeded > remaining() && cur().chunks.length > 0) {
         newPage();
       }
 

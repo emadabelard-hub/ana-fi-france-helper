@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import CVFormSection from '@/components/cv/CVFormSection';
@@ -6,10 +6,12 @@ import CVPreview from '@/components/cv/CVPreview';
 import CVGuideModal from '@/components/cv/CVGuideModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Eye, Loader2, Sparkles, Pencil } from 'lucide-react';
+import { FileText, Eye, Loader2, Sparkles, Pencil, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export interface CVData {
   fullName: string;
@@ -151,13 +153,122 @@ const CVGeneratorPage = () => {
       setIsTranslating(false);
     }
   };
-
-  const handleExportPDF = () => {
-    window.print();
-  };
-
   const displayData = translatedData || cvData;
+
+  const handleExportPDF = useCallback(async () => {
+    // 1. Validate content exists
+    const container = cvRef.current;
+    if (!container) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'محتوى السي في غير متاح' : 'Contenu CV non disponible',
+      });
+      return;
+    }
+
+    // Check the container has actual rendered content
+    const innerText = container.innerText?.trim();
+    if (!innerText || innerText.length < 10) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'السي في فارغ. يرجى ملء البيانات أولاً' : 'Le CV est vide. Veuillez remplir vos données d\'abord.',
+      });
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      // 2. Capture the CV container with html2canvas (same approach as invoices)
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        // Ensure full height is captured
+        height: container.scrollHeight,
+        windowHeight: container.scrollHeight,
+      });
+
+      // 3. Generate PDF — A4 dimensions
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210;
+      const pageHeight = 297;
+
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      // If content fits in one page
+      if (imgHeight <= pageHeight) {
+        pdf.addImage(
+          canvas.toDataURL('image/jpeg', 0.95),
+          'JPEG',
+          0, 0,
+          imgWidth, imgHeight
+        );
+      } else {
+        // Multi-page: slice the canvas
+        let remainingHeight = canvas.height;
+        let position = 0;
+        const pageCanvasHeight = (pageHeight * canvas.width) / imgWidth;
+
+        while (remainingHeight > 0) {
+          const sliceHeight = Math.min(pageCanvasHeight, remainingHeight);
+
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = sliceHeight;
+          const ctx = pageCanvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+            ctx.drawImage(
+              canvas,
+              0, position,
+              canvas.width, sliceHeight,
+              0, 0,
+              canvas.width, sliceHeight
+            );
+          }
+
+          const sliceImgHeight = (sliceHeight * imgWidth) / canvas.width;
+          if (position > 0) pdf.addPage();
+          pdf.addImage(
+            pageCanvas.toDataURL('image/jpeg', 0.95),
+            'JPEG',
+            0, 0,
+            imgWidth, sliceImgHeight
+          );
+
+          remainingHeight -= sliceHeight;
+          position += sliceHeight;
+        }
+      }
+
+      // 4. Download
+      const fileName = `CV_${displayData.fullName?.replace(/\s+/g, '_') || 'document'}.pdf`;
+      pdf.save(fileName);
+
+      toast({
+        title: isRTL ? 'تم التحميل!' : 'PDF téléchargé !',
+        description: isRTL ? 'تم تحميل السي في بنجاح' : 'Votre CV a été téléchargé avec succès',
+      });
+    } catch (error) {
+      console.error('CV PDF generation error:', error);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ في التحميل' : 'Erreur de téléchargement',
+        description: isRTL ? 'تعذر إنشاء ملف PDF. حاول مرة أخرى.' : 'Impossible de générer le PDF. Réessayez.',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [displayData, isRTL, toast]);
+
   const hasData = cvData.fullName || cvData.profession || cvData.experiences.length > 0;
+  const isCvReady = !!(displayData.fullName?.trim() || displayData.profession?.trim());
 
   return (
     <div className="py-4 space-y-4">
@@ -255,11 +366,20 @@ const CVGeneratorPage = () => {
               renderDownloadButton={() => (
                 <Button
                   onClick={handleExportPDF}
-                  disabled={!hasData}
+                  disabled={!isCvReady || isExporting}
                   className="w-full gap-2"
                   size="lg"
                 >
-                  {isRTL ? '📥 تحميل PDF' : '📥 Télécharger PDF'}
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      {isRTL ? 'جاري إنشاء PDF...' : 'Génération du PDF...'}
+                    </>
+                  ) : (
+                    <>
+                      {isRTL ? '📥 تحميل PDF' : '📥 Télécharger PDF'}
+                    </>
+                  )}
                 </Button>
               )}
             >

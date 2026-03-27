@@ -248,12 +248,16 @@ const InvoiceActions = ({
           chunkIndex += 1;
         }
       } else if (key !== 'table') {
-        // Regular section — add as insecable block
+        const sectionHeight = section.getBoundingClientRect().height;
+
+        // If a section is taller than a full page, we still add it
+        // (it will overflow but there's no way to split a non-table block)
+        // Otherwise, treat it as an insecable block
         addChunk({
           kind: 'section',
           key,
           element: section,
-          heightPx: section.getBoundingClientRect().height,
+          heightPx: sectionHeight,
         });
       }
     }

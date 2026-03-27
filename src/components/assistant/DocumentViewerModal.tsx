@@ -77,16 +77,15 @@ const DocumentViewerModal = ({
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const margin = 5;
+      const usableWidth = pdfWidth - margin * 2;
+      const scaledHeight = (canvas.height * usableWidth) / canvas.width;
 
-      const finalWidth = imgWidth * ratio * 0.95;
-      const finalHeight = imgHeight * ratio * 0.95;
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = 10;
-
-      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+      if (scaledHeight <= pdfHeight - margin * 2) {
+        pdf.addImage(imgData, 'PNG', margin, margin, usableWidth, scaledHeight);
+      } else {
+        pdf.addImage(imgData, 'PNG', margin, margin, usableWidth, pdfHeight - margin * 2);
+      }
       pdf.save(`document-${Date.now()}.pdf`);
 
       toast({

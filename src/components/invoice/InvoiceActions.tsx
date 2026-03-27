@@ -113,14 +113,36 @@ const InvoiceActions = ({
 
         const imgWidth = canvas.width;
         const imgHeight = canvas.height;
-        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
 
-        const finalWidth = imgWidth * ratio * 0.95;
-        const finalHeight = imgHeight * ratio * 0.95;
-        const x = (pdfWidth - finalWidth) / 2;
-        const y = 10;
+        // Scale to fill page width with small margins
+        const margin = 5; // mm
+        const usableWidth = pdfWidth - margin * 2;
+        const scaledHeight = (imgHeight * usableWidth) / imgWidth;
 
-        pdf.addImage(imgData, imgFormat, x, y, finalWidth, finalHeight);
+        if (scaledHeight <= pdfHeight - margin * 2) {
+          pdf.addImage(imgData, imgFormat, margin, margin, usableWidth, scaledHeight);
+        } else {
+          // Multi-page slicing for tall content
+          const sliceHeightPx = Math.floor(((pdfHeight - margin * 2) / usableWidth) * imgWidth);
+          let yOffset = 0;
+          let isFirst = true;
+          while (yOffset < imgHeight) {
+            if (!isFirst) pdf.addPage();
+            isFirst = false;
+            const sliceH = Math.min(sliceHeightPx, imgHeight - yOffset);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = imgWidth;
+            sliceCanvas.height = sliceH;
+            const ctx = sliceCanvas.getContext('2d')!;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, imgWidth, sliceH);
+            ctx.drawImage(canvas, 0, yOffset, imgWidth, sliceH, 0, 0, imgWidth, sliceH);
+            const sliceData = sliceCanvas.toDataURL(isAnnexe ? 'image/jpeg' : 'image/png', isAnnexe ? 0.7 : undefined);
+            const sliceFinalH = (sliceH * usableWidth) / imgWidth;
+            pdf.addImage(sliceData, imgFormat, margin, margin, usableWidth, sliceFinalH);
+            yOffset += sliceH;
+          }
+        }
       }
 
       // Add pagination footer on every page: "Devis n° D-2026-1 — Page X / Y"
@@ -295,22 +317,18 @@ const InvoiceActions = ({
       const imgData = canvas.toDataURL('image/png');
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
 
-      const finalWidth = imgWidth * ratio * 0.95;
-      const finalHeight = imgHeight * ratio * 0.95;
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = 5;
+      // Scale to fill page width with small margins
+      const margin = 5; // mm
+      const usableWidth = pdfWidth - margin * 2;
+      const scaledHeight = (imgHeight * usableWidth) / imgWidth;
+      const usableHeight = pdfHeight - margin * 2;
 
-      // If content is taller than one page, split across pages
-      const pageContentHeight = pdfHeight - 10; // margins
-      const scaledTotalHeight = (imgHeight / imgWidth) * finalWidth;
-
-      if (scaledTotalHeight <= pageContentHeight) {
-        pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+      if (scaledHeight <= usableHeight) {
+        pdf.addImage(imgData, 'PNG', margin, margin, usableWidth, scaledHeight);
       } else {
         // Multi-page: slice the canvas
-        const sliceHeightPx = Math.floor((pageContentHeight / finalWidth) * imgWidth);
+        const sliceHeightPx = Math.floor((usableHeight / usableWidth) * imgWidth);
         let yOffset = 0;
         let pageNum = 0;
         while (yOffset < imgHeight) {
@@ -321,13 +339,13 @@ const InvoiceActions = ({
           sliceCanvas.width = imgWidth;
           sliceCanvas.height = sliceH;
           const ctx = sliceCanvas.getContext('2d')!;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, imgWidth, sliceH);
           ctx.drawImage(canvas, 0, yOffset, imgWidth, sliceH, 0, 0, imgWidth, sliceH);
 
           const sliceData = sliceCanvas.toDataURL('image/png');
-          const sliceRatio = pdfWidth * 0.95 / imgWidth;
-          const sliceFinalW = imgWidth * sliceRatio;
-          const sliceFinalH = sliceH * sliceRatio;
-          pdf.addImage(sliceData, 'PNG', (pdfWidth - sliceFinalW) / 2, 5, sliceFinalW, sliceFinalH);
+          const sliceFinalH = (sliceH * usableWidth) / imgWidth;
+          pdf.addImage(sliceData, 'PNG', margin, margin, usableWidth, sliceFinalH);
 
           yOffset += sliceH;
           pageNum++;

@@ -164,6 +164,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [paymentMilestones, setPaymentMilestones] = useState<PaymentMilestone[]>([]);
   const [milestonesEnabled, setMilestonesEnabled] = useState(false);
   
+  // Discount state
+  const [discountEnabled, setDiscountEnabled] = useState(false);
+  const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
+  const [discountValue, setDiscountValue] = useState<number>(0);
+  
   // Line items - use empty strings for quantity/price to allow clean input
   const [items, setItems] = useState<LineItem[]>([
     {
@@ -584,12 +589,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     
     const subtotal = allItems.reduce((sum, item) => sum + item.total, 0);
     
+    // Discount calculation
+    const discountAmt = discountEnabled && discountValue > 0
+      ? (discountType === 'percent' ? Math.round(subtotal * (discountValue / 100) * 100) / 100 : Math.min(discountValue, subtotal))
+      : 0;
+    const subtotalAfterDiscount = Math.round((subtotal - discountAmt) * 100) / 100;
+    
     // Smart TVA calculation: Auto-entrepreneur = franchise de TVA, Sous-traitance = autoliquidation
     const tvaExempt = isAutoEntrepreneur;
     const isSousTraitanceTva = !isAutoEntrepreneur && projectTvaType === 'sous_traitance';
     const tvaRate = tvaExempt || isSousTraitanceTva ? 0 : (projectTvaType === 'logement' ? 10 : 20);
-    const tvaAmount = (tvaExempt || isSousTraitanceTva) ? 0 : Math.round(subtotal * (tvaRate / 100) * 100) / 100;
-    const total = subtotal + tvaAmount;
+    const tvaAmount = (tvaExempt || isSousTraitanceTva) ? 0 : Math.round(subtotalAfterDiscount * (tvaRate / 100) * 100) / 100;
+    const total = subtotalAfterDiscount + tvaAmount;
     
     return {
       type: documentType === 'devis' ? 'DEVIS' : 'FACTURE',
@@ -647,6 +658,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         total: item.total,
       })),
       subtotal: Math.round(subtotal * 100) / 100,
+      discountType: discountEnabled && discountAmt > 0 ? discountType : undefined,
+      discountValue: discountEnabled && discountAmt > 0 ? discountValue : undefined,
+      discountAmount: discountAmt > 0 ? discountAmt : undefined,
+      subtotalAfterDiscount: discountAmt > 0 ? subtotalAfterDiscount : undefined,
       tvaRate,
       tvaAmount,
       tvaExempt,
@@ -2708,6 +2723,55 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               <span className="text-muted-foreground">{isRTL ? 'المجموع قبل الضريبة:' : 'Sous-total HT:'}</span>
               <span className="font-mono font-medium">{invoiceData.subtotal.toFixed(2)} €</span>
             </div>
+
+            {/* Discount controls */}
+            <div className={cn("space-y-2 py-2 px-3 rounded-lg border border-dashed", discountEnabled ? "border-red-300 bg-red-50/50 dark:bg-red-950/20 dark:border-red-800" : "border-border")}>
+              <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                <Label htmlFor="discount-toggle" className={cn("text-sm font-medium cursor-pointer", isRTL && "font-cairo")}>
+                  {isRTL ? '🏷️ تطبيق خصم' : '🏷️ Appliquer une remise'}
+                </Label>
+                <Switch id="discount-toggle" checked={discountEnabled} onCheckedChange={setDiscountEnabled} />
+              </div>
+              {discountEnabled && (
+                <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                  <Select value={discountType} onValueChange={(v) => setDiscountType(v as 'percent' | 'fixed')}>
+                    <SelectTrigger className="w-24 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percent">%</SelectItem>
+                      <SelectItem value="fixed">€ fixe</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={discountType === 'percent' ? 100 : invoiceData.subtotal}
+                    step={discountType === 'percent' ? 1 : 0.01}
+                    value={discountValue || ''}
+                    onChange={(e) => setDiscountValue(Number(e.target.value))}
+                    className="w-24 h-8 text-sm font-mono"
+                    placeholder={discountType === 'percent' ? '10' : '50.00'}
+                  />
+                  {invoiceData.discountAmount && invoiceData.discountAmount > 0 && (
+                    <span className="text-sm text-red-600 dark:text-red-400 font-medium font-mono">
+                      - {invoiceData.discountAmount.toFixed(2)} €
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Show subtotal after discount */}
+            {invoiceData.discountAmount && invoiceData.discountAmount > 0 && (
+              <div className={cn(
+                "flex justify-between text-sm font-semibold",
+                isRTL && "flex-row-reverse"
+              )}>
+                <span className="text-muted-foreground">{isRTL ? 'المجموع بعد الخصم:' : 'Total après remise:'}</span>
+                <span className="font-mono font-medium">{(invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal).toFixed(2)} €</span>
+              </div>
+            )}
             
             {invoiceData.tvaExempt ? (
               <div className={cn(

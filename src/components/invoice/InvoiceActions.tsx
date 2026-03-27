@@ -148,6 +148,11 @@ const InvoiceActions = ({
     }
   };
 
+  /**
+   * Natural-flow page plan: content flows top-to-bottom across pages.
+   * No forced page breaks. Table starts right after header on page 1.
+   * Only rule: don't split a single table row or an insecable block.
+   */
   const createMainPagePlan = (
     mainPage: HTMLElement,
     contentWidthMm: number,
@@ -164,17 +169,11 @@ const InvoiceActions = ({
     const maxPagePx = maxContentHeightMm * pxPerMm;
     const gapPx = sectionGapMm * pxPerMm;
 
+    // Collect all sections in DOM order
     const sectionElements = Array.from(mainPage.querySelectorAll('[data-pdf-section]')) as HTMLElement[];
-    const sectionMap = new Map(sectionElements.map((section) => [section.dataset.pdfSection ?? '', section]));
-    const tableElement = sectionMap.get('table') as HTMLTableElement | undefined;
-
-    const preTableSections = ['header', 'client', 'objet']
-      .map((key) => sectionMap.get(key))
-      .filter(Boolean) as HTMLElement[];
-
-    const postTableSections = ['bloc-total', 'bloc-conditions', 'bloc-signature', 'footer']
-      .map((key) => sectionMap.get(key))
-      .filter(Boolean) as HTMLElement[];
+    const tableElement = sectionElements.find(
+      (el) => el.dataset.pdfSection === 'table',
+    ) as HTMLTableElement | undefined;
 
     const pages: PdfPagePlan[] = [{ chunks: [], usedPx: 0 }];
 
@@ -184,63 +183,33 @@ const InvoiceActions = ({
     const addChunk = (chunk: PdfChunkPlan) => {
       let page = currentPage();
       const gap = page.chunks.length > 0 ? gapPx : 0;
+      // Only start a new page if adding this chunk would overflow AND we already have content
       if (page.chunks.length > 0 && page.usedPx + gap + chunk.heightPx > maxPagePx) {
         startNewPage();
         page = currentPage();
       }
-
       page.usedPx += (page.chunks.length > 0 ? gapPx : 0) + chunk.heightPx;
       page.chunks.push(chunk);
     };
 
-    preTableSections.forEach((section) => {
-      addChunk({
-        kind: 'section',
-        key: section.dataset.pdfSection || 'section',
-        element: section,
-        heightPx: section.getBoundingClientRect().height,
-      });
-    });
+    // Process sections in DOM order — table rows are inlined naturally
+    for (const section of sectionElements) {
+      const key = section.dataset.pdfSection || 'section';
 
-    if (tableElement) {
-      const tableHead = tableElement.querySelector('thead') as HTMLElement | null;
-      const tableHeaderHeightPx = tableHead?.getBoundingClientRect().height ?? 0;
-      const allRows = Array.from(tableElement.querySelectorAll('tbody tr')) as HTMLTableRowElement[];
-      const rowHeights = new Map(allRows.map((row) => [row, row.getBoundingClientRect().height]));
+      if (key === 'table' && tableElement) {
+        // Split table into row chunks that fit remaining space
+        const tableHead = tableElement.querySelector('thead') as HTMLElement | null;
+        const tableHeaderHeightPx = tableHead?.getBoundingClientRect().height ?? 0;
+        const allRows = Array.from(tableElement.querySelectorAll('tbody tr')) as HTMLTableRowElement[];
 
-      const postTableHeightPx = postTableSections.reduce((sum, section) => sum + section.getBoundingClientRect().height, 0);
-      const postTableGapPx = gapPx * Math.max(postTableSections.length - 1, 0);
-      const minTargetLastPagePx = Math.min(
-        maxPagePx,
-        Math.max(maxPagePx * 0.8, postTableHeightPx + postTableGapPx + tableHeaderHeightPx),
-      );
-
-      let reservedStart = allRows.length;
-      let reservedRowsHeightPx = 0;
-
-      while (
-        reservedStart > 0 &&
-        postTableHeightPx +
-          postTableGapPx +
-          tableHeaderHeightPx +
-          reservedRowsHeightPx <
-          minTargetLastPagePx
-      ) {
-        reservedStart -= 1;
-        reservedRowsHeightPx += rowHeights.get(allRows[reservedStart]) ?? 0;
-      }
-
-      const leadingRows = allRows.slice(0, reservedStart);
-      const reservedRows = allRows.slice(reservedStart);
-
-      const queueTableRows = (rows: HTMLTableRowElement[], prefix: string) => {
         let rowIndex = 0;
         let chunkIndex = 0;
 
-        while (rowIndex < rows.length) {
+        while (rowIndex < allRows.length) {
           let page = currentPage();
           let availablePx = maxPagePx - page.usedPx - (page.chunks.length > 0 ? gapPx : 0);
 
+          // If not even a header fits, go to next page
           if (availablePx <= tableHeaderHeightPx && page.chunks.length > 0) {
             startNewPage();
             page = currentPage();
@@ -250,14 +219,15 @@ const InvoiceActions = ({
           const chunkRows: HTMLTableRowElement[] = [];
           let chunkHeightPx = tableHeaderHeightPx;
 
-          while (rowIndex < rows.length) {
-            const nextRow = rows[rowIndex];
-            const nextHeight = rowHeights.get(nextRow) ?? nextRow.getBoundingClientRect().height;
-            const projectedHeight = chunkHeightPx + nextHeight;
+          while (rowIndex < allRows.length) {
+            const row = allRows[rowIndex];
+            const rowHeight = row.getBoundingClientRect().height;
+            const projected = chunkHeightPx + rowHeight;
 
-            if (projectedHeight <= availablePx || chunkRows.length === 0) {
-              chunkRows.push(nextRow);
-              chunkHeightPx = projectedHeight;
+            // Always add at least one row per chunk
+            if (projected <= availablePx || chunkRows.length === 0) {
+              chunkRows.push(row);
+              chunkHeightPx = projected;
               rowIndex += 1;
             } else {
               break;
@@ -266,74 +236,28 @@ const InvoiceActions = ({
 
           addChunk({
             kind: 'table',
-            key: `${prefix}-${chunkIndex}`,
+            key: `table-${chunkIndex}`,
             sourceTable: tableElement,
             rows: chunkRows,
             heightPx: chunkHeightPx,
           });
           chunkIndex += 1;
         }
-      };
-
-      queueTableRows(leadingRows, 'table-main');
-
-      const reservedPackageHeightPx =
-        (reservedRows.length > 0 ? tableHeaderHeightPx + reservedRowsHeightPx + gapPx : 0) +
-        postTableHeightPx +
-        postTableGapPx;
-
-      if (
-        reservedRows.length > 0 &&
-        reservedPackageHeightPx <= maxPagePx &&
-        currentPage().chunks.length > 0 &&
-        currentPage().usedPx + gapPx + reservedPackageHeightPx > maxPagePx
-      ) {
-        startNewPage();
-      }
-
-      queueTableRows(reservedRows, 'table-tail');
-    }
-
-    postTableSections.forEach((section) => {
-      addChunk({
-        kind: 'section',
-        key: section.dataset.pdfSection || 'section',
-        element: section,
-        heightPx: section.getBoundingClientRect().height,
-      });
-    });
-
-    if (pages.length > 1) {
-      const lastPage = pages[pages.length - 1];
-      const previousPage = pages[pages.length - 2];
-      const minLastPagePx = maxPagePx * 0.8;
-      const minPreviousPagePx = maxPagePx * 0.65;
-
-      while (lastPage.usedPx < minLastPagePx && previousPage.chunks.length > 0) {
-        const candidate = previousPage.chunks[previousPage.chunks.length - 1];
-        if (candidate.kind !== 'table') break;
-
-        const previousGapReduction = previousPage.chunks.length > 1 ? gapPx : 0;
-        const nextGapIncrease = lastPage.chunks.length > 0 ? gapPx : 0;
-        const nextUsedPx = lastPage.usedPx + nextGapIncrease + candidate.heightPx;
-        const previousUsedPx = previousPage.usedPx - candidate.heightPx - previousGapReduction;
-
-        if (nextUsedPx > maxPagePx || (previousPage.chunks.length > 1 && previousUsedPx < minPreviousPagePx)) {
-          break;
-        }
-
-        previousPage.chunks.pop();
-        previousPage.usedPx = previousUsedPx;
-        lastPage.chunks.unshift(candidate);
-        lastPage.usedPx = nextUsedPx;
-      }
-
-      if (previousPage.chunks.length === 0) {
-        pages.splice(pages.length - 2, 1);
+      } else if (key !== 'table') {
+        // Regular section — add as insecable block
+        addChunk({
+          kind: 'section',
+          key,
+          element: section,
+          heightPx: section.getBoundingClientRect().height,
+        });
       }
     }
 
-    return { pages, contentWidthPx };
+    // Remove any empty pages (shouldn't happen, but safety net)
+    const cleanPages = pages.filter((p) => p.chunks.length > 0);
+
+    return { pages: cleanPages.length > 0 ? cleanPages : pages, contentWidthPx };
   };
 
   const buildPdfBlob = async ({ embedFacturX = false }: { embedFacturX?: boolean } = {}) => {

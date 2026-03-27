@@ -631,7 +631,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* Legal Footer — discreet, light grey */}
         {(data.legalFooter || data.emitter.iban || assuranceHeaderLine) && (
-          <div data-pdf-section="footer" className="invoice-footer-block mt-5 pt-3 text-center" style={{ borderTop: '1px solid #e5e7eb', pageBreakInside: 'avoid' }}>
+          <div data-pdf-section="footer" className="invoice-footer-block mt-2 pt-1.5 text-center" style={{ borderTop: '1px solid #e5e7eb' }}>
             {data.legalFooter && <p className="text-[6pt] text-gray-300 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
             {data.emitter.iban && (
               <p className="text-[6.5pt] text-gray-400 mt-0.5">

@@ -267,22 +267,36 @@ export async function buildPdfFromContainer(
 
     // 3) End-block (totaux + conditions + signature + IBAN) — insecable group
     if (afterTable.length > 0) {
-      // Precise height: sum of elements + gaps BETWEEN them (not after the last one)
-      const endHeights = afterTable.map(el => el.getBoundingClientRect().height);
+      // Measure each element's ACTUAL rendered height (excluding CSS margins to avoid double-counting)
+      const endHeights = afterTable.map(el => {
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        const marginTop = parseFloat(style.marginTop || '0');
+        const marginBottom = parseFloat(style.marginBottom || '0');
+        return rect.height + marginTop + marginBottom;
+      });
       const totalEndH = endHeights.reduce((s, h) => s + h, 0) + gapPx * Math.max(0, afterTable.length - 1);
 
-      // ONLY move to next page if it truly doesn't fit — never waste space
-      const spaceNeeded = totalEndH + gap();
-      if (spaceNeeded > remaining() && cur().chunks.length > 0) {
-        newPage();
+      // Only break if end-block genuinely cannot fit on current page
+      const currentGap = cur().chunks.length > 0 ? gapPx : 0;
+      const availableSpace = remaining() - currentGap;
+
+      if (totalEndH > availableSpace && cur().chunks.length > 0) {
+        // Double-check: would a fresh page even help? (avoid infinite loop edge case)
+        if (totalEndH <= maxPagePx) {
+          newPage();
+        }
       }
 
       for (const el of afterTable) {
-        // Place each sub-section (they'll all be on the same page now)
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        const marginTop = parseFloat(style.marginTop || '0');
+        const marginBottom = parseFloat(style.marginBottom || '0');
         const chunk: Chunk = {
           type: 'section',
           element: el,
-          heightPx: el.getBoundingClientRect().height,
+          heightPx: rect.height + marginTop + marginBottom,
         };
         cur().usedPx += (cur().chunks.length > 0 ? gapPx : 0) + chunk.heightPx;
         cur().chunks.push(chunk);

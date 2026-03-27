@@ -220,11 +220,6 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
       {/* ===== MAIN DOCUMENT ===== */}
       <div dir="ltr" lang="fr" className={pageContainerClass} style={pageContainerStyle} {...preventCopy}>
 
-        {/* Running footer — fixed to bottom of every printed page */}
-        <div className="invoice-print-footer hidden print:block">
-          {docRef}
-        </div>
-
         {/* ── HEADER — Clean, no borders ── */}
         <div data-pdf-section="header" className="flex justify-between items-start mb-4">
           {/* Left: Logo + Company */}
@@ -669,10 +664,6 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               style={{ ...pageContainerStyle, pageBreakBefore: 'always', display: 'flex', flexDirection: 'column', minHeight: '277mm' }}
               {...preventCopy}
             >
-              <div className="invoice-print-footer hidden print:block">
-                {docRef} — Annexe {pageIdx + 1}
-              </div>
-
               <div className="flex justify-between items-center mb-3 pb-2" style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <div>
                   <h2 className="text-[11pt] font-bold text-gray-900">{data.emitter.name}</h2>
@@ -682,7 +673,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               </div>
 
               <div className="annexe-photo-single flex-1 flex flex-col justify-start">
-                <div className="annexe-photo-media flex-1 flex items-start justify-center overflow-hidden rounded-md" style={{ border: '1px solid #e5e7eb', padding: '6mm', backgroundColor: '#ffffff' }}>
+                <div className="annexe-photo-media flex-1 flex items-start justify-center rounded-md" style={{ border: '1px solid #e5e7eb', padding: '6mm', backgroundColor: '#ffffff', overflow: 'visible' }}>
                   <img
                     src={photo.data}
                     alt={photo.name || `Photo ${pageIdx + 1}`}

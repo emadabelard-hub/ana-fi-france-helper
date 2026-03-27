@@ -201,11 +201,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
   const pageContainerClass = "french-invoice bg-white text-gray-900 rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none print:max-w-none print:rounded-none select-none";
   const pageContainerStyle: React.CSSProperties = {
-    padding: '10mm 12mm 14mm 12mm',
+    padding: '8mm 10mm 10mm 10mm',
     boxSizing: 'border-box',
     minHeight: 'auto',
-    fontSize: '9pt',
-    lineHeight: '1.5',
+    fontSize: '8pt',
+    lineHeight: '1.45',
     fontFamily: 'Arial, "Helvetica Neue", sans-serif',
     WebkitUserSelect: 'none',
     userSelect: 'none',
@@ -227,49 +227,49 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         </div>
 
         {/* ── HEADER — Clean, no borders ── */}
-        <div className="flex justify-between items-start mb-6">
+        <div className="flex justify-between items-start mb-4">
           {/* Left: Logo + Company */}
           <div className="flex-1 min-w-0">
             {data.logoUrl && (
-              <img src={data.logoUrl} alt="Logo" className="mb-2 object-contain" style={{ maxHeight: '44px', maxWidth: '120px' }} />
+              <img src={data.logoUrl} alt="Logo" className="mb-1.5 object-contain" style={{ maxHeight: '36px', maxWidth: '100px' }} />
             )}
-            <h1 className="text-[13pt] font-bold text-gray-900 leading-tight tracking-tight">
+            <h1 className="text-[11pt] font-bold text-gray-900 leading-tight tracking-tight">
               {data.emitter.name}
               {(data.emitter.legalStatus === 'auto-entrepreneur' || data.emitter.legalStatus === 'ei') && (
-                <span className="text-[8pt] font-medium text-gray-400 ml-1.5">EI</span>
+                <span className="text-[7pt] font-medium text-gray-400 ml-1">EI</span>
               )}
             </h1>
-            <p className="text-[8pt] text-gray-500 mt-0.5">SIRET : {data.emitter.siret}</p>
-            <p className="text-[8pt] text-gray-500 whitespace-pre-line leading-snug">{data.emitter.address}</p>
-            {data.emitter.phone && <p className="text-[8pt] text-gray-500">Tél : {data.emitter.phone}</p>}
-            {data.emitter.email && <p className="text-[8pt] text-gray-500">{data.emitter.email}</p>}
+            <p className="text-[7pt] text-gray-500 mt-0.5">SIRET : {data.emitter.siret}</p>
+            <p className="text-[7pt] text-gray-500 whitespace-pre-line leading-snug">{data.emitter.address}</p>
+            {data.emitter.phone && <p className="text-[7pt] text-gray-500">Tél : {data.emitter.phone}</p>}
+            {data.emitter.email && <p className="text-[7pt] text-gray-500">{data.emitter.email}</p>}
             {assuranceHeaderLine && (
-              <p className="text-[7pt] text-gray-500 mt-1 font-medium">{assuranceHeaderLine}</p>
+              <p className="text-[6.5pt] text-gray-500 mt-0.5 font-medium">{assuranceHeaderLine}</p>
             )}
           </div>
 
           {/* Right: Document type + QR */}
-          <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
+          <div className="text-right shrink-0 flex flex-col items-end gap-1">
             <div>
-              <h2 className="text-[22pt] font-extrabold text-gray-900 leading-none tracking-tight">
+              <h2 className="text-[16pt] font-extrabold text-gray-900 leading-none tracking-tight">
                 <ArSub fr={data.type} />
               </h2>
-              <p className="text-[9pt] text-gray-500 mt-0.5">N° {data.number}</p>
+              <p className="text-[8pt] text-gray-500 mt-0.5">N° {data.number}</p>
             </div>
             <DocumentQRCode
               documentNumber={data.number}
               date={data.date}
               totalTTC={data.total}
-              size={50}
+              size={42}
             />
           </div>
         </div>
 
         {/* ── COMPANY & CLIENT — 2-column, no boxes ── */}
-        <div className="flex justify-between gap-6 mb-4">
+        <div className="flex justify-between gap-4 mb-3">
           {/* Dates */}
           <div className="flex-1">
-            <div className="text-[8pt] text-gray-500 space-y-0.5">
+            <div className="text-[7pt] text-gray-500 space-y-0">
               <p>Date d'émission : <span className="text-gray-700 font-medium">{data.date}</span></p>
               {data.type === 'DEVIS' && data.validUntil && (
                 <p>Valable jusqu'au : <span className="text-gray-700 font-medium">{data.validUntil}</span></p>
@@ -288,26 +288,26 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
           {/* Client info — right aligned */}
           <div className="w-[45%] text-left">
-            <p className="text-[7pt] font-semibold text-gray-400 uppercase tracking-widest mb-1"><ArSub fr="CLIENT" /></p>
-            <p className="text-[10pt] font-bold text-gray-900 leading-tight">{data.client.name}</p>
-            <p className="text-[8pt] text-gray-500 whitespace-pre-line leading-snug mt-0.5">{data.client.address}</p>
-            {data.client.phone && <p className="text-[8pt] text-gray-500">Tél : {data.client.phone}</p>}
-            {data.client.email && <p className="text-[8pt] text-gray-500">{data.client.email}</p>}
-            {data.client.siren && <p className="text-[8pt] text-gray-500">SIREN : {data.client.siren}</p>}
-            {data.client.tvaIntra && !data.tvaExempt && <p className="text-[8pt] text-gray-500">TVA Intra : {data.client.tvaIntra}</p>}
+            <p className="text-[6.5pt] font-semibold text-gray-400 uppercase tracking-widest mb-0.5"><ArSub fr="CLIENT" /></p>
+            <p className="text-[9pt] font-bold text-gray-900 leading-tight">{data.client.name}</p>
+            <p className="text-[7pt] text-gray-500 whitespace-pre-line leading-snug mt-0.5">{data.client.address}</p>
+            {data.client.phone && <p className="text-[7pt] text-gray-500">Tél : {data.client.phone}</p>}
+            {data.client.email && <p className="text-[7pt] text-gray-500">{data.client.email}</p>}
+            {data.client.siren && <p className="text-[7pt] text-gray-500">SIREN : {data.client.siren}</p>}
+            {data.client.tvaIntra && !data.tvaExempt && <p className="text-[7pt] text-gray-500">TVA Intra : {data.client.tvaIntra}</p>}
             {data.workSite && !data.workSite.sameAsClient && data.workSite.address && (
-              <div className="mt-1.5">
-                <p className="text-[7pt] font-semibold text-gray-400 uppercase">Adresse du chantier</p>
-                <p className="text-[8pt] text-gray-500 whitespace-pre-line leading-snug">{data.workSite.address}</p>
+              <div className="mt-1">
+                <p className="text-[6.5pt] font-semibold text-gray-400 uppercase">Adresse du chantier</p>
+                <p className="text-[7pt] text-gray-500 whitespace-pre-line leading-snug">{data.workSite.address}</p>
               </div>
             )}
           </div>
         </div>
 
         {/* ── OBJET + NATURE — simple text + thin divider ── */}
-        <div className="mb-4">
+        <div className="mb-3">
           {data.natureOperation && (
-            <p className="text-[8pt] text-gray-500 mb-0.5">
+            <p className="text-[7pt] text-gray-500 mb-0.5">
               Nature de l'opération : <span className="text-gray-700 font-medium">
                 {data.natureOperation === 'service' ? 'Prestation de services'
                   : data.natureOperation === 'goods' ? 'Livraison de biens'
@@ -316,16 +316,15 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             </p>
           )}
           {dynamicSubject && (
-            <p className="text-[10pt] font-bold text-gray-900">
-              {data.type === 'DEVIS' ? 'Objet : ' : 'Objet : '}
-              <span>{dynamicSubject}</span>
+            <p className="text-[8.5pt] font-bold text-gray-900">
+              Objet : <span className="font-semibold">{dynamicSubject}</span>
             </p>
           )}
-          <div className="mt-2" style={{ borderBottom: '1px solid #e5e7eb' }} />
+          <div className="mt-1.5" style={{ borderBottom: '1px solid #e5e7eb' }} />
         </div>
 
         {/* ── TABLE DES PRESTATIONS ── */}
-        <table className="w-full border-collapse mb-8" style={{ tableLayout: 'fixed', fontSize: '8.5pt' }}>
+        <table className="w-full border-collapse mb-4" style={{ tableLayout: 'fixed', fontSize: '7.5pt' }}>
           <colgroup>
             <col style={{ width: '55%' }} />
             <col style={{ width: '10%' }} />
@@ -335,19 +334,19 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </colgroup>
           <thead style={{ display: 'table-header-group' }}>
             <tr style={{ backgroundColor: '#f3f4f6' }}>
-              <th className="py-2.5 px-3 text-left text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1.5 px-2 text-left text-[7pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
                 <ArSub fr="Désignation" />
               </th>
-              <th className="py-2.5 px-1 text-center text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1.5 px-1 text-center text-[7pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
                 <ArSub fr="Qté" />
               </th>
-              <th className="py-2.5 px-1 text-center text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1.5 px-1 text-center text-[7pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
                 <ArSub fr="Unité" />
               </th>
-              <th className="py-2.5 px-2.5 text-right text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1.5 px-2 text-right text-[7pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
                 <ArSub fr="P.U HT" />
               </th>
-              <th className="py-2.5 px-2.5 text-right text-[8pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1.5 px-2 text-right text-[7pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
                 <ArSub fr="Total HT" />
               </th>
             </tr>
@@ -372,7 +371,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                   }}
                 >
                   <td
-                    className="py-2 px-3"
+                    className="py-1 px-2"
                     style={{
                       verticalAlign: 'top',
                       whiteSpace: 'normal',
@@ -380,15 +379,15 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                       overflowWrap: 'break-word',
                       overflow: 'hidden',
                       borderBottom: '1px solid #f0f0f0',
-                      ...(isSectionTitle && index > 0 ? { paddingTop: '14px' } : {}),
+                      ...(isSectionTitle && index > 0 ? { paddingTop: '10px' } : {}),
                     }}
                   >
                     {isSectionTitle ? (
-                      <span className="block text-left text-[9pt] font-bold text-gray-900 tracking-wide leading-snug">
+                      <span className="block text-left text-[8pt] font-bold text-gray-900 tracking-wide leading-snug">
                         {item.designation_fr}
                       </span>
                     ) : (
-                      <span className="leading-snug block text-left text-gray-700">
+                      <span className="leading-snug block text-left text-gray-700 text-[7.5pt]">
                         {(() => {
                           const text = item.designation_fr;
                           // Bold the first phrase/segment for hierarchy
@@ -408,7 +407,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                           ? (
                             <ul className="list-disc list-inside space-y-0 ml-0">
                               {item.designation_fr.split('\n').filter(l => l.trim()).map((line, i) => (
-                                <li key={i} className="text-[8pt] leading-snug">{line.trim().replace(/^[-•·]\s*/, '')}</li>
+                                <li key={i} className="text-[7pt] leading-snug">{line.trim().replace(/^[-•·]\s*/, '')}</li>
                               ))}
                             </ul>
                           )
@@ -421,16 +420,16 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                       </span>
                     )}
                   </td>
-                  <td className="py-2 px-1 text-center text-gray-700" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                  <td className="py-1 px-1 text-center text-gray-700 text-[7.5pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
                     {item.quantity}
                   </td>
-                  <td className="py-2 px-1 text-center text-[7.5pt] text-gray-500" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                  <td className="py-1 px-1 text-center text-[7pt] text-gray-500" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
                     {item.unit}
                   </td>
-                  <td className="py-2 px-2.5 text-right text-gray-700 tabular-nums" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                  <td className="py-1 px-2 text-right text-gray-700 tabular-nums text-[7.5pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
                     {formatNumber(item.unitPrice)} €
                   </td>
-                  <td className="py-2 px-2.5 text-right font-semibold text-gray-900 tabular-nums" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                  <td className="py-1 px-2 text-right font-semibold text-gray-900 tabular-nums text-[7.5pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
                     {formatNumber(item.total)} €
                   </td>
                 </tr>
@@ -444,11 +443,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
         <div className="invoice-totals-signature-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
 
           {/* Totals row: schedule left, amounts right */}
-          <div className="flex justify-between items-start mb-8 gap-6 mt-4">
+          <div className="flex justify-between items-start mb-4 gap-4 mt-2">
             {/* Payment Schedule (compact, left side) */}
             {data.paymentMilestones && data.paymentMilestones.length > 0 && (
               <div className="flex-1 max-w-[48%]">
-                <p className="text-[8pt] font-bold text-gray-700 mb-2">Échéancier de paiement</p>
+                <p className="text-[7pt] font-bold text-gray-700 mb-1">Échéancier de paiement</p>
                 <ul className="space-y-1">
                   {data.paymentMilestones.map((m) => {
                     const milestoneAmount = m.mode === 'percent'
@@ -458,7 +457,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                       ? (m.percent || 0)
                       : Math.round((m.amount || 0) / data.total * 100 * 10) / 10;
                     return (
-                      <li key={m.id} className="flex justify-between text-[8pt] py-1" style={{ borderBottom: '1px solid #f0f0f0' }}>
+                      <li key={m.id} className="flex justify-between text-[7pt] py-0.5" style={{ borderBottom: '1px solid #f0f0f0' }}>
                         <span className="text-gray-600 truncate mr-2">• {m.label}</span>
                         <span className="text-gray-700 whitespace-nowrap font-medium">{milestonePercent}% — {formatCurrency(milestoneAmount)}</span>
                       </li>
@@ -471,12 +470,12 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                     ? Math.round(data.total * (first.percent || 0) / 100 * 100) / 100
                     : (first.amount || 0);
                   return (
-                    <div className="mt-3 rounded-md px-3 py-2" style={{ backgroundColor: '#f5f5f5', border: '1px solid #e5e5e5' }}>
-                      <div className="flex justify-between text-[8.5pt]">
+                    <div className="mt-2 rounded-md px-2 py-1.5" style={{ backgroundColor: '#f5f5f5', border: '1px solid #e5e5e5' }}>
+                      <div className="flex justify-between text-[7.5pt]">
                         <span className="text-gray-700 font-bold">Net à payer (ét.1)</span>
                         <span className="font-bold text-gray-900">{formatCurrency(firstAmt)}</span>
                       </div>
-                      <div className="flex justify-between text-[7pt] text-gray-500 mt-1">
+                      <div className="flex justify-between text-[6.5pt] text-gray-500 mt-0.5">
                         <span>Restant</span>
                         <span>{formatCurrency(Math.round((data.total - firstAmt) * 100) / 100)}</span>
                       </div>
@@ -487,46 +486,46 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             )}
 
             {/* Totals block — right aligned */}
-            <div className="w-56 ml-auto">
-              <div className="flex justify-between py-2" style={{ borderBottom: '1px solid #e5e7eb' }}>
-                <span className="text-gray-500 text-[8.5pt]"><ArSub fr="Total HT:" /></span>
-                <span className="text-gray-800 text-[9pt] font-medium">{formatCurrency(data.subtotal)}</span>
+            <div className="w-48 ml-auto">
+              <div className="flex justify-between py-1.5" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <span className="text-gray-500 text-[7.5pt]"><ArSub fr="Total HT:" /></span>
+                <span className="text-gray-800 text-[8pt] font-medium tabular-nums">{formatCurrency(data.subtotal)}</span>
               </div>
               {data.tvaExempt ? (
-                <div className="py-2" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <div className="py-1.5" style={{ borderBottom: '1px solid #e5e7eb' }}>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 text-[8.5pt]">TVA (0%) :</span>
-                    <span className="text-gray-800 text-[9pt] font-medium">{formatCurrency(0)}</span>
+                    <span className="text-gray-500 text-[7.5pt]">TVA (0%) :</span>
+                    <span className="text-gray-800 text-[8pt] font-medium tabular-nums">{formatCurrency(0)}</span>
                   </div>
-                  <p className="text-[7pt] text-gray-400 italic leading-tight mt-0.5">TVA non applicable, art. 293 B du CGI</p>
+                  <p className="text-[6.5pt] text-gray-400 italic leading-tight mt-0.5">TVA non applicable, art. 293 B du CGI</p>
                 </div>
               ) : (
-                <div className="flex justify-between py-2" style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <span className="text-gray-500 text-[8.5pt]">TVA ({data.tvaRate}%) :</span>
-                  <span className="text-gray-800 text-[9pt] font-medium">{formatCurrency(data.tvaAmount)}</span>
+                <div className="flex justify-between py-1.5" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <span className="text-gray-500 text-[7.5pt]">TVA ({data.tvaRate}%) :</span>
+                  <span className="text-gray-800 text-[8pt] font-medium tabular-nums">{formatCurrency(data.tvaAmount)}</span>
                 </div>
               )}
               {/* Thin divider before TTC */}
-              <div style={{ borderBottom: '2px solid #d1d5db', margin: '4px 0' }} />
-              {/* TTC — prominent highlight */}
-              <div className="flex justify-between items-center py-3 px-3.5 rounded-md" style={{ backgroundColor: '#f0f1f3' }}>
-                <span className="font-bold text-[10.5pt] text-gray-900"><ArSub fr="Total TTC:" /></span>
-                <span className="font-extrabold text-[16pt] text-gray-900 tabular-nums">{formatCurrency(data.total)}</span>
+              <div style={{ borderBottom: '2px solid #d1d5db', margin: '3px 0' }} />
+              {/* TTC — prominent but balanced */}
+              <div className="flex justify-between items-center py-2 px-2.5 rounded-md" style={{ backgroundColor: '#f0f1f3' }}>
+                <span className="font-bold text-[8.5pt] text-gray-900"><ArSub fr="Total TTC:" /></span>
+                <span className="font-extrabold text-[12pt] text-gray-900 tabular-nums">{formatCurrency(data.total)}</span>
               </div>
 
               {/* Simple acompte (no milestones) */}
               {data.acompteAmount && data.acompteAmount > 0 && (!data.paymentMilestones || data.paymentMilestones.length === 0) && (
-                  <div className="mt-3 rounded-md overflow-hidden" style={{ border: '1px solid #d1d5db' }}>
-                   <div className="flex justify-between py-1.5 px-3" style={{ backgroundColor: '#f5f5f5' }}>
-                    <span className="text-gray-600 text-[8pt] font-semibold">
+                  <div className="mt-2 rounded-md overflow-hidden" style={{ border: '1px solid #d1d5db' }}>
+                   <div className="flex justify-between py-1 px-2" style={{ backgroundColor: '#f5f5f5' }}>
+                    <span className="text-gray-600 text-[7pt] font-semibold">
                       <ArSub fr="Acompte" /> {data.acomptePercent ? `(${data.acomptePercent}%)` : ''}
                     </span>
-                    <span className="font-bold text-gray-700 text-[8pt] tabular-nums">{formatCurrency(data.acompteAmount)}</span>
+                    <span className="font-bold text-gray-700 text-[7pt] tabular-nums">{formatCurrency(data.acompteAmount)}</span>
                   </div>
                   {data.netAPayer !== undefined && (
-                    <div className="flex justify-between py-2.5 px-3" style={{ backgroundColor: '#e8eaed' }}>
-                      <span className="text-gray-900 text-[9.5pt] font-extrabold">Net à payer</span>
-                      <span className="font-extrabold text-gray-900 text-[12pt] tabular-nums">{formatCurrency(data.netAPayer)}</span>
+                    <div className="flex justify-between py-1.5 px-2" style={{ backgroundColor: '#e8eaed' }}>
+                      <span className="text-gray-900 text-[8pt] font-extrabold">Net à payer</span>
+                      <span className="font-extrabold text-gray-900 text-[10pt] tabular-nums">{formatCurrency(data.netAPayer)}</span>
                     </div>
                   )}
                 </div>
@@ -535,69 +534,69 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* ── PAYMENT CONDITIONS — bullet points, clean ── */}
-          <div className="mb-6 mt-2 text-[8pt] text-gray-500">
-            <p className="text-gray-600 font-semibold mb-2"><ArSub fr="Conditions de règlement:" /></p>
-            <ul className="space-y-1.5 ml-1">
+          <div className="mb-4 mt-1 text-[7pt] text-gray-500">
+            <p className="text-gray-600 font-semibold mb-1"><ArSub fr="Conditions de règlement:" /></p>
+            <ul className="space-y-0.5 ml-1">
               <li>• {data.paymentTerms}</li>
               {data.paymentDeadline === 'immediate' && (
                 <li className="text-gray-600 font-medium">• Paiement à réception de la facture.</li>
               )}
               {data.legalMentions && <li>• {data.legalMentions}</li>}
-              <li className="text-gray-400 text-[7pt]">• Indemnité forfaitaire de 40 € pour frais de recouvrement en cas de retard (Art. L.441-10 du Code de commerce).</li>
+              <li className="text-gray-400 text-[6.5pt]">• Indemnité forfaitaire de 40 € pour frais de recouvrement en cas de retard (Art. L.441-10 du Code de commerce).</li>
             </ul>
           </div>
 
           {/* ── ACCEPTANCE & SIGNATURE — compact horizontal layout ── */}
-          <div className="pt-4 mt-3" style={{ borderTop: '1px solid #e5e7eb' }}>
-            <h4 className="text-[8.5pt] font-bold text-gray-700 text-center mb-1">
+          <div className="pt-3 mt-2" style={{ borderTop: '1px solid #e5e7eb' }}>
+            <h4 className="text-[7.5pt] font-bold text-gray-700 text-center mb-0.5">
               {data.type === 'DEVIS' ? 'Acceptation du devis' : 'Acceptation de la facture'}
             </h4>
-            <p className="text-[7pt] text-gray-400 text-center mb-1 italic leading-snug">
+            <p className="text-[6.5pt] text-gray-400 text-center mb-0.5 italic leading-snug">
               {data.type === 'DEVIS'
                 ? 'Le client déclare avoir pris connaissance des conditions ci-dessus et accepte le présent devis.'
                 : 'Le client déclare avoir pris connaissance de la présente facture.'}
             </p>
-            <p className="text-[7.5pt] text-gray-500 text-center mb-3">
+            <p className="text-[7pt] text-gray-500 text-center mb-2">
               Mention manuscrite : « <span className="italic font-medium">Bon pour accord</span> »
             </p>
 
-            <div className="flex justify-between items-start gap-4">
+            <div className="flex justify-between items-start gap-3">
               {/* Client acceptance */}
-              <div className="flex-1 rounded p-2.5" style={{ border: '1px solid #e8e8e8' }}>
-                <p className="text-[7.5pt] font-bold text-gray-500 mb-1 text-center"><ArSub fr="Le client" /></p>
-                <div className="grid grid-cols-2 gap-2 mb-1.5">
+              <div className="flex-1 rounded p-2" style={{ border: '1px solid #e8e8e8' }}>
+                <p className="text-[7pt] font-bold text-gray-500 mb-0.5 text-center"><ArSub fr="Le client" /></p>
+                <div className="grid grid-cols-2 gap-1.5 mb-1">
                   <div>
-                    <p className="text-[6.5pt] text-gray-400 mb-0.5">Nom :</p>
-                    <div className="h-3.5" style={{ borderBottom: '1px dotted #d1d5db' }} />
+                    <p className="text-[6pt] text-gray-400 mb-0.5">Nom :</p>
+                    <div className="h-3" style={{ borderBottom: '1px dotted #d1d5db' }} />
                   </div>
                   <div>
-                    <p className="text-[6.5pt] text-gray-400 mb-0.5">Date :</p>
-                    <div className="h-3.5" style={{ borderBottom: '1px dotted #d1d5db' }} />
+                    <p className="text-[6pt] text-gray-400 mb-0.5">Date :</p>
+                    <div className="h-3" style={{ borderBottom: '1px dotted #d1d5db' }} />
                   </div>
                 </div>
-                <p className="text-[6.5pt] text-gray-400 mb-0.5">Signature :</p>
-                <div className="h-8 rounded" style={{ border: '1px dashed #d5d5d5' }} />
+                <p className="text-[6pt] text-gray-400 mb-0.5">Signature :</p>
+                <div className="h-6 rounded" style={{ border: '1px dashed #d5d5d5' }} />
               </div>
 
               {/* Artisan signature & stamp — smaller */}
-              <div className="w-32 text-center">
-                <p className="text-[7.5pt] font-bold text-gray-500 mb-1"><ArSub fr="Le prestataire" /></p>
-                <p className="text-[6.5pt] text-gray-400 mb-1">Date : {data.date}</p>
+              <div className="w-28 text-center">
+                <p className="text-[7pt] font-bold text-gray-500 mb-0.5"><ArSub fr="Le prestataire" /></p>
+                <p className="text-[6pt] text-gray-400 mb-0.5">Date : {data.date}</p>
                 {data.artisanSignatureUrl ? (
-                  <div className="rounded p-0.5 mb-1" style={{ border: '1px solid #e8e8e8' }}>
-                    <img src={data.artisanSignatureUrl} alt="Signature" className="max-h-8 mx-auto object-contain" />
+                  <div className="rounded p-0.5 mb-0.5" style={{ border: '1px solid #e8e8e8' }}>
+                    <img src={data.artisanSignatureUrl} alt="Signature" className="max-h-6 mx-auto object-contain" />
                   </div>
                 ) : (
-                  <div className="h-8 rounded mb-1" style={{ border: '1px dashed #d5d5d5' }} />
+                  <div className="h-6 rounded mb-0.5" style={{ border: '1px dashed #d5d5d5' }} />
                 )}
                 {data.stampUrl ? (
-                  <div className="rounded p-0.5 mx-auto" style={{ border: '1px solid #e8e8e8', width: '80px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src={data.stampUrl} alt="Cachet" style={{ maxWidth: '72px', maxHeight: '35px', objectFit: 'contain' }} />
+                  <div className="rounded p-0.5 mx-auto" style={{ border: '1px solid #e8e8e8', width: '64px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img src={data.stampUrl} alt="Cachet" style={{ maxWidth: '58px', maxHeight: '28px', objectFit: 'contain' }} />
                   </div>
                 ) : (
-                  <div className="h-7 rounded" style={{ border: '1px dashed #d5d5d5' }} />
+                  <div className="h-5 rounded" style={{ border: '1px dashed #d5d5d5' }} />
                 )}
-                <p className="text-[6pt] text-gray-400 mt-0.5"><ArSub fr="Signature & Cachet" /></p>
+                <p className="text-[5.5pt] text-gray-400 mt-0.5"><ArSub fr="Signature & Cachet" /></p>
               </div>
             </div>
           </div>
@@ -614,7 +613,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               <p className="text-[7pt] text-gray-500 leading-tight mt-0.5">Scannez le QR code pour payer en ligne.</p>
             </div>
             <div className="w-10 h-10 rounded flex items-center justify-center text-[6pt] text-gray-400 text-center leading-tight shrink-0" style={{ border: '1px dashed #d1d5db' }}>QR</div>
-            <button className="px-5 py-2.5 rounded-lg text-[9pt] font-bold text-white shadow-sm shrink-0 transition-colors hover:opacity-90" style={{ backgroundColor: '#059669' }} onClick={(e) => e.stopPropagation()}>Payer</button>
+            <button className="px-4 py-2 rounded-lg text-[8pt] font-bold text-white shadow-sm shrink-0 transition-colors hover:opacity-90" style={{ backgroundColor: '#059669' }} onClick={(e) => e.stopPropagation()}>Payer</button>
           </div>
         )}
 
@@ -633,7 +632,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
         {/* Legal Footer — discreet, light grey */}
         {(data.legalFooter || data.emitter.iban || assuranceHeaderLine) && (
-          <div className="invoice-footer-block mt-8 pt-4 text-center" style={{ borderTop: '1px solid #e5e7eb', pageBreakInside: 'avoid' }}>
+          <div className="invoice-footer-block mt-5 pt-3 text-center" style={{ borderTop: '1px solid #e5e7eb', pageBreakInside: 'avoid' }}>
             {data.legalFooter && <p className="text-[6pt] text-gray-300 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
             {data.emitter.iban && (
               <p className="text-[6.5pt] text-gray-400 mt-0.5">

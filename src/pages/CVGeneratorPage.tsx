@@ -153,6 +153,7 @@ const CVGeneratorPage = () => {
       setIsTranslating(false);
     }
   };
+  const displayData = translatedData || cvData;
 
   const handleExportPDF = useCallback(async () => {
     // 1. Validate content exists

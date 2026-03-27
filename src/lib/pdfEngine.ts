@@ -1,23 +1,25 @@
 /**
- * Universal PDF Engine v3 — Simple, stable, predictable.
+ * Universal PDF Engine v4 — Browserless (headless Chrome) powered.
  *
- * Strategy (deliberately simple):
- *   1. Collect sections in DOM order via `data-pdf-section`
- *   2. Sections BEFORE the table → placed as insecable blocks
- *   3. TABLE → only element that splits across pages (row by row)
- *   4. Sections AFTER the table = "end-block" → grouped as ONE insecable unit
- *      If end-block doesn't fit on current page → entire block moves to next page
- *   5. Annexe pages (.invoice-annexe-page) → each gets its own PDF page
- *   6. No page is ever left empty
+ * Strategy:
+ *   1. Serialize the rendered invoice DOM + all compiled CSS
+ *   2. Send HTML to an Edge Function that proxies Browserless.io
+ *   3. Browserless renders the page in real Chrome and returns a PDF
+ *   4. Natural browser pagination — zero manual height calculations
  *
- * HTML contract:
- *   - Main document: `.french-invoice` (first one)
- *   - Sections: `[data-pdf-section="header|client|objet|table|end-block"]`
- *   - Annexes: additional `.french-invoice.invoice-annexe-page` elements
+ * Benefits over v3:
+ *   - Pixel-perfect rendering (real Chrome, not html2canvas approximation)
+ *   - Natural CSS page-break support (page-break-inside: avoid works natively)
+ *   - Automatic table pagination with repeating headers (thead)
+ *   - No empty pages, no wasted space — Chrome handles layout perfectly
+ *   - End-block (totals/signature/IBAN) stays together via CSS
+ *
+ * HTML contract (unchanged):
+ *   - Main document: `.french-invoice`
+ *   - Sections: `[data-pdf-section]`
+ *   - End-block: `[data-pdf-section="end-block"]` → page-break-inside: avoid
+ *   - Annexes: `.french-invoice.invoice-annexe-page`
  */
-
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -28,7 +30,7 @@ export interface PdfEngineOptions {
   scale?: number;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers (kept for backward compatibility with image export) ─────────────
 
 export const waitForImages = async (root: ParentNode) => {
   const images = Array.from(root.querySelectorAll('img'));
@@ -47,9 +49,15 @@ export const waitForImages = async (root: ParentNode) => {
 export const waitForLayout = (delay = 80) =>
   new Promise((resolve) => setTimeout(resolve, delay));
 
+/**
+ * Legacy canvas capture — kept for image export (non-PDF use cases).
+ * PDF generation no longer uses this.
+ */
 export const captureCanvas = async (element: HTMLElement, scale = 2) => {
   await waitForImages(element);
   await waitForLayout(50);
+
+  const html2canvas = (await import('html2canvas')).default;
 
   const width = Math.max(Math.ceil(element.scrollWidth), 1);
   const height = Math.max(Math.ceil(element.scrollHeight), 1);
@@ -67,67 +75,136 @@ export const captureCanvas = async (element: HTMLElement, scale = 2) => {
   });
 };
 
-const validateChunkHeight = (heightPx: number, maxPagePx: number, label: string) => {
-  if (heightPx > maxPagePx) {
-    throw new Error(`PDF ENGINE: bloc trop grand pour tenir sur une page (${label})`);
+// ─── CSS Collection ──────────────────────────────────────────────────────────
+
+function collectAllCSS(): string {
+  const rules: string[] = [];
+  for (const sheet of document.styleSheets) {
+    try {
+      for (const rule of sheet.cssRules) {
+        rules.push(rule.cssText);
+      }
+    } catch (_e) {
+      // Cross-origin stylesheet (e.g. Google Fonts) — skip
+    }
   }
-};
+  return rules.join('\n');
+}
+
+// ─── Image Inlining ─────────────────────────────────────────────────────────
 
 /**
- * Render a subset of table rows (with thead) into an off-screen clone and capture.
+ * Convert blob: and relative image URLs to base64 data URIs.
+ * Absolute https:// URLs are left as-is (Browserless can fetch them).
  */
-export const renderTableChunk = async (
-  sourceTable: HTMLTableElement,
-  rows: HTMLTableRowElement[],
-  contentWidthPx: number,
-  scale = 2,
-) => {
-  const mount = document.createElement('div');
-  mount.className = 'french-invoice pdf-render-mode';
-  Object.assign(mount.style, {
-    position: 'fixed',
-    left: '-100000px',
-    top: '0',
-    width: `${Math.ceil(contentWidthPx)}px`,
-    margin: '0',
-    padding: '0',
-    background: '#ffffff',
-    boxSizing: 'border-box',
-    zIndex: '-1',
-  });
+async function inlineLocalImages(html: string): Promise<string> {
+  const imgRegex = /<img[^>]+src="([^"]+)"/g;
+  const replacements: Array<{ original: string; replacement: string }> = [];
 
-  const tableClone = sourceTable.cloneNode(false) as HTMLTableElement;
-  tableClone.style.width = '100%';
-  tableClone.style.margin = '0';
-  tableClone.style.borderCollapse = 'collapse';
-
-  const colgroup = sourceTable.querySelector('colgroup');
-  const thead = sourceTable.querySelector('thead');
-  if (colgroup) tableClone.appendChild(colgroup.cloneNode(true));
-  if (thead) tableClone.appendChild(thead.cloneNode(true));
-
-  const tbody = document.createElement('tbody');
-  rows.forEach((row) => tbody.appendChild(row.cloneNode(true)));
-  tableClone.appendChild(tbody);
-  mount.appendChild(tableClone);
-  document.body.appendChild(mount);
-
-  try {
-    return await captureCanvas(mount, scale);
-  } finally {
-    document.body.removeChild(mount);
+  let match: RegExpExecArray | null;
+  while ((match = imgRegex.exec(html)) !== null) {
+    const url = match[1];
+    // Skip data: (already inline) and absolute URLs (Browserless can fetch)
+    if (url.startsWith('data:') || url.startsWith('https://') || url.startsWith('http://')) {
+      continue;
+    }
+    // Convert blob: or relative URLs to base64
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const dataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+      replacements.push({ original: url, replacement: dataUrl });
+    } catch (_e) {
+      // Skip failed images silently
+    }
   }
-};
 
-// ─── Internal chunk types ────────────────────────────────────────────────────
+  let result = html;
+  for (const { original, replacement } of replacements) {
+    result = result.split(original).join(replacement);
+  }
+  return result;
+}
 
-type Chunk =
-  | { type: 'section'; element: HTMLElement; heightPx: number }
-  | { type: 'tableRows'; sourceTable: HTMLTableElement; rows: HTMLTableRowElement[]; heightPx: number };
+// ─── HTML Document Builder ───────────────────────────────────────────────────
 
-interface PdfPagePlan {
-  chunks: Chunk[];
-  usedPx: number;
+function buildFullHTML(bodyContent: string, css: string, marginMm: number): string {
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── App CSS (compiled Tailwind + custom) ── */
+${css}
+
+/* ── PDF Print Overrides ── */
+@page {
+  size: A4;
+  margin: ${marginMm}mm;
+}
+
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: white !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+/* End-block: totals + conditions + signature + IBAN — NEVER split */
+[data-pdf-section="end-block"] {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+/* Table: auto-paginate with repeating headers */
+table {
+  page-break-inside: auto !important;
+}
+thead {
+  display: table-header-group !important;
+}
+tr {
+  page-break-inside: avoid !important;
+  page-break-after: auto !important;
+}
+
+/* Annexe pages: each on its own page */
+.invoice-annexe-page {
+  page-break-before: always !important;
+  break-before: page !important;
+}
+
+/* Hide interactive elements in PDF */
+button, [role="button"], .no-print, input, select, textarea,
+[data-no-pdf], .pdf-hide {
+  display: none !important;
+}
+
+/* Ensure invoice fills the page width cleanly */
+.french-invoice {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 20px !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+</style>
+</head>
+<body>
+${bodyContent}
+</body>
+</html>`;
 }
 
 // ─── Main Builder ────────────────────────────────────────────────────────────
@@ -136,222 +213,57 @@ export async function buildPdfFromContainer(
   container: HTMLElement,
   options: PdfEngineOptions = {},
 ): Promise<Blob> {
-  const {
-    marginMm = 10,
-    sectionGapMm = 2,
-    footerLabel,
-    scale = 2,
-  } = options;
+  const { marginMm = 10, footerLabel } = options;
 
-  const allInvoicePages = Array.from(container.querySelectorAll('.french-invoice')) as HTMLElement[];
-  if (allInvoicePages.length === 0) throw new Error('No .french-invoice elements found');
+  // Activate render mode for consistent sizing
+  const invoicePages = Array.from(container.querySelectorAll('.french-invoice')) as HTMLElement[];
+  if (invoicePages.length === 0) throw new Error('No .french-invoice elements found');
 
-  const mainPage = allInvoicePages[0];
-  const annexePages = allInvoicePages.filter((el) => el.classList.contains('invoice-annexe-page'));
-
-  // Activate render mode
-  allInvoicePages.forEach((p) => p.classList.add('pdf-render-mode'));
-  await waitForLayout(150);
+  invoicePages.forEach((p) => p.classList.add('pdf-render-mode'));
+  await waitForLayout(200);
+  await waitForImages(container);
 
   try {
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pdfW = pdf.internal.pageSize.getWidth();
-    const pdfH = pdf.internal.pageSize.getHeight();
-    const CONTENT_W = pdfW - marginMm * 2;
-    const MAX_H = pdfH - marginMm * 2;
+    // 1. Collect all compiled CSS from the document
+    const css = collectAllCSS();
 
-    // ── Measure everything ──
-    const computed = window.getComputedStyle(mainPage);
-    const contentWidthPx =
-      mainPage.getBoundingClientRect().width -
-      parseFloat(computed.paddingLeft || '0') -
-      parseFloat(computed.paddingRight || '0');
+    // 2. Serialize the container HTML and inline local images
+    let bodyHTML = container.innerHTML;
+    bodyHTML = await inlineLocalImages(bodyHTML);
 
-    const pxPerMm = contentWidthPx / CONTENT_W;
-    const maxPagePx = MAX_H * pxPerMm;
-    const gapPx = sectionGapMm * pxPerMm;
+    // 3. Build a complete standalone HTML document
+    const fullHTML = buildFullHTML(bodyHTML, css, marginMm);
 
-    // ── Collect sections ──
-    const sectionEls = Array.from(mainPage.querySelectorAll('[data-pdf-section]')) as HTMLElement[];
+    // 4. Send to Edge Function → Browserless (headless Chrome)
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-    const beforeTable: HTMLElement[] = [];
-    const afterTable: HTMLElement[] = [];
-    let tableEl: HTMLTableElement | null = null;
-    let passedTable = false;
+    console.log(`[PDF Engine v4] Sending ${(fullHTML.length / 1024).toFixed(0)}KB HTML to Browserless...`);
 
-    for (const el of sectionEls) {
-      const key = el.dataset.pdfSection || '';
-      if (key === 'table') {
-        tableEl = el as HTMLTableElement;
-        passedTable = true;
-        continue;
-      }
-      if (!passedTable) {
-        beforeTable.push(el);
-      } else {
-        afterTable.push(el);
-      }
+    const response = await fetch(`${supabaseUrl}/functions/v1/generate-pdf`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': apikey,
+        'Authorization': `Bearer ${apikey}`,
+      },
+      body: JSON.stringify({
+        html: fullHTML,
+        marginMm,
+        footerLabel,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('[PDF Engine v4] Error:', response.status, errText);
+      throw new Error(`PDF generation failed (${response.status}): ${errText}`);
     }
 
-    // ── Build page plan ──
-    const pages: PdfPagePlan[] = [{ chunks: [], usedPx: 0 }];
-    const cur = () => pages[pages.length - 1];
-    const newPage = () => { pages.push({ chunks: [], usedPx: 0 }); };
-    const remaining = () => maxPagePx - cur().usedPx;
-    const gap = () => (cur().chunks.length > 0 ? gapPx : 0);
-
-    const placeBlock = (chunk: Chunk) => {
-      const needed = gap() + chunk.heightPx;
-      if (needed > remaining() && cur().chunks.length > 0) {
-        newPage();
-      }
-      cur().usedPx += (cur().chunks.length > 0 ? gapPx : 0) + chunk.heightPx;
-      cur().chunks.push(chunk);
-    };
-
-    // 1) Header sections
-    for (const el of beforeTable) {
-      validateChunkHeight(el.getBoundingClientRect().height, maxPagePx, el.dataset.pdfSection || 'section');
-      placeBlock({
-        type: 'section',
-        element: el,
-        heightPx: el.getBoundingClientRect().height,
-      });
-    }
-
-    // 2) Table rows — split across pages (NO row is ever skipped)
-    if (tableEl) {
-      const thead = tableEl.querySelector('thead') as HTMLElement | null;
-      const theadH = thead?.getBoundingClientRect().height ?? 0;
-      const rows = Array.from(tableEl.querySelectorAll('tbody tr')) as HTMLTableRowElement[];
-      const totalRowCount = rows.length;
-      let placedRowCount = 0;
-
-      let ri = 0;
-      while (ri < rows.length) {
-        let avail = remaining() - gap();
-        if (avail < theadH + 20 && cur().chunks.length > 0) {
-          newPage();
-          avail = maxPagePx;
-        }
-
-        const batch: HTMLTableRowElement[] = [];
-        let batchH = theadH;
-
-        while (ri < rows.length) {
-          const rowH = rows[ri].getBoundingClientRect().height;
-          validateChunkHeight(theadH + rowH, maxPagePx, `table-row-${ri}`);
-          // Always include at least one row per batch to avoid infinite loop
-          if (batchH + rowH > avail && batch.length > 0) break;
-          batch.push(rows[ri]);
-          batchH += rowH;
-          ri++;
-        }
-
-        if (batch.length > 0) {
-          placedRowCount += batch.length;
-          placeBlock({
-            type: 'tableRows',
-            sourceTable: tableEl,
-            rows: batch,
-            heightPx: batchH,
-          });
-        }
-      }
-
-      // VALIDATION: ensure no rows were lost
-      if (placedRowCount !== totalRowCount) {
-        throw new Error(`PDF ENGINE: Row count mismatch! Expected ${totalRowCount}, placed ${placedRowCount}`);
-      }
-    }
-
-    // 3) End-block (totaux + conditions + signature + IBAN) — insecable group
-    if (afterTable.length > 0) {
-      // Measure each element's ACTUAL rendered height (excluding CSS margins to avoid double-counting)
-      const endHeights = afterTable.map(el => {
-        const rect = el.getBoundingClientRect();
-        const style = window.getComputedStyle(el);
-        const marginTop = parseFloat(style.marginTop || '0');
-        const marginBottom = parseFloat(style.marginBottom || '0');
-        return rect.height + marginTop + marginBottom;
-      });
-      const totalEndH = endHeights.reduce((s, h) => s + h, 0) + gapPx * Math.max(0, afterTable.length - 1);
-
-      // Only break if end-block genuinely cannot fit on current page
-      const currentGap = cur().chunks.length > 0 ? gapPx : 0;
-      const availableSpace = remaining() - currentGap;
-
-      if (totalEndH > availableSpace && cur().chunks.length > 0) {
-        // Double-check: would a fresh page even help? (avoid infinite loop edge case)
-        if (totalEndH <= maxPagePx) {
-          newPage();
-        }
-      }
-
-      for (const el of afterTable) {
-        const rect = el.getBoundingClientRect();
-        const style = window.getComputedStyle(el);
-        const marginTop = parseFloat(style.marginTop || '0');
-        const marginBottom = parseFloat(style.marginBottom || '0');
-        const chunk: Chunk = {
-          type: 'section',
-          element: el,
-          heightPx: rect.height + marginTop + marginBottom,
-        };
-        cur().usedPx += (cur().chunks.length > 0 ? gapPx : 0) + chunk.heightPx;
-        cur().chunks.push(chunk);
-      }
-    }
-
-    // Remove empty pages
-    const cleanPages = pages.filter((p) => p.chunks.length > 0);
-
-    // ── Render to PDF ──
-    const renderChunk = async (chunk: Chunk): Promise<HTMLCanvasElement> => {
-      if (chunk.type === 'tableRows') {
-        return renderTableChunk(chunk.sourceTable, chunk.rows, contentWidthPx, scale);
-      }
-      return captureCanvas(chunk.element, scale);
-    };
-
-    for (let pi = 0; pi < cleanPages.length; pi++) {
-      if (pi > 0) pdf.addPage();
-      let y = marginMm;
-
-      for (let ci = 0; ci < cleanPages[pi].chunks.length; ci++) {
-        const canvas = await renderChunk(cleanPages[pi].chunks[ci]);
-        const hMm = (canvas.height * CONTENT_W) / canvas.width;
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', marginMm, y, CONTENT_W, hMm);
-        y += hMm + (ci < cleanPages[pi].chunks.length - 1 ? sectionGapMm : 0);
-      }
-    }
-
-    // ── Annexe pages (full-page capture) ──
-    for (const annexe of annexePages) {
-      pdf.addPage();
-      const canvas = await captureCanvas(annexe, scale);
-      const rawH = (canvas.height * CONTENT_W) / canvas.width;
-      const fitH = Math.min(rawH, MAX_H);
-      const fitW = rawH > MAX_H ? CONTENT_W * (MAX_H / rawH) : CONTENT_W;
-      const xOff = marginMm + (CONTENT_W - fitW) / 2;
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', xOff, marginMm, fitW, fitH);
-    }
-
-    // ── Footer labels ──
-    if (footerLabel) {
-      const total = pdf.getNumberOfPages();
-      for (let p = 1; p <= total; p++) {
-        pdf.setPage(p);
-        pdf.setFontSize(8);
-        pdf.setTextColor(150, 150, 150);
-        const text = `${footerLabel} — Page ${p} / ${total}`;
-        const tw = pdf.getTextWidth(text);
-        pdf.text(text, (pdfW - tw) / 2, pdfH - 6);
-      }
-    }
-
-    return pdf.output('blob');
+    const blob = await response.blob();
+    console.log(`[PDF Engine v4] PDF received: ${(blob.size / 1024).toFixed(0)}KB`);
+    return blob;
   } finally {
-    allInvoicePages.forEach((p) => p.classList.remove('pdf-render-mode'));
+    invoicePages.forEach((p) => p.classList.remove('pdf-render-mode'));
   }
 }

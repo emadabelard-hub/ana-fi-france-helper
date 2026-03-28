@@ -23,7 +23,7 @@ import FactureGuideModal from './FactureGuideModal';
 import PreFlightChecklistModal from './PreFlightChecklistModal';
 import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
 import { supabase } from '@/integrations/supabase/client';
-import { saveDraft, loadDraft, clearDraft, loadCloudDraft } from '@/lib/invoiceDraftStorage';
+import { saveDraft, loadDraft, clearDraft, loadCloudDraft, saveCurrentDocument, loadCurrentDocument, clearCurrentDocument, type CurrentDocumentState } from '@/lib/invoiceDraftStorage';
 import { detectMultipleTasks } from '@/lib/smartItemSplit';
 import { useAuth } from '@/hooks/useAuth';
 import { resolveAssetUrls } from '@/lib/storageUtils';
@@ -346,60 +346,82 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // CRITICAL: When prefillData exists (e.g. Smart Devis), SKIP draft restore entirely.
   // This prevents stale ghost data (old drafts) from overwriting fresh analysis results.
   const [draftRestored, setDraftRestored] = useState(false);
+  const restorePersistedDocument = useCallback((draft: Partial<CurrentDocumentState>) => {
+    if (draft.selectedClientId !== undefined) setSelectedClientId(draft.selectedClientId);
+    if (draft.selectedChantierId !== undefined) setSelectedChantierId(draft.selectedChantierId);
+    if (draft.clientName !== undefined) setClientName(draft.clientName);
+    if (draft.clientAddress !== undefined) setClientAddress(draft.clientAddress);
+    if (draft.clientPhone !== undefined) setClientPhone(draft.clientPhone);
+    if (draft.clientEmail !== undefined) setClientEmail(draft.clientEmail);
+    if (draft.clientSiren !== undefined) setClientSiren(draft.clientSiren);
+    if (draft.clientTvaIntra !== undefined) setClientTvaIntra(draft.clientTvaIntra);
+    if (draft.clientIsB2B !== undefined) setClientIsB2B(draft.clientIsB2B);
+    if (draft.workSiteSameAsClient !== undefined) setWorkSiteSameAsClient(draft.workSiteSameAsClient);
+    if (draft.workSiteAddress !== undefined) setWorkSiteAddress(draft.workSiteAddress || '');
+    if (draft.includeTravelCosts !== undefined) setIncludeTravelCosts(draft.includeTravelCosts);
+    if (draft.travelDescription !== undefined) setTravelDescription(draft.travelDescription || '');
+    if (draft.travelPrice !== undefined) setTravelPrice(draft.travelPrice || 30);
+    if (draft.includeWasteCosts !== undefined) setIncludeWasteCosts(draft.includeWasteCosts);
+    if (draft.wasteDescription !== undefined) setWasteDescription(draft.wasteDescription || '');
+    if (draft.wastePrice !== undefined) setWastePrice(draft.wastePrice || 0);
+    if (draft.selectedTvaRate !== undefined) setSelectedTvaRate(draft.selectedTvaRate || 10);
+    if (draft.projectTvaType !== undefined) setProjectTvaType(draft.projectTvaType);
+    if (draft.validityDuration !== undefined) setValidityDuration(draft.validityDuration || 30);
+    if (draft.dueDateDays !== undefined) setDueDateDays(draft.dueDateDays);
+    if (draft.acompteEnabled !== undefined) setAcompteEnabled(draft.acompteEnabled);
+    if (draft.acomptePercent !== undefined) setAcomptePercent(draft.acomptePercent ?? 30);
+    if (draft.acompteMode !== undefined) setAcompteMode(draft.acompteMode || 'percent');
+    if (draft.acompteFixedAmount !== undefined) setAcompteFixedAmount(draft.acompteFixedAmount || 0);
+    if (draft.delaiPaiement !== undefined) setDelaiPaiement(draft.delaiPaiement || '30jours');
+    if (draft.moyenPaiement !== undefined) setMoyenPaiement(draft.moyenPaiement || 'virement');
+    if (draft.docNumber !== undefined && draft.docNumber) setDocNumber(draft.docNumber);
+    if (draft.items?.length) setItems(draft.items as LineItem[]);
+    if (draft.natureOperation !== undefined) setNatureOperation(draft.natureOperation || 'service');
+    if (draft.assureurName !== undefined) setAssureurName(draft.assureurName || '');
+    if (draft.assureurAddress !== undefined) setAssureurAddress(draft.assureurAddress || '');
+    if (draft.policyNumber !== undefined) setPolicyNumber(draft.policyNumber || '');
+    if (draft.geographicCoverage !== undefined) setGeographicCoverage(draft.geographicCoverage || 'France métropolitaine');
+    if (draft.paymentMilestones !== undefined) setPaymentMilestones(draft.paymentMilestones);
+    if (draft.milestonesEnabled !== undefined) setMilestonesEnabled(draft.milestonesEnabled);
+    else if (draft.paymentMilestones !== undefined) setMilestonesEnabled(draft.paymentMilestones.length > 0);
+    if (draft.descriptionChantier !== undefined) setDescriptionChantier(draft.descriptionChantier || '');
+    if (draft.estimatedStartDate !== undefined) setEstimatedStartDate(draft.estimatedStartDate || '');
+    if (draft.estimatedDuration !== undefined) setEstimatedDuration(draft.estimatedDuration || '');
+    if (draft.discountEnabled !== undefined) setDiscountEnabled(draft.discountEnabled);
+    if (draft.discountType !== undefined) setDiscountType(draft.discountType || 'percent');
+    if (draft.discountValue !== undefined) setDiscountValue(draft.discountValue || 0);
+    if (draft.showPreview !== undefined) setShowPreview(draft.showPreview);
+    if (draft.showArabic !== undefined) setShowArabic(draft.showArabic);
+    if (draft.includePhotosInPdf !== undefined) setIncludePhotosInPdf(draft.includePhotosInPdf);
+    if (draft.sitePhotos !== undefined) setSitePhotos(draft.sitePhotos);
+    if (draft.tempValues !== undefined) setTempValues(draft.tempValues);
+  }, []);
+
   useEffect(() => {
-    if (prefillData || draftRestored) return;
+    if (draftRestored) return;
+    if (prefillData) {
+      setDraftRestored(true);
+      return;
+    }
     
     const restoreDraft = async () => {
+      const currentDocument = loadCurrentDocument(documentType);
+      if (currentDocument) {
+        restorePersistedDocument(currentDocument);
+        toast({
+          title: isRTL ? '📌 تم استرجاع المستند الحالي' : '📌 Document en cours restauré',
+          description: isRTL ? 'رجعنالك الدوفي/الفاتورة كما تركتها' : 'Votre devis/facture a été repris automatiquement',
+        });
+        setDraftRestored(true);
+        return;
+      }
+
       // Try cloud first if logged in, fallback to localStorage
       let draft = user ? await loadCloudDraft(documentType) : null;
       if (!draft) draft = loadDraft();
       
       if (draft) {
-        // Restore client fields from draft so nothing is lost
-        if (draft.clientName) setClientName(draft.clientName);
-        if (draft.clientAddress) setClientAddress(draft.clientAddress);
-        if (draft.clientPhone) setClientPhone(draft.clientPhone);
-        if (draft.clientEmail) setClientEmail(draft.clientEmail);
-        if (draft.clientSiren) setClientSiren(draft.clientSiren);
-        if (draft.clientTvaIntra) setClientTvaIntra(draft.clientTvaIntra);
-        if (draft.clientIsB2B) setClientIsB2B(draft.clientIsB2B);
-        
-        setWorkSiteSameAsClient(draft.workSiteSameAsClient);
-        setWorkSiteAddress(draft.workSiteAddress || '');
-        setIncludeTravelCosts(draft.includeTravelCosts);
-        setTravelDescription(draft.travelDescription || '');
-        setTravelPrice(draft.travelPrice || 30);
-        if ((draft as any).includeWasteCosts) setIncludeWasteCosts((draft as any).includeWasteCosts);
-        if ((draft as any).wasteDescription) setWasteDescription((draft as any).wasteDescription);
-        if ((draft as any).wastePrice) setWastePrice((draft as any).wastePrice);
-        // Don't restore isAutoEntrepreneur from draft — always derive from live profile
-        // setIsAutoEntrepreneur(draft.isAutoEntrepreneur);
-        setSelectedTvaRate(draft.selectedTvaRate || 10);
-        setValidityDuration(draft.validityDuration || 30);
-        setAcompteEnabled(draft.acompteEnabled ?? false);
-        setAcomptePercent(draft.acomptePercent ?? 30);
-        setAcompteMode((draft as any).acompteMode || 'percent');
-        setAcompteFixedAmount((draft as any).acompteFixedAmount || 0);
-        setDelaiPaiement(draft.delaiPaiement || '30jours');
-        setMoyenPaiement(draft.moyenPaiement || 'virement');
-        if (draft.docNumber) setDocNumber(draft.docNumber);
-        if (draft.items?.length) setItems(draft.items);
-        if (draft.natureOperation) setNatureOperation(draft.natureOperation);
-        if (draft.assureurName) setAssureurName(draft.assureurName);
-        if (draft.assureurAddress) setAssureurAddress(draft.assureurAddress);
-        if (draft.policyNumber) setPolicyNumber(draft.policyNumber);
-        if (draft.geographicCoverage) setGeographicCoverage(draft.geographicCoverage);
-        if ((draft as any).paymentMilestones?.length) {
-          setPaymentMilestones((draft as any).paymentMilestones);
-          setMilestonesEnabled(true);
-        }
-        if (draft.descriptionChantier) setDescriptionChantier(draft.descriptionChantier);
-        if (draft.estimatedStartDate) setEstimatedStartDate(draft.estimatedStartDate);
-        if (draft.estimatedDuration) setEstimatedDuration(draft.estimatedDuration);
-        // Restore discount fields
-        if ((draft as any).discountEnabled) setDiscountEnabled((draft as any).discountEnabled);
-        if ((draft as any).discountType) setDiscountType((draft as any).discountType);
-        if ((draft as any).discountValue) setDiscountValue((draft as any).discountValue);
+        restorePersistedDocument(draft);
         toast({
           title: isRTL ? '📝 تم استعادة المسودة' : '📝 Brouillon restauré',
           description: isRTL ? 'رجعنالك الشغل اللي كنت بتعمله' : 'Votre travail précédent a été restauré',
@@ -409,7 +431,67 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     };
     
     restoreDraft();
-  }, [prefillData, draftRestored, user, documentType]);
+  }, [prefillData, draftRestored, user, documentType, isRTL, toast, restorePersistedDocument]);
+
+  const persistCurrentDocumentState = useCallback((overrides: Partial<Omit<CurrentDocumentState, 'savedAt'>> = {}) => {
+    saveCurrentDocument({
+      documentType,
+      selectedClientId,
+      selectedChantierId,
+      clientName,
+      clientAddress,
+      clientPhone,
+      clientEmail,
+      clientSiren,
+      clientTvaIntra,
+      clientIsB2B,
+      workSiteSameAsClient,
+      workSiteAddress,
+      includeTravelCosts,
+      travelDescription,
+      travelPrice,
+      includeWasteCosts,
+      wasteDescription,
+      wastePrice,
+      isAutoEntrepreneur,
+      selectedTvaRate,
+      projectTvaType,
+      validityDuration,
+      dueDateDays,
+      acompteEnabled,
+      acomptePercent,
+      acompteMode,
+      acompteFixedAmount,
+      delaiPaiement,
+      moyenPaiement,
+      docNumber,
+      items,
+      natureOperation,
+      assureurName,
+      assureurAddress,
+      policyNumber,
+      geographicCoverage,
+      paymentMilestones,
+      milestonesEnabled,
+      descriptionChantier,
+      estimatedStartDate,
+      estimatedDuration,
+      discountEnabled,
+      discountType,
+      discountValue,
+      showPreview,
+      showArabic,
+      includePhotosInPdf,
+      sitePhotos,
+      tempValues,
+      ...overrides,
+    });
+  }, [documentType, selectedClientId, selectedChantierId, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, projectTvaType, validityDuration, dueDateDays, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, estimatedStartDate, estimatedDuration, discountEnabled, discountType, discountValue, showPreview, showArabic, includePhotosInPdf, sitePhotos, tempValues]);
+
+  useEffect(() => {
+    if (!draftRestored) return;
+    persistCurrentDocumentState();
+  }, [draftRestored, persistCurrentDocumentState]);
 
   // --- AUTO-SAVE draft on every change (debounced) ---
   useEffect(() => {
@@ -456,7 +538,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         discountType,
         discountValue,
       });
-    }, 1000);
+    }, 600);
     return () => clearTimeout(timer);
   }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, estimatedStartDate, estimatedDuration, discountEnabled, discountType, discountValue]);
 
@@ -1167,6 +1249,86 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     } finally {
       setSavingDraft(false);
     }
+  };
+
+  const handleFinishDocument = async () => {
+    if (!confirm(isRTL ? 'هل تريد فعلاً إنهاء هذا المستند ومسحه من الشاشة؟' : 'Confirmer la fin du document et vider l’écran ?')) return;
+
+    clearDraft();
+    clearCurrentDocument();
+    setClientName('');
+    setClientAddress('');
+    setClientPhone('');
+    setClientEmail('');
+    setClientSiren('');
+    setClientTvaIntra('');
+    setClientIsB2B(false);
+    setSelectedClientId('');
+    setSelectedChantierId('');
+    setWorkSiteSameAsClient(true);
+    setWorkSiteAddress('');
+    setIncludeTravelCosts(false);
+    setTravelDescription('');
+    setTravelPrice(30);
+    setIncludeWasteCosts(false);
+    setWasteDescription('');
+    setWastePrice(0);
+    const profileData = profile as any;
+    setIsAutoEntrepreneur(Boolean(profileData?.tva_exempt || profileData?.legal_status === 'auto-entrepreneur'));
+    setSelectedTvaRate(10);
+    setProjectTvaType('logement');
+    setValidityDuration(30);
+    setDueDateDays(30);
+    setAcompteEnabled(false);
+    setAcomptePercent(30);
+    setAcompteMode('percent');
+    setAcompteFixedAmount(0);
+    setDelaiPaiement('30jours');
+    setMoyenPaiement('virement');
+    setNatureOperation('service');
+    setAssureurName(profileData?.assureur_name || '');
+    setAssureurAddress(profileData?.assureur_address || '');
+    setPolicyNumber(profileData?.assurance_policy_number || '');
+    setGeographicCoverage(profileData?.assurance_geographic_coverage || 'France métropolitaine');
+    setPaymentMilestones([]);
+    setMilestonesEnabled(false);
+    setDescriptionChantier('');
+    setEstimatedStartDate('');
+    setEstimatedDuration('');
+    setDiscountEnabled(false);
+    setDiscountType('percent');
+    setDiscountValue(0);
+    setItems([{
+      id: generateId(),
+      designation_fr: '',
+      designation_ar: '',
+      quantity: '' as unknown as number,
+      unit: 'm²',
+      unitPrice: '' as unknown as number,
+      total: 0,
+    }]);
+    setTempValues({});
+    setSitePhotos([]);
+    setIncludePhotosInPdf(true);
+    setShowPreview(false);
+    setShowArabic(false);
+
+    if (user) {
+      setDocNumberLoading(true);
+      try {
+        const nextNumber = await fetchNextDocNumber(user.id, documentType);
+        setDocNumber(nextNumber);
+      } finally {
+        setDocNumberLoading(false);
+      }
+    } else {
+      setDocNumber(generateDocNumber(documentType));
+    }
+
+    toast({
+      title: isRTL ? '✅ تم إنهاء المستند' : '✅ Document terminé',
+      description: isRTL ? 'لن يتم مسحه إلا بعد الضغط على تأكيد وانهاء' : 'Le document actuel a été vidé uniquement après confirmation',
+    });
   };
 
   return (
@@ -2859,9 +3021,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             isRTL && "flex-row-reverse"
           )}>
             <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleFinishDocument}
+              className={cn(isRTL && "font-cairo")}
+            >
+              تأكيد وانهاء
+            </Button>
+            <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowPreview(false)}
+              onClick={() => {
+                persistCurrentDocumentState({ showPreview: false });
+                setShowPreview(false);
+              }}
               className={cn(isRTL && "font-cairo")}
             >
               <Edit3 className="h-4 w-4 mr-1" />
@@ -2875,6 +3048,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             showArabic={showArabic}
             onToggleArabic={setShowArabic}
             onUpdateInvoice={handleUpdateInvoice}
+            onBeforeExport={() => persistCurrentDocumentState({ showPreview: true })}
             isPaid={true} /* TRIAL PHASE: set to false to reactivate payments */
           />
 
@@ -2909,55 +3083,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              if (!confirm(isRTL ? 'هل أنت متأكد؟ سيتم حذف جميع البيانات المدخلة.' : 'Réinitialiser le formulaire ? Toutes les données saisies seront perdues.')) return;
-              clearDraft();
-              setClientName('');
-              setClientAddress('');
-              setClientPhone('');
-              setClientEmail('');
-              setClientSiren('');
-              setClientTvaIntra('');
-              setClientIsB2B(false);
-              setSelectedClientId('');
-              setSelectedChantierId('');
-              setWorkSiteSameAsClient(true);
-              setWorkSiteAddress('');
-              setTravelDescription('');
-              setTravelPrice(30);
-              setIncludeWasteCosts(false);
-              setWasteDescription('');
-              setWastePrice(0);
-              setIsAutoEntrepreneur(false);
-              setSelectedTvaRate(10);
-              setValidityDuration(30);
-              setAcomptePercent(30);
-              setDelaiPaiement('reception');
-              setMoyenPaiement('virement');
-              setDocNumber(generateDocNumber(documentType));
-              setNatureOperation('service');
-              setAssureurName('');
-              setAssureurAddress('');
-              setPolicyNumber('');
-              setGeographicCoverage('France métropolitaine');
-              setItems([{
-                id: generateId(),
-                designation_fr: '',
-                designation_ar: '',
-                quantity: '' as unknown as number,
-                unit: 'm²',
-                unitPrice: '' as unknown as number,
-                total: 0,
-              }]);
-              setShowPreview(false);
-              toast({
-                title: isRTL ? '🗑️ تم إعادة التعيين' : '🗑️ Formulaire réinitialisé',
-              });
-            }}
+            onClick={handleFinishDocument}
             className={cn("text-destructive hover:text-destructive", isRTL && "font-cairo")}
           >
             <RotateCcw className="h-4 w-4 mr-1" />
-            {isRTL ? 'مسح الكل' : 'Réinitialiser'}
+            تأكيد وانهاء
           </Button>
           
           {/* Save as Draft Button */}
@@ -3091,7 +3221,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           setShowChecklist(false);
           try {
             await saveToDocumentsComptables();
-            clearDraft();
+            persistCurrentDocumentState({ showPreview: true });
             setShowPreview(true);
           } catch (e) {
             const technicalMessage = getTechnicalErrorMessage(e);

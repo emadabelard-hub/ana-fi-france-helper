@@ -6,6 +6,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 const DRAFT_KEY = 'invoice_draft_v1';
+const CURRENT_DOCUMENT_KEY = 'currentDocument';
 
 export interface DraftPaymentMilestone {
   id: string;
@@ -67,6 +68,42 @@ export interface InvoiceDraft {
   savedAt: number;
 }
 
+export interface CurrentDocumentState extends InvoiceDraft {
+  selectedClientId?: string;
+  selectedChantierId?: string;
+  dueDateDays?: 15 | 30 | 45 | 60;
+  projectTvaType?: 'logement' | 'local_pro' | 'sous_traitance';
+  milestonesEnabled?: boolean;
+  showPreview?: boolean;
+  showArabic?: boolean;
+  includePhotosInPdf?: boolean;
+  sitePhotos?: Array<{ data: string; name: string }>;
+  tempValues?: Record<string, { quantity?: string; unitPrice?: string }>;
+}
+
+const hasMeaningfulCurrentDocument = (document: Omit<CurrentDocumentState, 'savedAt'>) => {
+  const hasClientData = Boolean(
+    document.clientName?.trim() ||
+    document.clientAddress?.trim() ||
+    document.workSiteAddress?.trim() ||
+    document.descriptionChantier?.trim()
+  );
+
+  const hasItems = Array.isArray(document.items) && document.items.some((item) => {
+    const quantityValue = typeof (item as any).quantity === 'string' ? (item as any).quantity : String(item.quantity ?? '');
+    const priceValue = typeof (item as any).unitPrice === 'string' ? (item as any).unitPrice : String(item.unitPrice ?? '');
+
+    return Boolean(
+      item.designation_fr?.trim() ||
+      item.designation_ar?.trim() ||
+      quantityValue.trim() ||
+      priceValue.trim()
+    );
+  });
+
+  return hasClientData || hasItems;
+};
+
 // ── Local Storage (offline fallback) ──
 
 export const saveDraft = (draft: Omit<InvoiceDraft, 'savedAt'>) => {
@@ -105,6 +142,43 @@ export const clearDraft = () => {
   }
   // Fire-and-forget cloud clear
   clearCloudDraft().catch(() => {});
+};
+
+export const saveCurrentDocument = (document: Omit<CurrentDocumentState, 'savedAt'>) => {
+  try {
+    if (!hasMeaningfulCurrentDocument(document)) {
+      localStorage.removeItem(CURRENT_DOCUMENT_KEY);
+      return;
+    }
+
+    const data: CurrentDocumentState = { ...document, savedAt: Date.now() };
+    localStorage.setItem(CURRENT_DOCUMENT_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save current document:', e);
+  }
+};
+
+export const loadCurrentDocument = (documentType?: 'devis' | 'facture'): CurrentDocumentState | null => {
+  try {
+    const raw = localStorage.getItem(CURRENT_DOCUMENT_KEY);
+    if (!raw) return null;
+
+    const document: CurrentDocumentState = JSON.parse(raw);
+    if (documentType && document.documentType !== documentType) return null;
+
+    return document;
+  } catch (e) {
+    console.warn('Failed to load current document:', e);
+    return null;
+  }
+};
+
+export const clearCurrentDocument = () => {
+  try {
+    localStorage.removeItem(CURRENT_DOCUMENT_KEY);
+  } catch (e) {
+    console.warn('Failed to clear current document:', e);
+  }
 };
 
 // ── Cloud Storage (Supabase) ──

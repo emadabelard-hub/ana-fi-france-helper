@@ -355,17 +355,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       if (!draft) draft = loadDraft();
       
       if (draft) {
-        // STRICT: Never auto-restore client fields from draft.
-        // User must always select or type client info manually.
-        setClientName('');
-        setClientAddress('');
-        setClientPhone('');
-        setClientEmail('');
-        setClientSiren('');
-        setClientTvaIntra('');
-        setClientIsB2B(false);
-        setSelectedClientId('');
-        setSelectedChantierId('');
+        // Restore client fields from draft so nothing is lost
+        if (draft.clientName) setClientName(draft.clientName);
+        if (draft.clientAddress) setClientAddress(draft.clientAddress);
+        if (draft.clientPhone) setClientPhone(draft.clientPhone);
+        if (draft.clientEmail) setClientEmail(draft.clientEmail);
+        if (draft.clientSiren) setClientSiren(draft.clientSiren);
+        if (draft.clientTvaIntra) setClientTvaIntra(draft.clientTvaIntra);
+        if (draft.clientIsB2B) setClientIsB2B(draft.clientIsB2B);
         
         setWorkSiteSameAsClient(draft.workSiteSameAsClient);
         setWorkSiteAddress(draft.workSiteAddress || '');
@@ -399,6 +396,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         if (draft.descriptionChantier) setDescriptionChantier(draft.descriptionChantier);
         if (draft.estimatedStartDate) setEstimatedStartDate(draft.estimatedStartDate);
         if (draft.estimatedDuration) setEstimatedDuration(draft.estimatedDuration);
+        // Restore discount fields
+        if ((draft as any).discountEnabled) setDiscountEnabled((draft as any).discountEnabled);
+        if ((draft as any).discountType) setDiscountType((draft as any).discountType);
+        if ((draft as any).discountValue) setDiscountValue((draft as any).discountValue);
         toast({
           title: isRTL ? '📝 تم استعادة المسودة' : '📝 Brouillon restauré',
           description: isRTL ? 'رجعنالك الشغل اللي كنت بتعمله' : 'Votre travail précédent a été restauré',
@@ -451,6 +452,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         descriptionChantier,
         estimatedStartDate,
         estimatedDuration,
+        discountEnabled,
+        discountType,
+        discountValue,
       });
     }, 1000);
     return () => clearTimeout(timer);

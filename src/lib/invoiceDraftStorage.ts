@@ -61,6 +61,9 @@ export interface InvoiceDraft {
   descriptionChantier?: string;
   estimatedStartDate?: string;
   estimatedDuration?: string;
+  discountEnabled?: boolean;
+  discountType?: 'percent' | 'fixed';
+  discountValue?: number;
   savedAt: number;
 }
 

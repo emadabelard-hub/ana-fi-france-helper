@@ -531,10 +531,10 @@ Décapage→ديكاباج, Chantier→شانتي, Électricité→كهربا, P
 Chaque tâche = UNE LIGNE, concrète, avec terme technique bilingue.
 Ordre obligatoire:
 1. Démolition / Évacuation gravats
-2. Nettoyage (نيتواياج)
-3. Réseaux: Électricité (كهربا) / Plomberie (سباكة)
-4. Préparation supports: Enduit (معجون) + Ponçage (صنفرة) + Primaire (سوسكوش)
-5. Finitions: Peinture (بنتيرة) / Carrelage (كارلاج) / Parquet (باركيه)
+2. Nettoyage du chantier
+3. Réseaux: Électricité / Plomberie
+4. Préparation supports: Enduit + Ponçage + Primaire
+5. Finitions: Peinture / Carrelage / Parquet
 → Adapter selon ce qui est visible. Ne lister QUE ce qui est nécessaire.
 
 3️⃣ RISQUES CRITIQUES

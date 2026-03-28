@@ -1,4 +1,5 @@
-import { X, HelpCircle } from 'lucide-react';
+import { useState } from 'react';
+import { X, HelpCircle, Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import {
@@ -25,6 +26,7 @@ const UNIT_GUIDE = [
     bgColor: 'bg-blue-50 dark:bg-blue-950/30',
     borderColor: 'border-blue-100 dark:border-blue-800',
     badgeColor: 'bg-blue-600 text-white',
+    selectedRing: 'ring-blue-500',
   },
   {
     code: 'ml',
@@ -35,6 +37,7 @@ const UNIT_GUIDE = [
     bgColor: 'bg-orange-50 dark:bg-orange-950/30',
     borderColor: 'border-orange-100 dark:border-orange-800',
     badgeColor: 'bg-orange-500 text-white',
+    selectedRing: 'ring-orange-500',
   },
   {
     code: 'U',
@@ -45,6 +48,7 @@ const UNIT_GUIDE = [
     bgColor: 'bg-green-50 dark:bg-green-950/30',
     borderColor: 'border-green-100 dark:border-green-800',
     badgeColor: 'bg-green-600 text-white',
+    selectedRing: 'ring-green-500',
   },
   {
     code: 'H',
@@ -55,6 +59,7 @@ const UNIT_GUIDE = [
     bgColor: 'bg-purple-50 dark:bg-purple-950/30',
     borderColor: 'border-purple-100 dark:border-purple-800',
     badgeColor: 'bg-purple-600 text-white',
+    selectedRing: 'ring-purple-500',
   },
   {
     code: 'J',
@@ -65,6 +70,7 @@ const UNIT_GUIDE = [
     bgColor: 'bg-amber-50 dark:bg-amber-950/30',
     borderColor: 'border-amber-100 dark:border-amber-800',
     badgeColor: 'bg-amber-600 text-white',
+    selectedRing: 'ring-amber-500',
   },
   {
     code: 'Forfait',
@@ -75,10 +81,10 @@ const UNIT_GUIDE = [
     bgColor: 'bg-slate-50 dark:bg-slate-800/30',
     borderColor: 'border-slate-200 dark:border-slate-700',
     badgeColor: 'bg-slate-600 text-white',
+    selectedRing: 'ring-slate-500',
   },
 ];
 
-// Map guide codes to LineItemEditor unit values
 const UNIT_CODE_TO_VALUE: Record<string, string> = {
   'm²': 'm²',
   'ml': 'ml',
@@ -90,9 +96,21 @@ const UNIT_CODE_TO_VALUE: Record<string, string> = {
 
 const UnitGuideModal = ({ open, onOpenChange, onSelectUnit }: UnitGuideModalProps) => {
   const { isRTL } = useLanguage();
+  const [selectedCode, setSelectedCode] = useState<string | null>(null);
+
+  const handleSelect = (unit: typeof UNIT_GUIDE[0]) => {
+    if (!onSelectUnit) return;
+    setSelectedCode(unit.code);
+    setTimeout(() => {
+      onSelectUnit(UNIT_CODE_TO_VALUE[unit.code] || unit.code.toLowerCase());
+      onOpenChange(false);
+      // Reset after close animation
+      setTimeout(() => setSelectedCode(null), 200);
+    }, 180);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setSelectedCode(null); }}>
       <DialogContent className={cn(
         "max-w-sm sm:max-w-md p-0 gap-0 rounded-[2rem] overflow-hidden",
         isRTL && "font-cairo"
@@ -117,47 +135,47 @@ const UnitGuideModal = ({ open, onOpenChange, onSelectUnit }: UnitGuideModalProp
         </DialogHeader>
 
         <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
-          {UNIT_GUIDE.map((unit) => (
-            <div
-              key={unit.code}
-              role={onSelectUnit ? "button" : undefined}
-              tabIndex={onSelectUnit ? 0 : undefined}
-              onClick={() => {
-                if (onSelectUnit) {
-                  onSelectUnit(UNIT_CODE_TO_VALUE[unit.code] || unit.code.toLowerCase());
-                  onOpenChange(false);
-                }
-              }}
-              className={cn(
-                "flex items-center gap-4 p-3 rounded-2xl border",
-                unit.bgColor,
-                unit.borderColor,
-                isRTL && "flex-row-reverse",
-                onSelectUnit && "cursor-pointer hover:ring-2 hover:ring-primary/40 transition-shadow active:scale-[0.98]"
-              )}
-            >
-              <div className={cn(
-                "font-black text-xs w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
-                unit.badgeColor
-              )}>
-                {unit.code}
-              </div>
-              <div className={cn("flex-1", isRTL && "text-right")}>
-                <p className={cn(
-                  "font-bold text-sm text-foreground",
-                  isRTL && "font-cairo"
+          {UNIT_GUIDE.map((unit) => {
+            const isSelected = selectedCode === unit.code;
+            return (
+              <div
+                key={unit.code}
+                role={onSelectUnit ? "button" : undefined}
+                tabIndex={onSelectUnit ? 0 : undefined}
+                onClick={() => handleSelect(unit)}
+                className={cn(
+                  "flex items-center gap-4 p-3 rounded-2xl border transition-all duration-150",
+                  unit.bgColor,
+                  unit.borderColor,
+                  isRTL && "flex-row-reverse",
+                  onSelectUnit && "cursor-pointer hover:brightness-95 dark:hover:brightness-110 active:scale-[0.96]",
+                  isSelected && `ring-2 ${unit.selectedRing} scale-[0.96]`
+                )}
+              >
+                <div className={cn(
+                  "relative font-black text-xs w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-150",
+                  unit.badgeColor,
+                  isSelected && "scale-110"
                 )}>
-                  {isRTL ? unit.name_ar : unit.name_fr}
-                </p>
-                <p className={cn(
-                  "text-[10px] text-muted-foreground mt-0.5",
-                  isRTL && "font-cairo"
-                )}>
-                  {isRTL ? unit.description_ar : unit.description_fr}
-                </p>
+                  {isSelected ? <Check size={18} strokeWidth={3} /> : unit.code}
+                </div>
+                <div className={cn("flex-1", isRTL && "text-right")}>
+                  <p className={cn(
+                    "font-bold text-sm text-foreground",
+                    isRTL && "font-cairo"
+                  )}>
+                    {isRTL ? unit.name_ar : unit.name_fr}
+                  </p>
+                  <p className={cn(
+                    "text-[10px] text-muted-foreground mt-0.5",
+                    isRTL && "font-cairo"
+                  )}>
+                    {isRTL ? unit.description_ar : unit.description_fr}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="p-4 pt-2 border-t bg-muted/30">
@@ -176,7 +194,6 @@ const UnitGuideModal = ({ open, onOpenChange, onSelectUnit }: UnitGuideModalProp
   );
 };
 
-// Export a trigger button component for convenience
 export const UnitGuideButton = ({ onClick }: { onClick: () => void }) => {
   const { isRTL } = useLanguage();
   

@@ -114,8 +114,24 @@ const DocumentHubPage = () => {
         </button>
       </section>
 
+      {/* ShbikLbik Card */}
+      <div className="max-w-md mx-auto w-full mt-8 px-2">
+        <ShbikLbikCard
+          totalIncome={totalIncome}
+          totalExpenses={totalExpenses}
+          tvaCollectee={tvaCollectee}
+          tvaDeductible={tvaDeductible}
+          urssafRate={urssafRate}
+          isRate={isRate}
+          totalIncomeHT={totalIncomeHT}
+          totalExpensesHT={totalExpensesHT}
+          isTvaExempt={isTvaExempt}
+          isRTL={isRTL}
+        />
+      </div>
+
       {/* Security Badge */}
-      <div className="max-w-md mx-auto w-full mt-10 px-2">
+      <div className="max-w-md mx-auto w-full mt-6 px-2">
         <SecurityBadge />
       </div>
     </div>

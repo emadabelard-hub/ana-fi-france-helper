@@ -2261,7 +2261,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                         {item.total.toFixed(2)} €
                       </div>
                     ) : (
-                      <div className="h-10 flex items-center justify-center px-3 <div className="h-10 flex items-center justify-center px-3 bg-sky-300 rounded-md text-black text-[10px] font-bold cursor-pointer"> font-bold cursor-pointer">
+                      <div className="<div className="h-10 flex items-center justify-center px-3 bg-sky-300 rounded-md text-black text-[10px] font-bold cursor-pointer"> className="h-10 flex items-center justify-center px-3 bg-sky-300 rounded-md text-black text-[10px] font-bold cursor-pointer"> font-bold cursor-pointer">
                         <span className={cn(isRTL && "font-cairo")}>{isRTL ? 'اضغط واحسب من هنا' : 'Cliquez pour calculer'}</span>
                       </div>
                     )}

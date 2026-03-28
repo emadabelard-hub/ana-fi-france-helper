@@ -176,9 +176,7 @@ const ChatMessage = ({
   dispatchInfo,
   letterContent,
 }: ChatMessageProps) => {
-  const [copied, setCopied] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const { toast } = useToast();
   const isUser = role === 'user';
 
   // Parse content to separate Arabic from French letter

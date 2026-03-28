@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 import FinancialSummary from '@/components/archive/FinancialSummary';
+import ShbikLbikCard from '@/components/archive/ShbikLbikCard';
 import DocumentCard, { type DocumentItem } from '@/components/archive/DocumentCard';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SendToAccountantModal from '@/components/archive/SendToAccountantModal';
@@ -143,6 +144,23 @@ const ArchiveAccountingPage = () => {
   const totalExpenses = useMemo(() =>
     expenses.reduce((s, e) => s + e.amountTTC, 0),
     [expenses]);
+
+  // ShbikLbik data
+  const tvaCollectee = useMemo(() =>
+    documents.filter(d => d.type === 'facture' && d.status === 'finalized').reduce((s, d) => s + (d.rawData?.tva_amount || 0), 0),
+    [documents]);
+  const tvaDeductible = useMemo(() =>
+    expenses.reduce((s, e) => s + (e.rawData?.tva_amount || 0), 0),
+    [expenses]);
+  const totalIncomeHT = useMemo(() =>
+    documents.filter(d => d.type === 'facture' && d.status === 'finalized').reduce((s, d) => s + d.amountHT, 0),
+    [documents]);
+  const totalExpensesHT = useMemo(() =>
+    expenses.reduce((s, e) => s + e.amountHT, 0),
+    [expenses]);
+  const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
+  const isRate = (profile as any)?.is_rate ?? 15;
+  const isTvaExempt = (profile as any)?.tva_exempt ?? false;
 
   const handleDelete = async (id: string) => {
     // Check if it's an expense or document
@@ -297,6 +315,22 @@ const ArchiveAccountingPage = () => {
       {/* Financial Summary */}
       <div className="mb-4 shrink-0">
         <FinancialSummary totalIncome={totalIncome} totalExpenses={totalExpenses} isRTL={isRTL} />
+      </div>
+
+      {/* ShbikLbik Smart Assistant */}
+      <div className="mb-4 shrink-0">
+        <ShbikLbikCard
+          totalIncome={totalIncome}
+          totalExpenses={totalExpenses}
+          tvaCollectee={tvaCollectee}
+          tvaDeductible={tvaDeductible}
+          urssafRate={urssafRate}
+          isRate={isRate}
+          totalIncomeHT={totalIncomeHT}
+          totalExpensesHT={totalExpensesHT}
+          isTvaExempt={isTvaExempt}
+          isRTL={isRTL}
+        />
       </div>
 
       {/* Tabs & Content */}

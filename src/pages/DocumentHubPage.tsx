@@ -106,8 +106,8 @@ const DocumentHubPage = () => {
             </h2>
             <p className="text-white/85 text-sm font-cairo leading-relaxed">
               {isRTL
-                ? 'ارفع طلباتك، الصور، الخرائط، الـ PDF، وطلبات الزبون... وأنا أعملك الدوفي'
-                : 'Uploadez photos, plans, PDF ou demandes client… et je génère le devis'}
+                ? 'ارفع طلباتك، الصور، الخرائط، الـ PDF، وطلبات الزبون... وتعالى نحلل الشانتي سوا'
+                : 'Uploadez photos, plans, PDF ou demandes client… et analysons le chantier ensemble'}
             </p>
           </div>
           <div className={cn('text-white/60 text-2xl', isRTL ? 'rotate-180' : '')}>→</div>

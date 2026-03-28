@@ -2265,10 +2265,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                         <span className={cn(isRTL && "font-cairo")}>{isRTL ? 'اضغط واحسب من هنا' : 'Cliquez pour calculer'}</span>
                       </div>
                     )}
-                      <div className="h-10 flex items-center justify-center px-3 bg-sky-300 rounded-md text-black text-[10px] font-bold cursor-pointer">="h-10 flex items-center justify-center px-3 bg-sky-300 rounded-md text-black text-[10px] font-bold cursor-pointer"> className="h-10 flex items-center justify-center px-3 bg-sky-300 rounded-md text-black text-[10px] font-bold cursor-pointer"> font-bold cursor-pointer">
-                        <span className={cn(isRTL && "font-cairo")}>{isRTL ? 'اضغط واحسب من هنا' : 'Cliquez pour calculer'}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
                 
@@ -2280,9 +2276,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                     </span>
                   ) : (
                     <span className={cn("text-[11px] font-bold bg-sky-300 text-black px-3 py-1.5 rounded cursor-pointer", isRTL && "font-cairo")}>
-                      {isRTL ? 'اضغط واحسب من هنا' : 'Cliquez pour calculer'}
-                    </span>
-                    <span className={cn("text-[11px] font-bold bg-sky-300 text-black px-3 py-1.5 rounded cursor-pointer", isRTL && "font-cairo")}> className={cn("text-[11px] font-bold bg-sky-300 text-black px-3 py-1.5 rounded cursor-pointer", isRTL && "font-cairo")}> rounded cursor-pointer", isRTL && "font-cairo")}>
                       {isRTL ? 'اضغط واحسب من هنا' : 'Cliquez pour calculer'}
                     </span>
                   )}

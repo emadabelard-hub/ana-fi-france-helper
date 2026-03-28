@@ -598,7 +598,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                         "h-10 px-3 py-2 rounded-md text-sm font-bold flex items-center justify-center",
                         item.total > 0
                           ? "bg-muted font-mono"
-                          : "bg-emerald-700 text-black cursor-pointer"
+                          : "bg-sky-300 text-black cursor-pointer"
                       )}
                         onClick={() => {
                           if (item.total === 0) {

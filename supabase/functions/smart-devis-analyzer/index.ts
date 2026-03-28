@@ -506,10 +506,11 @@ Les translittérations (معجون, صنفرة, سوسكوش, بنتيرة, كه
 Chaque tâche doit être concrète et compréhensible par un artisan.
 Utiliser un langage chantier simple avec translittération:
 
-❌ "Préparation des surfaces" (INTERDIT — trop vague)
-✅ "Rebouchage + enduit (معجون) + ponçage (صنفرة) + primaire (سوسكوش)"
+❌ task_fr: "Préparation des surfaces" (INTERDIT — trop vague)
+✅ task_fr: "Rebouchage + enduit + ponçage + primaire" (français pur, AUCUN mot arabe)
+✅ task_ar: "سد + معجون + صنفرة + سوسكوش" (arabe avec translittérations)
 
-TRANSLITTÉRATION OBLIGATOIRE:
+TRANSLITTÉRATION (pour champs _ar UNIQUEMENT):
 Peinture→بنتيرة, Enduit→معجون, Primaire→سوسكوش, Ponçage→صنفرة,
 Sous-couche→سوكوش, Ragréage→راغرياج, Parquet→باركيه, Plinthes→بلانت,
 Carrelage→كارلاج, Faïence→فايونس, Démontage→ديمونتاج, Nettoyage→نيتواياج,

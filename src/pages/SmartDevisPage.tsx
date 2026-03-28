@@ -673,17 +673,17 @@ const SmartDevisPage = () => {
       // ═══════════════════════════════════════
       content += `## 👷 تحليل شبيك لبيك\n\n`;
 
-      // الحالة
+      // 1️⃣ الحالة (Site Condition)
       const situationAr = d.observations_ar || data.analysis_ar || data.analysis || '';
       if (situationAr) {
-        content += `### الحالة\n${situationAr}\n\n`;
+        content += `### 1️⃣ الحالة\n${situationAr}\n\n`;
       }
 
-      // الشغل المطلوب
+      // 2️⃣ الشغل المطلوب (Required Works)
       if (data.workPlan_ar) {
-        content += `### الشغل المطلوب\n${data.workPlan_ar}\n\n`;
+        content += `### 2️⃣ الشغل المطلوب\n${data.workPlan_ar}\n\n`;
       } else if (normalizedSuggestedItems.length > 0) {
-        content += `### الشغل المطلوب\n`;
+        content += `### 2️⃣ الشغل المطلوب\n`;
         normalizedSuggestedItems.forEach((item: any) => {
           const ar = item.designation_ar || item.designation_fr;
           if (ar) content += `• ${ar}\n`;
@@ -691,22 +691,42 @@ const SmartDevisPage = () => {
         content += `\n`;
       }
 
-      // المدة والفريق
+      // 3️⃣ مخاطر مهمة (Critical Risks)
+      const risksAr = Array.isArray(data.criticalRisks_ar) && data.criticalRisks_ar.length > 0
+        ? data.criticalRisks_ar
+        : null;
+      if (risksAr) {
+        content += `### 3️⃣ ⚠️ مخاطر مهمة\n`;
+        risksAr.forEach((risk: string) => content += `• ${risk}\n`);
+        content += `\n`;
+      }
+
+      // 4️⃣ توصيات مهنية (Professional Recommendations)
+      const recsAr = Array.isArray(data.recommendations_ar) && data.recommendations_ar.length > 0
+        ? data.recommendations_ar
+        : null;
+      if (recsAr) {
+        content += `### 4️⃣ 💡 توصيات مهنية\n`;
+        recsAr.forEach((rec: string) => content += `• ${rec}\n`);
+        content += `\n`;
+      }
+
+      // 5️⃣ المدة والفريق (Time Estimation)
       if (data.estimatedDuration_ar || (crew.workers && crew.days)) {
-        content += `### المدة والفريق\n`;
+        content += `### 5️⃣ المدة والفريق\n`;
         if (data.estimatedDuration_ar) content += `${data.estimatedDuration_ar}\n`;
         if (crew.workers && crew.days) content += `👷 ${crew.workers} عمال — 📅 ${crew.days} أيام\n`;
         content += `\n`;
       }
 
-      // المساحة
+      // 6️⃣ المساحة (Surface — only if provided)
       if (area) {
-        content += `### المساحة المقدرة\n📐 ${area}\n\n`;
+        content += `### 6️⃣ المساحة\n📐 ${area}\n\n`;
       }
 
       // ملاحظة مهمة
       const verificationAr = d.verificationNeeded_ar || data.missingInfo_ar || '';
-      content += `### ملاحظة مهمة\n⚠️ ${verificationAr || 'المساحة تقديرية ولازم تتأكد في الموقع'}\n\n`;
+      content += `### ملاحظة مهمة\n⚠️ ${verificationAr || 'لازم تتأكد من القياسات في الموقع قبل ما تبدأ'}\n\n`;
 
       // إجراء سريع
       content += `> ✅ التحليل خلص — تقدر تعمل الدوفي يدوي دلوقتي\n\n`;
@@ -716,24 +736,22 @@ const SmartDevisPage = () => {
       // ═══════════════════════════════════════
       content += `---\n\n## 📄 Rapport chantier\n\n`;
 
-      // État du chantier
+      // 1. État du chantier
       const etatFr = data.analysis_fr || d.observations_fr || '';
       if (etatFr) {
-        content += `### État du chantier\n${etatFr}\n\n`;
+        content += `### 1. État du chantier\n${etatFr}\n\n`;
       }
       if (d.causes_fr) {
         content += `**Causes probables :** ${d.causes_fr}\n\n`;
       }
 
-      // Travaux à réaliser
+      // 2. Travaux à réaliser
       if (data.workPlan_fr || normalizedSuggestedItems.length > 0) {
-        content += `### Travaux à réaliser\n`;
+        content += `### 2. Travaux à réaliser\n`;
         if (normalizedSuggestedItems.length > 0) {
           normalizedSuggestedItems.forEach((item: any, index: number) => {
             const fr = item.designation_fr || 'Travail à confirmer';
-            const quantity = item.quantity !== '' ? item.quantity : 1;
-            const unit = item.unit || 'Ens';
-            content += `${index + 1}. ${fr} — ${quantity} ${unit}\n`;
+            content += `${index + 1}. ${fr}\n`;
           });
         } else if (data.workPlan_fr) {
           content += `${data.workPlan_fr}\n`;
@@ -741,15 +759,41 @@ const SmartDevisPage = () => {
         content += `\n`;
       }
 
-      // Estimation
+      // 3. Risques critiques
+      const risksFr = Array.isArray(data.criticalRisks_fr) && data.criticalRisks_fr.length > 0
+        ? data.criticalRisks_fr
+        : null;
+      if (risksFr) {
+        content += `### 3. Risques critiques\n`;
+        risksFr.forEach((risk: string) => content += `⚠️ ${risk}\n`);
+        content += `\n`;
+      }
+
+      // 4. Recommandations professionnelles
+      const recsFr = Array.isArray(data.recommendations_fr) && data.recommendations_fr.length > 0
+        ? data.recommendations_fr
+        : null;
+      if (recsFr) {
+        content += `### 4. Recommandations professionnelles\n`;
+        recsFr.forEach((rec: string) => content += `✅ ${rec}\n`);
+        content += `\n`;
+      }
+
+      // 5. Estimation durée
+      if (data.estimatedDuration_fr || (crew.workers && crew.days)) {
+        content += `### 5. Estimation de durée\n`;
+        if (data.estimatedDuration_fr) content += `${data.estimatedDuration_fr}\n`;
+        if (crew.workers && crew.days) content += `Équipe : ${crew.workers} ouvriers — ${crew.days} jours\n`;
+        content += `\n`;
+      }
+
+      // 6. Surface
       if (area) {
-        content += `### Estimation\nSurface estimée : **${data.estimatedArea} m²** *(à confirmer sur site)*\n\n`;
+        content += `### 6. Surface\nSurface estimée : **${data.estimatedArea} m²** *(à confirmer sur site)*\n\n`;
       }
-      if (data.estimatedDuration_fr) {
-        content += `**Durée estimée :** ${data.estimatedDuration_fr}\n\n`;
-      }
+
       if (data.materials_fr && Array.isArray(data.materials_fr) && data.materials_fr.length > 0) {
-        content += `**Matériaux :** ${data.materials_fr.join(', ')}\n\n`;
+        content += `**Matériaux recommandés :** ${data.materials_fr.join(', ')}\n\n`;
       }
 
       // Important
@@ -761,8 +805,8 @@ const SmartDevisPage = () => {
       const notesFr = data.notes_fr || '';
       if (notesFr) content += `📝 ${notesFr}\n\n`;
 
-      // ── Questions pour continuer ──
-      content += `---\nدلوقتي عايز أسألك كام سؤال عشان نعمل الدوفي صح:\n\n1️⃣ **جودة المواد؟** (اقتصادي / عادي / فخم)\n2️⃣ **هل في خصم؟** (نسبة %)\n3️⃣ **نسبة الربح المطلوبة؟** (%)`;
+      // Message de fin
+      content += `---\n✅ **Analyse terminée.** Vous pouvez maintenant créer votre devis manuellement.\n\n✅ **التحليل خلص.** تقدر تعمل الدوفي يدوي دلوقتي.`;
 
       setChatMessages([{ role: 'assistant', content }]);
       setStep('chat');

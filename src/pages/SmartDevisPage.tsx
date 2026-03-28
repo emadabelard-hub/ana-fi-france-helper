@@ -673,14 +673,23 @@ const SmartDevisPage = () => {
       // ═══════════════════════════════════════
       content += `## 👷 تحليل شبيك لبيك\n\n`;
 
-      // 1️⃣ الحالة (Site Condition)
+      // 1️⃣ الحالة
       const situationAr = d.observations_ar || data.analysis_ar || data.analysis || '';
       if (situationAr) {
         content += `### 1️⃣ الحالة\n${situationAr}\n\n`;
       }
 
-      // 2️⃣ الشغل المطلوب (Required Works)
-      if (data.workPlan_ar) {
+      // 2️⃣ الشغل المطلوب — Task list format
+      const taskList = Array.isArray(data.taskList) ? data.taskList : [];
+      if (taskList.length > 0) {
+        content += `### 2️⃣ الشغل المطلوب\n`;
+        taskList
+          .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
+          .forEach((task: any) => {
+            content += `• ${task.task_ar || task.task_fr}\n`;
+          });
+        content += `\n`;
+      } else if (data.workPlan_ar) {
         content += `### 2️⃣ الشغل المطلوب\n${data.workPlan_ar}\n\n`;
       } else if (normalizedSuggestedItems.length > 0) {
         content += `### 2️⃣ الشغل المطلوب\n`;
@@ -691,7 +700,7 @@ const SmartDevisPage = () => {
         content += `\n`;
       }
 
-      // 3️⃣ مخاطر مهمة (Critical Risks)
+      // 3️⃣ مخاطر مهمة
       const risksAr = Array.isArray(data.criticalRisks_ar) && data.criticalRisks_ar.length > 0
         ? data.criticalRisks_ar
         : null;
@@ -701,7 +710,7 @@ const SmartDevisPage = () => {
         content += `\n`;
       }
 
-      // 4️⃣ توصيات مهنية (Professional Recommendations)
+      // 4️⃣ توصيات مهنية
       const recsAr = Array.isArray(data.recommendations_ar) && data.recommendations_ar.length > 0
         ? data.recommendations_ar
         : null;
@@ -711,7 +720,7 @@ const SmartDevisPage = () => {
         content += `\n`;
       }
 
-      // 5️⃣ المدة والفريق (Time Estimation)
+      // 5️⃣ المدة والفريق
       if (data.estimatedDuration_ar || (crew.workers && crew.days)) {
         content += `### 5️⃣ المدة والفريق\n`;
         if (data.estimatedDuration_ar) content += `${data.estimatedDuration_ar}\n`;
@@ -719,7 +728,7 @@ const SmartDevisPage = () => {
         content += `\n`;
       }
 
-      // 6️⃣ المساحة (Surface — only if provided)
+      // 6️⃣ المساحة (only if provided)
       if (area) {
         content += `### 6️⃣ المساحة\n📐 ${area}\n\n`;
       }
@@ -728,7 +737,6 @@ const SmartDevisPage = () => {
       const verificationAr = d.verificationNeeded_ar || data.missingInfo_ar || '';
       content += `### ملاحظة مهمة\n⚠️ ${verificationAr || 'لازم تتأكد من القياسات في الموقع قبل ما تبدأ'}\n\n`;
 
-      // إجراء سريع
       content += `> ✅ التحليل خلص — تقدر تعمل الدوفي يدوي دلوقتي\n\n`;
 
       // ═══════════════════════════════════════
@@ -745,18 +753,23 @@ const SmartDevisPage = () => {
         content += `**Causes probables :** ${d.causes_fr}\n\n`;
       }
 
-      // 2. Travaux à réaliser
-      if (data.workPlan_fr || normalizedSuggestedItems.length > 0) {
+      // 2. Travaux à réaliser — Clean task list
+      if (taskList.length > 0) {
         content += `### 2. Travaux à réaliser\n`;
-        if (normalizedSuggestedItems.length > 0) {
-          normalizedSuggestedItems.forEach((item: any, index: number) => {
-            const fr = item.designation_fr || 'Travail à confirmer';
-            content += `${index + 1}. ${fr}\n`;
+        taskList
+          .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
+          .forEach((task: any, index: number) => {
+            content += `${index + 1}. ${task.task_fr}\n`;
           });
-        } else if (data.workPlan_fr) {
-          content += `${data.workPlan_fr}\n`;
-        }
         content += `\n`;
+      } else if (normalizedSuggestedItems.length > 0) {
+        content += `### 2. Travaux à réaliser\n`;
+        normalizedSuggestedItems.forEach((item: any, index: number) => {
+          content += `${index + 1}. ${item.designation_fr || 'Travail à confirmer'}\n`;
+        });
+        content += `\n`;
+      } else if (data.workPlan_fr) {
+        content += `### 2. Travaux à réaliser\n${data.workPlan_fr}\n\n`;
       }
 
       // 3. Risques critiques
@@ -789,11 +802,7 @@ const SmartDevisPage = () => {
 
       // 6. Surface
       if (area) {
-        content += `### 6. Surface\nSurface estimée : **${data.estimatedArea} m²** *(à confirmer sur site)*\n\n`;
-      }
-
-      if (data.materials_fr && Array.isArray(data.materials_fr) && data.materials_fr.length > 0) {
-        content += `**Matériaux recommandés :** ${data.materials_fr.join(', ')}\n\n`;
+        content += `### 6. Surface\nSurface : **${data.estimatedArea} m²** *(à confirmer sur site)*\n\n`;
       }
 
       // Important
@@ -801,9 +810,6 @@ const SmartDevisPage = () => {
       content += `### Important\n⚠️ ${verificationFr || 'Cette analyse est basée sur la photo et doit être confirmée lors d\'une visite technique.'}\n\n`;
 
       if (data.clientSummary_fr) content += `**Résumé client :** ${data.clientSummary_fr}\n\n`;
-
-      const notesFr = data.notes_fr || '';
-      if (notesFr) content += `📝 ${notesFr}\n\n`;
 
       // Message de fin
       content += `---\n✅ **Analyse terminée.** Vous pouvez maintenant créer votre devis manuellement.\n\n✅ **التحليل خلص.** تقدر تعمل الدوفي يدوي دلوقتي.`;

@@ -1,12 +1,11 @@
 import { cn } from '@/lib/utils';
-import { User, Bot, Copy, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useState, useMemo } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { User, Bot } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import LetterSuggestionButton from './LetterSuggestionButton';
 import DocumentReadyCard from './DocumentReadyCard';
 import DocumentViewerModal from './DocumentViewerModal';
 import MarkdownRenderer from './MarkdownRenderer';
+import CopyButton from '@/components/shared/CopyButton';
 
 interface ExtractedInfo {
   recipientName?: string;
@@ -177,9 +176,7 @@ const ChatMessage = ({
   dispatchInfo,
   letterContent,
 }: ChatMessageProps) => {
-  const [copied, setCopied] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const { toast } = useToast();
   const isUser = role === 'user';
 
   // Parse content to separate Arabic from French letter
@@ -212,31 +209,13 @@ const ChatMessage = ({
   // Show inline button when: AI suggests letter, callback provided, and not already showing letter
   const shouldShowLetterButton = showLetterSuggestion && hasSuggestionPrompt && onAcceptLetterSuggestion && !frenchLetter;
 
-  const handleCopy = async (textToCopy?: string) => {
-    try {
-      await navigator.clipboard.writeText(textToCopy || content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast({
-        title: isRTL ? "تم النسخ" : "Copié",
-        description: isRTL ? "النص اتنسخ" : "Le texte a été copié",
-      });
-    } catch {
-      // Ignore copy errors
-    }
-  };
-
   // No inline document rendering anymore — document opens in a dedicated viewer modal.
 
   return (
     <div
       className={cn(
-        // Force internal padding so RTL Arabic never touches the bubble edge.
-        // Spec requested: padding: 15px 20px !important; + border-box sizing.
         "flex gap-4 rounded-xl box-border !py-[15px] !px-5",
-        // Maximum width: bubbles take ~98% width on mobile (only 1% margin each side)
         "mx-[1%] sm:mx-[2%]",
-        // Background colors only, no directional offsets to maximize width
         isUser ? "bg-primary/10" : "bg-muted/50",
         isRTL && "flex-row-reverse"
       )}
@@ -251,11 +230,9 @@ const ChatMessage = ({
         {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
       </div>
 
-      {/* Content - with internal padding for breathing room */}
+      {/* Content */}
       <div className={cn(
-        // min-w-0 is critical in flex layouts so long words can wrap instead of overflowing.
         "flex-1 min-w-0 space-y-4",
-        // Extra padding inside content area for text breathing room
         isRTL ? "pr-3 pl-1" : "pl-3 pr-1"
       )}>
         {/* Arabic/RTL content */}
@@ -280,7 +257,7 @@ const ChatMessage = ({
           )
         )}
 
-        {/* Letter Suggestion Button - appears when AI suggests writing a letter */}
+        {/* Letter Suggestion Button */}
         {shouldShowLetterButton && (
           <LetterSuggestionButton
             onAccept={onAcceptLetterSuggestion!}
@@ -309,30 +286,9 @@ const ChatMessage = ({
           </div>
         )}
 
-        {/* Copy button for assistant messages (whole message) */}
+        {/* Copy button for assistant messages */}
         {!isUser && !frenchLetter && !shouldShowLetterButton && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleCopy()}
-            className={cn("h-7 text-xs gap-1", isRTL && "flex-row-reverse")}
-          >
-            {copied ? (
-              <>
-                <Check className="h-3 w-3" />
-                <span className={isRTL ? "font-cairo" : ""}>
-                  {isRTL ? "اتنسخ" : "Copié"}
-                </span>
-              </>
-            ) : (
-              <>
-                <Copy className="h-3 w-3" />
-                <span className={isRTL ? "font-cairo" : ""}>
-                  {isRTL ? "انسخ" : "Copier"}
-                </span>
-              </>
-            )}
-          </Button>
+          <CopyButton text={content} isRTL={isRTL} className="h-7" />
         )}
       </div>
     </div>

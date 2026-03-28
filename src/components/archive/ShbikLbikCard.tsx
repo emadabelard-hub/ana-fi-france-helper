@@ -67,7 +67,7 @@ const ShbikLbikCard = ({
       return { emoji: '⚠️', fr: 'Attention, charges importantes à venir', ar: 'انتبه، مصاريف كبيرة جاية' };
     if (healthRatio < 0.3)
       return { emoji: '⚠️', fr: 'Activité correcte, reste vigilant', ar: 'النشاط ماشي، بس خلي بالك' };
-    return { emoji: '✅', fr: 'Activité rentable, situation saine', ar: 'النشاط مربح، وضعك مزيان' };
+    return { emoji: '✅', fr: 'Activité rentable, situation saine', ar: 'النشاط مربح، وضعك كويس' };
   })();
 
   return (
@@ -171,7 +171,7 @@ const ShbikLbikCard = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/pro/expenses')}
+            onClick={() => navigate('/expenses')}
             className={cn(
               'w-full text-accent/70 hover:text-accent hover:bg-accent/10 text-xs font-semibold gap-1',
               isRTL && 'font-cairo flex-row-reverse'

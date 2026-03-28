@@ -1,12 +1,11 @@
 import { cn } from '@/lib/utils';
-import { User, Bot, Copy, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useState, useMemo } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { User, Bot } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import LetterSuggestionButton from './LetterSuggestionButton';
 import DocumentReadyCard from './DocumentReadyCard';
 import DocumentViewerModal from './DocumentViewerModal';
 import MarkdownRenderer from './MarkdownRenderer';
+import CopyButton from '@/components/shared/CopyButton';
 
 interface ExtractedInfo {
   recipientName?: string;

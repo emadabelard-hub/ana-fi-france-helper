@@ -179,35 +179,25 @@ const ShbikLbikCard = ({
           </div>
         )}
 
-            {/* ── Detailed Breakdown ── */}
-            {detailed && (
-              <div className="space-y-2 pt-1">
-                <DetailRow icon={<TrendingUp className="h-3.5 w-3.5 text-emerald-400" />}
-                  label={isRTL ? 'إجمالي الإيرادات' : 'Tu as encaissé'} value={fmt(totalIncome)}
-                  valueColor="text-emerald-400" isRTL={isRTL} />
-                <DetailRow icon={<TrendingDown className="h-3.5 w-3.5 text-red-400" />}
-                  label={isRTL ? 'المصاريف' : 'Tes dépenses'} value={`-${fmt(totalExpenses)}`}
-                  valueColor="text-red-400" isRTL={isRTL} />
-                {!isTvaExempt && (
-                  <DetailRow icon={<Shield className="h-3.5 w-3.5 text-sky-400" />}
-                    label={isRTL ? 'TVA المتوقعة' : 'TVA estimée à mettre de côté'} value={`-${fmt(tvaNet)}`}
-                    valueColor="text-sky-400" isRTL={isRTL} />
-                )}
-                <DetailRow icon={<Shield className="h-3.5 w-3.5 text-violet-400" />}
-                  label={isRTL ? 'URSSAF المتوقعة' : 'URSSAF estimée'} value={`-${fmt(urssaf)}`}
-                  valueColor="text-violet-400" isRTL={isRTL} />
-                <DetailRow icon={<Shield className="h-3.5 w-3.5 text-amber-400" />}
-                  label={isRTL ? 'الضريبة المتوقعة' : 'Impôt estimé'} value={`-${fmt(impot)}`}
-                  valueColor="text-amber-400" isRTL={isRTL} />
+        {/* ── Extra Detailed Breakdown (toggle) ── */}
+        {detailed && hasData && !isTvaExempt && (
+          <div className="space-y-2 rounded-xl bg-[hsl(220,20%,14%)] p-3">
+            <DetailRow icon={<Shield className="h-3.5 w-3.5 text-sky-400" />}
+              label={isRTL ? 'TVA المتوقعة' : 'TVA estimée'} value={`-${fmt(tvaNet)}`}
+              valueColor="text-sky-400" isRTL={isRTL} />
+            <div className="border-t border-border/30 pt-2">
+              <DetailRow icon={<Wallet className="h-3.5 w-3.5" />}
+                label={isRTL ? 'المتبقي تقريباً' : 'Il te resterait environ'}
+                value={fmt(disponible)} valueColor={amtColor} isRTL={isRTL} bold />
+            </div>
+          </div>
+        )}
 
-                <div className="border-t border-border pt-2 mt-2">
-                  <DetailRow icon={<Wallet className="h-3.5 w-3.5" />}
-                    label={isRTL ? 'المتبقي تقريباً' : 'Il te resterait environ'}
-                    value={fmt(disponible)} valueColor={amtColor} isRTL={isRTL} bold />
-                </div>
-              </div>
-            )}
-          </>
+        {/* ── Status message when no data ── */}
+        {!hasData && (
+          <p className={cn('text-center text-[11px] text-muted-foreground py-2', isRTL && 'font-cairo')}>
+            {isRTL ? 'أضف فواتير ومصاريف لتفعيل الحسابات' : 'Ajoutez des factures et dépenses pour activer les calculs'}
+          </p>
         )}
       </div>
 

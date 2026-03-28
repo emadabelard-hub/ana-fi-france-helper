@@ -2256,17 +2256,29 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   
                   <div className="space-y-1.5 hidden sm:block">
                     <Label className="text-xs">{isRTL ? 'المجموع' : 'Total'}</Label>
-                    <div className="h-10 flex items-center px-3 bg-primary/5 border rounded-md font-mono text-sm font-medium">
-                      {item.total.toFixed(2)} €
-                    </div>
+                    {item.total > 0 ? (
+                      <div className="h-10 flex items-center px-3 bg-primary/5 border rounded-md font-mono text-sm font-medium">
+                        {item.total.toFixed(2)} €
+                      </div>
+                    ) : (
+                      <div className="h-10 flex items-center justify-center px-3 bg-emerald-700 rounded-md text-black text-[10px] font-bold cursor-pointer">
+                        <span className={cn(isRTL && "font-cairo")}>{isRTL ? 'اضغط واحسب من هنا' : 'Cliquez pour calculer'}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
                 {/* Mobile total */}
                 <div className="sm:hidden flex justify-end">
-                  <span className="text-sm font-medium font-mono bg-primary/10 px-3 py-1 rounded">
-                    = {item.total.toFixed(2)} €
-                  </span>
+                  {item.total > 0 ? (
+                    <span className="text-sm font-medium font-mono bg-primary/10 px-3 py-1 rounded">
+                      = {item.total.toFixed(2)} €
+                    </span>
+                  ) : (
+                    <span className={cn("text-[11px] font-bold bg-emerald-700 text-black px-3 py-1.5 rounded cursor-pointer", isRTL && "font-cairo")}>
+                      {isRTL ? 'اضغط واحسب من هنا' : 'Cliquez pour calculer'}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}

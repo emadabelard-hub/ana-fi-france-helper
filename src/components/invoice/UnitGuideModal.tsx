@@ -202,12 +202,12 @@ export const UnitGuideButton = ({ onClick }: { onClick: () => void }) => {
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:text-primary/80 transition-colors bg-primary/10 px-2 py-1 rounded-full",
+        "inline-flex items-center gap-1 text-[10px] font-bold text-black transition-colors bg-emerald-500 hover:bg-emerald-600 px-2 py-1 rounded-full",
         isRTL && "flex-row-reverse font-cairo"
       )}
     >
       <HelpCircle size={10} />
-      <span>{isRTL ? 'إيه الوحدات؟' : 'Aide Unités'}</span>
+      <span>{isRTL ? 'القياسات' : 'Unités'}</span>
     </button>
   );
 };

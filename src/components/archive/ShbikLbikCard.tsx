@@ -119,13 +119,13 @@ const ShbikLbikCard = ({
   return (
     <div className="space-y-3">
       {/* ═══ MAIN CARD ═══ */}
-      <div className="rounded-2xl border border-accent/20 bg-card p-4 space-y-4">
+      <div className="rounded-2xl border border-accent/20 bg-[hsl(220,20%,12%)] p-5 space-y-4 shadow-lg">
         {/* Header */}
         <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
           <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
             <span className="text-2xl">🧞‍♂️</span>
             <div className={isRTL ? 'text-right' : ''}>
-              <h2 className={cn('text-lg font-black text-accent', isRTL && 'font-cairo')}>شبيك لبيك</h2>
+              <h2 className={cn('text-xl font-black text-accent', isRTL && 'font-cairo')}>شبيك لبيك</h2>
               <p className={cn('text-[11px] text-muted-foreground', isRTL && 'font-cairo')}>
                 {isRTL ? 'بشرحلك وضعك المالي ببساطة' : 'Je t\'explique simplement où tu en es.'}
               </p>
@@ -140,30 +140,44 @@ const ShbikLbikCard = ({
           </div>
         </div>
 
-        {!hasData ? (
-          <div className={cn('text-center py-6 text-sm text-muted-foreground', isRTL && 'font-cairo')}>
-            {isRTL ? 'لسه مفيش بيانات كافية. أول ما تبدأ تسجل فواتير ومصاريف، هيظهر كل حاجة هنا.'
-              : 'Pas encore assez de données. Dès que tu enregistres des factures et dépenses, tout apparaîtra ici.'}
-          </div>
-        ) : (
-          <>
-            {/* ── Main Amount ── */}
-            <div className={cn('rounded-xl bg-muted/40 p-4 text-center')}>
-              <p className={cn('text-xs text-muted-foreground mb-1', isRTL && 'font-cairo')}>
-                {isRTL ? '💰 المبلغ المتاح فعلاً' : '💰 Argent vraiment disponible'}
-              </p>
-              <p className={cn('text-3xl font-black tracking-tight', amtColor)}>
-                {fmt(disponible)}
-              </p>
-            </div>
+        {/* ── Main Amount (always visible) ── */}
+        <div className="rounded-xl bg-[hsl(220,20%,16%)] p-5 text-center space-y-1">
+          <p className={cn('text-xs text-muted-foreground', isRTL && 'font-cairo')}>
+            {isRTL ? '💰 المبلغ المتاح فعلاً' : '💰 Argent disponible'}
+          </p>
+          <p className={cn('text-4xl font-black tracking-tight', amtColor)}>
+            {hasData ? fmt(disponible) : '0,00 €'}
+          </p>
+          <p className={cn('text-[10px] text-muted-foreground', isRTL && 'font-cairo')}>
+            {isRTL ? 'إيرادات - مصاريف - URSSAF - ضرائب' : 'Revenus - Dépenses - URSSAF - Impôts'}
+          </p>
+        </div>
 
-            {/* ── Dynamic Message ── */}
-            <div className={cn('flex items-start gap-2 rounded-xl bg-muted/30 p-3', isRTL && 'flex-row-reverse')}>
-              <span className="text-lg shrink-0">{msg.emoji}</span>
-              <p className={cn('text-xs leading-relaxed text-foreground/80', isRTL && 'font-cairo text-right')}>
-                {isRTL ? msg.ar : msg.fr}
-              </p>
-            </div>
+        {/* ── Breakdown (always visible) ── */}
+        <div className="space-y-2 rounded-xl bg-[hsl(220,20%,14%)] p-4">
+          <DetailRow icon={<TrendingUp className="h-3.5 w-3.5 text-emerald-400" />}
+            label={isRTL ? 'الإيرادات' : 'Revenus'} value={fmt(totalIncome)}
+            valueColor="text-emerald-400" isRTL={isRTL} />
+          <DetailRow icon={<TrendingDown className="h-3.5 w-3.5 text-red-400" />}
+            label={isRTL ? 'المصاريف' : 'Dépenses'} value={`-${fmt(totalExpenses)}`}
+            valueColor="text-red-400" isRTL={isRTL} />
+          <DetailRow icon={<Shield className="h-3.5 w-3.5 text-violet-400" />}
+            label="URSSAF" value={`-${fmt(urssaf)}`}
+            valueColor="text-violet-400" isRTL={isRTL} />
+          <DetailRow icon={<Shield className="h-3.5 w-3.5 text-amber-400" />}
+            label={isRTL ? 'الضرائب' : 'Impôts'} value={`-${fmt(impot)}`}
+            valueColor="text-amber-400" isRTL={isRTL} />
+        </div>
+
+        {/* ── Dynamic Message ── */}
+        {hasData && (
+          <div className={cn('flex items-start gap-2 rounded-xl bg-[hsl(220,20%,14%)] p-3', isRTL && 'flex-row-reverse')}>
+            <span className="text-lg shrink-0">{msg.emoji}</span>
+            <p className={cn('text-xs leading-relaxed text-foreground/80', isRTL && 'font-cairo text-right')}>
+              {isRTL ? msg.ar : msg.fr}
+            </p>
+          </div>
+        )}
 
             {/* ── Detailed Breakdown ── */}
             {detailed && (

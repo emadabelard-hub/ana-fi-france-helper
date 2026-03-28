@@ -626,7 +626,7 @@ Réponds en JSON avec cette structure:
 
       if (hasFiles || hasLegacyImage) {
         const contentParts: any[] = [
-          { type: "text", text: userMessage || "Analyse ces fichiers et génère un devis détaillé." }
+          { type: "text", text: userMessage || "Analyse ces fichiers et fais un diagnostic technique du chantier." }
         ];
 
       if (hasFiles) {

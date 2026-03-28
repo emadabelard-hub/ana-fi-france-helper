@@ -34,6 +34,7 @@ interface InvoiceActionsProps {
   showArabic: boolean;
   onToggleArabic: (value: boolean) => void;
   onUpdateInvoice?: (updatedData: InvoiceData) => void;
+  onBeforeExport?: () => void | Promise<void>;
   isPaid?: boolean;
 }
 
@@ -43,6 +44,7 @@ const InvoiceActions = ({
   showArabic, 
   onToggleArabic,
   onUpdateInvoice,
+  onBeforeExport,
   isPaid: _isPaid = false,
 }: InvoiceActionsProps) => {
   // TRIAL PHASE: All features unlocked — set to `_isPaid` to reactivate payments
@@ -57,6 +59,8 @@ const InvoiceActions = ({
 
   const buildPdfBlob = async ({ embedFacturX = false }: { embedFacturX?: boolean } = {}) => {
     if (!invoiceRef.current) return null;
+
+    await onBeforeExport?.();
 
     const wasArabic = showArabic;
     if (wasArabic) {

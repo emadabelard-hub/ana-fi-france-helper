@@ -13,7 +13,7 @@ import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import { useToast } from '@/hooks/use-toast';
-import { clearDraft } from '@/lib/invoiceDraftStorage';
+import { clearCurrentDocument, clearDraft, loadCurrentDocument } from '@/lib/invoiceDraftStorage';
 import {
   Dialog,
   DialogContent,
@@ -46,9 +46,12 @@ const InvoiceCreatorPage = () => {
   const smartDevisReturnState = (location.state as { smartDevisReturnState?: { restoreWizard?: boolean; wizardSnapshot?: any } } | null)?.smartDevisReturnState;
   const smartDevisDataFromState = (location.state as { smartDevisData?: any } | null)?.smartDevisData;
   const isSmartDevisFlow = prefillSource === 'smart' || !!smartDevisReturnState || !!smartDevisDataFromState;
+  const resumedDocumentType = !urlDocType && !prefillSource
+    ? loadCurrentDocument()?.documentType ?? null
+    : null;
   
-  const [documentType, setDocumentType] = useState<'devis' | 'facture' | null>(urlDocType);
-  const [showTypeModal, setShowTypeModal] = useState(!urlDocType);
+  const [documentType, setDocumentType] = useState<'devis' | 'facture' | null>(urlDocType ?? resumedDocumentType);
+  const [showTypeModal, setShowTypeModal] = useState(!urlDocType && !resumedDocumentType);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
   // CRITICAL: Initialize prefillData SYNCHRONOUSLY to prevent draft restore race condition.
@@ -102,6 +105,16 @@ const InvoiceCreatorPage = () => {
       setShowTypeModal(false);
     }
   }, [urlDocType, documentType]);
+
+  useEffect(() => {
+    if (!urlDocType && documentType) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('type', documentType);
+        return next;
+      });
+    }
+  }, [urlDocType, documentType, setSearchParams]);
   
   // Handle document type selection
   const handleTypeSelect = (type: 'devis' | 'facture') => {
@@ -382,6 +395,7 @@ const InvoiceCreatorPage = () => {
             <AlertDialogAction 
               onClick={() => {
                 clearDraft();
+                 clearCurrentDocument();
                 confirmLeave();
               }} 
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full"

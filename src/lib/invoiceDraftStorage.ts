@@ -90,8 +90,8 @@ const hasMeaningfulCurrentDocument = (document: Omit<CurrentDocumentState, 'save
   );
 
   const hasItems = Array.isArray(document.items) && document.items.some((item) => {
-    const quantityValue = item.quantity === '' ? '' : String(item.quantity ?? '');
-    const priceValue = item.unitPrice === '' ? '' : String(item.unitPrice ?? '');
+    const quantityValue = typeof (item as any).quantity === 'string' ? (item as any).quantity : String(item.quantity ?? '');
+    const priceValue = typeof (item as any).unitPrice === 'string' ? (item as any).unitPrice : String(item.unitPrice ?? '');
 
     return Boolean(
       item.designation_fr?.trim() ||

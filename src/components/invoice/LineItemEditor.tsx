@@ -594,8 +594,24 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                       <Label className="text-xs text-muted-foreground">
                         {isRTL ? 'الإجمالي' : 'Total'}
                       </Label>
-                      <div className="h-10 px-3 py-2 bg-muted rounded-md text-sm font-medium flex items-center">
-                        {formatCurrency(item.total)}
+                      <div className={cn(
+                        "h-10 px-3 py-2 rounded-md text-sm font-bold flex items-center justify-center",
+                        item.total > 0
+                          ? "bg-muted font-mono"
+                          : "bg-emerald-700 text-black cursor-pointer"
+                      )}
+                        onClick={() => {
+                          if (item.total === 0) {
+                            // Focus the unit price input to prompt the user
+                          }
+                        }}
+                      >
+                        {item.total > 0 
+                          ? formatCurrency(item.total)
+                          : <span className={cn("text-[10px] leading-tight text-center", isRTL && "font-cairo")}>
+                              {isRTL ? 'اضغط واحسب من هنا' : 'Cliquez pour calculer'}
+                            </span>
+                        }
                       </div>
                     </div>
                   </div>

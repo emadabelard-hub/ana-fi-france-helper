@@ -57,35 +57,7 @@ const DocumentHubPage = () => {
       </section>
 
       <section className="space-y-5 max-w-md mx-auto w-full">
-        {/* Card A — AI Generation */}
-        <button
-          onClick={() => navigate('/pro/smart-devis', { state: { forceFreshSession: true } })}
-          className={cn(
-            'w-full rounded-2xl p-6 text-white',
-            'flex items-center gap-5 active:scale-[0.98] hover:scale-[1.02] transition-all duration-300',
-            'shadow-[0_12px_40px_-12px_hsl(180_60%_30%/0.4)]',
-            'hover:shadow-[0_20px_50px_-12px_hsl(180_60%_30%/0.55)] hover:-translate-y-1',
-            isRTL && 'flex-row-reverse'
-          )}
-          style={{ background: 'linear-gradient(135deg, #0D9488, #0EA5E9)' }}
-        >
-          <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-            <span className="text-4xl">🏗️</span>
-          </div>
-          <div className={cn('flex-1', isRTL ? 'text-right' : 'text-left')}>
-            <h2 className="text-lg font-bold font-cairo mb-1">
-              {isRTL ? 'اعمل الدوفي والفاتورة بالذكاء الاصطناعي وممكن تحول الدوفي لفاتورة في ثواني' : 'Devis & Facture IA — convertissez un devis en facture en secondes'}
-            </h2>
-            <p className="text-white/85 text-sm font-cairo leading-relaxed">
-              {isRTL
-                ? 'ارفع طلباتك، الصور، الخرائط، الـ PDF، وطلبات الزبون... وأنا أعملك الدوفي'
-                : 'Uploadez photos, plans, PDF ou demandes client… et je génère le devis'}
-            </p>
-          </div>
-          <div className={cn('text-white/60 text-2xl', isRTL ? 'rotate-180' : '')}>→</div>
-        </button>
-
-        {/* Card B — Manual / Management */}
+        {/* Card A — Manual / Management (now first) */}
         <button
           onClick={() => navigate('/pro')}
           className={cn(
@@ -108,6 +80,34 @@ const DocumentHubPage = () => {
               {isRTL
                 ? 'اكتب الفاتورة أو الدوفي يدوي، أو افتح مستنداتك'
                 : 'Créez manuellement vos factures, devis, ou consultez vos documents'}
+            </p>
+          </div>
+          <div className={cn('text-white/60 text-2xl', isRTL ? 'rotate-180' : '')}>→</div>
+        </button>
+
+        {/* Card B — AI Generation (now second) */}
+        <button
+          onClick={() => navigate('/pro/smart-devis', { state: { forceFreshSession: true } })}
+          className={cn(
+            'w-full rounded-2xl p-6 text-white',
+            'flex items-center gap-5 active:scale-[0.98] hover:scale-[1.02] transition-all duration-300',
+            'shadow-[0_12px_40px_-12px_hsl(180_60%_30%/0.4)]',
+            'hover:shadow-[0_20px_50px_-12px_hsl(180_60%_30%/0.55)] hover:-translate-y-1',
+            isRTL && 'flex-row-reverse'
+          )}
+          style={{ background: 'linear-gradient(135deg, #0D9488, #0EA5E9)' }}
+        >
+          <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+            <span className="text-4xl">🏗️</span>
+          </div>
+          <div className={cn('flex-1', isRTL ? 'text-right' : 'text-left')}>
+            <h2 className="text-lg font-bold font-cairo mb-1">
+              {isRTL ? 'حلل الشانتي والاحتياجات بالذكاء الاصطناعي' : 'Analysez le chantier et les besoins avec l\'IA'}
+            </h2>
+            <p className="text-white/85 text-sm font-cairo leading-relaxed">
+              {isRTL
+                ? 'ارفع طلباتك، الصور، الخرائط، الـ PDF، وطلبات الزبون... وأنا أعملك الدوفي'
+                : 'Uploadez photos, plans, PDF ou demandes client… et je génère le devis'}
             </p>
           </div>
           <div className={cn('text-white/60 text-2xl', isRTL ? 'rotate-180' : '')}>→</div>

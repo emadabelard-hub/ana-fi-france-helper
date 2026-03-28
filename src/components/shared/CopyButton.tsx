@@ -55,7 +55,7 @@ const CopyButton = ({
       onClick={handleCopy}
       className={cn(
         'gap-1.5 transition-all duration-200',
-        copied && 'text-green-600 dark:text-green-400',
+        copied && 'text-primary',
         isRTL && 'flex-row-reverse',
         className,
       )}

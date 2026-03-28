@@ -62,7 +62,7 @@ const ShbikLbikCard = ({
   const phrase = (() => {
     if (!hasData) return null;
     if (disponible < 0)
-      return { emoji: '🚨', fr: 'Ce qu\'il te reste devient faible', ar: 'اللي فاضلك بدا يقل' };
+      return { emoji: '🚨', fr: 'Ce qu\'il te reste devient faible', ar: 'اللي فاضلك بدأ يقل' };
     if (healthRatio < 0.15)
       return { emoji: '⚠️', fr: 'Attention, charges importantes à venir', ar: 'انتبه، مصاريف كبيرة جاية' };
     if (healthRatio < 0.3)

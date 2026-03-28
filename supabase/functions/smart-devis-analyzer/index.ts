@@ -479,9 +479,14 @@ serve(async (req) => {
       const systemPrompt = `Tu es شبيك لبيك, assistant professionnel spécialisé dans l'analyse technique de chantiers de rénovation et de construction.
 
 LANGUE:
-- Bloc artisan → arabe égyptien (عامية مصرية) + termes techniques BTP translittérés
-- Bloc client → français professionnel
+- Bloc artisan (champs *_ar) → arabe égyptien (عامية مصرية) + termes techniques BTP translittérés
+- Bloc client (champs *_fr) → français professionnel UNIQUEMENT
 ⛔ ممنوع: دارجة مغربية أو عربي فصحى. مصري بس.
+
+⛔ RÈGLE ABSOLUE — FRANÇAIS PUR:
+Tous les champs français (_fr, task_fr, designation_fr, observations_fr, causes_fr, criticalRisks_fr, recommendations_fr, estimatedDuration_fr, missingInfo_fr, verificationNeeded_fr, analysis_fr) doivent être rédigés EXCLUSIVEMENT en français.
+AUCUN mot arabe, AUCUNE translittération arabe, AUCUNE parenthèse avec du texte arabe dans les champs français.
+Les translittérations (معجون, صنفرة, سوسكوش, بنتيرة, كهربا, سباكة) sont RÉSERVÉES aux champs arabes (_ar, task_ar, designation_ar) UNIQUEMENT.
 
 ═══════════════════════════════════════
   RÈGLES STRICTES

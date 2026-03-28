@@ -1,12 +1,48 @@
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, ScanLine } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import SecurityBadge from '@/components/shared/SecurityBadge';
+import ShbikLbikCard from '@/components/archive/ShbikLbikCard';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 
 const DocumentHubPage = () => {
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { profile } = useProfile();
+
+  const [totalIncome, setTotalIncome] = useState(0);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [tvaCollectee, setTvaCollectee] = useState(0);
+  const [tvaDeductible, setTvaDeductible] = useState(0);
+  const [totalIncomeHT, setTotalIncomeHT] = useState(0);
+  const [totalExpensesHT, setTotalExpensesHT] = useState(0);
+
+  const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
+  const isRate = (profile as any)?.is_rate ?? 15;
+  const isTvaExempt = (profile as any)?.tva_exempt ?? false;
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchFinancials = async () => {
+      const [{ data: docs }, { data: exps }] = await Promise.all([
+        supabase.from('documents_comptables').select('total_ttc, subtotal_ht, tva_amount, document_type, status').eq('user_id', user.id),
+        supabase.from('expenses').select('amount, tva_amount').eq('user_id', user.id),
+      ]);
+      const invoices = (docs || []).filter(d => d.document_type === 'facture' && d.status === 'finalized');
+      setTotalIncome(invoices.reduce((s, d) => s + (d.total_ttc || 0), 0));
+      setTotalIncomeHT(invoices.reduce((s, d) => s + (d.subtotal_ht || 0), 0));
+      setTvaCollectee(invoices.reduce((s, d) => s + (d.tva_amount || 0), 0));
+      setTotalExpenses((exps || []).reduce((s, e) => s + (e.amount || 0), 0));
+      setTotalExpensesHT((exps || []).reduce((s, e) => s + ((e.amount || 0) - (e.tva_amount || 0)), 0));
+      setTvaDeductible((exps || []).reduce((s, e) => s + (e.tva_amount || 0), 0));
+    };
+    fetchFinancials();
+  }, [user]);
 
   return (
     <div className="min-h-[80vh] flex flex-col justify-center py-8 px-4" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -78,8 +114,24 @@ const DocumentHubPage = () => {
         </button>
       </section>
 
+      {/* ShbikLbik Card */}
+      <div className="max-w-md mx-auto w-full mt-8 px-2">
+        <ShbikLbikCard
+          totalIncome={totalIncome}
+          totalExpenses={totalExpenses}
+          tvaCollectee={tvaCollectee}
+          tvaDeductible={tvaDeductible}
+          urssafRate={urssafRate}
+          isRate={isRate}
+          totalIncomeHT={totalIncomeHT}
+          totalExpensesHT={totalExpensesHT}
+          isTvaExempt={isTvaExempt}
+          isRTL={isRTL}
+        />
+      </div>
+
       {/* Security Badge */}
-      <div className="max-w-md mx-auto w-full mt-10 px-2">
+      <div className="max-w-md mx-auto w-full mt-6 px-2">
         <SecurityBadge />
       </div>
     </div>

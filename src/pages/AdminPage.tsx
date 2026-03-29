@@ -121,10 +121,10 @@ const AdminPage = () => {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={cn("grid w-full grid-cols-3 mb-2", isRTL && "direction-rtl")}>
-          <TabsTrigger value="stats" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
+        <TabsList className={cn("grid w-full grid-cols-4 mb-2", isRTL && "direction-rtl")}>
+          <TabsTrigger value="dashboard" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <BarChart3 className="h-4 w-4" />
-            {isRTL ? 'إحصائيات' : 'Stats'}
+            Dashboard
           </TabsTrigger>
           <TabsTrigger value="users" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <Users className="h-4 w-4" />
@@ -133,6 +133,10 @@ const AdminPage = () => {
           <TabsTrigger value="visits" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <MapPin className="h-4 w-4" />
             {isRTL ? 'زيارات' : 'Visites'}
+          </TabsTrigger>
+          <TabsTrigger value="stats" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
+            <TrendingUp className="h-4 w-4" />
+            Stats
           </TabsTrigger>
         </TabsList>
         <TabsList className={cn("grid w-full grid-cols-4", isRTL && "direction-rtl")}>
@@ -164,6 +168,9 @@ const AdminPage = () => {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="dashboard" className="mt-6">
+          <AdminDashboard isRTL={isRTL} />
+        </TabsContent>
         <TabsContent value="stats" className="mt-6">
           <PromoStatsManager isRTL={isRTL} />
         </TabsContent>

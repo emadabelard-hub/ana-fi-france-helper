@@ -595,6 +595,12 @@ Bloc CLIENT (français): État, Surfaces, Travaux à réaliser, Durée estimée,
 
 Réponds en JSON avec cette structure:
 {
+  "quickSummary_ar": "جملة أو اتنين — الحالة والشغل الأساسي بالمصري (3 ثواني قراءة)",
+  "quickSummary_fr": "1-2 phrases — état et travaux principaux en français pur (lecture 3 secondes)",
+  "quickTasks_ar": ["3-5 خطوات أساسية بالمصري"],
+  "quickTasks_fr": ["3-5 étapes principales en français pur"],
+  "quickDuration_ar": "تقدير قصير بالمصري",
+  "quickDuration_fr": "Estimation courte en français",
   "analysis_ar": "وصف قصير بالمصري",
   "analysis_fr": "Description courte en français pur",
   "chantierType": "piscine|facade|mur|terrasse|toiture|maconnerie|renovation|peinture|carrelage|isolation",

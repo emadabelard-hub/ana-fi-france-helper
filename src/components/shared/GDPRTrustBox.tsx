@@ -32,18 +32,24 @@ const GDPRTrustBox = React.forwardRef<HTMLDivElement>((_, ref) => {
       </div>
 
       {/* Main title */}
-      <p className="text-[15px] font-bold text-white leading-relaxed mb-2">
-        🛡️ خصوصية مطلقة: بياناتك ملكك وحدك ولا يمكن لأحد غيرك الوصول إليها.
+      <p className={cn("text-[15px] font-bold text-white leading-relaxed mb-2", !isRTL && "text-left")}>
+        {isRTL
+          ? '🛡️ خصوصية مطلقة: بياناتك ملكك وحدك ولا يمكن لأحد غيرك الوصول إليها.'
+          : '🛡️ Confidentialité absolue : vos données vous appartiennent et personne d\'autre ne peut y accéder.'}
       </p>
 
-      {/* Arabic body */}
-      <p className="text-[13px] text-white/75 leading-relaxed mb-3">
-        نحن نستخدم تقنيات تشفير متطورة بمستوى الأنظمة البنكية العالمية. تطبيقنا متوافق تماماً مع قوانين الخصوصية الأوروبية (RGPD)، مما يضمن أنك الشخص الوحيد والمالك الحصري لكل البيانات والمستندات التي تضعها، ولا يتم مشاركتها مع أي طرف ثالث نهائياً.
+      {/* Body */}
+      <p className={cn("text-[13px] text-white/75 leading-relaxed mb-3", !isRTL && "text-left")}>
+        {isRTL
+          ? 'نحن نستخدم تقنيات تشفير متطورة بمستوى الأنظمة البنكية العالمية. تطبيقنا متوافق تماماً مع قوانين الخصوصية الأوروبية (RGPD)، مما يضمن أنك الشخص الوحيد والمالك الحصري لكل البيانات والمستندات التي تضعها، ولا يتم مشاركتها مع أي طرف ثالث نهائياً.'
+          : 'Nous utilisons des technologies de chiffrement avancées de niveau bancaire international. Notre application est entièrement conforme au RGPD européen, garantissant que vous êtes le seul propriétaire de toutes vos données et documents — aucun partage avec des tiers.'}
       </p>
 
       {/* French sub-text */}
-      <p className="text-[11px] text-white/50 italic leading-relaxed" dir="ltr">
-        Confidentialité Totale : Chiffrement de niveau bancaire conforme au RGPD européen. Vous êtes le seul propriétaire de vos données.
+      <p className={cn("text-[11px] text-white/50 italic leading-relaxed", !isRTL && "text-left")} dir="ltr">
+        {isRTL
+          ? 'Confidentialité Totale : Chiffrement de niveau bancaire conforme au RGPD européen. Vous êtes le seul propriétaire de vos données.'
+          : 'Confidentialité totale — Chiffrement bancaire — Conforme au RGPD européen'}
       </p>
     </div>
   );

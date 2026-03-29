@@ -10,8 +10,7 @@ import { FileText, Eye, Loader2, Sparkles, Pencil, AlertCircle } from 'lucide-re
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { buildCvHtml } from '@/lib/cvPdfTemplate';
 
 export interface CVData {
   fullName: string;

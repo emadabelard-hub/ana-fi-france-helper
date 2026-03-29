@@ -1430,9 +1430,10 @@ const SmartDevisPage = () => {
 
   const formatCurrency = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
-  const HELP_GUIDES: Record<string, { title: string; steps: string[] }> = {
+  const HELP_GUIDES: Record<string, { title: string; titleFr: string; steps: string[]; stepsFr: string[] }> = {
     photo: {
       title: '📸 ازاي تستخدم خاصية الصور؟',
+      titleFr: '📸 Comment utiliser la fonction Photos ?',
       steps: [
         'صور الشانتي بوضوح — يعني الحيطان، السقف، الأرض.',
         'السيستم هيعرف لو الحيطة محتاجة بنتيرة أو أندوي من الصورة.',
@@ -1440,9 +1441,17 @@ const SmartDevisPage = () => {
         'اكتب تفاصيل إضافية في الخانة (مثلاً: "الحيطة محتاجة أندوي طبقتين وبنتيرة ساتيني").',
         'السيستم هيقدر المساحة بشكل تقريبي من الصورة، وانت تقدر تعدل المقاسات بسهولة أثناء عمل الدوفي أو الفاتورة.',
       ],
+      stepsFr: [
+        'Photographiez le chantier clairement — murs, plafond, sol.',
+        'Le système détectera si les murs nécessitent de la peinture ou de l\'enduit.',
+        'S\'il y a du carrelage ou de la faïence, photographiez aussi le sol.',
+        'Ajoutez des détails supplémentaires dans le champ texte (ex : "murs à enduire 2 couches + peinture satinée").',
+        'Le système estimera les surfaces approximativement, vous pourrez ajuster les mesures lors de la création du devis.',
+      ],
     },
     blueprint: {
       title: '🗺️ ازاي تستخدم خاصية المخططات؟',
+      titleFr: '🗺️ Comment utiliser la fonction Plans ?',
       steps: [
         'ارفع المخطط أو الكروكي بتاع الشانتي.',
         'السيستم هيقرأ المقاسات من الرسم.',
@@ -1450,9 +1459,17 @@ const SmartDevisPage = () => {
         'اكتب في الخانة نوع الشغل اللي عايزه (بنتيرة، كارلاج، جبس...).',
         'السيستم هيطلعلك دوفي بالأسعار والكميات!',
       ],
+      stepsFr: [
+        'Téléchargez le plan ou le croquis du chantier.',
+        'Le système lira les dimensions depuis le dessin.',
+        'Si le dessin contient des dimensions (ex : 3m × 4m), il calculera la surface.',
+        'Indiquez dans le champ le type de travaux souhaité (peinture, carrelage, plâtre...).',
+        'Le système vous proposera un devis avec les prix et quantités.',
+      ],
     },
     document: {
       title: '📄 ازاي تستخدم خاصية المستندات؟',
+      titleFr: '📄 Comment utiliser la fonction Documents ?',
       steps: [
         'انسخ كلام الزبون من واتساب أو إيميل وحطه هنا.',
         'والسيستم هيعمل الدوفي الرسمي بالفرنسي.',
@@ -1460,13 +1477,20 @@ const SmartDevisPage = () => {
         'السيستم هيحلل الطلب ويطلعلك كل البنود.',
         'بعدها تقدر تعدل الأسعار وتضيف هامش الربح بتاعك!',
       ],
+      stepsFr: [
+        'Copiez le message du client depuis WhatsApp ou email et collez-le ici.',
+        'Le système créera le devis officiel en français.',
+        'Vous pouvez aussi télécharger un PDF si le client vous a envoyé un cahier des charges.',
+        'Le système analysera la demande et listera tous les postes.',
+        'Ensuite, vous pourrez ajuster les prix et ajouter votre marge.',
+      ],
     },
   };
 
   const INPUT_TYPES = [
-    { type: 'photo' as const, icon: Camera, emoji: '📸', title: 'صورة الشانتي', titleFr: 'Photo du chantier', desc: 'صوّر الشغل وأنا أقدّر', gradient: 'from-blue-500 to-blue-600' },
-    { type: 'blueprint' as const, icon: Map, emoji: '🗺️', title: 'خريطة أو كروكي', titleFr: 'Plan ou croquis', desc: 'ارفع المخطط وأنا أقرأ المقاسات', gradient: 'from-emerald-500 to-emerald-600' },
-    { type: 'document' as const, icon: FileText, emoji: '📄', title: 'مستند أو نص', titleFr: 'Document ou texte', desc: 'ارفع PDF أو الصق نص من إيميل', gradient: 'from-amber-500 to-amber-600' },
+    { type: 'photo' as const, icon: Camera, emoji: '📸', title: 'صورة الشانتي', titleFr: 'Photo du chantier', desc: 'صوّر الشغل وأنا أقدّر', descFr: 'Photographiez le chantier et je l\'analyse', gradient: 'from-blue-500 to-blue-600' },
+    { type: 'blueprint' as const, icon: Map, emoji: '🗺️', title: 'خريطة أو كروكي', titleFr: 'Plan ou croquis', desc: 'ارفع المخطط وأنا أقرأ المقاسات', descFr: 'Téléchargez le plan et je lis les dimensions', gradient: 'from-emerald-500 to-emerald-600' },
+    { type: 'document' as const, icon: FileText, emoji: '📄', title: 'مستند أو نص', titleFr: 'Document ou texte', desc: 'ارفع PDF أو الصق نص من إيميل', descFr: 'Téléchargez un PDF ou collez un texte', gradient: 'from-amber-500 to-amber-600' },
   ];
 
   return (
@@ -1531,11 +1555,11 @@ const SmartDevisPage = () => {
           {/* Start Button */}
           <Button
             size="lg"
-            className="w-full max-w-md text-lg font-bold font-cairo py-6 rounded-xl"
+            className={cn("w-full max-w-md text-lg font-bold py-6 rounded-xl", isRTL && "font-cairo")}
             onClick={() => setStep('select_input')}
           >
             <Sparkles className="h-5 w-5 ml-2" />
-            ابدأ
+            {isRTL ? 'ابدأ' : 'Commencer'}
           </Button>
         </div>
       )}
@@ -1546,7 +1570,7 @@ const SmartDevisPage = () => {
           <p className={cn("text-sm font-medium text-center text-muted-foreground", isRTL && "font-cairo")}>
             {isRTL ? 'اختار نوع المدخل:' : 'Choisissez le type d\'entrée:'}
           </p>
-          {INPUT_TYPES.map(({ type, emoji, title, titleFr, desc, gradient }) => (
+          {INPUT_TYPES.map(({ type, emoji, title, titleFr, desc, descFr, gradient }) => (
             <div key={type} className="space-y-1">
               <Card
                 className={cn("cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] border-none overflow-hidden relative", `bg-gradient-to-r ${gradient}`)}
@@ -1558,9 +1582,9 @@ const SmartDevisPage = () => {
                       <span className="text-2xl">{emoji}</span>
                     </div>
                     <div className={cn("flex-1", isRTL && "text-right")}>
-                      <h3 className={cn("text-lg font-bold text-white", isRTL && "font-cairo")}>{title}</h3>
-                      <p className="text-white/70 text-xs">{titleFr}</p>
-                      <p className={cn("text-white/80 text-xs mt-1", isRTL && "font-cairo")}>{desc}</p>
+                      <h3 className={cn("text-lg font-bold text-white", isRTL && "font-cairo")}>{isRTL ? title : titleFr}</h3>
+                      {isRTL && <p className="text-white/70 text-xs">{titleFr}</p>}
+                      <p className={cn("text-white/80 text-xs mt-1", isRTL && "font-cairo")}>{isRTL ? desc : descFr}</p>
                     </div>
                     <Arrow className="h-5 w-5 text-white/60" />
                   </div>
@@ -1576,7 +1600,7 @@ const SmartDevisPage = () => {
                 )}
               >
                 <HelpCircle className="h-3.5 w-3.5" />
-                <span>تحب أشرحلك ازاي تستخدم الخاصية دي؟</span>
+                <span>{isRTL ? 'تحب أشرحلك ازاي تستخدم الخاصية دي؟' : 'Comment utiliser cette fonctionnalité ?'}</span>
               </button>
             </div>
           ))}
@@ -2574,27 +2598,27 @@ const SmartDevisPage = () => {
         <DialogContent className="max-w-md mx-4 rounded-2xl p-0 overflow-hidden">
           <div className="bg-destructive/10 p-6 pb-4">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold font-cairo text-center text-foreground">
-                {helpGuide && HELP_GUIDES[helpGuide]?.title}
+              <DialogTitle className={cn("text-xl font-bold text-center text-foreground", isRTL && "font-cairo")}>
+                {helpGuide && (isRTL ? HELP_GUIDES[helpGuide]?.title : HELP_GUIDES[helpGuide]?.titleFr)}
               </DialogTitle>
             </DialogHeader>
           </div>
-          <div className="p-6 space-y-3" dir="rtl">
-            {helpGuide && HELP_GUIDES[helpGuide]?.steps.map((s, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-full bg-destructive/15 text-destructive flex items-center justify-center font-bold text-sm shrink-0 mt-0.5 font-cairo">
+          <div className="p-6 space-y-3" dir={isRTL ? "rtl" : "ltr"}>
+            {helpGuide && (isRTL ? HELP_GUIDES[helpGuide]?.steps : HELP_GUIDES[helpGuide]?.stepsFr)?.map((s, i) => (
+              <div key={i} className={cn("flex items-start gap-3", isRTL && "flex-row-reverse")}>
+                <div className={cn("w-7 h-7 rounded-full bg-destructive/15 text-destructive flex items-center justify-center font-bold text-sm shrink-0 mt-0.5", isRTL && "font-cairo")}>
                   {i + 1}
                 </div>
-                <p className="text-sm font-cairo text-foreground leading-relaxed">{s}</p>
+                <p className={cn("text-sm text-foreground leading-relaxed", isRTL && "font-cairo")}>{s}</p>
               </div>
             ))}
           </div>
           <div className="p-6 pt-2">
             <Button
               onClick={() => setHelpGuide(null)}
-              className="w-full font-cairo text-base py-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className={cn("w-full text-base py-6 bg-emerald-600 hover:bg-emerald-700 text-white", isRTL && "font-cairo")}
             >
-              فهمت خلاص، يلا نبدأ ✅
+              {isRTL ? 'فهمت خلاص، يلا نبدأ ✅' : 'Compris, commençons ✅'}
             </Button>
           </div>
         </DialogContent>

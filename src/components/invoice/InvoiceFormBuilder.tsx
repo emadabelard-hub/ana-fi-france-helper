@@ -3039,7 +3039,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               onClick={handleFinishDocument}
               className={cn(isRTL && "font-cairo")}
             >
-              تأكيد وانهاء
+              {isRTL ? 'تأكيد وانهاء' : 'Confirmer et terminer'}
             </Button>
             <Button
               variant="outline"
@@ -3100,7 +3100,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             className={cn("text-destructive hover:text-destructive", isRTL && "font-cairo")}
           >
             <RotateCcw className="h-4 w-4 mr-1" />
-            تأكيد وانهاء
+            {isRTL ? 'تأكيد وانهاء' : 'Confirmer et terminer'}
           </Button>
           
           {/* Save as Draft Button */}
@@ -3112,7 +3112,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             className={cn(isRTL && "font-cairo")}
           >
             {savingDraft ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-            {isRTL ? 'حفظ مسودة' : 'Sauvegarder مسودة'}
+            {isRTL ? 'حفظ مسودة' : 'Sauvegarder brouillon'}
           </Button>
 
           <Button

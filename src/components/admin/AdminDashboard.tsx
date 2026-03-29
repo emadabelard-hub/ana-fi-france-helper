@@ -101,7 +101,7 @@ const AdminDashboard = ({ isRTL }: { isRTL: boolean }) => {
         supabase.from('user_activity_logs').select('id, user_id, user_email, created_at').eq('page', '/smart-devis').eq('action', 'feature_click'),
         supabase.from('user_activity_logs').select('id').ilike('action', '%pdf%'),
         supabase.from('user_activity_logs').select('id, user_email, action, page, created_at').order('created_at', { ascending: false }).limit(20),
-        supabase.from('user_activity_logs').select('action, page, user_id, user_email').gte('created_at', weekStart),
+        supabase.from('user_activity_logs').select('action, page, user_id, user_email, created_at').gte('created_at', weekStart),
       ]);
 
       const users = usersRes.data || [];

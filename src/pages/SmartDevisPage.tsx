@@ -2598,27 +2598,27 @@ const SmartDevisPage = () => {
         <DialogContent className="max-w-md mx-4 rounded-2xl p-0 overflow-hidden">
           <div className="bg-destructive/10 p-6 pb-4">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold font-cairo text-center text-foreground">
-                {helpGuide && HELP_GUIDES[helpGuide]?.title}
+              <DialogTitle className={cn("text-xl font-bold text-center text-foreground", isRTL && "font-cairo")}>
+                {helpGuide && (isRTL ? HELP_GUIDES[helpGuide]?.title : HELP_GUIDES[helpGuide]?.titleFr)}
               </DialogTitle>
             </DialogHeader>
           </div>
-          <div className="p-6 space-y-3" dir="rtl">
-            {helpGuide && HELP_GUIDES[helpGuide]?.steps.map((s, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-full bg-destructive/15 text-destructive flex items-center justify-center font-bold text-sm shrink-0 mt-0.5 font-cairo">
+          <div className="p-6 space-y-3" dir={isRTL ? "rtl" : "ltr"}>
+            {helpGuide && (isRTL ? HELP_GUIDES[helpGuide]?.steps : HELP_GUIDES[helpGuide]?.stepsFr)?.map((s, i) => (
+              <div key={i} className={cn("flex items-start gap-3", isRTL && "flex-row-reverse")}>
+                <div className={cn("w-7 h-7 rounded-full bg-destructive/15 text-destructive flex items-center justify-center font-bold text-sm shrink-0 mt-0.5", isRTL && "font-cairo")}>
                   {i + 1}
                 </div>
-                <p className="text-sm font-cairo text-foreground leading-relaxed">{s}</p>
+                <p className={cn("text-sm text-foreground leading-relaxed", isRTL && "font-cairo")}>{s}</p>
               </div>
             ))}
           </div>
           <div className="p-6 pt-2">
             <Button
               onClick={() => setHelpGuide(null)}
-              className="w-full font-cairo text-base py-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className={cn("w-full text-base py-6 bg-emerald-600 hover:bg-emerald-700 text-white", isRTL && "font-cairo")}
             >
-              فهمت خلاص، يلا نبدأ ✅
+              {isRTL ? 'فهمت خلاص، يلا نبدأ ✅' : 'Compris, commençons ✅'}
             </Button>
           </div>
         </DialogContent>

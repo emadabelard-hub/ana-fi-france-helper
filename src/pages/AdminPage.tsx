@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3, Users, MapPin, Receipt, ClipboardList, Activity, HeadphonesIcon, Settings } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, HelpCircle, Shield, Loader2, BarChart3, Users, MapPin, Receipt, ClipboardList, Activity, HeadphonesIcon, Settings, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +20,7 @@ import AnalyticsManager from '@/components/admin/AnalyticsManager';
 import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
 import SystemHealthCard from '@/components/admin/SystemHealthCard';
 import AdminAlertBanner from '@/components/admin/AdminAlertBanner';
+import AdminDashboard from '@/components/admin/AdminDashboard';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();
@@ -31,7 +32,7 @@ const AdminPage = () => {
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'warning' | 'error'>('checking');
   const [apiMessage, setApiMessage] = useState('');
   
-  const [activeTab, setActiveTab] = useState('stats');
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
 
@@ -120,10 +121,10 @@ const AdminPage = () => {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={cn("grid w-full grid-cols-3 mb-2", isRTL && "direction-rtl")}>
-          <TabsTrigger value="stats" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
+        <TabsList className={cn("grid w-full grid-cols-4 mb-2", isRTL && "direction-rtl")}>
+          <TabsTrigger value="dashboard" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <BarChart3 className="h-4 w-4" />
-            {isRTL ? 'إحصائيات' : 'Stats'}
+            Dashboard
           </TabsTrigger>
           <TabsTrigger value="users" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <Users className="h-4 w-4" />
@@ -132,6 +133,10 @@ const AdminPage = () => {
           <TabsTrigger value="visits" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
             <MapPin className="h-4 w-4" />
             {isRTL ? 'زيارات' : 'Visites'}
+          </TabsTrigger>
+          <TabsTrigger value="stats" className={cn("gap-1 text-xs", isRTL && "flex-row-reverse font-cairo")}>
+            <TrendingUp className="h-4 w-4" />
+            Stats
           </TabsTrigger>
         </TabsList>
         <TabsList className={cn("grid w-full grid-cols-4", isRTL && "direction-rtl")}>
@@ -163,6 +168,9 @@ const AdminPage = () => {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="dashboard" className="mt-6">
+          <AdminDashboard isRTL={isRTL} />
+        </TabsContent>
         <TabsContent value="stats" className="mt-6">
           <PromoStatsManager isRTL={isRTL} />
         </TabsContent>

@@ -2083,7 +2083,7 @@ const SmartDevisPage = () => {
                       : 'bg-card text-card-foreground border border-border/60 rounded-bl-sm'
                   )}>
                     {msg.role === 'assistant' ? (
-                      i === 0 && analysisData ? (
+                      i === chatMessages.findIndex(m => m.role === 'assistant') && analysisData ? (
                         <DualModeAnalysis analysisData={analysisData} fullContent={msg.content} isRTL={isRTL} />
                       ) : (
                         <MarkdownRenderer content={msg.content} isRTL={isRTL} />

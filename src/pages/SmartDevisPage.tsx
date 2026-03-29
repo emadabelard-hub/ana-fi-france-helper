@@ -1570,7 +1570,7 @@ const SmartDevisPage = () => {
           <p className={cn("text-sm font-medium text-center text-muted-foreground", isRTL && "font-cairo")}>
             {isRTL ? 'اختار نوع المدخل:' : 'Choisissez le type d\'entrée:'}
           </p>
-          {INPUT_TYPES.map(({ type, emoji, title, titleFr, desc, gradient }) => (
+          {INPUT_TYPES.map(({ type, emoji, title, titleFr, desc, descFr, gradient }) => (
             <div key={type} className="space-y-1">
               <Card
                 className={cn("cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] border-none overflow-hidden relative", `bg-gradient-to-r ${gradient}`)}

@@ -333,7 +333,7 @@ const CVGeneratorPage = () => {
               )}
             >
               <div className="print-area">
-                <CVPreview ref={cvRef} data={displayData} />
+                <CVPreview data={displayData} />
               </div>
             </ProtectedDocumentWrapper>
           </div>

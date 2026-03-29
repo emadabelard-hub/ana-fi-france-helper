@@ -155,20 +155,7 @@ const CVGeneratorPage = () => {
   const displayData = translatedData || cvData;
 
   const handleExportPDF = useCallback(async () => {
-    // 1. Validate content exists
-    const container = cvRef.current;
-    if (!container) {
-      toast({
-        variant: 'destructive',
-        title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'محتوى السي في غير متاح' : 'Contenu CV non disponible',
-      });
-      return;
-    }
-
-    // Check the container has actual rendered content
-    const innerText = container.innerText?.trim();
-    if (!innerText || innerText.length < 10) {
+    if (!displayData.fullName?.trim() && !displayData.profession?.trim()) {
       toast({
         variant: 'destructive',
         title: isRTL ? 'خطأ' : 'Erreur',
@@ -179,71 +166,39 @@ const CVGeneratorPage = () => {
 
     setIsExporting(true);
     try {
-      // 2. Capture the CV container with html2canvas (same approach as invoices)
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        // Ensure full height is captured
-        height: container.scrollHeight,
-        windowHeight: container.scrollHeight,
+      // Build standalone HTML with controlled CSS
+      const html = await buildCvHtml(displayData);
+
+      // Send to the same Browserless edge function used for invoices
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': apikey,
+          'Authorization': `Bearer ${apikey}`,
+        },
+        body: JSON.stringify({
+          html,
+          marginMm: 0, // margins are in the HTML @page rule
+        }),
       });
 
-      // 3. Generate PDF — A4 dimensions
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = 210;
-      const pageHeight = 297;
-      const margin = 5;
-      const usableWidth = pageWidth - margin * 2;
-
-      const imgHeight = (canvas.height * usableWidth) / canvas.width;
-
-      if (imgHeight <= pageHeight - margin * 2) {
-        pdf.addImage(
-          canvas.toDataURL('image/jpeg', 0.95),
-          'JPEG',
-          margin, margin,
-          usableWidth, imgHeight
-        );
-      } else {
-        // Multi-page: slice the canvas
-        const usableHeight = pageHeight - margin * 2;
-        const sliceHeightPx = Math.floor((usableHeight / usableWidth) * canvas.width);
-        let yOffset = 0;
-        let pageNum = 0;
-
-        while (yOffset < canvas.height) {
-          if (pageNum > 0) pdf.addPage();
-          const sliceH = Math.min(sliceHeightPx, canvas.height - yOffset);
-
-          const pageCanvas = document.createElement('canvas');
-          pageCanvas.width = canvas.width;
-          pageCanvas.height = sliceH;
-          const ctx = pageCanvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-            ctx.drawImage(canvas, 0, yOffset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-          }
-
-          const sliceFinalH = (sliceH * usableWidth) / canvas.width;
-          pdf.addImage(
-            pageCanvas.toDataURL('image/jpeg', 0.95),
-            'JPEG',
-            margin, margin,
-            usableWidth, sliceFinalH
-          );
-
-          yOffset += sliceH;
-          pageNum++;
-        }
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('[CV PDF] Error:', response.status, errText);
+        throw new Error(`PDF generation failed (${response.status})`);
       }
 
-      // 4. Download
-      const fileName = `CV_${displayData.fullName?.replace(/\s+/g, '_') || 'document'}.pdf`;
-      pdf.save(fileName);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CV_${displayData.fullName?.replace(/\s+/g, '_') || 'document'}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
 
       toast({
         title: isRTL ? 'تم التحميل!' : 'PDF téléchargé !',

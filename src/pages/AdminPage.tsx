@@ -32,7 +32,7 @@ const AdminPage = () => {
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'warning' | 'error'>('checking');
   const [apiMessage, setApiMessage] = useState('');
   
-  const [activeTab, setActiveTab] = useState('stats');
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
 

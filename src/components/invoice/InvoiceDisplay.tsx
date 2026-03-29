@@ -42,6 +42,7 @@ export interface InvoiceData {
   };
   natureOperation?: 'service' | 'goods' | 'mixed';
   descriptionChantier?: string;
+  descriptionChantierAr?: string;
   estimatedStartDate?: string;
   estimatedDuration?: string;
   assuranceDecennale?: {
@@ -316,6 +317,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           {dynamicSubject && (
             <p className="text-[8.5pt] font-bold text-gray-900">
               Objet : <span className="font-semibold">{dynamicSubject}</span>
+            </p>
+          )}
+          {data.descriptionChantierAr && showArabic && (
+            <p className="text-[7pt] text-gray-500 mt-0.5 font-cairo" dir="rtl">
+              ({data.descriptionChantierAr})
             </p>
           )}
           <div className="mt-1.5" style={{ borderBottom: '1px solid #e5e7eb' }} />

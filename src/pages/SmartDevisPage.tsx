@@ -1535,22 +1535,25 @@ const SmartDevisPage = () => {
             <Sparkles size={40} className="text-primary" />
           </div>
 
-          {/* Arabic Text */}
-          <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-sm" dir="rtl">
-            <h2 className="text-lg font-bold font-cairo text-foreground mb-3 text-center">
-              هل تعلم؟ 🤖
-            </h2>
-            <p className="text-base font-cairo text-foreground/90 leading-relaxed text-right" style={{ fontSize: '16px' }}>
-              نوافذ الدردشة لدينا ليست مجرد أداة كتابة، بل هي خبير تقني معك في الشانتي. يمكنك طرح أي سؤال حول الأسعار، النصائح الفنية، أو إدارة المواقع... إنها ذكاء اصطناعي حقيقي يعمل من أجلك.
-            </p>
-          </div>
-
-          {/* French Text */}
-          <div className="bg-muted/50 border border-border/50 rounded-xl p-4 max-w-md w-full">
-            <p className="text-sm text-muted-foreground leading-relaxed text-center" style={{ fontSize: '14px' }}>
-              Nos fenêtres de discussion sont là pour répondre à toutes vos questions concernant vos chantiers (conseils, prix, technique...). C'est une véritable intelligence artificielle à votre service.
-            </p>
-          </div>
+          {isRTL ? (
+            <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-sm" dir="rtl">
+              <h2 className="text-lg font-bold font-cairo text-foreground mb-3 text-center">
+                هل تعلم؟ 🤖
+              </h2>
+              <p className="text-base font-cairo text-foreground/90 leading-relaxed text-right" style={{ fontSize: '16px' }}>
+                نوافذ الدردشة لدينا ليست مجرد أداة كتابة، بل هي خبير تقني معك في الشانتي. يمكنك طرح أي سؤال حول الأسعار، النصائح الفنية، أو إدارة المواقع... إنها ذكاء اصطناعي حقيقي يعمل من أجلك.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-sm" dir="ltr">
+              <h2 className="text-lg font-bold text-foreground mb-3 text-center">
+                Le saviez-vous ? 🤖
+              </h2>
+              <p className="text-base text-foreground/90 leading-relaxed text-center" style={{ fontSize: '16px' }}>
+                Nos fenêtres de discussion sont là pour répondre à toutes vos questions concernant vos chantiers, vos prix et vos choix techniques. C'est une véritable intelligence artificielle à votre service.
+              </p>
+            </div>
+          )}
 
           {/* Start Button */}
           <Button

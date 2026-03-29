@@ -13,6 +13,7 @@ const SecurityBadge = () => {
         "border border-[hsl(220,50%,35%)]",
         isRTL && "font-cairo"
       )}
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
       <div className={cn("flex items-center justify-center gap-3 flex-wrap", isRTL && "flex-row-reverse")}>
         <div className="flex items-center gap-2">
@@ -21,11 +22,11 @@ const SecurityBadge = () => {
           <span className="text-sm">🇪🇺</span>
         </div>
         <span className="text-xs font-bold text-white">
-          🔒 بيئة عمل آمنة — تشفير بمستوى بنكي
+          {isRTL ? '🔒 بيئة عمل آمنة — تشفير بمستوى بنكي' : '🔒 Espace sécurisé — chiffrement de niveau bancaire'}
         </span>
         <span className="text-[10px] text-white/40 mx-1">|</span>
         <span className="text-[10px] text-white/50 italic" dir="ltr">
-          Chiffrement bancaire — Conforme RGPD
+          {isRTL ? 'Chiffrement bancaire — Conforme RGPD' : 'Conforme au RGPD européen'}
         </span>
       </div>
     </div>

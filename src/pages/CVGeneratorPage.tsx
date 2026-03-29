@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import CVFormSection from '@/components/cv/CVFormSection';
@@ -75,7 +75,7 @@ const initialCVData: CVData = {
 const CVGeneratorPage = () => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
-  const cvRef = useRef<HTMLDivElement>(null);
+  
   
   const [cvData, setCVData] = useState<CVData>(initialCVData);
   const [translatedData, setTranslatedData] = useState<CVData | null>(null);

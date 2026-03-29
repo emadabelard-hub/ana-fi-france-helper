@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import AuthModal from '@/components/auth/AuthModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
+import DualModeAnalysis from '@/components/smart-devis/DualModeAnalysis';
 import {
   ArrowLeft, ArrowRight, Camera, Image as ImageIcon, FileText, Map,
   Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle, X, Upload,
@@ -2082,7 +2083,11 @@ const SmartDevisPage = () => {
                       : 'bg-card text-card-foreground border border-border/60 rounded-bl-sm'
                   )}>
                     {msg.role === 'assistant' ? (
-                      <MarkdownRenderer content={msg.content} isRTL={isRTL} />
+                      i === 0 && analysisData ? (
+                        <DualModeAnalysis analysisData={analysisData} fullContent={msg.content} isRTL={isRTL} />
+                      ) : (
+                        <MarkdownRenderer content={msg.content} isRTL={isRTL} />
+                      )
                     ) : (
                       <p className={cn("leading-relaxed", isRTL && "font-cairo text-right")} dir={isRTL ? 'rtl' : 'ltr'}>{msg.content}</p>
                     )}

@@ -25,6 +25,7 @@ import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
 import { supabase } from '@/integrations/supabase/client';
 import { saveDraft, loadDraft, clearDraft, loadCloudDraft, saveCurrentDocument, loadCurrentDocument, clearCurrentDocument, type CurrentDocumentState } from '@/lib/invoiceDraftStorage';
 import { detectMultipleTasks } from '@/lib/smartItemSplit';
+import { formatObjet, containsArabic } from '@/lib/objetFormatter';
 import { useAuth } from '@/hooks/useAuth';
 import { resolveAssetUrls } from '@/lib/storageUtils';
 import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
@@ -121,6 +122,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Description du chantier / objet du devis
   const [descriptionChantier, setDescriptionChantier] = useState('');
+  const [descriptionChantierAr, setDescriptionChantierAr] = useState('');
   
   // Estimated start date and duration
   const [estimatedStartDate, setEstimatedStartDate] = useState('');
@@ -727,6 +729,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       },
       natureOperation,
       descriptionChantier: descriptionChantier.trim() || undefined,
+      descriptionChantierAr: descriptionChantierAr.trim() || undefined,
       estimatedStartDate: estimatedStartDate.trim() 
         ? new Date(estimatedStartDate).toLocaleDateString('fr-FR') 
         : undefined,
@@ -1883,12 +1886,30 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           <Textarea
             value={descriptionChantier}
             onChange={(e) => setDescriptionChantier(e.target.value)}
+            onBlur={() => {
+              const raw = descriptionChantier.trim();
+              if (!raw) return;
+              const { french, arabicOriginal } = formatObjet(raw);
+              if (french && french !== raw) {
+                setDescriptionChantier(french);
+                if (arabicOriginal) setDescriptionChantierAr(arabicOriginal);
+                toast({
+                  title: isRTL ? '✅ تم التحسين تلقائياً' : '✅ Texte amélioré',
+                  description: isRTL ? 'الموضوع اتحوّل لفرنساوي احترافي' : 'L\'objet a été reformulé en français professionnel',
+                });
+              }
+            }}
             placeholder={isRTL 
               ? 'مثال: أعمال دهان كامل للشقة - صالون + 3 غرف + مدخل'
               : 'Ex: Travaux de peinture complète appartement T3 - Salon, 3 chambres, entrée et couloir'}
             rows={3}
             className={cn("text-sm resize-none", isRTL && "text-right font-cairo")}
           />
+          {descriptionChantierAr && (
+            <p className={cn("text-[10px] text-muted-foreground mt-1 p-2 rounded bg-muted/50", isRTL && "text-right font-cairo")}>
+              {isRTL ? '📝 النص الأصلي:' : '📝 Original :'} {descriptionChantierAr}
+            </p>
+          )}
           <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL 
               ? '💡 وصف مختصر للأشغال - بيظهر على الدوفي/الفاتورة قبل الجدول'

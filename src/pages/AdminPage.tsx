@@ -20,6 +20,7 @@ import AnalyticsManager from '@/components/admin/AnalyticsManager';
 import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
 import SystemHealthCard from '@/components/admin/SystemHealthCard';
 import AdminAlertBanner from '@/components/admin/AdminAlertBanner';
+import AdminDashboard from '@/components/admin/AdminDashboard';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();

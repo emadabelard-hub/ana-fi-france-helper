@@ -13,6 +13,8 @@ interface FinancialSummaryProps {
   debugDepensesCount: number;
   debugTotalFactures?: number;
   debugIgnoredFactures?: number;
+  debugPaidCount?: number;
+  debugUnpaidCount?: number;
   tresorerieEncaissee?: number;
 }
 
@@ -25,6 +27,7 @@ const FinancialSummary = ({
   urssafRate, isRate, isRTL,
   debugFacturesCount, debugDepensesCount,
   debugTotalFactures = 0, debugIgnoredFactures = 0,
+  debugPaidCount = 0, debugUnpaidCount = 0,
   tresorerieEncaissee = 0,
 }: FinancialSummaryProps) => {
   const benefice = caHT - depensesHT;
@@ -72,8 +75,9 @@ const FinancialSummary = ({
         </div>
         {/* Debug temporaire */}
         <div className="mt-2 rounded-lg border border-border/50 bg-muted/30 p-2 text-[10px] text-muted-foreground font-mono">
-          <p>🔍 DEBUG — Total factures: {debugTotalFactures} | Validées utilisées: {debugFacturesCount} | Ignorées (brouillon/devis): {debugIgnoredFactures} | Dépenses: {debugDepensesCount}</p>
-          <p>CA_HT: {fmt(caHT)} | Dépenses_HT: {fmt(depensesHT)} | Bénéfice: {fmt(benefice)} | Trésorerie encaissée: {fmt(tresorerieEncaissee)}</p>
+          <p>🔍 DEBUG — Total factures: {debugTotalFactures} | Finalisées: {debugFacturesCount} | Ignorées (brouillon/devis): {debugIgnoredFactures} | Dépenses: {debugDepensesCount}</p>
+          <p>💳 Payées: {debugPaidCount} | Non payées: {debugUnpaidCount}</p>
+          <p>CA_HT: {fmt(caHT)} | Trésorerie: {fmt(tresorerieEncaissee)} | Dépenses_HT: {fmt(depensesHT)} | Bénéfice: {fmt(benefice)}</p>
         </div>
       </div>
 

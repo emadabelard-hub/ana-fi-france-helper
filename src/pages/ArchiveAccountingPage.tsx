@@ -187,6 +187,15 @@ const ArchiveAccountingPage = () => {
   };
 
   const handleConvert = (doc: DocumentItem) => {
+    // Prevent double conversion
+    if (doc.rawData?.converted_to_invoice) {
+      toast({
+        title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
+        description: isRTL ? 'تم إنشاء فاتورة بالفعل من هذا الدوفي' : 'Une facture a déjà été créée depuis ce devis',
+        variant: 'destructive',
+      });
+      return;
+    }
     const raw = doc.rawData;
     if (!raw) return;
     const docData = raw.document_data || {};

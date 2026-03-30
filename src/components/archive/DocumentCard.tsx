@@ -136,10 +136,16 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, on
                 <Send className="h-4 w-4" />
                 {isRTL ? 'أرسل للمحاسب' : 'Envoyer au comptable'}
               </DropdownMenuItem>
-              {doc.type === 'devis' && onConvert && (
+              {doc.type === 'devis' && onConvert && !doc.rawData?.converted_to_invoice && (
                 <DropdownMenuItem className="gap-2" onClick={() => onConvert(doc)}>
                   <ArrowRightLeft className="h-4 w-4" />
                   {isRTL ? 'حوّل لفاتورة' : 'Convertir en facture'}
+                </DropdownMenuItem>
+              )}
+              {doc.type === 'devis' && doc.rawData?.converted_to_invoice && (
+                <DropdownMenuItem className="gap-2 text-amber-500" disabled>
+                  <ArrowRightLeft className="h-4 w-4" />
+                  {isRTL ? '✅ تم إنشاء فاتورة بالفعل' : '✅ Facture déjà créée'}
                 </DropdownMenuItem>
               )}
               {doc.type === 'devis' && onDuplicate && (

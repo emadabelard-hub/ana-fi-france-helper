@@ -1,0 +1,2 @@
+ALTER TABLE public.documents_comptables ADD COLUMN IF NOT EXISTS converted_to_invoice boolean NOT NULL DEFAULT false;
+ALTER TABLE public.documents_comptables ADD COLUMN IF NOT EXISTS linked_invoice_id text DEFAULT NULL;

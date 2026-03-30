@@ -132,6 +132,16 @@ const DocumentsListPage = () => {
   };
 
   const handleConvertToInvoice = async (doc: DocumentRow) => {
+    // Prevent double conversion
+    if ((doc as any).converted_to_invoice) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
+        description: isRTL ? 'تم إنشاء فاتورة بالفعل من هذا الدوفي' : 'Une facture a déjà été créée depuis ce devis',
+      });
+      return;
+    }
+    
     // Extract full data from document_data JSON
     const docData = doc.document_data || {};
     const items = docData.items || [];
@@ -196,6 +206,17 @@ const DocumentsListPage = () => {
 
   const handleDirectConvert = async (doc: DocumentRow) => {
     if (!user || converting) return;
+    
+    // Prevent double conversion
+    if ((doc as any).converted_to_invoice) {
+      toast({
+        title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
+        description: isRTL ? 'تم إنشاء فاتورة بالفعل من هذا الدوفي' : 'Une facture a déjà été créée depuis ce devis',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setConverting(true);
     try {
       // 1. Get next facture number
@@ -209,7 +230,7 @@ const DocumentsListPage = () => {
 
       // 2. Build new facture from devis data
       const docData = doc.document_data || {};
-      const { error: insertError } = await (supabase.from('documents_comptables') as any).insert({
+      const { data: insertedRows, error: insertError } = await (supabase.from('documents_comptables') as any).insert({
         user_id: user.id,
         document_type: 'facture',
         document_number: nextNumber,
@@ -223,12 +244,14 @@ const DocumentsListPage = () => {
         status: 'draft',
         document_data: { ...docData, convertedFromDevis: doc.document_number },
         chantier_id: (doc as any).chantier_id || null,
-      });
+      }).select('id').single();
       if (insertError) throw insertError;
 
-      // 3. Mark original devis as converted
+      const newInvoiceId = insertedRows?.id || null;
+
+      // 3. Mark original devis as converted with link to invoice
       await (supabase.from('documents_comptables') as any)
-        .update({ status: 'converted' })
+        .update({ status: 'converted', converted_to_invoice: true, linked_invoice_id: newInvoiceId })
         .eq('id', doc.id);
 
       toast({
@@ -384,15 +407,38 @@ const DocumentsListPage = () => {
         <div className={cn("mt-3 flex items-center gap-2 pt-3 border-t border-[hsl(0,0%,18%)]", isRTL && "flex-row-reverse")}>
           {isDevis && (
             <>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
-                onClick={(e) => { e.stopPropagation(); handleConvertToInvoice(doc); }}
-              >
-                <ArrowRightLeft className="h-3 w-3" />
-                {isRTL ? 'حوّل لفاتورة' : 'Convertir'}
-              </Button>
+              {(doc as any).converted_to_invoice ? (
+                <>
+                  <span className="text-xs text-amber-400 font-medium">
+                    {isRTL ? '✅ تم إنشاء فاتورة بالفعل' : '✅ Facture déjà créée'}
+                  </span>
+                  {(doc as any).linked_invoice_id && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const linked = documents.find((d: any) => d.id === (doc as any).linked_invoice_id);
+                        if (linked) setSelectedDocument(linked as any);
+                      }}
+                    >
+                      <Eye className="h-3 w-3" />
+                      {isRTL ? 'عرض الفاتورة' : 'Voir facture'}
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
+                  onClick={(e) => { e.stopPropagation(); handleConvertToInvoice(doc); }}
+                >
+                  <ArrowRightLeft className="h-3 w-3" />
+                  {isRTL ? 'حوّل لفاتورة' : 'Convertir'}
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="ghost"
@@ -574,20 +620,41 @@ const DocumentsListPage = () => {
               </div>
 
               {/* Convert Devis → Facture button */}
-              {selectedDocument.document_type === 'devis' && selectedDocument.status !== 'converted' && (
+              {selectedDocument.document_type === 'devis' && (
                 <div className={cn("pt-3 border-t border-border", isRTL && "text-right")}>
-                  <Button
-                    onClick={() => handleDirectConvert(selectedDocument)}
-                    disabled={converting}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 w-full"
-                  >
-                    {converting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ArrowRightLeft className="h-4 w-4" />
-                    )}
-                    {isRTL ? 'تحويل إلى فاتورة' : 'Convertir en Facture'}
-                  </Button>
+                  {(selectedDocument as any).converted_to_invoice ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-amber-400 font-medium text-center">
+                        {isRTL ? '✅ تم إنشاء فاتورة بالفعل' : '✅ Facture déjà créée'}
+                      </p>
+                      {(selectedDocument as any).linked_invoice_id && (
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2"
+                          onClick={() => {
+                            const linked = documents.find((d: any) => d.id === (selectedDocument as any).linked_invoice_id);
+                            if (linked) setSelectedDocument(linked as any);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                          {isRTL ? 'عرض الفاتورة المرتبطة' : 'Voir la facture liée'}
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => handleDirectConvert(selectedDocument)}
+                      disabled={converting}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 w-full"
+                    >
+                      {converting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ArrowRightLeft className="h-4 w-4" />
+                      )}
+                      {isRTL ? 'تحويل إلى فاتورة' : 'Convertir en Facture'}
+                    </Button>
+                  )}
                 </div>
               )}
             </>

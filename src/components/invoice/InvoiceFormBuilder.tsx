@@ -26,6 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { saveDraft, loadDraft, clearDraft, loadCloudDraft, saveCurrentDocument, loadCurrentDocument, clearCurrentDocument, type CurrentDocumentState } from '@/lib/invoiceDraftStorage';
 import { detectMultipleTasks } from '@/lib/smartItemSplit';
 import { formatObjet, containsArabic } from '@/lib/objetFormatter';
+import { validateDocument } from '@/lib/documentValidator';
 import { useAuth } from '@/hooks/useAuth';
 import { resolveAssetUrls } from '@/lib/storageUtils';
 import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';

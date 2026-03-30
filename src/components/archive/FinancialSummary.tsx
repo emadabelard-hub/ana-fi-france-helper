@@ -2,15 +2,15 @@ import { TrendingUp, TrendingDown, Wallet, Receipt, AlertTriangle, Calculator } 
 import { cn } from '@/lib/utils';
 
 interface FinancialSummaryProps {
-  totalIncome: number;
-  totalExpenses: number;
+  caHT: number;
+  depensesHT: number;
   tvaCollectee: number;
   tvaDeductible: number;
-  totalIncomeHT: number;
-  totalExpensesHT: number;
   urssafRate: number;
   isRate: number;
   isRTL: boolean;
+  debugFacturesCount: number;
+  debugDepensesCount: number;
 }
 
 const fmt = (n: number) =>

@@ -53,7 +53,7 @@ const ArchiveAccountingPage = () => {
       setLoading(true);
 
       const docsQuery = (supabase.from('documents_comptables') as any)
-        .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address, chantier_id, payment_status')
+        .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address, chantier_id, payment_status, converted_to_invoice, linked_invoice_id')
         .order('created_at', { ascending: false });
 
       const expensesQuery = (supabase.from('expenses') as any)

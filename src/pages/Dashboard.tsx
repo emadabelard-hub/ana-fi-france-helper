@@ -39,15 +39,16 @@ const Dashboard = () => {
       iconBg: 'bg-amber-400/30',
       emoji: '📄',
     },
-    {
-      icon: User,
-      title: isRTL ? 'سيرة ذاتية احترافية' : 'CV Professionnel',
-      subtitle: isRTL ? 'اصنع سيرتك الذاتية في دقائق' : 'Créez un CV pro en quelques minutes',
-      path: '/pro/cv-generator',
-      gradient: 'from-indigo-500 to-violet-600',
-      iconBg: 'bg-indigo-400/30',
-      emoji: '👤',
-    },
+    // CV card hidden for now - kept for future reactivation
+    // {
+    //   icon: User,
+    //   title: isRTL ? 'سيرة ذاتية احترافية' : 'CV Professionnel',
+    //   subtitle: isRTL ? 'اصنع سيرتك الذاتية في دقائق' : 'Créez un CV pro en quelques minutes',
+    //   path: '/pro/cv-generator',
+    //   gradient: 'from-indigo-500 to-violet-600',
+    //   iconBg: 'bg-indigo-400/30',
+    //   emoji: '👤',
+    // },
     {
       icon: Wallet,
       title: isRTL ? 'المحاسبة' : 'Comptabilité',

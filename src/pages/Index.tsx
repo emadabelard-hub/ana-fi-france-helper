@@ -159,29 +159,7 @@ const Index = () => {
             </svg>
           </button>
 
-          {/* Smart CV */}
-          <button
-            onClick={() => handleNavigate('/pro/cv-generator', 'فتح مُولد CV')}
-            className="w-full bg-card rounded-3xl flex items-center gap-4 p-5 active:scale-[0.98] transition-all duration-300 border border-[hsl(195,100%,50%)]/20 shadow-[0_8px_30px_-10px_hsl(195_100%_40%/0.35)] hover:shadow-[0_16px_40px_-10px_hsl(195_100%_40%/0.5)] hover:-translate-y-1 animate-fade-in"
-            dir="rtl"
-          >
-            <div className="w-16 h-16 rounded-2xl shadow-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #00BFFF, #0099CC)' }}>
-              <FileUser size={36} className="text-white drop-shadow-md" />
-            </div>
-            <div className="flex-1 text-right font-cairo space-y-1.5">
-              <h3 className="text-[16px] font-bold leading-relaxed text-foreground">
-                Smart CV
-              </h3>
-              <p className="text-[14px] font-medium text-muted-foreground">
-                {isRTL
-                  ? 'اعمل سي في بالعربي وأنا أطلعهولك بالفرنساوي 📝'
-                  : 'Créez votre CV en quelques minutes 📝'}
-              </p>
-            </div>
-            <svg className="w-5 h-5 text-muted-foreground rotate-180 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+          {/* Smart CV - Hidden for now, kept for future reactivation */}
         </div>
 
         {/* BOTTOM SECTION */}

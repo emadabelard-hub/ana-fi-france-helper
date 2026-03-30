@@ -81,7 +81,8 @@ const AppRoutes = () => {
             <Route path="/pro/documents" element={<DocumentsListPage />} />
             <Route path="/pro/archive" element={<ArchiveAccountingPage />} />
             <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />
-            <Route path="/pro/cv-generator" element={<CVGeneratorPage />} />
+            {/* CV route hidden - kept for future reactivation */}
+            {/* <Route path="/pro/cv-generator" element={<CVGeneratorPage />} /> */}
             <Route path="/pro/settings" element={<ProSettingsPage />} />
             <Route path="/ai-assistant" element={<AIAssistantPage />} />
             <Route path="/premium-consultation" element={<PremiumConsultationPage />} />

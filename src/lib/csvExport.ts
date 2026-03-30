@@ -1,15 +1,13 @@
 /**
- * Professional CSV export utility for accounting documents.
- * Produces comma-delimited CSV compatible with Excel and accounting software.
- * 3 sections: Factures (ventes), Dépenses (achats), Synthèse fiscale.
+ * Professional CSV export utility for French accounting.
+ * Single flat table, semicolon-delimited, strict validation.
+ * Format: Date;Type;Tiers;Compte;Libelle;Montant_HT;TVA_Taux;TVA_Montant;Montant_TTC;Statut
  */
 
 const BOM = '\uFEFF';
 
-// Arabic detection
 const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
-// Quick Arabic→French translation map for CSV labels
 const ARABIC_LABELS: Record<string, string> = {
   'بنزين': 'Frais de carburant',
   'مازوت': 'Frais de gasoil',
@@ -20,44 +18,34 @@ const ARABIC_LABELS: Record<string, string> = {
   'دهان': 'Travaux de peinture',
   'صباغة': 'Travaux de peinture',
   'بلاط': 'Travaux de carrelage',
-  'كهرباء': 'Travaux d\'électricité',
+  'كهرباء': "Travaux d'électricité",
   'سباكة': 'Travaux de plomberie',
   'ترميم': 'Travaux de rénovation',
   'هدم': 'Travaux de démolition',
-  'عزل': 'Travaux d\'isolation',
+  'عزل': "Travaux d'isolation",
   'تنظيف': 'Nettoyage de chantier',
   'نجارة': 'Travaux de menuiserie',
   'إصلاح': 'Travaux de réparation',
 };
 
-// Valid TVA rates in France
 const VALID_TVA_RATES = [0, 5.5, 10, 20];
 
-/**
- * Translate Arabic text to French for CSV export.
- */
 function translateToFrench(text: string): string {
   if (!text) return 'Prestation de services';
   const trimmed = text.trim();
-  // Direct match
   if (ARABIC_LABELS[trimmed]) return ARABIC_LABELS[trimmed];
-  // Contains Arabic → try word-by-word
   if (ARABIC_REGEX.test(trimmed)) {
     const parts: string[] = [];
     for (const [ar, fr] of Object.entries(ARABIC_LABELS)) {
       if (trimmed.includes(ar)) parts.push(fr);
     }
     if (parts.length > 0) return parts.join(' - ');
-    // Fallback: strip Arabic entirely
     const cleaned = trimmed.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g, '').trim();
     return cleaned || 'Prestation de services';
   }
   return trimmed;
 }
 
-/**
- * Detect truncated/garbled text (e.g. "ré5", "tra", "pon", "Prestation tra").
- */
 const GARBLED_PATTERN = /^[a-zàâéèêëïôùûüç]{1,4}\d|^.{1,5}$/i;
 const TRUNCATED_PATTERNS = [
   /^prestation\s*tra/i,
@@ -73,41 +61,24 @@ const TRUNCATED_PATTERNS = [
   /^\s*$/,
 ];
 
-/**
- * Upgrade weak libellés to professional French.
- * ZERO tolerance for truncated, garbled, or incomplete text.
- */
 function professionalLibelle(text: string, type: 'Vente' | 'Achat' | 'Transport'): string {
   let result = translateToFrench(text);
-
-  // Detect garbled or truncated text
   const isGarbled = GARBLED_PATTERN.test(result) || TRUNCATED_PATTERNS.some(p => p.test(result));
   const isTooShort = result.length < 15;
 
   if (isGarbled || isTooShort) {
-    if (type === 'Transport') {
-      result = 'Frais de déplacement chantier';
-    } else if (type === 'Achat') {
-      result = 'Achat de matériaux chantier';
-    } else {
-      result = 'Travaux de rénovation intérieure';
-    }
+    if (type === 'Transport') result = 'Frais de déplacement chantier';
+    else if (type === 'Achat') result = 'Achat de matériaux chantier';
+    else result = 'Travaux de rénovation intérieure';
   }
 
-  // Capitalize first letter
   if (result.length > 0) result = result.charAt(0).toUpperCase() + result.slice(1);
   return result;
 }
 
-/**
- * Correct TVA rate to nearest valid French rate.
- * DEFAULT: 10% (rénovation BTP) — TVA 0% only if explicitly marked exempt.
- */
 function correctTvaRate(rate: number, isExplicitlyExempt: boolean = false): number {
-  // Only allow 0% if the document is explicitly marked TVA-exempt
   if (rate === 0 && !isExplicitlyExempt) return 10;
   if (VALID_TVA_RATES.includes(rate)) return rate;
-  // Find nearest valid rate (excluding 0 unless exempt)
   let closest = 10;
   let minDiff = Math.abs(rate - 10);
   for (const valid of VALID_TVA_RATES) {
@@ -118,9 +89,6 @@ function correctTvaRate(rate: number, isExplicitlyExempt: boolean = false): numb
   return closest;
 }
 
-/**
- * Validate a monetary amount — must be positive and finite.
- */
 function sanitizeAmount(amount: number | null | undefined): number {
   if (amount == null || !isFinite(amount) || amount < 0) return 0;
   return Math.round(amount * 100) / 100;
@@ -129,7 +97,7 @@ function sanitizeAmount(amount: number | null | undefined): number {
 function cleanCell(value: string | number | null | undefined): string {
   if (value == null) return '';
   const str = String(value).replace(/"/g, '').replace(/\\/g, '').trim();
-  if (str.includes(',') || str.includes('\n') || str.includes(';')) return `"${str}"`;
+  if (str.includes(';') || str.includes('\n')) return `"${str}"`;
   return str;
 }
 
@@ -146,16 +114,6 @@ function fmtNum(n: number): string {
 function computeHT(ttc: number, tvaRate: number): number {
   if (!tvaRate || tvaRate <= 0) return ttc;
   return ttc / (1 + tvaRate / 100);
-}
-
-function computeTVA(ttc: number, tvaRate: number): number {
-  if (!tvaRate || tvaRate <= 0) return 0;
-  return ttc - computeHT(ttc, tvaRate);
-}
-
-function statusToFrench(_status: string | null | undefined): string {
-  // Per accounting rules: all exported entries are considered validated
-  return 'Validée';
 }
 
 // ── Types ──
@@ -177,13 +135,12 @@ export interface CsvDocumentRow {
 export interface AccountingExportData {
   invoices: CsvDocumentRow[];
   expenses: CsvDocumentRow[];
-  urssafRate?: number;
-  isRate?: number;
 }
 
-// ── Legacy single-table export (kept for backward compat) ──
+// ── Legacy simple export (kept for backward compat) ──
 
 export function generateProfessionalCSV(rows: CsvDocumentRow[]): string {
+  const sep = ';';
   const headers = [
     'Date', 'Type', 'Reference', 'Client', 'Projet',
     'Total HT', 'Taux TVA (%)', 'Montant TVA', 'Total TTC',
@@ -202,59 +159,65 @@ export function generateProfessionalCSV(rows: CsvDocumentRow[]): string {
     return [
       date, type, cleanCell(r.reference), cleanCell(r.clientName), cleanCell(r.projectName),
       ht.toFixed(2), tvaRate.toFixed(1), tvaMontant.toFixed(2), ttc.toFixed(2),
-    ].join(';');
+    ].join(sep);
   });
 
-  return BOM + [headers.join(';'), ...csvRows].join('\n');
+  return BOM + [headers.join(sep), ...csvRows].join('\n');
 }
 
 // ── Professional SINGLE-TABLE accounting export ──
-// FORMAT STRICT: Date,Type,Client,Compte,Libelle,Montant_HT,TVA_Taux,TVA_Montant,Montant_TTC,Statut
-// UNE SEULE TABLE — aucune section séparée, aucune ligne vide, aucun double header.
+// FORMAT STRICT: Date;Type;Tiers;Compte;Libelle;Montant_HT;TVA_Taux;TVA_Montant;Montant_TTC;Statut
+// Séparateur: point-virgule (;)
+// UNE SEULE TABLE — aucune section, aucune ligne vide, aucun titre.
 
 export function generateAccountingCSV(data: AccountingExportData): string {
-  const sep = ',';
+  const sep = ';';
   const headers = [
-    'Date', 'Type', 'Client', 'Compte', 'Libelle',
+    'Date', 'Type', 'Tiers', 'Compte', 'Libelle',
     'Montant_HT', 'TVA_Taux', 'TVA_Montant', 'Montant_TTC', 'Statut',
   ];
 
-  // ── Build all rows into a single flat array ──
   const allRows: string[] = [];
+  const errors: string[] = [];
 
-  // Ventes (factures)
+  // ── Ventes (factures) ──
   for (const r of data.invoices) {
+    const date = formatDate(r.date);
+    if (!date) { errors.push(`Date manquante pour ${r.reference}`); continue; }
+
     const tvaRate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
     const rawHT = sanitizeAmount(r.totalHT);
     const rawTTC = sanitizeAmount(r.totalTTC);
+    if (rawHT <= 0 && rawTTC <= 0) { errors.push(`Montant nul pour ${r.reference}`); continue; }
+
     const ht = rawHT > 0 ? rawHT : computeHT(rawTTC, tvaRate);
     const tvaMontant = Math.round(ht * tvaRate) / 100;
     const ttc = Math.round((ht + tvaMontant) * 100) / 100;
+
+    // Validation: TTC = HT + TVA
     const libelle = professionalLibelle(r.reference || r.clientName || '', 'Vente');
     const clientName = translateToFrench(r.clientName);
 
     allRows.push([
-      formatDate(r.date),
-      'Vente',
-      cleanCell(clientName),
-      '706',
-      cleanCell(libelle),
-      fmtNum(ht),
-      fmtNum(tvaRate),
-      fmtNum(tvaMontant),
-      fmtNum(ttc),
-      statusToFrench(r.status),
+      date, 'Vente', cleanCell(clientName), '706', cleanCell(libelle),
+      fmtNum(ht), fmtNum(tvaRate), fmtNum(tvaMontant), fmtNum(ttc), 'Validée',
     ].join(sep));
   }
 
-  // Achats (dépenses)
+  // ── Achats (dépenses) ──
   for (const r of data.expenses) {
+    const date = formatDate(r.date);
+    if (!date) { errors.push(`Date manquante pour dépense`); continue; }
+
     const tvaRate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
     const rawHT = sanitizeAmount(r.totalHT);
     const rawTTC = sanitizeAmount(r.totalTTC);
+    if (rawHT <= 0 && rawTTC <= 0) continue; // Skip zero expenses
+
     const ht = rawHT > 0 ? rawHT : computeHT(rawTTC, tvaRate);
     const tvaMontant = Math.round(ht * tvaRate) / 100;
     const ttc = Math.round((ht + tvaMontant) * 100) / 100;
+
     const rawLabel = r.reference || r.clientName || '';
     const isTransport = /transport|بنزين|مازوت|وقود|carburant|gasoil/i.test(rawLabel);
     const compte = isTransport ? '625' : '601';
@@ -262,20 +225,17 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     const clientName = translateToFrench(r.clientName || 'Fournisseur');
 
     allRows.push([
-      formatDate(r.date),
-      'Achat',
-      cleanCell(clientName),
-      compte,
-      cleanCell(libelle),
-      fmtNum(ht),
-      fmtNum(tvaRate),
-      fmtNum(tvaMontant),
-      fmtNum(ttc),
-      statusToFrench(r.status),
+      date, 'Achat', cleanCell(clientName), compte, cleanCell(libelle),
+      fmtNum(ht), fmtNum(tvaRate), fmtNum(tvaMontant), fmtNum(ttc), 'Validée',
     ].join(sep));
   }
 
-  // Single table: header + data rows, no empty lines
+  if (allRows.length === 0) {
+    throw new Error(errors.length > 0
+      ? `Export impossible : ${errors.join(', ')}`
+      : 'Aucune opération à exporter');
+  }
+
   return BOM + [headers.join(sep), ...allRows].join('\n');
 }
 

@@ -205,9 +205,36 @@ const ArchiveAccountingPage = () => {
     if (doc.type === 'expense') return;
     navigate('/pro/documents', { state: { openDocumentId: doc.id } });
   };
+  const buildCsvRows = (): { invoices: CsvDocumentRow[]; expenses: CsvDocumentRow[] } => {
+    const invoices: CsvDocumentRow[] = documents
+      .filter(d => d.type === 'facture' && d.status === 'finalized')
+      .map(d => ({
+        date: d.rawData?.created_at || new Date().toISOString(),
+        type: 'facture' as const,
+        reference: d.number,
+        clientName: d.clientName || '',
+        totalHT: d.amountHT,
+        tvaRate: d.rawData?.tva_rate ?? 0,
+        tvaAmount: d.rawData?.tva_amount ?? 0,
+        totalTTC: d.amountTTC,
+        tvaExempt: d.rawData?.tva_exempt ?? false,
+      }));
+    const expRows: CsvDocumentRow[] = expenses.map(e => ({
+      date: e.rawData?.expense_date || e.rawData?.created_at || new Date().toISOString(),
+      type: 'expense' as const,
+      reference: e.clientName || '',
+      clientName: e.clientName || 'Fournisseur',
+      totalHT: e.amountHT,
+      tvaRate: e.rawData?.tva_amount && e.amountHT ? ((e.rawData.tva_amount / e.amountHT) * 100) : 0,
+      tvaAmount: e.rawData?.tva_amount ?? 0,
+      totalTTC: e.amountTTC,
+    }));
+    return { invoices, expenses: expRows };
+  };
+
   const handleExportCSV = () => {
     if (allItems.length === 0) return;
-    const csvRows: CsvDocumentRow[] = allItems.map(d => ({
+    const allRows: CsvDocumentRow[] = allItems.map(d => ({
       date: d.rawData?.created_at || d.rawData?.expense_date || new Date().toISOString(),
       type: d.type as 'devis' | 'facture' | 'expense',
       reference: d.number,
@@ -218,9 +245,20 @@ const ArchiveAccountingPage = () => {
       tvaAmount: d.rawData?.tva_amount ?? 0,
       totalTTC: d.amountTTC,
     }));
-    const csv = generateProfessionalCSV(csvRows);
+    const csv = generateProfessionalCSV(allRows);
     downloadCSV(csv, `archive_${new Date().toISOString().slice(0, 10)}.csv`);
     toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export CSV réussi' });
+  };
+
+  const handleExportComptable = () => {
+    try {
+      const data = buildCsvRows();
+      const csv = generateAccountingCSV(data);
+      downloadCSV(csv, `comptabilite_${new Date().toISOString().slice(0, 10)}.csv`);
+      toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export comptable réussi' });
+    } catch (err: any) {
+      toast({ title: '❌ Erreur', description: err.message, variant: 'destructive' });
+    }
   };
 
   if (authLoading) {

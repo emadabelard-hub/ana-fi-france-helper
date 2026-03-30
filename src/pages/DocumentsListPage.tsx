@@ -314,7 +314,7 @@ const DocumentsListPage = () => {
         tva_amount: doc.tva_amount,
         total_ttc: doc.total_ttc,
         status: 'draft',
-        document_data: { ...docData, convertedFromDevis: doc.document_number },
+        document_data: { ...docData, convertedFromDevis: doc.document_number, convertedFromDevisId: doc.id },
         chantier_id: (doc as any).chantier_id || null,
       }).select('id').single();
       if (insertError) throw insertError;

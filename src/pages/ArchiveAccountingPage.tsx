@@ -192,6 +192,18 @@ const ArchiveAccountingPage = () => {
   };
 
   const handleDelete = async (id: string) => {
+    // Block deletion of finalized invoices (French legal compliance)
+    const doc = documents.find(d => d.id === id);
+    if (doc && doc.type === 'facture' && doc.status === 'finalized') {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '⛔ حذف ممنوع' : '⛔ Suppression interdite',
+        description: isRTL
+          ? 'لا يمكن حذف فاتورة نهائية. يمكنك فقط إصدار فاتورة تصحيحية.'
+          : 'Impossible de supprimer une facture finalisée. Émettez un avoir.',
+      });
+      return;
+    }
     const isExpense = expenses.some(e => e.id === id);
     if (isExpense) {
       await (supabase.from('expenses') as any).delete().eq('id', id);

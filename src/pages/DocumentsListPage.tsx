@@ -140,6 +140,18 @@ const DocumentsListPage = () => {
   }, [location.state, location.pathname, documents, navigate]);
 
   const handleDelete = async (id: string) => {
+    // Block deletion of finalized invoices (French legal compliance)
+    const doc = documents.find(d => d.id === id);
+    if (doc && doc.document_type === 'facture' && doc.status === 'finalized') {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '⛔ حذف ممنوع' : '⛔ Suppression interdite',
+        description: isRTL
+          ? 'لا يمكن حذف فاتورة نهائية (إلزام محاسبي فرنسي). يمكنك فقط إصدار فاتورة تصحيحية.'
+          : 'Impossible de supprimer une facture finalisée (obligation comptable). Émettez un avoir à la place.',
+      });
+      return;
+    }
     setDeletingId(id);
     const { error } = await (supabase.from('documents_comptables') as any).delete().eq('id', id);
     if (!error) {

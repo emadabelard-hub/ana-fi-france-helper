@@ -32,9 +32,6 @@ interface DocumentRow {
   payment_status: string;
 }
 
-const isConvertedQuote = (doc: any) =>
-  doc?.status === 'converted' || Boolean(doc?.converted_to_invoice) || Boolean(doc?.linked_invoice_id);
-
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
@@ -52,6 +49,20 @@ const DocumentsListPage = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
   const [converting, setConverting] = useState(false);
+
+  const convertedSourceNumbers = useMemo(() => {
+    const values = documents
+      .filter((d) => d.document_type === 'facture')
+      .map((d) => d.document_data?.convertedFromDevis)
+      .filter(Boolean);
+    return new Set(values);
+  }, [documents]);
+
+  const isConvertedQuote = (doc: any) =>
+    doc?.status === 'converted' ||
+    Boolean(doc?.converted_to_invoice) ||
+    Boolean(doc?.linked_invoice_id) ||
+    convertedSourceNumbers.has(doc?.document_number);
 
   useEffect(() => {
     if (!user || user.is_anonymous) {

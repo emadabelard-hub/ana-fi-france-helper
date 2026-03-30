@@ -49,6 +49,9 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, on
   const tc = typeConfig[doc.type];
   const sc = statusConfig[doc.status];
   const Icon = tc.icon;
+  const isConvertedQuote =
+    doc.type === 'devis' &&
+    (doc.rawData?.status === 'converted' || Boolean(doc.rawData?.converted_to_invoice) || Boolean(doc.rawData?.linked_invoice_id));
 
   const isOverdue = doc.type === 'facture' && doc.status === 'unpaid';
   const isClickable = doc.type !== 'expense' && Boolean(onOpen);
@@ -136,13 +139,13 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, on
                 <Send className="h-4 w-4" />
                 {isRTL ? 'أرسل للمحاسب' : 'Envoyer au comptable'}
               </DropdownMenuItem>
-              {doc.type === 'devis' && onConvert && !doc.rawData?.converted_to_invoice && (
+              {doc.type === 'devis' && onConvert && !isConvertedQuote && (
                 <DropdownMenuItem className="gap-2" onClick={() => onConvert(doc)}>
                   <ArrowRightLeft className="h-4 w-4" />
                   {isRTL ? 'حوّل لفاتورة' : 'Convertir en facture'}
                 </DropdownMenuItem>
               )}
-              {doc.type === 'devis' && doc.rawData?.converted_to_invoice && (
+              {doc.type === 'devis' && isConvertedQuote && (
                 <DropdownMenuItem className="gap-2 text-amber-500" disabled>
                   <ArrowRightLeft className="h-4 w-4" />
                   {isRTL ? '✅ تم إنشاء فاتورة بالفعل' : '✅ Facture déjà créée'}

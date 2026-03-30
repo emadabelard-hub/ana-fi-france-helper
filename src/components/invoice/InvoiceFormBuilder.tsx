@@ -26,6 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { saveDraft, loadDraft, clearDraft, loadCloudDraft, saveCurrentDocument, loadCurrentDocument, clearCurrentDocument, type CurrentDocumentState } from '@/lib/invoiceDraftStorage';
 import { detectMultipleTasks } from '@/lib/smartItemSplit';
 import { formatObjet, containsArabic } from '@/lib/objetFormatter';
+import { validateDocument } from '@/lib/documentValidator';
 import { useAuth } from '@/hooks/useAuth';
 import { resolveAssetUrls } from '@/lib/storageUtils';
 import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
@@ -847,7 +848,50 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     };
   };
   
-  const invoiceData = buildInvoiceData();
+  const rawInvoiceData = buildInvoiceData();
+  
+  // Auto-validate and fix document (expert-comptable level)
+  const validationResult = validateDocument(
+    rawInvoiceData.items.map((item, i) => ({ ...item, id: items[i]?.id || `v-${i}` })),
+    rawInvoiceData.tvaRate,
+    rawInvoiceData.tvaExempt
+  );
+  
+  const invoiceData: InvoiceData = {
+    ...rawInvoiceData,
+    items: validationResult.items.map(vi => ({
+      designation_fr: vi.designation_fr,
+      designation_ar: vi.designation_ar || vi.designation_fr,
+      quantity: vi.quantity,
+      unit: vi.unit,
+      unitPrice: vi.unitPrice,
+      total: vi.total,
+    })),
+    tvaRate: validationResult.tvaRate,
+    tvaAmount: rawInvoiceData.tvaExempt ? 0 : Math.round((rawInvoiceData.subtotalAfterDiscount ?? rawInvoiceData.subtotal) * (validationResult.tvaRate / 100) * 100) / 100,
+    total: (() => {
+      const ht = rawInvoiceData.subtotalAfterDiscount ?? rawInvoiceData.subtotal;
+      const tva = rawInvoiceData.tvaExempt ? 0 : Math.round(ht * (validationResult.tvaRate / 100) * 100) / 100;
+      return Math.round((ht + tva) * 100) / 100;
+    })(),
+    subtotal: validationResult.items.reduce((s, i) => s + i.total, 0),
+  };
+  
+  // Log corrections on first preview render (show toast once)
+  const lastCorrectionsRef = useRef<string>('');
+  useEffect(() => {
+    if (validationResult.corrections.length > 0 && showPreview) {
+      const key = validationResult.corrections.map(c => `${c.field}:${c.corrected}`).join('|');
+      if (key !== lastCorrectionsRef.current) {
+        lastCorrectionsRef.current = key;
+        toast({
+          title: `✅ ${validationResult.corrections.length} correction(s) automatique(s)`,
+          description: validationResult.corrections.slice(0, 3).map(c => `${c.field}: ${c.reason}`).join(' • '),
+          duration: 6000,
+        });
+      }
+    }
+  }, [showPreview, validationResult.corrections.length]);
   
   // Check if form is valid
   const isFormValid = items.some(item => item.designation_fr.trim() && item.unitPrice > 0) || (includeTravelCosts && travelPrice > 0);

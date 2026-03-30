@@ -15,6 +15,7 @@ interface ShbikLbikProps {
   totalExpensesHT: number;
   isTvaExempt: boolean;
   isRTL: boolean;
+  tresorerieEncaissee?: number;
 }
 
 const fmt = (n: number) =>

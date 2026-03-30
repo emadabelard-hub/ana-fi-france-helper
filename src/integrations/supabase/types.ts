@@ -303,11 +303,13 @@ export type Database = {
           chantier_id: string | null
           client_address: string | null
           client_name: string
+          converted_to_invoice: boolean
           created_at: string
           document_data: Json
           document_number: string
           document_type: string
           id: string
+          linked_invoice_id: string | null
           nature_operation: string | null
           payment_status: string
           pdf_url: string | null
@@ -326,11 +328,13 @@ export type Database = {
           chantier_id?: string | null
           client_address?: string | null
           client_name?: string
+          converted_to_invoice?: boolean
           created_at?: string
           document_data?: Json
           document_number: string
           document_type?: string
           id?: string
+          linked_invoice_id?: string | null
           nature_operation?: string | null
           payment_status?: string
           pdf_url?: string | null
@@ -349,11 +353,13 @@ export type Database = {
           chantier_id?: string | null
           client_address?: string | null
           client_name?: string
+          converted_to_invoice?: boolean
           created_at?: string
           document_data?: Json
           document_number?: string
           document_type?: string
           id?: string
+          linked_invoice_id?: string | null
           nature_operation?: string | null
           payment_status?: string
           pdf_url?: string | null

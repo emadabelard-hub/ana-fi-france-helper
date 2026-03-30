@@ -390,6 +390,7 @@ const ArchiveAccountingPage = () => {
           totalExpensesHT={depensesHT}
           isTvaExempt={isTvaExempt}
           isRTL={isRTL}
+          tresorerieEncaissee={tresorerieEncaissee}
         />
       </div>
 

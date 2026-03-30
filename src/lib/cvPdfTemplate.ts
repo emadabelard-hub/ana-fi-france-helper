@@ -176,7 +176,7 @@ export async function buildCvHtml(data: CVData): Promise<string> {
 <style>
 @page {
   size: A4;
-  margin: 12mm 14mm;
+  margin: 10mm 12mm;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
@@ -184,8 +184,8 @@ html, body {
   background: #fff;
   color: #1f2937;
   font-family: 'Urbanist', 'Inter', 'Segoe UI', sans-serif;
-  font-size: 9.5pt;
-  line-height: 1.45;
+  font-size: 8.5pt;
+  line-height: 1.3;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -195,34 +195,34 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   page-break-inside: avoid;
   break-inside: avoid;
 }
 .header-text { flex: 1; text-align: center; }
-.cv-header h1 { font-size: 18pt; line-height: 1.2; margin-bottom: 2px; }
+.cv-header h1 { font-size: 15pt; line-height: 1.15; margin-bottom: 1px; }
 .cv-header .fn { font-weight: 400; }
 .cv-header .ln { font-weight: 700; letter-spacing: 0.04em; }
-.header-bar { height: 1.5px; background: ${ACCENT}; width: 50px; margin: 6px auto; }
-.profession { color: ${ACCENT}; font-size: 10.5pt; font-weight: 600; letter-spacing: 0.03em; margin-bottom: 4px; }
-.personal-info { font-size: 8.5pt; color: #6b7280; letter-spacing: 0.03em; }
+.header-bar { height: 1.5px; background: ${ACCENT}; width: 40px; margin: 4px auto; }
+.profession { color: ${ACCENT}; font-size: 9pt; font-weight: 600; letter-spacing: 0.03em; margin-bottom: 2px; }
+.personal-info { font-size: 7.5pt; color: #6b7280; letter-spacing: 0.03em; }
 .photo {
-  width: 68px; height: 68px; border-radius: 50%; object-fit: cover;
-  border: 1.5px solid ${ACCENT}; flex-shrink: 0; margin-left: 12px;
+  width: 58px; height: 58px; border-radius: 50%; object-fit: cover;
+  border: 1.5px solid ${ACCENT}; flex-shrink: 0; margin-left: 10px;
 }
 
 /* Contact */
 .cv-contact {
   text-align: center;
-  padding-bottom: 8px;
-  margin-bottom: 8px;
+  padding-bottom: 5px;
+  margin-bottom: 5px;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 14px;
+  gap: 10px;
   color: #4b5563;
-  font-size: 8.5pt;
+  font-size: 7.5pt;
   page-break-inside: avoid;
   break-inside: avoid;
 }
@@ -231,42 +231,42 @@ html, body {
 .cv-section {
   page-break-inside: avoid;
   break-inside: avoid;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
-.section-title { margin-top: 10px; margin-bottom: 4px; }
+.section-title { margin-top: 7px; margin-bottom: 2px; }
 .section-title h2 {
-  font-size: 8pt;
+  font-size: 7pt;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   color: ${ACCENT};
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
-.title-bar { height: 1.5px; background: ${ACCENT}; width: 36px; }
+.title-bar { height: 1px; background: ${ACCENT}; width: 30px; }
 
 /* Body */
 .body-text {
-  font-size: 9pt;
-  line-height: 1.5;
+  font-size: 8pt;
+  line-height: 1.35;
   color: #374151;
   text-align: justify;
 }
-.body-text.small { font-size: 8.5pt; line-height: 1.45; color: #4b5563; }
+.body-text.small { font-size: 7.5pt; line-height: 1.3; color: #4b5563; }
 
 /* Entries (education, experience) */
-.entry { margin-bottom: 4px; }
-.entry-border { padding-top: 4px; border-top: 1px solid #f3f4f6; }
-.entry-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.entry { margin-bottom: 2px; }
+.entry-border { padding-top: 2px; border-top: 1px solid #f3f4f6; }
+.entry-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
 .entry-main { flex: 1; }
-.entry-title { font-size: 9pt; font-weight: 600; color: #1f2937; }
-.entry-sub { font-size: 8.5pt; color: #6b7280; }
-.entry-field { font-size: 8pt; color: #9ca3af; font-style: italic; }
-.entry-date { font-size: 8pt; color: ${ACCENT}; font-weight: 500; white-space: nowrap; }
+.entry-title { font-size: 8pt; font-weight: 600; color: #1f2937; }
+.entry-sub { font-size: 7.5pt; color: #6b7280; }
+.entry-field { font-size: 7pt; color: #9ca3af; font-style: italic; }
+.entry-date { font-size: 7pt; color: ${ACCENT}; font-weight: 500; white-space: nowrap; }
 
 /* Languages */
-.lang-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
-.lang-name { font-size: 9pt; font-weight: 500; color: #374151; }
-.lang-level { font-size: 8pt; font-style: italic; color: ${ACCENT}; }
+.lang-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1px; }
+.lang-name { font-size: 8pt; font-weight: 500; color: #374151; }
+.lang-level { font-size: 7pt; font-style: italic; color: ${ACCENT}; }
 
 /* Hide interactive elements */
 button, [role="button"], input, select, textarea { display: none !important; }

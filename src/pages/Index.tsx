@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Wallet, Building2, Bot } from 'lucide-react';
+import { Briefcase, Wallet, Building2, Bot, TrendingUp, Banknote } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import WelcomeModal from '@/components/home/WelcomeModal';
 import GDPRTrustBox from '@/components/shared/GDPRTrustBox';
 import { useTracker } from '@/contexts/ActivityTrackerContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const { language, setLanguage, isRTL } = useLanguage();

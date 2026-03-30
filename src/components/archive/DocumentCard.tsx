@@ -1,5 +1,6 @@
-import { FileText, Receipt, ReceiptText, Calendar, Euro, MoreVertical, Download, Send, Pencil, ArrowRightLeft, Copy } from 'lucide-react';
+import { FileText, Receipt, ReceiptText, Calendar, Euro, MoreVertical, Download, Send, Pencil, ArrowRightLeft, Copy, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
@@ -12,6 +13,7 @@ export interface DocumentItem {
   amountHT: number;
   amountTTC: number;
   status: 'paid' | 'unpaid' | 'pending' | 'draft' | 'finalized';
+  paymentStatus?: 'paid' | 'unpaid';
   project?: string;
   rawData?: any;
 }
@@ -23,6 +25,7 @@ interface DocumentCardProps {
   onConvert?: (doc: DocumentItem) => void;
   onDuplicate?: (doc: DocumentItem) => void;
   onOpen?: (doc: DocumentItem) => void;
+  onMarkPaid?: (doc: DocumentItem) => void;
 }
 
 const typeConfig = {
@@ -42,13 +45,15 @@ const statusConfig = {
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
-const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen }: DocumentCardProps) => {
+const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, onMarkPaid }: DocumentCardProps) => {
   const tc = typeConfig[doc.type];
   const sc = statusConfig[doc.status];
   const Icon = tc.icon;
 
   const isOverdue = doc.type === 'facture' && doc.status === 'unpaid';
   const isClickable = doc.type !== 'expense' && Boolean(onOpen);
+  const showMarkPaid = doc.type === 'facture' && doc.status === 'finalized' && doc.paymentStatus !== 'paid' && onMarkPaid;
+  const isPaid = doc.paymentStatus === 'paid';
 
   return (
     <div
@@ -69,7 +74,7 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen }: 
         }
       } : undefined}
     >
-      {/* Accent line - red for overdue, gold otherwise */}
+      {/* Accent line */}
       <div className={cn(
         "absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r opacity-40 group-hover:opacity-70 transition-opacity",
         isOverdue 
@@ -95,6 +100,21 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen }: 
             {isRTL ? sc.labelAr : sc.label}
           </span>
 
+          {/* Payment badge for finalized invoices */}
+          {doc.type === 'facture' && doc.status === 'finalized' && (
+            <Badge
+              variant={isPaid ? 'default' : 'outline'}
+              className={cn(
+                'text-[10px] font-bold',
+                isPaid
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  : 'bg-muted/50 text-muted-foreground border-border'
+              )}
+            >
+              {isPaid ? (isRTL ? 'تم الدفع' : 'Payé') : (isRTL ? 'غير مدفوع' : 'Non payé')}
+            </Badge>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
@@ -102,6 +122,12 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen }: 
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-48">
+              {showMarkPaid && (
+                <DropdownMenuItem className="gap-2 text-emerald-500 font-semibold" onClick={(e) => { e.stopPropagation(); onMarkPaid(doc); }}>
+                  <CheckCircle className="h-4 w-4" />
+                  {isRTL ? 'تم الدفع' : 'Marquer payé'}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem className="gap-2">
                 <Download className="h-4 w-4" />
                 {isRTL ? 'تحميل PDF' : 'Télécharger PDF'}

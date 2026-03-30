@@ -309,6 +309,7 @@ export type Database = {
           document_type: string
           id: string
           nature_operation: string | null
+          payment_status: string
           pdf_url: string | null
           sent_to_accountant_at: string | null
           status: string
@@ -331,6 +332,7 @@ export type Database = {
           document_type?: string
           id?: string
           nature_operation?: string | null
+          payment_status?: string
           pdf_url?: string | null
           sent_to_accountant_at?: string | null
           status?: string
@@ -353,6 +355,7 @@ export type Database = {
           document_type?: string
           id?: string
           nature_operation?: string | null
+          payment_status?: string
           pdf_url?: string | null
           sent_to_accountant_at?: string | null
           status?: string

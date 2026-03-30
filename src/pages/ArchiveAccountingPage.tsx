@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Search, Sparkles, FileText, Receipt, ReceiptText, FolderArchive, Download, ScanLine, Filter, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -40,7 +40,6 @@ const ArchiveAccountingPage = () => {
       setIsAdmin(true);
       return;
     }
-
     (async () => {
       const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
       setIsAdmin(data === true);
@@ -54,7 +53,7 @@ const ArchiveAccountingPage = () => {
       setLoading(true);
 
       const docsQuery = (supabase.from('documents_comptables') as any)
-        .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address, chantier_id')
+        .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address, chantier_id, payment_status')
         .order('created_at', { ascending: false });
 
       const expensesQuery = (supabase.from('expenses') as any)
@@ -78,6 +77,7 @@ const ArchiveAccountingPage = () => {
           amountHT: d.subtotal_ht,
           amountTTC: d.total_ttc,
           status: d.status === 'finalized' ? 'finalized' : 'draft',
+          paymentStatus: d.payment_status || 'unpaid',
           rawData: d,
         })));
       }
@@ -118,7 +118,6 @@ const ArchiveAccountingPage = () => {
         case 'year': start = new Date(now.getFullYear(), 0, 1); break;
         default: start = new Date(0);
       }
-      // Parse fr-FR date back (dd/mm/yyyy)
       result = result.filter(d => {
         const parts = d.date.split('/');
         const dt = new Date(+parts[2], +parts[1] - 1, +parts[0]);
@@ -137,9 +136,11 @@ const ArchiveAccountingPage = () => {
     return result;
   }, [allItems, activeTab, periodFilter, searchQuery]);
 
-  // Financial totals — UNIQUEMENT factures validées (HT) et dépenses (HT)
+  // ── Financial totals — UNIQUEMENT factures validées (HT) ──
+  const totalFactures = useMemo(() => documents.filter(d => d.type === 'facture').length, [documents]);
   const facturesValidees = useMemo(() =>
     documents.filter(d => d.type === 'facture' && d.status === 'finalized'), [documents]);
+  const ignoredFactures = useMemo(() => totalFactures - facturesValidees.length, [totalFactures, facturesValidees]);
 
   const caHT = useMemo(() =>
     facturesValidees.reduce((s, d) => s + d.amountHT, 0), [facturesValidees]);
@@ -151,12 +152,28 @@ const ArchiveAccountingPage = () => {
   const tvaDeductible = useMemo(() =>
     expenses.reduce((s, e) => s + (e.rawData?.tva_amount || 0), 0), [expenses]);
 
+  // Trésorerie encaissée = factures validées ET payées
+  const tresorerieEncaissee = useMemo(() =>
+    facturesValidees
+      .filter(d => d.paymentStatus === 'paid')
+      .reduce((s, d) => s + d.amountHT, 0),
+    [facturesValidees]);
+
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
   const isRate = (profile as any)?.is_rate ?? 15;
   const isTvaExempt = (profile as any)?.tva_exempt ?? false;
 
+  const handleMarkPaid = async (doc: DocumentItem) => {
+    await (supabase.from('documents_comptables') as any)
+      .update({ payment_status: 'paid' })
+      .eq('id', doc.id);
+    setDocuments(prev => prev.map(d =>
+      d.id === doc.id ? { ...d, paymentStatus: 'paid' as const } : d
+    ));
+    toast({ title: isRTL ? '✅ تم الدفع' : '✅ Marqué comme payé' });
+  };
+
   const handleDelete = async (id: string) => {
-    // Check if it's an expense or document
     const isExpense = expenses.some(e => e.id === id);
     if (isExpense) {
       await (supabase.from('expenses') as any).delete().eq('id', id);
@@ -193,25 +210,23 @@ const ArchiveAccountingPage = () => {
     navigate('/pro/invoice-creator?type=facture&prefill=quote');
   };
 
-
   const handleOpenDocument = (doc: DocumentItem) => {
     if (doc.type === 'expense') return;
     navigate('/pro/documents', { state: { openDocumentId: doc.id } });
   };
+
   const buildCsvRows = (): { invoices: CsvDocumentRow[]; expenses: CsvDocumentRow[] } => {
-    const invoices: CsvDocumentRow[] = documents
-      .filter(d => d.type === 'facture' && d.status === 'finalized')
-      .map(d => ({
-        date: d.rawData?.created_at || new Date().toISOString(),
-        type: 'facture' as const,
-        reference: d.number,
-        clientName: d.clientName || '',
-        totalHT: d.amountHT,
-        tvaRate: d.rawData?.tva_rate ?? 0,
-        tvaAmount: d.rawData?.tva_amount ?? 0,
-        totalTTC: d.amountTTC,
-        tvaExempt: d.rawData?.tva_exempt ?? false,
-      }));
+    const invoices: CsvDocumentRow[] = facturesValidees.map(d => ({
+      date: d.rawData?.created_at || new Date().toISOString(),
+      type: 'facture' as const,
+      reference: d.number,
+      clientName: d.clientName || '',
+      totalHT: d.amountHT,
+      tvaRate: d.rawData?.tva_rate ?? 0,
+      tvaAmount: d.rawData?.tva_amount ?? 0,
+      totalTTC: d.amountTTC,
+      tvaExempt: d.rawData?.tva_exempt ?? false,
+    }));
     const expRows: CsvDocumentRow[] = expenses.map(e => ({
       date: e.rawData?.expense_date || e.rawData?.created_at || new Date().toISOString(),
       type: 'expense' as const,
@@ -328,7 +343,7 @@ const ArchiveAccountingPage = () => {
         </div>
       </section>
 
-      {/* Search bar with AI icon */}
+      {/* Search */}
       <div className="relative mb-4 shrink-0">
         <Search className={cn('absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none', isRTL ? 'right-3' : 'left-3')} />
         <Input
@@ -355,10 +370,13 @@ const ArchiveAccountingPage = () => {
           isRTL={isRTL}
           debugFacturesCount={facturesValidees.length}
           debugDepensesCount={expenses.length}
+          debugTotalFactures={totalFactures}
+          debugIgnoredFactures={ignoredFactures}
+          tresorerieEncaissee={tresorerieEncaissee}
         />
       </div>
 
-      {/* ShbikLbik Smart Assistant */}
+      {/* ShbikLbik */}
       <div className="mb-4 shrink-0">
         <ShbikLbikCard
           totalIncome={caHT + tvaCollectee}
@@ -391,7 +409,6 @@ const ArchiveAccountingPage = () => {
             ))}
           </TabsList>
 
-          {/* Single content area since filtering is handled by state */}
           <div className="space-y-3">
             {loading ? (
               <div className="flex justify-center py-16">
@@ -406,6 +423,7 @@ const ArchiveAccountingPage = () => {
                   onDelete={handleDelete}
                   onConvert={doc.type === 'devis' ? handleConvert : undefined}
                   onOpen={handleOpenDocument}
+                  onMarkPaid={handleMarkPaid}
                 />
               ))
             )}
@@ -413,7 +431,7 @@ const ArchiveAccountingPage = () => {
         </Tabs>
       </div>
 
-      {/* Floating AI Actions */}
+      {/* Floating Actions */}
       <div className={cn('fixed bottom-24 flex flex-col gap-2 z-30', isRTL ? 'left-4' : 'right-4')}>
         <Button
           size="sm"
@@ -448,7 +466,6 @@ const ArchiveAccountingPage = () => {
         isRTL={isRTL}
         userId={user.id}
         onExpenseAdded={() => {
-          // Re-fetch expenses
           (supabase.from('expenses') as any)
             .select('*')
             .eq('user_id', user.id)
@@ -475,9 +492,7 @@ const ArchiveAccountingPage = () => {
         isRTL={isRTL}
         userId={user.id}
         accountantEmail={(profile as any)?.accountant_email}
-        onSent={() => {
-          // Optionally refresh data
-        }}
+        onSent={() => {}}
       />
     </div>
   );

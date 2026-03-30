@@ -1,10 +1,13 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, PenLine, FileText, User, Wallet, Settings } from 'lucide-react';
+import { Camera, PenLine, FileText, User, Wallet, Settings, TrendingUp, Banknote } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import LegalComplianceBanner from '@/components/shared/LegalComplianceBanner';
 import SecurityBadge from '@/components/shared/SecurityBadge';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const Dashboard = () => {
   // Build marker: force diff for publish sync

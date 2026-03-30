@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronRight, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ShbikLbikProps {

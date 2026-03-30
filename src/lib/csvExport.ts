@@ -275,30 +275,34 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     ].join(sep);
   });
 
-  // ── Section 3: SYNTHESE FISCALE ──
+  // ── Section 3: SYNTHESE FISCALE (recalculée pour cohérence) ──
   const totalHTVentes = data.invoices.reduce((s, r) => {
-    const rate = correctTvaRate(r.tvaRate ?? 0);
-    return s + ((r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, rate));
+    const rate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
+    const rawHT = sanitizeAmount(r.totalHT);
+    return s + (rawHT > 0 ? rawHT : computeHT(sanitizeAmount(r.totalTTC), rate));
   }, 0);
   const totalTVACollectee = data.invoices.reduce((s, r) => {
-    const rate = correctTvaRate(r.tvaRate ?? 0);
-    const ht = (r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, rate);
+    const rate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
+    const rawHT = sanitizeAmount(r.totalHT);
+    const ht = rawHT > 0 ? rawHT : computeHT(sanitizeAmount(r.totalTTC), rate);
     return s + Math.round(ht * rate) / 100;
   }, 0);
-  const totalTTCVentes = data.invoices.reduce((s, r) => s + r.totalTTC, 0);
+  const totalTTCVentes = Math.round((totalHTVentes + totalTVACollectee) * 100) / 100;
 
   const totalHTDepenses = data.expenses.reduce((s, r) => {
-    const rate = correctTvaRate(r.tvaRate ?? 0);
-    return s + ((r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, rate));
+    const rate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
+    const rawHT = sanitizeAmount(r.totalHT);
+    return s + (rawHT > 0 ? rawHT : computeHT(sanitizeAmount(r.totalTTC), rate));
   }, 0);
   const totalTVADeductible = data.expenses.reduce((s, r) => {
-    const rate = correctTvaRate(r.tvaRate ?? 0);
-    const ht = (r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, rate);
+    const rate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
+    const rawHT = sanitizeAmount(r.totalHT);
+    const ht = rawHT > 0 ? rawHT : computeHT(sanitizeAmount(r.totalTTC), rate);
     return s + Math.round(ht * rate) / 100;
   }, 0);
-  const totalTTCDepenses = data.expenses.reduce((s, r) => s + r.totalTTC, 0);
+  const totalTTCDepenses = Math.round((totalHTDepenses + totalTVADeductible) * 100) / 100;
 
-  const tvaAPayer = totalTVACollectee - totalTVADeductible;
+  const tvaAPayer = Math.round((totalTVACollectee - totalTVADeductible) * 100) / 100;
 
   const synthHeaders = ['Indicateur', 'Montant'];
   const synthRows = [
@@ -311,7 +315,7 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     ['TVA_A_Payer', fmtNum(tvaAPayer)],
   ].map(r => r.join(sep));
 
-  // Combine all 3 sections
+  // Combine all 3 sections (structure homogène)
   return BOM + [
     invoiceHeaders.join(sep),
     ...invoiceRows,

@@ -13,6 +13,8 @@ interface FinancialSummaryProps {
   debugDepensesCount: number;
   debugTotalFactures?: number;
   debugIgnoredFactures?: number;
+  debugPaidCount?: number;
+  debugUnpaidCount?: number;
   tresorerieEncaissee?: number;
 }
 

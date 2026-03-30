@@ -132,6 +132,16 @@ const DocumentsListPage = () => {
   };
 
   const handleConvertToInvoice = async (doc: DocumentRow) => {
+    // Prevent double conversion
+    if ((doc as any).converted_to_invoice) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
+        description: isRTL ? 'تم إنشاء فاتورة بالفعل من هذا الدوفي' : 'Une facture a déjà été créée depuis ce devis',
+      });
+      return;
+    }
+    
     // Extract full data from document_data JSON
     const docData = doc.document_data || {};
     const items = docData.items || [];

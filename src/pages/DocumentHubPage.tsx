@@ -31,7 +31,7 @@ const DocumentHubPage = () => {
     if (!user) return;
     const fetchFinancials = async () => {
       const [{ data: docs }, { data: exps }] = await Promise.all([
-        supabase.from('documents_comptables').select('total_ttc, subtotal_ht, tva_amount, document_type, status').eq('user_id', user.id),
+        supabase.from('documents_comptables').select('total_ttc, subtotal_ht, tva_amount, document_type, status, payment_status').eq('user_id', user.id),
         supabase.from('expenses').select('amount, tva_amount').eq('user_id', user.id),
       ]);
       const invoices = (docs || []).filter(d => d.document_type === 'facture' && d.status === 'finalized');

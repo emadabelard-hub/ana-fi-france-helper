@@ -619,8 +619,8 @@ const ExpensesPage = () => {
         </CardContent>
       </Card>
 
-      {/* 3 Large Summary Cards */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* 4 Large Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-emerald-500/20 bg-emerald-500/5">
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-2">
@@ -632,6 +632,19 @@ const ExpensesPage = () => {
             <p className="text-lg font-black text-emerald-400">{formatCurrency(totalIncome)}</p>
           </CardContent>
         </Card>
+
+        <Card className="border-cyan-500/20 bg-cyan-500/5">
+          <CardContent className="p-4 text-center">
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center mx-auto mb-2">
+              <Banknote className="h-5 w-5 text-cyan-400" />
+            </div>
+            <p className={cn("text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1", isRTL && "font-cairo")}>
+              {isRTL ? '💰 الأموال المحصلة' : '💰 Trésorerie encaissée'}
+            </p>
+            <p className="text-lg font-black text-cyan-400">{formatCurrency(totalCollected)}</p>
+          </CardContent>
+        </Card>
+
         <Card className="border-red-500/20 bg-red-500/5">
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center mx-auto mb-2">
@@ -643,6 +656,7 @@ const ExpensesPage = () => {
             <p className="text-lg font-black text-red-400">{formatCurrency(totalExpenses)}</p>
           </CardContent>
         </Card>
+
         <Card className={cn('border-blue-500/20', netProfit >= 0 ? 'bg-blue-500/5' : 'bg-red-500/5')}>
           <CardContent className="p-4 text-center">
             <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2", netProfit >= 0 ? "bg-blue-500/10" : "bg-red-500/10")}>

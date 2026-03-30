@@ -433,7 +433,7 @@ const ArchiveAccountingPage = () => {
         <Button
           size="sm"
           className="bg-accent/80 text-accent-foreground hover:bg-accent/70 font-bold gap-1.5 rounded-full shadow-lg shadow-accent/20 px-4"
-          onClick={handleExportCSV}
+          onClick={handleExportComptable}
         >
           <Download className="h-4 w-4" />
           <span className={cn('text-xs', isRTL && 'font-cairo')}>{isRTL ? 'ملف المحاسب' : 'Export comptable'}</span>

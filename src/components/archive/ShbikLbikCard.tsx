@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronRight, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ShbikLbikProps {
@@ -15,6 +15,7 @@ interface ShbikLbikProps {
   totalExpensesHT: number;
   isTvaExempt: boolean;
   isRTL: boolean;
+  tresorerieEncaissee?: number;
 }
 
 const fmt = (n: number) =>
@@ -23,7 +24,7 @@ const fmt = (n: number) =>
 const ShbikLbikCard = ({
   totalIncome, totalExpenses, tvaCollectee, tvaDeductible,
   urssafRate, isRate, totalIncomeHT, totalExpensesHT,
-  isTvaExempt, isRTL,
+  isTvaExempt, isRTL, tresorerieEncaissee = 0,
 }: ShbikLbikProps) => {
   const navigate = useNavigate();
   const [showDetail, setShowDetail] = useState(false);
@@ -159,8 +160,11 @@ const ShbikLbikCard = ({
           {showDetail && (
             <div className="space-y-1.5 rounded-xl bg-[hsl(220,20%,14%)] p-3 animate-in fade-in-0 slide-in-from-top-1 duration-200">
               <MiniRow icon={<TrendingUp className="h-3 w-3 text-emerald-400" />}
-                label={isRTL ? 'الإيرادات' : 'Revenus'} value={fmt(totalIncome)}
+                label={isRTL ? 'إجمالي الإيرادات (CA)' : 'Chiffre d\'affaires'} value={fmt(totalIncome)}
                 color="text-emerald-400" isRTL={isRTL} />
+              <MiniRow icon={<Banknote className="h-3 w-3 text-cyan-400" />}
+                label={isRTL ? '💰 الأموال المحصلة' : '💰 Trésorerie encaissée'} value={fmt(tresorerieEncaissee)}
+                color="text-cyan-400" isRTL={isRTL} />
               <MiniRow icon={<TrendingDown className="h-3 w-3 text-red-400" />}
                 label={isRTL ? 'المصاريف' : 'Dépenses'} value={`-${fmt(totalExpenses)}`}
                 color="text-red-400" isRTL={isRTL} />

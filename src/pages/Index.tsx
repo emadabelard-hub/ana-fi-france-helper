@@ -1,16 +1,38 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Wallet, Building2, Bot } from 'lucide-react';
+import { Briefcase, Wallet, Building2, Bot, TrendingUp, Banknote } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import WelcomeModal from '@/components/home/WelcomeModal';
 import GDPRTrustBox from '@/components/shared/GDPRTrustBox';
 import { useTracker } from '@/contexts/ActivityTrackerContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+
+const fmt = (n: number) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 
 const Index = () => {
   const { language, setLanguage, isRTL } = useLanguage();
   const navigate = useNavigate();
   const { trackFeatureClick } = useTracker();
+  const { user } = useAuth();
+  const [ca, setCa] = useState(0);
+  const [tresorerie, setTresorerie] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const loadFinancials = async () => {
+      const { data: docs } = await supabase
+        .from('documents_comptables')
+        .select('subtotal_ht, status, payment_status, document_type')
+        .eq('user_id', user.id);
+      const finalized = (docs || []).filter((d: any) => d.document_type === 'facture' && d.status === 'finalized');
+      setCa(finalized.reduce((s: number, d: any) => s + (d.subtotal_ht || 0), 0));
+      setTresorerie(finalized.filter((d: any) => d.payment_status === 'paid').reduce((s: number, d: any) => s + (d.subtotal_ht || 0), 0));
+    };
+    loadFinancials();
+  }, [user]);
 
   useEffect(() => {
     document.documentElement.style.overscrollBehaviorY = 'auto';
@@ -158,6 +180,36 @@ const Index = () => {
             </svg>
           </button>
         ))}
+
+        {/* Financial Indicators */}
+        {user && (
+          <section className="grid grid-cols-2 gap-3 mt-2">
+            <div className="rounded-2xl bg-gradient-to-br from-emerald-500/15 to-emerald-600/5 border border-emerald-500/20 p-4">
+              <div className={cn('flex items-center gap-2 mb-2', isRTL && 'flex-row-reverse')}>
+                <TrendingUp className="h-4 w-4 text-emerald-400" />
+                <span className={cn('text-[11px] font-bold text-emerald-400', isRTL && 'font-cairo')}>
+                  {isRTL ? 'إجمالي الإيرادات' : 'Chiffre d\'affaires'}
+                </span>
+              </div>
+              <p className={cn('text-xl font-black text-emerald-400', isRTL && 'text-right')}>{fmt(ca)}</p>
+              <p className={cn('text-[9px] text-muted-foreground mt-1', isRTL && 'font-cairo text-right')}>
+                {isRTL ? 'كل الفواتير المعتمدة' : 'Toutes factures finalisées'}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-gradient-to-br from-cyan-500/15 to-cyan-600/5 border border-cyan-500/20 p-4">
+              <div className={cn('flex items-center gap-2 mb-2', isRTL && 'flex-row-reverse')}>
+                <Banknote className="h-4 w-4 text-cyan-400" />
+                <span className={cn('text-[11px] font-bold text-cyan-400', isRTL && 'font-cairo')}>
+                  {isRTL ? '💰 الأموال المحصلة' : '💰 Trésorerie'}
+                </span>
+              </div>
+              <p className={cn('text-xl font-black text-cyan-400', isRTL && 'text-right')}>{fmt(tresorerie)}</p>
+              <p className={cn('text-[9px] text-muted-foreground mt-1', isRTL && 'font-cairo text-right')}>
+                {isRTL ? 'الفواتير المدفوعة فقط' : 'Factures payées uniquement'}
+              </p>
+            </div>
+          </section>
+        )}
 
         <div className="mt-auto pt-4">
           <GDPRTrustBox />

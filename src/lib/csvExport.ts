@@ -56,15 +56,45 @@ function translateToFrench(text: string): string {
 }
 
 /**
+ * Detect truncated/garbled text (e.g. "ré5", "tra", "pon", "Prestation tra").
+ */
+const GARBLED_PATTERN = /^[a-zàâéèêëïôùûüç]{1,4}\d|^.{1,5}$/i;
+const TRUNCATED_PATTERNS = [
+  /^prestation\s*tra/i,
+  /^travaux?\s*$/i,
+  /^ré\d/i,
+  /^tra$/i,
+  /^pon$/i,
+  /^end$/i,
+  /^pei$/i,
+  /^net$/i,
+  /^dém$/i,
+  /^fou$/i,
+  /^\s*$/,
+];
+
+/**
  * Upgrade weak libellés to professional French.
+ * ZERO tolerance for truncated, garbled, or incomplete text.
  */
 function professionalLibelle(text: string, type: 'Vente' | 'Achat' | 'Transport'): string {
   let result = translateToFrench(text);
-  // Fix truncated / weak descriptions
-  if (result.length < 15 || /^prestation\s*tra/i.test(result)) {
-    result = type === 'Vente' ? 'Travaux de rénovation intérieure' : 'Achat de matériaux chantier';
+
+  // Detect garbled or truncated text
+  const isGarbled = GARBLED_PATTERN.test(result) || TRUNCATED_PATTERNS.some(p => p.test(result));
+  const isTooShort = result.length < 15;
+
+  if (isGarbled || isTooShort) {
+    if (type === 'Transport') {
+      result = 'Frais de déplacement chantier';
+    } else if (type === 'Achat') {
+      result = 'Achat de matériaux chantier';
+    } else {
+      result = 'Travaux de rénovation intérieure';
+    }
   }
-  // Capitalize
+
+  // Capitalize first letter
   if (result.length > 0) result = result.charAt(0).toUpperCase() + result.slice(1);
   return result;
 }

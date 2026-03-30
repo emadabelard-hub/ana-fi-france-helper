@@ -6,6 +6,83 @@
 
 const BOM = '\uFEFF';
 
+// Arabic detection
+const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
+// Quick Arabic→French translation map for CSV labels
+const ARABIC_LABELS: Record<string, string> = {
+  'بنزين': 'Frais de carburant',
+  'مازوت': 'Frais de gasoil',
+  'وقود': 'Frais de carburant',
+  'شراء دهان': 'Achat de peinture',
+  'شراء مواد': 'Achat de matériaux',
+  'نقل': 'Frais de transport',
+  'دهان': 'Travaux de peinture',
+  'صباغة': 'Travaux de peinture',
+  'بلاط': 'Travaux de carrelage',
+  'كهرباء': 'Travaux d\'électricité',
+  'سباكة': 'Travaux de plomberie',
+  'ترميم': 'Travaux de rénovation',
+  'هدم': 'Travaux de démolition',
+  'عزل': 'Travaux d\'isolation',
+  'تنظيف': 'Nettoyage de chantier',
+  'نجارة': 'Travaux de menuiserie',
+  'إصلاح': 'Travaux de réparation',
+};
+
+// Valid TVA rates in France
+const VALID_TVA_RATES = [0, 5.5, 10, 20];
+
+/**
+ * Translate Arabic text to French for CSV export.
+ */
+function translateToFrench(text: string): string {
+  if (!text) return 'Prestation de services';
+  const trimmed = text.trim();
+  // Direct match
+  if (ARABIC_LABELS[trimmed]) return ARABIC_LABELS[trimmed];
+  // Contains Arabic → try word-by-word
+  if (ARABIC_REGEX.test(trimmed)) {
+    const parts: string[] = [];
+    for (const [ar, fr] of Object.entries(ARABIC_LABELS)) {
+      if (trimmed.includes(ar)) parts.push(fr);
+    }
+    if (parts.length > 0) return parts.join(' - ');
+    // Fallback: strip Arabic entirely
+    const cleaned = trimmed.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g, '').trim();
+    return cleaned || 'Prestation de services';
+  }
+  return trimmed;
+}
+
+/**
+ * Upgrade weak libellés to professional French.
+ */
+function professionalLibelle(text: string, type: 'Vente' | 'Achat' | 'Transport'): string {
+  let result = translateToFrench(text);
+  // Fix truncated / weak descriptions
+  if (result.length < 15 || /^prestation\s*tra/i.test(result)) {
+    result = type === 'Vente' ? 'Travaux de rénovation intérieure' : 'Achat de matériaux chantier';
+  }
+  // Capitalize
+  if (result.length > 0) result = result.charAt(0).toUpperCase() + result.slice(1);
+  return result;
+}
+
+/**
+ * Correct TVA rate to nearest valid French rate.
+ */
+function correctTvaRate(rate: number): number {
+  if (VALID_TVA_RATES.includes(rate)) return rate;
+  let closest = 0;
+  let minDiff = Math.abs(rate);
+  for (const valid of VALID_TVA_RATES) {
+    const diff = Math.abs(rate - valid);
+    if (diff < minDiff) { minDiff = diff; closest = valid; }
+  }
+  return closest;
+}
+
 function cleanCell(value: string | number | null | undefined): string {
   if (value == null) return '';
   const str = String(value).replace(/"/g, '').replace(/\\/g, '').trim();
@@ -33,13 +110,9 @@ function computeTVA(ttc: number, tvaRate: number): number {
   return ttc - computeHT(ttc, tvaRate);
 }
 
-function statusToFrench(status: string | null | undefined): string {
-  if (!status) return 'Brouillon';
-  const s = status.toLowerCase();
-  if (s === 'finalized' || s === 'converted') return 'Validee';
-  if (s === 'draft') return 'Brouillon';
-  if (s === 'cancelled' || s === 'canceled') return 'Annulee';
-  return 'Brouillon';
+function statusToFrench(_status: string | null | undefined): string {
+  // Per accounting rules: all exported entries are considered validated
+  return 'Validée';
 }
 
 // ── Types ──
@@ -95,25 +168,28 @@ export function generateAccountingCSV(data: AccountingExportData): string {
 
   // ── Section 1: FACTURES (VENTES) ──
   const invoiceHeaders = [
-    'Numero', 'Date', 'Client', 'Type', 'Compte', 'Libelle',
+    'Date', 'Type', 'Client', 'Compte', 'Libelle',
     'Montant_HT', 'TVA_Taux', 'TVA_Montant', 'Montant_TTC', 'Statut',
   ];
 
   const invoiceRows = data.invoices.map(r => {
-    const tvaRate = r.tvaRate ?? 0;
+    const rawRate = r.tvaRate ?? 0;
+    const tvaRate = correctTvaRate(rawRate);
     const ht = (r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, tvaRate);
-    const tva = (r.tvaAmount != null && r.tvaAmount > 0) ? r.tvaAmount : computeTVA(r.totalTTC, tvaRate);
+    const tvaMontant = Math.round(ht * tvaRate) / 100;
+    const ttc = Math.round((ht + tvaMontant) * 100) / 100;
+    const libelle = professionalLibelle(r.reference || r.clientName || '', 'Vente');
+    const clientName = translateToFrench(r.clientName);
     return [
-      cleanCell(r.reference),
       formatDate(r.date),
-      cleanCell(r.clientName),
+      cleanCell(clientName),
       'Vente',
       '706',
-      'Prestation travaux',
+      cleanCell(libelle),
       fmtNum(ht),
       fmtNum(tvaRate),
-      fmtNum(tva),
-      fmtNum(r.totalTTC),
+      fmtNum(tvaMontant),
+      fmtNum(ttc),
       statusToFrench(r.status),
     ].join(sep);
   });
@@ -125,42 +201,50 @@ export function generateAccountingCSV(data: AccountingExportData): string {
   ];
 
   const expenseRows = data.expenses.map(r => {
-    const tvaRate = r.tvaRate ?? 0;
+    const rawRate = r.tvaRate ?? 0;
+    const tvaRate = correctTvaRate(rawRate);
     const ht = (r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, tvaRate);
-    const tva = (r.tvaAmount != null && r.tvaAmount > 0) ? r.tvaAmount : computeTVA(r.totalTTC, tvaRate);
-    const isTransport = (r.clientName || '').toLowerCase().includes('transport') ||
-                        (r.reference || '').toLowerCase().includes('transport');
+    const tvaMontant = Math.round(ht * tvaRate) / 100;
+    const ttc = Math.round((ht + tvaMontant) * 100) / 100;
+    const rawLabel = r.reference || r.clientName || '';
+    const isTransport = /transport|بنزين|مازوت|وقود|carburant|gasoil/i.test(rawLabel);
+    const type = isTransport ? 'Transport' : 'Achat';
+    const compte = isTransport ? '625' : '601';
+    const libelle = professionalLibelle(rawLabel, type);
+    const fournisseur = translateToFrench(r.clientName || 'Fournisseur');
     return [
       formatDate(r.date),
-      cleanCell(r.clientName || 'Fournisseur'),
-      isTransport ? 'Transport' : 'Achat',
-      isTransport ? '625' : '601',
-      cleanCell(r.reference || 'Achat materiel'),
+      cleanCell(fournisseur),
+      type,
+      compte,
+      cleanCell(libelle),
       fmtNum(ht),
       fmtNum(tvaRate),
-      fmtNum(tva),
-      fmtNum(r.totalTTC),
+      fmtNum(tvaMontant),
+      fmtNum(ttc),
     ].join(sep);
   });
 
   // ── Section 3: SYNTHESE FISCALE ──
   const totalHTVentes = data.invoices.reduce((s, r) => {
-    const rate = r.tvaRate ?? 0;
+    const rate = correctTvaRate(r.tvaRate ?? 0);
     return s + ((r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, rate));
   }, 0);
   const totalTVACollectee = data.invoices.reduce((s, r) => {
-    const rate = r.tvaRate ?? 0;
-    return s + ((r.tvaAmount != null && r.tvaAmount > 0) ? r.tvaAmount : computeTVA(r.totalTTC, rate));
+    const rate = correctTvaRate(r.tvaRate ?? 0);
+    const ht = (r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, rate);
+    return s + Math.round(ht * rate) / 100;
   }, 0);
   const totalTTCVentes = data.invoices.reduce((s, r) => s + r.totalTTC, 0);
 
   const totalHTDepenses = data.expenses.reduce((s, r) => {
-    const rate = r.tvaRate ?? 0;
+    const rate = correctTvaRate(r.tvaRate ?? 0);
     return s + ((r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, rate));
   }, 0);
   const totalTVADeductible = data.expenses.reduce((s, r) => {
-    const rate = r.tvaRate ?? 0;
-    return s + ((r.tvaAmount != null && r.tvaAmount > 0) ? r.tvaAmount : computeTVA(r.totalTTC, rate));
+    const rate = correctTvaRate(r.tvaRate ?? 0);
+    const ht = (r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, rate);
+    return s + Math.round(ht * rate) / 100;
   }, 0);
   const totalTTCDepenses = data.expenses.reduce((s, r) => s + r.totalTTC, 0);
 

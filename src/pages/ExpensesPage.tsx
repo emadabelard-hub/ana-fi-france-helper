@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Receipt, Plus, TrendingUp, TrendingDown, Wallet,
+  Receipt, Plus, TrendingUp, TrendingDown, Wallet, Banknote,
   Loader2, Download, Eye, FileText, Archive,
   ChevronDown, ChevronUp, Users, HardHat, Calculator, Info, Landmark, Shield
 } from 'lucide-react';
@@ -56,6 +56,7 @@ const ExpensesPage = () => {
   const [rows, setRows] = useState<UnifiedRow[]>([]);
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalIncomeHT, setTotalIncomeHT] = useState(0);
+  const [totalCollected, setTotalCollected] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [archiving, setArchiving] = useState(false);
 

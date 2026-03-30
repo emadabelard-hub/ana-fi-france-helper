@@ -160,8 +160,38 @@ const Dashboard = () => {
         })}
       </section>
 
+      {/* Financial Indicators */}
+      {user && (
+        <section className="max-w-md mx-auto w-full mt-6 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl bg-gradient-to-br from-emerald-500/15 to-emerald-600/5 border border-emerald-500/20 p-4">
+            <div className={cn('flex items-center gap-2 mb-2', isRTL && 'flex-row-reverse')}>
+              <TrendingUp className="h-4 w-4 text-emerald-400" />
+              <span className={cn('text-[11px] font-bold text-emerald-400', isRTL && 'font-cairo')}>
+                {isRTL ? 'إجمالي الإيرادات' : 'Chiffre d\'affaires'}
+              </span>
+            </div>
+            <p className={cn('text-xl font-black text-emerald-400', isRTL && 'text-right')}>{fmt(ca)}</p>
+            <p className={cn('text-[9px] text-muted-foreground mt-1', isRTL && 'font-cairo text-right')}>
+              {isRTL ? 'كل الفواتير المعتمدة' : 'Toutes factures finalisées'}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-gradient-to-br from-cyan-500/15 to-cyan-600/5 border border-cyan-500/20 p-4">
+            <div className={cn('flex items-center gap-2 mb-2', isRTL && 'flex-row-reverse')}>
+              <Banknote className="h-4 w-4 text-cyan-400" />
+              <span className={cn('text-[11px] font-bold text-cyan-400', isRTL && 'font-cairo')}>
+                {isRTL ? '💰 الأموال المحصلة' : '💰 Trésorerie'}
+              </span>
+            </div>
+            <p className={cn('text-xl font-black text-cyan-400', isRTL && 'text-right')}>{fmt(tresorerie)}</p>
+            <p className={cn('text-[9px] text-muted-foreground mt-1', isRTL && 'font-cairo text-right')}>
+              {isRTL ? 'الفواتير المدفوعة فقط' : 'Factures payées uniquement'}
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* Simple Footer */}
-      <section className="text-center mt-12">
+      <section className="text-center mt-8">
         <p className="text-sm text-muted-foreground font-cairo">
           🇫🇷 {isRTL ? 'مساعدك في فرنسا' : 'Votre assistant en France'}
         </p>

@@ -373,6 +373,8 @@ const ArchiveAccountingPage = () => {
           debugDepensesCount={expenses.length}
           debugTotalFactures={totalFactures}
           debugIgnoredFactures={ignoredFactures}
+          debugPaidCount={facturesValidees.filter(d => d.paymentStatus === 'paid').length}
+          debugUnpaidCount={facturesValidees.filter(d => d.paymentStatus !== 'paid').length}
           tresorerieEncaissee={tresorerieEncaissee}
         />
       </div>

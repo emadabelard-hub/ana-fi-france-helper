@@ -75,7 +75,7 @@ const ExpensesPage = () => {
       // Fetch documents
       const docsQ = supabase
         .from('documents_comptables')
-        .select('id, document_type, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, created_at, chantier_id, pdf_url')
+        .select('id, document_type, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, payment_status, created_at, chantier_id, pdf_url')
         .order('created_at', { ascending: false });
       if (!isAdmin) docsQ.eq('user_id', user.id);
 
@@ -107,6 +107,7 @@ const ExpensesPage = () => {
 
       let incomeSum = 0;
       let incomeHTSum = 0;
+      let collectedSum = 0;
       let expenseSum = 0;
 
       const unified: UnifiedRow[] = [];
@@ -114,10 +115,15 @@ const ExpensesPage = () => {
       // Documents
       (docsRes.data || []).forEach((d: any) => {
         const ch = d.chantier_id ? chantierMap[d.chantier_id] : null;
-        if (d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted')) {
+        if (d.document_type === 'facture' && d.status === 'finalized') {
           incomeSum += d.total_ttc || 0;
           incomeHTSum += d.subtotal_ht || 0;
+
+          if (d.payment_status === 'paid') {
+            collectedSum += d.total_ttc || 0;
+          }
         }
+
         unified.push({
           id: d.id,
           date: d.created_at,
@@ -163,6 +169,7 @@ const ExpensesPage = () => {
       setRows(unified);
       setTotalIncome(incomeSum);
       setTotalIncomeHT(incomeHTSum);
+      setTotalCollected(collectedSum);
       setTotalExpenses(expenseSum);
     } catch {
       // fetch error handled gracefully

@@ -1,90 +1,139 @@
-import { useState, useCallback, useRef } from 'react';
-import { correctArtisanVocabulary } from '@/lib/artisanVocabulary';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+function pickSupportedMimeType() {
+  if (typeof MediaRecorder === 'undefined') return '';
+
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+    'audio/ogg;codecs=opus',
+    'audio/ogg',
+  ];
+
+  for (const mimeType of candidates) {
+    if (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported(mimeType)) {
+      return mimeType;
+    }
+  }
+
+  return '';
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      resolve(result.includes(',') ? result.split(',')[1] ?? '' : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Audio read failed'));
+    reader.readAsDataURL(blob);
+  });
+}
 
 /**
- * Hook for field-level voice input (ChatGPT-style toggle).
- * Click mic → start listening. Click again → stop & return corrected text.
+ * Field-level voice input using real audio recording.
+ * Records audio, sends it to backend multilingual STT + AI cleanup,
+ * then returns only the final professional French text.
  */
-export function useFieldVoice(lang = 'fr-FR') {
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
-  const accumulatedRef = useRef('');
+export function useFieldVoice() {
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const mimeTypeRef = useRef('audio/webm');
 
   const isSupported =
     typeof window !== 'undefined' &&
-    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+    typeof navigator !== 'undefined' &&
+    !!navigator.mediaDevices?.getUserMedia &&
+    typeof MediaRecorder !== 'undefined';
 
-  const start = useCallback(
-    (onInterim?: (text: string) => void) => {
-      if (!isSupported) return;
-
-      const SR =
-        (window as any).SpeechRecognition ||
-        (window as any).webkitSpeechRecognition;
-      const recognition = new SR();
-      recognition.lang = lang;
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.maxAlternatives = 1;
-
-      accumulatedRef.current = '';
-
-      recognition.onresult = (event: any) => {
-        let finalText = '';
-        let interimText = '';
-        for (let i = 0; i < event.results.length; i++) {
-          const r = event.results[i];
-          if (r.isFinal) {
-            finalText += r[0].transcript + ' ';
-          } else {
-            interimText += r[0].transcript;
-          }
-        }
-        const combined = (finalText + interimText).trim();
-        const corrected = correctArtisanVocabulary(combined);
-        accumulatedRef.current = corrected;
-        onInterim?.(corrected);
-      };
-
-      recognition.onerror = (e: any) => {
-        if (e.error === 'no-speech' || e.error === 'aborted') return;
-        console.error('Field voice error:', e.error);
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        // Auto-restart if still listening (browser may stop it)
-        if (recognitionRef.current) {
-          try {
-            recognition.start();
-          } catch {
-            setIsListening(false);
-          }
-        }
-      };
-
-      recognitionRef.current = recognition;
-      try {
-        recognition.start();
-        setIsListening(true);
-      } catch {
-        /* ignore */
-      }
-    },
-    [isSupported, lang],
-  );
-
-  const stop = useCallback((): string => {
-    const ref = recognitionRef.current;
-    recognitionRef.current = null;
-    try {
-      ref?.stop();
-    } catch {
-      /* ignore */
+  const cleanup = useCallback(() => {
+    mediaRecorderRef.current = null;
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
     }
-    setIsListening(false);
-    return correctArtisanVocabulary(accumulatedRef.current);
+    chunksRef.current = [];
+    setIsRecording(false);
   }, []);
 
-  return { isListening, start, stop, isSupported };
+  useEffect(() => cleanup, [cleanup]);
+
+  const start = useCallback(async () => {
+    if (!isSupported || isRecording || isProcessing) return false;
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
+
+    const mimeType = pickSupportedMimeType();
+    const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+
+    mimeTypeRef.current = recorder.mimeType || mimeType || 'audio/webm';
+    mediaStreamRef.current = stream;
+    mediaRecorderRef.current = recorder;
+    chunksRef.current = [];
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunksRef.current.push(event.data);
+      }
+    };
+
+    recorder.start();
+    setIsRecording(true);
+    return true;
+  }, [isSupported, isRecording, isProcessing]);
+
+  const stop = useCallback(async (): Promise<string> => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return '';
+
+    setIsProcessing(true);
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      recorder.onstop = () => {
+        resolve(new Blob(chunksRef.current, { type: mimeTypeRef.current }));
+      };
+      recorder.onerror = () => reject(new Error('Audio recording failed'));
+      recorder.stop();
+    });
+
+    cleanup();
+
+    if (!blob.size) {
+      setIsProcessing(false);
+      return '';
+    }
+
+    try {
+      const audioBase64 = await blobToBase64(blob);
+      const { data, error } = await supabase.functions.invoke('voice-field-input', {
+        body: {
+          audioBase64,
+          mimeType: blob.type || mimeTypeRef.current,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Voice processing failed');
+      }
+
+      return typeof data?.text === 'string' ? data.text.trim() : '';
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [cleanup]);
+
+  return { isRecording, isProcessing, start, stop, isSupported };
 }

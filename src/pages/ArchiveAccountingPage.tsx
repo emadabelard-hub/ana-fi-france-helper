@@ -137,27 +137,20 @@ const ArchiveAccountingPage = () => {
     return result;
   }, [allItems, activeTab, periodFilter, searchQuery]);
 
-  // Financial totals
-  const totalIncome = useMemo(() =>
-    documents.filter(d => d.type === 'facture' && d.status === 'finalized').reduce((s, d) => s + d.amountTTC, 0),
-    [documents]);
-  const totalExpenses = useMemo(() =>
-    expenses.reduce((s, e) => s + e.amountTTC, 0),
-    [expenses]);
+  // Financial totals — UNIQUEMENT factures validées (HT) et dépenses (HT)
+  const facturesValidees = useMemo(() =>
+    documents.filter(d => d.type === 'facture' && d.status === 'finalized'), [documents]);
 
-  // ShbikLbik data
+  const caHT = useMemo(() =>
+    facturesValidees.reduce((s, d) => s + d.amountHT, 0), [facturesValidees]);
+  const depensesHT = useMemo(() =>
+    expenses.reduce((s, e) => s + e.amountHT, 0), [expenses]);
+
   const tvaCollectee = useMemo(() =>
-    documents.filter(d => d.type === 'facture' && d.status === 'finalized').reduce((s, d) => s + (d.rawData?.tva_amount || 0), 0),
-    [documents]);
+    facturesValidees.reduce((s, d) => s + (d.rawData?.tva_amount || 0), 0), [facturesValidees]);
   const tvaDeductible = useMemo(() =>
-    expenses.reduce((s, e) => s + (e.rawData?.tva_amount || 0), 0),
-    [expenses]);
-  const totalIncomeHT = useMemo(() =>
-    documents.filter(d => d.type === 'facture' && d.status === 'finalized').reduce((s, d) => s + d.amountHT, 0),
-    [documents]);
-  const totalExpensesHT = useMemo(() =>
-    expenses.reduce((s, e) => s + e.amountHT, 0),
-    [expenses]);
+    expenses.reduce((s, e) => s + (e.rawData?.tva_amount || 0), 0), [expenses]);
+
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
   const isRate = (profile as any)?.is_rate ?? 15;
   const isTvaExempt = (profile as any)?.tva_exempt ?? false;
@@ -353,29 +346,29 @@ const ArchiveAccountingPage = () => {
       {/* Financial Summary */}
       <div className="mb-4 shrink-0">
         <FinancialSummary
-          totalIncome={totalIncome}
-          totalExpenses={totalExpenses}
+          caHT={caHT}
+          depensesHT={depensesHT}
           tvaCollectee={tvaCollectee}
           tvaDeductible={tvaDeductible}
-          totalIncomeHT={totalIncomeHT}
-          totalExpensesHT={totalExpensesHT}
           urssafRate={urssafRate}
           isRate={isRate}
           isRTL={isRTL}
+          debugFacturesCount={facturesValidees.length}
+          debugDepensesCount={expenses.length}
         />
       </div>
 
       {/* ShbikLbik Smart Assistant */}
       <div className="mb-4 shrink-0">
         <ShbikLbikCard
-          totalIncome={totalIncome}
-          totalExpenses={totalExpenses}
+          totalIncome={caHT + tvaCollectee}
+          totalExpenses={depensesHT + tvaDeductible}
           tvaCollectee={tvaCollectee}
           tvaDeductible={tvaDeductible}
           urssafRate={urssafRate}
           isRate={isRate}
-          totalIncomeHT={totalIncomeHT}
-          totalExpensesHT={totalExpensesHT}
+          totalIncomeHT={caHT}
+          totalExpensesHT={depensesHT}
           isTvaExempt={isTvaExempt}
           isRTL={isRTL}
         />

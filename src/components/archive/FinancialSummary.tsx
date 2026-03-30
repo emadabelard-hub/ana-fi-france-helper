@@ -2,38 +2,38 @@ import { TrendingUp, TrendingDown, Wallet, Receipt, AlertTriangle, Calculator } 
 import { cn } from '@/lib/utils';
 
 interface FinancialSummaryProps {
-  totalIncome: number;
-  totalExpenses: number;
+  caHT: number;
+  depensesHT: number;
   tvaCollectee: number;
   tvaDeductible: number;
-  totalIncomeHT: number;
-  totalExpensesHT: number;
   urssafRate: number;
   isRate: number;
   isRTL: boolean;
+  debugFacturesCount: number;
+  debugDepensesCount: number;
 }
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
 const FinancialSummary = ({
-  totalIncome, totalExpenses,
+  caHT, depensesHT,
   tvaCollectee, tvaDeductible,
-  totalIncomeHT, totalExpensesHT,
   urssafRate, isRate, isRTL,
+  debugFacturesCount, debugDepensesCount,
 }: FinancialSummaryProps) => {
-  // ── BLOC 1: Données réelles ──
-  const beneficeBrut = totalIncome - totalExpenses;
+  // ── BLOC 1: Données réelles (tout en HT) ──
+  const benefice = caHT - depensesHT;
   const tvaAPayer = Math.max(0, tvaCollectee - tvaDeductible);
 
-  // ── BLOC 2: Estimations ──
-  const urssafEstime = beneficeBrut > 0 ? beneficeBrut * (urssafRate / 100) : 0;
-  const isEstime = beneficeBrut > 0 ? beneficeBrut * (isRate / 100) : 0;
+  // ── BLOC 2: Estimations basées sur bénéfice HT ──
+  const urssafEstime = benefice > 0 ? Math.round(benefice * (urssafRate / 100) * 100) / 100 : 0;
+  const isEstime = benefice > 0 ? Math.round(benefice * (isRate / 100) * 100) / 100 : 0;
 
   const realRows = [
-    { label: "Chiffre d'affaires (TTC)", value: totalIncome, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { label: 'Dépenses (TTC)', value: totalExpenses, icon: TrendingDown, color: 'text-red-400', bg: 'bg-red-500/10' },
-    { label: 'Bénéfice brut', value: beneficeBrut, icon: Wallet, color: beneficeBrut >= 0 ? 'text-emerald-400' : 'text-red-400', bg: beneficeBrut >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' },
+    { label: "Chiffre d'affaires (HT)", value: caHT, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: 'Dépenses (HT)', value: depensesHT, icon: TrendingDown, color: 'text-red-400', bg: 'bg-red-500/10' },
+    { label: 'Bénéfice (HT)', value: benefice, icon: Wallet, color: benefice >= 0 ? 'text-emerald-400' : 'text-red-400', bg: benefice >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' },
     { label: 'TVA collectée', value: tvaCollectee, icon: Receipt, color: 'text-blue-400', bg: 'bg-blue-500/10' },
     { label: 'TVA déductible', value: tvaDeductible, icon: Receipt, color: 'text-violet-400', bg: 'bg-violet-500/10' },
     { label: 'TVA à payer', value: tvaAPayer, icon: Receipt, color: 'text-amber-400', bg: 'bg-amber-500/10' },
@@ -65,6 +65,11 @@ const FinancialSummary = ({
               </p>
             </div>
           ))}
+        </div>
+        {/* Debug temporaire */}
+        <div className="mt-2 rounded-lg border border-border/50 bg-muted/30 p-2 text-[10px] text-muted-foreground font-mono">
+          <p>🔍 DEBUG — Factures validées: {debugFacturesCount} | Dépenses: {debugDepensesCount}</p>
+          <p>CA_HT: {fmt(caHT)} | Dépenses_HT: {fmt(depensesHT)} | Bénéfice: {fmt(benefice)}</p>
         </div>
       </div>
 

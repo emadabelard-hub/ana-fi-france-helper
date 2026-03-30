@@ -208,32 +208,35 @@ export function generateProfessionalCSV(rows: CsvDocumentRow[]): string {
   return BOM + [headers.join(';'), ...csvRows].join('\n');
 }
 
-// ── Professional 3-section accounting export ──
+// ── Professional SINGLE-TABLE accounting export ──
+// FORMAT STRICT: Date,Type,Client,Compte,Libelle,Montant_HT,TVA_Taux,TVA_Montant,Montant_TTC,Statut
+// UNE SEULE TABLE — aucune section séparée, aucune ligne vide, aucun double header.
 
 export function generateAccountingCSV(data: AccountingExportData): string {
   const sep = ',';
-
-  // ── Section 1: FACTURES (VENTES) ──
-  const invoiceHeaders = [
+  const headers = [
     'Date', 'Type', 'Client', 'Compte', 'Libelle',
     'Montant_HT', 'TVA_Taux', 'TVA_Montant', 'Montant_TTC', 'Statut',
   ];
 
-  const invoiceRows = data.invoices.map(r => {
-    const rawRate = r.tvaRate ?? 0;
-    const tvaRate = correctTvaRate(rawRate, r.tvaExempt === true);
+  // ── Build all rows into a single flat array ──
+  const allRows: string[] = [];
+
+  // Ventes (factures)
+  for (const r of data.invoices) {
+    const tvaRate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
     const rawHT = sanitizeAmount(r.totalHT);
     const rawTTC = sanitizeAmount(r.totalTTC);
-    // Always recalculate for coherence: HT is source of truth when available
     const ht = rawHT > 0 ? rawHT : computeHT(rawTTC, tvaRate);
     const tvaMontant = Math.round(ht * tvaRate) / 100;
     const ttc = Math.round((ht + tvaMontant) * 100) / 100;
     const libelle = professionalLibelle(r.reference || r.clientName || '', 'Vente');
     const clientName = translateToFrench(r.clientName);
-    return [
+
+    allRows.push([
       formatDate(r.date),
-      cleanCell(clientName),
       'Vente',
+      cleanCell(clientName),
       '706',
       cleanCell(libelle),
       fmtNum(ht),
@@ -241,18 +244,12 @@ export function generateAccountingCSV(data: AccountingExportData): string {
       fmtNum(tvaMontant),
       fmtNum(ttc),
       statusToFrench(r.status),
-    ].join(sep);
-  });
+    ].join(sep));
+  }
 
-  // ── Section 2: DEPENSES (ACHATS) ──
-  const expenseHeaders = [
-    'Date', 'Fournisseur', 'Type', 'Compte', 'Libelle',
-    'Montant_HT', 'TVA_Taux', 'TVA_Montant', 'Montant_TTC', 'Statut',
-  ];
-
-  const expenseRows = data.expenses.map(r => {
-    const rawRate = r.tvaRate ?? 0;
-    const tvaRate = correctTvaRate(rawRate, r.tvaExempt === true);
+  // Achats (dépenses)
+  for (const r of data.expenses) {
+    const tvaRate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
     const rawHT = sanitizeAmount(r.totalHT);
     const rawTTC = sanitizeAmount(r.totalTTC);
     const ht = rawHT > 0 ? rawHT : computeHT(rawTTC, tvaRate);
@@ -260,14 +257,14 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     const ttc = Math.round((ht + tvaMontant) * 100) / 100;
     const rawLabel = r.reference || r.clientName || '';
     const isTransport = /transport|بنزين|مازوت|وقود|carburant|gasoil/i.test(rawLabel);
-    const type = isTransport ? 'Transport' : 'Achat';
     const compte = isTransport ? '625' : '601';
-    const libelle = professionalLibelle(rawLabel, type);
-    const fournisseur = translateToFrench(r.clientName || 'Fournisseur');
-    return [
+    const libelle = professionalLibelle(rawLabel, isTransport ? 'Transport' : 'Achat');
+    const clientName = translateToFrench(r.clientName || 'Fournisseur');
+
+    allRows.push([
       formatDate(r.date),
-      cleanCell(fournisseur),
-      type,
+      'Achat',
+      cleanCell(clientName),
       compte,
       cleanCell(libelle),
       fmtNum(ht),
@@ -275,60 +272,11 @@ export function generateAccountingCSV(data: AccountingExportData): string {
       fmtNum(tvaMontant),
       fmtNum(ttc),
       statusToFrench(r.status),
-    ].join(sep);
-  });
+    ].join(sep));
+  }
 
-  // ── Section 3: SYNTHESE FISCALE (recalculée pour cohérence) ──
-  const totalHTVentes = data.invoices.reduce((s, r) => {
-    const rate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
-    const rawHT = sanitizeAmount(r.totalHT);
-    return s + (rawHT > 0 ? rawHT : computeHT(sanitizeAmount(r.totalTTC), rate));
-  }, 0);
-  const totalTVACollectee = data.invoices.reduce((s, r) => {
-    const rate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
-    const rawHT = sanitizeAmount(r.totalHT);
-    const ht = rawHT > 0 ? rawHT : computeHT(sanitizeAmount(r.totalTTC), rate);
-    return s + Math.round(ht * rate) / 100;
-  }, 0);
-  const totalTTCVentes = Math.round((totalHTVentes + totalTVACollectee) * 100) / 100;
-
-  const totalHTDepenses = data.expenses.reduce((s, r) => {
-    const rate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
-    const rawHT = sanitizeAmount(r.totalHT);
-    return s + (rawHT > 0 ? rawHT : computeHT(sanitizeAmount(r.totalTTC), rate));
-  }, 0);
-  const totalTVADeductible = data.expenses.reduce((s, r) => {
-    const rate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
-    const rawHT = sanitizeAmount(r.totalHT);
-    const ht = rawHT > 0 ? rawHT : computeHT(sanitizeAmount(r.totalTTC), rate);
-    return s + Math.round(ht * rate) / 100;
-  }, 0);
-  const totalTTCDepenses = Math.round((totalHTDepenses + totalTVADeductible) * 100) / 100;
-
-  const tvaAPayer = Math.round((totalTVACollectee - totalTVADeductible) * 100) / 100;
-
-  const synthHeaders = ['Indicateur', 'Montant'];
-  const synthRows = [
-    ['Total_HT_Ventes', fmtNum(totalHTVentes)],
-    ['Total_TVA_Collectee', fmtNum(totalTVACollectee)],
-    ['Total_TTC_Ventes', fmtNum(totalTTCVentes)],
-    ['Total_HT_Depenses', fmtNum(totalHTDepenses)],
-    ['Total_TVA_Deductible', fmtNum(totalTVADeductible)],
-    ['Total_TTC_Depenses', fmtNum(totalTTCDepenses)],
-    ['TVA_A_Payer', fmtNum(tvaAPayer)],
-  ].map(r => r.join(sep));
-
-  // Combine all 3 sections (structure homogène)
-  return BOM + [
-    invoiceHeaders.join(sep),
-    ...invoiceRows,
-    '',
-    expenseHeaders.join(sep),
-    ...expenseRows,
-    '',
-    synthHeaders.join(sep),
-    ...synthRows,
-  ].join('\n');
+  // Single table: header + data rows, no empty lines
+  return BOM + [headers.join(sep), ...allRows].join('\n');
 }
 
 /**

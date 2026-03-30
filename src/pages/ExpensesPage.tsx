@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Receipt, Plus, TrendingUp, TrendingDown, Wallet,
+  Receipt, Plus, TrendingUp, TrendingDown, Wallet, Banknote,
   Loader2, Download, Eye, FileText, Archive,
   ChevronDown, ChevronUp, Users, HardHat, Calculator, Info, Landmark, Shield
 } from 'lucide-react';
@@ -56,6 +56,7 @@ const ExpensesPage = () => {
   const [rows, setRows] = useState<UnifiedRow[]>([]);
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalIncomeHT, setTotalIncomeHT] = useState(0);
+  const [totalCollected, setTotalCollected] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [archiving, setArchiving] = useState(false);
 
@@ -74,7 +75,7 @@ const ExpensesPage = () => {
       // Fetch documents
       const docsQ = supabase
         .from('documents_comptables')
-        .select('id, document_type, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, created_at, chantier_id, pdf_url')
+        .select('id, document_type, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, payment_status, created_at, chantier_id, pdf_url')
         .order('created_at', { ascending: false });
       if (!isAdmin) docsQ.eq('user_id', user.id);
 
@@ -106,6 +107,7 @@ const ExpensesPage = () => {
 
       let incomeSum = 0;
       let incomeHTSum = 0;
+      let collectedSum = 0;
       let expenseSum = 0;
 
       const unified: UnifiedRow[] = [];
@@ -113,10 +115,15 @@ const ExpensesPage = () => {
       // Documents
       (docsRes.data || []).forEach((d: any) => {
         const ch = d.chantier_id ? chantierMap[d.chantier_id] : null;
-        if (d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted')) {
+        if (d.document_type === 'facture' && d.status === 'finalized') {
           incomeSum += d.total_ttc || 0;
           incomeHTSum += d.subtotal_ht || 0;
+
+          if (d.payment_status === 'paid') {
+            collectedSum += d.total_ttc || 0;
+          }
         }
+
         unified.push({
           id: d.id,
           date: d.created_at,
@@ -162,6 +169,7 @@ const ExpensesPage = () => {
       setRows(unified);
       setTotalIncome(incomeSum);
       setTotalIncomeHT(incomeHTSum);
+      setTotalCollected(collectedSum);
       setTotalExpenses(expenseSum);
     } catch {
       // fetch error handled gracefully
@@ -187,7 +195,7 @@ const ExpensesPage = () => {
 
   // TVA calculations based on period filter
   const tvaCollectee = useMemo(() =>
-    filtered.filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted')).reduce((s, r) => s + r.tvaAmount, 0),
+    filtered.filter(r => r.type === 'facture' && r.status === 'finalized').reduce((s, r) => s + r.tvaAmount, 0),
     [filtered]);
   const tvaDeductible = useMemo(() =>
     filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.tvaAmount, 0),
@@ -198,7 +206,7 @@ const ExpensesPage = () => {
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
   const isRate = (profile as any)?.is_rate ?? 15;
   const filteredIncomeHT = useMemo(() =>
-    filtered.filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted')).reduce((s, r) => s + r.amountHT, 0),
+    filtered.filter(r => r.type === 'facture' && r.status === 'finalized').reduce((s, r) => s + r.amountHT, 0),
     [filtered]);
   const filteredExpensesHT = useMemo(() =>
     filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.amountHT, 0),
@@ -611,8 +619,8 @@ const ExpensesPage = () => {
         </CardContent>
       </Card>
 
-      {/* 3 Large Summary Cards */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* 4 Large Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-emerald-500/20 bg-emerald-500/5">
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-2">
@@ -624,6 +632,19 @@ const ExpensesPage = () => {
             <p className="text-lg font-black text-emerald-400">{formatCurrency(totalIncome)}</p>
           </CardContent>
         </Card>
+
+        <Card className="border-cyan-500/20 bg-cyan-500/5">
+          <CardContent className="p-4 text-center">
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center mx-auto mb-2">
+              <Banknote className="h-5 w-5 text-cyan-400" />
+            </div>
+            <p className={cn("text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1", isRTL && "font-cairo")}>
+              {isRTL ? '💰 الأموال المحصلة' : '💰 Trésorerie encaissée'}
+            </p>
+            <p className="text-lg font-black text-cyan-400">{formatCurrency(totalCollected)}</p>
+          </CardContent>
+        </Card>
+
         <Card className="border-red-500/20 bg-red-500/5">
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center mx-auto mb-2">
@@ -635,6 +656,7 @@ const ExpensesPage = () => {
             <p className="text-lg font-black text-red-400">{formatCurrency(totalExpenses)}</p>
           </CardContent>
         </Card>
+
         <Card className={cn('border-blue-500/20', netProfit >= 0 ? 'bg-blue-500/5' : 'bg-red-500/5')}>
           <CardContent className="p-4 text-center">
             <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2", netProfit >= 0 ? "bg-blue-500/10" : "bg-red-500/10")}>

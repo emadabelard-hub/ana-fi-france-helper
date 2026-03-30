@@ -17,7 +17,7 @@ import DocumentCard, { type DocumentItem } from '@/components/archive/DocumentCa
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SendToAccountantModal from '@/components/archive/SendToAccountantModal';
 import { useProfile } from '@/hooks/useProfile';
-import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
+import { generateProfessionalCSV, generateAccountingCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
 
 const ArchiveAccountingPage = () => {
   const { isRTL } = useLanguage();

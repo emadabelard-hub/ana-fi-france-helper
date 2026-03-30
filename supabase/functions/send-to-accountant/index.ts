@@ -38,41 +38,65 @@ function computeHT(ttc: number, tvaRate: number): number {
 
 function generateCSV(docs: any[], expenses: any[]): string {
   const BOM = "\uFEFF";
-  const headers = ["Date", "Type", "Reference", "Client", "Projet", "Total HT", "Taux TVA (%)", "Montant TVA", "Total TTC"];
-  const rows: string[] = [];
+  const sep = ",";
 
+  // Section 1: FACTURES
+  const invHeaders = ["Numero","Date","Client","Type","Compte","Libelle","Montant_HT","TVA_Taux","TVA_Montant","Montant_TTC","Statut"];
+  const invRows: string[] = [];
   for (const d of docs) {
-    const date = formatDateDDMMYYYY(d.created_at);
-    const type = d.document_type === "devis" ? "Devis" : "Facture";
     const ht = d.subtotal_ht > 0 ? d.subtotal_ht : computeHT(d.total_ttc, d.tva_rate || 0);
     const tvaRate = d.tva_rate || 0;
     const tva = d.tva_amount > 0 ? d.tva_amount : (d.total_ttc - ht);
-    rows.push([
-      date, type, cleanCell(d.document_number),
-      cleanCell(d.client_name),
-      "",
-      ht.toFixed(2),
-      tvaRate.toFixed(1),
-      tva.toFixed(2),
-      d.total_ttc?.toFixed(2) || "0.00",
-    ].join(";"));
+    invRows.push([
+      cleanCell(d.document_number), formatDateDDMMYYYY(d.created_at), cleanCell(d.client_name),
+      "Vente", "706", "Prestation travaux",
+      ht.toFixed(2), tvaRate.toFixed(2), tva.toFixed(2), (d.total_ttc || 0).toFixed(2), "Validee",
+    ].join(sep));
   }
 
+  // Section 2: DEPENSES
+  const expHeaders = ["Date","Fournisseur","Type","Compte","Libelle","Montant_HT","TVA_Taux","TVA_Montant","Montant_TTC"];
+  const expRows: string[] = [];
   for (const e of expenses) {
-    const date = formatDateDDMMYYYY(e.expense_date || e.created_at);
-    const tvaRate = e.amount > 0 && e.tva_amount > 0 ? ((e.tva_amount / e.amount) * 100) : 0;
-    rows.push([
-      date, "Depense", cleanCell(`EXP-${e.id.slice(0, 6).toUpperCase()}`),
-      cleanCell(e.title),
-      "",
-      e.amount?.toFixed(2) || "0.00",
-      tvaRate.toFixed(1),
-      e.tva_amount?.toFixed(2) || "0.00",
-      (e.amount + (e.tva_amount || 0)).toFixed(2),
-    ].join(";"));
+    const tvaAmt = e.tva_amount || 0;
+    const amt = e.amount || 0;
+    const htExp = amt;
+    const ttcExp = amt + tvaAmt;
+    const tvaRate = htExp > 0 && tvaAmt > 0 ? ((tvaAmt / htExp) * 100) : 0;
+    const isTransport = (e.title || "").toLowerCase().includes("transport");
+    expRows.push([
+      formatDateDDMMYYYY(e.expense_date || e.created_at), cleanCell(e.title || "Fournisseur"),
+      isTransport ? "Transport" : "Achat", isTransport ? "625" : "601",
+      cleanCell(e.title || "Achat materiel"),
+      htExp.toFixed(2), tvaRate.toFixed(2), tvaAmt.toFixed(2), ttcExp.toFixed(2),
+    ].join(sep));
   }
 
-  return BOM + [headers.join(";"), ...rows].join("\n");
+  // Section 3: SYNTHESE
+  const totalHTVentes = docs.reduce((s: number, d: any) => s + (d.subtotal_ht > 0 ? d.subtotal_ht : computeHT(d.total_ttc, d.tva_rate || 0)), 0);
+  const totalTVACollectee = docs.reduce((s: number, d: any) => s + (d.tva_amount > 0 ? d.tva_amount : (d.total_ttc - computeHT(d.total_ttc, d.tva_rate || 0))), 0);
+  const totalTTCVentes = docs.reduce((s: number, d: any) => s + (d.total_ttc || 0), 0);
+  const totalHTDepenses = expenses.reduce((s: number, e: any) => s + (e.amount || 0), 0);
+  const totalTVADeductible = expenses.reduce((s: number, e: any) => s + (e.tva_amount || 0), 0);
+  const totalTTCDepenses = totalHTDepenses + totalTVADeductible;
+  const tvaAPayer = totalTVACollectee - totalTVADeductible;
+
+  const synthHeaders = ["Indicateur","Montant"];
+  const synthRows = [
+    `Total_HT_Ventes,${totalHTVentes.toFixed(2)}`,
+    `Total_TVA_Collectee,${totalTVACollectee.toFixed(2)}`,
+    `Total_TTC_Ventes,${totalTTCVentes.toFixed(2)}`,
+    `Total_HT_Depenses,${totalHTDepenses.toFixed(2)}`,
+    `Total_TVA_Deductible,${totalTVADeductible.toFixed(2)}`,
+    `Total_TTC_Depenses,${totalTTCDepenses.toFixed(2)}`,
+    `TVA_A_Payer,${tvaAPayer.toFixed(2)}`,
+  ];
+
+  return BOM + [
+    invHeaders.join(sep), ...invRows, "",
+    expHeaders.join(sep), ...expRows, "",
+    synthHeaders.join(sep), ...synthRows,
+  ].join("\n");
 }
 
 Deno.serve(async (req) => {

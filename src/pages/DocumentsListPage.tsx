@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search, SendHorizontal, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search, SendHorizontal, Loader2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,6 +29,7 @@ interface DocumentRow {
   document_data: any;
   work_site_address: string | null;
   sent_to_accountant_at: string | null;
+  payment_status: string;
 }
 
 const formatCurrency = (n: number) =>
@@ -92,7 +93,7 @@ const DocumentsListPage = () => {
 
     const documentsQuery = (supabase
       .from('documents_comptables') as any)
-      .select('id, document_type, document_number, client_name, client_address, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, sent_to_accountant_at')
+      .select('id, document_type, document_number, client_name, client_address, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, sent_to_accountant_at, payment_status')
       .order('created_at', { ascending: false });
 
     if (!isAdmin) {
@@ -267,6 +268,16 @@ const DocumentsListPage = () => {
     toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export réussi', description: isRTL ? 'تم تحميل ملف CSV' : 'Fichier CSV téléchargé' });
   };
 
+  const handleMarkPaid = async (doc: DocumentRow) => {
+    await (supabase.from('documents_comptables') as any)
+      .update({ payment_status: 'paid' })
+      .eq('id', doc.id);
+    setDocuments(prev => prev.map(d =>
+      d.id === doc.id ? { ...d, payment_status: 'paid' } : d
+    ));
+    toast({ title: isRTL ? '✅ تم الدفع' : '✅ Marqué comme payé' });
+  };
+
   if (authLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
@@ -342,6 +353,32 @@ const DocumentsListPage = () => {
           </div>
           <span className="font-bold text-[hsl(45,80%,65%)]">TTC {formatCurrency(doc.total_ttc)}</span>
         </div>
+
+        {/* Payment status row for finalized invoices */}
+        {!isDevis && doc.status === 'finalized' && (
+          <div className={cn("mt-3 flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            {doc.payment_status === 'paid' ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                <CheckCircle className="h-3.5 w-3.5" />
+                {isRTL ? 'تم الدفع' : 'Payé'}
+              </span>
+            ) : (
+              <>
+                <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-muted/60 text-muted-foreground border border-border">
+                  {isRTL ? 'غير مدفوع' : 'Non payé'}
+                </span>
+                <Button
+                  size="sm"
+                  className="h-7 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1.5"
+                  onClick={(e) => { e.stopPropagation(); handleMarkPaid(doc); }}
+                >
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  {isRTL ? 'تم الدفع' : 'Marquer payé'}
+                </Button>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Actions */}
         <div className={cn("mt-3 flex items-center gap-2 pt-3 border-t border-[hsl(0,0%,18%)]", isRTL && "flex-row-reverse")}>

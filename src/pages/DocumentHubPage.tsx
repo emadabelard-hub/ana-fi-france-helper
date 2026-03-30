@@ -21,6 +21,7 @@ const DocumentHubPage = () => {
   const [tvaDeductible, setTvaDeductible] = useState(0);
   const [totalIncomeHT, setTotalIncomeHT] = useState(0);
   const [totalExpensesHT, setTotalExpensesHT] = useState(0);
+  const [tresorerieEncaissee, setTresorerieEncaissee] = useState(0);
 
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
   const isRate = (profile as any)?.is_rate ?? 15;

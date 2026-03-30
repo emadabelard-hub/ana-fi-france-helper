@@ -41,6 +41,9 @@ const DocumentHubPage = () => {
       setTotalExpenses((exps || []).reduce((s, e) => s + (e.amount || 0), 0));
       setTotalExpensesHT((exps || []).reduce((s, e) => s + ((e.amount || 0) - (e.tva_amount || 0)), 0));
       setTvaDeductible((exps || []).reduce((s, e) => s + (e.tva_amount || 0), 0));
+      // Trésorerie = only paid finalized invoices
+      const paidInvoices = invoices.filter((d: any) => d.payment_status === 'paid');
+      setTresorerieEncaissee(paidInvoices.reduce((s: number, d: any) => s + (d.total_ttc || 0), 0));
     };
     fetchFinancials();
   }, [user]);

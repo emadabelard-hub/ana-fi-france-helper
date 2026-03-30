@@ -29,6 +29,7 @@ interface DocumentRow {
   document_data: any;
   work_site_address: string | null;
   sent_to_accountant_at: string | null;
+  payment_status: string;
 }
 
 const formatCurrency = (n: number) =>

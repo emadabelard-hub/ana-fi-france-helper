@@ -174,6 +174,34 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, on
           </span>
         )}
       </div>
+
+      {/* Payment action row for finalized invoices */}
+      {doc.type === 'facture' && doc.status === 'finalized' && (
+        <div className={cn('mt-3 flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+          {isPaid ? (
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <CheckCircle className="h-3.5 w-3.5" />
+              {isRTL ? 'تم الدفع' : 'Payé'}
+            </span>
+          ) : (
+            <>
+              <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-muted/60 text-muted-foreground border border-border">
+                {isRTL ? 'غير مدفوع' : 'Non payé'}
+              </span>
+              {onMarkPaid && (
+                <Button
+                  size="sm"
+                  className="h-7 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1.5"
+                  onClick={(e) => { e.stopPropagation(); onMarkPaid(doc); }}
+                >
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  {isRTL ? 'تم الدفع' : 'Marquer payé'}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 };

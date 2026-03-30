@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Wallet, Receipt, AlertTriangle, Calculator } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Receipt, AlertTriangle, Calculator, Banknote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FinancialSummaryProps {
@@ -11,6 +11,9 @@ interface FinancialSummaryProps {
   isRTL: boolean;
   debugFacturesCount: number;
   debugDepensesCount: number;
+  debugTotalFactures?: number;
+  debugIgnoredFactures?: number;
+  tresorerieEncaissee?: number;
 }
 
 const fmt = (n: number) =>
@@ -21,12 +24,12 @@ const FinancialSummary = ({
   tvaCollectee, tvaDeductible,
   urssafRate, isRate, isRTL,
   debugFacturesCount, debugDepensesCount,
+  debugTotalFactures = 0, debugIgnoredFactures = 0,
+  tresorerieEncaissee = 0,
 }: FinancialSummaryProps) => {
-  // ── BLOC 1: Données réelles (tout en HT) ──
   const benefice = caHT - depensesHT;
   const tvaAPayer = Math.max(0, tvaCollectee - tvaDeductible);
 
-  // ── BLOC 2: Estimations basées sur bénéfice HT ──
   const urssafEstime = benefice > 0 ? Math.round(benefice * (urssafRate / 100) * 100) / 100 : 0;
   const isEstime = benefice > 0 ? Math.round(benefice * (isRate / 100) * 100) / 100 : 0;
 
@@ -34,6 +37,7 @@ const FinancialSummary = ({
     { label: "Chiffre d'affaires (HT)", value: caHT, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
     { label: 'Dépenses (HT)', value: depensesHT, icon: TrendingDown, color: 'text-red-400', bg: 'bg-red-500/10' },
     { label: 'Bénéfice (HT)', value: benefice, icon: Wallet, color: benefice >= 0 ? 'text-emerald-400' : 'text-red-400', bg: benefice >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' },
+    { label: 'Trésorerie encaissée', value: tresorerieEncaissee, icon: Banknote, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
     { label: 'TVA collectée', value: tvaCollectee, icon: Receipt, color: 'text-blue-400', bg: 'bg-blue-500/10' },
     { label: 'TVA déductible', value: tvaDeductible, icon: Receipt, color: 'text-violet-400', bg: 'bg-violet-500/10' },
     { label: 'TVA à payer', value: tvaAPayer, icon: Receipt, color: 'text-amber-400', bg: 'bg-amber-500/10' },
@@ -41,7 +45,7 @@ const FinancialSummary = ({
 
   return (
     <div className="space-y-4">
-      {/* ── BLOC 1: DONNÉES RÉELLES ── */}
+      {/* BLOC 1: DONNÉES RÉELLES */}
       <div className="rounded-xl border border-border bg-card p-4">
         <div className={cn('flex items-center gap-2 mb-3', isRTL && 'flex-row-reverse')}>
           <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center">
@@ -68,12 +72,12 @@ const FinancialSummary = ({
         </div>
         {/* Debug temporaire */}
         <div className="mt-2 rounded-lg border border-border/50 bg-muted/30 p-2 text-[10px] text-muted-foreground font-mono">
-          <p>🔍 DEBUG — Factures validées: {debugFacturesCount} | Dépenses: {debugDepensesCount}</p>
-          <p>CA_HT: {fmt(caHT)} | Dépenses_HT: {fmt(depensesHT)} | Bénéfice: {fmt(benefice)}</p>
+          <p>🔍 DEBUG — Total factures: {debugTotalFactures} | Validées utilisées: {debugFacturesCount} | Ignorées (brouillon/devis): {debugIgnoredFactures} | Dépenses: {debugDepensesCount}</p>
+          <p>CA_HT: {fmt(caHT)} | Dépenses_HT: {fmt(depensesHT)} | Bénéfice: {fmt(benefice)} | Trésorerie encaissée: {fmt(tresorerieEncaissee)}</p>
         </div>
       </div>
 
-      {/* ── BLOC 2: ESTIMATIONS ── */}
+      {/* BLOC 2: ESTIMATIONS */}
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
         <div className={cn('flex items-center gap-2 mb-3', isRTL && 'flex-row-reverse')}>
           <div className="w-7 h-7 rounded-lg bg-amber-500/15 flex items-center justify-center">

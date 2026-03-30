@@ -101,16 +101,29 @@ function professionalLibelle(text: string, type: 'Vente' | 'Achat' | 'Transport'
 
 /**
  * Correct TVA rate to nearest valid French rate.
+ * DEFAULT: 10% (rénovation BTP) — TVA 0% only if explicitly marked exempt.
  */
-function correctTvaRate(rate: number): number {
+function correctTvaRate(rate: number, isExplicitlyExempt: boolean = false): number {
+  // Only allow 0% if the document is explicitly marked TVA-exempt
+  if (rate === 0 && !isExplicitlyExempt) return 10;
   if (VALID_TVA_RATES.includes(rate)) return rate;
-  let closest = 0;
-  let minDiff = Math.abs(rate);
+  // Find nearest valid rate (excluding 0 unless exempt)
+  let closest = 10;
+  let minDiff = Math.abs(rate - 10);
   for (const valid of VALID_TVA_RATES) {
+    if (valid === 0 && !isExplicitlyExempt) continue;
     const diff = Math.abs(rate - valid);
     if (diff < minDiff) { minDiff = diff; closest = valid; }
   }
   return closest;
+}
+
+/**
+ * Validate a monetary amount — must be positive and finite.
+ */
+function sanitizeAmount(amount: number | null | undefined): number {
+  if (amount == null || !isFinite(amount) || amount < 0) return 0;
+  return Math.round(amount * 100) / 100;
 }
 
 function cleanCell(value: string | number | null | undefined): string {

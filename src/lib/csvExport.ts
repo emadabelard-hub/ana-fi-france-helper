@@ -218,8 +218,11 @@ export function generateAccountingCSV(data: AccountingExportData): string {
 
   const invoiceRows = data.invoices.map(r => {
     const rawRate = r.tvaRate ?? 0;
-    const tvaRate = correctTvaRate(rawRate);
-    const ht = (r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, tvaRate);
+    const tvaRate = correctTvaRate(rawRate, r.tvaExempt === true);
+    const rawHT = sanitizeAmount(r.totalHT);
+    const rawTTC = sanitizeAmount(r.totalTTC);
+    // Always recalculate for coherence: HT is source of truth when available
+    const ht = rawHT > 0 ? rawHT : computeHT(rawTTC, tvaRate);
     const tvaMontant = Math.round(ht * tvaRate) / 100;
     const ttc = Math.round((ht + tvaMontant) * 100) / 100;
     const libelle = professionalLibelle(r.reference || r.clientName || '', 'Vente');
@@ -241,13 +244,15 @@ export function generateAccountingCSV(data: AccountingExportData): string {
   // ── Section 2: DEPENSES (ACHATS) ──
   const expenseHeaders = [
     'Date', 'Fournisseur', 'Type', 'Compte', 'Libelle',
-    'Montant_HT', 'TVA_Taux', 'TVA_Montant', 'Montant_TTC',
+    'Montant_HT', 'TVA_Taux', 'TVA_Montant', 'Montant_TTC', 'Statut',
   ];
 
   const expenseRows = data.expenses.map(r => {
     const rawRate = r.tvaRate ?? 0;
-    const tvaRate = correctTvaRate(rawRate);
-    const ht = (r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, tvaRate);
+    const tvaRate = correctTvaRate(rawRate, r.tvaExempt === true);
+    const rawHT = sanitizeAmount(r.totalHT);
+    const rawTTC = sanitizeAmount(r.totalTTC);
+    const ht = rawHT > 0 ? rawHT : computeHT(rawTTC, tvaRate);
     const tvaMontant = Math.round(ht * tvaRate) / 100;
     const ttc = Math.round((ht + tvaMontant) * 100) / 100;
     const rawLabel = r.reference || r.clientName || '';
@@ -266,6 +271,7 @@ export function generateAccountingCSV(data: AccountingExportData): string {
       fmtNum(tvaRate),
       fmtNum(tvaMontant),
       fmtNum(ttc),
+      statusToFrench(r.status),
     ].join(sep);
   });
 

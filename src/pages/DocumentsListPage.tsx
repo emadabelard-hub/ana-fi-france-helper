@@ -268,6 +268,16 @@ const DocumentsListPage = () => {
     toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export réussi', description: isRTL ? 'تم تحميل ملف CSV' : 'Fichier CSV téléchargé' });
   };
 
+  const handleMarkPaid = async (doc: DocumentRow) => {
+    await (supabase.from('documents_comptables') as any)
+      .update({ payment_status: 'paid' })
+      .eq('id', doc.id);
+    setDocuments(prev => prev.map(d =>
+      d.id === doc.id ? { ...d, payment_status: 'paid' } : d
+    ));
+    toast({ title: isRTL ? '✅ تم الدفع' : '✅ Marqué comme payé' });
+  };
+
   if (authLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] gap-3">

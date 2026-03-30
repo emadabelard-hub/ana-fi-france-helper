@@ -361,14 +361,14 @@ const ArchiveAccountingPage = () => {
       {/* ShbikLbik Smart Assistant */}
       <div className="mb-4 shrink-0">
         <ShbikLbikCard
-          totalIncome={totalIncome}
-          totalExpenses={totalExpenses}
+          totalIncome={caHT + tvaCollectee}
+          totalExpenses={depensesHT + tvaDeductible}
           tvaCollectee={tvaCollectee}
           tvaDeductible={tvaDeductible}
           urssafRate={urssafRate}
           isRate={isRate}
-          totalIncomeHT={totalIncomeHT}
-          totalExpensesHT={totalExpensesHT}
+          totalIncomeHT={caHT}
+          totalExpensesHT={depensesHT}
           isTvaExempt={isTvaExempt}
           isRTL={isRTL}
         />

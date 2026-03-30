@@ -610,20 +610,41 @@ const DocumentsListPage = () => {
               </div>
 
               {/* Convert Devis → Facture button */}
-              {selectedDocument.document_type === 'devis' && selectedDocument.status !== 'converted' && (
+              {selectedDocument.document_type === 'devis' && (
                 <div className={cn("pt-3 border-t border-border", isRTL && "text-right")}>
-                  <Button
-                    onClick={() => handleDirectConvert(selectedDocument)}
-                    disabled={converting}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 w-full"
-                  >
-                    {converting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ArrowRightLeft className="h-4 w-4" />
-                    )}
-                    {isRTL ? 'تحويل إلى فاتورة' : 'Convertir en Facture'}
-                  </Button>
+                  {(selectedDocument as any).converted_to_invoice ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-amber-400 font-medium text-center">
+                        {isRTL ? '✅ تم إنشاء فاتورة بالفعل' : '✅ Facture déjà créée'}
+                      </p>
+                      {(selectedDocument as any).linked_invoice_id && (
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2"
+                          onClick={() => {
+                            const linked = documents.find((d: any) => d.id === (selectedDocument as any).linked_invoice_id);
+                            if (linked) setSelectedDocument(linked as any);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                          {isRTL ? 'عرض الفاتورة المرتبطة' : 'Voir la facture liée'}
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => handleDirectConvert(selectedDocument)}
+                      disabled={converting}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 w-full"
+                    >
+                      {converting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ArrowRightLeft className="h-4 w-4" />
+                      )}
+                      {isRTL ? 'تحويل إلى فاتورة' : 'Convertir en Facture'}
+                    </Button>
+                  )}
                 </div>
               )}
             </>

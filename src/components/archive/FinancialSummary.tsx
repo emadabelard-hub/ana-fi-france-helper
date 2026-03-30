@@ -75,7 +75,7 @@ const FinancialSummary = ({
             <AlertTriangle className="h-4 w-4 text-amber-400" />
           </div>
           <h3 className={cn('text-sm font-bold text-amber-400', isRTL && 'font-cairo')}>
-            Estimations (non officiel)
+            Estimation fiscale
           </h3>
         </div>
         <div className="grid grid-cols-2 gap-2.5 mb-3">
@@ -94,7 +94,7 @@ const FinancialSummary = ({
         </div>
         <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
           <p className="text-[11px] text-amber-300/90 leading-relaxed font-medium">
-            ⚠️ Ces montants sont des estimations indicatives. Seul un expert-comptable peut valider les montants réels.
+            ⚠️ Estimation indicative. Ne remplace pas un expert-comptable.
           </p>
         </div>
       </div>

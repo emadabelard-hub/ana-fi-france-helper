@@ -32,6 +32,9 @@ interface DocumentRow {
   payment_status: string;
 }
 
+const isConvertedQuote = (doc: any) =>
+  doc?.status === 'converted' || Boolean(doc?.converted_to_invoice) || Boolean(doc?.linked_invoice_id);
+
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
@@ -133,7 +136,7 @@ const DocumentsListPage = () => {
 
   const handleConvertToInvoice = async (doc: DocumentRow) => {
     // Prevent double conversion
-    if ((doc as any).converted_to_invoice) {
+    if (isConvertedQuote(doc)) {
       toast({
         variant: 'destructive',
         title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
@@ -210,7 +213,7 @@ const DocumentsListPage = () => {
     if (!user || converting) return;
     
     // Prevent double conversion
-    if ((doc as any).converted_to_invoice) {
+    if (isConvertedQuote(doc)) {
       toast({
         title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
         description: isRTL ? 'تم إنشاء فاتورة بالفعل من هذا الدوفي' : 'Une facture a déjà été créée depuis ce devis',
@@ -409,7 +412,7 @@ const DocumentsListPage = () => {
         <div className={cn("mt-3 flex items-center gap-2 pt-3 border-t border-[hsl(0,0%,18%)]", isRTL && "flex-row-reverse")}>
           {isDevis && (
             <>
-              {(doc as any).converted_to_invoice ? (
+              {isConvertedQuote(doc) ? (
                 <>
                   <span className="text-xs text-amber-400 font-medium">
                     {isRTL ? '✅ تم إنشاء فاتورة بالفعل' : '✅ Facture déjà créée'}
@@ -624,7 +627,7 @@ const DocumentsListPage = () => {
               {/* Convert Devis → Facture button */}
               {selectedDocument.document_type === 'devis' && (
                 <div className={cn("pt-3 border-t border-border", isRTL && "text-right")}>
-                  {(selectedDocument as any).converted_to_invoice ? (
+                  {isConvertedQuote(selectedDocument) ? (
                     <div className="space-y-2">
                       <p className="text-sm text-amber-400 font-medium text-center">
                         {isRTL ? '✅ تم إنشاء فاتورة بالفعل' : '✅ Facture déjà créée'}

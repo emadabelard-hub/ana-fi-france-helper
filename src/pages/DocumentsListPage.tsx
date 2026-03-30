@@ -30,6 +30,8 @@ interface DocumentRow {
   work_site_address: string | null;
   sent_to_accountant_at: string | null;
   payment_status: string;
+  converted_to_invoice?: boolean;
+  linked_invoice_id?: string | null;
 }
 
 const formatCurrency = (n: number) =>
@@ -65,8 +67,13 @@ const DocumentsListPage = () => {
     convertedSourceNumbers.has(doc?.document_number);
 
   useEffect(() => {
-    if (!user || user.is_anonymous) {
-      setIsAdmin(true);
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+
+    if (user.is_anonymous) {
+      setIsAdmin(false);
       return;
     }
 
@@ -146,6 +153,8 @@ const DocumentsListPage = () => {
   };
 
   const handleConvertToInvoice = async (doc: DocumentRow) => {
+    if (!user) return;
+
     // Prevent double conversion
     if (isConvertedQuote(doc)) {
       toast({
@@ -153,6 +162,33 @@ const DocumentsListPage = () => {
         title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
         description: isRTL ? 'تم إنشاء فاتورة بالفعل من هذا الدوفي' : 'Une facture a déjà été créée depuis ce devis',
       });
+      return;
+    }
+
+    const { data: sourceDevis, error: sourceCheckError } = await (supabase
+      .from('documents_comptables') as any)
+      .select('id, converted_to_invoice, linked_invoice_id')
+      .eq('id', doc.id)
+      .eq('user_id', user.id)
+      .eq('document_type', 'devis')
+      .maybeSingle();
+
+    if (sourceCheckError) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: sourceCheckError.message,
+      });
+      return;
+    }
+
+    if (!sourceDevis || sourceDevis.converted_to_invoice || sourceDevis.linked_invoice_id) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
+        description: isRTL ? 'تم إنشاء فاتورة بالفعل من هذا الدوفي' : 'Une facture a déjà été créée depuis ce devis',
+      });
+      await fetchDocuments();
       return;
     }
     
@@ -235,6 +271,26 @@ const DocumentsListPage = () => {
     
     setConverting(true);
     try {
+      const { data: sourceDevis, error: sourceCheckError } = await (supabase
+        .from('documents_comptables') as any)
+        .select('id, converted_to_invoice, linked_invoice_id')
+        .eq('id', doc.id)
+        .eq('user_id', user.id)
+        .eq('document_type', 'devis')
+        .maybeSingle();
+
+      if (sourceCheckError) throw sourceCheckError;
+
+      if (!sourceDevis || sourceDevis.converted_to_invoice || sourceDevis.linked_invoice_id) {
+        toast({
+          title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
+          description: isRTL ? 'تم إنشاء فاتورة بالفعل من هذا الدوفي' : 'Une facture a déjà été créée depuis ce devis',
+          variant: 'destructive',
+        });
+        await fetchDocuments();
+        return;
+      }
+
       // 1. Get next facture number
       const year = new Date().getFullYear();
       const { data: nextNumber, error: rpcError } = await supabase.rpc('get_next_document_number', {
@@ -266,9 +322,31 @@ const DocumentsListPage = () => {
       const newInvoiceId = insertedRows?.id || null;
 
       // 3. Mark original devis as converted with link to invoice
-      await (supabase.from('documents_comptables') as any)
+      const { data: updatedSource, error: updateError } = await (supabase.from('documents_comptables') as any)
         .update({ status: 'converted', converted_to_invoice: true, linked_invoice_id: newInvoiceId })
-        .eq('id', doc.id);
+        .eq('id', doc.id)
+        .eq('user_id', user.id)
+        .eq('document_type', 'devis')
+        .eq('converted_to_invoice', false)
+        .select('id')
+        .maybeSingle();
+
+      if (updateError) throw updateError;
+
+      if (!updatedSource && newInvoiceId) {
+        await (supabase.from('documents_comptables') as any)
+          .delete()
+          .eq('id', newInvoiceId)
+          .eq('user_id', user.id);
+
+        toast({
+          title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
+          description: isRTL ? 'تم منع إنشاء فاتورة مكررة لنفس الدوفي.' : 'La création d’une facture en doublon a été bloquée.',
+          variant: 'destructive',
+        });
+        await fetchDocuments();
+        return;
+      }
 
       toast({
         title: isRTL ? '✅ تم التحويل' : '✅ Converti',
@@ -449,7 +527,7 @@ const DocumentsListPage = () => {
                   size="sm"
                   variant="ghost"
                   className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
-                  onClick={(e) => { e.stopPropagation(); handleConvertToInvoice(doc); }}
+                  onClick={(e) => { e.stopPropagation(); void handleConvertToInvoice(doc); }}
                 >
                   <ArrowRightLeft className="h-3 w-3" />
                   {isRTL ? 'حوّل لفاتورة' : 'Convertir'}

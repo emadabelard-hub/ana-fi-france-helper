@@ -171,6 +171,7 @@ export interface CsvDocumentRow {
   tvaAmount?: number | null;
   totalTTC: number;
   status?: string | null;
+  tvaExempt?: boolean;
 }
 
 export interface AccountingExportData {

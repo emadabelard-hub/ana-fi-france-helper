@@ -27,6 +27,7 @@ const FinancialSummary = ({
   urssafRate, isRate, isRTL,
   debugFacturesCount, debugDepensesCount,
   debugTotalFactures = 0, debugIgnoredFactures = 0,
+  debugPaidCount = 0, debugUnpaidCount = 0,
   tresorerieEncaissee = 0,
 }: FinancialSummaryProps) => {
   const benefice = caHT - depensesHT;

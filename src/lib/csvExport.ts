@@ -192,13 +192,16 @@ export function generateProfessionalCSV(rows: CsvDocumentRow[]): string {
   const csvRows = rows.map(r => {
     const date = formatDate(r.date);
     const type = r.type === 'devis' ? 'Devis' : r.type === 'facture' ? 'Facture' : 'Depense';
-    const tvaRate = r.tvaRate ?? 0;
-    const ht = (r.totalHT != null && r.totalHT > 0) ? r.totalHT : computeHT(r.totalTTC, tvaRate);
-    const tva = (r.tvaAmount != null && r.tvaAmount > 0) ? r.tvaAmount : computeTVA(r.totalTTC, tvaRate);
+    const tvaRate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
+    const rawHT = sanitizeAmount(r.totalHT);
+    const rawTTC = sanitizeAmount(r.totalTTC);
+    const ht = rawHT > 0 ? rawHT : computeHT(rawTTC, tvaRate);
+    const tvaMontant = Math.round(ht * tvaRate) / 100;
+    const ttc = Math.round((ht + tvaMontant) * 100) / 100;
 
     return [
       date, type, cleanCell(r.reference), cleanCell(r.clientName), cleanCell(r.projectName),
-      ht.toFixed(2), tvaRate.toFixed(1), tva.toFixed(2), r.totalTTC.toFixed(2),
+      ht.toFixed(2), tvaRate.toFixed(1), tvaMontant.toFixed(2), ttc.toFixed(2),
     ].join(';');
   });
 

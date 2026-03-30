@@ -24,7 +24,7 @@ const fmt = (n: number) =>
 const ShbikLbikCard = ({
   totalIncome, totalExpenses, tvaCollectee, tvaDeductible,
   urssafRate, isRate, totalIncomeHT, totalExpensesHT,
-  isTvaExempt, isRTL,
+  isTvaExempt, isRTL, tresorerieEncaissee = 0,
 }: ShbikLbikProps) => {
   const navigate = useNavigate();
   const [showDetail, setShowDetail] = useState(false);

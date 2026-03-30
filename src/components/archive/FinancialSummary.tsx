@@ -75,7 +75,7 @@ const FinancialSummary = ({
             <AlertTriangle className="h-4 w-4 text-amber-400" />
           </div>
           <h3 className={cn('text-sm font-bold text-amber-400', isRTL && 'font-cairo')}>
-            Estimations (non officiel)
+            Estimation fiscale
           </h3>
         </div>
         <div className="grid grid-cols-2 gap-2.5 mb-3">

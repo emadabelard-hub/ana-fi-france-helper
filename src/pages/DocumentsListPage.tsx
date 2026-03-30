@@ -196,6 +196,17 @@ const DocumentsListPage = () => {
 
   const handleDirectConvert = async (doc: DocumentRow) => {
     if (!user || converting) return;
+    
+    // Prevent double conversion
+    if ((doc as any).converted_to_invoice) {
+      toast({
+        title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
+        description: isRTL ? 'تم إنشاء فاتورة بالفعل من هذا الدوفي' : 'Une facture a déjà été créée depuis ce devis',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setConverting(true);
     try {
       // 1. Get next facture number
@@ -209,7 +220,7 @@ const DocumentsListPage = () => {
 
       // 2. Build new facture from devis data
       const docData = doc.document_data || {};
-      const { error: insertError } = await (supabase.from('documents_comptables') as any).insert({
+      const { data: insertedRows, error: insertError } = await (supabase.from('documents_comptables') as any).insert({
         user_id: user.id,
         document_type: 'facture',
         document_number: nextNumber,
@@ -223,12 +234,14 @@ const DocumentsListPage = () => {
         status: 'draft',
         document_data: { ...docData, convertedFromDevis: doc.document_number },
         chantier_id: (doc as any).chantier_id || null,
-      });
+      }).select('id').single();
       if (insertError) throw insertError;
 
-      // 3. Mark original devis as converted
+      const newInvoiceId = insertedRows?.id || null;
+
+      // 3. Mark original devis as converted with link to invoice
       await (supabase.from('documents_comptables') as any)
-        .update({ status: 'converted' })
+        .update({ status: 'converted', converted_to_invoice: true, linked_invoice_id: newInvoiceId })
         .eq('id', doc.id);
 
       toast({

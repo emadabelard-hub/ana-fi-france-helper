@@ -92,6 +92,7 @@ const ArchiveAccountingPage = () => {
           amountHT: e.amount,
           amountTTC: e.amount + (e.tva_amount || 0),
           status: 'paid' as const,
+          rawData: e,
         })));
       }
 

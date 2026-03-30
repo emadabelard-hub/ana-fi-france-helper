@@ -34,6 +34,19 @@ const ArchiveAccountingPage = () => {
   const [showSendAccountant, setShowSendAccountant] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const { profile } = useProfile();
+  const convertedSourceNumbers = useMemo(() => {
+    const values = documents
+      .filter((d) => d.type === 'facture')
+      .map((d) => d.rawData?.document_data?.convertedFromDevis)
+      .filter(Boolean);
+    return new Set(values);
+  }, [documents]);
+  const isConvertedQuote = (doc: DocumentItem) =>
+    doc.type === 'devis' &&
+    (doc.rawData?.status === 'converted' ||
+      Boolean(doc.rawData?.converted_to_invoice) ||
+      Boolean(doc.rawData?.linked_invoice_id) ||
+      convertedSourceNumbers.has(doc.number));
 
   useEffect(() => {
     if (!user || user.is_anonymous) {
@@ -188,7 +201,7 @@ const ArchiveAccountingPage = () => {
 
   const handleConvert = (doc: DocumentItem) => {
     // Prevent double conversion
-    if (doc.rawData?.converted_to_invoice) {
+    if (isConvertedQuote(doc)) {
       toast({
         title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
         description: isRTL ? 'تم إنشاء فاتورة بالفعل من هذا الدوفي' : 'Une facture a déjà été créée depuis ce devis',
@@ -215,6 +228,8 @@ const ArchiveAccountingPage = () => {
         unitPrice: item.unitPrice || 0,
       })),
       source: 'devis_conversion',
+      sourceDocumentId: raw.id,
+      sourceDocumentNumber: raw.document_number,
     };
     sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
     navigate('/pro/invoice-creator?type=facture&prefill=quote');
@@ -428,17 +443,29 @@ const ArchiveAccountingPage = () => {
                 <div className="animate-pulse text-muted-foreground">{isRTL ? 'جاري التحميل...' : 'Chargement...'}</div>
               </div>
             ) : filtered.length === 0 ? renderEmpty() : (
-              filtered.map(doc => (
-                <DocumentCard
-                  key={doc.id}
-                  doc={doc}
-                  isRTL={isRTL}
-                  onDelete={handleDelete}
-                  onConvert={doc.type === 'devis' ? handleConvert : undefined}
-                  onOpen={handleOpenDocument}
-                  onMarkPaid={handleMarkPaid}
-                />
-              ))
+              filtered.map((doc) => {
+                const docWithConversionState = isConvertedQuote(doc)
+                  ? {
+                      ...doc,
+                      rawData: {
+                        ...(doc.rawData || {}),
+                        converted_to_invoice: true,
+                      },
+                    }
+                  : doc;
+
+                return (
+                  <DocumentCard
+                    key={doc.id}
+                    doc={docWithConversionState}
+                    isRTL={isRTL}
+                    onDelete={handleDelete}
+                    onConvert={doc.type === 'devis' ? handleConvert : undefined}
+                    onOpen={handleOpenDocument}
+                    onMarkPaid={handleMarkPaid}
+                  />
+                );
+              })
             )}
           </div>
         </Tabs>

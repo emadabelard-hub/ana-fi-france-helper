@@ -50,6 +50,20 @@ const DocumentsListPage = () => {
   const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
   const [converting, setConverting] = useState(false);
 
+  const convertedSourceNumbers = useMemo(() => {
+    const values = documents
+      .filter((d) => d.document_type === 'facture')
+      .map((d) => d.document_data?.convertedFromDevis)
+      .filter(Boolean);
+    return new Set(values);
+  }, [documents]);
+
+  const isConvertedQuote = (doc: any) =>
+    doc?.status === 'converted' ||
+    Boolean(doc?.converted_to_invoice) ||
+    Boolean(doc?.linked_invoice_id) ||
+    convertedSourceNumbers.has(doc?.document_number);
+
   useEffect(() => {
     if (!user || user.is_anonymous) {
       setIsAdmin(true);
@@ -133,7 +147,7 @@ const DocumentsListPage = () => {
 
   const handleConvertToInvoice = async (doc: DocumentRow) => {
     // Prevent double conversion
-    if ((doc as any).converted_to_invoice) {
+    if (isConvertedQuote(doc)) {
       toast({
         variant: 'destructive',
         title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
@@ -165,6 +179,8 @@ const DocumentsListPage = () => {
       })),
       notes: docData.legalMentions || '',
       source: 'devis_conversion',
+      sourceDocumentId: doc.id,
+      sourceDocumentNumber: doc.document_number,
     };
     
     sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
@@ -208,7 +224,7 @@ const DocumentsListPage = () => {
     if (!user || converting) return;
     
     // Prevent double conversion
-    if ((doc as any).converted_to_invoice) {
+    if (isConvertedQuote(doc)) {
       toast({
         title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
         description: isRTL ? 'تم إنشاء فاتورة بالفعل من هذا الدوفي' : 'Une facture a déjà été créée depuis ce devis',
@@ -407,7 +423,7 @@ const DocumentsListPage = () => {
         <div className={cn("mt-3 flex items-center gap-2 pt-3 border-t border-[hsl(0,0%,18%)]", isRTL && "flex-row-reverse")}>
           {isDevis && (
             <>
-              {(doc as any).converted_to_invoice ? (
+              {isConvertedQuote(doc) ? (
                 <>
                   <span className="text-xs text-amber-400 font-medium">
                     {isRTL ? '✅ تم إنشاء فاتورة بالفعل' : '✅ Facture déjà créée'}
@@ -622,7 +638,7 @@ const DocumentsListPage = () => {
               {/* Convert Devis → Facture button */}
               {selectedDocument.document_type === 'devis' && (
                 <div className={cn("pt-3 border-t border-border", isRTL && "text-right")}>
-                  {(selectedDocument as any).converted_to_invoice ? (
+                  {isConvertedQuote(selectedDocument) ? (
                     <div className="space-y-2">
                       <p className="text-sm text-amber-400 font-medium text-center">
                         {isRTL ? '✅ تم إنشاء فاتورة بالفعل' : '✅ Facture déjà créée'}

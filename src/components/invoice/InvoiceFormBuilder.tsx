@@ -52,6 +52,8 @@ interface PrefillData {
   }>;
   notes?: string;
   source?: string;
+  sourceDocumentId?: string;
+  sourceDocumentNumber?: string;
   sitePhotos?: Array<{ data: string; name: string }>;
   descriptionChantier?: string;
 }
@@ -1189,6 +1191,45 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
     const data = buildInvoiceData();
     const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
+    const isQuoteConversionFlow =
+      documentType === 'facture' &&
+      prefillData?.source === 'devis_conversion' &&
+      Boolean(prefillData?.sourceDocumentId);
+
+    if (isQuoteConversionFlow) {
+      const { data: sourceDevis, error: sourceCheckError } = await (supabase
+        .from('documents_comptables') as any)
+        .select('id, document_number, converted_to_invoice')
+        .eq('id', prefillData?.sourceDocumentId)
+        .eq('user_id', user.id)
+        .eq('document_type', 'devis')
+        .maybeSingle();
+
+      if (sourceCheckError) throw sourceCheckError;
+
+      if (!sourceDevis) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'خطأ في الربط' : 'Erreur de liaison',
+          description: isRTL
+            ? 'الدوفي الأصلي غير موجود. أعد فتح التحويل من صفحة المستندات.'
+            : 'Le devis source est introuvable. Relancez la conversion depuis vos documents.',
+        });
+        return;
+      }
+
+      if (sourceDevis.converted_to_invoice) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
+          description: isRTL
+            ? 'تم إنشاء فاتورة بالفعل لهذا الدوفي.'
+            : 'Une facture existe déjà pour ce devis.',
+        });
+        return;
+      }
+    }
+
     const linkedDocumentData = {
       ...documentDataForStorage,
       ...(selectedClientId && { linkedClientId: selectedClientId }),
@@ -1232,8 +1273,47 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       };
       if (selectedChantierId) insertData.chantier_id = selectedChantierId;
 
-      const { error } = await (supabase.from('documents_comptables') as any).insert(insertData);
+      const { data: insertedDocument, error } = await (supabase
+        .from('documents_comptables') as any)
+        .insert(insertData)
+        .select('id')
+        .single();
       if (error) throw error;
+
+      if (isQuoteConversionFlow && insertedDocument?.id) {
+        const { data: updatedSource, error: updateSourceError } = await (supabase
+          .from('documents_comptables') as any)
+          .update({
+            status: 'converted',
+            converted_to_invoice: true,
+            linked_invoice_id: insertedDocument.id,
+          })
+          .eq('id', prefillData?.sourceDocumentId)
+          .eq('user_id', user.id)
+          .eq('document_type', 'devis')
+          .eq('converted_to_invoice', false)
+          .select('id')
+          .maybeSingle();
+
+        if (updateSourceError) throw updateSourceError;
+
+        if (!updatedSource) {
+          await (supabase.from('documents_comptables') as any)
+            .delete()
+            .eq('id', insertedDocument.id)
+            .eq('user_id', user.id);
+
+          toast({
+            variant: 'destructive',
+            title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
+            description: isRTL
+              ? 'تم منع إنشاء فاتورة مكررة لنفس الدوفي.'
+              : 'La création d’une facture en doublon a été bloquée.',
+          });
+          return;
+        }
+      }
+
       toast({
         title: isRTL ? '✅ تم الحفظ' : '✅ Sauvegardé',
         description: isRTL ? 'المستند محفوظ في مستنداتك' : 'Document enregistré dans vos documents.',

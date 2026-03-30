@@ -314,7 +314,17 @@ const ArchiveAccountingPage = () => {
 
       {/* Financial Summary */}
       <div className="mb-4 shrink-0">
-        <FinancialSummary totalIncome={totalIncome} totalExpenses={totalExpenses} isRTL={isRTL} />
+        <FinancialSummary
+          totalIncome={totalIncome}
+          totalExpenses={totalExpenses}
+          tvaCollectee={tvaCollectee}
+          tvaDeductible={tvaDeductible}
+          totalIncomeHT={totalIncomeHT}
+          totalExpensesHT={totalExpensesHT}
+          urssafRate={urssafRate}
+          isRate={isRate}
+          isRTL={isRTL}
+        />
       </div>
 
       {/* ShbikLbik Smart Assistant */}

@@ -34,6 +34,9 @@ const ArchiveAccountingPage = () => {
   const [showSendAccountant, setShowSendAccountant] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const { profile } = useProfile();
+  const isConvertedQuote = (doc: DocumentItem) =>
+    doc.type === 'devis' &&
+    (doc.rawData?.status === 'converted' || Boolean(doc.rawData?.converted_to_invoice) || Boolean(doc.rawData?.linked_invoice_id));
 
   useEffect(() => {
     if (!user || user.is_anonymous) {
@@ -188,7 +191,7 @@ const ArchiveAccountingPage = () => {
 
   const handleConvert = (doc: DocumentItem) => {
     // Prevent double conversion
-    if (doc.rawData?.converted_to_invoice) {
+    if (isConvertedQuote(doc)) {
       toast({
         title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
         description: isRTL ? 'تم إنشاء فاتورة بالفعل من هذا الدوفي' : 'Une facture a déjà été créée depuis ce devis',

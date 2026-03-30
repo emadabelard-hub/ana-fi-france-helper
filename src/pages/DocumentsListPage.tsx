@@ -397,15 +397,38 @@ const DocumentsListPage = () => {
         <div className={cn("mt-3 flex items-center gap-2 pt-3 border-t border-[hsl(0,0%,18%)]", isRTL && "flex-row-reverse")}>
           {isDevis && (
             <>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
-                onClick={(e) => { e.stopPropagation(); handleConvertToInvoice(doc); }}
-              >
-                <ArrowRightLeft className="h-3 w-3" />
-                {isRTL ? 'حوّل لفاتورة' : 'Convertir'}
-              </Button>
+              {(doc as any).converted_to_invoice ? (
+                <>
+                  <span className="text-xs text-amber-400 font-medium">
+                    {isRTL ? '✅ تم إنشاء فاتورة بالفعل' : '✅ Facture déjà créée'}
+                  </span>
+                  {(doc as any).linked_invoice_id && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const linked = documents.find((d: any) => d.id === (doc as any).linked_invoice_id);
+                        if (linked) setSelectedDocument(linked as any);
+                      }}
+                    >
+                      <Eye className="h-3 w-3" />
+                      {isRTL ? 'عرض الفاتورة' : 'Voir facture'}
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
+                  onClick={(e) => { e.stopPropagation(); handleConvertToInvoice(doc); }}
+                >
+                  <ArrowRightLeft className="h-3 w-3" />
+                  {isRTL ? 'حوّل لفاتورة' : 'Convertir'}
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="ghost"

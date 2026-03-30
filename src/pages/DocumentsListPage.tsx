@@ -165,6 +165,8 @@ const DocumentsListPage = () => {
       })),
       notes: docData.legalMentions || '',
       source: 'devis_conversion',
+      sourceDocumentId: doc.id,
+      sourceDocumentNumber: doc.document_number,
     };
     
     sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));

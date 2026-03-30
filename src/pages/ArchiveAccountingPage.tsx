@@ -215,6 +215,8 @@ const ArchiveAccountingPage = () => {
         unitPrice: item.unitPrice || 0,
       })),
       source: 'devis_conversion',
+      sourceDocumentId: raw.id,
+      sourceDocumentNumber: raw.document_number,
     };
     sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
     navigate('/pro/invoice-creator?type=facture&prefill=quote');

@@ -66,6 +66,11 @@ const FinancialSummary = ({
             </div>
           ))}
         </div>
+        {/* Debug temporaire */}
+        <div className="mt-2 rounded-lg border border-border/50 bg-muted/30 p-2 text-[10px] text-muted-foreground font-mono">
+          <p>🔍 DEBUG — Factures validées: {debugFacturesCount} | Dépenses: {debugDepensesCount}</p>
+          <p>CA_HT: {fmt(caHT)} | Dépenses_HT: {fmt(depensesHT)} | Bénéfice: {fmt(benefice)}</p>
+        </div>
       </div>
 
       {/* ── BLOC 2: ESTIMATIONS ── */}

@@ -68,14 +68,16 @@ interface InvoiceFormBuilderProps {
 // Generate unique ID
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-// Generate document number prefix (locked part) - always uses current calendar year
-const getDocPrefix = (type: 'devis' | 'facture') => {
+// Generate document number prefix - always uses current calendar year
+const getDocPrefix = (type: 'devis' | 'facture'): string => {
   const prefix = type === 'devis' ? 'D' : 'F';
   const year = new Date().getFullYear();
   return `${prefix}-${year}-`;
 };
 
-// Fetch next sequential number from DB (atomic, no gaps, no duplicates)
+// Fetch next sequential number from DB (atomic, no gaps, no duplicates).
+// IMPORTANT: For factures, this should ONLY be called at finalization time
+// to guarantee sequential numbering with no gaps (French legal compliance).
 const fetchNextDocNumber = async (userId: string, type: 'devis' | 'facture'): Promise<string> => {
   const year = new Date().getFullYear();
   const { data, error } = await supabase.rpc('get_next_document_number', {
@@ -91,9 +93,12 @@ const fetchNextDocNumber = async (userId: string, type: 'devis' | 'facture'): Pr
   return data as string;
 };
 
-// Generate document number with empty suffix (fallback for non-logged-in)
-const generateDocNumber = (type: 'devis' | 'facture') => {
-  return `${getDocPrefix(type)}`;
+// Generate a placeholder number for drafts (not a real sequential number)
+const generateDraftPlaceholder = (type: 'devis' | 'facture'): string => {
+  const prefix = type === 'devis' ? 'D' : 'F';
+  const year = new Date().getFullYear();
+  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `BROUILLON-${prefix}-${year}-${rand}`;
 };
 
 const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeChange }: InvoiceFormBuilderProps) => {
@@ -195,8 +200,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [showArabic, setShowArabic] = useState(false);
   const [editingItems, setEditingItems] = useState(false);
   
-  // Editable document number
-  const [docNumber, setDocNumber] = useState(() => generateDocNumber(documentType));
+  // Editable document number:
+  // - For devis: fetch immediately (devis numbers are less critical legally)
+  // - For factures: use placeholder until finalization (French legal compliance)
+  const [docNumber, setDocNumber] = useState(() => {
+    if (documentType === 'facture') return generateDraftPlaceholder('facture');
+    return getDocPrefix('devis');
+  });
   const [docNumberLoading, setDocNumberLoading] = useState(false);
   
   // Quote Wizard state
@@ -226,12 +236,17 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const itemsRef = useRef(items);
   const [savingDraft, setSavingDraft] = useState(false);
 
-  // Auto-fetch next sequential number from DB
+  // Auto-fetch next sequential number from DB.
+  // For DEVIS: fetch on mount. For FACTURES: do NOT — number assigned at finalization.
   useEffect(() => {
     if (!user) return;
+    if (documentType === 'facture') {
+      if (!docNumber.startsWith('BROUILLON-')) {
+        setDocNumber(generateDraftPlaceholder('facture'));
+      }
+      return;
+    }
     const correctPrefix = getDocPrefix(documentType);
-    // Always auto-fetch if docNumber doesn't match the current document type prefix
-    // This ensures D- for devis and F- for facture, never mixed
     const hasCorrectPrefix = docNumber.startsWith(correctPrefix);
     const isJustPrefix = docNumber === correctPrefix;
     const hasSuffix = hasCorrectPrefix && docNumber.length > correctPrefix.length;
@@ -1189,7 +1204,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       return;
     }
 
-    const data = buildInvoiceData();
+    let data = buildInvoiceData();
     const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
     const isQuoteConversionFlow =
       documentType === 'facture' &&
@@ -1228,6 +1243,24 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         });
         return;
       }
+    }
+
+    // FACTURE NUMBERING: Fetch the real sequential number NOW (at finalization),
+    // not earlier, to guarantee no gaps (French legal compliance art. L441-3 Code de commerce).
+    if (documentType === 'facture') {
+      const finalNumber = await fetchNextDocNumber(user.id, 'facture');
+      if (!finalNumber || finalNumber === getDocPrefix('facture')) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'خطأ في الترقيم' : 'Erreur de numérotation',
+          description: isRTL
+            ? 'تعذر إنشاء رقم تسلسلي. حاول مرة أخرى.'
+            : 'Impossible de générer un numéro séquentiel. Réessayez.',
+        });
+        return;
+      }
+      data = { ...data, number: finalNumber };
+      setDocNumber(finalNumber);
     }
 
     const linkedDocumentData = {
@@ -1346,7 +1379,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       const insertData: any = {
         user_id: user.id,
         document_type: documentType,
-        document_number: data.number || generateDocNumber(documentType) + 'DRAFT',
+        document_number: generateDraftPlaceholder(documentType),
         client_name: data.client.name || '(مسودة)',
         client_address: data.client.address || '',
         work_site_address: data.workSite?.address || '',

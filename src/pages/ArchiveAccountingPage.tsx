@@ -49,8 +49,12 @@ const ArchiveAccountingPage = () => {
       convertedSourceNumbers.has(doc.number));
 
   useEffect(() => {
-    if (!user || user.is_anonymous) {
-      setIsAdmin(true);
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+    if (user.is_anonymous) {
+      setIsAdmin(false);
       return;
     }
     (async () => {

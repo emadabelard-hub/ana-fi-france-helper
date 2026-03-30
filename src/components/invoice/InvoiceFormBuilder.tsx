@@ -1485,7 +1485,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         setDocNumberLoading(false);
       }
     } else {
-      setDocNumber(generateDocNumber(documentType));
+      setDocNumber(documentType === 'facture' ? generateDraftPlaceholder('facture') : getDocPrefix(documentType));
     }
 
     toast({

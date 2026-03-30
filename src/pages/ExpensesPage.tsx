@@ -195,7 +195,7 @@ const ExpensesPage = () => {
 
   // TVA calculations based on period filter
   const tvaCollectee = useMemo(() =>
-    filtered.filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted')).reduce((s, r) => s + r.tvaAmount, 0),
+    filtered.filter(r => r.type === 'facture' && r.status === 'finalized').reduce((s, r) => s + r.tvaAmount, 0),
     [filtered]);
   const tvaDeductible = useMemo(() =>
     filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.tvaAmount, 0),
@@ -206,7 +206,7 @@ const ExpensesPage = () => {
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
   const isRate = (profile as any)?.is_rate ?? 15;
   const filteredIncomeHT = useMemo(() =>
-    filtered.filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted')).reduce((s, r) => s + r.amountHT, 0),
+    filtered.filter(r => r.type === 'facture' && r.status === 'finalized').reduce((s, r) => s + r.amountHT, 0),
     [filtered]);
   const filteredExpensesHT = useMemo(() =>
     filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.amountHT, 0),

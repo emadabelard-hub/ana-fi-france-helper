@@ -131,6 +131,7 @@ const DocumentHubPage = () => {
           totalExpensesHT={totalExpensesHT}
           isTvaExempt={isTvaExempt}
           isRTL={isRTL}
+          tresorerieEncaissee={tresorerieEncaissee}
         />
       </div>
 

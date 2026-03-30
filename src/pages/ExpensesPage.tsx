@@ -18,7 +18,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SecurityBadge from '@/components/shared/SecurityBadge';
-import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
+import { generateProfessionalCSV, generateAccountingCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
 import { useProfile } from '@/hooks/useProfile';
 
 interface UnifiedRow {

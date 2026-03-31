@@ -201,7 +201,7 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ text: cleanedText }), {
+    return new Response(JSON.stringify({ text: cleanedText, raw: rawTranscript }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

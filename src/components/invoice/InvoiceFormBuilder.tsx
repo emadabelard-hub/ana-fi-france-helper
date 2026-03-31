@@ -885,8 +885,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     : 0;
   const validatedSubtotalAfterDiscount = Math.round((validatedSubtotal - validatedDiscountAmt) * 100) / 100;
   const validatedTvaRate = validationResult.tvaRate;
-  const validatedTvaAmount = rawInvoiceData.tvaExempt ? 0 : Math.round(validatedSubtotal * (validatedTvaRate / 100) * 100) / 100;
-  const validatedTotal = Math.round((validatedSubtotal + validatedTvaAmount - validatedDiscountAmt) * 100) / 100;
+  const validatedTvaAmount = rawInvoiceData.tvaExempt ? 0 : Math.round(validatedSubtotalAfterDiscount * (validatedTvaRate / 100) * 100) / 100;
+  const validatedTotal = Math.round((validatedSubtotalAfterDiscount + validatedTvaAmount) * 100) / 100;
 
   const invoiceData: InvoiceData = {
     ...rawInvoiceData,

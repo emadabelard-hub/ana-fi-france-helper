@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import SmartReviewModal from './SmartReviewModal';
 import { cn } from '@/lib/utils';
-import { calculateInvoiceTotals } from '@/lib/invoiceTotals';
+import { calculateInvoiceTotals, validateInvoiceTotalsConsistency } from '@/lib/invoiceTotals';
 import html2canvas from 'html2canvas';
 import { supabase } from '@/integrations/supabase/client';
 import type { InvoiceData } from './InvoiceDisplay';
@@ -57,38 +57,61 @@ const InvoiceActions = ({
   const [signedPdfBlob, setSignedPdfBlob] = useState<Blob | null>(null);
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const SAFETY_BLOCK_MESSAGE = 'Calculation error – document blocked for safety';
 
   // Pre-PDF integrity check: verify TVA and totals are consistent
   const verifyFinancialIntegrity = (): boolean => {
-    const expectedTotals = calculateInvoiceTotals({
-      subtotal: invoiceData.subtotal,
+    const subtotalFromItems = Math.round(
+      invoiceData.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0) * 100
+    ) / 100;
+
+    if (Math.abs(invoiceData.subtotal - subtotalFromItems) > 0.01) {
+      console.error('[PDF INTEGRITY] Subtotal mismatch:', {
+        fromItems: subtotalFromItems,
+        storedSubtotal: invoiceData.subtotal,
+      });
+      toast({
+        variant: 'destructive',
+        title: '⚠️ Erreur de calcul',
+        description: SAFETY_BLOCK_MESSAGE,
+      });
+      return false;
+    }
+
+    const computedSubtotalAfterDiscount = invoiceData.subtotalAfterDiscount
+      ?? Math.round((invoiceData.subtotal - (invoiceData.discountAmount ?? 0)) * 100) / 100;
+
+    const consistency = validateInvoiceTotalsConsistency({
+      subtotal: subtotalFromItems,
       tvaRate: invoiceData.tvaRate,
       tvaExempt: invoiceData.tvaExempt,
       discountType: invoiceData.discountType,
       discountValue: invoiceData.discountValue,
       discountAmount: invoiceData.discountAmount,
+      computedSubtotalAfterDiscount,
+      computedTvaAmount: invoiceData.tvaAmount,
+      computedTotal: invoiceData.total,
     });
 
-    if (invoiceData.subtotal > 0 && invoiceData.total <= 0) {
-      toast({
-        variant: 'destructive',
-        title: '⚠️ Incohérence financière détectée',
-        description: 'Le total TTC est nul alors que le HT est positif. PDF bloqué.',
-      });
-      return false;
-    }
-    if (Math.abs(invoiceData.tvaAmount - expectedTotals.tvaAmount) > 0.01 || Math.abs(invoiceData.total - expectedTotals.total) > 0.01) {
-      console.error('[PDF INTEGRITY] Mismatch:', {
-        ui: { tva: invoiceData.tvaAmount, total: invoiceData.total },
-        expected: { tva: expectedTotals.tvaAmount, total: expectedTotals.total },
+    if (!consistency.isValid) {
+      console.error('[PDF INTEGRITY] Totals mismatch:', {
+        reason: consistency.reason,
+        ui: {
+          subtotal: invoiceData.subtotal,
+          subtotalAfterDiscount: computedSubtotalAfterDiscount,
+          tva: invoiceData.tvaAmount,
+          total: invoiceData.total,
+        },
+        expected: consistency.expectedTotals,
       });
       toast({
         variant: 'destructive',
-        title: '⚠️ Incohérence financière détectée',
-        description: 'Les valeurs TVA/TTC ne correspondent pas. PDF bloqué. Recalculez le document.',
+        title: '⚠️ Erreur de calcul',
+        description: SAFETY_BLOCK_MESSAGE,
       });
       return false;
     }
+
     return true;
   };
 
@@ -400,12 +423,15 @@ const InvoiceActions = ({
         `Remise${invoiceData.discountType === 'percent' ? ` (${invoiceData.discountValue}%)` : ''}: -${invoiceData.discountAmount.toFixed(2)}€`,
         `Sous-total HT: ${(invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal).toFixed(2)}€`,
       ] : []),
-      invoiceData.tvaRate > 0
-        ? `TVA (${invoiceData.tvaRate}%): ${invoiceData.tvaAmount.toFixed(2)}€`
-        : `TVA: ${invoiceData.tvaAmount.toFixed(2)}€`,
-      ...(invoiceData.tvaExempt ? [invoiceData.tvaExemptText || 'TVA non applicable, art. 293 B du CGI'] : []),
-      ...(!invoiceData.tvaExempt && invoiceData.tvaRate === 0 && invoiceData.legalMentions?.includes('283')
-        ? ['Autoliquidation de la TVA – art. 283-2 du CGI']
+      ...(invoiceData.tvaRate > 0
+        ? [
+            `TVA (${invoiceData.tvaRate}%): ${invoiceData.tvaAmount.toFixed(2)}€`,
+            `TVA appliquée à ${invoiceData.tvaRate}%`,
+          ]
+        : [`TVA: ${invoiceData.tvaAmount.toFixed(2)}€`]),
+      ...(invoiceData.tvaExempt ? [invoiceData.tvaExemptText || 'TVA non applicable, article 293B du CGI'] : []),
+      ...(!invoiceData.tvaExempt && invoiceData.tvaRate === 0 && (invoiceData.legalMentions?.includes('283') || invoiceData.legalFooter?.includes('283'))
+        ? ['Autoliquidation de la TVA – article 283 du CGI']
         : []),
       `Total TTC: ${invoiceData.total.toFixed(2)}€`,
       '',

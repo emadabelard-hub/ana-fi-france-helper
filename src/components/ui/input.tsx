@@ -25,6 +25,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     const handleVoiceResult = React.useCallback(
       (text: string) => {
+        if (onVoiceDual) return;
         const el = inputRef.current;
         if (!el) return;
         const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
@@ -36,7 +37,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         nativeInputValueSetter?.call(el, prev + separator + text);
         el.dispatchEvent(new Event('input', { bubbles: true }));
       },
-      [],
+      [onVoiceDual],
     );
 
     const showVoice =

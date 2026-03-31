@@ -6,16 +6,19 @@ const corsHeaders = {
 };
 
 const TRANSCRIPTION_HINT = [
+  "Transcribe the speech as spoken without translating.",
   "The audio may mix French and Arabic dialect used by construction artisans in France.",
-  "Construction vocabulary examples:",
-  "بانتيرة = peinture",
-  "كارلاج = carrelage",
-  "كهربا = électricité",
-  "سباكة = plomberie",
-  "دجراسياج = dégrossissage",
-  "دهان = peinture",
-  "حيطان = murs",
-  "أوض / أوضه = chambres / pièces",
+  "Keep Arabic words in Arabic script when spoken in Arabic, and keep French words in French when spoken in French.",
+  "Construction vocabulary that may appear includes: بانتيرة، كارلاج، كهربا، سباكة، دجراسياج، دهان، حيطان، أوض.",
+].join(" ");
+
+const DUAL_MODE_TRANSCRIPTION_HINT = [
+  "Transcribe the speech verbatim.",
+  "If the speaker uses Arabic dialect, keep the output in Arabic script.",
+  "Do not translate Arabic into French.",
+  "Do not normalize construction words into French.",
+  "Preserve short phrases and numbers as spoken.",
+  "Example raw outputs: رندة 3 أوض دهان ; بانتيرة الحيطان ; كهربا المطبخ",
 ].join(" ");
 
 function mimeTypeToExtension(mimeType: string) {
@@ -36,7 +39,12 @@ function decodeBase64Audio(base64: string) {
   return bytes;
 }
 
-async function transcribeAudio(audioBytes: Uint8Array, mimeType: string, openAiKey: string, forceLanguage?: string) {
+async function transcribeAudio(
+  audioBytes: Uint8Array,
+  mimeType: string,
+  openAiKey: string,
+  options?: { forceLanguage?: string; prompt?: string },
+) {
   const file = new File([audioBytes], `voice-input.${mimeTypeToExtension(mimeType)}`, {
     type: mimeType,
   });
@@ -45,9 +53,9 @@ async function transcribeAudio(audioBytes: Uint8Array, mimeType: string, openAiK
   formData.append("file", file);
   formData.append("model", "gpt-4o-transcribe");
   formData.append("response_format", "text");
-  formData.append("prompt", TRANSCRIPTION_HINT);
-  if (forceLanguage) {
-    formData.append("language", forceLanguage);
+  formData.append("prompt", options?.prompt ?? TRANSCRIPTION_HINT);
+  if (options?.forceLanguage) {
+    formData.append("language", options.forceLanguage);
   }
 
   const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
@@ -187,7 +195,10 @@ serve(async (req) => {
 
     // In dual mode: transcribe in Arabic for raw field, then rewrite to French
     // In normal mode: transcribe auto-detect, then rewrite to French
-    const rawTranscript = await transcribeAudio(audioBytes, mimeType, openAiKey, dualMode ? "ar" : undefined);
+    const rawTranscript = await transcribeAudio(audioBytes, mimeType, openAiKey, {
+      forceLanguage: dualMode ? "ar" : undefined,
+      prompt: dualMode ? DUAL_MODE_TRANSCRIPTION_HINT : TRANSCRIPTION_HINT,
+    });
     if (rawTranscript instanceof Response) return rawTranscript;
 
     if (!rawTranscript) {

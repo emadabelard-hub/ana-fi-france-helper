@@ -58,6 +58,7 @@ export function buildFacturXDataFromInvoice(invoiceData: {
   client: { name: string; address: string; siret?: string; siren?: string; tvaIntra?: string };
   items: Array<{ designation_fr: string; quantity: number; unit: string; unitPrice: number; total: number }>;
   subtotal: number;
+  subtotalAfterDiscount?: number;
   tvaRate: number;
   tvaAmount: number;
   total: number;

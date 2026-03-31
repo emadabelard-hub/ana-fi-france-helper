@@ -110,7 +110,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const { toast } = useToast();
   const navigate = useNavigate();
   const invoiceRef = useRef<HTMLDivElement>(null);
-  const SAFETY_BLOCK_MESSAGE = 'Calculation error – document blocked for safety';
+  const SAFETY_BLOCK_MESSAGE = 'Erreur de calcul – document bloqué pour sécurité';
   
   // Form state
   const [selectedClientId, setSelectedClientId] = useState('');

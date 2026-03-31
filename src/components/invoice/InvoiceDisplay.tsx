@@ -519,6 +519,14 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                   </div>
                   <p className="text-[6pt] text-gray-400 italic leading-tight mt-0.5">TVA non applicable, art. 293 B du CGI</p>
                 </div>
+              ) : data.tvaRate === 0 && data.legalMentions?.includes('283') ? (
+                <div className="py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 text-[7pt]">TVA :</span>
+                    <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(0)}</span>
+                  </div>
+                  <p className="text-[6pt] text-gray-400 italic leading-tight mt-0.5">Autoliquidation de la TVA – art. 283-2 du CGI</p>
+                </div>
               ) : (
                 <div className="flex justify-between py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
                   <span className="text-gray-500 text-[7pt]">TVA ({data.tvaRate}%) :</span>

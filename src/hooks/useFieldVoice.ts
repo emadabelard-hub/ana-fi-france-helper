@@ -8,6 +8,13 @@ export interface VoiceResult {
   raw: string;
 }
 
+interface VoiceFunctionPayload {
+  audioBase64?: string;
+  mimeType?: string;
+  dualMode: boolean;
+  rawText?: string;
+}
+
 function pickSupportedMimeType() {
   if (typeof MediaRecorder === 'undefined') return '';
 
@@ -59,6 +66,20 @@ export function useFieldVoice(options?: { dualMode?: boolean }) {
     typeof navigator !== 'undefined' &&
     !!navigator.mediaDevices?.getUserMedia &&
     typeof MediaRecorder !== 'undefined';
+
+  const invokeVoiceProcessor = useCallback(async (payload: VoiceFunctionPayload): Promise<VoiceResult> => {
+    const { data, error } = await supabase.functions.invoke('voice-field-input', {
+      body: payload,
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Voice processing failed');
+    }
+
+    const text = typeof data?.text === 'string' ? data.text.trim() : '';
+    const raw = typeof data?.raw === 'string' ? data.raw.trim() : '';
+    return { text, raw };
+  }, []);
 
   const cleanup = useCallback(() => {
     mediaRecorderRef.current = null;
@@ -126,25 +147,30 @@ export function useFieldVoice(options?: { dualMode?: boolean }) {
 
     try {
       const audioBase64 = await blobToBase64(blob);
-      const { data, error } = await supabase.functions.invoke('voice-field-input', {
-        body: {
-          audioBase64,
-          mimeType: blob.type || mimeTypeRef.current,
-          dualMode,
-        },
+      return await invokeVoiceProcessor({
+        audioBase64,
+        mimeType: blob.type || mimeTypeRef.current,
+        dualMode,
       });
-
-      if (error) {
-        throw new Error(error.message || 'Voice processing failed');
-      }
-
-      const text = typeof data?.text === 'string' ? data.text.trim() : '';
-      const raw = typeof data?.raw === 'string' ? data.raw.trim() : '';
-      return { text, raw };
     } finally {
       setIsProcessing(false);
     }
-  }, [cleanup]);
+  }, [cleanup, dualMode, invokeVoiceProcessor]);
 
-  return { isRecording, isProcessing, start, stop, isSupported };
+  const processRawText = useCallback(async (rawText: string): Promise<VoiceResult> => {
+    const trimmed = rawText.trim();
+    if (!trimmed) return { text: '', raw: '' };
+
+    setIsProcessing(true);
+    try {
+      return await invokeVoiceProcessor({
+        rawText: trimmed,
+        dualMode: true,
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [invokeVoiceProcessor]);
+
+  return { isRecording, isProcessing, start, stop, processRawText, isSupported };
 }

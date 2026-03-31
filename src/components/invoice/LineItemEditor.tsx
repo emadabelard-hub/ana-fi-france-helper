@@ -501,6 +501,7 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                         value={item.designation_fr}
                         onChange={(e) => updateItem(item.id, 'designation_fr', e.target.value)}
                         onBlur={() => lookupAndApplyCodePrice(item)}
+                        enableVoice={false}
                         placeholder={isRTL ? "Peinture salon / Pose carrelage..." : "Peinture salon / Pose carrelage..."}
                         className={cn(
                           "text-sm",

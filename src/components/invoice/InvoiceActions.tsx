@@ -57,7 +57,7 @@ const InvoiceActions = ({
   const [signedPdfBlob, setSignedPdfBlob] = useState<Blob | null>(null);
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const SAFETY_BLOCK_MESSAGE = 'Calculation error – document blocked for safety';
+  const SAFETY_BLOCK_MESSAGE = 'Erreur de calcul – document bloqué pour sécurité';
 
   // Pre-PDF integrity check: verify TVA and totals are consistent
   const verifyFinancialIntegrity = (): boolean => {
@@ -400,6 +400,19 @@ const InvoiceActions = ({
   };
 
   const handleCopyText = async () => {
+    const isAutoliquidationTva =
+      !invoiceData.tvaExempt &&
+      invoiceData.tvaRate === 0 &&
+      (invoiceData.legalMentions?.includes('283') || invoiceData.legalFooter?.includes('283'));
+
+    const vatMention = invoiceData.tvaRate > 0
+      ? `TVA au taux de ${invoiceData.tvaRate}%`
+      : isAutoliquidationTva
+        ? 'Autoliquidation de la TVA – article 283 du CGI'
+        : invoiceData.tvaExempt
+          ? (invoiceData.tvaExemptText || 'TVA non applicable, article 293B du CGI')
+          : undefined;
+
     const lines = [
       `${invoiceData.type} N° ${invoiceData.number}`,
       `Date: ${invoiceData.date}`,
@@ -423,16 +436,8 @@ const InvoiceActions = ({
         `Remise${invoiceData.discountType === 'percent' ? ` (${invoiceData.discountValue}%)` : ''}: -${invoiceData.discountAmount.toFixed(2)}€`,
         `Sous-total HT: ${(invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal).toFixed(2)}€`,
       ] : []),
-      ...(invoiceData.tvaRate > 0
-        ? [
-            `TVA (${invoiceData.tvaRate}%): ${invoiceData.tvaAmount.toFixed(2)}€`,
-            `TVA appliquée à ${invoiceData.tvaRate}%`,
-          ]
-        : [`TVA: ${invoiceData.tvaAmount.toFixed(2)}€`]),
-      ...(invoiceData.tvaExempt ? [invoiceData.tvaExemptText || 'TVA non applicable, article 293B du CGI'] : []),
-      ...(!invoiceData.tvaExempt && invoiceData.tvaRate === 0 && (invoiceData.legalMentions?.includes('283') || invoiceData.legalFooter?.includes('283'))
-        ? ['Autoliquidation de la TVA – article 283 du CGI']
-        : []),
+      `TVA (${invoiceData.tvaRate}%): ${invoiceData.tvaAmount.toFixed(2)}€`,
+      ...(vatMention ? [vatMention] : []),
       `Total TTC: ${invoiceData.total.toFixed(2)}€`,
       '',
       `Conditions: ${invoiceData.paymentTerms}`,

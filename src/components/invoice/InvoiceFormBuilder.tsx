@@ -110,7 +110,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const { toast } = useToast();
   const navigate = useNavigate();
   const invoiceRef = useRef<HTMLDivElement>(null);
-  const SAFETY_BLOCK_MESSAGE = 'Calculation error – document blocked for safety';
+  const SAFETY_BLOCK_MESSAGE = 'Erreur de calcul – document bloqué pour sécurité';
   
   // Form state
   const [selectedClientId, setSelectedClientId] = useState('');
@@ -717,6 +717,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     const subtotalAfterDiscount = totals.subtotalAfterDiscount;
     const tvaAmount = totals.tvaAmount;
     const total = totals.total;
+    const vatLegalMention = tvaRate > 0
+      ? `TVA au taux de ${tvaRate}%`
+      : tvaExempt
+        ? 'TVA non applicable, article 293B du CGI'
+        : isSousTraitanceTva
+          ? 'Autoliquidation de la TVA – article 283 du CGI'
+          : undefined;
     
     return {
       type: documentType === 'devis' ? 'DEVIS' : 'FACTURE',
@@ -828,11 +835,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         text += `En cas de retard : pénalités de 3 fois le taux légal + indemnité forfaitaire de 40€.`;
         return text;
       })(),
-      legalMentions: tvaExempt 
-        ? 'TVA non applicable, article 293B du CGI'
-        : isSousTraitanceTva
-          ? 'Autoliquidation de la TVA – article 283 du CGI'
-          : undefined,
+      legalMentions: vatLegalMention,
       // Inject signed URLs for artisan's permanent signature, stamp, and logo
       artisanSignatureUrl: signedUrls.artisanSignatureUrl || undefined,
       stampUrl: signedUrls.stampUrl || undefined,
@@ -857,12 +860,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           parts.push(`RCS ${p.ville_immatriculation}`);
         }
         if (p.code_naf) parts.push(`NAF : ${p.code_naf}`);
-        // Conditional TVA: never show both numero_tva AND exemption mention
-        if (isAutoEntrepreneur || tvaExempt) {
-          parts.push('TVA non applicable, article 293B du CGI');
-        } else if (isSousTraitanceTva) {
-          parts.push('Autoliquidation de la TVA – article 283 du CGI');
-        } else if (p.numero_tva) {
+        // Keep tax ID in footer, while VAT legal mention is rendered once in the dedicated footer line.
+        if (!isAutoEntrepreneur && !tvaExempt && !isSousTraitanceTva && p.numero_tva) {
           parts.push(`TVA Intracommunautaire : ${p.numero_tva}`);
         }
         return parts.length > 1 ? parts.join(' — ') : (p.legal_footer || undefined);

@@ -28,6 +28,7 @@ import { detectMultipleTasks } from '@/lib/smartItemSplit';
 import { formatObjet, containsArabic } from '@/lib/objetFormatter';
 import { validateDocument } from '@/lib/documentValidator';
 import { useAuth } from '@/hooks/useAuth';
+import type { VoiceResult } from '@/hooks/useFieldVoice';
 import { resolveAssetUrls } from '@/lib/storageUtils';
 import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
 
@@ -1036,6 +1037,50 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     } finally {
       stopTranslating(id);
     }
+  };
+
+  const handleArabicVoiceDual = (id: string, result: VoiceResult) => {
+    const raw = result.raw.trim();
+    const text = result.text.trim();
+    if (!raw && !text) return;
+
+    const current = itemsRef.current.find(item => item.id === id);
+    if (!current) return;
+
+    const nextArabic = [current.designation_ar?.trim(), raw].filter(Boolean).join(' ').trim();
+    const nextFrench = [current.designation_fr?.trim(), text].filter(Boolean).join(' ').trim();
+
+    const existingTimer = arabicDebounceTimersRef.current[id];
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      arabicDebounceTimersRef.current[id] = undefined;
+    }
+
+    setTypingArabicIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
+    setTranslationAttemptIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+
+    if (nextArabic && text) {
+      lastTranslatedSourceRef.current[id] = nextArabic;
+    }
+
+    setItems(prev => prev.map(item => {
+      if (item.id !== id) return item;
+
+      return {
+        ...item,
+        designation_ar: nextArabic || item.designation_ar,
+        designation_fr: nextFrench || item.designation_fr,
+      };
+    }));
   };
 
   // Auto-translate (debounced): when user stops typing in Arabic for 1s, translate and inject into FR.
@@ -2372,6 +2417,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                     <Input
                       value={item.designation_fr}
                       onChange={(e) => handleItemChange(item.id, 'designation_fr', e.target.value)}
+                      enableVoice={false}
                       placeholder={isRTL ? 'مثال: Peinture salon' : 'Ex: Peinture mur salon'}
                       className={cn(
                         "text-sm",
@@ -2396,6 +2442,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                     <Textarea
                       value={item.designation_ar}
                       onChange={(e) => handleArabicChange(item.id, e.target.value)}
+                      onVoiceDual={(result) => handleArabicVoiceDual(item.id, result)}
                       onBlur={(e) => {
                         const existing = arabicDebounceTimersRef.current[item.id];
                         if (existing) clearTimeout(existing);

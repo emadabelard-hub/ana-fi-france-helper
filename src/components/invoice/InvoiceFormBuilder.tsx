@@ -1203,6 +1203,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const saveToDocumentsComptables = async () => {
     if (!user) return;
 
+    // SAFETY: Block if calculations are broken (HT > 0 but TTC = 0)
+    const checkData = buildInvoiceData();
+    if (checkData.subtotal > 0 && checkData.total <= 0) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '⚠️ خطأ في الحسابات' : '⚠️ Erreur de calcul',
+        description: isRTL
+          ? 'المبلغ HT موجود لكن TTC = 0. راجع إعدادات TVA والخصم.'
+          : 'Le montant HT est positif mais le TTC est nul. Vérifiez la TVA et la remise.',
+      });
+      return;
+    }
+
     // Client name is required (either from selection or manual entry)
     if (!clientName.trim()) {
       toast({

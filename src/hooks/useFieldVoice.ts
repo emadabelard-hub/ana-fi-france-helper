@@ -44,7 +44,8 @@ function blobToBase64(blob: Blob): Promise<string> {
  * Field-level voice input using real audio recording.
  * Returns both the cleaned French text and the raw transcription.
  */
-export function useFieldVoice() {
+export function useFieldVoice(options?: { dualMode?: boolean }) {
+  const dualMode = options?.dualMode ?? false;
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 

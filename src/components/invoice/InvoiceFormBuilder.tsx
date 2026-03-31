@@ -27,7 +27,7 @@ import { saveDraft, loadDraft, clearDraft, loadCloudDraft, saveCurrentDocument, 
 import { detectMultipleTasks } from '@/lib/smartItemSplit';
 import { formatObjet, containsArabic } from '@/lib/objetFormatter';
 import { validateDocument } from '@/lib/documentValidator';
-import { calculateInvoiceTotals } from '@/lib/invoiceTotals';
+import { calculateInvoiceTotals, validateInvoiceTotalsConsistency } from '@/lib/invoiceTotals';
 import { useAuth } from '@/hooks/useAuth';
 import type { VoiceResult } from '@/hooks/useFieldVoice';
 import { resolveAssetUrls } from '@/lib/storageUtils';
@@ -110,6 +110,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const { toast } = useToast();
   const navigate = useNavigate();
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const SAFETY_BLOCK_MESSAGE = 'Calculation error – document blocked for safety';
   
   // Form state
   const [selectedClientId, setSelectedClientId] = useState('');
@@ -828,9 +829,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         return text;
       })(),
       legalMentions: tvaExempt 
-        ? 'TVA non applicable, article 293 B du CGI'
+        ? 'TVA non applicable, article 293B du CGI'
         : isSousTraitanceTva
-          ? 'Autoliquidation de la TVA – article 283-2 du CGI'
+          ? 'Autoliquidation de la TVA – article 283 du CGI'
           : undefined,
       // Inject signed URLs for artisan's permanent signature, stamp, and logo
       artisanSignatureUrl: signedUrls.artisanSignatureUrl || undefined,
@@ -858,9 +859,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         if (p.code_naf) parts.push(`NAF : ${p.code_naf}`);
         // Conditional TVA: never show both numero_tva AND exemption mention
         if (isAutoEntrepreneur || tvaExempt) {
-          parts.push('TVA non applicable, art. 293 B du CGI');
+          parts.push('TVA non applicable, article 293B du CGI');
         } else if (isSousTraitanceTva) {
-          parts.push('Autoliquidation de la TVA – art. 283-2 du CGI');
+          parts.push('Autoliquidation de la TVA – article 283 du CGI');
         } else if (p.numero_tva) {
           parts.push(`TVA Intracommunautaire : ${p.numero_tva}`);
         }
@@ -1251,6 +1252,57 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     setItems(newItems);
   };
 
+  const validateDocumentFinancialSafety = (data: InvoiceData): boolean => {
+    const subtotalFromItems = Math.round(
+      data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0) * 100,
+    ) / 100;
+
+    if (Math.abs(subtotalFromItems - data.subtotal) > 0.01) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '⚠️ خطأ في الحسابات' : '⚠️ Erreur de calcul',
+        description: SAFETY_BLOCK_MESSAGE,
+      });
+      return false;
+    }
+
+    const computedSubtotalAfterDiscount = data.subtotalAfterDiscount
+      ?? Math.round((data.subtotal - (data.discountAmount ?? 0)) * 100) / 100;
+
+    const consistency = validateInvoiceTotalsConsistency({
+      subtotal: subtotalFromItems,
+      tvaRate: data.tvaRate,
+      tvaExempt: data.tvaExempt,
+      discountType: data.discountType,
+      discountValue: data.discountValue,
+      discountAmount: data.discountAmount,
+      computedSubtotalAfterDiscount,
+      computedTvaAmount: data.tvaAmount,
+      computedTotal: data.total,
+    });
+
+    if (!consistency.isValid) {
+      console.error('[SAVE INTEGRITY] Mismatch detected:', {
+        reason: consistency.reason,
+        current: {
+          subtotal: data.subtotal,
+          subtotalAfterDiscount: computedSubtotalAfterDiscount,
+          tvaAmount: data.tvaAmount,
+          total: data.total,
+        },
+        expected: consistency.expectedTotals,
+      });
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '⚠️ خطأ في الحسابات' : '⚠️ Erreur de calcul',
+        description: SAFETY_BLOCK_MESSAGE,
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   // Save finalized document to documents_comptables
   const saveToDocumentsComptables = async () => {
     if (!user) return;
@@ -1260,41 +1312,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     // The validated invoiceData has already been through the expert-comptable
     // validation layer which may correct prices, quantities, TVA rates, and units.
 
-    // SAFETY: Block if calculations are broken (HT > 0 but TTC = 0)
-    if (invoiceData.subtotal > 0 && invoiceData.total <= 0) {
-      toast({
-        variant: 'destructive',
-        title: isRTL ? '⚠️ خطأ في الحسابات' : '⚠️ Erreur de calcul',
-        description: isRTL
-          ? 'المبلغ HT موجود لكن TTC = 0. راجع إعدادات TVA والخصم.'
-          : 'Le montant HT est positif mais le TTC est nul. Vérifiez la TVA et la remise.',
-      });
-      return;
-    }
-
-    // INTEGRITY CHECK: Verify TVA calculation consistency before saving
-    const expectedTotals = calculateInvoiceTotals({
-      subtotal: invoiceData.subtotal,
-      tvaRate: invoiceData.tvaRate,
-      tvaExempt: invoiceData.tvaExempt,
-      discountType: invoiceData.discountType,
-      discountValue: invoiceData.discountValue,
-      discountAmount: invoiceData.discountAmount,
-    });
-    const expectedTvaAmount = expectedTotals.tvaAmount;
-    const expectedTotal = expectedTotals.total;
-    if (Math.abs(invoiceData.tvaAmount - expectedTvaAmount) > 0.01 || Math.abs(invoiceData.total - expectedTotal) > 0.01) {
-      console.error('[INTEGRITY] Mismatch detected:', { 
-        stored: { tva: invoiceData.tvaAmount, total: invoiceData.total },
-        expected: { tva: expectedTvaAmount, total: expectedTotal }
-      });
-      toast({
-        variant: 'destructive',
-        title: isRTL ? '⚠️ خطأ في تطابق الحسابات' : '⚠️ Incohérence de calcul détectée',
-        description: isRTL
-          ? 'القيم المحسوبة غير متطابقة. أعد المحاولة.'
-          : 'Les valeurs calculées sont incohérentes. Réessayez.',
-      });
+    if (!validateDocumentFinancialSafety(invoiceData)) {
       return;
     }
 
@@ -1478,6 +1496,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (!user) return;
     setSavingDraft(true);
     try {
+      if (!validateDocumentFinancialSafety(invoiceData)) {
+        return;
+      }
+
       // Use validated invoiceData for consistency (UI = stored values)
       const data = { ...invoiceData };
       const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;

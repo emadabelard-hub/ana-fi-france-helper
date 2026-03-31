@@ -145,6 +145,8 @@ const AR_LABELS: Record<string, string> = {
   'Paiement à 30 jours': 'الدفع خلال 30 يوم',
   'Assurance décennale': 'تأمين عشري',
   'TVA non applicable, art. 293 B du CGI': 'معفى من الضريبة، مادة 293 ب',
+  'TVA non applicable, article 293B du CGI': 'معفى من الضريبة، مادة 293 ب',
+  'Autoliquidation de la TVA – article 283 du CGI': 'احتساب عكسي للضريبة، مادة 283',
   'Garantie décennale': 'ضمان عشري',
   'Retenue de garantie': 'ضمان محجوز',
 };
@@ -519,20 +521,23 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                     <span className="text-gray-500 text-[7pt]">TVA :</span>
                     <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(0)}</span>
                   </div>
-                  <p className="text-[6pt] text-gray-400 italic leading-tight mt-0.5">TVA non applicable, art. 293 B du CGI</p>
+                  <p className="text-[6pt] text-gray-400 italic leading-tight mt-0.5">TVA non applicable, article 293B du CGI</p>
                 </div>
-              ) : data.tvaRate === 0 && data.legalMentions?.includes('283') ? (
+              ) : data.tvaRate === 0 && (data.legalMentions?.includes('283') || data.legalFooter?.includes('283')) ? (
                 <div className="py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
                   <div className="flex justify-between">
                     <span className="text-gray-500 text-[7pt]">TVA :</span>
                     <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(0)}</span>
                   </div>
-                  <p className="text-[6pt] text-gray-400 italic leading-tight mt-0.5">Autoliquidation de la TVA – art. 283-2 du CGI</p>
+                  <p className="text-[6pt] text-gray-400 italic leading-tight mt-0.5">Autoliquidation de la TVA – article 283 du CGI</p>
                 </div>
               ) : (
-                <div className="flex justify-between py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <span className="text-gray-500 text-[7pt]">TVA ({data.tvaRate}%) :</span>
-                  <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(data.tvaAmount)}</span>
+                <div className="py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 text-[7pt]">TVA ({data.tvaRate}%) :</span>
+                    <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(data.tvaAmount)}</span>
+                  </div>
+                  <p className="text-[6pt] text-gray-400 italic leading-tight mt-0.5">TVA appliquée à {data.tvaRate}%</p>
                 </div>
               )}
               {/* Thin divider before TTC */}

@@ -1347,6 +1347,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         }
       }
 
+      // Clear drafts after successful save to prevent ghost state on next new document
+      clearDraft();
+      clearCurrentDocument();
+
       toast({
         title: isRTL ? '✅ تم الحفظ' : '✅ Sauvegardé',
         description: isRTL ? 'المستند محفوظ في مستنداتك' : 'Document enregistré dans vos documents.',

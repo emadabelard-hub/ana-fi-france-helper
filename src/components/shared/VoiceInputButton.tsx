@@ -18,7 +18,7 @@ const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
   className,
   disabled,
 }) => {
-  const { isRecording, isProcessing, start, stop, isSupported } = useFieldVoice();
+  const { isRecording, isProcessing, start, stop, isSupported } = useFieldVoice({ dualMode: !!onDualResult });
 
   const toggle = useCallback(async () => {
     if (isProcessing) return;

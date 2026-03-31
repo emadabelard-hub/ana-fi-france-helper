@@ -457,6 +457,18 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
                           isRTL && "text-right font-cairo"
                         )}
                         dir="rtl"
+                        onVoiceDual={(result) => {
+                          // Insert raw Arabic in this field
+                          handleArabicChange(item.id, 
+                            (item.designation_ar ? item.designation_ar + ' ' : '') + result.raw
+                          );
+                          // Insert cleaned French in the French field above
+                          if (result.text) {
+                            updateItem(item.id, 'designation_fr', 
+                              (item.designation_fr ? item.designation_fr + ' ' : '') + result.text
+                            );
+                          }
+                        }}
                       />
                       <p className={cn(
                         "text-xs text-muted-foreground mt-1",

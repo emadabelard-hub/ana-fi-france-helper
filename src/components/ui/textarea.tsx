@@ -25,6 +25,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 
     const handleVoiceResult = React.useCallback(
       (text: string) => {
+        // Skip default insertion when onVoiceDual handles both fields
+        if (onVoiceDual) return;
         const el = textareaRef.current;
         if (!el) return;
         const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
@@ -36,7 +38,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         nativeInputValueSetter?.call(el, prev + separator + text);
         el.dispatchEvent(new Event('input', { bubbles: true }));
       },
-      [],
+      [onVoiceDual],
     );
 
     const showVoice = enableVoice && !props.readOnly && !props.disabled;

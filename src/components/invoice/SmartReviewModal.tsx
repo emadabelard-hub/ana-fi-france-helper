@@ -161,8 +161,17 @@ const SmartReviewModal = ({
   const selectedAddons = addons.filter(a => a.selected);
   const additionalTotal = selectedAddons.reduce((sum, a) => sum + a.price, 0);
   const newSubtotal = invoiceData.subtotal + additionalTotal;
+  const newDiscountAmount = invoiceData.discountAmount && invoiceData.discountAmount > 0
+    ? (invoiceData.discountType === 'percent'
+        ? Math.round(newSubtotal * ((invoiceData.discountValue ?? 0) / 100) * 100) / 100
+        : Math.min(invoiceData.discountValue ?? 0, newSubtotal))
+    : 0;
   const newTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(newSubtotal * (invoiceData.tvaRate / 100) * 100) / 100;
-  const newTotal = newSubtotal + newTvaAmount;
+  const newTotal = Math.round((newSubtotal + newTvaAmount - newDiscountAmount) * 100) / 100;
+  const displayedTvaAmount = selectedAddons.length > 0 ? newTvaAmount : invoiceData.tvaAmount;
+  const displayedDiscountAmount = selectedAddons.length > 0 ? newDiscountAmount : (invoiceData.discountAmount ?? 0);
+  const displayedTotal = selectedAddons.length > 0 ? newTotal : invoiceData.total;
+  const isAutoliquidation = !invoiceData.tvaExempt && invoiceData.tvaRate === 0 && invoiceData.legalMentions?.includes('283');
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -326,10 +335,27 @@ const SmartReviewModal = ({
                   </>
                 )}
                 
-                {!invoiceData.tvaExempt && (
-                  <div className={cn("flex justify-between text-muted-foreground", isRTL && "flex-row-reverse")}>
-                    <span>TVA ({invoiceData.tvaRate}%)</span>
-                    <span>{formatCurrency(selectedAddons.length > 0 ? newTvaAmount : invoiceData.tvaAmount)}</span>
+                <div className={cn("flex justify-between text-muted-foreground", isRTL && "flex-row-reverse")}>
+                  <span>{invoiceData.tvaRate > 0 ? `TVA (${invoiceData.tvaRate}%)` : 'TVA'}</span>
+                  <span>{formatCurrency(displayedTvaAmount)}</span>
+                </div>
+
+                {displayedDiscountAmount > 0 && (
+                  <div className={cn("flex justify-between text-destructive", isRTL && "flex-row-reverse")}>
+                    <span>
+                      {invoiceData.discountType === 'percent'
+                        ? `Remise (${invoiceData.discountValue}%)`
+                        : 'Remise'}
+                    </span>
+                    <span>-{formatCurrency(displayedDiscountAmount)}</span>
+                  </div>
+                )}
+
+                {(invoiceData.tvaExempt || isAutoliquidation) && (
+                  <div className={cn("text-xs italic text-muted-foreground border-t pt-2", isRTL && "text-right")}>
+                    {invoiceData.tvaExempt
+                      ? 'TVA non applicable, art. 293 B du CGI'
+                      : 'Autoliquidation de la TVA – art. 283-2 du CGI'}
                   </div>
                 )}
                 
@@ -338,7 +364,7 @@ const SmartReviewModal = ({
                   isRTL && "flex-row-reverse"
                 )}>
                   <span>{isRTL ? 'المجموع الكلي (TTC)' : 'Total TTC'}</span>
-                  <span className="text-primary">{formatCurrency(selectedAddons.length > 0 ? newTotal : invoiceData.total)}</span>
+                  <span className="text-primary">{formatCurrency(displayedTotal)}</span>
                 </div>
               </div>
             </CardContent>

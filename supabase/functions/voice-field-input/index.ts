@@ -18,8 +18,8 @@ const DUAL_MODE_TRANSCRIPTION_HINT = [
   "Do not translate Arabic into French.",
   "Do not normalize construction words into French.",
   "Preserve short phrases, materials, finishes, quantities, colors, and numbers exactly as spoken.",
-  "Keep chantier expressions like توريد, تركيب, باركيه, ساتينيه, لوز, plinthe if spoken.",
-  "Example raw outputs: رندة 3 أوض دهان ; بانتيرة الحيطان ; كهربا المطبخ ; توريد وتركيب باركيه ; ازرق ساتينيه",
+  "Keep chantier expressions like توريد, تركيب, باركيه, بتركيبه, ساتينيه, لوز, plinthe if spoken.",
+  "Example raw outputs: رندة 3 أوض دهان ; بانتيرة الحيطان ; كهربا المطبخ ; توريد وتركيب باركيه لوز ; بانتيرة ازرق ساتينيه ; توريد وتركيب بتركيبه",
 ].join(" ");
 
 function mimeTypeToExtension(mimeType: string) {
@@ -68,6 +68,27 @@ function deduplicateTranscript(text: string) {
   }
 
   return deduped.join(" ").trim();
+}
+
+function normalizeConstructionTranscript(text: string) {
+  return text
+    .replace(/توريد\s*(?:و)?\s*تركيب/gu, "توريد وتركيب")
+    .replace(/(?:باركيه|بركيه|باركي|بركي|parquet|parket|parke|parki)/giu, "باركيه")
+    .replace(/بتركيب(?:ه|ة)?/gu, "باركيه")
+    .replace(/(?:لوز|لووز|louz|loose|louse|losange)/giu, "لوز")
+    .replace(/(?:ساتينيه|ساتيني|satinée|satinee|satiné|satin)/giu, "ساتينيه")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeConstructionOutput(text: string) {
+  return text
+    .replace(/fourniture et pose de\s+fourniture et pose de/gi, "Fourniture et pose de")
+    .replace(/\bparquet\s+parquet\b/gi, "parquet")
+    .replace(/\bpose en losange\s+pose en losange\b/gi, "pose en losange")
+    .replace(/\bde\s+de\b/gi, "de")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function transcribeAudio(
@@ -139,6 +160,8 @@ Règles:
 - corriger le vocabulaire métier: peinture, carrelage, électricité, plomberie, enduit, ponçage, dégrossissage, faux plafond, placo, etc.
 - si l'entrée mentionne fourniture, pose, dépose, parquet, plinthes, couleur ou finition (mat, satiné, brillant), conserve ces infos
 - si l'entrée dit توريد وتركيب ou équivalent, rends "Fourniture et pose de ..."
+- si l'entrée contient لوز / louz / loose, rends "pose en losange"
+- si l'entrée contient بتركيبه / بتركيبة dans un contexte de sol ou de توريد وتركيب, comprends "parquet"
 - si l'entrée parle de pièces/chambres/murs/plafonds, garde l'information utile
 - si plusieurs formulations sont possibles, choisis la plus naturelle pour un artisan en France
 
@@ -148,7 +171,10 @@ Exemples:
 - "كهربا المطبخ" -> "Travaux d'électricité dans la cuisine"
 - "سباكة الحمام" -> "Travaux de plomberie dans la salle de bains"
 - "توريد وتركيب باركيه" -> "Fourniture et pose de parquet"
-- "بانتيرة ازرق ساتينيه" -> "Peinture bleue satinée"`;
+- "توريد وتركيب بتركيبه" -> "Fourniture et pose de parquet"
+- "باركيه لوز" -> "Fourniture et pose de parquet en losange"
+- "بانتيرة ازرق ساتينيه" -> "Peinture bleue satinée"
+- "بانتيرة ازرق ساتينيه وتوريد وتركيب باركيه لوز" -> "Peinture bleue satinée et fourniture et pose de parquet en losange"`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -193,7 +219,7 @@ Exemples:
 
   const data = await response.json();
   const cleaned = data.choices?.[0]?.message?.content?.trim()?.replace(/^"|"$/g, "") ?? "";
-  return cleaned;
+  return normalizeConstructionOutput(cleaned);
 }
 
 serve(async (req) => {
@@ -225,7 +251,7 @@ serve(async (req) => {
       });
     }
 
-    let rawTranscript = deduplicateTranscript(rawTextInput);
+    let rawTranscript = deduplicateTranscript(normalizeConstructionTranscript(rawTextInput));
 
     if (!rawTranscript) {
       if (!openAiKey) {
@@ -250,7 +276,7 @@ serve(async (req) => {
         prompt: dualMode ? DUAL_MODE_TRANSCRIPTION_HINT : TRANSCRIPTION_HINT,
       });
       if (transcribed instanceof Response) return transcribed;
-      rawTranscript = deduplicateTranscript(transcribed);
+      rawTranscript = deduplicateTranscript(normalizeConstructionTranscript(transcribed));
     }
 
     if (!rawTranscript) {

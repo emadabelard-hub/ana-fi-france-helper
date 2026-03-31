@@ -35,9 +35,9 @@ const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
     isSupported: isBrowserSupported,
   } = useVoiceRecorder('ar-EG');
 
-  const useBrowserDualMode = dualMode && isBrowserSupported;
+  const useBrowserDualMode = dualMode && !isAudioSupported && isBrowserSupported;
   const isRecording = useBrowserDualMode ? isBrowserRecording : isAudioRecording;
-  const isSupported = useBrowserDualMode || isAudioSupported;
+  const isSupported = useBrowserDualMode ? isBrowserSupported : isAudioSupported;
 
   const toggle = useCallback(async () => {
     if (isProcessing) return;

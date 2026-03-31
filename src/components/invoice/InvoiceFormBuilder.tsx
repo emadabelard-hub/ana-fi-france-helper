@@ -27,6 +27,7 @@ import { saveDraft, loadDraft, clearDraft, loadCloudDraft, saveCurrentDocument, 
 import { detectMultipleTasks } from '@/lib/smartItemSplit';
 import { formatObjet, containsArabic } from '@/lib/objetFormatter';
 import { validateDocument } from '@/lib/documentValidator';
+import { calculateInvoiceTotals } from '@/lib/invoiceTotals';
 import { useAuth } from '@/hooks/useAuth';
 import type { VoiceResult } from '@/hooks/useFieldVoice';
 import { resolveAssetUrls } from '@/lib/storageUtils';
@@ -698,20 +699,23 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       });
     }
     
-    const subtotal = allItems.reduce((sum, item) => sum + item.total, 0);
-    
-    // Discount calculation
-    const discountAmt = discountEnabled && discountValue > 0
-      ? (discountType === 'percent' ? Math.round(subtotal * (discountValue / 100) * 100) / 100 : Math.min(discountValue, subtotal))
-      : 0;
-    const subtotalAfterDiscount = Math.round((subtotal - discountAmt) * 100) / 100;
+    const subtotal = Math.round(allItems.reduce((sum, item) => sum + item.total, 0) * 100) / 100;
     
     // Smart TVA calculation: Auto-entrepreneur = franchise de TVA, Sous-traitance = autoliquidation
     const tvaExempt = isAutoEntrepreneur;
     const isSousTraitanceTva = !isAutoEntrepreneur && projectTvaType === 'sous_traitance';
     const tvaRate = tvaExempt || isSousTraitanceTva ? 0 : (projectTvaType === 'logement' ? 10 : 20);
-    const tvaAmount = (tvaExempt || isSousTraitanceTva) ? 0 : Math.round(subtotalAfterDiscount * (tvaRate / 100) * 100) / 100;
-    const total = Math.round((subtotalAfterDiscount + tvaAmount) * 100) / 100;
+    const totals = calculateInvoiceTotals({
+      subtotal,
+      tvaRate,
+      tvaExempt,
+      discountType: discountEnabled ? discountType : undefined,
+      discountValue: discountEnabled ? discountValue : undefined,
+    });
+    const discountAmt = totals.discountAmount;
+    const subtotalAfterDiscount = totals.subtotalAfterDiscount;
+    const tvaAmount = totals.tvaAmount;
+    const total = totals.total;
     
     return {
       type: documentType === 'devis' ? 'DEVIS' : 'FACTURE',
@@ -769,7 +773,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         unitPrice: item.unitPrice,
         total: item.total,
       })),
-      subtotal: Math.round(subtotal * 100) / 100,
+      subtotal,
       discountType: discountEnabled && discountAmt > 0 ? discountType : undefined,
       discountValue: discountEnabled && discountAmt > 0 ? discountValue : undefined,
       discountAmount: discountAmt > 0 ? discountAmt : undefined,
@@ -777,7 +781,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       tvaRate,
       tvaAmount,
       tvaExempt,
-      total: Math.round(total * 100) / 100,
+      total,
       paymentDeadline: delaiPaiement === 'immediate' ? 'immediate' : delaiPaiement === 'echeancier' ? 'echeancier' : undefined,
       acomptePercent: acompteEnabled && !milestonesEnabled && acompteMode === 'percent' ? acomptePercent : undefined,
       acompteAmount: (() => {
@@ -878,15 +882,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // CRITICAL: Recalculate ALL financial values from validated items to ensure consistency.
   // The validation layer may change item prices/quantities, so we must recompute everything.
   const validatedSubtotal = validationResult.items.reduce((s, i) => s + i.total, 0);
-  const validatedDiscountAmt = rawInvoiceData.discountAmount && rawInvoiceData.discountAmount > 0
-    ? (rawInvoiceData.discountType === 'percent'
-        ? Math.round(validatedSubtotal * ((rawInvoiceData.discountValue ?? 0) / 100) * 100) / 100
-        : Math.min(rawInvoiceData.discountValue ?? 0, validatedSubtotal))
-    : 0;
-  const validatedSubtotalAfterDiscount = Math.round((validatedSubtotal - validatedDiscountAmt) * 100) / 100;
   const validatedTvaRate = validationResult.tvaRate;
-  const validatedTvaAmount = rawInvoiceData.tvaExempt ? 0 : Math.round(validatedSubtotalAfterDiscount * (validatedTvaRate / 100) * 100) / 100;
-  const validatedTotal = Math.round((validatedSubtotalAfterDiscount + validatedTvaAmount) * 100) / 100;
+  const validatedTotals = calculateInvoiceTotals({
+    subtotal: validatedSubtotal,
+    tvaRate: validatedTvaRate,
+    tvaExempt: rawInvoiceData.tvaExempt,
+    discountType: rawInvoiceData.discountType,
+    discountValue: rawInvoiceData.discountValue,
+  });
+  const validatedDiscountAmt = validatedTotals.discountAmount;
+  const validatedSubtotalAfterDiscount = validatedTotals.subtotalAfterDiscount;
+  const validatedTvaAmount = validatedTotals.tvaAmount;
+  const validatedTotal = validatedTotals.total;
 
   const invoiceData: InvoiceData = {
     ...rawInvoiceData,
@@ -1266,9 +1273,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     }
 
     // INTEGRITY CHECK: Verify TVA calculation consistency before saving
-    const htAfterDiscount = Math.round((invoiceData.subtotal - (invoiceData.discountAmount ?? 0)) * 100) / 100;
-    const expectedTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(htAfterDiscount * (invoiceData.tvaRate / 100) * 100) / 100;
-    const expectedTotal = Math.round((htAfterDiscount + expectedTvaAmount) * 100) / 100;
+    const expectedTotals = calculateInvoiceTotals({
+      subtotal: invoiceData.subtotal,
+      tvaRate: invoiceData.tvaRate,
+      tvaExempt: invoiceData.tvaExempt,
+      discountType: invoiceData.discountType,
+      discountValue: invoiceData.discountValue,
+      discountAmount: invoiceData.discountAmount,
+    });
+    const expectedTvaAmount = expectedTotals.tvaAmount;
+    const expectedTotal = expectedTotals.total;
     if (Math.abs(invoiceData.tvaAmount - expectedTvaAmount) > 0.01 || Math.abs(invoiceData.total - expectedTotal) > 0.01) {
       console.error('[INTEGRITY] Mismatch detected:', { 
         stored: { tva: invoiceData.tvaAmount, total: invoiceData.total },

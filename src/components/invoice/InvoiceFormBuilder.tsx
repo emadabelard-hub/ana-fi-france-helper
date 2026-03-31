@@ -1248,15 +1248,37 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const saveToDocumentsComptables = async () => {
     if (!user) return;
 
+    // CRITICAL: Use the VALIDATED invoiceData (post-validation recalculation)
+    // instead of raw buildInvoiceData() to ensure UI = stored = PDF values.
+    // The validated invoiceData has already been through the expert-comptable
+    // validation layer which may correct prices, quantities, TVA rates, and units.
+
     // SAFETY: Block if calculations are broken (HT > 0 but TTC = 0)
-    const checkData = buildInvoiceData();
-    if (checkData.subtotal > 0 && checkData.total <= 0) {
+    if (invoiceData.subtotal > 0 && invoiceData.total <= 0) {
       toast({
         variant: 'destructive',
         title: isRTL ? '⚠️ خطأ في الحسابات' : '⚠️ Erreur de calcul',
         description: isRTL
           ? 'المبلغ HT موجود لكن TTC = 0. راجع إعدادات TVA والخصم.'
           : 'Le montant HT est positif mais le TTC est nul. Vérifiez la TVA et la remise.',
+      });
+      return;
+    }
+
+    // INTEGRITY CHECK: Verify TVA calculation consistency before saving
+    const expectedTvaAmount = invoiceData.tvaExempt ? 0 : Math.round((invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal) * (invoiceData.tvaRate / 100) * 100) / 100;
+    const expectedTotal = Math.round(((invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal) + expectedTvaAmount) * 100) / 100;
+    if (Math.abs(invoiceData.tvaAmount - expectedTvaAmount) > 0.01 || Math.abs(invoiceData.total - expectedTotal) > 0.01) {
+      console.error('[INTEGRITY] Mismatch detected:', { 
+        stored: { tva: invoiceData.tvaAmount, total: invoiceData.total },
+        expected: { tva: expectedTvaAmount, total: expectedTotal }
+      });
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '⚠️ خطأ في تطابق الحسابات' : '⚠️ Incohérence de calcul détectée',
+        description: isRTL
+          ? 'القيم المحسوبة غير متطابقة. أعد المحاولة.'
+          : 'Les valeurs calculées sont incohérentes. Réessayez.',
       });
       return;
     }
@@ -1273,7 +1295,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       return;
     }
 
-    let data = buildInvoiceData();
+    let data = { ...invoiceData };
     const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
     const isQuoteConversionFlow =
       documentType === 'facture' &&

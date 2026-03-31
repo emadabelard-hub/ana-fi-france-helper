@@ -59,8 +59,9 @@ const InvoiceActions = ({
 
   // Pre-PDF integrity check: verify TVA and totals are consistent
   const verifyFinancialIntegrity = (): boolean => {
-    const expectedTva = invoiceData.tvaExempt ? 0 : Math.round(invoiceData.subtotal * (invoiceData.tvaRate / 100) * 100) / 100;
-    const expectedTotal = Math.round((invoiceData.subtotal + expectedTva - (invoiceData.discountAmount ?? 0)) * 100) / 100;
+    const htAfterDiscount = Math.round((invoiceData.subtotal - (invoiceData.discountAmount ?? 0)) * 100) / 100;
+    const expectedTva = invoiceData.tvaExempt ? 0 : Math.round(htAfterDiscount * (invoiceData.tvaRate / 100) * 100) / 100;
+    const expectedTotal = Math.round((htAfterDiscount + expectedTva) * 100) / 100;
     if (invoiceData.subtotal > 0 && invoiceData.total <= 0) {
       toast({
         variant: 'destructive',
@@ -296,8 +297,9 @@ const InvoiceActions = ({
             ? Math.round(newSubtotal * ((invoiceData.discountValue ?? 0) / 100) * 100) / 100
             : Math.min(invoiceData.discountValue ?? 0, newSubtotal))
         : 0;
-      const newTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(newSubtotal * (invoiceData.tvaRate / 100) * 100) / 100;
-      const newTotal = newSubtotal + newTvaAmount - newDiscountAmount;
+      const newSubtotalAfterDiscount = Math.round((newSubtotal - newDiscountAmount) * 100) / 100;
+      const newTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(newSubtotalAfterDiscount * (invoiceData.tvaRate / 100) * 100) / 100;
+      const newTotal = newSubtotalAfterDiscount + newTvaAmount;
       
       const updatedData: InvoiceData = {
         ...invoiceData,
@@ -386,18 +388,19 @@ const InvoiceActions = ({
         `- ${item.designation_fr}: ${item.quantity} ${item.unit} x ${item.unitPrice}€ = ${item.total}€`
       ),
       '',
-      `Total HT: ${invoiceData.subtotal}€`,
+      `Total HT: ${invoiceData.subtotal.toFixed(2)}€`,
+      ...(invoiceData.discountAmount && invoiceData.discountAmount > 0 ? [
+        `Remise${invoiceData.discountType === 'percent' ? ` (${invoiceData.discountValue}%)` : ''}: -${invoiceData.discountAmount.toFixed(2)}€`,
+        `Sous-total HT: ${(invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal).toFixed(2)}€`,
+      ] : []),
       invoiceData.tvaRate > 0
-        ? `TVA (${invoiceData.tvaRate}%): ${invoiceData.tvaAmount}€`
-        : `TVA: ${invoiceData.tvaAmount}€`,
+        ? `TVA (${invoiceData.tvaRate}%): ${invoiceData.tvaAmount.toFixed(2)}€`
+        : `TVA: ${invoiceData.tvaAmount.toFixed(2)}€`,
       ...(invoiceData.tvaExempt ? [invoiceData.tvaExemptText || 'TVA non applicable, art. 293 B du CGI'] : []),
       ...(!invoiceData.tvaExempt && invoiceData.tvaRate === 0 && invoiceData.legalMentions?.includes('283')
         ? ['Autoliquidation de la TVA – art. 283-2 du CGI']
         : []),
-      ...(invoiceData.discountAmount && invoiceData.discountAmount > 0 ? [
-        `Remise${invoiceData.discountType === 'percent' ? ` (${invoiceData.discountValue}%)` : ''}: -${invoiceData.discountAmount}€`,
-      ] : []),
-      `Total TTC: ${invoiceData.total}€`,
+      `Total TTC: ${invoiceData.total.toFixed(2)}€`,
       '',
       `Conditions: ${invoiceData.paymentTerms}`,
     ];

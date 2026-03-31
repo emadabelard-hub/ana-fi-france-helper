@@ -25,9 +25,18 @@ const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
 
     if (isRecording) {
       const result = await stop();
-      if (result.text.trim()) {
-        onResult(result.text.trim());
-        onDualResult?.(result);
+      const text = result.text.trim();
+      const raw = result.raw.trim();
+
+      if (onDualResult) {
+        if (text || raw) {
+          onDualResult({ text, raw });
+        }
+        return;
+      }
+
+      if (text) {
+        onResult(text);
       }
       return;
     }

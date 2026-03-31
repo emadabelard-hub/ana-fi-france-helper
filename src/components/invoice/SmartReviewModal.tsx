@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { calculateInvoiceTotals } from '@/lib/invoiceTotals';
 import type { InvoiceData } from './InvoiceDisplay';
 
 interface SuggestedAddon {
@@ -161,18 +162,24 @@ const SmartReviewModal = ({
   const selectedAddons = addons.filter(a => a.selected);
   const additionalTotal = selectedAddons.reduce((sum, a) => sum + a.price, 0);
   const newSubtotal = invoiceData.subtotal + additionalTotal;
-  const newDiscountAmount = invoiceData.discountAmount && invoiceData.discountAmount > 0
-    ? (invoiceData.discountType === 'percent'
-        ? Math.round(newSubtotal * ((invoiceData.discountValue ?? 0) / 100) * 100) / 100
-        : Math.min(invoiceData.discountValue ?? 0, newSubtotal))
-    : 0;
-  const newSubtotalAfterDiscount = Math.round((newSubtotal - newDiscountAmount) * 100) / 100;
-  const newTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(newSubtotalAfterDiscount * (invoiceData.tvaRate / 100) * 100) / 100;
-  const newTotal = Math.round((newSubtotalAfterDiscount + newTvaAmount) * 100) / 100;
+  const recalculatedTotals = calculateInvoiceTotals({
+    subtotal: newSubtotal,
+    tvaRate: invoiceData.tvaRate,
+    tvaExempt: invoiceData.tvaExempt,
+    discountType: invoiceData.discountType,
+    discountValue: invoiceData.discountValue,
+    discountAmount: invoiceData.discountAmount,
+  });
+  const newDiscountAmount = recalculatedTotals.discountAmount;
+  const newTvaAmount = recalculatedTotals.tvaAmount;
+  const newTotal = recalculatedTotals.total;
   const displayedTvaAmount = selectedAddons.length > 0 ? newTvaAmount : invoiceData.tvaAmount;
   const displayedDiscountAmount = selectedAddons.length > 0 ? newDiscountAmount : (invoiceData.discountAmount ?? 0);
   const displayedTotal = selectedAddons.length > 0 ? newTotal : invoiceData.total;
-  const isAutoliquidation = !invoiceData.tvaExempt && invoiceData.tvaRate === 0 && invoiceData.legalMentions?.includes('283');
+  const isAutoliquidation =
+    !invoiceData.tvaExempt &&
+    invoiceData.tvaRate === 0 &&
+    (invoiceData.legalMentions?.includes('283') || invoiceData.legalFooter?.includes('283'));
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -355,8 +362,8 @@ const SmartReviewModal = ({
                 {(invoiceData.tvaExempt || isAutoliquidation) && (
                   <div className={cn("text-xs italic text-muted-foreground border-t pt-2", isRTL && "text-right")}>
                     {invoiceData.tvaExempt
-                      ? 'TVA non applicable, art. 293 B du CGI'
-                      : 'Autoliquidation de la TVA – art. 283-2 du CGI'}
+                      ? 'TVA non applicable, article 293B du CGI'
+                      : 'Autoliquidation de la TVA – article 283 du CGI'}
                   </div>
                 )}
                 

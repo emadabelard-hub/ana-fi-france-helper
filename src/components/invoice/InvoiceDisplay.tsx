@@ -205,6 +205,26 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   const formatNumber = (amount: number) =>
     amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  const isAutoliquidationTva =
+    !data.tvaExempt &&
+    data.tvaRate === 0 &&
+    (data.legalMentions?.includes('283') || data.legalFooter?.includes('283'));
+
+  const vatFooterMention = data.tvaRate > 0
+    ? `TVA au taux de ${data.tvaRate}%`
+    : isAutoliquidationTva
+      ? 'Autoliquidation de la TVA – article 283 du CGI'
+      : 'TVA non applicable, article 293B du CGI';
+
+  const cleanLegalFooter = (data.legalFooter || '')
+    .replace(/TVA appliquée à\s*\d+(?:[.,]\d+)?%/gi, '')
+    .replace(/TVA au taux de\s*\d+(?:[.,]\d+)?%/gi, '')
+    .replace(/TVA non applicable,\s*article\s*293B\s*du\s*CGI/gi, '')
+    .replace(/Autoliquidation de la TVA\s*[–-]\s*article\s*283\s*du\s*CGI/gi, '')
+    .replace(/\s+—\s+—\s+/g, ' — ')
+    .replace(/^\s*—\s*|\s*—\s*$/g, '')
+    .trim();
+
   const pageContainerClass = "french-invoice bg-white text-gray-900 rounded-lg shadow-lg max-w-2xl mx-auto print:shadow-none print:max-w-none print:rounded-none select-none";
   const pageContainerStyle: React.CSSProperties = {
     padding: '8mm 10mm 10mm 10mm',
@@ -514,32 +534,13 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 </>
               )}
 
-              {/* TVA (calculated on HT after discount) */}
-              {data.tvaExempt ? (
-                <div className="py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 text-[7pt]">TVA :</span>
-                    <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(0)}</span>
-                  </div>
-                  <p className="text-[6pt] text-gray-400 italic leading-tight mt-0.5">TVA non applicable, article 293B du CGI</p>
+              {/* TVA (always calculated on HT after discount) */}
+              <div className="py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 text-[7pt]">TVA ({data.tvaRate}%) :</span>
+                  <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(data.tvaAmount)}</span>
                 </div>
-              ) : data.tvaRate === 0 && (data.legalMentions?.includes('283') || data.legalFooter?.includes('283')) ? (
-                <div className="py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 text-[7pt]">TVA :</span>
-                    <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(0)}</span>
-                  </div>
-                  <p className="text-[6pt] text-gray-400 italic leading-tight mt-0.5">Autoliquidation de la TVA – article 283 du CGI</p>
-                </div>
-              ) : (
-                <div className="py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 text-[7pt]">TVA ({data.tvaRate}%) :</span>
-                    <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(data.tvaAmount)}</span>
-                  </div>
-                  <p className="text-[6pt] text-gray-400 italic leading-tight mt-0.5">TVA appliquée à {data.tvaRate}%</p>
-                </div>
-              )}
+              </div>
               {/* Thin divider before TTC */}
               <div style={{ borderBottom: '2px solid #d1d5db', margin: '2px 0' }} />
               {/* TTC — prominent but balanced */}
@@ -576,7 +577,6 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               {data.paymentDeadline === 'immediate' && (
                 <li className="text-gray-600 font-medium">• Paiement à réception de la facture.</li>
               )}
-              {data.legalMentions && <li>• {data.legalMentions}</li>}
               <li className="text-gray-400 text-[6pt]">• Indemnité forfaitaire de 40 € pour frais de recouvrement en cas de retard (Art. L.441-10 du Code de commerce).</li>
             </ul>
           </div>
@@ -637,9 +637,10 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* Legal Footer — inside end-block so it's never isolated */}
-          {(data.legalFooter || data.emitter.iban || assuranceHeaderLine) && (
+          {(cleanLegalFooter || vatFooterMention || data.emitter.iban || assuranceHeaderLine) && (
             <div className="invoice-iban-block invoice-footer-block mt-1.5 pt-1 text-center" style={{ borderTop: '1px solid #e5e7eb' }}>
-              {data.legalFooter && <p className="text-[5.5pt] text-gray-300 leading-snug whitespace-pre-line">{data.legalFooter}</p>}
+              <p className="text-[5.5pt] text-gray-300 leading-snug">{vatFooterMention}</p>
+              {cleanLegalFooter && <p className="text-[5.5pt] text-gray-300 leading-snug whitespace-pre-line">{cleanLegalFooter}</p>}
               {data.emitter.iban && (
                 <p className="text-[6pt] text-gray-400 mt-0.5">
                   IBAN : <span className="font-mono font-medium tracking-wider">{data.emitter.iban}</span>

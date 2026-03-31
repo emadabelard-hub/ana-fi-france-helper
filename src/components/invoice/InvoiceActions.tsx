@@ -59,9 +59,16 @@ const InvoiceActions = ({
 
   // Pre-PDF integrity check: verify TVA and totals are consistent
   const verifyFinancialIntegrity = (): boolean => {
-    const baseHT = invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal;
-    const expectedTva = invoiceData.tvaExempt ? 0 : Math.round(baseHT * (invoiceData.tvaRate / 100) * 100) / 100;
-    const expectedTotal = Math.round((baseHT + expectedTva) * 100) / 100;
+    const expectedTva = invoiceData.tvaExempt ? 0 : Math.round(invoiceData.subtotal * (invoiceData.tvaRate / 100) * 100) / 100;
+    const expectedTotal = Math.round((invoiceData.subtotal + expectedTva - (invoiceData.discountAmount ?? 0)) * 100) / 100;
+    if (invoiceData.subtotal > 0 && invoiceData.total <= 0) {
+      toast({
+        variant: 'destructive',
+        title: '⚠️ Incohérence financière détectée',
+        description: 'Le total TTC est nul alors que le HT est positif. PDF bloqué.',
+      });
+      return false;
+    }
     if (Math.abs(invoiceData.tvaAmount - expectedTva) > 0.01 || Math.abs(invoiceData.total - expectedTotal) > 0.01) {
       console.error('[PDF INTEGRITY] Mismatch:', {
         ui: { tva: invoiceData.tvaAmount, total: invoiceData.total },
@@ -284,13 +291,20 @@ const InvoiceActions = ({
       ];
       
       const newSubtotal = newItems.reduce((sum, item) => sum + item.total, 0);
+      const newDiscountAmount = invoiceData.discountAmount && invoiceData.discountAmount > 0
+        ? (invoiceData.discountType === 'percent'
+            ? Math.round(newSubtotal * ((invoiceData.discountValue ?? 0) / 100) * 100) / 100
+            : Math.min(invoiceData.discountValue ?? 0, newSubtotal))
+        : 0;
       const newTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(newSubtotal * (invoiceData.tvaRate / 100) * 100) / 100;
-      const newTotal = newSubtotal + newTvaAmount;
+      const newTotal = newSubtotal + newTvaAmount - newDiscountAmount;
       
       const updatedData: InvoiceData = {
         ...invoiceData,
         items: newItems,
         subtotal: Math.round(newSubtotal * 100) / 100,
+        discountAmount: newDiscountAmount > 0 ? newDiscountAmount : undefined,
+        subtotalAfterDiscount: newDiscountAmount > 0 ? Math.round((newSubtotal - newDiscountAmount) * 100) / 100 : undefined,
         tvaAmount: newTvaAmount,
         total: Math.round(newTotal * 100) / 100,
       };
@@ -373,13 +387,16 @@ const InvoiceActions = ({
       ),
       '',
       `Total HT: ${invoiceData.subtotal}€`,
+      invoiceData.tvaRate > 0
+        ? `TVA (${invoiceData.tvaRate}%): ${invoiceData.tvaAmount}€`
+        : `TVA: ${invoiceData.tvaAmount}€`,
+      ...(invoiceData.tvaExempt ? [invoiceData.tvaExemptText || 'TVA non applicable, art. 293 B du CGI'] : []),
+      ...(!invoiceData.tvaExempt && invoiceData.tvaRate === 0 && invoiceData.legalMentions?.includes('283')
+        ? ['Autoliquidation de la TVA – art. 283-2 du CGI']
+        : []),
       ...(invoiceData.discountAmount && invoiceData.discountAmount > 0 ? [
         `Remise${invoiceData.discountType === 'percent' ? ` (${invoiceData.discountValue}%)` : ''}: -${invoiceData.discountAmount}€`,
-        `Total après remise: ${invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal}€`,
       ] : []),
-      invoiceData.tvaExempt 
-        ? invoiceData.tvaExemptText 
-        : `TVA (${invoiceData.tvaRate}%): ${invoiceData.tvaAmount}€`,
       `Total TTC: ${invoiceData.total}€`,
       '',
       `Conditions: ${invoiceData.paymentTerms}`,

@@ -710,8 +710,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     const tvaExempt = isAutoEntrepreneur;
     const isSousTraitanceTva = !isAutoEntrepreneur && projectTvaType === 'sous_traitance';
     const tvaRate = tvaExempt || isSousTraitanceTva ? 0 : (projectTvaType === 'logement' ? 10 : 20);
-    const tvaAmount = (tvaExempt || isSousTraitanceTva) ? 0 : Math.round(subtotalAfterDiscount * (tvaRate / 100) * 100) / 100;
-    const total = subtotalAfterDiscount + tvaAmount;
+    const tvaAmount = (tvaExempt || isSousTraitanceTva) ? 0 : Math.round(subtotal * (tvaRate / 100) * 100) / 100;
+    const total = Math.round((subtotal + tvaAmount - discountAmt) * 100) / 100;
     
     return {
       type: documentType === 'devis' ? 'DEVIS' : 'FACTURE',
@@ -826,7 +826,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       legalMentions: tvaExempt 
         ? 'TVA non applicable, article 293 B du CGI'
         : isSousTraitanceTva
-          ? 'Autoliquidation de la TVA – article 283 du CGI'
+          ? 'Autoliquidation de la TVA – article 283-2 du CGI'
           : undefined,
       // Inject signed URLs for artisan's permanent signature, stamp, and logo
       artisanSignatureUrl: signedUrls.artisanSignatureUrl || undefined,
@@ -856,7 +856,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         if (isAutoEntrepreneur || tvaExempt) {
           parts.push('TVA non applicable, art. 293 B du CGI');
         } else if (isSousTraitanceTva) {
-          parts.push('Autoliquidation de la TVA – art. 283 du CGI');
+          parts.push('Autoliquidation de la TVA – art. 283-2 du CGI');
         } else if (p.numero_tva) {
           parts.push(`TVA Intracommunautaire : ${p.numero_tva}`);
         }
@@ -885,8 +885,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     : 0;
   const validatedSubtotalAfterDiscount = Math.round((validatedSubtotal - validatedDiscountAmt) * 100) / 100;
   const validatedTvaRate = validationResult.tvaRate;
-  const validatedTvaAmount = rawInvoiceData.tvaExempt ? 0 : Math.round(validatedSubtotalAfterDiscount * (validatedTvaRate / 100) * 100) / 100;
-  const validatedTotal = Math.round((validatedSubtotalAfterDiscount + validatedTvaAmount) * 100) / 100;
+  const validatedTvaAmount = rawInvoiceData.tvaExempt ? 0 : Math.round(validatedSubtotal * (validatedTvaRate / 100) * 100) / 100;
+  const validatedTotal = Math.round((validatedSubtotal + validatedTvaAmount - validatedDiscountAmt) * 100) / 100;
 
   const invoiceData: InvoiceData = {
     ...rawInvoiceData,
@@ -1266,8 +1266,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     }
 
     // INTEGRITY CHECK: Verify TVA calculation consistency before saving
-    const expectedTvaAmount = invoiceData.tvaExempt ? 0 : Math.round((invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal) * (invoiceData.tvaRate / 100) * 100) / 100;
-    const expectedTotal = Math.round(((invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal) + expectedTvaAmount) * 100) / 100;
+    const expectedTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(invoiceData.subtotal * (invoiceData.tvaRate / 100) * 100) / 100;
+    const expectedTotal = Math.round((invoiceData.subtotal + expectedTvaAmount - (invoiceData.discountAmount ?? 0)) * 100) / 100;
     if (Math.abs(invoiceData.tvaAmount - expectedTvaAmount) > 0.01 || Math.abs(invoiceData.total - expectedTotal) > 0.01) {
       console.error('[INTEGRITY] Mismatch detected:', { 
         stored: { tva: invoiceData.tvaAmount, total: invoiceData.total },
@@ -3144,7 +3144,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                     )}>
                       {projectTvaType === 'logement' && (isRTL ? '📊 TVA = 10% (تجديد سكني)' : '📊 TVA = 10% (rénovation logement)')}
                       {projectTvaType === 'local_pro' && (isRTL ? '📊 TVA = 20% (محل مهني / بناء جديد)' : '📊 TVA = 20% (local professionnel / neuf)')}
-                      {projectTvaType === 'sous_traitance' && (isRTL ? '📊 TVA = 0% (مقاولة باطن — Autoliquidation)' : '📊 TVA = 0% (Autoliquidation – art. 283 du CGI)')}
+                      {projectTvaType === 'sous_traitance' && (isRTL ? '📊 TVA = 0% (مقاولة باطن — Autoliquidation)' : '📊 TVA = 0% (Autoliquidation – art. 283-2 du CGI)')}
                     </p>
                     <p className={cn(
                       "text-xs text-muted-foreground mt-1",
@@ -3220,17 +3220,26 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               )}
             </div>
 
-            {/* Show subtotal after discount */}
+            <div className={cn(
+              "flex justify-between text-sm",
+              isRTL && "flex-row-reverse"
+            )}>
+              <span className="text-muted-foreground">{invoiceData.tvaRate > 0 ? `TVA (${invoiceData.tvaRate}%) :` : 'TVA :'}</span>
+              <span className="font-mono font-medium">{invoiceData.tvaAmount.toFixed(2)} €</span>
+            </div>
+
             {invoiceData.discountAmount && invoiceData.discountAmount > 0 && (
               <div className={cn(
                 "flex justify-between text-sm font-semibold",
                 isRTL && "flex-row-reverse"
               )}>
-                <span className="text-muted-foreground">{isRTL ? 'المجموع بعد الخصم:' : 'Total après remise:'}</span>
-                <span className="font-mono font-medium">{(invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal).toFixed(2)} €</span>
+                <span className="text-muted-foreground">
+                  {isRTL ? 'الخصم:' : `Remise${invoiceData.discountType === 'percent' ? ` (${invoiceData.discountValue}%)` : ''} :`}
+                </span>
+                <span className="font-mono font-medium text-destructive">- {invoiceData.discountAmount.toFixed(2)} €</span>
               </div>
             )}
-            
+
             {invoiceData.tvaExempt ? (
               <div className={cn(
                 "text-xs text-muted-foreground italic",
@@ -3243,17 +3252,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 "text-xs text-amber-600 dark:text-amber-400 italic",
                 isRTL && "text-right font-cairo"
               )}>
-                Autoliquidation de la TVA – art. 283 du CGI
+                Autoliquidation de la TVA – art. 283-2 du CGI
               </div>
-            ) : (
-              <div className={cn(
-                "flex justify-between text-sm",
-                isRTL && "flex-row-reverse"
-              )}>
-                <span className="text-muted-foreground">TVA ({invoiceData.tvaRate}%):</span>
-                <span className="font-mono font-medium">{invoiceData.tvaAmount.toFixed(2)} €</span>
-              </div>
-            )}
+            ) : null}
             
             <div className={cn(
               "flex justify-between text-lg font-bold pt-2 border-t",

@@ -17,8 +17,9 @@ const DUAL_MODE_TRANSCRIPTION_HINT = [
   "If the speaker uses Arabic dialect, keep the output in Arabic script.",
   "Do not translate Arabic into French.",
   "Do not normalize construction words into French.",
-  "Preserve short phrases and numbers as spoken.",
-  "Example raw outputs: رندة 3 أوض دهان ; بانتيرة الحيطان ; كهربا المطبخ",
+  "Preserve short phrases, materials, finishes, quantities, colors, and numbers exactly as spoken.",
+  "Keep chantier expressions like توريد, تركيب, باركيه, ساتينيه, لوز, plinthe if spoken.",
+  "Example raw outputs: رندة 3 أوض دهان ; بانتيرة الحيطان ; كهربا المطبخ ; توريد وتركيب باركيه ; ازرق ساتينيه",
 ].join(" ");
 
 function mimeTypeToExtension(mimeType: string) {
@@ -37,6 +38,36 @@ function decodeBase64Audio(base64: string) {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
+}
+
+function deduplicateTranscript(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+
+  const words = trimmed.split(/\s+/);
+  if (words.length <= 1) return trimmed;
+
+  const deduped = [words[0]];
+  for (let i = 1; i < words.length; i++) {
+    if (words[i] !== words[i - 1]) {
+      deduped.push(words[i]);
+    }
+  }
+
+  for (let patternLen = 4; patternLen >= 2; patternLen--) {
+    let i = 0;
+    while (i + patternLen * 2 <= deduped.length) {
+      const current = deduped.slice(i, i + patternLen).join(" ");
+      const next = deduped.slice(i + patternLen, i + patternLen * 2).join(" ");
+      if (current === next) {
+        deduped.splice(i + patternLen, patternLen);
+        continue;
+      }
+      i += 1;
+    }
+  }
+
+  return deduped.join(" ").trim();
 }
 
 async function transcribeAudio(
@@ -104,7 +135,10 @@ Règles:
 - pas d'explication
 - pas de phrase longue
 - style professionnel terrain
+- ne répète jamais deux fois la même tâche
 - corriger le vocabulaire métier: peinture, carrelage, électricité, plomberie, enduit, ponçage, dégrossissage, faux plafond, placo, etc.
+- si l'entrée mentionne fourniture, pose, dépose, parquet, plinthes, couleur ou finition (mat, satiné, brillant), conserve ces infos
+- si l'entrée dit توريد وتركيب ou équivalent, rends "Fourniture et pose de ..."
 - si l'entrée parle de pièces/chambres/murs/plafonds, garde l'information utile
 - si plusieurs formulations sont possibles, choisis la plus naturelle pour un artisan en France
 
@@ -112,7 +146,9 @@ Exemples:
 - "رندة 3 أوض دهان" -> "Peinture de 3 chambres"
 - "بانتيرة الحيطان" -> "Peinture des murs"
 - "كهربا المطبخ" -> "Travaux d'électricité dans la cuisine"
-- "سباكة الحمام" -> "Travaux de plomberie dans la salle de bains"`;
+- "سباكة الحمام" -> "Travaux de plomberie dans la salle de bains"
+- "توريد وتركيب باركيه" -> "Fourniture et pose de parquet"
+- "بانتيرة ازرق ساتينيه" -> "Peinture bleue satinée"`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -189,7 +225,7 @@ serve(async (req) => {
       });
     }
 
-    let rawTranscript = rawTextInput;
+    let rawTranscript = deduplicateTranscript(rawTextInput);
 
     if (!rawTranscript) {
       if (!openAiKey) {
@@ -214,7 +250,7 @@ serve(async (req) => {
         prompt: dualMode ? DUAL_MODE_TRANSCRIPTION_HINT : TRANSCRIPTION_HINT,
       });
       if (transcribed instanceof Response) return transcribed;
-      rawTranscript = transcribed;
+      rawTranscript = deduplicateTranscript(transcribed);
     }
 
     if (!rawTranscript) {

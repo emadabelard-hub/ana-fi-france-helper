@@ -20,16 +20,22 @@ function deduplicateTranscript(text: string): string {
     }
   }
 
-  // Also detect repeated phrases (2-4 word patterns)
-  let result = deduped.join(' ');
+  // Also detect repeated contiguous phrases (2-4 word patterns) anywhere in the text.
+  const collapsed = [...deduped];
   for (let patternLen = 4; patternLen >= 2; patternLen--) {
-    if (deduped.length < patternLen * 2) continue;
-    const pattern = deduped.slice(0, patternLen).join(' ');
-    const regex = new RegExp(`(${escapeRegex(pattern)})(\\s+\\1)+`, 'g');
-    result = result.replace(regex, '$1');
+    let i = 0;
+    while (i + patternLen * 2 <= collapsed.length) {
+      const current = collapsed.slice(i, i + patternLen).join(' ');
+      const next = collapsed.slice(i + patternLen, i + patternLen * 2).join(' ');
+      if (current === next) {
+        collapsed.splice(i + patternLen, patternLen);
+        continue;
+      }
+      i += 1;
+    }
   }
 
-  return result.trim();
+  return collapsed.join(' ').trim();
 }
 
 function escapeRegex(s: string) {
@@ -54,7 +60,7 @@ export function useVoiceRecorder(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
   const startTimeRef = useRef<number>(0);
   const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finalTranscriptRef = useRef('');
-  const lastResultIndexRef = useRef(0);
+  const transcriptSegmentsRef = useRef<Record<number, { text: string; isFinal: boolean }>>({});
 
   const cleanup = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -66,7 +72,7 @@ export function useVoiceRecorder(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     setIsRecording(false);
     setIsLocked(false);
     setDuration(0);
-    lastResultIndexRef.current = 0;
+    transcriptSegmentsRef.current = {};
   }, []);
 
   // Cleanup on unmount
@@ -78,6 +84,7 @@ export function useVoiceRecorder(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
 
     cleanup();
     finalTranscriptRef.current = '';
+    transcriptSegmentsRef.current = {};
     setTranscript('');
 
     const recognition = new SR();
@@ -87,24 +94,35 @@ export function useVoiceRecorder(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: any) => {
-      let finalText = '';
-      let interimText = '';
-      
-      // Only process from resultIndex to avoid reprocessing old results
-      for (let i = 0; i < event.results.length; i++) {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
-        if (result.isFinal) {
-          finalText += result[0].transcript + ' ';
-        } else {
-          interimText += result[0].transcript;
+        const text = result?.[0]?.transcript?.trim() ?? '';
+
+        if (!text) {
+          delete transcriptSegmentsRef.current[i];
+          continue;
         }
+
+        transcriptSegmentsRef.current[i] = {
+          text,
+          isFinal: Boolean(result.isFinal),
+        };
       }
 
-      // Build complete transcript: all finals + current interim
-      const combined = (finalText + interimText).trim();
-      const cleaned = deduplicateTranscript(combined);
-      finalTranscriptRef.current = finalText.trim();
-      setTranscript(cleaned);
+      const orderedSegments = Object.entries(transcriptSegmentsRef.current)
+        .map(([index, value]) => ({ index: Number(index), ...value }))
+        .sort((a, b) => a.index - b.index);
+
+      finalTranscriptRef.current = deduplicateTranscript(
+        orderedSegments
+          .filter((segment) => segment.isFinal)
+          .map((segment) => segment.text)
+          .join(' '),
+      );
+
+      setTranscript(
+        deduplicateTranscript(orderedSegments.map((segment) => segment.text).join(' ')),
+      );
     };
 
     recognition.onerror = (e: any) => {

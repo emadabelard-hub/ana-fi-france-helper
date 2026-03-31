@@ -1,14 +1,17 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import VoiceInputButton from "@/components/shared/VoiceInputButton";
+import type { VoiceResult } from "@/hooks/useFieldVoice";
 
 export interface InputProps extends React.ComponentProps<"input"> {
   /** Set to false to hide the voice input button. Defaults to true. */
   enableVoice?: boolean;
+  /** Called with both French + raw transcription for dual-field UIs */
+  onVoiceDual?: (result: VoiceResult) => void;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, style, enableVoice = true, onChange, ...props }, ref) => {
+  ({ className, type, style, enableVoice = true, onChange, onVoiceDual, ...props }, ref) => {
     const inputRef = React.useRef<HTMLInputElement | null>(null);
 
     const mergedRef = React.useCallback(
@@ -66,7 +69,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         />
         {showVoice && (
           <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
-            <VoiceInputButton onResult={handleVoiceResult} />
+            <VoiceInputButton onResult={handleVoiceResult} onDualResult={onVoiceDual} />
           </div>
         )}
       </div>

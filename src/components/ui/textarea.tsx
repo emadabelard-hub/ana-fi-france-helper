@@ -1,14 +1,17 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import VoiceInputButton from "@/components/shared/VoiceInputButton";
+import type { VoiceResult } from "@/hooks/useFieldVoice";
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   /** Set to false to hide the voice input button. Defaults to true. */
   enableVoice?: boolean;
+  /** Called with both French + raw transcription for dual-field UIs */
+  onVoiceDual?: (result: VoiceResult) => void;
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, style, enableVoice = true, onChange, ...props }, ref) => {
+  ({ className, style, enableVoice = true, onChange, onVoiceDual, ...props }, ref) => {
     const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
     const mergedRef = React.useCallback(
@@ -54,7 +57,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         />
         {showVoice && (
           <div className="absolute right-1.5 top-2">
-            <VoiceInputButton onResult={handleVoiceResult} />
+            <VoiceInputButton onResult={handleVoiceResult} onDualResult={onVoiceDual} />
           </div>
         )}
       </div>

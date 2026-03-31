@@ -1463,7 +1463,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (!user) return;
     setSavingDraft(true);
     try {
-      const data = buildInvoiceData();
+      // Use validated invoiceData for consistency (UI = stored values)
+      const data = { ...invoiceData };
       const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
       const linkedDocumentData = {
         ...documentDataForStorage,

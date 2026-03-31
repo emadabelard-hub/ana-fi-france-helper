@@ -297,8 +297,9 @@ const InvoiceActions = ({
             ? Math.round(newSubtotal * ((invoiceData.discountValue ?? 0) / 100) * 100) / 100
             : Math.min(invoiceData.discountValue ?? 0, newSubtotal))
         : 0;
-      const newTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(newSubtotal * (invoiceData.tvaRate / 100) * 100) / 100;
-      const newTotal = newSubtotal + newTvaAmount - newDiscountAmount;
+      const newSubtotalAfterDiscount = Math.round((newSubtotal - newDiscountAmount) * 100) / 100;
+      const newTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(newSubtotalAfterDiscount * (invoiceData.tvaRate / 100) * 100) / 100;
+      const newTotal = newSubtotalAfterDiscount + newTvaAmount;
       
       const updatedData: InvoiceData = {
         ...invoiceData,

@@ -36,7 +36,7 @@ function decodeBase64Audio(base64: string) {
   return bytes;
 }
 
-async function transcribeAudio(audioBytes: Uint8Array, mimeType: string, openAiKey: string) {
+async function transcribeAudio(audioBytes: Uint8Array, mimeType: string, openAiKey: string, forceLanguage?: string) {
   const file = new File([audioBytes], `voice-input.${mimeTypeToExtension(mimeType)}`, {
     type: mimeType,
   });
@@ -46,6 +46,9 @@ async function transcribeAudio(audioBytes: Uint8Array, mimeType: string, openAiK
   formData.append("model", "gpt-4o-transcribe");
   formData.append("response_format", "text");
   formData.append("prompt", TRANSCRIPTION_HINT);
+  if (forceLanguage) {
+    formData.append("language", forceLanguage);
+  }
 
   const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
     method: "POST",

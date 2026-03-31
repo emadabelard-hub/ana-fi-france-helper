@@ -59,8 +59,9 @@ const InvoiceActions = ({
 
   // Pre-PDF integrity check: verify TVA and totals are consistent
   const verifyFinancialIntegrity = (): boolean => {
-    const expectedTva = invoiceData.tvaExempt ? 0 : Math.round(invoiceData.subtotal * (invoiceData.tvaRate / 100) * 100) / 100;
-    const expectedTotal = Math.round((invoiceData.subtotal + expectedTva - (invoiceData.discountAmount ?? 0)) * 100) / 100;
+    const htAfterDiscount = Math.round((invoiceData.subtotal - (invoiceData.discountAmount ?? 0)) * 100) / 100;
+    const expectedTva = invoiceData.tvaExempt ? 0 : Math.round(htAfterDiscount * (invoiceData.tvaRate / 100) * 100) / 100;
+    const expectedTotal = Math.round((htAfterDiscount + expectedTva) * 100) / 100;
     if (invoiceData.subtotal > 0 && invoiceData.total <= 0) {
       toast({
         variant: 'destructive',

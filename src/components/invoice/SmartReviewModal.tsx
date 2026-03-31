@@ -166,8 +166,9 @@ const SmartReviewModal = ({
         ? Math.round(newSubtotal * ((invoiceData.discountValue ?? 0) / 100) * 100) / 100
         : Math.min(invoiceData.discountValue ?? 0, newSubtotal))
     : 0;
-  const newTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(newSubtotal * (invoiceData.tvaRate / 100) * 100) / 100;
-  const newTotal = Math.round((newSubtotal + newTvaAmount - newDiscountAmount) * 100) / 100;
+  const newSubtotalAfterDiscount = Math.round((newSubtotal - newDiscountAmount) * 100) / 100;
+  const newTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(newSubtotalAfterDiscount * (invoiceData.tvaRate / 100) * 100) / 100;
+  const newTotal = Math.round((newSubtotalAfterDiscount + newTvaAmount) * 100) / 100;
   const displayedTvaAmount = selectedAddons.length > 0 ? newTvaAmount : invoiceData.tvaAmount;
   const displayedDiscountAmount = selectedAddons.length > 0 ? newDiscountAmount : (invoiceData.discountAmount ?? 0);
   const displayedTotal = selectedAddons.length > 0 ? newTotal : invoiceData.total;

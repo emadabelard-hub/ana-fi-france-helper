@@ -490,11 +490,29 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
             {/* Totals block — right aligned */}
             <div className="w-48 ml-auto">
+              {/* Total HT */}
               <div className="flex justify-between py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <span className="text-gray-500 text-[7pt]"><ArSub fr="Total HT:" /></span>
                 <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(data.subtotal)}</span>
               </div>
 
+              {/* Remise (after HT, before TVA) */}
+              {data.discountAmount && data.discountAmount > 0 && (
+                <>
+                  <div className="flex justify-between py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <span className="text-gray-500 text-[7pt]">
+                      Remise {data.discountType === 'percent' ? `(${data.discountValue}%)` : ''} :
+                    </span>
+                    <span className="text-red-600 text-[7.5pt] font-medium tabular-nums">- {formatCurrency(data.discountAmount)}</span>
+                  </div>
+                  <div className="flex justify-between py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <span className="text-gray-500 text-[7pt]">Sous-total HT :</span>
+                    <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(data.subtotalAfterDiscount ?? data.subtotal)}</span>
+                  </div>
+                </>
+              )}
+
+              {/* TVA (calculated on HT after discount) */}
               {data.tvaExempt ? (
                 <div className="py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
                   <div className="flex justify-between">
@@ -515,15 +533,6 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 <div className="flex justify-between py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
                   <span className="text-gray-500 text-[7pt]">TVA ({data.tvaRate}%) :</span>
                   <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(data.tvaAmount)}</span>
-                </div>
-              )}
-
-              {data.discountAmount && data.discountAmount > 0 && (
-                <div className="flex justify-between py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <span className="text-gray-500 text-[7pt]">
-                    Remise {data.discountType === 'percent' ? `(${data.discountValue}%)` : ''} :
-                  </span>
-                  <span className="text-red-600 text-[7.5pt] font-medium tabular-nums">- {formatCurrency(data.discountAmount)}</span>
                 </div>
               )}
               {/* Thin divider before TTC */}

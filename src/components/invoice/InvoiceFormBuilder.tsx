@@ -1266,8 +1266,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     }
 
     // INTEGRITY CHECK: Verify TVA calculation consistency before saving
-    const expectedTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(invoiceData.subtotal * (invoiceData.tvaRate / 100) * 100) / 100;
-    const expectedTotal = Math.round((invoiceData.subtotal + expectedTvaAmount - (invoiceData.discountAmount ?? 0)) * 100) / 100;
+    const htAfterDiscount = Math.round((invoiceData.subtotal - (invoiceData.discountAmount ?? 0)) * 100) / 100;
+    const expectedTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(htAfterDiscount * (invoiceData.tvaRate / 100) * 100) / 100;
+    const expectedTotal = Math.round((htAfterDiscount + expectedTvaAmount) * 100) / 100;
     if (Math.abs(invoiceData.tvaAmount - expectedTvaAmount) > 0.01 || Math.abs(invoiceData.total - expectedTotal) > 0.01) {
       console.error('[INTEGRITY] Mismatch detected:', { 
         stored: { tva: invoiceData.tvaAmount, total: invoiceData.total },

@@ -388,18 +388,19 @@ const InvoiceActions = ({
         `- ${item.designation_fr}: ${item.quantity} ${item.unit} x ${item.unitPrice}€ = ${item.total}€`
       ),
       '',
-      `Total HT: ${invoiceData.subtotal}€`,
+      `Total HT: ${invoiceData.subtotal.toFixed(2)}€`,
+      ...(invoiceData.discountAmount && invoiceData.discountAmount > 0 ? [
+        `Remise${invoiceData.discountType === 'percent' ? ` (${invoiceData.discountValue}%)` : ''}: -${invoiceData.discountAmount.toFixed(2)}€`,
+        `Sous-total HT: ${(invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal).toFixed(2)}€`,
+      ] : []),
       invoiceData.tvaRate > 0
-        ? `TVA (${invoiceData.tvaRate}%): ${invoiceData.tvaAmount}€`
-        : `TVA: ${invoiceData.tvaAmount}€`,
+        ? `TVA (${invoiceData.tvaRate}%): ${invoiceData.tvaAmount.toFixed(2)}€`
+        : `TVA: ${invoiceData.tvaAmount.toFixed(2)}€`,
       ...(invoiceData.tvaExempt ? [invoiceData.tvaExemptText || 'TVA non applicable, art. 293 B du CGI'] : []),
       ...(!invoiceData.tvaExempt && invoiceData.tvaRate === 0 && invoiceData.legalMentions?.includes('283')
         ? ['Autoliquidation de la TVA – art. 283-2 du CGI']
         : []),
-      ...(invoiceData.discountAmount && invoiceData.discountAmount > 0 ? [
-        `Remise${invoiceData.discountType === 'percent' ? ` (${invoiceData.discountValue}%)` : ''}: -${invoiceData.discountAmount}€`,
-      ] : []),
-      `Total TTC: ${invoiceData.total}€`,
+      `Total TTC: ${invoiceData.total.toFixed(2)}€`,
       '',
       `Conditions: ${invoiceData.paymentTerms}`,
     ];

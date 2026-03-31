@@ -98,7 +98,7 @@ export function buildFacturXDataFromInvoice(invoiceData: {
     buyerName: invoiceData.client.name,
     buyerAddress: invoiceData.client.address,
     buyerSiret: invoiceData.client.siret,
-    subtotalHT: invoiceData.subtotal,
+    subtotalHT: invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal,
     tvaRate: invoiceData.tvaRate,
     tvaAmount: invoiceData.tvaAmount,
     totalTTC: invoiceData.total,

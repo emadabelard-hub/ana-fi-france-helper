@@ -45,8 +45,10 @@ async function transcribeAudio(
   openAiKey: string,
   options?: { forceLanguage?: string; prompt?: string },
 ) {
-  const fileBuffer = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
-  const file = new File([fileBuffer], `voice-input.${mimeTypeToExtension(mimeType)}`, {
+  const fileBytes = new Uint8Array(audioBytes.byteLength);
+  fileBytes.set(audioBytes);
+
+  const file = new File([fileBytes], `voice-input.${mimeTypeToExtension(mimeType)}`, {
     type: mimeType,
   });
 
@@ -190,6 +192,13 @@ serve(async (req) => {
     let rawTranscript = rawTextInput;
 
     if (!rawTranscript) {
+      if (!openAiKey) {
+        return new Response(JSON.stringify({ error: "Configuration vocale incomplète." }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const audioBytes = decodeBase64Audio(audioBase64);
       if (!audioBytes.byteLength) {
         return new Response(JSON.stringify({ error: "Audio invalide." }), {

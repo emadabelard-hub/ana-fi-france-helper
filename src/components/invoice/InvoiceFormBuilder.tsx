@@ -874,6 +874,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     rawInvoiceData.tvaExempt
   );
   
+  // CRITICAL: Recalculate ALL financial values from validated items to ensure consistency.
+  // The validation layer may change item prices/quantities, so we must recompute everything.
+  const validatedSubtotal = validationResult.items.reduce((s, i) => s + i.total, 0);
+  const validatedDiscountAmt = rawInvoiceData.discountAmount && rawInvoiceData.discountAmount > 0
+    ? (rawInvoiceData.discountType === 'percent'
+        ? Math.round(validatedSubtotal * ((rawInvoiceData.discountValue ?? 0) / 100) * 100) / 100
+        : Math.min(rawInvoiceData.discountValue ?? 0, validatedSubtotal))
+    : 0;
+  const validatedSubtotalAfterDiscount = Math.round((validatedSubtotal - validatedDiscountAmt) * 100) / 100;
+  const validatedTvaRate = validationResult.tvaRate;
+  const validatedTvaAmount = rawInvoiceData.tvaExempt ? 0 : Math.round(validatedSubtotalAfterDiscount * (validatedTvaRate / 100) * 100) / 100;
+  const validatedTotal = Math.round((validatedSubtotalAfterDiscount + validatedTvaAmount) * 100) / 100;
+
   const invoiceData: InvoiceData = {
     ...rawInvoiceData,
     items: validationResult.items.map(vi => ({
@@ -884,14 +897,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       unitPrice: vi.unitPrice,
       total: vi.total,
     })),
-    tvaRate: validationResult.tvaRate,
-    tvaAmount: rawInvoiceData.tvaExempt ? 0 : Math.round((rawInvoiceData.subtotalAfterDiscount ?? rawInvoiceData.subtotal) * (validationResult.tvaRate / 100) * 100) / 100,
-    total: (() => {
-      const ht = rawInvoiceData.subtotalAfterDiscount ?? rawInvoiceData.subtotal;
-      const tva = rawInvoiceData.tvaExempt ? 0 : Math.round(ht * (validationResult.tvaRate / 100) * 100) / 100;
-      return Math.round((ht + tva) * 100) / 100;
-    })(),
-    subtotal: validationResult.items.reduce((s, i) => s + i.total, 0),
+    subtotal: Math.round(validatedSubtotal * 100) / 100,
+    discountAmount: validatedDiscountAmt > 0 ? validatedDiscountAmt : undefined,
+    subtotalAfterDiscount: validatedDiscountAmt > 0 ? validatedSubtotalAfterDiscount : undefined,
+    tvaRate: validatedTvaRate,
+    tvaAmount: validatedTvaAmount,
+    total: validatedTotal,
   };
   
   // Log corrections on first preview render (show toast once)
@@ -1192,6 +1203,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const saveToDocumentsComptables = async () => {
     if (!user) return;
 
+    // SAFETY: Block if calculations are broken (HT > 0 but TTC = 0)
+    const checkData = buildInvoiceData();
+    if (checkData.subtotal > 0 && checkData.total <= 0) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '⚠️ خطأ في الحسابات' : '⚠️ Erreur de calcul',
+        description: isRTL
+          ? 'المبلغ HT موجود لكن TTC = 0. راجع إعدادات TVA والخصم.'
+          : 'Le montant HT est positif mais le TTC est nul. Vérifiez la TVA et la remise.',
+      });
+      return;
+    }
+
     // Client name is required (either from selection or manual entry)
     if (!clientName.trim()) {
       toast({
@@ -1346,6 +1370,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           return;
         }
       }
+
+      // Clear drafts after successful save to prevent ghost state on next new document
+      clearDraft();
+      clearCurrentDocument();
 
       toast({
         title: isRTL ? '✅ تم الحفظ' : '✅ Sauvegardé',

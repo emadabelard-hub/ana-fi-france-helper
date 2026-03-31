@@ -118,6 +118,10 @@ const InvoiceCreatorPage = () => {
   
   // Handle document type selection
   const handleTypeSelect = (type: 'devis' | 'facture') => {
+    // CRITICAL: Clear previous document state so new document starts clean
+    // (no reuse of TVA, discount, project type, etc. from previous document)
+    clearCurrentDocument();
+    clearDraft();
     setDocumentType(type);
     setShowTypeModal(false);
     // Update URL

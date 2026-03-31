@@ -710,8 +710,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     const tvaExempt = isAutoEntrepreneur;
     const isSousTraitanceTva = !isAutoEntrepreneur && projectTvaType === 'sous_traitance';
     const tvaRate = tvaExempt || isSousTraitanceTva ? 0 : (projectTvaType === 'logement' ? 10 : 20);
-    const tvaAmount = (tvaExempt || isSousTraitanceTva) ? 0 : Math.round(subtotal * (tvaRate / 100) * 100) / 100;
-    const total = Math.round((subtotal + tvaAmount - discountAmt) * 100) / 100;
+    const tvaAmount = (tvaExempt || isSousTraitanceTva) ? 0 : Math.round(subtotalAfterDiscount * (tvaRate / 100) * 100) / 100;
+    const total = Math.round((subtotalAfterDiscount + tvaAmount) * 100) / 100;
     
     return {
       type: documentType === 'devis' ? 'DEVIS' : 'FACTURE',

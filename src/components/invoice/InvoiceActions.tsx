@@ -57,8 +57,31 @@ const InvoiceActions = ({
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Pre-PDF integrity check: verify TVA and totals are consistent
+  const verifyFinancialIntegrity = (): boolean => {
+    const baseHT = invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal;
+    const expectedTva = invoiceData.tvaExempt ? 0 : Math.round(baseHT * (invoiceData.tvaRate / 100) * 100) / 100;
+    const expectedTotal = Math.round((baseHT + expectedTva) * 100) / 100;
+    if (Math.abs(invoiceData.tvaAmount - expectedTva) > 0.01 || Math.abs(invoiceData.total - expectedTotal) > 0.01) {
+      console.error('[PDF INTEGRITY] Mismatch:', {
+        ui: { tva: invoiceData.tvaAmount, total: invoiceData.total },
+        expected: { tva: expectedTva, total: expectedTotal },
+      });
+      toast({
+        variant: 'destructive',
+        title: '⚠️ Incohérence financière détectée',
+        description: 'Les valeurs TVA/TTC ne correspondent pas. PDF bloqué. Recalculez le document.',
+      });
+      return false;
+    }
+    return true;
+  };
+
   const buildPdfBlob = async ({ embedFacturX = false }: { embedFacturX?: boolean } = {}) => {
     if (!invoiceRef.current) return null;
+
+    // CRITICAL: Block PDF if financial values are inconsistent
+    if (!verifyFinancialIntegrity()) return null;
 
     await onBeforeExport?.();
 

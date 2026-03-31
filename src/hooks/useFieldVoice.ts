@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface VoiceResult {
+  /** Cleaned French professional text */
+  text: string;
+  /** Raw transcription (may contain Arabic dialect) */
+  raw: string;
+}
+
 function pickSupportedMimeType() {
   if (typeof MediaRecorder === 'undefined') return '';
 
@@ -35,8 +42,7 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 /**
  * Field-level voice input using real audio recording.
- * Records audio, sends it to backend multilingual STT + AI cleanup,
- * then returns only the final professional French text.
+ * Returns both the cleaned French text and the raw transcription.
  */
 export function useFieldVoice() {
   const [isRecording, setIsRecording] = useState(false);
@@ -95,9 +101,10 @@ export function useFieldVoice() {
     return true;
   }, [isSupported, isRecording, isProcessing]);
 
-  const stop = useCallback(async (): Promise<string> => {
+  const stop = useCallback(async (): Promise<VoiceResult> => {
+    const empty: VoiceResult = { text: '', raw: '' };
     const recorder = mediaRecorderRef.current;
-    if (!recorder) return '';
+    if (!recorder) return empty;
 
     setIsProcessing(true);
 
@@ -113,7 +120,7 @@ export function useFieldVoice() {
 
     if (!blob.size) {
       setIsProcessing(false);
-      return '';
+      return empty;
     }
 
     try {
@@ -129,7 +136,9 @@ export function useFieldVoice() {
         throw new Error(error.message || 'Voice processing failed');
       }
 
-      return typeof data?.text === 'string' ? data.text.trim() : '';
+      const text = typeof data?.text === 'string' ? data.text.trim() : '';
+      const raw = typeof data?.raw === 'string' ? data.raw.trim() : '';
+      return { text, raw };
     } finally {
       setIsProcessing(false);
     }

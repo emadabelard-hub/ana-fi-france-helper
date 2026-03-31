@@ -1,16 +1,20 @@
 import React, { useCallback } from 'react';
 import { Loader2, Mic, MicOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFieldVoice } from '@/hooks/useFieldVoice';
+import { useFieldVoice, type VoiceResult } from '@/hooks/useFieldVoice';
 
 interface VoiceInputButtonProps {
+  /** Called with the cleaned French text (default single-field mode) */
   onResult: (text: string) => void;
+  /** Called with both French + raw transcription for dual-field UIs */
+  onDualResult?: (result: VoiceResult) => void;
   className?: string;
   disabled?: boolean;
 }
 
 const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
   onResult,
+  onDualResult,
   className,
   disabled,
 }) => {
@@ -20,13 +24,16 @@ const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
     if (isProcessing) return;
 
     if (isRecording) {
-      const text = await stop();
-      if (text.trim()) onResult(text.trim());
+      const result = await stop();
+      if (result.text.trim()) {
+        onResult(result.text.trim());
+        onDualResult?.(result);
+      }
       return;
     }
 
     await start();
-  }, [isProcessing, isRecording, onResult, start, stop]);
+  }, [isProcessing, isRecording, onResult, onDualResult, start, stop]);
 
   if (!isSupported) return null;
 

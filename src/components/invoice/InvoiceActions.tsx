@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import SmartReviewModal from './SmartReviewModal';
 import { cn } from '@/lib/utils';
+import { calculateInvoiceTotals } from '@/lib/invoiceTotals';
 import html2canvas from 'html2canvas';
 import { supabase } from '@/integrations/supabase/client';
 import type { InvoiceData } from './InvoiceDisplay';
@@ -59,9 +60,15 @@ const InvoiceActions = ({
 
   // Pre-PDF integrity check: verify TVA and totals are consistent
   const verifyFinancialIntegrity = (): boolean => {
-    const htAfterDiscount = Math.round((invoiceData.subtotal - (invoiceData.discountAmount ?? 0)) * 100) / 100;
-    const expectedTva = invoiceData.tvaExempt ? 0 : Math.round(htAfterDiscount * (invoiceData.tvaRate / 100) * 100) / 100;
-    const expectedTotal = Math.round((htAfterDiscount + expectedTva) * 100) / 100;
+    const expectedTotals = calculateInvoiceTotals({
+      subtotal: invoiceData.subtotal,
+      tvaRate: invoiceData.tvaRate,
+      tvaExempt: invoiceData.tvaExempt,
+      discountType: invoiceData.discountType,
+      discountValue: invoiceData.discountValue,
+      discountAmount: invoiceData.discountAmount,
+    });
+
     if (invoiceData.subtotal > 0 && invoiceData.total <= 0) {
       toast({
         variant: 'destructive',
@@ -70,10 +77,10 @@ const InvoiceActions = ({
       });
       return false;
     }
-    if (Math.abs(invoiceData.tvaAmount - expectedTva) > 0.01 || Math.abs(invoiceData.total - expectedTotal) > 0.01) {
+    if (Math.abs(invoiceData.tvaAmount - expectedTotals.tvaAmount) > 0.01 || Math.abs(invoiceData.total - expectedTotals.total) > 0.01) {
       console.error('[PDF INTEGRITY] Mismatch:', {
         ui: { tva: invoiceData.tvaAmount, total: invoiceData.total },
-        expected: { tva: expectedTva, total: expectedTotal },
+        expected: { tva: expectedTotals.tvaAmount, total: expectedTotals.total },
       });
       toast({
         variant: 'destructive',
@@ -292,23 +299,23 @@ const InvoiceActions = ({
       ];
       
       const newSubtotal = newItems.reduce((sum, item) => sum + item.total, 0);
-      const newDiscountAmount = invoiceData.discountAmount && invoiceData.discountAmount > 0
-        ? (invoiceData.discountType === 'percent'
-            ? Math.round(newSubtotal * ((invoiceData.discountValue ?? 0) / 100) * 100) / 100
-            : Math.min(invoiceData.discountValue ?? 0, newSubtotal))
-        : 0;
-      const newSubtotalAfterDiscount = Math.round((newSubtotal - newDiscountAmount) * 100) / 100;
-      const newTvaAmount = invoiceData.tvaExempt ? 0 : Math.round(newSubtotalAfterDiscount * (invoiceData.tvaRate / 100) * 100) / 100;
-      const newTotal = newSubtotalAfterDiscount + newTvaAmount;
+      const recalculatedTotals = calculateInvoiceTotals({
+        subtotal: newSubtotal,
+        tvaRate: invoiceData.tvaRate,
+        tvaExempt: invoiceData.tvaExempt,
+        discountType: invoiceData.discountType,
+        discountValue: invoiceData.discountValue,
+        discountAmount: invoiceData.discountAmount,
+      });
       
       const updatedData: InvoiceData = {
         ...invoiceData,
         items: newItems,
         subtotal: Math.round(newSubtotal * 100) / 100,
-        discountAmount: newDiscountAmount > 0 ? newDiscountAmount : undefined,
-        subtotalAfterDiscount: newDiscountAmount > 0 ? Math.round((newSubtotal - newDiscountAmount) * 100) / 100 : undefined,
-        tvaAmount: newTvaAmount,
-        total: Math.round(newTotal * 100) / 100,
+        discountAmount: recalculatedTotals.discountAmount > 0 ? recalculatedTotals.discountAmount : undefined,
+        subtotalAfterDiscount: recalculatedTotals.discountAmount > 0 ? recalculatedTotals.subtotalAfterDiscount : undefined,
+        tvaAmount: recalculatedTotals.tvaAmount,
+        total: recalculatedTotals.total,
       };
       
       onUpdateInvoice(updatedData);

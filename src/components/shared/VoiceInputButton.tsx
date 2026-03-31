@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { Loader2, Mic, MicOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFieldVoice, type VoiceResult } from '@/hooks/useFieldVoice';
+import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 
 interface VoiceInputButtonProps {
   /** Called with the cleaned French text (default single-field mode) */
@@ -18,19 +19,50 @@ const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
   className,
   disabled,
 }) => {
+  const dualMode = !!onDualResult;
   const {
-    isRecording,
+    isRecording: isAudioRecording,
     isProcessing,
-    start,
-    stop,
-    isSupported,
-  } = useFieldVoice({ dualMode: !!onDualResult });
+    start: startAudio,
+    stop: stopAudio,
+    processRawText,
+    isSupported: isAudioSupported,
+  } = useFieldVoice({ dualMode });
+  const {
+    isRecording: isBrowserRecording,
+    start: startBrowserRecording,
+    stop: stopBrowserRecording,
+    isSupported: isBrowserSupported,
+  } = useVoiceRecorder('ar-EG');
+
+  const useBrowserDualMode = dualMode && isBrowserSupported;
+  const isRecording = useBrowserDualMode ? isBrowserRecording : isAudioRecording;
+  const isSupported = useBrowserDualMode || isAudioSupported;
 
   const toggle = useCallback(async () => {
     if (isProcessing) return;
 
+    if (useBrowserDualMode) {
+      if (isBrowserRecording) {
+        const rawTranscript = stopBrowserRecording().trim();
+        if (!rawTranscript) return;
+
+        const result = await processRawText(rawTranscript);
+        const text = result.text.trim();
+        const raw = (result.raw || rawTranscript).trim();
+
+        if (text || raw) {
+          onDualResult?.({ text, raw });
+        }
+        return;
+      }
+
+      startBrowserRecording();
+      return;
+    }
+
     if (isRecording) {
-      const result = await stop();
+      const result = await stopAudio();
       const text = result.text.trim();
       const raw = result.raw.trim();
 
@@ -47,14 +79,20 @@ const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
       return;
     }
 
-    await start();
+    await startAudio();
   }, [
+    isAudioRecording,
+    isBrowserRecording,
     isProcessing,
     isRecording,
     onDualResult,
     onResult,
-    start,
-    stop,
+    processRawText,
+    startAudio,
+    startBrowserRecording,
+    stopAudio,
+    stopBrowserRecording,
+    useBrowserDualMode,
   ]);
 
   if (!isSupported) return null;

@@ -130,6 +130,7 @@ export function useFieldVoice(options?: { dualMode?: boolean }) {
         body: {
           audioBase64,
           mimeType: blob.type || mimeTypeRef.current,
+          dualMode,
         },
       });
 

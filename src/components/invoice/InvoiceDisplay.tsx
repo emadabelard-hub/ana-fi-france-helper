@@ -219,6 +219,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   const cleanLegalFooter = (data.legalFooter || '')
     .replace(/TVA appliquée à\s*\d+(?:[.,]\d+)?%/gi, '')
     .replace(/TVA au taux de\s*\d+(?:[.,]\d+)?%/gi, '')
+    .replace(/TVA non applicable,?\s*art(?:icle)?\.?\s*293\s*B\s*du\s*CGI/gi, '')
     .replace(/TVA non applicable,\s*article\s*293B\s*du\s*CGI/gi, '')
     .replace(/Autoliquidation de la TVA\s*[–-]\s*article\s*283\s*du\s*CGI/gi, '')
     .replace(/\s+—\s+—\s+/g, ' — ')

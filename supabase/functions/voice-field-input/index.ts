@@ -158,6 +158,7 @@ serve(async (req) => {
     const body = await req.json();
     const audioBase64 = typeof body?.audioBase64 === "string" ? body.audioBase64 : "";
     const mimeType = typeof body?.mimeType === "string" && body.mimeType ? body.mimeType : "audio/webm";
+    const dualMode = body?.dualMode === true;
 
     if (!audioBase64) {
       return new Response(JSON.stringify({ error: "Audio manquant." }), {
@@ -184,7 +185,9 @@ serve(async (req) => {
       });
     }
 
-    const rawTranscript = await transcribeAudio(audioBytes, mimeType, openAiKey);
+    // In dual mode: transcribe in Arabic for raw field, then rewrite to French
+    // In normal mode: transcribe auto-detect, then rewrite to French
+    const rawTranscript = await transcribeAudio(audioBytes, mimeType, openAiKey, dualMode ? "ar" : undefined);
     if (rawTranscript instanceof Response) return rawTranscript;
 
     if (!rawTranscript) {

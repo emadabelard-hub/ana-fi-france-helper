@@ -45,7 +45,8 @@ async function transcribeAudio(
   openAiKey: string,
   options?: { forceLanguage?: string; prompt?: string },
 ) {
-  const file = new File([audioBytes], `voice-input.${mimeTypeToExtension(mimeType)}`, {
+  const fileBuffer = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
+  const file = new File([fileBuffer], `voice-input.${mimeTypeToExtension(mimeType)}`, {
     type: mimeType,
   });
 
@@ -165,11 +166,12 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const audioBase64 = typeof body?.audioBase64 === "string" ? body.audioBase64 : "";
+    const rawTextInput = typeof body?.rawText === "string" ? body.rawText.trim() : "";
     const mimeType = typeof body?.mimeType === "string" && body.mimeType ? body.mimeType : "audio/webm";
     const dualMode = body?.dualMode === true;
 
-    if (!audioBase64) {
-      return new Response(JSON.stringify({ error: "Audio manquant." }), {
+    if (!audioBase64 && !rawTextInput) {
+      return new Response(JSON.stringify({ error: "Audio ou texte manquant." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -178,28 +180,33 @@ serve(async (req) => {
     const openAiKey = Deno.env.get("OPENAI_API_KEY");
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
-    if (!openAiKey || !lovableApiKey) {
+    if (!lovableApiKey || (!rawTextInput && !openAiKey)) {
       return new Response(JSON.stringify({ error: "Configuration vocale incomplète." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const audioBytes = decodeBase64Audio(audioBase64);
-    if (!audioBytes.byteLength) {
-      return new Response(JSON.stringify({ error: "Audio invalide." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    let rawTranscript = rawTextInput;
 
-    // In dual mode: transcribe in Arabic for raw field, then rewrite to French
-    // In normal mode: transcribe auto-detect, then rewrite to French
-    const rawTranscript = await transcribeAudio(audioBytes, mimeType, openAiKey, {
-      forceLanguage: dualMode ? "ar" : undefined,
-      prompt: dualMode ? DUAL_MODE_TRANSCRIPTION_HINT : TRANSCRIPTION_HINT,
-    });
-    if (rawTranscript instanceof Response) return rawTranscript;
+    if (!rawTranscript) {
+      const audioBytes = decodeBase64Audio(audioBase64);
+      if (!audioBytes.byteLength) {
+        return new Response(JSON.stringify({ error: "Audio invalide." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // In dual mode: transcribe in Arabic for raw field, then rewrite to French
+      // In normal mode: transcribe auto-detect, then rewrite to French
+      const transcribed = await transcribeAudio(audioBytes, mimeType, openAiKey, {
+        forceLanguage: dualMode ? "ar" : undefined,
+        prompt: dualMode ? DUAL_MODE_TRANSCRIPTION_HINT : TRANSCRIPTION_HINT,
+      });
+      if (transcribed instanceof Response) return transcribed;
+      rawTranscript = transcribed;
+    }
 
     if (!rawTranscript) {
       return new Response(JSON.stringify({ error: "Aucune parole détectée." }), {

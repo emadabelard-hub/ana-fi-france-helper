@@ -196,8 +196,18 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, on
         )}
       </div>
 
+      {/* Cancelled banner */}
+      {isCancelled && (
+        <div className={cn('mt-3 flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30">
+            <Ban className="h-3.5 w-3.5" />
+            {isRTL ? 'فاتورة ملغاة' : 'Facture annulée'}
+          </span>
+        </div>
+      )}
+
       {/* Payment action row for finalized invoices */}
-      {doc.type === 'facture' && doc.status === 'finalized' && (
+      {doc.type === 'facture' && doc.status === 'finalized' && !isCancelled && (
         <div className={cn('mt-3 flex items-center gap-2', isRTL && 'flex-row-reverse')}>
           {isPaid ? (
             <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">

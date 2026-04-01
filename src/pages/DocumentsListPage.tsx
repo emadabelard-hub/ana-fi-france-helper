@@ -585,15 +585,30 @@ const DocumentsListPage = () => {
             </>
           )}
           <div className="flex-1" />
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 w-7 p-0 text-[hsl(0,0%,45%)] hover:text-red-400 hover:bg-red-500/10"
-            onClick={(e) => { e.stopPropagation(); handleDelete(doc.id); }}
-            disabled={deletingId === doc.id}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          {/* Cancel action for finalized/paid invoices */}
+          {!isDevis && (doc.status === 'finalized' || doc.payment_status === 'paid') && doc.status !== 'cancelled' && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 gap-1"
+              onClick={(e) => { e.stopPropagation(); handleCancelInvoice(doc); }}
+            >
+              <Ban className="h-3 w-3" />
+              {isRTL ? 'إلغاء' : 'Annuler'}
+            </Button>
+          )}
+          {/* Delete only for drafts and non-finalized */}
+          {(isDevis || (doc.status !== 'finalized' && doc.status !== 'cancelled' && doc.payment_status !== 'paid')) && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 text-[hsl(0,0%,45%)] hover:text-red-400 hover:bg-red-500/10"
+              onClick={(e) => { e.stopPropagation(); handleDelete(doc.id); }}
+              disabled={deletingId === doc.id}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </div>
     );

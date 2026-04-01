@@ -1,4 +1,4 @@
-import { FileText, Receipt, ReceiptText, Calendar, Euro, MoreVertical, Download, Send, Pencil, ArrowRightLeft, Copy, CheckCircle } from 'lucide-react';
+import { FileText, Receipt, ReceiptText, Calendar, Euro, MoreVertical, Download, Send, Pencil, ArrowRightLeft, Copy, CheckCircle, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -12,7 +12,7 @@ export interface DocumentItem {
   date: string;
   amountHT: number;
   amountTTC: number;
-  status: 'paid' | 'unpaid' | 'pending' | 'draft' | 'finalized';
+  status: 'paid' | 'unpaid' | 'pending' | 'draft' | 'finalized' | 'cancelled';
   paymentStatus?: 'paid' | 'unpaid';
   project?: string;
   rawData?: any;
@@ -26,6 +26,7 @@ interface DocumentCardProps {
   onDuplicate?: (doc: DocumentItem) => void;
   onOpen?: (doc: DocumentItem) => void;
   onMarkPaid?: (doc: DocumentItem) => void;
+  onCancel?: (doc: DocumentItem) => void;
 }
 
 const typeConfig = {
@@ -40,12 +41,13 @@ const statusConfig = {
   pending: { label: 'En attente', labelAr: 'قيد الانتظار', cls: 'bg-amber-500/15 text-amber-400' },
   draft: { label: 'Brouillon', labelAr: 'مسودة', cls: 'bg-muted text-muted-foreground' },
   finalized: { label: 'Finalisé', labelAr: 'نهائي', cls: 'bg-emerald-500/15 text-emerald-400' },
+  cancelled: { label: 'Annulée', labelAr: 'ملغاة', cls: 'bg-red-500/15 text-red-400 line-through' },
 };
 
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
-const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, onMarkPaid }: DocumentCardProps) => {
+const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, onMarkPaid, onCancel }: DocumentCardProps) => {
   const tc = typeConfig[doc.type];
   const sc = statusConfig[doc.status];
   const Icon = tc.icon;
@@ -53,10 +55,12 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, on
     doc.type === 'devis' &&
     (doc.rawData?.status === 'converted' || Boolean(doc.rawData?.converted_to_invoice) || Boolean(doc.rawData?.linked_invoice_id));
 
+  const isCancelled = doc.status === 'cancelled';
   const isOverdue = doc.type === 'facture' && doc.status === 'unpaid';
   const isClickable = doc.type !== 'expense' && Boolean(onOpen);
-  const showMarkPaid = doc.type === 'facture' && doc.status === 'finalized' && doc.paymentStatus !== 'paid' && onMarkPaid;
+  const showMarkPaid = doc.type === 'facture' && doc.status === 'finalized' && doc.paymentStatus !== 'paid' && !isCancelled && onMarkPaid;
   const isPaid = doc.paymentStatus === 'paid';
+  const showCancelAction = doc.type === 'facture' && (doc.status === 'finalized' || doc.paymentStatus === 'paid') && !isCancelled && onCancel;
 
   return (
     <div
@@ -157,10 +161,18 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, on
                   {isRTL ? 'نسخ' : 'Dupliquer'}
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem className="gap-2 text-destructive" onClick={() => onDelete(doc.id)}>
-                <Pencil className="h-4 w-4" />
-                {isRTL ? 'حذف' : 'Supprimer'}
-              </DropdownMenuItem>
+              {showCancelAction && (
+                <DropdownMenuItem className="gap-2 text-red-500 font-semibold" onClick={(e) => { e.stopPropagation(); onCancel!(doc); }}>
+                  <Ban className="h-4 w-4" />
+                  {isRTL ? 'إلغاء الفاتورة' : 'Annuler la facture'}
+                </DropdownMenuItem>
+              )}
+              {!isCancelled && !(doc.type === 'facture' && (doc.status === 'finalized' || doc.paymentStatus === 'paid')) && (
+                <DropdownMenuItem className="gap-2 text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(doc.id); }}>
+                  <Pencil className="h-4 w-4" />
+                  {isRTL ? 'حذف' : 'Supprimer'}
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -184,8 +196,18 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, on
         )}
       </div>
 
+      {/* Cancelled banner */}
+      {isCancelled && (
+        <div className={cn('mt-3 flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30">
+            <Ban className="h-3.5 w-3.5" />
+            {isRTL ? 'فاتورة ملغاة' : 'Facture annulée'}
+          </span>
+        </div>
+      )}
+
       {/* Payment action row for finalized invoices */}
-      {doc.type === 'facture' && doc.status === 'finalized' && (
+      {doc.type === 'facture' && doc.status === 'finalized' && !isCancelled && (
         <div className={cn('mt-3 flex items-center gap-2', isRTL && 'flex-row-reverse')}>
           {isPaid ? (
             <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">

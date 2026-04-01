@@ -93,7 +93,7 @@ const ArchiveAccountingPage = () => {
           date: new Date(d.created_at).toLocaleDateString('fr-FR'),
           amountHT: d.subtotal_ht,
           amountTTC: d.total_ttc,
-          status: d.status === 'finalized' ? 'finalized' : 'draft',
+          status: d.status === 'finalized' ? 'finalized' : d.status === 'cancelled' ? 'cancelled' : 'draft',
           paymentStatus: d.payment_status || 'unpaid',
           rawData: d,
         })));
@@ -192,15 +192,15 @@ const ArchiveAccountingPage = () => {
   };
 
   const handleDelete = async (id: string) => {
-    // Block deletion of finalized invoices (French legal compliance)
     const doc = documents.find(d => d.id === id);
-    if (doc && doc.type === 'facture' && doc.status === 'finalized') {
+    // Block deletion of finalized/paid/cancelled invoices
+    if (doc && doc.type === 'facture' && (doc.status === 'finalized' || doc.status === ('cancelled' as any) || doc.rawData?.payment_status === 'paid')) {
       toast({
         variant: 'destructive',
         title: isRTL ? '⛔ حذف ممنوع' : '⛔ Suppression interdite',
         description: isRTL
-          ? 'لا يمكن حذف فاتورة نهائية. يمكنك فقط إصدار فاتورة تصحيحية.'
-          : 'Impossible de supprimer une facture finalisée. Émettez un avoir.',
+          ? 'لا يمكن حذف فاتورة نهائية أو مدفوعة. يمكنك إلغاؤها بدلاً من ذلك.'
+          : 'Impossible de supprimer une facture finalisée ou payée. Utilisez "Annuler la facture".',
       });
       return;
     }
@@ -213,6 +213,23 @@ const ArchiveAccountingPage = () => {
       setDocuments(prev => prev.filter(d => d.id !== id));
     }
     toast({ title: isRTL ? '✅ تم الحذف' : '✅ Supprimé' });
+  };
+
+  const handleCancelInvoice = async (doc: DocumentItem) => {
+    const { error } = await (supabase.from('documents_comptables') as any)
+      .update({ status: 'cancelled' })
+      .eq('id', doc.id);
+    if (!error) {
+      setDocuments(prev => prev.map(d =>
+        d.id === doc.id ? { ...d, status: 'cancelled' as any } : d
+      ));
+      toast({
+        title: isRTL ? '✅ تم إلغاء الفاتورة' : '✅ Facture annulée',
+        description: isRTL ? 'لن يتم احتسابها في الإيرادات.' : 'Elle ne sera plus comptabilisée dans le CA.',
+      });
+    } else {
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: error.message });
+    }
   };
 
   const handleConvert = (doc: DocumentItem) => {
@@ -479,6 +496,7 @@ const ArchiveAccountingPage = () => {
                     onConvert={doc.type === 'devis' ? handleConvert : undefined}
                     onOpen={handleOpenDocument}
                     onMarkPaid={handleMarkPaid}
+                    onCancel={doc.type === 'facture' ? handleCancelInvoice : undefined}
                   />
                 );
               })

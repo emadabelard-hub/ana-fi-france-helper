@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search, SendHorizontal, Loader2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search, SendHorizontal, Loader2, CheckCircle, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -140,15 +140,15 @@ const DocumentsListPage = () => {
   }, [location.state, location.pathname, documents, navigate]);
 
   const handleDelete = async (id: string) => {
-    // Block deletion of finalized invoices (French legal compliance)
     const doc = documents.find(d => d.id === id);
-    if (doc && doc.document_type === 'facture' && doc.status === 'finalized') {
+    // Block deletion of finalized/paid/cancelled invoices
+    if (doc && doc.document_type === 'facture' && (doc.status === 'finalized' || doc.status === 'cancelled' || doc.payment_status === 'paid')) {
       toast({
         variant: 'destructive',
         title: isRTL ? '⛔ حذف ممنوع' : '⛔ Suppression interdite',
         description: isRTL
-          ? 'لا يمكن حذف فاتورة نهائية (إلزام محاسبي فرنسي). يمكنك فقط إصدار فاتورة تصحيحية.'
-          : 'Impossible de supprimer une facture finalisée (obligation comptable). Émettez un avoir à la place.',
+          ? 'لا يمكن حذف فاتورة نهائية أو مدفوعة. يمكنك إلغاؤها بدلاً من ذلك.'
+          : 'Impossible de supprimer une facture finalisée ou payée. Utilisez "Annuler la facture".',
       });
       return;
     }
@@ -162,6 +162,23 @@ const DocumentsListPage = () => {
       toast({ title: isRTL ? 'تم الحذف' : 'Supprimé', description: isRTL ? 'تم حذف المستند' : 'Document supprimé avec succès.' });
     }
     setDeletingId(null);
+  };
+
+  const handleCancelInvoice = async (doc: DocumentRow) => {
+    const { error } = await (supabase.from('documents_comptables') as any)
+      .update({ status: 'cancelled' })
+      .eq('id', doc.id);
+    if (!error) {
+      setDocuments(prev => prev.map(d =>
+        d.id === doc.id ? { ...d, status: 'cancelled' } : d
+      ));
+      toast({
+        title: isRTL ? '✅ تم إلغاء الفاتورة' : '✅ Facture annulée',
+        description: isRTL ? 'تم إلغاء الفاتورة. لن يتم احتسابها في الإيرادات.' : 'La facture a été annulée. Elle ne sera plus comptabilisée dans le chiffre d\'affaires.',
+      });
+    } else {
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: error.message });
+    }
   };
 
   const handleConvertToInvoice = async (doc: DocumentRow) => {
@@ -455,10 +472,12 @@ const DocumentsListPage = () => {
               "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
               doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" :
               doc.status === 'converted' ? "bg-blue-500/15 text-blue-400" :
+              doc.status === 'cancelled' ? "bg-red-500/15 text-red-400" :
               "bg-amber-500/15 text-amber-400"
             )}>
               {doc.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') :
                doc.status === 'converted' ? (isRTL ? 'تم التحويل' : 'Converti') :
+               doc.status === 'cancelled' ? (isRTL ? 'ملغاة' : 'Annulée') :
                (isRTL ? 'مسودة' : 'Brouillon')}
             </span>
             {doc.sent_to_accountant_at && (
@@ -506,6 +525,15 @@ const DocumentsListPage = () => {
                 </Button>
               </>
             )}
+          </div>
+        )}
+
+        {/* Cancelled banner */}
+        {doc.status === 'cancelled' && (
+          <div className={cn("mt-3 flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30">
+              {isRTL ? 'فاتورة ملغاة – غير محتسبة' : 'Facture annulée – non comptabilisée'}
+            </span>
           </div>
         )}
 
@@ -557,15 +585,30 @@ const DocumentsListPage = () => {
             </>
           )}
           <div className="flex-1" />
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 w-7 p-0 text-[hsl(0,0%,45%)] hover:text-red-400 hover:bg-red-500/10"
-            onClick={(e) => { e.stopPropagation(); handleDelete(doc.id); }}
-            disabled={deletingId === doc.id}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          {/* Cancel action for finalized/paid invoices */}
+          {!isDevis && (doc.status === 'finalized' || doc.payment_status === 'paid') && doc.status !== 'cancelled' && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 gap-1"
+              onClick={(e) => { e.stopPropagation(); handleCancelInvoice(doc); }}
+            >
+              <Ban className="h-3 w-3" />
+              {isRTL ? 'إلغاء' : 'Annuler'}
+            </Button>
+          )}
+          {/* Delete only for drafts and non-finalized */}
+          {(isDevis || (doc.status !== 'finalized' && doc.status !== 'cancelled' && doc.payment_status !== 'paid')) && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 text-[hsl(0,0%,45%)] hover:text-red-400 hover:bg-red-500/10"
+              onClick={(e) => { e.stopPropagation(); handleDelete(doc.id); }}
+              disabled={deletingId === doc.id}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -721,6 +764,7 @@ const DocumentsListPage = () => {
                 <p><span className="text-muted-foreground">{isRTL ? 'Statut:' : 'Statut:'}</span> {
                   selectedDocument.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') :
                   selectedDocument.status === 'converted' ? (isRTL ? 'تم التحويل' : 'Converti') :
+                  selectedDocument.status === 'cancelled' ? (isRTL ? 'ملغاة' : 'Annulée') :
                   (isRTL ? 'مسودة' : 'Brouillon')
                 }</p>
               </div>

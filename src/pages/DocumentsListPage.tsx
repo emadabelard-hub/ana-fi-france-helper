@@ -371,8 +371,8 @@ const DocumentsListPage = () => {
       toast({
         title: isRTL ? '✅ تم التحويل' : '✅ Converti',
         description: isRTL
-          ? `تم إنشاء فاتورة ${nextNumber} من الدوفي ${doc.document_number}`
-          : `Facture ${nextNumber} créée depuis le devis ${doc.document_number}`,
+          ? `تم إنشاء فاتورة (مسودة) من الدوفي ${doc.document_number}`
+          : `Facture (brouillon) créée depuis le devis ${doc.document_number}`,
       });
 
       setSelectedDocument(null);

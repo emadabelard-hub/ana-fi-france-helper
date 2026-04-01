@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search, SendHorizontal, Loader2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search, SendHorizontal, Loader2, CheckCircle, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

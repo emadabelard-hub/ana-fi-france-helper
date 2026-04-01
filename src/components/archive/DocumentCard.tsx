@@ -47,7 +47,7 @@ const statusConfig = {
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
-const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, onMarkPaid }: DocumentCardProps) => {
+const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, onMarkPaid, onCancel }: DocumentCardProps) => {
   const tc = typeConfig[doc.type];
   const sc = statusConfig[doc.status];
   const Icon = tc.icon;

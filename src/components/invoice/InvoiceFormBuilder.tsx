@@ -397,7 +397,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (draft.acompteFixedAmount !== undefined) setAcompteFixedAmount(draft.acompteFixedAmount || 0);
     if (draft.delaiPaiement !== undefined) setDelaiPaiement(draft.delaiPaiement || '30jours');
     if (draft.moyenPaiement !== undefined) setMoyenPaiement(draft.moyenPaiement || 'virement');
-    if (draft.docNumber !== undefined && draft.docNumber) setDocNumber(draft.docNumber);
+    // For factures: NEVER restore a saved docNumber — always use placeholder until finalization
+    // For devis: restore is fine since devis numbering is less critical
+    if (draft.docNumber !== undefined && draft.docNumber && documentType !== 'facture') {
+      setDocNumber(draft.docNumber);
+    }
     if (draft.items?.length) setItems(draft.items as LineItem[]);
     if (draft.natureOperation !== undefined) setNatureOperation(draft.natureOperation || 'service');
     if (draft.assureurName !== undefined) setAssureurName(draft.assureurName || '');

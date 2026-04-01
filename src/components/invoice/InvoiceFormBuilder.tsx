@@ -238,6 +238,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const lastTranslatedSourceRef = useRef<Record<string, string | undefined>>({});
   const itemsRef = useRef(items);
   const [savingDraft, setSavingDraft] = useState(false);
+  // Custom facture number (user can optionally provide their own number)
+  const [customFactureNumber, setCustomFactureNumber] = useState('');
+  const [customNumberError, setCustomNumberError] = useState('');
 
   // Auto-fetch next sequential number from DB.
   // For DEVIS: fetch on mount. For FACTURES: do NOT — number assigned at finalization.

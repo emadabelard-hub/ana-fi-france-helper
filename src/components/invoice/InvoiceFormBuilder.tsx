@@ -1822,49 +1822,78 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 : (documentType === 'facture' ? 'Numéro de facture' : 'Numéro de devis')}
             </h3>
           </div>
-          <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
-            {isRTL
-              ? (documentType === 'facture' 
-                  ? 'رقم الفاتورة يتولّد تلقائياً عند التأكيد. لا يمكن تعديله يدوياً.'
-                  : 'الرقم بيتولّد تلقائي. تقدر تعدّله لو عايز.')
-              : (documentType === 'facture'
-                  ? "Le numéro de facture est attribué automatiquement à la validation. Il ne peut pas être modifié manuellement."
-                  : "Le numéro est généré automatiquement. Vous pouvez le modifier si nécessaire.")}
-          </p>
-          <Input
-            value={docNumberLoading ? (isRTL ? 'جاري التحميل...' : 'Chargement...') : docNumber}
-            onChange={(e) => {
-              // FACTURES: manual editing is FORBIDDEN (legal compliance)
-              if (documentType === 'facture') return;
-              const prefix = getDocPrefix(documentType);
-              const val = e.target.value;
-              if (val.length < prefix.length) {
-                setDocNumber(prefix);
-              } else if (val.startsWith(prefix)) {
-                setDocNumber(val);
-              } else {
-                setDocNumber(prefix);
-              }
-            }}
-            onFocus={() => {
-              if (documentType === 'facture') return;
-              const prefix = getDocPrefix(documentType);
-              if (!docNumber || !docNumber.startsWith(prefix)) {
-                setDocNumber(prefix);
-              }
-            }}
-            disabled={docNumberLoading || documentType === 'facture'}
-            readOnly={documentType === 'facture'}
-            placeholder={isRTL ? `مثال: ${getDocPrefix(documentType)}001` : `Ex: ${getDocPrefix(documentType)}001`}
-            className="font-mono text-left"
-            dir="ltr"
-            lang="fr"
-          />
-          <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
-            {isRTL
-              ? '💡 الترقيم تلقائي ومستقل: دوفي وفاتورة كل واحد له عداد خاص'
-              : '💡 Numérotation automatique et indépendante : Devis et Factures ont chacun leur propre compteur'}
-          </p>
+          {documentType === 'facture' ? (
+            <>
+              <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+                {isRTL
+                  ? 'اختر رقم مخصص أو اترك الحقل فارغ لترقيم تلقائي عند التأكيد.'
+                  : "Saisissez un numéro personnalisé (ex: F-2026-015) ou laissez vide pour un numéro automatique à la validation."}
+              </p>
+              <Input
+                value={customFactureNumber}
+                onChange={(e) => {
+                  const val = e.target.value.toUpperCase();
+                  setCustomFactureNumber(val);
+                  if (val && !/^F-\d{4}-\d{3,}$/.test(val)) {
+                    setCustomNumberError(isRTL ? 'الصيغة المطلوبة: F-YYYY-XXX (مثال: F-2026-001)' : 'Format requis : F-YYYY-XXX (ex: F-2026-001)');
+                  } else {
+                    setCustomNumberError('');
+                  }
+                }}
+                placeholder={isRTL ? 'اختياري — مثال: F-2026-015' : 'Optionnel — Ex: F-2026-015'}
+                className="font-mono text-left"
+                dir="ltr"
+                lang="fr"
+                enableVoice={false}
+              />
+              {customNumberError && (
+                <p className="text-[11px] text-destructive font-medium">{customNumberError}</p>
+              )}
+              <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+                {isRTL
+                  ? '💡 لو ما كتبت رقم، النظام هيعطي رقم تلقائي متسلسل.'
+                  : '💡 Sans numéro saisi, le système attribue automatiquement le prochain numéro séquentiel.'}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+                {isRTL
+                  ? 'الرقم بيتولّد تلقائي. تقدر تعدّله لو عايز.'
+                  : "Le numéro est généré automatiquement. Vous pouvez le modifier si nécessaire."}
+              </p>
+              <Input
+                value={docNumberLoading ? (isRTL ? 'جاري التحميل...' : 'Chargement...') : docNumber}
+                onChange={(e) => {
+                  const prefix = getDocPrefix(documentType);
+                  const val = e.target.value;
+                  if (val.length < prefix.length) {
+                    setDocNumber(prefix);
+                  } else if (val.startsWith(prefix)) {
+                    setDocNumber(val);
+                  } else {
+                    setDocNumber(prefix);
+                  }
+                }}
+                onFocus={() => {
+                  const prefix = getDocPrefix(documentType);
+                  if (!docNumber || !docNumber.startsWith(prefix)) {
+                    setDocNumber(prefix);
+                  }
+                }}
+                disabled={docNumberLoading}
+                placeholder={isRTL ? `مثال: ${getDocPrefix(documentType)}001` : `Ex: ${getDocPrefix(documentType)}001`}
+                className="font-mono text-left"
+                dir="ltr"
+                lang="fr"
+              />
+              <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+                {isRTL
+                  ? '💡 الترقيم تلقائي ومستقل: دوفي وفاتورة كل واحد له عداد خاص'
+                  : '💡 Numérotation automatique et indépendante : Devis et Factures ont chacun leur propre compteur'}
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
 

@@ -12,7 +12,7 @@ export interface DocumentItem {
   date: string;
   amountHT: number;
   amountTTC: number;
-  status: 'paid' | 'unpaid' | 'pending' | 'draft' | 'finalized';
+  status: 'paid' | 'unpaid' | 'pending' | 'draft' | 'finalized' | 'cancelled';
   paymentStatus?: 'paid' | 'unpaid';
   project?: string;
   rawData?: any;

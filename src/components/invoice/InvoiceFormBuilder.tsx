@@ -242,6 +242,17 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Custom facture number (user can optionally provide their own number)
   const [customFactureNumber, setCustomFactureNumber] = useState('');
   const [customNumberError, setCustomNumberError] = useState('');
+  // Onboarding for facture numbering (show once per user)
+  const [showNumberingOnboarding, setShowNumberingOnboarding] = useState(false);
+
+  // Check if user needs facture numbering onboarding
+  useEffect(() => {
+    if (documentType !== 'facture' || !user) return;
+    const onboardingKey = `facture_numbering_onboarded_${user.id}`;
+    if (!localStorage.getItem(onboardingKey)) {
+      setShowNumberingOnboarding(true);
+    }
+  }, [documentType, user]);
 
   // Auto-fetch next sequential number from DB.
   // For DEVIS: fetch on mount. For FACTURES: do NOT — number assigned at finalization.

@@ -34,7 +34,7 @@ const DocumentHubPage = () => {
         supabase.from('documents_comptables').select('total_ttc, subtotal_ht, tva_amount, document_type, status, payment_status').eq('user_id', user.id),
         supabase.from('expenses').select('amount, tva_amount').eq('user_id', user.id),
       ]);
-      const invoices = (docs || []).filter(d => d.document_type === 'facture' && d.status === 'finalized' && d.status !== 'cancelled');
+      const invoices = (docs || []).filter(d => d.document_type === 'facture' && d.status === 'finalized');
       setTotalIncome(invoices.reduce((s, d) => s + (d.total_ttc || 0), 0));
       setTotalIncomeHT(invoices.reduce((s, d) => s + (d.subtotal_ht || 0), 0));
       setTvaCollectee(invoices.reduce((s, d) => s + (d.tva_amount || 0), 0));

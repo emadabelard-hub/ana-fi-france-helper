@@ -26,7 +26,7 @@ const Dashboard = () => {
         .from('documents_comptables')
         .select('subtotal_ht, total_ttc, status, payment_status, document_type')
         .eq('user_id', user.id);
-      const finalized = (docs || []).filter((d: any) => d.document_type === 'facture' && d.status === 'finalized' && d.status !== 'cancelled');
+      const finalized = (docs || []).filter((d: any) => d.document_type === 'facture' && d.status === 'finalized');
       setCa(finalized.reduce((s: number, d: any) => s + (d.subtotal_ht || 0), 0));
       setTresorerie(finalized.filter((d: any) => d.payment_status === 'paid').reduce((s: number, d: any) => s + (d.subtotal_ht || 0), 0));
     };

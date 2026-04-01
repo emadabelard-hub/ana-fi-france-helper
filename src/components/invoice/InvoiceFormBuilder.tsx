@@ -1375,10 +1375,24 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       }
     }
 
-    // FACTURE NUMBERING: Let the DB trigger assign the official number at INSERT
-    // with status 'finalized'. We pass a BROUILLON placeholder that the trigger replaces.
+    // FACTURE NUMBERING: Use custom number if provided, otherwise placeholder for auto-assign
     if (documentType === 'facture') {
-      data = { ...data, number: generateDraftPlaceholder('facture') };
+      const trimmedCustom = customFactureNumber.trim();
+      if (trimmedCustom && /^F-\d{4}-\d{3,}$/.test(trimmedCustom)) {
+        // User provided a valid custom number — DB trigger will verify uniqueness
+        data = { ...data, number: trimmedCustom };
+      } else if (trimmedCustom) {
+        // Invalid format
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '⚠️ رقم فاتورة غير صالح' : '⚠️ Numéro de facture invalide',
+          description: isRTL ? 'الصيغة المطلوبة: F-YYYY-XXX' : 'Format requis : F-YYYY-XXX (ex: F-2026-001)',
+        });
+        return;
+      } else {
+        // No custom number — let DB trigger auto-assign
+        data = { ...data, number: generateDraftPlaceholder('facture') };
+      }
     }
 
     const linkedDocumentData = {

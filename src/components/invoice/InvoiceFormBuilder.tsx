@@ -20,6 +20,7 @@ import LineItemEditor, { LineItem } from './LineItemEditor';
 import QuoteWizardModal from './QuoteWizardModal';
 import InvoiceGuideModal from './InvoiceGuideModal';
 import FactureGuideModal from './FactureGuideModal';
+import FactureNumberingOnboarding from './FactureNumberingOnboarding';
 import PreFlightChecklistModal from './PreFlightChecklistModal';
 import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
 import { supabase } from '@/integrations/supabase/client';
@@ -238,6 +239,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const lastTranslatedSourceRef = useRef<Record<string, string | undefined>>({});
   const itemsRef = useRef(items);
   const [savingDraft, setSavingDraft] = useState(false);
+  // Custom facture number (user can optionally provide their own number)
+  const [customFactureNumber, setCustomFactureNumber] = useState('');
+  const [customNumberError, setCustomNumberError] = useState('');
+  // Onboarding for facture numbering (show once per user)
+  const [showNumberingOnboarding, setShowNumberingOnboarding] = useState(false);
+
+  // Check if user needs facture numbering onboarding
+  useEffect(() => {
+    if (documentType !== 'facture' || !user) return;
+    const onboardingKey = `facture_numbering_onboarded_${user.id}`;
+    if (!localStorage.getItem(onboardingKey)) {
+      setShowNumberingOnboarding(true);
+    }
+  }, [documentType, user]);
 
   // Auto-fetch next sequential number from DB.
   // For DEVIS: fetch on mount. For FACTURES: do NOT — number assigned at finalization.
@@ -1372,10 +1387,24 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       }
     }
 
-    // FACTURE NUMBERING: Let the DB trigger assign the official number at INSERT
-    // with status 'finalized'. We pass a BROUILLON placeholder that the trigger replaces.
+    // FACTURE NUMBERING: Use custom number if provided, otherwise placeholder for auto-assign
     if (documentType === 'facture') {
-      data = { ...data, number: generateDraftPlaceholder('facture') };
+      const trimmedCustom = customFactureNumber.trim();
+      if (trimmedCustom && /^F-\d{4}-\d{3,}$/.test(trimmedCustom)) {
+        // User provided a valid custom number — DB trigger will verify uniqueness
+        data = { ...data, number: trimmedCustom };
+      } else if (trimmedCustom) {
+        // Invalid format
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '⚠️ رقم فاتورة غير صالح' : '⚠️ Numéro de facture invalide',
+          description: isRTL ? 'الصيغة المطلوبة: F-YYYY-XXX' : 'Format requis : F-YYYY-XXX (ex: F-2026-001)',
+        });
+        return;
+      } else {
+        // No custom number — let DB trigger auto-assign
+        data = { ...data, number: generateDraftPlaceholder('facture') };
+      }
     }
 
     const linkedDocumentData = {
@@ -1655,7 +1684,23 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         <InvoiceGuideModal open={showGuide} onOpenChange={setShowGuide} />
       )}
 
-      {/* Document Type Toggle */}
+      {/* Facture Numbering Onboarding */}
+      <FactureNumberingOnboarding
+        open={showNumberingOnboarding}
+        onOpenChange={setShowNumberingOnboarding}
+        onContinueExisting={(nextNumber) => {
+          if (user) {
+            localStorage.setItem(`facture_numbering_onboarded_${user.id}`, 'true');
+          }
+          setCustomFactureNumber(nextNumber);
+        }}
+        onStartFresh={() => {
+          if (user) {
+            localStorage.setItem(`facture_numbering_onboarded_${user.id}`, 'true');
+          }
+        }}
+      />
+
       <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
         {onDocumentTypeChange ? (
           <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
@@ -1822,49 +1867,78 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 : (documentType === 'facture' ? 'Numéro de facture' : 'Numéro de devis')}
             </h3>
           </div>
-          <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
-            {isRTL
-              ? (documentType === 'facture' 
-                  ? 'رقم الفاتورة يتولّد تلقائياً عند التأكيد. لا يمكن تعديله يدوياً.'
-                  : 'الرقم بيتولّد تلقائي. تقدر تعدّله لو عايز.')
-              : (documentType === 'facture'
-                  ? "Le numéro de facture est attribué automatiquement à la validation. Il ne peut pas être modifié manuellement."
-                  : "Le numéro est généré automatiquement. Vous pouvez le modifier si nécessaire.")}
-          </p>
-          <Input
-            value={docNumberLoading ? (isRTL ? 'جاري التحميل...' : 'Chargement...') : docNumber}
-            onChange={(e) => {
-              // FACTURES: manual editing is FORBIDDEN (legal compliance)
-              if (documentType === 'facture') return;
-              const prefix = getDocPrefix(documentType);
-              const val = e.target.value;
-              if (val.length < prefix.length) {
-                setDocNumber(prefix);
-              } else if (val.startsWith(prefix)) {
-                setDocNumber(val);
-              } else {
-                setDocNumber(prefix);
-              }
-            }}
-            onFocus={() => {
-              if (documentType === 'facture') return;
-              const prefix = getDocPrefix(documentType);
-              if (!docNumber || !docNumber.startsWith(prefix)) {
-                setDocNumber(prefix);
-              }
-            }}
-            disabled={docNumberLoading || documentType === 'facture'}
-            readOnly={documentType === 'facture'}
-            placeholder={isRTL ? `مثال: ${getDocPrefix(documentType)}001` : `Ex: ${getDocPrefix(documentType)}001`}
-            className="font-mono text-left"
-            dir="ltr"
-            lang="fr"
-          />
-          <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
-            {isRTL
-              ? '💡 الترقيم تلقائي ومستقل: دوفي وفاتورة كل واحد له عداد خاص'
-              : '💡 Numérotation automatique et indépendante : Devis et Factures ont chacun leur propre compteur'}
-          </p>
+          {documentType === 'facture' ? (
+            <>
+              <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+                {isRTL
+                  ? 'اختر رقم مخصص أو اترك الحقل فارغ لترقيم تلقائي عند التأكيد.'
+                  : "Saisissez un numéro personnalisé (ex: F-2026-015) ou laissez vide pour un numéro automatique à la validation."}
+              </p>
+              <Input
+                value={customFactureNumber}
+                onChange={(e) => {
+                  const val = e.target.value.toUpperCase();
+                  setCustomFactureNumber(val);
+                  if (val && !/^F-\d{4}-\d{3,}$/.test(val)) {
+                    setCustomNumberError(isRTL ? 'الصيغة المطلوبة: F-YYYY-XXX (مثال: F-2026-001)' : 'Format requis : F-YYYY-XXX (ex: F-2026-001)');
+                  } else {
+                    setCustomNumberError('');
+                  }
+                }}
+                placeholder={isRTL ? 'اختياري — مثال: F-2026-015' : 'Optionnel — Ex: F-2026-015'}
+                className="font-mono text-left"
+                dir="ltr"
+                lang="fr"
+                enableVoice={false}
+              />
+              {customNumberError && (
+                <p className="text-[11px] text-destructive font-medium">{customNumberError}</p>
+              )}
+              <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+                {isRTL
+                  ? '💡 لو ما كتبت رقم، النظام هيعطي رقم تلقائي متسلسل.'
+                  : '💡 Sans numéro saisi, le système attribue automatiquement le prochain numéro séquentiel.'}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+                {isRTL
+                  ? 'الرقم بيتولّد تلقائي. تقدر تعدّله لو عايز.'
+                  : "Le numéro est généré automatiquement. Vous pouvez le modifier si nécessaire."}
+              </p>
+              <Input
+                value={docNumberLoading ? (isRTL ? 'جاري التحميل...' : 'Chargement...') : docNumber}
+                onChange={(e) => {
+                  const prefix = getDocPrefix(documentType);
+                  const val = e.target.value;
+                  if (val.length < prefix.length) {
+                    setDocNumber(prefix);
+                  } else if (val.startsWith(prefix)) {
+                    setDocNumber(val);
+                  } else {
+                    setDocNumber(prefix);
+                  }
+                }}
+                onFocus={() => {
+                  const prefix = getDocPrefix(documentType);
+                  if (!docNumber || !docNumber.startsWith(prefix)) {
+                    setDocNumber(prefix);
+                  }
+                }}
+                disabled={docNumberLoading}
+                placeholder={isRTL ? `مثال: ${getDocPrefix(documentType)}001` : `Ex: ${getDocPrefix(documentType)}001`}
+                className="font-mono text-left"
+                dir="ltr"
+                lang="fr"
+              />
+              <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+                {isRTL
+                  ? '💡 الترقيم تلقائي ومستقل: دوفي وفاتورة كل واحد له عداد خاص'
+                  : '💡 Numérotation automatique et indépendante : Devis et Factures ont chacun leur propre compteur'}
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
 

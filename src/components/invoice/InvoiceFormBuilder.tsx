@@ -1385,22 +1385,24 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     };
 
     try {
-      // Prevent duplicate entries with the same document number
-      const { data: existing } = await (supabase.from('documents_comptables') as any)
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('document_number', data.number)
-        .maybeSingle();
+      // Prevent duplicate entries with the same document number (skip for factures — DB trigger assigns number)
+      if (documentType !== 'facture') {
+        const { data: existing } = await (supabase.from('documents_comptables') as any)
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('document_number', data.number)
+          .maybeSingle();
 
-      if (existing) {
-        toast({
-          variant: 'destructive',
-          title: isRTL ? '⚠️ مستند موجود' : '⚠️ Document existant',
-          description: isRTL
-            ? `الرقم ${data.number} موجود بالفعل. غيّر الرقم أو راجع مستنداتك.`
-            : `Le numéro ${data.number} existe déjà. Changez le numéro ou consultez vos documents.`,
-        });
-        return;
+        if (existing) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? '⚠️ مستند موجود' : '⚠️ Document existant',
+            description: isRTL
+              ? `الرقم ${data.number} موجود بالفعل. غيّر الرقم أو راجع مستنداتك.`
+              : `Le numéro ${data.number} existe déjà. Changez le numéro ou consultez vos documents.`,
+          });
+          return;
+        }
       }
 
       const insertData: any = {

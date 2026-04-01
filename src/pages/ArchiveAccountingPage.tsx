@@ -93,7 +93,7 @@ const ArchiveAccountingPage = () => {
           date: new Date(d.created_at).toLocaleDateString('fr-FR'),
           amountHT: d.subtotal_ht,
           amountTTC: d.total_ttc,
-          status: d.status === 'finalized' ? 'finalized' : 'draft',
+          status: d.status === 'finalized' ? 'finalized' : d.status === 'cancelled' ? 'cancelled' : 'draft',
           paymentStatus: d.payment_status || 'unpaid',
           rawData: d,
         })));

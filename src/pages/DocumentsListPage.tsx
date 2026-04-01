@@ -503,7 +503,7 @@ const DocumentsListPage = () => {
         </div>
 
         {/* Payment status row for finalized invoices */}
-        {!isDevis && doc.status === 'finalized' && (
+        {!isDevis && doc.status === 'finalized' && doc.status !== 'cancelled' && (
           <div className={cn("mt-3 flex items-center gap-2", isRTL && "flex-row-reverse")}>
             {doc.payment_status === 'paid' ? (
               <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
@@ -525,6 +525,15 @@ const DocumentsListPage = () => {
                 </Button>
               </>
             )}
+          </div>
+        )}
+
+        {/* Cancelled banner */}
+        {doc.status === 'cancelled' && (
+          <div className={cn("mt-3 flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30">
+              {isRTL ? 'فاتورة ملغاة – غير محتسبة' : 'Facture annulée – non comptabilisée'}
+            </span>
           </div>
         )}
 

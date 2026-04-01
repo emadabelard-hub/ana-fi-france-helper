@@ -503,7 +503,7 @@ const DocumentsListPage = () => {
         </div>
 
         {/* Payment status row for finalized invoices */}
-        {!isDevis && doc.status === 'finalized' && doc.status !== 'cancelled' && (
+        {!isDevis && doc.status === 'finalized' && (
           <div className={cn("mt-3 flex items-center gap-2", isRTL && "flex-row-reverse")}>
             {doc.payment_status === 'paid' ? (
               <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">

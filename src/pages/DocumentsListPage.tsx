@@ -140,15 +140,15 @@ const DocumentsListPage = () => {
   }, [location.state, location.pathname, documents, navigate]);
 
   const handleDelete = async (id: string) => {
-    // Block deletion of finalized invoices (French legal compliance)
     const doc = documents.find(d => d.id === id);
-    if (doc && doc.document_type === 'facture' && doc.status === 'finalized') {
+    // Block deletion of finalized/paid/cancelled invoices
+    if (doc && doc.document_type === 'facture' && (doc.status === 'finalized' || doc.status === 'cancelled' || doc.payment_status === 'paid')) {
       toast({
         variant: 'destructive',
         title: isRTL ? '⛔ حذف ممنوع' : '⛔ Suppression interdite',
         description: isRTL
-          ? 'لا يمكن حذف فاتورة نهائية (إلزام محاسبي فرنسي). يمكنك فقط إصدار فاتورة تصحيحية.'
-          : 'Impossible de supprimer une facture finalisée (obligation comptable). Émettez un avoir à la place.',
+          ? 'لا يمكن حذف فاتورة نهائية أو مدفوعة. يمكنك إلغاؤها بدلاً من ذلك.'
+          : 'Impossible de supprimer une facture finalisée ou payée. Utilisez "Annuler la facture".',
       });
       return;
     }
@@ -162,6 +162,23 @@ const DocumentsListPage = () => {
       toast({ title: isRTL ? 'تم الحذف' : 'Supprimé', description: isRTL ? 'تم حذف المستند' : 'Document supprimé avec succès.' });
     }
     setDeletingId(null);
+  };
+
+  const handleCancelInvoice = async (doc: DocumentRow) => {
+    const { error } = await (supabase.from('documents_comptables') as any)
+      .update({ status: 'cancelled' })
+      .eq('id', doc.id);
+    if (!error) {
+      setDocuments(prev => prev.map(d =>
+        d.id === doc.id ? { ...d, status: 'cancelled' } : d
+      ));
+      toast({
+        title: isRTL ? '✅ تم إلغاء الفاتورة' : '✅ Facture annulée',
+        description: isRTL ? 'تم إلغاء الفاتورة. لن يتم احتسابها في الإيرادات.' : 'La facture a été annulée. Elle ne sera plus comptabilisée dans le chiffre d\'affaires.',
+      });
+    } else {
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: error.message });
+    }
   };
 
   const handleConvertToInvoice = async (doc: DocumentRow) => {

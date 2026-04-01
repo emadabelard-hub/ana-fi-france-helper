@@ -397,7 +397,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (draft.acompteFixedAmount !== undefined) setAcompteFixedAmount(draft.acompteFixedAmount || 0);
     if (draft.delaiPaiement !== undefined) setDelaiPaiement(draft.delaiPaiement || '30jours');
     if (draft.moyenPaiement !== undefined) setMoyenPaiement(draft.moyenPaiement || 'virement');
-    if (draft.docNumber !== undefined && draft.docNumber) setDocNumber(draft.docNumber);
+    // For factures: NEVER restore a saved docNumber — always use placeholder until finalization
+    // For devis: restore is fine since devis numbering is less critical
+    if (draft.docNumber !== undefined && draft.docNumber && documentType !== 'facture') {
+      setDocNumber(draft.docNumber);
+    }
     if (draft.items?.length) setItems(draft.items as LineItem[]);
     if (draft.natureOperation !== undefined) setNatureOperation(draft.natureOperation || 'service');
     if (draft.assureurName !== undefined) setAssureurName(draft.assureurName || '');
@@ -1824,12 +1828,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
           <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
-              ? 'الرقم بيتولّد تلقائي. تقدر تعدّله لو عايز.'
-              : "Le numéro est généré automatiquement. Vous pouvez le modifier si nécessaire."}
+              ? (documentType === 'facture' 
+                  ? 'رقم الفاتورة يتولّد تلقائياً عند التأكيد. لا يمكن تعديله يدوياً.'
+                  : 'الرقم بيتولّد تلقائي. تقدر تعدّله لو عايز.')
+              : (documentType === 'facture'
+                  ? "Le numéro de facture est attribué automatiquement à la validation. Il ne peut pas être modifié manuellement."
+                  : "Le numéro est généré automatiquement. Vous pouvez le modifier si nécessaire.")}
           </p>
           <Input
             value={docNumberLoading ? (isRTL ? 'جاري التحميل...' : 'Chargement...') : docNumber}
             onChange={(e) => {
+              // FACTURES: manual editing is FORBIDDEN (legal compliance)
+              if (documentType === 'facture') return;
               const prefix = getDocPrefix(documentType);
               const val = e.target.value;
               if (val.length < prefix.length) {
@@ -1841,12 +1851,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               }
             }}
             onFocus={() => {
+              if (documentType === 'facture') return;
               const prefix = getDocPrefix(documentType);
               if (!docNumber || !docNumber.startsWith(prefix)) {
                 setDocNumber(prefix);
               }
             }}
-            disabled={docNumberLoading}
+            disabled={docNumberLoading || documentType === 'facture'}
+            readOnly={documentType === 'facture'}
             placeholder={isRTL ? `مثال: ${getDocPrefix(documentType)}001` : `Ex: ${getDocPrefix(documentType)}001`}
             className="font-mono text-left"
             dir="ltr"

@@ -1684,7 +1684,23 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         <InvoiceGuideModal open={showGuide} onOpenChange={setShowGuide} />
       )}
 
-      {/* Document Type Toggle */}
+      {/* Facture Numbering Onboarding */}
+      <FactureNumberingOnboarding
+        open={showNumberingOnboarding}
+        onOpenChange={setShowNumberingOnboarding}
+        onContinueExisting={(nextNumber) => {
+          if (user) {
+            localStorage.setItem(`facture_numbering_onboarded_${user.id}`, 'true');
+          }
+          setCustomFactureNumber(nextNumber);
+        }}
+        onStartFresh={() => {
+          if (user) {
+            localStorage.setItem(`facture_numbering_onboarded_${user.id}`, 'true');
+          }
+        }}
+      />
+
       <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
         {onDocumentTypeChange ? (
           <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>

@@ -1372,22 +1372,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       }
     }
 
-    // FACTURE NUMBERING: Fetch the real sequential number NOW (at finalization),
-    // not earlier, to guarantee no gaps (French legal compliance art. L441-3 Code de commerce).
+    // FACTURE NUMBERING: Let the DB trigger assign the official number at INSERT
+    // with status 'finalized'. We pass a BROUILLON placeholder that the trigger replaces.
     if (documentType === 'facture') {
-      const finalNumber = await fetchNextDocNumber(user.id, 'facture');
-      if (!finalNumber || finalNumber === getDocPrefix('facture')) {
-        toast({
-          variant: 'destructive',
-          title: isRTL ? 'خطأ في الترقيم' : 'Erreur de numérotation',
-          description: isRTL
-            ? 'تعذر إنشاء رقم تسلسلي. حاول مرة أخرى.'
-            : 'Impossible de générer un numéro séquentiel. Réessayez.',
-        });
-        return;
-      }
-      data = { ...data, number: finalNumber };
-      setDocNumber(finalNumber);
+      data = { ...data, number: generateDraftPlaceholder('facture') };
     }
 
     const linkedDocumentData = {

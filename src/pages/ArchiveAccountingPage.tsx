@@ -496,6 +496,7 @@ const ArchiveAccountingPage = () => {
                     onConvert={doc.type === 'devis' ? handleConvert : undefined}
                     onOpen={handleOpenDocument}
                     onMarkPaid={handleMarkPaid}
+                    onCancel={doc.type === 'facture' ? handleCancelInvoice : undefined}
                   />
                 );
               })

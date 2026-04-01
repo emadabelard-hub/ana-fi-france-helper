@@ -1057,6 +1057,10 @@ export type Database = {
       }
     }
     Functions: {
+      assign_next_facture_number: {
+        Args: { p_user_id: string; p_year: number }
+        Returns: string
+      }
       get_next_document_number: {
         Args: { p_document_type: string; p_user_id: string; p_year: number }
         Returns: string

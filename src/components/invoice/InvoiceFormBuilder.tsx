@@ -1372,22 +1372,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       }
     }
 
-    // FACTURE NUMBERING: Fetch the real sequential number NOW (at finalization),
-    // not earlier, to guarantee no gaps (French legal compliance art. L441-3 Code de commerce).
+    // FACTURE NUMBERING: Let the DB trigger assign the official number at INSERT
+    // with status 'finalized'. We pass a BROUILLON placeholder that the trigger replaces.
     if (documentType === 'facture') {
-      const finalNumber = await fetchNextDocNumber(user.id, 'facture');
-      if (!finalNumber || finalNumber === getDocPrefix('facture')) {
-        toast({
-          variant: 'destructive',
-          title: isRTL ? 'خطأ في الترقيم' : 'Erreur de numérotation',
-          description: isRTL
-            ? 'تعذر إنشاء رقم تسلسلي. حاول مرة أخرى.'
-            : 'Impossible de générer un numéro séquentiel. Réessayez.',
-        });
-        return;
-      }
-      data = { ...data, number: finalNumber };
-      setDocNumber(finalNumber);
+      data = { ...data, number: generateDraftPlaceholder('facture') };
     }
 
     const linkedDocumentData = {
@@ -1397,22 +1385,24 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     };
 
     try {
-      // Prevent duplicate entries with the same document number
-      const { data: existing } = await (supabase.from('documents_comptables') as any)
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('document_number', data.number)
-        .maybeSingle();
+      // Prevent duplicate entries with the same document number (skip for factures — DB trigger assigns number)
+      if (documentType !== 'facture') {
+        const { data: existing } = await (supabase.from('documents_comptables') as any)
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('document_number', data.number)
+          .maybeSingle();
 
-      if (existing) {
-        toast({
-          variant: 'destructive',
-          title: isRTL ? '⚠️ مستند موجود' : '⚠️ Document existant',
-          description: isRTL
-            ? `الرقم ${data.number} موجود بالفعل. غيّر الرقم أو راجع مستنداتك.`
-            : `Le numéro ${data.number} existe déjà. Changez le numéro ou consultez vos documents.`,
-        });
-        return;
+        if (existing) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? '⚠️ مستند موجود' : '⚠️ Document existant',
+            description: isRTL
+              ? `الرقم ${data.number} موجود بالفعل. غيّر الرقم أو راجع مستنداتك.`
+              : `Le numéro ${data.number} existe déjà. Changez le numéro ou consultez vos documents.`,
+          });
+          return;
+        }
       }
 
       const insertData: any = {
@@ -1436,9 +1426,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       const { data: insertedDocument, error } = await (supabase
         .from('documents_comptables') as any)
         .insert(insertData)
-        .select('id')
+        .select('id, document_number')
         .single();
       if (error) throw error;
+
+      // Update UI with the official number assigned by the DB trigger
+      if (documentType === 'facture' && insertedDocument?.document_number) {
+        setDocNumber(insertedDocument.document_number);
+        data = { ...data, number: insertedDocument.document_number };
+      }
 
       if (isQuoteConversionFlow && insertedDocument?.id) {
         const { data: updatedSource, error: updateSourceError } = await (supabase

@@ -161,10 +161,18 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, on
                   {isRTL ? 'نسخ' : 'Dupliquer'}
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem className="gap-2 text-destructive" onClick={() => onDelete(doc.id)}>
-                <Pencil className="h-4 w-4" />
-                {isRTL ? 'حذف' : 'Supprimer'}
-              </DropdownMenuItem>
+              {showCancelAction && (
+                <DropdownMenuItem className="gap-2 text-red-500 font-semibold" onClick={(e) => { e.stopPropagation(); onCancel!(doc); }}>
+                  <Ban className="h-4 w-4" />
+                  {isRTL ? 'إلغاء الفاتورة' : 'Annuler la facture'}
+                </DropdownMenuItem>
+              )}
+              {!isCancelled && !(doc.type === 'facture' && (doc.status === 'finalized' || doc.paymentStatus === 'paid')) && (
+                <DropdownMenuItem className="gap-2 text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(doc.id); }}>
+                  <Pencil className="h-4 w-4" />
+                  {isRTL ? 'حذف' : 'Supprimer'}
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

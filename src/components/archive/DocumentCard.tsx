@@ -1,4 +1,4 @@
-import { FileText, Receipt, ReceiptText, Calendar, Euro, MoreVertical, Download, Send, Pencil, ArrowRightLeft, Copy, CheckCircle } from 'lucide-react';
+import { FileText, Receipt, ReceiptText, Calendar, Euro, MoreVertical, Download, Send, Pencil, ArrowRightLeft, Copy, CheckCircle, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';

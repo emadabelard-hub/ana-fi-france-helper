@@ -764,6 +764,7 @@ const DocumentsListPage = () => {
                 <p><span className="text-muted-foreground">{isRTL ? 'Statut:' : 'Statut:'}</span> {
                   selectedDocument.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') :
                   selectedDocument.status === 'converted' ? (isRTL ? 'تم التحويل' : 'Converti') :
+                  selectedDocument.status === 'cancelled' ? (isRTL ? 'ملغاة' : 'Annulée') :
                   (isRTL ? 'مسودة' : 'Brouillon')
                 }</p>
               </div>

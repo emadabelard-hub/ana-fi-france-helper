@@ -1424,9 +1424,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       const { data: insertedDocument, error } = await (supabase
         .from('documents_comptables') as any)
         .insert(insertData)
-        .select('id')
+        .select('id, document_number')
         .single();
       if (error) throw error;
+
+      // Update UI with the official number assigned by the DB trigger
+      if (documentType === 'facture' && insertedDocument?.document_number) {
+        setDocNumber(insertedDocument.document_number);
+        data = { ...data, number: insertedDocument.document_number };
+      }
 
       if (isQuoteConversionFlow && insertedDocument?.id) {
         const { data: updatedSource, error: updateSourceError } = await (supabase

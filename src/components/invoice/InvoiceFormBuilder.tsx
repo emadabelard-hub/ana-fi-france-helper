@@ -1828,12 +1828,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
           <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
-              ? 'الرقم بيتولّد تلقائي. تقدر تعدّله لو عايز.'
-              : "Le numéro est généré automatiquement. Vous pouvez le modifier si nécessaire."}
+              ? (documentType === 'facture' 
+                  ? 'رقم الفاتورة يتولّد تلقائياً عند التأكيد. لا يمكن تعديله يدوياً.'
+                  : 'الرقم بيتولّد تلقائي. تقدر تعدّله لو عايز.')
+              : (documentType === 'facture'
+                  ? "Le numéro de facture est attribué automatiquement à la validation. Il ne peut pas être modifié manuellement."
+                  : "Le numéro est généré automatiquement. Vous pouvez le modifier si nécessaire.")}
           </p>
           <Input
             value={docNumberLoading ? (isRTL ? 'جاري التحميل...' : 'Chargement...') : docNumber}
             onChange={(e) => {
+              // FACTURES: manual editing is FORBIDDEN (legal compliance)
+              if (documentType === 'facture') return;
               const prefix = getDocPrefix(documentType);
               const val = e.target.value;
               if (val.length < prefix.length) {
@@ -1845,12 +1851,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               }
             }}
             onFocus={() => {
+              if (documentType === 'facture') return;
               const prefix = getDocPrefix(documentType);
               if (!docNumber || !docNumber.startsWith(prefix)) {
                 setDocNumber(prefix);
               }
             }}
-            disabled={docNumberLoading}
+            disabled={docNumberLoading || documentType === 'facture'}
+            readOnly={documentType === 'facture'}
             placeholder={isRTL ? `مثال: ${getDocPrefix(documentType)}001` : `Ex: ${getDocPrefix(documentType)}001`}
             className="font-mono text-left"
             dir="ltr"

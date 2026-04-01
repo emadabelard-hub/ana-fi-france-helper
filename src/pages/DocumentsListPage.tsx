@@ -472,10 +472,12 @@ const DocumentsListPage = () => {
               "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
               doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" :
               doc.status === 'converted' ? "bg-blue-500/15 text-blue-400" :
+              doc.status === 'cancelled' ? "bg-red-500/15 text-red-400" :
               "bg-amber-500/15 text-amber-400"
             )}>
               {doc.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') :
                doc.status === 'converted' ? (isRTL ? 'تم التحويل' : 'Converti') :
+               doc.status === 'cancelled' ? (isRTL ? 'ملغاة' : 'Annulée') :
                (isRTL ? 'مسودة' : 'Brouillon')}
             </span>
             {doc.sent_to_accountant_at && (

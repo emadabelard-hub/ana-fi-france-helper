@@ -41,6 +41,7 @@ const statusConfig = {
   pending: { label: 'En attente', labelAr: 'قيد الانتظار', cls: 'bg-amber-500/15 text-amber-400' },
   draft: { label: 'Brouillon', labelAr: 'مسودة', cls: 'bg-muted text-muted-foreground' },
   finalized: { label: 'Finalisé', labelAr: 'نهائي', cls: 'bg-emerald-500/15 text-emerald-400' },
+  cancelled: { label: 'Annulée', labelAr: 'ملغاة', cls: 'bg-red-500/15 text-red-400 line-through' },
 };
 
 const formatCurrency = (n: number) =>

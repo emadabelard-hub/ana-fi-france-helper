@@ -26,6 +26,7 @@ interface DocumentCardProps {
   onDuplicate?: (doc: DocumentItem) => void;
   onOpen?: (doc: DocumentItem) => void;
   onMarkPaid?: (doc: DocumentItem) => void;
+  onCancel?: (doc: DocumentItem) => void;
 }
 
 const typeConfig = {

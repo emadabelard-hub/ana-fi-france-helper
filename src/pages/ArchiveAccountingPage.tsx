@@ -157,7 +157,7 @@ const ArchiveAccountingPage = () => {
   // ── Financial totals — UNIQUEMENT factures validées (HT) ──
   const totalFactures = useMemo(() => documents.filter(d => d.type === 'facture').length, [documents]);
   const facturesValidees = useMemo(() =>
-    documents.filter(d => d.type === 'facture' && d.status === 'finalized'), [documents]);
+    documents.filter(d => d.type === 'facture' && d.status === 'finalized' && d.status !== ('cancelled' as any)), [documents]);
   const ignoredFactures = useMemo(() => totalFactures - facturesValidees.length, [totalFactures, facturesValidees]);
 
   const caHT = useMemo(() =>

@@ -26,12 +26,12 @@ const FactureGuideModal = ({ open, onOpenChange }: FactureGuideModalProps) => {
       title_fr: 'Numéro de facture & identité',
       title_ar: 'رقم الفاتورة وبيانات شركتك',
       bullets_fr: [
-        '🔢 Entrez le numéro de facture (séquentiel, obligatoire légalement).',
+        '🔢 Le numéro de facture est attribué automatiquement à la validation (séquentiel, obligatoire légalement).',
         '🏢 Vérifiez que vos données société (nom, adresse, SIRET) sont correctes.',
         '📸 Votre logo, signature et cachet seront ajoutés automatiquement depuis votre profil.',
       ],
       bullets_ar: [
-        '🔢 أدخل رقم الفاتورة (تسلسلي، مطلوب قانونياً).',
+        '🔢 رقم الفاتورة بيتولّد تلقائي عند التأكيد (تسلسلي، مطلوب قانونياً).',
         '🏢 تأكد من بيانات شركتك (الاسم، العنوان، SIRET) صحيحة.',
         '📸 اللوجو والتوقيع والكاشي هيتحطوا تلقائي من بروفايلك.',
       ],

@@ -55,10 +55,12 @@ const DocumentCard = ({ doc, isRTL, onDelete, onConvert, onDuplicate, onOpen, on
     doc.type === 'devis' &&
     (doc.rawData?.status === 'converted' || Boolean(doc.rawData?.converted_to_invoice) || Boolean(doc.rawData?.linked_invoice_id));
 
+  const isCancelled = doc.status === 'cancelled';
   const isOverdue = doc.type === 'facture' && doc.status === 'unpaid';
   const isClickable = doc.type !== 'expense' && Boolean(onOpen);
-  const showMarkPaid = doc.type === 'facture' && doc.status === 'finalized' && doc.paymentStatus !== 'paid' && onMarkPaid;
+  const showMarkPaid = doc.type === 'facture' && doc.status === 'finalized' && doc.paymentStatus !== 'paid' && !isCancelled && onMarkPaid;
   const isPaid = doc.paymentStatus === 'paid';
+  const showCancelAction = doc.type === 'facture' && (doc.status === 'finalized' || doc.paymentStatus === 'paid') && !isCancelled && onCancel;
 
   return (
     <div

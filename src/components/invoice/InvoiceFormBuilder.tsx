@@ -13,7 +13,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw, Users, Save, Languages } from 'lucide-react';
+import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw, Users, Save, Languages, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
 import InvoiceDisplay, { InvoiceData, PaymentMilestone } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
@@ -211,6 +211,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const lastTranslatedSourceRef = useRef<Record<string, string | undefined>>({});
   const itemsRef = useRef(items);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Fetch clients list
   useEffect(() => {
@@ -1656,7 +1657,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </div>
 
       {/* Invoice Due Date Selector - Only for Facture */}
-      {documentType === 'facture' && (
+      {showAdvanced && documentType === 'facture' && (
         <Card className="border-red-500/20 bg-red-500/5">
           <CardContent className="p-4 space-y-3">
             <div className={cn(
@@ -1717,7 +1718,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       )}
 
       {/* Quote Validity Duration Selector - Only for Devis */}
-      {documentType === 'devis' && (
+      {showAdvanced && documentType === 'devis' && (
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4 space-y-3">
             <div className={cn(
@@ -1779,6 +1780,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </Card>
       )}
       {/* Document Number - Editable */}
+      {showAdvanced && (<>
       <Card>
         <CardContent className="p-4 space-y-2">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
@@ -1867,6 +1869,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
         </CardContent>
       </Card>
+      </>)}
 
       {/* Client Section */}
       <Card>
@@ -2100,7 +2103,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </CardContent>
       </Card>
 
-      {/* Nature of Operation */}
+      {showAdvanced && (
+      /* Nature of Operation */
       <Card>
         <CardContent className="p-4 space-y-3">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
@@ -2120,6 +2124,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </select>
         </CardContent>
       </Card>
+      )}
 
       {/* Objet du devis / Description du chantier */}
       <Card>
@@ -2251,6 +2256,29 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </CardContent>
       </Card>
 
+      {/* Toggle Advanced Options Button */}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setShowAdvanced(!showAdvanced)}
+        className={cn(
+          "w-full flex items-center justify-center gap-2 py-3 border-dashed border-2",
+          showAdvanced 
+            ? "border-primary/40 bg-primary/5 text-primary" 
+            : "border-muted-foreground/30 text-muted-foreground hover:border-primary/40 hover:text-primary",
+          isRTL && "flex-row-reverse font-cairo"
+        )}
+      >
+        <SlidersHorizontal className="h-4 w-4" />
+        <span className="font-bold text-sm">
+          {showAdvanced
+            ? (isRTL ? '⬆️ إخفاء الخيارات المتقدمة' : '⬆️ Masquer les options avancées')
+            : (isRTL ? '⚙️ خيارات متقدمة (TVA، تأمين، مواعيد...)' : '⚙️ Options avancées (TVA, assurance, calendrier...)')}
+        </span>
+        {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </Button>
+
+      {showAdvanced && (<>
       {/* Estimated Timeline (Optional) */}
       <Card className="border-blue-500/20 bg-blue-500/5">
         <CardContent className="p-4 space-y-3">
@@ -2418,6 +2446,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           )}
         </CardContent>
       </Card>
+      </>)}
       
       {/* AI Quote Wizard Button - Dynamic based on document type */}
       <Button
@@ -2640,6 +2669,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             ))}
           </div>
           
+          {showAdvanced && (<>
           {/* Travel Costs Section */}
           <Card className="border-orange-500/20 bg-orange-500/5">
             <CardContent className="p-4 space-y-4">
@@ -3262,6 +3292,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               )}
             </CardContent>
           </Card>
+          </>)}
           
           {/* Totals Summary */}
           <div className="pt-4 border-t space-y-2">

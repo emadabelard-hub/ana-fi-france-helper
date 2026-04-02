@@ -2256,6 +2256,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </CardContent>
       </Card>
 
+      {showAdvanced && (<>
       {/* Estimated Timeline (Optional) */}
       <Card className="border-blue-500/20 bg-blue-500/5">
         <CardContent className="p-4 space-y-3">

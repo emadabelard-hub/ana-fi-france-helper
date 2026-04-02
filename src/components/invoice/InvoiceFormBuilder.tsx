@@ -1947,7 +1947,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </>)}
 
       {/* Client Section */}
-      <Card className="border-blue-200/60 bg-blue-50/30 dark:border-blue-800/30 dark:bg-blue-950/10">
+      {currentStep === 0 && (
         <CardContent className="p-4 space-y-4">
           <div className={cn(
             "flex items-center justify-between",

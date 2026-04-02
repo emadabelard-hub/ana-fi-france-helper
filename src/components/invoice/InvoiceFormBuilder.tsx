@@ -2422,19 +2422,26 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="border-teal-200/60 bg-teal-50/30 dark:border-teal-800/30 dark:bg-teal-950/10">
         <CardContent className="p-4 space-y-4">
           <div className={cn(
-            "flex items-center gap-2",
+            "flex items-center justify-between",
             isRTL && "flex-row-reverse"
           )}>
-            <HardHat className="h-5 w-5 text-orange-500" />
-            <h3 className={cn(
-              "font-bold",
-              isRTL && "font-cairo"
-            )}>
-              {isRTL ? '📍 عنوان الشانتييه' : '📍 Adresse du Chantier'}
-            </h3>
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <div className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
+                <MapPin className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+              </div>
+              <h3 className={cn("font-bold text-teal-900 dark:text-teal-200", isRTL && "font-cairo")}>
+                {isRTL ? '📍 عنوان الشانتييه' : '📍 Adresse du Chantier'}
+              </h3>
+            </div>
+            {sectionCompletion.find(s => s.id === 'chantier')?.isComplete && (
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                <Check className="h-3 w-3" />
+                <span>{isRTL ? 'مكتمل' : 'OK'}</span>
+              </div>
+            )}
           </div>
           
           <div className={cn(

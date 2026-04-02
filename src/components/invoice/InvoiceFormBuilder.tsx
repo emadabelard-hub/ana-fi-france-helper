@@ -2256,6 +2256,28 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </CardContent>
       </Card>
 
+      {/* Toggle Advanced Options Button */}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setShowAdvanced(!showAdvanced)}
+        className={cn(
+          "w-full flex items-center justify-center gap-2 py-3 border-dashed border-2",
+          showAdvanced 
+            ? "border-primary/40 bg-primary/5 text-primary" 
+            : "border-muted-foreground/30 text-muted-foreground hover:border-primary/40 hover:text-primary",
+          isRTL && "flex-row-reverse font-cairo"
+        )}
+      >
+        <SlidersHorizontal className="h-4 w-4" />
+        <span className="font-bold text-sm">
+          {showAdvanced
+            ? (isRTL ? '⬆️ إخفاء الخيارات المتقدمة' : '⬆️ Masquer les options avancées')
+            : (isRTL ? '⚙️ خيارات متقدمة (TVA، تأمين، مواعيد...)' : '⚙️ Options avancées (TVA, assurance, calendrier...)')}
+        </span>
+        {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </Button>
+
       {showAdvanced && (<>
       {/* Estimated Timeline (Optional) */}
       <Card className="border-blue-500/20 bg-blue-500/5">

@@ -69,6 +69,7 @@ export interface InvoiceData {
   total: number;
   tvaExempt: boolean;
   tvaExemptText?: string;
+  tvaRegime?: 'standard' | 'franchise' | 'autoliquidation' | 'intracommunautaire';
   paymentTerms: string;
   paymentDeadline?: string;
   acomptePercent?: number;
@@ -207,15 +208,19 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   const formatNumber = (amount: number) =>
     amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const isAutoliquidationTva =
-    !data.tvaExempt &&
-    data.tvaRate === 0 &&
-    (data.legalMentions?.includes('283') || data.legalFooter?.includes('283'));
+  // Determine TVA regime deterministically from explicit field
+  const tvaRegime: 'standard' | 'franchise' | 'autoliquidation' | 'intracommunautaire' = (() => {
+    if (data.tvaRegime) return data.tvaRegime;
+    // Fallback for legacy data without tvaRegime
+    if (data.tvaExempt || (data.tvaRate === 0 && !data.legalMentions?.includes('283') && !data.legalMentions?.includes('262 ter'))) return 'franchise';
+    if (data.tvaRate === 0 && data.legalMentions?.includes('283')) return 'autoliquidation';
+    if (data.tvaRate === 0 && data.legalMentions?.includes('262 ter')) return 'intracommunautaire';
+    return 'standard';
+  })();
 
-  const isIntracomTva =
-    !data.tvaExempt &&
-    data.tvaRate === 0 &&
-    (data.legalMentions?.includes('262 ter') || data.legalFooter?.includes('262 ter'));
+  const isAutoliquidationTva = tvaRegime === 'autoliquidation';
+  const isIntracomTva = tvaRegime === 'intracommunautaire';
+  const isFranchise = tvaRegime === 'franchise';
 
   // TVA mention is now displayed inline after Total TTC (not in footer)
   // Footer only shows the rate info for standard TVA
@@ -563,22 +568,19 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               </div>
 
               {/* TVA legal mention — displayed right after Total TTC, before Acompte */}
-              {data.tvaRate === 0 && (
+              {tvaRegime !== 'standard' && (
                 <div className="mt-1 px-2 py-1 rounded text-center" style={{ backgroundColor: '#fefce8', border: '1px solid #fde68a' }}>
-                  {isAutoliquidationTva ? (
+                  {isAutoliquidationTva && (
                     <p className="text-[6.5pt] text-gray-600 font-medium italic">
-                      Autoliquidation de la TVA par le preneur – article 283-2 du CGI
+                      Autoliquidation de la TVA – article 283-2 du CGI
                     </p>
-                  ) : isIntracomTva ? (
-                    <>
-                      <p className="text-[6.5pt] text-gray-600 font-medium italic">
-                        Exonération de TVA – article 262 ter I du CGI
-                      </p>
-                      <p className="text-[6.5pt] text-gray-600 font-medium italic">
-                        Autoliquidation de la TVA par le preneur
-                      </p>
-                    </>
-                  ) : (
+                  )}
+                  {isIntracomTva && (
+                    <p className="text-[6.5pt] text-gray-600 font-medium italic">
+                      Exonération de TVA – article 262 ter I du CGI
+                    </p>
+                  )}
+                  {isFranchise && (
                     <p className="text-[6.5pt] text-gray-600 font-medium italic">
                       TVA non applicable, art. 293 B du CGI
                     </p>

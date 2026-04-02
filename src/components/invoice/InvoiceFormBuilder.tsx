@@ -2110,31 +2110,75 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 : (documentType === 'devis' ? '📝 Objet du devis' : '📝 Objet de la facture')}
             </h3>
           </div>
-          <Textarea
-            value={descriptionChantier}
-            onChange={(e) => setDescriptionChantier(e.target.value)}
-            onBlur={() => {
-              const raw = descriptionChantier.trim();
-              if (!raw) return;
-              const { french, arabicOriginal } = formatObjet(raw);
-              if (french && french !== raw) {
-                setDescriptionChantier(french);
-                if (arabicOriginal) setDescriptionChantierAr(arabicOriginal);
-                toast({
-                  title: isRTL ? '✅ تم التحسين تلقائياً' : '✅ Texte amélioré',
-                  description: isRTL ? 'الموضوع اتحوّل لفرنساوي احترافي' : 'L\'objet a été reformulé en français professionnel',
-                });
-              }
-            }}
-            placeholder={isRTL 
-              ? 'مثال: أعمال دهان كامل للشقة - صالون + 3 غرف + مدخل'
-              : 'Ex: Travaux de peinture complète appartement T3 - Salon, 3 chambres, entrée et couloir'}
-            rows={3}
-            className={cn("text-sm resize-none", isRTL && "text-right font-cairo")}
-          />
-          {descriptionChantierAr && (
-            <p className={cn("text-[10px] text-muted-foreground mt-1 p-2 rounded bg-muted/50", isRTL && "text-right font-cairo")}>
-              {isRTL ? '📝 النص الأصلي:' : '📝 Original :'} {descriptionChantierAr}
+          <div className="relative">
+            <Textarea
+              value={descriptionChantier}
+              onChange={(e) => setDescriptionChantier(e.target.value)}
+              placeholder="مثال: دهان شقة كاملة - صالون + 3 غرف + مدخل"
+              rows={3}
+              className={cn("text-sm resize-none text-right font-cairo")}
+              dir="auto"
+              enableVoice={true}
+            />
+          </div>
+          {/* Manual translate button */}
+          {descriptionChantier.trim() && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="font-cairo text-sm gap-2"
+              disabled={isTranslatingObjet}
+              onClick={async () => {
+                setIsTranslatingObjet(true);
+                try {
+                  const raw = descriptionChantier.trim();
+                  const { french } = formatObjet(raw);
+                  if (french && french !== raw) {
+                    setDescriptionChantierAr(raw);
+                    setDescriptionChantierFr(french);
+                  } else if (containsArabic(raw)) {
+                    // Use edge function for better translation
+                    const { data } = await supabase.functions.invoke('voice-field-input', {
+                      body: { rawText: raw, dualMode: true },
+                    });
+                    const frText = typeof data?.text === 'string' ? data.text.trim() : '';
+                    if (frText) {
+                      setDescriptionChantierAr(raw);
+                      setDescriptionChantierFr(frText);
+                    }
+                  } else {
+                    setDescriptionChantierFr(raw);
+                  }
+                  toast({
+                    title: '✅ تمت الترجمة',
+                    description: 'الموضوع اتترجم لفرنساوي',
+                  });
+                } catch {
+                  toast({ title: '❌ خطأ في الترجمة', variant: 'destructive' });
+                } finally {
+                  setIsTranslatingObjet(false);
+                }
+              }}
+            >
+              {isTranslatingObjet ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Languages className="h-4 w-4" />
+              )}
+              ترجم
+            </Button>
+          )}
+          {/* French translation displayed below */}
+          {descriptionChantierFr && (
+            <div className="p-2.5 rounded-md bg-muted/60 border border-border space-y-1">
+              <p className="text-[10px] font-medium text-muted-foreground">🇫🇷 Traduction française :</p>
+              <p className="text-sm text-foreground">{descriptionChantierFr}</p>
+            </div>
+          )}
+          {descriptionChantierAr && descriptionChantierFr && (
+            <p className={cn("text-[10px] text-muted-foreground p-2 rounded bg-muted/30 text-right font-cairo")}>
+              📝 النص الأصلي: {descriptionChantierAr}
             </p>
           )}
           <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>

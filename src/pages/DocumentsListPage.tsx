@@ -320,12 +320,13 @@ const DocumentsListPage = () => {
         return;
       }
 
-      // 1. Build new facture from devis data as draft (DB trigger assigns BROUILLON placeholder)
+      // 1. Build new facture from devis data as draft
       const docData = doc.document_data || {};
+      const draftPlaceholder = `BROUILLON-F-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const { data: insertedRows, error: insertError } = await (supabase.from('documents_comptables') as any).insert({
         user_id: user.id,
         document_type: 'facture',
-        document_number: '',
+        document_number: draftPlaceholder,
         client_name: doc.client_name,
         client_address: doc.client_address,
         work_site_address: doc.work_site_address,

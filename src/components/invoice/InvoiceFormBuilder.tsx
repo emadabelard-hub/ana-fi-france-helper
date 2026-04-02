@@ -906,6 +906,51 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const progressPercent = Math.round((completedSections / sectionCompletion.length) * 100);
   const allSectionsComplete = completedSections === sectionCompletion.length;
 
+  // Wizard steps definition
+  const WIZARD_STEPS: WizardStep[] = [
+    { id: 'client', label: isRTL ? 'بيانات الزبون' : 'Client', icon: '👤', isComplete: !!clientName.trim() && !!clientAddress.trim() },
+    { id: 'objet', label: isRTL ? 'موضوع الدوفي' : 'Objet', icon: '📝', isComplete: !!(descriptionChantier.trim() || descriptionChantierFr.trim()) },
+    { id: 'travaux', label: isRTL ? 'الأشغال والأسعار' : 'Travaux & Prix', icon: '💰', isComplete: isFormValid },
+    { id: 'options', label: isRTL ? 'خيارات متقدمة' : 'Options', icon: '⚙️', isComplete: true },
+    { id: 'chantier', label: isRTL ? 'عنوان الشانتييه' : 'Chantier', icon: '📍', isComplete: workSiteSameAsClient || !!workSiteAddress.trim() },
+    { id: 'delais', label: isRTL ? 'مواعيد وتأمين' : 'Délais & Assurance', icon: '📅', isComplete: true },
+    { id: 'paiement', label: isRTL ? 'الدفع' : 'Paiement', icon: '💳', isComplete: true },
+    { id: 'resume', label: isRTL ? 'الملخص' : 'Résumé', icon: '📊', isComplete: invoiceData.total > 0 },
+  ];
+
+  // Step validation messages
+  const getStepValidationMessage = (step: number): string | undefined => {
+    if (step === 0 && (!clientName.trim() || !clientAddress.trim())) {
+      return isRTL ? 'لازم تكتب اسم الزبون وعنوانه' : 'Veuillez renseigner le nom et l\'adresse du client';
+    }
+    if (step === 2 && !isFormValid) {
+      return isRTL ? 'أضف بند واحد على الأقل بسعره' : 'Ajoutez au moins une prestation avec un prix';
+    }
+    return undefined;
+  };
+
+  const canProceedFromStep = (step: number): boolean => {
+    // Steps 0 (client) and 2 (travaux) are mandatory
+    if (step === 0) return !!clientName.trim() && !!clientAddress.trim();
+    if (step === 2) return isFormValid;
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (currentStep < WIZARD_STEPS.length - 1 && canProceedFromStep(currentStep)) {
+      setCurrentStep(currentStep + 1);
+      // Scroll to top of form
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const getTechnicalErrorMessage = (error: unknown) => {
     const err = error as any;
     const raw = err?.context?.body || err?.message || err?.error_description || err?.details || err?.hint || String(error);

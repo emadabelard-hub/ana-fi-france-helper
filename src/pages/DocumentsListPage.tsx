@@ -322,7 +322,7 @@ const DocumentsListPage = () => {
 
       // 1. Build new facture from devis data as draft
       const docData = doc.document_data || {};
-      const draftPlaceholder = `BROUILLON-F-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const draftPlaceholder = `F-${new Date().getFullYear()}-DRAFT-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const { data: insertedRows, error: insertError } = await (supabase.from('documents_comptables') as any).insert({
         user_id: user.id,
         document_type: 'facture',

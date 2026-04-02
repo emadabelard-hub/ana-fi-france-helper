@@ -69,6 +69,7 @@ export interface InvoiceData {
   total: number;
   tvaExempt: boolean;
   tvaExemptText?: string;
+  tvaRegime?: 'standard' | 'franchise' | 'autoliquidation' | 'intracommunautaire';
   paymentTerms: string;
   paymentDeadline?: string;
   acomptePercent?: number;

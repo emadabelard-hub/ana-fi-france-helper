@@ -1657,7 +1657,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </div>
 
       {/* Invoice Due Date Selector - Only for Facture */}
-      {documentType === 'facture' && (
+      {showAdvanced && documentType === 'facture' && (
         <Card className="border-red-500/20 bg-red-500/5">
           <CardContent className="p-4 space-y-3">
             <div className={cn(

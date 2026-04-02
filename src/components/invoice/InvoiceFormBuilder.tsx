@@ -3231,6 +3231,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                       {projectTvaType === 'logement' && (isRTL ? '📊 TVA = 10% (تجديد سكني)' : '📊 TVA = 10% (rénovation logement)')}
                       {projectTvaType === 'local_pro' && (isRTL ? '📊 TVA = 20% (محل مهني / بناء جديد)' : '📊 TVA = 20% (local professionnel / neuf)')}
                       {projectTvaType === 'sous_traitance' && (isRTL ? '📊 TVA = 0% (مقاولة باطن — Autoliquidation)' : '📊 TVA = 0% (Autoliquidation – art. 283-2 du CGI)')}
+                      {projectTvaType === 'intracommunautaire' && (isRTL ? '📊 TVA = 0% (داخل أوروبا — إعفاء)' : '📊 TVA = 0% (Exonération – art. 262 ter I du CGI)')}
                     </p>
                     <p className={cn(
                       "text-xs text-muted-foreground mt-1",

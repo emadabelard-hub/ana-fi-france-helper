@@ -2647,6 +2647,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             ))}
           </div>
           
+          {showAdvanced && (<>
           {/* Travel Costs Section */}
           <Card className="border-orange-500/20 bg-orange-500/5">
             <CardContent className="p-4 space-y-4">

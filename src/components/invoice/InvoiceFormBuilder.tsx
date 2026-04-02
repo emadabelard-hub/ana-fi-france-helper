@@ -2478,7 +2478,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </Card>
       </>)}
 
-      {/* Work Site Address - Always visible */}
+      {/* Step 5 navigation */}
+      {currentStep === 5 && !showPreview && (
+        <StepButtons currentStep={5} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={true} isRTL={isRTL} />
+      )}
+
+      {/* === STEP 4: CHANTIER === */}
+      {currentStep === 4 && (
       <Card className="border-teal-200/60 bg-teal-50/30 dark:border-teal-800/30 dark:bg-teal-950/10">
         <CardContent className="p-4 space-y-4">
           <div className={cn(

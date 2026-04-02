@@ -13,7 +13,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw, Users, Save, Languages, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw, Users, Save, Languages, SlidersHorizontal, ChevronDown, ChevronUp, Check, CreditCard, BarChart3, Shield } from 'lucide-react';
+import FormProgressBar, { type ProgressSection } from './FormProgressBar';
 import InvoiceDisplay, { InvoiceData, PaymentMilestone } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
@@ -890,6 +891,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Check if form is valid
   const isFormValid = items.some(item => item.designation_fr.trim() && item.unitPrice > 0) || (includeTravelCosts && travelPrice > 0);
 
+  // Section completion for progress tracking
+  const sectionCompletion: ProgressSection[] = [
+    { id: 'client', label: isRTL ? 'الزبون' : 'Client', icon: '👤', isComplete: !!clientName.trim() && !!clientAddress.trim() },
+    { id: 'objet', label: isRTL ? 'الموضوع' : 'Objet', icon: '📝', isComplete: !!(descriptionChantier.trim() || descriptionChantierFr.trim()) },
+    { id: 'travaux', label: isRTL ? 'الشغل' : 'Travaux', icon: '💰', isComplete: isFormValid },
+    { id: 'chantier', label: isRTL ? 'الشانتييه' : 'Chantier', icon: '📍', isComplete: workSiteSameAsClient || !!workSiteAddress.trim() },
+    { id: 'paiement', label: isRTL ? 'الدفع' : 'Paiement', icon: '💳', isComplete: true },
+    { id: 'resume', label: isRTL ? 'الملخص' : 'Résumé', icon: '📊', isComplete: invoiceData.total > 0 },
+  ];
+  const completedSections = sectionCompletion.filter(s => s.isComplete).length;
+  const progressPercent = Math.round((completedSections / sectionCompletion.length) * 100);
+  const allSectionsComplete = completedSections === sectionCompletion.length;
+
   const getTechnicalErrorMessage = (error: unknown) => {
     const err = error as any;
     const raw = err?.context?.body || err?.message || err?.error_description || err?.details || err?.hint || String(error);
@@ -1665,6 +1679,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </Button>
       </div>
 
+      {/* Progress Bar */}
+      {!showPreview && (
+        <FormProgressBar
+          sections={sectionCompletion}
+          progressPercent={progressPercent}
+          isRTL={isRTL}
+        />
+      )}
       {/* Invoice Due Date Selector - Only for Facture */}
       {showAdvanced && documentType === 'facture' && (
         <Card className="border-red-500/20 bg-red-500/5">
@@ -1881,19 +1903,26 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </>)}
 
       {/* Client Section */}
-      <Card>
+      <Card className="border-blue-200/60 bg-blue-50/30 dark:border-blue-800/30 dark:bg-blue-950/10">
         <CardContent className="p-4 space-y-4">
           <div className={cn(
-            "flex items-center gap-2",
+            "flex items-center justify-between",
             isRTL && "flex-row-reverse"
           )}>
-            <User className="h-5 w-5 text-primary" />
-            <h3 className={cn(
-              "font-bold",
-              isRTL && "font-cairo"
-            )}>
-              {isRTL ? '👤 بيانات الزبون' : '👤 Informations client'}
-            </h3>
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 className={cn("font-bold text-blue-900 dark:text-blue-200", isRTL && "font-cairo")}>
+                {isRTL ? '👤 بيانات الزبون' : '👤 Informations client'}
+              </h3>
+            </div>
+            {sectionCompletion.find(s => s.id === 'client')?.isComplete && (
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                <Check className="h-3 w-3" />
+                <span>{isRTL ? 'مكتمل' : 'Complet'}</span>
+              </div>
+            )}
           </div>
 
           {/* Import from existing clients & projects - ALWAYS visible */}
@@ -2136,15 +2165,28 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       )}
 
       {/* Objet du devis / Description du chantier */}
-      <Card>
+      <Card className="border-violet-200/60 bg-violet-50/30 dark:border-violet-800/30 dark:bg-violet-950/10">
         <CardContent className="p-4 space-y-3">
-          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-            <Edit3 className="h-5 w-5 text-primary" />
-            <h3 className={cn("font-bold", isRTL && "font-cairo")}>
-              {isRTL 
-                ? (documentType === 'devis' ? '📝 موضوع الدوفي' : '📝 موضوع الفاتورة')
-                : (documentType === 'devis' ? '📝 Objet du devis' : '📝 Objet de la facture')}
-            </h3>
+          <div className={cn(
+            "flex items-center justify-between",
+            isRTL && "flex-row-reverse"
+          )}>
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+                <Edit3 className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              <h3 className={cn("font-bold text-violet-900 dark:text-violet-200", isRTL && "font-cairo")}>
+                {isRTL 
+                  ? (documentType === 'devis' ? '📝 موضوع الدوفي' : '📝 موضوع الفاتورة')
+                  : (documentType === 'devis' ? '📝 Objet du devis' : '📝 Objet de la facture')}
+              </h3>
+            </div>
+            {sectionCompletion.find(s => s.id === 'objet')?.isComplete && (
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                <Check className="h-3 w-3" />
+                <span>{isRTL ? 'مكتمل' : 'Complet'}</span>
+              </div>
+            )}
           </div>
           <div className="relative">
             <Textarea
@@ -2289,11 +2331,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
       {showAdvanced && (<>
       {/* Estimated Timeline (Optional) */}
-      <Card className="border-blue-500/20 bg-blue-500/5">
+      <Card className="border-sky-200/60 bg-sky-50/30 dark:border-sky-800/30 dark:bg-sky-950/10">
         <CardContent className="p-4 space-y-3">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-            <Calendar className="h-5 w-5 text-blue-600" />
-            <h3 className={cn("font-bold text-blue-700 dark:text-blue-400", isRTL && "font-cairo")}>
+            <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center">
+              <Calendar className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+            </div>
+            <h3 className={cn("font-bold text-sky-800 dark:text-sky-200", isRTL && "font-cairo")}>
               {isRTL ? '🗓️ مواعيد الأشغال (اختياري)' : '🗓️ Calendrier des travaux (optionnel)'}
             </h3>
           </div>
@@ -2330,11 +2374,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </Card>
 
       {/* Assurance Décennale (BTP) */}
-      <Card className="border-gray-500/20 bg-gray-500/5">
+      <Card className="border-slate-200/60 bg-slate-50/30 dark:border-slate-800/30 dark:bg-slate-950/10">
         <CardContent className="p-4 space-y-4">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-            <HardHat className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-            <h3 className={cn("font-bold text-gray-800 dark:text-gray-200", isRTL && "font-cairo")}>
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900/40 flex items-center justify-center">
+              <Shield className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+            </div>
+            <h3 className={cn("font-bold text-slate-800 dark:text-slate-200", isRTL && "font-cairo")}>
               {isRTL ? '🛡️ التأمين العشري و RC Pro' : '🛡️ Assurance Décennale & RC Pro'}
             </h3>
           </div>
@@ -2393,56 +2439,90 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
         </CardContent>
       </Card>
-      <Card>
+      </>)}
+
+      {/* Work Site Address - Always visible */}
+      <Card className="border-teal-200/60 bg-teal-50/30 dark:border-teal-800/30 dark:bg-teal-950/10">
         <CardContent className="p-4 space-y-4">
           <div className={cn(
-            "flex items-center gap-2",
+            "flex items-center justify-between",
             isRTL && "flex-row-reverse"
           )}>
-            <HardHat className="h-5 w-5 text-orange-500" />
-            <h3 className={cn(
-              "font-bold",
-              isRTL && "font-cairo"
-            )}>
-              {isRTL ? '📍 عنوان الشانتييه' : '📍 Adresse du Chantier'}
-            </h3>
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <div className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
+                <MapPin className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+              </div>
+              <h3 className={cn("font-bold text-teal-900 dark:text-teal-200", isRTL && "font-cairo")}>
+                {isRTL ? '📍 عنوان الشانتييه' : '📍 Adresse du Chantier'}
+              </h3>
+            </div>
+            {sectionCompletion.find(s => s.id === 'chantier')?.isComplete && (
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                <Check className="h-3 w-3" />
+                <span>{isRTL ? 'مكتمل' : 'OK'}</span>
+              </div>
+            )}
           </div>
           
           <div className={cn(
-            "flex items-center gap-3",
+            "flex items-center gap-3 p-3 rounded-lg bg-teal-50/50 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-800/20",
             isRTL && "flex-row-reverse"
           )}>
-            <Checkbox
-              id="same-address"
+            <Switch
+              id="same-address-toggle"
               checked={workSiteSameAsClient}
-              onCheckedChange={(checked) => setWorkSiteSameAsClient(checked === true)}
+              onCheckedChange={(checked) => setWorkSiteSameAsClient(checked)}
             />
             <Label 
-              htmlFor="same-address" 
+              htmlFor="same-address-toggle" 
               className={cn(
-                "cursor-pointer text-sm",
+                "cursor-pointer text-sm font-medium",
                 isRTL && "font-cairo"
               )}
             >
               {isRTL 
                 ? 'نفس عنوان الزبون'
-                : "L'adresse du chantier est identique à l'adresse du client"}
+                : "Même adresse que le client"}
             </Label>
           </div>
           
           {!workSiteSameAsClient && (
-            <div className="space-y-2 pt-2">
-              <Label className={cn(isRTL && "font-cairo text-right block")}>
-                {isRTL ? 'عنوان الشانتييه' : 'Adresse du Chantier / Stationnement'}
-              </Label>
-              <Input
-                value={workSiteAddress}
-                onChange={(e) => setWorkSiteAddress(e.target.value)}
-                placeholder={isRTL ? '45 avenue de Lyon, 69001 Lyon' : '45 avenue de Lyon, 69001 Lyon'}
-                dir="ltr"
-                lang="fr"
-                className="text-left"
-              />
+            <div className="space-y-3 pt-2">
+              {/* Auto-fill from project suggestion */}
+              {selectedChantierId && chantiersList.find(c => c.id === selectedChantierId)?.site_address && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const chantier = chantiersList.find(c => c.id === selectedChantierId);
+                    if (chantier?.site_address) {
+                      setWorkSiteAddress(chantier.site_address);
+                      toast({
+                        title: isRTL ? '✅ تم نسخ العنوان' : '✅ Adresse copiée',
+                        description: isRTL ? 'تم نقل عنوان المشروع' : 'L\'adresse du projet a été importée',
+                      });
+                    }
+                  }}
+                  className={cn("w-full text-xs gap-1.5 border-teal-200 text-teal-700 hover:bg-teal-50 dark:border-teal-800 dark:text-teal-400", isRTL && "flex-row-reverse font-cairo")}
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  {isRTL ? '📋 استخدم عنوان المشروع المسجل' : '📋 Utiliser l\'adresse du projet sélectionné'}
+                </Button>
+              )}
+              <div className="space-y-2">
+                <Label className={cn(isRTL && "font-cairo text-right block")}>
+                  {isRTL ? 'عنوان الشانتييه' : 'Adresse du chantier'}
+                </Label>
+                <Input
+                  value={workSiteAddress}
+                  onChange={(e) => setWorkSiteAddress(e.target.value)}
+                  placeholder={isRTL ? '45 avenue de Lyon, 69001 Lyon' : '45 avenue de Lyon, 69001 Lyon'}
+                  dir="ltr"
+                  lang="fr"
+                  className="text-left"
+                />
+              </div>
               <p className={cn(
                 "text-xs text-muted-foreground",
                 isRTL && "font-cairo text-right"
@@ -2455,7 +2535,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           )}
         </CardContent>
       </Card>
-      </>)}
       
       {/* AI Quote Wizard Button - Dynamic based on document type */}
       <Button
@@ -2484,7 +2563,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </Button>
       
       {/* Line Items Section */}
-      <Card>
+      <Card className="border-emerald-200/60 bg-emerald-50/30 dark:border-emerald-800/30 dark:bg-emerald-950/10">
         <CardContent className="p-4 space-y-4">
           <div className={cn(
             "flex items-center justify-between",
@@ -2494,13 +2573,17 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               "flex items-center gap-2",
               isRTL && "flex-row-reverse"
             )}>
-              <FileText className="h-5 w-5 text-primary" />
-              <h3 className={cn(
-                "font-bold",
-                isRTL && "font-cairo"
-              )}>
-                {isRTL ? '📋 الشغل والأسعار' : '📋 Lignes de prestation'}
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h3 className={cn("font-bold text-emerald-900 dark:text-emerald-200", isRTL && "font-cairo")}>
+                {isRTL ? '💰 الشغل والأسعار' : '💰 Lignes de prestation'}
               </h3>
+              {sectionCompletion.find(s => s.id === 'travaux')?.isComplete && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                  <Check className="h-3 w-3" />
+                </div>
+              )}
             </div>
             
             <Button
@@ -2823,7 +2906,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </Card>
           
           {/* Payment Terms - Conditions de Règlement */}
-          <Card className="border-amber-500/20 bg-amber-500/5">
+          <Card className="border-pink-200/60 bg-pink-50/30 dark:border-pink-800/30 dark:bg-pink-950/10">
             <CardContent className="p-4 space-y-4">
               {/* Pedagogical Alert */}
               <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700">
@@ -3491,139 +3574,143 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </ProtectedDocumentWrapper>
         </div>
       ) : (
-        <div className={cn(
-          "flex gap-3 flex-wrap",
-          isRTL && "flex-row-reverse"
-        )}>
-          <Button
-            variant="outline"
-            onClick={onBack}
-            className={cn(isRTL && "font-cairo")}
-          >
-            {isRTL ? 'رجوع' : 'Retour'}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleFinishDocument}
-            className={cn("text-destructive hover:text-destructive", isRTL && "font-cairo")}
-          >
-            <RotateCcw className="h-4 w-4 mr-1" />
-            {isRTL ? 'تأكيد وانهاء' : 'Confirmer et terminer'}
-          </Button>
-          
-          {/* Save as Draft Button */}
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={savingDraft}
-            onClick={saveAsDraft}
-            className={cn(isRTL && "font-cairo")}
-          >
-            {savingDraft ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-            {isRTL ? 'حفظ مسودة' : 'Sauvegarder brouillon'}
-          </Button>
+        <div className="space-y-4">
+          {/* Completion Message */}
+          {allSectionsComplete && (
+            <div className={cn(
+              "p-4 rounded-xl border-2 border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 text-center",
+              isRTL && "font-cairo"
+            )}>
+              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
+                {isRTL 
+                  ? '✅ الدوفي بتاعك جاهز — تقدر تعمله PDF من غير أخطاء'
+                  : '✅ Votre document est prêt — vous pouvez le générer sans erreur'}
+              </p>
+            </div>
+          )}
 
-          <Button
-            onClick={async () => {
-              try {
-                const ok = await ensureTranslations();
-                if (!ok) return;
-
-                // Comprehensive validation with detailed feedback
-                const missingFields: string[] = [];
-                
-                // SIRET warning (non-blocking) — document can still be created
-                // Profile SIRET check is informational only
-
-                // Check client name
-                if (!clientName.trim()) {
-                  missingFields.push(isRTL ? '👤 اسم الزبون' : '👤 Nom du client');
-                }
-                
-                // Check client address
-                if (!clientAddress.trim()) {
-                  missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
-                }
-
-                // Client/Chantier selection is optional — if selected, fields are auto-filled
-                // No blocking if not selected, manual entry is allowed
-
-                // Validate document number is filled
-                const currentPrefix = getDocPrefix(documentType);
-                const hasValidDocNumber = docNumber.startsWith(currentPrefix) && docNumber.length > currentPrefix.length;
-                if (!hasValidDocNumber) {
-                  missingFields.push(isRTL 
-                    ? (documentType === 'facture' ? '🔢 رقم الفاتورة' : '🔢 رقم الدوفي')
-                    : (documentType === 'facture' ? '🔢 Numéro de facture' : '🔢 Numéro de devis'));
-                }
-
-                // B2B: SIREN/SIRET is REQUIRED when B2B is checked
-                const clientSirenDigits = clientSiren.replace(/\s/g, '');
-                if (clientIsB2B && !clientSirenDigits) {
-                  missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (إجباري B2B)' : '🏢 SIRET du client (obligatoire B2B)');
-                } else if (clientIsB2B && clientSirenDigits && ![9, 14].includes(clientSirenDigits.length)) {
-                  missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (9 أو 14 رقم)' : '🏢 SIRET client invalide (9 ou 14 chiffres)');
-                }
-                
-                // Check work site address if different from client
-                if (!workSiteSameAsClient && !workSiteAddress.trim()) {
-                  missingFields.push(isRTL ? '🏗️ عنوان الشانتييه' : '🏗️ Adresse du chantier');
-                }
-                
-                // Check line items
-                const hasValidItem = items.some(item => item.designation_fr.trim() && Number(item.unitPrice) > 0);
-                if (!hasValidItem && !(includeTravelCosts && travelPrice > 0)) {
-                  missingFields.push(isRTL ? '📋 بند واحد على الأقل بسعره' : '📋 Au moins une prestation avec un prix');
-                }
-                
-                // Show validation errors if any
-                if (missingFields.length > 0) {
+          {/* Action Buttons - Reorganized */}
+          <div className={cn(
+            "grid grid-cols-1 gap-3",
+            isRTL && "font-cairo"
+          )}>
+            {/* Primary: Generate PDF */}
+            <Button
+              onClick={async () => {
+                try {
+                  const ok = await ensureTranslations();
+                  if (!ok) return;
+                  const missingFields: string[] = [];
+                  if (!clientName.trim()) {
+                    missingFields.push(isRTL ? '👤 اسم الزبون' : '👤 Nom du client');
+                  }
+                  if (!clientAddress.trim()) {
+                    missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
+                  }
+                  const currentPrefix = getDocPrefix(documentType);
+                  const hasValidDocNumber = docNumber.startsWith(currentPrefix) && docNumber.length > currentPrefix.length;
+                  if (!hasValidDocNumber) {
+                    missingFields.push(isRTL 
+                      ? (documentType === 'facture' ? '🔢 رقم الفاتورة' : '🔢 رقم الدوفي')
+                      : (documentType === 'facture' ? '🔢 Numéro de facture' : '🔢 Numéro de devis'));
+                  }
+                  const clientSirenDigits = clientSiren.replace(/\s/g, '');
+                  if (clientIsB2B && !clientSirenDigits) {
+                    missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (إجباري B2B)' : '🏢 SIRET du client (obligatoire B2B)');
+                  } else if (clientIsB2B && clientSirenDigits && ![9, 14].includes(clientSirenDigits.length)) {
+                    missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (9 أو 14 رقم)' : '🏢 SIRET client invalide (9 ou 14 chiffres)');
+                  }
+                  if (!workSiteSameAsClient && !workSiteAddress.trim()) {
+                    missingFields.push(isRTL ? '🏗️ عنوان الشانتييه' : '🏗️ Adresse du chantier');
+                  }
+                  const hasValidItem = items.some(item => item.designation_fr.trim() && Number(item.unitPrice) > 0);
+                  if (!hasValidItem && !(includeTravelCosts && travelPrice > 0)) {
+                    missingFields.push(isRTL ? '📋 بند واحد على الأقل بسعره' : '📋 Au moins une prestation avec un prix');
+                  }
+                  if (missingFields.length > 0) {
+                    toast({
+                      variant: "destructive",
+                      title: isRTL ? "⚠️ في حاجات ناقصة" : "⚠️ Données manquantes",
+                      description: (
+                        <div className="mt-2 space-y-1">
+                          <p className={cn("font-medium", isRTL && "font-cairo text-right")}>
+                            {isRTL ? 'كمّل الخانات دي:' : 'Veuillez compléter:'}
+                          </p>
+                          <ul className={cn("list-none space-y-1 text-sm", isRTL && "text-right")}>
+                            {missingFields.map((field, idx) => (
+                              <li key={idx} className="text-destructive-foreground">
+                                {field === '__SIRET_ERROR__' ? (
+                                  <button
+                                    onClick={() => navigate('/pro/settings')}
+                                    className="underline font-semibold hover:opacity-80 text-left"
+                                  >
+                                    {isRTL ? '🏢 رقم SIRET بتاعك (14 رقم) — اضغط هنا للتعديل' : '🏢 Votre SIRET (14 chiffres) — Modifier dans Mon Entreprise →'}
+                                  </button>
+                                ) : field}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ),
+                    });
+                    return;
+                  }
+                  setShowChecklist(true);
+                } catch (err) {
+                  const technicalMessage = getTechnicalErrorMessage(err);
+                  console.error('Preview validation error:', err);
                   toast({
                     variant: "destructive",
-                    title: isRTL ? "⚠️ في حاجات ناقصة" : "⚠️ Données manquantes",
-                    description: (
-                      <div className="mt-2 space-y-1">
-                        <p className={cn("font-medium", isRTL && "font-cairo text-right")}>
-                          {isRTL ? 'كمّل الخانات دي:' : 'Veuillez compléter:'}
-                        </p>
-                        <ul className={cn("list-none space-y-1 text-sm", isRTL && "text-right")}>
-                          {missingFields.map((field, idx) => (
-                            <li key={idx} className="text-destructive-foreground">
-                              {field === '__SIRET_ERROR__' ? (
-                                <button
-                                  onClick={() => navigate('/pro/settings')}
-                                  className="underline font-semibold hover:opacity-80 text-left"
-                                >
-                                  {isRTL ? '🏢 رقم SIRET بتاعك (14 رقم) — اضغط هنا للتعديل' : '🏢 Votre SIRET (14 chiffres) — Modifier dans Mon Entreprise →'}
-                                </button>
-                              ) : field}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ),
+                    title: isRTL ? "⚠️ خطأ تقني" : "⚠️ Erreur technique",
+                    description: technicalMessage,
                   });
-                  return;
                 }
-                
-                setShowChecklist(true);
-              } catch (err) {
-                const technicalMessage = getTechnicalErrorMessage(err);
-                console.error('Preview validation error:', err);
-                toast({
-                  variant: "destructive",
-                  title: isRTL ? "⚠️ خطأ تقني" : "⚠️ Erreur technique",
-                  description: technicalMessage,
-                });
-              }
-            }}
-            className={cn("flex-1", isRTL && "font-cairo")}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            {isRTL ? 'معاينة وتحميل' : 'Aperçu et Télécharger PDF'}
-          </Button>
+              }}
+              size="lg"
+              className={cn(
+                "w-full py-6 text-base font-bold gap-2",
+                allSectionsComplete 
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white" 
+                  : "",
+                isRTL && "font-cairo flex-row-reverse"
+              )}
+            >
+              <FileText className="h-5 w-5" />
+              {isRTL ? '📄 معاينة وتحميل PDF' : '📄 Aperçu et Télécharger PDF'}
+            </Button>
+
+            {/* Secondary row */}
+            <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onBack}
+                className={cn("flex-1", isRTL && "font-cairo")}
+              >
+                {isRTL ? '← رجوع' : '← Retour'}
+              </Button>
+              
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={savingDraft}
+                onClick={saveAsDraft}
+                className={cn("flex-1", isRTL && "font-cairo")}
+              >
+                {savingDraft ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+                {isRTL ? 'حفظ مسودة' : 'Sauvegarder'}
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleFinishDocument}
+                className={cn("text-destructive hover:text-destructive", isRTL && "font-cairo")}
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       )}
       

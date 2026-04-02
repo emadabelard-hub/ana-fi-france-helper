@@ -400,18 +400,14 @@ const InvoiceActions = ({
   };
 
   const handleCopyText = async () => {
-    const isAutoliquidationTva =
-      !invoiceData.tvaExempt &&
-      invoiceData.tvaRate === 0 &&
-      (invoiceData.legalMentions?.includes('283') || invoiceData.legalFooter?.includes('283'));
-
-    const vatMention = invoiceData.tvaRate > 0
+    const regime = invoiceData.tvaRegime || (invoiceData.tvaExempt ? 'franchise' : invoiceData.tvaRate === 0 ? 'franchise' : 'standard');
+    const vatMention = regime === 'standard'
       ? `TVA au taux de ${invoiceData.tvaRate}%`
-      : isAutoliquidationTva
-        ? 'Autoliquidation de la TVA – article 283 du CGI'
-        : invoiceData.tvaExempt
-          ? (invoiceData.tvaExemptText || 'TVA non applicable, article 293B du CGI')
-          : undefined;
+      : regime === 'autoliquidation'
+        ? 'Autoliquidation de la TVA – article 283-2 du CGI'
+        : regime === 'intracommunautaire'
+          ? 'Exonération de TVA – article 262 ter I du CGI'
+          : 'TVA non applicable, art. 293 B du CGI';
 
     const lines = [
       `${invoiceData.type} N° ${invoiceData.number}`,

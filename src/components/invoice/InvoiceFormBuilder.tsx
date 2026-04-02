@@ -2318,11 +2318,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
       {showAdvanced && (<>
       {/* Estimated Timeline (Optional) */}
-      <Card className="border-blue-500/20 bg-blue-500/5">
+      <Card className="border-sky-200/60 bg-sky-50/30 dark:border-sky-800/30 dark:bg-sky-950/10">
         <CardContent className="p-4 space-y-3">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-            <Calendar className="h-5 w-5 text-blue-600" />
-            <h3 className={cn("font-bold text-blue-700 dark:text-blue-400", isRTL && "font-cairo")}>
+            <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center">
+              <Calendar className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+            </div>
+            <h3 className={cn("font-bold text-sky-800 dark:text-sky-200", isRTL && "font-cairo")}>
               {isRTL ? '🗓️ مواعيد الأشغال (اختياري)' : '🗓️ Calendrier des travaux (optionnel)'}
             </h3>
           </div>

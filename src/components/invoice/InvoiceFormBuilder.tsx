@@ -2462,40 +2462,64 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
           
           <div className={cn(
-            "flex items-center gap-3",
+            "flex items-center gap-3 p-3 rounded-lg bg-teal-50/50 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-800/20",
             isRTL && "flex-row-reverse"
           )}>
-            <Checkbox
-              id="same-address"
+            <Switch
+              id="same-address-toggle"
               checked={workSiteSameAsClient}
-              onCheckedChange={(checked) => setWorkSiteSameAsClient(checked === true)}
+              onCheckedChange={(checked) => setWorkSiteSameAsClient(checked)}
             />
             <Label 
-              htmlFor="same-address" 
+              htmlFor="same-address-toggle" 
               className={cn(
-                "cursor-pointer text-sm",
+                "cursor-pointer text-sm font-medium",
                 isRTL && "font-cairo"
               )}
             >
               {isRTL 
                 ? 'نفس عنوان الزبون'
-                : "L'adresse du chantier est identique à l'adresse du client"}
+                : "Même adresse que le client"}
             </Label>
           </div>
           
           {!workSiteSameAsClient && (
-            <div className="space-y-2 pt-2">
-              <Label className={cn(isRTL && "font-cairo text-right block")}>
-                {isRTL ? 'عنوان الشانتييه' : 'Adresse du Chantier / Stationnement'}
-              </Label>
-              <Input
-                value={workSiteAddress}
-                onChange={(e) => setWorkSiteAddress(e.target.value)}
-                placeholder={isRTL ? '45 avenue de Lyon, 69001 Lyon' : '45 avenue de Lyon, 69001 Lyon'}
-                dir="ltr"
-                lang="fr"
-                className="text-left"
-              />
+            <div className="space-y-3 pt-2">
+              {/* Auto-fill from project suggestion */}
+              {selectedChantierId && chantiersList.find(c => c.id === selectedChantierId)?.site_address && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const chantier = chantiersList.find(c => c.id === selectedChantierId);
+                    if (chantier?.site_address) {
+                      setWorkSiteAddress(chantier.site_address);
+                      toast({
+                        title: isRTL ? '✅ تم نسخ العنوان' : '✅ Adresse copiée',
+                        description: isRTL ? 'تم نقل عنوان المشروع' : 'L\'adresse du projet a été importée',
+                      });
+                    }
+                  }}
+                  className={cn("w-full text-xs gap-1.5 border-teal-200 text-teal-700 hover:bg-teal-50 dark:border-teal-800 dark:text-teal-400", isRTL && "flex-row-reverse font-cairo")}
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  {isRTL ? '📋 استخدم عنوان المشروع المسجل' : '📋 Utiliser l\'adresse du projet sélectionné'}
+                </Button>
+              )}
+              <div className="space-y-2">
+                <Label className={cn(isRTL && "font-cairo text-right block")}>
+                  {isRTL ? 'عنوان الشانتييه' : 'Adresse du chantier'}
+                </Label>
+                <Input
+                  value={workSiteAddress}
+                  onChange={(e) => setWorkSiteAddress(e.target.value)}
+                  placeholder={isRTL ? '45 avenue de Lyon, 69001 Lyon' : '45 avenue de Lyon, 69001 Lyon'}
+                  dir="ltr"
+                  lang="fr"
+                  className="text-left"
+                />
+              </div>
               <p className={cn(
                 "text-xs text-muted-foreground",
                 isRTL && "font-cairo text-right"
@@ -2508,7 +2532,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           )}
         </CardContent>
       </Card>
-      </>)}
       
       {/* AI Quote Wizard Button - Dynamic based on document type */}
       <Button

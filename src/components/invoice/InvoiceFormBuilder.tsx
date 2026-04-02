@@ -2165,15 +2165,28 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       )}
 
       {/* Objet du devis / Description du chantier */}
-      <Card>
+      <Card className="border-violet-200/60 bg-violet-50/30 dark:border-violet-800/30 dark:bg-violet-950/10">
         <CardContent className="p-4 space-y-3">
-          <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-            <Edit3 className="h-5 w-5 text-primary" />
-            <h3 className={cn("font-bold", isRTL && "font-cairo")}>
-              {isRTL 
-                ? (documentType === 'devis' ? '📝 موضوع الدوفي' : '📝 موضوع الفاتورة')
-                : (documentType === 'devis' ? '📝 Objet du devis' : '📝 Objet de la facture')}
-            </h3>
+          <div className={cn(
+            "flex items-center justify-between",
+            isRTL && "flex-row-reverse"
+          )}>
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+                <Edit3 className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              <h3 className={cn("font-bold text-violet-900 dark:text-violet-200", isRTL && "font-cairo")}>
+                {isRTL 
+                  ? (documentType === 'devis' ? '📝 موضوع الدوفي' : '📝 موضوع الفاتورة')
+                  : (documentType === 'devis' ? '📝 Objet du devis' : '📝 Objet de la facture')}
+              </h3>
+            </div>
+            {sectionCompletion.find(s => s.id === 'objet')?.isComplete && (
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                <Check className="h-3 w-3" />
+                <span>{isRTL ? 'مكتمل' : 'Complet'}</span>
+              </div>
+            )}
           </div>
           <div className="relative">
             <Textarea

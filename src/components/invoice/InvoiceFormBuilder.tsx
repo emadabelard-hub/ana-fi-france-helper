@@ -2184,8 +2184,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
         </CardContent>
       </Card>
+      )}
 
-      {showAdvanced && (
+      {/* Step 0 navigation */}
+      {currentStep === 0 && !showPreview && (
+        <StepButtons currentStep={0} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={canProceedFromStep(0)} isRTL={isRTL} />
+      )}
+
+      {currentStep === 3 && (
       /* Nature of Operation */
       <Card>
         <CardContent className="p-4 space-y-3">

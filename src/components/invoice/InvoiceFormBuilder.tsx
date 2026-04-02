@@ -1731,8 +1731,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           validationMessage={!canProceedFromStep(currentStep) ? getStepValidationMessage(currentStep) : undefined}
         />
       )}
-      {/* Invoice Due Date Selector - Only for Facture */}
-      {showAdvanced && documentType === 'facture' && (
+      {/* === STEP 3: OPTIONS — Due date/validity === */}
+      {currentStep === 3 && documentType === 'facture' && (
         <Card className="border-red-500/20 bg-red-500/5">
           <CardContent className="p-4 space-y-3">
             <div className={cn(

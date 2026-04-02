@@ -1793,7 +1793,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       )}
 
       {/* Quote Validity Duration Selector - Only for Devis */}
-      {showAdvanced && documentType === 'devis' && (
+      {currentStep === 3 && documentType === 'devis' && (
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4 space-y-3">
             <div className={cn(

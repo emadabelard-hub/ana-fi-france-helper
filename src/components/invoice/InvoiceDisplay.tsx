@@ -217,13 +217,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
     data.tvaRate === 0 &&
     (data.legalMentions?.includes('262 ter') || data.legalFooter?.includes('262 ter'));
 
+  // TVA mention is now displayed inline after Total TTC (not in footer)
+  // Footer only shows the rate info for standard TVA
   const vatFooterMention = data.tvaRate > 0
     ? `TVA au taux de ${data.tvaRate}%`
-    : isAutoliquidationTva
-      ? 'Autoliquidation de la TVA – article 283-2 du CGI'
-      : isIntracomTva
-        ? 'Exonération de TVA – article 262 ter I du CGI'
-        : 'TVA non applicable, article 293B du CGI';
+    : '';
 
   const cleanLegalFooter = (data.legalFooter || '')
     .replace(/TVA appliquée à\s*\d+(?:[.,]\d+)?%/gi, '')
@@ -559,6 +557,30 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 <span className="font-bold text-[8pt] text-gray-900"><ArSub fr="Total TTC:" /></span>
                 <span className="font-extrabold text-[11pt] text-gray-900 tabular-nums">{formatCurrency(data.total)}</span>
               </div>
+
+              {/* TVA legal mention — displayed right after Total TTC, before Acompte */}
+              {data.tvaRate === 0 && (
+                <div className="mt-1 px-2 py-1 rounded text-center" style={{ backgroundColor: '#fefce8', border: '1px solid #fde68a' }}>
+                  {isAutoliquidationTva ? (
+                    <p className="text-[6.5pt] text-gray-600 font-medium italic">
+                      Autoliquidation de la TVA – article 283-2 du CGI
+                    </p>
+                  ) : isIntracomTva ? (
+                    <>
+                      <p className="text-[6.5pt] text-gray-600 font-medium italic">
+                        Exonération de TVA – article 262 ter I du CGI
+                      </p>
+                      <p className="text-[6.5pt] text-gray-600 font-medium italic">
+                        Autoliquidation de la TVA par le preneur
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[6.5pt] text-gray-600 font-medium italic">
+                      TVA non applicable, art. 293 B du CGI
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Simple acompte (no milestones) */}
               {data.acompteAmount && data.acompteAmount > 0 && (!data.paymentMilestones || data.paymentMilestones.length === 0) && (

@@ -1565,17 +1565,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     setShowPreview(false);
     setShowArabic(false);
 
-    if (user) {
-      setDocNumberLoading(true);
-      try {
-        const nextNumber = await fetchNextDocNumber(user.id, documentType);
-        setDocNumber(nextNumber);
-      } finally {
-        setDocNumberLoading(false);
-      }
-    } else {
-      setDocNumber(documentType === 'facture' ? generateDraftPlaceholder('facture') : getDocPrefix(documentType));
-    }
+    setDocNumber(getDocPrefix(documentType));
 
     toast({
       title: isRTL ? '✅ تم إنهاء المستند' : '✅ Document terminé',

@@ -1780,6 +1780,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </Card>
       )}
       {/* Document Number - Editable */}
+      {showAdvanced && (<>
       <Card>
         <CardContent className="p-4 space-y-2">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>

@@ -1657,26 +1657,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
   return (
     <div className="space-y-6">
-      {/* Help Banner */}
-      <button
-        type="button"
-        onClick={() => setShowGuide(true)}
-        className={cn(
-          "w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl",
-          "border-2 border-dashed transition-colors cursor-pointer",
-          isRTL 
-            ? "bg-red-600 border-red-700 hover:bg-red-700 flex-row-reverse font-cairo" 
-            : "bg-green-600 border-green-700 hover:bg-green-700"
-        )}
-      >
-        <HelpCircle className="h-5 w-5 text-white shrink-0" />
-        <span className="text-sm font-black text-white">
-          {documentType === 'facture'
-            ? (isRTL ? 'عايز تعرف تعمل فاكتير ازاي؟ اضغط هنا 👈' : 'Besoin d\'aide pour créer votre facture ? Cliquez ici 👆')
-            : (isRTL ? 'عايز تعرف تعمل ازاي الدوفي؟ اضغط هنا 👆' : 'Besoin d\'aide pour créer votre devis ? Cliquez ici 👆')}
-        </span>
-      </button>
-
       {/* Guide Modal */}
       {documentType === 'facture' ? (
         <FactureGuideModal open={showGuide} onOpenChange={setShowGuide} />
@@ -1684,7 +1664,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         <InvoiceGuideModal open={showGuide} onOpenChange={setShowGuide} />
       )}
 
-
+      {/* Top bar: Type toggle + Clear button */}
       <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
         {onDocumentTypeChange ? (
           <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
@@ -1714,24 +1694,41 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         ) : (
           <div />
         )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleFinishDocument}
-          className={cn("text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive gap-1 text-[10px] px-2 py-1 h-7", isRTL && "font-cairo flex-row-reverse")}
-        >
-          <Trash2 className="h-3 w-3" />
-          {isRTL ? 'امسح بيانات المستند السابق' : 'Effacer le document précédent'}
-        </Button>
+        <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+          <button
+            type="button"
+            onClick={() => setShowGuide(true)}
+            className="text-primary hover:text-primary/80 transition-colors"
+          >
+            <HelpCircle className="h-5 w-5" />
+          </button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleFinishDocument}
+            className={cn("text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive gap-1 text-[10px] px-2 py-1 h-7", isRTL && "font-cairo flex-row-reverse")}
+          >
+            <Trash2 className="h-3 w-3" />
+            {isRTL ? 'امسح' : 'Effacer'}
+          </Button>
+        </div>
       </div>
 
-      {/* Progress Bar */}
+      {/* Wizard Step Navigation */}
       {!showPreview && (
-        <FormProgressBar
-          sections={sectionCompletion}
-          progressPercent={progressPercent}
+        <StepNavigation
+          steps={WIZARD_STEPS}
+          currentStep={currentStep}
+          onStepChange={(step) => {
+            if (step < currentStep || canProceedFromStep(currentStep)) {
+              setCurrentStep(step);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
           isRTL={isRTL}
+          canProceed={canProceedFromStep(currentStep)}
+          validationMessage={!canProceedFromStep(currentStep) ? getStepValidationMessage(currentStep) : undefined}
         />
       )}
       {/* Invoice Due Date Selector - Only for Facture */}

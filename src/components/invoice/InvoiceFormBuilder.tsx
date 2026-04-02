@@ -1468,7 +1468,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       const insertData: any = {
         user_id: user.id,
         document_type: documentType,
-        document_number: generateDraftPlaceholder(documentType),
+        document_number: docNumber,
         client_name: data.client.name || '(مسودة)',
         client_address: data.client.address || '',
         work_site_address: data.workSite?.address || '',

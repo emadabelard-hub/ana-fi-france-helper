@@ -1265,6 +1265,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       return;
     }
 
+    // Block if Arabic description has no French translation
+    if (descriptionChantier.trim() && containsArabic(descriptionChantier) && !descriptionChantierFr) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '⚠️ لازم الترجمة' : '⚠️ Traduction requise',
+        description: isRTL
+          ? 'لازم تدوس على "ترجم" عشان الموضوع يطلع فرنساوي في الوثيقة'
+          : 'Veuillez traduire l\'objet en français avant de sauvegarder.',
+      });
+      return;
+    }
+
     // Client name is required (either from selection or manual entry)
     if (!clientName.trim()) {
       toast({

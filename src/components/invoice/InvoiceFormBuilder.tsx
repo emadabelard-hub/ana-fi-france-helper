@@ -78,41 +78,6 @@ const getDocPrefix = (type: 'devis' | 'facture'): string => {
   return `${prefix}-${year}-`;
 };
 
-// Fetch next sequential number from DB (atomic, no gaps, no duplicates).
-// Uses assign_next_facture_number for factures, get_next_document_number for devis.
-const fetchNextDocNumber = async (userId: string, type: 'devis' | 'facture'): Promise<string> => {
-  const year = new Date().getFullYear();
-  if (type === 'facture') {
-    const { data, error } = await supabase.rpc('assign_next_facture_number', {
-      p_user_id: userId,
-      p_year: year,
-    });
-    if (error) {
-      console.error('Failed to assign facture number:', error);
-      throw new Error('Impossible d\'attribuer un numéro de facture');
-    }
-    return data as string;
-  }
-  const { data, error } = await supabase.rpc('get_next_document_number', {
-    p_user_id: userId,
-    p_document_type: type,
-    p_year: year,
-  });
-  if (error) {
-    console.error('Failed to fetch next doc number:', error);
-    return getDocPrefix(type);
-  }
-  return data as string;
-};
-
-// Generate a placeholder label for drafts (not a real sequential number)
-const generateDraftPlaceholder = (type: 'devis' | 'facture'): string => {
-  const prefix = type === 'devis' ? 'D' : 'F';
-  const year = new Date().getFullYear();
-  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `BROUILLON-${prefix}-${year}-${rand}`;
-};
-
 const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeChange }: InvoiceFormBuilderProps) => {
   const { isRTL, language } = useLanguage();
   const { user } = useAuth();

@@ -2216,6 +2216,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
       {/* Objet du devis / Description du chantier */}
       {currentStep === 1 && (
+      <Card className="border-violet-200/60 bg-violet-50/30 dark:border-violet-800/30 dark:bg-violet-950/10">
         <CardContent className="p-4 space-y-3">
           <div className={cn(
             "flex items-center justify-between",

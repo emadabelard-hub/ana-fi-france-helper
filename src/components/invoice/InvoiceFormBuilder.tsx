@@ -133,7 +133,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [isAutoEntrepreneur, setIsAutoEntrepreneur] = useState(false);
   const [selectedTvaRate, setSelectedTvaRate] = useState<5.5 | 10 | 20>(10);
   // Project type for automatic TVA calculation (non auto-entrepreneur)
-  const [projectTvaType, setProjectTvaType] = useState<'logement' | 'local_pro' | 'sous_traitance'>('logement');
+  const [projectTvaType, setProjectTvaType] = useState<'logement' | 'local_pro' | 'sous_traitance' | 'intracommunautaire'>('logement');
   
   // Quote validity duration (in days) - default 30 days
   const [validityDuration, setValidityDuration] = useState<15 | 30 | 60 | 90>(30);
@@ -652,10 +652,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     
     const subtotal = Math.round(allItems.reduce((sum, item) => sum + item.total, 0) * 100) / 100;
     
-    // Smart TVA calculation: Auto-entrepreneur = franchise de TVA, Sous-traitance = autoliquidation
+    // Smart TVA calculation: Auto-entrepreneur = franchise de TVA, Sous-traitance = autoliquidation, Intracommunautaire = exonération
     const tvaExempt = isAutoEntrepreneur;
     const isSousTraitanceTva = !isAutoEntrepreneur && projectTvaType === 'sous_traitance';
-    const tvaRate = tvaExempt || isSousTraitanceTva ? 0 : (projectTvaType === 'logement' ? 10 : 20);
+    const isIntracomTva = !isAutoEntrepreneur && projectTvaType === 'intracommunautaire';
+    const tvaRate = tvaExempt || isSousTraitanceTva || isIntracomTva ? 0 : (projectTvaType === 'logement' ? 10 : 20);
     const totals = calculateInvoiceTotals({
       subtotal,
       tvaRate,
@@ -672,8 +673,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       : tvaExempt
         ? 'TVA non applicable, article 293B du CGI'
         : isSousTraitanceTva
-          ? 'Autoliquidation de la TVA – article 283 du CGI'
-          : undefined;
+          ? 'Autoliquidation de la TVA – article 283-2 du CGI'
+          : isIntracomTva
+            ? 'Exonération de TVA – article 262 ter I du CGI'
+            : undefined;
     
     return {
       type: documentType === 'devis' ? 'DEVIS' : 'FACTURE',
@@ -3197,18 +3200,30 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                         {isRTL ? 'مقاولة باطن' : 'Sous-traitance'}
                       </span>
                     </Button>
+                    <Button
+                      type="button"
+                      variant={projectTvaType === 'intracommunautaire' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setProjectTvaType('intracommunautaire')}
+                      className="flex-1 min-w-[100px]"
+                    >
+                      <span className="text-base mr-1">🇪🇺</span>
+                      <span className="font-bold">
+                        {isRTL ? 'داخل أوروبا' : 'Intracom. UE'}
+                      </span>
+                    </Button>
                   </div>
 
                   {/* Computed TVA result (read-only) */}
                   <div className={cn(
                     "p-3 rounded-lg border",
-                    projectTvaType === 'sous_traitance' 
+                    (projectTvaType === 'sous_traitance' || projectTvaType === 'intracommunautaire')
                       ? "bg-amber-500/10 border-amber-500/20" 
                       : "bg-primary/10 border-primary/20"
                   )}>
                     <p className={cn(
                       "text-sm font-medium",
-                      projectTvaType === 'sous_traitance' 
+                      (projectTvaType === 'sous_traitance' || projectTvaType === 'intracommunautaire')
                         ? "text-amber-700 dark:text-amber-400"
                         : "text-primary",
                       isRTL && "font-cairo text-right"
@@ -3216,6 +3231,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                       {projectTvaType === 'logement' && (isRTL ? '📊 TVA = 10% (تجديد سكني)' : '📊 TVA = 10% (rénovation logement)')}
                       {projectTvaType === 'local_pro' && (isRTL ? '📊 TVA = 20% (محل مهني / بناء جديد)' : '📊 TVA = 20% (local professionnel / neuf)')}
                       {projectTvaType === 'sous_traitance' && (isRTL ? '📊 TVA = 0% (مقاولة باطن — Autoliquidation)' : '📊 TVA = 0% (Autoliquidation – art. 283-2 du CGI)')}
+                      {projectTvaType === 'intracommunautaire' && (isRTL ? '📊 TVA = 0% (داخل أوروبا — إعفاء)' : '📊 TVA = 0% (Exonération – art. 262 ter I du CGI)')}
                     </p>
                     <p className={cn(
                       "text-xs text-muted-foreground mt-1",

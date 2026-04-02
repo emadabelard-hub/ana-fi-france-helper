@@ -146,7 +146,9 @@ const AR_LABELS: Record<string, string> = {
   'Assurance décennale': 'تأمين عشري',
   'TVA non applicable, art. 293 B du CGI': 'معفى من الضريبة، مادة 293 ب',
   'TVA non applicable, article 293B du CGI': 'معفى من الضريبة، مادة 293 ب',
+  'Autoliquidation de la TVA – article 283-2 du CGI': 'احتساب عكسي للضريبة، مادة 283-2',
   'Autoliquidation de la TVA – article 283 du CGI': 'احتساب عكسي للضريبة، مادة 283',
+  'Exonération de TVA – article 262 ter I du CGI': 'إعفاء من الضريبة — مادة 262 ter I',
   'Garantie décennale': 'ضمان عشري',
   'Retenue de garantie': 'ضمان محجوز',
 };
@@ -210,18 +212,26 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
     data.tvaRate === 0 &&
     (data.legalMentions?.includes('283') || data.legalFooter?.includes('283'));
 
+  const isIntracomTva =
+    !data.tvaExempt &&
+    data.tvaRate === 0 &&
+    (data.legalMentions?.includes('262 ter') || data.legalFooter?.includes('262 ter'));
+
   const vatFooterMention = data.tvaRate > 0
     ? `TVA au taux de ${data.tvaRate}%`
     : isAutoliquidationTva
-      ? 'Autoliquidation de la TVA – article 283 du CGI'
-      : 'TVA non applicable, article 293B du CGI';
+      ? 'Autoliquidation de la TVA – article 283-2 du CGI'
+      : isIntracomTva
+        ? 'Exonération de TVA – article 262 ter I du CGI'
+        : 'TVA non applicable, article 293B du CGI';
 
   const cleanLegalFooter = (data.legalFooter || '')
     .replace(/TVA appliquée à\s*\d+(?:[.,]\d+)?%/gi, '')
     .replace(/TVA au taux de\s*\d+(?:[.,]\d+)?%/gi, '')
     .replace(/TVA non applicable,?\s*art(?:icle)?\.?\s*293\s*B\s*du\s*CGI/gi, '')
     .replace(/TVA non applicable,\s*article\s*293B\s*du\s*CGI/gi, '')
-    .replace(/Autoliquidation de la TVA\s*[–-]\s*article\s*283\s*du\s*CGI/gi, '')
+    .replace(/Autoliquidation de la TVA\s*[–-]\s*article\s*283(?:-2)?\s*du\s*CGI/gi, '')
+    .replace(/Exonération de TVA\s*[–-]\s*article\s*262\s*ter\s*I\s*du\s*CGI/gi, '')
     .replace(/\s+—\s+—\s+/g, ' — ')
     .replace(/^\s*—\s*|\s*—\s*$/g, '')
     .trim();

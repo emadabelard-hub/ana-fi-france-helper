@@ -72,7 +72,7 @@ export interface CurrentDocumentState extends InvoiceDraft {
   selectedClientId?: string;
   selectedChantierId?: string;
   dueDateDays?: 15 | 30 | 45 | 60;
-  projectTvaType?: 'logement' | 'local_pro' | 'sous_traitance';
+  projectTvaType?: 'logement' | 'local_pro' | 'sous_traitance' | 'intracommunautaire';
   milestonesEnabled?: boolean;
   showPreview?: boolean;
   showArabic?: boolean;

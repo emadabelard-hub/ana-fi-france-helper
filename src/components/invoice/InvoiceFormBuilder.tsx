@@ -573,11 +573,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         setSitePhotos(prefillData.sitePhotos);
       }
 
-      // Auto-fill subject/description from Smart Devis (auto-translate if Arabic)
+      // Auto-fill subject/description from Smart Devis (keep as-is, no auto-translate)
       if (prefillData.descriptionChantier) {
-        const { french, arabicOriginal } = formatObjet(prefillData.descriptionChantier);
-        setDescriptionChantier(french || prefillData.descriptionChantier);
-        if (arabicOriginal) setDescriptionChantierAr(arabicOriginal);
+        setDescriptionChantier(prefillData.descriptionChantier);
       }
       
       toast({

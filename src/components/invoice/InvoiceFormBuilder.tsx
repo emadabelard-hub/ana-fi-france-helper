@@ -3200,6 +3200,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                         {isRTL ? 'مقاولة باطن' : 'Sous-traitance'}
                       </span>
                     </Button>
+                    <Button
+                      type="button"
+                      variant={projectTvaType === 'intracommunautaire' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setProjectTvaType('intracommunautaire')}
+                      className="flex-1 min-w-[100px]"
+                    >
+                      <span className="text-base mr-1">🇪🇺</span>
+                      <span className="font-bold">
+                        {isRTL ? 'داخل أوروبا' : 'Intracom. UE'}
+                      </span>
+                    </Button>
                   </div>
 
                   {/* Computed TVA result (read-only) */}

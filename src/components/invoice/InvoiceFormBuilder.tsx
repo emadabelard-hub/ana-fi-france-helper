@@ -1265,6 +1265,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       return;
     }
 
+    // Block if Arabic description has no French translation
+    if (descriptionChantier.trim() && containsArabic(descriptionChantier) && !descriptionChantierFr) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '⚠️ لازم الترجمة' : '⚠️ Traduction requise',
+        description: isRTL
+          ? 'لازم تدوس على "ترجم" عشان الموضوع يطلع فرنساوي في الوثيقة'
+          : 'Veuillez traduire l\'objet en français avant de sauvegarder.',
+      });
+      return;
+    }
+
     // Client name is required (either from selection or manual entry)
     if (!clientName.trim()) {
       toast({
@@ -2116,8 +2128,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           <div className="relative">
             <Textarea
               value={descriptionChantier}
-              onChange={(e) => setDescriptionChantier(e.target.value)}
-              placeholder="اتكلم بالعربي... مثال: دهان شقة كاملة"
+              onChange={(e) => {
+                setDescriptionChantier(e.target.value);
+                // Clear French translation when user edits the source text
+                if (descriptionChantierFr) {
+                  setDescriptionChantierFr('');
+                  setDescriptionChantierAr('');
+                }
+              }}
+              placeholder="اتكلم بالعربي... مثال: دهان حيطان وسقف مكتب مسيو هاني"
               rows={3}
               className={cn("text-sm resize-none text-right font-cairo")}
               dir="auto"
@@ -2130,10 +2149,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   const sep = prev && !prev.endsWith(' ') ? ' ' : '';
                   return prev + sep + rawArabic;
                 });
+                // Clear stale translation
+                setDescriptionChantierFr('');
+                setDescriptionChantierAr('');
               }}
             />
           </div>
-          {/* Manual translate button */}
+
+          {/* Translate button */}
           {descriptionChantier.trim() && (
             <Button
               type="button"
@@ -2145,12 +2168,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 setIsTranslatingObjet(true);
                 try {
                   const raw = descriptionChantier.trim();
-                  const { french } = formatObjet(raw);
-                  if (french && french !== raw) {
-                    setDescriptionChantierAr(raw);
-                    setDescriptionChantierFr(french);
-                  } else if (containsArabic(raw)) {
-                    // Use edge function for better translation
+                  // Always try edge function for best quality professional translation
+                  if (containsArabic(raw)) {
                     const { data } = await supabase.functions.invoke('voice-field-input', {
                       body: { rawText: raw, dualMode: true },
                     });
@@ -2158,8 +2177,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                     if (frText) {
                       setDescriptionChantierAr(raw);
                       setDescriptionChantierFr(frText);
+                    } else {
+                      // Fallback to local formatter
+                      const { french } = formatObjet(raw);
+                      if (french && french !== raw) {
+                        setDescriptionChantierAr(raw);
+                        setDescriptionChantierFr(french);
+                      }
                     }
                   } else {
+                    // Already French text
                     setDescriptionChantierFr(raw);
                   }
                   toast({
@@ -2181,22 +2208,38 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               ترجم
             </Button>
           )}
-          {/* French translation displayed below */}
+
+          {/* French translation preview */}
           {descriptionChantierFr && (
-            <div className="p-2.5 rounded-md bg-muted/60 border border-border space-y-1">
-              <p className="text-[10px] font-medium text-muted-foreground">🇫🇷 Traduction française :</p>
-              <p className="text-sm text-foreground">{descriptionChantierFr}</p>
+            <div className="p-3 rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 space-y-1">
+              <p className="text-[10px] font-semibold text-green-700 dark:text-green-400">🇫🇷 Version française (utilisée dans le document) :</p>
+              <p className="text-sm text-foreground font-medium">{descriptionChantierFr}</p>
             </div>
           )}
+
+          {/* Original Arabic text reminder */}
           {descriptionChantierAr && descriptionChantierFr && (
-            <p className={cn("text-[10px] text-muted-foreground p-2 rounded bg-muted/30 text-right font-cairo")}>
-              📝 النص الأصلي: {descriptionChantierAr}
-            </p>
+            <div className="p-2 rounded bg-muted/40 border border-border">
+              <p className={cn("text-[10px] text-muted-foreground text-right font-cairo")}>
+                📝 النص الأصلي: {descriptionChantierAr}
+              </p>
+            </div>
           )}
+
+          {/* Warning: Arabic detected but no translation yet */}
+          {descriptionChantier.trim() && containsArabic(descriptionChantier) && !descriptionChantierFr && (
+            <div className="p-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 font-cairo text-right">
+                ⚠️ لازم تدوس على "ترجم" عشان الموضوع يطلع فرنساوي في الدوفي/الفاتورة
+              </p>
+            </div>
+          )}
+
+          {/* Document language notice */}
           <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL 
-              ? '💡 وصف مختصر للأشغال - بيظهر على الدوفي/الفاتورة قبل الجدول'
-              : '💡 Description courte des travaux — apparaît sur le document avant le tableau des prestations'}
+              ? '📄 الوثيقة النهائية هتتعمل بالفرنساوي بس'
+              : '📄 Le document final sera généré en français'}
           </p>
         </CardContent>
       </Card>

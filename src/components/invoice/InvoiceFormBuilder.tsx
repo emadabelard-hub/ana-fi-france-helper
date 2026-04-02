@@ -2117,11 +2117,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             <Textarea
               value={descriptionChantier}
               onChange={(e) => setDescriptionChantier(e.target.value)}
-              placeholder="مثال: دهان شقة كاملة - صالون + 3 غرف + مدخل"
+              placeholder="اتكلم بالعربي... مثال: دهان شقة كاملة"
               rows={3}
               className={cn("text-sm resize-none text-right font-cairo")}
               dir="auto"
               enableVoice={true}
+              onVoiceDual={(result: VoiceResult) => {
+                // Always keep the raw Arabic text, never auto-translate
+                const rawArabic = (result.raw || result.text || '').trim();
+                if (!rawArabic) return;
+                setDescriptionChantier(prev => {
+                  const sep = prev && !prev.endsWith(' ') ? ' ' : '';
+                  return prev + sep + rawArabic;
+                });
+              }}
             />
           </div>
           {/* Manual translate button */}

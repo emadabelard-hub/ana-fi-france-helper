@@ -560,6 +560,30 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 <span className="font-extrabold text-[11pt] text-gray-900 tabular-nums">{formatCurrency(data.total)}</span>
               </div>
 
+              {/* TVA legal mention — displayed right after Total TTC, before Acompte */}
+              {data.tvaRate === 0 && (
+                <div className="mt-1 px-2 py-1 rounded text-center" style={{ backgroundColor: '#fefce8', border: '1px solid #fde68a' }}>
+                  {isAutoliquidationTva ? (
+                    <p className="text-[6.5pt] text-gray-600 font-medium italic">
+                      Autoliquidation de la TVA – article 283-2 du CGI
+                    </p>
+                  ) : isIntracomTva ? (
+                    <>
+                      <p className="text-[6.5pt] text-gray-600 font-medium italic">
+                        Exonération de TVA – article 262 ter I du CGI
+                      </p>
+                      <p className="text-[6.5pt] text-gray-600 font-medium italic">
+                        Autoliquidation de la TVA par le preneur
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[6.5pt] text-gray-600 font-medium italic">
+                      TVA non applicable, art. 293 B du CGI
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Simple acompte (no milestones) */}
               {data.acompteAmount && data.acompteAmount > 0 && (!data.paymentMilestones || data.paymentMilestones.length === 0) && (
                   <div className="mt-1 rounded-md overflow-hidden" style={{ border: '1px solid #d1d5db' }}>

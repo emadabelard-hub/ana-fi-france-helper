@@ -568,22 +568,19 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               </div>
 
               {/* TVA legal mention — displayed right after Total TTC, before Acompte */}
-              {data.tvaRate === 0 && (
+              {tvaRegime !== 'standard' && (
                 <div className="mt-1 px-2 py-1 rounded text-center" style={{ backgroundColor: '#fefce8', border: '1px solid #fde68a' }}>
-                  {isAutoliquidationTva ? (
+                  {isAutoliquidationTva && (
                     <p className="text-[6.5pt] text-gray-600 font-medium italic">
-                      Autoliquidation de la TVA par le preneur – article 283-2 du CGI
+                      Autoliquidation de la TVA – article 283-2 du CGI
                     </p>
-                  ) : isIntracomTva ? (
-                    <>
-                      <p className="text-[6.5pt] text-gray-600 font-medium italic">
-                        Exonération de TVA – article 262 ter I du CGI
-                      </p>
-                      <p className="text-[6.5pt] text-gray-600 font-medium italic">
-                        Autoliquidation de la TVA par le preneur
-                      </p>
-                    </>
-                  ) : (
+                  )}
+                  {isIntracomTva && (
+                    <p className="text-[6.5pt] text-gray-600 font-medium italic">
+                      Exonération de TVA – article 262 ter I du CGI
+                    </p>
+                  )}
+                  {isFranchise && (
                     <p className="text-[6.5pt] text-gray-600 font-medium italic">
                       TVA non applicable, art. 293 B du CGI
                     </p>

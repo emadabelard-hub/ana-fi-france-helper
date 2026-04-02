@@ -742,6 +742,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       tvaRate,
       tvaAmount,
       tvaExempt,
+      tvaRegime: tvaExempt ? 'franchise' as const
+        : isSousTraitanceTva ? 'autoliquidation' as const
+        : isIntracomTva ? 'intracommunautaire' as const
+        : 'standard' as const,
       total,
       paymentDeadline: delaiPaiement === 'immediate' ? 'immediate' : delaiPaiement === 'echeancier' ? 'echeancier' : undefined,
       acomptePercent: acompteEnabled && !milestonesEnabled && acompteMode === 'percent' ? acomptePercent : undefined,

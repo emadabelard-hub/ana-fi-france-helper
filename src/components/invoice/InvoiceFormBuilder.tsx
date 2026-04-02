@@ -181,10 +181,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Editable document number:
   // - For devis: fetch immediately (devis numbers are less critical legally)
   // - For factures: use placeholder until finalization (French legal compliance)
-  const [docNumber, setDocNumber] = useState(() => {
-    if (documentType === 'facture') return generateDraftPlaceholder('facture');
-    return getDocPrefix('devis');
-  });
+  const [docNumber, setDocNumber] = useState(() => getDocPrefix(documentType));
   const [docNumberLoading, setDocNumberLoading] = useState(false);
   
   // Quote Wizard state

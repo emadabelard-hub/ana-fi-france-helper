@@ -2103,7 +2103,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </CardContent>
       </Card>
 
-      {/* Nature of Operation */}
+      {showAdvanced && (
+      /* Nature of Operation */
       <Card>
         <CardContent className="p-4 space-y-3">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>

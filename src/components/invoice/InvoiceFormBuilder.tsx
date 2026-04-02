@@ -1679,6 +1679,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </Button>
       </div>
 
+      {/* Progress Bar */}
+      {!showPreview && (
+        <FormProgressBar
+          sections={sectionCompletion}
+          progressPercent={progressPercent}
+          isRTL={isRTL}
+        />
+      )}
       {/* Invoice Due Date Selector - Only for Facture */}
       {showAdvanced && documentType === 'facture' && (
         <Card className="border-red-500/20 bg-red-500/5">

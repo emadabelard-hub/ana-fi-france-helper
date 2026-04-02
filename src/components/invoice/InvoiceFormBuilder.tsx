@@ -2124,6 +2124,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </select>
         </CardContent>
       </Card>
+      )}
 
       {/* Objet du devis / Description du chantier */}
       <Card>

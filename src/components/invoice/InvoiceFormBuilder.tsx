@@ -20,7 +20,7 @@ import LineItemEditor, { LineItem } from './LineItemEditor';
 import QuoteWizardModal from './QuoteWizardModal';
 import InvoiceGuideModal from './InvoiceGuideModal';
 import FactureGuideModal from './FactureGuideModal';
-import FactureNumberingOnboarding from './FactureNumberingOnboarding';
+
 import PreFlightChecklistModal from './PreFlightChecklistModal';
 import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
 import { supabase } from '@/integrations/supabase/client';
@@ -76,41 +76,6 @@ const getDocPrefix = (type: 'devis' | 'facture'): string => {
   const prefix = type === 'devis' ? 'D' : 'F';
   const year = new Date().getFullYear();
   return `${prefix}-${year}-`;
-};
-
-// Fetch next sequential number from DB (atomic, no gaps, no duplicates).
-// Uses assign_next_facture_number for factures, get_next_document_number for devis.
-const fetchNextDocNumber = async (userId: string, type: 'devis' | 'facture'): Promise<string> => {
-  const year = new Date().getFullYear();
-  if (type === 'facture') {
-    const { data, error } = await supabase.rpc('assign_next_facture_number', {
-      p_user_id: userId,
-      p_year: year,
-    });
-    if (error) {
-      console.error('Failed to assign facture number:', error);
-      throw new Error('Impossible d\'attribuer un numéro de facture');
-    }
-    return data as string;
-  }
-  const { data, error } = await supabase.rpc('get_next_document_number', {
-    p_user_id: userId,
-    p_document_type: type,
-    p_year: year,
-  });
-  if (error) {
-    console.error('Failed to fetch next doc number:', error);
-    return getDocPrefix(type);
-  }
-  return data as string;
-};
-
-// Generate a placeholder label for drafts (not a real sequential number)
-const generateDraftPlaceholder = (type: 'devis' | 'facture'): string => {
-  const prefix = type === 'devis' ? 'D' : 'F';
-  const year = new Date().getFullYear();
-  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `BROUILLON-${prefix}-${year}-${rand}`;
 };
 
 const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeChange }: InvoiceFormBuilderProps) => {
@@ -216,10 +181,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Editable document number:
   // - For devis: fetch immediately (devis numbers are less critical legally)
   // - For factures: use placeholder until finalization (French legal compliance)
-  const [docNumber, setDocNumber] = useState(() => {
-    if (documentType === 'facture') return generateDraftPlaceholder('facture');
-    return getDocPrefix('devis');
-  });
+  const [docNumber, setDocNumber] = useState(() => getDocPrefix(documentType));
   const [docNumberLoading, setDocNumberLoading] = useState(false);
   
   // Quote Wizard state
@@ -248,45 +210,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const lastTranslatedSourceRef = useRef<Record<string, string | undefined>>({});
   const itemsRef = useRef(items);
   const [savingDraft, setSavingDraft] = useState(false);
-  // Custom facture number (user can optionally provide their own number)
-  const [customFactureNumber, setCustomFactureNumber] = useState('');
-  const [customNumberError, setCustomNumberError] = useState('');
-  // Onboarding for facture numbering (show once per user)
-  const [showNumberingOnboarding, setShowNumberingOnboarding] = useState(false);
-
-  // Check if user needs facture numbering onboarding
-  useEffect(() => {
-    if (documentType !== 'facture' || !user) return;
-    const onboardingKey = `facture_numbering_onboarded_${user.id}`;
-    if (!localStorage.getItem(onboardingKey)) {
-      setShowNumberingOnboarding(true);
-    }
-  }, [documentType, user]);
-
-  // Auto-fetch next sequential number from DB.
-  // For DEVIS: fetch on mount. For FACTURES: do NOT — number assigned at finalization.
-  useEffect(() => {
-    if (!user) return;
-    if (documentType === 'facture') {
-      if (!docNumber.startsWith('BROUILLON-')) {
-        setDocNumber(generateDraftPlaceholder('facture'));
-      }
-      return;
-    }
-    const correctPrefix = getDocPrefix(documentType);
-    const hasCorrectPrefix = docNumber.startsWith(correctPrefix);
-    const isJustPrefix = docNumber === correctPrefix;
-    const hasSuffix = hasCorrectPrefix && docNumber.length > correctPrefix.length;
-    
-    // Re-fetch if: wrong prefix, just prefix without number, or initial empty state
-    if (!hasCorrectPrefix || isJustPrefix || !hasSuffix) {
-      setDocNumberLoading(true);
-      fetchNextDocNumber(user.id, documentType).then((num) => {
-        setDocNumber(num);
-        setDocNumberLoading(false);
-      });
-    }
-  }, [documentType, user]);
 
   // Fetch clients list
   useEffect(() => {
@@ -1396,48 +1319,22 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       }
     }
 
-    // FACTURE NUMBERING: Assign number from frontend at finalization
-    if (documentType === 'facture') {
-      const trimmedCustom = customFactureNumber.trim();
-      if (trimmedCustom) {
-        // Validate format
-        if (!/^F-\d{4}-\d{3,}$/.test(trimmedCustom)) {
-          toast({
-            variant: 'destructive',
-            title: isRTL ? '⚠️ رقم فاتورة غير صالح' : '⚠️ Numéro de facture invalide',
-            description: isRTL ? 'الصيغة المطلوبة: F-YYYY-XXX' : 'Format requis : F-YYYY-XXX (ex: F-2026-001)',
-          });
-          return;
-        }
-        // Check uniqueness
-        const { data: existing } = await (supabase.from('documents_comptables') as any)
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('document_number', trimmedCustom)
-          .eq('document_type', 'facture')
-          .maybeSingle();
-        if (existing) {
-          toast({
-            variant: 'destructive',
-            title: isRTL ? '⚠️ رقم موجود' : '⚠️ Numéro existant',
-            description: isRTL ? `الرقم ${trimmedCustom} مستخدم بالفعل` : `Le numéro ${trimmedCustom} existe déjà.`,
-          });
-          return;
-        }
-        data = { ...data, number: trimmedCustom };
-      } else {
-        // Auto-assign: fetch next number atomically from DB
-        try {
-          const nextNumber = await fetchNextDocNumber(user.id, 'facture');
-          data = { ...data, number: nextNumber };
-        } catch (e) {
-          toast({
-            variant: 'destructive',
-            title: isRTL ? '⚠️ خطأ' : '⚠️ Erreur',
-            description: isRTL ? 'فشل في إنشاء رقم الفاتورة' : 'Impossible de générer le numéro de facture.',
-          });
-          return;
-        }
+    // NUMBERING: Use the manually entered docNumber directly
+    // Check uniqueness for the document number
+    {
+      const { data: existing } = await (supabase.from('documents_comptables') as any)
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('document_number', data.number)
+        .eq('document_type', documentType)
+        .maybeSingle();
+      if (existing) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '⚠️ رقم موجود' : '⚠️ Numéro existant',
+          description: isRTL ? `الرقم ${data.number} مستخدم بالفعل` : `Le numéro ${data.number} existe déjà.`,
+        });
+        return;
       }
     }
 
@@ -1571,7 +1468,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       const insertData: any = {
         user_id: user.id,
         document_type: documentType,
-        document_number: generateDraftPlaceholder(documentType),
+        document_number: docNumber,
         client_name: data.client.name || '(مسودة)',
         client_address: data.client.address || '',
         work_site_address: data.workSite?.address || '',
@@ -1668,17 +1565,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     setShowPreview(false);
     setShowArabic(false);
 
-    if (user) {
-      setDocNumberLoading(true);
-      try {
-        const nextNumber = await fetchNextDocNumber(user.id, documentType);
-        setDocNumber(nextNumber);
-      } finally {
-        setDocNumberLoading(false);
-      }
-    } else {
-      setDocNumber(documentType === 'facture' ? generateDraftPlaceholder('facture') : getDocPrefix(documentType));
-    }
+    setDocNumber(getDocPrefix(documentType));
 
     toast({
       title: isRTL ? '✅ تم إنهاء المستند' : '✅ Document terminé',
@@ -1715,34 +1602,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         <InvoiceGuideModal open={showGuide} onOpenChange={setShowGuide} />
       )}
 
-      {/* Facture Numbering Onboarding */}
-      <FactureNumberingOnboarding
-        open={showNumberingOnboarding}
-        onOpenChange={setShowNumberingOnboarding}
-        onContinueExisting={async (lastNum) => {
-          if (user) {
-            localStorage.setItem(`facture_numbering_onboarded_${user.id}`, 'true');
-            // Persist to document_counters so next auto-assign continues from here
-            const year = new Date().getFullYear();
-            const numericPart = parseInt(lastNum.replace(/^F-\d{4}-/, ''), 10) - 1;
-            if (!isNaN(numericPart) && numericPart >= 0) {
-              await (supabase.from('document_counters') as any)
-                .upsert({
-                  user_id: user.id,
-                  document_type: 'facture',
-                  year,
-                  last_number: numericPart,
-                }, { onConflict: 'user_id,document_type,year' });
-            }
-          }
-          setCustomFactureNumber(lastNum);
-        }}
-        onStartFresh={() => {
-          if (user) {
-            localStorage.setItem(`facture_numbering_onboarded_${user.id}`, 'true');
-          }
-        }}
-      />
 
       <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
         {onDocumentTypeChange ? (
@@ -1910,78 +1769,32 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 : (documentType === 'facture' ? 'Numéro de facture' : 'Numéro de devis')}
             </h3>
           </div>
-          {documentType === 'facture' ? (
-            <>
-              <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
-                {isRTL
-                  ? 'اختر رقم مخصص أو اترك الحقل فارغ لترقيم تلقائي عند التأكيد.'
-                  : "Saisissez un numéro personnalisé (ex: F-2026-015) ou laissez vide pour un numéro automatique à la validation."}
-              </p>
-              <Input
-                value={customFactureNumber}
-                onChange={(e) => {
-                  const val = e.target.value.toUpperCase();
-                  setCustomFactureNumber(val);
-                  if (val && !/^F-\d{4}-\d{3,}$/.test(val)) {
-                    setCustomNumberError(isRTL ? 'الصيغة المطلوبة: F-YYYY-XXX (مثال: F-2026-001)' : 'Format requis : F-YYYY-XXX (ex: F-2026-001)');
-                  } else {
-                    setCustomNumberError('');
-                  }
-                }}
-                placeholder={isRTL ? 'اختياري — مثال: F-2026-015' : 'Optionnel — Ex: F-2026-015'}
-                className="font-mono text-left"
-                dir="ltr"
-                lang="fr"
-                enableVoice={false}
-              />
-              {customNumberError && (
-                <p className="text-[11px] text-destructive font-medium">{customNumberError}</p>
-              )}
-              <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
-                {isRTL
-                  ? '💡 لو ما كتبت رقم، النظام هيعطي رقم تلقائي متسلسل.'
-                  : '💡 Sans numéro saisi, le système attribue automatiquement le prochain numéro séquentiel.'}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className={cn("text-[11px] text-muted-foreground", isRTL && "text-right font-cairo")}>
-                {isRTL
-                  ? 'الرقم بيتولّد تلقائي. تقدر تعدّله لو عايز.'
-                  : "Le numéro est généré automatiquement. Vous pouvez le modifier si nécessaire."}
-              </p>
-              <Input
-                value={docNumberLoading ? (isRTL ? 'جاري التحميل...' : 'Chargement...') : docNumber}
-                onChange={(e) => {
-                  const prefix = getDocPrefix(documentType);
-                  const val = e.target.value;
-                  if (val.length < prefix.length) {
-                    setDocNumber(prefix);
-                  } else if (val.startsWith(prefix)) {
-                    setDocNumber(val);
-                  } else {
-                    setDocNumber(prefix);
-                  }
-                }}
-                onFocus={() => {
-                  const prefix = getDocPrefix(documentType);
-                  if (!docNumber || !docNumber.startsWith(prefix)) {
-                    setDocNumber(prefix);
-                  }
-                }}
-                disabled={docNumberLoading}
-                placeholder={isRTL ? `مثال: ${getDocPrefix(documentType)}001` : `Ex: ${getDocPrefix(documentType)}001`}
-                className="font-mono text-left"
-                dir="ltr"
-                lang="fr"
-              />
-              <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
-                {isRTL
-                  ? '💡 الترقيم تلقائي ومستقل: دوفي وفاتورة كل واحد له عداد خاص'
-                  : '💡 Numérotation automatique et indépendante : Devis et Factures ont chacun leur propre compteur'}
-              </p>
-            </>
+          <Input
+            value={docNumber}
+            onChange={(e) => {
+              const val = e.target.value.toUpperCase();
+              setDocNumber(val);
+            }}
+            placeholder={isRTL 
+              ? `مثال: ${getDocPrefix(documentType)}1` 
+              : `Ex : ${getDocPrefix(documentType)}1`}
+            className="font-mono text-left"
+            dir="ltr"
+            lang="fr"
+            enableVoice={false}
+          />
+          {docNumber && !docNumber.startsWith(getDocPrefix(documentType)) && (
+            <p className="text-[11px] text-amber-600 font-medium">
+              {isRTL 
+                ? `💡 الصيغة الموصى بها: ${getDocPrefix(documentType)}NUMERO`
+                : `💡 Format recommandé : ${getDocPrefix(documentType)}NUMERO`}
+            </p>
           )}
+          <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
+            {isRTL
+              ? '⚠️ تأكد من الحفاظ على ترقيم مستمر (التزام قانوني)'
+              : '⚠️ Assurez-vous de garder une numérotation continue (obligation légale)'}
+          </p>
         </CardContent>
       </Card>
 
@@ -3580,14 +3393,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 // Client/Chantier selection is optional — if selected, fields are auto-filled
                 // No blocking if not selected, manual entry is allowed
 
-                // Auto-generate document number if missing (AI handles this, not the user)
+                // Validate document number is filled
                 const currentPrefix = getDocPrefix(documentType);
                 const hasValidDocNumber = docNumber.startsWith(currentPrefix) && docNumber.length > currentPrefix.length;
-                if (!hasValidDocNumber && user) {
-                  // Auto-fetch and set the number, don't block the user
-                  const autoNum = await fetchNextDocNumber(user.id, documentType);
-                  setDocNumber(autoNum);
-                  // Re-check after auto-set — proceed without blocking
+                if (!hasValidDocNumber) {
+                  missingFields.push(isRTL 
+                    ? (documentType === 'facture' ? '🔢 رقم الفاتورة' : '🔢 رقم الدوفي')
+                    : (documentType === 'facture' ? '🔢 Numéro de facture' : '🔢 Numéro de devis'));
                 }
 
                 // B2B: SIREN/SIRET is REQUIRED when B2B is checked

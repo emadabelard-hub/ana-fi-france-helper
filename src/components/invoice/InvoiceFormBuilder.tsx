@@ -3217,13 +3217,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   {/* Computed TVA result (read-only) */}
                   <div className={cn(
                     "p-3 rounded-lg border",
-                    projectTvaType === 'sous_traitance' 
+                    (projectTvaType === 'sous_traitance' || projectTvaType === 'intracommunautaire')
                       ? "bg-amber-500/10 border-amber-500/20" 
                       : "bg-primary/10 border-primary/20"
                   )}>
                     <p className={cn(
                       "text-sm font-medium",
-                      projectTvaType === 'sous_traitance' 
+                      (projectTvaType === 'sous_traitance' || projectTvaType === 'intracommunautaire')
                         ? "text-amber-700 dark:text-amber-400"
                         : "text-primary",
                       isRTL && "font-cairo text-right"

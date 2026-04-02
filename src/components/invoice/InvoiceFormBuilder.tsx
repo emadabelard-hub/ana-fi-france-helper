@@ -2439,6 +2439,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
         </CardContent>
       </Card>
+      </>)}
+
+      {/* Work Site Address - Always visible */}
       <Card className="border-teal-200/60 bg-teal-50/30 dark:border-teal-800/30 dark:bg-teal-950/10">
         <CardContent className="p-4 space-y-4">
           <div className={cn(

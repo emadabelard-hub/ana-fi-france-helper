@@ -176,10 +176,8 @@ const SmartReviewModal = ({
   const displayedTvaAmount = selectedAddons.length > 0 ? newTvaAmount : invoiceData.tvaAmount;
   const displayedDiscountAmount = selectedAddons.length > 0 ? newDiscountAmount : (invoiceData.discountAmount ?? 0);
   const displayedTotal = selectedAddons.length > 0 ? newTotal : invoiceData.total;
-  const isAutoliquidation =
-    !invoiceData.tvaExempt &&
-    invoiceData.tvaRate === 0 &&
-    (invoiceData.legalMentions?.includes('283') || invoiceData.legalFooter?.includes('283'));
+  const tvaRegime = invoiceData.tvaRegime || (invoiceData.tvaExempt ? 'franchise' : 'standard');
+  const isAutoliquidation = tvaRegime === 'autoliquidation';
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {

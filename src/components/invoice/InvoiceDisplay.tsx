@@ -217,13 +217,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
     data.tvaRate === 0 &&
     (data.legalMentions?.includes('262 ter') || data.legalFooter?.includes('262 ter'));
 
+  // TVA mention is now displayed inline after Total TTC (not in footer)
+  // Footer only shows the rate info for standard TVA
   const vatFooterMention = data.tvaRate > 0
     ? `TVA au taux de ${data.tvaRate}%`
-    : isAutoliquidationTva
-      ? 'Autoliquidation de la TVA – article 283-2 du CGI'
-      : isIntracomTva
-        ? 'Exonération de TVA – article 262 ter I du CGI'
-        : 'TVA non applicable, article 293B du CGI';
+    : '';
 
   const cleanLegalFooter = (data.legalFooter || '')
     .replace(/TVA appliquée à\s*\d+(?:[.,]\d+)?%/gi, '')

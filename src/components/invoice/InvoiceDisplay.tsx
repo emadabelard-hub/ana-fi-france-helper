@@ -146,7 +146,9 @@ const AR_LABELS: Record<string, string> = {
   'Assurance décennale': 'تأمين عشري',
   'TVA non applicable, art. 293 B du CGI': 'معفى من الضريبة، مادة 293 ب',
   'TVA non applicable, article 293B du CGI': 'معفى من الضريبة، مادة 293 ب',
+  'Autoliquidation de la TVA – article 283-2 du CGI': 'احتساب عكسي للضريبة، مادة 283-2',
   'Autoliquidation de la TVA – article 283 du CGI': 'احتساب عكسي للضريبة، مادة 283',
+  'Exonération de TVA – article 262 ter I du CGI': 'إعفاء من الضريبة — مادة 262 ter I',
   'Garantie décennale': 'ضمان عشري',
   'Retenue de garantie': 'ضمان محجوز',
 };

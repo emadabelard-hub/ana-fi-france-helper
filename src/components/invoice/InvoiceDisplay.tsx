@@ -546,8 +546,12 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               {/* TVA (always calculated on HT after discount) */}
               <div className="py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <div className="flex justify-between">
-                  <span className="text-gray-500 text-[7pt]">TVA ({data.tvaRate}%) :</span>
-                  <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(data.tvaAmount)}</span>
+                  <span className="text-gray-500 text-[7pt]">
+                    {isAutoliquidationTva ? 'TVA : autoliquidation' : `TVA (${data.tvaRate}%) :`}
+                  </span>
+                  {!isAutoliquidationTva && (
+                    <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(data.tvaAmount)}</span>
+                  )}
                 </div>
               </div>
               {/* Thin divider before TTC */}
@@ -563,7 +567,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 <div className="mt-1 px-2 py-1 rounded text-center" style={{ backgroundColor: '#fefce8', border: '1px solid #fde68a' }}>
                   {isAutoliquidationTva ? (
                     <p className="text-[6.5pt] text-gray-600 font-medium italic">
-                      Autoliquidation de la TVA – article 283-2 du CGI
+                      Autoliquidation de la TVA par le preneur – article 283-2 du CGI
                     </p>
                   ) : isIntracomTva ? (
                     <>

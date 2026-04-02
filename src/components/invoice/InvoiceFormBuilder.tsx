@@ -3574,139 +3574,143 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </ProtectedDocumentWrapper>
         </div>
       ) : (
-        <div className={cn(
-          "flex gap-3 flex-wrap",
-          isRTL && "flex-row-reverse"
-        )}>
-          <Button
-            variant="outline"
-            onClick={onBack}
-            className={cn(isRTL && "font-cairo")}
-          >
-            {isRTL ? 'رجوع' : 'Retour'}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleFinishDocument}
-            className={cn("text-destructive hover:text-destructive", isRTL && "font-cairo")}
-          >
-            <RotateCcw className="h-4 w-4 mr-1" />
-            {isRTL ? 'تأكيد وانهاء' : 'Confirmer et terminer'}
-          </Button>
-          
-          {/* Save as Draft Button */}
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={savingDraft}
-            onClick={saveAsDraft}
-            className={cn(isRTL && "font-cairo")}
-          >
-            {savingDraft ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-            {isRTL ? 'حفظ مسودة' : 'Sauvegarder brouillon'}
-          </Button>
+        <div className="space-y-4">
+          {/* Completion Message */}
+          {allSectionsComplete && (
+            <div className={cn(
+              "p-4 rounded-xl border-2 border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 text-center",
+              isRTL && "font-cairo"
+            )}>
+              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
+                {isRTL 
+                  ? '✅ الدوفي بتاعك جاهز — تقدر تعمله PDF من غير أخطاء'
+                  : '✅ Votre document est prêt — vous pouvez le générer sans erreur'}
+              </p>
+            </div>
+          )}
 
-          <Button
-            onClick={async () => {
-              try {
-                const ok = await ensureTranslations();
-                if (!ok) return;
-
-                // Comprehensive validation with detailed feedback
-                const missingFields: string[] = [];
-                
-                // SIRET warning (non-blocking) — document can still be created
-                // Profile SIRET check is informational only
-
-                // Check client name
-                if (!clientName.trim()) {
-                  missingFields.push(isRTL ? '👤 اسم الزبون' : '👤 Nom du client');
-                }
-                
-                // Check client address
-                if (!clientAddress.trim()) {
-                  missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
-                }
-
-                // Client/Chantier selection is optional — if selected, fields are auto-filled
-                // No blocking if not selected, manual entry is allowed
-
-                // Validate document number is filled
-                const currentPrefix = getDocPrefix(documentType);
-                const hasValidDocNumber = docNumber.startsWith(currentPrefix) && docNumber.length > currentPrefix.length;
-                if (!hasValidDocNumber) {
-                  missingFields.push(isRTL 
-                    ? (documentType === 'facture' ? '🔢 رقم الفاتورة' : '🔢 رقم الدوفي')
-                    : (documentType === 'facture' ? '🔢 Numéro de facture' : '🔢 Numéro de devis'));
-                }
-
-                // B2B: SIREN/SIRET is REQUIRED when B2B is checked
-                const clientSirenDigits = clientSiren.replace(/\s/g, '');
-                if (clientIsB2B && !clientSirenDigits) {
-                  missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (إجباري B2B)' : '🏢 SIRET du client (obligatoire B2B)');
-                } else if (clientIsB2B && clientSirenDigits && ![9, 14].includes(clientSirenDigits.length)) {
-                  missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (9 أو 14 رقم)' : '🏢 SIRET client invalide (9 ou 14 chiffres)');
-                }
-                
-                // Check work site address if different from client
-                if (!workSiteSameAsClient && !workSiteAddress.trim()) {
-                  missingFields.push(isRTL ? '🏗️ عنوان الشانتييه' : '🏗️ Adresse du chantier');
-                }
-                
-                // Check line items
-                const hasValidItem = items.some(item => item.designation_fr.trim() && Number(item.unitPrice) > 0);
-                if (!hasValidItem && !(includeTravelCosts && travelPrice > 0)) {
-                  missingFields.push(isRTL ? '📋 بند واحد على الأقل بسعره' : '📋 Au moins une prestation avec un prix');
-                }
-                
-                // Show validation errors if any
-                if (missingFields.length > 0) {
+          {/* Action Buttons - Reorganized */}
+          <div className={cn(
+            "grid grid-cols-1 gap-3",
+            isRTL && "font-cairo"
+          )}>
+            {/* Primary: Generate PDF */}
+            <Button
+              onClick={async () => {
+                try {
+                  const ok = await ensureTranslations();
+                  if (!ok) return;
+                  const missingFields: string[] = [];
+                  if (!clientName.trim()) {
+                    missingFields.push(isRTL ? '👤 اسم الزبون' : '👤 Nom du client');
+                  }
+                  if (!clientAddress.trim()) {
+                    missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
+                  }
+                  const currentPrefix = getDocPrefix(documentType);
+                  const hasValidDocNumber = docNumber.startsWith(currentPrefix) && docNumber.length > currentPrefix.length;
+                  if (!hasValidDocNumber) {
+                    missingFields.push(isRTL 
+                      ? (documentType === 'facture' ? '🔢 رقم الفاتورة' : '🔢 رقم الدوفي')
+                      : (documentType === 'facture' ? '🔢 Numéro de facture' : '🔢 Numéro de devis'));
+                  }
+                  const clientSirenDigits = clientSiren.replace(/\s/g, '');
+                  if (clientIsB2B && !clientSirenDigits) {
+                    missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (إجباري B2B)' : '🏢 SIRET du client (obligatoire B2B)');
+                  } else if (clientIsB2B && clientSirenDigits && ![9, 14].includes(clientSirenDigits.length)) {
+                    missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (9 أو 14 رقم)' : '🏢 SIRET client invalide (9 ou 14 chiffres)');
+                  }
+                  if (!workSiteSameAsClient && !workSiteAddress.trim()) {
+                    missingFields.push(isRTL ? '🏗️ عنوان الشانتييه' : '🏗️ Adresse du chantier');
+                  }
+                  const hasValidItem = items.some(item => item.designation_fr.trim() && Number(item.unitPrice) > 0);
+                  if (!hasValidItem && !(includeTravelCosts && travelPrice > 0)) {
+                    missingFields.push(isRTL ? '📋 بند واحد على الأقل بسعره' : '📋 Au moins une prestation avec un prix');
+                  }
+                  if (missingFields.length > 0) {
+                    toast({
+                      variant: "destructive",
+                      title: isRTL ? "⚠️ في حاجات ناقصة" : "⚠️ Données manquantes",
+                      description: (
+                        <div className="mt-2 space-y-1">
+                          <p className={cn("font-medium", isRTL && "font-cairo text-right")}>
+                            {isRTL ? 'كمّل الخانات دي:' : 'Veuillez compléter:'}
+                          </p>
+                          <ul className={cn("list-none space-y-1 text-sm", isRTL && "text-right")}>
+                            {missingFields.map((field, idx) => (
+                              <li key={idx} className="text-destructive-foreground">
+                                {field === '__SIRET_ERROR__' ? (
+                                  <button
+                                    onClick={() => navigate('/pro/settings')}
+                                    className="underline font-semibold hover:opacity-80 text-left"
+                                  >
+                                    {isRTL ? '🏢 رقم SIRET بتاعك (14 رقم) — اضغط هنا للتعديل' : '🏢 Votre SIRET (14 chiffres) — Modifier dans Mon Entreprise →'}
+                                  </button>
+                                ) : field}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ),
+                    });
+                    return;
+                  }
+                  setShowChecklist(true);
+                } catch (err) {
+                  const technicalMessage = getTechnicalErrorMessage(err);
+                  console.error('Preview validation error:', err);
                   toast({
                     variant: "destructive",
-                    title: isRTL ? "⚠️ في حاجات ناقصة" : "⚠️ Données manquantes",
-                    description: (
-                      <div className="mt-2 space-y-1">
-                        <p className={cn("font-medium", isRTL && "font-cairo text-right")}>
-                          {isRTL ? 'كمّل الخانات دي:' : 'Veuillez compléter:'}
-                        </p>
-                        <ul className={cn("list-none space-y-1 text-sm", isRTL && "text-right")}>
-                          {missingFields.map((field, idx) => (
-                            <li key={idx} className="text-destructive-foreground">
-                              {field === '__SIRET_ERROR__' ? (
-                                <button
-                                  onClick={() => navigate('/pro/settings')}
-                                  className="underline font-semibold hover:opacity-80 text-left"
-                                >
-                                  {isRTL ? '🏢 رقم SIRET بتاعك (14 رقم) — اضغط هنا للتعديل' : '🏢 Votre SIRET (14 chiffres) — Modifier dans Mon Entreprise →'}
-                                </button>
-                              ) : field}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ),
+                    title: isRTL ? "⚠️ خطأ تقني" : "⚠️ Erreur technique",
+                    description: technicalMessage,
                   });
-                  return;
                 }
-                
-                setShowChecklist(true);
-              } catch (err) {
-                const technicalMessage = getTechnicalErrorMessage(err);
-                console.error('Preview validation error:', err);
-                toast({
-                  variant: "destructive",
-                  title: isRTL ? "⚠️ خطأ تقني" : "⚠️ Erreur technique",
-                  description: technicalMessage,
-                });
-              }
-            }}
-            className={cn("flex-1", isRTL && "font-cairo")}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            {isRTL ? 'معاينة وتحميل' : 'Aperçu et Télécharger PDF'}
-          </Button>
+              }}
+              size="lg"
+              className={cn(
+                "w-full py-6 text-base font-bold gap-2",
+                allSectionsComplete 
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white" 
+                  : "",
+                isRTL && "font-cairo flex-row-reverse"
+              )}
+            >
+              <FileText className="h-5 w-5" />
+              {isRTL ? '📄 معاينة وتحميل PDF' : '📄 Aperçu et Télécharger PDF'}
+            </Button>
+
+            {/* Secondary row */}
+            <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onBack}
+                className={cn("flex-1", isRTL && "font-cairo")}
+              >
+                {isRTL ? '← رجوع' : '← Retour'}
+              </Button>
+              
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={savingDraft}
+                onClick={saveAsDraft}
+                className={cn("flex-1", isRTL && "font-cairo")}
+              >
+                {savingDraft ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+                {isRTL ? 'حفظ مسودة' : 'Sauvegarder'}
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleFinishDocument}
+                className={cn("text-destructive hover:text-destructive", isRTL && "font-cairo")}
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       )}
       

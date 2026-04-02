@@ -214,6 +214,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const itemsRef = useRef(items);
   const [savingDraft, setSavingDraft] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   // Fetch clients list
   useEffect(() => {

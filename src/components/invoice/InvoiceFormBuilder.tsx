@@ -1638,7 +1638,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               checked={documentType === 'facture'}
               onCheckedChange={(checked) => {
                 const newType = checked ? 'facture' : 'devis';
-                // Auto-fetch the next number for the new type
                 setDocNumber(getDocPrefix(newType));
                 onDocumentTypeChange(newType);
               }}
@@ -1654,6 +1653,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         ) : (
           <div />
         )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleFinishDocument}
+          className={cn("text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive gap-1 text-[10px] px-2 py-1 h-7", isRTL && "font-cairo flex-row-reverse")}
+        >
+          <Trash2 className="h-3 w-3" />
+          {isRTL ? 'امسح بيانات المستند السابق' : 'Effacer le document précédent'}
+        </Button>
       </div>
 
       {/* Invoice Due Date Selector - Only for Facture */}

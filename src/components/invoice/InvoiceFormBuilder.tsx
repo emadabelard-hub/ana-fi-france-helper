@@ -904,6 +904,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const progressPercent = Math.round((completedSections / sectionCompletion.length) * 100);
   const allSectionsComplete = completedSections === sectionCompletion.length;
 
+
+
   const getTechnicalErrorMessage = (error: unknown) => {
     const err = error as any;
     const raw = err?.context?.body || err?.message || err?.error_description || err?.details || err?.hint || String(error);
@@ -1687,8 +1689,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           isRTL={isRTL}
         />
       )}
-      {/* Invoice Due Date Selector - Only for Facture */}
-      {showAdvanced && documentType === 'facture' && (
+      {/* === STEP 3: OPTIONS — Due date/validity === */}
+      {currentStep === 3 && documentType === 'facture' && (
         <Card className="border-red-500/20 bg-red-500/5">
           <CardContent className="p-4 space-y-3">
             <div className={cn(
@@ -1749,7 +1751,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       )}
 
       {/* Quote Validity Duration Selector - Only for Devis */}
-      {showAdvanced && documentType === 'devis' && (
+      {currentStep === 3 && documentType === 'devis' && (
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4 space-y-3">
             <div className={cn(
@@ -1811,7 +1813,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </Card>
       )}
       {/* Document Number - Editable */}
-      {showAdvanced && (<>
+      {currentStep === 3 && (<>
       <Card>
         <CardContent className="p-4 space-y-2">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
@@ -1903,6 +1905,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </>)}
 
       {/* Client Section */}
+      {currentStep === 0 && (
       <Card className="border-blue-200/60 bg-blue-50/30 dark:border-blue-800/30 dark:bg-blue-950/10">
         <CardContent className="p-4 space-y-4">
           <div className={cn(
@@ -2140,8 +2143,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
         </CardContent>
       </Card>
+      )}
 
-      {showAdvanced && (
+      {/* Step 0 navigation */}
+      {currentStep === 0 && !showPreview && (
+        <StepButtons currentStep={0} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={canProceedFromStep(0)} isRTL={isRTL} />
+      )}
+
+      {currentStep === 3 && (
       /* Nature of Operation */
       <Card>
         <CardContent className="p-4 space-y-3">
@@ -2165,6 +2174,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       )}
 
       {/* Objet du devis / Description du chantier */}
+      {currentStep === 1 && (
       <Card className="border-violet-200/60 bg-violet-50/30 dark:border-violet-800/30 dark:bg-violet-950/10">
         <CardContent className="p-4 space-y-3">
           <div className={cn(
@@ -2306,30 +2316,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </p>
         </CardContent>
       </Card>
+      )}
 
-      {/* Toggle Advanced Options Button */}
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => setShowAdvanced(!showAdvanced)}
-        className={cn(
-          "w-full flex items-center justify-center gap-2 py-3 border-dashed border-2",
-          showAdvanced 
-            ? "border-primary/40 bg-primary/5 text-primary" 
-            : "border-muted-foreground/30 text-muted-foreground hover:border-primary/40 hover:text-primary",
-          isRTL && "flex-row-reverse font-cairo"
-        )}
-      >
-        <SlidersHorizontal className="h-4 w-4" />
-        <span className="font-bold text-sm">
-          {showAdvanced
-            ? (isRTL ? '⬆️ إخفاء الخيارات المتقدمة' : '⬆️ Masquer les options avancées')
-            : (isRTL ? '⚙️ خيارات متقدمة (TVA، تأمين، مواعيد...)' : '⚙️ Options avancées (TVA, assurance, calendrier...)')}
-        </span>
-        {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-      </Button>
+      {/* Step 1 navigation */}
+      {currentStep === 1 && !showPreview && (
+        <StepButtons currentStep={1} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={canProceedFromStep(1)} isRTL={isRTL} />
+      )}
 
-      {showAdvanced && (<>
+      {/* === STEP 5: DÉLAIS & ASSURANCE === */}
+      {currentStep === 5 && (<>
       {/* Estimated Timeline (Optional) */}
       <Card className="border-sky-200/60 bg-sky-50/30 dark:border-sky-800/30 dark:bg-sky-950/10">
         <CardContent className="p-4 space-y-3">
@@ -2441,7 +2436,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </Card>
       </>)}
 
-      {/* Work Site Address - Always visible */}
+      {/* Step 5 navigation */}
+      {currentStep === 5 && !showPreview && (
+        <StepButtons currentStep={5} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={true} isRTL={isRTL} />
+      )}
+
+      {/* === STEP 4: CHANTIER === */}
+      {currentStep === 4 && (
       <Card className="border-teal-200/60 bg-teal-50/30 dark:border-teal-800/30 dark:bg-teal-950/10">
         <CardContent className="p-4 space-y-4">
           <div className={cn(
@@ -2535,7 +2536,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           )}
         </CardContent>
       </Card>
-      
+      )}
+
+      {/* Step 4 navigation */}
+      {currentStep === 4 && !showPreview && (
+        <StepButtons currentStep={4} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={canProceedFromStep(4)} isRTL={isRTL} />
+      )}
+
+      {/* === STEP 2: TRAVAUX & PRIX === */}
+      {currentStep === 2 && (<>
       {/* AI Quote Wizard Button - Dynamic based on document type */}
       <Button
         variant="outline"

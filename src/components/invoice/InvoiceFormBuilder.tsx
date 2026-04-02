@@ -1396,27 +1396,53 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       }
     }
 
-    // FACTURE NUMBERING: Use custom number if provided, otherwise placeholder for auto-assign
+    // FACTURE NUMBERING: Assign number from frontend at finalization
     if (documentType === 'facture') {
       const trimmedCustom = customFactureNumber.trim();
-      if (trimmedCustom && /^F-\d{4}-\d{3,}$/.test(trimmedCustom)) {
-        // User provided a valid custom number — DB trigger will verify uniqueness
+      if (trimmedCustom) {
+        // Validate format
+        if (!/^F-\d{4}-\d{3,}$/.test(trimmedCustom)) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? '⚠️ رقم فاتورة غير صالح' : '⚠️ Numéro de facture invalide',
+            description: isRTL ? 'الصيغة المطلوبة: F-YYYY-XXX' : 'Format requis : F-YYYY-XXX (ex: F-2026-001)',
+          });
+          return;
+        }
+        // Check uniqueness
+        const { data: existing } = await (supabase.from('documents_comptables') as any)
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('document_number', trimmedCustom)
+          .eq('document_type', 'facture')
+          .maybeSingle();
+        if (existing) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? '⚠️ رقم موجود' : '⚠️ Numéro existant',
+            description: isRTL ? `الرقم ${trimmedCustom} مستخدم بالفعل` : `Le numéro ${trimmedCustom} existe déjà.`,
+          });
+          return;
+        }
         data = { ...data, number: trimmedCustom };
-      } else if (trimmedCustom) {
-        // Invalid format
-        toast({
-          variant: 'destructive',
-          title: isRTL ? '⚠️ رقم فاتورة غير صالح' : '⚠️ Numéro de facture invalide',
-          description: isRTL ? 'الصيغة المطلوبة: F-YYYY-XXX' : 'Format requis : F-YYYY-XXX (ex: F-2026-001)',
-        });
-        return;
       } else {
-        // No custom number — let DB trigger auto-assign
-        data = { ...data, number: generateDraftPlaceholder('facture') };
+        // Auto-assign: fetch next number atomically from DB
+        try {
+          const nextNumber = await fetchNextDocNumber(user.id, 'facture');
+          data = { ...data, number: nextNumber };
+        } catch (e) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? '⚠️ خطأ' : '⚠️ Erreur',
+            description: isRTL ? 'فشل في إنشاء رقم الفاتورة' : 'Impossible de générer le numéro de facture.',
+          });
+          return;
+        }
       }
     }
 
-    const linkedDocumentData = {
+    // Update docNumber in UI immediately
+    setDocNumber(data.number);
       ...documentDataForStorage,
       ...(selectedClientId && { linkedClientId: selectedClientId }),
       ...(selectedChantierId && { linkedChantierId: selectedChantierId }),

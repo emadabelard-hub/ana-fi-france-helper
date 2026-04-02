@@ -652,10 +652,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     
     const subtotal = Math.round(allItems.reduce((sum, item) => sum + item.total, 0) * 100) / 100;
     
-    // Smart TVA calculation: Auto-entrepreneur = franchise de TVA, Sous-traitance = autoliquidation
+    // Smart TVA calculation: Auto-entrepreneur = franchise de TVA, Sous-traitance = autoliquidation, Intracommunautaire = exonération
     const tvaExempt = isAutoEntrepreneur;
     const isSousTraitanceTva = !isAutoEntrepreneur && projectTvaType === 'sous_traitance';
-    const tvaRate = tvaExempt || isSousTraitanceTva ? 0 : (projectTvaType === 'logement' ? 10 : 20);
+    const isIntracomTva = !isAutoEntrepreneur && projectTvaType === 'intracommunautaire';
+    const tvaRate = tvaExempt || isSousTraitanceTva || isIntracomTva ? 0 : (projectTvaType === 'logement' ? 10 : 20);
     const totals = calculateInvoiceTotals({
       subtotal,
       tvaRate,
@@ -672,8 +673,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       : tvaExempt
         ? 'TVA non applicable, article 293B du CGI'
         : isSousTraitanceTva
-          ? 'Autoliquidation de la TVA – article 283 du CGI'
-          : undefined;
+          ? 'Autoliquidation de la TVA – article 283-2 du CGI'
+          : isIntracomTva
+            ? 'Exonération de TVA – article 262 ter I du CGI'
+            : undefined;
     
     return {
       type: documentType === 'devis' ? 'DEVIS' : 'FACTURE',

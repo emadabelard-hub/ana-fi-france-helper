@@ -1544,6 +1544,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     setPaymentMilestones([]);
     setMilestonesEnabled(false);
     setDescriptionChantier('');
+    setDescriptionChantierAr('');
+    setDescriptionChantierFr('');
     setEstimatedStartDate('');
     setEstimatedDuration('');
     setDiscountEnabled(false);

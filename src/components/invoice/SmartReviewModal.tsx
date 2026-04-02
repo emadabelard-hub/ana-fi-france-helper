@@ -357,11 +357,13 @@ const SmartReviewModal = ({
                   </div>
                 )}
 
-                {(invoiceData.tvaExempt || isAutoliquidation) && (
+                {tvaRegime !== 'standard' && (
                   <div className={cn("text-xs italic text-muted-foreground border-t pt-2", isRTL && "text-right")}>
-                    {invoiceData.tvaExempt
-                      ? 'TVA non applicable, article 293B du CGI'
-                      : 'Autoliquidation de la TVA – article 283 du CGI'}
+                    {tvaRegime === 'franchise'
+                      ? 'TVA non applicable, art. 293 B du CGI'
+                      : tvaRegime === 'autoliquidation'
+                        ? 'Autoliquidation de la TVA – article 283-2 du CGI'
+                        : 'Exonération de TVA – article 262 ter I du CGI'}
                   </div>
                 )}
                 

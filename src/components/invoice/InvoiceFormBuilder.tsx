@@ -2578,7 +2578,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           )}
         </CardContent>
       </Card>
-      
+      )}
+
+      {/* Step 4 navigation */}
+      {currentStep === 4 && !showPreview && (
+        <StepButtons currentStep={4} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={canProceedFromStep(4)} isRTL={isRTL} />
+      )}
+
+      {/* === STEP 2: TRAVAUX & PRIX === */}
+      {currentStep === 2 && (<>
       {/* AI Quote Wizard Button - Dynamic based on document type */}
       <Button
         variant="outline"

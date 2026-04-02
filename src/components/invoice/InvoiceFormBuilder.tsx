@@ -1451,8 +1451,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     };
 
     try {
-      // Prevent duplicate entries with the same document number (skip for factures — DB trigger assigns number)
-      if (documentType !== 'facture') {
+      // Prevent duplicate devis numbers
+      if (documentType === 'devis') {
         const { data: existing } = await (supabase.from('documents_comptables') as any)
           .select('id')
           .eq('user_id', user.id)
@@ -1464,8 +1464,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             variant: 'destructive',
             title: isRTL ? '⚠️ مستند موجود' : '⚠️ Document existant',
             description: isRTL
-              ? `الرقم ${data.number} موجود بالفعل. غيّر الرقم أو راجع مستنداتك.`
-              : `Le numéro ${data.number} existe déjà. Changez le numéro ou consultez vos documents.`,
+              ? `الرقم ${data.number} موجود بالفعل.`
+              : `Le numéro ${data.number} existe déjà.`,
           });
           return;
         }
@@ -1495,12 +1495,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         .select('id, document_number')
         .single();
       if (error) throw error;
-
-      // Update UI with the official number assigned by the DB trigger
-      if (documentType === 'facture' && insertedDocument?.document_number) {
-        setDocNumber(insertedDocument.document_number);
-        data = { ...data, number: insertedDocument.document_number };
-      }
 
       if (isQuoteConversionFlow && insertedDocument?.id) {
         const { data: updatedSource, error: updateSourceError } = await (supabase

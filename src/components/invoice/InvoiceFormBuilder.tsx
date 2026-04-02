@@ -891,6 +891,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Check if form is valid
   const isFormValid = items.some(item => item.designation_fr.trim() && item.unitPrice > 0) || (includeTravelCosts && travelPrice > 0);
 
+  // Section completion for progress tracking
+  const sectionCompletion: ProgressSection[] = [
+    { id: 'client', label: isRTL ? 'الزبون' : 'Client', icon: '👤', isComplete: !!clientName.trim() && !!clientAddress.trim() },
+    { id: 'objet', label: isRTL ? 'الموضوع' : 'Objet', icon: '📝', isComplete: !!(descriptionChantier.trim() || descriptionChantierFr.trim()) },
+    { id: 'travaux', label: isRTL ? 'الشغل' : 'Travaux', icon: '💰', isComplete: isFormValid },
+    { id: 'chantier', label: isRTL ? 'الشانتييه' : 'Chantier', icon: '📍', isComplete: workSiteSameAsClient || !!workSiteAddress.trim() },
+    { id: 'paiement', label: isRTL ? 'الدفع' : 'Paiement', icon: '💳', isComplete: true },
+    { id: 'resume', label: isRTL ? 'الملخص' : 'Résumé', icon: '📊', isComplete: invoiceData.total > 0 },
+  ];
+  const completedSections = sectionCompletion.filter(s => s.isComplete).length;
+  const progressPercent = Math.round((completedSections / sectionCompletion.length) * 100);
+  const allSectionsComplete = completedSections === sectionCompletion.length;
+
   const getTechnicalErrorMessage = (error: unknown) => {
     const err = error as any;
     const raw = err?.context?.body || err?.message || err?.error_description || err?.details || err?.hint || String(error);

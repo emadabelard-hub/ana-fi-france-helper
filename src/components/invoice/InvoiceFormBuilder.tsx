@@ -2867,7 +2867,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </Card>
           
           {/* Payment Terms - Conditions de Règlement */}
-          <Card className="border-amber-500/20 bg-amber-500/5">
+          <Card className="border-pink-200/60 bg-pink-50/30 dark:border-pink-800/30 dark:bg-pink-950/10">
             <CardContent className="p-4 space-y-4">
               {/* Pedagogical Alert */}
               <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700">

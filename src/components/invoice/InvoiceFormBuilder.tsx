@@ -1443,6 +1443,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
     // Update docNumber in UI immediately
     setDocNumber(data.number);
+
+    const linkedDocumentData = {
       ...documentDataForStorage,
       ...(selectedClientId && { linkedClientId: selectedClientId }),
       ...(selectedChantierId && { linkedChantierId: selectedChantierId }),

@@ -109,7 +109,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Description du chantier / objet du devis
   const [descriptionChantier, setDescriptionChantier] = useState('');
   const [descriptionChantierAr, setDescriptionChantierAr] = useState('');
-  
+  const [descriptionChantierFr, setDescriptionChantierFr] = useState('');
+  const [isTranslatingObjet, setIsTranslatingObjet] = useState(false);
   // Estimated start date and duration
   const [estimatedStartDate, setEstimatedStartDate] = useState('');
   const [estimatedDuration, setEstimatedDuration] = useState('');

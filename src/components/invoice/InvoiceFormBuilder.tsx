@@ -79,10 +79,20 @@ const getDocPrefix = (type: 'devis' | 'facture'): string => {
 };
 
 // Fetch next sequential number from DB (atomic, no gaps, no duplicates).
-// IMPORTANT: For factures, this should ONLY be called at finalization time
-// to guarantee sequential numbering with no gaps (French legal compliance).
+// Uses assign_next_facture_number for factures, get_next_document_number for devis.
 const fetchNextDocNumber = async (userId: string, type: 'devis' | 'facture'): Promise<string> => {
   const year = new Date().getFullYear();
+  if (type === 'facture') {
+    const { data, error } = await supabase.rpc('assign_next_facture_number', {
+      p_user_id: userId,
+      p_year: year,
+    });
+    if (error) {
+      console.error('Failed to assign facture number:', error);
+      throw new Error('Impossible d\'attribuer un numéro de facture');
+    }
+    return data as string;
+  }
   const { data, error } = await supabase.rpc('get_next_document_number', {
     p_user_id: userId,
     p_document_type: type,
@@ -90,13 +100,12 @@ const fetchNextDocNumber = async (userId: string, type: 'devis' | 'facture'): Pr
   });
   if (error) {
     console.error('Failed to fetch next doc number:', error);
-    // Fallback to prefix only
     return getDocPrefix(type);
   }
   return data as string;
 };
 
-// Generate a placeholder number for drafts (not a real sequential number)
+// Generate a placeholder label for drafts (not a real sequential number)
 const generateDraftPlaceholder = (type: 'devis' | 'facture'): string => {
   const prefix = type === 'devis' ? 'D' : 'F';
   const year = new Date().getFullYear();
@@ -1387,25 +1396,53 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       }
     }
 
-    // FACTURE NUMBERING: Use custom number if provided, otherwise placeholder for auto-assign
+    // FACTURE NUMBERING: Assign number from frontend at finalization
     if (documentType === 'facture') {
       const trimmedCustom = customFactureNumber.trim();
-      if (trimmedCustom && /^F-\d{4}-\d{3,}$/.test(trimmedCustom)) {
-        // User provided a valid custom number — DB trigger will verify uniqueness
+      if (trimmedCustom) {
+        // Validate format
+        if (!/^F-\d{4}-\d{3,}$/.test(trimmedCustom)) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? '⚠️ رقم فاتورة غير صالح' : '⚠️ Numéro de facture invalide',
+            description: isRTL ? 'الصيغة المطلوبة: F-YYYY-XXX' : 'Format requis : F-YYYY-XXX (ex: F-2026-001)',
+          });
+          return;
+        }
+        // Check uniqueness
+        const { data: existing } = await (supabase.from('documents_comptables') as any)
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('document_number', trimmedCustom)
+          .eq('document_type', 'facture')
+          .maybeSingle();
+        if (existing) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? '⚠️ رقم موجود' : '⚠️ Numéro existant',
+            description: isRTL ? `الرقم ${trimmedCustom} مستخدم بالفعل` : `Le numéro ${trimmedCustom} existe déjà.`,
+          });
+          return;
+        }
         data = { ...data, number: trimmedCustom };
-      } else if (trimmedCustom) {
-        // Invalid format
-        toast({
-          variant: 'destructive',
-          title: isRTL ? '⚠️ رقم فاتورة غير صالح' : '⚠️ Numéro de facture invalide',
-          description: isRTL ? 'الصيغة المطلوبة: F-YYYY-XXX' : 'Format requis : F-YYYY-XXX (ex: F-2026-001)',
-        });
-        return;
       } else {
-        // No custom number — let DB trigger auto-assign
-        data = { ...data, number: generateDraftPlaceholder('facture') };
+        // Auto-assign: fetch next number atomically from DB
+        try {
+          const nextNumber = await fetchNextDocNumber(user.id, 'facture');
+          data = { ...data, number: nextNumber };
+        } catch (e) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? '⚠️ خطأ' : '⚠️ Erreur',
+            description: isRTL ? 'فشل في إنشاء رقم الفاتورة' : 'Impossible de générer le numéro de facture.',
+          });
+          return;
+        }
       }
     }
+
+    // Update docNumber in UI immediately
+    setDocNumber(data.number);
 
     const linkedDocumentData = {
       ...documentDataForStorage,
@@ -1414,8 +1451,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     };
 
     try {
-      // Prevent duplicate entries with the same document number (skip for factures — DB trigger assigns number)
-      if (documentType !== 'facture') {
+      // Prevent duplicate devis numbers
+      if (documentType === 'devis') {
         const { data: existing } = await (supabase.from('documents_comptables') as any)
           .select('id')
           .eq('user_id', user.id)
@@ -1427,8 +1464,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             variant: 'destructive',
             title: isRTL ? '⚠️ مستند موجود' : '⚠️ Document existant',
             description: isRTL
-              ? `الرقم ${data.number} موجود بالفعل. غيّر الرقم أو راجع مستنداتك.`
-              : `Le numéro ${data.number} existe déjà. Changez le numéro ou consultez vos documents.`,
+              ? `الرقم ${data.number} موجود بالفعل.`
+              : `Le numéro ${data.number} existe déjà.`,
           });
           return;
         }
@@ -1458,12 +1495,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         .select('id, document_number')
         .single();
       if (error) throw error;
-
-      // Update UI with the official number assigned by the DB trigger
-      if (documentType === 'facture' && insertedDocument?.document_number) {
-        setDocNumber(insertedDocument.document_number);
-        data = { ...data, number: insertedDocument.document_number };
-      }
 
       if (isQuoteConversionFlow && insertedDocument?.id) {
         const { data: updatedSource, error: updateSourceError } = await (supabase
@@ -1688,11 +1719,23 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       <FactureNumberingOnboarding
         open={showNumberingOnboarding}
         onOpenChange={setShowNumberingOnboarding}
-        onContinueExisting={(nextNumber) => {
+        onContinueExisting={async (lastNum) => {
           if (user) {
             localStorage.setItem(`facture_numbering_onboarded_${user.id}`, 'true');
+            // Persist to document_counters so next auto-assign continues from here
+            const year = new Date().getFullYear();
+            const numericPart = parseInt(lastNum.replace(/^F-\d{4}-/, ''), 10) - 1;
+            if (!isNaN(numericPart) && numericPart >= 0) {
+              await (supabase.from('document_counters') as any)
+                .upsert({
+                  user_id: user.id,
+                  document_type: 'facture',
+                  year,
+                  last_number: numericPart,
+                }, { onConflict: 'user_id,document_type,year' });
+            }
           }
-          setCustomFactureNumber(nextNumber);
+          setCustomFactureNumber(lastNum);
         }}
         onStartFresh={() => {
           if (user) {

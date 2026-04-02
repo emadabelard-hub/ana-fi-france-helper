@@ -208,15 +208,19 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   const formatNumber = (amount: number) =>
     amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const isAutoliquidationTva =
-    !data.tvaExempt &&
-    data.tvaRate === 0 &&
-    (data.legalMentions?.includes('283') || data.legalFooter?.includes('283'));
+  // Determine TVA regime deterministically from explicit field
+  const tvaRegime: 'standard' | 'franchise' | 'autoliquidation' | 'intracommunautaire' = (() => {
+    if (data.tvaRegime) return data.tvaRegime;
+    // Fallback for legacy data without tvaRegime
+    if (data.tvaExempt || (data.tvaRate === 0 && !data.legalMentions?.includes('283') && !data.legalMentions?.includes('262 ter'))) return 'franchise';
+    if (data.tvaRate === 0 && data.legalMentions?.includes('283')) return 'autoliquidation';
+    if (data.tvaRate === 0 && data.legalMentions?.includes('262 ter')) return 'intracommunautaire';
+    return 'standard';
+  })();
 
-  const isIntracomTva =
-    !data.tvaExempt &&
-    data.tvaRate === 0 &&
-    (data.legalMentions?.includes('262 ter') || data.legalFooter?.includes('262 ter'));
+  const isAutoliquidationTva = tvaRegime === 'autoliquidation';
+  const isIntracomTva = tvaRegime === 'intracommunautaire';
+  const isFranchise = tvaRegime === 'franchise';
 
   // TVA mention is now displayed inline after Total TTC (not in footer)
   // Footer only shows the rate info for standard TVA

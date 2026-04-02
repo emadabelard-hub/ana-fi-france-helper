@@ -1903,19 +1903,26 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </>)}
 
       {/* Client Section */}
-      <Card>
+      <Card className="border-blue-200/60 bg-blue-50/30 dark:border-blue-800/30 dark:bg-blue-950/10">
         <CardContent className="p-4 space-y-4">
           <div className={cn(
-            "flex items-center gap-2",
+            "flex items-center justify-between",
             isRTL && "flex-row-reverse"
           )}>
-            <User className="h-5 w-5 text-primary" />
-            <h3 className={cn(
-              "font-bold",
-              isRTL && "font-cairo"
-            )}>
-              {isRTL ? '👤 بيانات الزبون' : '👤 Informations client'}
-            </h3>
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 className={cn("font-bold text-blue-900 dark:text-blue-200", isRTL && "font-cairo")}>
+                {isRTL ? '👤 بيانات الزبون' : '👤 Informations client'}
+              </h3>
+            </div>
+            {sectionCompletion.find(s => s.id === 'client')?.isComplete && (
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                <Check className="h-3 w-3" />
+                <span>{isRTL ? 'مكتمل' : 'Complet'}</span>
+              </div>
+            )}
           </div>
 
           {/* Import from existing clients & projects - ALWAYS visible */}

@@ -1869,6 +1869,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </div>
         </CardContent>
       </Card>
+      </>)}
 
       {/* Client Section */}
       <Card>

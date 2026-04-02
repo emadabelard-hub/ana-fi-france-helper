@@ -2424,6 +2424,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           )}
         </CardContent>
       </Card>
+      </>)}
       
       {/* AI Quote Wizard Button - Dynamic based on document type */}
       <Button

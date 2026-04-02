@@ -1602,34 +1602,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         <InvoiceGuideModal open={showGuide} onOpenChange={setShowGuide} />
       )}
 
-      {/* Facture Numbering Onboarding */}
-      <FactureNumberingOnboarding
-        open={showNumberingOnboarding}
-        onOpenChange={setShowNumberingOnboarding}
-        onContinueExisting={async (lastNum) => {
-          if (user) {
-            localStorage.setItem(`facture_numbering_onboarded_${user.id}`, 'true');
-            // Persist to document_counters so next auto-assign continues from here
-            const year = new Date().getFullYear();
-            const numericPart = parseInt(lastNum.replace(/^F-\d{4}-/, ''), 10) - 1;
-            if (!isNaN(numericPart) && numericPart >= 0) {
-              await (supabase.from('document_counters') as any)
-                .upsert({
-                  user_id: user.id,
-                  document_type: 'facture',
-                  year,
-                  last_number: numericPart,
-                }, { onConflict: 'user_id,document_type,year' });
-            }
-          }
-          setCustomFactureNumber(lastNum);
-        }}
-        onStartFresh={() => {
-          if (user) {
-            localStorage.setItem(`facture_numbering_onboarded_${user.id}`, 'true');
-          }
-        }}
-      />
 
       <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
         {onDocumentTypeChange ? (

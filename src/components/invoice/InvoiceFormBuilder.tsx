@@ -211,6 +211,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const lastTranslatedSourceRef = useRef<Record<string, string | undefined>>({});
   const itemsRef = useRef(items);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Fetch clients list
   useEffect(() => {

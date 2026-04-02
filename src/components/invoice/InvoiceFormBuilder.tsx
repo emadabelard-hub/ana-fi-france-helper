@@ -2513,7 +2513,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </Button>
       
       {/* Line Items Section */}
-      <Card>
+      <Card className="border-emerald-200/60 bg-emerald-50/30 dark:border-emerald-800/30 dark:bg-emerald-950/10">
         <CardContent className="p-4 space-y-4">
           <div className={cn(
             "flex items-center justify-between",
@@ -2523,13 +2523,17 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               "flex items-center gap-2",
               isRTL && "flex-row-reverse"
             )}>
-              <FileText className="h-5 w-5 text-primary" />
-              <h3 className={cn(
-                "font-bold",
-                isRTL && "font-cairo"
-              )}>
-                {isRTL ? '📋 الشغل والأسعار' : '📋 Lignes de prestation'}
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h3 className={cn("font-bold text-emerald-900 dark:text-emerald-200", isRTL && "font-cairo")}>
+                {isRTL ? '💰 الشغل والأسعار' : '💰 Lignes de prestation'}
               </h3>
+              {sectionCompletion.find(s => s.id === 'travaux')?.isComplete && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                  <Check className="h-3 w-3" />
+                </div>
+              )}
             </div>
             
             <Button

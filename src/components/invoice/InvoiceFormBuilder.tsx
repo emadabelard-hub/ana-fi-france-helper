@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw, Users, Save, Languages, SlidersHorizontal, ChevronDown, ChevronUp, Check, CreditCard, BarChart3, Shield } from 'lucide-react';
 import FormProgressBar, { type ProgressSection } from './FormProgressBar';
+import StepNavigation, { StepButtons, type WizardStep } from './StepNavigation';
 import InvoiceDisplay, { InvoiceData, PaymentMilestone } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
@@ -904,6 +905,42 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const progressPercent = Math.round((completedSections / sectionCompletion.length) * 100);
   const allSectionsComplete = completedSections === sectionCompletion.length;
 
+  // === WIZARD STATE ===
+  const WIZARD_STEPS: WizardStep[] = [
+    { id: 'client', label: isRTL ? 'الزبون' : 'Client', icon: '👤', isComplete: sectionCompletion[0].isComplete },
+    { id: 'objet', label: isRTL ? 'الموضوع' : 'Objet', icon: '📝', isComplete: sectionCompletion[1].isComplete },
+    { id: 'travaux', label: isRTL ? 'الشغل' : 'Travaux', icon: '💰', isComplete: sectionCompletion[2].isComplete },
+    { id: 'options', label: isRTL ? 'خيارات' : 'Options', icon: '⚙️', isComplete: true },
+    { id: 'chantier', label: isRTL ? 'الشانتييه' : 'Chantier', icon: '📍', isComplete: sectionCompletion[3].isComplete },
+    { id: 'delais', label: isRTL ? 'المواعيد' : 'Délais', icon: '📅', isComplete: true },
+    { id: 'paiement', label: isRTL ? 'الدفع' : 'Paiement', icon: '💳', isComplete: sectionCompletion[4].isComplete },
+    { id: 'resume', label: isRTL ? 'الملخص' : 'Résumé', icon: '📊', isComplete: sectionCompletion[5].isComplete },
+  ];
+
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const canProceedFromStep = (step: number): boolean => {
+    switch (step) {
+      case 0: return !!clientName.trim() && !!clientAddress.trim();
+      case 1: return true;
+      case 2: return isFormValid;
+      default: return true;
+    }
+  };
+
+  const handleNextStep = () => {
+    if (currentStep < WIZARD_STEPS.length - 1 && canProceedFromStep(currentStep)) {
+      setCurrentStep(prev => prev + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
 
   const getTechnicalErrorMessage = (error: unknown) => {
@@ -1640,6 +1677,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       )}
 
 
+
+
+
       <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
         {onDocumentTypeChange ? (
           <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
@@ -1681,12 +1721,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </Button>
       </div>
 
-      {/* Progress Bar */}
+      {/* Step Navigation */}
       {!showPreview && (
-        <FormProgressBar
-          sections={sectionCompletion}
-          progressPercent={progressPercent}
+        <StepNavigation
+          steps={WIZARD_STEPS}
+          currentStep={currentStep}
+          onStepChange={setCurrentStep}
           isRTL={isRTL}
+          canProceed={canProceedFromStep(currentStep)}
+          validationMessage={
+            !canProceedFromStep(currentStep)
+              ? (isRTL ? 'يرجى إكمال المعلومات المطلوبة' : 'Veuillez compléter les informations requises')
+              : undefined
+          }
         />
       )}
       {/* === STEP 3: OPTIONS — Due date/validity === */}
@@ -2769,8 +2816,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               </div>
             ))}
           </div>
-          
-          {showAdvanced && (<>
+        </CardContent>
+      </Card>
+
+      <StepButtons currentStep={2} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={canProceedFromStep(2)} isRTL={isRTL} />
+      </>)}
+
+      {/* === STEP 3: OPTIONS === */}
+      {currentStep === 3 && (<>
           {/* Travel Costs Section */}
           <Card className="border-orange-500/20 bg-orange-500/5">
             <CardContent className="p-4 space-y-4">
@@ -2913,7 +2966,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               )}
             </CardContent>
           </Card>
-          
+
+      <StepButtons currentStep={3} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={true} isRTL={isRTL} />
+      </>)}
+
+      {/* === STEP 6: PAIEMENT === */}
+      {currentStep === 6 && (<>
           {/* Payment Terms - Conditions de Règlement */}
           <Card className="border-pink-200/60 bg-pink-50/30 dark:border-pink-800/30 dark:bg-pink-950/10">
             <CardContent className="p-4 space-y-4">
@@ -3233,6 +3291,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             </CardContent>
           </Card>
 
+      <StepButtons currentStep={6} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={true} isRTL={isRTL} />
+      </>)}
+
+      {/* === STEP 7: TVA & REMISE + RÉSUMÉ === */}
+      {currentStep === 7 && (<>
           {/* TVA Settings - French Law Compliance */}
           <Card className="border-gray-500/20 bg-gray-500/5">
             <CardContent className="p-4 space-y-4">
@@ -3393,7 +3456,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               )}
             </CardContent>
           </Card>
-          </>)}
           
           {/* Totals Summary */}
           <div className="pt-4 border-t space-y-2">
@@ -3487,8 +3549,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               <span className="font-mono text-primary">{invoiceData.total.toFixed(2)} €</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
       {/* Photo Attachment Toggle - shown only when photos exist */}
       {sitePhotos.length > 0 && (
@@ -3515,6 +3575,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </CardContent>
         </Card>
       )}
+
+      <StepButtons currentStep={7} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={() => {}} canProceed={true} isRTL={isRTL} />
+      </>)}
 
       {/* Preview & Actions */}
       {showPreview ? (
@@ -3582,7 +3645,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             </div>
           </ProtectedDocumentWrapper>
         </div>
-      ) : (
+      ) : currentStep === WIZARD_STEPS.length - 1 ? (
         <div className="space-y-4">
           {/* Completion Message */}
           {allSectionsComplete && (
@@ -3721,7 +3784,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             </div>
           </div>
         </div>
-      )}
+      ) : null}
       
       {/* Quote Wizard Modal */}
       <QuoteWizardModal

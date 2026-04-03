@@ -3643,7 +3643,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             </div>
           </ProtectedDocumentWrapper>
         </div>
-      ) : (
+      ) : currentStep === WIZARD_STEPS.length - 1 ? (
         <div className="space-y-4">
           {/* Completion Message */}
           {allSectionsComplete && (

@@ -3453,7 +3453,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               )}
             </CardContent>
           </Card>
-          </>)}
           
           {/* Totals Summary */}
           <div className="pt-4 border-t space-y-2">

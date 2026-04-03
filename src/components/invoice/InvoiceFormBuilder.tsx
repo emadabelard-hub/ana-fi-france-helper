@@ -24,6 +24,7 @@ import InvoiceGuideModal from './InvoiceGuideModal';
 import FactureGuideModal from './FactureGuideModal';
 
 import PreFlightChecklistModal from './PreFlightChecklistModal';
+import PreGenerationChecklist, { runChecks, type PreGenCheckInput } from './PreGenerationChecklist';
 import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
 import { supabase } from '@/integrations/supabase/client';
 import { saveDraft, loadDraft, clearDraft, loadCloudDraft, saveCurrentDocument, loadCurrentDocument, clearCurrentDocument, type CurrentDocumentState } from '@/lib/invoiceDraftStorage';

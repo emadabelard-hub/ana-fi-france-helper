@@ -1718,12 +1718,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </Button>
       </div>
 
-      {/* Progress Bar */}
+      {/* Step Navigation */}
       {!showPreview && (
-        <FormProgressBar
-          sections={sectionCompletion}
-          progressPercent={progressPercent}
+        <StepNavigation
+          steps={WIZARD_STEPS}
+          currentStep={currentStep}
+          onStepChange={setCurrentStep}
           isRTL={isRTL}
+          canProceed={canProceedFromStep(currentStep)}
+          validationMessage={
+            !canProceedFromStep(currentStep)
+              ? (isRTL ? 'يرجى إكمال المعلومات المطلوبة' : 'Veuillez compléter les informations requises')
+              : undefined
+          }
         />
       )}
       {/* === STEP 3: OPTIONS — Due date/validity === */}

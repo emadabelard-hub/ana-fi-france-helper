@@ -2813,8 +2813,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               </div>
             ))}
           </div>
-          
-          {showAdvanced && (<>
+        </CardContent>
+      </Card>
+
+      <StepButtons currentStep={2} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={canProceedFromStep(2)} isRTL={isRTL} />
+      </>)}
+
+      {/* === STEP 3: OPTIONS === */}
+      {currentStep === 3 && (<>
           {/* Travel Costs Section */}
           <Card className="border-orange-500/20 bg-orange-500/5">
             <CardContent className="p-4 space-y-4">

@@ -3782,7 +3782,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             </div>
           </div>
         </div>
-      )}
+      ) : null}
       
       {/* Quote Wizard Modal */}
       <QuoteWizardModal

@@ -3576,6 +3576,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </Card>
       )}
 
+      <StepButtons currentStep={7} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={() => {}} canProceed={true} isRTL={isRTL} />
+      </>)}
+
       {/* Preview & Actions */}
       {showPreview ? (
         <div className="space-y-4 relative">

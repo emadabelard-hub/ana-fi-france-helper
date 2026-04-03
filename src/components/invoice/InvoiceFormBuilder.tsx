@@ -3546,7 +3546,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               <span className="font-mono text-primary">{invoiceData.total.toFixed(2)} €</span>
             </div>
           </div>
-        </CardContent>
       </Card>
 
       {/* Photo Attachment Toggle - shown only when photos exist */}

@@ -905,6 +905,42 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const progressPercent = Math.round((completedSections / sectionCompletion.length) * 100);
   const allSectionsComplete = completedSections === sectionCompletion.length;
 
+  // === WIZARD STATE ===
+  const WIZARD_STEPS: WizardStep[] = [
+    { id: 'client', label: isRTL ? 'الزبون' : 'Client', icon: '👤', isComplete: sectionCompletion[0].isComplete },
+    { id: 'objet', label: isRTL ? 'الموضوع' : 'Objet', icon: '📝', isComplete: sectionCompletion[1].isComplete },
+    { id: 'travaux', label: isRTL ? 'الشغل' : 'Travaux', icon: '💰', isComplete: sectionCompletion[2].isComplete },
+    { id: 'options', label: isRTL ? 'خيارات' : 'Options', icon: '⚙️', isComplete: true },
+    { id: 'chantier', label: isRTL ? 'الشانتييه' : 'Chantier', icon: '📍', isComplete: sectionCompletion[3].isComplete },
+    { id: 'delais', label: isRTL ? 'المواعيد' : 'Délais', icon: '📅', isComplete: true },
+    { id: 'paiement', label: isRTL ? 'الدفع' : 'Paiement', icon: '💳', isComplete: sectionCompletion[4].isComplete },
+    { id: 'resume', label: isRTL ? 'الملخص' : 'Résumé', icon: '📊', isComplete: sectionCompletion[5].isComplete },
+  ];
+
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const canProceedFromStep = (step: number): boolean => {
+    switch (step) {
+      case 0: return !!clientName.trim() && !!clientAddress.trim();
+      case 1: return true;
+      case 2: return isFormValid;
+      default: return true;
+    }
+  };
+
+  const handleNextStep = () => {
+    if (currentStep < WIZARD_STEPS.length - 1 && canProceedFromStep(currentStep)) {
+      setCurrentStep(prev => prev + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
 
   const getTechnicalErrorMessage = (error: unknown) => {

@@ -2963,7 +2963,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               )}
             </CardContent>
           </Card>
-          
+
+      <StepButtons currentStep={3} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={true} isRTL={isRTL} />
+      </>)}
+
+      {/* === STEP 6: PAIEMENT === */}
+      {currentStep === 6 && (<>
           {/* Payment Terms - Conditions de Règlement */}
           <Card className="border-pink-200/60 bg-pink-50/30 dark:border-pink-800/30 dark:bg-pink-950/10">
             <CardContent className="p-4 space-y-4">

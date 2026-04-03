@@ -1676,6 +1676,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         <InvoiceGuideModal open={showGuide} onOpenChange={setShowGuide} />
       )}
 
+      <StepButtons currentStep={7} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={() => {}} canProceed={true} isRTL={isRTL} />
+      </>)}
+
 
       <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
         {onDocumentTypeChange ? (

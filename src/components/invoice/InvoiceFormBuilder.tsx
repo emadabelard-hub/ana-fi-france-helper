@@ -3288,6 +3288,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             </CardContent>
           </Card>
 
+      <StepButtons currentStep={6} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={true} isRTL={isRTL} />
+      </>)}
+
+      {/* === STEP 7: TVA & REMISE + RÉSUMÉ === */}
+      {currentStep === 7 && (<>
           {/* TVA Settings - French Law Compliance */}
           <Card className="border-gray-500/20 bg-gray-500/5">
             <CardContent className="p-4 space-y-4">

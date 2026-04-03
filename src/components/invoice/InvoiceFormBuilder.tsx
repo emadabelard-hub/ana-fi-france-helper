@@ -24,6 +24,7 @@ import InvoiceGuideModal from './InvoiceGuideModal';
 import FactureGuideModal from './FactureGuideModal';
 
 import PreFlightChecklistModal from './PreFlightChecklistModal';
+import PreGenerationChecklist, { runChecks, type PreGenCheckInput } from './PreGenerationChecklist';
 import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
 import { supabase } from '@/integrations/supabase/client';
 import { saveDraft, loadDraft, clearDraft, loadCloudDraft, saveCurrentDocument, loadCurrentDocument, clearCurrentDocument, type CurrentDocumentState } from '@/lib/invoiceDraftStorage';
@@ -3647,19 +3648,31 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </div>
       ) : currentStep === WIZARD_STEPS.length - 1 ? (
         <div className="space-y-4">
-          {/* Completion Message */}
-          {allSectionsComplete && (
-            <div className={cn(
-              "p-4 rounded-xl border-2 border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 text-center",
-              isRTL && "font-cairo"
-            )}>
-              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
-                {isRTL 
-                  ? '✅ الدوفي بتاعك جاهز — تقدر تعمله PDF من غير أخطاء'
-                  : '✅ Votre document est prêt — vous pouvez le générer sans erreur'}
-              </p>
-            </div>
-          )}
+          {/* Pre-generation Checklist */}
+          <PreGenerationChecklist input={{
+            clientName,
+            clientAddress,
+            items,
+            includeTravelCosts,
+            travelPrice,
+            subtotal: invoiceData.subtotal,
+            tvaRate: invoiceData.tvaRate,
+            tvaAmount: invoiceData.tvaAmount,
+            total: invoiceData.total,
+            tvaExempt: isAutoEntrepreneur || projectTvaType === 'sous_traitance',
+            discountEnabled,
+            discountValue,
+            discountType,
+            moyenPaiement,
+            acompteEnabled,
+            acomptePercent,
+            acompteMode,
+            acompteFixedAmount,
+            milestonesEnabled,
+            paymentMilestones,
+            docNumber,
+            documentType,
+          }} />
 
           {/* Action Buttons - Reorganized */}
           <div className={cn(

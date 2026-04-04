@@ -548,17 +548,17 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 </>
               )}
 
-              {/* TVA (always calculated on HT after discount) */}
-              <div className="py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-[7pt]">
-                    {isAutoliquidationTva ? 'TVA : autoliquidation' : `TVA (${data.tvaRate}%) :`}
-                  </span>
-                  {!isAutoliquidationTva && (
+              {/* TVA line — only shown for standard regime (real TVA > 0%) */}
+              {tvaRegime === 'standard' && (
+                <div className="py-1" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 text-[7pt]">
+                      {`TVA (${data.tvaRate}%) :`}
+                    </span>
                     <span className="text-gray-800 text-[7.5pt] font-medium tabular-nums">{formatCurrency(data.tvaAmount)}</span>
-                  )}
+                  </div>
                 </div>
-              </div>
+              )}
               {/* Thin divider before TTC */}
               <div style={{ borderBottom: '2px solid #d1d5db', margin: '2px 0' }} />
               {/* TTC — prominent but balanced */}

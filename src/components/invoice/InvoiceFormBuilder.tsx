@@ -3649,31 +3649,37 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </div>
       ) : currentStep === WIZARD_STEPS.length - 1 ? (
         <div className="space-y-4">
-          {/* Pre-generation Checklist */}
-          <PreGenerationChecklist input={{
-            clientName,
-            clientAddress,
-            items,
-            includeTravelCosts,
-            travelPrice,
-            subtotal: invoiceData.subtotal,
-            tvaRate: invoiceData.tvaRate,
-            tvaAmount: invoiceData.tvaAmount,
-            total: invoiceData.total,
-            tvaExempt: isAutoEntrepreneur || projectTvaType === 'sous_traitance',
-            discountEnabled,
-            discountValue,
-            discountType,
-            moyenPaiement,
-            acompteEnabled,
-            acomptePercent,
-            acompteMode,
-            acompteFixedAmount,
-            milestonesEnabled,
-            paymentMilestones,
-            docNumber,
-            documentType,
-          }} />
+          {/* Validation Checklist with step navigation */}
+          <ValidationChecklist
+            input={{
+              clientName,
+              clientAddress,
+              items,
+              includeTravelCosts,
+              travelPrice,
+              subtotal: invoiceData.subtotal,
+              tvaRate: invoiceData.tvaRate,
+              tvaAmount: invoiceData.tvaAmount,
+              total: invoiceData.total,
+              tvaExempt: isAutoEntrepreneur || projectTvaType === 'sous_traitance',
+              discountEnabled,
+              discountValue,
+              discountType,
+              moyenPaiement,
+              acompteEnabled,
+              acomptePercent,
+              acompteMode,
+              acompteFixedAmount,
+              milestonesEnabled,
+              paymentMilestones,
+              docNumber,
+              documentType,
+            }}
+            onNavigateToStep={(step) => {
+              setCurrentStep(step);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
 
           {/* Action Buttons - Reorganized */}
           <div className={cn(

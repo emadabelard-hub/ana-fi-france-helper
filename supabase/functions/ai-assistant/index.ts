@@ -187,6 +187,8 @@ ${personalizationAr}
 ${formattingRulesAr}
 ${categoryCtx}
 
+${documentRedactionRulesAr}
+
 ${deepStrategyAr}
 
 قواعد الرد:

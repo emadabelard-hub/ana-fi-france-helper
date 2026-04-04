@@ -165,6 +165,8 @@ ${personalizationFr}
 ${formattingRulesFr}
 ${categoryCtx}
 
+${documentRedactionRulesFr}
+
 ${deepStrategyFr}
 
 RÈGLES DE RÉPONSE :

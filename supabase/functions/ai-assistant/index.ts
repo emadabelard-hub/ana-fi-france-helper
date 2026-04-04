@@ -51,6 +51,74 @@ RÈGLES DE FORMATAGE (OBLIGATOIRE):
 - استخدم أرقام (1. 2. 3.) للخطوات المتتابعة.
 - ما تكتبش كتل نص كبيرة. كل فكرة = فقرة قصيرة.`;
 
+    const documentRedactionRulesFr = `
+RÈGLES DE RÉDACTION DE DEVIS/FACTURES (OBLIGATOIRE - AUCUNE EXCEPTION):
+Quand l'utilisateur te demande de rédiger, mettre en forme ou générer un devis ou une facture :
+
+🚨 RÈGLE ABSOLUE : Tu ne modifies STRICTEMENT RIEN en dehors de la mise en forme.
+- Tu ne modifies aucun montant
+- Tu ne modifies pas la TVA
+- Tu ne modifies pas la mention TVA
+- Tu ne modifies pas les données fournies
+- Tu ne fais aucune interprétation
+- Tu ne corriges pas les valeurs
+- Tu ne prends aucune initiative
+- Tu fais UNIQUEMENT de la mise en forme et de la rédaction
+
+STRUCTURE DU DOCUMENT GÉNÉRÉ :
+1. En-tête entreprise (nom, adresse, SIRET, email, téléphone)
+2. Informations client (nom, adresse)
+3. Objet du devis/facture
+4. Description claire des travaux
+5. Tableau financier (Total HT / TVA / Total TTC) — valeurs EXACTES fournies
+6. Mention TVA EXACTE (copier-coller sans modification)
+7. Conditions de paiement
+8. Zone signature
+
+STYLE : Sobre, professionnel, clair, sans ajout inutile.
+
+🚫 INTERDICTIONS STRICTES :
+- Ne rien ajouter qui n'est pas dans les données
+- Ne rien supprimer
+- Ne rien modifier
+- Ne pas recalculer
+- Ne pas interpréter
+- Ne pas corriger
+- Ne pas compléter`;
+
+    const documentRedactionRulesAr = `
+قواعد كتابة الدوفي والفاتورة (إلزامي - بدون أي استثناء):
+لما المستخدم يطلب منك تكتب أو تنسق أو تولد دوفي أو فاتورة:
+
+🚨 قاعدة مطلقة: ما تغيرش حاجة خالص غير التنسيق.
+- ما تغيرش أي مبلغ
+- ما تغيرش الضريبة TVA
+- ما تغيرش ذكر الضريبة
+- ما تغيرش البيانات المقدمة
+- ما تفسرش حاجة
+- ما تصلحش القيم
+- ما تاخدش أي مبادرة
+- بس تعمل تنسيق وصياغة
+
+هيكل الوثيقة:
+1. رأس الوثيقة (اسم الشركة، العنوان، SIRET، الإيميل، التليفون)
+2. بيانات الزبون (الاسم، العنوان)
+3. موضوع الدوفي/الفاتورة
+4. وصف واضح للأشغال
+5. جدول مالي (إجمالي HT / TVA / إجمالي TTC) — القيم بالظبط زي ما هي
+6. ذكر TVA بالظبط (نسخ لصق بدون تعديل)
+7. شروط الدفع
+8. منطقة التوقيع
+
+🚫 ممنوع منعاً باتاً:
+- ما تضيفش حاجة مش في البيانات
+- ما تحذفش حاجة
+- ما تغيرش حاجة
+- ما تعيدش الحساب
+- ما تفسرش
+- ما تصلحش
+- ما تكملش`;
+
     const deepStrategyFr = `
 ANALYSE STRATÉGIQUE APPROFONDIE (OBLIGATOIRE):
 - Ne te contente JAMAIS de donner des informations générales. Analyse le problème en profondeur et propose des SOLUTIONS CONCRÈTES.
@@ -97,6 +165,8 @@ ${personalizationFr}
 ${formattingRulesFr}
 ${categoryCtx}
 
+${documentRedactionRulesFr}
+
 ${deepStrategyFr}
 
 RÈGLES DE RÉPONSE :
@@ -116,6 +186,8 @@ RÈGLES DE RÉPONSE :
 ${personalizationAr}
 ${formattingRulesAr}
 ${categoryCtx}
+
+${documentRedactionRulesAr}
 
 ${deepStrategyAr}
 

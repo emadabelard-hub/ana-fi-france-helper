@@ -25,6 +25,7 @@ import FactureGuideModal from './FactureGuideModal';
 
 import PreFlightChecklistModal from './PreFlightChecklistModal';
 import PreGenerationChecklist, { runChecks, type PreGenCheckInput } from './PreGenerationChecklist';
+import ValidationChecklist, { type ValidationInput } from './ValidationChecklist';
 import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
 import { supabase } from '@/integrations/supabase/client';
 import { saveDraft, loadDraft, clearDraft, loadCloudDraft, saveCurrentDocument, loadCurrentDocument, clearCurrentDocument, type CurrentDocumentState } from '@/lib/invoiceDraftStorage';
@@ -3648,31 +3649,37 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         </div>
       ) : currentStep === WIZARD_STEPS.length - 1 ? (
         <div className="space-y-4">
-          {/* Pre-generation Checklist */}
-          <PreGenerationChecklist input={{
-            clientName,
-            clientAddress,
-            items,
-            includeTravelCosts,
-            travelPrice,
-            subtotal: invoiceData.subtotal,
-            tvaRate: invoiceData.tvaRate,
-            tvaAmount: invoiceData.tvaAmount,
-            total: invoiceData.total,
-            tvaExempt: isAutoEntrepreneur || projectTvaType === 'sous_traitance',
-            discountEnabled,
-            discountValue,
-            discountType,
-            moyenPaiement,
-            acompteEnabled,
-            acomptePercent,
-            acompteMode,
-            acompteFixedAmount,
-            milestonesEnabled,
-            paymentMilestones,
-            docNumber,
-            documentType,
-          }} />
+          {/* Validation Checklist with step navigation */}
+          <ValidationChecklist
+            input={{
+              clientName,
+              clientAddress,
+              items,
+              includeTravelCosts,
+              travelPrice,
+              subtotal: invoiceData.subtotal,
+              tvaRate: invoiceData.tvaRate,
+              tvaAmount: invoiceData.tvaAmount,
+              total: invoiceData.total,
+              tvaExempt: isAutoEntrepreneur || projectTvaType === 'sous_traitance',
+              discountEnabled,
+              discountValue,
+              discountType,
+              moyenPaiement,
+              acompteEnabled,
+              acomptePercent,
+              acompteMode,
+              acompteFixedAmount,
+              milestonesEnabled,
+              paymentMilestones,
+              docNumber,
+              documentType,
+            }}
+            onNavigateToStep={(step) => {
+              setCurrentStep(step);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
 
           {/* Action Buttons - Reorganized */}
           <div className={cn(

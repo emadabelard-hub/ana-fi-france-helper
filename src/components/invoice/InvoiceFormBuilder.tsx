@@ -341,7 +341,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (draft.wasteDescription !== undefined) setWasteDescription(draft.wasteDescription || '');
     if (draft.wastePrice !== undefined) setWastePrice(draft.wastePrice || 0);
     if (draft.selectedTvaRate !== undefined) setSelectedTvaRate(draft.selectedTvaRate || 10);
-    if (draft.projectTvaType !== undefined) setProjectTvaType(draft.projectTvaType);
+    if (draft.projectTvaType !== undefined) {
+      // Migrate legacy 'logement' value to 'logement_ancien'
+      const mappedType = draft.projectTvaType === 'logement' ? 'logement_ancien' : draft.projectTvaType;
+      setProjectTvaType(mappedType as any);
+    }
     if (draft.validityDuration !== undefined) setValidityDuration(draft.validityDuration || 30);
     if (draft.dueDateDays !== undefined) setDueDateDays(draft.dueDateDays);
     if (draft.acompteEnabled !== undefined) setAcompteEnabled(draft.acompteEnabled);

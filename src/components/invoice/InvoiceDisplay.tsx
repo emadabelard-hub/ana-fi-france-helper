@@ -694,9 +694,8 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* Legal Footer — inside end-block so it's never isolated */}
-          {(cleanLegalFooter || vatFooterMention || data.emitter.iban || assuranceHeaderLine) && (
-            <div className="invoice-iban-block invoice-footer-block mt-1.5 pt-1 text-center" style={{ borderTop: '1px solid #e5e7eb' }}>
-              <p className="text-[5.5pt] text-gray-300 leading-snug">{vatFooterMention}</p>
+          <div className="invoice-iban-block invoice-footer-block mt-1.5 pt-1 text-center" style={{ borderTop: '1px solid #e5e7eb' }}>
+              <p className="text-[6pt] text-gray-500 leading-snug font-medium italic">{vatFooterMention}</p>
               {cleanLegalFooter && <p className="text-[5.5pt] text-gray-300 leading-snug whitespace-pre-line">{cleanLegalFooter}</p>}
               {data.emitter.iban && (
                 <p className="text-[6pt] text-gray-400 mt-0.5">
@@ -711,7 +710,6 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 {data.type === 'DEVIS' && ' Validité du devis : 30 jours.'}
               </p>
             </div>
-          )}
 
         </div>{/* end invoice-totals-signature-block */}
 

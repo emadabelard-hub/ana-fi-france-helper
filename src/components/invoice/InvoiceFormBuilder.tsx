@@ -137,7 +137,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [isAutoEntrepreneur, setIsAutoEntrepreneur] = useState(false);
   const [selectedTvaRate, setSelectedTvaRate] = useState<5.5 | 10 | 20>(10);
   // Project type for automatic TVA calculation (non auto-entrepreneur)
-  const [projectTvaType, setProjectTvaType] = useState<'logement' | 'local_pro' | 'sous_traitance' | 'intracommunautaire'>('logement');
+  const [projectTvaType, setProjectTvaType] = useState<'logement_ancien' | 'logement_neuf' | 'local_pro' | 'sous_traitance' | 'intracommunautaire'>('logement_ancien');
   
   // Quote validity duration (in days) - default 30 days
   const [validityDuration, setValidityDuration] = useState<15 | 30 | 60 | 90>(30);
@@ -341,7 +341,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (draft.wasteDescription !== undefined) setWasteDescription(draft.wasteDescription || '');
     if (draft.wastePrice !== undefined) setWastePrice(draft.wastePrice || 0);
     if (draft.selectedTvaRate !== undefined) setSelectedTvaRate(draft.selectedTvaRate || 10);
-    if (draft.projectTvaType !== undefined) setProjectTvaType(draft.projectTvaType);
+    if (draft.projectTvaType !== undefined) {
+      // Migrate legacy 'logement' value to 'logement_ancien'
+      const mappedType = draft.projectTvaType === 'logement' ? 'logement_ancien' : draft.projectTvaType;
+      setProjectTvaType(mappedType as any);
+    }
     if (draft.validityDuration !== undefined) setValidityDuration(draft.validityDuration || 30);
     if (draft.dueDateDays !== undefined) setDueDateDays(draft.dueDateDays);
     if (draft.acompteEnabled !== undefined) setAcompteEnabled(draft.acompteEnabled);
@@ -661,7 +665,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     const tvaExempt = isAutoEntrepreneur;
     const isSousTraitanceTva = !isAutoEntrepreneur && projectTvaType === 'sous_traitance';
     const isIntracomTva = !isAutoEntrepreneur && projectTvaType === 'intracommunautaire';
-    const tvaRate = tvaExempt || isSousTraitanceTva || isIntracomTva ? 0 : (projectTvaType === 'logement' ? 10 : 20);
+    const tvaRate = tvaExempt || isSousTraitanceTva || isIntracomTva ? 0 : (projectTvaType === 'logement_ancien' ? 10 : 20);
     const totals = calculateInvoiceTotals({
       subtotal,
       tvaRate,
@@ -1602,7 +1606,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     const profileData = profile as any;
     setIsAutoEntrepreneur(Boolean(profileData?.tva_exempt || profileData?.legal_status === 'auto-entrepreneur'));
     setSelectedTvaRate(10);
-    setProjectTvaType('logement');
+    setProjectTvaType('logement_ancien');
     setValidityDuration(30);
     setDueDateDays(30);
     setAcompteEnabled(false);
@@ -3356,63 +3360,32 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                     isRTL && "font-cairo text-right"
                   )}>
                     {isRTL 
-                      ? 'اختر نوع المشروع وهنحسبلك الضريبة تلقائي:' 
-                      : 'Sélectionnez le type de projet, la TVA sera calculée automatiquement :'}
+                      ? 'اختر نوع الشانتي وهنحسبلك الضريبة تلقائي:' 
+                      : 'Sélectionnez le type de chantier, la TVA sera calculée automatiquement :'}
                   </p>
 
-                  <div className={cn(
-                    "flex gap-2 flex-wrap",
-                    isRTL && "flex-row-reverse"
-                  )}>
-                    <Button
-                      type="button"
-                      variant={projectTvaType === 'logement' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setProjectTvaType('logement')}
-                      className="flex-1 min-w-[100px]"
-                    >
-                      <span className="text-base mr-1">🏠</span>
-                      <span className="font-bold">
-                        {isRTL ? 'سكن' : 'Logement'}
-                      </span>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={projectTvaType === 'local_pro' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setProjectTvaType('local_pro')}
-                      className="flex-1 min-w-[100px]"
-                    >
-                      <span className="text-base mr-1">🏢</span>
-                      <span className="font-bold">
-                        {isRTL ? 'محل مهني' : 'Local pro'}
-                      </span>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={projectTvaType === 'sous_traitance' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setProjectTvaType('sous_traitance')}
-                      className="flex-1 min-w-[100px]"
-                    >
-                      <span className="text-base mr-1">🤝</span>
-                      <span className="font-bold">
-                        {isRTL ? 'مقاولة باطن' : 'Sous-traitance'}
-                      </span>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={projectTvaType === 'intracommunautaire' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setProjectTvaType('intracommunautaire')}
-                      className="flex-1 min-w-[100px]"
-                    >
-                      <span className="text-base mr-1">🇪🇺</span>
-                      <span className="font-bold">
-                        {isRTL ? 'داخل أوروبا' : 'Intracom. UE'}
-                      </span>
-                    </Button>
-                  </div>
+                  <Select value={projectTvaType} onValueChange={(v) => setProjectTvaType(v as any)}>
+                    <SelectTrigger className={cn("w-full", isRTL && "text-right font-cairo")}>
+                      <SelectValue placeholder={isRTL ? 'اختر نوع الشانتي' : 'Type de chantier'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="logement_ancien">
+                        🏠 {isRTL ? 'سكن قديم (أكثر من سنتين)' : 'Logement ancien (plus de 2 ans)'} — TVA 10%
+                      </SelectItem>
+                      <SelectItem value="logement_neuf">
+                        🏗️ {isRTL ? 'سكن جديد' : 'Logement neuf'} — TVA 20%
+                      </SelectItem>
+                      <SelectItem value="local_pro">
+                        🏢 {isRTL ? 'محل مهني' : 'Local professionnel'} — TVA 20%
+                      </SelectItem>
+                      <SelectItem value="sous_traitance">
+                        🤝 {isRTL ? 'مقاولة باطن' : 'Sous-traitance'} — TVA 0%
+                      </SelectItem>
+                      <SelectItem value="intracommunautaire">
+                        🇪🇺 {isRTL ? 'زبون مهني في أوروبا' : 'Client professionnel en Europe'} — TVA 0%
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
 
                   {/* Computed TVA result (read-only) */}
                   <div className={cn(
@@ -3428,8 +3401,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                         : "text-primary",
                       isRTL && "font-cairo text-right"
                     )}>
-                      {projectTvaType === 'logement' && (isRTL ? '📊 TVA = 10% (تجديد سكني)' : '📊 TVA = 10% (rénovation logement)')}
-                      {projectTvaType === 'local_pro' && (isRTL ? '📊 TVA = 20% (محل مهني / بناء جديد)' : '📊 TVA = 20% (local professionnel / neuf)')}
+                      {projectTvaType === 'logement_ancien' && (isRTL ? '📊 TVA = 10% (تجديد سكن قديم)' : '📊 TVA = 10% (rénovation logement ancien)')}
+                      {projectTvaType === 'logement_neuf' && (isRTL ? '📊 TVA = 20% (سكن جديد)' : '📊 TVA = 20% (logement neuf)')}
+                      {projectTvaType === 'local_pro' && (isRTL ? '📊 TVA = 20% (محل مهني)' : '📊 TVA = 20% (local professionnel)')}
                       {projectTvaType === 'sous_traitance' && (isRTL ? '📊 TVA = 0% (مقاولة باطن — Autoliquidation)' : '📊 TVA = 0% (Autoliquidation – art. 283-2 du CGI)')}
                       {projectTvaType === 'intracommunautaire' && (isRTL ? '📊 TVA = 0% (داخل أوروبا — إعفاء)' : '📊 TVA = 0% (Exonération – art. 262 ter I du CGI)')}
                     </p>
@@ -3437,12 +3411,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                       "text-xs text-muted-foreground mt-1",
                       isRTL && "font-cairo text-right"
                     )}>
-                      {isRTL ? 'TVA محسوبة تلقائياً حسب نوع المشروع' : 'TVA calculée automatiquement selon le type de projet'}
+                      {isRTL ? 'TVA محسوبة تلقائياً حسب نوع الشانتي' : 'TVA calculée automatiquement selon le type de chantier'}
                     </p>
                   </div>
 
                   {/* RULE 5: Coherence alert - logement + B2B client */}
-                  {projectTvaType === 'logement' && clientIsB2B && (
+                  {(projectTvaType === 'logement_ancien' || projectTvaType === 'logement_neuf') && clientIsB2B && (
                     <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
                       <p className={cn(
                         "text-xs text-destructive font-medium",

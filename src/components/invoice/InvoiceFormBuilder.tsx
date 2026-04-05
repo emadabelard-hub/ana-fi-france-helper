@@ -1602,7 +1602,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     const profileData = profile as any;
     setIsAutoEntrepreneur(Boolean(profileData?.tva_exempt || profileData?.legal_status === 'auto-entrepreneur'));
     setSelectedTvaRate(10);
-    setProjectTvaType('logement');
+    setProjectTvaType('logement_ancien');
     setValidityDuration(30);
     setDueDateDays(30);
     setAcompteEnabled(false);

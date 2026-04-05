@@ -661,7 +661,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     const tvaExempt = isAutoEntrepreneur;
     const isSousTraitanceTva = !isAutoEntrepreneur && projectTvaType === 'sous_traitance';
     const isIntracomTva = !isAutoEntrepreneur && projectTvaType === 'intracommunautaire';
-    const tvaRate = tvaExempt || isSousTraitanceTva || isIntracomTva ? 0 : (projectTvaType === 'logement' ? 10 : 20);
+    const tvaRate = tvaExempt || isSousTraitanceTva || isIntracomTva ? 0 : (projectTvaType === 'logement_ancien' ? 10 : 20);
     const totals = calculateInvoiceTotals({
       subtotal,
       tvaRate,

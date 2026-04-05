@@ -228,23 +228,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
   // Always compute a TVA legal mention based on client type / country / rate / regime
   const vatFooterMention = (() => {
-    // 1. Franchise / micro-entrepreneur — no TVA
-    if (isFranchise) return 'TVA non applicable - article 293B du CGI';
-    // 2. Autoliquidation (sous-traitance BTP)
+    if (isFranchise) return 'TVA non applicable, article 293B du CGI';
     if (isAutoliquidationTva) return 'Autoliquidation de la TVA – article 283-2 du CGI';
-    // 3. Intracommunautaire (client pro UE)
-    if (isIntracomTva) return 'Exonération de TVA – livraison intracommunautaire – article 262 ter I du CGI';
-    // 4. Standard TVA — fixed rules based on rate
+    if (isIntracomTva) return 'Exonération de TVA – article 262 ter I du CGI';
     if (data.tvaRate === 10) return 'TVA au taux réduit de 10% conformément à l\'article 279-0 bis du CGI';
-    if (data.tvaRate === 20) {
-      // Société en France → législation en vigueur ; Particulier → article 278
-      if (data.client?.isB2B) return 'TVA au taux normal de 20% conformément à la législation en vigueur';
-      return 'TVA au taux normal de 20% conformément à l\'article 278 du CGI';
-    }
-    if (data.tvaRate === 5.5) return 'TVA au taux réduit de 5,5% (travaux énergétiques)';
-    if (data.tvaRate > 0) return `TVA au taux de ${data.tvaRate}%`;
-    // 5. Fallback
-    return 'TVA applicable selon la réglementation en vigueur';
+    return 'TVA au taux normal de 20% conformément à l\'article 278 du CGI';
   })();
 
   const cleanLegalFooter = (data.legalFooter || '')

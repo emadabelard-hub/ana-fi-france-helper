@@ -222,11 +222,29 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   const isIntracomTva = tvaRegime === 'intracommunautaire';
   const isFranchise = tvaRegime === 'franchise';
 
-  // TVA mention is now displayed inline after Total TTC (not in footer)
-  // Footer only shows the rate info for standard TVA
-  const vatFooterMention = data.tvaRate > 0
-    ? `TVA au taux de ${data.tvaRate}%`
-    : '';
+  // Always compute a TVA legal mention based on client type / country / rate / regime
+  const vatFooterMention = (() => {
+    // 1. Franchise / micro-entrepreneur — no TVA
+    if (isFranchise) return 'TVA non applicable - article 293B du CGI';
+    // 2. Autoliquidation (sous-traitance BTP or pro hors France)
+    if (isAutoliquidationTva) {
+      // Check if it's explicitly sous-traitance
+      const isSousTraitance = data.legalMentions?.toLowerCase().includes('sous-traitance')
+        || data.natureOperation?.toLowerCase().includes('sous-traitance');
+      return isSousTraitance
+        ? 'Autoliquidation de la TVA - sous-traitance (article 283-2 du CGI)'
+        : 'Autoliquidation de la TVA - article 283-2 du CGI';
+    }
+    // 3. Intracommunautaire (client UE B2B)
+    if (isIntracomTva) return 'Exonération de TVA – article 262 ter I du CGI';
+    // 4. Standard TVA — differentiate by rate
+    if (data.tvaRate === 5.5) return 'TVA applicable au taux réduit de 5,5% (travaux énergétiques)';
+    if (data.tvaRate === 10) return 'TVA applicable au taux réduit de 10% (rénovation)';
+    if (data.tvaRate === 20) return 'TVA applicable au taux de 20%';
+    if (data.tvaRate > 0) return `TVA applicable au taux de ${data.tvaRate}%`;
+    // 5. Fallback — always show something
+    return 'TVA applicable selon la réglementation en vigueur';
+  })();
 
   const cleanLegalFooter = (data.legalFooter || '')
     .replace(/TVA appliquée à\s*\d+(?:[.,]\d+)?%/gi, '')
@@ -676,9 +694,8 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </div>
 
           {/* Legal Footer — inside end-block so it's never isolated */}
-          {(cleanLegalFooter || vatFooterMention || data.emitter.iban || assuranceHeaderLine) && (
-            <div className="invoice-iban-block invoice-footer-block mt-1.5 pt-1 text-center" style={{ borderTop: '1px solid #e5e7eb' }}>
-              <p className="text-[5.5pt] text-gray-300 leading-snug">{vatFooterMention}</p>
+          <div className="invoice-iban-block invoice-footer-block mt-1.5 pt-1 text-center" style={{ borderTop: '1px solid #e5e7eb' }}>
+              <p className="text-[6pt] text-gray-500 leading-snug font-medium italic">{vatFooterMention}</p>
               {cleanLegalFooter && <p className="text-[5.5pt] text-gray-300 leading-snug whitespace-pre-line">{cleanLegalFooter}</p>}
               {data.emitter.iban && (
                 <p className="text-[6pt] text-gray-400 mt-0.5">
@@ -693,7 +710,6 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 {data.type === 'DEVIS' && ' Validité du devis : 30 jours.'}
               </p>
             </div>
-          )}
 
         </div>{/* end invoice-totals-signature-block */}
 

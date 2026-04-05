@@ -149,7 +149,11 @@ const AR_LABELS: Record<string, string> = {
   'TVA non applicable, article 293B du CGI': 'معفى من الضريبة، مادة 293 ب',
   'Autoliquidation de la TVA – article 283-2 du CGI': 'احتساب عكسي للضريبة، مادة 283-2',
   'Autoliquidation de la TVA – article 283 du CGI': 'احتساب عكسي للضريبة، مادة 283',
+  'Exonération de TVA – livraison intracommunautaire – article 262 ter I du CGI': 'إعفاء من الضريبة — توريد داخل أوروبا — مادة 262 ter I',
   'Exonération de TVA – article 262 ter I du CGI': 'إعفاء من الضريبة — مادة 262 ter I',
+  'TVA au taux réduit de 10% conformément à l\'article 279-0 bis du CGI': 'ضريبة مخفضة 10% — مادة 279-0 bis',
+  'TVA au taux normal de 20% conformément à l\'article 278 du CGI': 'ضريبة 20% — مادة 278',
+  'TVA au taux normal de 20% conformément à la législation en vigueur': 'ضريبة 20% حسب التشريع الساري',
   'Garantie décennale': 'ضمان عشري',
   'Retenue de garantie': 'ضمان محجوز',
 };
@@ -226,23 +230,20 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   const vatFooterMention = (() => {
     // 1. Franchise / micro-entrepreneur — no TVA
     if (isFranchise) return 'TVA non applicable - article 293B du CGI';
-    // 2. Autoliquidation (sous-traitance BTP or pro hors France)
-    if (isAutoliquidationTva) {
-      // Check if it's explicitly sous-traitance
-      const isSousTraitance = data.legalMentions?.toLowerCase().includes('sous-traitance')
-        || data.natureOperation?.toLowerCase().includes('sous-traitance');
-      return isSousTraitance
-        ? 'Autoliquidation de la TVA - sous-traitance (article 283-2 du CGI)'
-        : 'Autoliquidation de la TVA - article 283-2 du CGI';
+    // 2. Autoliquidation (sous-traitance BTP)
+    if (isAutoliquidationTva) return 'Autoliquidation de la TVA – article 283-2 du CGI';
+    // 3. Intracommunautaire (client pro UE)
+    if (isIntracomTva) return 'Exonération de TVA – livraison intracommunautaire – article 262 ter I du CGI';
+    // 4. Standard TVA — fixed rules based on rate
+    if (data.tvaRate === 10) return 'TVA au taux réduit de 10% conformément à l\'article 279-0 bis du CGI';
+    if (data.tvaRate === 20) {
+      // Société en France → législation en vigueur ; Particulier → article 278
+      if (data.client?.isB2B) return 'TVA au taux normal de 20% conformément à la législation en vigueur';
+      return 'TVA au taux normal de 20% conformément à l\'article 278 du CGI';
     }
-    // 3. Intracommunautaire (client UE B2B)
-    if (isIntracomTva) return 'Exonération de TVA – article 262 ter I du CGI';
-    // 4. Standard TVA — differentiate by rate
-    if (data.tvaRate === 5.5) return 'TVA applicable au taux réduit de 5,5% (travaux énergétiques)';
-    if (data.tvaRate === 10) return 'TVA applicable au taux réduit de 10% (rénovation)';
-    if (data.tvaRate === 20) return 'TVA applicable au taux de 20%';
-    if (data.tvaRate > 0) return `TVA applicable au taux de ${data.tvaRate}%`;
-    // 5. Fallback — always show something
+    if (data.tvaRate === 5.5) return 'TVA au taux réduit de 5,5% (travaux énergétiques)';
+    if (data.tvaRate > 0) return `TVA au taux de ${data.tvaRate}%`;
+    // 5. Fallback
     return 'TVA applicable selon la réglementation en vigueur';
   })();
 

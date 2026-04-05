@@ -677,15 +677,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     const subtotalAfterDiscount = totals.subtotalAfterDiscount;
     const tvaAmount = totals.tvaAmount;
     const total = totals.total;
-    const vatLegalMention = tvaRate > 0
-      ? `TVA au taux de ${tvaRate}%`
-      : tvaExempt
-        ? 'TVA non applicable, article 293B du CGI'
-        : isSousTraitanceTva
-          ? 'Autoliquidation de la TVA – article 283-2 du CGI'
-          : isIntracomTva
-            ? 'Exonération de TVA – article 262 ter I du CGI'
-            : undefined;
+    const vatLegalMention = (() => {
+      if (tvaExempt) return 'TVA non applicable, article 293B du CGI';
+      if (isSousTraitanceTva) return 'Autoliquidation de la TVA – article 283-2 du CGI';
+      if (isIntracomTva) return 'Exonération de TVA – livraison intracommunautaire – article 262 ter I du CGI';
+      if (tvaRate === 10) return 'TVA au taux réduit de 10% conformément à l\'article 279-0 bis du CGI';
+      if (tvaRate === 20 && (projectTvaType === 'local_pro' || clientIsB2B)) return 'TVA au taux normal de 20% conformément à la législation en vigueur';
+      if (tvaRate === 20) return 'TVA au taux normal de 20% conformément à l\'article 278 du CGI';
+      return 'TVA applicable selon la réglementation en vigueur';
+    })();
     
     return {
       type: documentType === 'devis' ? 'DEVIS' : 'FACTURE',

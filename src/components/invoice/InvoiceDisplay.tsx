@@ -149,7 +149,11 @@ const AR_LABELS: Record<string, string> = {
   'TVA non applicable, article 293B du CGI': 'معفى من الضريبة، مادة 293 ب',
   'Autoliquidation de la TVA – article 283-2 du CGI': 'احتساب عكسي للضريبة، مادة 283-2',
   'Autoliquidation de la TVA – article 283 du CGI': 'احتساب عكسي للضريبة، مادة 283',
+  'Exonération de TVA – livraison intracommunautaire – article 262 ter I du CGI': 'إعفاء من الضريبة — توريد داخل أوروبا — مادة 262 ter I',
   'Exonération de TVA – article 262 ter I du CGI': 'إعفاء من الضريبة — مادة 262 ter I',
+  'TVA au taux réduit de 10% conformément à l\'article 279-0 bis du CGI': 'ضريبة مخفضة 10% — مادة 279-0 bis',
+  'TVA au taux normal de 20% conformément à l\'article 278 du CGI': 'ضريبة 20% — مادة 278',
+  'TVA au taux normal de 20% conformément à la législation en vigueur': 'ضريبة 20% حسب التشريع الساري',
   'Garantie décennale': 'ضمان عشري',
   'Retenue de garantie': 'ضمان محجوز',
 };

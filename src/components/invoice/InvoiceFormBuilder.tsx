@@ -678,11 +678,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     const tvaAmount = totals.tvaAmount;
     const total = totals.total;
     const vatLegalMention = (() => {
-      if (tvaExempt) return 'TVA non applicable, article 293B du CGI';
-      if (isSousTraitanceTva) return 'Autoliquidation de la TVA – article 283-2 du CGI';
-      if (isIntracomTva) return 'Exonération de TVA – article 262 ter I du CGI';
-      if (tvaRate === 10) return 'TVA au taux réduit de 10% conformément à l\'article 279-0 bis du CGI';
-      return 'TVA au taux normal de 20% conformément à l\'article 278 du CGI';
+      if (tvaExempt) return 'TVA non applicable, article 293B du Code général des impôts (CGI)';
+      if (isSousTraitanceTva) return 'Autoliquidation de la TVA – article 283-2 du Code général des impôts (CGI)';
+      if (isIntracomTva) return 'Exonération de TVA – livraison intracommunautaire – article 262 ter I du Code général des impôts (CGI)';
+      if (projectTvaType === 'logement_ancien') return 'TVA au taux réduit de 10% conformément à l\'article 279-0 bis du Code général des impôts (CGI)';
+      if (projectTvaType === 'local_pro') return 'TVA au taux normal de 20% conformément à la législation en vigueur';
+      return 'TVA au taux normal de 20% conformément à l\'article 278 du Code général des impôts (CGI)';
     })();
     
     return {
@@ -3367,20 +3368,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                       <SelectValue placeholder={isRTL ? 'اختر نوع الشانتي' : 'Type de chantier'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="logement_ancien">
-                        🏠 {isRTL ? 'سكن قديم (أكثر من سنتين)' : 'Logement ancien (plus de 2 ans)'} — TVA 10%
-                      </SelectItem>
-                      <SelectItem value="logement_neuf">
-                        🏗️ {isRTL ? 'سكن جديد' : 'Logement neuf'} — TVA 20%
-                      </SelectItem>
-                      <SelectItem value="local_pro">
-                        🏢 {isRTL ? 'محل مهني' : 'Local professionnel'} — TVA 20%
-                      </SelectItem>
                       <SelectItem value="sous_traitance">
                         🤝 {isRTL ? 'مقاولة باطن' : 'Sous-traitance'} — TVA 0%
                       </SelectItem>
                       <SelectItem value="intracommunautaire">
                         🇪🇺 {isRTL ? 'زبون مهني في أوروبا' : 'Client professionnel en Europe'} — TVA 0%
+                      </SelectItem>
+                      <SelectItem value="logement_ancien">
+                        🏠 {isRTL ? 'خاص — سكن قديم (أكثر من سنتين)' : 'Particulier – logement ancien (plus de 2 ans)'} — TVA 10%
+                      </SelectItem>
+                      <SelectItem value="logement_neuf">
+                        🏗️ {isRTL ? 'خاص — سكن جديد' : 'Particulier – logement neuf'} — TVA 20%
+                      </SelectItem>
+                      <SelectItem value="local_pro">
+                        🏢 {isRTL ? 'زبون مهني في فرنسا' : 'Client professionnel en France'} — TVA 20%
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -3399,11 +3400,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                         : "text-primary",
                       isRTL && "font-cairo text-right"
                     )}>
-                      {projectTvaType === 'logement_ancien' && (isRTL ? '📊 TVA = 10% (تجديد سكن قديم)' : '📊 TVA = 10% (rénovation logement ancien)')}
-                      {projectTvaType === 'logement_neuf' && (isRTL ? '📊 TVA = 20% (سكن جديد)' : '📊 TVA = 20% (logement neuf)')}
-                      {projectTvaType === 'local_pro' && (isRTL ? '📊 TVA = 20% (محل مهني)' : '📊 TVA = 20% (local professionnel)')}
-                      {projectTvaType === 'sous_traitance' && (isRTL ? '📊 TVA = 0% (مقاولة باطن — Autoliquidation)' : '📊 TVA = 0% (Autoliquidation – art. 283-2 du CGI)')}
-                      {projectTvaType === 'intracommunautaire' && (isRTL ? '📊 TVA = 0% (داخل أوروبا — إعفاء)' : '📊 TVA = 0% (Exonération – art. 262 ter I du CGI)')}
+                      {projectTvaType === 'sous_traitance' && (isRTL ? '📊 TVA = 0% (مقاولة باطن — Autoliquidation)' : '📊 TVA = 0% — Autoliquidation de la TVA – art. 283-2 du CGI')}
+                      {projectTvaType === 'intracommunautaire' && (isRTL ? '📊 TVA = 0% (داخل أوروبا — إعفاء)' : '📊 TVA = 0% — Exonération – art. 262 ter I du CGI')}
+                      {projectTvaType === 'logement_ancien' && (isRTL ? '📊 TVA = 10% (تجديد سكن قديم)' : '📊 TVA = 10% — art. 279-0 bis du CGI')}
+                      {projectTvaType === 'logement_neuf' && (isRTL ? '📊 TVA = 20% (سكن جديد)' : '📊 TVA = 20% — art. 278 du CGI')}
+                      {projectTvaType === 'local_pro' && (isRTL ? '📊 TVA = 20% (زبون مهني في فرنسا)' : '📊 TVA = 20% — législation en vigueur')}
                     </p>
                     <p className={cn(
                       "text-xs text-muted-foreground mt-1",

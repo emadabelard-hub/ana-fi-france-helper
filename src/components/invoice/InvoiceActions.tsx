@@ -570,8 +570,10 @@ const InvoiceActions = ({
                     const link = document.createElement('a');
                     link.href = url;
                     link.download = `facturx-${invoiceData.type.toLowerCase()}-${invoiceData.number}.pdf`;
+                    document.body.appendChild(link);
                     link.click();
-                    URL.revokeObjectURL(url);
+                    document.body.removeChild(link);
+                    setTimeout(() => URL.revokeObjectURL(url), 5000);
                     toast({
                       title: isRTL ? '✅ تم التحميل' : '✅ Téléchargé',
                       description: isRTL ? 'PDF Factur-X جاهز (EN 16931)' : 'PDF Factur-X conforme EN 16931',

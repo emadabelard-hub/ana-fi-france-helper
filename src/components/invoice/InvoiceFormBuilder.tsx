@@ -3368,20 +3368,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                       <SelectValue placeholder={isRTL ? 'اختر نوع الشانتي' : 'Type de chantier'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="logement_ancien">
-                        🏠 {isRTL ? 'سكن قديم (أكثر من سنتين)' : 'Logement ancien (plus de 2 ans)'} — TVA 10%
-                      </SelectItem>
-                      <SelectItem value="logement_neuf">
-                        🏗️ {isRTL ? 'سكن جديد' : 'Logement neuf'} — TVA 20%
-                      </SelectItem>
-                      <SelectItem value="local_pro">
-                        🏢 {isRTL ? 'محل مهني' : 'Local professionnel'} — TVA 20%
-                      </SelectItem>
                       <SelectItem value="sous_traitance">
                         🤝 {isRTL ? 'مقاولة باطن' : 'Sous-traitance'} — TVA 0%
                       </SelectItem>
                       <SelectItem value="intracommunautaire">
                         🇪🇺 {isRTL ? 'زبون مهني في أوروبا' : 'Client professionnel en Europe'} — TVA 0%
+                      </SelectItem>
+                      <SelectItem value="logement_ancien">
+                        🏠 {isRTL ? 'خاص — سكن قديم (أكثر من سنتين)' : 'Particulier – logement ancien (plus de 2 ans)'} — TVA 10%
+                      </SelectItem>
+                      <SelectItem value="logement_neuf">
+                        🏗️ {isRTL ? 'خاص — سكن جديد' : 'Particulier – logement neuf'} — TVA 20%
+                      </SelectItem>
+                      <SelectItem value="local_pro">
+                        🏢 {isRTL ? 'زبون مهني في فرنسا' : 'Client professionnel en France'} — TVA 20%
                       </SelectItem>
                     </SelectContent>
                   </Select>

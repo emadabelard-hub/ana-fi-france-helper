@@ -36,8 +36,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isPrimaryAdmin = !!user?.email && normalizeEmail(user.email) === PRIMARY_ADMIN_EMAIL;
 
   useEffect(() => {
+    let isSigningOut = false;
+
     // CRITICAL: Set up auth listener BEFORE checking session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // Block any state update during explicit sign-out
+      if (isSigningOut || sessionStorage.getItem('explicit_signout') === 'true') {
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setIsLoading(false);
+        }
+        return;
+      }
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setIsLoading(false);
@@ -55,6 +66,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // If user explicitly signed out, don't auto-create anonymous session
         if (sessionStorage.getItem('explicit_signout') === 'true') {
           sessionStorage.removeItem('explicit_signout');
+          setUser(null);
+          setSession(null);
           setIsLoading(false);
           clearTimeout(safetyTimer);
           return;
@@ -84,9 +97,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
+    // Expose signing out flag to signOut function
+    (window as any).__setSigningOut = (val: boolean) => { isSigningOut = val; };
+
     initSession();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      delete (window as any).__setSigningOut;
+    };
   }, []);
 
   const signUp = async (email: string, password: string): Promise<AuthResult> => {

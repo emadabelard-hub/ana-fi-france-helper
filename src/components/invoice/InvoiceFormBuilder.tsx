@@ -3400,11 +3400,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                         : "text-primary",
                       isRTL && "font-cairo text-right"
                     )}>
-                      {projectTvaType === 'logement_ancien' && (isRTL ? '📊 TVA = 10% (تجديد سكن قديم)' : '📊 TVA = 10% (rénovation logement ancien)')}
-                      {projectTvaType === 'logement_neuf' && (isRTL ? '📊 TVA = 20% (سكن جديد)' : '📊 TVA = 20% (logement neuf)')}
-                      {projectTvaType === 'local_pro' && (isRTL ? '📊 TVA = 20% (محل مهني)' : '📊 TVA = 20% (local professionnel)')}
-                      {projectTvaType === 'sous_traitance' && (isRTL ? '📊 TVA = 0% (مقاولة باطن — Autoliquidation)' : '📊 TVA = 0% (Autoliquidation – art. 283-2 du CGI)')}
-                      {projectTvaType === 'intracommunautaire' && (isRTL ? '📊 TVA = 0% (داخل أوروبا — إعفاء)' : '📊 TVA = 0% (Exonération – art. 262 ter I du CGI)')}
+                      {projectTvaType === 'sous_traitance' && (isRTL ? '📊 TVA = 0% (مقاولة باطن — Autoliquidation)' : '📊 TVA = 0% — Autoliquidation de la TVA – art. 283-2 du CGI')}
+                      {projectTvaType === 'intracommunautaire' && (isRTL ? '📊 TVA = 0% (داخل أوروبا — إعفاء)' : '📊 TVA = 0% — Exonération – art. 262 ter I du CGI')}
+                      {projectTvaType === 'logement_ancien' && (isRTL ? '📊 TVA = 10% (تجديد سكن قديم)' : '📊 TVA = 10% — art. 279-0 bis du CGI')}
+                      {projectTvaType === 'logement_neuf' && (isRTL ? '📊 TVA = 20% (سكن جديد)' : '📊 TVA = 20% — art. 278 du CGI')}
+                      {projectTvaType === 'local_pro' && (isRTL ? '📊 TVA = 20% (زبون مهني في فرنسا)' : '📊 TVA = 20% — législation en vigueur')}
                     </p>
                     <p className={cn(
                       "text-xs text-muted-foreground mt-1",

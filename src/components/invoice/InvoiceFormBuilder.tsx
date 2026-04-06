@@ -393,10 +393,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       const currentDocument = loadCurrentDocument(documentType);
       if (currentDocument) {
         restorePersistedDocument(currentDocument);
-        toast({
-          title: isRTL ? '📌 تم استرجاع المستند الحالي' : '📌 Document en cours restauré',
-          description: isRTL ? 'رجعنالك الدوفي/الفاتورة كما تركتها' : 'Votre devis/facture a été repris automatiquement',
-        });
         setDraftRestored(true);
         return;
       }
@@ -407,10 +403,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       
       if (draft) {
         restorePersistedDocument(draft);
-        toast({
-          title: isRTL ? '📝 تم استعادة المسودة' : '📝 Brouillon restauré',
-          description: isRTL ? 'رجعنالك الشغل اللي كنت بتعمله' : 'Votre travail précédent a été restauré',
-        });
       }
       setDraftRestored(true);
     };

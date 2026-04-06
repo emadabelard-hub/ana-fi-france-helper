@@ -3715,7 +3715,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                    if (missingFields.length > 0) {
                     // Map field emoji to step index for click-to-navigate
                     const fieldToStep: Record<string, number> = {
-                      '👤': 0, '📍': 0, '🔢': 1, '🏢': 0, '🏗️': 4, '📋': 2,
+                      '👤': 0, '📍': 0, '🔢': 3, '🏢': 0, '🏗️': 4, '📋': 2,
                     };
                     const getStepForField = (f: string): number => {
                       for (const [emoji, step] of Object.entries(fieldToStep)) {

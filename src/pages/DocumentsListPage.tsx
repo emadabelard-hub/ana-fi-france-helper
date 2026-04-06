@@ -738,7 +738,8 @@ const DocumentsListPage = () => {
         </Tabs>
       </div>
 
-      <Dialog open={Boolean(selectedDocument)} onOpenChange={(open) => !open && setSelectedDocument(null)}>
+      {/* Summary Dialog */}
+      <Dialog open={Boolean(selectedDocument) && !showFullView} onOpenChange={(open) => { if (!open) setSelectedDocument(null); }}>
         <DialogContent className={cn("max-w-2xl", isRTL && "font-cairo")}>
           {selectedDocument && (
             <>
@@ -762,6 +763,17 @@ const DocumentsListPage = () => {
                   (isRTL ? 'مسودة' : 'Brouillon')
                 }</p>
               </div>
+
+              {/* View full document button */}
+              {selectedDocument.document_data && Object.keys(selectedDocument.document_data).length > 0 && (
+                <Button
+                  className="w-full gap-2 bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold"
+                  onClick={() => setShowFullView(true)}
+                >
+                  <Eye className="h-4 w-4" />
+                  {isRTL ? '📄 عرض المستند الكامل' : '📄 Voir le document complet'}
+                </Button>
+              )}
 
               {/* Convert Devis → Facture button */}
               {selectedDocument.document_type === 'devis' && (
@@ -802,6 +814,32 @@ const DocumentsListPage = () => {
                 </div>
               )}
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Full Document View Dialog */}
+      <Dialog open={Boolean(selectedDocument) && showFullView} onOpenChange={(open) => { if (!open) { setShowFullView(false); } }}>
+        <DialogContent className="max-w-4xl h-[90vh] p-0 overflow-hidden">
+          {selectedDocument && selectedDocument.document_data && (
+            <div className="flex flex-col h-full">
+              <div className={cn("flex items-center justify-between px-4 py-3 border-b border-border shrink-0", isRTL && "flex-row-reverse")}>
+                <h2 className={cn("text-sm font-bold", isRTL && "font-cairo")}>
+                  {selectedDocument.document_number} — {selectedDocument.document_type === 'devis' ? (isRTL ? 'دوفي' : 'Devis') : (isRTL ? 'فاتورة' : 'Facture')}
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => setShowFullView(false)}>
+                  {isRTL ? 'رجوع' : 'Retour'}
+                </Button>
+              </div>
+              <ScrollArea className="flex-1">
+                <div className="p-4">
+                  <InvoiceDisplay
+                    data={selectedDocument.document_data}
+                    showArabic={true}
+                  />
+                </div>
+              </ScrollArea>
+            </div>
           )}
         </DialogContent>
       </Dialog>

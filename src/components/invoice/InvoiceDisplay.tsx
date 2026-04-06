@@ -10,6 +10,11 @@ export interface PaymentMilestone {
   targetDate?: string;
 }
 
+export interface SelectedTVA {
+  taux: number;
+  mention: string;
+}
+
 export interface InvoiceData {
   type: string;
   number: string;
@@ -70,6 +75,8 @@ export interface InvoiceData {
   tvaExempt: boolean;
   tvaExemptText?: string;
   tvaRegime?: 'standard' | 'franchise' | 'autoliquidation' | 'intracommunautaire';
+  selectedTVA?: SelectedTVA;
+  tvaMention?: string;
   paymentTerms: string;
   paymentDeadline?: string;
   acomptePercent?: number;
@@ -227,7 +234,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   const isFranchise = tvaRegime === 'franchise';
 
   // The legal mention from the form selection is the SINGLE source of truth — never recompute
-  const vatFooterMention = data.legalMentions || (() => {
+  const vatFooterMention = data.tvaMention || data.selectedTVA?.mention || data.legalMentions || (() => {
     // Fallback only for legacy documents without legalMentions
     if (isFranchise) return 'TVA non applicable, article 293B du Code général des impôts (CGI)';
     if (isAutoliquidationTva) return 'Autoliquidation de la TVA – article 283-2 du Code général des impôts (CGI)';
@@ -235,6 +242,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
     if (data.tvaRate === 10) return 'TVA au taux réduit de 10% conformément à l\'article 279-0 bis du Code général des impôts (CGI)';
     return 'TVA au taux normal de 20% conformément à l\'article 278 du Code général des impôts (CGI)';
   })();
+  const displayedTvaMention = vatFooterMention.trim();
 
   const cleanLegalFooter = (data.legalFooter || '')
     .replace(/TVA appliquée à\s*\d+(?:[.,]\d+)?%/gi, '')
@@ -576,23 +584,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               </div>
 
               {/* TVA legal mention — displayed right after Total TTC, before Acompte */}
-              {tvaRegime !== 'standard' && (
+              {displayedTvaMention && (
                 <div className="mt-1 px-2 py-1 rounded text-center" style={{ backgroundColor: '#fefce8', border: '1px solid #fde68a' }}>
-                  {isAutoliquidationTva && (
-                    <p className="text-[6.5pt] text-gray-600 font-medium italic">
-                      Autoliquidation de la TVA – article 283-2 du CGI
-                    </p>
-                  )}
-                  {isIntracomTva && (
-                    <p className="text-[6.5pt] text-gray-600 font-medium italic">
-                      Exonération de TVA – article 262 ter I du CGI
-                    </p>
-                  )}
-                  {isFranchise && (
-                    <p className="text-[6.5pt] text-gray-600 font-medium italic">
-                      TVA non applicable, art. 293 B du CGI
-                    </p>
-                  )}
+                  <p className="text-[6.5pt] text-gray-600 font-medium italic">
+                    {displayedTvaMention}
+                  </p>
                 </div>
               )}
 
@@ -685,7 +681,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
           {/* Legal Footer — inside end-block so it's never isolated */}
           <div className="invoice-iban-block invoice-footer-block mt-1.5 pt-1 text-center" style={{ borderTop: '1px solid #e5e7eb' }}>
-              <p className="text-[6pt] text-gray-500 leading-snug font-medium italic">{vatFooterMention}</p>
+              {displayedTvaMention && <p className="text-[6pt] text-gray-500 leading-snug font-medium italic">{displayedTvaMention}</p>}
               {cleanLegalFooter && <p className="text-[5.5pt] text-gray-300 leading-snug whitespace-pre-line">{cleanLegalFooter}</p>}
               {data.emitter.iban && (
                 <p className="text-[6pt] text-gray-400 mt-0.5">

@@ -1706,34 +1706,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
 
       <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
-        {onDocumentTypeChange ? (
-          <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
-            <span className={cn(
-              "text-xs font-bold uppercase",
-              documentType === 'devis' ? 'text-primary' : 'text-muted-foreground',
-              isRTL && "font-cairo"
-            )}>
-              {isRTL ? 'دوفي' : 'Devis'}
-            </span>
-            <Switch
-              checked={documentType === 'facture'}
-              onCheckedChange={(checked) => {
-                const newType = checked ? 'facture' : 'devis';
-                setDocNumber(getDocPrefix(newType));
-                onDocumentTypeChange(newType);
-              }}
-            />
-            <span className={cn(
-              "text-xs font-bold uppercase",
-              documentType === 'facture' ? 'text-primary' : 'text-muted-foreground',
-              isRTL && "font-cairo"
-            )}>
-              {isRTL ? 'فاتورة' : 'Facture'}
-            </span>
-          </div>
-        ) : (
-          <div />
-        )}
+        <div />
         <Button
           type="button"
           variant="outline"

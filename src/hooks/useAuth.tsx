@@ -144,22 +144,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    // Set flag BEFORE sign out to prevent anonymous session re-creation
+    // 1. Block auth listener from recreating sessions
     sessionStorage.setItem('explicit_signout', 'true');
-    
-    // Sign out from Supabase
-    await supabase.auth.signOut();
-    
-    // Clear all local storage to ensure clean state
-    localStorage.clear();
-    sessionStorage.setItem('explicit_signout', 'true'); // Re-set after clear
-    
-    // Reset state
+    (window as any).__setSigningOut?.(true);
+
+    // 2. Immediately clear React state so UI updates
     setUser(null);
     setSession(null);
-    
-    // Hard redirect to login
-    window.location.href = '/login';
+
+    // 3. Sign out from Supabase (clears server session)
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (e) {
+      console.warn('signOut error (ignored):', e);
+    }
+
+    // 4. Wipe all local persistence
+    localStorage.clear();
+    sessionStorage.setItem('explicit_signout', 'true'); // Re-set after clear
+
+    // 5. Hard redirect — guarantees clean page state
+    window.location.replace('/login');
   };
 
   return (

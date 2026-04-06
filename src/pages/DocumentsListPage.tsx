@@ -51,6 +51,7 @@ const DocumentsListPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
+  const [showFullView, setShowFullView] = useState(false);
   const [converting, setConverting] = useState(false);
 
   const convertedSourceNumbers = useMemo(() => {

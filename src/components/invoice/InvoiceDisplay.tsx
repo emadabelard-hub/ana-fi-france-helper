@@ -226,13 +226,14 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   const isIntracomTva = tvaRegime === 'intracommunautaire';
   const isFranchise = tvaRegime === 'franchise';
 
-  // Always compute a TVA legal mention based on client type / country / rate / regime
-  const vatFooterMention = (() => {
-    if (isFranchise) return 'TVA non applicable, article 293B du CGI';
-    if (isAutoliquidationTva) return 'Autoliquidation de la TVA – article 283-2 du CGI';
-    if (isIntracomTva) return 'Exonération de TVA – article 262 ter I du CGI';
-    if (data.tvaRate === 10) return 'TVA au taux réduit de 10% conformément à l\'article 279-0 bis du CGI';
-    return 'TVA au taux normal de 20% conformément à l\'article 278 du CGI';
+  // The legal mention from the form selection is the SINGLE source of truth — never recompute
+  const vatFooterMention = data.legalMentions || (() => {
+    // Fallback only for legacy documents without legalMentions
+    if (isFranchise) return 'TVA non applicable, article 293B du Code général des impôts (CGI)';
+    if (isAutoliquidationTva) return 'Autoliquidation de la TVA – article 283-2 du Code général des impôts (CGI)';
+    if (isIntracomTva) return 'Exonération de TVA – livraison intracommunautaire – article 262 ter I du Code général des impôts (CGI)';
+    if (data.tvaRate === 10) return 'TVA au taux réduit de 10% conformément à l\'article 279-0 bis du Code général des impôts (CGI)';
+    return 'TVA au taux normal de 20% conformément à l\'article 278 du Code général des impôts (CGI)';
   })();
 
   const cleanLegalFooter = (data.legalFooter || '')

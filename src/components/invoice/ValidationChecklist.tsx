@@ -70,7 +70,7 @@ function runValidation(input: ValidationInput): CheckItem[] {
     status: hasValidDocNumber ? 'ok' : 'error',
     detail_fr: hasValidDocNumber ? input.docNumber : 'Numéro manquant',
     detail_ar: hasValidDocNumber ? input.docNumber : 'الرقم ناقص',
-    stepIndex: 1,
+    stepIndex: 3,
   });
 
   // 3. Travaux (step 2)

@@ -678,11 +678,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     const tvaAmount = totals.tvaAmount;
     const total = totals.total;
     const vatLegalMention = (() => {
-      if (tvaExempt) return 'TVA non applicable, article 293B du CGI';
-      if (isSousTraitanceTva) return 'Autoliquidation de la TVA – article 283-2 du CGI';
-      if (isIntracomTva) return 'Exonération de TVA – article 262 ter I du CGI';
-      if (tvaRate === 10) return 'TVA au taux réduit de 10% conformément à l\'article 279-0 bis du CGI';
-      return 'TVA au taux normal de 20% conformément à l\'article 278 du CGI';
+      if (tvaExempt) return 'TVA non applicable, article 293B du Code général des impôts (CGI)';
+      if (isSousTraitanceTva) return 'Autoliquidation de la TVA – article 283-2 du Code général des impôts (CGI)';
+      if (isIntracomTva) return 'Exonération de TVA – livraison intracommunautaire – article 262 ter I du Code général des impôts (CGI)';
+      if (projectTvaType === 'logement_ancien') return 'TVA au taux réduit de 10% conformément à l\'article 279-0 bis du Code général des impôts (CGI)';
+      if (projectTvaType === 'local_pro') return 'TVA au taux normal de 20% conformément à la législation en vigueur';
+      return 'TVA au taux normal de 20% conformément à l\'article 278 du Code général des impôts (CGI)';
     })();
     
     return {

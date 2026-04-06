@@ -285,6 +285,10 @@ const DocumentsListPage = () => {
 
   const handleOpenDocument = (doc: DocumentRow) => {
     setSelectedDocument(doc);
+    // If document has full data, go directly to full view
+    if (doc.document_data && typeof doc.document_data === 'object' && Object.keys(doc.document_data).length > 0) {
+      setShowFullView(true);
+    }
   };
 
   const handleDirectConvert = async (doc: DocumentRow) => {
@@ -765,7 +769,7 @@ const DocumentsListPage = () => {
               </div>
 
               {/* View full document button */}
-              {selectedDocument.document_data && Object.keys(selectedDocument.document_data).length > 0 && (
+              {selectedDocument.document_data && typeof selectedDocument.document_data === 'object' && Object.keys(selectedDocument.document_data).length > 0 && (
                 <Button
                   className="w-full gap-2 bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold"
                   onClick={() => setShowFullView(true)}

@@ -374,8 +374,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (draft.discountEnabled !== undefined) setDiscountEnabled(draft.discountEnabled);
     if (draft.discountType !== undefined) setDiscountType(draft.discountType || 'percent');
     if (draft.discountValue !== undefined) setDiscountValue(draft.discountValue || 0);
-    // Never restore showPreview — always return to form view so user doesn't lose access to editing
-    // if (draft.showPreview !== undefined) setShowPreview(draft.showPreview);
+    // Restore showPreview so users don't lose preview state on mobile page reload (e.g. after download)
+    if (draft.showPreview !== undefined) setShowPreview(draft.showPreview);
     if (draft.showArabic !== undefined) setShowArabic(draft.showArabic);
     if (draft.includePhotosInPdf !== undefined) setIncludePhotosInPdf(draft.includePhotosInPdf);
     if (draft.sitePhotos !== undefined) setSitePhotos(draft.sitePhotos);

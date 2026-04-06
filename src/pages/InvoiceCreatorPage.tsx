@@ -385,11 +385,7 @@ const InvoiceCreatorPage = () => {
           <AlertDialogFooter className={cn("flex flex-col gap-2 sm:flex-col", isRTL && "items-stretch")}>
             <AlertDialogAction 
               onClick={() => {
-                // Draft is already auto-saved, just confirm and leave
-                toast({
-                  title: isRTL ? '✅ المسودة محفوظة' : '✅ Brouillon sauvegardé',
-                  description: isRTL ? 'تقدر ترجع تكمل في أي وقت' : 'Vous pourrez reprendre à tout moment',
-                });
+                // Draft is already auto-saved, just leave silently
                 confirmLeave();
               }} 
               className="bg-primary text-primary-foreground hover:bg-primary/90 w-full"

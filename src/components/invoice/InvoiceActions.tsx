@@ -222,7 +222,7 @@ const InvoiceActions = ({
     }
   };
 
-  // Share via WhatsApp
+  // Share via WhatsApp using Web Share API (works on mobile)
   const handleWhatsAppShare = async () => {
     let pdfBlob = signedPdfBlob;
     
@@ -239,26 +239,44 @@ const InvoiceActions = ({
       return;
     }
 
-    // Create download link first (WhatsApp can't directly share files via web API)
-    const url = URL.createObjectURL(pdfBlob);
     const filename = `${invoiceData.type.toLowerCase()}-${invoiceData.number}.pdf`;
-    
-    // Download the file
+    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+    // Try Web Share API first (native sharing on mobile — works with WhatsApp, email, etc.)
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({
+          title: `${invoiceData.type} N° ${invoiceData.number}`,
+          text: `${invoiceData.type} N° ${invoiceData.number} - ${invoiceData.client.name} - Total: ${invoiceData.total.toFixed(2)}€`,
+          files: [file],
+        });
+        toast({
+          title: isRTL ? '✅ تم الإرسال!' : '✅ Envoyé!',
+          description: isRTL ? 'تم مشاركة المستند بنجاح' : 'Le document a été partagé avec succès',
+        });
+        return;
+      } catch (err: any) {
+        // User cancelled share — that's fine, don't show error
+        if (err?.name === 'AbortError') return;
+        console.warn('Web Share failed, falling back to download:', err);
+      }
+    }
+
+    // Fallback: download + open WhatsApp with message
+    const url = URL.createObjectURL(pdfBlob);
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
 
-    // Prepare WhatsApp message
     const message = encodeURIComponent(
       `${invoiceData.type} N° ${invoiceData.number}\n` +
       `Client: ${invoiceData.client.name}\n` +
       `Total: ${invoiceData.total.toFixed(2)}€\n`
     );
-
-    // Open WhatsApp with pre-filled message
-    const whatsappUrl = `https://wa.me/?text=${message}`;
-    window.open(whatsappUrl, '_blank');
+    window.open(`https://wa.me/?text=${message}`, '_blank');
 
     toast({
       title: isRTL ? '📲 جاهز للإرسال!' : '📲 Prêt à envoyer!',
@@ -267,7 +285,7 @@ const InvoiceActions = ({
         : 'Le PDF est téléchargé. Attachez-le dans WhatsApp',
     });
 
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
   // Generate and download a standard PDF (no Factur-X XML)
@@ -287,8 +305,10 @@ const InvoiceActions = ({
       const link = document.createElement('a');
       link.href = url;
       link.download = `${invoiceData.type.toLowerCase()}-${invoiceData.number}.pdf`;
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
 
       toast({
         title: isRTL ? '✅ تم التحميل' : '✅ Téléchargé',
@@ -376,10 +396,13 @@ const InvoiceActions = ({
         useCORS: true,
       });
       
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
       const link = document.createElement('a');
       link.download = `${invoiceData.type.toLowerCase()}-${invoiceData.number}-${Date.now()}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 0.9);
+      link.href = dataUrl;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
 
       toast({
         title: isRTL ? "تم الحفظ" : "Enregistré",
@@ -550,8 +573,10 @@ const InvoiceActions = ({
                     const link = document.createElement('a');
                     link.href = url;
                     link.download = `facturx-${invoiceData.type.toLowerCase()}-${invoiceData.number}.pdf`;
+                    document.body.appendChild(link);
                     link.click();
-                    URL.revokeObjectURL(url);
+                    document.body.removeChild(link);
+                    setTimeout(() => URL.revokeObjectURL(url), 5000);
                     toast({
                       title: isRTL ? '✅ تم التحميل' : '✅ Téléchargé',
                       description: isRTL ? 'PDF Factur-X جاهز (EN 16931)' : 'PDF Factur-X conforme EN 16931',

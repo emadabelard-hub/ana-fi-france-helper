@@ -396,10 +396,13 @@ const InvoiceActions = ({
         useCORS: true,
       });
       
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
       const link = document.createElement('a');
       link.download = `${invoiceData.type.toLowerCase()}-${invoiceData.number}-${Date.now()}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 0.9);
+      link.href = dataUrl;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
 
       toast({
         title: isRTL ? "تم الحفظ" : "Enregistré",

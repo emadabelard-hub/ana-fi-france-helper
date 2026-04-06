@@ -68,6 +68,19 @@ const DocumentsListPage = () => {
     Boolean(doc?.linked_invoice_id) ||
     convertedSourceNumbers.has(doc?.document_number);
 
+  const hasOfficialDocumentData = (doc: DocumentRow | null | undefined) =>
+    Boolean(
+      doc?.document_data &&
+      typeof doc.document_data === 'object' &&
+      !Array.isArray(doc.document_data) &&
+      Object.keys(doc.document_data).length > 0,
+    );
+
+  const openDocumentView = (doc: DocumentRow) => {
+    setSelectedDocument(doc);
+    setShowFullView(hasOfficialDocumentData(doc));
+  };
+
   useEffect(() => {
     if (!user) {
       setIsAdmin(false);
@@ -136,7 +149,7 @@ const DocumentsListPage = () => {
 
     const target = documents.find((doc) => doc.id === targetId);
     if (target) {
-      setSelectedDocument(target);
+      openDocumentView(target);
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [location.state, location.pathname, documents, navigate]);
@@ -284,11 +297,7 @@ const DocumentsListPage = () => {
   };
 
   const handleOpenDocument = (doc: DocumentRow) => {
-    setSelectedDocument(doc);
-    // If document has full data, go directly to full view
-    if (doc.document_data && typeof doc.document_data === 'object' && Object.keys(doc.document_data).length > 0) {
-      setShowFullView(true);
-    }
+    openDocumentView(doc);
   };
 
   const handleDirectConvert = async (doc: DocumentRow) => {
@@ -552,7 +561,7 @@ const DocumentsListPage = () => {
                       onClick={(e) => {
                         e.stopPropagation();
                         const linked = documents.find((d: any) => d.id === (doc as any).linked_invoice_id);
-                        if (linked) setSelectedDocument(linked as any);
+                          if (linked) openDocumentView(linked as any);
                       }}
                     >
                       <Eye className="h-3 w-3" />
@@ -743,7 +752,7 @@ const DocumentsListPage = () => {
       </div>
 
       {/* Summary Dialog */}
-      <Dialog open={Boolean(selectedDocument) && !showFullView} onOpenChange={(open) => { if (!open) setSelectedDocument(null); }}>
+      <Dialog open={Boolean(selectedDocument) && !showFullView} onOpenChange={(open) => { if (!open) { setSelectedDocument(null); setShowFullView(false); } }}>
         <DialogContent className={cn("max-w-2xl", isRTL && "font-cairo")}>
           {selectedDocument && (
             <>
@@ -769,7 +778,7 @@ const DocumentsListPage = () => {
               </div>
 
               {/* View full document button */}
-              {selectedDocument.document_data && typeof selectedDocument.document_data === 'object' && Object.keys(selectedDocument.document_data).length > 0 && (
+              {hasOfficialDocumentData(selectedDocument) && (
                 <Button
                   className="w-full gap-2 bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold"
                   onClick={() => setShowFullView(true)}
@@ -793,7 +802,7 @@ const DocumentsListPage = () => {
                           className="w-full gap-2"
                           onClick={() => {
                             const linked = documents.find((d: any) => d.id === (selectedDocument as any).linked_invoice_id);
-                            if (linked) setSelectedDocument(linked as any);
+                            if (linked) openDocumentView(linked as any);
                           }}
                         >
                           <Eye className="h-4 w-4" />
@@ -823,7 +832,7 @@ const DocumentsListPage = () => {
       </Dialog>
 
       {/* Full Document View Dialog */}
-      <Dialog open={Boolean(selectedDocument) && showFullView} onOpenChange={(open) => { if (!open) { setShowFullView(false); } }}>
+      <Dialog open={Boolean(selectedDocument) && showFullView} onOpenChange={(open) => { if (!open) { setShowFullView(false); setSelectedDocument(null); } }}>
         <DialogContent className="max-w-4xl h-[90vh] p-0 overflow-hidden">
           {selectedDocument && selectedDocument.document_data && (
             <div className="flex flex-col h-full">
@@ -831,8 +840,8 @@ const DocumentsListPage = () => {
                 <h2 className={cn("text-sm font-bold", isRTL && "font-cairo")}>
                   {selectedDocument.document_number} — {selectedDocument.document_type === 'devis' ? (isRTL ? 'دوفي' : 'Devis') : (isRTL ? 'فاتورة' : 'Facture')}
                 </h2>
-                <Button variant="ghost" size="sm" onClick={() => setShowFullView(false)}>
-                  {isRTL ? 'رجوع' : 'Retour'}
+                <Button variant="ghost" size="sm" onClick={() => { setShowFullView(false); setSelectedDocument(null); }}>
+                  {isRTL ? 'إغلاق' : 'Fermer'}
                 </Button>
               </div>
               <ScrollArea className="flex-1">

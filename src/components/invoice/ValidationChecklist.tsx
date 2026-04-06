@@ -60,7 +60,20 @@ function runValidation(input: ValidationInput): CheckItem[] {
     stepIndex: 0,
   });
 
-  // 2. Travaux (step 2)
+  // 2. Numéro de document (step 1)
+  const prefix = input.documentType === 'facture' ? 'F-' : 'D-';
+  const hasValidDocNumber = input.docNumber.startsWith(prefix) && input.docNumber.length > prefix.length;
+  results.push({
+    id: 'docNumber',
+    label_fr: input.documentType === 'facture' ? 'Numéro de facture' : 'Numéro de devis',
+    label_ar: input.documentType === 'facture' ? 'رقم الفاتورة' : 'رقم الدوفي',
+    status: hasValidDocNumber ? 'ok' : 'error',
+    detail_fr: hasValidDocNumber ? input.docNumber : 'Numéro manquant',
+    detail_ar: hasValidDocNumber ? input.docNumber : 'الرقم ناقص',
+    stepIndex: 1,
+  });
+
+  // 3. Travaux (step 2)
   const validItems = input.items.filter(
     i => i.designation_fr.trim() && Number(i.quantity) > 0 && Number(i.unitPrice) > 0
   );

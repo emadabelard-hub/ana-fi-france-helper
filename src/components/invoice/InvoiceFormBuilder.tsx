@@ -3712,14 +3712,24 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   if (!hasValidItem && !(includeTravelCosts && travelPrice > 0)) {
                     missingFields.push(isRTL ? '📋 بند واحد على الأقل بسعره' : '📋 Au moins une prestation avec un prix');
                   }
-                  if (missingFields.length > 0) {
+                   if (missingFields.length > 0) {
+                    // Map field emoji to step index for click-to-navigate
+                    const fieldToStep: Record<string, number> = {
+                      '👤': 0, '📍': 0, '🔢': 1, '🏢': 0, '🏗️': 4, '📋': 2,
+                    };
+                    const getStepForField = (f: string): number => {
+                      for (const [emoji, step] of Object.entries(fieldToStep)) {
+                        if (f.startsWith(emoji)) return step;
+                      }
+                      return 0;
+                    };
                     toast({
                       variant: "destructive",
                       title: isRTL ? "⚠️ في حاجات ناقصة" : "⚠️ Données manquantes",
                       description: (
                         <div className="mt-2 space-y-1">
                           <p className={cn("font-medium", isRTL && "font-cairo text-right")}>
-                            {isRTL ? 'كمّل الخانات دي:' : 'Veuillez compléter:'}
+                            {isRTL ? 'كمّل الخانات دي — اضغط للتصحيح:' : 'Complétez ces champs — cliquez pour corriger:'}
                           </p>
                           <ul className={cn("list-none space-y-1 text-sm", isRTL && "text-right")}>
                             {missingFields.map((field, idx) => (
@@ -3731,7 +3741,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                                   >
                                     {isRTL ? '🏢 رقم SIRET بتاعك (14 رقم) — اضغط هنا للتعديل' : '🏢 Votre SIRET (14 chiffres) — Modifier dans Mon Entreprise →'}
                                   </button>
-                                ) : field}
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      const targetStep = getStepForField(field);
+                                      setCurrentStep(targetStep);
+                                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    className="underline hover:opacity-80 cursor-pointer w-full text-right"
+                                  >
+                                    {field} ←
+                                  </button>
+                                )}
                               </li>
                             ))}
                           </ul>

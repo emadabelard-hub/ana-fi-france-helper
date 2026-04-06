@@ -934,7 +934,27 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   };
 
   const handleNextStep = () => {
-    if (currentStep < WIZARD_STEPS.length - 1 && canProceedFromStep(currentStep)) {
+    if (currentStep < WIZARD_STEPS.length - 1) {
+      if (!canProceedFromStep(currentStep)) {
+        // Show what's missing in current step
+        const missing: string[] = [];
+        if (currentStep === 0) {
+          if (!clientName.trim()) missing.push(isRTL ? '👤 اسم الزبون' : '👤 Nom du client');
+          if (!clientAddress.trim()) missing.push(isRTL ? '📍 عنوان الزبون' : '📍 Adresse du client');
+        }
+        if (currentStep === 2) {
+          missing.push(isRTL ? '💰 أضف بند واحد على الأقل' : '💰 Ajoutez au moins une prestation');
+        }
+        if (missing.length > 0) {
+          toast({
+            title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Champs obligatoires manquants',
+            description: missing.join('\n'),
+            variant: 'destructive',
+            duration: 5000,
+          });
+        }
+        return;
+      }
       setCurrentStep(prev => prev + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }

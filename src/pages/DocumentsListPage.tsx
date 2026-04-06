@@ -285,6 +285,10 @@ const DocumentsListPage = () => {
 
   const handleOpenDocument = (doc: DocumentRow) => {
     setSelectedDocument(doc);
+    // If document has full data, go directly to full view
+    if (doc.document_data && typeof doc.document_data === 'object' && Object.keys(doc.document_data).length > 0) {
+      setShowFullView(true);
+    }
   };
 
   const handleDirectConvert = async (doc: DocumentRow) => {

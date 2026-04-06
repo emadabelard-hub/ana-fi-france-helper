@@ -765,7 +765,7 @@ const DocumentsListPage = () => {
               </div>
 
               {/* View full document button */}
-              {selectedDocument.document_data && Object.keys(selectedDocument.document_data).length > 0 && (
+              {selectedDocument.document_data && typeof selectedDocument.document_data === 'object' && Object.keys(selectedDocument.document_data).length > 0 && (
                 <Button
                   className="w-full gap-2 bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold"
                   onClick={() => setShowFullView(true)}

@@ -33,6 +33,7 @@ import { detectMultipleTasks } from '@/lib/smartItemSplit';
 import { formatObjet, containsArabic } from '@/lib/objetFormatter';
 import { validateDocument } from '@/lib/documentValidator';
 import { calculateInvoiceTotals, validateInvoiceTotalsConsistency } from '@/lib/invoiceTotals';
+import { generateOfficialPdfBlob } from '@/lib/invoicePdf';
 import { useAuth } from '@/hooks/useAuth';
 import type { VoiceResult } from '@/hooks/useFieldVoice';
 import { resolveAssetUrls } from '@/lib/storageUtils';
@@ -215,6 +216,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const lastTranslatedSourceRef = useRef<Record<string, string | undefined>>({});
   const itemsRef = useRef(items);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [isSavingOfficialDocument, setIsSavingOfficialDocument] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Fetch clients list
@@ -1330,113 +1332,172 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     return true;
   };
 
+  const uploadOfficialPdf = async (blob: Blob, documentNumber: string) => {
+    if (!user) throw new Error('Utilisateur non authentifié');
+
+    const fileName = `${user.id}/${documentType.toLowerCase()}-${documentNumber}.pdf`;
+    const { error: uploadError } = await supabase.storage
+      .from('signed-documents')
+      .upload(fileName, blob, {
+        contentType: 'application/pdf',
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from('signed-documents')
+      .getPublicUrl(fileName);
+
+    if (!urlData?.publicUrl) {
+      throw new Error('URL du PDF introuvable');
+    }
+
+    return urlData.publicUrl;
+  };
+
   // Save finalized document to documents_comptables
   const saveToDocumentsComptables = async () => {
-    if (!user) return;
+    if (!user || isSavingOfficialDocument) return;
 
-    // CRITICAL: Use the VALIDATED invoiceData (post-validation recalculation)
-    // instead of raw buildInvoiceData() to ensure UI = stored = PDF values.
-    // The validated invoiceData has already been through the expert-comptable
-    // validation layer which may correct prices, quantities, TVA rates, and units.
-
-    if (!validateDocumentFinancialSafety(invoiceData)) {
-      return;
-    }
-
-    // Block if Arabic description has no French translation
-    if (descriptionChantier.trim() && containsArabic(descriptionChantier) && !descriptionChantierFr) {
-      toast({
-        variant: 'destructive',
-        title: isRTL ? '⚠️ لازم الترجمة' : '⚠️ Traduction requise',
-        description: isRTL
-          ? 'لازم تدوس على "ترجم" عشان الموضوع يطلع فرنساوي في الوثيقة'
-          : 'Veuillez traduire l\'objet en français avant de sauvegarder.',
-      });
-      return;
-    }
-
-    // Client name is required (either from selection or manual entry)
-    if (!clientName.trim()) {
-      toast({
-        variant: 'destructive',
-        title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
-        description: isRTL
-          ? 'يجب إدخال اسم العميل قبل الحفظ'
-          : 'Vous devez renseigner le nom du client avant de sauvegarder.',
-      });
-      return;
-    }
-
-    let data = { ...invoiceData };
-    const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
-    const isQuoteConversionFlow =
-      documentType === 'facture' &&
-      prefillData?.source === 'devis_conversion' &&
-      Boolean(prefillData?.sourceDocumentId);
-
-    if (isQuoteConversionFlow) {
-      const { data: sourceDevis, error: sourceCheckError } = await (supabase
-        .from('documents_comptables') as any)
-        .select('id, document_number, converted_to_invoice')
-        .eq('id', prefillData?.sourceDocumentId)
-        .eq('user_id', user.id)
-        .eq('document_type', 'devis')
-        .maybeSingle();
-
-      if (sourceCheckError) throw sourceCheckError;
-
-      if (!sourceDevis) {
-        toast({
-          variant: 'destructive',
-          title: isRTL ? 'خطأ في الربط' : 'Erreur de liaison',
-          description: isRTL
-            ? 'الدوفي الأصلي غير موجود. أعد فتح التحويل من صفحة المستندات.'
-            : 'Le devis source est introuvable. Relancez la conversion depuis vos documents.',
-        });
-        return;
-      }
-
-      if (sourceDevis.converted_to_invoice) {
-        toast({
-          variant: 'destructive',
-          title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
-          description: isRTL
-            ? 'تم إنشاء فاتورة بالفعل لهذا الدوفي.'
-            : 'Une facture existe déjà pour ce devis.',
-        });
-        return;
-      }
-    }
-
-    // NUMBERING: Use the manually entered docNumber directly
-    // Check uniqueness for the document number
-    {
-      const { data: existing } = await (supabase.from('documents_comptables') as any)
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('document_number', data.number)
-        .eq('document_type', documentType)
-        .maybeSingle();
-      if (existing) {
-        toast({
-          variant: 'destructive',
-          title: isRTL ? '⚠️ رقم موجود' : '⚠️ Numéro existant',
-          description: isRTL ? `الرقم ${data.number} مستخدم بالفعل` : `Le numéro ${data.number} existe déjà.`,
-        });
-        return;
-      }
-    }
-
-    // Update docNumber in UI immediately
-    setDocNumber(data.number);
-
-    const linkedDocumentData = {
-      ...documentDataForStorage,
-      ...(selectedClientId && { linkedClientId: selectedClientId }),
-      ...(selectedChantierId && { linkedChantierId: selectedChantierId }),
-    };
+    setIsSavingOfficialDocument(true);
 
     try {
+
+      // CRITICAL: Use the VALIDATED invoiceData (post-validation recalculation)
+      // instead of raw buildInvoiceData() to ensure UI = stored = PDF values.
+      // The validated invoiceData has already been through the expert-comptable
+      // validation layer which may correct prices, quantities, TVA rates, and units.
+
+      if (!validateDocumentFinancialSafety(invoiceData)) {
+        return;
+      }
+
+      // Block if Arabic description has no French translation
+      if (descriptionChantier.trim() && containsArabic(descriptionChantier) && !descriptionChantierFr) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '⚠️ لازم الترجمة' : '⚠️ Traduction requise',
+          description: isRTL
+            ? 'لازم تدوس على "ترجم" عشان الموضوع يطلع فرنساوي في الوثيقة'
+            : 'Veuillez traduire l\'objet en français avant de sauvegarder.',
+        });
+        return;
+      }
+
+      // Client name is required (either from selection or manual entry)
+      if (!clientName.trim()) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
+          description: isRTL
+            ? 'يجب إدخال اسم العميل قبل الحفظ'
+            : 'Vous devez renseigner le nom du client avant de sauvegarder.',
+        });
+        return;
+      }
+
+      let data = { ...invoiceData };
+      const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
+      const isQuoteConversionFlow =
+        documentType === 'facture' &&
+        prefillData?.source === 'devis_conversion' &&
+        Boolean(prefillData?.sourceDocumentId);
+
+      if (isQuoteConversionFlow) {
+        const { data: sourceDevis, error: sourceCheckError } = await (supabase
+          .from('documents_comptables') as any)
+          .select('id, document_number, converted_to_invoice')
+          .eq('id', prefillData?.sourceDocumentId)
+          .eq('user_id', user.id)
+          .eq('document_type', 'devis')
+          .maybeSingle();
+
+        if (sourceCheckError) throw sourceCheckError;
+
+        if (!sourceDevis) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? 'خطأ في الربط' : 'Erreur de liaison',
+            description: isRTL
+              ? 'الدوفي الأصلي غير موجود. أعد فتح التحويل من صفحة المستندات.'
+              : 'Le devis source est introuvable. Relancez la conversion depuis vos documents.',
+          });
+          return;
+        }
+
+        if (sourceDevis.converted_to_invoice) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? 'تم التحويل سابقاً' : 'Déjà converti',
+            description: isRTL
+              ? 'تم إنشاء فاتورة بالفعل لهذا الدوفي.'
+              : 'Une facture existe déjà pour ce devis.',
+          });
+          return;
+        }
+      }
+
+      // NUMBERING: Use the manually entered docNumber directly
+      // Check uniqueness for the document number
+      {
+        const { data: existing } = await (supabase.from('documents_comptables') as any)
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('document_number', data.number)
+          .eq('document_type', documentType)
+          .maybeSingle();
+        if (existing) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? '⚠️ رقم موجود' : '⚠️ Numéro existant',
+            description: isRTL ? `الرقم ${data.number} مستخدم بالفعل` : `Le numéro ${data.number} existe déjà.`,
+          });
+          return;
+        }
+      }
+
+      // Update docNumber in UI immediately
+      setDocNumber(data.number);
+
+      const linkedDocumentData = {
+        ...documentDataForStorage,
+        ...(selectedClientId && { linkedClientId: selectedClientId }),
+        ...(selectedChantierId && { linkedChantierId: selectedChantierId }),
+      };
+
+      if (!invoiceRef.current) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'خطأ في المعاينة' : 'Erreur aperçu',
+          description: isRTL
+            ? 'افتح المعاينة الرسمية أولاً قبل الحفظ.'
+            : 'Ouvrez d’abord l’aperçu officiel avant l’enregistrement.',
+        });
+        return;
+      }
+
+      const pdfBlob = await generateOfficialPdfBlob({
+        invoiceElement: invoiceRef.current,
+        footerLabel: `${data.type} n° ${data.number}`,
+        onBeforeExport: () => persistCurrentDocumentState({ showPreview: true }),
+        onToggleArabic: setShowArabic,
+        showArabic,
+      });
+
+      if (!pdfBlob) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'خطأ PDF' : 'Erreur PDF',
+          description: isRTL
+            ? 'تعذر إنشاء الـ PDF الرسمي.'
+            : 'Impossible de générer le PDF officiel.',
+        });
+        return;
+      }
+
+      const pdfUrl = await uploadOfficialPdf(pdfBlob, data.number);
+
       // Prevent duplicate devis numbers
       if (documentType === 'devis') {
         const { data: existing } = await (supabase.from('documents_comptables') as any)
@@ -1469,6 +1530,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         tva_rate: data.tvaRate,
         tva_amount: data.tvaAmount,
         total_ttc: data.total,
+        pdf_url: pdfUrl,
         tva_exempt: data.tvaExempt,
         document_data: linkedDocumentData,
         status: 'finalized',
@@ -1533,6 +1595,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         description: technicalMessage,
       });
       throw e;
+    } finally {
+      setIsSavingOfficialDocument(false);
     }
   };
 
@@ -3554,6 +3618,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             {isRTL ? 'تعديل' : 'Modifier'}
           </Button>
 
+          <Button
+            onClick={saveToDocumentsComptables}
+            disabled={isSavingOfficialDocument}
+            size="lg"
+            className={cn("w-full py-6 text-base font-bold gap-2", isRTL && "font-cairo flex-row-reverse")}
+          >
+            {isSavingOfficialDocument ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
+            {isSavingOfficialDocument
+              ? (isRTL ? '⏳ جاري التحقق والحفظ' : '⏳ Validation et enregistrement...')
+              : (isRTL ? '✅ تأكيد وتسجيل' : '✅ Valider et enregistrer')}
+          </Button>
+
           <div className={cn(
             "flex items-center gap-2",
             isRTL && "flex-row-reverse"
@@ -3747,7 +3823,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               )}
             >
               <Check className="h-5 w-5" />
-              {isRTL ? '✅ تأكيد وتسجيل' : '✅ Valider et enregistrer'}
+              {isRTL ? '👁️ افتح المعاينة قبل التأكيد' : '👁️ Ouvrir l’aperçu avant validation'}
             </Button>
 
             {/* Secondary row */}
@@ -3788,19 +3864,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         onOpenChange={setShowChecklist}
         onConfirm={async () => {
           setShowChecklist(false);
-          try {
-            await saveToDocumentsComptables();
-            persistCurrentDocumentState({ showPreview: true });
-            setShowPreview(true);
-          } catch (e) {
-            const technicalMessage = getTechnicalErrorMessage(e);
-            console.error('Final save failed:', e);
-            toast({
-              variant: 'destructive',
-              title: isRTL ? '⚠️ خطأ تقني' : '⚠️ Erreur technique',
-              description: technicalMessage,
-            });
-          }
+          persistCurrentDocumentState({ showPreview: true });
+          setShowPreview(true);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         items={items}
       />

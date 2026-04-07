@@ -3746,8 +3746,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 isRTL && "font-cairo flex-row-reverse"
               )}
             >
-              <FileText className="h-5 w-5" />
-              {isRTL ? '📄 معاينة وتحميل PDF' : '📄 Aperçu et Télécharger PDF'}
+              <Check className="h-5 w-5" />
+              {isRTL ? '✅ تأكيد وتسجيل' : '✅ Valider et enregistrer'}
             </Button>
 
             {/* Secondary row */}
@@ -3759,17 +3759,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 className={cn("flex-1", isRTL && "font-cairo")}
               >
                 {isRTL ? '← رجوع' : '← Retour'}
-              </Button>
-              
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={savingDraft}
-                onClick={saveAsDraft}
-                className={cn("flex-1", isRTL && "font-cairo")}
-              >
-                {savingDraft ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-                {isRTL ? 'حفظ مسودة' : 'Sauvegarder'}
               </Button>
               
               <Button

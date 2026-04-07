@@ -263,46 +263,100 @@ export async function buildPdfFromContainer(
   await waitForImages(container);
 
   try {
-    // 1. Collect all compiled CSS from the document
-    const css = collectAllCSS();
-
-    // 2. Serialize the container HTML and inline local images
-    let bodyHTML = container.innerHTML;
-    bodyHTML = await inlineLocalImages(bodyHTML);
-
-    // 3. Build a complete standalone HTML document
-    const fullHTML = buildFullHTML(bodyHTML, css, marginMm);
-
-    // 4. Send to Edge Function → Browserless (headless Chrome)
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-    console.log(`[PDF Engine v4] Sending ${(fullHTML.length / 1024).toFixed(0)}KB HTML to Browserless...`);
-
-    const response = await fetch(`${supabaseUrl}/functions/v1/generate-pdf`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': apikey,
-        'Authorization': `Bearer ${apikey}`,
-      },
-      body: JSON.stringify({
-        html: fullHTML,
-        marginMm,
-        footerLabel,
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('[PDF Engine v4] Error:', response.status, errText);
-      throw new Error(`PDF generation failed (${response.status}): ${errText}`);
+    // Try Browserless first
+    try {
+      const blob = await buildPdfViaBrowserless(container, marginMm, footerLabel);
+      return blob;
+    } catch (browserlessError) {
+      console.warn('[PDF Engine v4] Browserless failed, using client-side fallback:', browserlessError);
     }
 
-    const blob = await response.blob();
-    console.log(`[PDF Engine v4] PDF received: ${(blob.size / 1024).toFixed(0)}KB`);
-    return blob;
+    // Fallback: html2canvas + jsPDF (client-side)
+    return await buildPdfClientSide(container);
   } finally {
     invoicePages.forEach((p) => p.classList.remove('pdf-render-mode'));
   }
+}
+
+async function buildPdfViaBrowserless(
+  container: HTMLElement,
+  marginMm: number,
+  footerLabel?: string,
+): Promise<Blob> {
+  const css = collectAllCSS();
+  let bodyHTML = container.innerHTML;
+  bodyHTML = await inlineLocalImages(bodyHTML);
+  const fullHTML = buildFullHTML(bodyHTML, css, marginMm);
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  console.log(`[PDF Engine v4] Sending ${(fullHTML.length / 1024).toFixed(0)}KB HTML to Browserless...`);
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/generate-pdf`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': apikey,
+      'Authorization': `Bearer ${apikey}`,
+    },
+    body: JSON.stringify({ html: fullHTML, marginMm, footerLabel }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error('[PDF Engine v4] Error:', response.status, errText);
+    throw new Error(`PDF generation failed (${response.status}): ${errText}`);
+  }
+
+  const blob = await response.blob();
+  console.log(`[PDF Engine v4] PDF received: ${(blob.size / 1024).toFixed(0)}KB`);
+  return blob;
+}
+
+async function buildPdfClientSide(container: HTMLElement): Promise<Blob> {
+  const html2canvas = (await import('html2canvas')).default;
+  const { jsPDF } = await import('jspdf');
+
+  console.log('[PDF Engine v4] Using client-side fallback (html2canvas + jsPDF)...');
+
+  const pages = Array.from(container.querySelectorAll('.french-invoice')) as HTMLElement[];
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdfWidth = 210;
+  const pdfHeight = 297;
+  const margin = 10;
+  const contentWidth = pdfWidth - margin * 2;
+
+  for (let i = 0; i < pages.length; i++) {
+    if (i > 0) pdf.addPage();
+
+    const canvas = await html2canvas(pages[i], {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true,
+      scrollX: 0,
+      scrollY: -window.scrollY,
+      width: Math.max(pages[i].scrollWidth, 1),
+      height: Math.max(pages[i].scrollHeight, 1),
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+    const imgHeight = (canvas.height * contentWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = margin;
+
+    pdf.addImage(imgData, 'JPEG', margin, position, contentWidth, imgHeight);
+    heightLeft -= (pdfHeight - margin * 2);
+
+    while (heightLeft > 0) {
+      position = margin - (imgHeight - heightLeft);
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', margin, position, contentWidth, imgHeight);
+      heightLeft -= (pdfHeight - margin * 2);
+    }
+  }
+
+  const blob = pdf.output('blob');
+  console.log(`[PDF Engine v4] Client-side PDF generated: ${(blob.size / 1024).toFixed(0)}KB`);
+  return blob;
 }

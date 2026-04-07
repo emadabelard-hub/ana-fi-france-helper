@@ -3762,17 +3762,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               </Button>
               
               <Button
-                variant="secondary"
-                size="sm"
-                disabled={savingDraft}
-                onClick={saveAsDraft}
-                className={cn("flex-1", isRTL && "font-cairo")}
-              >
-                {savingDraft ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-                {isRTL ? 'حفظ مسودة' : 'Sauvegarder'}
-              </Button>
-              
-              <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleFinishDocument}

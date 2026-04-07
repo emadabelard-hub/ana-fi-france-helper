@@ -3746,8 +3746,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 isRTL && "font-cairo flex-row-reverse"
               )}
             >
-              <FileText className="h-5 w-5" />
-              {isRTL ? '📄 معاينة وتحميل PDF' : '📄 Aperçu et Télécharger PDF'}
+              <Check className="h-5 w-5" />
+              {isRTL ? '✅ تأكيد وتسجيل' : '✅ Valider et enregistrer'}
             </Button>
 
             {/* Secondary row */}

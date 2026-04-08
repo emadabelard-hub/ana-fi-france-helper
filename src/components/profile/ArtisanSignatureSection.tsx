@@ -8,7 +8,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import SignaturePad from 'signature_pad';
-import { getSignedAssetUrl } from '@/lib/storageUtils';
+import { extractCompanyAssetPath, getSignedAssetUrl } from '@/lib/storageUtils';
 
 const ArtisanSignatureSection = () => {
   const { isRTL } = useLanguage();
@@ -92,13 +92,7 @@ const ArtisanSignatureSection = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('company-assets')
-        .getPublicUrl(fileName);
-
-      // Update profile with signature URL
-      await updateProfile({ artisan_signature_url: publicUrl });
+      await updateProfile({ artisan_signature_url: fileName });
 
     } catch (error) {
       console.error('Error saving signature:', error);
@@ -112,11 +106,9 @@ const ArtisanSignatureSection = () => {
 
     setIsDeleting(true);
     try {
-      // Extract file path from URL
-      const urlParts = currentSignatureUrl.split('/');
-      const filePath = urlParts.slice(-2).join('/');
+      const filePath = extractCompanyAssetPath(currentSignatureUrl);
+      if (!filePath) throw new Error('Signature path not found');
 
-      // Delete from storage
       await supabase.storage
         .from('company-assets')
         .remove([filePath]);

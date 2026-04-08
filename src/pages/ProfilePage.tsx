@@ -148,8 +148,7 @@ const ProfilePage = () => {
         .from('company-assets')
         .upload(fileName, compressedBlob, { upsert: true, contentType: 'image/jpeg' });
       if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('company-assets').getPublicUrl(fileName);
-      return publicUrl;
+      return fileName;
     } catch (error) { console.error('Upload error:', error); return null; }
   };
 

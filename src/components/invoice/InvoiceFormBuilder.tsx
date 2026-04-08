@@ -293,16 +293,25 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     headerImageUrl: string | null;
   }>({ logoUrl: null, artisanSignatureUrl: null, stampUrl: null, headerImageUrl: null });
 
+  const refreshSignedUrls = useCallback(async () => {
+    if (!profile) return;
+
+    try {
+      const resolved = await resolveAssetUrls({
+        logoUrl: profile.logo_url,
+        artisanSignatureUrl: profile.artisan_signature_url,
+        stampUrl: profile.stamp_url,
+        headerImageUrl: profile.header_image_url,
+      });
+      setSignedUrls(resolved);
+    } catch (err) {
+      console.warn('Failed to resolve asset URLs:', err);
+    }
+  }, [profile]);
+
   useEffect(() => {
     if (!profile) return;
-    resolveAssetUrls({
-      logoUrl: profile.logo_url,
-      artisanSignatureUrl: profile.artisan_signature_url,
-      stampUrl: profile.stamp_url,
-      headerImageUrl: profile.header_image_url,
-    }).then(setSignedUrls).catch(err => {
-      console.warn('Failed to resolve asset URLs:', err);
-    });
+    refreshSignedUrls();
     
     // Auto-populate assurance décennale from profile
     const p = profile as any;
@@ -314,7 +323,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     // ALWAYS re-evaluate on legal_status change (e.g. user switched from AE to SARL)
     const isAE = p.tva_exempt || p.legal_status === 'auto-entrepreneur';
     setIsAutoEntrepreneur(isAE);
-  }, [profile?.logo_url, profile?.artisan_signature_url, profile?.stamp_url, profile?.header_image_url, profile?.legal_status, profile?.tva_exempt]);
+  }, [refreshSignedUrls, profile?.logo_url, profile?.artisan_signature_url, profile?.stamp_url, profile?.header_image_url, profile?.legal_status, profile?.tva_exempt]);
+
+  useEffect(() => {
+    if (!showPreview) return;
+    refreshSignedUrls();
+  }, [showPreview, refreshSignedUrls]);
 
   useEffect(() => {
     itemsRef.current = items;
@@ -1392,7 +1406,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         return;
       }
 
-      let data = { ...invoiceData };
+      await refreshSignedUrls();
+
+      let data = {
+        ...invoiceData,
+        artisanSignatureUrl: signedUrls.artisanSignatureUrl || invoiceData.artisanSignatureUrl,
+        stampUrl: signedUrls.stampUrl || invoiceData.stampUrl,
+        logoUrl: signedUrls.logoUrl || invoiceData.logoUrl,
+      };
       const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
       const isQuoteConversionFlow =
         documentType === 'facture' &&
@@ -1457,6 +1478,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
       const linkedDocumentData = {
         ...documentDataForStorage,
+        logoUrl: profile?.logo_url || documentDataForStorage.logoUrl || null,
+        artisanSignatureUrl: profile?.artisan_signature_url || documentDataForStorage.artisanSignatureUrl || null,
+        stampUrl: profile?.stamp_url || documentDataForStorage.stampUrl || null,
         ...(selectedClientId && { linkedClientId: selectedClientId }),
         ...(selectedChantierId && { linkedChantierId: selectedChantierId }),
       };
@@ -1591,6 +1615,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
       const linkedDocumentData = {
         ...documentDataForStorage,
+        logoUrl: profile?.logo_url || documentDataForStorage.logoUrl || null,
+        artisanSignatureUrl: profile?.artisan_signature_url || documentDataForStorage.artisanSignatureUrl || null,
+        stampUrl: profile?.stamp_url || documentDataForStorage.stampUrl || null,
         ...(selectedClientId && { linkedClientId: selectedClientId }),
         ...(selectedChantierId && { linkedChantierId: selectedChantierId }),
       };

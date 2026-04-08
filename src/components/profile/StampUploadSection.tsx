@@ -9,7 +9,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { compressImageFile } from '@/lib/imageCompression';
-import { getSignedAssetUrl } from '@/lib/storageUtils';
+import { extractCompanyAssetPath, getSignedAssetUrl } from '@/lib/storageUtils';
 
 const StampUploadSection = () => {
   const { isRTL } = useLanguage();
@@ -50,11 +50,7 @@ const StampUploadSection = () => {
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('company-assets')
-        .getPublicUrl(fileName);
-
-      await updateProfile({ stamp_url: publicUrl });
+      await updateProfile({ stamp_url: fileName });
     } catch (error) {
       console.error('Error uploading stamp:', error);
     } finally {
@@ -66,8 +62,8 @@ const StampUploadSection = () => {
     if (!user || !currentStampUrl) return;
     setIsDeleting(true);
     try {
-      const urlParts = currentStampUrl.split('/');
-      const filePath = urlParts.slice(-2).join('/');
+      const filePath = extractCompanyAssetPath(currentStampUrl);
+      if (!filePath) throw new Error('Stamp path not found');
       await supabase.storage.from('company-assets').remove([filePath]);
       await updateProfile({ stamp_url: null });
     } catch (error) {

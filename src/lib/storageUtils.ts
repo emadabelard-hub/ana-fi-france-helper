@@ -6,14 +6,22 @@ import { supabase } from '@/integrations/supabase/client';
  * Signed URLs look like: https://<project>.supabase.co/storage/v1/object/sign/company-assets/<user_id>/file.jpg?token=...
  * We need just the path after "company-assets/".
  */
-function extractStoragePath(url: string): string | null {
-  if (!url) return null;
+export function extractCompanyAssetPath(value: string | null | undefined): string | null {
+  if (!value) return null;
+
+  const normalized = value.trim();
+  if (!normalized) return null;
+
+  if (!normalized.includes('://') && !normalized.startsWith('blob:') && !normalized.startsWith('data:')) {
+    return normalized.replace(/^company-assets\//, '').split('?')[0] || null;
+  }
+
   const marker = 'company-assets/';
-  const idx = url.indexOf(marker);
+  const idx = normalized.indexOf(marker);
   if (idx === -1) return null;
-  // Remove any query params
-  const pathWithParams = url.substring(idx + marker.length);
-  return pathWithParams.split('?')[0];
+
+  const pathWithParams = normalized.substring(idx + marker.length);
+  return pathWithParams.split('?')[0] || null;
 }
 
 /**
@@ -23,11 +31,11 @@ function extractStoragePath(url: string): string | null {
  */
 export async function getSignedAssetUrl(
   url: string | null | undefined,
-  expiresIn = 300
+  expiresIn = 60 * 60 * 24
 ): Promise<string | null> {
   if (!url) return null;
   
-  const path = extractStoragePath(url);
+  const path = extractCompanyAssetPath(url);
   if (!path) return url; // Not a company-assets URL, return as-is
 
   const { data, error } = await supabase.storage

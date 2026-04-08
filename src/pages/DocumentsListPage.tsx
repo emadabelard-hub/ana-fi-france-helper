@@ -50,7 +50,6 @@ const DocumentsListPage = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
   const [selectedDocumentData, setSelectedDocumentData] = useState<any | null>(null);
   const [showFullView, setShowFullView] = useState(false);
@@ -82,23 +81,6 @@ const DocumentsListPage = () => {
     setSelectedDocument(doc);
     setShowFullView(hasOfficialDocumentData(doc));
   };
-
-  useEffect(() => {
-    if (!user) {
-      setIsAdmin(false);
-      return;
-    }
-
-    if (user.is_anonymous) {
-      setIsAdmin(false);
-      return;
-    }
-
-    (async () => {
-      const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
-      setIsAdmin(data === true);
-    })();
-  }, [user]);
 
   const filteredDocuments = useMemo(() => {
     let result = documents;
@@ -132,19 +114,16 @@ const DocumentsListPage = () => {
     const documentsQuery = (supabase
       .from('documents_comptables') as any)
       .select('id, document_type, document_number, client_name, client_address, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, sent_to_accountant_at, payment_status, converted_to_invoice, linked_invoice_id')
+      .eq('user_id', user.id)
       .neq('status', 'draft')
       .order('created_at', { ascending: false });
-
-    if (!isAdmin) {
-      documentsQuery.eq('user_id', user.id);
-    }
 
     const { data, error } = await documentsQuery;
     if (!error && data) setDocuments(data);
     setLoading(false);
   };
 
-  useEffect(() => { fetchDocuments(); }, [user, isAdmin, authLoading]);
+  useEffect(() => { fetchDocuments(); }, [user, authLoading]);
 
   useEffect(() => {
     let cancelled = false;

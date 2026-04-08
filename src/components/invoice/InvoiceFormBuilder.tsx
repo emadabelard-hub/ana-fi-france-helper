@@ -1493,25 +1493,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
       const pdfUrl = await uploadOfficialPdf(pdfBlob, data.number);
 
-      // Prevent duplicate devis numbers
-      if (documentType === 'devis') {
-        const { data: existing } = await (supabase.from('documents_comptables') as any)
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('document_number', data.number)
-          .maybeSingle();
-
-        if (existing) {
-          toast({
-            variant: 'destructive',
-            title: isRTL ? '⚠️ مستند موجود' : '⚠️ Document existant',
-            description: isRTL
-              ? `الرقم ${data.number} موجود بالفعل.`
-              : `Le numéro ${data.number} existe déjà.`,
-          });
-          return;
-        }
-      }
+      // Uniqueness already verified above (pre-upload check)
 
       const insertData: any = {
         user_id: user.id,

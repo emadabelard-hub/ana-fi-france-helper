@@ -23,7 +23,12 @@ export default function GlobalErrorHandler() {
         message.includes('storage') ||
         message.includes('NetworkError') ||
         message.includes('AbortError') ||
-        message.includes('Load failed');
+        message.includes('Load failed') ||
+        message.includes('Anonymous sign-ins are disabled') ||
+        message.includes('anonymous') ||
+        message.includes('signInAnonymously') ||
+        message.includes('Signup requires a valid password') ||
+        message.includes('auth');
       
       if (isNonCritical) {
         event.preventDefault();

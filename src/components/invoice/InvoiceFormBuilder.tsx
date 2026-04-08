@@ -34,6 +34,7 @@ import { formatObjet, containsArabic } from '@/lib/objetFormatter';
 import { validateDocument } from '@/lib/documentValidator';
 import { calculateInvoiceTotals, validateInvoiceTotalsConsistency } from '@/lib/invoiceTotals';
 import { generateOfficialPdfBlob } from '@/lib/invoicePdf';
+import { waitForLayout } from '@/lib/pdfEngine';
 import { useAuth } from '@/hooks/useAuth';
 import type { VoiceResult } from '@/hooks/useFieldVoice';
 import { resolveAssetUrls } from '@/lib/storageUtils';
@@ -293,16 +294,40 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     headerImageUrl: string | null;
   }>({ logoUrl: null, artisanSignatureUrl: null, stampUrl: null, headerImageUrl: null });
 
+  const refreshSignedUrls = useCallback(async () => {
+    if (!profile) return null;
+
+    try {
+      const resolved = await resolveAssetUrls({
+        logoUrl: profile.logo_url,
+        artisanSignatureUrl: profile.artisan_signature_url,
+        stampUrl: profile.stamp_url,
+        headerImageUrl: profile.header_image_url,
+      });
+      setSignedUrls(resolved);
+      return resolved;
+    } catch (err) {
+      console.warn('Failed to resolve asset URLs:', err);
+      return null;
+    }
+  }, [profile]);
+
+  const getFreshSignedUrls = useCallback(async () => {
+    const resolvedAssets = await refreshSignedUrls();
+    if (resolvedAssets) {
+      await waitForLayout(150);
+    }
+    persistCurrentDocumentState({ showPreview: true });
+    return resolvedAssets;
+  }, [refreshSignedUrls]);
+
+  const prepareFreshAssetsForExport = useCallback(async () => {
+    await getFreshSignedUrls();
+  }, [getFreshSignedUrls]);
+
   useEffect(() => {
     if (!profile) return;
-    resolveAssetUrls({
-      logoUrl: profile.logo_url,
-      artisanSignatureUrl: profile.artisan_signature_url,
-      stampUrl: profile.stamp_url,
-      headerImageUrl: profile.header_image_url,
-    }).then(setSignedUrls).catch(err => {
-      console.warn('Failed to resolve asset URLs:', err);
-    });
+    refreshSignedUrls();
     
     // Auto-populate assurance décennale from profile
     const p = profile as any;
@@ -314,7 +339,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     // ALWAYS re-evaluate on legal_status change (e.g. user switched from AE to SARL)
     const isAE = p.tva_exempt || p.legal_status === 'auto-entrepreneur';
     setIsAutoEntrepreneur(isAE);
-  }, [profile?.logo_url, profile?.artisan_signature_url, profile?.stamp_url, profile?.header_image_url, profile?.legal_status, profile?.tva_exempt]);
+  }, [refreshSignedUrls, profile?.logo_url, profile?.artisan_signature_url, profile?.stamp_url, profile?.header_image_url, profile?.legal_status, profile?.tva_exempt]);
+
+  useEffect(() => {
+    if (!showPreview) return;
+    refreshSignedUrls();
+  }, [showPreview, refreshSignedUrls]);
 
   useEffect(() => {
     itemsRef.current = items;
@@ -1392,7 +1422,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         return;
       }
 
-      let data = { ...invoiceData };
+      const resolvedAssets = await getFreshSignedUrls();
+
+      let data = {
+        ...invoiceData,
+        artisanSignatureUrl: resolvedAssets?.artisanSignatureUrl || signedUrls.artisanSignatureUrl || invoiceData.artisanSignatureUrl,
+        stampUrl: resolvedAssets?.stampUrl || signedUrls.stampUrl || invoiceData.stampUrl,
+        logoUrl: resolvedAssets?.logoUrl || signedUrls.logoUrl || invoiceData.logoUrl,
+      };
       const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
       const isQuoteConversionFlow =
         documentType === 'facture' &&
@@ -1457,6 +1494,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
       const linkedDocumentData = {
         ...documentDataForStorage,
+        logoUrl: profile?.logo_url || documentDataForStorage.logoUrl || null,
+        artisanSignatureUrl: profile?.artisan_signature_url || documentDataForStorage.artisanSignatureUrl || null,
+        stampUrl: profile?.stamp_url || documentDataForStorage.stampUrl || null,
         ...(selectedClientId && { linkedClientId: selectedClientId }),
         ...(selectedChantierId && { linkedChantierId: selectedChantierId }),
       };
@@ -1475,7 +1515,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       const pdfBlob = await generateOfficialPdfBlob({
         invoiceElement: invoiceRef.current,
         footerLabel: `${data.type} n° ${data.number}`,
-        onBeforeExport: () => persistCurrentDocumentState({ showPreview: true }),
+        onBeforeExport: prepareFreshAssetsForExport,
         onToggleArabic: setShowArabic,
         showArabic,
       });
@@ -1591,6 +1631,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
       const linkedDocumentData = {
         ...documentDataForStorage,
+        logoUrl: profile?.logo_url || documentDataForStorage.logoUrl || null,
+        artisanSignatureUrl: profile?.artisan_signature_url || documentDataForStorage.artisanSignatureUrl || null,
+        stampUrl: profile?.stamp_url || documentDataForStorage.stampUrl || null,
         ...(selectedClientId && { linkedClientId: selectedClientId }),
         ...(selectedChantierId && { linkedChantierId: selectedChantierId }),
       };
@@ -3639,7 +3682,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             showArabic={showArabic}
             onToggleArabic={setShowArabic}
             onUpdateInvoice={handleUpdateInvoice}
-            onBeforeExport={() => persistCurrentDocumentState({ showPreview: true })}
+                onBeforeExport={prepareFreshAssetsForExport}
             isPaid={true} /* TRIAL PHASE: set to false to reactivate payments */
           />
 

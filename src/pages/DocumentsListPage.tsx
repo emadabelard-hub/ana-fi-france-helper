@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { resolveAssetUrls } from '@/lib/storageUtils';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
@@ -51,6 +52,7 @@ const DocumentsListPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
+  const [selectedDocumentData, setSelectedDocumentData] = useState<any | null>(null);
   const [showFullView, setShowFullView] = useState(false);
   const [converting, setConverting] = useState(false);
 
@@ -143,6 +145,42 @@ const DocumentsListPage = () => {
   };
 
   useEffect(() => { fetchDocuments(); }, [user, isAdmin, authLoading]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrateSelectedDocumentAssets = async () => {
+      if (!selectedDocument?.document_data) {
+        setSelectedDocumentData(null);
+        return;
+      }
+
+      const docData = selectedDocument.document_data;
+
+      try {
+        const resolvedAssets = await resolveAssetUrls({
+          logoUrl: docData.logoUrl,
+          artisanSignatureUrl: docData.artisanSignatureUrl,
+          stampUrl: docData.stampUrl,
+          headerImageUrl: docData.headerImageUrl,
+        });
+
+        if (!cancelled) {
+          setSelectedDocumentData({ ...docData, ...resolvedAssets });
+        }
+      } catch {
+        if (!cancelled) {
+          setSelectedDocumentData(docData);
+        }
+      }
+    };
+
+    hydrateSelectedDocumentAssets();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDocument]);
 
   useEffect(() => {
     const targetId = (location.state as { openDocumentId?: string } | null)?.openDocumentId;
@@ -835,7 +873,7 @@ const DocumentsListPage = () => {
       {/* Full Document View Dialog */}
       <Dialog open={Boolean(selectedDocument) && showFullView} onOpenChange={(open) => { if (!open) { setShowFullView(false); setSelectedDocument(null); } }}>
         <DialogContent className="max-w-4xl h-[90vh] p-0 overflow-hidden">
-          {selectedDocument && selectedDocument.document_data && (
+          {selectedDocument && selectedDocumentData && (
             <div className="flex flex-col h-full">
               <div className={cn("flex items-center justify-between px-4 py-3 border-b border-border shrink-0", isRTL && "flex-row-reverse")}>
                 <h2 className={cn("text-sm font-bold", isRTL && "font-cairo")}>
@@ -848,7 +886,7 @@ const DocumentsListPage = () => {
               <ScrollArea className="flex-1">
                 <div className="p-4">
                   <InvoiceDisplay
-                    data={selectedDocument.document_data}
+                    data={selectedDocumentData}
                     showArabic={true}
                   />
                 </div>

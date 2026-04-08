@@ -2667,30 +2667,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       {/* === STEP 2: TRAVAUX & PRIX === */}
       {currentStep === 2 && (<>
       {/* AI Quote Wizard Button - Dynamic based on document type */}
-      <Button
-        variant="outline"
-        size="lg"
-        onClick={() => setShowWizard(true)}
-        className={cn(
-          "w-full border-2 border-dashed border-primary/50 bg-primary/5 hover:bg-primary/10 hover:border-primary",
-          "flex items-center justify-center gap-3 py-6",
-          isRTL && "flex-row-reverse font-cairo"
-        )}
-      >
-        <Wand2 className="h-6 w-6 text-primary" />
-        <div className={cn("text-center", isRTL && "font-cairo")}>
-          <div className="font-bold text-primary">
-            {documentType === 'devis' 
-              ? (isRTL ? '🧙‍♂️ ساعدني أحسب الدوفي' : '🧙‍♂️ Assistant Devis - Chiffrage')
-              : (isRTL ? '📝 ساعدني أعمل الفاكتير' : '📝 Assistant Facture')}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {documentType === 'devis'
-              ? (isRTL ? 'قولي الشغل وأنا أحسبلك!' : 'Aidez-moi à chiffrer!')
-              : (isRTL ? 'أملّيلك البنود بسرعة!' : 'Aidez-moi à rédiger rapidement!')}
-          </div>
-        </div>
-      </Button>
       
       {/* Line Items Section */}
       <Card className="border-emerald-200/60 bg-emerald-50/30 dark:border-emerald-800/30 dark:bg-emerald-950/10">
@@ -2898,74 +2874,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
       {/* === STEP 3: OPTIONS === */}
       {currentStep === 3 && (<>
-          {/* Travel Costs Section */}
-          <Card className="border-orange-500/20 bg-orange-500/5">
-            <CardContent className="p-4 space-y-4">
-              <div className={cn(
-                "flex items-center justify-between",
-                isRTL && "flex-row-reverse"
-              )}>
-                <div className={cn(
-                  "flex items-center gap-2",
-                  isRTL && "flex-row-reverse"
-                )}>
-                  <Truck className="h-5 w-5 text-orange-600" />
-                  <h4 className={cn(
-                    "font-bold text-orange-700 dark:text-orange-400",
-                    isRTL && "font-cairo"
-                  )}>
-                    {isRTL ? '🚚 مصاريف المشوار' : '🚚 Frais de déplacement'}
-                  </h4>
-                </div>
-                
-                <div className={cn(
-                  "flex items-center gap-2",
-                  isRTL && "flex-row-reverse"
-                )}>
-                  <Label 
-                    htmlFor="travel-toggle" 
-                    className={cn("text-sm", isRTL && "font-cairo")}
-                  >
-                    {isRTL ? 'أضيف؟' : 'Ajouter?'}
-                  </Label>
-                  <Switch
-                    id="travel-toggle"
-                    checked={includeTravelCosts}
-                    onCheckedChange={setIncludeTravelCosts}
-                  />
-                </div>
-              </div>
-              
-              {includeTravelCosts && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div className="space-y-1.5">
-                    <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                      {isRTL ? 'الوصف' : 'Description'}
-                    </Label>
-                    <Input
-                      value={travelDescription}
-                      onChange={(e) => setTravelDescription(e.target.value)}
-                      placeholder={isRTL ? 'مثال: Paris A/R' : 'Ex: Paris A/R'}
-                      className={cn("text-sm", isRTL && "text-right font-cairo")}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">
-                      {isRTL ? 'المبلغ (€)' : 'Montant (€)'}
-                    </Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={travelPrice}
-                      onChange={(e) => setTravelPrice(parseFloat(e.target.value) || 0)}
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
           {/* REP / Waste Management (Optional) */}
           <Card className="border-gray-500/20 bg-gray-500/5">

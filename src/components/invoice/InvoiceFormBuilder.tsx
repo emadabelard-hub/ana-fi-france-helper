@@ -312,13 +312,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     }
   }, [profile]);
 
-  const prepareFreshAssetsForExport = useCallback(async () => {
+  const getFreshSignedUrls = useCallback(async () => {
     const resolvedAssets = await refreshSignedUrls();
     if (resolvedAssets) {
       await waitForLayout(150);
     }
     persistCurrentDocumentState({ showPreview: true });
+    return resolvedAssets;
   }, [refreshSignedUrls]);
+
+  const prepareFreshAssetsForExport = useCallback(async () => {
+    await getFreshSignedUrls();
+  }, [getFreshSignedUrls]);
 
   useEffect(() => {
     if (!profile) return;
@@ -1417,7 +1422,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         return;
       }
 
-      const resolvedAssets = await prepareFreshAssetsForExport();
+      const resolvedAssets = await getFreshSignedUrls();
 
       let data = {
         ...invoiceData,

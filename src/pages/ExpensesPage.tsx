@@ -52,21 +52,12 @@ const ExpensesPage = () => {
   const [periodFilter, setPeriodFilter] = useState('all');
   const [showAccountingMenu, setShowAccountingMenu] = useState(false);
 
-  const [isAdmin, setIsAdmin] = useState(false);
   const [rows, setRows] = useState<UnifiedRow[]>([]);
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalIncomeHT, setTotalIncomeHT] = useState(0);
   const [totalCollected, setTotalCollected] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [archiving, setArchiving] = useState(false);
-
-  useEffect(() => {
-    if (!user) { setIsAdmin(false); return; }
-    (async () => {
-      const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
-      setIsAdmin(data === true);
-    })();
-  }, [user]);
 
   const fetchAll = async () => {
     if (!user) return;
@@ -76,23 +67,21 @@ const ExpensesPage = () => {
       const docsQ = supabase
         .from('documents_comptables')
         .select('id, document_type, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, payment_status, created_at, chantier_id, pdf_url')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      if (!isAdmin) docsQ.eq('user_id', user.id);
 
       // Fetch expenses
       const expQ = supabase
         .from('expenses')
         .select('id, title, amount, tva_amount, expense_date, chantier_id, document_id, created_at')
+        .eq('user_id', user.id)
         .order('expense_date', { ascending: false });
-      if (!isAdmin) expQ.eq('user_id', user.id);
 
       // Fetch chantiers for name lookup
-      const chQ = supabase.from('chantiers').select('id, name, client_id');
-      if (!isAdmin) chQ.eq('user_id', user.id);
+      const chQ = supabase.from('chantiers').select('id, name, client_id').eq('user_id', user.id);
 
       // Fetch clients for ID lookup
-      const clQ = supabase.from('clients').select('id, name');
-      if (!isAdmin) clQ.eq('user_id', user.id);
+      const clQ = supabase.from('clients').select('id, name').eq('user_id', user.id);
 
       const [docsRes, expRes, chRes, clRes] = await Promise.all([docsQ, expQ, chQ, clQ]);
 
@@ -178,7 +167,7 @@ const ExpensesPage = () => {
     }
   };
 
-  useEffect(() => { fetchAll(); }, [user, isAdmin]);
+  useEffect(() => { fetchAll(); }, [user]);
 
   const filtered = useMemo(() => {
     if (periodFilter === 'all') return rows;

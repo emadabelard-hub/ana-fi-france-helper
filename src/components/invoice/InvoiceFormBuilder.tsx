@@ -318,7 +318,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       await waitForLayout(150);
     }
     persistCurrentDocumentState({ showPreview: true });
-    return resolvedAssets;
   }, [refreshSignedUrls]);
 
   useEffect(() => {

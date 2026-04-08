@@ -1335,25 +1335,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const uploadOfficialPdf = async (blob: Blob, documentNumber: string) => {
     if (!user) throw new Error('Utilisateur non authentifié');
 
-    const fileName = `${user.id}/${documentType.toLowerCase()}-${documentNumber}.pdf`;
+    const safeDocNum = documentNumber.replace(/[^a-zA-Z0-9\-_]/g, '_');
+    const timestamp = Date.now();
+    const fileName = `${user.id}/${documentType.toLowerCase()}-${safeDocNum}-${timestamp}.pdf`;
     const { error: uploadError } = await supabase.storage
       .from('signed-documents')
       .upload(fileName, blob, {
         contentType: 'application/pdf',
-        upsert: false,
+        upsert: true,
       });
 
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage
-      .from('signed-documents')
-      .getPublicUrl(fileName);
-
-    if (!urlData?.publicUrl) {
-      throw new Error('URL du PDF introuvable');
-    }
-
-    return urlData.publicUrl;
+    // Bucket is private — store file path, generate signed URL on demand
+    return fileName;
   };
 
   // Save finalized document to documents_comptables

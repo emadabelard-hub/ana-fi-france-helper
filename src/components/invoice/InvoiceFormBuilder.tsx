@@ -34,6 +34,7 @@ import { formatObjet, containsArabic } from '@/lib/objetFormatter';
 import { validateDocument } from '@/lib/documentValidator';
 import { calculateInvoiceTotals, validateInvoiceTotalsConsistency } from '@/lib/invoiceTotals';
 import { generateOfficialPdfBlob } from '@/lib/invoicePdf';
+import { waitForLayout } from '@/lib/pdfEngine';
 import { useAuth } from '@/hooks/useAuth';
 import type { VoiceResult } from '@/hooks/useFieldVoice';
 import { resolveAssetUrls } from '@/lib/storageUtils';
@@ -294,7 +295,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   }>({ logoUrl: null, artisanSignatureUrl: null, stampUrl: null, headerImageUrl: null });
 
   const refreshSignedUrls = useCallback(async () => {
-    if (!profile) return;
+    if (!profile) return null;
 
     try {
       const resolved = await resolveAssetUrls({
@@ -304,10 +305,21 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         headerImageUrl: profile.header_image_url,
       });
       setSignedUrls(resolved);
+      return resolved;
     } catch (err) {
       console.warn('Failed to resolve asset URLs:', err);
+      return null;
     }
   }, [profile]);
+
+  const prepareFreshAssetsForExport = useCallback(async () => {
+    const resolvedAssets = await refreshSignedUrls();
+    if (resolvedAssets) {
+      await waitForLayout(150);
+    }
+    persistCurrentDocumentState({ showPreview: true });
+    return resolvedAssets;
+  }, [refreshSignedUrls]);
 
   useEffect(() => {
     if (!profile) return;
@@ -1406,13 +1418,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         return;
       }
 
-      await refreshSignedUrls();
+      const resolvedAssets = await prepareFreshAssetsForExport();
 
       let data = {
         ...invoiceData,
-        artisanSignatureUrl: signedUrls.artisanSignatureUrl || invoiceData.artisanSignatureUrl,
-        stampUrl: signedUrls.stampUrl || invoiceData.stampUrl,
-        logoUrl: signedUrls.logoUrl || invoiceData.logoUrl,
+        artisanSignatureUrl: resolvedAssets?.artisanSignatureUrl || signedUrls.artisanSignatureUrl || invoiceData.artisanSignatureUrl,
+        stampUrl: resolvedAssets?.stampUrl || signedUrls.stampUrl || invoiceData.stampUrl,
+        logoUrl: resolvedAssets?.logoUrl || signedUrls.logoUrl || invoiceData.logoUrl,
       };
       const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
       const isQuoteConversionFlow =
@@ -1499,7 +1511,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       const pdfBlob = await generateOfficialPdfBlob({
         invoiceElement: invoiceRef.current,
         footerLabel: `${data.type} n° ${data.number}`,
-        onBeforeExport: () => persistCurrentDocumentState({ showPreview: true }),
+        onBeforeExport: prepareFreshAssetsForExport,
         onToggleArabic: setShowArabic,
         showArabic,
       });
@@ -3666,7 +3678,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             showArabic={showArabic}
             onToggleArabic={setShowArabic}
             onUpdateInvoice={handleUpdateInvoice}
-            onBeforeExport={() => persistCurrentDocumentState({ showPreview: true })}
+                onBeforeExport={prepareFreshAssetsForExport}
             isPaid={true} /* TRIAL PHASE: set to false to reactivate payments */
           />
 

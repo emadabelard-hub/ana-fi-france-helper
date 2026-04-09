@@ -17,60 +17,60 @@ html, body {
 
 @layer base {
   :root {
-    /* LUXURY BUSINESS — Deep Slate Night Theme */
-    --background: 220 15% 10%;
-    --foreground: 40 20% 92%;
+    /* LUXURY BANKING — Deep Navy Night Theme */
+    --background: 222 30% 11%;
+    --foreground: 210 20% 92%;
 
-    /* Cards: rich dark slate with subtle warmth */
-    --card: 220 12% 14%;
-    --card-foreground: 40 20% 92%;
+    /* Cards: subtle navy lift */
+    --card: 222 25% 15%;
+    --card-foreground: 210 20% 92%;
 
-    --popover: 220 12% 14%;
-    --popover-foreground: 40 20% 92%;
+    --popover: 222 25% 15%;
+    --popover-foreground: 210 20% 92%;
 
-    /* Primary: Muted Gold / Antique Bronze #BFA071 = hsl(37, 37%, 60%) */
-    --primary: 37 37% 60%;
-    --primary-foreground: 220 15% 10%;
+    /* Primary: Warm Antique Gold */
+    --primary: 37 40% 58%;
+    --primary-foreground: 222 30% 11%;
 
-    /* Secondary: Deep Navy Blue */
-    --secondary: 220 40% 20%;
-    --secondary-foreground: 40 20% 92%;
+    /* Secondary: Soft Deep Navy */
+    --secondary: 222 28% 20%;
+    --secondary-foreground: 210 20% 90%;
 
-    /* Muted */
-    --muted: 220 12% 16%;
-    --muted-foreground: 220 10% 55%;
+    /* Muted: Calm navy-grey */
+    --muted: 222 22% 18%;
+    --muted-foreground: 215 15% 55%;
 
-    /* Accent: Antique Bronze */
-    --accent: 37 37% 60%;
-    --accent-foreground: 220 15% 10%;
+    /* Accent: Warm Bronze */
+    --accent: 37 40% 58%;
+    --accent-foreground: 222 30% 11%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 40 20% 96%;
+    --destructive: 0 55% 48%;
+    --destructive-foreground: 210 20% 96%;
 
     /* Border/Input */
-    --border: 220 10% 20%;
-    --input: 220 12% 18%;
-    --input-foreground: 40 20% 95%;
-    --ring: 37 37% 60%;
+    --border: 222 18% 22%;
+    --input: 222 22% 17%;
+    --input-foreground: 210 20% 94%;
+    --ring: 37 40% 58%;
 
     --radius: 1.5rem;
 
     /* Chat */
-    --chat-ai: 220 12% 16%;
-    --chat-ai-foreground: 40 20% 92%;
-    --chat-user: 37 37% 60%;
-    --chat-user-foreground: 220 15% 10%;
-    --chat-input: 220 15% 12%;
-    --chat-input-foreground: 40 20% 92%;
+    --chat-ai: 222 22% 18%;
+    --chat-ai-foreground: 210 20% 92%;
+    --chat-user: 37 40% 58%;
+    --chat-user-foreground: 222 30% 11%;
+    --chat-input: 222 28% 14%;
+    --chat-input-foreground: 210 20% 92%;
 
-    --sidebar-background: 220 15% 8%;
-    --sidebar-foreground: 40 20% 92%;
-    --sidebar-primary: 37 37% 60%;
-    --sidebar-primary-foreground: 220 15% 10%;
-    --sidebar-accent: 220 12% 16%;
-    --sidebar-accent-foreground: 40 20% 92%;
-    --sidebar-border: 220 10% 20%;
-    --sidebar-ring: 37 37% 60%;
+    --sidebar-background: 222 32% 9%;
+    --sidebar-foreground: 210 20% 92%;
+    --sidebar-primary: 37 40% 58%;
+    --sidebar-primary-foreground: 222 30% 11%;
+    --sidebar-accent: 222 22% 18%;
+    --sidebar-accent-foreground: 210 20% 92%;
+    --sidebar-border: 222 18% 22%;
+    --sidebar-ring: 37 40% 58%;
   }
 
   /* Light mode — Crisp White & Bronze */

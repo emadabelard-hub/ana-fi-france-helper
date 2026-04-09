@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -20,15 +20,20 @@ const LoginPage = () => {
 
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [showResendConfirm, setShowResendConfirm] = useState(false);
   const [resendingConfirm, setResendingConfirm] = useState(false);
+
+  // Use refs for form values to avoid Chrome mobile autofill issues
+  // Chrome autofill does NOT fire onChange on controlled inputs,
+  // so React state stays empty while user sees filled values.
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
+  const resetEmailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -59,10 +64,7 @@ const LoginPage = () => {
   const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const formData = new FormData(e.currentTarget);
-    const submittedEmail = normalizeEmail(String(formData.get('email') ?? ''));
-
-    setEmail(submittedEmail);
+    const submittedEmail = normalizeEmail(resetEmailRef.current?.value ?? '');
 
     if (!submittedEmail) return;
 
@@ -108,14 +110,19 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const formData = new FormData(e.currentTarget);
-    const submittedEmail = normalizeEmail(String(formData.get('email') ?? ''));
-    const submittedPassword = String(formData.get('password') ?? '');
-    const submittedConfirmPassword = String(formData.get('confirmPassword') ?? '');
+    // Read directly from DOM refs — immune to Chrome autofill issues
+    const submittedEmail = normalizeEmail(emailRef.current?.value ?? '');
+    const submittedPassword = passwordRef.current?.value ?? '';
+    const submittedConfirmPassword = confirmPasswordRef.current?.value ?? '';
 
-    setEmail(submittedEmail);
-    setPassword(submittedPassword);
-    setConfirmPassword(submittedConfirmPassword);
+    if (!submittedEmail || !submittedPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Veuillez remplir tous les champs',
+      });
+      return;
+    }
 
     if (!isLogin && submittedPassword !== submittedConfirmPassword) {
       toast({
@@ -200,10 +207,9 @@ const LoginPage = () => {
                 <div className="space-y-2">
                   <Label className="font-bold">Email</Label>
                   <Input
+                    ref={resetEmailRef}
                     name="email"
                     type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
                     placeholder="email@example.com"
                     required
                     autoComplete="email"
@@ -229,10 +235,9 @@ const LoginPage = () => {
                 <div className="space-y-2">
                   <Label className="font-bold">Email</Label>
                   <Input
+                    ref={emailRef}
                     name="email"
                     type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
                     placeholder="email@example.com"
                     required
                     autoComplete="email"
@@ -244,10 +249,9 @@ const LoginPage = () => {
                   <Label className="font-bold">Mot de passe</Label>
                   <div className="relative">
                     <Input
+                      ref={passwordRef}
                       name="password"
                       type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
                       minLength={6}
@@ -278,10 +282,9 @@ const LoginPage = () => {
                   <div className="space-y-2">
                     <Label className="font-bold">Confirmer</Label>
                     <Input
+                      ref={confirmPasswordRef}
                       name="confirmPassword"
                       type="password"
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
                       required
                       autoComplete="new-password"
@@ -315,10 +318,11 @@ const LoginPage = () => {
                   className="w-full font-bold h-11 text-[16px]"
                   disabled={resendingConfirm}
                   onClick={async () => {
-                    if (!email) return;
+                    const currentEmail = emailRef.current?.value;
+                    if (!currentEmail) return;
                     setResendingConfirm(true);
                     try {
-                      const { error } = await supabase.auth.resend({ type: 'signup', email: normalizeEmail(email) });
+                      const { error } = await supabase.auth.resend({ type: 'signup', email: normalizeEmail(currentEmail) });
                       toast({
                         title: error ? 'Erreur' : 'Lien envoyé ✓',
                         description: error ? error.message : 'Vérifiez votre boîte mail',

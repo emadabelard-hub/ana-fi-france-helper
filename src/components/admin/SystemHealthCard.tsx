@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import { checkAdminSystemHealth, type AdminSystemStatus } from '@/lib/adminHealth';
 import { AlertTriangle, CheckCircle2, XCircle, RefreshCw, Activity, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-type ApiStatus = 'checking' | 'ok' | 'warning' | 'error';
+type ApiStatus = AdminSystemStatus;
 
 interface SystemHealthCardProps {
   isRTL: boolean;
@@ -23,73 +23,15 @@ const SystemHealthCard = ({ isRTL, onStatusChange }: SystemHealthCardProps) => {
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
     setStatus('checking');
-    const startTime = Date.now();
 
     try {
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
-        body: {
-          messages: [{ role: 'user', content: 'ping' }],
-          language: 'fr',
-        },
-      });
+      const result = await checkAdminSystemHealth(isRTL);
 
-      const elapsed = Date.now() - startTime;
-      setResponseTime(elapsed);
+      setResponseTime(result.responseTime);
       setLastChecked(new Date());
-
-      if (error) {
-        const errMsg = error.message || '';
-        if (errMsg.includes('402') || errMsg.includes('insufficient_quota') || errMsg.includes('Payment')) {
-          setStatus('error');
-          const msg = isRTL
-            ? '⚠️ تنبيه: رصيد OpenAI انتهى. يرجى الشحن لضمان استمرار الخدمة.'
-            : '⚠️ Alerte : Quota OpenAI épuisé. Rechargez pour maintenir le service.';
-          setMessage(msg);
-          onStatusChange?.('error', msg);
-        } else if (errMsg.includes('429') || errMsg.includes('rate')) {
-          setStatus('warning');
-          const msg = isRTL ? '⚠️ حد الطلبات مرتفع، حاول لاحقاً' : '⚠️ Limite de requêtes atteinte';
-          setMessage(msg);
-          onStatusChange?.('warning', msg);
-        } else {
-          setStatus('error');
-          const msg = isRTL ? '❌ خطأ في الاتصال بالنظام' : '❌ Erreur de connexion au système';
-          setMessage(msg);
-          onStatusChange?.('error', msg);
-        }
-      } else {
-        // Check response time for warning
-        if (elapsed > 5000) {
-          setStatus('warning');
-          const msg = isRTL ? '⚠️ النظام بطيء - وقت الاستجابة مرتفع' : '⚠️ Système lent - temps de réponse élevé';
-          setMessage(msg);
-          onStatusChange?.('warning', msg);
-        } else {
-          setStatus('ok');
-          const msg = isRTL ? '✅ النظام جاهز ويعمل بشكل طبيعي' : '✅ Système opérationnel';
-          setMessage(msg);
-          onStatusChange?.('ok', msg);
-        }
-      }
-    } catch (err: any) {
-      const elapsed = Date.now() - startTime;
-      setResponseTime(elapsed);
-      setLastChecked(new Date());
-      const errStr = String(err?.message || err || '');
-
-      if (errStr.includes('402') || errStr.includes('quota')) {
-        setStatus('error');
-        const msg = isRTL
-          ? '⚠️ تنبيه: رصيد OpenAI انتهى. يرجى الشحن لضمان استمرار الخدمة.'
-          : '⚠️ Alerte : Quota OpenAI épuisé. Rechargez.';
-        setMessage(msg);
-        onStatusChange?.('error', msg);
-      } else {
-        setStatus('error');
-        const msg = isRTL ? '❌ خطأ في الاتصال' : '❌ Erreur de connexion';
-        setMessage(msg);
-        onStatusChange?.('error', msg);
-      }
+      setStatus(result.status);
+      setMessage(result.message);
+      onStatusChange?.(result.status, result.message);
     } finally {
       setIsChecking(false);
     }

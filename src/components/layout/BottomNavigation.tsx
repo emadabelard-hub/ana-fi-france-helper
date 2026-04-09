@@ -68,19 +68,39 @@ const BottomNavigation = () => {
   const { language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading, isPrimaryAdmin } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+
     const checkAdmin = async () => {
-      if (!user) { setIsAdmin(false); return; }
+      if (authLoading) return;
+
+      if (!user || user.is_anonymous) {
+        if (isMounted) setIsAdmin(false);
+        return;
+      }
+
+      if (isPrimaryAdmin) {
+        if (isMounted) setIsAdmin(true);
+        return;
+      }
+
       try {
         const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
-        setIsAdmin(data === true);
-      } catch { setIsAdmin(false); }
+        if (isMounted) setIsAdmin(data === true);
+      } catch {
+        if (isMounted) setIsAdmin(false);
+      }
     };
+
     checkAdmin();
-  }, [user]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [authLoading, isPrimaryAdmin, user]);
 
   const items = isAdmin ? [...navItems, adminItem] : navItems;
 

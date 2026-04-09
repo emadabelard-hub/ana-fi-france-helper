@@ -65,7 +65,7 @@ const StyledInput = ({ className, ...props }: React.ComponentProps<typeof Input>
 
 const ProfilePage = () => {
   const { isRTL } = useLanguage();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isLoading: authLoading, isPrimaryAdmin } = useAuth();
   const { profile, isLoading, updateProfile } = useProfile();
   const navigate = useNavigate();
 
@@ -113,9 +113,33 @@ const ProfilePage = () => {
   }, [profile]);
 
   useEffect(() => {
-    if (!user) return;
-    supabase.rpc('is_admin', { _user_id: user.id }).then(({ data }) => setIsAdmin(data === true));
-  }, [user]);
+    let isMounted = true;
+
+    const checkAdmin = async () => {
+      if (authLoading) return;
+
+      if (!user || user.is_anonymous) {
+        if (isMounted) setIsAdmin(false);
+        return;
+      }
+
+      if (isPrimaryAdmin) {
+        if (isMounted) setIsAdmin(true);
+        return;
+      }
+
+      const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
+      if (isMounted) setIsAdmin(data === true);
+    };
+
+    checkAdmin().catch(() => {
+      if (isMounted) setIsAdmin(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [authLoading, isPrimaryAdmin, user]);
 
   useEffect(() => {
     if (formData.logo_url) getSignedAssetUrl(formData.logo_url).then(url => setSignedLogoUrl(url));

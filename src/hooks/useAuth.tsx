@@ -48,6 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let isSigningOut = false;
+    let hasInitialized = false;
 
     // CRITICAL: Set up auth listener BEFORE checking session
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
@@ -62,7 +63,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
-      setIsLoading(false);
+
+      if (hasInitialized || event !== 'INITIAL_SESSION') {
+        setIsLoading(false);
+      }
     });
 
     const initSession = async () => {
@@ -70,8 +74,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Safety timeout — never stay on splash screen forever
       const safetyTimer = setTimeout(() => {
+        hasInitialized = true;
         setIsLoading(false);
       }, 5000);
+
+      const finishLoading = () => {
+        hasInitialized = true;
+        setIsLoading(false);
+        clearTimeout(safetyTimer);
+      };
 
       try {
         const skipAnonymousBoot = shouldSkipAnonymousBoot();
@@ -80,8 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           sessionStorage.removeItem('explicit_signout');
           setUser(null);
           setSession(null);
-          setIsLoading(false);
-          clearTimeout(safetyTimer);
+          finishLoading();
           return;
         }
 
@@ -95,39 +105,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           setSession(null);
           setUser(null);
-          setIsLoading(false);
-          clearTimeout(safetyTimer);
+          finishLoading();
           return;
         }
 
         if (existing) {
           setSession(existing);
           setUser(existing.user);
-          setIsLoading(false);
-          clearTimeout(safetyTimer);
+          finishLoading();
           return;
         }
 
         if (skipAnonymousBoot) {
           setUser(null);
           setSession(null);
-          setIsLoading(false);
-          clearTimeout(safetyTimer);
+          finishLoading();
           return;
         }
 
         // No session found — create anonymous guest session for public access
         const { error } = await supabase.auth.signInAnonymously();
+        hasInitialized = true;
+
         if (error) {
           console.warn('Anonymous sign-in failed:', error.message);
-          setIsLoading(false);
-          clearTimeout(safetyTimer);
+          finishLoading();
         }
         // onAuthStateChange will finalize state on success
       } catch (err) {
         console.warn('Auth init failed:', err);
-        setIsLoading(false);
-        clearTimeout(safetyTimer);
+        finishLoading();
       }
     };
 

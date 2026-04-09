@@ -17,6 +17,19 @@ serve(async (req) => {
     }
 
     const { messages, language, userName, userGender, category } = await req.json();
+
+    if (
+      Array.isArray(messages) &&
+      messages.length === 1 &&
+      typeof messages[0]?.content === 'string' &&
+      messages[0].content.trim().toLowerCase() === 'ping'
+    ) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 

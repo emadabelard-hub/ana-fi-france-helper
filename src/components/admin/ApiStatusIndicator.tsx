@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
+import { checkAdminSystemHealth, type AdminSystemStatus } from '@/lib/adminHealth';
 import { AlertTriangle, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-type ApiStatus = 'checking' | 'ok' | 'warning' | 'error';
+type ApiStatus = AdminSystemStatus;
 
 const ApiStatusIndicator = ({ isRTL }: { isRTL: boolean }) => {
   const [status, setStatus] = useState<ApiStatus>('checking');
@@ -16,44 +15,11 @@ const ApiStatusIndicator = ({ isRTL }: { isRTL: boolean }) => {
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
     setStatus('checking');
-    try {
-      // Test the AI gateway via a lightweight edge function call
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
-        body: {
-          messages: [{ role: 'user', content: 'ping' }],
-          language: 'fr',
-        },
-      });
 
-      if (error) {
-        const errMsg = error.message || '';
-        if (errMsg.includes('402') || errMsg.includes('insufficient_quota') || errMsg.includes('Payment')) {
-          setStatus('warning');
-          setMessage(isRTL
-            ? '⚠️ تنبيه: رصيد العمليات منخفض، يرجى شحن الحساب لضمان استمرار الخدمة.'
-            : '⚠️ Alerte : Solde API bas, veuillez recharger pour garantir le service.');
-        } else if (errMsg.includes('429') || errMsg.includes('rate')) {
-          setStatus('warning');
-          setMessage(isRTL ? '⚠️ حد الطلبات مرتفع، حاول لاحقاً' : '⚠️ Limite de requêtes atteinte');
-        } else {
-          setStatus('error');
-          setMessage(isRTL ? '❌ خطأ في الاتصال بالنظام' : '❌ Erreur de connexion au système');
-        }
-      } else {
-        setStatus('ok');
-        setMessage(isRTL ? '✅ النظام جاهز' : '✅ Système opérationnel');
-      }
-    } catch (err: any) {
-      const errStr = String(err?.message || err || '');
-      if (errStr.includes('402') || errStr.includes('quota')) {
-        setStatus('warning');
-        setMessage(isRTL
-          ? '⚠️ تنبيه: رصيد العمليات منخفض، يرجى شحن الحساب لضمان استمرار الخدمة.'
-          : '⚠️ Alerte : Solde API bas, veuillez recharger.');
-      } else {
-        setStatus('error');
-        setMessage(isRTL ? '❌ خطأ في الاتصال' : '❌ Erreur de connexion');
-      }
+    try {
+      const result = await checkAdminSystemHealth(isRTL);
+      setStatus(result.status);
+      setMessage(result.message);
     } finally {
       setIsChecking(false);
     }

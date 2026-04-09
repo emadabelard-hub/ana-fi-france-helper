@@ -55,13 +55,15 @@ interface ProfileContextType {
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export const ProfileProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = useCallback(async () => {
-    if (!user) {
+    if (authLoading) return;
+
+    if (!user || !isAuthenticated) {
       setProfile(null);
       setIsLoading(false);
       return;
@@ -94,14 +96,22 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [authLoading, isAuthenticated, user]);
 
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
 
   const updateProfile = useCallback(async (updates: Partial<Profile>) => {
-    if (!user) return { error: new Error('Not authenticated') };
+    if (!user || user.is_anonymous) {
+      const error = new Error('Not authenticated');
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Reconnectez-vous puis réessayez.',
+      });
+      return { error };
+    }
 
     try {
       // Convert empty strings to null for nullable text columns to avoid

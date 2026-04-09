@@ -27,32 +27,38 @@ const validatePassword = (password: string): string | null => {
 
 interface PasswordInputProps {
   id: string;
+  name: string;
   value: string;
   onChange: (v: string) => void;
   show: boolean;
   onToggle: () => void;
   placeholder: string;
+  autoComplete?: string;
   isRTL: boolean;
 }
 
 const PasswordInput = ({
   id,
+  name,
   value,
   onChange,
   show,
   onToggle,
   placeholder,
+  autoComplete,
   isRTL,
 }: PasswordInputProps) => (
   <div className="relative">
     <Input
       id={id}
+      name={name}
       type={show ? 'text' : 'password'}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       required
       minLength={6}
+      autoComplete={autoComplete}
       className={cn("pr-10", isRTL && "text-right pr-3 pl-10")}
     />
     <button
@@ -91,7 +97,8 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const normalizedEmail = normalizeEmail(email);
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const normalizedEmail = normalizeEmail(String(formData.get('email') ?? ''));
     if (!normalizedEmail) {
       toast({
         variant: "destructive",
@@ -161,11 +168,14 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const normalizedEmail = normalizeEmail(email);
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const normalizedEmail = normalizeEmail(String(formData.get('email') ?? ''));
+    const submittedPassword = String(formData.get('password') ?? '');
+    const submittedConfirmPassword = String(formData.get('confirmPassword') ?? '');
 
     // Password validation for sign-up
     if (!isLogin) {
-      const pwError = validatePassword(password);
+      const pwError = validatePassword(submittedPassword);
       if (pwError) {
         toast({
           variant: "destructive",
@@ -176,7 +186,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
         });
         return;
       }
-      if (password !== confirmPassword) {
+      if (submittedPassword !== submittedConfirmPassword) {
         toast({
           variant: "destructive",
           title: isRTL ? "خطأ" : "Erreur",
@@ -189,8 +199,8 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     setIsLoading(true);
     try {
       const result = isLogin
-        ? await signIn(normalizedEmail, password)
-        : await signUp(normalizedEmail, password);
+        ? await signIn(normalizedEmail, submittedPassword)
+        : await signUp(normalizedEmail, submittedPassword);
 
       if (result.error) {
         const errorMessage = result.error.message.toLowerCase();
@@ -295,11 +305,13 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 </Label>
                 <Input
                   id="reset-email"
+                  name="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="exemple@email.com"
                   required
+                  autoComplete="email"
                   className={cn(isRTL && "text-right")}
                 />
               </div>
@@ -328,11 +340,13 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 </Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="exemple@email.com"
                   required
+                  autoComplete="email"
                   className={cn(isRTL && "text-right")}
                 />
               </div>
@@ -343,11 +357,13 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 </Label>
                 <PasswordInput
                   id="password"
+                  name="password"
                   value={password}
                   onChange={setPassword}
                   show={showPassword}
                   onToggle={() => setShowPassword(!showPassword)}
                   placeholder="••••••••"
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
                   isRTL={isRTL}
                 />
                 {isLogin && (
@@ -375,11 +391,13 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                   </Label>
                   <PasswordInput
                     id="confirmPassword"
+                     name="confirmPassword"
                     value={confirmPassword}
                     onChange={setConfirmPassword}
                     show={showConfirmPassword}
                     onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
                     placeholder="••••••••"
+                     autoComplete="new-password"
                     isRTL={isRTL}
                   />
                 </div>

@@ -68,9 +68,18 @@ export async function checkAdminSystemHealth(isRTL: boolean): Promise<AdminSyste
       };
     }
 
-    const { data: isAdmin, error: adminError } = await withHealthTimeout(
-      supabase.rpc('is_admin', { _user_id: session.user.id })
-    );
+    let isAdmin: boolean | null = null;
+    let adminError: Error | null = null;
+
+    try {
+      const result = await withHealthTimeout(
+        Promise.resolve(supabase.rpc('is_admin', { _user_id: session.user.id }))
+      );
+      isAdmin = (result as any)?.data ?? null;
+      if ((result as any)?.error) adminError = (result as any).error;
+    } catch {
+      adminError = new Error('health-timeout');
+    }
 
     const elapsed = Date.now() - startTime;
 

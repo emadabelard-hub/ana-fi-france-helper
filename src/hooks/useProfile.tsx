@@ -103,17 +103,36 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchProfile]);
 
   const updateProfile = useCallback(async (updates: Partial<Profile>) => {
-    if (!user || user.is_anonymous) {
-      const error = new Error('Not authenticated');
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: 'Reconnectez-vous puis réessayez.',
-      });
-      return { error };
-    }
-
     try {
+      // Refresh session to ensure we have a valid, non-expired token
+      const { data: { session } } = await supabase.auth.getSession();
+      const activeUser = session?.user;
+
+      if (!activeUser || activeUser.is_anonymous) {
+        // Try refreshing the token once
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        const refreshedUser = refreshed.session?.user;
+
+        if (!refreshedUser || refreshedUser.is_anonymous) {
+          toast({
+            variant: 'destructive',
+            title: 'Erreur',
+            description: 'Session expirée. Reconnectez-vous puis réessayez.',
+          });
+          return { error: new Error('Not authenticated') };
+        }
+      }
+
+      const userId = activeUser?.id ?? user?.id;
+      if (!userId) {
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: 'Aucun utilisateur actif. Reconnectez-vous.',
+        });
+        return { error: new Error('No user ID') };
+      }
+
       // Convert empty strings to null for nullable text columns to avoid
       // check-constraint violations (e.g. siret_format)
       const cleaned: Record<string, unknown> = {};
@@ -123,7 +142,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .upsert({ user_id: user.id, ...cleaned }, { onConflict: 'user_id' })
+        .upsert({ user_id: userId, ...cleaned }, { onConflict: 'user_id' })
         .select()
         .single();
 
@@ -137,15 +156,16 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
 
       return { error: null };
     } catch (error) {
-      console.error('Error updating profile:', error);
+      const errMsg = (error as any)?.message || (error as any)?.details || String(error);
+      console.error('Error updating profile:', errMsg, error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de mettre à jour le profil.",
+        description: `Impossible de mettre à jour le profil: ${errMsg.slice(0, 120)}`,
       });
       return { error };
     }
-  }, [user, toast]);
+  }, [user, toast, supabase]);
 
   return (
     <ProfileContext.Provider value={{ profile, isLoading, updateProfile, refetch: fetchProfile }}>

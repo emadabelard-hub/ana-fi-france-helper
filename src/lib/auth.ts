@@ -6,6 +6,30 @@ export const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 export const getResetPasswordRedirectUrl = () => `${window.location.origin}/reset-password`;
 
+export const AUTH_OPERATION_TIMEOUT_MS = 12000;
+
+export const withAuthTimeout = async <T>(
+  operation: Promise<T>,
+  message = 'La requête prend trop de temps. Réessayez.'
+): Promise<T> => {
+  let timeoutId: number | null = null;
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          reject(new Error(message));
+        }, AUTH_OPERATION_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
+  }
+};
+
 const readHashParams = () => {
   const hash = window.location.hash.startsWith('#')
     ? window.location.hash.slice(1)

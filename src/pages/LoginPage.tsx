@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Loader2, Eye, EyeOff, ArrowRight, UserRound } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { getResetPasswordRedirectUrl, isAnonymousSession, normalizeEmail, PRIMARY_ADMIN_EMAIL } from '@/lib/auth';
+import { getResetPasswordRedirectUrl, normalizeEmail, PRIMARY_ADMIN_EMAIL, withAuthTimeout } from '@/lib/auth';
 
 const LoginPage = () => {
   const { signIn, signUp, signInAnonymously, isAuthenticated, isLoading: authLoading, user } = useAuth();
@@ -70,17 +70,12 @@ const LoginPage = () => {
 
     setIsLoading(true);
     try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (isAnonymousSession(currentSession)) {
-        const { error: cleanupError } = await supabase.auth.signOut({ scope: 'local' });
-        if (cleanupError) {
-          console.warn('Anonymous session cleanup failed before password reset:', cleanupError.message);
-        }
-      }
-
-      const { error } = await supabase.auth.resetPasswordForEmail(submittedEmail, {
-        redirectTo: getResetPasswordRedirectUrl(),
-      });
+      const { error } = await withAuthTimeout(
+        supabase.auth.resetPasswordForEmail(submittedEmail, {
+          redirectTo: getResetPasswordRedirectUrl(),
+        }),
+        'L’envoi du lien prend trop de temps. Réessayez.'
+      );
       if (error) {
         toast({ variant: 'destructive', title: 'Erreur', description: error.message });
       } else {

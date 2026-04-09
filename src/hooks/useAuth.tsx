@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
-import { getRecoveryContext, isAnonymousSession, normalizeEmail, PRIMARY_ADMIN_EMAIL } from '@/lib/auth';
+import { getRecoveryContext, isAnonymousSession, normalizeEmail, PRIMARY_ADMIN_EMAIL, withAuthTimeout } from '@/lib/auth';
 
 interface AuthResult {
   error: Error | null;
@@ -29,14 +29,10 @@ const shouldSkipAnonymousBoot = () => {
 };
 
 const clearAnonymousSessionIfNeeded = async () => {
-  const { data: { session: currentSession } } = await supabase.auth.getSession();
-
-  if (isAnonymousSession(currentSession)) {
-    const { error } = await supabase.auth.signOut({ scope: 'local' });
-    if (error) {
-      console.warn('Anonymous session cleanup failed:', error.message);
-    }
-  }
+  // Intentionally a no-op.
+  // On some mobile Chrome sessions, chaining getSession/signOut before auth
+  // actions can deadlock the auth client and leave submit buttons stuck.
+  // Let Supabase replace the anonymous session directly during sign-in/sign-up.
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -151,13 +147,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     await clearAnonymousSessionIfNeeded();
 
-    const { data, error } = await supabase.auth.signUp({
-      email: normalizedEmail,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
-    });
+    const { data, error } = await withAuthTimeout(
+      supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      }),
+      'La création du compte prend trop de temps. Réessayez.'
+    );
 
     return {
       error: error ?? null,
@@ -171,10 +170,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     await clearAnonymousSessionIfNeeded();
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
+    const { data, error } = await withAuthTimeout(
+      supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      }),
+      'La connexion prend trop de temps. Réessayez.'
+    );
 
     return {
       error: error ?? null,

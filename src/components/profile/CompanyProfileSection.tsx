@@ -158,17 +158,26 @@ const CompanyProfileSection = () => {
   };
 
   const uploadFile = async (file: File, type: 'logo' | 'header'): Promise<string | null> => {
-    if (!user) return null;
-    
     try {
-      // Compress image before upload
+      // Ensure valid authenticated session before uploading
+      const { data: { session } } = await supabase.auth.getSession();
+      let activeUser = session?.user;
+      if (!activeUser || activeUser.is_anonymous) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        activeUser = refreshed.session?.user ?? null;
+      }
+      if (!activeUser || activeUser.is_anonymous) {
+        console.error('Upload failed: no active authenticated session');
+        return null;
+      }
+
       const compressedBlob = await compressImageFile(file, {
         maxWidth: type === 'header' ? 1920 : 500,
         maxHeight: type === 'header' ? 400 : 500,
         quality: 0.85,
       });
       
-      const fileName = `${user.id}/${type}-${Date.now()}.jpg`;
+      const fileName = `${activeUser.id}/${type}-${Date.now()}.jpg`;
       
       const { error: uploadError } = await supabase.storage
         .from('company-assets')

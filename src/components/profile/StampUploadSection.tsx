@@ -33,17 +33,29 @@ const StampUploadSection = () => {
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
 
     setIsUploading(true);
     try {
+      // Ensure valid authenticated session
+      const { data: { session } } = await supabase.auth.getSession();
+      let activeUser = session?.user;
+      if (!activeUser || activeUser.is_anonymous) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        activeUser = refreshed.session?.user ?? null;
+      }
+      if (!activeUser || activeUser.is_anonymous) {
+        console.error('Stamp upload failed: no active authenticated session');
+        return;
+      }
+
       const compressed = await compressImageFile(file, {
         maxWidth: 500,
         maxHeight: 500,
         quality: 0.85,
       });
 
-      const fileName = `${user.id}/stamp-${Date.now()}.jpg`;
+      const fileName = `${activeUser.id}/stamp-${Date.now()}.jpg`;
       const { error: uploadError } = await supabase.storage
         .from('company-assets')
         .upload(fileName, compressed, { upsert: true, contentType: 'image/jpeg' });

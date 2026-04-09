@@ -137,7 +137,14 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
       // check-constraint violations (e.g. siret_format)
       const cleaned: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(updates)) {
-        cleaned[key] = typeof value === 'string' && value.trim() === '' ? null : value;
+        if (typeof value === 'string' && value.trim() === '') {
+          cleaned[key] = null;
+        } else if (key === 'siret' && typeof value === 'string' && !/^\d{14}$/.test(value)) {
+          // Invalid SIRET → store as null to avoid CHECK constraint violation
+          cleaned[key] = null;
+        } else {
+          cleaned[key] = value;
+        }
       }
 
       const { data, error } = await supabase

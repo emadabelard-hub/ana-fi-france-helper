@@ -24,6 +24,34 @@ interface AuthContextType {
 const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
+const isRecoveryFlow = () => {
+  const hash = window.location.hash || '';
+  const search = window.location.search || '';
+
+  return (
+    hash.includes('type=recovery') ||
+    search.includes('type=recovery') ||
+    (hash.includes('access_token=') && hash.includes('refresh_token='))
+  );
+};
+
+const shouldSkipAnonymousBoot = () => {
+  const pathname = window.location.pathname;
+
+  return pathname === '/login' || pathname === '/reset-password' || isRecoveryFlow();
+};
+
+const clearAnonymousSessionIfNeeded = async () => {
+  const { data: { session: currentSession } } = await supabase.auth.getSession();
+
+  if (currentSession?.user?.is_anonymous) {
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
+    if (error) {
+      console.warn('Anonymous session cleanup failed:', error.message);
+    }
+  }
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -82,6 +110,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
+        if (shouldSkipAnonymousBoot()) {
+          setUser(null);
+          setSession(null);
+          setIsLoading(false);
+          clearTimeout(safetyTimer);
+          return;
+        }
+
         // No session found — create anonymous guest session for public access
         const { error } = await supabase.auth.signInAnonymously();
         if (error) {
@@ -127,6 +163,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string): Promise<AuthResult> => {
     const normalizedEmail = normalizeEmail(email);
+
+    await clearAnonymousSessionIfNeeded();
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email: normalizedEmail,
       password,

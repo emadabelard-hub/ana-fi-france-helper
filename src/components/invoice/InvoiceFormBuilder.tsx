@@ -1470,27 +1470,23 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         }
       }
 
-      // NUMBERING: Use the manually entered docNumber directly
-      // Check uniqueness for the document number
-      {
-        const { data: existing } = await (supabase.from('documents_comptables') as any)
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('document_number', data.number)
-          .eq('document_type', documentType)
-          .maybeSingle();
-        if (existing) {
-          toast({
-            variant: 'destructive',
-            title: isRTL ? '⚠️ رقم موجود' : '⚠️ Numéro existant',
-            description: isRTL ? `الرقم ${data.number} مستخدم بالفعل` : `Le numéro ${data.number} existe déjà.`,
-          });
-          return;
-        }
+      // NUMBERING: Atomically get the next sequential number from the DB
+      const { data: nextNumber, error: numberError } = await supabase.rpc('get_next_document_number', {
+        _user_id: user.id,
+        _document_type: documentType,
+      });
+      if (numberError || !nextNumber) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '⚠️ خطأ في الترقيم' : '⚠️ Erreur de numérotation',
+          description: isRTL ? 'تعذر إنشاء رقم المستند' : 'Impossible de générer le numéro du document.',
+        });
+        console.error('Numbering error:', numberError);
+        return;
       }
-
-      // Update docNumber in UI immediately
-      setDocNumber(data.number);
+      // Assign the generated number to the document
+      data.number = nextNumber;
+      setDocNumber(nextNumber);
 
       const linkedDocumentData = {
         ...documentDataForStorage,

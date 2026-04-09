@@ -1,4 +1,5 @@
-import type { Session } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 export const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
 
@@ -75,3 +76,20 @@ export const getRecoveryContext = () => {
 export const isAnonymousSession = (session: Session | null | undefined) => session?.user?.is_anonymous === true;
 
 export const isAuthenticatedSession = (session: Session | null | undefined) => Boolean(session?.user) && !isAnonymousSession(session);
+
+export const requireActiveSessionUser = async (): Promise<User> => {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session?.user || session.user.is_anonymous) {
+    throw new Error('AUTH_REQUIRED');
+  }
+
+  const { data: refreshed } = await supabase.auth.refreshSession();
+  const activeUser = refreshed.session?.user ?? session.user;
+
+  if (!activeUser || activeUser.is_anonymous) {
+    throw new Error('AUTH_REQUIRED');
+  }
+
+  return activeUser;
+};

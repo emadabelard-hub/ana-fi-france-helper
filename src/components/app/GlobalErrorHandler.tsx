@@ -1,14 +1,10 @@
 import { useEffect } from "react";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { toast } from "@/hooks/use-toast";
 
 /**
  * Centralise la gestion des erreurs globales.
  * IMPORTANT: doit rester sous LanguageProvider pour respecter le verrouillage FR/AR.
  */
 export default function GlobalErrorHandler() {
-  const { t } = useLanguage();
-
   useEffect(() => {
     const normalizeErrorMessage = (value: unknown) => {
       if (typeof value === "string") return value.toLowerCase();
@@ -18,27 +14,6 @@ export default function GlobalErrorHandler() {
       }
       return String(value ?? "").toLowerCase();
     };
-
-    const showGenericToast = (() => {
-      let lastToastAt = 0;
-      let lastToastMessage = "";
-
-      return () => {
-        const message = t("error.generic");
-        const now = Date.now();
-
-        if (lastToastMessage === message && now - lastToastAt < 8000) return;
-
-        lastToastAt = now;
-        lastToastMessage = message;
-
-        toast({
-          variant: "destructive",
-          title: t("common.error"),
-          description: message,
-        });
-      };
-    })();
 
     const isNonCriticalError = (value: unknown) => {
       const message = normalizeErrorMessage(value);
@@ -99,7 +74,6 @@ export default function GlobalErrorHandler() {
 
       console.error("Unhandled promise rejection:", event.reason);
       event.preventDefault();
-      showGenericToast();
     };
 
     const handleError = (event: ErrorEvent) => {
@@ -114,7 +88,7 @@ export default function GlobalErrorHandler() {
       }
 
       console.error("Global error:", event.error ?? event.message);
-      showGenericToast();
+      event.preventDefault();
     };
 
     window.addEventListener("unhandledrejection", handleUnhandledRejection);
@@ -124,7 +98,7 @@ export default function GlobalErrorHandler() {
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
       window.removeEventListener("error", handleError);
     };
-  }, [t]);
+  }, []);
 
   return null;
 }

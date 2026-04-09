@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { isAuthenticatedSession, normalizeEmail, PRIMARY_ADMIN_EMAIL } from '@/lib/auth';
 
 export type AdminSystemStatus = 'checking' | 'ok' | 'warning' | 'error';
 
@@ -12,6 +13,18 @@ const HEALTH_TIMEOUT_MS = 8000;
 
 const getSyncMessage = (isRTL: boolean) =>
   isRTL ? '⏳ جاري مزامنة جلسة المدير...' : '⏳ Synchronisation de la session admin...';
+
+const getReadyMessage = (isRTL: boolean) =>
+  isRTL ? '✅ جلسة المدير مستقرة' : '✅ Session admin stable';
+
+const getSlowMessage = (isRTL: boolean) =>
+  isRTL ? '⚠️ الجلسة مستقرة لكن التحقق بطيء قليلاً' : '⚠️ Session stable mais vérification un peu lente';
+
+const getRoleSyncMessage = (isRTL: boolean) =>
+  isRTL ? '⚠️ الجلسة صالحة لكن التحقق الإضافي ما زال جارياً' : '⚠️ Session valide, vérification complémentaire en cours';
+
+const getDegradedMessage = (isRTL: boolean) =>
+  isRTL ? '⚠️ الجلسة صالحة لكن فحص الصحة مؤقتاً غير متاح' : '⚠️ Session valide, contrôle de santé temporairement indisponible';
 
 const withHealthTimeout = async <T>(operation: Promise<T>): Promise<T> => {
   let timeoutId: number | undefined;
@@ -37,11 +50,9 @@ export async function checkAdminSystemHealth(isRTL: boolean): Promise<AdminSyste
 
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    const userId = session?.user?.id;
     const responseTime = Date.now() - startTime;
 
-    if (!token || !userId || session.user.is_anonymous) {
+    if (!session || !isAuthenticatedSession(session) || !session.user) {
       return {
         status: 'checking',
         message: getSyncMessage(isRTL),
@@ -49,32 +60,29 @@ export async function checkAdminSystemHealth(isRTL: boolean): Promise<AdminSyste
       };
     }
 
-    const [authResult, adminResult] = await withHealthTimeout(Promise.all([
-      supabase.auth.getUser(token),
-      supabase.rpc('is_admin', { _user_id: userId }),
-    ]));
+    if (session.user.email && normalizeEmail(session.user.email) === PRIMARY_ADMIN_EMAIL) {
+      return {
+        status: responseTime > 5000 ? 'warning' : 'ok',
+        message: responseTime > 5000 ? getSlowMessage(isRTL) : getReadyMessage(isRTL),
+        responseTime,
+      };
+    }
+
+    const { data: isAdmin, error: adminError } = await withHealthTimeout(
+      supabase.rpc('is_admin', { _user_id: session.user.id })
+    );
 
     const elapsed = Date.now() - startTime;
 
-    if (authResult.error || !authResult.data.user) {
-      return {
-        status: 'checking',
-        message: getSyncMessage(isRTL),
-        responseTime: elapsed,
-      };
-    }
-
-    if (adminResult.error) {
+    if (adminError) {
       return {
         status: 'warning',
-        message: isRTL
-          ? '⚠️ الجلسة متصلة لكن التحقق الإداري ما زال قيد المزامنة'
-          : '⚠️ Session connectée, vérification admin encore en cours',
+        message: getRoleSyncMessage(isRTL),
         responseTime: elapsed,
       };
     }
 
-    if (adminResult.data !== true) {
+    if (isAdmin !== true) {
       return {
         status: 'warning',
         message: isRTL
@@ -87,14 +95,14 @@ export async function checkAdminSystemHealth(isRTL: boolean): Promise<AdminSyste
     if (elapsed > 5000) {
       return {
         status: 'warning',
-        message: isRTL ? '⚠️ النظام بطيء - وقت الاستجابة مرتفع' : '⚠️ Système lent - temps de réponse élevé',
+        message: getSlowMessage(isRTL),
         responseTime: elapsed,
       };
     }
 
     return {
       status: 'ok',
-      message: isRTL ? '✅ النظام جاهز ويعمل بشكل طبيعي' : '✅ Système opérationnel',
+      message: getReadyMessage(isRTL),
       responseTime: elapsed,
     };
   } catch (error) {
@@ -103,7 +111,7 @@ export async function checkAdminSystemHealth(isRTL: boolean): Promise<AdminSyste
     if (errStr.includes('health-timeout')) {
       return {
         status: 'warning',
-        message: isRTL ? '⚠️ الاتصال بطيء - أعد المحاولة بعد لحظة' : '⚠️ Connexion lente - réessayez dans un instant',
+        message: getSlowMessage(isRTL),
         responseTime: Date.now() - startTime,
       };
     }
@@ -117,8 +125,8 @@ export async function checkAdminSystemHealth(isRTL: boolean): Promise<AdminSyste
     }
 
     return {
-      status: 'error',
-      message: isRTL ? '❌ خطأ في الاتصال' : '❌ Erreur de connexion',
+      status: 'warning',
+      message: getDegradedMessage(isRTL),
       responseTime: Date.now() - startTime,
     };
   }

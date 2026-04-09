@@ -153,15 +153,14 @@ function runChecks(input: PreGenCheckInput): CheckResult[] {
     });
   }
 
-  // 8. Données générales
-  const hasNumber = input.docNumber.length > prefix.length + 5;
+  // 8. Numéro de document — auto-attribué à l'enregistrement, toujours OK
   results.push({
     id: 'general',
     label_fr: 'Numéro de document',
     label_ar: 'رقم الوثيقة',
-    ok: hasNumber,
-    error_fr: 'Numéro de document manquant',
-    error_ar: 'رقم الوثيقة ناقص',
+    ok: true,
+    error_fr: '',
+    error_ar: '',
   });
 
   return results;

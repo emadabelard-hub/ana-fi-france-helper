@@ -188,7 +188,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Editable document number:
   // - For devis: fetch immediately (devis numbers are less critical legally)
   // - For factures: use placeholder until finalization (French legal compliance)
-  const [docNumber, setDocNumber] = useState(() => getDocPrefix(documentType));
+  const [docNumber, setDocNumber] = useState(() => `${getDocPrefix(documentType)}AUTO`);
   const [docNumberLoading, setDocNumberLoading] = useState(false);
   
   // Quote Wizard state
@@ -561,10 +561,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       // STEP 1: Clear any existing draft to prevent ghost data contamination
       clearDraft();
       
-      // STEP 2: Force correct document number prefix to prevent F- on Devis
-      // Reset docNumber to just the prefix so the auto-fetch effect re-triggers
-      const correctPrefix = getDocPrefix(documentType);
-      setDocNumber(correctPrefix);
+      // STEP 2: Reset docNumber to auto placeholder
+      setDocNumber(`${getDocPrefix(documentType)}AUTO`);
       
       // NEVER auto-fill client fields — user must choose or register manually
       setSelectedClientId('');
@@ -1470,27 +1468,23 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         }
       }
 
-      // NUMBERING: Use the manually entered docNumber directly
-      // Check uniqueness for the document number
-      {
-        const { data: existing } = await (supabase.from('documents_comptables') as any)
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('document_number', data.number)
-          .eq('document_type', documentType)
-          .maybeSingle();
-        if (existing) {
-          toast({
-            variant: 'destructive',
-            title: isRTL ? '⚠️ رقم موجود' : '⚠️ Numéro existant',
-            description: isRTL ? `الرقم ${data.number} مستخدم بالفعل` : `Le numéro ${data.number} existe déjà.`,
-          });
-          return;
-        }
+      // NUMBERING: Atomically get the next sequential number from the DB
+      const { data: nextNumber, error: numberError } = await supabase.rpc('get_next_document_number', {
+        _user_id: user.id,
+        _document_type: documentType,
+      });
+      if (numberError || !nextNumber) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '⚠️ خطأ في الترقيم' : '⚠️ Erreur de numérotation',
+          description: isRTL ? 'تعذر إنشاء رقم المستند' : 'Impossible de générer le numéro du document.',
+        });
+        console.error('Numbering error:', numberError);
+        return;
       }
-
-      // Update docNumber in UI immediately
-      setDocNumber(data.number);
+      // Assign the generated number to the document
+      data.number = nextNumber;
+      setDocNumber(nextNumber);
 
       const linkedDocumentData = {
         ...documentDataForStorage,
@@ -1933,9 +1927,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </CardContent>
         </Card>
       )}
-      {/* Document Number - Editable */}
+      {/* Document Number - Auto-assigned */}
       {currentStep === 3 && (<>
-      <Card>
+      <Card className="border-primary/20 bg-primary/5">
         <CardContent className="p-4 space-y-2">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
             <FileText className="h-5 w-5 text-primary" />
@@ -1945,31 +1939,22 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 : (documentType === 'facture' ? 'Numéro de facture' : 'Numéro de devis')}
             </h3>
           </div>
-          <Input
-            value={docNumber}
-            onChange={(e) => {
-              const val = e.target.value.toUpperCase();
-              setDocNumber(val);
-            }}
-            placeholder={isRTL 
-              ? `مثال: ${getDocPrefix(documentType)}1` 
-              : `Ex : ${getDocPrefix(documentType)}1`}
-            className="font-mono text-left"
-            dir="ltr"
-            lang="fr"
-            enableVoice={false}
-          />
-          {docNumber && !docNumber.startsWith(getDocPrefix(documentType)) && (
-            <p className="text-[11px] text-amber-600 font-medium">
+          <div className={cn("p-3 rounded-lg bg-muted/50 border border-border", isRTL && "text-right")}>
+            <p className={cn("text-sm font-medium text-foreground", isRTL && "font-cairo")}>
               {isRTL 
-                ? `💡 الصيغة الموصى بها: ${getDocPrefix(documentType)}NUMERO`
-                : `💡 Format recommandé : ${getDocPrefix(documentType)}NUMERO`}
+                ? '🔢 الترقيم تلقائي — الرقم يتحدد عند التسجيل النهائي'
+                : '🔢 Numérotation automatique — le numéro sera attribué à l\'enregistrement'}
             </p>
-          )}
+            <p className={cn("text-xs text-muted-foreground mt-1", isRTL && "font-cairo")}>
+              {isRTL
+                ? `الصيغة: ${getDocPrefix(documentType)}001, ${getDocPrefix(documentType)}002...`
+                : `Format : ${getDocPrefix(documentType)}001, ${getDocPrefix(documentType)}002...`}
+            </p>
+          </div>
           <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
-              ? '⚠️ تأكد من الحفاظ على ترقيم مستمر (التزام قانوني)'
-              : '⚠️ Assurez-vous de garder une numérotation continue (obligation légale)'}
+              ? '✅ النظام يضمن ترقيم مستمر بدون ثغرات (التزام قانوني)'
+              : '✅ Le système garantit une numérotation continue sans rupture (obligation légale)'}
           </p>
         </CardContent>
       </Card>
@@ -3664,13 +3649,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   if (!clientAddress.trim()) {
                     missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
                   }
-                  const currentPrefix = getDocPrefix(documentType);
-                  const hasValidDocNumber = docNumber.startsWith(currentPrefix) && docNumber.length > currentPrefix.length;
-                  if (!hasValidDocNumber) {
-                    missingFields.push(isRTL 
-                      ? (documentType === 'facture' ? '🔢 رقم الفاتورة' : '🔢 رقم الدوفي')
-                      : (documentType === 'facture' ? '🔢 Numéro de facture' : '🔢 Numéro de devis'));
-                  }
+                  // docNumber is auto-assigned at finalization — no validation needed here
                   const clientSirenDigits = clientSiren.replace(/\s/g, '');
                   if (clientIsB2B && !clientSirenDigits) {
                     missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (إجباري B2B)' : '🏢 SIRET du client (obligatoire B2B)');

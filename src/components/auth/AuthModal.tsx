@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { Loader2, Eye, EyeOff, UserRound } from 'lucide-react';
 import GDPRTrustBox from '@/components/shared/GDPRTrustBox';
 import { supabase } from '@/integrations/supabase/client';
+import { getResetPasswordRedirectUrl, isAnonymousSession, normalizeEmail, PRIMARY_ADMIN_EMAIL } from '@/lib/auth';
 
 interface AuthModalProps {
   open: boolean;
@@ -73,7 +74,6 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
   
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -90,7 +90,9 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
+
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
       toast({
         variant: "destructive",
         title: isRTL ? "خطأ" : "Erreur",
@@ -100,8 +102,16 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     }
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (isAnonymousSession(currentSession)) {
+        const { error: cleanupError } = await supabase.auth.signOut({ scope: 'local' });
+        if (cleanupError) {
+          console.warn('Anonymous session cleanup failed before password reset:', cleanupError.message);
+        }
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: getResetPasswordRedirectUrl(),
       });
       if (error) {
         toast({
@@ -151,7 +161,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
 
     // Password validation for sign-up
     if (!isLogin) {

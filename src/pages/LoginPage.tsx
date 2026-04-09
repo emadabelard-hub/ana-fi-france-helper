@@ -10,8 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Loader2, Eye, EyeOff, ArrowRight, UserRound } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-
-const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
+import { getResetPasswordRedirectUrl, isAnonymousSession, normalizeEmail, PRIMARY_ADMIN_EMAIL } from '@/lib/auth';
 
 const LoginPage = () => {
   const { signIn, signUp, signInAnonymously, isAuthenticated, isLoading: authLoading, user } = useAuth();
@@ -60,16 +59,31 @@ const LoginPage = () => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) return;
+
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (isAnonymousSession(currentSession)) {
+        const { error: cleanupError } = await supabase.auth.signOut({ scope: 'local' });
+        if (cleanupError) {
+          console.warn('Anonymous session cleanup failed before password reset:', cleanupError.message);
+        }
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: getResetPasswordRedirectUrl(),
       });
       if (error) {
         toast({ variant: "destructive", title: "Erreur", description: error.message });
       } else {
         setResetEmailSent(true);
+        toast({
+          title: "Email envoyé",
+          description: "Si un compte existe pour cet email, un lien de réinitialisation vient d’être envoyé.",
+        });
       }
     } finally {
       setIsLoading(false);
@@ -240,7 +254,7 @@ const LoginPage = () => {
                     if (!email) return;
                     setResendingConfirm(true);
                     try {
-                      const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim().toLowerCase() });
+                      const { error } = await supabase.auth.resend({ type: 'signup', email: normalizeEmail(email) });
                       toast({
                         title: error ? "Erreur" : "Lien envoyé ✓",
                         description: error ? error.message : "Vérifiez votre boîte mail",

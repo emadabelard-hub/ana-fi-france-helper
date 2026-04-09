@@ -72,7 +72,6 @@ export async function checkAdminSystemHealth(isRTL: boolean): Promise<AdminSyste
     let adminError: Error | null = null;
 
     try {
-    try {
       const result = await withHealthTimeout(
         Promise.resolve(supabase.rpc('is_admin', { _user_id: session.user.id }))
       );

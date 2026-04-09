@@ -104,9 +104,16 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return { error: new Error('Not authenticated') };
 
     try {
+      // Convert empty strings to null for nullable text columns to avoid
+      // check-constraint violations (e.g. siret_format)
+      const cleaned: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(updates)) {
+        cleaned[key] = typeof value === 'string' && value.trim() === '' ? null : value;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
+        .update(cleaned)
         .eq('user_id', user.id)
         .select()
         .single();

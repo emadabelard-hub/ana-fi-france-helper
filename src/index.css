@@ -73,54 +73,60 @@ html, body {
     --sidebar-ring: 37 40% 58%;
   }
 
-  /* Light mode — Crisp White & Bronze */
+  /* Light mode — Soft Premium Banking */
   .light {
-    --background: 0 0% 100%;
-    --foreground: 220 25% 10%;
+    /* Off-white warm background — not pure white */
+    --background: 220 20% 97%;
+    --foreground: 220 25% 14%;
 
+    /* Pure white cards with subtle lift */
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
+    --card-foreground: 220 25% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
+    --popover-foreground: 220 25% 14%;
 
-    /* Primary: Antique Bronze */
-    --primary: 37 37% 50%;
+    /* Primary: Warm Antique Bronze */
+    --primary: 37 45% 48%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Deep Navy */
-    --secondary: 220 30% 94%;
-    --secondary-foreground: 220 40% 20%;
+    /* Secondary: Soft cool grey */
+    --secondary: 220 18% 94%;
+    --secondary-foreground: 220 30% 22%;
 
-    --muted: 220 15% 95%;
-    --muted-foreground: 220 10% 42%;
+    /* Muted: Gentle grey for backgrounds */
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 8% 46%;
 
-    --accent: 37 37% 50%;
+    /* Accent: Warm bronze */
+    --accent: 37 45% 48%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 60% 48%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 15% 90%;
-    --input: 220 20% 96%;
-    --input-foreground: 220 25% 8%;
-    --ring: 37 37% 50%;
+    /* Subtle borders — barely visible */
+    --border: 220 14% 90%;
+    --input: 220 16% 96%;
+    --input-foreground: 220 25% 12%;
+    --ring: 37 45% 48%;
 
-    --chat-ai: 220 10% 96%;
-    --chat-ai-foreground: 220 25% 10%;
-    --chat-user: 37 37% 50%;
+    --chat-ai: 220 14% 96%;
+    --chat-ai-foreground: 220 25% 14%;
+    --chat-user: 37 45% 48%;
     --chat-user-foreground: 0 0% 100%;
     --chat-input: 0 0% 100%;
-    --chat-input-foreground: 220 25% 10%;
+    --chat-input-foreground: 220 25% 14%;
 
-    --sidebar-background: 220 40% 16%;
+    /* Sidebar stays dark for contrast */
+    --sidebar-background: 222 32% 13%;
     --sidebar-foreground: 40 20% 96%;
-    --sidebar-primary: 37 37% 50%;
+    --sidebar-primary: 37 45% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 35% 24%;
+    --sidebar-accent: 222 28% 20%;
     --sidebar-accent-foreground: 40 20% 96%;
-    --sidebar-border: 220 30% 24%;
-    --sidebar-ring: 37 37% 50%;
+    --sidebar-border: 222 24% 22%;
+    --sidebar-ring: 37 45% 48%;
   }
 
   * {

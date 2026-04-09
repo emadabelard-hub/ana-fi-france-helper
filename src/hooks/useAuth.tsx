@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
-import { getRecoveryContext, isAnonymousSession, normalizeEmail, PRIMARY_ADMIN_EMAIL, withAuthTimeout } from '@/lib/auth';
+import { AUTH_OPERATION_TIMEOUT_MS, getRecoveryContext, isAnonymousSession, normalizeEmail, PRIMARY_ADMIN_EMAIL, withAuthTimeout } from '@/lib/auth';
 
 interface AuthResult {
   error: Error | null;
@@ -25,7 +25,13 @@ interface AuthContextType {
 const shouldSkipAnonymousBoot = () => {
   const pathname = window.location.pathname;
 
-  return pathname === '/login' || pathname === '/reset-password' || getRecoveryContext().isRecoveryLink;
+  return (
+    pathname === '/login' ||
+    pathname === '/reset-password' ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/profile') ||
+    getRecoveryContext().isRecoveryLink
+  );
 };
 
 const clearAnonymousSessionIfNeeded = async () => {
@@ -72,11 +78,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initSession = async () => {
       setIsLoading(true);
 
+      const skipAnonymousBoot = shouldSkipAnonymousBoot();
+
       // Safety timeout — never stay on splash screen forever
       const safetyTimer = setTimeout(() => {
         hasInitialized = true;
         setIsLoading(false);
-      }, 5000);
+      }, skipAnonymousBoot ? AUTH_OPERATION_TIMEOUT_MS : 5000);
 
       const finishLoading = () => {
         hasInitialized = true;
@@ -85,7 +93,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
 
       try {
-        const skipAnonymousBoot = shouldSkipAnonymousBoot();
         // If user explicitly signed out, don't auto-create anonymous session
         if (sessionStorage.getItem('explicit_signout') === 'true') {
           sessionStorage.removeItem('explicit_signout');

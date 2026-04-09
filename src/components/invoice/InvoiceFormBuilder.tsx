@@ -662,7 +662,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       allItems.push({
         id: generateId(),
         designation_fr: travelDescription || 'Frais de déplacement',
-        designation_ar: 'مصاريف النقل',
+        designation_ar: isRTL ? 'مصاريف النقل' : '',
         quantity: 1,
         unit: 'forfait',
         unitPrice: travelPrice,
@@ -675,7 +675,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       allItems.push({
         id: generateId(),
         designation_fr: wasteDescription || 'Gestion des déchets / REP',
-        designation_ar: 'إدارة النفايات',
+        designation_ar: isRTL ? 'إدارة النفايات' : '',
         quantity: 1,
         unit: 'forfait',
         unitPrice: wastePrice,
@@ -2015,8 +2015,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                     : 'bg-primary/10 text-primary'
                 )}>
                   {profile.legal_status === 'auto-entrepreneur' 
-                    ? 'Auto-entrepreneur (معفى من الـ TVA)'
-                    : 'Société (يدفع TVA)'}
+                    ? (isRTL ? 'Auto-entrepreneur (معفى من الـ TVA)' : 'Auto-entrepreneur — TVA non applicable')
+                    : (isRTL ? 'Société (يدفع TVA)' : 'Société — TVA applicable')}
                 </span>
               </div>
             )}
@@ -2136,7 +2136,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 placeholder={isRTL ? '12 rue de Paris, 75001 Paris' : '12 rue de Paris, 75001 Paris'}
                 dir="ltr"
                 lang="fr"
-                className="text-left font-cairo"
+                  className={cn("text-left", isRTL && "font-cairo")}
               />
             </div>
 
@@ -2178,15 +2178,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               >
                 <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                   <RadioGroupItem value="yes" id="b2b-yes" />
-                  <Label htmlFor="b2b-yes" className={cn("cursor-pointer text-sm font-cairo")}>
-                    نعم
-                  </Label>
+                    <Label htmlFor="b2b-yes" className={cn("cursor-pointer text-sm", isRTL && "font-cairo")}>
+                      {isRTL ? 'نعم' : 'Oui'}
+                    </Label>
                 </div>
                 <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                   <RadioGroupItem value="no" id="b2b-no" />
-                  <Label htmlFor="b2b-no" className={cn("cursor-pointer text-sm font-cairo")}>
-                    لا
-                  </Label>
+                    <Label htmlFor="b2b-no" className={cn("cursor-pointer text-sm", isRTL && "font-cairo")}>
+                      {isRTL ? 'لا' : 'Non'}
+                    </Label>
                 </div>
               </RadioGroup>
             </div>
@@ -2330,9 +2330,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   setDescriptionChantierAr('');
                 }
               }}
-              placeholder="اتكلم بالعربي... مثال: دهان حيطان وسقف مكتب مسيو هاني"
+              placeholder={isRTL ? 'اتكلم بالعربي... مثال: دهان حيطان وسقف مكتب مسيو هاني' : 'Ex : Peinture des murs et du plafond d’un bureau'}
               rows={3}
-              className={cn("text-sm resize-none text-right font-cairo")}
+              className={cn("text-sm resize-none", isRTL ? "text-right font-cairo" : "text-left")}
               dir="auto"
               enableVoice={true}
               onVoiceDual={(result: VoiceResult) => {
@@ -2356,7 +2356,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               type="button"
               variant="outline"
               size="sm"
-              className="font-cairo text-sm gap-2"
+              className={cn("text-sm gap-2", isRTL && "font-cairo")}
               disabled={isTranslatingObjet}
               onClick={async () => {
                 setIsTranslatingObjet(true);
@@ -2384,11 +2384,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                     setDescriptionChantierFr(raw);
                   }
                   toast({
-                    title: '✅ تمت الترجمة',
-                    description: 'الموضوع اتترجم لفرنساوي',
+                    title: isRTL ? '✅ تمت الترجمة' : '✅ Traduction terminée',
+                    description: isRTL ? 'الموضوع اتترجم لفرنساوي' : 'La description a été traduite en français',
                   });
                 } catch {
-                  toast({ title: '❌ خطأ في الترجمة', variant: 'destructive' });
+                  toast({ title: isRTL ? '❌ خطأ في الترجمة' : '❌ Erreur de traduction', variant: 'destructive' });
                 } finally {
                   setIsTranslatingObjet(false);
                 }
@@ -2399,7 +2399,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               ) : (
                 <Languages className="h-4 w-4" />
               )}
-              ترجم
+              {isRTL ? 'ترجم' : 'Traduire'}
             </Button>
           )}
 
@@ -2414,8 +2414,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           {/* Original Arabic text reminder */}
           {descriptionChantierAr && descriptionChantierFr && (
             <div className="p-2 rounded bg-muted/40 border border-border">
-              <p className={cn("text-[10px] text-muted-foreground text-right font-cairo")}>
-                📝 النص الأصلي: {descriptionChantierAr}
+              <p className={cn("text-[10px] text-muted-foreground", isRTL ? "text-right font-cairo" : "text-left")}>
+                {isRTL ? '📝 النص الأصلي: ' : '📝 Texte source : '}
+                {descriptionChantierAr}
               </p>
             </div>
           )}
@@ -2423,8 +2424,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           {/* Warning: Arabic detected but no translation yet */}
           {descriptionChantier.trim() && containsArabic(descriptionChantier) && !descriptionChantierFr && (
             <div className="p-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-              <p className="text-[11px] text-amber-700 dark:text-amber-400 font-cairo text-right">
-                ⚠️ لازم تدوس على "ترجم" عشان الموضوع يطلع فرنساوي في الدوفي/الفاتورة
+              <p className={cn("text-[11px] text-amber-700 dark:text-amber-400", isRTL ? "font-cairo text-right" : "text-left")}>
+                {isRTL
+                  ? '⚠️ لازم تدوس على "ترجم" عشان الموضوع يطلع فرنساوي في الدوفي/الفاتورة'
+                  : '⚠️ Cliquez sur « Traduire » pour générer une version française dans le document'}
               </p>
             </div>
           )}
@@ -2765,7 +2768,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   
                   <div className="space-y-1.5">
                     <Label className={cn("text-xs", isRTL && "font-cairo")}>
-                      {'اكتب بالعربي وأنا أترجم ✨'}
+                      {isRTL ? 'اكتب بالعربي وأنا أترجم ✨' : 'Texte à traduire ✨'}
                     </Label>
                     <Textarea
                       value={item.designation_ar}
@@ -2960,7 +2963,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               {/* Pedagogical Alert */}
               <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700">
                 <p className={cn("font-bold text-amber-800 dark:text-amber-300 text-sm mb-1", isRTL && "text-right font-cairo")}>
-                  {isRTL ? '⚖️ احمي حقك / Protégez vos droits' : '⚖️ Protégez vos droits / احمي حقك'}
+                  {isRTL ? '⚖️ احمي حقك / Protégez vos droits' : '⚖️ Protégez vos droits'}
                 </p>
                 <p className={cn("text-xs text-amber-700 dark:text-amber-400", isRTL && "text-right font-cairo")}>
                   {isRTL 

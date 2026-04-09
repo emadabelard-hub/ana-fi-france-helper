@@ -63,7 +63,7 @@ const InvoiceGuideModal = ({ open, onOpenChange }: InvoiceGuideModalProps) => {
       title_ar: 'وصف العمل والترجمة الذكية',
       bullets_fr: [
         '✍️ Écrivez en arabe dans le champ prévu, le système traduit automatiquement en français professionnel.',
-        '🔧 Même si vous écrivez "بانتيرة" ou "كارلاح" ou "مانيفر", le système comprend et traduit correctement.',
+        '🔧 Même avec des termes phonétiques comme « bantira », « karlage » ou « manivre », le système comprend et traduit correctement.',
       ],
       bullets_ar: [
         '✍️ اكتب براحتك بالعربي في الخانة المخصصة، والبرنامج هيحول كلامك لفرنساوي احترافي.',

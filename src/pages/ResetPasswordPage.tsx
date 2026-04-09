@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import type { Session } from '@supabase/supabase-js';
+import { getRecoveryContext, isAnonymousSession, isAuthenticatedSession } from '@/lib/auth';
 
 const validatePassword = (password: string): string | null => {
   if (password.length < 6) return 'min6';
@@ -29,34 +31,98 @@ const ResetPasswordPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [isCheckingRecovery, setIsCheckingRecovery] = useState(true);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const recoveryContext = useMemo(() => getRecoveryContext(), []);
 
   useEffect(() => {
-    // Listen for PASSWORD_RECOVERY event
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsRecovery(true);
-      }
-      // Also detect if user is already logged in via recovery (event fires before mount)
-      if (event === 'SIGNED_IN' && session) {
-        setIsRecovery(true);
-      }
-    });
+    let isMounted = true;
+    let fallbackTimer: number | null = null;
 
-    // Check if we're in a recovery flow from hash
-    const hash = window.location.hash;
-    if (hash && hash.includes('type=recovery')) {
+    const getRecoveryErrorMessage = () => {
+      if (recoveryContext.errorDescription) {
+        return recoveryContext.errorDescription;
+      }
+
+      return isRTL
+        ? 'رابط إعادة التعيين غير صالح أو منتهي الصلاحية. اطلب رابطًا جديدًا.'
+        : 'Le lien de réinitialisation est invalide ou expiré. Demandez un nouveau lien.';
+    };
+
+    const markRecoveryReady = () => {
+      if (!isMounted) return;
       setIsRecovery(true);
-    }
+      setRecoveryError(null);
+      setIsCheckingRecovery(false);
+    };
 
-    // Also check if there's already an active session (recovery link already consumed)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsRecovery(true);
+    const markRecoveryFailed = () => {
+      if (!isMounted) return;
+      setIsRecovery(false);
+      setRecoveryError(getRecoveryErrorMessage());
+      setIsCheckingRecovery(false);
+    };
+
+    const resolveSession = (session: Session | null) => {
+      if (isAuthenticatedSession(session)) {
+        markRecoveryReady();
+        return true;
+      }
+
+      return false;
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (
+        (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || event === 'USER_UPDATED') &&
+        resolveSession(session)
+      ) {
+        if (fallbackTimer) {
+          window.clearTimeout(fallbackTimer);
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    const initRecovery = async () => {
+      setIsCheckingRecovery(true);
+
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+
+      if (isAnonymousSession(existingSession)) {
+        const { error } = await supabase.auth.signOut({ scope: 'local' });
+        if (error) {
+          console.warn('Anonymous recovery session cleanup failed:', error.message);
+        }
+      } else if (resolveSession(existingSession)) {
+        return;
+      }
+
+      if (recoveryContext.error || !recoveryContext.isRecoveryLink) {
+        markRecoveryFailed();
+        return;
+      }
+
+      fallbackTimer = window.setTimeout(async () => {
+        const { data: { session: recoveredSession } } = await supabase.auth.getSession();
+
+        if (resolveSession(recoveredSession)) {
+          return;
+        }
+
+        markRecoveryFailed();
+      }, 1200);
+    };
+
+    initRecovery();
+
+    return () => {
+      isMounted = false;
+      if (fallbackTimer) {
+        window.clearTimeout(fallbackTimer);
+      }
+      subscription.unsubscribe();
+    };
+  }, [isRTL, recoveryContext]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,6 +167,11 @@ const ResetPasswordPage = () => {
       }
     } catch (err) {
       console.error('Password reset error:', err);
+      toast({
+        variant: "destructive",
+        title: isRTL ? "خطأ" : "Erreur",
+        description: isRTL ? "تعذر تحديث كلمة المرور" : "Impossible de mettre à jour le mot de passe",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +195,7 @@ const ResetPasswordPage = () => {
     );
   }
 
-  if (!isRecovery) {
+  if (isCheckingRecovery) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] px-4">
         <Card className="w-full max-w-md text-center">
@@ -133,6 +204,24 @@ const ResetPasswordPage = () => {
             <p className="text-muted-foreground">
               {isRTL ? "جاري التحقق من الرابط..." : "Vérification du lien..."}
             </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (recoveryError) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] px-4">
+        <Card className={cn("w-full max-w-md text-center", isRTL && "font-cairo")}>
+          <CardContent className="pt-8 pb-8 space-y-4">
+            <h2 className="text-xl font-bold text-foreground">
+              {isRTL ? 'رابط غير صالح' : 'Lien invalide'}
+            </h2>
+            <p className="text-muted-foreground">{recoveryError}</p>
+            <Button onClick={() => navigate('/login')} className="w-full font-bold">
+              {isRTL ? 'Retour à la connexion' : 'Retour à la connexion'}
+            </Button>
           </CardContent>
         </Card>
       </div>

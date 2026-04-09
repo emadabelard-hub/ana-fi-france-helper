@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
+import { getRecoveryContext, isAnonymousSession, normalizeEmail, PRIMARY_ADMIN_EMAIL } from '@/lib/auth';
 
 interface AuthResult {
   error: Error | null;
@@ -21,30 +22,16 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
-
-const isRecoveryFlow = () => {
-  const hash = window.location.hash || '';
-  const search = window.location.search || '';
-
-  return (
-    hash.includes('type=recovery') ||
-    search.includes('type=recovery') ||
-    (hash.includes('access_token=') && hash.includes('refresh_token='))
-  );
-};
-
 const shouldSkipAnonymousBoot = () => {
   const pathname = window.location.pathname;
 
-  return pathname === '/login' || pathname === '/reset-password' || isRecoveryFlow();
+  return pathname === '/login' || pathname === '/reset-password' || getRecoveryContext().isRecoveryLink;
 };
 
 const clearAnonymousSessionIfNeeded = async () => {
   const { data: { session: currentSession } } = await supabase.auth.getSession();
 
-  if (currentSession?.user?.is_anonymous) {
+  if (isAnonymousSession(currentSession)) {
     const { error } = await supabase.auth.signOut({ scope: 'local' });
     if (error) {
       console.warn('Anonymous session cleanup failed:', error.message);
@@ -91,6 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }, 5000);
 
       try {
+        const skipAnonymousBoot = shouldSkipAnonymousBoot();
         // If user explicitly signed out, don't auto-create anonymous session
         if (sessionStorage.getItem('explicit_signout') === 'true') {
           sessionStorage.removeItem('explicit_signout');
@@ -102,6 +90,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         const { data: { session: existing } } = await supabase.auth.getSession();
+
+        if (skipAnonymousBoot && isAnonymousSession(existing)) {
+          const { error } = await supabase.auth.signOut({ scope: 'local' });
+          if (error) {
+            console.warn('Anonymous session cleanup failed:', error.message);
+          }
+
+          setSession(null);
+          setUser(null);
+          setIsLoading(false);
+          clearTimeout(safetyTimer);
+          return;
+        }
+
         if (existing) {
           setSession(existing);
           setUser(existing.user);
@@ -110,7 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        if (shouldSkipAnonymousBoot()) {
+        if (skipAnonymousBoot) {
           setUser(null);
           setSession(null);
           setIsLoading(false);
@@ -146,6 +148,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string): Promise<AuthResult> => {
     const normalizedEmail = normalizeEmail(email);
+
+    await clearAnonymousSessionIfNeeded();
+
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
       password,

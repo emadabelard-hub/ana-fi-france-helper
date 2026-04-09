@@ -19,6 +19,27 @@ export default function GlobalErrorHandler() {
       return String(value ?? "").toLowerCase();
     };
 
+    const showGenericToast = (() => {
+      let lastToastAt = 0;
+      let lastToastMessage = "";
+
+      return () => {
+        const message = t("error.generic");
+        const now = Date.now();
+
+        if (lastToastMessage === message && now - lastToastAt < 8000) return;
+
+        lastToastAt = now;
+        lastToastMessage = message;
+
+        toast({
+          variant: "destructive",
+          title: t("common.error"),
+          description: message,
+        });
+      };
+    })();
+
     const isNonCriticalError = (value: unknown) => {
       const message = normalizeErrorMessage(value);
       return (
@@ -36,12 +57,41 @@ export default function GlobalErrorHandler() {
         message.includes("signinanonymously") ||
         message.includes("signup requires a valid password") ||
         message.includes("/auth/v1/token") ||
-        message.includes("authretryablefetcherror")
+        message.includes("authretryablefetcherror") ||
+        message.includes("function components cannot be given refs") ||
+        message.includes("script error") ||
+        message.includes("resizeobserver loop") ||
+        message.includes("chunkloaderror") ||
+        message.includes("loading chunk") ||
+        message.includes("favicon") ||
+        message.includes("vite")
       );
     };
 
+    const isResourceLoadError = (event: ErrorEvent) => {
+      const target = event.target;
+
+      return Boolean(
+        target &&
+        target !== window &&
+        (
+          target instanceof HTMLImageElement ||
+          target instanceof HTMLScriptElement ||
+          target instanceof HTMLLinkElement ||
+          target instanceof HTMLSourceElement
+        )
+      );
+    };
+
+    const isEmptyBrowserNoise = (event: ErrorEvent) => {
+      const message = typeof event.message === "string" ? event.message.trim() : "";
+      return !event.error && message.length === 0;
+    };
+
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      if (isNonCriticalError(event.reason)) {
+      const message = normalizeErrorMessage(event.reason);
+
+      if (!message || isNonCriticalError(event.reason)) {
         event.preventDefault();
         console.debug("Non-critical rejection suppressed:", event.reason);
         return;
@@ -49,26 +99,22 @@ export default function GlobalErrorHandler() {
 
       console.error("Unhandled promise rejection:", event.reason);
       event.preventDefault();
-      toast({
-        variant: "destructive",
-        title: t("common.error"),
-        description: t("error.generic"),
-      });
+      showGenericToast();
     };
 
     const handleError = (event: ErrorEvent) => {
-      if (isNonCriticalError(event.error ?? event.message)) {
+      if (
+        isResourceLoadError(event) ||
+        isEmptyBrowserNoise(event) ||
+        isNonCriticalError(event.error ?? event.message)
+      ) {
         event.preventDefault();
         console.debug("Non-critical error suppressed:", event.error ?? event.message);
         return;
       }
 
-      console.error("Global error:", event.error);
-      toast({
-        variant: "destructive",
-        title: t("common.error"),
-        description: t("error.generic"),
-      });
+      console.error("Global error:", event.error ?? event.message);
+      showGenericToast();
     };
 
     window.addEventListener("unhandledrejection", handleUnhandledRejection);

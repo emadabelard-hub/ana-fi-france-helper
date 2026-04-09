@@ -1057,6 +1057,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_next_document_number: {
+        Args: { _document_type: string; _user_id: string }
+        Returns: string
+      }
       increment_promo_clicks: {
         Args: { p_promo_id: string }
         Returns: undefined

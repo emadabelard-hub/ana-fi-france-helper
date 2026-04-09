@@ -116,10 +116,10 @@ const Index = () => {
             AF
           </div>
           <div>
-            <h1 className="text-lg font-black tracking-tighter text-foreground uppercase italic leading-none">
-              أنا في فرنسا 🇫🇷
+            <h1 className={cn("text-lg font-black tracking-tighter text-foreground uppercase italic leading-none", isRTL && "font-cairo")}>
+              {isRTL ? 'أنا في فرنسا 🇫🇷' : 'Ana Fi France 🇫🇷'}
             </h1>
-            <p className="text-xs text-muted-foreground mt-1 font-cairo">
+            <p className={cn("text-xs text-muted-foreground mt-1", isRTL && "font-cairo")}>
               {isRTL
                 ? 'حلل الشانتي وطلع الدوفي في دقائق 🚀'
                 : 'Analysez le chantier et créez vos devis en minutes 🚀'}
@@ -159,7 +159,7 @@ const Index = () => {
               card.bg,
               card.border
             )}
-            dir="rtl"
+            dir={isRTL ? 'rtl' : 'ltr'}
           >
             <div
               className="w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center shrink-0"
@@ -167,7 +167,7 @@ const Index = () => {
             >
               {card.icon}
             </div>
-            <div className="flex-1 text-right font-cairo space-y-1">
+            <div className={cn("flex-1 space-y-1", isRTL ? "text-right font-cairo" : "text-left")}>
               <h3 className="text-[15px] font-bold leading-snug text-foreground">
                 {isRTL ? card.titleAr : card.titleFr}
               </h3>

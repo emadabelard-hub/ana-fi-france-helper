@@ -69,10 +69,22 @@ const ArtisanSignatureSection = () => {
   };
 
   const handleSave = async () => {
-    if (!signaturePadRef.current || signaturePadRef.current.isEmpty() || !user) return;
+    if (!signaturePadRef.current || signaturePadRef.current.isEmpty()) return;
 
     setIsSaving(true);
     try {
+      // Ensure valid authenticated session
+      const { data: { session } } = await supabase.auth.getSession();
+      let activeUser = session?.user;
+      if (!activeUser || activeUser.is_anonymous) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        activeUser = refreshed.session?.user ?? null;
+      }
+      if (!activeUser || activeUser.is_anonymous) {
+        console.error('Signature save failed: no active authenticated session');
+        return;
+      }
+
       // Get signature as data URL
       const dataUrl = signaturePadRef.current.toDataURL('image/png');
       
@@ -81,7 +93,7 @@ const ArtisanSignatureSection = () => {
       const blob = await response.blob();
       
       // Upload to storage
-      const fileName = `${user.id}/artisan-signature-${Date.now()}.png`;
+      const fileName = `${activeUser.id}/artisan-signature-${Date.now()}.png`;
       
       const { error: uploadError } = await supabase.storage
         .from('company-assets')

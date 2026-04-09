@@ -8,8 +8,29 @@ export interface AdminSystemHealthResult {
   responseTime: number;
 }
 
+const HEALTH_TIMEOUT_MS = 8000;
+
 const getSyncMessage = (isRTL: boolean) =>
   isRTL ? '⏳ جاري مزامنة جلسة المدير...' : '⏳ Synchronisation de la session admin...';
+
+const withHealthTimeout = async <T>(operation: Promise<T>): Promise<T> => {
+  let timeoutId: number | undefined;
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          reject(new Error('health-timeout'));
+        }, HEALTH_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
+    }
+  }
+};
 
 export async function checkAdminSystemHealth(isRTL: boolean): Promise<AdminSystemHealthResult> {
   const startTime = Date.now();
@@ -17,9 +38,10 @@ export async function checkAdminSystemHealth(isRTL: boolean): Promise<AdminSyste
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
+    const userId = session?.user?.id;
     const responseTime = Date.now() - startTime;
 
-    if (!token) {
+    if (!token || !userId || session.user.is_anonymous) {
       return {
         status: 'checking',
         message: getSyncMessage(isRTL),
@@ -27,22 +49,14 @@ export async function checkAdminSystemHealth(isRTL: boolean): Promise<AdminSyste
       };
     }
 
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: 'ping' }],
-        language: 'fr',
-      }),
-    });
+    const [authResult, adminResult] = await withHealthTimeout(Promise.all([
+      supabase.auth.getUser(token),
+      supabase.rpc('is_admin', { _user_id: userId }),
+    ]));
 
     const elapsed = Date.now() - startTime;
 
-    if (response.status === 401) {
+    if (authResult.error || !authResult.data.user) {
       return {
         status: 'checking',
         message: getSyncMessage(isRTL),
@@ -50,28 +64,22 @@ export async function checkAdminSystemHealth(isRTL: boolean): Promise<AdminSyste
       };
     }
 
-    if (!response.ok) {
-      if (response.status === 402) {
-        return {
-          status: 'error',
-          message: isRTL
-            ? '⚠️ تنبيه: رصيد الذكاء الاصطناعي غير كافٍ.'
-            : '⚠️ Alerte : crédits IA insuffisants.',
-          responseTime: elapsed,
-        };
-      }
-
-      if (response.status === 429) {
-        return {
-          status: 'warning',
-          message: isRTL ? '⚠️ حد الطلبات مرتفع، حاول لاحقاً' : '⚠️ Limite de requêtes atteinte',
-          responseTime: elapsed,
-        };
-      }
-
+    if (adminResult.error) {
       return {
-        status: 'error',
-        message: isRTL ? '❌ خطأ في الاتصال بالنظام' : '❌ Erreur de connexion au système',
+        status: 'warning',
+        message: isRTL
+          ? '⚠️ الجلسة متصلة لكن التحقق الإداري ما زال قيد المزامنة'
+          : '⚠️ Session connectée, vérification admin encore en cours',
+        responseTime: elapsed,
+      };
+    }
+
+    if (adminResult.data !== true) {
+      return {
+        status: 'warning',
+        message: isRTL
+          ? '⚠️ الجلسة صالحة لكن صلاحيات المدير لم تُؤكَّد بعد'
+          : '⚠️ Session valide, droits admin pas encore confirmés',
         responseTime: elapsed,
       };
     }
@@ -92,10 +100,18 @@ export async function checkAdminSystemHealth(isRTL: boolean): Promise<AdminSyste
   } catch (error) {
     const errStr = String((error as Error)?.message || error || '');
 
-    if (errStr.includes('402') || errStr.toLowerCase().includes('quota')) {
+    if (errStr.includes('health-timeout')) {
       return {
-        status: 'error',
-        message: isRTL ? '⚠️ تنبيه: رصيد الذكاء الاصطناعي غير كافٍ.' : '⚠️ Alerte : crédits IA insuffisants.',
+        status: 'warning',
+        message: isRTL ? '⚠️ الاتصال بطيء - أعد المحاولة بعد لحظة' : '⚠️ Connexion lente - réessayez dans un instant',
+        responseTime: Date.now() - startTime,
+      };
+    }
+
+    if (errStr.toLowerCase().includes('session') || errStr.toLowerCase().includes('jwt')) {
+      return {
+        status: 'checking',
+        message: getSyncMessage(isRTL),
         responseTime: Date.now() - startTime,
       };
     }

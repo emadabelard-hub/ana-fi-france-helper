@@ -3651,13 +3651,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                   if (!clientAddress.trim()) {
                     missingFields.push(isRTL ? '📍 عنوان الفاكتير' : '📍 Adresse de facturation');
                   }
-                  const currentPrefix = getDocPrefix(documentType);
-                  const hasValidDocNumber = docNumber.startsWith(currentPrefix) && docNumber.length > currentPrefix.length;
-                  if (!hasValidDocNumber) {
-                    missingFields.push(isRTL 
-                      ? (documentType === 'facture' ? '🔢 رقم الفاتورة' : '🔢 رقم الدوفي')
-                      : (documentType === 'facture' ? '🔢 Numéro de facture' : '🔢 Numéro de devis'));
-                  }
+                  // docNumber is auto-assigned at finalization — no validation needed here
                   const clientSirenDigits = clientSiren.replace(/\s/g, '');
                   if (clientIsB2B && !clientSirenDigits) {
                     missingFields.push(isRTL ? '🏢 رقم SIRET الزبون (إجباري B2B)' : '🏢 SIRET du client (obligatoire B2B)');

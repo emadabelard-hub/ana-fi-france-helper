@@ -40,16 +40,25 @@ const SupportTicketsManager = ({ isRTL }: { isRTL: boolean }) => {
 
   const fetchTickets = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
-      .from('support_tickets')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) {
-      console.error('Error fetching tickets:', error);
+    try {
+      // Ensure fresh JWT so RLS is_admin() check passes
+      await supabase.auth.refreshSession();
+
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching tickets:', error);
+        toast.error(isRTL ? 'خطأ في تحميل التذاكر' : 'Erreur de chargement');
+      }
+      setTickets((data as SupportTicket[]) || []);
+    } catch (err) {
+      console.error('Tickets fetch failed:', err);
       toast.error(isRTL ? 'خطأ في تحميل التذاكر' : 'Erreur de chargement');
+    } finally {
+      setIsLoading(false);
     }
-    setTickets((data as SupportTicket[]) || []);
-    setIsLoading(false);
   };
 
   const handleStatusChange = async (ticketId: string, newStatus: string) => {

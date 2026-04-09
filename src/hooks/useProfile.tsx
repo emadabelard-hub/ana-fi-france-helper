@@ -80,7 +80,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
       if (!data) {
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
-          .insert({ user_id: user.id })
+          .upsert({ user_id: user.id }, { onConflict: 'user_id' })
           .select()
           .single();
 
@@ -113,8 +113,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .update(cleaned)
-        .eq('user_id', user.id)
+        .upsert({ user_id: user.id, ...cleaned }, { onConflict: 'user_id' })
         .select()
         .single();
 

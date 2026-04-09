@@ -158,6 +158,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       'La création du compte prend trop de temps. Réessayez.'
     );
 
+    if (!error && data.session) {
+      setSession(data.session);
+      setUser(data.user);
+      setIsLoading(false);
+    }
+
     return {
       error: error ?? null,
       needsEmailConfirmation: !error && !data.session,
@@ -178,6 +184,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       'La connexion prend trop de temps. Réessayez.'
     );
 
+    if (!error && data.session) {
+      setSession(data.session);
+      setUser(data.user);
+      setIsLoading(false);
+    }
+
     return {
       error: error ?? null,
       isPrimaryAdmin: normalizedEmail === PRIMARY_ADMIN_EMAIL,
@@ -185,7 +197,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInAnonymously = async () => {
-    const { error } = await supabase.auth.signInAnonymously();
+    const { data, error } = await supabase.auth.signInAnonymously();
+
+    if (!error && data.session) {
+      setSession(data.session);
+      setUser(data.user);
+      setIsLoading(false);
+    }
+
     return { error: error ?? null };
   };
 

@@ -1929,9 +1929,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           </CardContent>
         </Card>
       )}
-      {/* Document Number - Editable */}
+      {/* Document Number - Auto-assigned */}
       {currentStep === 3 && (<>
-      <Card>
+      <Card className="border-primary/20 bg-primary/5">
         <CardContent className="p-4 space-y-2">
           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
             <FileText className="h-5 w-5 text-primary" />
@@ -1941,31 +1941,22 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 : (documentType === 'facture' ? 'Numéro de facture' : 'Numéro de devis')}
             </h3>
           </div>
-          <Input
-            value={docNumber}
-            onChange={(e) => {
-              const val = e.target.value.toUpperCase();
-              setDocNumber(val);
-            }}
-            placeholder={isRTL 
-              ? `مثال: ${getDocPrefix(documentType)}1` 
-              : `Ex : ${getDocPrefix(documentType)}1`}
-            className="font-mono text-left"
-            dir="ltr"
-            lang="fr"
-            enableVoice={false}
-          />
-          {docNumber && !docNumber.startsWith(getDocPrefix(documentType)) && (
-            <p className="text-[11px] text-amber-600 font-medium">
+          <div className={cn("p-3 rounded-lg bg-muted/50 border border-border", isRTL && "text-right")}>
+            <p className={cn("text-sm font-medium text-foreground", isRTL && "font-cairo")}>
               {isRTL 
-                ? `💡 الصيغة الموصى بها: ${getDocPrefix(documentType)}NUMERO`
-                : `💡 Format recommandé : ${getDocPrefix(documentType)}NUMERO`}
+                ? '🔢 الترقيم تلقائي — الرقم يتحدد عند التسجيل النهائي'
+                : '🔢 Numérotation automatique — le numéro sera attribué à l\'enregistrement'}
             </p>
-          )}
+            <p className={cn("text-xs text-muted-foreground mt-1", isRTL && "font-cairo")}>
+              {isRTL
+                ? `الصيغة: ${getDocPrefix(documentType)}001, ${getDocPrefix(documentType)}002...`
+                : `Format : ${getDocPrefix(documentType)}001, ${getDocPrefix(documentType)}002...`}
+            </p>
+          </div>
           <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>
             {isRTL
-              ? '⚠️ تأكد من الحفاظ على ترقيم مستمر (التزام قانوني)'
-              : '⚠️ Assurez-vous de garder une numérotation continue (obligation légale)'}
+              ? '✅ النظام يضمن ترقيم مستمر بدون ثغرات (التزام قانوني)'
+              : '✅ Le système garantit une numérotation continue sans rupture (obligation légale)'}
           </p>
         </CardContent>
       </Card>

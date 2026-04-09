@@ -13,19 +13,19 @@ const ProPage = () => {
   const mainTools = [
     {
       icon: null,
-      emoji: '🏗️',
-      title: isRTL ? 'تحويل الصور، الخرائط، الـ PDF، وطلبات الزبون' : 'Smart Devis IA',
-      description: isRTL ? 'ارفع طلباتك.. وأنا أعملك الدوفي قبل ما تخلص شرب قهوتك ☕' : 'Photos, plans, PDF → Devis intelligent par IA ☕',
-      path: '/pro/smart-devis',
-      gradient: 'from-blue-600 to-emerald-500',
-    },
-    {
-      icon: null,
       emoji: '📄',
       title: isRTL ? 'فواتير ودوفيهات' : 'Factures & Devis',
       description: isRTL ? 'اعمل الفاكتير والدوفي بتوعك بسهولة أو حوّل الدوفي لفاتورة' : 'Créez vos factures et devis facilement ou convertissez un devis en facture',
       path: '/pro/invoice-creator',
       gradient: 'from-emerald-500 to-emerald-600',
+    },
+    {
+      icon: null,
+      emoji: '🏗️',
+      title: isRTL ? 'تحويل الصور، الخرائط، الـ PDF، وطلبات الزبون' : 'Smart Devis IA',
+      description: isRTL ? 'ارفع طلباتك.. وأنا أعملك الدوفي قبل ما تخلص شرب قهوتك ☕' : 'Photos, plans, PDF → Devis intelligent par IA ☕',
+      path: '/pro/smart-devis',
+      gradient: 'from-blue-600 to-emerald-500',
     },
     {
       icon: FolderOpen,

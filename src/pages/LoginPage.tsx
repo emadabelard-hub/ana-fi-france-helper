@@ -14,7 +14,7 @@ import { getResetPasswordRedirectUrl, isAnonymousSession, normalizeEmail, PRIMAR
 
 const LoginPage = () => {
   const { signIn, signUp, signInAnonymously, isAuthenticated, isLoading: authLoading, user } = useAuth();
-  
+
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -30,10 +30,9 @@ const LoginPage = () => {
   const [showResendConfirm, setShowResendConfirm] = useState(false);
   const [resendingConfirm, setResendingConfirm] = useState(false);
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      const isPrimaryAdmin = user?.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL;
+      const isPrimaryAdmin = !!user?.email && normalizeEmail(user.email) === PRIMARY_ADMIN_EMAIL;
       navigate(isPrimaryAdmin ? '/accounts' : '/', { replace: true });
     }
   }, [authLoading, isAuthenticated, navigate, user?.email]);
@@ -57,11 +56,15 @@ const LoginPage = () => {
     return errorMsg;
   };
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const normalizedEmail = normalizeEmail(email);
-    if (!normalizedEmail) return;
+    const formData = new FormData(e.currentTarget);
+    const submittedEmail = normalizeEmail(String(formData.get('email') ?? ''));
+
+    setEmail(submittedEmail);
+
+    if (!submittedEmail) return;
 
     setIsLoading(true);
     try {
@@ -73,16 +76,16 @@ const LoginPage = () => {
         }
       }
 
-      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      const { error } = await supabase.auth.resetPasswordForEmail(submittedEmail, {
         redirectTo: getResetPasswordRedirectUrl(),
       });
       if (error) {
-        toast({ variant: "destructive", title: "Erreur", description: error.message });
+        toast({ variant: 'destructive', title: 'Erreur', description: error.message });
       } else {
         setResetEmailSent(true);
         toast({
-          title: "Email envoyé",
-          description: "Si un compte existe pour cet email, un lien de réinitialisation vient d’être envoyé.",
+          title: 'Email envoyé',
+          description: 'Si un compte existe pour cet email, un lien de réinitialisation vient d’être envoyé.',
         });
       }
     } finally {
@@ -102,15 +105,23 @@ const LoginPage = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const normalizedEmail = email.trim().toLowerCase();
 
-    if (!isLogin && password !== confirmPassword) {
+    const formData = new FormData(e.currentTarget);
+    const submittedEmail = normalizeEmail(String(formData.get('email') ?? ''));
+    const submittedPassword = String(formData.get('password') ?? '');
+    const submittedConfirmPassword = String(formData.get('confirmPassword') ?? '');
+
+    setEmail(submittedEmail);
+    setPassword(submittedPassword);
+    setConfirmPassword(submittedConfirmPassword);
+
+    if (!isLogin && submittedPassword !== submittedConfirmPassword) {
       toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Les mots de passe ne correspondent pas",
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Les mots de passe ne correspondent pas',
       });
       return;
     }
@@ -118,20 +129,19 @@ const LoginPage = () => {
     setIsLoading(true);
     try {
       const result = isLogin
-        ? await signIn(normalizedEmail, password)
-        : await signUp(normalizedEmail, password);
+        ? await signIn(submittedEmail, submittedPassword)
+        : await signUp(submittedEmail, submittedPassword);
 
       if (result.error) {
         const errMsg = result.error.message.toLowerCase();
-        
-        // If "email not confirmed", try to force-refresh user state first
+
         if (errMsg.includes('email not confirmed') && isLogin) {
           setShowResendConfirm(true);
         }
-        
+
         toast({
-          variant: "destructive",
-          title: "Erreur",
+          variant: 'destructive',
+          title: 'Erreur',
           description: getErrorMessage(result.error.message),
         });
         return;
@@ -139,15 +149,15 @@ const LoginPage = () => {
 
       if (!isLogin && result.needsEmailConfirmation) {
         toast({
-          title: "Vérifiez votre email",
-          description: "Compte créé. Confirmez votre email avant la connexion.",
+          title: 'Vérifiez votre email',
+          description: 'Compte créé. Confirmez votre email avant la connexion.',
         });
         setIsLogin(true);
         return;
       }
 
-      toast({ title: "Connexion réussie ✓" });
-      const isPrimaryAdmin = normalizedEmail === PRIMARY_ADMIN_EMAIL;
+      toast({ title: 'Connexion réussie ✓' });
+      const isPrimaryAdmin = submittedEmail === PRIMARY_ADMIN_EMAIL;
       navigate(isPrimaryAdmin ? '/accounts' : '/', { replace: true });
     } finally {
       setIsLoading(false);
@@ -163,10 +173,10 @@ const LoginPage = () => {
           </div>
           <CardTitle className="text-xl font-bold">
             {isForgotPassword
-              ? "Mot de passe oublié"
+              ? 'Mot de passe oublié'
               : isLogin
-                ? "Connexion"
-                : "Créer un compte"}
+                ? 'Connexion'
+                : 'Créer un compte'}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -174,7 +184,14 @@ const LoginPage = () => {
             resetEmailSent ? (
               <div className="text-center space-y-4">
                 <p className="text-foreground font-bold">✉️ Vérifiez votre boîte mail</p>
-                <Button variant="outline" className="w-full" onClick={() => { setIsForgotPassword(false); setResetEmailSent(false); }}>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setIsForgotPassword(false);
+                    setResetEmailSent(false);
+                  }}
+                >
                   Retour
                 </Button>
               </div>
@@ -182,12 +199,26 @@ const LoginPage = () => {
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
                   <Label className="font-bold">Email</Label>
-                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required className="text-[16px]" dir="ltr" />
+                  <Input
+                    name="email"
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="email@example.com"
+                    required
+                    autoComplete="email"
+                    className="text-[16px]"
+                    dir="ltr"
+                  />
                 </div>
                 <Button type="submit" className="w-full font-bold" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Envoyer le lien"}
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Envoyer le lien'}
                 </Button>
-                <button type="button" onClick={() => setIsForgotPassword(false)} className="w-full text-center text-sm text-primary underline font-bold">
+                <button
+                  type="button"
+                  onClick={() => setIsForgotPassword(false)}
+                  className="w-full text-center text-sm text-primary underline font-bold"
+                >
                   Retour
                 </button>
               </form>
@@ -197,27 +228,48 @@ const LoginPage = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label className="font-bold">Email</Label>
-                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required className="text-[16px]" dir="ltr" />
+                  <Input
+                    name="email"
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="email@example.com"
+                    required
+                    autoComplete="email"
+                    className="text-[16px]"
+                    dir="ltr"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold">Mot de passe</Label>
                   <div className="relative">
                     <Input
+                      name="password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
                       minLength={6}
+                      autoComplete={isLogin ? 'current-password' : 'new-password'}
                       className="text-[16px]"
                       dir="ltr"
                     />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute top-1/2 -translate-y-1/2 text-muted-foreground right-3" tabIndex={-1}>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute top-1/2 -translate-y-1/2 text-muted-foreground right-3"
+                      tabIndex={-1}
+                    >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                   {isLogin && (
-                    <button type="button" onClick={() => setIsForgotPassword(true)} className="text-xs text-primary underline font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotPassword(true)}
+                      className="text-xs text-primary underline font-bold"
+                    >
                       Mot de passe oublié ?
                     </button>
                   )}
@@ -225,13 +277,25 @@ const LoginPage = () => {
                 {!isLogin && (
                   <div className="space-y-2">
                     <Label className="font-bold">Confirmer</Label>
-                    <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" required className="text-[16px]" dir="ltr" />
+                    <Input
+                      name="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      autoComplete="new-password"
+                      className="text-[16px]"
+                      dir="ltr"
+                    />
                   </div>
                 )}
                 <Button type="submit" className="w-full font-bold h-12 text-[16px]" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
                     <>
-                      {isLogin ? "Se connecter" : "Créer un compte"}
+                      {isLogin ? 'Se connecter' : 'Créer un compte'}
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </>
                   )}
@@ -256,21 +320,28 @@ const LoginPage = () => {
                     try {
                       const { error } = await supabase.auth.resend({ type: 'signup', email: normalizeEmail(email) });
                       toast({
-                        title: error ? "Erreur" : "Lien envoyé ✓",
-                        description: error ? error.message : "Vérifiez votre boîte mail",
-                        variant: error ? "destructive" : "default",
+                        title: error ? 'Erreur' : 'Lien envoyé ✓',
+                        description: error ? error.message : 'Vérifiez votre boîte mail',
+                        variant: error ? 'destructive' : 'default',
                       });
                     } finally {
                       setResendingConfirm(false);
                     }
                   }}
                 >
-                  {resendingConfirm ? <Loader2 className="h-4 w-4 animate-spin" /> : "Renvoyer le lien de confirmation"}
+                  {resendingConfirm ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Renvoyer le lien de confirmation'}
                 </Button>
               )}
 
-              <Button variant="outline" className="w-full font-bold gap-2 h-11 text-[16px]" onClick={handleGuestLogin} disabled={isGuestLoading}>
-                {isGuestLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+              <Button
+                variant="outline"
+                className="w-full font-bold gap-2 h-11 text-[16px]"
+                onClick={handleGuestLogin}
+                disabled={isGuestLoading}
+              >
+                {isGuestLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
                   <>
                     <UserRound className="h-4 w-4" />
                     Essai rapide (sans compte)
@@ -279,9 +350,9 @@ const LoginPage = () => {
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
-                {isLogin ? "Pas de compte ? " : "Déjà un compte ? "}
+                {isLogin ? 'Pas de compte ? ' : 'Déjà un compte ? '}
                 <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-primary underline font-bold">
-                  {isLogin ? "Créer un compte" : "Se connecter"}
+                  {isLogin ? 'Créer un compte' : 'Se connecter'}
                 </button>
               </p>
             </>

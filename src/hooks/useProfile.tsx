@@ -163,12 +163,23 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
 
       return { error: null };
     } catch (error) {
-      const errMsg = (error as any)?.message || (error as any)?.details || String(error);
-      console.error('Error updating profile:', errMsg, error);
+      const errMsg = (error as any)?.message || (error as any)?.details || (error as any)?.hint || String(error);
+      console.error('Error updating profile:', errMsg, JSON.stringify(error));
+      
+      // Provide a user-friendly message based on common constraint violations
+      let userMessage = errMsg;
+      if (errMsg.includes('siret_format')) {
+        userMessage = 'رقم SIRET غير صالح. يجب أن يتكون من 14 رقمًا بالضبط.';
+      } else if (errMsg.includes('header_type_check')) {
+        userMessage = 'نوع الرأسية غير صالح.';
+      } else if (errMsg.includes('legal_status_check')) {
+        userMessage = 'الوضع القانوني غير صالح.';
+      }
+      
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: `Impossible de mettre à jour le profil: ${errMsg.slice(0, 120)}`,
+        title: "خطأ",
+        description: userMessage.slice(0, 200),
       });
       return { error };
     }

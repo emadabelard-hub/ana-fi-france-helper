@@ -38,7 +38,7 @@ const LoginPage = () => {
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
       const isPrimaryAdmin = !!user?.email && normalizeEmail(user.email) === PRIMARY_ADMIN_EMAIL;
-      navigate(isPrimaryAdmin ? '/accounts' : '/', { replace: true });
+      navigate(isPrimaryAdmin ? '/admin' : '/', { replace: true });
     }
   }, [authLoading, isAuthenticated, navigate, user?.email]);
 
@@ -160,7 +160,7 @@ const LoginPage = () => {
 
       toast({ title: 'Connexion réussie ✓' });
       const isPrimaryAdmin = submittedEmail === PRIMARY_ADMIN_EMAIL;
-      navigate(isPrimaryAdmin ? '/accounts' : '/', { replace: true });
+      navigate(isPrimaryAdmin ? '/admin' : '/', { replace: true });
     } finally {
       setIsLoading(false);
     }

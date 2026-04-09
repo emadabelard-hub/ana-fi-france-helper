@@ -244,7 +244,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
 
       const isPrimaryAdmin = normalizedEmail === PRIMARY_ADMIN_EMAIL || result.isPrimaryAdmin === true;
       if (isPrimaryAdmin) {
-        navigate('/accounts', { replace: true });
+        navigate('/admin', { replace: true });
       }
     } catch (error) {
       console.error('Auth error:', error);

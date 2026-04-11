@@ -9,11 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { compressImageFile } from '@/lib/imageCompression';
+import { getProfileErrorMessage, logSupabaseError, uploadCompanyImage } from '@/lib/profilePersistence';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import ArtisanSignatureSection from './ArtisanSignatureSection';
 import StampUploadSection from './StampUploadSection';
@@ -57,8 +56,8 @@ interface CompanyFormData {
 
 const CompanyProfileSection = () => {
   const { isRTL } = useLanguage();
-  const { user } = useAuth();
   const { profile, isLoading, updateProfile } = useProfile();
+  const { toast } = useToast();
   
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -159,38 +158,22 @@ const CompanyProfileSection = () => {
 
   const uploadFile = async (file: File, type: 'logo' | 'header'): Promise<string | null> => {
     try {
-      // Ensure valid authenticated session before uploading
-      const { data: { session } } = await supabase.auth.getSession();
-      let activeUser = session?.user;
-      if (!activeUser || activeUser.is_anonymous) {
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        activeUser = refreshed.session?.user ?? null;
-      }
-      if (!activeUser || activeUser.is_anonymous) {
-        console.error('Upload failed: no active authenticated session');
-        return null;
-      }
-
-      const compressedBlob = await compressImageFile(file, {
-        maxWidth: type === 'header' ? 1920 : 500,
-        maxHeight: type === 'header' ? 400 : 500,
-        quality: 0.85,
-      });
-      
-      const fileName = `${activeUser.id}/${type}-${Date.now()}.jpg`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('company-assets')
-        .upload(fileName, compressedBlob, { 
-          upsert: true,
-          contentType: 'image/jpeg'
-        });
-      
-      if (uploadError) throw uploadError;
-      
-      return fileName;
+      return await uploadCompanyImage(file, type);
     } catch (error) {
-      console.error('Upload error:', error);
+      logSupabaseError('company-profile:upload', error, {
+        type,
+        fileName: file.name,
+      });
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'فشل تحميل الصورة' : "Échec de l’envoi de l’image",
+        description: getProfileErrorMessage(
+          error,
+          isRTL
+            ? 'تعذر رفع الصورة، لكن يمكنك حفظ البيانات النصية.'
+            : "L’image n’a pas pu être envoyée, mais vous pouvez quand même enregistrer les données texte."
+        ),
+      });
       return null;
     }
   };
@@ -221,11 +204,14 @@ const CompanyProfileSection = () => {
 
   const handleSave = async () => {
     if (siretError) return;
-    
+
     setIsSaving(true);
-    const { urssaf_rate, is_rate, ...rest } = formData;
-    await updateProfile({ ...rest, urssaf_rate: parseFloat(urssaf_rate) || 21.2, is_rate: parseFloat(is_rate) || 15 } as any);
-    setIsSaving(false);
+    try {
+      const { urssaf_rate, is_rate, ...rest } = formData;
+      await updateProfile({ ...rest, urssaf_rate: parseFloat(urssaf_rate) || 21.2, is_rate: parseFloat(is_rate) || 15 } as any);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {

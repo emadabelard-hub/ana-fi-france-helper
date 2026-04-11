@@ -22,17 +22,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-const shouldSkipAnonymousBoot = () => {
-  const pathname = window.location.pathname;
-
-  return (
-    pathname === '/login' ||
-    pathname === '/reset-password' ||
-    pathname.startsWith('/admin') ||
-    pathname.startsWith('/profile') ||
-    getRecoveryContext().isRecoveryLink
-  );
-};
+const shouldSkipAnonymousBoot = () => true;
 
 const clearAnonymousSessionIfNeeded = async () => {
   // Intentionally a no-op.
@@ -93,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
 
       try {
-        // If user explicitly signed out, don't auto-create anonymous session
+        // If user explicitly signed out, don't restore
         if (sessionStorage.getItem('explicit_signout') === 'true') {
           sessionStorage.removeItem('explicit_signout');
           setUser(null);
@@ -104,18 +94,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         const { data: { session: existing } } = await supabase.auth.getSession();
 
-        if (skipAnonymousBoot && isAnonymousSession(existing)) {
-          const { error } = await supabase.auth.signOut({ scope: 'local' });
-          if (error) {
-            console.warn('Anonymous session cleanup failed:', error.message);
-          }
-
-          setSession(null);
-          setUser(null);
-          finishLoading();
-          return;
-        }
-
         if (existing) {
           setSession(existing);
           setUser(existing.user);
@@ -123,22 +101,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        if (skipAnonymousBoot) {
-          setUser(null);
-          setSession(null);
-          finishLoading();
-          return;
-        }
-
-        // No session found — create anonymous guest session for public access
-        const { error } = await supabase.auth.signInAnonymously();
-        hasInitialized = true;
-
-        if (error) {
-          console.warn('Anonymous sign-in failed:', error.message);
-          finishLoading();
-        }
-        // onAuthStateChange will finalize state on success
+        // No session — just finish loading, do NOT create anonymous session
+        setUser(null);
+        setSession(null);
+        finishLoading();
       } catch (err) {
         console.warn('Auth init failed:', err);
         finishLoading();
@@ -238,11 +204,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.warn('signOut error (ignored):', e);
     }
 
-    // 4. Wipe all local persistence
-    localStorage.clear();
-    sessionStorage.setItem('explicit_signout', 'true'); // Re-set after clear
-
-    // 5. Hard redirect — guarantees clean page state
+    // 4. Hard redirect — guarantees clean page state
     window.location.replace('/login');
   };
 

@@ -103,17 +103,13 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchProfile]);
 
   const updateProfile = useCallback(async (updates: Partial<Profile>) => {
-    try {
-      // Refresh session to ensure we have a valid, non-expired token
-      const { data: { session } } = await supabase.auth.getSession();
-      const activeUser = session?.user;
-
-      if (!activeUser || activeUser.is_anonymous) {
-        // Try refreshing the token once
+    const attempt = async (retry: boolean): Promise<{ error: Error | null | unknown }> => {
+      try {
+        // Refresh session to ensure we have a valid, non-expired token
         const { data: refreshed } = await supabase.auth.refreshSession();
-        const refreshedUser = refreshed.session?.user;
+        const activeUser = refreshed.session?.user;
 
-        if (!refreshedUser || refreshedUser.is_anonymous) {
+        if (!activeUser || activeUser.is_anonymous) {
           toast({
             variant: 'destructive',
             title: 'Erreur',
@@ -121,68 +117,76 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
           });
           return { error: new Error('Not authenticated') };
         }
-      }
 
-      const userId = activeUser?.id ?? user?.id;
-      if (!userId) {
-        toast({
-          variant: 'destructive',
-          title: 'Erreur',
-          description: 'Aucun utilisateur actif. Reconnectez-vous.',
-        });
-        return { error: new Error('No user ID') };
-      }
+        const userId = activeUser.id;
 
-      // Convert empty strings to null for nullable text columns to avoid
-      // check-constraint violations (e.g. siret_format)
-      const cleaned: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(updates)) {
-        if (typeof value === 'string' && value.trim() === '') {
-          cleaned[key] = null;
-        } else if (key === 'siret' && typeof value === 'string' && !/^\d{14}$/.test(value)) {
-          // Invalid SIRET → store as null to avoid CHECK constraint violation
-          cleaned[key] = null;
-        } else {
-          cleaned[key] = value;
+        // Convert empty strings to null for nullable text columns to avoid
+        // check-constraint violations (e.g. siret_format)
+        const cleaned: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(updates)) {
+          if (typeof value === 'string' && value.trim() === '') {
+            cleaned[key] = null;
+          } else if (key === 'siret' && typeof value === 'string' && !/^\d{14}$/.test(value)) {
+            cleaned[key] = null;
+          } else {
+            cleaned[key] = value;
+          }
         }
+
+        // Remove fields that should not be sent in the upsert
+        delete cleaned['id'];
+        delete cleaned['created_at'];
+        delete cleaned['updated_at'];
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .upsert({ user_id: userId, ...cleaned }, { onConflict: 'user_id' })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setProfile(data);
+        toast({
+          title: "Profil mis à jour",
+          description: "Vos informations ont été enregistrées avec succès.",
+        });
+
+        return { error: null };
+      } catch (error: unknown) {
+        const errMsg = (error as any)?.message || (error as any)?.details || (error as any)?.hint || String(error);
+        const lowerMsg = errMsg.toLowerCase();
+
+        // "signal is aborted without reason" / AbortError → retry once
+        if (retry && (lowerMsg.includes('abort') || lowerMsg.includes('signal') || lowerMsg.includes('failed to fetch'))) {
+          console.warn('Profile save aborted, retrying…');
+          await new Promise(r => setTimeout(r, 800));
+          return attempt(false);
+        }
+
+        console.error('Error updating profile:', errMsg, JSON.stringify(error));
+
+        let userMessage = errMsg;
+        if (lowerMsg.includes('abort') || lowerMsg.includes('signal')) {
+          userMessage = 'Erreur réseau. Vérifiez votre connexion et réessayez.';
+        } else if (lowerMsg.includes('siret_format')) {
+          userMessage = 'Le SIRET doit contenir exactement 14 chiffres.';
+        } else if (lowerMsg.includes('header_type_check')) {
+          userMessage = "Type d'en-tête invalide.";
+        } else if (lowerMsg.includes('legal_status_check')) {
+          userMessage = 'Statut juridique invalide.';
+        }
+
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: userMessage.slice(0, 200),
+        });
+        return { error };
       }
+    };
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .upsert({ user_id: userId, ...cleaned }, { onConflict: 'user_id' })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setProfile(data);
-      toast({
-        title: "Profil mis à jour",
-        description: "Vos informations ont été enregistrées avec succès.",
-      });
-
-      return { error: null };
-    } catch (error) {
-      const errMsg = (error as any)?.message || (error as any)?.details || (error as any)?.hint || String(error);
-      console.error('Error updating profile:', errMsg, JSON.stringify(error));
-      
-      // Provide a user-friendly message based on common constraint violations
-      let userMessage = errMsg;
-      if (errMsg.includes('siret_format')) {
-        userMessage = 'رقم SIRET غير صالح. يجب أن يتكون من 14 رقمًا بالضبط.';
-      } else if (errMsg.includes('header_type_check')) {
-        userMessage = 'نوع الرأسية غير صالح.';
-      } else if (errMsg.includes('legal_status_check')) {
-        userMessage = 'الوضع القانوني غير صالح.';
-      }
-      
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: userMessage.slice(0, 200),
-      });
-      return { error };
-    }
+    return attempt(true);
   }, [user, toast, supabase]);
 
   return (

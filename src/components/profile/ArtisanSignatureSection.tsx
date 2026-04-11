@@ -5,15 +5,18 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import SignaturePad from 'signature_pad';
+import { getProfileErrorMessage, logSupabaseError, uploadCompanySignature } from '@/lib/profilePersistence';
 import { extractCompanyAssetPath, getSignedAssetUrl } from '@/lib/storageUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 const ArtisanSignatureSection = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { profile, updateProfile } = useProfile();
+  const { toast } = useToast();
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad | null>(null);
@@ -73,41 +76,23 @@ const ArtisanSignatureSection = () => {
 
     setIsSaving(true);
     try {
-      // Ensure valid authenticated session
-      const { data: { session } } = await supabase.auth.getSession();
-      let activeUser = session?.user;
-      if (!activeUser || activeUser.is_anonymous) {
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        activeUser = refreshed.session?.user ?? null;
-      }
-      if (!activeUser || activeUser.is_anonymous) {
-        console.error('Signature save failed: no active authenticated session');
-        return;
-      }
-
-      // Get signature as data URL
       const dataUrl = signaturePadRef.current.toDataURL('image/png');
-      
-      // Convert to blob
       const response = await fetch(dataUrl);
       const blob = await response.blob();
-      
-      // Upload to storage
-      const fileName = `${activeUser.id}/artisan-signature-${Date.now()}.png`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('company-assets')
-        .upload(fileName, blob, {
-          contentType: 'image/png',
-          upsert: true,
-        });
 
-      if (uploadError) throw uploadError;
-
-      await updateProfile({ artisan_signature_url: fileName });
-
+      const fileName = await uploadCompanySignature(blob);
+      const { error } = await updateProfile({ artisan_signature_url: fileName });
+      if (error) return;
     } catch (error) {
-      console.error('Error saving signature:', error);
+      logSupabaseError('profile-signature:save', error, { currentSignatureUrl });
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'فشل حفظ التوقيع' : 'Échec de l’enregistrement de la signature',
+        description: getProfileErrorMessage(
+          error,
+          isRTL ? 'تعذر حفظ التوقيع.' : "La signature n'a pas pu être enregistrée."
+        ),
+      });
     } finally {
       setIsSaving(false);
     }
@@ -128,7 +113,15 @@ const ArtisanSignatureSection = () => {
       // Clear from profile
       await updateProfile({ artisan_signature_url: null });
     } catch (error) {
-      console.error('Error deleting signature:', error);
+      logSupabaseError('profile-signature:delete', error, { currentSignatureUrl });
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'فشل حذف التوقيع' : 'Échec de la suppression de la signature',
+        description: getProfileErrorMessage(
+          error,
+          isRTL ? 'تعذر حذف التوقيع.' : 'La signature n’a pas pu être supprimée.'
+        ),
+      });
     } finally {
       setIsDeleting(false);
     }

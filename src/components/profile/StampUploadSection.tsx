@@ -6,15 +6,17 @@ import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { compressImageFile } from '@/lib/imageCompression';
+import { getProfileErrorMessage, logSupabaseError, uploadCompanyImage } from '@/lib/profilePersistence';
 import { extractCompanyAssetPath, getSignedAssetUrl } from '@/lib/storageUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 const StampUploadSection = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { profile, updateProfile } = useProfile();
+  const { toast } = useToast();
 
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -37,34 +39,19 @@ const StampUploadSection = () => {
 
     setIsUploading(true);
     try {
-      // Ensure valid authenticated session
-      const { data: { session } } = await supabase.auth.getSession();
-      let activeUser = session?.user;
-      if (!activeUser || activeUser.is_anonymous) {
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        activeUser = refreshed.session?.user ?? null;
-      }
-      if (!activeUser || activeUser.is_anonymous) {
-        console.error('Stamp upload failed: no active authenticated session');
-        return;
-      }
-
-      const compressed = await compressImageFile(file, {
-        maxWidth: 500,
-        maxHeight: 500,
-        quality: 0.85,
-      });
-
-      const fileName = `${activeUser.id}/stamp-${Date.now()}.jpg`;
-      const { error: uploadError } = await supabase.storage
-        .from('company-assets')
-        .upload(fileName, compressed, { upsert: true, contentType: 'image/jpeg' });
-
-      if (uploadError) throw uploadError;
-
-      await updateProfile({ stamp_url: fileName });
+      const fileName = await uploadCompanyImage(file, 'stamp');
+      const { error } = await updateProfile({ stamp_url: fileName });
+      if (error) return;
     } catch (error) {
-      console.error('Error uploading stamp:', error);
+      logSupabaseError('profile-stamp:upload', error, { fileName: file.name });
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'فشل حفظ الطابع' : 'Échec du téléversement du tampon',
+        description: getProfileErrorMessage(
+          error,
+          isRTL ? 'تعذر حفظ الطابع.' : "Le tampon n'a pas pu être enregistré."
+        ),
+      });
     } finally {
       setIsUploading(false);
     }
@@ -79,7 +66,15 @@ const StampUploadSection = () => {
       await supabase.storage.from('company-assets').remove([filePath]);
       await updateProfile({ stamp_url: null });
     } catch (error) {
-      console.error('Error deleting stamp:', error);
+      logSupabaseError('profile-stamp:delete', error, { currentStampUrl });
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'فشل حذف الطابع' : 'Échec de la suppression du tampon',
+        description: getProfileErrorMessage(
+          error,
+          isRTL ? 'تعذر حذف الطابع.' : 'Le tampon n’a pas pu être supprimé.'
+        ),
+      });
     } finally {
       setIsDeleting(false);
     }

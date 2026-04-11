@@ -13,9 +13,10 @@ import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { compressImageFile } from '@/lib/imageCompression';
+import { getProfileErrorMessage, logSupabaseError, uploadCompanyImage } from '@/lib/profilePersistence';
 import { getSignedAssetUrl } from '@/lib/storageUtils';
 import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
 import ResetDataSection from '@/components/profile/ResetDataSection';
@@ -67,6 +68,7 @@ const ProfilePage = () => {
   const { isRTL } = useLanguage();
   const { user, signOut, isLoading: authLoading, isPrimaryAdmin } = useAuth();
   const { profile, isLoading, updateProfile } = useProfile();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<TabKey>('company');
@@ -163,30 +165,22 @@ const ProfilePage = () => {
 
   const uploadFile = async (file: File, type: 'logo' | 'header'): Promise<string | null> => {
     try {
-      // Ensure we have a valid authenticated session before uploading
-      const { data: { session } } = await supabase.auth.getSession();
-      let activeUser = session?.user;
-
-      if (!activeUser || activeUser.is_anonymous) {
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        activeUser = refreshed.session?.user ?? null;
-      }
-
-      if (!activeUser || activeUser.is_anonymous) {
-        console.error('Upload failed: no active authenticated session');
-        return null;
-      }
-
-      const compressedBlob = await compressImageFile(file, {
-        maxWidth: type === 'header' ? 1920 : 500, maxHeight: type === 'header' ? 400 : 500, quality: 0.85,
+      return await uploadCompanyImage(file, type);
+    } catch (error) {
+      logSupabaseError('profile-page:upload', error, {
+        type,
+        fileName: file.name,
       });
-      const fileName = `${activeUser.id}/${type}-${Date.now()}.jpg`;
-      const { error: uploadError } = await supabase.storage
-        .from('company-assets')
-        .upload(fileName, compressedBlob, { upsert: true, contentType: 'image/jpeg' });
-      if (uploadError) throw uploadError;
-      return fileName;
-    } catch (error) { console.error('Upload error:', error); return null; }
+      toast({
+        variant: 'destructive',
+        title: 'Échec de l’envoi de l’image',
+        description: getProfileErrorMessage(
+          error,
+          "L’image n’a pas pu être envoyée, mais vous pouvez quand même enregistrer les autres données."
+        ),
+      });
+      return null;
+    }
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,8 +202,11 @@ const ProfilePage = () => {
   const handleSave = async () => {
     if (siretError) return;
     setIsSaving(true);
-    await updateProfile(formData as any);
-    setIsSaving(false);
+    try {
+      await updateProfile(formData as any);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSignOut = async () => { await signOut(); };

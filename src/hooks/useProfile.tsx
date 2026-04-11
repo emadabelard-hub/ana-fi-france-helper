@@ -1,7 +1,14 @@
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
+import {
+  ensureProfileExists,
+  getAuthenticatedProfileUser,
+  getProfileErrorMessage,
+  isAbortLikeError,
+  logSupabaseError,
+  saveProfileForUser,
+} from '@/lib/profilePersistence';
 
 export interface Profile {
   id: string;
@@ -71,28 +78,11 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!data) {
-        const { data: newProfile, error: insertError } = await supabase
-          .from('profiles')
-          .upsert({ user_id: user.id }, { onConflict: 'user_id' })
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-        setProfile(newProfile);
-      } else {
-        setProfile(data);
-      }
+      const ensuredProfile = await ensureProfileExists(user);
+      setProfile(ensuredProfile);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      logSupabaseError('profile:fetch', error, { userId: user.id });
+      setProfile(null);
     } finally {
       setIsLoading(false);
     }
@@ -105,89 +95,38 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   const updateProfile = useCallback(async (updates: Partial<Profile>) => {
     const attempt = async (retry: boolean): Promise<{ error: Error | null | unknown }> => {
       try {
-        // Refresh session to ensure we have a valid, non-expired token
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        const activeUser = refreshed.session?.user;
+        const activeUser = await getAuthenticatedProfileUser();
+        const { created, profile: savedProfile } = await saveProfileForUser(activeUser, updates as Profile);
 
-        if (!activeUser || activeUser.is_anonymous) {
-          toast({
-            variant: 'destructive',
-            title: 'Erreur',
-            description: 'Session expirée. Reconnectez-vous puis réessayez.',
-          });
-          return { error: new Error('Not authenticated') };
-        }
-
-        const userId = activeUser.id;
-
-        // Convert empty strings to null for nullable text columns to avoid
-        // check-constraint violations (e.g. siret_format)
-        const cleaned: Record<string, unknown> = {};
-        for (const [key, value] of Object.entries(updates)) {
-          if (typeof value === 'string' && value.trim() === '') {
-            cleaned[key] = null;
-          } else if (key === 'siret' && typeof value === 'string' && !/^\d{14}$/.test(value)) {
-            cleaned[key] = null;
-          } else {
-            cleaned[key] = value;
-          }
-        }
-
-        // Remove fields that should not be sent in the upsert
-        delete cleaned['id'];
-        delete cleaned['created_at'];
-        delete cleaned['updated_at'];
-
-        const { data, error } = await supabase
-          .from('profiles')
-          .upsert({ user_id: userId, ...cleaned }, { onConflict: 'user_id' })
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        setProfile(data);
+        setProfile(savedProfile);
         toast({
-          title: "Profil mis à jour",
-          description: "Vos informations ont été enregistrées avec succès.",
+          title: created ? 'Profil recréé' : 'Profil mis à jour',
+          description: created
+            ? 'Votre fiche a été recréée puis enregistrée avec succès.'
+            : 'Vos informations ont été enregistrées avec succès.',
         });
 
         return { error: null };
       } catch (error: unknown) {
-        const errMsg = (error as any)?.message || (error as any)?.details || (error as any)?.hint || String(error);
-        const lowerMsg = errMsg.toLowerCase();
-
-        // "signal is aborted without reason" / AbortError → retry once
-        if (retry && (lowerMsg.includes('abort') || lowerMsg.includes('signal') || lowerMsg.includes('failed to fetch'))) {
-          console.warn('Profile save aborted, retrying…');
+        if (retry && isAbortLikeError(error)) {
+          console.warn('[profile:update] Request aborted, retrying once...');
           await new Promise(r => setTimeout(r, 800));
           return attempt(false);
         }
 
-        console.error('Error updating profile:', errMsg, JSON.stringify(error));
-
-        let userMessage = errMsg;
-        if (lowerMsg.includes('abort') || lowerMsg.includes('signal')) {
-          userMessage = 'Erreur réseau. Vérifiez votre connexion et réessayez.';
-        } else if (lowerMsg.includes('siret_format')) {
-          userMessage = 'Le SIRET doit contenir exactement 14 chiffres.';
-        } else if (lowerMsg.includes('header_type_check')) {
-          userMessage = "Type d'en-tête invalide.";
-        } else if (lowerMsg.includes('legal_status_check')) {
-          userMessage = 'Statut juridique invalide.';
-        }
+        logSupabaseError('profile:update', error, { fields: Object.keys(updates) });
 
         toast({
           variant: "destructive",
           title: "Erreur",
-          description: userMessage.slice(0, 200),
+          description: getProfileErrorMessage(error, 'L’enregistrement du profil a échoué.').slice(0, 200),
         });
         return { error };
       }
     };
 
     return attempt(true);
-  }, [user, toast, supabase]);
+  }, [toast]);
 
   return (
     <ProfileContext.Provider value={{ profile, isLoading, updateProfile, refetch: fetchProfile }}>

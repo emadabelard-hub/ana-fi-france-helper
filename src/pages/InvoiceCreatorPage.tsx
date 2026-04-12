@@ -179,8 +179,32 @@ const InvoiceCreatorPage = () => {
     );
   }
 
+  // Debug state for visible mobile debugging
+  const debugLines: string[] = [];
+  {
+    const raw = sessionStorage.getItem('quoteToInvoiceData');
+    if (raw) {
+      try {
+        const p = JSON.parse(raw);
+        debugLines.push(`READ quoteToInvoiceData ✅ (${raw.length} chars)`);
+        debugLines.push(`  items: ${p?.items?.length ?? 'none'}, client: ${p?.clientName ?? 'n/a'}`);
+      } catch { debugLines.push('READ quoteToInvoiceData ⚠️ parse error'); }
+    } else {
+      debugLines.push('NO quoteToInvoiceData FOUND ❌');
+    }
+    debugLines.push(`sessionStorage keys: [${Object.keys(sessionStorage).join(', ')}]`);
+    debugLines.push(`prefillData: ${prefillData ? `✅ items=${prefillData?.items?.length}` : '❌ null'}`);
+    debugLines.push(`documentType: ${documentType ?? 'null'} | urlDocType: ${urlDocType ?? 'null'}`);
+    debugLines.push(`prefillSource: ${prefillSource ?? 'null'} | missingQuoteData: ${missingQuoteData}`);
+  }
+
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden">
+      {/* Temporary Debug Box */}
+      <div className="bg-yellow-100 dark:bg-yellow-900 border border-yellow-400 text-[10px] font-mono p-2 rounded m-2 max-h-40 overflow-auto shrink-0 z-50">
+        <strong>🔍 DEBUG (temp)</strong>
+        {debugLines.map((l, i) => <div key={i}>{l}</div>)}
+      </div>
       {/* Header */}
       <section className={cn(
         "flex items-center gap-4 py-4 shrink-0",

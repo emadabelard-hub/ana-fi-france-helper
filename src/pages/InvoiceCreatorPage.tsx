@@ -55,46 +55,47 @@ const InvoiceCreatorPage = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
   // CRITICAL: Initialize prefillData SYNCHRONOUSLY to prevent draft restore race condition.
-  // Do NOT remove storage keys here — defer cleanup to useEffect to survive React double-mount.
-  // Check ALL sources unconditionally — URL params (prefillSource) can be lost on mobile redirects.
-  const [prefillData, setPrefillData] = useState<any>(() => {
-    // === Source 1: location.state (highest priority — works for both Smart Devis and Quote-to-Invoice) ===
-    const stateData = (location.state as any)?.smartDevisData || (location.state as any)?.quoteToInvoiceData;
-    if (stateData && stateData.items?.length > 0) {
-      console.log('[InvoiceCreator] Prefill from location.state:', stateData.items.length, 'items, source:', stateData.source);
-      return stateData;
-    }
-
-    // === Source 2: sessionStorage/localStorage 'smartDevisData' (always check, regardless of URL params) ===
-    for (const storage of [sessionStorage, localStorage]) {
-      try {
-        const raw = storage.getItem('smartDevisData');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed?.items?.length > 0) {
-            console.log('[InvoiceCreator] Prefill from', storage === sessionStorage ? 'sessionStorage' : 'localStorage', '(smartDevisData):', parsed.items.length, 'items');
-            return parsed;
-          }
-        }
-      } catch (e) {
-        console.error('Failed to parse smartDevisData:', e);
-      }
-    }
-
-    // === Source 3: sessionStorage 'quoteToInvoiceData' (always check) ===
+  // Check ALL sessionStorage sources unconditionally — URL params can be lost on mobile redirects.
+  const [prefillData] = useState<any>(() => {
+    // === Source 1: sessionStorage 'quoteToInvoiceData' (Quote → Invoice flow) ===
     try {
       const raw = sessionStorage.getItem('quoteToInvoiceData');
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed?.items?.length > 0) {
-          console.log('[InvoiceCreator] Prefill from sessionStorage (quoteToInvoiceData):', parsed.items.length, 'items');
+          console.log('[InvoiceCreator] ✅ Prefill from quoteToInvoiceData:', parsed.items.length, 'items');
+          // Clean up immediately after reading to prevent stale reuse
+          sessionStorage.removeItem('quoteToInvoiceData');
           return parsed;
         }
       }
     } catch (e) {
-      console.error('Failed to parse quoteToInvoiceData:', e);
+      console.error('[InvoiceCreator] Failed to parse quoteToInvoiceData:', e);
     }
 
+    // === Source 2: sessionStorage 'smartDevisData' (Smart Devis flow) ===
+    try {
+      const raw = sessionStorage.getItem('smartDevisData');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.items?.length > 0) {
+          console.log('[InvoiceCreator] ✅ Prefill from smartDevisData:', parsed.items.length, 'items');
+          sessionStorage.removeItem('smartDevisData');
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('[InvoiceCreator] Failed to parse smartDevisData:', e);
+    }
+
+    // === Source 3: location.state fallback (for in-app navigations) ===
+    const stateData = (location.state as any)?.smartDevisData || (location.state as any)?.quoteToInvoiceData;
+    if (stateData?.items?.length > 0) {
+      console.log('[InvoiceCreator] ✅ Prefill from location.state:', stateData.items.length, 'items');
+      return stateData;
+    }
+
+    console.log('[InvoiceCreator] No prefill data found');
     return null;
   });
 

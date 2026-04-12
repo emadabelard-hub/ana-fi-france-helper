@@ -687,7 +687,7 @@ const ExpensesPage = () => {
         <span className="text-[16px] sm:text-[18px] text-amber-400 inline-flex items-center gap-1.5">
           <Landmark size={18} className="shrink-0" />
           {isRTL ? 'ضريبة تقديرية: ' : 'IS estimé: '}
-          <span className="font-bold">{formatCurrency(realEstimatedIS)}</span>
+          <span className="font-bold">{formatCurrency(estimatedIS)}</span>
         </span>
       </div>
 

@@ -93,16 +93,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const invoiceRef = useRef<HTMLDivElement>(null);
   const SAFETY_BLOCK_MESSAGE = 'Erreur de calcul – document bloqué pour sécurité';
   
-  // Form state
+  // Ref to track if prefill has been applied (prevents double-application)
+  const prefillAppliedRef = useRef(false);
+
+  // Form state — initialize directly from prefillData to avoid effect race conditions
+  const isImageQuotePrefill = prefillData?.source === 'image_quote_to_invoice';
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedChantierId, setSelectedChantierId] = useState('');
   const [clientsList, setClientsList] = useState<Array<{ id: string; name: string; client_type: string; company_name: string | null; address: string | null; street: string | null; postal_code: string | null; city: string | null; contact_phone: string | null; contact_email: string | null; siret: string | null; is_b2b: boolean; tva_number: string | null }>>([]);
   const [chantiersList, setChantiersList] = useState<Array<{ id: string; name: string; site_address: string | null }>>([]);
   
-  const [clientName, setClientName] = useState('');
-  const [clientAddress, setClientAddress] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
-  const [clientEmail, setClientEmail] = useState('');
+  const [clientName, setClientName] = useState(isImageQuotePrefill ? (prefillData?.clientName || '') : '');
+  const [clientAddress, setClientAddress] = useState(isImageQuotePrefill ? (prefillData?.clientAddress || '') : '');
+  const [clientPhone, setClientPhone] = useState(isImageQuotePrefill ? (prefillData?.clientPhone || '') : '');
+  const [clientEmail, setClientEmail] = useState(isImageQuotePrefill ? (prefillData?.clientEmail || '') : '');
   const [clientSiren, setClientSiren] = useState('');
   const [clientTvaIntra, setClientTvaIntra] = useState('');
   const [clientIsB2B, setClientIsB2B] = useState(false);
@@ -113,7 +117,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [natureOperation, setNatureOperation] = useState<'service' | 'goods' | 'mixed'>('service');
   
   // Description du chantier / objet du devis
-  const [descriptionChantier, setDescriptionChantier] = useState('');
+  const [descriptionChantier, setDescriptionChantier] = useState(isImageQuotePrefill ? (prefillData?.descriptionChantier || '') : '');
   const [descriptionChantierAr, setDescriptionChantierAr] = useState('');
   const [descriptionChantierFr, setDescriptionChantierFr] = useState('');
   const [isTranslatingObjet, setIsTranslatingObjet] = useState(false);
@@ -164,18 +168,31 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
   const [discountValue, setDiscountValue] = useState<number>(0);
   
-  // Line items - use empty strings for quantity/price to allow clean input
-  const [items, setItems] = useState<LineItem[]>([
-    {
+  // Line items — initialize from prefillData if available (image-quote flow)
+  const [items, setItems] = useState<LineItem[]>(() => {
+    if (isImageQuotePrefill && prefillData?.items && prefillData.items.length > 0) {
+      console.log('[InvoiceFormBuilder] ✅ Initializing items from prefillData:', prefillData.items.length, 'items');
+      prefillAppliedRef.current = true;
+      return prefillData.items.map((item) => ({
+        id: generateId(),
+        designation_fr: item.designation_fr || '',
+        designation_ar: item.designation_ar || '',
+        quantity: item.quantity || 1,
+        unit: item.unit || 'U',
+        unitPrice: item.unitPrice || 0,
+        total: (item.quantity || 1) * (item.unitPrice || 0),
+      }));
+    }
+    return [{
       id: generateId(),
       designation_fr: '',
       designation_ar: '',
-      quantity: '' as unknown as number, // Allow empty for clean input
+      quantity: '' as unknown as number,
       unit: 'm²',
-      unitPrice: '' as unknown as number, // Allow empty for clean input
+      unitPrice: '' as unknown as number,
       total: 0,
-    }
-  ]);
+    }];
+  });
   
   // Track temporary string values for quantity and price inputs
   const [tempValues, setTempValues] = useState<Record<string, { quantity?: string; unitPrice?: string }>>({});

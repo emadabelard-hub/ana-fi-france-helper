@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import AuthModal from '@/components/auth/AuthModal';
 import { supabase } from '@/integrations/supabase/client';
 import { compressImage, isImageData } from '@/lib/imageCompression';
+import { extractTextFromPDF } from '@/lib/pdfExtractor';
 
 interface NormalizedQuoteData {
   source: 'image_quote_to_invoice';

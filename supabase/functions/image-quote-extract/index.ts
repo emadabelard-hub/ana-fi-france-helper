@@ -36,9 +36,9 @@ serve(async (req) => {
       });
     }
 
-    const { imageBase64, mimeType } = await req.json();
-    if (!imageBase64) {
-      return new Response(JSON.stringify({ error: "imageBase64 is required" }), {
+    const { imageBase64, mimeType, pdfText } = await req.json();
+    if (!imageBase64 && !pdfText) {
+      return new Response(JSON.stringify({ error: "imageBase64 or pdfText is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

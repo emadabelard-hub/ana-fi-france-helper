@@ -223,20 +223,20 @@ const InvoiceCreatorPage = () => {
   // Debug state for visible mobile debugging
   const debugLines: string[] = [];
   {
-    // Note: sessionStorage key is already consumed & removed during useState init
-    // So we check prefillData state instead (the actual truth)
     if (prefillData) {
       debugLines.push(`PREFILL LOADED ✅ source=${prefillData.source}`);
       debugLines.push(`  items: ${prefillData.items?.length ?? 0}, client: ${prefillData.clientName ?? 'n/a'}`);
       prefillData.items?.slice(0, 2).forEach((it: any, i: number) => {
-        debugLines.push(`  [${i}] ${it.designation_fr?.slice(0, 40)} | qty=${it.quantity} ${it.unit} | €${it.unitPrice}`);
+        const desig = it.designation_fr || it.designation || '';
+        debugLines.push(`  [${i}] ${desig.slice(0, 40)} | qty=${it.quantity} ${it.unit} | €${it.unitPrice}`);
       });
     } else {
       debugLines.push('PREFILL ❌ null (no data was in sessionStorage at mount)');
       debugLines.push(`sessionStorage keys now: [${Object.keys(sessionStorage).join(', ')}]`);
     }
     debugLines.push(`documentType: ${documentType ?? 'null'} | urlDocType: ${urlDocType ?? 'null'}`);
-    debugLines.push(`prefillSource: ${prefillSource ?? 'null'} | missingQuoteData: ${missingQuoteData}`);
+    debugLines.push(`prefillSource: ${prefillSource ?? 'null'} | source: ${urlSource ?? 'null'} | missingQuoteData: ${missingQuoteData}`);
+    debugLines.push(`isImageQuoteFlow: ${isImageQuoteFlow}`);
   }
 
   return (

@@ -46,12 +46,53 @@ const InvoiceCreatorPage = () => {
     ? loadCurrentDocument()?.documentType ?? null
     : null;
   
+  const urlSource = searchParams.get('source');
+  const isImageQuoteFlow = urlSource === 'image-quote';
+
   const [documentType, setDocumentType] = useState<'devis' | 'facture' | null>(urlDocType ?? resumedDocumentType);
   const [showTypeModal, setShowTypeModal] = useState(!urlDocType && !resumedDocumentType);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
   // Initialize prefillData synchronously so it is available on first render.
   const [prefillData] = useState<any>(() => {
+    // --- NEW: Image Quote To Invoice flow ---
+    if (isImageQuoteFlow) {
+      try {
+        const raw = sessionStorage.getItem('imageQuoteToInvoiceData');
+        if (!raw) {
+          console.log('NO imageQuoteToInvoiceData FOUND');
+          return null;
+        }
+        const parsed = JSON.parse(raw);
+        console.log('READ imageQuoteToInvoiceData', parsed);
+        if (parsed?.items?.length > 0) {
+          // Transform to InvoiceFormBuilder expected shape
+          const transformed = {
+            source: 'image_quote_to_invoice',
+            clientName: parsed.clientName || '',
+            clientAddress: parsed.clientAddress || '',
+            clientPhone: parsed.clientPhone || '',
+            objet: parsed.description || '',
+            items: parsed.items.map((it: any) => ({
+              designation_fr: it.designation || '',
+              designation_ar: '',
+              quantity: Number(it.quantity) || 1,
+              unit: it.unit || 'forfait',
+              unitPrice: Number(it.unitPrice) || 0,
+            })),
+            notes: '',
+          };
+          console.log('[InvoiceCreator] ✅ Prefill from imageQuoteToInvoiceData:', transformed.items.length, 'items');
+          sessionStorage.removeItem('imageQuoteToInvoiceData');
+          return transformed;
+        }
+      } catch (error) {
+        console.error('[InvoiceCreator] Failed to parse imageQuoteToInvoiceData:', error);
+      }
+      return null;
+    }
+
+    // --- EXISTING: quoteToInvoiceData flow ---
     try {
       const raw = sessionStorage.getItem('quoteToInvoiceData');
       if (!raw) {
@@ -77,7 +118,7 @@ const InvoiceCreatorPage = () => {
     return null;
   });
 
-  const missingQuoteData = expectsStoredPrefill && !prefillData;
+  const missingQuoteData = (expectsStoredPrefill || isImageQuoteFlow) && !prefillData;
 
   // Navigation guard: block leaving when a document type is selected (form is active)
   const hasUnsavedWork = !!documentType && !missingQuoteData;
@@ -182,20 +223,20 @@ const InvoiceCreatorPage = () => {
   // Debug state for visible mobile debugging
   const debugLines: string[] = [];
   {
-    // Note: sessionStorage key is already consumed & removed during useState init
-    // So we check prefillData state instead (the actual truth)
     if (prefillData) {
       debugLines.push(`PREFILL LOADED ✅ source=${prefillData.source}`);
       debugLines.push(`  items: ${prefillData.items?.length ?? 0}, client: ${prefillData.clientName ?? 'n/a'}`);
       prefillData.items?.slice(0, 2).forEach((it: any, i: number) => {
-        debugLines.push(`  [${i}] ${it.designation_fr?.slice(0, 40)} | qty=${it.quantity} ${it.unit} | €${it.unitPrice}`);
+        const desig = it.designation_fr || it.designation || '';
+        debugLines.push(`  [${i}] ${desig.slice(0, 40)} | qty=${it.quantity} ${it.unit} | €${it.unitPrice}`);
       });
     } else {
       debugLines.push('PREFILL ❌ null (no data was in sessionStorage at mount)');
       debugLines.push(`sessionStorage keys now: [${Object.keys(sessionStorage).join(', ')}]`);
     }
     debugLines.push(`documentType: ${documentType ?? 'null'} | urlDocType: ${urlDocType ?? 'null'}`);
-    debugLines.push(`prefillSource: ${prefillSource ?? 'null'} | missingQuoteData: ${missingQuoteData}`);
+    debugLines.push(`prefillSource: ${prefillSource ?? 'null'} | source: ${urlSource ?? 'null'} | missingQuoteData: ${missingQuoteData}`);
+    debugLines.push(`isImageQuoteFlow: ${isImageQuoteFlow}`);
   }
 
   return (

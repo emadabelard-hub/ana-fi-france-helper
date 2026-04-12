@@ -22,6 +22,7 @@ const ProSettingsPage = lazy(() => import("@/pages/ProSettingsPage"));
 const InvoiceCreatorPage = lazy(() => import("@/pages/InvoiceCreatorPage"));
 const SmartDevisPage = lazy(() => import("@/pages/SmartDevisPage"));
 const QuoteToInvoicePage = lazy(() => import("@/pages/QuoteToInvoicePage"));
+const ImageQuoteToInvoicePage = lazy(() => import("@/pages/ImageQuoteToInvoicePage"));
 const DocumentsListPage = lazy(() => import("@/pages/DocumentsListPage"));
 const ArchiveAccountingPage = lazy(() => import("@/pages/ArchiveAccountingPage"));
 const ProAdminAssistantPage = lazy(() => import("@/pages/ProAdminAssistantPage"));
@@ -78,6 +79,7 @@ const AppRoutes = () => {
             <Route path="/pro/invoice-creator" element={<InvoiceCreatorPage />} />
             <Route path="/pro/smart-devis" element={<SmartDevisPage />} />
             <Route path="/pro/quote-to-invoice" element={<QuoteToInvoicePage />} />
+            <Route path="/pro/image-quote-to-invoice" element={<ImageQuoteToInvoicePage />} />
             <Route path="/pro/documents" element={<DocumentsListPage />} />
             <Route path="/pro/archive" element={<ArchiveAccountingPage />} />
             <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />

@@ -72,7 +72,7 @@ const InvoiceCreatorPage = () => {
             clientName: parsed.clientName || '',
             clientAddress: parsed.clientAddress || '',
             clientPhone: parsed.clientPhone || '',
-            objet: parsed.description || '',
+            descriptionChantier: parsed.description || '',
             items: parsed.items.map((it: any) => ({
               designation_fr: it.designation || '',
               designation_ar: '',

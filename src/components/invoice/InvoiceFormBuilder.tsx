@@ -564,16 +564,29 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       // STEP 2: Reset docNumber to auto placeholder
       setDocNumber(`${getDocPrefix(documentType)}AUTO`);
       
-      // NEVER auto-fill client fields — user must choose or register manually
-      setSelectedClientId('');
-      setSelectedChantierId('');
-      setClientName('');
-      setClientAddress('');
-      setClientPhone('');
-      setClientEmail('');
-      setClientSiren('');
-      setClientTvaIntra('');
-      setClientIsB2B(false);
+      // For image-quote flow, inject client fields from extracted data
+      if (prefillData.source === 'image_quote_to_invoice') {
+        setSelectedClientId('');
+        setSelectedChantierId('');
+        setClientName(prefillData.clientName || '');
+        setClientAddress(prefillData.clientAddress || '');
+        setClientPhone(prefillData.clientPhone || '');
+        setClientEmail(prefillData.clientEmail || '');
+        setClientSiren('');
+        setClientTvaIntra('');
+        setClientIsB2B(false);
+      } else {
+        // Other flows: user must choose or register manually
+        setSelectedClientId('');
+        setSelectedChantierId('');
+        setClientName('');
+        setClientAddress('');
+        setClientPhone('');
+        setClientEmail('');
+        setClientSiren('');
+        setClientTvaIntra('');
+        setClientIsB2B(false);
+      }
       if (prefillData.workSiteAddress) {
         setWorkSiteAddress(prefillData.workSiteAddress);
         setWorkSiteSameAsClient(false);

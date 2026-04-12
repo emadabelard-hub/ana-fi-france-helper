@@ -122,10 +122,26 @@ const ImageQuoteToInvoicePage = () => {
       if (data?.error) throw new Error(data.error);
       if (!data?.data) throw new Error('Aucune donnée extraite');
 
-      setExtractedData(data.data as NormalizedQuoteData);
+      const normalized = data.data as NormalizedQuoteData;
+
+      // Auto-redirect: write + navigate immediately, no verification step
+      if (normalized.items && normalized.items.length > 0) {
+        sessionStorage.setItem('imageQuoteToInvoiceData', JSON.stringify(normalized));
+        console.log('WRITE imageQuoteToInvoiceData (auto)', normalized);
+        toast({
+          title: isRTL ? "✅ تم التحليل!" : "✅ Analyse réussie!",
+          description: isRTL ? "جاري فتح الفاتورة..." : "Ouverture de la facture...",
+        });
+        navigate('/pro/invoice-creator?type=facture&source=image-quote');
+        return;
+      }
+
+      // Fallback: no items extracted
+      setExtractedData(normalized);
       toast({
-        title: isRTL ? "✅ تم التحليل!" : "✅ Analyse réussie!",
-        description: isRTL ? "البيانات جاهزة" : "Les données sont prêtes",
+        variant: "destructive",
+        title: isRTL ? "⚠️ بيانات ناقصة" : "⚠️ Données incomplètes",
+        description: isRTL ? "لم يتم استخراج أي عنصر" : "Aucun article extrait du document",
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur inconnue';

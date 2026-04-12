@@ -46,11 +46,12 @@ const ImageQuoteToInvoicePage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
       toast({
         variant: "destructive",
-        title: isRTL ? "صورة فقط" : "Image uniquement",
-        description: isRTL ? "يرجى تحميل صورة فقط" : "Veuillez télécharger une image (JPG, PNG)",
+        title: isRTL ? "صيغة غير مدعومة" : "Format non supporté",
+        description: isRTL ? "JPG, PNG, WEBP أو PDF فقط" : "Uniquement JPG, PNG, WEBP ou PDF",
       });
       return;
     }
@@ -67,7 +68,13 @@ const ImageQuoteToInvoicePage = () => {
     setUploadedFile(file);
     setError(null);
     setExtractedData(null);
-    setPreviewUrl(URL.createObjectURL(file));
+    setPreviewUrl(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
+
+    // Auto-trigger analysis immediately
+    setTimeout(() => {
+      const analyzeBtn = document.getElementById('auto-analyze-trigger');
+      analyzeBtn?.click();
+    }, 100);
   };
 
   const handleAnalyze = async () => {

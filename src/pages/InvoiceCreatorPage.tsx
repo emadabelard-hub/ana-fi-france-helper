@@ -56,46 +56,43 @@ const InvoiceCreatorPage = () => {
   const [showEducationModal, setShowEducationModal] = useState(false);
   // CRITICAL: Initialize prefillData SYNCHRONOUSLY to prevent draft restore race condition.
   // Do NOT remove storage keys here — defer cleanup to useEffect to survive React double-mount.
+  // Check ALL sources unconditionally — URL params (prefillSource) can be lost on mobile redirects.
   const [prefillData, setPrefillData] = useState<any>(() => {
-    // === Source 1: location.state (highest priority) ===
-    const stateData = (location.state as any)?.smartDevisData;
+    // === Source 1: location.state (highest priority — works for both Smart Devis and Quote-to-Invoice) ===
+    const stateData = (location.state as any)?.smartDevisData || (location.state as any)?.quoteToInvoiceData;
     if (stateData && stateData.items?.length > 0) {
-      console.log('[InvoiceCreator] Prefill from location.state:', stateData.items.length, 'items');
+      console.log('[InvoiceCreator] Prefill from location.state:', stateData.items.length, 'items, source:', stateData.source);
       return stateData;
     }
 
-    // === Source 2: sessionStorage 'smartDevisData' ===
-    if (isSmartDevisFlow || prefillSource === 'smart') {
-      for (const storage of [sessionStorage, localStorage]) {
-        try {
-          const raw = storage.getItem('smartDevisData');
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (parsed?.items?.length > 0) {
-              console.log('[InvoiceCreator] Prefill from', storage === sessionStorage ? 'sessionStorage' : 'localStorage', '(smartDevisData):', parsed.items.length, 'items');
-              return parsed;
-            }
-          }
-        } catch (e) {
-          console.error('Failed to parse smartDevisData:', e);
-        }
-      }
-    }
-
-    // === Source 3: sessionStorage 'quoteToInvoiceData' ===
-    if (prefillSource === 'quote') {
+    // === Source 2: sessionStorage/localStorage 'smartDevisData' (always check, regardless of URL params) ===
+    for (const storage of [sessionStorage, localStorage]) {
       try {
-        const raw = sessionStorage.getItem('quoteToInvoiceData');
+        const raw = storage.getItem('smartDevisData');
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed) {
-            console.log('[InvoiceCreator] Prefill from sessionStorage (quoteToInvoiceData)');
+          if (parsed?.items?.length > 0) {
+            console.log('[InvoiceCreator] Prefill from', storage === sessionStorage ? 'sessionStorage' : 'localStorage', '(smartDevisData):', parsed.items.length, 'items');
             return parsed;
           }
         }
       } catch (e) {
-        console.error('Failed to parse quoteToInvoiceData:', e);
+        console.error('Failed to parse smartDevisData:', e);
       }
+    }
+
+    // === Source 3: sessionStorage 'quoteToInvoiceData' (always check) ===
+    try {
+      const raw = sessionStorage.getItem('quoteToInvoiceData');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.items?.length > 0) {
+          console.log('[InvoiceCreator] Prefill from sessionStorage (quoteToInvoiceData):', parsed.items.length, 'items');
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse quoteToInvoiceData:', e);
     }
 
     return null;

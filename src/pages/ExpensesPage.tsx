@@ -214,10 +214,13 @@ const ExpensesPage = () => {
   const totalURSSAF = Math.round(beneficeBrut * (urssafRate / 100) * 100) / 100;
   const estimatedIS = Math.max(0, Math.round((beneficeBrut - totalURSSAF) * (isRate / 100) * 100) / 100);
 
-  // Bénéfice net = encaissé - TVA à payer - dépenses - URSSAF - IS
-  // Ne peut jamais dépasser l'encaissement
-  const rawNetProfit = totalCollected - tvaAPayer - totalExpenses - totalURSSAF - estimatedIS;
-  const netProfit = Math.min(rawNetProfit, totalCollected);
+   // Bénéfice avant impôt = encaissé - TVA - URSSAF - dépenses
+   const profitBeforeIS = totalCollected - tvaAPayer - totalURSSAF - totalExpenses;
+
+   // Bénéfice net estimé = encaissé - TVA à payer - dépenses - URSSAF - IS
+   // Ne peut jamais dépasser l'encaissement
+   const rawNetProfit = totalCollected - tvaAPayer - totalExpenses - totalURSSAF - estimatedIS;
+   const netProfit = Math.min(rawNetProfit, totalCollected);
 
   const handleExportCSV = () => {
     if (filtered.length === 0) return;

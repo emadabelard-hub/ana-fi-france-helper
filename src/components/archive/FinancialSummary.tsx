@@ -37,7 +37,10 @@ const FinancialSummary = ({
   const urssafEstime = Math.round(beneficeBrutHT * (urssafRate / 100) * 100) / 100;
   const isEstime = Math.max(0, Math.round((beneficeBrutHT - urssafEstime) * (isRate / 100) * 100) / 100);
 
-  // Bénéfice réel = encaissé - TVA à payer - dépenses - URSSAF - IS
+  // Bénéfice avant impôt = encaissé - TVA - URSSAF - dépenses
+  const beneficeAvantImpot = tresorerieEncaissee - tvaAPayer - urssafEstime - depensesHT;
+
+  // Bénéfice net estimé = encaissé - TVA à payer - dépenses - URSSAF - IS
   // Ne peut jamais dépasser la trésorerie encaissée
   const rawBenefice = tresorerieEncaissee - tvaAPayer - depensesHT - urssafEstime - isEstime;
   const benefice = Math.min(rawBenefice, tresorerieEncaissee);
@@ -45,7 +48,8 @@ const FinancialSummary = ({
   const realRows = [
     { label: "Chiffre d'affaires (HT)", value: caHT, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
     { label: 'Dépenses (HT)', value: depensesHT, icon: TrendingDown, color: 'text-red-400', bg: 'bg-red-500/10' },
-    { label: 'Bénéfice (HT)', value: benefice, icon: Wallet, color: benefice >= 0 ? 'text-emerald-400' : 'text-red-400', bg: benefice >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' },
+    { label: 'Bénéfice avant impôt', value: beneficeAvantImpot, icon: Wallet, color: beneficeAvantImpot >= 0 ? 'text-blue-400' : 'text-red-400', bg: beneficeAvantImpot >= 0 ? 'bg-blue-500/10' : 'bg-red-500/10' },
+    { label: 'Bénéfice net estimé', value: benefice, icon: Wallet, color: benefice >= 0 ? 'text-emerald-400' : 'text-red-400', bg: benefice >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' },
     { label: 'Trésorerie encaissée', value: tresorerieEncaissee, icon: Banknote, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
     { label: 'TVA collectée', value: tvaCollectee, icon: Receipt, color: 'text-blue-400', bg: 'bg-blue-500/10' },
     { label: 'TVA déductible', value: tvaDeductible, icon: Receipt, color: 'text-violet-400', bg: 'bg-violet-500/10' },

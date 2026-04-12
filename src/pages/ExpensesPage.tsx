@@ -182,14 +182,22 @@ const ExpensesPage = () => {
     return rows.filter(r => new Date(r.date) >= start);
   }, [rows, periodFilter]);
 
-  // TVA calculations based on period filter
+  // TVA robuste : TTC - HT si les deux existent, sinon fallback TTC * 0.1667
+  const computeRowTva = (r: UnifiedRow) => {
+    if (r.tvaAmount > 0) return r.tvaAmount;
+    if (r.amountHT > 0 && r.amount > r.amountHT) return Math.round((r.amount - r.amountHT) * 100) / 100;
+    if (r.amountHT === 0 && r.amount > 0) return Math.round(r.amount * 0.1667 * 100) / 100;
+    return 0;
+  };
+
   const tvaCollectee = useMemo(() =>
-    filtered.filter(r => r.type === 'facture' && r.status === 'finalized').reduce((s, r) => s + r.tvaAmount, 0),
+    filtered.filter(r => r.type === 'facture' && r.status === 'finalized').reduce((s, r) => s + computeRowTva(r), 0),
     [filtered]);
   const tvaDeductible = useMemo(() =>
     filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.tvaAmount, 0),
     [filtered]);
   const tvaNet = tvaCollectee - tvaDeductible;
+  const tvaAPayer = Math.max(0, tvaNet);
 
   // URSSAF calculations
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
@@ -200,12 +208,16 @@ const ExpensesPage = () => {
   const filteredExpensesHT = useMemo(() =>
     filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.amountHT, 0),
     [filtered]);
-  const totalURSSAF = filteredIncomeHT * (urssafRate / 100);
-  const estimatedIS = (filteredIncomeHT - filteredExpensesHT - totalURSSAF) * (isRate / 100);
-  const realEstimatedIS = Math.max(0, estimatedIS); // IS can't be negative
 
-  // FINAL Net Profit = Revenue HT - Expenses - URSSAF - Estimated IS
-  const netProfit = filteredIncomeHT - totalExpenses - totalURSSAF - realEstimatedIS;
+  // URSSAF sur bénéfice brut (CA HT - dépenses), jamais négatif
+  const beneficeBrut = Math.max(0, filteredIncomeHT - filteredExpensesHT);
+  const totalURSSAF = Math.round(beneficeBrut * (urssafRate / 100) * 100) / 100;
+  const estimatedIS = Math.max(0, Math.round((beneficeBrut - totalURSSAF) * (isRate / 100) * 100) / 100);
+
+  // Bénéfice net = encaissé - TVA à payer - dépenses - URSSAF - IS
+  // Ne peut jamais dépasser l'encaissement
+  const rawNetProfit = totalCollected - tvaAPayer - totalExpenses - totalURSSAF - estimatedIS;
+  const netProfit = Math.min(rawNetProfit, totalCollected);
 
   const handleExportCSV = () => {
     if (filtered.length === 0) return;

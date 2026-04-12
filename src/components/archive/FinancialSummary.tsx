@@ -30,11 +30,17 @@ const FinancialSummary = ({
   debugPaidCount = 0, debugUnpaidCount = 0,
   tresorerieEncaissee = 0,
 }: FinancialSummaryProps) => {
-  const benefice = caHT - depensesHT;
   const tvaAPayer = Math.max(0, tvaCollectee - tvaDeductible);
 
-  const urssafEstime = benefice > 0 ? Math.round(benefice * (urssafRate / 100) * 100) / 100 : 0;
-  const isEstime = benefice > 0 ? Math.round(benefice * (isRate / 100) * 100) / 100 : 0;
+  // Bénéfice brut HT (pour base URSSAF/IS)
+  const beneficeBrutHT = Math.max(0, caHT - depensesHT);
+  const urssafEstime = Math.round(beneficeBrutHT * (urssafRate / 100) * 100) / 100;
+  const isEstime = Math.max(0, Math.round((beneficeBrutHT - urssafEstime) * (isRate / 100) * 100) / 100);
+
+  // Bénéfice réel = encaissé - TVA à payer - dépenses - URSSAF - IS
+  // Ne peut jamais dépasser la trésorerie encaissée
+  const rawBenefice = tresorerieEncaissee - tvaAPayer - depensesHT - urssafEstime - isEstime;
+  const benefice = Math.min(rawBenefice, tresorerieEncaissee);
 
   const realRows = [
     { label: "Chiffre d'affaires (HT)", value: caHT, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },

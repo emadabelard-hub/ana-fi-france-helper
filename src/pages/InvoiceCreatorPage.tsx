@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, PenLine, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -12,7 +12,6 @@ import SecurityBadge from '@/components/shared/SecurityBadge';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
-import { useToast } from '@/hooks/use-toast';
 import { clearCurrentDocument, clearDraft, loadCurrentDocument } from '@/lib/invoiceDraftStorage';
 import {
   Dialog,
@@ -37,15 +36,12 @@ const InvoiceCreatorPage = () => {
   const { user } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   // Get document type from URL or show modal
   const urlDocType = searchParams.get('type') as 'devis' | 'facture' | null;
   const prefillSource = searchParams.get('prefill');
-  const smartDevisReturnState = (location.state as { smartDevisReturnState?: { restoreWizard?: boolean; wizardSnapshot?: any } } | null)?.smartDevisReturnState;
-  const smartDevisDataFromState = (location.state as { smartDevisData?: any } | null)?.smartDevisData;
-  const isSmartDevisFlow = prefillSource === 'smart' || !!smartDevisReturnState || !!smartDevisDataFromState;
+  const isSmartDevisFlow = prefillSource === 'smart';
+  const expectsStoredPrefill = prefillSource === 'quote' || isSmartDevisFlow;
   const resumedDocumentType = !urlDocType && !prefillSource
     ? loadCurrentDocument()?.documentType ?? null
     : null;
@@ -54,55 +50,35 @@ const InvoiceCreatorPage = () => {
   const [showTypeModal, setShowTypeModal] = useState(!urlDocType && !resumedDocumentType);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
-  // CRITICAL: Initialize prefillData SYNCHRONOUSLY to prevent draft restore race condition.
-  // Check ALL sessionStorage sources unconditionally — URL params can be lost on mobile redirects.
+  // Initialize prefillData synchronously so it is available on first render.
   const [prefillData] = useState<any>(() => {
-    // === Source 1: sessionStorage 'quoteToInvoiceData' (Quote → Invoice flow) ===
     try {
       const raw = sessionStorage.getItem('quoteToInvoiceData');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.items?.length > 0) {
-          console.log('[InvoiceCreator] ✅ Prefill from quoteToInvoiceData:', parsed.items.length, 'items');
-          // Clean up immediately after reading to prevent stale reuse
-          sessionStorage.removeItem('quoteToInvoiceData');
-          return parsed;
-        }
+      if (!raw) {
+        console.log('[InvoiceCreator] No quoteToInvoiceData found in sessionStorage');
+        return null;
       }
-    } catch (e) {
-      console.error('[InvoiceCreator] Failed to parse quoteToInvoiceData:', e);
-    }
 
-    // === Source 2: sessionStorage 'smartDevisData' (Smart Devis flow) ===
-    try {
-      const raw = sessionStorage.getItem('smartDevisData');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.items?.length > 0) {
-          console.log('[InvoiceCreator] ✅ Prefill from smartDevisData:', parsed.items.length, 'items');
-          sessionStorage.removeItem('smartDevisData');
-          return parsed;
-        }
+      const parsed = JSON.parse(raw);
+      if (parsed?.items?.length > 0) {
+        console.log('[InvoiceCreator] ✅ Prefill from quoteToInvoiceData:', parsed.items.length, 'items');
+        sessionStorage.removeItem('quoteToInvoiceData');
+        return parsed;
       }
-    } catch (e) {
-      console.error('[InvoiceCreator] Failed to parse smartDevisData:', e);
+
+      console.warn('[InvoiceCreator] quoteToInvoiceData is present but invalid:', parsed);
+    } catch (error) {
+      console.error('[InvoiceCreator] Failed to parse quoteToInvoiceData:', error);
     }
 
-    // === Source 3: location.state fallback (for in-app navigations) ===
-    const stateData = (location.state as any)?.smartDevisData || (location.state as any)?.quoteToInvoiceData;
-    if (stateData?.items?.length > 0) {
-      console.log('[InvoiceCreator] ✅ Prefill from location.state:', stateData.items.length, 'items');
-      return stateData;
-    }
-
-    console.log('[InvoiceCreator] No prefill data found');
+    console.log('[InvoiceCreator] No valid quote data found');
     return null;
   });
 
-  // No deferred cleanup needed — sessionStorage keys are cleared immediately after reading above.
-  
+  const missingQuoteData = expectsStoredPrefill && !prefillData;
+
   // Navigation guard: block leaving when a document type is selected (form is active)
-  const hasUnsavedWork = !!documentType && !isSmartDevisFlow;
+  const hasUnsavedWork = !!documentType && !missingQuoteData;
   const { showLeaveDialog, requestLeave, confirmLeave, cancelLeave } = useNavigationGuard(hasUnsavedWork);
   
   // Sync URL with document type (no more prefill loading here — done synchronously above)
@@ -143,8 +119,6 @@ const InvoiceCreatorPage = () => {
   
   
   const buildSmartDevisReturnState = () => {
-    if (smartDevisReturnState) return smartDevisReturnState;
-
     try {
       const raw = sessionStorage.getItem('smartDevisWizardState');
       const wizardSnapshot = raw ? JSON.parse(raw) : null;
@@ -185,7 +159,7 @@ const InvoiceCreatorPage = () => {
   };
 
   const handleFormBack = () => {
-    if (isSmartDevisFlow) {
+    if (expectsStoredPrefill) {
       handleNavigateBack();
       return;
     }
@@ -260,7 +234,16 @@ const InvoiceCreatorPage = () => {
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto pb-4">
-        {documentType ? (
+        {missingQuoteData ? (
+          <div className="flex items-center justify-center h-full">
+            <p className={cn(
+              "text-muted-foreground",
+              isRTL && "font-cairo"
+            )}>
+              No quote data found
+            </p>
+          </div>
+        ) : documentType ? (
           <InvoiceFormBuilder 
             documentType={documentType}
             onBack={handleFormBack}
@@ -270,7 +253,7 @@ const InvoiceCreatorPage = () => {
               setSearchParams((prev) => {
                 const next = new URLSearchParams(prev);
                 next.set('type', type);
-                if (isSmartDevisFlow) next.set('prefill', 'smart');
+                if (prefillSource) next.set('prefill', prefillSource);
                 else next.delete('prefill');
                 return next;
               });
@@ -295,6 +278,10 @@ const InvoiceCreatorPage = () => {
           if (!open && !documentType) {
             if (isSmartDevisFlow) {
               navigate('/pro/smart-devis', { state: buildSmartDevisReturnState() });
+              return;
+            }
+            if (prefillSource === 'quote') {
+              handleNavigateBack();
               return;
             }
             // Don't auto-redirect to home — keep the modal open or let user use back button

@@ -99,18 +99,7 @@ const InvoiceCreatorPage = () => {
     return null;
   });
 
-  // Cleanup storage AFTER prefillData is confirmed loaded (survives React double-mount)
-  useEffect(() => {
-    if (!prefillData) return;
-    const cleanup = setTimeout(() => {
-      try {
-        sessionStorage.removeItem('smartDevisData');
-        localStorage.removeItem('smartDevisData');
-        sessionStorage.removeItem('quoteToInvoiceData');
-      } catch { /* ignore */ }
-    }, 2000);
-    return () => clearTimeout(cleanup);
-  }, [prefillData]);
+  // No deferred cleanup needed — sessionStorage keys are cleared immediately after reading above.
   
   // Navigation guard: block leaving when a document type is selected (form is active)
   const hasUnsavedWork = !!documentType && !isSmartDevisFlow;

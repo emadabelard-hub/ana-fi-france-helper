@@ -219,7 +219,8 @@ const InvoiceCreatorPage = () => {
       </div>
     );
   }
-
+  return (
+    <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden">
       {/* Header */}
       <section className={cn(
         "flex items-center gap-4 py-4 shrink-0",

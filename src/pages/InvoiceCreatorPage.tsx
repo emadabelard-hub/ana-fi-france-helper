@@ -219,33 +219,8 @@ const InvoiceCreatorPage = () => {
       </div>
     );
   }
-
-  // Debug state for visible mobile debugging
-  const debugLines: string[] = [];
-  {
-    if (prefillData) {
-      debugLines.push(`PREFILL LOADED ✅ source=${prefillData.source}`);
-      debugLines.push(`  items: ${prefillData.items?.length ?? 0}, client: ${prefillData.clientName ?? 'n/a'}`);
-      prefillData.items?.slice(0, 2).forEach((it: any, i: number) => {
-        const desig = it.designation_fr || it.designation || '';
-        debugLines.push(`  [${i}] ${desig.slice(0, 40)} | qty=${it.quantity} ${it.unit} | €${it.unitPrice}`);
-      });
-    } else {
-      debugLines.push('PREFILL ❌ null (no data was in sessionStorage at mount)');
-      debugLines.push(`sessionStorage keys now: [${Object.keys(sessionStorage).join(', ')}]`);
-    }
-    debugLines.push(`documentType: ${documentType ?? 'null'} | urlDocType: ${urlDocType ?? 'null'}`);
-    debugLines.push(`prefillSource: ${prefillSource ?? 'null'} | source: ${urlSource ?? 'null'} | missingQuoteData: ${missingQuoteData}`);
-    debugLines.push(`isImageQuoteFlow: ${isImageQuoteFlow}`);
-  }
-
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden">
-      {/* Temporary Debug Box */}
-      <div className="bg-yellow-100 dark:bg-yellow-900 border border-yellow-400 text-[10px] font-mono p-2 rounded m-2 max-h-40 overflow-auto shrink-0 z-50">
-        <strong>🔍 DEBUG (temp)</strong>
-        {debugLines.map((l, i) => <div key={i}>{l}</div>)}
-      </div>
       {/* Header */}
       <section className={cn(
         "flex items-center gap-4 py-4 shrink-0",

@@ -180,16 +180,23 @@ const QuoteToInvoicePage = () => {
       source: 'quote_to_invoice',
     };
 
-    // Clear any stale invoice draft to prevent ghost data overwriting fresh results
+    // Clear ALL stale data to prevent ghost overwrites
     try {
       localStorage.removeItem('invoice_draft_v1');
       sessionStorage.removeItem('invoice_draft_v1');
+      localStorage.removeItem('smartDevisData');
+      sessionStorage.removeItem('smartDevisData');
+      // Clear current document state too
+      localStorage.removeItem('current_invoice_document');
+      sessionStorage.removeItem('current_invoice_document');
     } catch { /* ignore */ }
 
-    // Store in sessionStorage as fallback (in case location.state is lost on mobile)
-    sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefillPayload));
+    // Store in sessionStorage — single source of truth
+    const payload = JSON.stringify(prefillPayload);
+    sessionStorage.setItem('quoteToInvoiceData', payload);
+    console.log('[QuoteToInvoice] Stored prefill data:', prefillPayload.items?.length, 'items');
     
-    // Navigate with BOTH location.state AND sessionStorage for maximum reliability
+    // Navigate — pass state as backup but sessionStorage is primary
     navigate('/pro/invoice-creator?type=facture&prefill=quote', {
       state: { quoteToInvoiceData: prefillPayload },
     });

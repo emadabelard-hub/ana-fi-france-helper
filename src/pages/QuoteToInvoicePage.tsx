@@ -175,11 +175,24 @@ const QuoteToInvoicePage = () => {
   const handleCreateInvoice = () => {
     if (!extractedData) return;
 
-    // Store extracted data in sessionStorage for the invoice form to pick up
-    sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(extractedData));
+    const prefillPayload = {
+      ...extractedData,
+      source: 'quote_to_invoice',
+    };
+
+    // Clear any stale invoice draft to prevent ghost data overwriting fresh results
+    try {
+      localStorage.removeItem('invoice_draft_v1');
+      sessionStorage.removeItem('invoice_draft_v1');
+    } catch { /* ignore */ }
+
+    // Store in sessionStorage as fallback (in case location.state is lost on mobile)
+    sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefillPayload));
     
-    // Navigate to invoice creator with pre-filled data flag
-    navigate('/pro/invoice-creator?type=facture&prefill=quote');
+    // Navigate with BOTH location.state AND sessionStorage for maximum reliability
+    navigate('/pro/invoice-creator?type=facture&prefill=quote', {
+      state: { quoteToInvoiceData: prefillPayload },
+    });
   };
 
   const handleReset = () => {

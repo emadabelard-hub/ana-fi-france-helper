@@ -661,13 +661,27 @@ const ExpensesPage = () => {
           </CardContent>
         </Card>
 
+        <Card className={cn('border-indigo-500/20', profitBeforeIS >= 0 ? 'bg-indigo-500/5' : 'bg-red-500/5')}>
+          <CardContent className="p-4 text-center">
+            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2", profitBeforeIS >= 0 ? "bg-indigo-500/10" : "bg-red-500/10")}>
+              <Wallet className={cn("h-5 w-5", profitBeforeIS >= 0 ? "text-indigo-400" : "text-red-400")} />
+            </div>
+            <p className={cn("text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1", isRTL && "font-cairo")}>
+              {isRTL ? 'الربح قبل الضرائب' : 'Bénéfice avant impôt'}
+            </p>
+            <p className={cn("text-lg font-black", profitBeforeIS >= 0 ? "text-indigo-400" : "text-red-400")}>
+              {formatCurrency(profitBeforeIS)}
+            </p>
+          </CardContent>
+        </Card>
+
         <Card className={cn('border-blue-500/20', netProfit >= 0 ? 'bg-blue-500/5' : 'bg-red-500/5')}>
           <CardContent className="p-4 text-center">
             <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2", netProfit >= 0 ? "bg-blue-500/10" : "bg-red-500/10")}>
               <Wallet className={cn("h-5 w-5", netProfit >= 0 ? "text-blue-400" : "text-red-400")} />
             </div>
             <p className={cn("text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1", isRTL && "font-cairo")}>
-              {isRTL ? 'صافي الربح' : 'Bénéfice Net'}
+              {isRTL ? 'صافي الربح المقدّر' : 'Bénéfice net estimé'}
             </p>
             <p className={cn("text-lg font-black", netProfit >= 0 ? "text-blue-400" : "text-red-400")}>
               {formatCurrency(netProfit)}

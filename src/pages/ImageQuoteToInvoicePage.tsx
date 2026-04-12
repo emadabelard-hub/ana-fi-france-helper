@@ -213,7 +213,7 @@ const ImageQuoteToInvoicePage = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
                 onChange={handleFileSelect}
                 className="hidden"
               />
@@ -223,9 +223,9 @@ const ImageQuoteToInvoicePage = () => {
                 </div>
                 <div className="text-center">
                   <p className="font-semibold text-foreground">
-                    {isRTL ? 'اضغط لتحميل صورة الدوفي' : 'Cliquez pour uploader l\'image du devis'}
+                    {isRTL ? 'اضغط لتحميل صورة أو PDF الدوفي' : 'Cliquez pour uploader le devis (image ou PDF)'}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">JPG, PNG, WEBP</p>
+                  <p className="text-sm text-muted-foreground mt-1">JPG, PNG, WEBP, PDF</p>
                 </div>
               </div>
             </label>

@@ -184,8 +184,6 @@ const SmartDevisPage = () => {
     try {
       localStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
       sessionStorage.removeItem(SMART_DEVIS_WIZARD_STATE_KEY);
-      localStorage.removeItem('smartDevisData');
-      sessionStorage.removeItem('smartDevisData');
       localStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
       sessionStorage.removeItem(SMART_DEVIS_SKIP_RESTORE_ONCE_KEY);
     } catch {
@@ -1319,12 +1317,11 @@ const SmartDevisPage = () => {
         sessionStorage.removeItem('invoice_draft_v1');
       } catch { /* ignore */ }
 
-      // Persist data + wizard snapshot as fallback for navigation state loss
+      // Persist prefill + wizard snapshot before navigation
       try {
         const prefillJson = JSON.stringify(prefillData);
         const snapshotJson = JSON.stringify(wizardSnapshot);
-        sessionStorage.setItem('smartDevisData', prefillJson);
-        localStorage.setItem('smartDevisData', prefillJson);
+        sessionStorage.setItem('quoteToInvoiceData', prefillJson);
         sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, snapshotJson);
         localStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, snapshotJson);
       } catch (e) {
@@ -1335,15 +1332,7 @@ const SmartDevisPage = () => {
       setChatMessages([]);
       setChatInput('');
 
-      navigate('/pro/invoice-creator?type=devis&prefill=smart', {
-        state: {
-          smartDevisData: prefillData,
-          smartDevisReturnState: {
-            restoreWizard: true,
-            wizardSnapshot: { ...wizardSnapshot, chatMessages: [] },
-          },
-        },
-      });
+      navigate('/pro/invoice-creator?type=devis&prefill=smart');
     } catch (err: any) {
       const technicalMessage = err?.message || err?.context?.body || String(err);
       console.error('[SmartDevis->InvoiceTransfer] Failed to transfer data:', err);

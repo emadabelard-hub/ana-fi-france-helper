@@ -184,8 +184,6 @@ const QuoteToInvoicePage = () => {
     try {
       localStorage.removeItem('invoice_draft_v1');
       sessionStorage.removeItem('invoice_draft_v1');
-      localStorage.removeItem('smartDevisData');
-      sessionStorage.removeItem('smartDevisData');
       // Clear current document state too
       localStorage.removeItem('current_invoice_document');
       sessionStorage.removeItem('current_invoice_document');
@@ -196,10 +194,7 @@ const QuoteToInvoicePage = () => {
     sessionStorage.setItem('quoteToInvoiceData', payload);
     console.log('[QuoteToInvoice] Stored prefill data:', prefillPayload.items?.length, 'items');
     
-    // Navigate — pass state as backup but sessionStorage is primary
-    navigate('/pro/invoice-creator?type=facture&prefill=quote', {
-      state: { quoteToInvoiceData: prefillPayload },
-    });
+    navigate('/pro/invoice-creator?type=facture&prefill=quote');
   };
 
   const handleReset = () => {

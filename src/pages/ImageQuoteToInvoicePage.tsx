@@ -249,7 +249,7 @@ const ImageQuoteToInvoicePage = () => {
 
               {/* Analyze Button */}
               {!extractedData && !error && (
-                <Button onClick={handleAnalyze} disabled={isProcessing} className="w-full" size="lg">
+                <Button id="auto-analyze-trigger" onClick={handleAnalyze} disabled={isProcessing} className="w-full" size="lg">
                   {isProcessing ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />

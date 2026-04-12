@@ -214,10 +214,13 @@ const ExpensesPage = () => {
   const totalURSSAF = Math.round(beneficeBrut * (urssafRate / 100) * 100) / 100;
   const estimatedIS = Math.max(0, Math.round((beneficeBrut - totalURSSAF) * (isRate / 100) * 100) / 100);
 
-  // Bénéfice net = encaissé - TVA à payer - dépenses - URSSAF - IS
-  // Ne peut jamais dépasser l'encaissement
-  const rawNetProfit = totalCollected - tvaAPayer - totalExpenses - totalURSSAF - estimatedIS;
-  const netProfit = Math.min(rawNetProfit, totalCollected);
+   // Bénéfice avant impôt = encaissé - TVA - URSSAF - dépenses
+   const profitBeforeIS = totalCollected - tvaAPayer - totalURSSAF - totalExpenses;
+
+   // Bénéfice net estimé = encaissé - TVA à payer - dépenses - URSSAF - IS
+   // Ne peut jamais dépasser l'encaissement
+   const rawNetProfit = totalCollected - tvaAPayer - totalExpenses - totalURSSAF - estimatedIS;
+   const netProfit = Math.min(rawNetProfit, totalCollected);
 
   const handleExportCSV = () => {
     if (filtered.length === 0) return;
@@ -621,7 +624,7 @@ const ExpensesPage = () => {
       </Card>
 
       {/* 4 Large Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card className="border-emerald-500/20 bg-emerald-500/5">
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-2">
@@ -658,13 +661,27 @@ const ExpensesPage = () => {
           </CardContent>
         </Card>
 
+        <Card className={cn('border-indigo-500/20', profitBeforeIS >= 0 ? 'bg-indigo-500/5' : 'bg-red-500/5')}>
+          <CardContent className="p-4 text-center">
+            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2", profitBeforeIS >= 0 ? "bg-indigo-500/10" : "bg-red-500/10")}>
+              <Wallet className={cn("h-5 w-5", profitBeforeIS >= 0 ? "text-indigo-400" : "text-red-400")} />
+            </div>
+            <p className={cn("text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1", isRTL && "font-cairo")}>
+              {isRTL ? 'الربح قبل الضرائب' : 'Bénéfice avant impôt'}
+            </p>
+            <p className={cn("text-lg font-black", profitBeforeIS >= 0 ? "text-indigo-400" : "text-red-400")}>
+              {formatCurrency(profitBeforeIS)}
+            </p>
+          </CardContent>
+        </Card>
+
         <Card className={cn('border-blue-500/20', netProfit >= 0 ? 'bg-blue-500/5' : 'bg-red-500/5')}>
           <CardContent className="p-4 text-center">
             <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2", netProfit >= 0 ? "bg-blue-500/10" : "bg-red-500/10")}>
               <Wallet className={cn("h-5 w-5", netProfit >= 0 ? "text-blue-400" : "text-red-400")} />
             </div>
             <p className={cn("text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1", isRTL && "font-cairo")}>
-              {isRTL ? 'صافي الربح' : 'Bénéfice Net'}
+              {isRTL ? 'صافي الربح المقدّر' : 'Bénéfice net estimé'}
             </p>
             <p className={cn("text-lg font-black", netProfit >= 0 ? "text-blue-400" : "text-red-400")}>
               {formatCurrency(netProfit)}

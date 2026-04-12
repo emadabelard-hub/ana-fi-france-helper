@@ -46,12 +46,53 @@ const InvoiceCreatorPage = () => {
     ? loadCurrentDocument()?.documentType ?? null
     : null;
   
+  const urlSource = searchParams.get('source');
+  const isImageQuoteFlow = urlSource === 'image-quote';
+
   const [documentType, setDocumentType] = useState<'devis' | 'facture' | null>(urlDocType ?? resumedDocumentType);
   const [showTypeModal, setShowTypeModal] = useState(!urlDocType && !resumedDocumentType);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
   // Initialize prefillData synchronously so it is available on first render.
   const [prefillData] = useState<any>(() => {
+    // --- NEW: Image Quote To Invoice flow ---
+    if (isImageQuoteFlow) {
+      try {
+        const raw = sessionStorage.getItem('imageQuoteToInvoiceData');
+        if (!raw) {
+          console.log('NO imageQuoteToInvoiceData FOUND');
+          return null;
+        }
+        const parsed = JSON.parse(raw);
+        console.log('READ imageQuoteToInvoiceData', parsed);
+        if (parsed?.items?.length > 0) {
+          // Transform to InvoiceFormBuilder expected shape
+          const transformed = {
+            source: 'image_quote_to_invoice',
+            clientName: parsed.clientName || '',
+            clientAddress: parsed.clientAddress || '',
+            clientPhone: parsed.clientPhone || '',
+            objet: parsed.description || '',
+            items: parsed.items.map((it: any) => ({
+              designation_fr: it.designation || '',
+              designation_ar: '',
+              quantity: Number(it.quantity) || 1,
+              unit: it.unit || 'forfait',
+              unitPrice: Number(it.unitPrice) || 0,
+            })),
+            notes: '',
+          };
+          console.log('[InvoiceCreator] ✅ Prefill from imageQuoteToInvoiceData:', transformed.items.length, 'items');
+          sessionStorage.removeItem('imageQuoteToInvoiceData');
+          return transformed;
+        }
+      } catch (error) {
+        console.error('[InvoiceCreator] Failed to parse imageQuoteToInvoiceData:', error);
+      }
+      return null;
+    }
+
+    // --- EXISTING: quoteToInvoiceData flow ---
     try {
       const raw = sessionStorage.getItem('quoteToInvoiceData');
       if (!raw) {
@@ -77,7 +118,7 @@ const InvoiceCreatorPage = () => {
     return null;
   });
 
-  const missingQuoteData = expectsStoredPrefill && !prefillData;
+  const missingQuoteData = (expectsStoredPrefill || isImageQuoteFlow) && !prefillData;
 
   // Navigation guard: block leaving when a document type is selected (form is active)
   const hasUnsavedWork = !!documentType && !missingQuoteData;

@@ -90,30 +90,41 @@ const ImageQuoteToInvoicePage = () => {
     setError(null);
 
     try {
-      // Read file as base64
-      const reader = new FileReader();
-      const fullBase64 = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(uploadedFile);
-      });
+      const isPdf = uploadedFile.type === 'application/pdf';
+      let body: Record<string, string>;
 
-      let base64Data = fullBase64.split(',')[1];
-      let mimeType = uploadedFile.type;
-
-      // Compress image
-      if (isImageData(fullBase64)) {
-        try {
-          const compressed = await compressImage(fullBase64);
-          base64Data = compressed.split(',')[1];
-          mimeType = 'image/jpeg';
-        } catch {
-          // use original
+      if (isPdf) {
+        // Extract text from PDF client-side
+        const reader = new FileReader();
+        const fullBase64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(uploadedFile);
+        });
+        const pdfText = await extractTextFromPDF(fullBase64);
+        body = { pdfText, mimeType: 'application/pdf' };
+      } else {
+        // Image: compress and send as base64
+        const reader = new FileReader();
+        const fullBase64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(uploadedFile);
+        });
+        let base64Data = fullBase64.split(',')[1];
+        let mimeType = uploadedFile.type;
+        if (isImageData(fullBase64)) {
+          try {
+            const compressed = await compressImage(fullBase64);
+            base64Data = compressed.split(',')[1];
+            mimeType = 'image/jpeg';
+          } catch { /* use original */ }
         }
+        body = { imageBase64: base64Data, mimeType };
       }
 
       const { data, error: fnError } = await supabase.functions.invoke('image-quote-extract', {
-        body: { imageBase64: base64Data, mimeType },
+        body,
       });
 
       if (fnError) {

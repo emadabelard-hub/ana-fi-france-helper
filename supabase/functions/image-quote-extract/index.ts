@@ -79,13 +79,15 @@ N'invente RIEN. Extrais uniquement ce qui est visible sur le document.`;
           { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: [
-              { type: "text", text: "Analyse cette image de devis et extrais toutes les données." },
-              {
-                type: "image_url",
-                image_url: { url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}` },
-              },
-            ],
+            content: pdfText
+              ? [{ type: "text", text: `Analyse ce texte extrait d'un devis PDF et extrais toutes les données :\n\n${pdfText}` }]
+              : [
+                  { type: "text", text: "Analyse cette image de devis et extrais toutes les données." },
+                  {
+                    type: "image_url",
+                    image_url: { url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}` },
+                  },
+                ],
           },
         ],
         tools: [

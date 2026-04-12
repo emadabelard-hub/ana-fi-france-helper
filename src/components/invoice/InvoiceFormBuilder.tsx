@@ -93,16 +93,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const invoiceRef = useRef<HTMLDivElement>(null);
   const SAFETY_BLOCK_MESSAGE = 'Erreur de calcul – document bloqué pour sécurité';
   
-  // Form state
+  // Ref to track if prefill has been applied (prevents double-application)
+  const prefillAppliedRef = useRef(false);
+
+  // Form state — initialize directly from prefillData to avoid effect race conditions
+  const isImageQuotePrefill = prefillData?.source === 'image_quote_to_invoice';
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedChantierId, setSelectedChantierId] = useState('');
   const [clientsList, setClientsList] = useState<Array<{ id: string; name: string; client_type: string; company_name: string | null; address: string | null; street: string | null; postal_code: string | null; city: string | null; contact_phone: string | null; contact_email: string | null; siret: string | null; is_b2b: boolean; tva_number: string | null }>>([]);
   const [chantiersList, setChantiersList] = useState<Array<{ id: string; name: string; site_address: string | null }>>([]);
   
-  const [clientName, setClientName] = useState('');
-  const [clientAddress, setClientAddress] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
-  const [clientEmail, setClientEmail] = useState('');
+  const [clientName, setClientName] = useState(isImageQuotePrefill ? (prefillData?.clientName || '') : '');
+  const [clientAddress, setClientAddress] = useState(isImageQuotePrefill ? (prefillData?.clientAddress || '') : '');
+  const [clientPhone, setClientPhone] = useState(isImageQuotePrefill ? (prefillData?.clientPhone || '') : '');
+  const [clientEmail, setClientEmail] = useState(isImageQuotePrefill ? (prefillData?.clientEmail || '') : '');
   const [clientSiren, setClientSiren] = useState('');
   const [clientTvaIntra, setClientTvaIntra] = useState('');
   const [clientIsB2B, setClientIsB2B] = useState(false);
@@ -113,7 +117,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [natureOperation, setNatureOperation] = useState<'service' | 'goods' | 'mixed'>('service');
   
   // Description du chantier / objet du devis
-  const [descriptionChantier, setDescriptionChantier] = useState('');
+  const [descriptionChantier, setDescriptionChantier] = useState(isImageQuotePrefill ? (prefillData?.descriptionChantier || '') : '');
   const [descriptionChantierAr, setDescriptionChantierAr] = useState('');
   const [descriptionChantierFr, setDescriptionChantierFr] = useState('');
   const [isTranslatingObjet, setIsTranslatingObjet] = useState(false);
@@ -164,18 +168,31 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
   const [discountValue, setDiscountValue] = useState<number>(0);
   
-  // Line items - use empty strings for quantity/price to allow clean input
-  const [items, setItems] = useState<LineItem[]>([
-    {
+  // Line items — initialize from prefillData if available (image-quote flow)
+  const [items, setItems] = useState<LineItem[]>(() => {
+    if (isImageQuotePrefill && prefillData?.items && prefillData.items.length > 0) {
+      console.log('[InvoiceFormBuilder] ✅ Initializing items from prefillData:', prefillData.items.length, 'items');
+      prefillAppliedRef.current = true;
+      return prefillData.items.map((item) => ({
+        id: generateId(),
+        designation_fr: item.designation_fr || '',
+        designation_ar: item.designation_ar || '',
+        quantity: item.quantity || 1,
+        unit: item.unit || 'U',
+        unitPrice: item.unitPrice || 0,
+        total: (item.quantity || 1) * (item.unitPrice || 0),
+      }));
+    }
+    return [{
       id: generateId(),
       designation_fr: '',
       designation_ar: '',
-      quantity: '' as unknown as number, // Allow empty for clean input
+      quantity: '' as unknown as number,
       unit: 'm²',
-      unitPrice: '' as unknown as number, // Allow empty for clean input
+      unitPrice: '' as unknown as number,
       total: 0,
-    }
-  ]);
+    }];
+  });
   
   // Track temporary string values for quantity and price inputs
   const [tempValues, setTempValues] = useState<Record<string, { quantity?: string; unitPrice?: string }>>({});
@@ -552,50 +569,48 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, estimatedStartDate, estimatedDuration, discountEnabled, discountType, discountValue]);
 
   // Handle prefill data from quote-to-invoice conversion or Smart Devis
-  // STRICT: Never auto-fill client info. User must select or type manually.
-  // CRITICAL: This effect MUST reliably inject Smart Devis items into the form.
+  // CRITICAL: This effect MUST reliably inject items into the form.
+  // For image-quote flow, state is already initialized via useState — this effect
+  // handles non-image-quote flows and shows the toast.
   useEffect(() => {
-    if (prefillData) {
-      console.log('[InvoiceFormBuilder] Applying prefill data:', prefillData.source, '—', prefillData.items?.length, 'items');
-      
-      // STEP 1: Clear any existing draft to prevent ghost data contamination
-      clearDraft();
-      
-      // STEP 2: Reset docNumber to auto placeholder
-      setDocNumber(`${getDocPrefix(documentType)}AUTO`);
-      
-      // For image-quote flow, inject client fields from extracted data
-      if (prefillData.source === 'image_quote_to_invoice') {
-        setSelectedClientId('');
-        setSelectedChantierId('');
-        setClientName(prefillData.clientName || '');
-        setClientAddress(prefillData.clientAddress || '');
-        setClientPhone(prefillData.clientPhone || '');
-        setClientEmail(prefillData.clientEmail || '');
-        setClientSiren('');
-        setClientTvaIntra('');
-        setClientIsB2B(false);
-      } else {
-        // Other flows: user must choose or register manually
-        setSelectedClientId('');
-        setSelectedChantierId('');
-        setClientName('');
-        setClientAddress('');
-        setClientPhone('');
-        setClientEmail('');
-        setClientSiren('');
-        setClientTvaIntra('');
-        setClientIsB2B(false);
+    if (!prefillData) return;
+    if (prefillAppliedRef.current) {
+      // Already applied (either via useState init or previous effect run) — just show toast once
+      console.log('[InvoiceFormBuilder] Prefill already applied, skipping re-application');
+      return;
+    }
+    prefillAppliedRef.current = true;
+
+    console.log('[InvoiceFormBuilder] Applying prefill data:', prefillData.source, '—', prefillData.items?.length, 'items');
+    
+    // Clear stale drafts and localStorage to prevent ghost data
+    clearDraft();
+    clearCurrentDocument();
+    try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
+    
+    // Reset docNumber to auto placeholder
+    setDocNumber(`${getDocPrefix(documentType)}AUTO`);
+    
+    // For image-quote flow, client/items are already set via useState initializers.
+    // For other flows, inject here.
+    if (prefillData.source === 'image_quote_to_invoice') {
+      // Already initialized in useState — just set translation markers
+      if (prefillData.items && prefillData.items.length > 0) {
+        const attemptedIds = new Set(items.map(item => item.id));
+        setTranslationAttemptIds(attemptedIds);
       }
-      if (prefillData.workSiteAddress) {
-        setWorkSiteAddress(prefillData.workSiteAddress);
-        setWorkSiteSameAsClient(false);
-      }
-      if (prefillData.natureOperation) {
-        setNatureOperation(prefillData.natureOperation as 'service' | 'goods' | 'mixed');
-      }
+    } else {
+      // Other flows (devis_conversion, smart_devis, etc.)
+      setSelectedClientId('');
+      setSelectedChantierId('');
+      setClientName('');
+      setClientAddress('');
+      setClientPhone('');
+      setClientEmail('');
+      setClientSiren('');
+      setClientTvaIntra('');
+      setClientIsB2B(false);
       
-      // Set items
       if (prefillData.items && prefillData.items.length > 0) {
         const newItems: LineItem[] = prefillData.items.map((item) => ({
           id: generateId(),
@@ -607,32 +622,39 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           total: (item.quantity || 1) * (item.unitPrice || 0),
         }));
         setItems(newItems);
-        
-        // Mark these items as having already been translated (from AI extraction)
         const attemptedIds = new Set(newItems.map(item => item.id));
         setTranslationAttemptIds(attemptedIds);
       }
-
-      // Load site photos from Smart Devis
-      if (prefillData.sitePhotos && prefillData.sitePhotos.length > 0) {
-        setSitePhotos(prefillData.sitePhotos);
-      }
-
-      // Auto-fill subject/description from Smart Devis (keep as-is, no auto-translate)
-      if (prefillData.descriptionChantier) {
-        setDescriptionChantier(prefillData.descriptionChantier);
-      }
-      
-      toast({
-        title: isRTL 
-          ? (prefillData.source === 'devis_conversion' ? '✅ تم نقل بيانات الدوفي!' : prefillData.source === 'devis_duplication' ? '✅ تم نسخ الدوفي!' : '✅ تم ملء البيانات!')
-          : (prefillData.source === 'devis_conversion' ? '✅ Devis converti en facture!' : prefillData.source === 'devis_duplication' ? '✅ Devis dupliqué!' : '✅ Données pré-remplies!'),
-        description: isRTL 
-          ? 'راجع البيانات واضغط على معاينة' 
-          : 'Vérifiez les données et cliquez sur Aperçu',
-      });
     }
-  }, [prefillData, isRTL, toast, documentType]);
+
+    if (prefillData.workSiteAddress) {
+      setWorkSiteAddress(prefillData.workSiteAddress);
+      setWorkSiteSameAsClient(false);
+    }
+    if (prefillData.natureOperation) {
+      setNatureOperation(prefillData.natureOperation as 'service' | 'goods' | 'mixed');
+    }
+
+    // Load site photos from Smart Devis
+    if (prefillData.sitePhotos && prefillData.sitePhotos.length > 0) {
+      setSitePhotos(prefillData.sitePhotos);
+    }
+
+    // Auto-fill subject/description
+    if (prefillData.descriptionChantier && !descriptionChantier) {
+      setDescriptionChantier(prefillData.descriptionChantier);
+    }
+    
+    toast({
+      title: isRTL 
+        ? (prefillData.source === 'devis_conversion' ? '✅ تم نقل بيانات الدوفي!' : prefillData.source === 'devis_duplication' ? '✅ تم نسخ الدوفي!' : '✅ تم ملء البيانات!')
+        : (prefillData.source === 'devis_conversion' ? '✅ Devis converti en facture!' : prefillData.source === 'devis_duplication' ? '✅ Devis dupliqué!' : '✅ Données pré-remplies!'),
+      description: isRTL 
+        ? 'راجع البيانات واضغط على معاينة' 
+        : 'Vérifiez les données et cliquez sur Aperçu',
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const startTranslating = (id: string) => {
     setTranslatingIds(prev => {

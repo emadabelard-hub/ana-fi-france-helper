@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import AuthModal from '@/components/auth/AuthModal';
 import { supabase } from '@/integrations/supabase/client';
 import { compressImage, isImageData } from '@/lib/imageCompression';
+import { extractTextFromPDF } from '@/lib/pdfExtractor';
 
 interface NormalizedQuoteData {
   source: 'image_quote_to_invoice';
@@ -46,11 +47,12 @@ const ImageQuoteToInvoicePage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
       toast({
         variant: "destructive",
-        title: isRTL ? "صورة فقط" : "Image uniquement",
-        description: isRTL ? "يرجى تحميل صورة فقط" : "Veuillez télécharger une image (JPG, PNG)",
+        title: isRTL ? "صيغة غير مدعومة" : "Format non supporté",
+        description: isRTL ? "JPG, PNG, WEBP أو PDF فقط" : "Uniquement JPG, PNG, WEBP ou PDF",
       });
       return;
     }
@@ -67,7 +69,13 @@ const ImageQuoteToInvoicePage = () => {
     setUploadedFile(file);
     setError(null);
     setExtractedData(null);
-    setPreviewUrl(URL.createObjectURL(file));
+    setPreviewUrl(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
+
+    // Auto-trigger analysis immediately
+    setTimeout(() => {
+      const analyzeBtn = document.getElementById('auto-analyze-trigger');
+      analyzeBtn?.click();
+    }, 100);
   };
 
   const handleAnalyze = async () => {
@@ -82,30 +90,41 @@ const ImageQuoteToInvoicePage = () => {
     setError(null);
 
     try {
-      // Read file as base64
-      const reader = new FileReader();
-      const fullBase64 = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(uploadedFile);
-      });
+      const isPdf = uploadedFile.type === 'application/pdf';
+      let body: Record<string, string>;
 
-      let base64Data = fullBase64.split(',')[1];
-      let mimeType = uploadedFile.type;
-
-      // Compress image
-      if (isImageData(fullBase64)) {
-        try {
-          const compressed = await compressImage(fullBase64);
-          base64Data = compressed.split(',')[1];
-          mimeType = 'image/jpeg';
-        } catch {
-          // use original
+      if (isPdf) {
+        // Extract text from PDF client-side
+        const reader = new FileReader();
+        const fullBase64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(uploadedFile);
+        });
+        const pdfText = await extractTextFromPDF(fullBase64);
+        body = { pdfText, mimeType: 'application/pdf' };
+      } else {
+        // Image: compress and send as base64
+        const reader = new FileReader();
+        const fullBase64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(uploadedFile);
+        });
+        let base64Data = fullBase64.split(',')[1];
+        let mimeType = uploadedFile.type;
+        if (isImageData(fullBase64)) {
+          try {
+            const compressed = await compressImage(fullBase64);
+            base64Data = compressed.split(',')[1];
+            mimeType = 'image/jpeg';
+          } catch { /* use original */ }
         }
+        body = { imageBase64: base64Data, mimeType };
       }
 
       const { data, error: fnError } = await supabase.functions.invoke('image-quote-extract', {
-        body: { imageBase64: base64Data, mimeType },
+        body,
       });
 
       if (fnError) {
@@ -122,10 +141,26 @@ const ImageQuoteToInvoicePage = () => {
       if (data?.error) throw new Error(data.error);
       if (!data?.data) throw new Error('Aucune donnée extraite');
 
-      setExtractedData(data.data as NormalizedQuoteData);
+      const normalized = data.data as NormalizedQuoteData;
+
+      // Auto-redirect: write + navigate immediately, no verification step
+      if (normalized.items && normalized.items.length > 0) {
+        sessionStorage.setItem('imageQuoteToInvoiceData', JSON.stringify(normalized));
+        console.log('WRITE imageQuoteToInvoiceData (auto)', normalized);
+        toast({
+          title: isRTL ? "✅ تم التحليل!" : "✅ Analyse réussie!",
+          description: isRTL ? "جاري فتح الفاتورة..." : "Ouverture de la facture...",
+        });
+        navigate('/pro/invoice-creator?type=facture&source=image-quote');
+        return;
+      }
+
+      // Fallback: no items extracted
+      setExtractedData(normalized);
       toast({
-        title: isRTL ? "✅ تم التحليل!" : "✅ Analyse réussie!",
-        description: isRTL ? "البيانات جاهزة" : "Les données sont prêtes",
+        variant: "destructive",
+        title: isRTL ? "⚠️ بيانات ناقصة" : "⚠️ Données incomplètes",
+        description: isRTL ? "لم يتم استخراج أي عنصر" : "Aucun article extrait du document",
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur inconnue';
@@ -190,7 +225,7 @@ const ImageQuoteToInvoicePage = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
                 onChange={handleFileSelect}
                 className="hidden"
               />
@@ -200,9 +235,9 @@ const ImageQuoteToInvoicePage = () => {
                 </div>
                 <div className="text-center">
                   <p className="font-semibold text-foreground">
-                    {isRTL ? 'اضغط لتحميل صورة الدوفي' : 'Cliquez pour uploader l\'image du devis'}
+                    {isRTL ? 'اضغط لتحميل صورة أو PDF الدوفي' : 'Cliquez pour uploader le devis (image ou PDF)'}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">JPG, PNG, WEBP</p>
+                  <p className="text-sm text-muted-foreground mt-1">JPG, PNG, WEBP, PDF</p>
                 </div>
               </div>
             </label>
@@ -226,7 +261,7 @@ const ImageQuoteToInvoicePage = () => {
 
               {/* Analyze Button */}
               {!extractedData && !error && (
-                <Button onClick={handleAnalyze} disabled={isProcessing} className="w-full" size="lg">
+                <Button id="auto-analyze-trigger" onClick={handleAnalyze} disabled={isProcessing} className="w-full" size="lg">
                   {isProcessing ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />

@@ -28,6 +28,14 @@ const ProPage = () => {
       gradient: 'from-blue-600 to-emerald-500',
     },
     {
+      icon: null,
+      emoji: '📸',
+      title: isRTL ? 'تحويل صورة دوفي → فاتورة' : 'Transformer un devis en facture (image)',
+      description: isRTL ? 'حمّل صورة الدوفي والذكاء الاصطناعي يملأ فاتورتك' : 'Uploadez une photo de devis, l\'IA crée la facture',
+      path: '/pro/image-quote-to-invoice',
+      gradient: 'from-purple-500 to-indigo-600',
+    },
+    {
       icon: FolderOpen,
       emoji: null,
       title: isRTL ? 'مستنداتي المحاسبية' : 'Mes Documents',

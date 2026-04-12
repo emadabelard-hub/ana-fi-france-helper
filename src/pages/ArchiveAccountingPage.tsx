@@ -165,16 +165,27 @@ const ArchiveAccountingPage = () => {
   const depensesHT = useMemo(() =>
     expenses.reduce((s, e) => s + e.amountHT, 0), [expenses]);
 
+  // TVA robuste : TTC - HT si les deux existent, sinon fallback TTC * 0.1667
+  const computeTvaForDoc = (d: DocumentItem) => {
+    const ttc = d.amountTTC || 0;
+    const ht = d.amountHT || 0;
+    const dbTva = d.rawData?.tva_amount || 0;
+    if (dbTva > 0) return dbTva;
+    if (ht > 0 && ttc > ht) return Math.round((ttc - ht) * 100) / 100;
+    if (ht === 0 && ttc > 0) return Math.round(ttc * 0.1667 * 100) / 100;
+    return 0;
+  };
+
   const tvaCollectee = useMemo(() =>
-    facturesValidees.reduce((s, d) => s + (d.rawData?.tva_amount || 0), 0), [facturesValidees]);
+    facturesValidees.reduce((s, d) => s + computeTvaForDoc(d), 0), [facturesValidees]);
   const tvaDeductible = useMemo(() =>
     expenses.reduce((s, e) => s + (e.rawData?.tva_amount || 0), 0), [expenses]);
 
-  // Trésorerie encaissée = factures validées ET payées
+  // Trésorerie encaissée = factures validées ET payées (TTC)
   const tresorerieEncaissee = useMemo(() =>
     facturesValidees
       .filter(d => d.paymentStatus === 'paid')
-      .reduce((s, d) => s + d.amountHT, 0),
+      .reduce((s, d) => s + d.amountTTC, 0),
     [facturesValidees]);
 
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;

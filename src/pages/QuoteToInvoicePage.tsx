@@ -192,7 +192,11 @@ const QuoteToInvoicePage = () => {
     // Store in sessionStorage — single source of truth
     const payload = JSON.stringify(prefillPayload);
     sessionStorage.setItem('quoteToInvoiceData', payload);
-    console.log('[QuoteToInvoice] Stored prefill data:', prefillPayload.items?.length, 'items');
+    console.log('WRITE quoteToInvoiceData', prefillPayload);
+    
+    // Verify write succeeded before navigating
+    const verifyRead = sessionStorage.getItem('quoteToInvoiceData');
+    console.log('VERIFY quoteToInvoiceData written:', !!verifyRead, 'length:', verifyRead?.length);
     
     navigate('/pro/invoice-creator?type=facture&prefill=quote');
   };

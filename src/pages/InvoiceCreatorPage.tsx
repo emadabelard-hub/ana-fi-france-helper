@@ -55,11 +55,13 @@ const InvoiceCreatorPage = () => {
     try {
       const raw = sessionStorage.getItem('quoteToInvoiceData');
       if (!raw) {
-        console.log('[InvoiceCreator] No quoteToInvoiceData found in sessionStorage');
+        console.log('NO quoteToInvoiceData FOUND');
+        console.log('[DEBUG] All sessionStorage keys:', Object.keys(sessionStorage));
         return null;
       }
 
       const parsed = JSON.parse(raw);
+      console.log('READ quoteToInvoiceData', parsed);
       if (parsed?.items?.length > 0) {
         console.log('[InvoiceCreator] ✅ Prefill from quoteToInvoiceData:', parsed.items.length, 'items');
         sessionStorage.removeItem('quoteToInvoiceData');

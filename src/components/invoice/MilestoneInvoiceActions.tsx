@@ -67,9 +67,14 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
   const docData = devisDoc.document_data || {};
 
   const handleCreateMilestoneInvoice = (milestone: PaymentMilestone, index: number) => {
-    const milestoneAmount = milestone.mode === 'percent'
-      ? (totalTTC * (milestone.percent || 0)) / 100
-      : (milestone.amount || 0);
+    // Compute proportion from the milestone
+    const milestoneProportion = milestone.mode === 'percent'
+      ? (milestone.percent || 0) / 100
+      : (milestone.amount || 0) / (totalTTC || 1);
+
+    // Scale HT proportionally from the quote's HT — do NOT recompute from TTC
+    const quoteSubtotalHT = docData.subtotalHT ?? docData.totalHT ?? 0;
+    const milestoneHT = Math.round(quoteSubtotalHT * milestoneProportion * 100) / 100;
 
     const label = getMilestoneLabel(index, milestones.length, isRTL);
 
@@ -86,13 +91,13 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
       clientIsB2B: docData.client?.isB2B || false,
       workSiteAddress: devisDoc.work_site_address || docData.workSite?.address || '',
       natureOperation: devisDoc.nature_operation || docData.natureOperation || '',
-      // Single line item for the milestone amount
+      // Single line item — unitPrice is HT so the form applies TVA correctly
       items: [{
         designation_fr: `${label.fr} — Réf. devis ${devisDoc.document_number} — ${milestone.label || `Échéance ${index + 1}`}`,
         designation_ar: `${label.ar} — مرجع العرض ${devisDoc.document_number} — ${milestone.label || `قسط ${index + 1}`}`,
         quantity: 1,
         unit: 'forfait',
-        unitPrice: milestoneAmount,
+        unitPrice: milestoneHT,
       }],
       notes: `${label.fr} relative au devis ${devisDoc.document_number}.\nDétail des travaux d'origine : ${items.length} poste(s).`,
       source: 'milestone_invoice',

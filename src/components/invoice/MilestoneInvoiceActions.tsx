@@ -73,7 +73,7 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
       : (milestone.amount || 0) / (totalTTC || 1);
 
     // Scale HT proportionally from the quote's HT — do NOT recompute from TTC
-    const quoteSubtotalHT = docData.subtotalHT ?? docData.totalHT ?? 0;
+    const quoteSubtotalHT = docData.subtotalAfterDiscount ?? docData.subtotal ?? docData.subtotalHT ?? docData.totalHT ?? 0;
     const milestoneHT = Math.round(quoteSubtotalHT * milestoneProportion * 100) / 100;
 
     const label = getMilestoneLabel(index, milestones.length, isRTL);

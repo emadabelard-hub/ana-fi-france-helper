@@ -603,16 +603,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         setTranslationAttemptIds(attemptedIds);
       }
     } else {
-      // Other flows (devis_conversion, smart_devis, etc.)
-      setSelectedClientId('');
-      setSelectedChantierId('');
-      setClientName('');
-      setClientAddress('');
-      setClientPhone('');
-      setClientEmail('');
-      setClientSiren('');
-      setClientTvaIntra('');
-      setClientIsB2B(false);
+      // Other flows (devis_conversion, smart_devis, milestone_invoice, etc.)
+      setSelectedClientId(prefillData.selectedClientId || '');
+      setSelectedChantierId(prefillData.selectedChantierId || '');
+      setClientName(prefillData.clientName || '');
+      setClientAddress(prefillData.clientAddress || '');
+      setClientPhone(prefillData.clientPhone || '');
+      setClientEmail(prefillData.clientEmail || '');
+      setClientSiren(prefillData.clientSiren || '');
+      setClientTvaIntra(prefillData.clientTvaIntra || '');
+      setClientIsB2B(prefillData.clientIsB2B || false);
+      
+      console.log('[InvoiceFormBuilder] Prefill OK — client:', prefillData.clientName, '— items:', prefillData.items?.length);
       
       if (prefillData.items && prefillData.items.length > 0) {
         const newItems: LineItem[] = prefillData.items.map((item) => ({
@@ -627,6 +629,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         setItems(newItems);
         const attemptedIds = new Set(newItems.map(item => item.id));
         setTranslationAttemptIds(attemptedIds);
+      }
+
+      if (prefillData.notes) {
+        setDescriptionChantier(prev => prev || prefillData.notes || '');
       }
     }
 

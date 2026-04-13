@@ -519,7 +519,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                     );
                   })}
                 </ul>
-                {(() => {
+                {data.type !== 'DEVIS' && (() => {
                   const first = data.paymentMilestones[0];
                   const firstAmt = first.mode === 'percent'
                     ? Math.round(data.total * (first.percent || 0) / 100 * 100) / 100
@@ -597,11 +597,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                   <div className="mt-1 rounded-md overflow-hidden" style={{ border: '1px solid #d1d5db' }}>
                    <div className="flex justify-between py-0.5 px-1.5" style={{ backgroundColor: '#f5f5f5' }}>
                     <span className="text-gray-600 text-[6.5pt] font-semibold">
-                      <ArSub fr="Acompte" /> {data.acomptePercent ? `(${data.acomptePercent}%)` : ''}
+                      {data.type === 'DEVIS' ? <ArSub fr="Acompte à la commande" /> : <ArSub fr="Acompte" />} {data.acomptePercent ? `(${data.acomptePercent}%)` : ''}
                     </span>
                     <span className="font-bold text-gray-700 text-[6.5pt] tabular-nums">{formatCurrency(data.acompteAmount)}</span>
                   </div>
-                  {data.netAPayer !== undefined && (
+                  {data.type !== 'DEVIS' && data.netAPayer !== undefined && (
                     <div className="flex justify-between py-1 px-1.5" style={{ backgroundColor: '#e8eaed' }}>
                       <span className="text-gray-900 text-[7.5pt] font-extrabold">Net à payer</span>
                       <span className="font-extrabold text-gray-900 text-[9pt] tabular-nums">{formatCurrency(data.netAPayer)}</span>

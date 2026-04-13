@@ -93,13 +93,13 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
       natureOperation: devisDoc.nature_operation || docData.natureOperation || '',
       // Single line item — unitPrice is HT so the form applies TVA correctly
       items: [{
-        designation_fr: `${label.fr} — Réf. devis ${devisDoc.document_number} — ${milestone.label || `Échéance ${index + 1}`}`,
-        designation_ar: `${label.ar} — مرجع العرض ${devisDoc.document_number} — ${milestone.label || `قسط ${index + 1}`}`,
+        designation_fr: `${label.fr} — Paiement de ${milestone.mode === 'percent' ? `${milestone.percent}%` : `${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(milestone.amount || 0)}`} sur devis n° ${devisDoc.document_number}\n${milestone.label || `Échéance ${index + 1}`}`,
+        designation_ar: `${label.ar} — دفعة ${milestone.mode === 'percent' ? `${milestone.percent}%` : `${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(milestone.amount || 0)}`} على العرض رقم ${devisDoc.document_number}\n${milestone.label || `قسط ${index + 1}`}`,
         quantity: 1,
         unit: 'forfait',
         unitPrice: milestoneHT,
       }],
-      notes: `${label.fr} relative au devis ${devisDoc.document_number}.\nDétail des travaux d'origine : ${items.length} poste(s).`,
+      notes: `${label.fr} relative au devis n° ${devisDoc.document_number}.\nMontant total du devis : ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(totalTTC)} TTC.\nDétail des travaux d'origine : ${items.length} poste(s).`,
       source: 'milestone_invoice',
       sourceDocumentId: devisDoc.id,
       sourceDocumentNumber: devisDoc.document_number,

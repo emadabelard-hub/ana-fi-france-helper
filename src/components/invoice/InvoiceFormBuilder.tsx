@@ -68,6 +68,24 @@ interface PrefillData {
   milestoneId?: string;
   milestoneIndex?: number;
   milestoneLabel?: string;
+  // Advanced fields — TVA, payment, schedule, dates
+  isAutoEntrepreneur?: boolean;
+  selectedTvaRate?: 5.5 | 10 | 20;
+  projectTvaType?: 'logement_ancien' | 'logement_neuf' | 'local_pro' | 'sous_traitance' | 'intracommunautaire';
+  delaiPaiement?: string;
+  moyenPaiement?: string;
+  acompteEnabled?: boolean;
+  acomptePercent?: number;
+  acompteMode?: 'percent' | 'fixed';
+  acompteFixedAmount?: number;
+  milestonesEnabled?: boolean;
+  paymentMilestones?: PaymentMilestone[];
+  discountEnabled?: boolean;
+  discountType?: 'percent' | 'fixed';
+  discountValue?: number;
+  estimatedStartDate?: string;
+  estimatedDuration?: string;
+  validityDuration?: 15 | 30 | 60 | 90;
 }
 
 interface InvoiceFormBuilderProps {
@@ -653,6 +671,40 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (prefillData.descriptionChantier && !descriptionChantier) {
       setDescriptionChantier(prefillData.descriptionChantier);
     }
+
+    // === Advanced fields: TVA, payment, schedule, dates ===
+    if (prefillData.isAutoEntrepreneur !== undefined) setIsAutoEntrepreneur(prefillData.isAutoEntrepreneur);
+    if (prefillData.selectedTvaRate !== undefined) setSelectedTvaRate(prefillData.selectedTvaRate);
+    if (prefillData.projectTvaType !== undefined) setProjectTvaType(prefillData.projectTvaType);
+    if (prefillData.delaiPaiement !== undefined) setDelaiPaiement(prefillData.delaiPaiement);
+    if (prefillData.moyenPaiement !== undefined) setMoyenPaiement(prefillData.moyenPaiement);
+    if (prefillData.acompteEnabled !== undefined) setAcompteEnabled(prefillData.acompteEnabled);
+    if (prefillData.acomptePercent !== undefined) setAcomptePercent(prefillData.acomptePercent);
+    if (prefillData.acompteMode !== undefined) setAcompteMode(prefillData.acompteMode);
+    if (prefillData.acompteFixedAmount !== undefined) setAcompteFixedAmount(prefillData.acompteFixedAmount);
+    if (prefillData.milestonesEnabled !== undefined) setMilestonesEnabled(prefillData.milestonesEnabled);
+    if (prefillData.paymentMilestones !== undefined) setPaymentMilestones(prefillData.paymentMilestones);
+    if (prefillData.discountEnabled !== undefined) setDiscountEnabled(prefillData.discountEnabled);
+    if (prefillData.discountType !== undefined) setDiscountType(prefillData.discountType);
+    if (prefillData.discountValue !== undefined) setDiscountValue(prefillData.discountValue);
+    if (prefillData.estimatedStartDate !== undefined) setEstimatedStartDate(prefillData.estimatedStartDate);
+    if (prefillData.estimatedDuration !== undefined) setEstimatedDuration(prefillData.estimatedDuration);
+    if (prefillData.validityDuration !== undefined) setValidityDuration(prefillData.validityDuration);
+
+    console.log('[InvoiceFormBuilder] FULL PREFILL OK —', {
+      source: prefillData.source,
+      client: prefillData.clientName,
+      items: prefillData.items?.length,
+      tvaRate: prefillData.selectedTvaRate,
+      projectTvaType: prefillData.projectTvaType,
+      delaiPaiement: prefillData.delaiPaiement,
+      moyenPaiement: prefillData.moyenPaiement,
+      acompteEnabled: prefillData.acompteEnabled,
+      milestonesEnabled: prefillData.milestonesEnabled,
+      milestones: prefillData.paymentMilestones?.length,
+      estimatedStartDate: prefillData.estimatedStartDate,
+      estimatedDuration: prefillData.estimatedDuration,
+    });
     
     toast({
       title: isRTL 

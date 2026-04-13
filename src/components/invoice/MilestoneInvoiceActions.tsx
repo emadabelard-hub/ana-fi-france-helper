@@ -75,6 +75,7 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
 
     // Build prefill data reusing existing flow
     const items = docData.items || [];
+    const advancedData = extractAdvancedPrefillData(docData);
     const prefill = {
       clientName: devisDoc.client_name || docData.client?.name || '',
       clientAddress: devisDoc.client_address || docData.client?.address || '',
@@ -100,8 +101,16 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
       milestoneId: milestone.id,
       milestoneIndex: index,
       milestoneLabel: label.fr,
+      // Include advanced data from the source devis
+      ...advancedData,
+      // Override: milestone invoices should NOT re-enable milestones/acompte
+      milestonesEnabled: false,
+      paymentMilestones: [],
+      acompteEnabled: false,
+      discountEnabled: false,
     };
 
+    console.log('[MilestoneInvoiceActions] FULL PREFILL OK — milestone_invoice:', prefill);
     sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
     navigate('/pro/invoice-creator?type=facture&prefill=quote');
   };

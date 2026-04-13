@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import type { PaymentMilestone } from '@/components/invoice/InvoiceDisplay';
+import { extractAdvancedPrefillData } from '@/lib/prefillAdvancedData';
 
 interface MilestoneInvoiceActionsProps {
   /** The source devis document */

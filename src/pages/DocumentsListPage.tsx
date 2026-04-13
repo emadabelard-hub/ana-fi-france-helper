@@ -845,6 +845,21 @@ const DocumentsListPage = () => {
                   )}
                 </div>
               )}
+
+              {/* Milestone invoice actions for devis with payment schedule */}
+              {selectedDocument.document_type === 'devis' &&
+                selectedDocument.document_data?.paymentMilestones?.length > 0 && (
+                <div className={cn("pt-3 border-t border-border")}>
+                  <MilestoneInvoiceActions
+                    devisDoc={selectedDocument}
+                    allDocuments={documents}
+                    onViewInvoice={(invoiceId) => {
+                      const linked = documents.find(d => d.id === invoiceId);
+                      if (linked) openDocumentView(linked as any);
+                    }}
+                  />
+                </div>
+              )}
             </>
           )}
         </DialogContent>

@@ -258,6 +258,7 @@ const DocumentsListPage = () => {
     // Extract full data from document_data JSON
     const docData = doc.document_data || {};
     const items = docData.items || [];
+    const advancedData = extractAdvancedPrefillData(docData);
     
     const prefill = {
       clientName: doc.client_name || docData.client?.name || '',
@@ -280,8 +281,10 @@ const DocumentsListPage = () => {
       source: 'devis_conversion',
       sourceDocumentId: doc.id,
       sourceDocumentNumber: doc.document_number,
+      ...advancedData,
     };
     
+    console.log('[DocumentsListPage] FULL PREFILL OK — devis_conversion:', prefill);
     sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
     navigate('/pro/invoice-creator?type=facture&prefill=quote');
   };
@@ -289,6 +292,7 @@ const DocumentsListPage = () => {
   const handleDuplicateDevis = (doc: DocumentRow) => {
     const docData = doc.document_data || {};
     const items = docData.items || [];
+    const advancedData = extractAdvancedPrefillData(docData);
     
     const prefill = {
       clientName: doc.client_name || docData.client?.name || '',
@@ -309,6 +313,7 @@ const DocumentsListPage = () => {
       })),
       notes: docData.legalMentions || '',
       source: 'devis_duplication',
+      ...advancedData,
     };
     
     sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));

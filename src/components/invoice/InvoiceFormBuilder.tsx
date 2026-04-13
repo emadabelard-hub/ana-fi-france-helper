@@ -85,7 +85,7 @@ interface PrefillData {
   discountValue?: number;
   estimatedStartDate?: string;
   estimatedDuration?: string;
-  validityDuration?: number;
+  validityDuration?: 15 | 30 | 60 | 90;
 }
 
 interface InvoiceFormBuilderProps {

@@ -554,6 +554,18 @@ const DocumentsListPage = () => {
           </div>
         )}
 
+        {/* Milestone schedule badge for devis */}
+        {isDevis && doc.document_data?.paymentMilestones?.length > 0 && (
+          <div className={cn("mt-3 flex items-center gap-2", isRTL && "flex-row-reverse")}>
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30">
+              📋 {isRTL ? `${doc.document_data.paymentMilestones.length} أقساط` : `${doc.document_data.paymentMilestones.length} échéances`}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {isRTL ? 'اضغط لإنشاء الفواتير' : 'Cliquez pour facturer'}
+            </span>
+          </div>
+        )}
+
         {/* Cancelled banner */}
         {doc.status === 'cancelled' && (
           <div className={cn("mt-3 flex items-center gap-2", isRTL && "flex-row-reverse")}>

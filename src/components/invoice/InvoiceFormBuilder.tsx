@@ -65,6 +65,9 @@ interface PrefillData {
   sourceDocumentNumber?: string;
   sitePhotos?: Array<{ data: string; name: string }>;
   descriptionChantier?: string;
+  milestoneId?: string;
+  milestoneIndex?: number;
+  milestoneLabel?: string;
 }
 
 interface InvoiceFormBuilderProps {
@@ -1528,6 +1531,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         stampUrl: profile?.stamp_url || documentDataForStorage.stampUrl || null,
         ...(selectedClientId && { linkedClientId: selectedClientId }),
         ...(selectedChantierId && { linkedChantierId: selectedChantierId }),
+        // Milestone invoice metadata (for installment tracking)
+        ...(prefillData?.source === 'milestone_invoice' && prefillData?.milestoneId && {
+          milestoneId: prefillData.milestoneId,
+          sourceDevisId: prefillData.sourceDocumentId,
+          sourceDevisNumber: prefillData.sourceDocumentNumber,
+          milestoneLabel: prefillData.milestoneLabel,
+        }),
       };
 
       if (!invoiceRef.current) {

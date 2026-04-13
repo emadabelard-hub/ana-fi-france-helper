@@ -15,6 +15,7 @@ import { resolveAssetUrls } from '@/lib/storageUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
 import InvoiceDisplay from '@/components/invoice/InvoiceDisplay';
+import MilestoneInvoiceActions from '@/components/invoice/MilestoneInvoiceActions';
 import { ScrollArea } from '@/components/ui/scroll-area';
 interface DocumentRow {
   id: string;
@@ -842,6 +843,21 @@ const DocumentsListPage = () => {
                       {isRTL ? 'تحويل إلى فاتورة' : 'Convertir en Facture'}
                     </Button>
                   )}
+                </div>
+              )}
+
+              {/* Milestone invoice actions for devis with payment schedule */}
+              {selectedDocument.document_type === 'devis' &&
+                selectedDocument.document_data?.paymentMilestones?.length > 0 && (
+                <div className={cn("pt-3 border-t border-border")}>
+                  <MilestoneInvoiceActions
+                    devisDoc={selectedDocument}
+                    allDocuments={documents}
+                    onViewInvoice={(invoiceId) => {
+                      const linked = documents.find(d => d.id === invoiceId);
+                      if (linked) openDocumentView(linked as any);
+                    }}
+                  />
                 </div>
               )}
             </>

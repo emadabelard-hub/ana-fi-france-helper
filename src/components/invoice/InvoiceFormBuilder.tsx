@@ -3314,6 +3314,66 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                             className="text-xs flex-1"
                           />
                         </div>
+                        {/* Créer facture button — only for saved devis */}
+                        {documentType === 'devis' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-[10px] gap-1 mt-1 border-primary/30 text-primary hover:bg-primary/10"
+                            onClick={() => {
+                              const currentData = invoiceData;
+                              const milestoneP = milestone.mode === 'percent'
+                                ? (milestone.percent || 0) / 100
+                                : (milestone.amount || 0) / (currentData.total || 1);
+                              const quoteSubtotalHT = currentData.subtotalAfterDiscount ?? currentData.subtotal ?? 0;
+                              const milestoneHT = Math.round(quoteSubtotalHT * milestoneP * 100) / 100;
+
+                              const labelMap: Record<string, { fr: string; ar: string }> = {};
+                              if (idx === 0) { labelMap.l = { fr: "Facture d'acompte", ar: 'فاتورة مقدم' }; }
+                              else if (idx === paymentMilestones.length - 1) { labelMap.l = { fr: 'Facture finale', ar: 'فاتورة نهائية' }; }
+                              else { labelMap.l = { fr: 'Facture intermédiaire', ar: 'فاتورة مرحلية' }; }
+                              const label = labelMap.l;
+
+                              const advancedData = extractAdvancedPrefillData(currentData as any);
+                              const prefill = {
+                                clientName: currentData.client?.name || clientName,
+                                clientAddress: currentData.client?.address || clientAddress,
+                                clientPhone: currentData.client?.phone || clientPhone,
+                                clientEmail: currentData.client?.email || clientEmail,
+                                clientSiren: currentData.client?.siren || clientSiren,
+                                clientTvaIntra: currentData.client?.tvaIntra || clientTvaIntra,
+                                clientIsB2B: currentData.client?.isB2B || clientIsB2B,
+                                workSiteAddress: currentData.workSite?.address || workSiteAddress,
+                                natureOperation: currentData.natureOperation || natureOperation,
+                                items: [{
+                                  designation_fr: `${label.fr} — Paiement de ${milestone.mode === 'percent' ? `${milestone.percent}%` : `${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(milestone.amount || 0)}`} sur devis n° ${docNumber}\n${milestone.label || `Échéance ${idx + 1}`}`,
+                                  designation_ar: `${label.ar} — دفعة ${milestone.mode === 'percent' ? `${milestone.percent}%` : `${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(milestone.amount || 0)}`} على العرض رقم ${docNumber}\n${milestone.label || `قسط ${idx + 1}`}`,
+                                  quantity: 1,
+                                  unit: 'forfait',
+                                  unitPrice: milestoneHT,
+                                }],
+                                notes: `${label.fr} relative au devis n° ${docNumber}.\nMontant total du devis : ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(currentData.total)} TTC.`,
+                                source: 'milestone_invoice',
+                                sourceDocumentNumber: docNumber,
+                                milestoneId: milestone.id,
+                                milestoneIndex: idx,
+                                milestoneLabel: label.fr,
+                                ...advancedData,
+                                milestonesEnabled: false,
+                                paymentMilestones: [],
+                                acompteEnabled: false,
+                                discountEnabled: false,
+                              };
+
+                              console.log('[InvoiceFormBuilder] Milestone → Créer facture PREFILL OK:', prefill);
+                              sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
+                              navigate('/pro/invoice-creator?type=facture&prefill=quote');
+                            }}
+                          >
+                            <Receipt className="h-3 w-3" />
+                            {isRTL ? 'أنشئ فاتورة' : 'Créer facture'}
+                          </Button>
+                        )}
                       </div>
                     ))}
 

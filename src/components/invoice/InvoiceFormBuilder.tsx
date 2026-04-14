@@ -89,6 +89,7 @@ interface PrefillData {
   estimatedStartDate?: string;
   estimatedDuration?: string;
   validityDuration?: 15 | 30 | 60 | 90;
+  acompteLabel?: string;
 }
 
 interface InvoiceFormBuilderProps {

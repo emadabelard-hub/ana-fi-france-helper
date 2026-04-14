@@ -13,6 +13,7 @@ import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import { clearCurrentDocument, clearDraft, loadCurrentDocument } from '@/lib/invoiceDraftStorage';
+import NumberingOnboardingModal from '@/components/invoice/NumberingOnboardingModal';
 import {
   Dialog,
   DialogContent,
@@ -54,7 +55,19 @@ const InvoiceCreatorPage = () => {
   const [showTypeModal, setShowTypeModal] = useState(!urlDocType && !resumedDocumentType);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
+  const [showNumberingOnboarding, setShowNumberingOnboarding] = useState(false);
+  const [numberingChecked, setNumberingChecked] = useState(false);
   const activeDocumentType = urlDocType ?? documentType;
+
+  // Check if numbering onboarding is needed (first time creating a document)
+  useEffect(() => {
+    if (!user || numberingChecked) return;
+    const onboarded = localStorage.getItem(`numbering_onboarded_${user.id}`);
+    if (!onboarded && activeDocumentType) {
+      setShowNumberingOnboarding(true);
+    }
+    setNumberingChecked(true);
+  }, [user, activeDocumentType, numberingChecked]);
 
   const prefillData = useMemo(() => {
     // --- NEW: Image Quote To Invoice flow ---
@@ -344,6 +357,12 @@ const InvoiceCreatorPage = () => {
       />
 
       <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+      
+      <NumberingOnboardingModal
+        open={showNumberingOnboarding}
+        onOpenChange={setShowNumberingOnboarding}
+        onComplete={() => setShowNumberingOnboarding(false)}
+      />
       
       {/* Education Modal */}
       <Dialog open={showEducationModal} onOpenChange={setShowEducationModal}>

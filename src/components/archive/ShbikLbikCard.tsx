@@ -160,7 +160,7 @@ const ShbikLbikCard = ({
           {showDetail && (
             <div className="space-y-1.5 rounded-xl bg-[hsl(220,20%,14%)] p-3 animate-in fade-in-0 slide-in-from-top-1 duration-200">
               <MiniRow icon={<TrendingUp className="h-3 w-3 text-emerald-400" />}
-                label={isRTL ? 'إجمالي الإيرادات (CA)' : 'Chiffre d\'affaires'} value={fmt(totalIncome)}
+                label={isRTL ? 'رقم المعاملات المحصل (CA)' : 'Chiffre d\'affaires'} value={fmt(totalIncome)}
                 color="text-emerald-400" isRTL={isRTL} />
               <MiniRow icon={<Banknote className="h-3 w-3 text-cyan-400" />}
                 label={isRTL ? '💰 الأموال المحصلة' : '💰 Trésorerie encaissée'} value={fmt(tresorerieEncaissee)}

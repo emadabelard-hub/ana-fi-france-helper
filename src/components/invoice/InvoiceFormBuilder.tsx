@@ -3329,18 +3329,27 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                             className="text-xs flex-1"
                           />
                         </div>
-                        {/* Créer facture button — available when milestones are active AND devis is saved */}
+                        {/* Créer facture button — available when milestones are active */}
                         {(milestone.mode === 'percent' ? (milestone.percent || 0) > 0 : (milestone.amount || 0) > 0) && (
                           <Button
                             variant="outline"
                             size="sm"
+                            disabled={docNumber.includes('AUTO')}
+                            title={docNumber.includes('AUTO') ? (isRTL ? 'احفظ الدوفي أولاً للحصول على رقم حقيقي' : 'Enregistrez le devis d\'abord pour obtenir un vrai numéro') : undefined}
                             className="w-full text-[10px] gap-1 mt-1 border-primary/30 text-primary hover:bg-primary/10"
                             onClick={() => {
+                              if (docNumber.includes('AUTO')) {
+                                toast({
+                                  variant: 'destructive',
+                                  title: isRTL ? '⚠️ تنبيه' : '⚠️ Attention',
+                                  description: isRTL ? 'احفظ الدوفي أولاً للحصول على رقم حقيقي' : 'Enregistrez le devis d\'abord pour obtenir un vrai numéro de référence.',
+                                });
+                                return;
+                              }
                               const currentData = invoiceData;
-                              const realDocNumber = docNumber.includes('AUTO') ? (docNumber.replace('AUTO', '---')) : docNumber;
                               const prefill = buildMilestoneInvoicePrefill({
                                 quote: {
-                                  documentNumber: realDocNumber,
+                                  documentNumber: docNumber,
                                   clientName: currentData.client?.name || clientName,
                                   clientAddress: currentData.client?.address || clientAddress,
                                   clientPhone: currentData.client?.phone || clientPhone,

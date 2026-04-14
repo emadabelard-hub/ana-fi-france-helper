@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Receipt, CheckCircle, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { isOfficialDocumentNumber, reserveOfficialDocumentNumber } from '@/lib/documentNumbers';
 import { cn } from '@/lib/utils';
 import type { PaymentMilestone } from '@/components/invoice/InvoiceDisplay';
 import { buildMilestoneInvoicePrefill } from '@/lib/milestoneInvoicePrefill';
@@ -44,6 +47,8 @@ function getMilestoneLabel(index: number, total: number, isRTL: boolean): { fr: 
 
 const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: MilestoneInvoiceActionsProps) => {
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const milestones: PaymentMilestone[] = devisDoc.document_data?.paymentMilestones || [];
@@ -66,27 +71,55 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
   const totalTTC = devisDoc.total_ttc;
   const docData = devisDoc.document_data || {};
 
-  const handleCreateMilestoneInvoice = (milestone: PaymentMilestone, index: number) => {
-    const prefill = buildMilestoneInvoicePrefill({
-      quote: {
-        id: devisDoc.id,
-        documentNumber: devisDoc.document_number,
-        clientName: devisDoc.client_name,
-        clientAddress: devisDoc.client_address,
-        workSiteAddress: devisDoc.work_site_address,
-        natureOperation: devisDoc.nature_operation,
-        totalTTC,
-        documentData: docData,
-      },
-      milestone,
-      milestoneIndex: index,
-      totalMilestones: milestones.length,
-    });
+  const handleCreateMilestoneInvoice = async (milestone: PaymentMilestone, index: number) => {
+    if (!user) return;
 
-    console.log('[MilestoneInvoiceActions] FULL PREFILL OK — milestone_invoice:', prefill);
-    sessionStorage.removeItem('quoteToInvoiceData');
-    sessionStorage.setItem('milestoneInvoiceData', JSON.stringify(prefill));
-    navigate('/pro/invoice-creator?type=facture&prefill=milestone');
+    if (!isOfficialDocumentNumber(devisDoc.document_number, 'devis')) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ في الربط' : 'Erreur de liaison',
+        description: isRTL
+          ? 'رقم الدوفي غير صالح. افتح الدوفي المحفوظ من المستندات.'
+          : 'Le numéro du devis source est invalide. Ouvrez le devis enregistré depuis vos documents.',
+      });
+      return;
+    }
+
+    try {
+      const reservedDocumentNumber = await reserveOfficialDocumentNumber(user.id, 'facture');
+      const prefill = {
+        ...buildMilestoneInvoicePrefill({
+          quote: {
+            id: devisDoc.id,
+            documentNumber: devisDoc.document_number,
+            clientName: devisDoc.client_name,
+            clientAddress: devisDoc.client_address,
+            workSiteAddress: devisDoc.work_site_address,
+            natureOperation: devisDoc.nature_operation,
+            totalTTC,
+            documentData: docData,
+          },
+          milestone,
+          milestoneIndex: index,
+          totalMilestones: milestones.length,
+        }),
+        reservedDocumentNumber,
+      };
+
+      console.log('[MilestoneInvoiceActions] FULL PREFILL OK — milestone_invoice:', prefill);
+      sessionStorage.removeItem('quoteToInvoiceData');
+      sessionStorage.setItem('milestoneInvoiceData', JSON.stringify(prefill));
+      navigate('/pro/invoice-creator?type=facture&prefill=milestone');
+    } catch (error) {
+      console.error('[MilestoneInvoiceActions] Numbering error:', error);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ في الترقيم' : 'Erreur de numérotation',
+        description: isRTL
+          ? 'تعذر إنشاء رقم الفاتورة.'
+          : 'Impossible de générer le numéro de facture.',
+      });
+    }
   };
 
   return (

@@ -34,6 +34,7 @@ import { detectMultipleTasks } from '@/lib/smartItemSplit';
 import { formatObjet, containsArabic } from '@/lib/objetFormatter';
 import { validateDocument } from '@/lib/documentValidator';
 import { calculateInvoiceTotals, validateInvoiceTotalsConsistency } from '@/lib/invoiceTotals';
+import { isOfficialDocumentNumber, reserveOfficialDocumentNumber } from '@/lib/documentNumbers';
 import { generateOfficialPdfBlob } from '@/lib/invoicePdf';
 import { waitForLayout } from '@/lib/pdfEngine';
 import { useAuth } from '@/hooks/useAuth';
@@ -64,6 +65,7 @@ interface PrefillData {
   source?: string;
   sourceDocumentId?: string;
   sourceDocumentNumber?: string;
+  reservedDocumentNumber?: string;
   sitePhotos?: Array<{ data: string; name: string }>;
   descriptionChantier?: string;
   milestoneId?: string;
@@ -227,7 +229,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Editable document number:
   // - For devis: fetch immediately (devis numbers are less critical legally)
   // - For factures: use placeholder until finalization (French legal compliance)
-  const [docNumber, setDocNumber] = useState(() => `${getDocPrefix(documentType)}AUTO`);
+  const [docNumber, setDocNumber] = useState(() => {
+    if (documentType === 'facture' && isOfficialDocumentNumber(prefillData?.reservedDocumentNumber, 'facture')) {
+      return prefillData.reservedDocumentNumber;
+    }
+
+    return `${getDocPrefix(documentType)}AUTO`;
+  });
   const [docNumberLoading, setDocNumberLoading] = useState(false);
   
   // Quote Wizard state
@@ -425,9 +433,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (draft.acompteFixedAmount !== undefined) setAcompteFixedAmount(draft.acompteFixedAmount || 0);
     if (draft.delaiPaiement !== undefined) setDelaiPaiement(draft.delaiPaiement || '30jours');
     if (draft.moyenPaiement !== undefined) setMoyenPaiement(draft.moyenPaiement || 'virement');
-    // For factures: NEVER restore a saved docNumber — always use placeholder until finalization
-    // For devis: restore is fine since devis numbering is less critical
-    if (draft.docNumber !== undefined && draft.docNumber && documentType !== 'facture') {
+    // For factures: only restore an already-reserved official number.
+    if (
+      draft.docNumber !== undefined &&
+      draft.docNumber &&
+      (documentType !== 'facture' || isOfficialDocumentNumber(draft.docNumber, 'facture'))
+    ) {
       setDocNumber(draft.docNumber);
     }
     if (draft.items?.length) setItems(draft.items as LineItem[]);
@@ -610,8 +621,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     clearCurrentDocument();
     try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
     
-    // Reset docNumber to auto placeholder
-    setDocNumber(`${getDocPrefix(documentType)}AUTO`);
+    // Reset docNumber to the reserved invoice number when provided, otherwise use placeholder
+    setDocNumber(
+      documentType === 'facture' && isOfficialDocumentNumber(prefillData.reservedDocumentNumber, 'facture')
+        ? prefillData.reservedDocumentNumber
+        : `${getDocPrefix(documentType)}AUTO`,
+    );
     
     // For image-quote flow, client/items are already set via useState initializers.
     // For other flows, inject here.
@@ -1541,6 +1556,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         logoUrl: resolvedAssets?.logoUrl || signedUrls.logoUrl || invoiceData.logoUrl,
       };
       const { sitePhotos: _sitePhotos, ...documentDataForStorage } = data as any;
+      let sourceDevisNumber = prefillData?.sourceDocumentNumber;
+      const isMilestoneInvoiceFlow =
+        documentType === 'facture' && prefillData?.source === 'milestone_invoice';
       const isQuoteConversionFlow =
         documentType === 'facture' &&
         prefillData?.source === 'devis_conversion' &&
@@ -1568,6 +1586,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           return;
         }
 
+        sourceDevisNumber = sourceDevis.document_number;
+
         if (sourceDevis.converted_to_invoice) {
           toast({
             variant: 'destructive',
@@ -1580,20 +1600,35 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         }
       }
 
-      // NUMBERING: Atomically get the next sequential number from the DB
-      const { data: nextNumber, error: numberError } = await supabase.rpc('get_next_document_number', {
-        _user_id: user.id,
-        _document_type: documentType,
-      });
-      if (numberError || !nextNumber) {
+      if (isMilestoneInvoiceFlow && !isOfficialDocumentNumber(sourceDevisNumber, 'devis')) {
         toast({
           variant: 'destructive',
-          title: isRTL ? '⚠️ خطأ في الترقيم' : '⚠️ Erreur de numérotation',
-          description: isRTL ? 'تعذر إنشاء رقم المستند' : 'Impossible de générer le numéro du document.',
+          title: isRTL ? 'خطأ في الربط' : 'Erreur de liaison',
+          description: isRTL
+            ? 'رقم الدوفي المصدر غير صالح. أعد فتح إنشاء الفاتورة من الدوفي المرتبط.'
+            : 'Le numéro du devis source est invalide. Relancez la facture depuis le devis lié.',
         });
-        console.error('Numbering error:', numberError);
         return;
       }
+
+      let nextNumber = docNumber;
+      if (!isOfficialDocumentNumber(nextNumber, documentType)) {
+        try {
+          setDocNumberLoading(true);
+          nextNumber = await reserveOfficialDocumentNumber(user.id, documentType);
+        } catch (numberError) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? '⚠️ خطأ في الترقيم' : '⚠️ Erreur de numérotation',
+            description: isRTL ? 'تعذر إنشاء رقم المستند' : 'Impossible de générer le numéro du document.',
+          });
+          console.error('Numbering error:', numberError);
+          return;
+        } finally {
+          setDocNumberLoading(false);
+        }
+      }
+
       // Assign the generated number to the document
       data.number = nextNumber;
       setDocNumber(nextNumber);
@@ -1605,11 +1640,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         stampUrl: profile?.stamp_url || documentDataForStorage.stampUrl || null,
         ...(selectedClientId && { linkedClientId: selectedClientId }),
         ...(selectedChantierId && { linkedChantierId: selectedChantierId }),
+        ...(documentType === 'facture' && isOfficialDocumentNumber(sourceDevisNumber, 'devis') && {
+          sourceDevisNumber,
+          ...(prefillData?.sourceDocumentId && { sourceDevisId: prefillData.sourceDocumentId }),
+        }),
         // Milestone invoice metadata (for installment tracking)
         ...(prefillData?.source === 'milestone_invoice' && prefillData?.milestoneId && {
           milestoneId: prefillData.milestoneId,
-          sourceDevisId: prefillData.sourceDocumentId,
-          sourceDevisNumber: prefillData.sourceDocumentNumber,
           milestoneLabel: prefillData.milestoneLabel,
         }),
       };
@@ -3334,43 +3371,62 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                           <Button
                             variant="outline"
                             size="sm"
-                            disabled={docNumber.includes('AUTO')}
-                            title={docNumber.includes('AUTO') ? (isRTL ? 'احفظ الدوفي أولاً للحصول على رقم حقيقي' : 'Enregistrez le devis d\'abord pour obtenir un vrai numéro') : undefined}
                             className="w-full text-[10px] gap-1 mt-1 border-primary/30 text-primary hover:bg-primary/10"
-                            onClick={() => {
-                              if (docNumber.includes('AUTO')) {
+                            onClick={async () => {
+                              if (!user) {
                                 toast({
                                   variant: 'destructive',
-                                  title: isRTL ? '⚠️ تنبيه' : '⚠️ Attention',
-                                  description: isRTL ? 'احفظ الدوفي أولاً للحصول على رقم حقيقي' : 'Enregistrez le devis d\'abord pour obtenir un vrai numéro de référence.',
+                                  title: isRTL ? 'خطأ' : 'Erreur',
+                                  description: isRTL ? 'سجّل الدخول أولاً.' : 'Connectez-vous d’abord.',
                                 });
                                 return;
                               }
-                              const currentData = invoiceData;
-                              const prefill = buildMilestoneInvoicePrefill({
-                                quote: {
-                                  documentNumber: docNumber,
-                                  clientName: currentData.client?.name || clientName,
-                                  clientAddress: currentData.client?.address || clientAddress,
-                                  clientPhone: currentData.client?.phone || clientPhone,
-                                  clientEmail: currentData.client?.email || clientEmail,
-                                  clientSiren: currentData.client?.siren || clientSiren,
-                                  clientTvaIntra: currentData.client?.tvaIntra || clientTvaIntra,
-                                  clientIsB2B: currentData.client?.isB2B || clientIsB2B,
-                                  workSiteAddress: currentData.workSite?.address || workSiteAddress,
-                                  natureOperation: currentData.natureOperation || natureOperation,
-                                  totalTTC: currentData.total,
-                                  documentData: currentData,
-                                },
-                                milestone,
-                                milestoneIndex: idx,
-                                totalMilestones: paymentMilestones.length,
-                              });
+                              try {
+                                const currentData = invoiceData;
+                                const sourceDocumentNumber = isOfficialDocumentNumber(docNumber, 'devis')
+                                  ? docNumber
+                                  : await reserveOfficialDocumentNumber(user.id, 'devis');
+                                const reservedDocumentNumber = await reserveOfficialDocumentNumber(user.id, 'facture');
 
-                              console.log('[InvoiceFormBuilder] Milestone → Créer facture PREFILL OK:', prefill);
-                              sessionStorage.removeItem('quoteToInvoiceData');
-                              sessionStorage.setItem('milestoneInvoiceData', JSON.stringify(prefill));
-                              navigate('/pro/invoice-creator?type=facture&prefill=milestone');
+                                setDocNumber(sourceDocumentNumber);
+
+                                const prefill = {
+                                  ...buildMilestoneInvoicePrefill({
+                                    quote: {
+                                      documentNumber: sourceDocumentNumber,
+                                      clientName: currentData.client?.name || clientName,
+                                      clientAddress: currentData.client?.address || clientAddress,
+                                      clientPhone: currentData.client?.phone || clientPhone,
+                                      clientEmail: currentData.client?.email || clientEmail,
+                                      clientSiren: currentData.client?.siren || clientSiren,
+                                      clientTvaIntra: currentData.client?.tvaIntra || clientTvaIntra,
+                                      clientIsB2B: currentData.client?.isB2B || clientIsB2B,
+                                      workSiteAddress: currentData.workSite?.address || workSiteAddress,
+                                      natureOperation: currentData.natureOperation || natureOperation,
+                                      totalTTC: currentData.total,
+                                      documentData: currentData,
+                                    },
+                                    milestone,
+                                    milestoneIndex: idx,
+                                    totalMilestones: paymentMilestones.length,
+                                  }),
+                                  reservedDocumentNumber,
+                                };
+
+                                console.log('[InvoiceFormBuilder] Milestone → Créer facture PREFILL OK:', prefill);
+                                sessionStorage.removeItem('quoteToInvoiceData');
+                                sessionStorage.setItem('milestoneInvoiceData', JSON.stringify(prefill));
+                                navigate('/pro/invoice-creator?type=facture&prefill=milestone');
+                              } catch (error) {
+                                console.error('[InvoiceFormBuilder] Milestone numbering error:', error);
+                                toast({
+                                  variant: 'destructive',
+                                  title: isRTL ? 'خطأ في الترقيم' : 'Erreur de numérotation',
+                                  description: isRTL
+                                    ? 'تعذر إنشاء رقم رسمي للدوفي أو الفاتورة.'
+                                    : 'Impossible de générer un numéro officiel pour le devis ou la facture.',
+                                });
+                              }
                             }}
                           >
                             <Receipt className="h-3 w-3" />

@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import AuthModal from '@/components/auth/AuthModal';
 import CompanyProfileSection from '@/components/profile/CompanyProfileSection';
+import NumberingSettingsSection from '@/components/profile/NumberingSettingsSection';
 
 const ProSettingsPage = () => {
   const { isRTL } = useLanguage();
@@ -69,6 +70,9 @@ const ProSettingsPage = () => {
           </p>
         </div>
       </section>
+
+      {/* Numbering Settings */}
+      <NumberingSettingsSection />
 
       {/* Company Profile Form */}
       <CompanyProfileSection />

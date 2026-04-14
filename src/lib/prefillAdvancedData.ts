@@ -93,9 +93,10 @@ export function extractAdvancedPrefillData(docData: any) {
     estimatedDuration,
   };
 
-  // Description
-  if (docData.descriptionChantier) {
-    result.descriptionChantier = docData.descriptionChantier;
+  // Description — fallback to natureOperation or objet if descriptionChantier is empty
+  const descChantier = docData.descriptionChantier || docData.natureOperation || docData.objet || '';
+  if (descChantier) {
+    result.descriptionChantier = descChantier;
   }
 
   console.log('[extractAdvancedPrefillData] Extracted:', {

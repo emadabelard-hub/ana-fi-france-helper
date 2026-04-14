@@ -236,20 +236,7 @@ export function validateDocument(
   const correctedItems = items.map((item) => {
     const corrected = { ...item };
 
-    // 2a. Language: ensure French designation
-    const originalDesignation = corrected.designation_fr;
-    const upgraded = upgradeDesignation(originalDesignation);
-    if (upgraded !== originalDesignation) {
-      corrections.push({
-        field: `Désignation`,
-        original: originalDesignation,
-        corrected: upgraded,
-        reason: containsArabic(originalDesignation)
-          ? 'Traduction automatique arabe → français'
-          : 'Description améliorée pour professionnalisme',
-      });
-      corrected.designation_fr = upgraded;
-    }
+    // 2a. Désignation : source de vérité utilisateur — ne jamais modifier automatiquement
 
     // 2b. Unit normalization
     const normalizedUnit = normalizeUnit(corrected.unit);

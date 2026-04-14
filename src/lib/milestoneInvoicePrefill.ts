@@ -67,16 +67,23 @@ export function buildMilestoneInvoicePrefill({
   const milestoneHT = round2(quoteSubtotalHT * milestoneProportion);
   const displayedShare = `${formatPercent(milestoneSharePercent)}%`;
   const selectedMilestoneName = milestone.label?.trim() || milestoneLabel.fr;
-  const objetDevis = (quote.natureOperation || docData.natureOperation || docData.objet || '').trim();
 
-  // Designation = nature des travaux from devis items or objet field — NEVER auto-generate
-  // Priority: 1) objet/natureOperation, 2) first devis item designation, 3) empty string
-  const devisItems = docData.items || [];
-  const firstItemDesignation = devisItems.length > 0
-    ? (devisItems[0].designation_fr || '').trim()
+  // Désignation = reprise exacte du devis source, sans reformulation ni fallback automatique
+  const devisItems = Array.isArray(docData.items) ? docData.items : [];
+  const firstQuoteItem = devisItems.find((item: any) =>
+    typeof item?.designation_fr === 'string' && item.designation_fr.trim().length > 0
+  );
+  const designationFr = typeof firstQuoteItem?.designation_fr === 'string'
+    ? firstQuoteItem.designation_fr
     : '';
-  const designationFr = objetDevis || firstItemDesignation || '';
-  const designationAr = objetDevis || firstItemDesignation || '';
+  const designationAr = typeof firstQuoteItem?.designation_ar === 'string'
+    ? firstQuoteItem.designation_ar
+    : '';
+  const formNatureOperation = docData.natureOperation === 'service'
+    || docData.natureOperation === 'goods'
+    || docData.natureOperation === 'mixed'
+    ? docData.natureOperation
+    : undefined;
 
   return {
     ...advancedData,
@@ -88,7 +95,7 @@ export function buildMilestoneInvoicePrefill({
     clientTvaIntra: quote.clientTvaIntra || docData.client?.tvaIntra || '',
     clientIsB2B: quote.clientIsB2B ?? docData.client?.isB2B ?? false,
     workSiteAddress: quote.workSiteAddress || docData.workSite?.address || '',
-    natureOperation: quote.natureOperation || docData.natureOperation || '',
+    natureOperation: formNatureOperation,
     items: [{
       designation_fr: designationFr,
       designation_ar: designationAr,

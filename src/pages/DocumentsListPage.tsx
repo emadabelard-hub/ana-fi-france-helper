@@ -41,6 +41,14 @@ interface DocumentRow {
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
+const isStoredNatureType = (value: unknown): value is 'service' | 'goods' | 'mixed' =>
+  value === 'service' || value === 'goods' || value === 'mixed';
+
+const getStoredWorkDescription = (docData: any, storedNatureOperation?: string | null) =>
+  docData?.descriptionChantier
+  || docData?.objet
+  || (isStoredNatureType(storedNatureOperation) ? '' : (storedNatureOperation || ''));
+
 const DocumentsListPage = () => {
   const { isRTL } = useLanguage();
   const { user, isLoading: authLoading } = useAuth();
@@ -270,7 +278,7 @@ const DocumentsListPage = () => {
       clientTvaIntra: docData.client?.tvaIntra || '',
       clientIsB2B: docData.client?.isB2B || false,
       workSiteAddress: doc.work_site_address || docData.workSite?.address || '',
-      natureOperation: doc.nature_operation || docData.natureOperation || '',
+      natureOperation: isStoredNatureType(docData.natureOperation) ? docData.natureOperation : undefined,
       items: items.map((item: any) => ({
         designation_fr: item.designation_fr || '',
         designation_ar: item.designation_ar || '',
@@ -279,7 +287,7 @@ const DocumentsListPage = () => {
         unitPrice: item.unitPrice || 0,
       })),
       notes: docData.legalMentions || '',
-      descriptionChantier: doc.nature_operation || docData.descriptionChantier || docData.natureOperation || docData.objet || '',
+      descriptionChantier: getStoredWorkDescription(docData, doc.nature_operation),
       source: 'devis_conversion',
       sourceDocumentId: doc.id,
       sourceDocumentNumber: doc.document_number,
@@ -305,7 +313,7 @@ const DocumentsListPage = () => {
       clientTvaIntra: docData.client?.tvaIntra || '',
       clientIsB2B: docData.client?.isB2B || false,
       workSiteAddress: doc.work_site_address || docData.workSite?.address || '',
-      natureOperation: doc.nature_operation || docData.natureOperation || '',
+      natureOperation: isStoredNatureType(docData.natureOperation) ? docData.natureOperation : undefined,
       items: items.map((item: any) => ({
         designation_fr: item.designation_fr || '',
         designation_ar: item.designation_ar || '',
@@ -314,7 +322,7 @@ const DocumentsListPage = () => {
         unitPrice: item.unitPrice || 0,
       })),
       notes: docData.legalMentions || '',
-      descriptionChantier: doc.nature_operation || docData.descriptionChantier || docData.natureOperation || docData.objet || '',
+      descriptionChantier: getStoredWorkDescription(docData, doc.nature_operation),
       source: 'devis_duplication',
       ...advancedData,
     };
@@ -372,7 +380,7 @@ const DocumentsListPage = () => {
         client_name: doc.client_name,
         client_address: doc.client_address,
         work_site_address: doc.work_site_address,
-        nature_operation: doc.nature_operation,
+        nature_operation: getStoredWorkDescription(docData, doc.nature_operation),
         subtotal_ht: doc.subtotal_ht,
         tva_amount: doc.tva_amount,
         total_ttc: doc.total_ttc,

@@ -3330,16 +3330,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                           />
                         </div>
                         {/* Créer facture button — available when milestones are active AND devis is saved */}
-                        {(
+                        {(milestone.mode === 'percent' ? (milestone.percent || 0) > 0 : (milestone.amount || 0) > 0) && (
                           <Button
                             variant="outline"
                             size="sm"
-                            disabled={docNumber.includes('AUTO')}
-                            title={docNumber.includes('AUTO') ? (isRTL ? 'احفظ الدوفي أولاً' : 'Enregistrez le devis d\'abord') : ''}
-                            className="w-full text-[10px] gap-1 mt-1 border-primary/30 text-primary hover:bg-primary/10 disabled:opacity-40"
+                            className="w-full text-[10px] gap-1 mt-1 border-primary/30 text-primary hover:bg-primary/10"
                             onClick={() => {
                               const currentData = invoiceData;
-                              const realDocNumber = docNumber.includes('AUTO') ? '' : docNumber;
+                              const realDocNumber = docNumber.includes('AUTO') ? (docNumber.replace('AUTO', '---')) : docNumber;
                               const prefill = buildMilestoneInvoicePrefill({
                                 quote: {
                                   documentNumber: realDocNumber,

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import type { PaymentMilestone } from '@/components/invoice/InvoiceDisplay';
-import { extractAdvancedPrefillData } from '@/lib/prefillAdvancedData';
+import { buildMilestoneInvoicePrefill } from '@/lib/milestoneInvoicePrefill';
 
 interface MilestoneInvoiceActionsProps {
   /** The source devis document */
@@ -67,53 +67,21 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
   const docData = devisDoc.document_data || {};
 
   const handleCreateMilestoneInvoice = (milestone: PaymentMilestone, index: number) => {
-    // Compute proportion from the milestone
-    const milestoneProportion = milestone.mode === 'percent'
-      ? (milestone.percent || 0) / 100
-      : (milestone.amount || 0) / (totalTTC || 1);
-
-    // Scale HT proportionally from the quote's HT — do NOT recompute from TTC
-    const quoteSubtotalHT = docData.subtotalAfterDiscount ?? docData.subtotal ?? docData.subtotalHT ?? docData.totalHT ?? 0;
-    const milestoneHT = Math.round(quoteSubtotalHT * milestoneProportion * 100) / 100;
-
-    const label = getMilestoneLabel(index, milestones.length, isRTL);
-
-    // Build prefill data reusing existing flow
-    const items = docData.items || [];
-    const advancedData = extractAdvancedPrefillData(docData);
-    const prefill = {
-      clientName: devisDoc.client_name || docData.client?.name || '',
-      clientAddress: devisDoc.client_address || docData.client?.address || '',
-      clientPhone: docData.client?.phone || '',
-      clientEmail: docData.client?.email || '',
-      clientSiren: docData.client?.siren || '',
-      clientTvaIntra: docData.client?.tvaIntra || '',
-      clientIsB2B: docData.client?.isB2B || false,
-      workSiteAddress: devisDoc.work_site_address || docData.workSite?.address || '',
-      natureOperation: devisDoc.nature_operation || docData.natureOperation || '',
-      // Single line item — unitPrice is HT so the form applies TVA correctly
-      items: [{
-        designation_fr: `${label.fr} — Paiement de ${milestone.mode === 'percent' ? `${milestone.percent}%` : `${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(milestone.amount || 0)}`} sur devis n° ${devisDoc.document_number}\n${milestone.label || `Échéance ${index + 1}`}`,
-        designation_ar: `${label.ar} — دفعة ${milestone.mode === 'percent' ? `${milestone.percent}%` : `${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(milestone.amount || 0)}`} على العرض رقم ${devisDoc.document_number}\n${milestone.label || `قسط ${index + 1}`}`,
-        quantity: 1,
-        unit: 'forfait',
-        unitPrice: milestoneHT,
-      }],
-      notes: `${label.fr} relative au devis n° ${devisDoc.document_number}.\nMontant total du devis : ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(totalTTC)} TTC.\nDétail des travaux d'origine : ${items.length} poste(s).`,
-      source: 'milestone_invoice',
-      sourceDocumentId: devisDoc.id,
-      sourceDocumentNumber: devisDoc.document_number,
-      milestoneId: milestone.id,
+    const prefill = buildMilestoneInvoicePrefill({
+      quote: {
+        id: devisDoc.id,
+        documentNumber: devisDoc.document_number,
+        clientName: devisDoc.client_name,
+        clientAddress: devisDoc.client_address,
+        workSiteAddress: devisDoc.work_site_address,
+        natureOperation: devisDoc.nature_operation,
+        totalTTC,
+        documentData: docData,
+      },
+      milestone,
       milestoneIndex: index,
-      milestoneLabel: label.fr,
-      // Include advanced data from the source devis
-      ...advancedData,
-      // Override: milestone invoices should NOT re-enable milestones/acompte
-      milestonesEnabled: false,
-      paymentMilestones: [],
-      acompteEnabled: false,
-      discountEnabled: false,
-    };
+      totalMilestones: milestones.length,
+    });
 
     console.log('[MilestoneInvoiceActions] FULL PREFILL OK — milestone_invoice:', prefill);
     sessionStorage.removeItem('quoteToInvoiceData');

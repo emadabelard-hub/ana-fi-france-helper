@@ -14,7 +14,7 @@ import { useProfile, Profile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw, Users, Save, Languages, SlidersHorizontal, ChevronDown, ChevronUp, Check, CreditCard, BarChart3, Shield, Receipt } from 'lucide-react';
-import { extractAdvancedPrefillData } from '@/lib/prefillAdvancedData';
+import { buildMilestoneInvoicePrefill } from '@/lib/milestoneInvoicePrefill';
 import FormProgressBar, { type ProgressSection } from './FormProgressBar';
 import StepNavigation, { StepButtons, type WizardStep } from './StepNavigation';
 import InvoiceDisplay, { InvoiceData, PaymentMilestone } from './InvoiceDisplay';
@@ -749,6 +749,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Build invoice data from form
   const buildInvoiceData = (): InvoiceData => {
+    const isMilestoneInvoiceFlow = prefillData?.source === 'milestone_invoice';
+    const effectiveMilestonesEnabled = isMilestoneInvoiceFlow ? false : milestonesEnabled;
+    const effectivePaymentMilestones = isMilestoneInvoiceFlow ? [] : paymentMilestones;
+    const effectiveAcompteEnabled = isMilestoneInvoiceFlow ? false : acompteEnabled;
+
     // Combine regular items with travel costs if enabled
     const allItems = [...items.filter(item => item.designation_fr.trim() && Number(item.unitPrice) >= 0)];
     
@@ -874,22 +879,28 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         : isIntracomTva ? 'intracommunautaire' as const
         : 'standard' as const,
       total,
-      paymentDeadline: delaiPaiement === 'immediate' ? 'immediate' : delaiPaiement === 'echeancier' ? 'echeancier' : undefined,
-      acomptePercent: acompteEnabled && !milestonesEnabled && acompteMode === 'percent' ? acomptePercent : undefined,
+      paymentDeadline: isMilestoneInvoiceFlow && delaiPaiement === 'echeancier'
+        ? undefined
+        : delaiPaiement === 'immediate'
+          ? 'immediate'
+          : delaiPaiement === 'echeancier'
+            ? 'echeancier'
+            : undefined,
+      acomptePercent: effectiveAcompteEnabled && !effectiveMilestonesEnabled && acompteMode === 'percent' ? acomptePercent : undefined,
       acompteAmount: (() => {
-        if (milestonesEnabled || !acompteEnabled) return undefined;
+        if (effectiveMilestonesEnabled || !effectiveAcompteEnabled) return undefined;
         if (acompteMode === 'percent') return Math.round(total * (acomptePercent / 100) * 100) / 100;
         return acompteFixedAmount;
       })(),
-      acompteMode: acompteEnabled && !milestonesEnabled ? acompteMode : undefined,
+      acompteMode: effectiveAcompteEnabled && !effectiveMilestonesEnabled ? acompteMode : undefined,
       netAPayer: (() => {
-        if (milestonesEnabled || !acompteEnabled) return undefined;
+        if (effectiveMilestonesEnabled || !effectiveAcompteEnabled) return undefined;
         const acompte = acompteMode === 'percent' 
           ? Math.round(total * (acomptePercent / 100) * 100) / 100 
           : acompteFixedAmount;
         return Math.round((total - acompte) * 100) / 100;
       })(),
-      paymentMilestones: milestonesEnabled && paymentMilestones.length > 0 ? paymentMilestones : undefined,
+      paymentMilestones: effectiveMilestonesEnabled && effectivePaymentMilestones.length > 0 ? effectivePaymentMilestones : undefined,
       paymentTerms: (() => {
         const delaiLabel = delaiPaiement === 'immediate' ? 'à réception' 
           : delaiPaiement === '15jours' ? 'à 15 jours'
@@ -900,8 +911,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           : 'fin de mois';
         const moyenLabel = moyenPaiement === 'virement' ? 'Virement' : moyenPaiement === 'cheque' ? 'Chèque' : 'Espèces';
         let text = '';
-        if (milestonesEnabled && paymentMilestones.length > 0) {
-          text += `Paiement selon échéancier (${paymentMilestones.length} étapes). `;
+        if (isMilestoneInvoiceFlow) {
+          text += delaiPaiement === 'echeancier'
+            ? `Paiement par ${moyenLabel}. `
+            : `Paiement ${delaiLabel} par ${moyenLabel}. `;
+        } else if (effectiveMilestonesEnabled && effectivePaymentMilestones.length > 0) {
+          text += `Paiement selon échéancier (${effectivePaymentMilestones.length} étapes). `;
           text += `Le paiement sera effectué selon l'avancement des travaux décrit ci-dessus. `;
           // Smart labeling: if a specific deadline is set alongside the schedule
           if (delaiPaiement !== 'echeancier' && delaiPaiement !== 'immediate') {
@@ -3322,48 +3337,25 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                             className="w-full text-[10px] gap-1 mt-1 border-primary/30 text-primary hover:bg-primary/10"
                             onClick={() => {
                               const currentData = invoiceData;
-                              const milestoneP = milestone.mode === 'percent'
-                                ? (milestone.percent || 0) / 100
-                                : (milestone.amount || 0) / (currentData.total || 1);
-                              const quoteSubtotalHT = currentData.subtotalAfterDiscount ?? currentData.subtotal ?? 0;
-                              const milestoneHT = Math.round(quoteSubtotalHT * milestoneP * 100) / 100;
-
-                              const labelMap: Record<string, { fr: string; ar: string }> = {};
-                              if (idx === 0) { labelMap.l = { fr: "Facture d'acompte", ar: 'فاتورة مقدم' }; }
-                              else if (idx === paymentMilestones.length - 1) { labelMap.l = { fr: 'Facture finale', ar: 'فاتورة نهائية' }; }
-                              else { labelMap.l = { fr: 'Facture intermédiaire', ar: 'فاتورة مرحلية' }; }
-                              const label = labelMap.l;
-
-                              const advancedData = extractAdvancedPrefillData(currentData as any);
-                              const prefill = {
-                                clientName: currentData.client?.name || clientName,
-                                clientAddress: currentData.client?.address || clientAddress,
-                                clientPhone: currentData.client?.phone || clientPhone,
-                                clientEmail: currentData.client?.email || clientEmail,
-                                clientSiren: currentData.client?.siren || clientSiren,
-                                clientTvaIntra: currentData.client?.tvaIntra || clientTvaIntra,
-                                clientIsB2B: currentData.client?.isB2B || clientIsB2B,
-                                workSiteAddress: currentData.workSite?.address || workSiteAddress,
-                                natureOperation: currentData.natureOperation || natureOperation,
-                                items: [{
-                                  designation_fr: `${label.fr} — Paiement de ${milestone.mode === 'percent' ? `${milestone.percent}%` : `${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(milestone.amount || 0)}`} sur devis n° ${docNumber}\n${milestone.label || `Échéance ${idx + 1}`}`,
-                                  designation_ar: `${label.ar} — دفعة ${milestone.mode === 'percent' ? `${milestone.percent}%` : `${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(milestone.amount || 0)}`} على العرض رقم ${docNumber}\n${milestone.label || `قسط ${idx + 1}`}`,
-                                  quantity: 1,
-                                  unit: 'forfait',
-                                  unitPrice: milestoneHT,
-                                }],
-                                notes: `${label.fr} relative au devis n° ${docNumber}.\nMontant total du devis : ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(currentData.total)} TTC.`,
-                                source: 'milestone_invoice',
-                                sourceDocumentNumber: docNumber,
-                                milestoneId: milestone.id,
+                              const prefill = buildMilestoneInvoicePrefill({
+                                quote: {
+                                  documentNumber: docNumber,
+                                  clientName: currentData.client?.name || clientName,
+                                  clientAddress: currentData.client?.address || clientAddress,
+                                  clientPhone: currentData.client?.phone || clientPhone,
+                                  clientEmail: currentData.client?.email || clientEmail,
+                                  clientSiren: currentData.client?.siren || clientSiren,
+                                  clientTvaIntra: currentData.client?.tvaIntra || clientTvaIntra,
+                                  clientIsB2B: currentData.client?.isB2B || clientIsB2B,
+                                  workSiteAddress: currentData.workSite?.address || workSiteAddress,
+                                  natureOperation: currentData.natureOperation || natureOperation,
+                                  totalTTC: currentData.total,
+                                  documentData: currentData,
+                                },
+                                milestone,
                                 milestoneIndex: idx,
-                                milestoneLabel: label.fr,
-                                ...advancedData,
-                                milestonesEnabled: false,
-                                paymentMilestones: [],
-                                acompteEnabled: false,
-                                discountEnabled: false,
-                              };
+                                totalMilestones: paymentMilestones.length,
+                              });
 
                               console.log('[InvoiceFormBuilder] Milestone → Créer facture PREFILL OK:', prefill);
                               sessionStorage.removeItem('quoteToInvoiceData');

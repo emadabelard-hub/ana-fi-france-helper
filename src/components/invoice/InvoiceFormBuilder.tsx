@@ -771,7 +771,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     const effectiveAcompteEnabled = isMilestoneInvoiceFlow ? false : acompteEnabled;
 
     // Combine regular items with travel costs if enabled
-    const allItems = [...items.filter(item => item.designation_fr.trim() && Number(item.unitPrice) >= 0)];
+    // For milestone invoices, keep items even with empty designation (user-provided data is sacred)
+    const allItems = [...items.filter(item => (isMilestoneInvoiceFlow || item.designation_fr.trim()) && Number(item.unitPrice) >= 0)];
     
     // Add travel costs as a line item if enabled
     if (includeTravelCosts && travelPrice > 0) {

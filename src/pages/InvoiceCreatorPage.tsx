@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, PenLine, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -53,8 +53,9 @@ const InvoiceCreatorPage = () => {
   const [showTypeModal, setShowTypeModal] = useState(!urlDocType && !resumedDocumentType);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
-  // Initialize prefillData synchronously so it is available on first render.
-  const [prefillData] = useState<any>(() => {
+  const activeDocumentType = urlDocType ?? documentType;
+
+  const prefillData = useMemo(() => {
     // --- NEW: Image Quote To Invoice flow ---
     if (isImageQuoteFlow) {
       try {
@@ -83,12 +84,15 @@ const InvoiceCreatorPage = () => {
             notes: '',
           };
           console.log('[InvoiceCreator] ✅ Prefill from imageQuoteToInvoiceData:', transformed.items.length, 'items');
-          sessionStorage.removeItem('imageQuoteToInvoiceData');
           return transformed;
         }
       } catch (error) {
         console.error('[InvoiceCreator] Failed to parse imageQuoteToInvoiceData:', error);
       }
+      return null;
+    }
+
+    if (!expectsStoredPrefill) {
       return null;
     }
 
@@ -105,7 +109,6 @@ const InvoiceCreatorPage = () => {
       console.log('READ quoteToInvoiceData', parsed);
       if (parsed?.items?.length > 0) {
         console.log('[InvoiceCreator] ✅ Prefill from quoteToInvoiceData:', parsed.items.length, 'items');
-        sessionStorage.removeItem('quoteToInvoiceData');
         return parsed;
       }
 
@@ -116,17 +119,17 @@ const InvoiceCreatorPage = () => {
 
     console.log('[InvoiceCreator] No valid quote data found');
     return null;
-  });
+  }, [expectsStoredPrefill, isImageQuoteFlow]);
 
   const missingQuoteData = (expectsStoredPrefill || isImageQuoteFlow) && !prefillData;
 
   // Navigation guard: block leaving when a document type is selected (form is active)
-  const hasUnsavedWork = !!documentType && !missingQuoteData;
+  const hasUnsavedWork = !!activeDocumentType && !missingQuoteData;
   const { showLeaveDialog, requestLeave, confirmLeave, cancelLeave } = useNavigationGuard(hasUnsavedWork);
   
   // Sync URL with document type (no more prefill loading here — done synchronously above)
   useEffect(() => {
-    if (urlDocType && !documentType) {
+    if (urlDocType && documentType !== urlDocType) {
       setDocumentType(urlDocType);
       setShowTypeModal(false);
     }
@@ -246,9 +249,9 @@ const InvoiceCreatorPage = () => {
               "text-lg font-bold text-foreground",
               isRTL && "font-cairo"
             )}>
-              {documentType === 'devis' 
+              {activeDocumentType === 'devis' 
                 ? (isRTL ? 'إنشاء عرض سعر (Devis)' : 'Créer un Devis')
-                : documentType === 'facture'
+                : activeDocumentType === 'facture'
                   ? (isRTL ? 'إنشاء فاتورة (Facture)' : 'Créer une Facture')
                   : (isRTL ? 'اعمل فواتيرك ودوفيهاتك معانا' : 'Factures & Devis')}
             </h1>
@@ -285,9 +288,10 @@ const InvoiceCreatorPage = () => {
               No quote data found
             </p>
           </div>
-        ) : documentType ? (
+        ) : activeDocumentType ? (
           <InvoiceFormBuilder 
-            documentType={documentType}
+            key={`${activeDocumentType}-${prefillSource ?? urlSource ?? 'none'}-${prefillData?.source ?? 'base'}-${prefillData?.sourceDocumentId ?? prefillData?.sourceDocumentNumber ?? 'local'}-${prefillData?.milestoneId ?? 'default'}`}
+            documentType={activeDocumentType}
             onBack={handleFormBack}
             prefillData={prefillData}
             onDocumentTypeChange={(type) => {

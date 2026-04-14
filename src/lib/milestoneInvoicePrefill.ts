@@ -69,9 +69,14 @@ export function buildMilestoneInvoicePrefill({
   const selectedMilestoneName = milestone.label?.trim() || milestoneLabel.fr;
   const objetDevis = (quote.natureOperation || docData.natureOperation || docData.objet || '').trim();
 
-  // Designation = nature des travaux ONLY — never inject acompte/percent/devis ref
-  const designationFr = objetDevis || '';
-  const designationAr = objetDevis || '';
+  // Designation = nature des travaux from devis items or objet field — NEVER auto-generate
+  // Priority: 1) objet/natureOperation, 2) first devis item designation, 3) empty string
+  const devisItems = docData.items || [];
+  const firstItemDesignation = devisItems.length > 0
+    ? (devisItems[0].designation_fr || '').trim()
+    : '';
+  const designationFr = objetDevis || firstItemDesignation || '';
+  const designationAr = objetDevis || firstItemDesignation || '';
 
   return {
     ...advancedData,

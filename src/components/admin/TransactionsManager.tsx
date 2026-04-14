@@ -83,7 +83,7 @@ const TransactionsManager = ({ isRTL }: TransactionsManagerProps) => {
               <div className={cn(isRTL && "text-right")}>
                 <p className="text-3xl font-bold">{totalRevenue.toFixed(0)} €</p>
                 <p className="text-sm text-muted-foreground">
-                  {isRTL ? 'إجمالي الإيرادات' : 'Revenu total'}
+                  {isRTL ? 'رقم المعاملات المحصل' : 'Revenu total'}
                 </p>
               </div>
             </div>

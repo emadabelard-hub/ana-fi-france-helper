@@ -167,7 +167,7 @@ const Dashboard = () => {
             <div className={cn('flex items-center gap-2 mb-2', isRTL && 'flex-row-reverse')}>
               <TrendingUp className="h-4 w-4 text-emerald-400" />
               <span className={cn('text-[11px] font-bold text-emerald-400', isRTL && 'font-cairo')}>
-                {isRTL ? 'إجمالي الإيرادات' : 'Chiffre d\'affaires'}
+                {isRTL ? 'رقم المعاملات المحصل' : 'Chiffre d\'affaires'}
               </span>
             </div>
             <p className={cn('text-xl font-black text-emerald-400', isRTL && 'text-right')}>{fmt(ca)}</p>

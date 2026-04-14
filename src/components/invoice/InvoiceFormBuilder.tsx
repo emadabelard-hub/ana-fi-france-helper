@@ -982,6 +982,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       })(),
       sitePhotos: (sitePhotos.length > 0 && includePhotosInPdf) ? sitePhotos : undefined,
       sourceDevisNumber: prefillData?.sourceDocumentNumber || undefined,
+      acompteLabel: prefillData?.acompteLabel || undefined,
     };
   };
   

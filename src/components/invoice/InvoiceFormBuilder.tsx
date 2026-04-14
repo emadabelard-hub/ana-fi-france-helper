@@ -89,6 +89,7 @@ interface PrefillData {
   estimatedStartDate?: string;
   estimatedDuration?: string;
   validityDuration?: 15 | 30 | 60 | 90;
+  acompteLabel?: string;
 }
 
 interface InvoiceFormBuilderProps {
@@ -982,6 +983,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       })(),
       sitePhotos: (sitePhotos.length > 0 && includePhotosInPdf) ? sitePhotos : undefined,
       sourceDevisNumber: prefillData?.sourceDocumentNumber || undefined,
+      acompteLabel: prefillData?.acompteLabel || undefined,
     };
   };
   

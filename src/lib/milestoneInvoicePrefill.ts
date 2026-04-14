@@ -37,12 +37,12 @@ const formatPercent = (value: number) =>
 
 function getMilestoneInvoiceLabel(index: number, total: number): { fr: string; ar: string } {
   if (index === 0) {
-    return { fr: "Facture d'acompte", ar: 'فاتورة مقدم' };
+    return { fr: "Facture d'acompte", ar: '\u0641\u0627\u062A\u0648\u0631\u0629 \u0645\u0642\u062F\u0645' };
   }
   if (index === total - 1) {
-    return { fr: 'Facture finale', ar: 'فاتورة نهائية' };
+    return { fr: 'Facture finale', ar: '\u0641\u0627\u062A\u0648\u0631\u0629 \u0646\u0647\u0627\u0626\u064A\u0629' };
   }
-  return { fr: 'Facture intermédiaire', ar: 'فاتورة مرحلية' };
+  return { fr: 'Facture interm\u00E9diaire', ar: '\u0641\u0627\u062A\u0648\u0631\u0629 \u0645\u0631\u062D\u0644\u064A\u0629' };
 }
 
 export function buildMilestoneInvoicePrefill({
@@ -69,13 +69,9 @@ export function buildMilestoneInvoicePrefill({
   const selectedMilestoneName = milestone.label?.trim() || milestoneLabel.fr;
   const objetDevis = (quote.natureOperation || docData.natureOperation || docData.objet || '').trim();
 
-  // Build professional designation: nature des travaux first, then acompte + devis ref
-  const designationFr = objetDevis
-    ? `${objetDevis} – Acompte de ${displayedShare}`
-    : `Acompte de ${displayedShare}`;
-  const designationAr = objetDevis
-    ? `${objetDevis} – دفعة ${displayedShare}`
-    : `دفعة ${displayedShare}`;
+  // Designation = nature des travaux ONLY — never inject acompte/percent/devis ref
+  const designationFr = objetDevis || '';
+  const designationAr = objetDevis || '';
 
   return {
     ...advancedData,
@@ -95,7 +91,8 @@ export function buildMilestoneInvoicePrefill({
       unit: 'forfait',
       unitPrice: milestoneHT,
     }],
-    notes: `Facture d’échéance : ${selectedMilestoneName}\nPaiement de ${displayedShare} sur devis n° ${quote.documentNumber}\nMontant total du devis : ${formatCurrency(quote.totalTTC)} TTC`,
+    acompteLabel: `Acompte de ${displayedShare}`,
+    notes: `Facture d'\u00E9ch\u00E9ance : ${selectedMilestoneName}\nPaiement de ${displayedShare} sur devis n\u00B0 ${quote.documentNumber}\nMontant total du devis : ${formatCurrency(quote.totalTTC)} TTC`,
     source: 'milestone_invoice',
     sourceDocumentId: quote.id,
     sourceDocumentNumber: quote.documentNumber,

@@ -19,6 +19,14 @@ import SendToAccountantModal from '@/components/archive/SendToAccountantModal';
 import { useProfile } from '@/hooks/useProfile';
 import { generateProfessionalCSV, generateAccountingCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
 
+const isStoredNatureType = (value: unknown): value is 'service' | 'goods' | 'mixed' =>
+  value === 'service' || value === 'goods' || value === 'mixed';
+
+const getStoredWorkDescription = (docData: any, storedNatureOperation?: string | null) =>
+  docData?.descriptionChantier
+  || docData?.objet
+  || (isStoredNatureType(storedNatureOperation) ? '' : (storedNatureOperation || ''));
+
 const ArchiveAccountingPage = () => {
   const { isRTL } = useLanguage();
   const { user, isLoading: authLoading } = useAuth();
@@ -263,7 +271,7 @@ const ArchiveAccountingPage = () => {
       clientPhone: docData.client?.phone || '',
       clientEmail: docData.client?.email || '',
       workSiteAddress: raw.work_site_address || '',
-      natureOperation: raw.nature_operation || '',
+      natureOperation: isStoredNatureType(docData.natureOperation) ? docData.natureOperation : undefined,
       items: items.map((item: any) => ({
         designation_fr: item.designation_fr || '',
         designation_ar: item.designation_ar || '',
@@ -271,7 +279,7 @@ const ArchiveAccountingPage = () => {
         unit: item.unit || 'm²',
         unitPrice: item.unitPrice || 0,
       })),
-      descriptionChantier: raw.nature_operation || docData.descriptionChantier || docData.natureOperation || docData.objet || '',
+      descriptionChantier: getStoredWorkDescription(docData, raw.nature_operation),
       source: 'devis_conversion',
       sourceDocumentId: raw.id,
       sourceDocumentNumber: raw.document_number,

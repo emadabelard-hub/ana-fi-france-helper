@@ -666,7 +666,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         setTranslationAttemptIds(attemptedIds);
       }
 
-      if (prefillData.notes) {
+      if (prefillData.source === 'quote_to_invoice' && prefillData.notes) {
         setDescriptionChantier(prev => prev || prefillData.notes || '');
       }
     }
@@ -1696,7 +1696,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         client_name: data.client.name,
         client_address: data.client.address,
         work_site_address: data.workSite?.address || '',
-        nature_operation: data.natureOperation || '',
+        nature_operation: data.descriptionChantier || '',
         subtotal_ht: data.subtotal,
         tva_rate: data.tvaRate,
         tva_amount: data.tvaAmount,
@@ -1799,7 +1799,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         client_name: data.client.name || '(مسودة)',
         client_address: data.client.address || '',
         work_site_address: data.workSite?.address || '',
-        nature_operation: data.natureOperation || '',
+        nature_operation: data.descriptionChantier || '',
         subtotal_ht: data.subtotal || 0,
         tva_rate: data.tvaRate || 0,
         tva_amount: data.tvaAmount || 0,

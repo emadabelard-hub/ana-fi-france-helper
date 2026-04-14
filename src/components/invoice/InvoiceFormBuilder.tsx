@@ -3314,8 +3314,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                             className="text-xs flex-1"
                           />
                         </div>
-                        {/* Créer facture button — only for saved devis */}
-                        {documentType === 'devis' && (
+                        {/* Créer facture button — available when milestones are active */}
+                        {(
                           <Button
                             variant="outline"
                             size="sm"

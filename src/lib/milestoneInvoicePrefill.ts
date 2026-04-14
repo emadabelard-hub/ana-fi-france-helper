@@ -71,11 +71,11 @@ export function buildMilestoneInvoicePrefill({
 
   // Build professional designation: nature des travaux first, then acompte + devis ref
   const designationFr = objetDevis
-    ? `${objetDevis} – Acompte de ${displayedShare} (selon devis n° ${quote.documentNumber})`
-    : `Acompte de ${displayedShare} (selon devis n° ${quote.documentNumber})`;
+    ? `${objetDevis} – Acompte de ${displayedShare}`
+    : `Acompte de ${displayedShare}`;
   const designationAr = objetDevis
-    ? `${objetDevis} – دفعة ${displayedShare} (حسب العرض رقم ${quote.documentNumber})`
-    : `دفعة ${displayedShare} (حسب العرض رقم ${quote.documentNumber})`;
+    ? `${objetDevis} – دفعة ${displayedShare}`
+    : `دفعة ${displayedShare}`;
 
   return {
     ...advancedData,

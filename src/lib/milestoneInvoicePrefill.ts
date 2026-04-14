@@ -67,6 +67,12 @@ export function buildMilestoneInvoicePrefill({
   const milestoneHT = round2(quoteSubtotalHT * milestoneProportion);
   const displayedShare = `${formatPercent(milestoneSharePercent)}%`;
   const selectedMilestoneName = milestone.label?.trim() || milestoneLabel.fr;
+  const objetDevis = (quote.natureOperation || docData.natureOperation || docData.objet || '').trim();
+
+  // Build professional designation with objet if available
+  const objetSuffix = objetDevis ? ` – ${objetDevis}` : '';
+  const designationFr = `Acompte de ${displayedShare}${objetSuffix} (selon devis n° ${quote.documentNumber})`;
+  const designationAr = `دفعة ${displayedShare}${objetDevis ? ` – ${objetDevis}` : ''} (حسب العرض رقم ${quote.documentNumber})`;
 
   return {
     ...advancedData,
@@ -80,8 +86,8 @@ export function buildMilestoneInvoicePrefill({
     workSiteAddress: quote.workSiteAddress || docData.workSite?.address || '',
     natureOperation: quote.natureOperation || docData.natureOperation || '',
     items: [{
-      designation_fr: `${milestoneLabel.fr} – paiement de ${displayedShare} du devis n° ${quote.documentNumber}`,
-      designation_ar: `${milestoneLabel.ar} – دفعة ${displayedShare} من العرض رقم ${quote.documentNumber}`,
+      designation_fr: designationFr,
+      designation_ar: designationAr,
       quantity: 1,
       unit: 'forfait',
       unitPrice: milestoneHT,

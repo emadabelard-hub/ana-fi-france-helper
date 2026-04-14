@@ -981,6 +981,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         return parts.length > 1 ? parts.join(' — ') : (p.legal_footer || undefined);
       })(),
       sitePhotos: (sitePhotos.length > 0 && includePhotosInPdf) ? sitePhotos : undefined,
+      sourceDevisNumber: prefillData?.sourceDocumentNumber || undefined,
     };
   };
   

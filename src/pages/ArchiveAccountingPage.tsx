@@ -271,6 +271,7 @@ const ArchiveAccountingPage = () => {
         unit: item.unit || 'm²',
         unitPrice: item.unitPrice || 0,
       })),
+      descriptionChantier: raw.nature_operation || docData.descriptionChantier || docData.natureOperation || docData.objet || '',
       source: 'devis_conversion',
       sourceDocumentId: raw.id,
       sourceDocumentNumber: raw.document_number,

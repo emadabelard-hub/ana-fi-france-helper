@@ -3366,8 +3366,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                               };
 
                               console.log('[InvoiceFormBuilder] Milestone → Créer facture PREFILL OK:', prefill);
-                              sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
-                              navigate('/pro/invoice-creator?type=facture&prefill=quote');
+                              sessionStorage.removeItem('quoteToInvoiceData');
+                              sessionStorage.setItem('milestoneInvoiceData', JSON.stringify(prefill));
+                              navigate('/pro/invoice-creator?type=facture&prefill=milestone');
                             }}
                           >
                             <Receipt className="h-3 w-3" />

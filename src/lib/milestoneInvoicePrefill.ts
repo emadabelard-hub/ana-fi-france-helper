@@ -69,13 +69,9 @@ export function buildMilestoneInvoicePrefill({
   const selectedMilestoneName = milestone.label?.trim() || milestoneLabel.fr;
   const objetDevis = (quote.natureOperation || docData.natureOperation || docData.objet || '').trim();
 
-  // Build professional designation: nature des travaux first, then acompte + devis ref
-  const designationFr = objetDevis
-    ? `${objetDevis} – Acompte de ${displayedShare}`
-    : `Acompte de ${displayedShare}`;
-  const designationAr = objetDevis
-    ? `${objetDevis} – دفعة ${displayedShare}`
-    : `دفعة ${displayedShare}`;
+  // Designation = nature des travaux ONLY — never inject acompte/percent/devis ref
+  const designationFr = objetDevis || '';
+  const designationAr = objetDevis || '';
 
   return {
     ...advancedData,

@@ -91,6 +91,7 @@ export interface InvoiceData {
   stampUrl?: string;
   sitePhotos?: Array<{ data: string; name: string }>;
   sourceDevisNumber?: string;
+  acompteLabel?: string;
 }
 
 interface InvoiceDisplayProps {
@@ -474,6 +475,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                     {showArabic && item.designation_ar && (
                       <span className="block text-[6.5pt] text-gray-400 mt-0.5 leading-snug print:hidden" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
                         {item.designation_ar}
+                      </span>
+                    )}
+                    {data.acompteLabel && (
+                      <span className="block text-[6.5pt] text-gray-500 mt-0.5 italic leading-snug">
+                        {data.acompteLabel}
                       </span>
                     )}
                     {data.sourceDevisNumber && (

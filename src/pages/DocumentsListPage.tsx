@@ -314,6 +314,7 @@ const DocumentsListPage = () => {
         unitPrice: item.unitPrice || 0,
       })),
       notes: docData.legalMentions || '',
+      descriptionChantier: doc.nature_operation || docData.descriptionChantier || docData.natureOperation || docData.objet || '',
       source: 'devis_duplication',
       ...advancedData,
     };

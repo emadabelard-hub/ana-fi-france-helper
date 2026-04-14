@@ -41,7 +41,8 @@ const InvoiceCreatorPage = () => {
   const urlDocType = searchParams.get('type') as 'devis' | 'facture' | null;
   const prefillSource = searchParams.get('prefill');
   const isSmartDevisFlow = prefillSource === 'smart';
-  const expectsStoredPrefill = prefillSource === 'quote' || isSmartDevisFlow;
+  const isMilestonePrefillFlow = prefillSource === 'milestone';
+  const expectsStoredPrefill = prefillSource === 'quote' || isSmartDevisFlow || isMilestonePrefillFlow;
   const resumedDocumentType = !urlDocType && !prefillSource
     ? loadCurrentDocument()?.documentType ?? null
     : null;
@@ -96,30 +97,34 @@ const InvoiceCreatorPage = () => {
       return null;
     }
 
-    // --- EXISTING: quoteToInvoiceData flow ---
+    const storageKey = isMilestonePrefillFlow ? 'milestoneInvoiceData' : 'quoteToInvoiceData';
+
     try {
-      const raw = sessionStorage.getItem('quoteToInvoiceData');
+      const raw = sessionStorage.getItem(storageKey);
       if (!raw) {
-        console.log('NO quoteToInvoiceData FOUND');
+        console.log(`NO ${storageKey} FOUND`);
         console.log('[DEBUG] All sessionStorage keys:', Object.keys(sessionStorage));
         return null;
       }
 
       const parsed = JSON.parse(raw);
-      console.log('READ quoteToInvoiceData', parsed);
+      console.log(`READ ${storageKey}`, parsed);
       if (parsed?.items?.length > 0) {
-        console.log('[InvoiceCreator] ✅ Prefill from quoteToInvoiceData:', parsed.items.length, 'items');
+        if (isMilestonePrefillFlow) {
+          sessionStorage.removeItem(storageKey);
+        }
+        console.log(`[InvoiceCreator] ✅ Prefill from ${storageKey}:`, parsed.items.length, 'items');
         return parsed;
       }
 
-      console.warn('[InvoiceCreator] quoteToInvoiceData is present but invalid:', parsed);
+      console.warn(`[InvoiceCreator] ${storageKey} is present but invalid:`, parsed);
     } catch (error) {
-      console.error('[InvoiceCreator] Failed to parse quoteToInvoiceData:', error);
+      console.error(`[InvoiceCreator] Failed to parse ${storageKey}:`, error);
     }
 
     console.log('[InvoiceCreator] No valid quote data found');
     return null;
-  }, [expectsStoredPrefill, isImageQuoteFlow]);
+  }, [expectsStoredPrefill, isImageQuoteFlow, isMilestonePrefillFlow]);
 
   const missingQuoteData = (expectsStoredPrefill || isImageQuoteFlow) && !prefillData;
 
@@ -326,7 +331,7 @@ const InvoiceCreatorPage = () => {
               navigate('/pro/smart-devis', { state: buildSmartDevisReturnState() });
               return;
             }
-            if (prefillSource === 'quote') {
+            if (prefillSource === 'quote' || prefillSource === 'milestone') {
               handleNavigateBack();
               return;
             }

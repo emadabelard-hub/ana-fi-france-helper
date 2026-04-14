@@ -116,8 +116,9 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
     };
 
     console.log('[MilestoneInvoiceActions] FULL PREFILL OK — milestone_invoice:', prefill);
-    sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefill));
-    navigate('/pro/invoice-creator?type=facture&prefill=quote');
+    sessionStorage.removeItem('quoteToInvoiceData');
+    sessionStorage.setItem('milestoneInvoiceData', JSON.stringify(prefill));
+    navigate('/pro/invoice-creator?type=facture&prefill=milestone');
   };
 
   return (

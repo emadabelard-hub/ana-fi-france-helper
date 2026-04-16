@@ -16,6 +16,8 @@ interface FinancialSummaryProps {
   debugPaidCount?: number;
   debugUnpaidCount?: number;
   tresorerieEncaissee?: number;
+  caEnAttenteHT?: number;
+  caTotalFactureHT?: number;
 }
 
 const fmt = (n: number) =>
@@ -29,6 +31,8 @@ const FinancialSummary = ({
   debugTotalFactures = 0, debugIgnoredFactures = 0,
   debugPaidCount = 0, debugUnpaidCount = 0,
   tresorerieEncaissee = 0,
+  caEnAttenteHT = 0,
+  caTotalFactureHT = 0,
 }: FinancialSummaryProps) => {
   const tvaAPayer = Math.max(0, tvaCollectee - tvaDeductible);
 
@@ -46,7 +50,9 @@ const FinancialSummary = ({
   const benefice = Math.min(rawBenefice, tresorerieEncaissee);
 
   const realRows = [
-    { label: "Chiffre d'affaires (HT)", value: caHT, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: "CA encaissé (HT)", value: caHT, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: 'CA en attente (HT)', value: caEnAttenteHT, icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-500/10' },
+    { label: 'CA total facturé (HT)', value: caTotalFactureHT, icon: TrendingUp, color: 'text-blue-400', bg: 'bg-blue-500/10' },
     { label: 'Dépenses (HT)', value: depensesHT, icon: TrendingDown, color: 'text-red-400', bg: 'bg-red-500/10' },
     { label: 'Bénéfice avant impôt', value: beneficeAvantImpot, icon: Wallet, color: beneficeAvantImpot >= 0 ? 'text-blue-400' : 'text-red-400', bg: beneficeAvantImpot >= 0 ? 'bg-blue-500/10' : 'bg-red-500/10' },
     { label: 'Bénéfice net estimé', value: benefice, icon: Wallet, color: benefice >= 0 ? 'text-emerald-400' : 'text-red-400', bg: benefice >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' },

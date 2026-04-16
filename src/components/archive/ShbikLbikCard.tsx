@@ -16,6 +16,8 @@ interface ShbikLbikProps {
   isTvaExempt: boolean;
   isRTL: boolean;
   tresorerieEncaissee?: number;
+  caEnAttenteHT?: number;
+  caTotalFactureHT?: number;
 }
 
 const fmt = (n: number) =>
@@ -25,6 +27,8 @@ const ShbikLbikCard = ({
   totalIncome, totalExpenses, tvaCollectee, tvaDeductible,
   urssafRate, isRate, totalIncomeHT, totalExpensesHT,
   isTvaExempt, isRTL, tresorerieEncaissee = 0,
+  caEnAttenteHT = 0,
+  caTotalFactureHT = 0,
 }: ShbikLbikProps) => {
   const navigate = useNavigate();
   const [showDetail, setShowDetail] = useState(false);

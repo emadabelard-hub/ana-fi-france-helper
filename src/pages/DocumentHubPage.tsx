@@ -22,6 +22,8 @@ const DocumentHubPage = () => {
   const [totalIncomeHT, setTotalIncomeHT] = useState(0);
   const [totalExpensesHT, setTotalExpensesHT] = useState(0);
   const [tresorerieEncaissee, setTresorerieEncaissee] = useState(0);
+  const [caEnAttenteHT, setCaEnAttenteHT] = useState(0);
+  const [caTotalFactureHT, setCaTotalFactureHT] = useState(0);
 
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
   const isRate = (profile as any)?.is_rate ?? 15;
@@ -36,13 +38,21 @@ const DocumentHubPage = () => {
       ]);
       // Comptabilité 100% encaissement : seules les factures payées comptent
       const paidInvoices = (docs || []).filter(d => d.document_type === 'facture' && d.status === 'finalized' && d.payment_status === 'paid');
+      const unpaidInvoices = (docs || []).filter(d => d.document_type === 'facture' && d.status === 'finalized' && d.payment_status !== 'paid');
+      
+      const caEncaisseHT = paidInvoices.reduce((s, d) => s + (d.subtotal_ht || 0), 0);
+      const caAttenteHT = unpaidInvoices.reduce((s, d) => s + (d.subtotal_ht || 0), 0);
+      const caTotalHT = caEncaisseHT + caAttenteHT;
+      
       setTotalIncome(paidInvoices.reduce((s, d) => s + (d.total_ttc || 0), 0));
-      setTotalIncomeHT(paidInvoices.reduce((s, d) => s + (d.subtotal_ht || 0), 0));
+      setTotalIncomeHT(caEncaisseHT);
       setTvaCollectee(paidInvoices.reduce((s, d) => s + (d.tva_amount || 0), 0));
       setTotalExpenses((exps || []).reduce((s, e) => s + (e.amount || 0), 0));
       setTotalExpensesHT((exps || []).reduce((s, e) => s + ((e.amount || 0) - (e.tva_amount || 0)), 0));
       setTvaDeductible((exps || []).reduce((s, e) => s + (e.tva_amount || 0), 0));
       setTresorerieEncaissee(paidInvoices.reduce((s: number, d: any) => s + (d.total_ttc || 0), 0));
+      setCaEnAttenteHT(caAttenteHT);
+      setCaTotalFactureHT(caTotalHT);
     };
     fetchFinancials();
   }, [user]);
@@ -131,6 +141,8 @@ const DocumentHubPage = () => {
           isTvaExempt={isTvaExempt}
           isRTL={isRTL}
           tresorerieEncaissee={tresorerieEncaissee}
+          caEnAttenteHT={caEnAttenteHT}
+          caTotalFactureHT={caTotalFactureHT}
         />
       </div>
 

@@ -97,6 +97,7 @@ interface InvoiceFormBuilderProps {
   onBack: () => void;
   prefillData?: PrefillData | null;
   onDocumentTypeChange?: (type: 'devis' | 'facture') => void;
+  skipDraftRestore?: boolean;
 }
 
 // Generate unique ID
@@ -109,7 +110,7 @@ const getDocPrefix = (type: 'devis' | 'facture'): string => {
   return `${prefix}-${year}-`;
 };
 
-const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeChange }: InvoiceFormBuilderProps) => {
+const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeChange, skipDraftRestore }: InvoiceFormBuilderProps) => {
   const { isRTL, language } = useLanguage();
   const { user } = useAuth();
   const { profile } = useProfile();

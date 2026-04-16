@@ -295,6 +295,32 @@ html, body {
   object-position: center top !important;
 }
 
+/* ============================================
+   PDF readability: darken light grays for better contrast.
+   Layout, sizes, columns and spacing are preserved — only color changes.
+   ============================================ */
+.pdf-render-mode .text-gray-400,
+.pdf-render-mode .text-gray-500 {
+  color: #4b5563 !important; /* gray-600: soft dark, still hierarchical */
+}
+.pdf-render-mode .text-gray-600 {
+  color: #374151 !important; /* gray-700 */
+}
+.pdf-render-mode .text-gray-700,
+.pdf-render-mode .text-gray-800 {
+  color: #1f2937 !important; /* gray-800/900 — near black */
+}
+
+/* Footer page-number: bump +1px and use soft dark gray for legibility */
+@media print {
+  @page {
+    @bottom-center {
+      color: #555 !important;
+      font-size: 8pt !important;
+    }
+  }
+}
+
 /* Safe area padding for mobile devices */
 @layer utilities {
   .safe-area-pt {

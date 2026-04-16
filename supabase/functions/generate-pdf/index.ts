@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     if (footerLabel) {
       pdfOptions.displayHeaderFooter = true;
       pdfOptions.headerTemplate = '<span></span>';
-      pdfOptions.footerTemplate = `<div style="font-size:8px;color:#999;text-align:center;width:100%;font-family:Arial,sans-serif;padding:0 10mm">${footerLabel} — Page <span class="pageNumber"></span> / <span class="totalPages"></span></div>`;
+      pdfOptions.footerTemplate = `<div style="font-size:9px;color:#555;text-align:center;width:100%;font-family:Arial,sans-serif;padding:0 10mm">${footerLabel} — Page <span class="pageNumber"></span> / <span class="totalPages"></span></div>`;
     }
 
     console.log(`Generating PDF: ${(html.length / 1024).toFixed(1)}KB HTML, margin=${marginMm}mm, footer=${!!footerLabel}`);

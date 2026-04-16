@@ -3181,16 +3181,17 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               </div>
 
               {/* Payment Milestones (Échéancier) */}
-              <div className="border border-border rounded-lg p-3 space-y-3">
+              <div className="border-2 border-border/80 bg-muted/40 rounded-lg p-3 space-y-3">
                 <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
                   <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                     <span className="text-lg">📅</span>
-                    <Label htmlFor="milestones-toggle" className={cn("text-sm font-bold cursor-pointer", isRTL && "font-cairo")}>
+                    <Label htmlFor="milestones-toggle" className={cn("text-sm font-bold cursor-pointer text-foreground", isRTL && "font-cairo")}>
                       {isRTL ? 'جدول دفعات متعدد (Échéancier)' : 'Échéancier de paiement'}
                     </Label>
                   </div>
                   <Switch
                     id="milestones-toggle"
+                    className="data-[state=unchecked]:bg-muted-foreground/50 data-[state=checked]:bg-primary [&>span]:bg-white [&>span]:shadow-md"
                     checked={milestonesEnabled}
                     onCheckedChange={(checked) => {
                       setMilestonesEnabled(checked);

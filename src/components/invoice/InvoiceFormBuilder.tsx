@@ -464,6 +464,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (draft.includePhotosInPdf !== undefined) setIncludePhotosInPdf(draft.includePhotosInPdf);
     if (draft.sitePhotos !== undefined) setSitePhotos(draft.sitePhotos);
     if (draft.tempValues !== undefined) setTempValues(draft.tempValues);
+    if (draft.currentStep !== undefined) {
+      const restoredStep = Math.max(0, Math.min(Number(draft.currentStep) || 0, 7));
+      setCurrentStep(restoredStep);
+    }
   }, []);
 
   useEffect(() => {
@@ -1081,7 +1085,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     { id: 'resume', label: isRTL ? 'الملخص' : 'Résumé', icon: '📊', isComplete: sectionCompletion[5].isComplete },
   ];
 
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (prefillData || skipDraftRestore) return 0;
+    return loadCurrentDocument(documentType)?.currentStep ?? 0;
+  });
+
+  useEffect(() => {
+    if (!draftRestored) return;
+    persistCurrentDocumentState({ currentStep });
+  }, [draftRestored, currentStep, persistCurrentDocumentState]);
 
   const canProceedFromStep = (step: number): boolean => {
     switch (step) {

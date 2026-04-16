@@ -74,6 +74,7 @@ export interface CurrentDocumentState extends InvoiceDraft {
   dueDateDays?: 15 | 30 | 45 | 60;
   projectTvaType?: 'logement' | 'logement_ancien' | 'logement_neuf' | 'local_pro' | 'sous_traitance' | 'intracommunautaire';
   milestonesEnabled?: boolean;
+  currentStep?: number;
   showPreview?: boolean;
   showArabic?: boolean;
   includePhotosInPdf?: boolean;

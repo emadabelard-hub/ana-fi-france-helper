@@ -97,6 +97,7 @@ interface InvoiceFormBuilderProps {
   onBack: () => void;
   prefillData?: PrefillData | null;
   onDocumentTypeChange?: (type: 'devis' | 'facture') => void;
+  skipDraftRestore?: boolean;
 }
 
 // Generate unique ID
@@ -109,7 +110,7 @@ const getDocPrefix = (type: 'devis' | 'facture'): string => {
   return `${prefix}-${year}-`;
 };
 
-const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeChange }: InvoiceFormBuilderProps) => {
+const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeChange, skipDraftRestore }: InvoiceFormBuilderProps) => {
   const { isRTL, language } = useLanguage();
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -471,6 +472,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       setDraftRestored(true);
       return;
     }
+    // New document creation: skip all draft restoration
+    if (skipDraftRestore) {
+      setDraftRestored(true);
+      return;
+    }
     
     const restoreDraft = async () => {
       const currentDocument = loadCurrentDocument(documentType);
@@ -491,7 +497,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     };
     
     restoreDraft();
-  }, [prefillData, draftRestored, user, documentType, isRTL, toast, restorePersistedDocument]);
+  }, [prefillData, skipDraftRestore, draftRestored, user, documentType, isRTL, toast, restorePersistedDocument]);
 
   const persistCurrentDocumentState = useCallback((overrides: Partial<Omit<CurrentDocumentState, 'savedAt'>> = {}) => {
     saveCurrentDocument({

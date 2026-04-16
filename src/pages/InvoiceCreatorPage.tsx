@@ -57,6 +57,8 @@ const InvoiceCreatorPage = () => {
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showNumberingOnboarding, setShowNumberingOnboarding] = useState(false);
   const [numberingChecked, setNumberingChecked] = useState(false);
+  // Track whether this is a fresh new document (user chose type from modal, not a resume)
+  const [isNewDocument, setIsNewDocument] = useState(false);
   const activeDocumentType = urlDocType ?? documentType;
 
   // Check if numbering onboarding is needed (first time creating a document)
@@ -166,9 +168,11 @@ const InvoiceCreatorPage = () => {
   // Handle document type selection
   const handleTypeSelect = (type: 'devis' | 'facture') => {
     // CRITICAL: Clear previous document state so new document starts clean
-    // (no reuse of TVA, discount, project type, etc. from previous document)
     clearCurrentDocument();
     clearDraft();
+    // Also clear LineItemEditor persistence
+    try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
+    setIsNewDocument(true);
     setDocumentType(type);
     setShowTypeModal(false);
     // Update URL
@@ -312,6 +316,7 @@ const InvoiceCreatorPage = () => {
             documentType={activeDocumentType}
             onBack={handleFormBack}
             prefillData={prefillData}
+            skipDraftRestore={isNewDocument && !prefillData}
             onDocumentTypeChange={(type) => {
               setDocumentType(type);
               setSearchParams((prev) => {

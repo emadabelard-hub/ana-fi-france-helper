@@ -43,7 +43,7 @@ const ShbikLbikCard = ({
   const hasData = baseIncome > 0 || totalExpenses > 0;
 
   // ── Health / color ──
-  const healthRatio = totalIncome > 0 ? disponible / totalIncome : 0;
+  const healthRatio = baseIncome > 0 ? disponible / baseIncome : 0;
   type Health = 'good' | 'watch' | 'fragile';
   const health: Health =
     disponible < 0 || healthRatio < 0.1 ? 'fragile' :

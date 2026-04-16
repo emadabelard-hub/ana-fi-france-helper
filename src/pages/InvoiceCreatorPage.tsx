@@ -60,6 +60,50 @@ const InvoiceCreatorPage = () => {
   // Track whether this is a fresh new document (user chose type from modal, not a resume)
   const [isNewDocument, setIsNewDocument] = useState(false);
   const activeDocumentType = urlDocType ?? documentType;
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const SCROLL_KEY = 'invoiceCreator_scroll_v1';
+
+  // Restore scroll position when form is shown for the same document type (not on new doc)
+  useEffect(() => {
+    if (!activeDocumentType || isNewDocument) return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    try {
+      const raw = sessionStorage.getItem(SCROLL_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data?.docType === activeDocumentType && typeof data.top === 'number') {
+        // Defer to allow content to render
+        requestAnimationFrame(() => {
+          el.scrollTop = data.top;
+        });
+      }
+    } catch {}
+  }, [activeDocumentType, isNewDocument]);
+
+  // Save scroll position continuously
+  useEffect(() => {
+    if (!activeDocumentType) return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    let rafId: number | null = null;
+    const onScroll = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        try {
+          sessionStorage.setItem(SCROLL_KEY, JSON.stringify({
+            docType: activeDocumentType,
+            top: el.scrollTop,
+          }));
+        } catch {}
+      });
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [activeDocumentType]);
 
   // Check if numbering onboarding is needed (first time creating a document)
   useEffect(() => {

@@ -4,6 +4,8 @@ import DocumentQRCode from './DocumentQRCode';
 export interface PaymentMilestone {
   id: string;
   label: string;
+  /** Optional Arabic label (UI helper). The French `label` is the source of truth for the PDF. */
+  labelAr?: string;
   mode: 'percent' | 'fixed';
   percent?: number;
   amount?: number;

@@ -59,3 +59,17 @@ export const arabicMilestoneLabelToFrench = (
   if (!key) return previousFrench;
   return AR_TO_FR[key] ?? previousFrench;
 };
+
+/**
+ * Translates Arabic input to French for display in the read-only FR field.
+ * - If Arabic matches a known phrase, returns the canonical French label.
+ * - If Arabic is empty, returns an empty string.
+ * - Otherwise returns an empty string (FR field stays blank until a known
+ *   Arabic phrase is typed). The caller is responsible for falling back to
+ *   the raw Arabic value when persisting, so the PDF never loses data.
+ */
+export const arabicToFrenchDisplay = (arabicValue: string): string => {
+  const key = normalize(arabicValue);
+  if (!key) return '';
+  return AR_TO_FR[key] ?? '';
+};

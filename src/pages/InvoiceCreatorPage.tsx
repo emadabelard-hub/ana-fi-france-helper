@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, PenLine, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -60,6 +60,50 @@ const InvoiceCreatorPage = () => {
   // Track whether this is a fresh new document (user chose type from modal, not a resume)
   const [isNewDocument, setIsNewDocument] = useState(false);
   const activeDocumentType = urlDocType ?? documentType;
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const SCROLL_KEY = 'invoiceCreator_scroll_v1';
+
+  // Restore scroll position when form is shown for the same document type (not on new doc)
+  useEffect(() => {
+    if (!activeDocumentType || isNewDocument) return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    try {
+      const raw = sessionStorage.getItem(SCROLL_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data?.docType === activeDocumentType && typeof data.top === 'number') {
+        // Defer to allow content to render
+        requestAnimationFrame(() => {
+          el.scrollTop = data.top;
+        });
+      }
+    } catch {}
+  }, [activeDocumentType, isNewDocument]);
+
+  // Save scroll position continuously
+  useEffect(() => {
+    if (!activeDocumentType) return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    let rafId: number | null = null;
+    const onScroll = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        try {
+          sessionStorage.setItem(SCROLL_KEY, JSON.stringify({
+            docType: activeDocumentType,
+            top: el.scrollTop,
+          }));
+        } catch {}
+      });
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [activeDocumentType]);
 
   // Check if numbering onboarding is needed (first time creating a document)
   useEffect(() => {
@@ -170,8 +214,9 @@ const InvoiceCreatorPage = () => {
     // CRITICAL: Clear previous document state so new document starts clean
     clearCurrentDocument();
     clearDraft();
-    // Also clear LineItemEditor persistence
+    // Also clear LineItemEditor persistence and saved scroll position
     try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
+    try { sessionStorage.removeItem('invoiceCreator_scroll_v1'); } catch {}
     setIsNewDocument(true);
     setDocumentType(type);
     setShowTypeModal(false);
@@ -300,7 +345,7 @@ const InvoiceCreatorPage = () => {
       </section>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto pb-4">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pb-4">
         {missingQuoteData ? (
           <div className="flex items-center justify-center h-full">
             <p className={cn(

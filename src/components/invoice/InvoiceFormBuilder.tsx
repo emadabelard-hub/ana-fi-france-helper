@@ -3260,29 +3260,41 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                         <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                           <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">#{idx + 1}</span>
                           <div className="flex-1 space-y-1">
+                            {/* Arabic field — primary editable source */}
                             <Input
-                              value={milestone.label}
+                              value={milestone.labelAr ?? milestoneLabelToArabic(milestone.label)}
                               onChange={(e) => {
+                                const arValue = e.target.value;
+                                const frFromDict = arabicToFrenchDisplay(arValue);
+                                // Save FR translation if known, else fall back to AR text
+                                // so the PDF never loses user content.
+                                const nextLabel = frFromDict || arValue;
                                 const updated = [...paymentMilestones];
-                                updated[idx] = { ...updated[idx], label: e.target.value };
-                                setPaymentMilestones(updated);
-                              }}
-                              placeholder={"Nom de l'étape (FR)"}
-                              dir="ltr"
-                              lang="fr"
-                              className="text-sm"
-                            />
-                            <Input
-                              value={milestoneLabelToArabic(milestone.label)}
-                              onChange={(e) => {
-                                const updated = [...paymentMilestones];
-                                updated[idx] = { ...updated[idx], label: arabicMilestoneLabelToFrench(e.target.value, milestone.label) };
+                                updated[idx] = {
+                                  ...updated[idx],
+                                  label: nextLabel,
+                                  labelAr: arValue,
+                                };
                                 setPaymentMilestones(updated);
                               }}
                               placeholder={'اسم المرحلة (AR)'}
                               dir="rtl"
                               lang="ar"
-                              className="text-xs font-cairo text-right text-muted-foreground"
+                              className="text-sm font-cairo text-right"
+                            />
+                            {/* French field — auto-derived, read-only */}
+                            <Input
+                              value={
+                                arabicToFrenchDisplay(
+                                  milestone.labelAr ?? milestoneLabelToArabic(milestone.label)
+                                ) || milestone.label
+                              }
+                              readOnly
+                              tabIndex={-1}
+                              placeholder={'Traduction française (auto)'}
+                              dir="ltr"
+                              lang="fr"
+                              className="text-xs text-muted-foreground bg-muted/50 cursor-default"
                             />
                           </div>
                           <Button

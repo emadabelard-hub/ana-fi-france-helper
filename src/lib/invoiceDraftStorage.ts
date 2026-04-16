@@ -85,47 +85,6 @@ export interface CurrentDocumentState extends InvoiceDraft {
   tempValues?: Record<string, { quantity?: string; unitPrice?: string }>;
 }
 
-const hasMeaningfulCurrentDocument = (document: Omit<CurrentDocumentState, 'savedAt'>) => {
-  const hasClientData = Boolean(
-    document.clientName?.trim() ||
-    document.clientAddress?.trim() ||
-    document.clientPhone?.trim() ||
-    document.clientEmail?.trim() ||
-    document.clientSiren?.trim() ||
-    document.workSiteAddress?.trim() ||
-    document.descriptionChantier?.trim()
-  );
-
-  const hasItems = Array.isArray(document.items) && document.items.some((item) => {
-    const quantityValue = typeof (item as any).quantity === 'string' ? (item as any).quantity : String(item.quantity ?? '');
-    const priceValue = typeof (item as any).unitPrice === 'string' ? (item as any).unitPrice : String(item.unitPrice ?? '');
-
-    return Boolean(
-      item.designation_fr?.trim() ||
-      item.designation_ar?.trim() ||
-      quantityValue.trim() ||
-      priceValue.trim()
-    );
-  });
-
-  // Preserve user progress through the wizard, even before client/items are filled.
-  const hasWizardProgress = Boolean(
-    (typeof document.currentStep === 'number' && document.currentStep > 0) ||
-    document.selectedClientId ||
-    document.selectedChantierId ||
-    document.discountEnabled ||
-    document.milestonesEnabled ||
-    (Array.isArray(document.paymentMilestones) && document.paymentMilestones.length > 0) ||
-    document.includeTravelCosts ||
-    document.includeWasteCosts ||
-    document.estimatedStartDate?.trim() ||
-    document.estimatedDuration?.trim() ||
-    (Array.isArray(document.sitePhotos) && document.sitePhotos.length > 0)
-  );
-
-  return hasClientData || hasItems || hasWizardProgress;
-};
-
 // ── Local Storage (offline fallback) ──
 
 export const saveDraft = (draft: Omit<InvoiceDraft, 'savedAt'>) => {
@@ -168,11 +127,6 @@ export const clearDraft = () => {
 
 export const saveCurrentDocument = (document: Omit<CurrentDocumentState, 'savedAt'>) => {
   try {
-    if (!hasMeaningfulCurrentDocument(document)) {
-      localStorage.removeItem(CURRENT_DOCUMENT_KEY);
-      return;
-    }
-
     const data: CurrentDocumentState = { ...document, savedAt: Date.now() };
     localStorage.setItem(CURRENT_DOCUMENT_KEY, JSON.stringify(data));
   } catch (e) {
@@ -201,6 +155,16 @@ export const clearCurrentDocument = () => {
   } catch (e) {
     console.warn('Failed to clear current document:', e);
   }
+};
+
+export const loadResumeDocumentType = (): 'devis' | 'facture' | null => {
+  const currentDocumentType = loadCurrentDocument()?.documentType;
+  if (currentDocumentType) return currentDocumentType;
+
+  const draftDocumentType = loadDraft()?.documentType;
+  if (draftDocumentType) return draftDocumentType;
+
+  return null;
 };
 
 // ── Cloud Storage (Supabase) ──

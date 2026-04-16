@@ -127,6 +127,19 @@ export const clearDraft = () => {
 
 export const saveCurrentDocument = (document: Omit<CurrentDocumentState, 'savedAt'>) => {
   try {
+    // Only save if there's meaningful content (avoid persisting empty shells)
+    const hasMeaningfulCurrentDocument =
+      !!document.clientName?.trim() ||
+      !!document.clientAddress?.trim() ||
+      (document.items && document.items.length > 0 && document.items.some(i => i.designation_fr?.trim() || i.designation_ar?.trim() || i.unitPrice > 0)) ||
+      !!document.descriptionChantier?.trim() ||
+      !!document.descriptionChantierFr?.trim() ||
+      !!document.descriptionChantierAr?.trim();
+
+    if (!hasMeaningfulCurrentDocument) {
+      return;
+    }
+
     const data: CurrentDocumentState = { ...document, savedAt: Date.now() };
     localStorage.setItem(CURRENT_DOCUMENT_KEY, JSON.stringify(data));
   } catch (e) {
@@ -155,16 +168,6 @@ export const clearCurrentDocument = () => {
   } catch (e) {
     console.warn('Failed to clear current document:', e);
   }
-};
-
-export const loadResumeDocumentType = (): 'devis' | 'facture' | null => {
-  const currentDocumentType = loadCurrentDocument()?.documentType;
-  if (currentDocumentType) return currentDocumentType;
-
-  const draftDocumentType = loadDraft()?.documentType;
-  if (draftDocumentType) return draftDocumentType;
-
-  return null;
 };
 
 // ── Cloud Storage (Supabase) ──

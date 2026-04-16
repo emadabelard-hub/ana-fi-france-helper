@@ -508,8 +508,6 @@ const InvoiceCreatorPage = () => {
             </AlertDialogAction>
             <AlertDialogAction 
               onClick={() => {
-                clearDraft();
-                 clearCurrentDocument();
                 confirmLeave();
               }} 
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full"

@@ -34,6 +34,7 @@ interface UnifiedRow {
   amountHT: number;
   tvaAmount: number;
   status: string | null;
+  paymentStatus: string | null;
   pdfUrl: string | null;
 }
 

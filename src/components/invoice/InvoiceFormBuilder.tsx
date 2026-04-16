@@ -1162,14 +1162,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         }
         return;
       }
-      setCurrentStep(prev => prev + 1);
+      const nextStep = currentStep + 1;
+      persistCurrentDocumentState({ currentStep: nextStep });
+      saveCurrentDraftSnapshot();
+      setCurrentStep(nextStep);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handlePrevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      const nextStep = currentStep - 1;
+      persistCurrentDocumentState({ currentStep: nextStep });
+      saveCurrentDraftSnapshot();
+      setCurrentStep(nextStep);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -3808,6 +3814,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               documentType,
             }}
             onNavigateToStep={(step) => {
+              persistCurrentDocumentState({ currentStep: step });
+              saveCurrentDraftSnapshot();
               setCurrentStep(step);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}

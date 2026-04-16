@@ -60,11 +60,14 @@ export interface InvoiceDraft {
   geographicCoverage?: string;
   paymentMilestones?: DraftPaymentMilestone[];
   descriptionChantier?: string;
+  descriptionChantierAr?: string;
+  descriptionChantierFr?: string;
   estimatedStartDate?: string;
   estimatedDuration?: string;
   discountEnabled?: boolean;
   discountType?: 'percent' | 'fixed';
   discountValue?: number;
+  currentStep?: number;
   savedAt: number;
 }
 

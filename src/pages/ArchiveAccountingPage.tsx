@@ -162,14 +162,18 @@ const ArchiveAccountingPage = () => {
     return result;
   }, [allItems, activeTab, periodFilter, searchQuery]);
 
-  // ── Financial totals — UNIQUEMENT factures validées (HT) ──
+  // ── Financial totals — 100% encaissement (factures payées uniquement) ──
   const totalFactures = useMemo(() => documents.filter(d => d.type === 'facture').length, [documents]);
   const facturesValidees = useMemo(() =>
     documents.filter(d => d.type === 'facture' && d.status === 'finalized'), [documents]);
   const ignoredFactures = useMemo(() => totalFactures - facturesValidees.length, [totalFactures, facturesValidees]);
 
+  // Seules les factures payées entrent dans les calculs
+  const facturesPayees = useMemo(() =>
+    facturesValidees.filter(d => d.paymentStatus === 'paid'), [facturesValidees]);
+
   const caHT = useMemo(() =>
-    facturesValidees.reduce((s, d) => s + d.amountHT, 0), [facturesValidees]);
+    facturesPayees.reduce((s, d) => s + d.amountHT, 0), [facturesPayees]);
   const depensesHT = useMemo(() =>
     expenses.reduce((s, e) => s + e.amountHT, 0), [expenses]);
 
@@ -185,16 +189,14 @@ const ArchiveAccountingPage = () => {
   };
 
   const tvaCollectee = useMemo(() =>
-    facturesValidees.reduce((s, d) => s + computeTvaForDoc(d), 0), [facturesValidees]);
+    facturesPayees.reduce((s, d) => s + computeTvaForDoc(d), 0), [facturesPayees]);
   const tvaDeductible = useMemo(() =>
     expenses.reduce((s, e) => s + (e.rawData?.tva_amount || 0), 0), [expenses]);
 
-  // Trésorerie encaissée = factures validées ET payées (TTC)
+  // Trésorerie encaissée = factures payées (TTC)
   const tresorerieEncaissee = useMemo(() =>
-    facturesValidees
-      .filter(d => d.paymentStatus === 'paid')
-      .reduce((s, d) => s + d.amountTTC, 0),
-    [facturesValidees]);
+    facturesPayees.reduce((s, d) => s + d.amountTTC, 0),
+    [facturesPayees]);
 
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
   const isRate = (profile as any)?.is_rate ?? 15;

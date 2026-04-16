@@ -34,6 +34,7 @@ interface UnifiedRow {
   amountHT: number;
   tvaAmount: number;
   status: string | null;
+  paymentStatus: string | null;
   pdfUrl: string | null;
 }
 
@@ -104,13 +105,11 @@ const ExpensesPage = () => {
       // Documents
       (docsRes.data || []).forEach((d: any) => {
         const ch = d.chantier_id ? chantierMap[d.chantier_id] : null;
-        if (d.document_type === 'facture' && d.status === 'finalized') {
+        // Comptabilité 100% encaissement : seules les factures payées comptent
+        if (d.document_type === 'facture' && d.status === 'finalized' && d.payment_status === 'paid') {
           incomeSum += d.total_ttc || 0;
           incomeHTSum += d.subtotal_ht || 0;
-
-          if (d.payment_status === 'paid') {
-            collectedSum += d.total_ttc || 0;
-          }
+          collectedSum += d.total_ttc || 0;
         }
 
         unified.push({
@@ -126,6 +125,7 @@ const ExpensesPage = () => {
           amountHT: d.subtotal_ht || 0,
           tvaAmount: d.tva_amount || 0,
           status: d.status || null,
+          paymentStatus: d.payment_status || null,
           pdfUrl: d.pdf_url || null,
         });
       });
@@ -148,6 +148,7 @@ const ExpensesPage = () => {
           amountHT: e.amount || 0,
           tvaAmount: e.tva_amount || 0,
           status: null,
+          paymentStatus: null,
           pdfUrl: null,
         });
       });
@@ -190,9 +191,14 @@ const ExpensesPage = () => {
     return 0;
   };
 
-  const tvaCollectee = useMemo(() =>
-    filtered.filter(r => r.type === 'facture' && r.status === 'finalized').reduce((s, r) => s + computeRowTva(r), 0),
+  // Comptabilité 100% encaissement : uniquement factures payées
+  const paidInvoices = useMemo(() =>
+    filtered.filter(r => r.type === 'facture' && r.status === 'finalized' && r.paymentStatus === 'paid'),
     [filtered]);
+
+  const tvaCollectee = useMemo(() =>
+    paidInvoices.reduce((s, r) => s + computeRowTva(r), 0),
+    [paidInvoices]);
   const tvaDeductible = useMemo(() =>
     filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.tvaAmount, 0),
     [filtered]);
@@ -203,8 +209,8 @@ const ExpensesPage = () => {
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
   const isRate = (profile as any)?.is_rate ?? 15;
   const filteredIncomeHT = useMemo(() =>
-    filtered.filter(r => r.type === 'facture' && r.status === 'finalized').reduce((s, r) => s + r.amountHT, 0),
-    [filtered]);
+    paidInvoices.reduce((s, r) => s + r.amountHT, 0),
+    [paidInvoices]);
   const filteredExpensesHT = useMemo(() =>
     filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.amountHT, 0),
     [filtered]);

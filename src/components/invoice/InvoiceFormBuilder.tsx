@@ -472,6 +472,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       setDraftRestored(true);
       return;
     }
+    // New document creation: skip all draft restoration
+    if (skipDraftRestore) {
+      setDraftRestored(true);
+      return;
+    }
     
     const restoreDraft = async () => {
       const currentDocument = loadCurrentDocument(documentType);
@@ -492,7 +497,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     };
     
     restoreDraft();
-  }, [prefillData, draftRestored, user, documentType, isRTL, toast, restorePersistedDocument]);
+  }, [prefillData, skipDraftRestore, draftRestored, user, documentType, isRTL, toast, restorePersistedDocument]);
 
   const persistCurrentDocumentState = useCallback((overrides: Partial<Omit<CurrentDocumentState, 'savedAt'>> = {}) => {
     saveCurrentDocument({

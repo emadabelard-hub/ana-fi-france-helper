@@ -2936,6 +2936,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                     <Textarea
                       value={item.designation_ar}
                       onChange={(e) => handleArabicChange(item.id, e.target.value)}
+                      enableVoice={true}
                       onVoiceDual={(result) => handleArabicVoiceDual(item.id, result)}
                       onBlur={(e) => {
                         const existing = arabicDebounceTimersRef.current[item.id];

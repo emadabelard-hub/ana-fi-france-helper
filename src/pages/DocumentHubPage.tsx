@@ -34,15 +34,14 @@ const DocumentHubPage = () => {
         supabase.from('documents_comptables').select('total_ttc, subtotal_ht, tva_amount, document_type, status, payment_status').eq('user_id', user.id),
         supabase.from('expenses').select('amount, tva_amount').eq('user_id', user.id),
       ]);
-      const invoices = (docs || []).filter(d => d.document_type === 'facture' && d.status === 'finalized');
-      setTotalIncome(invoices.reduce((s, d) => s + (d.total_ttc || 0), 0));
-      setTotalIncomeHT(invoices.reduce((s, d) => s + (d.subtotal_ht || 0), 0));
-      setTvaCollectee(invoices.reduce((s, d) => s + (d.tva_amount || 0), 0));
+      // Comptabilité 100% encaissement : seules les factures payées comptent
+      const paidInvoices = (docs || []).filter(d => d.document_type === 'facture' && d.status === 'finalized' && d.payment_status === 'paid');
+      setTotalIncome(paidInvoices.reduce((s, d) => s + (d.total_ttc || 0), 0));
+      setTotalIncomeHT(paidInvoices.reduce((s, d) => s + (d.subtotal_ht || 0), 0));
+      setTvaCollectee(paidInvoices.reduce((s, d) => s + (d.tva_amount || 0), 0));
       setTotalExpenses((exps || []).reduce((s, e) => s + (e.amount || 0), 0));
       setTotalExpensesHT((exps || []).reduce((s, e) => s + ((e.amount || 0) - (e.tva_amount || 0)), 0));
       setTvaDeductible((exps || []).reduce((s, e) => s + (e.tva_amount || 0), 0));
-      // Trésorerie = only paid finalized invoices
-      const paidInvoices = invoices.filter((d: any) => d.payment_status === 'paid');
       setTresorerieEncaissee(paidInvoices.reduce((s: number, d: any) => s + (d.total_ttc || 0), 0));
     };
     fetchFinancials();

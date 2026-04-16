@@ -104,13 +104,11 @@ const ExpensesPage = () => {
       // Documents
       (docsRes.data || []).forEach((d: any) => {
         const ch = d.chantier_id ? chantierMap[d.chantier_id] : null;
-        if (d.document_type === 'facture' && d.status === 'finalized') {
+        // Comptabilité 100% encaissement : seules les factures payées comptent
+        if (d.document_type === 'facture' && d.status === 'finalized' && d.payment_status === 'paid') {
           incomeSum += d.total_ttc || 0;
           incomeHTSum += d.subtotal_ht || 0;
-
-          if (d.payment_status === 'paid') {
-            collectedSum += d.total_ttc || 0;
-          }
+          collectedSum += d.total_ttc || 0;
         }
 
         unified.push({
@@ -191,8 +189,8 @@ const ExpensesPage = () => {
   };
 
   const tvaCollectee = useMemo(() =>
-    filtered.filter(r => r.type === 'facture' && r.status === 'finalized').reduce((s, r) => s + computeRowTva(r), 0),
-    [filtered]);
+    filtered.filter(r => r.type === 'facture' && r.status === 'finalized' && r.status !== null && filtered.find(f => f.id === r.id && rows.find(row => row.id === r.id))).reduce((s, r) => s + computeRowTva(r), 0),
+    [filtered, rows]);
   const tvaDeductible = useMemo(() =>
     filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.tvaAmount, 0),
     [filtered]);

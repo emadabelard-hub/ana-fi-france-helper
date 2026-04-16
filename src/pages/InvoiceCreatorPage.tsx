@@ -168,9 +168,11 @@ const InvoiceCreatorPage = () => {
   // Handle document type selection
   const handleTypeSelect = (type: 'devis' | 'facture') => {
     // CRITICAL: Clear previous document state so new document starts clean
-    // (no reuse of TVA, discount, project type, etc. from previous document)
     clearCurrentDocument();
     clearDraft();
+    // Also clear LineItemEditor persistence
+    try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
+    setIsNewDocument(true);
     setDocumentType(type);
     setShowTypeModal(false);
     // Update URL
@@ -314,6 +316,7 @@ const InvoiceCreatorPage = () => {
             documentType={activeDocumentType}
             onBack={handleFormBack}
             prefillData={prefillData}
+            skipDraftRestore={isNewDocument && !prefillData}
             onDocumentTypeChange={(type) => {
               setDocumentType(type);
               setSearchParams((prev) => {

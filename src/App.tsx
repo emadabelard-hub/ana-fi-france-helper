@@ -83,7 +83,7 @@ const RouteResumeManager = () => {
 
       const savedRoutePath = savedRoute ? getRoutePathname(savedRoute) : '';
       const fallbackRoute = `/pro/invoice-creator?type=${currentDocument.documentType}`;
-      const resumeRoute = savedRoutePath && !isResumeEntryRoute(savedRoutePath)
+      const resumeRoute = savedRoutePath.startsWith('/pro/invoice-creator')
         ? savedRoute!
         : fallbackRoute;
 

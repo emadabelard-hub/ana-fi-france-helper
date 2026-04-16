@@ -13,7 +13,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import GlobalErrorHandler from "@/components/app/GlobalErrorHandler";
 import AuthSplashScreen from "@/components/auth/AuthSplashScreen";
 import { Loader2 } from "lucide-react";
-import { loadCurrentDocument } from "@/lib/invoiceDraftStorage";
+import { loadCurrentDocument, loadResumeDocumentType } from "@/lib/invoiceDraftStorage";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
@@ -79,10 +79,11 @@ const RouteResumeManager = () => {
     try {
       const savedRoute = localStorage.getItem(LAST_ROUTE_KEY);
       const currentDocument = loadCurrentDocument();
-      if (!currentDocument) return;
+      const resumeDocumentType = currentDocument?.documentType ?? loadResumeDocumentType();
+      if (!resumeDocumentType) return;
 
       const savedRoutePath = savedRoute ? getRoutePathname(savedRoute) : '';
-      const fallbackRoute = `/pro/invoice-creator?type=${currentDocument.documentType}`;
+      const fallbackRoute = `/pro/invoice-creator?type=${resumeDocumentType}`;
       const resumeRoute = savedRoutePath.startsWith('/pro/invoice-creator')
         ? savedRoute!
         : fallbackRoute;

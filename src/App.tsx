@@ -58,6 +58,10 @@ const PageLoader = () => (
 );
 
 const LAST_ROUTE_KEY = 'app_last_route_v1';
+const RESUME_ENTRY_ROUTES = new Set(['/', '/home', '/index']);
+
+const isResumeEntryRoute = (pathname: string) => RESUME_ENTRY_ROUTES.has(pathname);
+const getRoutePathname = (route: string) => route.split(/[?#]/, 1)[0] || route;
 
 const RouteResumeManager = () => {
   const location = useLocation();
@@ -70,24 +74,27 @@ const RouteResumeManager = () => {
 
   useEffect(() => {
     const { pathname } = initialRouteRef.current;
-    const isHomeRoute = pathname === '/' || pathname === '/home';
-    if (!isHomeRoute) return;
+    if (!isResumeEntryRoute(pathname)) return;
 
     try {
       const savedRoute = localStorage.getItem(LAST_ROUTE_KEY);
       const currentDocument = loadCurrentDocument();
+      if (!currentDocument) return;
 
-      if (savedRoute?.startsWith('/pro/invoice-creator') && currentDocument) {
-        navigate(savedRoute, { replace: true });
-      }
+      const savedRoutePath = savedRoute ? getRoutePathname(savedRoute) : '';
+      const fallbackRoute = `/pro/invoice-creator?type=${currentDocument.documentType}`;
+      const resumeRoute = savedRoutePath && !isResumeEntryRoute(savedRoutePath)
+        ? savedRoute!
+        : fallbackRoute;
+
+      navigate(resumeRoute, { replace: true });
     } catch {
       // Ignore route restore failures
     }
   }, [navigate]);
 
   useEffect(() => {
-    const isHomeRoute = location.pathname === '/' || location.pathname === '/home';
-    if (isHomeRoute) return;
+    if (isResumeEntryRoute(location.pathname)) return;
 
     try {
       localStorage.setItem(LAST_ROUTE_KEY, `${location.pathname}${location.search}${location.hash}`);

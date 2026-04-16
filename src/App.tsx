@@ -1,10 +1,10 @@
 // App entry point - v3.0 (auth splash + lazy loading)
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import GlobalErrorHandler from "@/components/app/GlobalErrorHandler";
 import AuthSplashScreen from "@/components/auth/AuthSplashScreen";
 import { Loader2 } from "lucide-react";
+import { loadCurrentDocument } from "@/lib/invoiceDraftStorage";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
@@ -56,6 +57,48 @@ const PageLoader = () => (
   </div>
 );
 
+const LAST_ROUTE_KEY = 'app_last_route_v1';
+
+const RouteResumeManager = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialRouteRef = useRef({
+    pathname: location.pathname,
+    search: location.search,
+    hash: location.hash,
+  });
+
+  useEffect(() => {
+    const { pathname } = initialRouteRef.current;
+    const isHomeRoute = pathname === '/' || pathname === '/home';
+    if (!isHomeRoute) return;
+
+    try {
+      const savedRoute = localStorage.getItem(LAST_ROUTE_KEY);
+      const currentDocument = loadCurrentDocument();
+
+      if (savedRoute?.startsWith('/pro/invoice-creator') && currentDocument) {
+        navigate(savedRoute, { replace: true });
+      }
+    } catch {
+      // Ignore route restore failures
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    const isHomeRoute = location.pathname === '/' || location.pathname === '/home';
+    if (isHomeRoute) return;
+
+    try {
+      localStorage.setItem(LAST_ROUTE_KEY, `${location.pathname}${location.search}${location.hash}`);
+    } catch {
+      // Ignore storage failures
+    }
+  }, [location.hash, location.pathname, location.search]);
+
+  return null;
+};
+
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
@@ -68,6 +111,7 @@ const AppRoutes = () => {
 
   return (
     <BrowserRouter>
+      <RouteResumeManager />
       <MainLayout>
         <Suspense fallback={<PageLoader />}>
           <Routes>

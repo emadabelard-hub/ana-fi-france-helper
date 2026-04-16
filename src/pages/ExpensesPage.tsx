@@ -148,6 +148,7 @@ const ExpensesPage = () => {
           amountHT: e.amount || 0,
           tvaAmount: e.tva_amount || 0,
           status: null,
+          paymentStatus: null,
           pdfUrl: null,
         });
       });

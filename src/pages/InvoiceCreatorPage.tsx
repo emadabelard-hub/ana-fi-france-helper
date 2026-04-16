@@ -214,8 +214,9 @@ const InvoiceCreatorPage = () => {
     // CRITICAL: Clear previous document state so new document starts clean
     clearCurrentDocument();
     clearDraft();
-    // Also clear LineItemEditor persistence
+    // Also clear LineItemEditor persistence and saved scroll position
     try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
+    try { sessionStorage.removeItem('invoiceCreator_scroll_v1'); } catch {}
     setIsNewDocument(true);
     setDocumentType(type);
     setShowTypeModal(false);
@@ -344,7 +345,7 @@ const InvoiceCreatorPage = () => {
       </section>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto pb-4">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pb-4">
         {missingQuoteData ? (
           <div className="flex items-center justify-center h-full">
             <p className={cn(

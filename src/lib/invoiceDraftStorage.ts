@@ -86,6 +86,9 @@ const hasMeaningfulCurrentDocument = (document: Omit<CurrentDocumentState, 'save
   const hasClientData = Boolean(
     document.clientName?.trim() ||
     document.clientAddress?.trim() ||
+    document.clientPhone?.trim() ||
+    document.clientEmail?.trim() ||
+    document.clientSiren?.trim() ||
     document.workSiteAddress?.trim() ||
     document.descriptionChantier?.trim()
   );
@@ -102,7 +105,22 @@ const hasMeaningfulCurrentDocument = (document: Omit<CurrentDocumentState, 'save
     );
   });
 
-  return hasClientData || hasItems;
+  // Preserve user progress through the wizard, even before client/items are filled.
+  const hasWizardProgress = Boolean(
+    (typeof document.currentStep === 'number' && document.currentStep > 0) ||
+    document.selectedClientId ||
+    document.selectedChantierId ||
+    document.discountEnabled ||
+    document.milestonesEnabled ||
+    (Array.isArray(document.paymentMilestones) && document.paymentMilestones.length > 0) ||
+    document.includeTravelCosts ||
+    document.includeWasteCosts ||
+    document.estimatedStartDate?.trim() ||
+    document.estimatedDuration?.trim() ||
+    (Array.isArray(document.sitePhotos) && document.sitePhotos.length > 0)
+  );
+
+  return hasClientData || hasItems || hasWizardProgress;
 };
 
 // ── Local Storage (offline fallback) ──

@@ -268,6 +268,57 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [savingDraft, setSavingDraft] = useState(false);
   const [isSavingOfficialDocument, setIsSavingOfficialDocument] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (prefillData || skipDraftRestore) return 0;
+    return loadCurrentDocument(documentType)?.currentStep ?? 0;
+  });
+
+  const saveCurrentDraftSnapshot = useCallback(() => {
+    saveDraft({
+      documentType,
+      clientName,
+      clientAddress,
+      clientPhone,
+      clientEmail,
+      clientSiren,
+      clientTvaIntra,
+      clientIsB2B,
+      workSiteSameAsClient,
+      workSiteAddress,
+      includeTravelCosts,
+      travelDescription,
+      travelPrice,
+      includeWasteCosts,
+      wasteDescription,
+      wastePrice,
+      isAutoEntrepreneur,
+      selectedTvaRate,
+      validityDuration,
+      acompteEnabled,
+      acomptePercent,
+      acompteMode,
+      acompteFixedAmount,
+      delaiPaiement,
+      moyenPaiement,
+      docNumber,
+      items,
+      natureOperation,
+      assureurName,
+      assureurAddress,
+      policyNumber,
+      geographicCoverage,
+      paymentMilestones: milestonesEnabled ? paymentMilestones : undefined,
+      descriptionChantier,
+      descriptionChantierAr,
+      descriptionChantierFr,
+      estimatedStartDate,
+      estimatedDuration,
+      discountEnabled,
+      discountType,
+      discountValue,
+      currentStep,
+    });
+  }, [documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, descriptionChantierAr, descriptionChantierFr, estimatedStartDate, estimatedDuration, discountEnabled, discountType, discountValue, currentStep]);
 
   // Fetch clients list
   useEffect(() => {
@@ -453,6 +504,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (draft.milestonesEnabled !== undefined) setMilestonesEnabled(draft.milestonesEnabled);
     else if (draft.paymentMilestones !== undefined) setMilestonesEnabled(draft.paymentMilestones.length > 0);
     if (draft.descriptionChantier !== undefined) setDescriptionChantier(draft.descriptionChantier || '');
+    if (draft.descriptionChantierAr !== undefined) setDescriptionChantierAr(draft.descriptionChantierAr || '');
+    if (draft.descriptionChantierFr !== undefined) setDescriptionChantierFr(draft.descriptionChantierFr || '');
     if (draft.estimatedStartDate !== undefined) setEstimatedStartDate(draft.estimatedStartDate || '');
     if (draft.estimatedDuration !== undefined) setEstimatedDuration(draft.estimatedDuration || '');
     if (draft.discountEnabled !== undefined) setDiscountEnabled(draft.discountEnabled);
@@ -544,11 +597,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       paymentMilestones,
       milestonesEnabled,
       descriptionChantier,
+      descriptionChantierAr,
+      descriptionChantierFr,
       estimatedStartDate,
       estimatedDuration,
       discountEnabled,
       discountType,
       discountValue,
+      currentStep,
       showPreview,
       showArabic,
       includePhotosInPdf,
@@ -556,7 +612,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       tempValues,
       ...overrides,
     });
-  }, [documentType, selectedClientId, selectedChantierId, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, projectTvaType, validityDuration, dueDateDays, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, estimatedStartDate, estimatedDuration, discountEnabled, discountType, discountValue, showPreview, showArabic, includePhotosInPdf, sitePhotos, tempValues]);
+  }, [documentType, selectedClientId, selectedChantierId, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, projectTvaType, validityDuration, dueDateDays, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, descriptionChantierAr, descriptionChantierFr, estimatedStartDate, estimatedDuration, discountEnabled, discountType, discountValue, currentStep, showPreview, showArabic, includePhotosInPdf, sitePhotos, tempValues]);
 
   useEffect(() => {
     if (!draftRestored) return;
@@ -567,50 +623,35 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   useEffect(() => {
     if (!draftRestored) return;
     const timer = setTimeout(() => {
-      saveDraft({
-        documentType,
-        clientName,
-        clientAddress,
-        clientPhone,
-        clientEmail,
-        clientSiren,
-        clientTvaIntra,
-        clientIsB2B,
-        workSiteSameAsClient,
-        workSiteAddress,
-        includeTravelCosts,
-        travelDescription,
-        travelPrice,
-        includeWasteCosts,
-        wasteDescription,
-        wastePrice,
-        isAutoEntrepreneur,
-        selectedTvaRate,
-        validityDuration,
-        acompteEnabled,
-        acomptePercent,
-        acompteMode,
-        acompteFixedAmount,
-        delaiPaiement,
-        moyenPaiement,
-        docNumber,
-        items,
-        natureOperation,
-        assureurName,
-        assureurAddress,
-        policyNumber,
-        geographicCoverage,
-        paymentMilestones: milestonesEnabled ? paymentMilestones : undefined,
-        descriptionChantier,
-        estimatedStartDate,
-        estimatedDuration,
-        discountEnabled,
-        discountType,
-        discountValue,
-      });
+      saveCurrentDraftSnapshot();
     }, 600);
     return () => clearTimeout(timer);
-  }, [draftRestored, documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, estimatedStartDate, estimatedDuration, discountEnabled, discountType, discountValue]);
+  }, [draftRestored, saveCurrentDraftSnapshot]);
+
+  useEffect(() => {
+    if (!draftRestored) return;
+
+    const flushDraftNow = () => {
+      persistCurrentDocumentState();
+      saveCurrentDraftSnapshot();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushDraftNow();
+      }
+    };
+
+    window.addEventListener('pagehide', flushDraftNow);
+    window.addEventListener('beforeunload', flushDraftNow);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('pagehide', flushDraftNow);
+      window.removeEventListener('beforeunload', flushDraftNow);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [draftRestored, persistCurrentDocumentState, saveCurrentDraftSnapshot]);
 
   // Handle prefill data from quote-to-invoice conversion or Smart Devis
   // CRITICAL: This effect MUST reliably inject items into the form.
@@ -1084,11 +1125,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     { id: 'paiement', label: isRTL ? 'الدفع' : 'Paiement', icon: '💳', isComplete: sectionCompletion[4].isComplete },
     { id: 'resume', label: isRTL ? 'الملخص' : 'Résumé', icon: '📊', isComplete: sectionCompletion[5].isComplete },
   ];
-
-  const [currentStep, setCurrentStep] = useState(() => {
-    if (prefillData || skipDraftRestore) return 0;
-    return loadCurrentDocument(documentType)?.currentStep ?? 0;
-  });
 
   useEffect(() => {
     if (!draftRestored) return;

@@ -125,6 +125,7 @@ const ExpensesPage = () => {
           amountHT: d.subtotal_ht || 0,
           tvaAmount: d.tva_amount || 0,
           status: d.status || null,
+          paymentStatus: d.payment_status || null,
           pdfUrl: d.pdf_url || null,
         });
       });

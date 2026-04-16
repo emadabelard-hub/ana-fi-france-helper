@@ -12,7 +12,7 @@ import SecurityBadge from '@/components/shared/SecurityBadge';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
-import { clearCurrentDocument, clearDraft, loadResumeDocumentType } from '@/lib/invoiceDraftStorage';
+import { clearCurrentDocument, clearDraft, loadCurrentDocument } from '@/lib/invoiceDraftStorage';
 import NumberingOnboardingModal from '@/components/invoice/NumberingOnboardingModal';
 import {
   Dialog,
@@ -45,7 +45,7 @@ const InvoiceCreatorPage = () => {
   const isMilestonePrefillFlow = prefillSource === 'milestone';
   const expectsStoredPrefill = prefillSource === 'quote' || isSmartDevisFlow || isMilestonePrefillFlow;
   const resumedDocumentType = !urlDocType && !prefillSource
-    ? loadResumeDocumentType()
+    ? loadCurrentDocument()?.documentType ?? null
     : null;
   
   const urlSource = searchParams.get('source');

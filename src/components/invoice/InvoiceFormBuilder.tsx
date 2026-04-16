@@ -3258,16 +3258,32 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                       <div key={milestone.id} className="border border-border rounded-md p-2.5 space-y-2 bg-muted/30">
                         <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                           <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">#{idx + 1}</span>
-                          <Input
-                            value={milestone.label}
-                            onChange={(e) => {
-                              const updated = [...paymentMilestones];
-                              updated[idx] = { ...updated[idx], label: e.target.value };
-                              setPaymentMilestones(updated);
-                            }}
-                            placeholder={isRTL ? 'اسم المرحلة' : 'Nom de l\'étape'}
-                            className="text-sm flex-1"
-                          />
+                          <div className="flex-1 space-y-1">
+                            <Input
+                              value={milestone.label}
+                              onChange={(e) => {
+                                const updated = [...paymentMilestones];
+                                updated[idx] = { ...updated[idx], label: e.target.value };
+                                setPaymentMilestones(updated);
+                              }}
+                              placeholder={"Nom de l'étape (FR)"}
+                              dir="ltr"
+                              lang="fr"
+                              className="text-sm"
+                            />
+                            <Input
+                              value={milestoneLabelToArabic(milestone.label)}
+                              onChange={(e) => {
+                                const updated = [...paymentMilestones];
+                                updated[idx] = { ...updated[idx], label: arabicMilestoneLabelToFrench(e.target.value, milestone.label) };
+                                setPaymentMilestones(updated);
+                              }}
+                              placeholder={'اسم المرحلة (AR)'}
+                              dir="rtl"
+                              lang="ar"
+                              className="text-xs font-cairo text-right text-muted-foreground"
+                            />
+                          </div>
                           <Button
                             variant="ghost"
                             size="icon"

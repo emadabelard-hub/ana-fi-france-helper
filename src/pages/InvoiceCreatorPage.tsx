@@ -57,6 +57,8 @@ const InvoiceCreatorPage = () => {
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showNumberingOnboarding, setShowNumberingOnboarding] = useState(false);
   const [numberingChecked, setNumberingChecked] = useState(false);
+  // Track whether this is a fresh new document (user chose type from modal, not a resume)
+  const [isNewDocument, setIsNewDocument] = useState(false);
   const activeDocumentType = urlDocType ?? documentType;
 
   // Check if numbering onboarding is needed (first time creating a document)

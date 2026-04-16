@@ -29,16 +29,18 @@ const ShbikLbikCard = ({
   const navigate = useNavigate();
   const [showDetail, setShowDetail] = useState(false);
 
-  // ── Calculations ──
+  // ── Calculations — 100% encaissement ──
+  const baseIncome = tresorerieEncaissee > 0 ? tresorerieEncaissee : totalIncome;
+  const baseIncomeHT = tresorerieEncaissee > 0 ? (totalIncomeHT > 0 ? totalIncomeHT : tresorerieEncaissee) : totalIncomeHT;
   const tvaNet = isTvaExempt ? 0 : Math.max(0, tvaCollectee - tvaDeductible);
-  const urssaf = totalIncomeHT * (urssafRate / 100);
-  const benefice = totalIncomeHT - totalExpensesHT - urssaf;
+  const urssaf = baseIncomeHT * (urssafRate / 100);
+  const benefice = baseIncomeHT - totalExpensesHT - urssaf;
   const impot = Math.max(0, benefice * (isRate / 100));
   const totalReserve = tvaNet + urssaf + impot;
-  const disponible = totalIncome - totalExpenses - totalReserve;
+  const disponible = baseIncome - totalExpenses - totalReserve;
   const aPrevoir = urssaf + impot;
 
-  const hasData = totalIncome > 0 || totalExpenses > 0;
+  const hasData = baseIncome > 0 || totalExpenses > 0;
 
   // ── Health / color ──
   const healthRatio = totalIncome > 0 ? disponible / totalIncome : 0;

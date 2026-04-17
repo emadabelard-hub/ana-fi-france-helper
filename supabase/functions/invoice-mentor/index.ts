@@ -821,6 +821,17 @@ serve(async (req) => {
       return handleTranslation(body.text, LOVABLE_API_KEY);
     }
 
+    // Handle auto-generation of Objet + designations from a free-text client description
+    if (body.action === 'generate_from_description') {
+      const raw = (body.description || body.text || body.message || '').trim();
+      if (!raw || raw.length < 5) {
+        return new Response(JSON.stringify({ error: 'Description trop courte' }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return handleGenerateFromDescription(raw, LOVABLE_API_KEY);
+    }
+
     // Original chat functionality
     const { message, conversationHistory = [] } = body;
     

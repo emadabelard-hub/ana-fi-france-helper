@@ -15,8 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw, Users, Save, Languages, SlidersHorizontal, ChevronDown, ChevronUp, Check, CreditCard, BarChart3, Shield, Receipt } from 'lucide-react';
 import { buildMilestoneInvoicePrefill } from '@/lib/milestoneInvoicePrefill';
-import { milestoneLabelToArabic, arabicToFrenchDisplay } from '@/lib/milestoneLabelTranslation';
-import { useMilestoneTranslator } from '@/hooks/useMilestoneTranslator';
+import { milestoneLabelToArabic } from '@/lib/milestoneLabelTranslation';
 import FormProgressBar, { type ProgressSection } from './FormProgressBar';
 import StepNavigation, { StepButtons, type WizardStep } from './StepNavigation';
 import InvoiceDisplay, { InvoiceData, PaymentMilestone } from './InvoiceDisplay';
@@ -190,24 +189,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Payment milestones (échéancier)
   const [paymentMilestones, setPaymentMilestones] = useState<PaymentMilestone[]>([]);
   const [milestonesEnabled, setMilestonesEnabled] = useState(false);
-
-  // Bilingual translator for milestone labels (AR<->FR), debounced + loop-safe.
-  const { requestTranslation: requestMilestoneTranslation } = useMilestoneTranslator({
-    onTranslated: (key, target, text) => {
-      setPaymentMilestones((prev) => {
-        const idx = prev.findIndex((m) => m.id === key);
-        if (idx === -1) return prev;
-        const next = [...prev];
-        if (target === 'fr') {
-          next[idx] = { ...next[idx], label: text };
-        } else {
-          next[idx] = { ...next[idx], labelAr: text };
-        }
-        return next;
-      });
-    },
-  });
-
 
   // Discount state
   const [discountEnabled, setDiscountEnabled] = useState(false);
@@ -3279,22 +3260,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                         <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                           <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">#{idx + 1}</span>
                           <div className="flex-1 space-y-1">
-                            {/* Arabic field — editable. AR edits trigger real translation to FR. */}
                             <Input
-                              value={milestone.labelAr ?? milestoneLabelToArabic(milestone.label)}
-                              onChange={(e) => {
-                                const arValue = e.target.value;
-                                const updated = [...paymentMilestones];
-                                updated[idx] = { ...updated[idx], labelAr: arValue };
-                                setPaymentMilestones(updated);
-                                requestMilestoneTranslation(milestone.id, arValue, 'ar-to-fr');
-                              }}
+                              value={milestoneLabelToArabic(milestone.label)}
                               placeholder={'اسم المرحلة (AR)'}
                               dir="rtl"
                               lang="ar"
+                              readOnly
+                              aria-readonly="true"
+                              tabIndex={-1}
                               className="text-sm font-cairo text-right"
                             />
-                            {/* French field — editable. FR edits trigger real translation to AR. */}
                             <Input
                               value={milestone.label}
                               onChange={(e) => {
@@ -3302,7 +3277,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                                 const updated = [...paymentMilestones];
                                 updated[idx] = { ...updated[idx], label: frValue };
                                 setPaymentMilestones(updated);
-                                requestMilestoneTranslation(milestone.id, frValue, 'fr-to-ar');
                               }}
                               placeholder={"Nom de l'étape (FR)"}
                               dir="ltr"

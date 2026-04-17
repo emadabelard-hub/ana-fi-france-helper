@@ -20,6 +20,7 @@ import StepNavigation, { StepButtons, type WizardStep } from './StepNavigation';
 import InvoiceDisplay, { InvoiceData, PaymentMilestone } from './InvoiceDisplay';
 import InvoiceActions from './InvoiceActions';
 import LineItemEditor, { LineItem } from './LineItemEditor';
+import { MilestoneLabelInput } from './MilestoneLabelInput';
 import QuoteWizardModal from './QuoteWizardModal';
 import InvoiceGuideModal from './InvoiceGuideModal';
 import FactureGuideModal from './FactureGuideModal';

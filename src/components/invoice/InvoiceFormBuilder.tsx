@@ -3239,9 +3239,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                       setMilestonesEnabled(checked);
                       if (checked && paymentMilestones.length === 0) {
                         setPaymentMilestones([
-                          { id: generateId(), label: 'Acompte à la commande', mode: 'percent', percent: 30 },
-                          { id: generateId(), label: 'Fin de gros œuvre', mode: 'percent', percent: 40 },
-                          { id: generateId(), label: 'Remise des clés', mode: 'percent', percent: 30 },
+                          { id: generateId(), label: '', mode: 'percent', percent: 0 },
                         ]);
                       }
                       if (checked) {
@@ -3262,15 +3260,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                             <Input
                               value={milestone.label}
                               onChange={(e) => {
-                                const frValue = e.target.value;
                                 const updated = [...paymentMilestones];
-                                updated[idx] = { ...updated[idx], label: frValue };
+                                updated[idx] = { ...updated[idx], label: e.target.value };
                                 setPaymentMilestones(updated);
                               }}
-                              placeholder={isRTL ? 'Nom de l’étape' : "Nom de l'étape"}
-                              dir="ltr"
-                              lang="fr"
-                              className="text-sm"
+                              placeholder={isRTL ? 'وصف الدفعة (حر)' : "Description de l'échéance (libre)"}
+                              className={cn("text-sm", isRTL && "text-right font-cairo")}
                             />
                           </div>
                           <Button

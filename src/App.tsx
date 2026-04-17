@@ -65,37 +65,11 @@ const getRoutePathname = (route: string) => route.split(/[?#]/, 1)[0] || route;
 
 const RouteResumeManager = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const initialRouteRef = useRef({
-    pathname: location.pathname,
-    search: location.search,
-    hash: location.hash,
-  });
 
-  useEffect(() => {
-    const { pathname } = initialRouteRef.current;
-    if (!isResumeEntryRoute(pathname)) return;
-
-    try {
-      const savedRoute = localStorage.getItem(LAST_ROUTE_KEY);
-      const currentDocument = loadCurrentDocument();
-      if (!currentDocument?.documentType) return;
-
-      const savedRoutePath = savedRoute ? getRoutePathname(savedRoute) : '';
-      const fallbackRoute = `/pro/invoice-creator?type=${currentDocument.documentType}`;
-      const resumeRoute = savedRoutePath.startsWith('/pro/invoice-creator')
-        ? savedRoute!
-        : fallbackRoute;
-
-      navigate(resumeRoute, { replace: true });
-    } catch {
-      // Ignore route restore failures
-    }
-  }, [navigate]);
-
+  // Auto-resume DISABLED — was forcing users back to /pro/invoice-creator on every load.
+  // Home (/) must always be the default landing page.
   useEffect(() => {
     if (isResumeEntryRoute(location.pathname)) return;
-
     try {
       localStorage.setItem(LAST_ROUTE_KEY, `${location.pathname}${location.search}${location.hash}`);
     } catch {

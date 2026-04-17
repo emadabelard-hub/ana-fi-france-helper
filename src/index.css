@@ -296,19 +296,75 @@ html, body {
 }
 
 /* ============================================
-   PDF readability: darken light grays for better contrast.
-   Layout, sizes, columns and spacing are preserved — only color changes.
+   PDF readability: premium color palette.
+   - Main text: dark gray (#333333)
+   - Titles (DEVIS, FACTURE, CLIENT, TOTAL TTC): pure black (#000000)
+   - Secondary mentions (conditions, notes): medium gray (#555555)
+   Sizes, spacings, margins and structure are unchanged.
    ============================================ */
+
+/* Base body text in PDF → dark gray #333 */
+.pdf-render-mode,
+.pdf-render-mode p,
+.pdf-render-mode span,
+.pdf-render-mode div,
+.pdf-render-mode li,
+.pdf-render-mode td {
+  color: #333333 !important;
+}
+
+/* Titles / headings → pure black #000 */
+.pdf-render-mode h1,
+.pdf-render-mode h2,
+.pdf-render-mode h3,
+.pdf-render-mode h4,
+.pdf-render-mode th,
+.pdf-render-mode .invoice-title,
+.pdf-render-mode .invoice-section-title,
+.pdf-render-mode [data-pdf-title],
+.pdf-render-mode .font-bold {
+  color: #000000 !important;
+}
+
+/* Secondary mentions (light/muted grays) → medium gray #555 */
 .pdf-render-mode .text-gray-400,
-.pdf-render-mode .text-gray-500 {
-  color: #4b5563 !important; /* gray-600: soft dark, still hierarchical */
+.pdf-render-mode .text-gray-500,
+.pdf-render-mode .text-muted-foreground,
+.pdf-render-mode .invoice-legal-footer,
+.pdf-render-mode .invoice-conditions-block,
+.pdf-render-mode small {
+  color: #555555 !important;
 }
-.pdf-render-mode .text-gray-600 {
-  color: #374151 !important; /* gray-700 */
-}
+
+/* Mid-tone grays used in table/meta → dark gray #333 for readability */
+.pdf-render-mode .text-gray-600,
 .pdf-render-mode .text-gray-700,
-.pdf-render-mode .text-gray-800 {
-  color: #1f2937 !important; /* gray-800/900 — near black */
+.pdf-render-mode .text-gray-800,
+.pdf-render-mode table,
+.pdf-render-mode tbody,
+.pdf-render-mode tr {
+  color: #333333 !important;
+}
+
+/* Total TTC → pure black + slightly bolder (same size) */
+.pdf-render-mode .invoice-total-ttc,
+.pdf-render-mode [data-total-ttc],
+.pdf-render-mode .total-ttc-value,
+.pdf-render-mode .total-ttc-label {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+/* Table contrast: slightly darker row borders, dark gray text */
+.pdf-render-mode table th,
+.pdf-render-mode table td {
+  border-color: #cccccc !important;
+}
+.pdf-render-mode table td {
+  color: #333333 !important;
+}
+.pdf-render-mode table th {
+  color: #000000 !important;
 }
 
 /* Footer page-number: bump +1px and use soft dark gray for legibility */

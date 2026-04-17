@@ -148,6 +148,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [descriptionChantierAr, setDescriptionChantierAr] = useState('');
   const [descriptionChantierFr, setDescriptionChantierFr] = useState('');
   const [isTranslatingObjet, setIsTranslatingObjet] = useState(false);
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   // Estimated start date and duration
   const [estimatedStartDate, setEstimatedStartDate] = useState('');
   const [estimatedDuration, setEstimatedDuration] = useState('');
@@ -2556,57 +2557,123 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             />
           </div>
 
-          {/* Translate button */}
+          {/* Action buttons row: Translate + Auto-generate */}
           {descriptionChantier.trim() && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={cn("text-sm gap-2", isRTL && "font-cairo")}
-              disabled={isTranslatingObjet}
-              onClick={async () => {
-                setIsTranslatingObjet(true);
-                try {
-                  const raw = descriptionChantier.trim();
-                  // Always try edge function for best quality professional translation
-                  if (containsArabic(raw)) {
-                    const { data } = await supabase.functions.invoke('voice-field-input', {
-                      body: { rawText: raw, dualMode: true },
-                    });
-                    const frText = typeof data?.text === 'string' ? data.text.trim() : '';
-                    if (frText) {
-                      setDescriptionChantierAr(raw);
-                      setDescriptionChantierFr(frText);
-                    } else {
-                      // Fallback to local formatter
-                      const { french } = formatObjet(raw);
-                      if (french && french !== raw) {
+            <div className={cn("flex flex-wrap gap-2", isRTL && "flex-row-reverse")}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={cn("text-sm gap-2", isRTL && "font-cairo")}
+                disabled={isTranslatingObjet}
+                onClick={async () => {
+                  setIsTranslatingObjet(true);
+                  try {
+                    const raw = descriptionChantier.trim();
+                    if (containsArabic(raw)) {
+                      const { data } = await supabase.functions.invoke('voice-field-input', {
+                        body: { rawText: raw, dualMode: true },
+                      });
+                      const frText = typeof data?.text === 'string' ? data.text.trim() : '';
+                      if (frText) {
                         setDescriptionChantierAr(raw);
-                        setDescriptionChantierFr(french);
+                        setDescriptionChantierFr(frText);
+                      } else {
+                        const { french } = formatObjet(raw);
+                        if (french && french !== raw) {
+                          setDescriptionChantierAr(raw);
+                          setDescriptionChantierFr(french);
+                        }
                       }
+                    } else {
+                      setDescriptionChantierFr(raw);
                     }
-                  } else {
-                    // Already French text
-                    setDescriptionChantierFr(raw);
+                    toast({
+                      title: isRTL ? '✅ تمت الترجمة' : '✅ Traduction terminée',
+                      description: isRTL ? 'الموضوع اتترجم لفرنساوي' : 'La description a été traduite en français',
+                    });
+                  } catch {
+                    toast({ title: isRTL ? '❌ خطأ في الترجمة' : '❌ Erreur de traduction', variant: 'destructive' });
+                  } finally {
+                    setIsTranslatingObjet(false);
                   }
-                  toast({
-                    title: isRTL ? '✅ تمت الترجمة' : '✅ Traduction terminée',
-                    description: isRTL ? 'الموضوع اتترجم لفرنساوي' : 'La description a été traduite en français',
-                  });
-                } catch {
-                  toast({ title: isRTL ? '❌ خطأ في الترجمة' : '❌ Erreur de traduction', variant: 'destructive' });
-                } finally {
-                  setIsTranslatingObjet(false);
-                }
-              }}
-            >
-              {isTranslatingObjet ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Languages className="h-4 w-4" />
-              )}
-              {isRTL ? 'ترجم' : 'Traduire'}
-            </Button>
+                }}
+              >
+                {isTranslatingObjet ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Languages className="h-4 w-4" />
+                )}
+                {isRTL ? 'ترجم' : 'Traduire'}
+              </Button>
+
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                className={cn("text-sm gap-2", isRTL && "font-cairo")}
+                disabled={isAutoGenerating}
+                onClick={async () => {
+                  const raw = descriptionChantier.trim();
+                  if (raw.length < 5) return;
+                  setIsAutoGenerating(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke('invoice-mentor', {
+                      body: { action: 'generate_from_description', description: raw },
+                    });
+                    if (error) throw error;
+                    const objet = typeof data?.objet === 'string' ? data.objet.trim() : '';
+                    const designations: string[] = Array.isArray(data?.designations)
+                      ? data.designations.filter((d: unknown): d is string => typeof d === 'string' && d.trim().length > 0).slice(0, 5)
+                      : [];
+
+                    if (!objet || designations.length === 0) {
+                      throw new Error('Réponse IA invalide');
+                    }
+
+                    // Fill the Objet (French) — keep Arabic source as-is
+                    setDescriptionChantierFr(objet);
+                    if (containsArabic(raw)) {
+                      setDescriptionChantierAr(raw);
+                    }
+
+                    // Replace items with the AI designations (no prices, no quantities, default unit)
+                    setItems(designations.map((label) => ({
+                      id: generateId(),
+                      designation_fr: label,
+                      designation_ar: '',
+                      quantity: '' as unknown as number,
+                      unit: 'U',
+                      unitPrice: '' as unknown as number,
+                      total: 0,
+                    })));
+
+                    toast({
+                      title: isRTL ? '✨ تم إنشاء الدوفي' : '✨ Devis généré',
+                      description: isRTL
+                        ? 'الموضوع و' + designations.length + ' بنود اتعملوا. زود الأسعار بقى.'
+                        : `Objet et ${designations.length} ligne(s) générés. Ajoutez maintenant les prix.`,
+                    });
+                  } catch (e: any) {
+                    console.error('[generate_from_description] error:', e);
+                    const status = e?.context?.status || e?.status;
+                    let msg = isRTL ? 'حصلت مشكلة في الإنشاء' : 'Erreur lors de la génération';
+                    if (status === 429) msg = isRTL ? 'الخدمة مشغولة، جرب تاني' : 'Service surchargé, réessayez dans une minute';
+                    if (status === 402) msg = isRTL ? 'الرصيد خلص' : 'Crédits IA épuisés';
+                    toast({ title: isRTL ? '❌ خطأ' : '❌ Erreur', description: msg, variant: 'destructive' });
+                  } finally {
+                    setIsAutoGenerating(false);
+                  }
+                }}
+              >
+                {isAutoGenerating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Wand2 className="h-4 w-4" />
+                )}
+                {isRTL ? '✨ إنشاء تلقائي' : 'Auto-générer'}
+              </Button>
+            </div>
           )}
 
           {/* French translation preview */}

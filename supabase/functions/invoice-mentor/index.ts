@@ -13,7 +13,7 @@ interface Message {
 interface RequestBody {
   message?: string;
   conversationHistory?: Message[];
-  action?: 'suggest_price' | 'generate_quote' | 'generate_invoice' | 'translate_to_french';
+  action?: 'suggest_price' | 'generate_quote' | 'generate_invoice' | 'translate_to_french' | 'generate_from_description';
   description?: string;
   unit?: string;
   category?: string;
@@ -21,6 +21,114 @@ interface RequestBody {
   categoryAnswers?: string;
   logistics?: string;
   text?: string;
+}
+
+// Generate professional Objet + up to 5 line designations from a free-text client description.
+// Returns: { objet: string, designations: string[] } — NO prices, NO quantities.
+async function handleGenerateFromDescription(rawText: string, apiKey: string): Promise<Response> {
+  const systemPrompt = `Tu es un assistant pour artisans du BTP en France.
+À partir d'une description libre d'un chantier (texte client, dictée, e-mail), tu produis :
+1. UN "objet" : une phrase courte, claire et professionnelle décrivant le projet (max ~20 mots).
+2. Une liste de DÉSIGNATIONS de lots de travaux (5 maximum), simples et compréhensibles par un client.
+
+Règles strictes :
+- Tout en français professionnel, sans jargon technique complexe.
+- Pas de phrases longues. Pas de prix. Pas de quantités. Pas d'unités.
+- Chaque désignation = un lot de travaux clair (ex: "Travaux de peinture", "Travaux d'électricité").
+- Si la description est vague, reste générique mais utile.
+- Ne pas inventer de prestations qui ne sont pas dans la description.
+- Tu réponds UNIQUEMENT via l'outil "fill_quote".`;
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Description client :\n"""\n${rawText}\n"""` },
+      ],
+      tools: [{
+        type: "function",
+        function: {
+          name: "fill_quote",
+          description: "Remplit l'objet du devis et les désignations de lots de travaux.",
+          parameters: {
+            type: "object",
+            properties: {
+              objet: {
+                type: "string",
+                description: "Phrase courte et professionnelle décrivant le projet (max ~20 mots).",
+              },
+              designations: {
+                type: "array",
+                description: "Liste de lots de travaux (1 à 5 lignes maximum), professionnelles et concises.",
+                items: { type: "string" },
+                minItems: 1,
+                maxItems: 5,
+              },
+            },
+            required: ["objet", "designations"],
+            additionalProperties: false,
+          },
+        },
+      }],
+      tool_choice: { type: "function", function: { name: "fill_quote" } },
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (response.status === 402) {
+      return new Response(JSON.stringify({ error: "Payment required" }), {
+        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const errText = await response.text();
+    console.error("generate_from_description AI error:", response.status, errText);
+    return new Response(JSON.stringify({ error: "AI gateway error" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const data = await response.json();
+  const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+  const argsStr = toolCall?.function?.arguments;
+
+  let objet = "";
+  let designations: string[] = [];
+  if (argsStr) {
+    try {
+      const parsed = JSON.parse(argsStr);
+      objet = typeof parsed.objet === "string" ? parsed.objet.trim() : "";
+      if (Array.isArray(parsed.designations)) {
+        designations = parsed.designations
+          .filter((d: unknown): d is string => typeof d === "string")
+          .map((d: string) => d.trim())
+          .filter((d: string) => d.length > 0)
+          .slice(0, 5);
+      }
+    } catch (e) {
+      console.error("Failed to parse fill_quote args:", e, argsStr);
+    }
+  }
+
+  if (!objet || designations.length === 0) {
+    return new Response(JSON.stringify({ error: "Réponse IA invalide" }), {
+      status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  return new Response(JSON.stringify({ objet, designations }), {
+    status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
 
 // Price suggestion handler
@@ -711,6 +819,17 @@ serve(async (req) => {
         });
       }
       return handleTranslation(body.text, LOVABLE_API_KEY);
+    }
+
+    // Handle auto-generation of Objet + designations from a free-text client description
+    if (body.action === 'generate_from_description') {
+      const raw = (body.description || body.text || body.message || '').trim();
+      if (!raw || raw.length < 5) {
+        return new Response(JSON.stringify({ error: 'Description trop courte' }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return handleGenerateFromDescription(raw, LOVABLE_API_KEY);
     }
 
     // Original chat functionality

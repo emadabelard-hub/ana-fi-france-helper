@@ -187,9 +187,12 @@ const InvoiceCreatorPage = () => {
 
   const missingQuoteData = (expectsStoredPrefill || isImageQuoteFlow) && !prefillData;
 
-  // Navigation guard: block leaving when a document type is selected (form is active)
-  const hasUnsavedWork = !!activeDocumentType && !missingQuoteData;
-  const { showLeaveDialog, requestLeave, confirmLeave, cancelLeave } = useNavigationGuard(hasUnsavedWork);
+  // Navigation guard DISABLED — the draft is auto-saved, navigation must stay free.
+  // Keeping no-op stubs to preserve the existing call sites without behavior change.
+  const showLeaveDialog = false;
+  const requestLeave = (action: () => void) => action();
+  const confirmLeave = () => {};
+  const cancelLeave = () => {};
   
   // Sync URL with document type (no more prefill loading here — done synchronously above)
   useEffect(() => {

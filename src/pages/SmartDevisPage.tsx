@@ -2124,7 +2124,57 @@ const SmartDevisPage = () => {
                   </div>
                   <button
                     onClick={() => {
-                      navigate('/pro/invoice-creator?type=devis');
+                      try {
+                        // Build prefill from analysisData (subject + suggestedItems)
+                        const subject =
+                          (typeof analysisData?.devis_subject_fr === 'string' && analysisData.devis_subject_fr.trim()) ||
+                          (typeof analysisData?.chantier_title === 'string' && analysisData.chantier_title.trim()) ||
+                          'Travaux de rénovation';
+
+                        const description =
+                          (typeof analysisData?.workPlan_fr === 'string' && analysisData.workPlan_fr.trim()) ||
+                          (typeof analysisData?.analysis === 'string' && analysisData.analysis.trim()) ||
+                          subject;
+
+                        const rawItems = Array.isArray(analysisData?.suggestedItems) ? analysisData.suggestedItems : [];
+                        const items = rawItems.map((it: any) => ({
+                          id: generateId(),
+                          designation_fr: typeof it?.designation_fr === 'string' ? it.designation_fr : '',
+                          designation_ar: typeof it?.designation_ar === 'string' ? it.designation_ar : '',
+                          quantity: Number(it?.quantity) > 0 ? Number(it.quantity) : 1,
+                          unit: typeof it?.unit === 'string' && it.unit ? it.unit : 'U',
+                          unitPrice: Number(it?.unitPrice) > 0 ? Number(it.unitPrice) : 0,
+                          total: 0,
+                        }));
+
+                        const prefillData = {
+                          source: 'smart_devis',
+                          descriptionChantier: subject,
+                          descriptionChantierFr: subject,
+                          notes: description,
+                          items,
+                        };
+
+                        // Clear stale drafts so the prefill wins
+                        try {
+                          localStorage.removeItem('invoice_draft_v1');
+                          sessionStorage.removeItem('invoice_draft_v1');
+                          localStorage.removeItem('lineItemEditor_items_v1');
+                        } catch { /* ignore */ }
+
+                        sessionStorage.setItem('quoteToInvoiceData', JSON.stringify(prefillData));
+
+                        // Persist wizard snapshot to allow returning to Smart Devis
+                        try {
+                          const snapshot = buildWizardSnapshot();
+                          const snapshotJson = JSON.stringify(snapshot);
+                          sessionStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, snapshotJson);
+                          localStorage.setItem(SMART_DEVIS_WIZARD_STATE_KEY, snapshotJson);
+                        } catch { /* ignore */ }
+                      } catch (e) {
+                        console.warn('[SmartDevis] Manual devis prefill failed:', e);
+                      }
+                      navigate('/pro/invoice-creator?type=devis&prefill=smart');
                     }}
                     className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all text-black font-bold text-2xl font-cairo shadow-lg flex items-center justify-center gap-3"
                   >

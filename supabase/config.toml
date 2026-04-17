@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.generate-pdf]
 verify_jwt = false
+
+[functions.translate-milestone-label]
+verify_jwt = false

@@ -29,6 +29,7 @@ import {
 import SecurityBadge from '@/components/shared/SecurityBadge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import EquipmentSuggestions from '@/components/smart-devis/EquipmentSuggestions';
+import { transformSmartDevisItemsForManualQuote } from '@/lib/smartDevisToManualTransform';
 
 interface UploadedFile {
   id: string;

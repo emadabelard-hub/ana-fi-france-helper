@@ -134,7 +134,15 @@ serve(async (req) => {
     }
 
     const translation = await aiTranslate(text, direction, apiKey);
-    return new Response(JSON.stringify({ translation, source: "ai" }), {
+
+    // Safety: for ar-to-fr, the result MUST NOT still contain Arabic.
+    let safe = translation;
+    if (direction === "ar-to-fr" && containsArabic(safe)) {
+      console.warn("translate-milestone-label: AI returned Arabic — discarded");
+      safe = "";
+    }
+
+    return new Response(JSON.stringify({ translation: safe, source: "ai" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

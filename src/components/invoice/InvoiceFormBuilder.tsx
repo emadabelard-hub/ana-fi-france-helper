@@ -148,6 +148,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [descriptionChantierAr, setDescriptionChantierAr] = useState('');
   const [descriptionChantierFr, setDescriptionChantierFr] = useState('');
   const [isTranslatingObjet, setIsTranslatingObjet] = useState(false);
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   // Estimated start date and duration
   const [estimatedStartDate, setEstimatedStartDate] = useState('');
   const [estimatedDuration, setEstimatedDuration] = useState('');

@@ -65,8 +65,10 @@ export function MilestoneLabelInput({ milestoneId, value, isRTL, onChange }: Mil
           return;
         }
         const translation = (data?.translation ?? '').toString().trim();
+        // Empty = AI failed or returned Arabic (server filtered) → keep previous FR.
         if (!translation) return;
-        // User may have started editing FR while we were translating → respect lock.
+        // Defensive: never accept Arabic into the French field.
+        if (containsArabic(translation)) return;
         if (frLocked) return;
         setFrench(translation);
         onChange(translation);
@@ -75,7 +77,7 @@ export function MilestoneLabelInput({ milestoneId, value, isRTL, onChange }: Mil
       } finally {
         if (myReq === reqIdRef.current) setTranslating(false);
       }
-    }, 700);
+    }, 400);
   };
 
   const handleArabicChange = (e: React.ChangeEvent<HTMLInputElement>) => {

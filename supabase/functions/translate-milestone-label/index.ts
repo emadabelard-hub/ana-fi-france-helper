@@ -40,20 +40,37 @@ function tryDictionary(text: string, direction: "ar-to-fr" | "fr-to-ar"): string
   return FR_TO_AR[key] ?? null;
 }
 
+function containsArabic(s: string): boolean {
+  return /[\u0600-\u06FF]/.test(s);
+}
+
+function containsLatin(s: string): boolean {
+  return /[A-Za-zÀ-ÿ]/.test(s);
+}
+
 async function aiTranslate(text: string, direction: "ar-to-fr" | "fr-to-ar", apiKey: string): Promise<string> {
-  const targetLang = direction === "ar-to-fr" ? "français professionnel BTP (chantier France)" : "arabe égyptien dialectal (Ammiya) compréhensible par un artisan";
-  const sourceLang = direction === "ar-to-fr" ? "arabe (dialecte ou littéraire)" : "français";
+  const systemPrompt = direction === "ar-to-fr"
+    ? `Tu es un traducteur professionnel spécialisé dans le BTP en France (devis et factures).
+Tu reçois un libellé d'échéance de paiement en arabe (dialecte égyptien Ammiya, darija ou arabe standard).
+Tu DOIS produire UNE phrase courte en FRANÇAIS PROFESSIONNEL, claire et naturelle, utilisable directement dans un devis ou une facture française.
 
-  const systemPrompt = `Tu es un traducteur spécialisé dans le vocabulaire de chantier (BTP) et des étapes de paiement (échéancier de devis/facture).
-Traduis le texte donné depuis ${sourceLang} vers ${targetLang}.
+RÈGLES ABSOLUES:
+- Réponds UNIQUEMENT par la traduction française, sans guillemets, sans explication, sans préfixe, sans suffixe.
+- INTERDIT: recopier le texte arabe. INTERDIT: laisser des caractères arabes dans la réponse.
+- INTERDIT: traduction mot à mot. Produis une formulation BTP naturelle.
+- Style attendu: court, professionnel, type "Acompte à la commande", "Paiement au début des travaux", "Paiement à la livraison", "Fin de gros œuvre", "Remise des clés", "Solde à réception", "Paiement à mi-chantier".
+- Commence par une majuscule. Pas de point final.
+- Si le texte est vide ou incompréhensible, réponds par une chaîne vide.
 
-Règles strictes:
-- Réponds UNIQUEMENT par la traduction, sans guillemets, sans explication, sans préfixe.
-- Garde une formulation courte et naturelle, adaptée à un libellé d'échéance de paiement.
-- Pour le français: style professionnel BTP (ex: "Acompte à la commande", "Fin de gros œuvre", "Remise des clés", "Solde final").
-- Pour l'arabe: dialecte égyptien (Ammiya), pas de fusha rigide (ex: "دفعة مقدمة عند الطلب", "نهاية الأشغال الكبرى", "تسليم المفاتيح", "الدفعة الأخيرة").
-- Ne JAMAIS recopier le texte source. Toujours produire la langue cible.
-- Si le texte est vide ou incompréhensible, réponds par une chaîne vide.`;
+EXEMPLES:
+- "دفعة مقدمة" → "Acompte à la commande"
+- "عند بداية الأشغال" → "Paiement au début des travaux"
+- "عند التسليم" → "Paiement à la livraison"
+- "نص الشانتي" → "Paiement à mi-chantier"
+- "الدفعة الأخيرة" → "Solde final"
+- "تسليم المفاتيح" → "Remise des clés"`
+    : `Tu es un traducteur professionnel. Traduis ce libellé d'échéance de paiement français vers l'arabe égyptien dialectal (Ammiya) compréhensible par un artisan.
+Réponds UNIQUEMENT par la traduction, sans guillemets ni explication. Ne recopie jamais le texte source.`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -64,7 +81,7 @@ Règles strictes:
     body: JSON.stringify({
       model: "google/gemini-2.5-flash",
       stream: false,
-      temperature: 0.1,
+      temperature: 0.2,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: text },
@@ -117,7 +134,15 @@ serve(async (req) => {
     }
 
     const translation = await aiTranslate(text, direction, apiKey);
-    return new Response(JSON.stringify({ translation, source: "ai" }), {
+
+    // Safety: for ar-to-fr, the result MUST NOT still contain Arabic.
+    let safe = translation;
+    if (direction === "ar-to-fr" && containsArabic(safe)) {
+      console.warn("translate-milestone-label: AI returned Arabic — discarded");
+      safe = "";
+    }
+
+    return new Response(JSON.stringify({ translation: safe, source: "ai" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

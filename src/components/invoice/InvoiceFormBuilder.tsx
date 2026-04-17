@@ -3279,36 +3279,551 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                         <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                           <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">#{idx + 1}</span>
                           <div className="flex-1 space-y-1">
-                            {/* Arabic field — editable. AR edits trigger real translation to FR. */}
+                            {/* Arabic field — editable, syncs FR via dictionary */}
                             <Input
                               value={milestone.labelAr ?? milestoneLabelToArabic(milestone.label)}
                               onChange={(e) => {
                                 const arValue = e.target.value;
+                                const frFromDict = arabicToFrenchDisplay(arValue);
+                                // If AR matches dictionary, update FR. Otherwise keep previous FR
+                                // (so user's manual FR edits are not wiped by unknown AR text).
+                                const nextLabel = frFromDict || milestone.label || arValue;
                                 const updated = [...paymentMilestones];
-                                updated[idx] = { ...updated[idx], labelAr: arValue };
+                                updated[idx] = {
+                                  ...updated[idx],
+                                  label: nextLabel,
+                                  labelAr: arValue,
+                                };
                                 setPaymentMilestones(updated);
-                                requestMilestoneTranslation(milestone.id, arValue, 'ar-to-fr');
                               }}
                               placeholder={'اسم المرحلة (AR)'}
                               dir="rtl"
                               lang="ar"
                               className="text-sm font-cairo text-right"
                             />
-                            {/* French field — editable. FR edits trigger real translation to AR. */}
+                            {/* French field — editable, syncs AR via dictionary */}
                             <Input
                               value={milestone.label}
                               onChange={(e) => {
                                 const frValue = e.target.value;
+                                const arFromDict = milestoneLabelToArabic(frValue);
+                                // If FR matches dictionary, update AR. Otherwise keep previous AR.
+                                const nextAr = arFromDict || milestone.labelAr || '';
                                 const updated = [...paymentMilestones];
-                                updated[idx] = { ...updated[idx], label: frValue };
+                                updated[idx] = {
+                                  ...updated[idx],
+                                  label: frValue,
+                                  labelAr: nextAr,
+                                };
                                 setPaymentMilestones(updated);
-                                requestMilestoneTranslation(milestone.id, frValue, 'fr-to-ar');
                               }}
                               placeholder={"Nom de l'étape (FR)"}
                               dir="ltr"
                               lang="fr"
                               className="text-xs"
                             />
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 shrink-0 text-destructive"
+                            onClick={() => setPaymentMilestones(prev => prev.filter(m => m.id !== milestone.id))}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+                          <select
+                            value={milestone.mode}
+                            onChange={(e) => {
+                              const updated = [...paymentMilestones];
+                              updated[idx] = { ...updated[idx], mode: e.target.value as 'percent' | 'fixed' };
+                              setPaymentMilestones(updated);
+                            }}
+                            className="bg-background border border-border text-foreground text-xs rounded-md p-1.5 w-24"
+                          >
+                            <option value="percent">%</option>
+                            <option value="fixed">€ fixe</option>
+                          </select>
+                          {milestone.mode === 'percent' ? (
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={milestone.percent || ''}
+                              onChange={(e) => {
+                                const updated = [...paymentMilestones];
+                                updated[idx] = { ...updated[idx], percent: parseFloat(e.target.value) || 0 };
+                                setPaymentMilestones(updated);
+                              }}
+                              placeholder="30"
+                              className="text-xs font-mono w-20"
+                            />
+                          ) : (
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={milestone.amount || ''}
+                              onChange={(e) => {
+                                const updated = [...paymentMilestones];
+                                updated[idx] = { ...updated[idx], amount: parseFloat(e.target.value) || 0 };
+                                setPaymentMilestones(updated);
+                              }}
+                              placeholder="500.00"
+                              className="text-xs font-mono w-24"
+                            />
+                          )}
+                          <Input
+                            type="text"
+                            value={milestone.targetDate || ''}
+                            onChange={(e) => {
+                              const updated = [...paymentMilestones];
+                              updated[idx] = { ...updated[idx], targetDate: e.target.value };
+                              setPaymentMilestones(updated);
+                            }}
+                            placeholder={isRTL ? 'تاريخ (اختياري)' : 'Date (optionnel)'}
+                            className="text-xs flex-1"
+                          />
+                        </div>
+                        {/* Créer facture button — available when milestones are active */}
+                        {(milestone.mode === 'percent' ? (milestone.percent || 0) > 0 : (milestone.amount || 0) > 0) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-[10px] gap-1 mt-1 border-primary/30 text-primary hover:bg-primary/10"
+                            onClick={async () => {
+                              if (!user) {
+                                toast({
+                                  variant: 'destructive',
+                                  title: isRTL ? 'خطأ' : 'Erreur',
+                                  description: isRTL ? 'سجّل الدخول أولاً.' : 'Connectez-vous d’abord.',
+                                });
+                                return;
+                              }
+                              try {
+                                const currentData = invoiceData;
+                                const sourceDocumentNumber = isOfficialDocumentNumber(docNumber, 'devis')
+                                  ? docNumber
+                                  : await reserveOfficialDocumentNumber(user.id, 'devis');
+                                const reservedDocumentNumber = await reserveOfficialDocumentNumber(user.id, 'facture');
+
+                                setDocNumber(sourceDocumentNumber);
+
+                                const prefill = {
+                                  ...buildMilestoneInvoicePrefill({
+                                    quote: {
+                                      documentNumber: sourceDocumentNumber,
+                                      clientName: currentData.client?.name || clientName,
+                                      clientAddress: currentData.client?.address || clientAddress,
+                                      clientPhone: currentData.client?.phone || clientPhone,
+                                      clientEmail: currentData.client?.email || clientEmail,
+                                      clientSiren: currentData.client?.siren || clientSiren,
+                                      clientTvaIntra: currentData.client?.tvaIntra || clientTvaIntra,
+                                      clientIsB2B: currentData.client?.isB2B || clientIsB2B,
+                                      workSiteAddress: currentData.workSite?.address || workSiteAddress,
+                                      natureOperation: currentData.natureOperation || natureOperation,
+                                      totalTTC: currentData.total,
+                                      documentData: currentData,
+                                    },
+                                    milestone,
+                                    milestoneIndex: idx,
+                                    totalMilestones: paymentMilestones.length,
+                                  }),
+                                  reservedDocumentNumber,
+                                };
+
+                                console.log('[InvoiceFormBuilder] Milestone → Créer facture PREFILL OK:', prefill);
+                                sessionStorage.removeItem('quoteToInvoiceData');
+                                sessionStorage.setItem('milestoneInvoiceData', JSON.stringify(prefill));
+                                navigate('/pro/invoice-creator?type=facture&prefill=milestone');
+                              } catch (error) {
+                                console.error('[InvoiceFormBuilder] Milestone numbering error:', error);
+                                toast({
+                                  variant: 'destructive',
+                                  title: isRTL ? 'خطأ في الترقيم' : 'Erreur de numérotation',
+                                  description: isRTL
+                                    ? 'تعذر إنشاء رقم رسمي للدوفي أو الفاتورة.'
+                                    : 'Impossible de générer un numéro officiel pour le devis ou la facture.',
+                                });
+                              }
+                            }}
+                          >
+                            <Receipt className="h-3 w-3" />
+                            {isRTL ? 'أنشئ فاتورة' : 'Créer facture'}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPaymentMilestones(prev => [...prev, { id: generateId(), label: '', mode: 'percent', percent: 0 }])}
+                      className="w-full text-xs"
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      {isRTL ? 'إضافة مرحلة' : 'Ajouter une étape'}
+                    </Button>
+
+                    {/* Summary */}
+                    <div className="p-2 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-[10px] space-y-1">
+                      {paymentMilestones.map((m) => {
+                        const amt = m.mode === 'percent' 
+                          ? (invoiceData.total * (m.percent || 0) / 100).toFixed(2) 
+                          : (m.amount || 0).toFixed(2);
+                        return (
+                          <div key={m.id} className={cn("flex justify-between", isRTL && "flex-row-reverse")}>
+                            <span className="text-amber-700 dark:text-amber-400 truncate">{m.label || '—'}</span>
+                            <span className="font-mono font-bold text-amber-800 dark:text-amber-300">{amt} €</span>
+                          </div>
+                        );
+                      })}
+                      <div className={cn("flex justify-between pt-1 border-t border-amber-300 dark:border-amber-700", isRTL && "flex-row-reverse")}>
+                        <span className="text-amber-900 dark:text-amber-200 font-bold">
+                          {isRTL ? 'الباقي:' : 'Reste:'}
+                        </span>
+                        <span className="font-bold font-mono text-amber-900 dark:text-amber-200">
+                          {(() => {
+                            const totalPaid = paymentMilestones.reduce((sum, m) => sum + (m.mode === 'percent' ? invoiceData.total * (m.percent || 0) / 100 : (m.amount || 0)), 0);
+                            return (invoiceData.total - totalPaid).toFixed(2);
+                          })()} €
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Preview of generated text */}
+              <div className="p-2 rounded bg-muted/50 border border-border">
+                <p className="text-[10px] text-muted-foreground font-mono leading-relaxed">
+                  📄 {invoiceData.paymentTerms}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+      <StepButtons currentStep={6} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={handleNextStep} canProceed={true} isRTL={isRTL} />
+      </>)}
+
+      {/* === STEP 7: TVA & REMISE + RÉSUMÉ === */}
+      {currentStep === 7 && (<>
+          {/* TVA Settings - French Law Compliance */}
+          <Card className="border-gray-500/20 bg-gray-500/5">
+            <CardContent className="p-4 space-y-4">
+              <div className={cn(
+                "flex items-center justify-between",
+                isRTL && "flex-row-reverse"
+              )}>
+                <div className={cn(
+                  "flex items-center gap-2",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <span className="text-xl">💶</span>
+                  <h4 className={cn(
+                    "font-bold text-gray-800 dark:text-gray-200",
+                    isRTL && "font-cairo"
+                  )}>
+                    {isRTL ? 'الـ TVA (الضريبة)' : 'TVA'}
+                  </h4>
+                </div>
+                
+                {/* Auto-entrepreneur badge (read-only from profile) */}
+                {isAutoEntrepreneur && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-700 dark:text-green-400 font-medium">
+                    Auto-entrepreneur
+                  </span>
+                )}
+              </div>
+
+              {isAutoEntrepreneur ? (
+                /* RULE 1: Auto-entrepreneur = locked 0% TVA */
+                <div className="space-y-2">
+                  <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <p className={cn(
+                      "text-sm text-green-700 dark:text-green-400 font-medium",
+                      isRTL && "font-cairo text-right"
+                    )}>
+                      🔒 {isRTL 
+                        ? 'TVA = 0% — مقفول تلقائي' 
+                        : 'TVA = 0% — Verrouillé automatiquement'}
+                    </p>
+                    <p className={cn(
+                      "text-xs text-green-600 dark:text-green-500 mt-1",
+                      isRTL && "font-cairo text-right"
+                    )}>
+                      {isRTL
+                        ? '"TVA non applicable – article 293 B du CGI" هتتكتب تلقائي في الدوكيمون'
+                        : 'Mention légale "TVA non applicable – article 293 B du CGI" ajoutée automatiquement'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                /* RULE 2 & 3: Non auto-entrepreneur = project type selector */
+                <div className="space-y-3">
+                  <p className={cn(
+                    "text-xs text-muted-foreground",
+                    isRTL && "font-cairo text-right"
+                  )}>
+                    {isRTL 
+                      ? 'اختر نوع الشانتي وهنحسبلك الضريبة تلقائي:' 
+                      : 'Sélectionnez le type de chantier, la TVA sera calculée automatiquement :'}
+                  </p>
+
+                  <Select value={projectTvaType} onValueChange={(v) => setProjectTvaType(v as any)}>
+                    <SelectTrigger className={cn("w-full", isRTL && "text-right font-cairo")}>
+                      <SelectValue placeholder={isRTL ? 'اختر نوع الشانتي' : 'Type de chantier'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sous_traitance">
+                        🤝 {isRTL ? 'مقاولة باطن' : 'Sous-traitance'} — TVA 0%
+                      </SelectItem>
+                      <SelectItem value="intracommunautaire">
+                        🇪🇺 {isRTL ? 'زبون مهني في أوروبا' : 'Client professionnel en Europe'} — TVA 0%
+                      </SelectItem>
+                      <SelectItem value="logement_ancien">
+                        🏠 {isRTL ? 'خاص — سكن قديم (أكثر من سنتين)' : 'Particulier – logement ancien (plus de 2 ans)'} — TVA 10%
+                      </SelectItem>
+                      <SelectItem value="logement_neuf">
+                        🏗️ {isRTL ? 'خاص — سكن جديد' : 'Particulier – logement neuf'} — TVA 20%
+                      </SelectItem>
+                      <SelectItem value="local_pro">
+                        🏢 {isRTL ? 'زبون مهني في فرنسا' : 'Client professionnel en France'} — TVA 20%
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Computed TVA result (read-only) */}
+                  <div className={cn(
+                    "p-3 rounded-lg border",
+                    (projectTvaType === 'sous_traitance' || projectTvaType === 'intracommunautaire')
+                      ? "bg-amber-500/10 border-amber-500/20" 
+                      : "bg-primary/10 border-primary/20"
+                  )}>
+                    <p className={cn(
+                      "text-sm font-medium",
+                      (projectTvaType === 'sous_traitance' || projectTvaType === 'intracommunautaire')
+                        ? "text-amber-700 dark:text-amber-400"
+                        : "text-primary",
+                      isRTL && "font-cairo text-right"
+                    )}>
+                      {projectTvaType === 'sous_traitance' && (isRTL ? '📊 TVA = 0% (مقاولة باطن — Autoliquidation)' : '📊 TVA = 0% — Autoliquidation de la TVA – art. 283-2 du CGI')}
+                      {projectTvaType === 'intracommunautaire' && (isRTL ? '📊 TVA = 0% (داخل أوروبا — إعفاء)' : '📊 TVA = 0% — Exonération – art. 262 ter I du CGI')}
+                      {projectTvaType === 'logement_ancien' && (isRTL ? '📊 TVA = 10% (تجديد سكن قديم)' : '📊 TVA = 10% — art. 279-0 bis du CGI')}
+                      {projectTvaType === 'logement_neuf' && (isRTL ? '📊 TVA = 20% (سكن جديد)' : '📊 TVA = 20% — art. 278 du CGI')}
+                      {projectTvaType === 'local_pro' && (isRTL ? '📊 TVA = 20% (زبون مهني في فرنسا)' : '📊 TVA = 20% — législation en vigueur')}
+                    </p>
+                    <p className={cn(
+                      "text-xs text-muted-foreground mt-1",
+                      isRTL && "font-cairo text-right"
+                    )}>
+                      {isRTL ? 'TVA محسوبة تلقائياً حسب نوع الشانتي' : 'TVA calculée automatiquement selon le type de chantier'}
+                    </p>
+                  </div>
+
+                  {/* RULE 5: Coherence alert - logement + B2B client */}
+                  {(projectTvaType === 'logement_ancien' || projectTvaType === 'logement_neuf') && clientIsB2B && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+                      <p className={cn(
+                        "text-xs text-destructive font-medium",
+                        isRTL && "font-cairo text-right"
+                      )}>
+                        ⚠️ {isRTL 
+                          ? 'الزبون شركة والمشروع سكن — تأكد إن الشانتي فعلاً سكن وإلا اختار "محل مهني"'
+                          : 'Le client est une entreprise mais le projet est un logement — vérifiez si le chantier est bien un logement'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Totals Summary */}
+          <div className="pt-4 border-t space-y-2">
+            <div className={cn(
+              "flex justify-between text-sm",
+              isRTL && "flex-row-reverse"
+            )}>
+              <span className="text-muted-foreground">{isRTL ? 'المجموع قبل الضريبة:' : 'Sous-total HT:'}</span>
+              <span className="font-mono font-medium">{invoiceData.subtotal.toFixed(2)} €</span>
+            </div>
+
+            {/* Discount controls */}
+            <div className={cn("space-y-2 py-2 px-3 rounded-lg border border-dashed", discountEnabled ? "border-red-300 bg-red-50/50 dark:bg-red-950/20 dark:border-red-800" : "border-border")}>
+              <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                <Label htmlFor="discount-toggle" className={cn("text-sm font-medium cursor-pointer", isRTL && "font-cairo")}>
+                  {isRTL ? '🏷️ تطبيق خصم' : '🏷️ Appliquer une remise'}
+                </Label>
+                <Switch id="discount-toggle" checked={discountEnabled} onCheckedChange={setDiscountEnabled} />
+              </div>
+              {discountEnabled && (
+                <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                  <Select value={discountType} onValueChange={(v) => setDiscountType(v as 'percent' | 'fixed')}>
+                    <SelectTrigger className="w-24 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percent">%</SelectItem>
+                      <SelectItem value="fixed">€ fixe</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={discountType === 'percent' ? 100 : invoiceData.subtotal}
+                    step={discountType === 'percent' ? 1 : 0.01}
+                    value={discountValue || ''}
+                    onChange={(e) => setDiscountValue(Number(e.target.value))}
+                    className="w-24 h-8 text-sm font-mono"
+                    placeholder={discountType === 'percent' ? '10' : '50.00'}
+                  />
+                  {invoiceData.discountAmount && invoiceData.discountAmount > 0 && (
+                    <span className="text-sm text-red-600 dark:text-red-400 font-medium font-mono">
+                      - {invoiceData.discountAmount.toFixed(2)} €
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className={cn(
+              "flex justify-between text-sm",
+              isRTL && "flex-row-reverse"
+            )}>
+              <span className="text-muted-foreground">{invoiceData.tvaRate > 0 ? `TVA (${invoiceData.tvaRate}%) :` : 'TVA :'}</span>
+              <span className="font-mono font-medium">{invoiceData.tvaAmount.toFixed(2)} €</span>
+            </div>
+
+            {invoiceData.discountAmount && invoiceData.discountAmount > 0 && (
+              <div className={cn(
+                "flex justify-between text-sm font-semibold",
+                isRTL && "flex-row-reverse"
+              )}>
+                <span className="text-muted-foreground">
+                  {isRTL ? 'الخصم:' : `Remise${invoiceData.discountType === 'percent' ? ` (${invoiceData.discountValue}%)` : ''} :`}
+                </span>
+                <span className="font-mono font-medium text-destructive">- {invoiceData.discountAmount.toFixed(2)} €</span>
+              </div>
+            )}
+
+            {invoiceData.tvaExempt ? (
+              <div className={cn(
+                "text-xs text-muted-foreground italic",
+                isRTL && "text-right font-cairo"
+              )}>
+                TVA non applicable, art. 293 B du CGI
+              </div>
+            ) : invoiceData.tvaRate === 0 ? (
+              <div className={cn(
+                "text-xs text-amber-600 dark:text-amber-400 italic",
+                isRTL && "text-right font-cairo"
+              )}>
+                Autoliquidation de la TVA – art. 283-2 du CGI
+              </div>
+            ) : null}
+            
+            <div className={cn(
+              "flex justify-between text-lg font-bold pt-2 border-t",
+              isRTL && "flex-row-reverse"
+            )}>
+              <span>{isRTL ? 'الإجمالي:' : 'Total TTC:'}</span>
+              <span className="font-mono text-primary">{invoiceData.total.toFixed(2)} €</span>
+            </div>
+          </div>
+
+      {/* Photo Attachment Toggle - shown only when photos exist */}
+      {sitePhotos.length > 0 && (
+        <Card className="border-amber-500/20 bg-amber-500/5">
+          <CardContent className="p-4 space-y-2">
+            <div className={cn("flex items-center justify-between gap-3", isRTL && "flex-row-reverse")}>
+              <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                <span className="text-lg">📷</span>
+                <Label htmlFor="photo-toggle" className={cn("text-sm font-bold cursor-pointer", isRTL && "font-cairo")}>
+                  {isRTL ? 'هل تحب تضيف الصور في الـ PDF؟' : 'Souhaitez-vous joindre les photos au PDF ?'}
+                </Label>
+              </div>
+              <Switch
+                id="photo-toggle"
+                checked={includePhotosInPdf}
+                onCheckedChange={setIncludePhotosInPdf}
+              />
+            </div>
+            <p className={cn("text-[10px] text-muted-foreground leading-tight", isRTL && "text-right font-cairo")}>
+              {includePhotosInPdf
+                ? (isRTL ? `✅ ${sitePhotos.length} صورة هتتضاف في صفحة "Annexe Photos" بعد الصفحة الرئيسية.` : `✅ ${sitePhotos.length} photo(s) seront ajoutées en annexe (page 2+).`)
+                : (isRTL ? '📊 الصور هتتستخدم بس في تحليل الأسعار، ومش هتظهر في الـ PDF.' : '📊 Les photos seront utilisées uniquement pour l\'analyse IA, sans apparaître dans le PDF.')}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      <StepButtons currentStep={7} totalSteps={WIZARD_STEPS.length} onPrev={handlePrevStep} onNext={() => {}} canProceed={true} isRTL={isRTL} />
+      </>)}
+
+      {/* Preview & Actions */}
+      {showPreview ? (
+        <div className="space-y-4 relative">
+          {/* Floating Edit Button */}
+          <Button
+            onClick={() => setShowPreview(false)}
+            className={cn(
+              "fixed bottom-24 right-4 z-50 rounded-full shadow-lg gap-2 px-5 py-3 text-sm font-bold",
+              isRTL && "font-cairo left-4 right-auto"
+            )}
+          >
+            <Edit3 className="h-4 w-4" />
+            {isRTL ? 'تعديل' : 'Modifier'}
+          </Button>
+
+          <Button
+            onClick={saveToDocumentsComptables}
+            disabled={isSavingOfficialDocument}
+            size="lg"
+            className={cn("w-full py-6 text-base font-bold gap-2", isRTL && "font-cairo flex-row-reverse")}
+          >
+            {isSavingOfficialDocument ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
+            {isSavingOfficialDocument
+              ? (isRTL ? '⏳ جاري التحقق والحفظ' : '⏳ Validation et enregistrement...')
+              : (isRTL ? '✅ تأكيد وتسجيل' : '✅ Valider et enregistrer')}
+          </Button>
+
+          <div className={cn(
+            "flex items-center gap-2",
+            isRTL && "flex-row-reverse"
+          )}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleFinishDocument}
+              className={cn(isRTL && "font-cairo")}
+            >
+              {isRTL ? 'تأكيد وانهاء' : 'Confirmer et terminer'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                persistCurrentDocumentState({ showPreview: false });
+                setShowPreview(false);
+              }}
+              className={cn(isRTL && "font-cairo")}
+            >
+              <Edit3 className="h-4 w-4 mr-1" />
+              {isRTL ? 'عدّل البيانات' : 'Modifier le formulaire'}
+            </Button>
+          </div>
+          
+          <InvoiceActions
+            invoiceData={invoiceData}
+            invoiceRef={invoiceRef}
+            showArabic={showArabic}
+            onToggleArabic={setShowArabic}
+            onUpdateInvoice={handleUpdateInvoice}
+                onBeforeExport={prepareFreshAssetsForExport}
+            isPaid={true} /* TRIAL PHASE: set to false to reactivate payments */
+          />
 
           <ProtectedDocumentWrapper
             documentType={prefillData?.source === 'smart_devis' ? 'smart_devis' : documentType}

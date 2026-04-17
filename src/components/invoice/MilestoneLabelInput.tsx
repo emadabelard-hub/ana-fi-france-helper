@@ -40,28 +40,44 @@ export function MilestoneLabelInput({ milestoneId, value, isRTL, onChange }: Mil
 
   const handleTranslate = async () => {
     const trimmed = arabic.trim();
+    console.log('[milestone translate] click, text=', trimmed);
     if (!trimmed) {
       toast.error('اكتب الوصف بالعربي الأول');
-      return;
-    }
-    if (!containsArabic(trimmed)) {
-      toast.error('النص لازم يكون بالعربي');
       return;
     }
 
     const myReq = ++reqIdRef.current;
     setTranslating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('translate-milestone-label', {
-        body: { text: trimmed, direction: 'ar-to-fr' },
+      // Direct fetch — more reliable than supabase.functions.invoke for anonymous calls.
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/translate-milestone-label`;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: apiKey,
+          Authorization: `Bearer ${accessToken || apiKey}`,
+        },
+        body: JSON.stringify({ text: trimmed, direction: 'ar-to-fr' }),
       });
+
       if (myReq !== reqIdRef.current) return;
-      if (error) {
-        console.warn('[milestone translate] edge error', error);
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        console.warn('[milestone translate] http error', res.status, errBody);
         toast.error('فشلت الترجمة، حاول تاني');
         return;
       }
+
+      const data = await res.json();
       const translation = (data?.translation ?? '').toString().trim();
+      console.log('[milestone translate] ok, translation=', translation);
+
       if (!translation || containsArabic(translation)) {
         toast.error('الترجمة فشلت، اكتب بالفرنساوي مباشرة');
         return;

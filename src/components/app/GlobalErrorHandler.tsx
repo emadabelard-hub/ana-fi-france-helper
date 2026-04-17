@@ -94,9 +94,40 @@ export default function GlobalErrorHandler() {
     window.addEventListener("unhandledrejection", handleUnhandledRejection);
     window.addEventListener("error", handleError);
 
+    // SAFETY NET: Radix Dialog/AlertDialog sometimes leaves <body style="pointer-events: none">
+    // after a modal unmounts unexpectedly, blocking ALL clicks app-wide.
+    // We watch the body and clear it whenever no Radix dialog is actually open.
+    const unlockBodyIfOrphan = () => {
+      const body = document.body;
+      if (!body) return;
+      const hasOpenRadixDialog = document.querySelector(
+        '[data-state="open"][role="dialog"], [data-state="open"][role="alertdialog"]'
+      );
+      if (!hasOpenRadixDialog) {
+        if (body.style.pointerEvents === 'none') {
+          body.style.pointerEvents = '';
+        }
+        if (body.hasAttribute('data-scroll-locked')) {
+          body.removeAttribute('data-scroll-locked');
+        }
+      }
+    };
+
+    const bodyObserver = new MutationObserver(() => {
+      // Defer to next tick so Radix has a chance to settle
+      requestAnimationFrame(unlockBodyIfOrphan);
+    });
+    bodyObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['style', 'data-scroll-locked'],
+    });
+    // Initial cleanup in case the page was loaded with stale state
+    requestAnimationFrame(unlockBodyIfOrphan);
+
     return () => {
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
       window.removeEventListener("error", handleError);
+      bodyObserver.disconnect();
     };
   }, []);
 

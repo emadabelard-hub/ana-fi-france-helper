@@ -11,7 +11,7 @@ import DocumentTypeModal from '@/components/invoice/DocumentTypeModal';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
-import { useNavigationGuard } from '@/hooks/useNavigationGuard';
+// useNavigationGuard removed — was blocking navigation
 import { clearCurrentDocument, clearDraft, loadCurrentDocument } from '@/lib/invoiceDraftStorage';
 import NumberingOnboardingModal from '@/components/invoice/NumberingOnboardingModal';
 import {

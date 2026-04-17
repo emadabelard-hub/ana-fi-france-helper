@@ -2137,14 +2137,18 @@ const SmartDevisPage = () => {
                           subject;
 
                         const rawItems = Array.isArray(analysisData?.suggestedItems) ? analysisData.suggestedItems : [];
-                        const items = rawItems.map((it: any) => ({
+                        // Transform: drop raw materials (sacs, litres, kg) + group into
+                        // professional "Fourniture et pose" lines by category.
+                        const cleanLines = transformSmartDevisItemsForManualQuote(rawItems);
+                        const items = (cleanLines.length > 0 ? cleanLines : []).map((cl) => ({
                           id: generateId(),
-                          designation_fr: typeof it?.designation_fr === 'string' ? it.designation_fr : '',
-                          designation_ar: typeof it?.designation_ar === 'string' ? it.designation_ar : '',
-                          quantity: Number(it?.quantity) > 0 ? Number(it.quantity) : 1,
-                          unit: typeof it?.unit === 'string' && it.unit ? it.unit : 'U',
-                          unitPrice: Number(it?.unitPrice) > 0 ? Number(it.unitPrice) : 0,
+                          designation_fr: cl.designation_fr,
+                          designation_ar: cl.designation_ar,
+                          quantity: cl.quantity,
+                          unit: cl.unit,
+                          unitPrice: 0,
                           total: 0,
+                          category: cl.category,
                         }));
 
                         const prefillData = {

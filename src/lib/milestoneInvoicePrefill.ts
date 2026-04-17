@@ -68,17 +68,10 @@ export function buildMilestoneInvoicePrefill({
   const displayedShare = `${formatPercent(milestoneSharePercent)}%`;
   const selectedMilestoneName = milestone.label?.trim() || milestoneLabel.fr;
 
-  // Désignation = reprise exacte du devis source, sans reformulation ni fallback automatique
-  const devisItems = Array.isArray(docData.items) ? docData.items : [];
-  const firstQuoteItem = devisItems.find((item: any) =>
-    typeof item?.designation_fr === 'string' && item.designation_fr.trim().length > 0
-  );
-  const designationFr = typeof firstQuoteItem?.designation_fr === 'string'
-    ? firstQuoteItem.designation_fr
-    : '';
-  const designationAr = typeof firstQuoteItem?.designation_ar === 'string'
-    ? firstQuoteItem.designation_ar
-    : '';
+  // Désignation = description de l'échéance + pourcentage + numéro du devis
+  // (jamais les lignes de désignation du devis source)
+  const designationFr = `${selectedMilestoneName} – ${displayedShare} selon devis n°${quote.documentNumber}`;
+  const designationAr = '';
   const formNatureOperation = docData.natureOperation === 'service'
     || docData.natureOperation === 'goods'
     || docData.natureOperation === 'mixed'

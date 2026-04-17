@@ -190,7 +190,26 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Payment milestones (échéancier)
   const [paymentMilestones, setPaymentMilestones] = useState<PaymentMilestone[]>([]);
   const [milestonesEnabled, setMilestonesEnabled] = useState(false);
-  
+
+  // Bilingual translator for milestone labels (AR<->FR), debounced + loop-safe.
+  const { requestTranslation: requestMilestoneTranslation } = useMilestoneTranslator({
+    onTranslated: (target, text, _reqId) => {
+      setPaymentMilestones((prev) => {
+        const idx = prev.findIndex((m) => m.id === pendingMilestoneIdRef.current);
+        if (idx === -1) return prev;
+        const next = [...prev];
+        if (target === 'fr') {
+          next[idx] = { ...next[idx], label: text };
+        } else {
+          next[idx] = { ...next[idx], labelAr: text };
+        }
+        return next;
+      });
+    },
+  });
+  const pendingMilestoneIdRef = useRef<string | null>(null);
+
+
   // Discount state
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');

@@ -3257,15 +3257,15 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                         <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                           <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">#{idx + 1}</span>
                           <div className="flex-1">
-                            <Input
+                            <MilestoneLabelInput
+                              milestoneId={milestone.id}
                               value={milestone.label}
-                              onChange={(e) => {
+                              isRTL={isRTL}
+                              onChange={(newLabel) => {
                                 const updated = [...paymentMilestones];
-                                updated[idx] = { ...updated[idx], label: e.target.value };
+                                updated[idx] = { ...updated[idx], label: newLabel };
                                 setPaymentMilestones(updated);
                               }}
-                              placeholder={isRTL ? 'وصف الدفعة (حر)' : "Description de l'échéance (libre)"}
-                              className={cn("text-sm", isRTL && "text-right font-cairo")}
                             />
                           </div>
                           <Button

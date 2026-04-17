@@ -3239,9 +3239,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                       setMilestonesEnabled(checked);
                       if (checked && paymentMilestones.length === 0) {
                         setPaymentMilestones([
-                          { id: generateId(), label: 'Acompte à la commande', mode: 'percent', percent: 30 },
-                          { id: generateId(), label: 'Fin de gros œuvre', mode: 'percent', percent: 40 },
-                          { id: generateId(), label: 'Remise des clés', mode: 'percent', percent: 30 },
+                          { id: generateId(), label: '', mode: 'percent', percent: 0 },
                         ]);
                       }
                       if (checked) {

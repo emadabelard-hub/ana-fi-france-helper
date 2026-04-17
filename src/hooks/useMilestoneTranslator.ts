@@ -7,21 +7,17 @@ type Direction = 'ar-to-fr' | 'fr-to-ar';
  * Debounced bidirectional translator for milestone labels.
  *
  * Loop-prevention strategy:
- *   - Each translation request is tagged with the SOURCE language.
+ *   - Each `key` (= milestone id) tracks which side the user last typed in.
  *   - When the result comes back, we only write into the OPPOSITE field.
- *   - We track which field the user last typed in via `lastEditedRef`.
- *     If a stale response arrives after the user switched sides, we drop it.
- *
- * The caller provides `onTranslated(targetLang, text)` and is responsible
- * for updating only the target field — never echoing back into the source.
+ *   - If a stale response arrives after the user switched sides on the same
+ *     milestone, we drop it.
  */
 export function useMilestoneTranslator(opts: {
-  onTranslated: (target: 'ar' | 'fr', text: string, requestId: number) => void;
+  onTranslated: (key: string, target: 'ar' | 'fr', text: string) => void;
   debounceMs?: number;
 }) {
   const { onTranslated, debounceMs = 600 } = opts;
   const timersRef = useRef<Map<string, number>>(new Map());
-  const requestCounterRef = useRef(0);
   const lastEditedRef = useRef<Map<string, 'ar' | 'fr'>>(new Map());
 
   const cancel = useCallback((key: string) => {
@@ -42,8 +38,6 @@ export function useMilestoneTranslator(opts: {
       const trimmed = text.trim();
       if (!trimmed) return;
 
-      const requestId = ++requestCounterRef.current;
-
       const timer = window.setTimeout(async () => {
         try {
           const { data, error } = await supabase.functions.invoke(
@@ -59,7 +53,7 @@ export function useMilestoneTranslator(opts: {
 
           const translation = (data?.translation ?? '').toString().trim();
           if (!translation) return;
-          onTranslated(target, translation, requestId);
+          onTranslated(key, target, translation);
         } catch (e) {
           console.warn('[milestone translate] failed', e);
         }
@@ -71,9 +65,10 @@ export function useMilestoneTranslator(opts: {
   );
 
   useEffect(() => {
+    const timers = timersRef.current;
     return () => {
-      timersRef.current.forEach((t) => window.clearTimeout(t));
-      timersRef.current.clear();
+      timers.forEach((t) => window.clearTimeout(t));
+      timers.clear();
     };
   }, []);
 

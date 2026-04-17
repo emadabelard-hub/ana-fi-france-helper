@@ -193,9 +193,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
   // Bilingual translator for milestone labels (AR<->FR), debounced + loop-safe.
   const { requestTranslation: requestMilestoneTranslation } = useMilestoneTranslator({
-    onTranslated: (target, text, _reqId) => {
+    onTranslated: (key, target, text) => {
       setPaymentMilestones((prev) => {
-        const idx = prev.findIndex((m) => m.id === pendingMilestoneIdRef.current);
+        const idx = prev.findIndex((m) => m.id === key);
         if (idx === -1) return prev;
         const next = [...prev];
         if (target === 'fr') {
@@ -207,7 +207,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       });
     },
   });
-  const pendingMilestoneIdRef = useRef<string | null>(null);
 
 
   // Discount state

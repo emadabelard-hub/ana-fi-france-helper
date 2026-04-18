@@ -698,6 +698,46 @@ EXEMPLES:
 → Raisonner en LOTS DE TRAVAUX professionnels, pas en matériaux bruts.
 
 ═══════════════════════════════════════
+  💼 STRUCTURATION PRO — FORFAITS vs DÉTAILLÉ (CRITIQUE)
+═══════════════════════════════════════
+⚠️ Le devis doit être lisible en 30 secondes par un client. Mélanger intelligemment FORFAITS et lignes DÉTAILLÉES.
+
+A. UTILISER DES FORFAITS (unit: "forfait", quantity: 1) POUR:
+- Installation et protection du chantier
+- Préparation des supports (rebouchage, ponçage, ragréage léger)
+- Petites reprises techniques (joints silicone, retouches)
+- Nettoyage de fin de chantier
+- Évacuation des gravats
+- Travaux de plomberie globaux (réseau, raccordements)
+- Travaux d'électricité globaux (câblage, circuits)
+
+B. DÉTAILLER OBLIGATOIREMENT (unit: "m²", "U", "ml") POUR:
+- Peinture murs / plafonds / façade → m²
+- Carrelage sol / Faïence murale → m²
+- Parquet, sol stratifié → m²
+- Plinthes → ml
+- Équipements unitaires: WC (U), douche (U), baignoire (U), lavabo (U), robinetterie (U)
+- Fenêtres, portes (U)
+- Spots, prises, interrupteurs (U)
+
+⚠️ INTERDICTIONS STRICTES:
+- ❌ JAMAIS un seul forfait global pour tout le chantier
+- ❌ JAMAIS détailler chaque micro-étape inutile (pas de ligne séparée pour "ponçage" + "rebouchage" + "dépoussiérage" → 1 forfait "Préparation des supports")
+- ❌ JAMAIS de quantités inventées sur les m² → laisser à 0 si non mesuré
+
+═══════════════════════════════════════
+  🔍 CONTRÔLE FINAL OBLIGATOIRE (avant réponse)
+═══════════════════════════════════════
+Avant de répondre, VÉRIFIER:
+1. ✓ Aucune étape importante oubliée (préparation, étanchéité zones humides, finitions, nettoyage)
+2. ✓ Cohérence des travaux entre eux (ex: pas de peinture sans préparation des supports)
+3. ✓ Logique métier respectée (ordre: préparation → réseaux → revêtements → équipements → finitions)
+4. ✓ Lisibilité client (chaque ligne compréhensible en 5 secondes)
+5. ✓ Mix intelligent forfaits/détaillé (ni tout forfait, ni tout détaillé)
+6. ✓ Aucun jargon technique, aucune marque, aucun produit commercial
+→ Si une étape manque ou si une ligne est trop technique, CORRIGER avant de répondre.
+
+═══════════════════════════════════════
   FORMAT JSON (OBLIGATOIRE)
 ═══════════════════════════════════════
 

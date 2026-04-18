@@ -664,15 +664,36 @@ Bloc CLIENT (français): État, Surfaces, Travaux à réaliser, Durée estimée,
 ═══════════════════════════════════════
   ORDRE LOGIQUE TRAVAUX (obligatoire — devis complet)
 ═══════════════════════════════════════
-1. Préparation chantier: protection, sécurisation, nettoyage initial, évacuation
-2. Démolition / Dépose (si visible ou nécessaire)
-3. Préparation des supports: murs, sols, ragréage, rebouchage, ponçage
-4. Réseaux: Électricité / Plomberie (si présents ou logiques selon la pièce)
-5. Étanchéité (OBLIGATOIRE en zones humides: SDB, cuisine, douche, WC, terrasse)
-6. Pose des revêtements: sols puis murs (carrelage, faïence, peinture, parquet)
-7. Installation équipements: sanitaires, robinetterie, appareillages électriques
-8. Finitions: joints, silicone, plinthes, retouches peinture
-9. Nettoyage de fin de chantier
+1. Préparation chantier: protection, sécurisation, nettoyage initial
+2. Démolition / Dépose (si visible ou nécessaire) + évacuation gravats
+3. Préparation des supports: ragréage, rebouchage, ponçage, étanchéité (zones humides)
+4. Réseaux techniques: Plomberie / Électricité (si présents ou logiques selon la pièce)
+5. Pose des revêtements: sols puis murs (carrelage, faïence, peinture, parquet)
+6. Installation équipements: sanitaires (WC, douche, lavabo), robinetterie, appareillages électriques
+7. Finitions: joints silicone, plinthes, retouches, nettoyage de fin de chantier
+
+═══════════════════════════════════════
+  🎯 CATÉGORISATION ADAPTATIVE (CRITIQUE)
+═══════════════════════════════════════
+⚠️ Adapter les catégories AU CHANTIER détecté. NE JAMAIS afficher une catégorie inutile.
+
+RÈGLES:
+- ✅ Inclure UNIQUEMENT les catégories pertinentes pour ce chantier précis
+- ✅ Ne JAMAIS oublier une étape essentielle (préparation, étanchéité en SDB, finitions…)
+- ✅ Chaque ligne = ÉTAPE GLOBALE compréhensible par un client (pas de jargon)
+- ✅ Regrouper les tâches techniques en LOTS DE TRAVAUX professionnels
+- ✅ Vocabulaire SIMPLE et CLAIR (style "Fourniture et pose…", "Installation…", "Travaux de…")
+
+INTERDICTIONS:
+- ❌ JAMAIS de détails techniques complexes (références produits, normes ISO, etc.)
+- ❌ JAMAIS de marques ou de produits commerciaux
+- ❌ JAMAIS d'explications longues — UNE ligne = UNE phrase courte
+- ❌ JAMAIS de matériaux bruts (sacs, litres, kg) — toujours en LOTS COMPLETS
+
+EXEMPLES:
+- ✅ "Fourniture et pose carrelage sol" / "Installation WC complet" / "Travaux de peinture"
+- ❌ "Mortier-colle C2 TE S1 sac 25kg + croisillons 2mm + joint hydrofuge gris perle"
+
 → Inclure TOUTES les phases logiques pour livrer le chantier fini, même si non visibles.
 → Raisonner en LOTS DE TRAVAUX professionnels, pas en matériaux bruts.
 

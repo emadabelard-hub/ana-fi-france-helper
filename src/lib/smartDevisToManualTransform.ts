@@ -47,13 +47,16 @@ const RAW_MATERIAL_KEYWORDS = [
   'croisillon', 'ruban', 'bâche', 'bache',
 ];
 
-// Category mapping
+// Category mapping (adaptive — only categories with matching lines are emitted)
 type CategoryKey =
   | 'preparation'
+  | 'demolition'
+  | 'supports'
   | 'murs'
   | 'sols'
   | 'plomberie'
   | 'electricite'
+  | 'equipements'
   | 'menuiserie'
   | 'finitions'
   | 'autre';
@@ -67,13 +70,16 @@ interface CategoryDef {
 
 const CATEGORIES: Record<CategoryKey, CategoryDef> = {
   preparation: { key: 'preparation', fr: 'Préparation chantier',     ar: 'تحضير الورشة',         order: 1 },
-  murs:        { key: 'murs',        fr: 'Revêtements murs',         ar: 'تغطية الجدران',        order: 2 },
-  sols:        { key: 'sols',        fr: 'Revêtements sols',         ar: 'تغطية الأرضيات',       order: 3 },
-  plomberie:   { key: 'plomberie',   fr: 'Plomberie / sanitaires',   ar: 'سباكة / صحية',         order: 4 },
-  electricite: { key: 'electricite', fr: 'Électricité',              ar: 'كهرباء',               order: 5 },
-  menuiserie:  { key: 'menuiserie',  fr: 'Menuiserie',               ar: 'نجارة',                order: 6 },
-  finitions:   { key: 'finitions',   fr: 'Finitions',                ar: 'لمسات أخيرة',          order: 7 },
-  autre:       { key: 'autre',       fr: 'Autres travaux',           ar: 'أعمال أخرى',           order: 8 },
+  demolition:  { key: 'demolition',  fr: 'Démolition / dépose',      ar: 'هدم وفك',              order: 2 },
+  supports:    { key: 'supports',    fr: 'Préparation des supports', ar: 'تحضير الأسطح',         order: 3 },
+  murs:        { key: 'murs',        fr: 'Revêtements murs',         ar: 'تغطية الجدران',        order: 4 },
+  sols:        { key: 'sols',        fr: 'Revêtements sols',         ar: 'تغطية الأرضيات',       order: 5 },
+  plomberie:   { key: 'plomberie',   fr: 'Plomberie / sanitaires',   ar: 'سباكة / صحية',         order: 6 },
+  electricite: { key: 'electricite', fr: 'Électricité',              ar: 'كهرباء',               order: 7 },
+  equipements: { key: 'equipements', fr: 'Équipements',              ar: 'تجهيزات',              order: 8 },
+  menuiserie:  { key: 'menuiserie',  fr: 'Menuiserie',               ar: 'نجارة',                order: 9 },
+  finitions:   { key: 'finitions',   fr: 'Finitions',                ar: 'لمسات أخيرة',          order: 10 },
+  autre:       { key: 'autre',       fr: 'Autres travaux',           ar: 'أعمال أخرى',           order: 11 },
 };
 
 interface WorkTypeRule {
@@ -87,13 +93,23 @@ interface WorkTypeRule {
 // Professional consolidated work-type rules
 const WORK_TYPES: WorkTypeRule[] = [
   // ---- Préparation
-  { category: 'preparation', match: /(protection|bâchage|bachage|installation\s+chantier)/i,
+  { category: 'preparation', match: /(protection|bâchage|bachage|installation\s+chantier|sécurisation|securisation)/i,
     designation_fr: 'Installation et protection du chantier', designation_ar: 'تجهيز وحماية الورشة', defaultUnit: 'forfait' },
-  { category: 'preparation', match: /(démolition|demolition|dépose|depose|dem(o|ó)l)/i,
-    designation_fr: 'Travaux de démolition et dépose', designation_ar: 'أعمال هدم وفك', defaultUnit: 'forfait' },
-  { category: 'preparation', match: /(évacuation|evacuation|gravats|déchets|dechets|benne)/i,
+
+  // ---- Démolition / dépose
+  { category: 'demolition', match: /(démolition|demolition|dem(o|ó)l)/i,
+    designation_fr: 'Travaux de démolition', designation_ar: 'أعمال هدم', defaultUnit: 'forfait' },
+  { category: 'demolition', match: /(dépose|depose|démontage|demontage)/i,
+    designation_fr: 'Dépose des éléments existants', designation_ar: 'فك العناصر الموجودة', defaultUnit: 'forfait' },
+  { category: 'demolition', match: /(évacuation|evacuation|gravats|déchets|dechets|benne)/i,
     designation_fr: 'Évacuation des gravats', designation_ar: 'إخلاء المخلفات', defaultUnit: 'forfait' },
-  { category: 'preparation', match: /(ponçage|poncage|rebouchage|reboucher|enduit\s+(de\s+)?lissage|préparation|preparation)\s+(mur|plafond|surface)?/i,
+
+  // ---- Préparation des supports
+  { category: 'supports', match: /(ragréage|ragreage|chape\s+(de\s+)?ravoirage)/i,
+    designation_fr: 'Réalisation d\'un ragréage de sol', designation_ar: 'صب راغرياج للأرضية', defaultUnit: 'm²' },
+  { category: 'supports', match: /(étanchéité|etancheite|spec|natte\s+étanche)/i,
+    designation_fr: 'Mise en œuvre de l\'étanchéité (zones humides)', designation_ar: 'تنفيذ العزل المائي', defaultUnit: 'm²' },
+  { category: 'supports', match: /(ponçage|poncage|rebouchage|reboucher|enduit\s+(de\s+)?lissage|préparation\s+(mur|plafond|support|surface)|preparation\s+(mur|plafond|support|surface))/i,
     designation_fr: 'Préparation des supports (rebouchage, ponçage)', designation_ar: 'تحضير الأسطح (ترميم وصنفرة)', defaultUnit: 'm²' },
 
   // ---- Murs
@@ -124,20 +140,20 @@ const WORK_TYPES: WorkTypeRule[] = [
   { category: 'sols', match: /(plinthe|plinthes)/i,
     designation_fr: 'Fourniture et pose plinthes', designation_ar: 'توريد وتركيب قواعد الجدار', defaultUnit: 'ml' },
 
-  // ---- Plomberie
-  { category: 'plomberie', match: /(wc|toilette)/i,
+  // ---- Plomberie / sanitaires
+  { category: 'equipements', match: /(wc|toilette)/i,
     designation_fr: 'Installation WC complet', designation_ar: 'تركيب مرحاض كامل', defaultUnit: 'U' },
-  { category: 'plomberie', match: /(douche|receveur|paroi)/i,
+  { category: 'equipements', match: /(douche|receveur|paroi)/i,
     designation_fr: 'Installation douche complète', designation_ar: 'تركيب دش كامل', defaultUnit: 'U' },
-  { category: 'plomberie', match: /(baignoire)/i,
+  { category: 'equipements', match: /(baignoire)/i,
     designation_fr: 'Installation baignoire', designation_ar: 'تركيب بانيو', defaultUnit: 'U' },
-  { category: 'plomberie', match: /(lavabo|vasque|évier|evier)/i,
+  { category: 'equipements', match: /(lavabo|vasque|évier|evier)/i,
     designation_fr: 'Installation lavabo / vasque', designation_ar: 'تركيب حوض', defaultUnit: 'U' },
-  { category: 'plomberie', match: /(robinet|mitigeur)/i,
+  { category: 'equipements', match: /(robinet|mitigeur)/i,
     designation_fr: 'Fourniture et pose robinetterie', designation_ar: 'توريد وتركيب الحنفيات', defaultUnit: 'U' },
-  { category: 'plomberie', match: /(chauffe-eau|ballon|chauffage)/i,
+  { category: 'equipements', match: /(chauffe-eau|ballon\s+(d['’]eau)?)/i,
     designation_fr: 'Installation chauffe-eau', designation_ar: 'تركيب سخان الماء', defaultUnit: 'U' },
-  { category: 'plomberie', match: /(plomberie|tuyau|canalisation|raccord|évacuation\s+eau)/i,
+  { category: 'plomberie', match: /(plomberie|tuyau|canalisation|raccord|évacuation\s+eau|alimentation\s+eau)/i,
     designation_fr: 'Travaux de plomberie', designation_ar: 'أعمال السباكة', defaultUnit: 'forfait' },
 
   // ---- Électricité

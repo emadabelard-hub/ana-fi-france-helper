@@ -57,8 +57,23 @@ const InvoiceCreatorPage = () => {
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showNumberingOnboarding, setShowNumberingOnboarding] = useState(false);
   const [numberingChecked, setNumberingChecked] = useState(false);
-  // Track whether this is a fresh new document (user chose type from modal, not a resume)
-  const [isNewDocument, setIsNewDocument] = useState(false);
+  // Track whether this is a fresh new document (user chose type from modal, or arrived via "Create" link without prefill).
+  // RULE: arriving on /pro/invoice-creator?type=X with NO prefill/source means a fresh creation → reset to step 1.
+  // Resuming an existing draft happens only when there is no urlDocType (resumedDocumentType path) OR when prefill data is provided.
+  const isFreshCreationEntry = !!urlDocType && !prefillSource && !isImageQuoteFlow;
+  const [isNewDocument, setIsNewDocument] = useState(isFreshCreationEntry);
+
+  // On a fresh creation entry, wipe any previously persisted document state so the form
+  // always starts at step 1/8 with empty client data — independent of any prior session.
+  useEffect(() => {
+    if (!isFreshCreationEntry) return;
+    clearCurrentDocument();
+    clearDraft();
+    try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
+    try { sessionStorage.removeItem('invoiceCreator_scroll_v1'); } catch {}
+    // run only once on mount for this fresh entry
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const activeDocumentType = urlDocType ?? documentType;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const SCROLL_KEY = 'invoiceCreator_scroll_v1';

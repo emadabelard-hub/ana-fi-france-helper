@@ -149,6 +149,11 @@ const SmartDevisPage = () => {
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const voiceRecognitionRef = useRef<any>(null);
 
+  // Mini-formulaire de confirmation (contexte additionnel envoyé à l'IA, sans logique auto)
+  const [refineTechnique, setRefineTechnique] = useState<'' | 'aucun' | 'electricite' | 'plomberie' | 'les_deux'>('');
+  const [refineNiveau, setRefineNiveau] = useState<'' | 'leger' | 'moyen' | 'important'>('');
+  const [refineSurface, setRefineSurface] = useState<string>('');
+
   const startVoiceInput = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;

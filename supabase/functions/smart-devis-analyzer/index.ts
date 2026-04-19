@@ -483,48 +483,33 @@ Analyser un chantier à partir d'une image et produire une analyse ULTRA PROFESS
 Expliquer clairement à un artisan EXACTEMENT quoi faire, dans le bon ordre, avec logique chantier réelle.
 
 ═══════════════════════════════════════
-  📋 STRUCTURE OBLIGATOIRE DU CHAMP analysis_fr
+  STRUCTURE OBLIGATOIRE DU CHAMP analysis_fr
 ═══════════════════════════════════════
-⚠️ Le champ "analysis_fr" DOIT suivre EXACTEMENT cette structure Markdown en 6 sections, SANS texte introductif, SANS conclusion, SANS blabla:
+Le champ "analysis_fr" DOIT suivre EXACTEMENT cette structure en 5 sections numérotées, dans UNE SEULE LANGUE (français), sans introduction, sans conclusion, sans blabla.
 
-## 1. ÉTAT DU CHANTIER (factuel)
-[Décrire UNIQUEMENT ce qui est visible sans interprétation. 2-4 phrases max.]
+1. État du chantier
+[Description simple et factuelle de ce qui est visible. 1 à 3 phrases.]
 
-## 2. ÉLÉMENTS DÉTECTÉS
-[Liste à puces de tous les éléments visibles: plomberie, électricité, murs, sol, équipements, menuiseries…]
+2. Éléments visibles
+[Liste courte à puces des éléments visibles : murs, sol, plafond, plomberie, électricité, équipements…]
 
-## 3. TRAVAUX À PRÉVOIR
-[Liste à puces de TOUS les travaux nécessaires comme pour préparer un devis réel. Toujours inclure si pertinent: démolition/nettoyage, préparation supports, plomberie, électricité, étanchéité (SPEC si douche), revêtements (sol+murs), peinture, équipements (WC, lavabo, douche…), finitions. Même si incertain → inclure avec mention "à vérifier".]
+3. Travaux à prévoir
+[Liste claire à puces avec une logique de devis. Inclure si pertinent : préparation, démolition/nettoyage, supports, étanchéité, plomberie, électricité, revêtements sol et murs, peinture, équipements, finitions.]
 
-## 4. INCERTITUDES
-[Liste à puces de ce qui n'est pas visible ou mesurable.]
+4. Incertitudes
+[Liste à puces simple de ce qui doit être vérifié sur place.]
 
-## 5. RISQUES CHANTIER
-[Liste à puces des risques techniques: humidité, électricité, support, amiante éventuel…]
+5. Risques
+[Liste à puces simple des risques (humidité, électricité, support fragile…).]
 
-## 6. 🧾 BASE DEVIS
-[Tableau Markdown OBLIGATOIRE avec EXACTEMENT ces 4 colonnes:
-
-| Désignation | Quantité estimée | Unité | Remarque |
-|---|---|---|---|
-| Préparation des supports muraux | 20 | m² | à confirmer sur place |
-| Étanchéité douche (SPEC) | 5 | m² | obligatoire zone humide |
-| Pose faïence murale | 25 | m² | hors fourniture |
-| Installation WC suspendu | 1 | u | bâti déjà présent |
-
-Règles tableau:
-- Regrouper intelligemment (ni trop détaillé, ni trop vague)
-- Toujours cohérent avec la photo
-- Ne rien oublier (préparation, étanchéité zones humides, finitions)
-- Si doute → mention "à vérifier" dans Remarque
-- Quantités estimées raisonnables même approximatives, sinon "à mesurer"]
-
-⛔ INTERDICTIONS pour analysis_fr:
-- Pas d'explication longue
-- Pas de ton "artisan qui parle"
-- Pas de phrases inutiles entre les sections
-- Pas de prix, pas de marques
-- Réponse purement structurée, exploitable directement pour générer un devis
+⛔ RÈGLES STRICTES pour analysis_fr :
+- UNE seule langue : français uniquement (aucun mot arabe, aucune translittération)
+- Aucun mélange de langues
+- Aucun JSON, aucun code, aucun tableau Markdown
+- Aucun symbole technique (pas de ✅, ❌, 🧾, ═, etc.)
+- Aucun jargon complexe, aucune marque, aucun prix
+- Réponse courte, claire et professionnelle
+- Texte structuré et lisible, directement utilisable pour préparer un devis
 
 ═══════════════════════════════════════
   LANGUES

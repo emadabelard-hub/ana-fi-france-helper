@@ -149,6 +149,11 @@ const SmartDevisPage = () => {
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const voiceRecognitionRef = useRef<any>(null);
 
+  // Mini-formulaire de confirmation (contexte additionnel envoyé à l'IA, sans logique auto)
+  const [refineTechnique, setRefineTechnique] = useState<'' | 'aucun' | 'electricite' | 'plomberie' | 'les_deux'>('');
+  const [refineNiveau, setRefineNiveau] = useState<'' | 'leger' | 'moyen' | 'important'>('');
+  const [refineSurface, setRefineSurface] = useState<string>('');
+
   const startVoiceInput = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
@@ -208,6 +213,9 @@ const SmartDevisPage = () => {
     setProfitMarginPercent(15);
     setPreferencesCollected(false);
     setSurfaceEstimates([]);
+    setRefineTechnique('');
+    setRefineNiveau('');
+    setRefineSurface('');
     // materialScope is now fixed to 'fourniture_et_pose'
   }, []);
 
@@ -1007,6 +1015,15 @@ const SmartDevisPage = () => {
         discountPercent,
         profitMarginPercent,
         materialScope: effectiveScope,
+        // Réponses du mini-formulaire de confirmation — envoyées UNIQUEMENT comme contexte
+        // pour affiner l'analyse de l'IA. Aucune modification automatique des quantités.
+        userRefinements: (refineTechnique || refineNiveau || refineSurface.trim())
+          ? {
+              travaux_techniques: refineTechnique || undefined,
+              niveau_travaux: refineNiveau || undefined,
+              surface_estimee_m2: refineSurface.trim() ? Number(refineSurface) : undefined,
+            }
+          : undefined,
       };
 
       const data = await invokeAnalyzer(payload);
@@ -2055,6 +2072,95 @@ const SmartDevisPage = () => {
                   </div>
                 </div>
               </Card>
+
+              {/* Mini-formulaire de confirmation (optionnel) — envoyé comme contexte à l'IA */}
+              {analysisData && (
+                <Card className="p-3 border-primary/30 bg-primary/5">
+                  <p className={cn("text-xs font-bold text-foreground mb-2", isRTL && "text-right font-cairo")}>
+                    {isRTL ? '✅ أكّد أو صحّح لتحسين الديفي:' : '✅ Confirmez ou corrigez pour améliorer le devis :'}
+                  </p>
+
+                  {/* 1. Travaux techniques */}
+                  <div className="mb-3">
+                    <label className={cn("text-[11px] font-medium text-muted-foreground block mb-1.5", isRTL && "text-right font-cairo")}>
+                      {isRTL ? '1. الأشغال التقنية' : '1. Travaux techniques'}
+                    </label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {([
+                        { v: 'aucun', fr: 'Aucun', ar: 'لا شيء' },
+                        { v: 'electricite', fr: 'Électricité', ar: 'كهربا' },
+                        { v: 'plomberie', fr: 'Plomberie', ar: 'سباكة' },
+                        { v: 'les_deux', fr: 'Les deux', ar: 'الاتنين' },
+                      ] as const).map(opt => (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => setRefineTechnique(prev => prev === opt.v ? '' : opt.v)}
+                          className={cn(
+                            "h-8 rounded-md border text-[11px] font-medium transition-colors",
+                            refineTechnique === opt.v
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border bg-background text-foreground hover:bg-muted",
+                            isRTL && "font-cairo"
+                          )}
+                        >
+                          {isRTL ? opt.ar : opt.fr}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 2. Niveau des travaux */}
+                  <div className="mb-3">
+                    <label className={cn("text-[11px] font-medium text-muted-foreground block mb-1.5", isRTL && "text-right font-cairo")}>
+                      {isRTL ? '2. مستوى الأشغال' : '2. Niveau des travaux'}
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {([
+                        { v: 'leger', fr: 'Léger', ar: 'خفيف' },
+                        { v: 'moyen', fr: 'Moyen', ar: 'متوسط' },
+                        { v: 'important', fr: 'Important', ar: 'كبير' },
+                      ] as const).map(opt => (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => setRefineNiveau(prev => prev === opt.v ? '' : opt.v)}
+                          className={cn(
+                            "h-8 rounded-md border text-[11px] font-medium transition-colors",
+                            refineNiveau === opt.v
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border bg-background text-foreground hover:bg-muted",
+                            isRTL && "font-cairo"
+                          )}
+                        >
+                          {isRTL ? opt.ar : opt.fr}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 3. Surface estimée */}
+                  <div>
+                    <label className={cn("text-[11px] font-medium text-muted-foreground block mb-1.5", isRTL && "text-right font-cairo")}>
+                      {isRTL ? '3. المساحة التقديرية (م²)' : '3. Surface estimée (m²)'}
+                    </label>
+                    <div className={cn("flex items-center gap-1.5", isRTL && "flex-row-reverse")}>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step="0.5"
+                        lang="fr"
+                        value={refineSurface}
+                        onChange={(e) => setRefineSurface(e.target.value)}
+                        placeholder={isRTL ? 'مثال: 25' : 'Ex: 25'}
+                        className="h-8 text-xs flex-1"
+                      />
+                      <span className="text-xs font-bold text-foreground shrink-0">m²</span>
+                    </div>
+                  </div>
+                </Card>
+              )}
 
               {/* Chat messages */}
               {chatMessages.map((msg, i) => (

@@ -1313,10 +1313,41 @@ Bandes=بوند, Calicot=كاليكو, Aspiration=أسبيراسيون
         ? `\n⛔ RÈGLE SCOPE MATÉRIAUX (CRITIQUE): Le client fournit ses propres matériaux. Chiffre UNIQUEMENT la main d'œuvre (pose, préparation, nettoyage). Les prix ne doivent PAS inclure le coût des matériaux. Utilise "Pose de..." au lieu de "Fourniture et pose de...".`
         : `\nLe devis inclut fourniture ET pose (matériaux + main d'œuvre).`;
 
+      // ── CONTEXTE UTILISATEUR (mini-formulaire de confirmation) ──
+      // Ces réponses sont fournies UNIQUEMENT comme contexte pour affiner l'analyse.
+      // Aucune logique automatique : l'IA décide librement comment en tenir compte.
+      let refinementsBlock = '';
+      if (userRefinements && typeof userRefinements === 'object') {
+        const techMap: Record<string, string> = {
+          aucun: 'Aucun travail technique (ni électricité ni plomberie)',
+          electricite: 'Travaux électriques inclus',
+          plomberie: 'Travaux de plomberie inclus',
+          les_deux: 'Travaux électriques ET de plomberie inclus',
+        };
+        const niveauMap: Record<string, string> = {
+          leger: 'Niveau LÉGER (rafraîchissement, petites reprises)',
+          moyen: 'Niveau MOYEN (rénovation standard)',
+          important: 'Niveau IMPORTANT (rénovation lourde, gros œuvre)',
+        };
+        const lines: string[] = [];
+        if (userRefinements.travaux_techniques && techMap[userRefinements.travaux_techniques]) {
+          lines.push(`• Travaux techniques confirmés par l'artisan : ${techMap[userRefinements.travaux_techniques]}`);
+        }
+        if (userRefinements.niveau_travaux && niveauMap[userRefinements.niveau_travaux]) {
+          lines.push(`• Niveau des travaux confirmé par l'artisan : ${niveauMap[userRefinements.niveau_travaux]}`);
+        }
+        if (typeof userRefinements.surface_estimee_m2 === 'number' && userRefinements.surface_estimee_m2 > 0) {
+          lines.push(`• Surface estimée par l'artisan : ${userRefinements.surface_estimee_m2} m² (à privilégier si l'analyse photo est imprécise)`);
+        }
+        if (lines.length > 0) {
+          refinementsBlock = `\n\n📌 CONTEXTE COMPLÉMENTAIRE FOURNI PAR L'ARTISAN (mini-formulaire de confirmation) :\n${lines.join('\n')}\n\n→ Utilise ces informations comme CONTEXTE pour affiner ton analyse et produire un devis plus précis. Ne modifie PAS automatiquement les quantités : adapte naturellement la nature et la cohérence des prestations à ce contexte.`;
+        }
+      }
+
       const systemPrompt = `Tu es شبيك لبيك, l'expert qui représente l'Artisan (المعلم). Tu es propre, extrêmement professionnel et tu possèdes une expertise terrain indiscutable.
 À partir de l'analyse fournie, génère les lignes de devis finales selon les standards professionnels du BTP.
 ${tierInstruction}
-${projectTypeInstruction}
+${projectTypeInstruction}${refinementsBlock}
 ⛔ MARCHÉ FRANÇAIS UNIQUEMENT: Tous les prix sont basés sur le marché BTP français. Ne JAMAIS mentionner le marché égyptien.
 
 🧠 PHASAGE DU CHANTIER: Structure TOUJOURS les travaux selon l'ordre logique du métier:

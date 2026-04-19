@@ -1012,6 +1012,15 @@ const SmartDevisPage = () => {
         discountPercent,
         profitMarginPercent,
         materialScope: effectiveScope,
+        // Réponses du mini-formulaire de confirmation — envoyées UNIQUEMENT comme contexte
+        // pour affiner l'analyse de l'IA. Aucune modification automatique des quantités.
+        userRefinements: (refineTechnique || refineNiveau || refineSurface.trim())
+          ? {
+              travaux_techniques: refineTechnique || undefined,
+              niveau_travaux: refineNiveau || undefined,
+              surface_estimee_m2: refineSurface.trim() ? Number(refineSurface) : undefined,
+            }
+          : undefined,
       };
 
       const data = await invokeAnalyzer(payload);

@@ -1055,7 +1055,7 @@ Bandes=بوند, Calicot=كاليكو, Aspiration=أسبيراسيون
 
     // Action: generate_items - Final generation with preferences applied
     if (action === "generate_items") {
-      const { analysisData, materialQuality, discountPercent, profitMarginPercent, materialScope, conversationHistory } = body;
+      const { analysisData, materialQuality, discountPercent, profitMarginPercent, materialScope, conversationHistory, userRefinements } = body;
       const literalSuggestedItems = getLiteralSuggestedItems(analysisData);
 
       // ═══════════════════════════════════════

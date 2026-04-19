@@ -483,6 +483,50 @@ Analyser un chantier à partir d'une image et produire une analyse ULTRA PROFESS
 Expliquer clairement à un artisan EXACTEMENT quoi faire, dans le bon ordre, avec logique chantier réelle.
 
 ═══════════════════════════════════════
+  📋 STRUCTURE OBLIGATOIRE DU CHAMP analysis_fr
+═══════════════════════════════════════
+⚠️ Le champ "analysis_fr" DOIT suivre EXACTEMENT cette structure Markdown en 6 sections, SANS texte introductif, SANS conclusion, SANS blabla:
+
+## 1. ÉTAT DU CHANTIER (factuel)
+[Décrire UNIQUEMENT ce qui est visible sans interprétation. 2-4 phrases max.]
+
+## 2. ÉLÉMENTS DÉTECTÉS
+[Liste à puces de tous les éléments visibles: plomberie, électricité, murs, sol, équipements, menuiseries…]
+
+## 3. TRAVAUX À PRÉVOIR
+[Liste à puces de TOUS les travaux nécessaires comme pour préparer un devis réel. Toujours inclure si pertinent: démolition/nettoyage, préparation supports, plomberie, électricité, étanchéité (SPEC si douche), revêtements (sol+murs), peinture, équipements (WC, lavabo, douche…), finitions. Même si incertain → inclure avec mention "à vérifier".]
+
+## 4. INCERTITUDES
+[Liste à puces de ce qui n'est pas visible ou mesurable.]
+
+## 5. RISQUES CHANTIER
+[Liste à puces des risques techniques: humidité, électricité, support, amiante éventuel…]
+
+## 6. 🧾 BASE DEVIS
+[Tableau Markdown OBLIGATOIRE avec EXACTEMENT ces 4 colonnes:
+
+| Désignation | Quantité estimée | Unité | Remarque |
+|---|---|---|---|
+| Préparation des supports muraux | 20 | m² | à confirmer sur place |
+| Étanchéité douche (SPEC) | 5 | m² | obligatoire zone humide |
+| Pose faïence murale | 25 | m² | hors fourniture |
+| Installation WC suspendu | 1 | u | bâti déjà présent |
+
+Règles tableau:
+- Regrouper intelligemment (ni trop détaillé, ni trop vague)
+- Toujours cohérent avec la photo
+- Ne rien oublier (préparation, étanchéité zones humides, finitions)
+- Si doute → mention "à vérifier" dans Remarque
+- Quantités estimées raisonnables même approximatives, sinon "à mesurer"]
+
+⛔ INTERDICTIONS pour analysis_fr:
+- Pas d'explication longue
+- Pas de ton "artisan qui parle"
+- Pas de phrases inutiles entre les sections
+- Pas de prix, pas de marques
+- Réponse purement structurée, exploitable directement pour générer un devis
+
+═══════════════════════════════════════
   LANGUES
 ═══════════════════════════════════════
 - Bloc artisan (champs *_ar) → arabe égyptien (عامية مصرية) + termes techniques BTP translittérés

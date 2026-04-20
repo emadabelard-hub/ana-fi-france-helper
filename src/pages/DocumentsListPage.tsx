@@ -172,8 +172,22 @@ const DocumentsListPage = () => {
       .neq('status', 'draft')
       .order('created_at', { ascending: false });
 
-    const { data, error } = await documentsQuery;
-    if (!error && data) setDocuments(data);
+    const expensesQuery = (supabase
+      .from('expenses') as any)
+      .select('id, title, amount, tva_amount, category, expense_date, notes, receipt_url, chantier_id, document_id, created_at')
+      .eq('user_id', user.id)
+      .order('expense_date', { ascending: false });
+
+    const chantiersQuery = (supabase
+      .from('chantiers') as any)
+      .select('id, name')
+      .eq('user_id', user.id);
+
+    const [docsRes, expensesRes, chantiersRes] = await Promise.all([documentsQuery, expensesQuery, chantiersQuery]);
+
+    if (!docsRes.error && docsRes.data) setDocuments(docsRes.data);
+    if (!expensesRes.error && expensesRes.data) setExpenses(expensesRes.data as ExpenseRow[]);
+    if (!chantiersRes.error && chantiersRes.data) setChantiers(chantiersRes.data as { id: string; name: string }[]);
     setLoading(false);
   };
 

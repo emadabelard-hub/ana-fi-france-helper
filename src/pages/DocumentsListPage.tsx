@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search, SendHorizontal, Loader2, CheckCircle, Ban } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search, SendHorizontal, Loader2, CheckCircle, Ban, Wallet, Pencil, Save, X, Tag, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +40,37 @@ interface DocumentRow {
   linked_invoice_id?: string | null;
 }
 
+interface ExpenseRow {
+  id: string;
+  title: string;
+  amount: number;
+  tva_amount: number;
+  category: string;
+  expense_date: string;
+  notes: string | null;
+  receipt_url: string | null;
+  chantier_id: string | null;
+  document_id: string | null;
+  created_at: string;
+}
+
+const EXPENSE_CATEGORIES: { value: string; labelFr: string; labelAr: string }[] = [
+  { value: 'materials', labelFr: 'Matériaux', labelAr: 'مواد' },
+  { value: 'tools', labelFr: 'Outils', labelAr: 'أدوات' },
+  { value: 'transport', labelFr: 'Transport', labelAr: 'نقل' },
+  { value: 'food', labelFr: 'Repas', labelAr: 'وجبات' },
+  { value: 'office', labelFr: 'Fournitures', labelAr: 'لوازم مكتبية' },
+  { value: 'insurance', labelFr: 'Assurance', labelAr: 'تأمين' },
+  { value: 'telecom', labelFr: 'Télécom', labelAr: 'اتصالات' },
+  { value: 'other', labelFr: 'Autre', labelAr: 'أخرى' },
+];
+
+const getCategoryLabel = (value: string, isRTL: boolean) => {
+  const c = EXPENSE_CATEGORIES.find(x => x.value === value);
+  if (!c) return value;
+  return isRTL ? c.labelAr : c.labelFr;
+};
+
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
@@ -64,6 +97,17 @@ const DocumentsListPage = () => {
   const [selectedDocumentData, setSelectedDocumentData] = useState<any | null>(null);
   const [showFullView, setShowFullView] = useState(false);
   const [converting, setConverting] = useState(false);
+
+  // Expenses state
+  const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
+  const [chantiers, setChantiers] = useState<{ id: string; name: string }[]>([]);
+  const [expenseCategoryFilter, setExpenseCategoryFilter] = useState<string>('all');
+  const [expenseChantierFilter, setExpenseChantierFilter] = useState<string>('all');
+  const [selectedExpense, setSelectedExpense] = useState<ExpenseRow | null>(null);
+  const [editingExpense, setEditingExpense] = useState(false);
+  const [expenseDraft, setExpenseDraft] = useState<Partial<ExpenseRow>>({});
+  const [savingExpense, setSavingExpense] = useState(false);
+  const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
 
   const convertedSourceNumbers = useMemo(() => {
     const values = documents
@@ -128,8 +172,22 @@ const DocumentsListPage = () => {
       .neq('status', 'draft')
       .order('created_at', { ascending: false });
 
-    const { data, error } = await documentsQuery;
-    if (!error && data) setDocuments(data);
+    const expensesQuery = (supabase
+      .from('expenses') as any)
+      .select('id, title, amount, tva_amount, category, expense_date, notes, receipt_url, chantier_id, document_id, created_at')
+      .eq('user_id', user.id)
+      .order('expense_date', { ascending: false });
+
+    const chantiersQuery = (supabase
+      .from('chantiers') as any)
+      .select('id, name')
+      .eq('user_id', user.id);
+
+    const [docsRes, expensesRes, chantiersRes] = await Promise.all([documentsQuery, expensesQuery, chantiersQuery]);
+
+    if (!docsRes.error && docsRes.data) setDocuments(docsRes.data);
+    if (!expensesRes.error && expensesRes.data) setExpenses(expensesRes.data as ExpenseRow[]);
+    if (!chantiersRes.error && chantiersRes.data) setChantiers(chantiersRes.data as { id: string; name: string }[]);
     setLoading(false);
   };
 
@@ -437,6 +495,103 @@ const DocumentsListPage = () => {
 
   const devis = filteredDocuments.filter(d => d.document_type === 'devis');
   const factures = filteredDocuments.filter(d => d.document_type === 'facture');
+
+  // ============== EXPENSES helpers ==============
+  const chantierMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    chantiers.forEach(c => { m[c.id] = c.name; });
+    return m;
+  }, [chantiers]);
+
+  const filteredExpenses = useMemo(() => {
+    let result = [...expenses];
+    if (periodFilter !== 'all') {
+      const now = new Date();
+      let startDate: Date;
+      switch (periodFilter) {
+        case 'month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); break;
+        case 'quarter': startDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1); break;
+        case 'year': startDate = new Date(now.getFullYear(), 0, 1); break;
+        default: startDate = new Date(0);
+      }
+      result = result.filter(e => new Date(e.expense_date) >= startDate);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(e =>
+        (e.title || '').toLowerCase().includes(q) ||
+        (e.notes || '').toLowerCase().includes(q)
+      );
+    }
+    if (expenseCategoryFilter !== 'all') {
+      result = result.filter(e => e.category === expenseCategoryFilter);
+    }
+    if (expenseChantierFilter !== 'all') {
+      result = result.filter(e => e.chantier_id === expenseChantierFilter);
+    }
+    return result;
+  }, [expenses, periodFilter, searchQuery, expenseCategoryFilter, expenseChantierFilter]);
+
+  const openExpenseView = (exp: ExpenseRow) => {
+    setSelectedExpense(exp);
+    setEditingExpense(false);
+    setExpenseDraft({});
+  };
+
+  const startEditExpense = () => {
+    if (!selectedExpense) return;
+    setExpenseDraft({
+      title: selectedExpense.title,
+      amount: selectedExpense.amount,
+      tva_amount: selectedExpense.tva_amount,
+      category: selectedExpense.category,
+      expense_date: selectedExpense.expense_date,
+      notes: selectedExpense.notes,
+      chantier_id: selectedExpense.chantier_id,
+    });
+    setEditingExpense(true);
+  };
+
+  const handleSaveExpenseEdit = async () => {
+    if (!selectedExpense) return;
+    setSavingExpense(true);
+    const payload: any = {
+      title: (expenseDraft.title || '').toString().trim(),
+      amount: Number(expenseDraft.amount) || 0,
+      tva_amount: Number(expenseDraft.tva_amount) || 0,
+      category: expenseDraft.category || 'other',
+      expense_date: expenseDraft.expense_date || selectedExpense.expense_date,
+      notes: expenseDraft.notes ? expenseDraft.notes.toString() : null,
+      chantier_id: expenseDraft.chantier_id || null,
+    };
+    const { error } = await (supabase.from('expenses') as any)
+      .update(payload)
+      .eq('id', selectedExpense.id);
+    if (error) {
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: error.message });
+    } else {
+      const updated: ExpenseRow = { ...selectedExpense, ...payload };
+      setExpenses(prev => prev.map(e => e.id === selectedExpense.id ? updated : e));
+      setSelectedExpense(updated);
+      setEditingExpense(false);
+      toast({ title: isRTL ? '✅ تم الحفظ' : '✅ Modifié' });
+    }
+    setSavingExpense(false);
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    setDeletingExpenseId(id);
+    const { error } = await (supabase.from('expenses') as any).delete().eq('id', id);
+    if (!error) {
+      setExpenses(prev => prev.filter(e => e.id !== id));
+      if (selectedExpense?.id === id) setSelectedExpense(null);
+      toast({ title: isRTL ? 'تم الحذف' : 'Supprimé' });
+    } else {
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: error.message });
+    }
+    setDeletingExpenseId(null);
+  };
+
 
   const handleExportCSV = () => {
     if (documents.length === 0) return;
@@ -774,6 +929,13 @@ const DocumentsListPage = () => {
               <Receipt className="h-4 w-4 mr-1.5" />
               {isRTL ? 'الفواتير' : 'Factures'} ({factures.length})
             </TabsTrigger>
+            <TabsTrigger
+              value="expenses"
+              className="flex-1 data-[state=active]:bg-[hsl(45,80%,55%)] data-[state=active]:text-[hsl(0,0%,8%)] data-[state=active]:font-bold text-[hsl(0,0%,50%)] rounded-lg transition-all"
+            >
+              <Wallet className="h-4 w-4 mr-1.5" />
+              {isRTL ? 'المصاريف' : 'Dépenses'} ({filteredExpenses.length})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="devis" className="mt-4">
@@ -793,6 +955,152 @@ const DocumentsListPage = () => {
               </div>
             ) : factures.length === 0 ? renderEmpty('facture') : (
               <div className="grid gap-3">{factures.map(renderCard)}</div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="expenses" className="mt-4 space-y-3">
+            {/* Expense filters */}
+            <div className={cn("flex flex-wrap gap-2", isRTL && "flex-row-reverse")}>
+              <Select value={expenseCategoryFilter} onValueChange={setExpenseCategoryFilter}>
+                <SelectTrigger className="h-8 w-[150px] border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,10%)] text-[hsl(0,0%,60%)] text-xs">
+                  <Tag className="h-3 w-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{isRTL ? 'كل الفئات' : 'Toutes catégories'}</SelectItem>
+                  {EXPENSE_CATEGORIES.map(c => (
+                    <SelectItem key={c.value} value={c.value}>{isRTL ? c.labelAr : c.labelFr}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={expenseChantierFilter} onValueChange={setExpenseChantierFilter}>
+                <SelectTrigger className="h-8 w-[160px] border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,10%)] text-[hsl(0,0%,60%)] text-xs">
+                  <FolderOpen className="h-3 w-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{isRTL ? 'كل المشاريع' : 'Tous les projets'}</SelectItem>
+                  {chantiers.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center py-16">
+                <div className="animate-pulse text-[hsl(0,0%,40%)]">{isRTL ? 'جاري التحميل...' : 'Chargement...'}</div>
+              </div>
+            ) : filteredExpenses.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-[hsl(45,80%,55%)/0.1] flex items-center justify-center">
+                  <Wallet className="h-8 w-8 text-[hsl(45,80%,55%)/0.4]" />
+                </div>
+                <p className={cn("text-sm text-[hsl(0,0%,45%)]", isRTL && "font-cairo")}>
+                  {isRTL ? 'ما عندك حتى مصروف بعد' : 'Aucune dépense pour le moment'}
+                </p>
+                <Button
+                  size="sm"
+                  className="bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold gap-1.5"
+                  onClick={() => navigate('/expenses')}
+                >
+                  <Plus className="h-4 w-4" />
+                  {isRTL ? 'إضافة مصروف' : 'Ajouter une dépense'}
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {filteredExpenses.map(exp => {
+                  const date = new Date(exp.expense_date).toLocaleDateString('fr-FR');
+                  const projectName = exp.chantier_id ? chantierMap[exp.chantier_id] : null;
+                  const tvaRecoverable = exp.tva_amount > 0;
+                  return (
+                    <div
+                      key={exp.id}
+                      className="group relative rounded-xl border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,12%)] p-4 hover:border-[hsl(45,80%,55%)/0.6] transition-all duration-300 hover:shadow-[0_0_20px_hsl(45,80%,55%,0.1)] cursor-pointer"
+                      onClick={() => openExpenseView(exp)}
+                    >
+                      <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-[hsl(45,80%,55%)] to-transparent opacity-60" />
+
+                      <div className={cn("flex items-start justify-between gap-3", isRTL && "flex-row-reverse")}>
+                        <div className={cn("flex items-center gap-3 flex-1 min-w-0", isRTL && "flex-row-reverse")}>
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/15 text-amber-400">
+                            <Wallet className="h-5 w-5" />
+                          </div>
+                          <div className={cn("min-w-0 flex-1", isRTL && "text-right")}>
+                            <p className="text-sm font-bold text-[hsl(45,80%,70%)] truncate">{exp.title}</p>
+                            <p className="text-xs text-[hsl(0,0%,60%)] truncate">
+                              {projectName || (isRTL ? 'بدون مشروع' : 'Sans projet')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider bg-[hsl(45,80%,55%)/0.15] text-[hsl(45,80%,65%)]">
+                            {getCategoryLabel(exp.category, isRTL)}
+                          </span>
+                          <span className={cn(
+                            "text-[9px] font-semibold px-2 py-0.5 rounded-full",
+                            tvaRecoverable ? "bg-emerald-500/15 text-emerald-400" : "bg-muted/40 text-muted-foreground"
+                          )}>
+                            {tvaRecoverable
+                              ? (isRTL ? 'TVA قابلة للاسترداد' : 'TVA récupérable')
+                              : (isRTL ? 'بدون TVA' : 'TVA NON')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className={cn("mt-3 flex items-center gap-4 text-xs", isRTL && "flex-row-reverse")}>
+                        <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
+                          <Calendar className="h-3 w-3 text-[hsl(0,0%,45%)]" />
+                          <span className="text-[hsl(0,0%,55%)]">{date}</span>
+                        </div>
+                        {tvaRecoverable && (
+                          <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
+                            <Euro className="h-3 w-3 text-[hsl(0,0%,45%)]" />
+                            <span className="text-[hsl(0,0%,55%)]">TVA {formatCurrency(exp.tva_amount)}</span>
+                          </div>
+                        )}
+                        <span className="font-bold text-[hsl(45,80%,65%)] ml-auto">TTC {formatCurrency(exp.amount)}</span>
+                      </div>
+
+                      <div className={cn("mt-3 flex items-center gap-2 pt-3 border-t border-[hsl(0,0%,18%)]", isRTL && "flex-row-reverse")}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 gap-1"
+                          onClick={(e) => { e.stopPropagation(); openExpenseView(exp); }}
+                        >
+                          <Eye className="h-3 w-3" />
+                          {isRTL ? 'تفاصيل' : 'Détail'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
+                          onClick={(e) => { e.stopPropagation(); setSelectedExpense(exp); setExpenseDraft({
+                            title: exp.title, amount: exp.amount, tva_amount: exp.tva_amount,
+                            category: exp.category, expense_date: exp.expense_date, notes: exp.notes,
+                            chantier_id: exp.chantier_id,
+                          }); setEditingExpense(true); }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                          {isRTL ? 'تعديل' : 'Modifier'}
+                        </Button>
+                        <div className="flex-1" />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-[hsl(0,0%,45%)] hover:text-red-400 hover:bg-red-500/10"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteExpense(exp.id); }}
+                          disabled={deletingExpenseId === exp.id}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </TabsContent>
         </Tabs>
@@ -933,6 +1241,165 @@ const DocumentsListPage = () => {
                 </div>
               </ScrollArea>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Expense Detail / Edit Dialog */}
+      <Dialog open={Boolean(selectedExpense)} onOpenChange={(open) => { if (!open) { setSelectedExpense(null); setEditingExpense(false); } }}>
+        <DialogContent className={cn("max-w-md", isRTL && "font-cairo")}>
+          {selectedExpense && (
+            <>
+              <DialogHeader>
+                <DialogTitle className={cn("flex items-center gap-2", isRTL && "flex-row-reverse text-right")}>
+                  <Wallet className="h-4 w-4 text-[hsl(45,80%,55%)]" />
+                  {editingExpense
+                    ? (isRTL ? 'تعديل المصروف' : 'Modifier la dépense')
+                    : (isRTL ? 'تفاصيل المصروف' : 'Détail de la dépense')}
+                </DialogTitle>
+              </DialogHeader>
+
+              {!editingExpense ? (
+                <div className={cn("space-y-3 text-sm", isRTL && "text-right")}>
+                  <p className="font-bold text-base text-[hsl(45,80%,70%)]">{selectedExpense.title}</p>
+                  <p><span className="text-muted-foreground">{isRTL ? 'الفئة:' : 'Catégorie:'}</span> {getCategoryLabel(selectedExpense.category, isRTL)}</p>
+                  <p><span className="text-muted-foreground">{isRTL ? 'المشروع:' : 'Projet:'}</span> {selectedExpense.chantier_id ? (chantierMap[selectedExpense.chantier_id] || '-') : '-'}</p>
+                  <p><span className="text-muted-foreground">Date:</span> {new Date(selectedExpense.expense_date).toLocaleDateString('fr-FR')}</p>
+                  <p><span className="text-muted-foreground">TVA:</span> {formatCurrency(selectedExpense.tva_amount)} {selectedExpense.tva_amount > 0 ? (isRTL ? '(قابلة للاسترداد)' : '(récupérable)') : (isRTL ? '(غير قابلة)' : '(non récupérable)')}</p>
+                  <p className="font-bold"><span className="text-muted-foreground">TTC:</span> {formatCurrency(selectedExpense.amount)}</p>
+                  {selectedExpense.notes && (
+                    <p><span className="text-muted-foreground">Notes:</span> {selectedExpense.notes}</p>
+                  )}
+
+                  <div className={cn("flex gap-2 pt-3 border-t border-border", isRTL && "flex-row-reverse")}>
+                    <Button
+                      className="flex-1 bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold gap-2"
+                      onClick={startEditExpense}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      {isRTL ? 'تعديل' : 'Modifier'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-red-500/30 text-red-400 hover:bg-red-500/10 gap-2"
+                      onClick={() => handleDeleteExpense(selectedExpense.id)}
+                      disabled={deletingExpenseId === selectedExpense.id}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {isRTL ? 'حذف' : 'Supprimer'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className={cn("text-xs font-bold text-muted-foreground", isRTL && "text-right block font-cairo")}>
+                      {isRTL ? 'العنوان' : 'Titre'}
+                    </Label>
+                    <Input
+                      value={(expenseDraft.title as string) || ''}
+                      onChange={e => setExpenseDraft(d => ({ ...d, title: e.target.value }))}
+                      className={cn("bg-background border-border", isRTL && "text-right font-cairo")}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-muted-foreground">{isRTL ? 'المبلغ TTC (€)' : 'Montant TTC (€)'}</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={expenseDraft.amount?.toString() || ''}
+                        onChange={e => setExpenseDraft(d => ({ ...d, amount: parseFloat(e.target.value) || 0 }))}
+                        className="bg-background border-border"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-muted-foreground">TVA (€)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={expenseDraft.tva_amount?.toString() || ''}
+                        onChange={e => setExpenseDraft(d => ({ ...d, tva_amount: parseFloat(e.target.value) || 0 }))}
+                        className="bg-background border-border"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-muted-foreground">{isRTL ? 'الفئة' : 'Catégorie'}</Label>
+                      <Select value={(expenseDraft.category as string) || 'other'} onValueChange={v => setExpenseDraft(d => ({ ...d, category: v }))}>
+                        <SelectTrigger className="bg-background border-border text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EXPENSE_CATEGORIES.map(c => (
+                            <SelectItem key={c.value} value={c.value}>{isRTL ? c.labelAr : c.labelFr}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-muted-foreground">Date</Label>
+                      <Input
+                        type="date"
+                        value={(expenseDraft.expense_date as string) || ''}
+                        onChange={e => setExpenseDraft(d => ({ ...d, expense_date: e.target.value }))}
+                        className="bg-background border-border"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-muted-foreground">{isRTL ? 'المشروع' : 'Projet'}</Label>
+                    <Select
+                      value={(expenseDraft.chantier_id as string) || 'none'}
+                      onValueChange={v => setExpenseDraft(d => ({ ...d, chantier_id: v === 'none' ? null : v }))}
+                    >
+                      <SelectTrigger className="bg-background border-border text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{isRTL ? 'بدون مشروع' : 'Aucun projet'}</SelectItem>
+                        {chantiers.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-muted-foreground">Notes</Label>
+                    <Textarea
+                      value={(expenseDraft.notes as string) || ''}
+                      onChange={e => setExpenseDraft(d => ({ ...d, notes: e.target.value }))}
+                      className={cn("bg-background border-border min-h-[60px]", isRTL && "text-right font-cairo")}
+                    />
+                  </div>
+
+                  <div className={cn("flex gap-2 pt-3 border-t border-border", isRTL && "flex-row-reverse")}>
+                    <Button
+                      className="flex-1 bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold gap-2"
+                      onClick={handleSaveExpenseEdit}
+                      disabled={savingExpense}
+                    >
+                      {savingExpense ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      {isRTL ? 'حفظ' : 'Enregistrer'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => { setEditingExpense(false); setExpenseDraft({}); }}
+                      disabled={savingExpense}
+                    >
+                      <X className="h-4 w-4" />
+                      {isRTL ? 'إلغاء' : 'Annuler'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </DialogContent>
       </Dialog>

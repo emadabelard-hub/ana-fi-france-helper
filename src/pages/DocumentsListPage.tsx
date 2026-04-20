@@ -929,6 +929,13 @@ const DocumentsListPage = () => {
               <Receipt className="h-4 w-4 mr-1.5" />
               {isRTL ? 'الفواتير' : 'Factures'} ({factures.length})
             </TabsTrigger>
+            <TabsTrigger
+              value="expenses"
+              className="flex-1 data-[state=active]:bg-[hsl(45,80%,55%)] data-[state=active]:text-[hsl(0,0%,8%)] data-[state=active]:font-bold text-[hsl(0,0%,50%)] rounded-lg transition-all"
+            >
+              <Wallet className="h-4 w-4 mr-1.5" />
+              {isRTL ? 'المصاريف' : 'Dépenses'} ({filteredExpenses.length})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="devis" className="mt-4">
@@ -948,6 +955,152 @@ const DocumentsListPage = () => {
               </div>
             ) : factures.length === 0 ? renderEmpty('facture') : (
               <div className="grid gap-3">{factures.map(renderCard)}</div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="expenses" className="mt-4 space-y-3">
+            {/* Expense filters */}
+            <div className={cn("flex flex-wrap gap-2", isRTL && "flex-row-reverse")}>
+              <Select value={expenseCategoryFilter} onValueChange={setExpenseCategoryFilter}>
+                <SelectTrigger className="h-8 w-[150px] border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,10%)] text-[hsl(0,0%,60%)] text-xs">
+                  <Tag className="h-3 w-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{isRTL ? 'كل الفئات' : 'Toutes catégories'}</SelectItem>
+                  {EXPENSE_CATEGORIES.map(c => (
+                    <SelectItem key={c.value} value={c.value}>{isRTL ? c.labelAr : c.labelFr}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={expenseChantierFilter} onValueChange={setExpenseChantierFilter}>
+                <SelectTrigger className="h-8 w-[160px] border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,10%)] text-[hsl(0,0%,60%)] text-xs">
+                  <FolderOpen className="h-3 w-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{isRTL ? 'كل المشاريع' : 'Tous les projets'}</SelectItem>
+                  {chantiers.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center py-16">
+                <div className="animate-pulse text-[hsl(0,0%,40%)]">{isRTL ? 'جاري التحميل...' : 'Chargement...'}</div>
+              </div>
+            ) : filteredExpenses.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-[hsl(45,80%,55%)/0.1] flex items-center justify-center">
+                  <Wallet className="h-8 w-8 text-[hsl(45,80%,55%)/0.4]" />
+                </div>
+                <p className={cn("text-sm text-[hsl(0,0%,45%)]", isRTL && "font-cairo")}>
+                  {isRTL ? 'ما عندك حتى مصروف بعد' : 'Aucune dépense pour le moment'}
+                </p>
+                <Button
+                  size="sm"
+                  className="bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold gap-1.5"
+                  onClick={() => navigate('/expenses')}
+                >
+                  <Plus className="h-4 w-4" />
+                  {isRTL ? 'إضافة مصروف' : 'Ajouter une dépense'}
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {filteredExpenses.map(exp => {
+                  const date = new Date(exp.expense_date).toLocaleDateString('fr-FR');
+                  const projectName = exp.chantier_id ? chantierMap[exp.chantier_id] : null;
+                  const tvaRecoverable = exp.tva_amount > 0;
+                  return (
+                    <div
+                      key={exp.id}
+                      className="group relative rounded-xl border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,12%)] p-4 hover:border-[hsl(45,80%,55%)/0.6] transition-all duration-300 hover:shadow-[0_0_20px_hsl(45,80%,55%,0.1)] cursor-pointer"
+                      onClick={() => openExpenseView(exp)}
+                    >
+                      <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-[hsl(45,80%,55%)] to-transparent opacity-60" />
+
+                      <div className={cn("flex items-start justify-between gap-3", isRTL && "flex-row-reverse")}>
+                        <div className={cn("flex items-center gap-3 flex-1 min-w-0", isRTL && "flex-row-reverse")}>
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/15 text-amber-400">
+                            <Wallet className="h-5 w-5" />
+                          </div>
+                          <div className={cn("min-w-0 flex-1", isRTL && "text-right")}>
+                            <p className="text-sm font-bold text-[hsl(45,80%,70%)] truncate">{exp.title}</p>
+                            <p className="text-xs text-[hsl(0,0%,60%)] truncate">
+                              {projectName || (isRTL ? 'بدون مشروع' : 'Sans projet')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider bg-[hsl(45,80%,55%)/0.15] text-[hsl(45,80%,65%)]">
+                            {getCategoryLabel(exp.category, isRTL)}
+                          </span>
+                          <span className={cn(
+                            "text-[9px] font-semibold px-2 py-0.5 rounded-full",
+                            tvaRecoverable ? "bg-emerald-500/15 text-emerald-400" : "bg-muted/40 text-muted-foreground"
+                          )}>
+                            {tvaRecoverable
+                              ? (isRTL ? 'TVA قابلة للاسترداد' : 'TVA récupérable')
+                              : (isRTL ? 'بدون TVA' : 'TVA NON')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className={cn("mt-3 flex items-center gap-4 text-xs", isRTL && "flex-row-reverse")}>
+                        <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
+                          <Calendar className="h-3 w-3 text-[hsl(0,0%,45%)]" />
+                          <span className="text-[hsl(0,0%,55%)]">{date}</span>
+                        </div>
+                        {tvaRecoverable && (
+                          <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
+                            <Euro className="h-3 w-3 text-[hsl(0,0%,45%)]" />
+                            <span className="text-[hsl(0,0%,55%)]">TVA {formatCurrency(exp.tva_amount)}</span>
+                          </div>
+                        )}
+                        <span className="font-bold text-[hsl(45,80%,65%)] ml-auto">TTC {formatCurrency(exp.amount)}</span>
+                      </div>
+
+                      <div className={cn("mt-3 flex items-center gap-2 pt-3 border-t border-[hsl(0,0%,18%)]", isRTL && "flex-row-reverse")}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 gap-1"
+                          onClick={(e) => { e.stopPropagation(); openExpenseView(exp); }}
+                        >
+                          <Eye className="h-3 w-3" />
+                          {isRTL ? 'تفاصيل' : 'Détail'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
+                          onClick={(e) => { e.stopPropagation(); setSelectedExpense(exp); setExpenseDraft({
+                            title: exp.title, amount: exp.amount, tva_amount: exp.tva_amount,
+                            category: exp.category, expense_date: exp.expense_date, notes: exp.notes,
+                            chantier_id: exp.chantier_id,
+                          }); setEditingExpense(true); }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                          {isRTL ? 'تعديل' : 'Modifier'}
+                        </Button>
+                        <div className="flex-1" />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-[hsl(0,0%,45%)] hover:text-red-400 hover:bg-red-500/10"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteExpense(exp.id); }}
+                          disabled={deletingExpenseId === exp.id}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </TabsContent>
         </Tabs>

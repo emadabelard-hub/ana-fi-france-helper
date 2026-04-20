@@ -3416,9 +3416,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                               }
                               try {
                                 const currentData = invoiceData;
-                                const sourceDocumentNumber = isOfficialDocumentNumber(docNumber, 'devis')
-                                  ? docNumber
-                                  : await reserveOfficialDocumentNumber(user.id, 'devis');
+                                // RÈGLE STRICTE : ne JAMAIS réserver un nouveau numéro de devis
+                                // depuis le flux de création d'une facture d'échéance.
+                                // Le devis source DOIT déjà exister avec un numéro officiel.
+                                if (!isOfficialDocumentNumber(docNumber, 'devis')) {
+                                  toast({
+                                    variant: 'destructive',
+                                    title: isRTL ? 'احفظ الدوفي أولاً' : 'Enregistrez d’abord le devis',
+                                    description: isRTL
+                                      ? 'يجب حفظ الدوفي رسمياً قبل إنشاء فاتورة دفعة. لن يتم إنشاء رقم دوفي جديد.'
+                                      : 'Le devis doit être enregistré officiellement avant de créer une facture d’échéance. Aucun nouveau numéro de devis ne sera créé.',
+                                  });
+                                  return;
+                                }
+                                const sourceDocumentNumber = docNumber;
                                 const reservedDocumentNumber = await reserveOfficialDocumentNumber(user.id, 'facture');
 
                                 setDocNumber(sourceDocumentNumber);

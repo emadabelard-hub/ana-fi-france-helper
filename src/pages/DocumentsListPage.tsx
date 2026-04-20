@@ -40,6 +40,37 @@ interface DocumentRow {
   linked_invoice_id?: string | null;
 }
 
+interface ExpenseRow {
+  id: string;
+  title: string;
+  amount: number;
+  tva_amount: number;
+  category: string;
+  expense_date: string;
+  notes: string | null;
+  receipt_url: string | null;
+  chantier_id: string | null;
+  document_id: string | null;
+  created_at: string;
+}
+
+const EXPENSE_CATEGORIES: { value: string; labelFr: string; labelAr: string }[] = [
+  { value: 'materials', labelFr: 'Matériaux', labelAr: 'مواد' },
+  { value: 'tools', labelFr: 'Outils', labelAr: 'أدوات' },
+  { value: 'transport', labelFr: 'Transport', labelAr: 'نقل' },
+  { value: 'food', labelFr: 'Repas', labelAr: 'وجبات' },
+  { value: 'office', labelFr: 'Fournitures', labelAr: 'لوازم مكتبية' },
+  { value: 'insurance', labelFr: 'Assurance', labelAr: 'تأمين' },
+  { value: 'telecom', labelFr: 'Télécom', labelAr: 'اتصالات' },
+  { value: 'other', labelFr: 'Autre', labelAr: 'أخرى' },
+];
+
+const getCategoryLabel = (value: string, isRTL: boolean) => {
+  const c = EXPENSE_CATEGORIES.find(x => x.value === value);
+  if (!c) return value;
+  return isRTL ? c.labelAr : c.labelFr;
+};
+
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 

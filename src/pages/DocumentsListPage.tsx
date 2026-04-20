@@ -1244,6 +1244,165 @@ const DocumentsListPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Expense Detail / Edit Dialog */}
+      <Dialog open={Boolean(selectedExpense)} onOpenChange={(open) => { if (!open) { setSelectedExpense(null); setEditingExpense(false); } }}>
+        <DialogContent className={cn("max-w-md", isRTL && "font-cairo")}>
+          {selectedExpense && (
+            <>
+              <DialogHeader>
+                <DialogTitle className={cn("flex items-center gap-2", isRTL && "flex-row-reverse text-right")}>
+                  <Wallet className="h-4 w-4 text-[hsl(45,80%,55%)]" />
+                  {editingExpense
+                    ? (isRTL ? 'تعديل المصروف' : 'Modifier la dépense')
+                    : (isRTL ? 'تفاصيل المصروف' : 'Détail de la dépense')}
+                </DialogTitle>
+              </DialogHeader>
+
+              {!editingExpense ? (
+                <div className={cn("space-y-3 text-sm", isRTL && "text-right")}>
+                  <p className="font-bold text-base text-[hsl(45,80%,70%)]">{selectedExpense.title}</p>
+                  <p><span className="text-muted-foreground">{isRTL ? 'الفئة:' : 'Catégorie:'}</span> {getCategoryLabel(selectedExpense.category, isRTL)}</p>
+                  <p><span className="text-muted-foreground">{isRTL ? 'المشروع:' : 'Projet:'}</span> {selectedExpense.chantier_id ? (chantierMap[selectedExpense.chantier_id] || '-') : '-'}</p>
+                  <p><span className="text-muted-foreground">Date:</span> {new Date(selectedExpense.expense_date).toLocaleDateString('fr-FR')}</p>
+                  <p><span className="text-muted-foreground">TVA:</span> {formatCurrency(selectedExpense.tva_amount)} {selectedExpense.tva_amount > 0 ? (isRTL ? '(قابلة للاسترداد)' : '(récupérable)') : (isRTL ? '(غير قابلة)' : '(non récupérable)')}</p>
+                  <p className="font-bold"><span className="text-muted-foreground">TTC:</span> {formatCurrency(selectedExpense.amount)}</p>
+                  {selectedExpense.notes && (
+                    <p><span className="text-muted-foreground">Notes:</span> {selectedExpense.notes}</p>
+                  )}
+
+                  <div className={cn("flex gap-2 pt-3 border-t border-border", isRTL && "flex-row-reverse")}>
+                    <Button
+                      className="flex-1 bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold gap-2"
+                      onClick={startEditExpense}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      {isRTL ? 'تعديل' : 'Modifier'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-red-500/30 text-red-400 hover:bg-red-500/10 gap-2"
+                      onClick={() => handleDeleteExpense(selectedExpense.id)}
+                      disabled={deletingExpenseId === selectedExpense.id}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {isRTL ? 'حذف' : 'Supprimer'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className={cn("text-xs font-bold text-muted-foreground", isRTL && "text-right block font-cairo")}>
+                      {isRTL ? 'العنوان' : 'Titre'}
+                    </Label>
+                    <Input
+                      value={(expenseDraft.title as string) || ''}
+                      onChange={e => setExpenseDraft(d => ({ ...d, title: e.target.value }))}
+                      className={cn("bg-background border-border", isRTL && "text-right font-cairo")}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-muted-foreground">{isRTL ? 'المبلغ TTC (€)' : 'Montant TTC (€)'}</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={expenseDraft.amount?.toString() || ''}
+                        onChange={e => setExpenseDraft(d => ({ ...d, amount: parseFloat(e.target.value) || 0 }))}
+                        className="bg-background border-border"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-muted-foreground">TVA (€)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={expenseDraft.tva_amount?.toString() || ''}
+                        onChange={e => setExpenseDraft(d => ({ ...d, tva_amount: parseFloat(e.target.value) || 0 }))}
+                        className="bg-background border-border"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-muted-foreground">{isRTL ? 'الفئة' : 'Catégorie'}</Label>
+                      <Select value={(expenseDraft.category as string) || 'other'} onValueChange={v => setExpenseDraft(d => ({ ...d, category: v }))}>
+                        <SelectTrigger className="bg-background border-border text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EXPENSE_CATEGORIES.map(c => (
+                            <SelectItem key={c.value} value={c.value}>{isRTL ? c.labelAr : c.labelFr}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-muted-foreground">Date</Label>
+                      <Input
+                        type="date"
+                        value={(expenseDraft.expense_date as string) || ''}
+                        onChange={e => setExpenseDraft(d => ({ ...d, expense_date: e.target.value }))}
+                        className="bg-background border-border"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-muted-foreground">{isRTL ? 'المشروع' : 'Projet'}</Label>
+                    <Select
+                      value={(expenseDraft.chantier_id as string) || 'none'}
+                      onValueChange={v => setExpenseDraft(d => ({ ...d, chantier_id: v === 'none' ? null : v }))}
+                    >
+                      <SelectTrigger className="bg-background border-border text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{isRTL ? 'بدون مشروع' : 'Aucun projet'}</SelectItem>
+                        {chantiers.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-muted-foreground">Notes</Label>
+                    <Textarea
+                      value={(expenseDraft.notes as string) || ''}
+                      onChange={e => setExpenseDraft(d => ({ ...d, notes: e.target.value }))}
+                      className={cn("bg-background border-border min-h-[60px]", isRTL && "text-right font-cairo")}
+                    />
+                  </div>
+
+                  <div className={cn("flex gap-2 pt-3 border-t border-border", isRTL && "flex-row-reverse")}>
+                    <Button
+                      className="flex-1 bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold gap-2"
+                      onClick={handleSaveExpenseEdit}
+                      disabled={savingExpense}
+                    >
+                      {savingExpense ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      {isRTL ? 'حفظ' : 'Enregistrer'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => { setEditingExpense(false); setExpenseDraft({}); }}
+                      disabled={savingExpense}
+                    >
+                      <X className="h-4 w-4" />
+                      {isRTL ? 'إلغاء' : 'Annuler'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

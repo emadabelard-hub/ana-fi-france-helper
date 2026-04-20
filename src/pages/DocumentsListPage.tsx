@@ -496,6 +496,103 @@ const DocumentsListPage = () => {
   const devis = filteredDocuments.filter(d => d.document_type === 'devis');
   const factures = filteredDocuments.filter(d => d.document_type === 'facture');
 
+  // ============== EXPENSES helpers ==============
+  const chantierMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    chantiers.forEach(c => { m[c.id] = c.name; });
+    return m;
+  }, [chantiers]);
+
+  const filteredExpenses = useMemo(() => {
+    let result = [...expenses];
+    if (periodFilter !== 'all') {
+      const now = new Date();
+      let startDate: Date;
+      switch (periodFilter) {
+        case 'month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); break;
+        case 'quarter': startDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1); break;
+        case 'year': startDate = new Date(now.getFullYear(), 0, 1); break;
+        default: startDate = new Date(0);
+      }
+      result = result.filter(e => new Date(e.expense_date) >= startDate);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(e =>
+        (e.title || '').toLowerCase().includes(q) ||
+        (e.notes || '').toLowerCase().includes(q)
+      );
+    }
+    if (expenseCategoryFilter !== 'all') {
+      result = result.filter(e => e.category === expenseCategoryFilter);
+    }
+    if (expenseChantierFilter !== 'all') {
+      result = result.filter(e => e.chantier_id === expenseChantierFilter);
+    }
+    return result;
+  }, [expenses, periodFilter, searchQuery, expenseCategoryFilter, expenseChantierFilter]);
+
+  const openExpenseView = (exp: ExpenseRow) => {
+    setSelectedExpense(exp);
+    setEditingExpense(false);
+    setExpenseDraft({});
+  };
+
+  const startEditExpense = () => {
+    if (!selectedExpense) return;
+    setExpenseDraft({
+      title: selectedExpense.title,
+      amount: selectedExpense.amount,
+      tva_amount: selectedExpense.tva_amount,
+      category: selectedExpense.category,
+      expense_date: selectedExpense.expense_date,
+      notes: selectedExpense.notes,
+      chantier_id: selectedExpense.chantier_id,
+    });
+    setEditingExpense(true);
+  };
+
+  const handleSaveExpenseEdit = async () => {
+    if (!selectedExpense) return;
+    setSavingExpense(true);
+    const payload: any = {
+      title: (expenseDraft.title || '').toString().trim(),
+      amount: Number(expenseDraft.amount) || 0,
+      tva_amount: Number(expenseDraft.tva_amount) || 0,
+      category: expenseDraft.category || 'other',
+      expense_date: expenseDraft.expense_date || selectedExpense.expense_date,
+      notes: expenseDraft.notes ? expenseDraft.notes.toString() : null,
+      chantier_id: expenseDraft.chantier_id || null,
+    };
+    const { error } = await (supabase.from('expenses') as any)
+      .update(payload)
+      .eq('id', selectedExpense.id);
+    if (error) {
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: error.message });
+    } else {
+      const updated: ExpenseRow = { ...selectedExpense, ...payload };
+      setExpenses(prev => prev.map(e => e.id === selectedExpense.id ? updated : e));
+      setSelectedExpense(updated);
+      setEditingExpense(false);
+      toast({ title: isRTL ? '✅ تم الحفظ' : '✅ Modifié' });
+    }
+    setSavingExpense(false);
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    setDeletingExpenseId(id);
+    const { error } = await (supabase.from('expenses') as any).delete().eq('id', id);
+    if (!error) {
+      setExpenses(prev => prev.filter(e => e.id !== id));
+      if (selectedExpense?.id === id) setSelectedExpense(null);
+      toast({ title: isRTL ? 'تم الحذف' : 'Supprimé' });
+    } else {
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: error.message });
+    }
+    setDeletingExpenseId(null);
+  };
+
+
   const handleExportCSV = () => {
     if (documents.length === 0) return;
     const csvRows: CsvDocumentRow[] = documents.map(doc => ({

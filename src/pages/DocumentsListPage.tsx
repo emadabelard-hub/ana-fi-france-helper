@@ -98,6 +98,17 @@ const DocumentsListPage = () => {
   const [showFullView, setShowFullView] = useState(false);
   const [converting, setConverting] = useState(false);
 
+  // Expenses state
+  const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
+  const [chantiers, setChantiers] = useState<{ id: string; name: string }[]>([]);
+  const [expenseCategoryFilter, setExpenseCategoryFilter] = useState<string>('all');
+  const [expenseChantierFilter, setExpenseChantierFilter] = useState<string>('all');
+  const [selectedExpense, setSelectedExpense] = useState<ExpenseRow | null>(null);
+  const [editingExpense, setEditingExpense] = useState(false);
+  const [expenseDraft, setExpenseDraft] = useState<Partial<ExpenseRow>>({});
+  const [savingExpense, setSavingExpense] = useState(false);
+  const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
+
   const convertedSourceNumbers = useMemo(() => {
     const values = documents
       .filter((d) => d.document_type === 'facture')

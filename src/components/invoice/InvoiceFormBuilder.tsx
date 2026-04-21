@@ -3549,6 +3549,68 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                 )}
               </div>
 
+              {/* === Garantie sur les travaux (optionnel) === */}
+              <div className={cn(
+                "border-2 rounded-lg p-3 space-y-3",
+                garantieEnabled
+                  ? "border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800"
+                  : "border-border/80 bg-muted/40"
+              )}>
+                <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                  <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                    <span className="text-lg">🛡️</span>
+                    <Label
+                      htmlFor="garantie-toggle"
+                      className={cn("text-sm font-bold cursor-pointer text-foreground", isRTL && "font-cairo")}
+                    >
+                      {isRTL ? 'ضمان الأشغال' : 'Garantie sur les travaux'}
+                    </Label>
+                  </div>
+                  <Switch
+                    id="garantie-toggle"
+                    className="data-[state=unchecked]:bg-muted-foreground/50 data-[state=checked]:bg-emerald-600 [&>span]:bg-white [&>span]:shadow-md"
+                    checked={garantieEnabled}
+                    onCheckedChange={setGarantieEnabled}
+                  />
+                </div>
+
+                {garantieEnabled && (
+                  <div className="space-y-2 pt-1">
+                    <Label className={cn("text-xs text-muted-foreground", isRTL && "font-cairo block text-right")}>
+                      {isRTL ? 'مدة الضمان' : 'Durée de la garantie'}
+                    </Label>
+                    <div className={cn("grid grid-cols-3 gap-2", isRTL && "direction-rtl")}>
+                      {([1, 2, 10] as const).map((years) => {
+                        const isActive = garantieYears === years;
+                        const labelFr = years === 1 ? '1 an' : `${years} ans`;
+                        const labelAr = years === 1 ? 'سنة واحدة' : years === 2 ? 'سنتين' : '10 سنوات';
+                        return (
+                          <button
+                            key={years}
+                            type="button"
+                            onClick={() => setGarantieYears(years)}
+                            className={cn(
+                              "py-2 px-2 rounded-md border-2 text-sm font-bold transition-all",
+                              isActive
+                                ? "border-emerald-600 bg-emerald-600 text-white shadow-sm"
+                                : "border-border bg-background text-foreground hover:border-emerald-400",
+                              isRTL && "font-cairo"
+                            )}
+                          >
+                            {isRTL ? labelAr : labelFr}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className={cn("text-[11px] text-muted-foreground leading-relaxed pt-1", isRTL && "font-cairo text-right")}>
+                      {isRTL
+                        ? `هتظهر في الـ PDF: «Garantie sur l'ensemble des travaux : ${garantieYears} ${garantieYears > 1 ? 'ans' : 'an'} à compter de la date de réception du chantier.»`
+                        : `Mention ajoutée au PDF : « Garantie sur l'ensemble des travaux : ${garantieYears} ${garantieYears > 1 ? 'ans' : 'an'} à compter de la date de réception du chantier. »`}
+                    </p>
+                  </div>
+                )}
+              </div>
+
               {/* Preview of generated text */}
               <div className="p-2 rounded bg-muted/50 border border-border">
                 <p className="text-[10px] text-muted-foreground font-mono leading-relaxed">

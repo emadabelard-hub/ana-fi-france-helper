@@ -67,6 +67,9 @@ export interface InvoiceDraft {
   discountEnabled?: boolean;
   discountType?: 'percent' | 'fixed';
   discountValue?: number;
+  /** Garantie sur les travaux (toggle dans l'étape Conditions de règlement) */
+  garantieEnabled?: boolean;
+  garantieYears?: 1 | 2 | 10;
   currentStep?: number;
   savedAt: number;
 }

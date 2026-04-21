@@ -195,6 +195,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
   const [discountValue, setDiscountValue] = useState<number>(0);
+
+  // Garantie state (1 / 2 / 10 ans) — optionnel, désactivé par défaut
+  const [garantieEnabled, setGarantieEnabled] = useState(false);
+  const [garantieYears, setGarantieYears] = useState<1 | 2 | 10>(1);
   
   // Line items — initialize from prefillData if available (image-quote flow)
   const [items, setItems] = useState<LineItem[]>(() => {
@@ -318,9 +322,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       discountEnabled,
       discountType,
       discountValue,
+      garantieEnabled,
+      garantieYears,
       currentStep,
     });
-  }, [documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, descriptionChantierAr, descriptionChantierFr, estimatedStartDate, estimatedDuration, discountEnabled, discountType, discountValue, currentStep]);
+  }, [documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, descriptionChantierAr, descriptionChantierFr, estimatedStartDate, estimatedDuration, discountEnabled, discountType, discountValue, garantieEnabled, garantieYears, currentStep]);
 
   // Fetch clients list
   useEffect(() => {
@@ -513,6 +519,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (draft.discountEnabled !== undefined) setDiscountEnabled(draft.discountEnabled);
     if (draft.discountType !== undefined) setDiscountType(draft.discountType || 'percent');
     if (draft.discountValue !== undefined) setDiscountValue(draft.discountValue || 0);
+    if (draft.garantieEnabled !== undefined) setGarantieEnabled(!!draft.garantieEnabled);
+    if (draft.garantieYears !== undefined && [1, 2, 10].includes(draft.garantieYears)) {
+      setGarantieYears(draft.garantieYears as 1 | 2 | 10);
+    }
     // Restore showPreview so users don't lose preview state on mobile page reload (e.g. after download)
     if (draft.showPreview !== undefined) setShowPreview(draft.showPreview);
     if (draft.showArabic !== undefined) setShowArabic(draft.showArabic);
@@ -606,6 +616,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       discountEnabled,
       discountType,
       discountValue,
+      garantieEnabled,
+      garantieYears,
       currentStep,
       showPreview,
       showArabic,
@@ -757,6 +769,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (prefillData.discountEnabled !== undefined) setDiscountEnabled(prefillData.discountEnabled);
     if (prefillData.discountType !== undefined) setDiscountType(prefillData.discountType);
     if (prefillData.discountValue !== undefined) setDiscountValue(prefillData.discountValue);
+    // Garantie — copie stricte depuis le devis source (règle 2 : transformation devis → facture)
+    if ((prefillData as any).garantieEnabled !== undefined) {
+      setGarantieEnabled(!!(prefillData as any).garantieEnabled);
+    }
+    if ((prefillData as any).garantieYears !== undefined) {
+      const gy = (prefillData as any).garantieYears;
+      if ([1, 2, 10].includes(gy)) {
+        setGarantieYears(gy as 1 | 2 | 10);
+        // Si une garantie est définie côté source, l'activer même si le flag n'est pas explicite
+        if ((prefillData as any).garantieEnabled === undefined) {
+          setGarantieEnabled(true);
+        }
+      }
+    }
     if (prefillData.estimatedStartDate !== undefined) setEstimatedStartDate(prefillData.estimatedStartDate);
     if (prefillData.estimatedDuration !== undefined) setEstimatedDuration(prefillData.estimatedDuration);
     if (prefillData.validityDuration !== undefined) setValidityDuration(prefillData.validityDuration);
@@ -1005,6 +1031,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         return text;
       })(),
       legalMentions: vatLegalMention,
+      // Garantie sur les travaux — source de vérité explicite (toggle Conditions de règlement)
+      garantieYears: garantieEnabled ? garantieYears : undefined,
       // Inject signed URLs for artisan's permanent signature, stamp, and logo
       artisanSignatureUrl: signedUrls.artisanSignatureUrl || undefined,
       stampUrl: signedUrls.stampUrl || undefined,
@@ -1941,6 +1969,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     setDiscountEnabled(false);
     setDiscountType('percent');
     setDiscountValue(0);
+    setGarantieEnabled(false);
+    setGarantieYears(1);
     setItems([{
       id: generateId(),
       designation_fr: '',
@@ -3515,6 +3545,68 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                         </span>
                       </div>
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* === Garantie sur les travaux (optionnel) === */}
+              <div className={cn(
+                "border-2 rounded-lg p-3 space-y-3",
+                garantieEnabled
+                  ? "border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800"
+                  : "border-border/80 bg-muted/40"
+              )}>
+                <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                  <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                    <span className="text-lg">🛡️</span>
+                    <Label
+                      htmlFor="garantie-toggle"
+                      className={cn("text-sm font-bold cursor-pointer text-foreground", isRTL && "font-cairo")}
+                    >
+                      {isRTL ? 'ضمان الأشغال' : 'Garantie sur les travaux'}
+                    </Label>
+                  </div>
+                  <Switch
+                    id="garantie-toggle"
+                    className="data-[state=unchecked]:bg-muted-foreground/50 data-[state=checked]:bg-emerald-600 [&>span]:bg-white [&>span]:shadow-md"
+                    checked={garantieEnabled}
+                    onCheckedChange={setGarantieEnabled}
+                  />
+                </div>
+
+                {garantieEnabled && (
+                  <div className="space-y-2 pt-1">
+                    <Label className={cn("text-xs text-muted-foreground", isRTL && "font-cairo block text-right")}>
+                      {isRTL ? 'مدة الضمان' : 'Durée de la garantie'}
+                    </Label>
+                    <div className={cn("grid grid-cols-3 gap-2", isRTL && "direction-rtl")}>
+                      {([1, 2, 10] as const).map((years) => {
+                        const isActive = garantieYears === years;
+                        const labelFr = years === 1 ? '1 an' : `${years} ans`;
+                        const labelAr = years === 1 ? 'سنة واحدة' : years === 2 ? 'سنتين' : '10 سنوات';
+                        return (
+                          <button
+                            key={years}
+                            type="button"
+                            onClick={() => setGarantieYears(years)}
+                            className={cn(
+                              "py-2 px-2 rounded-md border-2 text-sm font-bold transition-all",
+                              isActive
+                                ? "border-emerald-600 bg-emerald-600 text-white shadow-sm"
+                                : "border-border bg-background text-foreground hover:border-emerald-400",
+                              isRTL && "font-cairo"
+                            )}
+                          >
+                            {isRTL ? labelAr : labelFr}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className={cn("text-[11px] text-muted-foreground leading-relaxed pt-1", isRTL && "font-cairo text-right")}>
+                      {isRTL
+                        ? `هتظهر في الـ PDF: «Garantie sur l'ensemble des travaux : ${garantieYears} ${garantieYears > 1 ? 'ans' : 'an'} à compter de la date de réception du chantier.»`
+                        : `Mention ajoutée au PDF : « Garantie sur l'ensemble des travaux : ${garantieYears} ${garantieYears > 1 ? 'ans' : 'an'} à compter de la date de réception du chantier. »`}
+                    </p>
                   </div>
                 )}
               </div>

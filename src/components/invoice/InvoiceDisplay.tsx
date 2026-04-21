@@ -95,6 +95,8 @@ export interface InvoiceData {
   sitePhotos?: Array<{ data: string; name: string }>;
   sourceDevisNumber?: string;
   acompteLabel?: string;
+  /** Garantie sur les travaux (en années). Source de vérité explicite, prioritaire sur la détection texte. */
+  garantieYears?: number;
 }
 
 interface InvoiceDisplayProps {
@@ -271,8 +273,13 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
     return null;
   };
 
-  // ── AUTO GARANTIE — detect garantie mention in any line ──
+  // ── GARANTIE — explicit toggle prioritaire, fallback sur détection texte ──
   const detectedGarantieYears = (() => {
+    // 1. Source explicite (toggle dans l'étape "Conditions de règlement")
+    if (typeof data.garantieYears === 'number' && data.garantieYears > 0) {
+      return data.garantieYears;
+    }
+    // 2. Fallback : détection automatique dans les désignations
     const allText = (data.items || [])
       .map(i => `${i.designation_fr || ''} ${i.designation_ar || ''}`)
       .join(' ')

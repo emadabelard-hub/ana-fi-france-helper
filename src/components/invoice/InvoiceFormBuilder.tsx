@@ -517,6 +517,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (draft.discountEnabled !== undefined) setDiscountEnabled(draft.discountEnabled);
     if (draft.discountType !== undefined) setDiscountType(draft.discountType || 'percent');
     if (draft.discountValue !== undefined) setDiscountValue(draft.discountValue || 0);
+    if (draft.garantieEnabled !== undefined) setGarantieEnabled(!!draft.garantieEnabled);
+    if (draft.garantieYears !== undefined && [1, 2, 10].includes(draft.garantieYears)) {
+      setGarantieYears(draft.garantieYears as 1 | 2 | 10);
+    }
     // Restore showPreview so users don't lose preview state on mobile page reload (e.g. after download)
     if (draft.showPreview !== undefined) setShowPreview(draft.showPreview);
     if (draft.showArabic !== undefined) setShowArabic(draft.showArabic);
@@ -761,6 +765,20 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     if (prefillData.discountEnabled !== undefined) setDiscountEnabled(prefillData.discountEnabled);
     if (prefillData.discountType !== undefined) setDiscountType(prefillData.discountType);
     if (prefillData.discountValue !== undefined) setDiscountValue(prefillData.discountValue);
+    // Garantie — copie stricte depuis le devis source (règle 2 : transformation devis → facture)
+    if ((prefillData as any).garantieEnabled !== undefined) {
+      setGarantieEnabled(!!(prefillData as any).garantieEnabled);
+    }
+    if ((prefillData as any).garantieYears !== undefined) {
+      const gy = (prefillData as any).garantieYears;
+      if ([1, 2, 10].includes(gy)) {
+        setGarantieYears(gy as 1 | 2 | 10);
+        // Si une garantie est définie côté source, l'activer même si le flag n'est pas explicite
+        if ((prefillData as any).garantieEnabled === undefined) {
+          setGarantieEnabled(true);
+        }
+      }
+    }
     if (prefillData.estimatedStartDate !== undefined) setEstimatedStartDate(prefillData.estimatedStartDate);
     if (prefillData.estimatedDuration !== undefined) setEstimatedDuration(prefillData.estimatedDuration);
     if (prefillData.validityDuration !== undefined) setValidityDuration(prefillData.validityDuration);
@@ -1945,6 +1963,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     setDiscountEnabled(false);
     setDiscountType('percent');
     setDiscountValue(0);
+    setGarantieEnabled(false);
+    setGarantieYears(1);
     setItems([{
       id: generateId(),
       designation_fr: '',

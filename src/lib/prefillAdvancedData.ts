@@ -63,6 +63,13 @@ export function extractAdvancedPrefillData(docData: any) {
   const discountType = docData.discountType || 'percent';
   const discountValue = docData.discountValue ?? 0;
 
+  // Garantie — copie stricte depuis le devis source (règle 2 : transformation devis → facture)
+  const rawGarantie = docData.garantieYears;
+  const garantieYears: 1 | 2 | 10 | undefined = rawGarantie === 1 || rawGarantie === 2 || rawGarantie === 10
+    ? rawGarantie
+    : undefined;
+  const garantieEnabled = garantieYears !== undefined;
+
   // Dates — stored as formatted fr-FR strings, convert back to ISO for date inputs
   let estimatedStartDate = '';
   if (docData.estimatedStartDate) {
@@ -89,6 +96,8 @@ export function extractAdvancedPrefillData(docData: any) {
     discountEnabled,
     discountType,
     discountValue,
+    garantieEnabled,
+    garantieYears,
     estimatedStartDate,
     estimatedDuration,
   };

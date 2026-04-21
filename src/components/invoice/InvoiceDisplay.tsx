@@ -454,99 +454,116 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             </tr>
           </thead>
           <tbody>
-            {data.items.map((item, index) => {
-              const designLower = item.designation_fr.toLowerCase();
-              const isSectionTitle = item.designation_fr.toUpperCase().startsWith('ZONE') ||
-                ['fourniture et pose', 'main d\'œuvre', 'dépose', 'repose', 'finitions', 'sous-traitance',
-                 'peinture', 'plomberie', 'électricité', 'maçonnerie', 'carrelage', 'menuiserie',
-                 'plâtrerie', 'isolation', 'démolition', 'ravalement', 'étanchéité', 'toiture', 'terrassement']
-                  .some(kw => designLower.startsWith(kw)) ||
-                (item.quantity === 0 && item.unitPrice === 0);
+            {(() => {
+              let previousLot: string | null = null;
+              return data.items.map((item, index) => {
+                const designLower = item.designation_fr.toLowerCase();
+                const isSectionTitle = item.designation_fr.toUpperCase().startsWith('ZONE') ||
+                  ['fourniture et pose', 'main d\'œuvre', 'dépose', 'repose', 'finitions', 'sous-traitance',
+                   'peinture', 'plomberie', 'électricité', 'maçonnerie', 'carrelage', 'menuiserie',
+                   'plâtrerie', 'isolation', 'démolition', 'ravalement', 'étanchéité', 'toiture', 'terrassement']
+                    .some(kw => designLower.startsWith(kw)) ||
+                  (item.quantity === 0 && item.unitPrice === 0);
 
-              return (
-                <tr
-                  key={index}
-                  style={{
-                    backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafafa',
-                    pageBreakInside: 'avoid',
-                    breakInside: 'avoid',
-                  }}
-                >
-                  <td
-                    className="py-0.5 px-1.5"
-                    style={{
-                      verticalAlign: 'top',
-                      whiteSpace: 'normal',
-                      wordWrap: 'break-word',
-                      overflowWrap: 'break-word',
-                      overflow: 'visible',
-                      borderBottom: '1px solid #f0f0f0',
-                      ...(isSectionTitle && index > 0 ? { paddingTop: '6px' } : {}),
-                    }}
-                  >
-                    {isSectionTitle ? (
-                      <span className="block text-left text-[7.5pt] font-bold text-gray-900 tracking-wide leading-snug">
-                        {item.designation_fr}
-                      </span>
-                    ) : (
-                      <span className="leading-snug block text-left text-gray-700 text-[7pt]">
-                        {(() => {
-                          const text = item.designation_fr;
-                          // Bold the first phrase/segment for hierarchy
-                          const dashIdx = text.indexOf(' - ');
-                          const colonIdx = text.indexOf(' : ');
-                          const splitIdx = dashIdx >= 0 && (colonIdx < 0 || dashIdx < colonIdx) ? dashIdx : colonIdx;
-                          if (splitIdx > 0 && !text.includes('\n')) {
-                            return (
-                              <>
-                                <span className="font-semibold text-gray-800">{text.slice(0, splitIdx)}</span>
-                                {text.slice(splitIdx)}
-                              </>
-                            );
-                          }
-                          return null;
-                        })() || (item.designation_fr.includes('\n')
-                          ? (
-                            <ul className="list-disc list-inside space-y-0 ml-0">
-                              {item.designation_fr.split('\n').filter(l => l.trim()).map((line, i) => (
-                                <li key={i} className="text-[6.5pt] leading-snug">{line.trim().replace(/^[-•·]\s*/, '')}</li>
-                              ))}
-                            </ul>
-                          )
-                          : item.designation_fr)}
-                      </span>
+                // Detect lot only for real billable items (skip explicit section titles to avoid double-headers)
+                const currentLot = !isSectionTitle ? detectLot(item) : null;
+                const showLotHeader = currentLot && currentLot !== previousLot;
+                if (currentLot) previousLot = currentLot;
+
+                return (
+                  <React.Fragment key={`row-${index}`}>
+                    {showLotHeader && (
+                      <tr style={{ backgroundColor: '#f9fafb', pageBreakInside: 'avoid', breakInside: 'avoid', pageBreakAfter: 'avoid' }}>
+                        <td colSpan={5} className="py-1 px-1.5" style={{ borderTop: '1px solid #d1d5db', borderBottom: '1px solid #e5e7eb', paddingTop: index > 0 ? '6px' : '4px' }}>
+                          <span className="block text-left text-[7.5pt] font-bold text-gray-900 uppercase tracking-wide leading-snug">
+                            Lot — {currentLot}
+                          </span>
+                        </td>
+                      </tr>
                     )}
-                    {showArabic && item.designation_ar && (
-                      <span className="block text-[6.5pt] text-gray-400 mt-0.5 leading-snug print:hidden" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
-                        {item.designation_ar}
-                      </span>
-                    )}
-                    {data.acompteLabel && (
-                      <span className="block text-[6.5pt] text-gray-500 mt-0.5 italic leading-snug">
-                        {data.acompteLabel}
-                      </span>
-                    )}
-                    {data.sourceDevisNumber && (
-                      <span className="block text-[6.5pt] text-gray-500 mt-0.5 italic leading-snug">
-                        Selon devis n° {data.sourceDevisNumber}
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-0.5 px-1 text-center text-gray-700 text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
-                    {item.quantity}
-                  </td>
-                  <td className="py-0.5 px-1 text-center text-[6.5pt] text-gray-500" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
-                    {item.unit}
-                  </td>
-                  <td className="py-0.5 px-1.5 text-right text-gray-700 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
-                    {formatNumber(item.unitPrice)} €
-                  </td>
-                  <td className="py-0.5 px-1.5 text-right font-semibold text-gray-900 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
-                    {formatNumber(item.total)} €
-                  </td>
-                </tr>
-              );
-            })}
+                    <tr
+                      style={{
+                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafafa',
+                        pageBreakInside: 'avoid',
+                        breakInside: 'avoid',
+                      }}
+                    >
+                      <td
+                        className="py-0.5 px-1.5"
+                        style={{
+                          verticalAlign: 'top',
+                          whiteSpace: 'normal',
+                          wordWrap: 'break-word',
+                          overflowWrap: 'break-word',
+                          overflow: 'visible',
+                          borderBottom: '1px solid #f0f0f0',
+                          ...(isSectionTitle && index > 0 ? { paddingTop: '6px' } : {}),
+                        }}
+                      >
+                        {isSectionTitle ? (
+                          <span className="block text-left text-[7.5pt] font-bold text-gray-900 tracking-wide leading-snug">
+                            {item.designation_fr}
+                          </span>
+                        ) : (
+                          <span className="leading-snug block text-left text-gray-700 text-[7pt]">
+                            {(() => {
+                              const text = item.designation_fr;
+                              const dashIdx = text.indexOf(' - ');
+                              const colonIdx = text.indexOf(' : ');
+                              const splitIdx = dashIdx >= 0 && (colonIdx < 0 || dashIdx < colonIdx) ? dashIdx : colonIdx;
+                              if (splitIdx > 0 && !text.includes('\n')) {
+                                return (
+                                  <>
+                                    <span className="font-semibold text-gray-800">{text.slice(0, splitIdx)}</span>
+                                    {text.slice(splitIdx)}
+                                  </>
+                                );
+                              }
+                              return null;
+                            })() || (item.designation_fr.includes('\n')
+                              ? (
+                                <ul className="list-disc list-inside space-y-0 ml-0">
+                                  {item.designation_fr.split('\n').filter(l => l.trim()).map((line, i) => (
+                                    <li key={i} className="text-[6.5pt] leading-snug">{line.trim().replace(/^[-•·]\s*/, '')}</li>
+                                  ))}
+                                </ul>
+                              )
+                              : item.designation_fr)}
+                          </span>
+                        )}
+                        {showArabic && item.designation_ar && (
+                          <span className="block text-[6.5pt] text-gray-400 mt-0.5 leading-snug print:hidden" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                            {item.designation_ar}
+                          </span>
+                        )}
+                        {data.acompteLabel && (
+                          <span className="block text-[6.5pt] text-gray-500 mt-0.5 italic leading-snug">
+                            {data.acompteLabel}
+                          </span>
+                        )}
+                        {data.sourceDevisNumber && (
+                          <span className="block text-[6.5pt] text-gray-500 mt-0.5 italic leading-snug">
+                            Selon devis n° {data.sourceDevisNumber}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-0.5 px-1 text-center text-gray-700 text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                        {item.quantity}
+                      </td>
+                      <td className="py-0.5 px-1 text-center text-[6.5pt] text-gray-500" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                        {item.unit}
+                      </td>
+                      <td className="py-0.5 px-1.5 text-right text-gray-700 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                        {formatNumber(item.unitPrice)} €
+                      </td>
+                      <td className="py-0.5 px-1.5 text-right font-semibold text-gray-900 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                        {formatNumber(item.total)} €
+                      </td>
+                    </tr>
+                  </React.Fragment>
+                );
+              });
+            })()}
           </tbody>
         </table>
 

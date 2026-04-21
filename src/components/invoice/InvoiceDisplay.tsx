@@ -694,6 +694,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               {data.paymentDeadline === 'immediate' && (
                 <li className="text-gray-600 font-medium">• Paiement à réception de la facture.</li>
               )}
+              {detectedGarantieYears && (
+                <li className="text-gray-700 font-semibold">
+                  • Garantie sur l'ensemble des travaux : {detectedGarantieYears} an{detectedGarantieYears > 1 ? 's' : ''} à compter de la réception du chantier.
+                </li>
+              )}
               <li className="text-gray-400 text-[6pt]">• Indemnité forfaitaire de 40 € pour frais de recouvrement en cas de retard (Art. L.441-10 du Code de commerce).</li>
             </ul>
           </div>

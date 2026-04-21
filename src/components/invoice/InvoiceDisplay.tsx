@@ -1,3 +1,4 @@
+import React from 'react';
 import { cn } from '@/lib/utils';
 import DocumentQRCode from './DocumentQRCode';
 
@@ -248,6 +249,48 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   })();
   const displayedTvaMention = vatFooterMention.trim();
 
+  // ── LOT DETECTION — auto-group items by trade (corps d'état) ──
+  const LOT_RULES: { lot: string; keywords: RegExp }[] = [
+    { lot: 'Installation chantier', keywords: /\b(installation\s+(de\s+)?chantier|protection|b[âa]che|signalisation|tri\s+s[ée]lectif|mise\s+en\s+place\s+(des|de)\s+protections|تجهيز\s*ال?ورشة|حماية)/i },
+    { lot: 'Démolition et dépose', keywords: /\b(d[ée]molition|d[ée]pose|[ée]vacuation\s+(des\s+)?gravats|gravats|d[ée]chets\s+de\s+chantier|هدم|شيل\s*ال?هدم|إخلاء\s*ال?مخلفات)/i },
+    { lot: 'Maçonnerie et étanchéité', keywords: /\b(ma[çc]onnerie|[ée]tanch[ée]it[ée]|ragr[ée]age|chape|enduit\s+ext|hydrofuge|بناء|عزل\s*مائي)/i },
+    { lot: 'Peinture et enduits', keywords: /\b(peinture|enduit(?!\s+ext)|sous[- ]couche|impression|pon[çc]age|rebouchage|fa[çc]ade|دهان|بانتير|معجون|صباغة)/i },
+    { lot: 'Revêtements sol', keywords: /\b(rev[êe]tement\s+(de\s+)?sol|parquet|stratifi[ée]|moquette|lino|pvc\s+sol|أرضية(?!\s*بلاط))/i },
+    { lot: 'Carrelage et faïence', keywords: /\b(carrelage|fa[ïi]ence|joints?\s+de\s+carrelage|pose\s+de\s+carrelage|بلاط|تبليط|سيراميك|زليج)/i },
+    { lot: 'Plomberie sanitaire', keywords: /\b(plomberie|sanitaire|robinetterie|[ée]tanch[ée]it[ée]\s+plomberie|wc|lavabo|douche|baignoire|سباكة|بلومبري)/i },
+    { lot: 'Électricité', keywords: /\b([ée]lectri|c[âa]blage|prise|interrupteur|tableau\s+[ée]lectrique|nf\s+c\s*15-?100|كهرباء|كهربا|مقابس|مفاتيح)/i },
+    { lot: 'Menuiserie', keywords: /\b(menuiserie|porte|fen[êe]tre|placard|quincaillerie|نجارة|أبواب)/i },
+    { lot: 'Nettoyage', keywords: /\b(nettoyage|remise\s+en\s+[ée]tat|fin\s+de\s+chantier|تنظيف)/i },
+  ];
+
+  const detectLot = (item: { designation_fr: string; designation_ar?: string }): string | null => {
+    const text = `${item.designation_fr || ''} ${item.designation_ar || ''}`;
+    for (const { lot, keywords } of LOT_RULES) {
+      if (keywords.test(text)) return lot;
+    }
+    return null;
+  };
+
+  // ── AUTO GARANTIE — detect garantie mention in any line ──
+  const detectedGarantieYears = (() => {
+    const allText = (data.items || [])
+      .map(i => `${i.designation_fr || ''} ${i.designation_ar || ''}`)
+      .join(' ')
+      .toLowerCase();
+    // French: "garantie X an(s)" / "X année(s) de garantie"
+    const frMatch = allText.match(/garantie\s+(?:de\s+)?(\d+)\s*(?:an|ann[ée]e)/i)
+      || allText.match(/(\d+)\s*(?:an|ann[ée]e)s?\s+de\s+garantie/i);
+    if (frMatch) return parseInt(frMatch[1], 10);
+    // Arabic: "ضمان X سنة/سنين/سنوات"
+    const arMatch = allText.match(/ضمان\s+(\d+)\s*(?:سنة|سنين|سنوات)/);
+    if (arMatch) return parseInt(arMatch[1], 10);
+    // Arabic: "ضمان سنة" (1 year, no digit)
+    if (/ضمان\s+سنة/.test(allText)) return 1;
+    // French: "garantie un an"
+    if (/garantie\s+(?:d['e]\s*)?un\s+an/i.test(allText)) return 1;
+    return null;
+  })();
+
   const cleanLegalFooter = (data.legalFooter || '')
     .replace(/TVA appliquée à\s*\d+(?:[.,]\d+)?%/gi, '')
     .replace(/TVA au taux de\s*\d+(?:[.,]\d+)?%/gi, '')
@@ -412,99 +455,116 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             </tr>
           </thead>
           <tbody>
-            {data.items.map((item, index) => {
-              const designLower = item.designation_fr.toLowerCase();
-              const isSectionTitle = item.designation_fr.toUpperCase().startsWith('ZONE') ||
-                ['fourniture et pose', 'main d\'œuvre', 'dépose', 'repose', 'finitions', 'sous-traitance',
-                 'peinture', 'plomberie', 'électricité', 'maçonnerie', 'carrelage', 'menuiserie',
-                 'plâtrerie', 'isolation', 'démolition', 'ravalement', 'étanchéité', 'toiture', 'terrassement']
-                  .some(kw => designLower.startsWith(kw)) ||
-                (item.quantity === 0 && item.unitPrice === 0);
+            {(() => {
+              let previousLot: string | null = null;
+              return data.items.map((item, index) => {
+                const designLower = item.designation_fr.toLowerCase();
+                const isSectionTitle = item.designation_fr.toUpperCase().startsWith('ZONE') ||
+                  ['fourniture et pose', 'main d\'œuvre', 'dépose', 'repose', 'finitions', 'sous-traitance',
+                   'peinture', 'plomberie', 'électricité', 'maçonnerie', 'carrelage', 'menuiserie',
+                   'plâtrerie', 'isolation', 'démolition', 'ravalement', 'étanchéité', 'toiture', 'terrassement']
+                    .some(kw => designLower.startsWith(kw)) ||
+                  (item.quantity === 0 && item.unitPrice === 0);
 
-              return (
-                <tr
-                  key={index}
-                  style={{
-                    backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafafa',
-                    pageBreakInside: 'avoid',
-                    breakInside: 'avoid',
-                  }}
-                >
-                  <td
-                    className="py-0.5 px-1.5"
-                    style={{
-                      verticalAlign: 'top',
-                      whiteSpace: 'normal',
-                      wordWrap: 'break-word',
-                      overflowWrap: 'break-word',
-                      overflow: 'visible',
-                      borderBottom: '1px solid #f0f0f0',
-                      ...(isSectionTitle && index > 0 ? { paddingTop: '6px' } : {}),
-                    }}
-                  >
-                    {isSectionTitle ? (
-                      <span className="block text-left text-[7.5pt] font-bold text-gray-900 tracking-wide leading-snug">
-                        {item.designation_fr}
-                      </span>
-                    ) : (
-                      <span className="leading-snug block text-left text-gray-700 text-[7pt]">
-                        {(() => {
-                          const text = item.designation_fr;
-                          // Bold the first phrase/segment for hierarchy
-                          const dashIdx = text.indexOf(' - ');
-                          const colonIdx = text.indexOf(' : ');
-                          const splitIdx = dashIdx >= 0 && (colonIdx < 0 || dashIdx < colonIdx) ? dashIdx : colonIdx;
-                          if (splitIdx > 0 && !text.includes('\n')) {
-                            return (
-                              <>
-                                <span className="font-semibold text-gray-800">{text.slice(0, splitIdx)}</span>
-                                {text.slice(splitIdx)}
-                              </>
-                            );
-                          }
-                          return null;
-                        })() || (item.designation_fr.includes('\n')
-                          ? (
-                            <ul className="list-disc list-inside space-y-0 ml-0">
-                              {item.designation_fr.split('\n').filter(l => l.trim()).map((line, i) => (
-                                <li key={i} className="text-[6.5pt] leading-snug">{line.trim().replace(/^[-•·]\s*/, '')}</li>
-                              ))}
-                            </ul>
-                          )
-                          : item.designation_fr)}
-                      </span>
+                // Detect lot only for real billable items (skip explicit section titles to avoid double-headers)
+                const currentLot = !isSectionTitle ? detectLot(item) : null;
+                const showLotHeader = currentLot && currentLot !== previousLot;
+                if (currentLot) previousLot = currentLot;
+
+                return (
+                  <React.Fragment key={`row-${index}`}>
+                    {showLotHeader && (
+                      <tr style={{ backgroundColor: '#f9fafb', pageBreakInside: 'avoid', breakInside: 'avoid', pageBreakAfter: 'avoid' }}>
+                        <td colSpan={5} className="py-1 px-1.5" style={{ borderTop: '1px solid #d1d5db', borderBottom: '1px solid #e5e7eb', paddingTop: index > 0 ? '6px' : '4px' }}>
+                          <span className="block text-left text-[7.5pt] font-bold text-gray-900 uppercase tracking-wide leading-snug">
+                            Lot — {currentLot}
+                          </span>
+                        </td>
+                      </tr>
                     )}
-                    {showArabic && item.designation_ar && (
-                      <span className="block text-[6.5pt] text-gray-400 mt-0.5 leading-snug print:hidden" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
-                        {item.designation_ar}
-                      </span>
-                    )}
-                    {data.acompteLabel && (
-                      <span className="block text-[6.5pt] text-gray-500 mt-0.5 italic leading-snug">
-                        {data.acompteLabel}
-                      </span>
-                    )}
-                    {data.sourceDevisNumber && (
-                      <span className="block text-[6.5pt] text-gray-500 mt-0.5 italic leading-snug">
-                        Selon devis n° {data.sourceDevisNumber}
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-0.5 px-1 text-center text-gray-700 text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
-                    {item.quantity}
-                  </td>
-                  <td className="py-0.5 px-1 text-center text-[6.5pt] text-gray-500" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
-                    {item.unit}
-                  </td>
-                  <td className="py-0.5 px-1.5 text-right text-gray-700 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
-                    {formatNumber(item.unitPrice)} €
-                  </td>
-                  <td className="py-0.5 px-1.5 text-right font-semibold text-gray-900 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
-                    {formatNumber(item.total)} €
-                  </td>
-                </tr>
-              );
-            })}
+                    <tr
+                      style={{
+                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafafa',
+                        pageBreakInside: 'avoid',
+                        breakInside: 'avoid',
+                      }}
+                    >
+                      <td
+                        className="py-0.5 px-1.5"
+                        style={{
+                          verticalAlign: 'top',
+                          whiteSpace: 'normal',
+                          wordWrap: 'break-word',
+                          overflowWrap: 'break-word',
+                          overflow: 'visible',
+                          borderBottom: '1px solid #f0f0f0',
+                          ...(isSectionTitle && index > 0 ? { paddingTop: '6px' } : {}),
+                        }}
+                      >
+                        {isSectionTitle ? (
+                          <span className="block text-left text-[7.5pt] font-bold text-gray-900 tracking-wide leading-snug">
+                            {item.designation_fr}
+                          </span>
+                        ) : (
+                          <span className="leading-snug block text-left text-gray-700 text-[7pt]">
+                            {(() => {
+                              const text = item.designation_fr;
+                              const dashIdx = text.indexOf(' - ');
+                              const colonIdx = text.indexOf(' : ');
+                              const splitIdx = dashIdx >= 0 && (colonIdx < 0 || dashIdx < colonIdx) ? dashIdx : colonIdx;
+                              if (splitIdx > 0 && !text.includes('\n')) {
+                                return (
+                                  <>
+                                    <span className="font-semibold text-gray-800">{text.slice(0, splitIdx)}</span>
+                                    {text.slice(splitIdx)}
+                                  </>
+                                );
+                              }
+                              return null;
+                            })() || (item.designation_fr.includes('\n')
+                              ? (
+                                <ul className="list-disc list-inside space-y-0 ml-0">
+                                  {item.designation_fr.split('\n').filter(l => l.trim()).map((line, i) => (
+                                    <li key={i} className="text-[6.5pt] leading-snug">{line.trim().replace(/^[-•·]\s*/, '')}</li>
+                                  ))}
+                                </ul>
+                              )
+                              : item.designation_fr)}
+                          </span>
+                        )}
+                        {showArabic && item.designation_ar && (
+                          <span className="block text-[6.5pt] text-gray-400 mt-0.5 leading-snug print:hidden" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                            {item.designation_ar}
+                          </span>
+                        )}
+                        {data.acompteLabel && (
+                          <span className="block text-[6.5pt] text-gray-500 mt-0.5 italic leading-snug">
+                            {data.acompteLabel}
+                          </span>
+                        )}
+                        {data.sourceDevisNumber && (
+                          <span className="block text-[6.5pt] text-gray-500 mt-0.5 italic leading-snug">
+                            Selon devis n° {data.sourceDevisNumber}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-0.5 px-1 text-center text-gray-700 text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                        {item.quantity}
+                      </td>
+                      <td className="py-0.5 px-1 text-center text-[6.5pt] text-gray-500" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                        {item.unit}
+                      </td>
+                      <td className="py-0.5 px-1.5 text-right text-gray-700 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                        {formatNumber(item.unitPrice)} €
+                      </td>
+                      <td className="py-0.5 px-1.5 text-right font-semibold text-gray-900 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                        {formatNumber(item.total)} €
+                      </td>
+                    </tr>
+                  </React.Fragment>
+                );
+              });
+            })()}
           </tbody>
         </table>
 
@@ -633,6 +693,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               <li>• {data.paymentTerms}</li>
               {data.paymentDeadline === 'immediate' && (
                 <li className="text-gray-600 font-medium">• Paiement à réception de la facture.</li>
+              )}
+              {detectedGarantieYears && (
+                <li className="text-gray-700 font-semibold">
+                  • Garantie sur l'ensemble des travaux : {detectedGarantieYears} an{detectedGarantieYears > 1 ? 's' : ''} à compter de la réception du chantier.
+                </li>
               )}
               <li className="text-gray-400 text-[6pt]">• Indemnité forfaitaire de 40 € pour frais de recouvrement en cas de retard (Art. L.441-10 du Code de commerce).</li>
             </ul>

@@ -1031,6 +1031,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         return text;
       })(),
       legalMentions: vatLegalMention,
+      // Garantie sur les travaux — source de vérité explicite (toggle Conditions de règlement)
+      garantieYears: garantieEnabled ? garantieYears : undefined,
       // Inject signed URLs for artisan's permanent signature, stamp, and logo
       artisanSignatureUrl: signedUrls.artisanSignatureUrl || undefined,
       stampUrl: signedUrls.stampUrl || undefined,

@@ -261,37 +261,41 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
     updateItem(id, field, numValue);
   };
 
-  // Auto-translate Arabic to French
+  // Auto-reformulate Arabic into a complete professional French BTP description
   const handleArabicBlur = async (item: LineItem) => {
     const arabicText = item.designation_ar?.trim();
-    
-    // Only translate if there's Arabic text
+
+    // Only reformulate if there's Arabic text
     if (!arabicText) return;
-    
+
+    // Skip if French field already has user-edited content (preserve their edits)
+    if (item.designation_fr?.trim()) return;
+
     setTranslatingFor(item.id);
-    
+
     try {
       const { data, error } = await supabase.functions.invoke('invoice-mentor', {
         body: {
-          action: 'translate_to_french',
+          action: 'reformulate_btp',
           text: arabicText,
         },
       });
 
       if (error) throw error;
 
-      if (data?.translation) {
-        updateItem(item.id, 'designation_fr', data.translation);
-        lookupAndApplyCodePrice({ ...item, designation_fr: data.translation });
+      const reformulated = data?.reformulation || data?.translation;
+      if (reformulated) {
+        updateItem(item.id, 'designation_fr', reformulated);
+        lookupAndApplyCodePrice({ ...item, designation_fr: reformulated });
         toast({
-          title: isRTL ? '✨ تم الترجمة!' : '✨ Traduit!',
-          description: isRTL 
-            ? `تم ترجمة "${arabicText.substring(0, 20)}..." للفرنسية`
-            : `"${arabicText.substring(0, 20)}..." traduit en français`,
+          title: isRTL ? '✨ تم الصياغة باحترافية!' : '✨ Reformulé en français professionnel !',
+          description: isRTL
+            ? 'تقدر تعدّل النص الفرنساوي قبل ما تأكد'
+            : 'Vous pouvez modifier le texte avant de valider',
         });
       }
     } catch (error) {
-      console.error('Translation error:', error);
+      console.error('Reformulation error:', error);
       // Silently fail - user can still type manually
     } finally {
       setTranslatingFor(null);

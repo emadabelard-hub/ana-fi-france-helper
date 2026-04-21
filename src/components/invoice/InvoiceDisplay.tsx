@@ -248,6 +248,48 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   })();
   const displayedTvaMention = vatFooterMention.trim();
 
+  // ── LOT DETECTION — auto-group items by trade (corps d'état) ──
+  const LOT_RULES: { lot: string; keywords: RegExp }[] = [
+    { lot: 'Installation chantier', keywords: /\b(installation\s+(de\s+)?chantier|protection|b[âa]che|signalisation|tri\s+s[ée]lectif|mise\s+en\s+place\s+(des|de)\s+protections|تجهيز\s*ال?ورشة|حماية)/i },
+    { lot: 'Démolition et dépose', keywords: /\b(d[ée]molition|d[ée]pose|[ée]vacuation\s+(des\s+)?gravats|gravats|d[ée]chets\s+de\s+chantier|هدم|شيل\s*ال?هدم|إخلاء\s*ال?مخلفات)/i },
+    { lot: 'Maçonnerie et étanchéité', keywords: /\b(ma[çc]onnerie|[ée]tanch[ée]it[ée]|ragr[ée]age|chape|enduit\s+ext|hydrofuge|بناء|عزل\s*مائي)/i },
+    { lot: 'Peinture et enduits', keywords: /\b(peinture|enduit(?!\s+ext)|sous[- ]couche|impression|pon[çc]age|rebouchage|fa[çc]ade|دهان|بانتير|معجون|صباغة)/i },
+    { lot: 'Revêtements sol', keywords: /\b(rev[êe]tement\s+(de\s+)?sol|parquet|stratifi[ée]|moquette|lino|pvc\s+sol|أرضية(?!\s*بلاط))/i },
+    { lot: 'Carrelage et faïence', keywords: /\b(carrelage|fa[ïi]ence|joints?\s+de\s+carrelage|pose\s+de\s+carrelage|بلاط|تبليط|سيراميك|زليج)/i },
+    { lot: 'Plomberie sanitaire', keywords: /\b(plomberie|sanitaire|robinetterie|[ée]tanch[ée]it[ée]\s+plomberie|wc|lavabo|douche|baignoire|سباكة|بلومبري)/i },
+    { lot: 'Électricité', keywords: /\b([ée]lectri|c[âa]blage|prise|interrupteur|tableau\s+[ée]lectrique|nf\s+c\s*15-?100|كهرباء|كهربا|مقابس|مفاتيح)/i },
+    { lot: 'Menuiserie', keywords: /\b(menuiserie|porte|fen[êe]tre|placard|quincaillerie|نجارة|أبواب)/i },
+    { lot: 'Nettoyage', keywords: /\b(nettoyage|remise\s+en\s+[ée]tat|fin\s+de\s+chantier|تنظيف)/i },
+  ];
+
+  const detectLot = (item: { designation_fr: string; designation_ar?: string }): string | null => {
+    const text = `${item.designation_fr || ''} ${item.designation_ar || ''}`;
+    for (const { lot, keywords } of LOT_RULES) {
+      if (keywords.test(text)) return lot;
+    }
+    return null;
+  };
+
+  // ── AUTO GARANTIE — detect garantie mention in any line ──
+  const detectedGarantieYears = (() => {
+    const allText = (data.items || [])
+      .map(i => `${i.designation_fr || ''} ${i.designation_ar || ''}`)
+      .join(' ')
+      .toLowerCase();
+    // French: "garantie X an(s)" / "X année(s) de garantie"
+    const frMatch = allText.match(/garantie\s+(?:de\s+)?(\d+)\s*(?:an|ann[ée]e)/i)
+      || allText.match(/(\d+)\s*(?:an|ann[ée]e)s?\s+de\s+garantie/i);
+    if (frMatch) return parseInt(frMatch[1], 10);
+    // Arabic: "ضمان X سنة/سنين/سنوات"
+    const arMatch = allText.match(/ضمان\s+(\d+)\s*(?:سنة|سنين|سنوات)/);
+    if (arMatch) return parseInt(arMatch[1], 10);
+    // Arabic: "ضمان سنة" (1 year, no digit)
+    if (/ضمان\s+سنة/.test(allText)) return 1;
+    // French: "garantie un an"
+    if (/garantie\s+(?:d['e]\s*)?un\s+an/i.test(allText)) return 1;
+    return null;
+  })();
+
   const cleanLegalFooter = (data.legalFooter || '')
     .replace(/TVA appliquée à\s*\d+(?:[.,]\d+)?%/gi, '')
     .replace(/TVA au taux de\s*\d+(?:[.,]\d+)?%/gi, '')

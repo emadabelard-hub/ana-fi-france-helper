@@ -322,9 +322,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       discountEnabled,
       discountType,
       discountValue,
+      garantieEnabled,
+      garantieYears,
       currentStep,
     });
-  }, [documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, descriptionChantierAr, descriptionChantierFr, estimatedStartDate, estimatedDuration, discountEnabled, discountType, discountValue, currentStep]);
+  }, [documentType, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, validityDuration, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, descriptionChantierAr, descriptionChantierFr, estimatedStartDate, estimatedDuration, discountEnabled, discountType, discountValue, garantieEnabled, garantieYears, currentStep]);
 
   // Fetch clients list
   useEffect(() => {
@@ -614,6 +616,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       discountEnabled,
       discountType,
       discountValue,
+      garantieEnabled,
+      garantieYears,
       currentStep,
       showPreview,
       showArabic,

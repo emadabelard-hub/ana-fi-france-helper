@@ -195,6 +195,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
   const [discountValue, setDiscountValue] = useState<number>(0);
+
+  // Garantie state (1 / 2 / 10 ans) — optionnel, désactivé par défaut
+  const [garantieEnabled, setGarantieEnabled] = useState(false);
+  const [garantieYears, setGarantieYears] = useState<1 | 2 | 10>(1);
   
   // Line items — initialize from prefillData if available (image-quote flow)
   const [items, setItems] = useState<LineItem[]>(() => {

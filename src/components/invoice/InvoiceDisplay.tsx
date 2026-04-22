@@ -97,6 +97,8 @@ export interface InvoiceData {
   acompteLabel?: string;
   /** Garantie sur les travaux (en années). Source de vérité explicite, prioritaire sur la détection texte. */
   garantieYears?: number;
+  /** Database UUID of the saved document — used to encode the public verification URL in the QR code. */
+  documentId?: string;
 }
 
 interface InvoiceDisplayProps {
@@ -362,6 +364,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               <p className="text-[7pt] text-gray-500 mt-0.5">N° {data.number}</p>
             </div>
             <DocumentQRCode
+              documentId={data.documentId}
               documentNumber={data.number}
               date={data.date}
               totalTTC={data.total}

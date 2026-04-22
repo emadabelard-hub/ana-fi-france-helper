@@ -213,11 +213,11 @@ const DocumentsListPage = () => {
         });
 
         if (!cancelled) {
-          setSelectedDocumentData({ ...docData, ...resolvedAssets });
+          setSelectedDocumentData({ ...docData, ...resolvedAssets, documentId: selectedDocument.id });
         }
       } catch {
         if (!cancelled) {
-          setSelectedDocumentData(docData);
+          setSelectedDocumentData({ ...docData, documentId: selectedDocument.id });
         }
       }
     };

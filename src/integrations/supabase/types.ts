@@ -1057,6 +1057,21 @@ export type Database = {
       }
     }
     Functions: {
+      get_document_verification: {
+        Args: { _document_id: string }
+        Returns: {
+          client_name: string
+          company_logo_url: string
+          company_name: string
+          created_at: string
+          document_number: string
+          document_type: string
+          id: string
+          payment_status: string
+          status: string
+          total_ttc: number
+        }[]
+      }
       get_next_document_number: {
         Args: { _document_type: string; _user_id: string }
         Returns: string

@@ -29,6 +29,7 @@ import PreFlightChecklistModal from './PreFlightChecklistModal';
 import PreGenerationChecklist, { runChecks, type PreGenCheckInput } from './PreGenerationChecklist';
 import ValidationChecklist, { type ValidationInput } from './ValidationChecklist';
 import UnitGuideModal, { UnitGuideButton } from './UnitGuideModal';
+import AutoSaveIndicator from './AutoSaveIndicator';
 import { supabase } from '@/integrations/supabase/client';
 import { saveDraft, loadDraft, clearDraft, loadCloudDraft, saveCurrentDocument, loadCurrentDocument, clearCurrentDocument, type CurrentDocumentState } from '@/lib/invoiceDraftStorage';
 import { detectMultipleTasks } from '@/lib/smartItemSplit';
@@ -2028,7 +2029,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
 
       <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
-        <div />
+        <AutoSaveIndicator documentType={documentType} />
         <Button
           type="button"
           variant="outline"

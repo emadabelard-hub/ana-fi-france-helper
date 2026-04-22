@@ -7,6 +7,20 @@ import { supabase } from '@/integrations/supabase/client';
 
 const DRAFT_KEY = 'invoice_draft_v1';
 const CURRENT_DOCUMENT_KEY = 'currentDocument';
+// Per-document persistent drafts (one slot per type)
+const CURRENT_DOCUMENT_KEY_BY_TYPE = (type: 'devis' | 'facture') => `currentDocument_${type}_v1`;
+// Drafts older than 48h are considered stale and offered for cleanup
+export const DRAFT_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+// Browser event broadcast on every successful auto-save (used by AutoSaveIndicator)
+export const DRAFT_SAVED_EVENT = 'invoice-draft:saved';
+
+const broadcastDraftSaved = (documentType: 'devis' | 'facture') => {
+  try {
+    window.dispatchEvent(new CustomEvent(DRAFT_SAVED_EVENT, { detail: { documentType, at: Date.now() } }));
+  } catch {
+    // SSR / non-browser env — ignore
+  }
+};
 
 export interface DraftPaymentMilestone {
   id: string;
@@ -94,6 +108,7 @@ export const saveDraft = (draft: Omit<InvoiceDraft, 'savedAt'>) => {
   try {
     const data: InvoiceDraft = { ...draft, savedAt: Date.now() };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+    broadcastDraftSaved(draft.documentType);
   } catch (e) {
     console.warn('Failed to save draft:', e);
   }
@@ -106,8 +121,8 @@ export const loadDraft = (): InvoiceDraft | null => {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const draft: InvoiceDraft = JSON.parse(raw);
-    // Expire drafts older than 7 days
-    if (Date.now() - draft.savedAt > 7 * 24 * 60 * 60 * 1000) {
+    // Expire drafts older than 48h
+    if (Date.now() - draft.savedAt > DRAFT_MAX_AGE_MS) {
       clearDraft();
       return null;
     }
@@ -144,7 +159,12 @@ export const saveCurrentDocument = (document: Omit<CurrentDocumentState, 'savedA
     }
 
     const data: CurrentDocumentState = { ...document, savedAt: Date.now() };
-    localStorage.setItem(CURRENT_DOCUMENT_KEY, JSON.stringify(data));
+    const serialized = JSON.stringify(data);
+    // Generic slot (last touched, all types) for legacy callers
+    localStorage.setItem(CURRENT_DOCUMENT_KEY, serialized);
+    // Per-type slot (multi-document support)
+    localStorage.setItem(CURRENT_DOCUMENT_KEY_BY_TYPE(document.documentType), serialized);
+    broadcastDraftSaved(document.documentType);
   } catch (e) {
     console.warn('Failed to save current document:', e);
   }
@@ -152,6 +172,15 @@ export const saveCurrentDocument = (document: Omit<CurrentDocumentState, 'savedA
 
 export const loadCurrentDocument = (documentType?: 'devis' | 'facture'): CurrentDocumentState | null => {
   try {
+    // Prefer per-type slot when a type is requested
+    if (documentType) {
+      const rawTyped = localStorage.getItem(CURRENT_DOCUMENT_KEY_BY_TYPE(documentType));
+      if (rawTyped) {
+        const doc = JSON.parse(rawTyped) as CurrentDocumentState;
+        if (doc.documentType === documentType) return doc;
+      }
+    }
+
     const raw = localStorage.getItem(CURRENT_DOCUMENT_KEY);
     if (!raw) return null;
 
@@ -165,12 +194,74 @@ export const loadCurrentDocument = (documentType?: 'devis' | 'facture'): Current
   }
 };
 
-export const clearCurrentDocument = () => {
+export const clearCurrentDocument = (documentType?: 'devis' | 'facture') => {
   try {
+    if (documentType) {
+      localStorage.removeItem(CURRENT_DOCUMENT_KEY_BY_TYPE(documentType));
+      // Clear generic slot only if it pointed to the same type
+      try {
+        const raw = localStorage.getItem(CURRENT_DOCUMENT_KEY);
+        if (raw) {
+          const doc = JSON.parse(raw) as CurrentDocumentState;
+          if (doc.documentType === documentType) localStorage.removeItem(CURRENT_DOCUMENT_KEY);
+        }
+      } catch {
+        localStorage.removeItem(CURRENT_DOCUMENT_KEY);
+      }
+      return;
+    }
+    // No type → wipe everything
     localStorage.removeItem(CURRENT_DOCUMENT_KEY);
+    localStorage.removeItem(CURRENT_DOCUMENT_KEY_BY_TYPE('devis'));
+    localStorage.removeItem(CURRENT_DOCUMENT_KEY_BY_TYPE('facture'));
   } catch (e) {
     console.warn('Failed to clear current document:', e);
   }
+};
+
+export interface AvailableDraftSummary {
+  documentType: 'devis' | 'facture';
+  savedAt: number;
+  isStale: boolean;
+  clientName: string;
+  itemsCount: number;
+  currentStep: number;
+}
+
+/**
+ * List all available local drafts (one per document type), with metadata
+ * to power the resume modal.
+ */
+export const listAvailableDrafts = (): AvailableDraftSummary[] => {
+  const result: AvailableDraftSummary[] = [];
+  const types: Array<'devis' | 'facture'> = ['devis', 'facture'];
+  const now = Date.now();
+  for (const type of types) {
+    try {
+      const raw = localStorage.getItem(CURRENT_DOCUMENT_KEY_BY_TYPE(type));
+      if (!raw) continue;
+      const doc = JSON.parse(raw) as CurrentDocumentState;
+      if (!doc || doc.documentType !== type) continue;
+      const hasContent =
+        !!doc.clientName?.trim() ||
+        !!doc.clientAddress?.trim() ||
+        (doc.items?.length ?? 0) > 0 ||
+        !!doc.descriptionChantier?.trim();
+      if (!hasContent) continue;
+      result.push({
+        documentType: type,
+        savedAt: doc.savedAt ?? 0,
+        isStale: now - (doc.savedAt ?? 0) > DRAFT_MAX_AGE_MS,
+        clientName: doc.clientName?.trim() || '',
+        itemsCount: doc.items?.length ?? 0,
+        currentStep: doc.currentStep ?? 0,
+      });
+    } catch (err) {
+      console.warn('Failed to read draft summary:', err);
+    }
+  }
+  // Most recent first
+  return result.sort((a, b) => b.savedAt - a.savedAt);
 };
 
 // ── Cloud Storage (Supabase) ──

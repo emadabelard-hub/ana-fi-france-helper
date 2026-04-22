@@ -12,8 +12,9 @@ import SecurityBadge from '@/components/shared/SecurityBadge';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 // useNavigationGuard removed — was blocking navigation
-import { clearCurrentDocument, clearDraft, loadCurrentDocument } from '@/lib/invoiceDraftStorage';
+import { clearCurrentDocument, clearDraft, loadCurrentDocument, listAvailableDrafts } from '@/lib/invoiceDraftStorage';
 import NumberingOnboardingModal from '@/components/invoice/NumberingOnboardingModal';
+import DraftResumeModal from '@/components/invoice/DraftResumeModal';
 import {
   Dialog,
   DialogContent,
@@ -57,6 +58,14 @@ const InvoiceCreatorPage = () => {
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showNumberingOnboarding, setShowNumberingOnboarding] = useState(false);
   const [numberingChecked, setNumberingChecked] = useState(false);
+
+  // Resume modal: show on initial mount if at least one fresh local draft exists
+  // and the user did not arrive with a prefill / explicit URL type.
+  const [showResumeModal, setShowResumeModal] = useState(() => {
+    if (urlDocType || prefillSource || urlSource === 'image-quote') return false;
+    return listAvailableDrafts().length > 0;
+  });
+
   // Track whether this is a fresh new document (user chose type from modal, or arrived via "Create" link without prefill).
   // RULE: arriving on /pro/invoice-creator?type=X with NO prefill/source means a fresh creation → reset to step 1.
   // Resuming an existing draft happens only when there is no urlDocType (resumedDocumentType path) OR when prefill data is provided.
@@ -129,6 +138,20 @@ const InvoiceCreatorPage = () => {
     }
     setNumberingChecked(true);
   }, [user, activeDocumentType, numberingChecked]);
+
+  // When the user comes back to the tab/app after an interruption (call, screenshot,
+  // app switch), re-check for unfinished drafts and offer to resume them.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      // Don't pop the modal mid-edit: only when no document is currently open.
+      if (documentType) return;
+      if (urlDocType || prefillSource || isImageQuoteFlow) return;
+      if (listAvailableDrafts().length > 0) setShowResumeModal(true);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [documentType, urlDocType, prefillSource, isImageQuoteFlow]);
 
   const prefillData = useMemo(() => {
     // --- NEW: Image Quote To Invoice flow ---
@@ -538,6 +561,30 @@ const InvoiceCreatorPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <DraftResumeModal
+        open={showResumeModal}
+        onResume={(type) => {
+          setShowResumeModal(false);
+          setIsNewDocument(false);
+          setDocumentType(type);
+          setShowTypeModal(false);
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.set('type', type);
+            return next;
+          });
+        }}
+        onStartFresh={() => {
+          setShowResumeModal(false);
+          // listAvailableDrafts entries already cleared by the modal.
+          clearDraft();
+          try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
+          try { sessionStorage.removeItem('invoiceCreator_scroll_v1'); } catch {}
+          setIsNewDocument(true);
+          if (!documentType) setShowTypeModal(true);
+        }}
+        onClose={() => setShowResumeModal(false)}
+      />
       <SecurityBadge />
     </div>
   );

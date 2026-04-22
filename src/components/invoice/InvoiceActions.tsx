@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Image, Copy, Eye, EyeOff, Share2, ShieldCheck, ExternalLink, Download } from 'lucide-react';
+import { FileText, Copy, Eye, EyeOff, Share2, ShieldCheck, ExternalLink, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -9,13 +9,10 @@ import { useAuth } from '@/hooks/useAuth';
 import SmartReviewModal from './SmartReviewModal';
 import { cn } from '@/lib/utils';
 import { calculateInvoiceTotals, validateInvoiceTotalsConsistency } from '@/lib/invoiceTotals';
-import html2canvas from 'html2canvas';
 import { supabase } from '@/integrations/supabase/client';
 import type { InvoiceData } from './InvoiceDisplay';
-import type { LineItem } from './LineItemEditor';
-import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
 import { embedFacturXInPdf, buildFacturXDataFromInvoice } from '@/lib/facturxPdf';
-import { buildPdfFromContainer, waitForLayout, captureCanvas } from '@/lib/pdfEngine';
+import { buildPdfFromContainer, waitForLayout } from '@/lib/pdfEngine';
 
 
 interface SuggestedAddon {
@@ -38,6 +35,42 @@ interface InvoiceActionsProps {
   onBeforeExport?: () => void | Promise<void>;
   isPaid?: boolean;
 }
+
+// ───────────────────────────────────────────────────────────
+// Helpers
+// ───────────────────────────────────────────────────────────
+
+/** Sanitize a string for use in a filename (ASCII-safe, no spaces). */
+const sanitizeForFilename = (input: string, fallback = 'document'): string => {
+  if (!input) return fallback;
+  const cleaned = input
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // strip accents
+    .replace(/[^a-zA-Z0-9-_]+/g, '-') // non-alphanum → dash
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return cleaned || fallback;
+};
+
+/** Build the canonical PDF filename: [TYPE]-[NUMERO]-[CLIENT].pdf */
+const buildPdfFilename = (type: string, number: string, clientName: string): string => {
+  const typePart = sanitizeForFilename(type, 'Document');
+  // Capitalize first letter of type for readability (Devis / Facture)
+  const typeNice = typePart.charAt(0).toUpperCase() + typePart.slice(1).toLowerCase();
+  const numberPart = sanitizeForFilename(number, 'SansNumero');
+  const clientPart = sanitizeForFilename(clientName, 'Client');
+  return `${typeNice}-${numberPart}-${clientPart}.pdf`;
+};
+
+/** Format an amount as European currency (1.250,00 €). */
+const formatEUR = (amount: number): string => {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+};
 
 const InvoiceActions = ({ 
   invoiceData, 
@@ -115,6 +148,10 @@ const InvoiceActions = ({
     return true;
   };
 
+  /**
+   * Generate a real binary PDF from the rendered invoice DOM.
+   * Returns the Blob (caller decides what to do with it).
+   */
   const buildPdfBlob = async ({ embedFacturX = false }: { embedFacturX?: boolean } = {}) => {
     if (!invoiceRef.current) return null;
 
@@ -148,11 +185,6 @@ const InvoiceActions = ({
       }
 
       setSignedPdfBlob(blob);
-
-      if (embedFacturX && user) {
-        await uploadSignedPdf(blob);
-      }
-
       return blob;
     } catch (error) {
       console.error('PDF generation error:', error);
@@ -174,60 +206,96 @@ const InvoiceActions = ({
     }
   };
 
-  // Generate PDF from signed invoice with Factur-X XML embedded
-  const generateSignedPdf = async () => {
-    return buildPdfBlob({ embedFacturX: true });
+  /**
+   * Trigger a real download of the binary PDF blob to the user's device.
+   * Uses a synthetic <a download> link as required.
+   */
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
-  // Upload signed PDF to Supabase storage
-  const uploadSignedPdf = async (blob: Blob) => {
-    if (!user) return;
+  /**
+   * Upload the PDF to Supabase Storage at /{user_id}/{type}-{numero}-{date}.pdf
+   * and return a signed public URL (24h validity) for sharing.
+   * Also persists pdf_url in documents_comptables when documentId is known.
+   */
+  const uploadPdfAndGetShareUrl = async (blob: Blob): Promise<string | null> => {
+    if (!user) return null;
 
     setIsUploading(true);
     try {
-      const fileName = `${user.id}/${invoiceData.type.toLowerCase()}-${invoiceData.number}-${Date.now()}.pdf`;
-      
-      const { data, error } = await supabase.storage
+      const datePart = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const typePart = sanitizeForFilename(invoiceData.type, 'document').toLowerCase();
+      const numberPart = sanitizeForFilename(invoiceData.number, 'sansnumero');
+      const storagePath = `${user.id}/${typePart}-${numberPart}-${datePart}.pdf`;
+
+      // Upsert: re-uploads overwrite previous version of the same document
+      const { error: uploadError } = await supabase.storage
         .from('signed-documents')
-        .upload(fileName, blob, {
+        .upload(storagePath, blob, {
           contentType: 'application/pdf',
-          upsert: false,
+          upsert: true,
         });
 
-      if (error) {
-        console.error('Upload error:', error);
-        // Bucket might not exist yet - that's ok, we'll still have the local blob
-        return;
+      if (uploadError) {
+        console.error('[PDF Upload] Storage error:', uploadError);
+        return null;
       }
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
+      // Generate a signed URL valid 24h for sharing (bucket is private)
+      const { data: signedData, error: signedError } = await supabase.storage
         .from('signed-documents')
-        .getPublicUrl(fileName);
+        .createSignedUrl(storagePath, 60 * 60 * 24);
 
-      if (urlData?.publicUrl) {
-        setSignedPdfUrl(urlData.publicUrl);
+      if (signedError || !signedData?.signedUrl) {
+        console.error('[PDF Upload] Signed URL error:', signedError);
+        return null;
       }
 
-      toast({
-        title: isRTL ? '📁 تم الحفظ!' : '📁 Sauvegardé!',
-        description: isRTL 
-          ? 'الوثيقة محفوظة في ملفاتك'
-          : 'Le document est sauvegardé dans vos fichiers',
-      });
+      const shareUrl = signedData.signedUrl;
+      setSignedPdfUrl(shareUrl);
+
+      // Persist pdf_url in the documents table if we have a documentId
+      const docId = (invoiceData as { documentId?: string }).documentId;
+      if (docId) {
+        const { error: updateError } = await supabase
+          .from('documents_comptables')
+          .update({ pdf_url: shareUrl })
+          .eq('id', docId);
+        if (updateError) {
+          console.warn('[PDF Upload] Could not persist pdf_url:', updateError);
+        }
+      }
+
+      return shareUrl;
     } catch (error) {
-      console.error('Storage error:', error);
+      console.error('[PDF Upload] Unexpected error:', error);
+      return null;
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Share via WhatsApp using Web Share API (works on mobile)
+  /**
+   * CORRECTION 2 — WhatsApp share:
+   * 1. Build the real PDF (with Factur-X embedded)
+   * 2. Upload to Supabase Storage
+   * 3. Get a public signed URL
+   * 4. Open WhatsApp with structured message including the link
+   */
   const handleWhatsAppShare = async () => {
     let pdfBlob = signedPdfBlob;
-    
+
     if (!pdfBlob) {
-      pdfBlob = await generateSignedPdf();
+      pdfBlob = await buildPdfBlob({ embedFacturX: true });
     }
 
     if (!pdfBlob) {
@@ -239,56 +307,37 @@ const InvoiceActions = ({
       return;
     }
 
-    const filename = `${invoiceData.type.toLowerCase()}-${invoiceData.number}.pdf`;
-    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-
-    // Try Web Share API first (native sharing on mobile — works with WhatsApp, email, etc.)
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({
-          title: `${invoiceData.type} N° ${invoiceData.number}`,
-          text: `${invoiceData.type} N° ${invoiceData.number} - ${invoiceData.client.name} - Total: ${invoiceData.total.toFixed(2)}€`,
-          files: [file],
-        });
-        toast({
-          title: isRTL ? '✅ تم الإرسال!' : '✅ Envoyé!',
-          description: isRTL ? 'تم مشاركة المستند بنجاح' : 'Le document a été partagé avec succès',
-        });
-        return;
-      } catch (err: any) {
-        // User cancelled share — that's fine, don't show error
-        if (err?.name === 'AbortError') return;
-        console.warn('Web Share failed, falling back to download:', err);
-      }
+    // Upload + get share URL
+    let shareUrl = signedPdfUrl;
+    if (!shareUrl) {
+      shareUrl = await uploadPdfAndGetShareUrl(pdfBlob);
     }
 
-    // Fallback: download + open WhatsApp with message
-    const url = URL.createObjectURL(pdfBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const docTypeLower = (invoiceData.type || 'document').toLowerCase();
+    const message = shareUrl
+      ? `Bonjour, veuillez trouver ci-joint votre ${docTypeLower} n° ${invoiceData.number} d'un montant de ${formatEUR(invoiceData.total)} TTC.\nLien : ${shareUrl}`
+      : `Bonjour, veuillez trouver ci-joint votre ${docTypeLower} n° ${invoiceData.number} d'un montant de ${formatEUR(invoiceData.total)} TTC.`;
 
-    const message = encodeURIComponent(
-      `${invoiceData.type} N° ${invoiceData.number}\n` +
-      `Client: ${invoiceData.client.name}\n` +
-      `Total: ${invoiceData.total.toFixed(2)}€\n`
-    );
-    window.open(`https://wa.me/?text=${message}`, '_blank');
+    // Always also offer the file locally so the user has a copy
+    const filename = buildPdfFilename(invoiceData.type, invoiceData.number, invoiceData.client.name);
+    downloadBlob(pdfBlob, filename);
+
+    // Open WhatsApp with the prefilled message
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
 
     toast({
       title: isRTL ? '📲 جاهز للإرسال!' : '📲 Prêt à envoyer!',
-      description: isRTL 
-        ? 'الـ PDF تم تحميله. أرفقه في واتساب'
-        : 'Le PDF est téléchargé. Attachez-le dans WhatsApp',
+      description: shareUrl
+        ? (isRTL ? 'الرابط جاهز في الواتساب والـ PDF محفوظ' : 'Lien partagé dans WhatsApp + PDF téléchargé')
+        : (isRTL ? 'الـ PDF تم تحميله. أرفقه في واتساب' : 'PDF téléchargé. Joignez-le dans WhatsApp'),
     });
-
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
-  // Generate and download a standard PDF (no Factur-X XML)
+  /**
+   * CORRECTION 1 + 4 — Direct PDF download:
+   * Generates a real binary PDF, names it [TYPE]-[NUMERO]-[CLIENT].pdf,
+   * triggers a real download and silently uploads it to Storage.
+   */
   const handlePDFClick = async () => {
     const blob = await buildPdfBlob();
     if (!blob) {
@@ -301,14 +350,11 @@ const InvoiceActions = ({
     }
 
     try {
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${invoiceData.type.toLowerCase()}-${invoiceData.number}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      const filename = buildPdfFilename(invoiceData.type, invoiceData.number, invoiceData.client.name);
+      downloadBlob(blob, filename);
+
+      // CORRECTION 5 — Silent upload to Storage in the background
+      void uploadPdfAndGetShareUrl(blob);
 
       toast({
         title: isRTL ? '✅ تم التحميل' : '✅ Téléchargé',
@@ -368,112 +414,55 @@ const InvoiceActions = ({
     }
     
     // Now proceed with PDF export
-    await executeExportPDF();
+    await handlePDFClick();
   };
 
   const handleSmartReviewCancel = () => {
     setShowSmartReview(false);
   };
 
-  const executeExportPDF = async () => {
-    await handlePDFClick();
-  };
+  /**
+   * CORRECTION 3 — "نسخ النص" now copies the public PDF link
+   * (uploads the PDF first if needed) instead of raw text.
+   */
+  const handleCopyText = async () => {
+    let pdfBlob = signedPdfBlob;
+    let shareUrl = signedPdfUrl;
 
-  const handleExportImage = async () => {
-    if (!invoiceRef.current) return;
-
-    // Temporarily switch to French for image
-    const wasArabic = showArabic;
-    if (wasArabic) {
-      onToggleArabic(false);
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    try {
-      const canvas = await html2canvas(invoiceRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-      });
-      
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      const link = document.createElement('a');
-      link.download = `${invoiceData.type.toLowerCase()}-${invoiceData.number}-${Date.now()}.jpg`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast({
-        title: isRTL ? "تم الحفظ" : "Enregistré",
-        description: isRTL ? "تم حفظ الصورة" : "L'image a été enregistrée",
-      });
-    } catch (error) {
-      console.error('Image export error:', error);
-      toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "فشل في إنشاء الصورة" : "Échec de la création de l'image",
-      });
-    } finally {
-      if (wasArabic) {
-        onToggleArabic(true);
+    if (!shareUrl) {
+      if (!pdfBlob) {
+        pdfBlob = await buildPdfBlob({ embedFacturX: true });
+      }
+      if (pdfBlob) {
+        shareUrl = await uploadPdfAndGetShareUrl(pdfBlob);
       }
     }
-  };
 
-  const handleCopyText = async () => {
-    const regime = invoiceData.tvaRegime || (invoiceData.tvaExempt ? 'franchise' : invoiceData.tvaRate === 0 ? 'franchise' : 'standard');
-    const vatMention = regime === 'standard'
-      ? `TVA au taux de ${invoiceData.tvaRate}%`
-      : regime === 'autoliquidation'
-        ? 'Autoliquidation de la TVA – article 283-2 du CGI'
-        : regime === 'intracommunautaire'
-          ? 'Exonération de TVA – article 262 ter I du CGI'
-          : 'TVA non applicable, art. 293 B du CGI';
-
-    const lines = [
-      `${invoiceData.type} N° ${invoiceData.number}`,
-      `Date: ${invoiceData.date}`,
-      '',
-      'ÉMETTEUR:',
-      invoiceData.emitter.name,
-      `SIRET: ${invoiceData.emitter.siret}`,
-      invoiceData.emitter.address,
-      '',
-      'CLIENT:',
-      invoiceData.client.name,
-      invoiceData.client.address,
-      '',
-      'PRESTATIONS:',
-      ...invoiceData.items.map(item => 
-        `- ${item.designation_fr}: ${item.quantity} ${item.unit} x ${item.unitPrice}€ = ${item.total}€`
-      ),
-      '',
-      `Total HT: ${invoiceData.subtotal.toFixed(2)}€`,
-      ...(invoiceData.discountAmount && invoiceData.discountAmount > 0 ? [
-        `Remise${invoiceData.discountType === 'percent' ? ` (${invoiceData.discountValue}%)` : ''}: -${invoiceData.discountAmount.toFixed(2)}€`,
-        `Sous-total HT: ${(invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal).toFixed(2)}€`,
-      ] : []),
-      `TVA (${invoiceData.tvaRate}%): ${invoiceData.tvaAmount.toFixed(2)}€`,
-      ...(vatMention ? [vatMention] : []),
-      `Total TTC: ${invoiceData.total.toFixed(2)}€`,
-      '',
-      `Conditions: ${invoiceData.paymentTerms}`,
-    ];
+    if (!shareUrl) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL
+          ? 'تعذر إنشاء رابط الـ PDF'
+          : 'Impossible de générer le lien du PDF',
+      });
+      return;
+    }
 
     try {
-      await navigator.clipboard.writeText(lines.join('\n'));
+      await navigator.clipboard.writeText(shareUrl);
       toast({
-        title: isRTL ? "تم النسخ" : "Copié",
-        description: isRTL ? "تم نسخ النص للحافظة" : "Le texte a été copié",
+        title: isRTL ? '🔗 تم نسخ الرابط' : '🔗 Lien copié',
+        description: isRTL
+          ? 'الصق الرابط في الواتساب أو الإيميل'
+          : 'Collez le lien dans WhatsApp ou un e-mail',
       });
     } catch (error) {
       console.error('Copy error:', error);
       toast({
-        variant: "destructive",
-        title: isRTL ? "خطأ" : "Erreur",
-        description: isRTL ? "فشل في النسخ" : "Échec de la copie",
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'فشل في النسخ' : 'Échec de la copie',
       });
     }
   };
@@ -567,16 +556,11 @@ const InvoiceActions = ({
                 variant="default"
                 size="sm"
                 onClick={async () => {
-                  const blob = await generateSignedPdf();
+                  const blob = await buildPdfBlob({ embedFacturX: true });
                   if (blob) {
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `facturx-${invoiceData.type.toLowerCase()}-${invoiceData.number}.pdf`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    setTimeout(() => URL.revokeObjectURL(url), 5000);
+                    const filename = `facturx-${buildPdfFilename(invoiceData.type, invoiceData.number, invoiceData.client.name)}`;
+                    downloadBlob(blob, filename);
+                    void uploadPdfAndGetShareUrl(blob);
                     toast({
                       title: isRTL ? '✅ تم التحميل' : '✅ Téléchargé',
                       description: isRTL ? 'PDF Factur-X جاهز (EN 16931)' : 'PDF Factur-X conforme EN 16931',
@@ -591,24 +575,26 @@ const InvoiceActions = ({
             </div>
           </div>
 
+          {/* CORRECTION 4 — "Save as image" replaced by "Download PDF" */}
           <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExportImage}
+              onClick={handlePDFClick}
               className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
             >
-              <Image className="h-4 w-4 mr-2" />
-              {isRTL ? '🖼️ حفظ كصورة' : '🖼️ Enregistrer image'}
+              <Download className="h-4 w-4 mr-2" />
+              {isRTL ? '💾 تحميل PDF' : '💾 Télécharger PDF'}
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handleCopyText}
+              disabled={isUploading}
               className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
             >
               <Copy className="h-4 w-4 mr-2" />
-              {isRTL ? '📋 نسخ النص' : '📋 Copier texte'}
+              {isRTL ? '🔗 نسخ الرابط' : '🔗 Copier le lien'}
             </Button>
           </div>
 

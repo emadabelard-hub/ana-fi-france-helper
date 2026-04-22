@@ -12,8 +12,9 @@ import SecurityBadge from '@/components/shared/SecurityBadge';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 // useNavigationGuard removed — was blocking navigation
-import { clearCurrentDocument, clearDraft, loadCurrentDocument } from '@/lib/invoiceDraftStorage';
+import { clearCurrentDocument, clearDraft, loadCurrentDocument, listAvailableDrafts } from '@/lib/invoiceDraftStorage';
 import NumberingOnboardingModal from '@/components/invoice/NumberingOnboardingModal';
+import DraftResumeModal from '@/components/invoice/DraftResumeModal';
 import {
   Dialog,
   DialogContent,

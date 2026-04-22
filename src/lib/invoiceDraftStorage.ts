@@ -108,6 +108,7 @@ export const saveDraft = (draft: Omit<InvoiceDraft, 'savedAt'>) => {
   try {
     const data: InvoiceDraft = { ...draft, savedAt: Date.now() };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+    broadcastDraftSaved(draft.documentType);
   } catch (e) {
     console.warn('Failed to save draft:', e);
   }
@@ -120,8 +121,8 @@ export const loadDraft = (): InvoiceDraft | null => {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const draft: InvoiceDraft = JSON.parse(raw);
-    // Expire drafts older than 7 days
-    if (Date.now() - draft.savedAt > 7 * 24 * 60 * 60 * 1000) {
+    // Expire drafts older than 48h
+    if (Date.now() - draft.savedAt > DRAFT_MAX_AGE_MS) {
       clearDraft();
       return null;
     }

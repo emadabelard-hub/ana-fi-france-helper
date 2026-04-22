@@ -7,6 +7,20 @@ import { supabase } from '@/integrations/supabase/client';
 
 const DRAFT_KEY = 'invoice_draft_v1';
 const CURRENT_DOCUMENT_KEY = 'currentDocument';
+// Per-document persistent drafts (one slot per type)
+const CURRENT_DOCUMENT_KEY_BY_TYPE = (type: 'devis' | 'facture') => `currentDocument_${type}_v1`;
+// Drafts older than 48h are considered stale and offered for cleanup
+export const DRAFT_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+// Browser event broadcast on every successful auto-save (used by AutoSaveIndicator)
+export const DRAFT_SAVED_EVENT = 'invoice-draft:saved';
+
+const broadcastDraftSaved = (documentType: 'devis' | 'facture') => {
+  try {
+    window.dispatchEvent(new CustomEvent(DRAFT_SAVED_EVENT, { detail: { documentType, at: Date.now() } }));
+  } catch {
+    // SSR / non-browser env — ignore
+  }
+};
 
 export interface DraftPaymentMilestone {
   id: string;

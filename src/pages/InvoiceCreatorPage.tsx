@@ -547,6 +547,30 @@ const InvoiceCreatorPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <DraftResumeModal
+        open={showResumeModal}
+        onResume={(type) => {
+          setShowResumeModal(false);
+          setIsNewDocument(false);
+          setDocumentType(type);
+          setShowTypeModal(false);
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.set('type', type);
+            return next;
+          });
+        }}
+        onStartFresh={() => {
+          setShowResumeModal(false);
+          // listAvailableDrafts entries already cleared by the modal.
+          clearDraft();
+          try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
+          try { sessionStorage.removeItem('invoiceCreator_scroll_v1'); } catch {}
+          setIsNewDocument(true);
+          if (!documentType) setShowTypeModal(true);
+        }}
+        onClose={() => setShowResumeModal(false)}
+      />
       <SecurityBadge />
     </div>
   );

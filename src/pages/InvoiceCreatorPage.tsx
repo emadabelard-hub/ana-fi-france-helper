@@ -58,6 +58,14 @@ const InvoiceCreatorPage = () => {
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showNumberingOnboarding, setShowNumberingOnboarding] = useState(false);
   const [numberingChecked, setNumberingChecked] = useState(false);
+
+  // Resume modal: show on initial mount if at least one fresh local draft exists
+  // and the user did not arrive with a prefill / explicit URL type.
+  const [showResumeModal, setShowResumeModal] = useState(() => {
+    if (urlDocType || prefillSource || urlSource === 'image-quote') return false;
+    return listAvailableDrafts().length > 0;
+  });
+
   // Track whether this is a fresh new document (user chose type from modal, or arrived via "Create" link without prefill).
   // RULE: arriving on /pro/invoice-creator?type=X with NO prefill/source means a fresh creation → reset to step 1.
   // Resuming an existing draft happens only when there is no urlDocType (resumedDocumentType path) OR when prefill data is provided.

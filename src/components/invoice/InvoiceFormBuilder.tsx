@@ -243,7 +243,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       return prefillData.reservedDocumentNumber;
     }
 
-    return `${getDocPrefix(documentType)}AUTO`;
+    // Placeholder until finalization assigns the real sequential number.
+    // We show "___" instead of "AUTO" so it never appears as a real-looking suffix in preview/PDF.
+    return `${getDocPrefix(documentType)}___`;
   });
   const [docNumberLoading, setDocNumberLoading] = useState(false);
   
@@ -692,7 +694,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     setDocNumber(
       documentType === 'facture' && isOfficialDocumentNumber(prefillData.reservedDocumentNumber, 'facture')
         ? prefillData.reservedDocumentNumber
-        : `${getDocPrefix(documentType)}AUTO`,
+        : `${getDocPrefix(documentType)}___`,
     );
     
     // For image-quote flow, client/items are already set via useState initializers.

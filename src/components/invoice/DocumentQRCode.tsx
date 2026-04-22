@@ -1,8 +1,9 @@
 /**
  * Real, scannable QR code for document verification.
- * Encodes the public verification URL so any smartphone can validate authenticity.
+ * Renders as a base64 PNG <img> so it survives PDF export
+ * (a <canvas> would be empty when serialized to HTML for Browserless).
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 
 interface DocumentQRCodeProps {
@@ -23,30 +24,45 @@ const buildVerifyUrl = (documentId?: string, documentNumber?: string) => {
 };
 
 const DocumentQRCode = ({ documentId, documentNumber, date, totalTTC, size = 64 }: DocumentQRCodeProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [dataUrl, setDataUrl] = useState<string>('');
   const url = buildVerifyUrl(documentId, documentNumber);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, url, {
-      width: size,
+    let cancelled = false;
+    QRCode.toDataURL(url, {
+      width: size * 2, // 2× for crisp rendering when downscaled
       margin: 1,
       color: { dark: '#1a1a1a', light: '#ffffff' },
       errorCorrectionLevel: 'M',
-    }).catch(() => {
-      // Silent fail — visual silence policy
-    });
+    })
+      .then((png) => {
+        if (!cancelled) setDataUrl(png);
+      })
+      .catch(() => {
+        // Silent fail — visual silence policy
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [url, size]);
 
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <canvas
-        ref={canvasRef}
-        width={size}
-        height={size}
-        className="border border-gray-300 rounded"
-        style={{ shapeRendering: 'crispEdges' }}
-      />
+      {dataUrl ? (
+        <img
+          src={dataUrl}
+          alt="QR de vérification"
+          width={size}
+          height={size}
+          className="border border-gray-300 rounded"
+          style={{ width: `${size}px`, height: `${size}px`, imageRendering: 'pixelated' }}
+        />
+      ) : (
+        <div
+          className="border border-gray-300 rounded bg-gray-50"
+          style={{ width: `${size}px`, height: `${size}px` }}
+        />
+      )}
       <span className="text-[5pt] text-gray-400 font-medium tracking-wide">
         Scannez pour vérifier
       </span>

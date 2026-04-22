@@ -36,6 +36,12 @@ const UNIT_OPTIONS = [
   { value: 'jour', label_display: 'J - يوم', label_fr: 'Jour', label_ar: 'يوم' },
   { value: 'forfait', label_display: 'F - فورفيه', label_fr: 'Forfait', label_ar: 'فورفيه' },
   { value: 'ens', label_display: 'Ens - أنسومبل', label_fr: 'Ensemble', label_ar: 'أنسومبل' },
+  { value: 'km', label_display: 'km - كيلومتر', label_fr: 'km', label_ar: 'كيلومتر' },
+  { value: 'nuit', label_display: 'Nuit - ليلة', label_fr: 'Nuit', label_ar: 'ليلة' },
+  { value: 'repas', label_display: 'Repas - وجبة', label_fr: 'Repas', label_ar: 'وجبة' },
+  { value: 'seance', label_display: 'Séance - جلسة', label_fr: 'Séance', label_ar: 'جلسة' },
+  { value: 'm³', label_display: 'm³ - متر مكعب', label_fr: 'm³', label_ar: 'متر مكعب' },
+  { value: 'tonne', label_display: 'Tonne - طن', label_fr: 'Tonne', label_ar: 'طن' },
 ];
 
 // Storage key for persistence when the component is visible (retain line items on refresh)

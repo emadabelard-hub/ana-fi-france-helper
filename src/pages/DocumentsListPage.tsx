@@ -931,6 +931,13 @@ const DocumentsListPage = () => {
               {isRTL ? 'الفواتير' : 'Factures'} ({factures.length})
             </TabsTrigger>
             <TabsTrigger
+              value="cv"
+              className="flex-1 data-[state=active]:bg-[hsl(45,80%,55%)] data-[state=active]:text-[hsl(0,0%,8%)] data-[state=active]:font-bold text-[hsl(0,0%,50%)] rounded-lg transition-all"
+            >
+              <FileText className="h-4 w-4 mr-1.5" />
+              CV ({cvs.length})
+            </TabsTrigger>
+            <TabsTrigger
               value="expenses"
               className="flex-1 data-[state=active]:bg-[hsl(45,80%,55%)] data-[state=active]:text-[hsl(0,0%,8%)] data-[state=active]:font-bold text-[hsl(0,0%,50%)] rounded-lg transition-all"
             >

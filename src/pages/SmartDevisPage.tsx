@@ -1522,7 +1522,6 @@ const SmartDevisPage = () => {
             {isRTL ? 'حوّل الصور لدوفي احترافي بالذكاء الاصطناعي' : 'Transformez vos photos en devis professionnel'}
           </p>
         </div>
-        <Badge variant="secondary" className="text-xs font-bold">14,99€</Badge>
         <Button
           variant="outline"
           size="sm"

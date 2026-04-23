@@ -1043,6 +1043,8 @@ const DocumentsListPage = () => {
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="expenses" className="mt-4 space-y-3">
             {/* Expense filters */}
             <div className={cn("flex flex-wrap gap-2", isRTL && "flex-row-reverse")}>
               <Select value={expenseCategoryFilter} onValueChange={setExpenseCategoryFilter}>

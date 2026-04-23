@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Wallet, Building2, Bot, TrendingUp, Banknote } from 'lucide-react';
+import { Briefcase, Wallet, Building2, Bot, FileText, TrendingUp, Banknote } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import WelcomeModal from '@/components/home/WelcomeModal';
@@ -96,6 +96,18 @@ const Index = () => {
       feature: 'فتح المساعد الذكي',
       bg: 'bg-[#F3E5F5] dark:bg-[#1A0A2E]',
       border: 'border-[#E1BEE7] dark:border-[hsl(271,40%,30%)]',
+    },
+    {
+      icon: <FileText size={32} className="text-white drop-shadow-md" />,
+      gradient: 'linear-gradient(135deg, #4F46E5, #3730A3)',
+      titleAr: 'إنشاء السيرة الذاتية 📄',
+      titleFr: 'Créez votre CV 📄',
+      descAr: 'اكتب السيرة الذاتية بتاعتك بالعربي والفرنسي',
+      descFr: 'Rédigez votre CV en arabe et en français',
+      path: '/pro/cv-generator',
+      feature: 'فتح مولد السيرة الذاتية',
+      bg: 'bg-[#EEF2FF] dark:bg-[#0F1532]',
+      border: 'border-[hsl(230,60%,85%)] dark:border-[hsl(230,30%,30%)]',
     },
   ];
 

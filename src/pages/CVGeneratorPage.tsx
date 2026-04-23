@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import CVFormSection from '@/components/cv/CVFormSection';
@@ -6,11 +6,13 @@ import CVPreview from '@/components/cv/CVPreview';
 import CVGuideModal from '@/components/cv/CVGuideModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Eye, Loader2, Sparkles, Pencil, AlertCircle } from 'lucide-react';
+import { FileText, Eye, Loader2, Sparkles, Pencil, AlertCircle, CheckCircle, Download, Share2, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
 import { buildCvHtml } from '@/lib/cvPdfTemplate';
+import html2canvas from 'html2canvas';
 
 export interface CVData {
   fullName: string;

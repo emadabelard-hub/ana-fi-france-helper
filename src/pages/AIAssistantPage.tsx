@@ -404,23 +404,11 @@ const AIAssistantPage = () => {
       {/* Input - positioned above bottom nav */}
       <div className="p-3 border-t border-border bg-background shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <div className="relative flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-          {/* Voice Recorder Overlay */}
-          <VoiceRecorderOverlay
-            isRecording={voiceRecorder.isRecording}
-            isLocked={voiceRecorder.isLocked}
-            transcript={voiceRecorder.transcript}
-            duration={voiceRecorder.duration}
-            onSend={handleVoiceSend}
-            onCancel={voiceRecorder.cancel}
-            onLock={voiceRecorder.lock}
-            isRTL={isRTL}
-          />
-
-          {/* Mic button */}
+          {/* Mic button — opens fullscreen voice modal */}
           <button
             type="button"
             onClick={handleVoiceMicPress}
-            disabled={isLoading || voiceRecorder.isRecording}
+            disabled={isLoading}
             className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
           >
             <Mic size={22} />

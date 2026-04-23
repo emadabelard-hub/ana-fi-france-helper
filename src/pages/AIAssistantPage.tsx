@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
-import VoiceRecorderOverlay from '@/components/assistant/VoiceRecorderOverlay';
+import FullscreenVoiceModal from '@/components/assistant/FullscreenVoiceModal';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
@@ -43,6 +43,7 @@ const AIAssistantPage = () => {
   const [onboardingGender, setOnboardingGender] = useState<'male' | 'female'>('male');
   const [showScanner, setShowScanner] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>(null);
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const voiceRecorder = useVoiceRecorder(isRTL ? 'ar-EG' : 'fr-FR');
@@ -72,15 +73,32 @@ const AIAssistantPage = () => {
     if (text.trim()) {
       setInput(prev => (prev ? prev + ' ' + text : text));
     }
+    setVoiceModalOpen(false);
+  }, [voiceRecorder]);
+
+  const handleVoiceStop = useCallback(() => {
+    // Stop recording but keep transcript visible in modal
+    const text = voiceRecorder.stop();
+    if (text.trim()) {
+      setInput(prev => (prev ? prev + ' ' + text : text));
+    }
+    // Modal stays open so user can review / press Send to inject + close
+  }, [voiceRecorder]);
+
+  const handleVoiceCancel = useCallback(() => {
+    voiceRecorder.cancel();
+    setVoiceModalOpen(false);
   }, [voiceRecorder]);
 
   const handleVoiceMicPress = useCallback(() => {
-    if (voiceRecorder.isRecording) return;
     if (!voiceRecorder.isSupported) {
       toast({ variant: 'destructive', title: isRTL ? 'غير مدعوم' : 'Non supporté' });
       return;
     }
-    voiceRecorder.start();
+    setVoiceModalOpen(true);
+    if (!voiceRecorder.isRecording) {
+      voiceRecorder.start();
+    }
   }, [voiceRecorder, isRTL, toast]);
 
   const send = async () => {
@@ -386,23 +404,11 @@ const AIAssistantPage = () => {
       {/* Input - positioned above bottom nav */}
       <div className="p-3 border-t border-border bg-background shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <div className="relative flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-          {/* Voice Recorder Overlay */}
-          <VoiceRecorderOverlay
-            isRecording={voiceRecorder.isRecording}
-            isLocked={voiceRecorder.isLocked}
-            transcript={voiceRecorder.transcript}
-            duration={voiceRecorder.duration}
-            onSend={handleVoiceSend}
-            onCancel={voiceRecorder.cancel}
-            onLock={voiceRecorder.lock}
-            isRTL={isRTL}
-          />
-
-          {/* Mic button */}
+          {/* Mic button — opens fullscreen voice modal */}
           <button
             type="button"
             onClick={handleVoiceMicPress}
-            disabled={isLoading || voiceRecorder.isRecording}
+            disabled={isLoading}
             className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
           >
             <Mic size={22} />
@@ -446,6 +452,18 @@ const AIAssistantPage = () => {
 
       {/* Room Scanner Modal */}
       <RoomScannerModal open={showScanner} onClose={() => setShowScanner(false)} isRTL={isRTL} />
+
+      {/* Fullscreen Voice Dictation Modal */}
+      <FullscreenVoiceModal
+        open={voiceModalOpen}
+        isRecording={voiceRecorder.isRecording}
+        transcript={voiceRecorder.transcript}
+        duration={voiceRecorder.duration}
+        onStop={handleVoiceStop}
+        onSend={handleVoiceSend}
+        onCancel={handleVoiceCancel}
+        isRTL={isRTL}
+      />
     </div>
   );
 };

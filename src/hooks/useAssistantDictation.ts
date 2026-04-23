@@ -3,22 +3,31 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 /**
  * Dictation hook dedicated to the "مساعد الشانتي الذكي" (AI Assistant) page.
  *
- * Implements clean separation between:
- *   - finalTranscript : permanent text (only `isFinal === true` results)
- *   - interimTranscript : live preview (replaced on every event, never accumulated)
- *
- * The displayed `transcript` = finalTranscript + interimTranscript, so the user
- * sees live typing without any duplication.
+ * Rules:
+ * - final transcript persists for the whole recording session
+ * - interim transcript is only temporary UI preview
+ * - only NEW final results are committed
+ * - no replay from index 0, we respect event.resultIndex
  */
 
 const MAX_DURATION_MS = 120_000; // 2 min safety cap
+
+function normalizeChunk(input: string): string {
+  return input.replace(/\s+/g, ' ').trim();
+}
+
+function addSoftPunctuation(input: string): string {
+  const text = input.trim();
+  if (!text) return '';
+  if (/[.!?؟…]$/.test(text)) return text;
+  return `${text}.`;
+}
 
 /** Light cleanup applied at send time: collapse spaces, remove repeated words/fillers. */
 function cleanFinalText(input: string): string {
   if (!input) return '';
   let text = input.replace(/\s+/g, ' ').trim();
 
-  // Remove French + Arabic hesitation fillers
   const fillers = [
     'euh', 'heu', 'hum', 'bah', 'ben', 'eh',
     'يعني', 'ايه', 'آه', 'اه', 'امم', 'إمم',
@@ -29,17 +38,15 @@ function cleanFinalText(input: string): string {
   );
   text = text.replace(fillerRegex, '').replace(/\s+/g, ' ').trim();
 
-  // Remove consecutive duplicate words (case-insensitive)
-  const words = text.split(/\s+/);
+  const words = text.split(/\s+/).filter(Boolean);
   const deduped: string[] = [];
-  for (const w of words) {
-    if (deduped.length === 0 || deduped[deduped.length - 1].toLowerCase() !== w.toLowerCase()) {
-      deduped.push(w);
+  for (const word of words) {
+    if (deduped.length === 0 || deduped[deduped.length - 1].toLowerCase() !== word.toLowerCase()) {
+      deduped.push(word);
     }
   }
 
-  // Remove consecutive duplicate phrases (2-4 word windows)
-  let result = deduped;
+  const result = [...deduped];
   for (let len = 4; len >= 2; len--) {
     let i = 0;
     while (i + len * 2 <= result.length) {
@@ -49,11 +56,16 @@ function cleanFinalText(input: string): string {
         result.splice(i + len, len);
         continue;
       }
-      i++;
+      i += 1;
     }
   }
 
-  return result.join(' ').trim();
+  return addSoftPunctuation(result.join(' ').trim());
+}
+
+function parseSegmentKey(key: string) {
+  const [cycle, index] = key.split(':').map(Number);
+  return { cycle, index };
 }
 
 export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
@@ -63,6 +75,8 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
 
   const recognitionRef = useRef<any>(null);
   const finalRef = useRef('');
+  const committedSegmentsRef = useRef<Record<string, string>>({});
+  const recognitionCycleRef = useRef(0);
   const isRecordingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -71,6 +85,22 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
   const isSupported =
     typeof window !== 'undefined' &&
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+
+  const rebuildFinalTranscript = useCallback(() => {
+    finalRef.current = Object.keys(committedSegmentsRef.current)
+      .sort((a, b) => {
+        const left = parseSegmentKey(a);
+        const right = parseSegmentKey(b);
+        return left.cycle - right.cycle || left.index - right.index;
+      })
+      .map((key) => committedSegmentsRef.current[key])
+      .filter(Boolean)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return finalRef.current;
+  }, []);
 
   const cleanup = useCallback(() => {
     if (timerRef.current) {
@@ -103,9 +133,10 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     if (!isSupported) return false;
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-    // Reset everything for a fresh session
     cleanup();
     finalRef.current = '';
+    committedSegmentsRef.current = {};
+    recognitionCycleRef.current = 0;
     setTranscript('');
 
     const recognition = new SR();
@@ -115,36 +146,49 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: any) => {
-      // Build interim from CURRENT batch only (never persist it)
-      let interim = '';
-      // Append ONLY new final results to finalRef (one-shot)
+      let interimTranscript = '';
+      const currentCycle = recognitionCycleRef.current;
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
-        const text = result?.[0]?.transcript ?? '';
-        if (!text) continue;
+        const rawText = result?.[0]?.transcript ?? '';
+        const text = normalizeChunk(rawText);
+        const segmentKey = `${currentCycle}:${i}`;
+
+        if (!text) {
+          delete committedSegmentsRef.current[segmentKey];
+          continue;
+        }
+
         if (result.isFinal) {
-          finalRef.current += (finalRef.current ? ' ' : '') + text.trim();
+          committedSegmentsRef.current[segmentKey] = text;
         } else {
-          interim += text;
+          interimTranscript += `${interimTranscript ? ' ' : ''}${text}`;
         }
       }
-      const display = (finalRef.current + (interim ? ' ' + interim : '')).replace(/\s+/g, ' ').trim();
-      setTranscript(display);
+
+      const finalTranscript = rebuildFinalTranscript();
+      const displayTranscript = [finalTranscript, normalizeChunk(interimTranscript)]
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      setTranscript(displayTranscript);
     };
 
     recognition.onerror = (e: any) => {
-      // Non-fatal: silence/aborted
       if (e.error === 'no-speech' || e.error === 'aborted') return;
       console.error('Assistant dictation error:', e.error);
     };
 
     recognition.onend = () => {
-      // Auto-restart while user keeps recording (browser may stop after silence)
       if (isRecordingRef.current && recognitionRef.current === recognition) {
+        recognitionCycleRef.current += 1;
         try {
           recognition.start();
         } catch {
-          /* may throw if already started — ignore */
+          /* noop */
         }
       }
     };
@@ -169,9 +213,8 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     }, MAX_DURATION_MS);
 
     return true;
-  }, [isSupported, lang, cleanup]);
+  }, [cleanup, isSupported, lang, rebuildFinalTranscript]);
 
-  /** Stop recording but KEEP the transcript visible. Returns the current text. */
   const stopRecording = useCallback((): string => {
     isRecordingRef.current = false;
     if (timerRef.current) {
@@ -192,18 +235,18 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
       recognitionRef.current = null;
     }
     setIsRecording(false);
-    return finalRef.current.trim();
-  }, []);
+    return (finalRef.current || transcript).trim();
+  }, [transcript]);
 
-  /** Get the cleaned final text (apply at SEND time only). */
   const getCleanedText = useCallback((): string => {
     return cleanFinalText(finalRef.current || transcript);
   }, [transcript]);
 
-  /** Cancel session and clear everything. */
   const cancel = useCallback(() => {
     cleanup();
     finalRef.current = '';
+    committedSegmentsRef.current = {};
+    recognitionCycleRef.current = 0;
     setTranscript('');
   }, [cleanup]);
 

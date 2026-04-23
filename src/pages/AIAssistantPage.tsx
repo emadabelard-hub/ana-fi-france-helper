@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
-import VoiceRecorderOverlay from '@/components/assistant/VoiceRecorderOverlay';
+import FullscreenVoiceModal from '@/components/assistant/FullscreenVoiceModal';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;

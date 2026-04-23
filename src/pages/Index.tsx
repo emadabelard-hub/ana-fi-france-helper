@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Wallet, Building2, Bot, TrendingUp, Banknote } from 'lucide-react';
+import { Briefcase, Wallet, Building2, Bot, FileText, TrendingUp, Banknote } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import WelcomeModal from '@/components/home/WelcomeModal';

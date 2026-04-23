@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * - interim transcript is only temporary UI preview
  * - only NEW final results are committed
  * - no replay from index 0, we respect event.resultIndex
+ * - lastProcessedIndex guarantees zero re-processing of already-finalized segments
  */
 
 const MAX_DURATION_MS = 120_000; // 2 min safety cap

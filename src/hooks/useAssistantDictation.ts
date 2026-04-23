@@ -17,6 +17,57 @@ function normalizeChunk(input: string): string {
   return input.replace(/\s+/g, ' ').trim();
 }
 
+function escapeRegex(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function isDuplicate(newText: string, existingText: string): boolean {
+  const next = normalizeChunk(newText);
+  const existing = normalizeChunk(existingText);
+
+  if (!next || !existing) return false;
+  return existing.includes(next);
+}
+
+function cleanText(input: string): string {
+  if (!input) return '';
+
+  const fillers = [
+    'euh', 'heu', 'hum', 'bah', 'ben', 'eh', 'du coup', 'genre', 'donc euh',
+    'يعني', 'ايه', 'آه', 'اه', 'أه', 'امم', 'إمم', 'ممم',
+  ];
+
+  let text = input.replace(/\s+/g, ' ').trim();
+
+  for (const filler of fillers) {
+    const fillerRegex = new RegExp(`(^|\\s)${escapeRegex(filler)}(?=\\s|$)`, 'giu');
+    text = text.replace(fillerRegex, ' ');
+  }
+
+  return text
+    .replace(/(\b\w+\b)(\s+\1\b)+/gi, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function capitalizeIfLatin(input: string): string {
+  if (!input) return input;
+  const [first, ...rest] = input;
+  return /[a-zà-ÿ]/i.test(first) ? `${first.toLocaleUpperCase()}${rest.join('')}` : input;
+}
+
+function formatText(input: string): string {
+  const cleaned = cleanText(input);
+  if (!cleaned) return '';
+
+  let formatted = capitalizeIfLatin(cleaned);
+  if (!/[.!?؟…]$/.test(formatted)) {
+    formatted += '.';
+  }
+
+  return formatted;
+}
+
 function addSoftPunctuation(input: string): string {
   const text = input.trim();
   if (!text) return '';
@@ -27,17 +78,7 @@ function addSoftPunctuation(input: string): string {
 /** Light cleanup applied at send time: collapse spaces, remove repeated words/fillers. */
 function cleanFinalText(input: string): string {
   if (!input) return '';
-  let text = input.replace(/\s+/g, ' ').trim();
-
-  const fillers = [
-    'euh', 'heu', 'hum', 'bah', 'ben', 'eh',
-    'يعني', 'ايه', 'آه', 'اه', 'امم', 'إمم',
-  ];
-  const fillerRegex = new RegExp(
-    `\\b(?:${fillers.map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
-    'giu',
-  );
-  text = text.replace(fillerRegex, '').replace(/\s+/g, ' ').trim();
+  let text = cleanText(input);
 
   const words = text.split(/\s+/).filter(Boolean);
   const deduped: string[] = [];
@@ -61,7 +102,7 @@ function cleanFinalText(input: string): string {
     }
   }
 
-  return addSoftPunctuation(result.join(' ').trim());
+  return formatText(addSoftPunctuation(result.join(' ').trim()));
 }
 
 export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
@@ -70,7 +111,9 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
   const [duration, setDuration] = useState(0);
 
   const recognitionRef = useRef<any>(null);
-  const finalRef = useRef('');
+  const finalTranscriptRef = useRef('');
+  const interimTranscriptRef = useRef('');
+  const lastFinalizedTextRef = useRef('');
   const finalSegmentsRef = useRef<Record<number, string>>({});
   const lastProcessedIndexRef = useRef(0);
   const cycleBaseIndexRef = useRef(0);
@@ -84,7 +127,7 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
   const rebuildFinalTranscript = useCallback(() => {
-    finalRef.current = Object.keys(finalSegmentsRef.current)
+    finalTranscriptRef.current = Object.keys(finalSegmentsRef.current)
       .map(Number)
       .sort((a, b) => a - b)
       .map((key) => finalSegmentsRef.current[key])
@@ -93,7 +136,14 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
       .replace(/\s+/g, ' ')
       .trim();
 
-    return finalRef.current;
+    return finalTranscriptRef.current;
+  }, []);
+
+  const syncTranscript = useCallback(() => {
+    const rawText = `${finalTranscriptRef.current} ${interimTranscriptRef.current}`.trim();
+    const cleaned = cleanText(rawText);
+    setTranscript(cleaned);
+    return cleaned;
   }, []);
 
   const cleanup = useCallback(() => {
@@ -128,7 +178,9 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     cleanup();
-    finalRef.current = '';
+    finalTranscriptRef.current = '';
+    interimTranscriptRef.current = '';
+    lastFinalizedTextRef.current = '';
     finalSegmentsRef.current = {};
     lastProcessedIndexRef.current = 0;
     cycleBaseIndexRef.current = 0;
@@ -146,7 +198,7 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         const rawText = result?.[0]?.transcript ?? '';
-        const text = normalizeChunk(rawText);
+        const text = cleanText(normalizeChunk(rawText));
         const absoluteIndex = cycleBaseIndexRef.current + i;
 
         if (absoluteIndex < lastProcessedIndexRef.current) {
@@ -158,21 +210,22 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
         }
 
         if (result.isFinal) {
+          if (isDuplicate(text, finalTranscriptRef.current) || text === lastFinalizedTextRef.current) {
+            lastProcessedIndexRef.current = absoluteIndex + 1;
+            continue;
+          }
+
           finalSegmentsRef.current[absoluteIndex] = text;
+          lastFinalizedTextRef.current = text;
           lastProcessedIndexRef.current = absoluteIndex + 1;
         } else {
           interimTranscript += `${interimTranscript ? ' ' : ''}${text}`;
         }
       }
 
-      const finalTranscript = rebuildFinalTranscript();
-      const displayTranscript = [finalTranscript, normalizeChunk(interimTranscript)]
-        .filter(Boolean)
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      setTranscript(displayTranscript);
+      finalTranscriptRef.current = rebuildFinalTranscript();
+      interimTranscriptRef.current = cleanText(normalizeChunk(interimTranscript));
+      syncTranscript();
     };
 
     recognition.onerror = (e: any) => {
@@ -233,16 +286,19 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
       recognitionRef.current = null;
     }
     setIsRecording(false);
-    return (finalRef.current || transcript).trim();
+    interimTranscriptRef.current = '';
+    return cleanText(finalTranscriptRef.current || transcript);
   }, [transcript]);
 
   const getCleanedText = useCallback((): string => {
-    return cleanFinalText(finalRef.current || transcript);
+    return cleanFinalText(finalTranscriptRef.current || transcript);
   }, [transcript]);
 
   const cancel = useCallback(() => {
     cleanup();
-    finalRef.current = '';
+    finalTranscriptRef.current = '';
+    interimTranscriptRef.current = '';
+    lastFinalizedTextRef.current = '';
     finalSegmentsRef.current = {};
     lastProcessedIndexRef.current = 0;
     cycleBaseIndexRef.current = 0;

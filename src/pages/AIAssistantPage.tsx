@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
-import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
+import { useAssistantDictation } from '@/hooks/useAssistantDictation';
 import FullscreenVoiceModal from '@/components/assistant/FullscreenVoiceModal';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
@@ -46,7 +46,7 @@ const AIAssistantPage = () => {
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const voiceRecorder = useVoiceRecorder(isRTL ? 'ar-EG' : 'fr-FR');
+  const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
 
   // Auto-fill from profile if available
   useEffect(() => {
@@ -67,39 +67,38 @@ const AIAssistantPage = () => {
     setShowOnboarding(false);
   };
 
-  // ── Voice: handled by useVoiceRecorder hook ──
+  // ── Voice: dictation dedicated to this page ──
   const handleVoiceSend = useCallback(() => {
-    const text = voiceRecorder.stop();
-    if (text.trim()) {
-      setInput(prev => (prev ? prev + ' ' + text : text));
+    // Stop recording first to flush any in-flight result
+    if (dictation.isRecording) dictation.stopRecording();
+    const cleaned = dictation.getCleanedText();
+    if (cleaned) {
+      setInput(prev => (prev ? prev + ' ' + cleaned : cleaned));
     }
+    dictation.cancel();
     setVoiceModalOpen(false);
-  }, [voiceRecorder]);
+  }, [dictation]);
 
   const handleVoiceStop = useCallback(() => {
-    // Stop recording but keep transcript visible in modal
-    const text = voiceRecorder.stop();
-    if (text.trim()) {
-      setInput(prev => (prev ? prev + ' ' + text : text));
-    }
-    // Modal stays open so user can review / press Send to inject + close
-  }, [voiceRecorder]);
+    // Pause recording but KEEP transcript visible so user can review
+    dictation.stopRecording();
+  }, [dictation]);
 
   const handleVoiceCancel = useCallback(() => {
-    voiceRecorder.cancel();
+    dictation.cancel();
     setVoiceModalOpen(false);
-  }, [voiceRecorder]);
+  }, [dictation]);
 
   const handleVoiceMicPress = useCallback(() => {
-    if (!voiceRecorder.isSupported) {
+    if (!dictation.isSupported) {
       toast({ variant: 'destructive', title: isRTL ? 'غير مدعوم' : 'Non supporté' });
       return;
     }
     setVoiceModalOpen(true);
-    if (!voiceRecorder.isRecording) {
-      voiceRecorder.start();
+    if (!dictation.isRecording) {
+      dictation.start();
     }
-  }, [voiceRecorder, isRTL, toast]);
+  }, [dictation, isRTL, toast]);
 
   const send = async () => {
     const text = input.trim();
@@ -456,9 +455,9 @@ const AIAssistantPage = () => {
       {/* Fullscreen Voice Dictation Modal */}
       <FullscreenVoiceModal
         open={voiceModalOpen}
-        isRecording={voiceRecorder.isRecording}
-        transcript={voiceRecorder.transcript}
-        duration={voiceRecorder.duration}
+        isRecording={dictation.isRecording}
+        transcript={dictation.transcript}
+        duration={dictation.duration}
         onStop={handleVoiceStop}
         onSend={handleVoiceSend}
         onCancel={handleVoiceCancel}

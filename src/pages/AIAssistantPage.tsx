@@ -452,6 +452,18 @@ const AIAssistantPage = () => {
 
       {/* Room Scanner Modal */}
       <RoomScannerModal open={showScanner} onClose={() => setShowScanner(false)} isRTL={isRTL} />
+
+      {/* Fullscreen Voice Dictation Modal */}
+      <FullscreenVoiceModal
+        open={voiceModalOpen}
+        isRecording={voiceRecorder.isRecording}
+        transcript={voiceRecorder.transcript}
+        duration={voiceRecorder.duration}
+        onStop={handleVoiceStop}
+        onSend={handleVoiceSend}
+        onCancel={handleVoiceCancel}
+        isRTL={isRTL}
+      />
     </div>
   );
 };

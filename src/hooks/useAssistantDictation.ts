@@ -63,11 +63,6 @@ function cleanFinalText(input: string): string {
   return addSoftPunctuation(result.join(' ').trim());
 }
 
-function parseSegmentKey(key: string) {
-  const [cycle, index] = key.split(':').map(Number);
-  return { cycle, index };
-}
-
 export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -75,8 +70,9 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
 
   const recognitionRef = useRef<any>(null);
   const finalRef = useRef('');
-  const committedSegmentsRef = useRef<Record<string, string>>({});
-  const recognitionCycleRef = useRef(0);
+  const finalSegmentsRef = useRef<Record<number, string>>({});
+  const lastProcessedIndexRef = useRef(0);
+  const cycleBaseIndexRef = useRef(0);
   const isRecordingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,13 +83,10 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
   const rebuildFinalTranscript = useCallback(() => {
-    finalRef.current = Object.keys(committedSegmentsRef.current)
-      .sort((a, b) => {
-        const left = parseSegmentKey(a);
-        const right = parseSegmentKey(b);
-        return left.cycle - right.cycle || left.index - right.index;
-      })
-      .map((key) => committedSegmentsRef.current[key])
+    finalRef.current = Object.keys(finalSegmentsRef.current)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .map((key) => finalSegmentsRef.current[key])
       .filter(Boolean)
       .join(' ')
       .replace(/\s+/g, ' ')
@@ -135,8 +128,9 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
 
     cleanup();
     finalRef.current = '';
-    committedSegmentsRef.current = {};
-    recognitionCycleRef.current = 0;
+    finalSegmentsRef.current = {};
+    lastProcessedIndexRef.current = 0;
+    cycleBaseIndexRef.current = 0;
     setTranscript('');
 
     const recognition = new SR();
@@ -147,21 +141,24 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
 
     recognition.onresult = (event: any) => {
       let interimTranscript = '';
-      const currentCycle = recognitionCycleRef.current;
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         const rawText = result?.[0]?.transcript ?? '';
         const text = normalizeChunk(rawText);
-        const segmentKey = `${currentCycle}:${i}`;
+        const absoluteIndex = cycleBaseIndexRef.current + i;
+
+        if (absoluteIndex < lastProcessedIndexRef.current) {
+          continue;
+        }
 
         if (!text) {
-          delete committedSegmentsRef.current[segmentKey];
           continue;
         }
 
         if (result.isFinal) {
-          committedSegmentsRef.current[segmentKey] = text;
+          finalSegmentsRef.current[absoluteIndex] = text;
+          lastProcessedIndexRef.current = absoluteIndex + 1;
         } else {
           interimTranscript += `${interimTranscript ? ' ' : ''}${text}`;
         }
@@ -184,7 +181,7 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
 
     recognition.onend = () => {
       if (isRecordingRef.current && recognitionRef.current === recognition) {
-        recognitionCycleRef.current += 1;
+        cycleBaseIndexRef.current = lastProcessedIndexRef.current;
         try {
           recognition.start();
         } catch {
@@ -245,8 +242,9 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
   const cancel = useCallback(() => {
     cleanup();
     finalRef.current = '';
-    committedSegmentsRef.current = {};
-    recognitionCycleRef.current = 0;
+    finalSegmentsRef.current = {};
+    lastProcessedIndexRef.current = 0;
+    cycleBaseIndexRef.current = 0;
     setTranscript('');
   }, [cleanup]);
 

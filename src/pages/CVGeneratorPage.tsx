@@ -74,15 +74,32 @@ const initialCVData: CVData = {
   photoUrl: undefined,
 };
 
+const sanitizeForFilename = (input: string, fallback = 'CV'): string => {
+  if (!input) return fallback;
+  const cleaned = input
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9-_]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return cleaned || fallback;
+};
+
 const CVGeneratorPage = () => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
-  
-  
+  const { user } = useAuth();
+  const cvPreviewRef = useRef<HTMLDivElement>(null);
+
   const [cvData, setCVData] = useState<CVData>(initialCVData);
   const [translatedData, setTranslatedData] = useState<CVData | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isImaging, setIsImaging] = useState(false);
+  const [savedDocId, setSavedDocId] = useState<string | null>(null);
+  const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('edit');
   const [showGuide, setShowGuide] = useState(false);
 

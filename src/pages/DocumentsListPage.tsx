@@ -495,6 +495,7 @@ const DocumentsListPage = () => {
 
   const devis = filteredDocuments.filter(d => d.document_type === 'devis');
   const factures = filteredDocuments.filter(d => d.document_type === 'facture');
+  const cvs = filteredDocuments.filter(d => d.document_type === 'cv');
 
   // ============== EXPENSES helpers ==============
   const chantierMap = useMemo(() => {

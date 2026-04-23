@@ -43,6 +43,7 @@ const AIAssistantPage = () => {
   const [onboardingGender, setOnboardingGender] = useState<'male' | 'female'>('male');
   const [showScanner, setShowScanner] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>(null);
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const voiceRecorder = useVoiceRecorder(isRTL ? 'ar-EG' : 'fr-FR');

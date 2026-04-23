@@ -966,7 +966,83 @@ const DocumentsListPage = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="expenses" className="mt-4 space-y-3">
+          <TabsContent value="cv" className="mt-4">
+            {loading ? (
+              <div className="flex justify-center py-16">
+                <div className="animate-pulse text-[hsl(0,0%,40%)]">{isRTL ? 'جاري التحميل...' : 'Chargement...'}</div>
+              </div>
+            ) : cvs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-[hsl(45,80%,55%)/0.1] flex items-center justify-center">
+                  <FileText className="h-8 w-8 text-[hsl(45,80%,55%)/0.4]" />
+                </div>
+                <p className={cn("text-sm text-[hsl(0,0%,45%)]", isRTL && "font-cairo")}>
+                  {isRTL ? 'ما عندك حتى سي في بعد' : 'Aucun CV pour le moment'}
+                </p>
+                <Button
+                  size="sm"
+                  className="bg-[hsl(45,80%,55%)] text-[hsl(0,0%,8%)] hover:bg-[hsl(45,80%,45%)] font-bold gap-1.5"
+                  onClick={() => navigate('/pro/cv-generator')}
+                >
+                  <Plus className="h-4 w-4" />
+                  {isRTL ? 'أنشئ سي في' : 'Créer un CV'}
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {cvs.map(cv => {
+                  const date = new Date(cv.created_at).toLocaleDateString('fr-FR');
+                  const pdfUrl = (cv as any).document_data?.pdf_url || (cv as any).pdf_url;
+                  return (
+                    <div
+                      key={cv.id}
+                      className="group relative rounded-xl border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,12%)] p-4 hover:border-[hsl(45,80%,55%)/0.6] transition-all duration-300"
+                    >
+                      <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-[hsl(45,80%,55%)] to-transparent opacity-60" />
+                      <div className={cn("flex items-start justify-between gap-3", isRTL && "flex-row-reverse")}>
+                        <div className={cn("flex items-center gap-3 flex-1 min-w-0", isRTL && "flex-row-reverse")}>
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-indigo-500/15 text-indigo-400">
+                            <FileText className="h-5 w-5" />
+                          </div>
+                          <div className={cn("min-w-0 flex-1", isRTL && "text-right")}>
+                            <p className="text-sm font-bold text-[hsl(45,80%,70%)] truncate">{cv.client_name || 'CV'}</p>
+                            <p className="text-xs text-[hsl(0,0%,60%)] truncate">{cv.document_number}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Calendar className="h-3 w-3 text-[hsl(0,0%,45%)]" />
+                          <span className="text-xs text-[hsl(0,0%,55%)]">{date}</span>
+                        </div>
+                      </div>
+                      <div className={cn("mt-3 flex items-center gap-2 pt-3 border-t border-[hsl(0,0%,18%)]", isRTL && "flex-row-reverse")}>
+                        {pdfUrl ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 gap-1"
+                            onClick={() => window.open(pdfUrl, '_blank', 'noopener,noreferrer')}
+                          >
+                            <Download className="h-3 w-3" />
+                            {isRTL ? 'تحميل PDF' : 'Télécharger PDF'}
+                          </Button>
+                        ) : null}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 gap-1 ml-auto"
+                          onClick={() => handleDelete(cv.id)}
+                          disabled={deletingId === cv.id}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          {isRTL ? 'حذف' : 'Supprimer'}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
             {/* Expense filters */}
             <div className={cn("flex flex-wrap gap-2", isRTL && "flex-row-reverse")}>
               <Select value={expenseCategoryFilter} onValueChange={setExpenseCategoryFilter}>

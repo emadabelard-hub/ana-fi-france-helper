@@ -73,15 +73,32 @@ const AIAssistantPage = () => {
     if (text.trim()) {
       setInput(prev => (prev ? prev + ' ' + text : text));
     }
+    setVoiceModalOpen(false);
+  }, [voiceRecorder]);
+
+  const handleVoiceStop = useCallback(() => {
+    // Stop recording but keep transcript visible in modal
+    const text = voiceRecorder.stop();
+    if (text.trim()) {
+      setInput(prev => (prev ? prev + ' ' + text : text));
+    }
+    // Modal stays open so user can review / press Send to inject + close
+  }, [voiceRecorder]);
+
+  const handleVoiceCancel = useCallback(() => {
+    voiceRecorder.cancel();
+    setVoiceModalOpen(false);
   }, [voiceRecorder]);
 
   const handleVoiceMicPress = useCallback(() => {
-    if (voiceRecorder.isRecording) return;
     if (!voiceRecorder.isSupported) {
       toast({ variant: 'destructive', title: isRTL ? 'غير مدعوم' : 'Non supporté' });
       return;
     }
-    voiceRecorder.start();
+    setVoiceModalOpen(true);
+    if (!voiceRecorder.isRecording) {
+      voiceRecorder.start();
+    }
   }, [voiceRecorder, isRTL, toast]);
 
   const send = async () => {

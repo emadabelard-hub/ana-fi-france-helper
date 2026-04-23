@@ -523,26 +523,92 @@ const CVGeneratorPage = () => {
               documentType="cv"
               returnPath="/cv-generator"
               renderDownloadButton={() => (
-                <Button
-                  onClick={handleExportPDF}
-                  disabled={!isCvReady || isExporting}
-                  className="w-full gap-2"
-                  size="lg"
-                >
-                  {isExporting ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      {isRTL ? 'جاري إنشاء PDF...' : 'Génération du PDF...'}
-                    </>
-                  ) : (
-                    <>
-                      {isRTL ? '📥 تحميل PDF' : '📥 Télécharger PDF'}
-                    </>
-                  )}
-                </Button>
+                <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {/* ✅ Confirm & Save */}
+                  <Button
+                    onClick={handleConfirmAndSave}
+                    disabled={!isCvReady || isSaving}
+                    className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    size="lg"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        {isRTL ? 'جاري الحفظ...' : 'Enregistrement...'}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-5 w-5" />
+                        {isRTL ? '✅ تأكيد وتسجيل' : '✅ Confirmer et enregistrer'}
+                      </>
+                    )}
+                  </Button>
+
+                  {/* 📥 Download PDF */}
+                  <Button
+                    onClick={handleExportPDF}
+                    disabled={!isCvReady || isExporting}
+                    className="w-full gap-2"
+                    size="lg"
+                  >
+                    {isExporting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        {isRTL ? 'جاري إنشاء PDF...' : 'Génération...'}
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-5 w-5" />
+                        {isRTL ? '📥 تحميل PDF' : '📥 Télécharger PDF'}
+                      </>
+                    )}
+                  </Button>
+
+                  {/* 📱 WhatsApp */}
+                  <Button
+                    onClick={handleWhatsAppShare}
+                    disabled={!isCvReady || isSharing}
+                    variant="outline"
+                    className="w-full gap-2 border-emerald-600/40 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+                    size="lg"
+                  >
+                    {isSharing ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        {isRTL ? 'جاري التحضير...' : 'Préparation...'}
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="h-5 w-5" />
+                        {isRTL ? '📱 ابعت بالواتساب' : '📱 Envoyer par WhatsApp'}
+                      </>
+                    )}
+                  </Button>
+
+                  {/* 💾 Save as Image */}
+                  <Button
+                    onClick={handleSaveAsImage}
+                    disabled={!isCvReady || isImaging}
+                    variant="outline"
+                    className="w-full gap-2"
+                    size="lg"
+                  >
+                    {isImaging ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        {isRTL ? 'جاري الحفظ...' : 'Enregistrement...'}
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="h-5 w-5" />
+                        {isRTL ? '💾 حفظ كصورة' : '💾 Enregistrer en image'}
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
             >
-              <div className="print-area">
+              <div ref={cvPreviewRef} className="print-area">
                 <CVPreview data={displayData} />
               </div>
             </ProtectedDocumentWrapper>

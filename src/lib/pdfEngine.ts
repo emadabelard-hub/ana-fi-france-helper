@@ -99,38 +99,52 @@ function collectAllCSS(): string {
 // ─── Image Inlining ─────────────────────────────────────────────────────────
 
 /**
- * Convert blob: and relative image URLs to base64 data URIs.
- * Absolute https:// URLs are left as-is (Browserless can fetch them).
+ * Convert ALL image URLs (blob:, relative, https://, http://) to base64 data URIs.
+ *
+ * Why: Logo / signature / cachet stored on Supabase Storage are served via signed URLs
+ * that can expire, be rate-limited, or fail to load from Browserless's headless Chrome.
+ * Inlining as base64 guarantees 100% reliability — the image bytes travel with the HTML.
+ *
+ * Only `data:` URIs (already inline) are left untouched.
  */
 async function inlineLocalImages(html: string): Promise<string> {
   const imgRegex = /<img[^>]+src="([^"]+)"/g;
-  const replacements: Array<{ original: string; replacement: string }> = [];
+  const urls = new Set<string>();
 
   let match: RegExpExecArray | null;
   while ((match = imgRegex.exec(html)) !== null) {
     const url = match[1];
-    // Skip data: (already inline) and absolute URLs (Browserless can fetch)
-    if (url.startsWith('data:') || url.startsWith('https://') || url.startsWith('http://')) {
-      continue;
-    }
-    // Convert blob: or relative URLs to base64
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const dataUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-      replacements.push({ original: url, replacement: dataUrl });
-    } catch (_e) {
-      // Skip failed images silently
-    }
+    if (url.startsWith('data:')) continue;
+    urls.add(url);
   }
 
+  // Fetch all images in parallel for speed
+  const replacements = await Promise.all(
+    Array.from(urls).map(async (url) => {
+      try {
+        const response = await fetch(url, { cache: 'reload' });
+        if (!response.ok) {
+          console.warn(`[PDF Engine] Image fetch failed (${response.status}):`, url);
+          return null;
+        }
+        const blob = await response.blob();
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        });
+        return { original: url, replacement: dataUrl };
+      } catch (e) {
+        console.warn('[PDF Engine] Could not inline image:', url, e);
+        return null;
+      }
+    })
+  );
+
   let result = html;
-  for (const { original, replacement } of replacements) {
-    result = result.split(original).join(replacement);
+  for (const r of replacements) {
+    if (r) result = result.split(r.original).join(r.replacement);
   }
   return result;
 }

@@ -3,6 +3,7 @@ import { AlertCircle, Send, Clock, X, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { useProfile } from '@/hooks/useProfile';
 import type { DocumentItem } from './DocumentCard';
 
 interface UnpaidInvoicesBlockProps {
@@ -13,6 +14,9 @@ interface UnpaidInvoicesBlockProps {
 const fmt = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
+const fmtAmount = (n: number) =>
+  new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
 const parseDateFR = (dateStr: string): Date => {
   const parts = dateStr.split('/');
   if (parts.length === 3) {
@@ -21,12 +25,92 @@ const parseDateFR = (dateStr: string): Date => {
   return new Date(dateStr);
 };
 
-const buildReminderMessage = (doc: DocumentItem, isRTL: boolean, daysOverdue: number) => {
-  const amount = fmt(doc.amountTTC);
-  if (isRTL) {
-    return `السلام عليكم،\n\nده تذكير لطيف بخصوص الفاتورة رقم ${doc.number} بتاريخ ${doc.date} بمبلغ ${amount}.\n\nالفاتورة دي مستحقة من ${daysOverdue} يوم.\n\nياريت تأكدلي الدفع لما يتم.\n\nشكراً جزيلاً.`;
+type ClientInfo = {
+  isCompany: boolean;
+  particulierName: string;
+  companyName: string;
+  displayName: string;
+};
+
+const getClientInfo = (doc: DocumentItem): ClientInfo => {
+  const raw = doc.rawData || {};
+  const dd = raw.document_data || {};
+  const client = dd.client || {};
+
+  const clientType = client.client_type || client.clientType || raw.client_type;
+  const isB2B = client.is_b2b === true || client.isB2B === true || clientType === 'professionnel';
+  const companyName = (client.company_name || client.companyName || '').toString().trim();
+  const contactName = (client.contact_name || client.contactName || client.name || '').toString().trim();
+  const fallbackName = (doc.clientName || '').toString().trim();
+
+  const isCompany = isB2B || (!!companyName && companyName !== fallbackName && !contactName);
+
+  return {
+    isCompany,
+    particulierName: contactName || fallbackName,
+    companyName: companyName || fallbackName,
+    displayName: isCompany ? (companyName || fallbackName) : (contactName || fallbackName),
+  };
+};
+
+type ReminderLevel = 1 | 2 | 3;
+
+const getReminderLevel = (daysOverdue: number): ReminderLevel => {
+  if (daysOverdue > 60) return 3;
+  if (daysOverdue >= 30) return 2;
+  return 1;
+};
+
+const buildReminderMessage = (
+  doc: DocumentItem,
+  daysOverdue: number,
+  artisanCompany: string,
+): string => {
+  const info = getClientInfo(doc);
+  const amount = fmtAmount(doc.amountTTC);
+  const level = getReminderLevel(daysOverdue);
+  const company = (artisanCompany || '').trim() || '[Votre entreprise]';
+
+  const greetingStandard = info.isCompany ? 'Bonjour,' : `Bonjour ${info.particulierName},`;
+  const greetingFormal = info.isCompany ? 'Madame, Monsieur,' : `Madame, Monsieur ${info.particulierName},`;
+
+  if (level === 1) {
+    return `${greetingStandard}
+
+Sauf erreur de notre part, la facture n° ${doc.number} d'un montant de ${amount}€ émise le ${doc.date} reste à ce jour impayée.
+
+Pourriez-vous nous confirmer la date de règlement prévue ?
+
+Cordialement,
+
+${company}`;
   }
-  return `Bonjour,\n\nCeci est un rappel concernant la facture n°${doc.number} du ${doc.date} d'un montant de ${amount}.\n\nCette facture est en attente de règlement depuis ${daysOverdue} jour${daysOverdue > 1 ? 's' : ''}.\n\nMerci de bien vouloir procéder au règlement dès que possible.\n\nCordialement.`;
+
+  if (level === 2) {
+    return `${greetingStandard}
+
+Malgré notre précédent rappel, la facture n° ${doc.number} d'un montant de ${amount}€ demeure impayée depuis le ${doc.date}.
+
+Nous vous demandons de procéder au règlement dans les 8 jours.
+
+Sans retour de votre part, nous nous verrons contraints d'engager une procédure de recouvrement.
+
+Cordialement,
+
+${company}`;
+  }
+
+  return `${greetingFormal}
+
+MISE EN DEMEURE DE PAYER
+
+Malgré nos relances restées sans suite, la facture n° ${doc.number} d'un montant de ${amount}€ reste impayée.
+
+En application de l'article L.441-10 du Code de commerce, des pénalités de retard sont applicables.
+
+Vous disposez de 8 jours pour régulariser avant engagement de poursuites judiciaires.
+
+${company}`;
 };
 
 const getClientPhone = (doc: DocumentItem) => {

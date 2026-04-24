@@ -439,6 +439,11 @@ const ArchiveAccountingPage = () => {
         <Sparkles className={cn('absolute top-1/2 -translate-y-1/2 h-4 w-4 text-accent/50', isRTL ? 'left-3' : 'right-3')} />
       </div>
 
+      {/* Unpaid Invoices - Top priority */}
+      <div className="mb-4 shrink-0">
+        <UnpaidInvoicesBlock documents={documents} isRTL={isRTL} />
+      </div>
+
       {/* Financial Summary */}
       <div className="mb-4 shrink-0">
         <FinancialSummary
@@ -457,11 +462,6 @@ const ArchiveAccountingPage = () => {
           debugUnpaidCount={facturesValidees.filter(d => d.paymentStatus !== 'paid').length}
           tresorerieEncaissee={tresorerieEncaissee}
         />
-      </div>
-
-      {/* Unpaid Invoices */}
-      <div className="mb-4 shrink-0">
-        <UnpaidInvoicesBlock documents={documents} isRTL={isRTL} />
       </div>
 
       {/* ShbikLbik */}

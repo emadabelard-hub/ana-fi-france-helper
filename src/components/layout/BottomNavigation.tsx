@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Newspaper, User, Shield, HeadphonesIcon, Receipt } from 'lucide-react';
+import { Home, Newspaper, User, Shield, HeadphonesIcon, Receipt, Bot } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +33,15 @@ const navItems = [
     color: 'text-orange-400',
     activeBg: 'bg-orange-400/15',
     dotColor: 'bg-orange-400',
+  },
+  {
+    path: '/ai-assistant',
+    icon: Bot,
+    labelAr: 'مساعد',
+    labelFr: 'Assistant',
+    color: 'text-violet-400',
+    activeBg: 'bg-violet-400/15',
+    dotColor: 'bg-violet-400',
   },
   {
     path: '/support',

@@ -100,6 +100,141 @@ const AIAssistantPage = () => {
     }
   }, [dictation, isRTL, toast]);
 
+  // ── Agent comptable : détection commandes arabes ──
+  const isAccountingCommand = (text: string): boolean => {
+    const t = text.trim().toLowerCase();
+    const triggers = [
+      'كام كسبت الشهر',
+      'عمل تقرير',
+      'اعمل تقرير',
+      'إيه أخبار حساباتي',
+      'ايه اخبار حساباتي',
+      'تقرير الشهر',
+      'تقرير شهري',
+      'حسابات الشهر',
+    ];
+    return triggers.some(k => t.includes(k.toLowerCase()));
+  };
+
+  const formatEUR = (n: number) =>
+    new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' €';
+
+  const generateAccountingReport = async (): Promise<string> => {
+    if (!user) {
+      return 'لازم تكون مسجل دخول عشان أعرف أعمل لك التقرير يا فندم 🙏';
+    }
+    const now = new Date();
+    const year = now.getFullYear();
+    const monthIndex = now.getMonth();
+    const monthStart = new Date(year, monthIndex, 1).toISOString();
+    const nextMonth = new Date(year, monthIndex + 1, 1).toISOString();
+    const monthsAr = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    const monthName = monthsAr[monthIndex];
+
+    // Mois précédent (pour comparaison)
+    const prevStart = new Date(year, monthIndex - 1, 1).toISOString();
+    const prevEnd = monthStart;
+
+    try {
+      // Factures payées du mois en cours (CA encaissé) — comptabilité 100% encaissement
+      const { data: paidDocs } = await supabase
+        .from('documents_comptables')
+        .select('total_ttc, subtotal_ht, tva_amount, created_at')
+        .eq('user_id', user.id)
+        .eq('document_type', 'facture')
+        .eq('payment_status', 'paid')
+        .gte('created_at', monthStart)
+        .lt('created_at', nextMonth);
+
+      // Factures payées du mois précédent
+      const { data: prevPaidDocs } = await supabase
+        .from('documents_comptables')
+        .select('total_ttc')
+        .eq('user_id', user.id)
+        .eq('document_type', 'facture')
+        .eq('payment_status', 'paid')
+        .gte('created_at', prevStart)
+        .lt('created_at', prevEnd);
+
+      // Factures payées depuis le début de l'année (seuil micro)
+      const yearStart = new Date(year, 0, 1).toISOString();
+      const { data: yearDocs } = await supabase
+        .from('documents_comptables')
+        .select('total_ttc')
+        .eq('user_id', user.id)
+        .eq('document_type', 'facture')
+        .eq('payment_status', 'paid')
+        .gte('created_at', yearStart);
+
+      // Dépenses du mois
+      const { data: expenses } = await supabase
+        .from('expenses')
+        .select('amount, tva_amount')
+        .eq('user_id', user.id)
+        .gte('expense_date', monthStart.slice(0, 10))
+        .lt('expense_date', nextMonth.slice(0, 10));
+
+      const revenusTTC = (paidDocs || []).reduce((s, d) => s + Number(d.total_ttc || 0), 0);
+      const revenusHT = (paidDocs || []).reduce((s, d) => s + Number(d.subtotal_ht || 0), 0);
+      const tvaCollectee = (paidDocs || []).reduce((s, d) => s + Number(d.tva_amount || 0), 0);
+
+      const depensesTTC = (expenses || []).reduce((s, e) => s + Number(e.amount || 0), 0);
+      const tvaDepenses = (expenses || []).reduce((s, e) => s + Number(e.tva_amount || 0), 0);
+      const depensesHT = depensesTTC - tvaDepenses;
+
+      const tvaNette = Math.max(0, tvaCollectee - tvaDepenses);
+
+      // Bénéfice brut HT (base URSSAF)
+      const beneficeBrutHT = Math.max(0, revenusHT - depensesHT);
+      const urssafRate = (profile?.urssaf_rate ?? 22) / 100;
+      const urssaf = beneficeBrutHT * urssafRate;
+
+      const beneficeNet = revenusTTC - depensesTTC - urssaf - tvaNette;
+
+      // Comparaison mois précédent
+      const revenusPrev = (prevPaidDocs || []).reduce((s, d) => s + Number(d.total_ttc || 0), 0);
+      const totalAnnuel = (yearDocs || []).reduce((s, d) => s + Number(d.total_ttc || 0), 0);
+      const seuilMicro = 77700;
+      const pctSeuil = (totalAnnuel / seuilMicro) * 100;
+
+      // Conseil personnalisé
+      let conseil = '';
+      if (pctSeuil >= 80) {
+        conseil = `تنبيه — وصلت لـ ${pctSeuil.toFixed(0)}% من الحد السنوي 77700€، خد بالك متعديش`;
+      } else if (tvaNette > 500) {
+        conseil = 'خد بالك — عندك TVA كبيرة الشهر ده، حط فلوسها جنب من دلوقتي';
+      } else if (depensesTTC > revenusTTC * 0.5 && revenusTTC > 0) {
+        conseil = 'مصاريفك عالية الشهر ده — راجعها كويس وشوف اللي ينفع تقلله';
+      } else if (revenusTTC > revenusPrev && revenusPrev > 0) {
+        const diff = revenusTTC - revenusPrev;
+        conseil = `ماشي كويس — دخلك زاد بـ ${formatEUR(diff)} عن الشهر اللي فات 👏`;
+      } else if (revenusTTC === 0) {
+        conseil = 'لسه مفيش فواتير مدفوعة الشهر ده — يلا نشتغل ونحصّل 💪';
+      } else {
+        conseil = 'الوضع متوازن، كمل على نفس النهج وحط فلوس الضرايب جنب 👍';
+      }
+
+      return `📊 تقرير ${monthName} ${year}
+
+💰 دخلك : ${formatEUR(revenusTTC)}
+
+💸 مصاريفك : ${formatEUR(depensesTTC)}
+
+📈 ربحك قبل الضرايب : ${formatEUR(revenusTTC - depensesTTC)}
+
+🏛️ URSSAF المقدرة : ${formatEUR(urssaf)}
+
+💳 TVA اللي هتدفعها : ${formatEUR(tvaNette)}
+
+✅ صافي ربحك : ${formatEUR(beneficeNet)}
+
+💡 ${conseil}`;
+    } catch (err) {
+      console.error('Accounting report error:', err);
+      return 'حصل مشكلة في جلب البيانات، جرب تاني بعد شوية 🔄';
+    }
+  };
+
   const send = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
@@ -108,6 +243,14 @@ const AIAssistantPage = () => {
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
+
+    // Intercept: agent comptable
+    if (isAccountingCommand(text)) {
+      const report = await generateAccountingReport();
+      setMessages(prev => [...prev, { role: 'assistant', content: report }]);
+      setIsLoading(false);
+      return;
+    }
 
     let assistantSoFar = '';
 

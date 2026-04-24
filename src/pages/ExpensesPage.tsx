@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Receipt, Plus, TrendingUp, TrendingDown, Wallet, Banknote,
   Loader2, Download, Eye, FileText, Archive,
-  ChevronDown, ChevronUp, Users, HardHat, Calculator, Info, Landmark, Shield
+  ChevronDown, ChevronUp, Users, HardHat, Calculator, Info, Landmark, Shield, Bot
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
@@ -776,6 +776,21 @@ const ExpensesPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Assistant comptable shortcut */}
+      <Button
+        variant="outline"
+        onClick={() => navigate('/ai-assistant')}
+        className={cn(
+          "w-full gap-2.5 h-14 rounded-xl border-2 border-violet-400/40 bg-violet-400/5 hover:bg-violet-400/10 shadow-md text-violet-500",
+          isRTL && "flex-row-reverse font-cairo"
+        )}
+      >
+        <Bot className="h-5 w-5 text-violet-400" />
+        <span className="font-bold" style={{ fontSize: '16px' }}>
+          {isRTL ? '🤖 اسأل المساعد عن حساباتك' : '🤖 Demander à l\'assistant'}
+        </span>
+      </Button>
 
       {/* Export Buttons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

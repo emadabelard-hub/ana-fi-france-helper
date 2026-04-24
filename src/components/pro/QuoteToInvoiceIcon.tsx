@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface QuoteToInvoiceIconProps {
   className?: string;
@@ -9,6 +10,9 @@ interface QuoteToInvoiceIconProps {
  * with a transfer arrow between them
  */
 const QuoteToInvoiceIcon = ({ className = "h-8 w-8" }: QuoteToInvoiceIconProps) => {
+  const { isRTL } = useLanguage();
+  const quoteLabel = isRTL ? 'دوفي' : 'Devis';
+  const invoiceLabel = isRTL ? 'فاكتير' : 'Facture';
   return (
     <svg 
       viewBox="0 0 48 48" 

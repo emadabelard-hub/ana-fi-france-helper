@@ -130,6 +130,8 @@ export interface CsvDocumentRow {
   totalTTC: number;
   status?: string | null;
   tvaExempt?: boolean;
+  documentNumber?: string | null;
+  paymentMode?: string | null;
 }
 
 export interface AccountingExportData {
@@ -166,19 +168,40 @@ export function generateProfessionalCSV(rows: CsvDocumentRow[]): string {
 }
 
 // ── Professional SINGLE-TABLE accounting export ──
-// FORMAT STRICT: Date;Type;Tiers;Compte;Libelle;Montant_HT;TVA_Taux;TVA_Montant;Montant_TTC;Statut
+// FORMAT FRANÇAIS COMPTABILITÉ STANDARD :
+// Date;N° Pièce;N° Document;Type;Compte;Compte Tiers;Tiers;Libellé;
+// Montant HT;Taux TVA;Montant TVA;Compte TVA;Montant TTC;Mode règlement;Statut
 // Séparateur: point-virgule (;)
-// UNE SEULE TABLE — aucune section, aucune ligne vide, aucun titre.
+
+// Détecte un numéro de document (F-2026-049, D-2026-001…) dans une chaîne libre
+function extractDocumentNumber(raw: string | null | undefined): string {
+  if (!raw) return '';
+  const m = String(raw).match(/\b([FD])[-_ ]?\d{2,4}[-_ ]?\d{1,5}\b/i);
+  return m ? m[0].toUpperCase().replace(/[_ ]/g, '-') : '';
+}
+
+// Normalise le mode de règlement vers le vocabulaire comptable français
+function normalizePaymentMode(raw: string | null | undefined): string {
+  if (!raw) return 'Non spécifié';
+  const s = String(raw).toLowerCase();
+  if (/(virement|transfer|sepa|wire)/.test(s)) return 'Virement';
+  if (/(ch[èe]que|cheque)/.test(s)) return 'Chèque';
+  if (/(esp[èe]ces|espece|cash|liquide|نقد|كاش)/.test(s)) return 'Espèces';
+  if (/(carte|cb|card)/.test(s)) return 'Carte bancaire';
+  if (/(pr[ée]l[èe]vement)/.test(s)) return 'Prélèvement';
+  return 'Non spécifié';
+}
 
 export function generateAccountingCSV(data: AccountingExportData): string {
   const sep = ';';
   const headers = [
-    'Date', 'Type', 'Tiers', 'Compte', 'Libelle',
-    'Montant_HT', 'TVA_Taux', 'TVA_Montant', 'Montant_TTC', 'Statut',
+    'Date', 'N° Pièce', 'N° Document', 'Type', 'Compte', 'Compte Tiers', 'Tiers', 'Libellé',
+    'Montant HT', 'Taux TVA', 'Montant TVA', 'Compte TVA', 'Montant TTC', 'Mode règlement', 'Statut',
   ];
 
   const allRows: string[] = [];
   const errors: string[] = [];
+  let pieceCounter = 0;
 
   // ── Ventes (factures) ──
   for (const r of data.invoices) {
@@ -194,13 +217,17 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     const tvaMontant = Math.round(ht * tvaRate) / 100;
     const ttc = Math.round((ht + tvaMontant) * 100) / 100;
 
-    // Validation: TTC = HT + TVA
     const libelle = professionalLibelle(r.reference || r.clientName || '', 'Vente');
     const clientName = translateToFrench(r.clientName);
+    const docNumber = r.documentNumber || extractDocumentNumber(r.reference);
+    const paymentMode = normalizePaymentMode(r.paymentMode);
+    pieceCounter += 1;
+    const piece = `PCE-${String(pieceCounter).padStart(5, '0')}`;
+    const compteTVA = tvaMontant > 0 ? '44571' : '';
 
     allRows.push([
-      date, 'Vente', cleanCell(clientName), '706', cleanCell(libelle),
-      fmtNum(ht), fmtNum(tvaRate), fmtNum(tvaMontant), fmtNum(ttc), 'Validée',
+      date, piece, cleanCell(docNumber), 'Vente', '706', '411000', cleanCell(clientName), cleanCell(libelle),
+      fmtNum(ht), fmtNum(tvaRate), fmtNum(tvaMontant), compteTVA, fmtNum(ttc), paymentMode, 'Validée',
     ].join(sep));
   }
 
@@ -212,7 +239,7 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     const tvaRate = correctTvaRate(r.tvaRate ?? 0, r.tvaExempt === true);
     const rawHT = sanitizeAmount(r.totalHT);
     const rawTTC = sanitizeAmount(r.totalTTC);
-    if (rawHT <= 0 && rawTTC <= 0) continue; // Skip zero expenses
+    if (rawHT <= 0 && rawTTC <= 0) continue;
 
     const ht = rawHT > 0 ? rawHT : computeHT(rawTTC, tvaRate);
     const tvaMontant = Math.round(ht * tvaRate) / 100;
@@ -222,11 +249,16 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     const isTransport = /transport|بنزين|مازوت|وقود|carburant|gasoil/i.test(rawLabel);
     const compte = isTransport ? '625' : '601';
     const libelle = professionalLibelle(rawLabel, isTransport ? 'Transport' : 'Achat');
-    const clientName = translateToFrench(r.clientName || 'Fournisseur');
+    const fournisseurName = translateToFrench(r.clientName || 'Fournisseur');
+    const docNumber = r.documentNumber || extractDocumentNumber(r.reference);
+    const paymentMode = normalizePaymentMode(r.paymentMode);
+    pieceCounter += 1;
+    const piece = `PCE-${String(pieceCounter).padStart(5, '0')}`;
+    const compteTVA = tvaMontant > 0 ? '44566' : '';
 
     allRows.push([
-      date, 'Achat', cleanCell(clientName), compte, cleanCell(libelle),
-      fmtNum(ht), fmtNum(tvaRate), fmtNum(tvaMontant), fmtNum(ttc), 'Validée',
+      date, piece, cleanCell(docNumber), 'Achat', compte, '401000', cleanCell(fournisseurName), cleanCell(libelle),
+      fmtNum(ht), fmtNum(tvaRate), fmtNum(tvaMontant), compteTVA, fmtNum(ttc), paymentMode, 'Validée',
     ].join(sep));
   }
 

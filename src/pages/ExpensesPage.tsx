@@ -610,8 +610,6 @@ const ExpensesPage = () => {
       </div>
 
       {/* Comptabilité submenu */}
-      <UnpaidInvoicesBlock documents={documentItems} isRTL={isRTL} />
-
       <Card className="border-border bg-card">
         <CardContent className="p-3 space-y-3">
           <Button

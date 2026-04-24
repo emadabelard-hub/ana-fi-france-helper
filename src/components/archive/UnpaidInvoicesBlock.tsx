@@ -144,8 +144,12 @@ const normalizeWhatsAppPhone = (value: string) => {
 };
 
 const UnpaidInvoicesBlock = ({ documents, isRTL }: UnpaidInvoicesBlockProps) => {
+  const { profile } = useProfile();
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [previewMessage, setPreviewMessage] = useState('');
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
+  const artisanCompany = (profile?.company_name || profile?.full_name || '').trim();
 
   const unpaidInvoices = useMemo(() => {
     const now = new Date();
@@ -170,14 +174,24 @@ const UnpaidInvoicesBlock = ({ documents, isRTL }: UnpaidInvoicesBlockProps) => 
   );
 
   const openPreview = (doc: DocumentItem, daysOverdue: number) => {
-    const message = buildReminderMessage(doc, isRTL, daysOverdue);
+    const message = buildReminderMessage(doc, daysOverdue, artisanCompany);
     setPreviewMessage(message);
     setPreviewId(doc.id);
+    setConfirmingId(null);
   };
 
   const closePreview = () => {
     setPreviewId(null);
     setPreviewMessage('');
+    setConfirmingId(null);
+  };
+
+  const requestConfirm = (doc: DocumentItem) => {
+    setConfirmingId(doc.id);
+  };
+
+  const cancelConfirm = () => {
+    setConfirmingId(null);
   };
 
   const handleConfirmSend = (doc: DocumentItem) => {
@@ -189,6 +203,7 @@ const UnpaidInvoicesBlock = ({ documents, isRTL }: UnpaidInvoicesBlockProps) => 
     window.open(url, '_blank', 'noopener,noreferrer');
     setPreviewId(null);
     setPreviewMessage('');
+    setConfirmingId(null);
   };
 
   if (unpaidInvoices.length === 0) {

@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Receipt, Plus, TrendingUp, TrendingDown, Wallet, Banknote,
   Loader2, Download, Eye, FileText, Archive,
-  ChevronDown, ChevronUp, Users, HardHat, Calculator, Info, Landmark, Shield
+  ChevronDown, ChevronUp, Users, HardHat, Calculator, Info, Landmark, Shield, Bot
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';

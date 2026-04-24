@@ -17,9 +17,11 @@ import {
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
+import UnpaidInvoicesBlock from '@/components/archive/UnpaidInvoicesBlock';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 import { generateProfessionalCSV, generateAccountingCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
 import { useProfile } from '@/hooks/useProfile';
+import type { DocumentItem } from '@/components/archive/DocumentCard';
 
 interface UnifiedRow {
   id: string;
@@ -54,6 +56,7 @@ const ExpensesPage = () => {
   const [showAccountingMenu, setShowAccountingMenu] = useState(false);
 
   const [rows, setRows] = useState<UnifiedRow[]>([]);
+  const [documentItems, setDocumentItems] = useState<DocumentItem[]>([]);
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalIncomeHT, setTotalIncomeHT] = useState(0);
   const [totalCollected, setTotalCollected] = useState(0);
@@ -67,7 +70,7 @@ const ExpensesPage = () => {
       // Fetch documents
       const docsQ = supabase
         .from('documents_comptables')
-        .select('id, document_type, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, payment_status, created_at, chantier_id, pdf_url')
+        .select('id, document_type, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, payment_status, created_at, chantier_id, pdf_url, document_data, converted_to_invoice, linked_invoice_id')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -101,6 +104,7 @@ const ExpensesPage = () => {
       let expenseSum = 0;
 
       const unified: UnifiedRow[] = [];
+      const mappedDocuments: DocumentItem[] = [];
 
       // Documents
       (docsRes.data || []).forEach((d: any) => {
@@ -127,6 +131,19 @@ const ExpensesPage = () => {
           status: d.status || null,
           paymentStatus: d.payment_status || null,
           pdfUrl: d.pdf_url || null,
+        });
+
+        mappedDocuments.push({
+          id: d.id,
+          type: d.document_type === 'devis' ? 'devis' : 'facture',
+          number: d.document_number,
+          clientName: d.client_name || '',
+          date: new Date(d.created_at).toLocaleDateString('fr-FR'),
+          amountHT: d.subtotal_ht || 0,
+          amountTTC: d.total_ttc || 0,
+          status: d.status === 'finalized' ? 'finalized' : d.status === 'cancelled' ? 'cancelled' : 'draft',
+          paymentStatus: d.payment_status || 'unpaid',
+          rawData: d,
         });
       });
 
@@ -157,6 +174,7 @@ const ExpensesPage = () => {
       unified.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
       setRows(unified);
+      setDocumentItems(mappedDocuments);
       setTotalIncome(incomeSum);
       setTotalIncomeHT(incomeHTSum);
       setTotalCollected(collectedSum);
@@ -592,6 +610,8 @@ const ExpensesPage = () => {
       </div>
 
       {/* Comptabilité submenu */}
+      <UnpaidInvoicesBlock documents={documentItems} isRTL={isRTL} />
+
       <Card className="border-border bg-card">
         <CardContent className="p-3 space-y-3">
           <Button

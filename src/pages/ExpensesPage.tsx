@@ -85,7 +85,7 @@ const ExpensesPage = () => {
       const chQ = supabase.from('chantiers').select('id, name, client_id').eq('user_id', user.id);
 
       // Fetch clients for ID lookup
-      const clQ = supabase.from('clients').select('id, name').eq('user_id', user.id);
+      const clQ = supabase.from('clients').select('id, name, contact_phone').eq('user_id', user.id);
 
       const [docsRes, expRes, chRes, clRes] = await Promise.all([docsQ, expQ, chQ, clQ]);
 
@@ -93,7 +93,11 @@ const ExpensesPage = () => {
       (chRes.data || []).forEach((c: any) => { chantierMap[c.id] = { name: c.name, clientId: c.client_id }; });
 
       const clientMap: Record<string, string> = {};
-      (clRes.data || []).forEach((c: any) => { clientMap[c.name] = c.id; });
+      const clientPhoneMap: Record<string, string> = {};
+      (clRes.data || []).forEach((c: any) => {
+        clientMap[c.name] = c.id;
+        clientPhoneMap[c.name] = c.contact_phone || '';
+      });
       // Also map by id
       const clientIdMap: Record<string, string> = {};
       (clRes.data || []).forEach((c: any) => { clientIdMap[c.id] = c.name; });
@@ -143,7 +147,10 @@ const ExpensesPage = () => {
           amountTTC: d.total_ttc || 0,
           status: d.status === 'finalized' ? 'finalized' : d.status === 'cancelled' ? 'cancelled' : 'draft',
           paymentStatus: d.payment_status || 'unpaid',
-          rawData: d,
+          rawData: {
+            ...d,
+            resolved_client_phone: clientPhoneMap[d.client_name] || '',
+          },
         });
       });
 

@@ -795,6 +795,9 @@ const ExpensesPage = () => {
         </Button>
       </div>
 
+      {/* Unpaid invoices reminder block */}
+      <UnpaidInvoicesBlock documents={documentItems} isRTL={isRTL} />
+
       {/* URSSAF Summary Card */}
       <Card className="border-violet-500/20 bg-violet-500/5">
         <CardContent className="p-4">

@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
-import { AlertCircle, Send, Clock } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { AlertCircle, Send, Clock, X, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import type { DocumentItem } from './DocumentCard';
 
 interface UnpaidInvoicesBlockProps {
@@ -29,6 +30,9 @@ const buildReminderMessage = (doc: DocumentItem, isRTL: boolean, daysOverdue: nu
 };
 
 const UnpaidInvoicesBlock = ({ documents, isRTL }: UnpaidInvoicesBlockProps) => {
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [previewMessage, setPreviewMessage] = useState('');
+
   const unpaidInvoices = useMemo(() => {
     const now = new Date();
     return documents
@@ -51,14 +55,26 @@ const UnpaidInvoicesBlock = ({ documents, isRTL }: UnpaidInvoicesBlockProps) => 
     [unpaidInvoices]
   );
 
-  const handleSendReminder = (doc: DocumentItem, daysOverdue: number) => {
-    const phone = (doc.rawData?.document_data?.client?.phone || '').replace(/[^\d+]/g, '');
+  const openPreview = (doc: DocumentItem, daysOverdue: number) => {
     const message = buildReminderMessage(doc, isRTL, daysOverdue);
-    const encodedMessage = encodeURIComponent(message);
+    setPreviewMessage(message);
+    setPreviewId(doc.id);
+  };
+
+  const closePreview = () => {
+    setPreviewId(null);
+    setPreviewMessage('');
+  };
+
+  const handleConfirmSend = (doc: DocumentItem) => {
+    const phone = (doc.rawData?.document_data?.client?.phone || '').replace(/[^\d+]/g, '');
+    const encodedMessage = encodeURIComponent(previewMessage);
     const url = phone
       ? `https://wa.me/${phone.replace(/^\+/, '')}?text=${encodedMessage}`
       : `https://wa.me/?text=${encodedMessage}`;
     window.open(url, '_blank', 'noopener,noreferrer');
+    setPreviewId(null);
+    setPreviewMessage('');
   };
 
   if (unpaidInvoices.length === 0) {
@@ -93,42 +109,83 @@ const UnpaidInvoicesBlock = ({ documents, isRTL }: UnpaidInvoicesBlockProps) => 
             : isWarning
               ? 'text-orange-400 bg-orange-500/10 border-orange-500/30'
               : 'text-muted-foreground bg-muted/30 border-border/50';
+          const isPreviewing = previewId === doc.id;
 
           return (
             <div
               key={doc.id}
               className={cn(
-                'rounded-lg border p-2.5 flex items-center gap-2',
+                'rounded-lg border p-2.5',
                 isCritical ? 'border-red-500/30 bg-red-500/5' : isWarning ? 'border-orange-500/30 bg-orange-500/5' : 'border-border/50 bg-muted/20',
-                isRTL && 'flex-row-reverse'
+                isRTL && 'text-right'
               )}
             >
-              <div className={cn('flex-1 min-w-0', isRTL && 'text-right')}>
-                <div className={cn('flex items-center gap-1.5 mb-0.5', isRTL && 'flex-row-reverse')}>
-                  <span className="text-xs font-bold text-foreground truncate">{doc.number}</span>
-                  <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full border font-semibold', ageColor)}>
-                    <Clock className="inline h-2.5 w-2.5 mr-0.5 -mt-0.5" />
-                    {isRTL ? `${daysOverdue} يوم` : `${daysOverdue}j`}
-                  </span>
+              <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+                <div className={cn('flex-1 min-w-0', isRTL && 'text-right')}>
+                  <div className={cn('flex items-center gap-1.5 mb-0.5', isRTL && 'flex-row-reverse')}>
+                    <span className="text-xs font-bold text-foreground truncate">{doc.number}</span>
+                    <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full border font-semibold', ageColor)}>
+                      <Clock className="inline h-2.5 w-2.5 mr-0.5 -mt-0.5" />
+                      {isRTL ? `${daysOverdue} يوم` : `${daysOverdue}j`}
+                    </span>
+                  </div>
+                  <p className={cn('text-[11px] text-muted-foreground truncate', isRTL && 'font-cairo')}>
+                    {doc.clientName || (isRTL ? 'بدون اسم' : 'Sans nom')}
+                  </p>
                 </div>
-                <p className={cn('text-[11px] text-muted-foreground truncate', isRTL && 'font-cairo')}>
-                  {doc.clientName || (isRTL ? 'بدون اسم' : 'Sans nom')}
-                </p>
+                <div className={cn('text-right shrink-0', isRTL && 'text-left')}>
+                  <p className="text-sm font-black text-foreground leading-none">{fmt(doc.amountTTC)}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => isPreviewing ? closePreview() : openPreview(doc, daysOverdue)}
+                  className={cn(
+                    'h-8 px-2.5 font-semibold gap-1 shrink-0',
+                    isPreviewing
+                      ? 'border-muted text-muted-foreground hover:bg-muted/50'
+                      : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300'
+                  )}
+                >
+                  {isPreviewing ? <X className="h-3 w-3" /> : <Send className="h-3 w-3" />}
+                  <span className={cn('text-[10px] hidden sm:inline', isRTL && 'font-cairo')}>
+                    {isPreviewing ? (isRTL ? 'إلغاء' : 'Annuler') : (isRTL ? 'تذكير' : 'Relancer')}
+                  </span>
+                </Button>
               </div>
-              <div className={cn('text-right shrink-0', isRTL && 'text-left')}>
-                <p className="text-sm font-black text-foreground leading-none">{fmt(doc.amountTTC)}</p>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleSendReminder(doc, daysOverdue)}
-                className="h-8 px-2.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 font-semibold gap-1 shrink-0"
-              >
-                <Send className="h-3 w-3" />
-                <span className={cn('text-[10px] hidden sm:inline', isRTL && 'font-cairo')}>
-                  {isRTL ? 'تذكير' : 'Relancer'}
-                </span>
-              </Button>
+
+              {isPreviewing && (
+                <div className={cn('mt-3 space-y-2', isRTL && 'font-cairo')}>
+                  <div className={cn('flex items-center gap-1.5 text-xs text-muted-foreground', isRTL && 'flex-row-reverse')}>
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    <span>{isRTL ? 'مراجعة الرسالة قبل الإرسال' : 'Prévisualiser le message avant envoi'}</span>
+                  </div>
+                  <Textarea
+                    value={previewMessage}
+                    onChange={(e) => setPreviewMessage(e.target.value)}
+                    className={cn('min-h-[120px] text-sm bg-background', isRTL && 'text-right font-cairo')}
+                    dir={isRTL ? 'rtl' : 'ltr'}
+                  />
+                  <div className={cn('flex gap-2', isRTL && 'flex-row-reverse')}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={closePreview}
+                      className="flex-1 h-9 text-xs"
+                    >
+                      {isRTL ? 'إلغاء' : 'Annuler'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleConfirmSend(doc)}
+                      className="flex-1 h-9 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                    >
+                      <Send className="h-3 w-3" />
+                      {isRTL ? 'إرسال بالواتساب' : 'Envoyer par WhatsApp'}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

@@ -224,9 +224,14 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     'Montant HT', 'Taux TVA', 'Montant TVA', 'Compte TVA', 'Montant TTC', 'Mode règlement', 'Statut',
   ];
 
+  // Réinitialise le cache d'uniformisation à chaque export
+  TIERS_NAME_CACHE.clear();
+
   const allRows: string[] = [];
   const errors: string[] = [];
   let pieceCounter = 0;
+  let achatCounter = 0;
+  const currentYear = new Date().getFullYear();
 
   // ── Ventes (factures) ──
   for (const r of data.invoices) {
@@ -243,7 +248,7 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     const ttc = Math.round((ht + tvaMontant) * 100) / 100;
 
     const libelle = professionalLibelle(r.reference || r.clientName || '', 'Vente');
-    const clientName = translateToFrench(r.clientName);
+    const clientName = normalizeTiersName(translateToFrench(r.clientName));
     const docNumber = r.documentNumber || extractDocumentNumber(r.reference);
     const paymentMode = normalizePaymentMode(r.paymentMode);
     pieceCounter += 1;
@@ -274,8 +279,11 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     const isTransport = /transport|بنزين|مازوت|وقود|carburant|gasoil/i.test(rawLabel);
     const compte = isTransport ? '625' : '601';
     const libelle = professionalLibelle(rawLabel, isTransport ? 'Transport' : 'Achat');
-    const fournisseurName = translateToFrench(r.clientName || 'Fournisseur');
-    const docNumber = r.documentNumber || extractDocumentNumber(r.reference);
+    const fournisseurName = normalizeTiersName(translateToFrench(r.clientName || 'Fournisseur'));
+    // N° Document pour achats : extraction depuis facture fournisseur, sinon ACH-YYYY-NNN
+    achatCounter += 1;
+    const extractedDoc = r.documentNumber || extractDocumentNumber(r.reference);
+    const docNumber = extractedDoc || `ACH-${currentYear}-${String(achatCounter).padStart(3, '0')}`;
     const paymentMode = normalizePaymentMode(r.paymentMode);
     pieceCounter += 1;
     const piece = `PCE-${String(pieceCounter).padStart(5, '0')}`;

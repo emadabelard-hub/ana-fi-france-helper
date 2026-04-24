@@ -70,14 +70,14 @@ const QuoteToInvoiceIcon = ({ className = "h-8 w-8" }: QuoteToInvoiceIconProps) 
       <text 
         x="36" 
         y="28" 
-        fontSize="3.5" 
+        fontSize={invoiceLabel.length > 5 ? 2.4 : 3.5}
         fill="white" 
         fontWeight="bold" 
         textAnchor="middle"
         opacity="0.9"
-        fontFamily="Cairo, sans-serif"
+        fontFamily={isRTL ? 'Cairo, sans-serif' : 'Inter, sans-serif'}
       >
-        فاكتير
+        {invoiceLabel}
       </text>
       
       {/* Sparkle effect on invoice (success indicator) */}

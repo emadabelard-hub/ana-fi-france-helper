@@ -35,6 +35,15 @@ const navItems = [
     dotColor: 'bg-orange-400',
   },
   {
+    path: '/ai-assistant',
+    icon: Bot,
+    labelAr: 'مساعد',
+    labelFr: 'Assistant',
+    color: 'text-violet-400',
+    activeBg: 'bg-violet-400/15',
+    dotColor: 'bg-violet-400',
+  },
+  {
     path: '/support',
     icon: HeadphonesIcon,
     labelAr: 'مساعدة',

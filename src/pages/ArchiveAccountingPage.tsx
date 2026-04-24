@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 import FinancialSummary from '@/components/archive/FinancialSummary';
+import UnpaidInvoicesBlock from '@/components/archive/UnpaidInvoicesBlock';
 import ShbikLbikCard from '@/components/archive/ShbikLbikCard';
 import DocumentCard, { type DocumentItem } from '@/components/archive/DocumentCard';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
@@ -456,6 +457,11 @@ const ArchiveAccountingPage = () => {
           debugUnpaidCount={facturesValidees.filter(d => d.paymentStatus !== 'paid').length}
           tresorerieEncaissee={tresorerieEncaissee}
         />
+      </div>
+
+      {/* Unpaid Invoices */}
+      <div className="mb-4 shrink-0">
+        <UnpaidInvoicesBlock documents={documents} isRTL={isRTL} />
       </div>
 
       {/* ShbikLbik */}

@@ -610,8 +610,6 @@ const ExpensesPage = () => {
       </div>
 
       {/* Comptabilité submenu */}
-      <UnpaidInvoicesBlock documents={documentItems} isRTL={isRTL} />
-
       <Card className="border-border bg-card">
         <CardContent className="p-3 space-y-3">
           <Button
@@ -796,6 +794,9 @@ const ExpensesPage = () => {
           </span>
         </Button>
       </div>
+
+      {/* Unpaid invoices reminder block */}
+      <UnpaidInvoicesBlock documents={documentItems} isRTL={isRTL} />
 
       {/* URSSAF Summary Card */}
       <Card className="border-violet-500/20 bg-violet-500/5">

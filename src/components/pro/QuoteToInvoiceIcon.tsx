@@ -37,14 +37,14 @@ const QuoteToInvoiceIcon = ({ className = "h-8 w-8" }: QuoteToInvoiceIconProps) 
       <text 
         x="12" 
         y="24" 
-        fontSize="3.5" 
+        fontSize={quoteLabel.length > 4 ? 2.6 : 3.5}
         fill="white" 
         fontWeight="bold" 
         textAnchor="middle"
         opacity="0.9"
-        fontFamily="Cairo, sans-serif"
+        fontFamily={isRTL ? 'Cairo, sans-serif' : 'Inter, sans-serif'}
       >
-        دوفي
+        {quoteLabel}
       </text>
       
       {/* Transfer arrow (center) - animated pulse effect via CSS */}

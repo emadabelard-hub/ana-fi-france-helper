@@ -283,38 +283,75 @@ const UnpaidInvoicesBlock = ({ documents, isRTL }: UnpaidInvoicesBlockProps) => 
                 </Button>
               </div>
 
-              {isPreviewing && (
-                <div className={cn('mt-3 space-y-2', isRTL && 'font-cairo')}>
-                  <div className={cn('flex items-center gap-1.5 text-xs text-muted-foreground', isRTL && 'flex-row-reverse')}>
-                    <MessageSquare className="h-3.5 w-3.5" />
-                    <span>{isRTL ? 'مراجعة الرسالة قبل الإرسال' : 'Prévisualiser le message avant envoi'}</span>
+              {isPreviewing && (() => {
+                const info = getClientInfo(doc);
+                const recipientName = info.displayName || (isRTL ? 'العميل' : 'Client');
+                const isConfirming = confirmingId === doc.id;
+                return (
+                  <div className={cn('mt-3 space-y-2', isRTL && 'font-cairo')}>
+                    <div className={cn('flex items-center gap-1.5 text-xs text-muted-foreground', isRTL && 'flex-row-reverse')}>
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      <span>{isRTL ? 'مراجعة الرسالة قبل الإرسال' : 'Prévisualiser le message avant envoi'}</span>
+                    </div>
+                    <Textarea
+                      value={previewMessage}
+                      onChange={(e) => {
+                        setPreviewMessage(e.target.value);
+                        if (isConfirming) setConfirmingId(null);
+                      }}
+                      className="min-h-[160px] text-sm bg-background text-left"
+                      dir="ltr"
+                      lang="fr"
+                    />
+                    {isConfirming ? (
+                      <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
+                        <p className="text-sm font-bold text-foreground text-right font-cairo" dir="rtl">
+                          {`هتبعت لـ ${recipientName} الرسالة دي — تأكيد ؟`}
+                        </p>
+                        <div className="flex gap-2 flex-row-reverse">
+                          <Button
+                            size="sm"
+                            onClick={() => handleConfirmSend(doc)}
+                            className="flex-1 h-9 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1 font-cairo"
+                          >
+                            <span>✅</span>
+                            <span>تأكيد</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={cancelConfirm}
+                            className="flex-1 h-9 text-xs gap-1 font-cairo"
+                          >
+                            <span>✏️</span>
+                            <span>تعديل</span>
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={cn('flex gap-2', isRTL && 'flex-row-reverse')}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={closePreview}
+                          className="flex-1 h-9 text-xs"
+                        >
+                          {isRTL ? 'إلغاء' : 'Annuler'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => requestConfirm(doc)}
+                          className="flex-1 h-9 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                        >
+                          <Send className="h-3 w-3" />
+                          {isRTL ? 'إرسال بالواتساب' : 'Envoyer par WhatsApp'}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  <Textarea
-                    value={previewMessage}
-                    onChange={(e) => setPreviewMessage(e.target.value)}
-                    className={cn('min-h-[120px] text-sm bg-background', isRTL && 'text-right font-cairo')}
-                    dir={isRTL ? 'rtl' : 'ltr'}
-                  />
-                  <div className={cn('flex gap-2', isRTL && 'flex-row-reverse')}>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={closePreview}
-                      className="flex-1 h-9 text-xs"
-                    >
-                      {isRTL ? 'إلغاء' : 'Annuler'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleConfirmSend(doc)}
-                      className="flex-1 h-9 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
-                    >
-                      <Send className="h-3 w-3" />
-                      {isRTL ? 'إرسال بالواتساب' : 'Envoyer par WhatsApp'}
-                    </Button>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
+
             </div>
           );
         })}

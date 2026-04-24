@@ -181,15 +181,40 @@ function extractDocumentNumber(raw: string | null | undefined): string {
 }
 
 // Normalise le mode de règlement vers le vocabulaire comptable français
+// Si non renseigné → "Virement" par défaut (mode le plus utilisé)
 function normalizePaymentMode(raw: string | null | undefined): string {
-  if (!raw) return 'Non spécifié';
-  const s = String(raw).toLowerCase();
+  if (!raw) return 'Virement';
+  const s = String(raw).toLowerCase().trim();
+  if (!s) return 'Virement';
   if (/(virement|transfer|sepa|wire)/.test(s)) return 'Virement';
   if (/(ch[èe]que|cheque)/.test(s)) return 'Chèque';
   if (/(esp[èe]ces|espece|cash|liquide|نقد|كاش)/.test(s)) return 'Espèces';
   if (/(carte|cb|card)/.test(s)) return 'Carte bancaire';
   if (/(pr[ée]l[èe]vement)/.test(s)) return 'Prélèvement';
-  return 'Non spécifié';
+  return 'Virement';
+}
+
+// Uniformise les noms de tiers : casse cohérente, accents normalisés, espaces nettoyés
+// Exemple : "BATI club", "bâti club", "Bâti  Club" → "Bâti Club"
+const TIERS_NAME_CACHE = new Map<string, string>();
+function normalizeTiersName(raw: string): string {
+  if (!raw) return raw;
+  const trimmed = raw.replace(/\s+/g, ' ').trim();
+  if (!trimmed) return trimmed;
+  // Clé de regroupement : sans accents, minuscules, sans espaces multiples
+  const key = trimmed
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  // Premier nom rencontré pour cette clé → titlecase canonique
+  if (!TIERS_NAME_CACHE.has(key)) {
+    const titled = trimmed
+      .split(' ')
+      .map(w => w.length > 0 ? w.charAt(0).toLocaleUpperCase('fr-FR') + w.slice(1).toLocaleLowerCase('fr-FR') : w)
+      .join(' ');
+    TIERS_NAME_CACHE.set(key, titled);
+  }
+  return TIERS_NAME_CACHE.get(key)!;
 }
 
 export function generateAccountingCSV(data: AccountingExportData): string {

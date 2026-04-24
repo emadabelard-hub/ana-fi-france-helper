@@ -29,6 +29,36 @@ const buildReminderMessage = (doc: DocumentItem, isRTL: boolean, daysOverdue: nu
   return `Bonjour,\n\nCeci est un rappel concernant la facture n°${doc.number} du ${doc.date} d'un montant de ${amount}.\n\nCette facture est en attente de règlement depuis ${daysOverdue} jour${daysOverdue > 1 ? 's' : ''}.\n\nMerci de bien vouloir procéder au règlement dès que possible.\n\nCordialement.`;
 };
 
+const getClientPhone = (doc: DocumentItem) => {
+  const candidates = [
+    doc.rawData?.resolved_client_phone,
+    doc.rawData?.document_data?.client?.phone,
+    doc.rawData?.document_data?.clientPhone,
+    doc.rawData?.document_data?.client?.contact_phone,
+    doc.rawData?.client_phone,
+  ];
+
+  return candidates.find((value): value is string => typeof value === 'string' && value.trim().length > 0) || '';
+};
+
+const normalizeWhatsAppPhone = (value: string) => {
+  const cleaned = value.replace(/[^\d+]/g, '').trim();
+  if (!cleaned) return '';
+
+  const unsigned = cleaned.startsWith('+')
+    ? cleaned.slice(1)
+    : cleaned.startsWith('00')
+      ? cleaned.slice(2)
+      : cleaned;
+
+  if (/^0\d{9}$/.test(unsigned)) return `33${unsigned.slice(1)}`;
+  if (/^[1-9]\d{8}$/.test(unsigned)) return `33${unsigned}`;
+  if (/^33\d{9}$/.test(unsigned)) return unsigned;
+  if (/^\d{8,15}$/.test(unsigned)) return unsigned;
+
+  return '';
+};
+
 const UnpaidInvoicesBlock = ({ documents, isRTL }: UnpaidInvoicesBlockProps) => {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [previewMessage, setPreviewMessage] = useState('');
@@ -67,10 +97,10 @@ const UnpaidInvoicesBlock = ({ documents, isRTL }: UnpaidInvoicesBlockProps) => 
   };
 
   const handleConfirmSend = (doc: DocumentItem) => {
-    const phone = (doc.rawData?.document_data?.client?.phone || '').replace(/[^\d+]/g, '');
+    const phone = normalizeWhatsAppPhone(getClientPhone(doc));
     const encodedMessage = encodeURIComponent(previewMessage);
     const url = phone
-      ? `https://wa.me/${phone.replace(/^\+/, '')}?text=${encodedMessage}`
+      ? `https://wa.me/${phone}?text=${encodedMessage}`
       : `https://wa.me/?text=${encodedMessage}`;
     window.open(url, '_blank', 'noopener,noreferrer');
     setPreviewId(null);

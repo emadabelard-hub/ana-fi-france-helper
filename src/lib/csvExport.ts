@@ -181,15 +181,40 @@ function extractDocumentNumber(raw: string | null | undefined): string {
 }
 
 // Normalise le mode de règlement vers le vocabulaire comptable français
+// Si non renseigné → "Virement" par défaut (mode le plus utilisé)
 function normalizePaymentMode(raw: string | null | undefined): string {
-  if (!raw) return 'Non spécifié';
-  const s = String(raw).toLowerCase();
+  if (!raw) return 'Virement';
+  const s = String(raw).toLowerCase().trim();
+  if (!s) return 'Virement';
   if (/(virement|transfer|sepa|wire)/.test(s)) return 'Virement';
   if (/(ch[èe]que|cheque)/.test(s)) return 'Chèque';
   if (/(esp[èe]ces|espece|cash|liquide|نقد|كاش)/.test(s)) return 'Espèces';
   if (/(carte|cb|card)/.test(s)) return 'Carte bancaire';
   if (/(pr[ée]l[èe]vement)/.test(s)) return 'Prélèvement';
-  return 'Non spécifié';
+  return 'Virement';
+}
+
+// Uniformise les noms de tiers : casse cohérente, accents normalisés, espaces nettoyés
+// Exemple : "BATI club", "bâti club", "Bâti  Club" → "Bâti Club"
+const TIERS_NAME_CACHE = new Map<string, string>();
+function normalizeTiersName(raw: string): string {
+  if (!raw) return raw;
+  const trimmed = raw.replace(/\s+/g, ' ').trim();
+  if (!trimmed) return trimmed;
+  // Clé de regroupement : sans accents, minuscules, sans espaces multiples
+  const key = trimmed
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  // Premier nom rencontré pour cette clé → titlecase canonique
+  if (!TIERS_NAME_CACHE.has(key)) {
+    const titled = trimmed
+      .split(' ')
+      .map(w => w.length > 0 ? w.charAt(0).toLocaleUpperCase('fr-FR') + w.slice(1).toLocaleLowerCase('fr-FR') : w)
+      .join(' ');
+    TIERS_NAME_CACHE.set(key, titled);
+  }
+  return TIERS_NAME_CACHE.get(key)!;
 }
 
 export function generateAccountingCSV(data: AccountingExportData): string {
@@ -199,9 +224,14 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     'Montant HT', 'Taux TVA', 'Montant TVA', 'Compte TVA', 'Montant TTC', 'Mode règlement', 'Statut',
   ];
 
+  // Réinitialise le cache d'uniformisation à chaque export
+  TIERS_NAME_CACHE.clear();
+
   const allRows: string[] = [];
   const errors: string[] = [];
   let pieceCounter = 0;
+  let achatCounter = 0;
+  const currentYear = new Date().getFullYear();
 
   // ── Ventes (factures) ──
   for (const r of data.invoices) {
@@ -218,7 +248,7 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     const ttc = Math.round((ht + tvaMontant) * 100) / 100;
 
     const libelle = professionalLibelle(r.reference || r.clientName || '', 'Vente');
-    const clientName = translateToFrench(r.clientName);
+    const clientName = normalizeTiersName(translateToFrench(r.clientName));
     const docNumber = r.documentNumber || extractDocumentNumber(r.reference);
     const paymentMode = normalizePaymentMode(r.paymentMode);
     pieceCounter += 1;
@@ -249,8 +279,11 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     const isTransport = /transport|بنزين|مازوت|وقود|carburant|gasoil/i.test(rawLabel);
     const compte = isTransport ? '625' : '601';
     const libelle = professionalLibelle(rawLabel, isTransport ? 'Transport' : 'Achat');
-    const fournisseurName = translateToFrench(r.clientName || 'Fournisseur');
-    const docNumber = r.documentNumber || extractDocumentNumber(r.reference);
+    const fournisseurName = normalizeTiersName(translateToFrench(r.clientName || 'Fournisseur'));
+    // N° Document pour achats : extraction depuis facture fournisseur, sinon ACH-YYYY-NNN
+    achatCounter += 1;
+    const extractedDoc = r.documentNumber || extractDocumentNumber(r.reference);
+    const docNumber = extractedDoc || `ACH-${currentYear}-${String(achatCounter).padStart(3, '0')}`;
     const paymentMode = normalizePaymentMode(r.paymentMode);
     pieceCounter += 1;
     const piece = `PCE-${String(pieceCounter).padStart(5, '0')}`;

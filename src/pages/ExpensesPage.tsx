@@ -63,6 +63,138 @@ const ExpensesPage = () => {
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [archiving, setArchiving] = useState(false);
 
+  // Rapport agent comptable (généré au clic du bouton "اسأل المساعد عن حساباتك")
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportText, setReportText] = useState<string | null>(null);
+
+  const formatEUR0 = (n: number) =>
+    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Math.round(n));
+
+  const generateMonthlyReport = async () => {
+    if (!user) return;
+    setReportLoading(true);
+    setReportText(null);
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth(); // 0-11
+      const startCurrent = new Date(year, month, 1).toISOString();
+      const startNext = new Date(year, month + 1, 1).toISOString();
+      const startPrev = new Date(year, month - 1, 1).toISOString();
+      const startYear = new Date(year, 0, 1).toISOString();
+
+      // Factures du mois en cours (toutes finalisées, on filtre payées ensuite)
+      const curDocsQ = supabase
+        .from('documents_comptables')
+        .select('subtotal_ht, total_ttc, tva_amount, document_type, status, payment_status, created_at')
+        .eq('user_id', user.id)
+        .eq('document_type', 'facture')
+        .gte('created_at', startCurrent)
+        .lt('created_at', startNext);
+
+      // Factures du mois précédent
+      const prevDocsQ = supabase
+        .from('documents_comptables')
+        .select('total_ttc, document_type, status, payment_status, created_at')
+        .eq('user_id', user.id)
+        .eq('document_type', 'facture')
+        .gte('created_at', startPrev)
+        .lt('created_at', startCurrent);
+
+      // Cumul annuel (toutes les factures payées de l'année)
+      const yearDocsQ = supabase
+        .from('documents_comptables')
+        .select('total_ttc, document_type, status, payment_status, created_at')
+        .eq('user_id', user.id)
+        .eq('document_type', 'facture')
+        .gte('created_at', startYear);
+
+      // Dépenses du mois en cours
+      const curExpQ = supabase
+        .from('expenses')
+        .select('amount, tva_amount, expense_date')
+        .eq('user_id', user.id)
+        .gte('expense_date', startCurrent.slice(0, 10))
+        .lt('expense_date', startNext.slice(0, 10));
+
+      const [curDocsRes, prevDocsRes, yearDocsRes, curExpRes] = await Promise.all([
+        curDocsQ, prevDocsQ, yearDocsQ, curExpQ,
+      ]);
+
+      const isPaidFinalized = (d: any) =>
+        (d.status === 'finalized' || d.status === 'converted') &&
+        (d.payment_status === 'paid');
+
+      const curPaid = (curDocsRes.data ?? []).filter(isPaidFinalized);
+      const prevPaid = (prevDocsRes.data ?? []).filter(isPaidFinalized);
+      const yearPaid = (yearDocsRes.data ?? []).filter(isPaidFinalized);
+
+      const caTTC = curPaid.reduce((s, d: any) => s + Number(d.total_ttc || 0), 0);
+      const caHT = curPaid.reduce((s, d: any) => s + Number(d.subtotal_ht || 0), 0);
+      const tvaCollectee = curPaid.reduce((s, d: any) => s + Number(d.tva_amount || 0), 0);
+
+      const depensesTTC = (curExpRes.data ?? []).reduce((s, e: any) => s + Number(e.amount || 0), 0);
+      const tvaDeductible = (curExpRes.data ?? []).reduce((s, e: any) => s + Number(e.tva_amount || 0), 0);
+      const depensesHT = depensesTTC - tvaDeductible;
+
+      const tvaNet = profile?.tva_exempt ? 0 : Math.max(0, tvaCollectee - tvaDeductible);
+      const beneficeBrutHT = Math.max(0, caHT - depensesHT);
+      const urssafRate = Number(profile?.urssaf_rate ?? 21.2);
+      const urssaf = beneficeBrutHT * (urssafRate / 100);
+      const beneficeNet = beneficeBrutHT - urssaf;
+
+      const prevCaTTC = prevPaid.reduce((s, d: any) => s + Number(d.total_ttc || 0), 0);
+      const yearCaTTC = yearPaid.reduce((s, d: any) => s + Number(d.total_ttc || 0), 0);
+      const seuil = 77700;
+      const seuilPct = Math.round((yearCaTTC / seuil) * 100);
+
+      const moisAr = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+      const moisFr = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+      const monthLabel = isRTL ? moisAr[month] : moisFr[month];
+
+      // Conseil personnalisé (priorité : seuil > TVA > dépenses > comparaison)
+      let conseil = '';
+      if (seuilPct >= 80) {
+        conseil = `🚨 تنبيه — وصلت ${seuilPct}% من الحد السنوي 77 700€`;
+      } else if (tvaNet > 500) {
+        conseil = '⚠️ خد بالك — TVA كبيرة، حط فلوسها جنب';
+      } else if (caTTC > 0 && depensesTTC / caTTC > 0.3) {
+        conseil = '📌 مصاريفك عالية الشهر ده — راجعها';
+      } else if (caTTC > prevCaTTC && prevCaTTC > 0) {
+        conseil = '👍 ماشي كويس — دخلك زاد عن الشهر اللي فات';
+      } else if (caTTC === 0 && depensesTTC === 0) {
+        conseil = 'ℹ️ مفيش حركة الشهر ده لسه';
+      } else {
+        conseil = '✅ وضعك المالي مستقر الشهر ده';
+      }
+
+      const report = [
+        `📊 تقرير ${monthLabel} ${year}`,
+        '',
+        `💰 دخلك : ${formatEUR0(caTTC)}`,
+        `💸 مصاريفك : ${formatEUR0(depensesTTC)}`,
+        `📈 ربحك قبل الضرايب : ${formatEUR0(beneficeBrutHT)}`,
+        `🏛️ URSSAF المقدرة : ${formatEUR0(urssaf)}`,
+        `💳 TVA اللي هتدفعها : ${formatEUR0(tvaNet)}`,
+        `✅ صافي ربحك : ${formatEUR0(beneficeNet)}`,
+        `📅 الكومول السنوي : ${formatEUR0(yearCaTTC)} من 77 700€`,
+        '',
+        conseil,
+      ].join('\n');
+
+      setReportText(report);
+    } catch (err) {
+      console.error('[expenses:report] generation failed', err);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Impossible de générer le rapport pour le moment.',
+      });
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   const fetchAll = async () => {
     if (!user) return;
     setLoading(true);
@@ -777,20 +909,41 @@ const ExpensesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Assistant comptable shortcut */}
+      {/* Assistant comptable shortcut — génère un rapport directement (pas de redirection) */}
       <Button
         variant="outline"
-        onClick={() => navigate('/ai-assistant')}
+        onClick={generateMonthlyReport}
+        disabled={reportLoading}
         className={cn(
           "w-full gap-2.5 h-14 rounded-xl border-2 border-violet-400/40 bg-violet-400/5 hover:bg-violet-400/10 shadow-md text-violet-500",
           isRTL && "flex-row-reverse font-cairo"
         )}
       >
-        <Bot className="h-5 w-5 text-violet-400" />
+        {reportLoading
+          ? <Loader2 className="h-5 w-5 text-violet-400 animate-spin" />
+          : <Bot className="h-5 w-5 text-violet-400" />}
         <span className="font-bold" style={{ fontSize: '16px' }}>
           {isRTL ? '🤖 اسأل المساعد عن حساباتك' : '🤖 Demander à l\'assistant'}
         </span>
       </Button>
+
+      {/* Carte rapport agent comptable */}
+      {reportText && (
+        <Card className="border-2 border-violet-400/40 bg-violet-400/5 shadow-md">
+          <CardContent className="p-4">
+            <pre
+              className={cn(
+                'whitespace-pre-wrap font-cairo text-foreground leading-relaxed m-0',
+                isRTL ? 'text-right' : 'text-left'
+              )}
+              dir={isRTL ? 'rtl' : 'ltr'}
+              style={{ fontSize: '15px', fontFamily: '"IBM Plex Sans Arabic", "Cairo", sans-serif' }}
+            >
+              {reportText}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Export Buttons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

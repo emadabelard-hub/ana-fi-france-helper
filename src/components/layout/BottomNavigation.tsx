@@ -128,8 +128,8 @@ const BottomNavigation = () => {
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                "flex flex-col items-center justify-center px-2 py-1 rounded-xl transition-all duration-200",
-                "min-w-[56px] gap-0.5 relative",
+                "flex flex-col items-center justify-center px-1.5 py-1 rounded-xl transition-all duration-200 shrink-0",
+                "min-w-[48px] gap-0.5 relative",
                 isActive ? item.activeBg : "hover:bg-muted/50"
               )}
             >

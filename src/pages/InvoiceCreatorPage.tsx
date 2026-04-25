@@ -151,6 +151,29 @@ const InvoiceCreatorPage = () => {
   // The form already restores `currentStep` from `loadCurrentDocument(documentType)`,
   // so coming back to the page lands the user on the exact step they left.
 
+  // Correction 3: when leaving the form page while a draft is in progress, show a
+  // soft Arabic info toast (non-blocking, single per session).
+  const leftNoticeShownRef = useRef(false);
+  useEffect(() => {
+    return () => {
+      if (leftNoticeShownRef.current) return;
+      try {
+        const hasDraft = listAvailableDrafts().length > 0;
+        if (!hasDraft) return;
+        leftNoticeShownRef.current = true;
+        toast.info(
+          isRTL
+            ? 'عندك دوفي مش مكمل — لو مشيت هتلاقيه محفوظ في مسوداتك'
+            : 'Brouillon en cours sauvegardé dans "Mes brouillons".',
+          { duration: 4000 }
+        );
+      } catch {
+        // ignore
+      }
+    };
+  }, [isRTL]);
+
+
   const prefillData = useMemo(() => {
     // --- NEW: Image Quote To Invoice flow ---
     if (isImageQuoteFlow) {

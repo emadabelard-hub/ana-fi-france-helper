@@ -106,6 +106,59 @@ const CVGeneratorPage = () => {
   const [activeTab, setActiveTab] = useState('edit');
   const [showGuide, setShowGuide] = useState(false);
 
+  // ─── Auto-save (POINT 7) ───
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [showResumeModal, setShowResumeModal] = useState(false);
+  const [pendingDraftSavedAt, setPendingDraftSavedAt] = useState<number>(0);
+
+  // On mount: detect existing draft (<48h) and offer to resume
+  useEffect(() => {
+    const draft = loadCVDraft();
+    if (draft) {
+      setPendingDraftSavedAt(draft.savedAt);
+      setShowResumeModal(true);
+    } else {
+      setDraftRestored(true);
+    }
+  }, []);
+
+  // Debounced auto-save on every cvData change
+  useEffect(() => {
+    if (!draftRestored) return;
+    const t = setTimeout(() => saveCVDraft(cvData), 500);
+    return () => clearTimeout(t);
+  }, [cvData, draftRestored]);
+
+  // Flush on background / page hide (POINT 6)
+  useEffect(() => {
+    if (!draftRestored) return;
+    const flush = () => saveCVDraft(cvData);
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('pagehide', flush);
+    window.addEventListener('beforeunload', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      window.removeEventListener('beforeunload', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [cvData, draftRestored]);
+
+  const handleResumeDraft = useCallback(() => {
+    const draft = loadCVDraft();
+    if (draft) setCVData(draft.data);
+    setShowResumeModal(false);
+    setDraftRestored(true);
+  }, []);
+
+  const handleDiscardDraft = useCallback(() => {
+    clearCVDraft();
+    setShowResumeModal(false);
+    setDraftRestored(true);
+  }, []);
+
   const handleTranslate = async () => {
     // Validate minimum required fields before calling API
     if (!cvData.fullName.trim() || !cvData.profession.trim()) {

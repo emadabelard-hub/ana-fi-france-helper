@@ -275,6 +275,19 @@ const Index = () => {
           <GDPRTrustBox />
         </div>
       </main>
+
+      <DraftResumeModal
+        open={showDraftsModal}
+        onResume={(type) => {
+          setShowDraftsModal(false);
+          navigate(`/pro/invoice-creator?type=${type}`);
+        }}
+        onStartFresh={() => {
+          setShowDraftsModal(false);
+          setDraftsCount(0);
+        }}
+        onClose={() => setShowDraftsModal(false)}
+      />
     </div>
   );
 };

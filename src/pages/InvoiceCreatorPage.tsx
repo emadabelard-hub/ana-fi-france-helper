@@ -52,6 +52,13 @@ const InvoiceCreatorPage = () => {
   const urlSource = searchParams.get('source');
   const isImageQuoteFlow = urlSource === 'image-quote';
 
+  // Force-fresh entry only when the user explicitly requested a brand new doc
+  // via the URL flag `?fresh=1`. Otherwise, if a draft exists for the requested
+  // type, we resume it silently (Correction 1: no question, exact same step).
+  const forceFresh = searchParams.get('fresh') === '1';
+  const existingDraftForUrlType = urlDocType ? loadCurrentDocument(urlDocType) : null;
+  const hasResumableDraftForUrlType = !!existingDraftForUrlType && !forceFresh;
+
   const [documentType, setDocumentType] = useState<'devis' | 'facture' | null>(urlDocType ?? resumedDocumentType);
   const [showTypeModal, setShowTypeModal] = useState(!urlDocType && !resumedDocumentType);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -59,17 +66,17 @@ const InvoiceCreatorPage = () => {
   const [showNumberingOnboarding, setShowNumberingOnboarding] = useState(false);
   const [numberingChecked, setNumberingChecked] = useState(false);
 
-  // Resume modal: show on initial mount if at least one fresh local draft exists
-  // and the user did not arrive with a prefill / explicit URL type.
-  const [showResumeModal, setShowResumeModal] = useState(() => {
-    if (urlDocType || prefillSource || urlSource === 'image-quote') return false;
-    return listAvailableDrafts().length > 0;
-  });
+  // Resume modal is no longer auto-opened — Correction 1 says: resume silently.
+  // Kept as a manual entry point (e.g. from the "مسوداتي" home button) only.
+  const [showResumeModal, setShowResumeModal] = useState(false);
 
-  // Track whether this is a fresh new document (user chose type from modal, or arrived via "Create" link without prefill).
-  // RULE: arriving on /pro/invoice-creator?type=X with NO prefill/source means a fresh creation → reset to step 1.
-  // Resuming an existing draft happens only when there is no urlDocType (resumedDocumentType path) OR when prefill data is provided.
-  const isFreshCreationEntry = !!urlDocType && !prefillSource && !isImageQuoteFlow;
+  // Fresh creation only when:
+  //  - explicit ?fresh=1 flag, OR
+  //  - urlDocType present AND no prefill AND no existing draft for that type.
+  // Otherwise (draft exists), we resume silently at the saved step.
+  const isFreshCreationEntry =
+    forceFresh ||
+    (!!urlDocType && !prefillSource && !isImageQuoteFlow && !existingDraftForUrlType);
   const [isNewDocument, setIsNewDocument] = useState(isFreshCreationEntry);
 
   // On a fresh creation entry, wipe any previously persisted document state so the form

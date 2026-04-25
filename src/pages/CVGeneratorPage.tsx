@@ -1,9 +1,11 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import CVFormSection from '@/components/cv/CVFormSection';
 import CVPreview from '@/components/cv/CVPreview';
 import CVGuideModal from '@/components/cv/CVGuideModal';
+import CVAutoSaveIndicator from '@/components/cv/CVAutoSaveIndicator';
+import CVDraftResumeModal from '@/components/cv/CVDraftResumeModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Eye, Loader2, Sparkles, Pencil, AlertCircle, CheckCircle, Download, Share2, Image as ImageIcon } from 'lucide-react';
@@ -13,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
 import { buildCvHtml } from '@/lib/cvPdfTemplate';
 import html2canvas from 'html2canvas';
+import { saveCVDraft, loadCVDraft, clearCVDraft } from '@/lib/cvDraftStorage';
 
 export interface CVData {
   fullName: string;
@@ -102,6 +105,59 @@ const CVGeneratorPage = () => {
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('edit');
   const [showGuide, setShowGuide] = useState(false);
+
+  // ─── Auto-save (POINT 7) ───
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [showResumeModal, setShowResumeModal] = useState(false);
+  const [pendingDraftSavedAt, setPendingDraftSavedAt] = useState<number>(0);
+
+  // On mount: detect existing draft (<48h) and offer to resume
+  useEffect(() => {
+    const draft = loadCVDraft();
+    if (draft) {
+      setPendingDraftSavedAt(draft.savedAt);
+      setShowResumeModal(true);
+    } else {
+      setDraftRestored(true);
+    }
+  }, []);
+
+  // Debounced auto-save on every cvData change
+  useEffect(() => {
+    if (!draftRestored) return;
+    const t = setTimeout(() => saveCVDraft(cvData), 500);
+    return () => clearTimeout(t);
+  }, [cvData, draftRestored]);
+
+  // Flush on background / page hide (POINT 6)
+  useEffect(() => {
+    if (!draftRestored) return;
+    const flush = () => saveCVDraft(cvData);
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('pagehide', flush);
+    window.addEventListener('beforeunload', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      window.removeEventListener('beforeunload', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [cvData, draftRestored]);
+
+  const handleResumeDraft = useCallback(() => {
+    const draft = loadCVDraft();
+    if (draft) setCVData(draft.data);
+    setShowResumeModal(false);
+    setDraftRestored(true);
+  }, []);
+
+  const handleDiscardDraft = useCallback(() => {
+    clearCVDraft();
+    setShowResumeModal(false);
+    setDraftRestored(true);
+  }, []);
 
   const handleTranslate = async () => {
     // Validate minimum required fields before calling API
@@ -296,6 +352,8 @@ const CVGeneratorPage = () => {
       const docId = await persistCvDocument(url);
       setSignedPdfUrl(url);
       setSavedDocId(docId);
+      // Clear auto-save draft after successful confirmation (POINT 5)
+      clearCVDraft();
       toast({
         title: isRTL ? '✅ تم الحفظ' : '✅ CV enregistré',
         description: isRTL ? 'السي في محفوظ في مستنداتي' : 'CV sauvegardé dans Mes documents',
@@ -433,6 +491,20 @@ const CVGeneratorPage = () => {
     <div className="py-4 space-y-4">
       {/* Guide Modal */}
       <CVGuideModal open={showGuide} onOpenChange={setShowGuide} />
+
+      {/* Resume draft modal (POINT 3) */}
+      <CVDraftResumeModal
+        open={showResumeModal}
+        savedAt={pendingDraftSavedAt}
+        onResume={handleResumeDraft}
+        onStartFresh={handleDiscardDraft}
+        onClose={handleDiscardDraft}
+      />
+
+      {/* Auto-save badge (POINT 4) */}
+      <div className={cn('flex', isRTL ? 'justify-start' : 'justify-end')}>
+        <CVAutoSaveIndicator />
+      </div>
 
       {/* Red Help Banner */}
       <div

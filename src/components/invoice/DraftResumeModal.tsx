@@ -70,13 +70,13 @@ const DraftResumeModal = ({ open, onResume, onStartFresh, onClose }: DraftResume
         <DialogHeader>
           <DialogTitle className={cn('text-base', isRTL && 'text-right font-cairo')}>
             {isRTL
-              ? '🔄 عندك مستند لسه مكملتش'
+              ? '🔄 عندك دوفي لسه مكملتش'
               : '🔄 Vous avez un document en cours'}
           </DialogTitle>
           <DialogDescription className={cn('text-sm', isRTL && 'text-right font-cairo')}>
             {isRTL
-              ? 'تكمل من حيث وقفت، ولا تبدأ من جديد؟'
-              : 'Reprendre où vous vous êtes arrêté, ou recommencer ?'}
+              ? 'تكمل من حيث وقفت؟'
+              : 'Reprendre où vous vous êtes arrêté ?'}
           </DialogDescription>
         </DialogHeader>
 
@@ -133,7 +133,7 @@ const DraftResumeModal = ({ open, onResume, onStartFresh, onClose }: DraftResume
                     className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-2.5 text-xs"
                   >
                     <Check className="h-3.5 w-3.5 mr-1" />
-                    {isRTL ? 'كمّل' : 'Reprendre'}
+                    {isRTL ? 'أيوه كمّل' : 'Reprendre'}
                   </Button>
                   <Button
                     size="sm"
@@ -156,7 +156,7 @@ const DraftResumeModal = ({ open, onResume, onStartFresh, onClose }: DraftResume
             className="flex-1"
             onClick={handleDiscardAll}
           >
-            🗑️ {isRTL ? 'لا، ابدأ من أول' : 'Tout effacer'}
+            🗑️ {isRTL ? 'لا ابدأ من أول' : 'Tout effacer'}
           </Button>
         </div>
       </DialogContent>

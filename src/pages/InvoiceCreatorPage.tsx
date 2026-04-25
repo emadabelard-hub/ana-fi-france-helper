@@ -146,19 +146,9 @@ const InvoiceCreatorPage = () => {
     setNumberingChecked(true);
   }, [user, activeDocumentType, numberingChecked]);
 
-  // When the user comes back to the tab/app after an interruption (call, screenshot,
-  // app switch), re-check for unfinished drafts and offer to resume them.
-  useEffect(() => {
-    const onVisibility = () => {
-      if (document.visibilityState !== 'visible') return;
-      // Don't pop the modal mid-edit: only when no document is currently open.
-      if (documentType) return;
-      if (urlDocType || prefillSource || isImageQuoteFlow) return;
-      if (listAvailableDrafts().length > 0) setShowResumeModal(true);
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, [documentType, urlDocType, prefillSource, isImageQuoteFlow]);
+  // Correction 1: drafts auto-resume silently — no popup on visibility change.
+  // The form already restores `currentStep` from `loadCurrentDocument(documentType)`,
+  // so coming back to the page lands the user on the exact step they left.
 
   const prefillData = useMemo(() => {
     // --- NEW: Image Quote To Invoice flow ---

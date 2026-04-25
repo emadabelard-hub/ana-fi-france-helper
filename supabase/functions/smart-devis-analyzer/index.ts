@@ -281,7 +281,7 @@ function getLiteralSuggestedItems(analysisData: any): LiteralSuggestedItem[] {
       code: typeof item?.code === "string" ? item.code.trim() : "",
       category: typeof item?.category === "string" ? item.category.trim() : "",
     }))
-    .filter((item) => item.designation_fr || item.designation_ar);
+    .filter((item: any) => item.designation_fr || item.designation_ar);
 }
 
 function buildLiteralSuggestedItem(literalItem: LiteralSuggestedItem): GeneratedQuoteItem {

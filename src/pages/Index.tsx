@@ -21,7 +21,24 @@ const Index = () => {
   const { user } = useAuth();
   const [ca, setCa] = useState(0);
   const [tresorerie, setTresorerie] = useState(0);
+  const [showDraftsModal, setShowDraftsModal] = useState(false);
+  const [draftsCount, setDraftsCount] = useState(() => {
+    try { return listAvailableDrafts().length; } catch { return 0; }
+  });
 
+  // Refresh drafts count whenever the page becomes visible (user returning).
+  useEffect(() => {
+    const refresh = () => {
+      try { setDraftsCount(listAvailableDrafts().length); } catch { setDraftsCount(0); }
+    };
+    refresh();
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, []);
   useEffect(() => {
     if (!user) return;
     const loadFinancials = async () => {

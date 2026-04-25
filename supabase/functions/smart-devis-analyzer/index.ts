@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -281,7 +281,7 @@ function getLiteralSuggestedItems(analysisData: any): LiteralSuggestedItem[] {
       code: typeof item?.code === "string" ? item.code.trim() : "",
       category: typeof item?.category === "string" ? item.category.trim() : "",
     }))
-    .filter((item) => item.designation_fr || item.designation_ar);
+    .filter((item: any) => item.designation_fr || item.designation_ar);
 }
 
 function buildLiteralSuggestedItem(literalItem: LiteralSuggestedItem): GeneratedQuoteItem {

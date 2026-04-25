@@ -241,7 +241,7 @@ ${description}
     // 2. Fix unescaped newlines inside strings (common AI mistake)
     content = content.replace(/(?<=:\s*"[^"]*)\n(?=[^"]*")/g, '\\n');
     // 3. Remove any control characters
-    content = content.replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\r' || ch === '\t' ? ' ' : '');
+    content = content.replace(/[\x00-\x1F\x7F]/g, (ch: string) => ch === '\n' || ch === '\r' || ch === '\t' ? ' ' : '');
     
     let analysis;
     try {

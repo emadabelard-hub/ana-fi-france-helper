@@ -492,6 +492,20 @@ const CVGeneratorPage = () => {
       {/* Guide Modal */}
       <CVGuideModal open={showGuide} onOpenChange={setShowGuide} />
 
+      {/* Resume draft modal (POINT 3) */}
+      <CVDraftResumeModal
+        open={showResumeModal}
+        savedAt={pendingDraftSavedAt}
+        onResume={handleResumeDraft}
+        onStartFresh={handleDiscardDraft}
+        onClose={handleDiscardDraft}
+      />
+
+      {/* Auto-save badge (POINT 4) */}
+      <div className={cn('flex', isRTL ? 'justify-start' : 'justify-end')}>
+        <CVAutoSaveIndicator />
+      </div>
+
       {/* Red Help Banner */}
       <div
         onClick={() => setShowGuide(true)}

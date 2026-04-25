@@ -70,13 +70,13 @@ const DraftResumeModal = ({ open, onResume, onStartFresh, onClose }: DraftResume
         <DialogHeader>
           <DialogTitle className={cn('text-base', isRTL && 'text-right font-cairo')}>
             {isRTL
-              ? '🔄 عندك مستند لسه مكملتش'
+              ? '🔄 عندك دوفي لسه مكملتش'
               : '🔄 Vous avez un document en cours'}
           </DialogTitle>
           <DialogDescription className={cn('text-sm', isRTL && 'text-right font-cairo')}>
             {isRTL
-              ? 'تكمل من حيث وقفت، ولا تبدأ من جديد؟'
-              : 'Reprendre où vous vous êtes arrêté, ou recommencer ?'}
+              ? 'تكمل من حيث وقفت؟'
+              : 'Reprendre où vous vous êtes arrêté ?'}
           </DialogDescription>
         </DialogHeader>
 

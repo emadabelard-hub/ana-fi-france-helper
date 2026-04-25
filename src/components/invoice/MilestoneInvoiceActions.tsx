@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { isOfficialDocumentNumber, reserveOfficialDocumentNumber } from '@/lib/documentNumbers';
+import { isOfficialDocumentNumber } from '@/lib/documentNumbers';
 import { cn } from '@/lib/utils';
 import type { PaymentMilestone } from '@/components/invoice/InvoiceDisplay';
 import { buildMilestoneInvoicePrefill } from '@/lib/milestoneInvoicePrefill';

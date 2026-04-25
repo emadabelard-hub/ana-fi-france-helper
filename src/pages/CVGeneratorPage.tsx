@@ -352,6 +352,8 @@ const CVGeneratorPage = () => {
       const docId = await persistCvDocument(url);
       setSignedPdfUrl(url);
       setSavedDocId(docId);
+      // Clear auto-save draft after successful confirmation (POINT 5)
+      clearCVDraft();
       toast({
         title: isRTL ? '✅ تم الحفظ' : '✅ CV enregistré',
         description: isRTL ? 'السي في محفوظ في مستنداتي' : 'CV sauvegardé dans Mes documents',

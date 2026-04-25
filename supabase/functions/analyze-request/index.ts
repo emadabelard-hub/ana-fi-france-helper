@@ -683,7 +683,7 @@ function extractDispatchInfo(filledData: FilledData, letterContent: string): {
 
 function buildSystemPrompt(profile: UserProfile | undefined, language: 'fr' | 'ar' = 'ar'): string {
   // PII Minimization: Only send placeholder markers to AI, not actual sensitive data
-  const hasProfile = profile && (profile.full_name || profile.address);
+  const hasProfile = !!(profile && (profile.full_name || profile.address));
   
   // FRENCH MODE: Pure French professional responses
   if (language === 'fr') {

@@ -133,7 +133,7 @@ const DraftResumeModal = ({ open, onResume, onStartFresh, onClose }: DraftResume
                     className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-2.5 text-xs"
                   >
                     <Check className="h-3.5 w-3.5 mr-1" />
-                    {isRTL ? 'كمّل' : 'Reprendre'}
+                    {isRTL ? 'أيوه كمّل' : 'Reprendre'}
                   </Button>
                   <Button
                     size="sm"
@@ -156,7 +156,7 @@ const DraftResumeModal = ({ open, onResume, onStartFresh, onClose }: DraftResume
             className="flex-1"
             onClick={handleDiscardAll}
           >
-            🗑️ {isRTL ? 'لا، ابدأ من أول' : 'Tout effacer'}
+            🗑️ {isRTL ? 'لا ابدأ من أول' : 'Tout effacer'}
           </Button>
         </div>
       </DialogContent>

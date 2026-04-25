@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { isOfficialDocumentNumber, reserveOfficialDocumentNumber } from '@/lib/documentNumbers';
+import { isOfficialDocumentNumber } from '@/lib/documentNumbers';
 import { cn } from '@/lib/utils';
 import type { PaymentMilestone } from '@/components/invoice/InvoiceDisplay';
 import { buildMilestoneInvoicePrefill } from '@/lib/milestoneInvoicePrefill';
@@ -86,38 +86,37 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
     }
 
     try {
-      const reservedDocumentNumber = await reserveOfficialDocumentNumber(user.id, 'facture');
-      const prefill = {
-        ...buildMilestoneInvoicePrefill({
-          quote: {
-            id: devisDoc.id,
-            documentNumber: devisDoc.document_number,
-            clientName: devisDoc.client_name,
-            clientAddress: devisDoc.client_address,
-            workSiteAddress: devisDoc.work_site_address,
-            natureOperation: devisDoc.nature_operation,
-            totalTTC,
-            documentData: docData,
-          },
-          milestone,
-          milestoneIndex: index,
-          totalMilestones: milestones.length,
-        }),
-        reservedDocumentNumber,
-      };
+      // RÈGLE STRICTE — le numéro de facture officiel est réservé UNIQUEMENT
+      // au moment de la confirmation finale ("تأكيد وتسجيل") dans le builder.
+      // Ici on ne réserve rien : le clic sert uniquement à pré-remplir le formulaire.
+      const prefill = buildMilestoneInvoicePrefill({
+        quote: {
+          id: devisDoc.id,
+          documentNumber: devisDoc.document_number,
+          clientName: devisDoc.client_name,
+          clientAddress: devisDoc.client_address,
+          workSiteAddress: devisDoc.work_site_address,
+          natureOperation: devisDoc.nature_operation,
+          totalTTC,
+          documentData: docData,
+        },
+        milestone,
+        milestoneIndex: index,
+        totalMilestones: milestones.length,
+      });
 
-      console.log('[MilestoneInvoiceActions] FULL PREFILL OK — milestone_invoice:', prefill);
+      console.log('[MilestoneInvoiceActions] Prefill OK (numéro réservé à la confirmation):', prefill);
       sessionStorage.removeItem('quoteToInvoiceData');
       sessionStorage.setItem('milestoneInvoiceData', JSON.stringify(prefill));
       navigate('/pro/invoice-creator?type=facture&prefill=milestone');
     } catch (error) {
-      console.error('[MilestoneInvoiceActions] Numbering error:', error);
+      console.error('[MilestoneInvoiceActions] Prefill error:', error);
       toast({
         variant: 'destructive',
-        title: isRTL ? 'خطأ في الترقيم' : 'Erreur de numérotation',
+        title: isRTL ? 'خطأ' : 'Erreur',
         description: isRTL
-          ? 'تعذر إنشاء رقم الفاتورة.'
-          : 'Impossible de générer le numéro de facture.',
+          ? 'تعذر تحضير الفاتورة.'
+          : 'Impossible de préparer la facture.',
       });
     }
   };

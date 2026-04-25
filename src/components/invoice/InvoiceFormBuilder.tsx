@@ -3396,32 +3396,30 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                                   return;
                                 }
                                 const sourceDocumentNumber = docNumber;
-                                const reservedDocumentNumber = await reserveOfficialDocumentNumber(user.id, 'facture');
 
-                                setDocNumber(sourceDocumentNumber);
-
-                                const prefill = {
-                                  ...buildMilestoneInvoicePrefill({
-                                    quote: {
-                                      documentNumber: sourceDocumentNumber,
-                                      clientName: currentData.client?.name || clientName,
-                                      clientAddress: currentData.client?.address || clientAddress,
-                                      clientPhone: currentData.client?.phone || clientPhone,
-                                      clientEmail: currentData.client?.email || clientEmail,
-                                      clientSiren: currentData.client?.siren || clientSiren,
-                                      clientTvaIntra: currentData.client?.tvaIntra || clientTvaIntra,
-                                      clientIsB2B: currentData.client?.isB2B || clientIsB2B,
-                                      workSiteAddress: currentData.workSite?.address || workSiteAddress,
-                                      natureOperation: currentData.natureOperation || natureOperation,
-                                      totalTTC: currentData.total,
-                                      documentData: currentData,
-                                    },
-                                    milestone,
-                                    milestoneIndex: idx,
-                                    totalMilestones: paymentMilestones.length,
-                                  }),
-                                  reservedDocumentNumber,
-                                };
+                                // RÈGLE STRICTE — le numéro de facture officiel est réservé
+                                // UNIQUEMENT à la confirmation finale ("تأكيد وتسجيل"),
+                                // jamais ici au clic. Ainsi : pas de numéros gaspillés,
+                                // pas de doublons, pas de trous dans la séquence.
+                                const prefill = buildMilestoneInvoicePrefill({
+                                  quote: {
+                                    documentNumber: sourceDocumentNumber,
+                                    clientName: currentData.client?.name || clientName,
+                                    clientAddress: currentData.client?.address || clientAddress,
+                                    clientPhone: currentData.client?.phone || clientPhone,
+                                    clientEmail: currentData.client?.email || clientEmail,
+                                    clientSiren: currentData.client?.siren || clientSiren,
+                                    clientTvaIntra: currentData.client?.tvaIntra || clientTvaIntra,
+                                    clientIsB2B: currentData.client?.isB2B || clientIsB2B,
+                                    workSiteAddress: currentData.workSite?.address || workSiteAddress,
+                                    natureOperation: currentData.natureOperation || natureOperation,
+                                    totalTTC: currentData.total,
+                                    documentData: currentData,
+                                  },
+                                  milestone,
+                                  milestoneIndex: idx,
+                                  totalMilestones: paymentMilestones.length,
+                                });
 
                                 console.log('[InvoiceFormBuilder] Milestone → Créer facture PREFILL OK:', prefill);
                                 sessionStorage.removeItem('quoteToInvoiceData');

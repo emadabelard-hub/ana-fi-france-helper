@@ -212,6 +212,35 @@ const Index = () => {
           </button>
         ))}
 
+        {/* مسوداتي — Quick access to saved drafts */}
+        {draftsCount > 0 && (
+          <button
+            onClick={() => setShowDraftsModal(true)}
+            className={cn(
+              'w-full rounded-2xl flex items-center gap-3 p-4 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all duration-200 animate-fade-in',
+              isRTL && 'flex-row-reverse'
+            )}
+            dir={isRTL ? 'rtl' : 'ltr'}
+          >
+            <div className="w-11 h-11 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+              <FolderClock className="h-5 w-5 text-amber-500" />
+            </div>
+            <div className={cn('flex-1', isRTL ? 'text-right font-cairo' : 'text-left')}>
+              <h3 className="text-sm font-bold text-foreground">
+                {isRTL ? '📁 مسوداتي' : '📁 Mes brouillons'}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isRTL
+                  ? `${draftsCount} مسودة محفوظة — كمّل من حيث وقفت`
+                  : `${draftsCount} brouillon(s) sauvegardé(s)`}
+              </p>
+            </div>
+            <span className="text-xs font-black text-amber-500 bg-amber-500/15 px-2 py-1 rounded-lg">
+              {draftsCount}
+            </span>
+          </button>
+        )}
+
         {/* Financial Indicators */}
         {user && (
           <section className="grid grid-cols-2 gap-3 mt-2">

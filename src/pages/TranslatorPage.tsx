@@ -229,17 +229,10 @@ const TranslatorPage = () => {
     }
   };
 
-  const playTranslation = async (text?: string) => {
+  const playTranslation = (text?: string) => {
     const value = (text ?? translatedText).trim();
     if (!value) return;
-    try {
-      setIsPlaying(true);
-      await playTTS(value, 'nova');
-    } catch (err) {
-      console.error('TTS error:', err);
-    } finally {
-      setIsPlaying(false);
-    }
+    speak(value, targetLang);
   };
 
   const handleCopy = async () => {

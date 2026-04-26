@@ -257,7 +257,7 @@ const TranslatorPage = () => {
   };
 
   const handleClear = () => {
-    stopGlobalAudio();
+    stopSpeak();
     setOriginalText('');
     setTranslatedText('');
   };

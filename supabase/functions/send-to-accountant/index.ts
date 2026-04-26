@@ -238,12 +238,14 @@ Deno.serve(async (req) => {
       await supabaseAdmin
         .from("documents_comptables")
         .update({ sent_to_accountant_at: now })
+        .eq("user_id", user.id)
         .in("id", docIds);
     }
     if (expIds.length > 0) {
       await supabaseAdmin
         .from("expenses")
         .update({ sent_to_accountant_at: now })
+        .eq("user_id", user.id)
         .in("id", expIds);
     }
 

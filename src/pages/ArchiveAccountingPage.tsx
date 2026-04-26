@@ -202,9 +202,11 @@ const ArchiveAccountingPage = () => {
   const isTvaExempt = (profile as any)?.tva_exempt ?? false;
 
   const handleMarkPaid = async (doc: DocumentItem) => {
+    if (!user) return;
     await (supabase.from('documents_comptables') as any)
       .update({ payment_status: 'paid' })
-      .eq('id', doc.id);
+      .eq('id', doc.id)
+      .eq('user_id', user.id);
     setDocuments(prev => prev.map(d =>
       d.id === doc.id ? { ...d, paymentStatus: 'paid' as const } : d
     ));
@@ -212,6 +214,7 @@ const ArchiveAccountingPage = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!user) return;
     const doc = documents.find(d => d.id === id);
     // Block deletion of finalized/paid/cancelled invoices
     if (doc && doc.type === 'facture' && (doc.status === 'finalized' || doc.status === ('cancelled' as any) || doc.rawData?.payment_status === 'paid')) {
@@ -226,19 +229,21 @@ const ArchiveAccountingPage = () => {
     }
     const isExpense = expenses.some(e => e.id === id);
     if (isExpense) {
-      await (supabase.from('expenses') as any).delete().eq('id', id);
+      await (supabase.from('expenses') as any).delete().eq('id', id).eq('user_id', user.id);
       setExpenses(prev => prev.filter(e => e.id !== id));
     } else {
-      await (supabase.from('documents_comptables') as any).delete().eq('id', id);
+      await (supabase.from('documents_comptables') as any).delete().eq('id', id).eq('user_id', user.id);
       setDocuments(prev => prev.filter(d => d.id !== id));
     }
     toast({ title: isRTL ? '✅ تم الحذف' : '✅ Supprimé' });
   };
 
   const handleCancelInvoice = async (doc: DocumentItem) => {
+    if (!user) return;
     const { error } = await (supabase.from('documents_comptables') as any)
       .update({ status: 'cancelled' })
-      .eq('id', doc.id);
+      .eq('id', doc.id)
+      .eq('user_id', user.id);
     if (!error) {
       setDocuments(prev => prev.map(d =>
         d.id === doc.id ? { ...d, status: 'cancelled' as any } : d

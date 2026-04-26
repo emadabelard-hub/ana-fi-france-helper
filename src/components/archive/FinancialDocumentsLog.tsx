@@ -67,30 +67,23 @@ const FinancialDocumentsLog = forwardRef<FinancialDocumentsLogRef, Props>(({ use
     const fetchAll = async () => {
       setLoading(true);
 
+      // SECURITY (RGPD): Always scope by user_id, even for admins.
+      // Admin global access is exclusive to /admin panel.
       const docsQuery = supabase
         .from('documents_comptables')
         .select('id, document_type, document_number, client_name, total_ttc, status, created_at, chantier_id')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
-
-      if (!isAdmin) {
-        docsQuery.eq('user_id', userId);
-      }
 
       const chantiersQuery = supabase
         .from('chantiers')
-        .select('id, name');
-
-      if (!isAdmin) {
-        chantiersQuery.eq('user_id', userId);
-      }
+        .select('id, name')
+        .eq('user_id', userId);
 
       const clientsQuery = supabase
         .from('clients')
-        .select('id, name');
-
-      if (!isAdmin) {
-        clientsQuery.eq('user_id', userId);
-      }
+        .select('id, name')
+        .eq('user_id', userId);
 
       const [docsRes, chantiersRes, clientsRes] = await Promise.all([docsQuery, chantiersQuery, clientsQuery]);
 

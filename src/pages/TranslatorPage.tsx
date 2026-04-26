@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { playTTS, stopGlobalAudio } from '@/lib/audioController';
 import { cn } from '@/lib/utils';
 
 type Lang = 'ar' | 'fr';

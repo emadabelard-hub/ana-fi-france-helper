@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { playTTS, stopGlobalAudio } from '@/lib/audioController';
 import { cn } from '@/lib/utils';
 
 type Lang = 'ar' | 'fr';
@@ -51,20 +50,65 @@ const TranslatorPage = () => {
     if (!error && data) setHistory(data as HistoryItem[]);
   }, [user]);
 
+  // ─── Native Web Speech TTS (no API key, works offline on mobile) ───
+  const speak = useCallback((text: string, lang: Lang) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      console.warn('SpeechSynthesis not supported');
+      return;
+    }
+    try {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = lang === 'ar' ? 'ar-EG' : 'fr-FR';
+      utter.rate = 0.95;
+      utter.pitch = 1;
+      utter.volume = 1;
+      // Try to pick a voice matching the language
+      const voices = window.speechSynthesis.getVoices();
+      const preferred =
+        voices.find((v) => v.lang.toLowerCase().startsWith(utter.lang.toLowerCase())) ||
+        voices.find((v) => v.lang.toLowerCase().startsWith(lang === 'ar' ? 'ar' : 'fr'));
+      if (preferred) utter.voice = preferred;
+      utter.onstart = () => setIsPlaying(true);
+      utter.onend = () => setIsPlaying(false);
+      utter.onerror = () => setIsPlaying(false);
+      window.speechSynthesis.speak(utter);
+    } catch (err) {
+      console.error('TTS error:', err);
+      setIsPlaying(false);
+    }
+  }, []);
+
+  const stopSpeak = useCallback(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsPlaying(false);
+  }, []);
+
+  // Pre-load voices (some browsers populate them async)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    const handler = () => window.speechSynthesis.getVoices();
+    handler();
+    window.speechSynthesis.addEventListener('voiceschanged', handler);
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', handler);
+  }, []);
+
   useEffect(() => {
     if (showHistory) loadHistory();
   }, [showHistory, loadHistory]);
 
   useEffect(() => {
     return () => {
-      stopGlobalAudio();
+      stopSpeak();
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, []);
+  }, [stopSpeak]);
 
   const startRecording = async () => {
     try {
-      stopGlobalAudio();
+      stopSpeak();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       const mr = new MediaRecorder(stream);
@@ -185,17 +229,10 @@ const TranslatorPage = () => {
     }
   };
 
-  const playTranslation = async (text?: string) => {
+  const playTranslation = (text?: string) => {
     const value = (text ?? translatedText).trim();
     if (!value) return;
-    try {
-      setIsPlaying(true);
-      await playTTS(value, 'nova');
-    } catch (err) {
-      console.error('TTS error:', err);
-    } finally {
-      setIsPlaying(false);
-    }
+    speak(value, targetLang);
   };
 
   const handleCopy = async () => {
@@ -220,7 +257,7 @@ const TranslatorPage = () => {
   };
 
   const handleClear = () => {
-    stopGlobalAudio();
+    stopSpeak();
     setOriginalText('');
     setTranslatedText('');
   };

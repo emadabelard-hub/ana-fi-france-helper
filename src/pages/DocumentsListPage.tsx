@@ -253,8 +253,9 @@ const DocumentsListPage = () => {
       });
       return;
     }
+    if (!user) return;
     setDeletingId(id);
-    const { error } = await (supabase.from('documents_comptables') as any).delete().eq('id', id);
+    const { error } = await (supabase.from('documents_comptables') as any).delete().eq('id', id).eq('user_id', user.id);
     if (!error) {
       setDocuments(prev => prev.filter(d => d.id !== id));
       if (selectedDocument?.id === id) {
@@ -266,9 +267,11 @@ const DocumentsListPage = () => {
   };
 
   const handleCancelInvoice = async (doc: DocumentRow) => {
+    if (!user) return;
     const { error } = await (supabase.from('documents_comptables') as any)
       .update({ status: 'cancelled' })
-      .eq('id', doc.id);
+      .eq('id', doc.id)
+      .eq('user_id', user.id);
     if (!error) {
       setDocuments(prev => prev.map(d =>
         d.id === doc.id ? { ...d, status: 'cancelled' } : d
@@ -567,7 +570,8 @@ const DocumentsListPage = () => {
     };
     const { error } = await (supabase.from('expenses') as any)
       .update(payload)
-      .eq('id', selectedExpense.id);
+      .eq('id', selectedExpense.id)
+      .eq('user_id', user!.id);
     if (error) {
       toast({ variant: 'destructive', title: isRTL ? 'خطأ' : 'Erreur', description: error.message });
     } else {
@@ -581,8 +585,9 @@ const DocumentsListPage = () => {
   };
 
   const handleDeleteExpense = async (id: string) => {
+    if (!user) return;
     setDeletingExpenseId(id);
-    const { error } = await (supabase.from('expenses') as any).delete().eq('id', id);
+    const { error } = await (supabase.from('expenses') as any).delete().eq('id', id).eq('user_id', user.id);
     if (!error) {
       setExpenses(prev => prev.filter(e => e.id !== id));
       if (selectedExpense?.id === id) setSelectedExpense(null);

@@ -378,7 +378,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       client_type: clientIsB2B ? 'professionnel' : 'particulier',
       siret: clientSiren || null,
       tva_number: clientTvaIntra || null,
-    } as any).eq('id', selectedClientId);
+    } as any).eq('id', selectedClientId).eq('user_id', user.id);
     if (!error) {
       toast({ title: isRTL ? 'تم حفظ بيانات الزبون ✓' : 'Infos client mises à jour ✓' });
       supabase.from('clients').select('id, name, client_type, company_name, address, street, postal_code, city, contact_phone, contact_email, siret, is_b2b, tva_number')

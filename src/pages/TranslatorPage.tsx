@@ -85,6 +85,7 @@ const TranslatorPage = () => {
 
   // ─── Native Web Speech TTS — male voice + retry on failure ───
   const ttsFailCountRef = useRef(0);
+  const ttsRunIdRef = useRef(0);
 
   const pickMaleVoice = useCallback((lang: Lang): SpeechSynthesisVoice | null => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
@@ -131,9 +132,13 @@ const TranslatorPage = () => {
     const trimmed = text.trim();
     if (!trimmed) return;
 
+    const runId = ttsRunIdRef.current + 1;
+    ttsRunIdRef.current = runId;
+
     const doSpeak = (attempt: number) => {
       try {
-        // Always cancel any in-flight utterance before starting a new one
+        if (runId !== ttsRunIdRef.current) return;
+
         window.speechSynthesis.cancel();
 
         const utter = new SpeechSynthesisUtterance(trimmed);
@@ -146,22 +151,26 @@ const TranslatorPage = () => {
         if (voice) utter.voice = voice;
 
         utter.onstart = () => {
+          if (runId !== ttsRunIdRef.current) return;
           ttsFailCountRef.current = 0;
           setIsPlaying(true);
         };
-        utter.onend = () => setIsPlaying(false);
+        utter.onend = () => {
+          if (runId === ttsRunIdRef.current) setIsPlaying(false);
+        };
         utter.onerror = (ev) => {
+          if (runId !== ttsRunIdRef.current) return;
+          const error = String(ev.error || '');
+          if (error === 'canceled' || error === 'interrupted') return;
           console.warn('TTS error event:', ev);
           setIsPlaying(false);
-          // Auto-retry once
           if (attempt < 1) {
-            setTimeout(() => doSpeak(attempt + 1), 200);
+            setTimeout(() => doSpeak(attempt + 1), 250);
           } else {
             ttsFailCountRef.current += 1;
             if (ttsFailCountRef.current >= 2) {
               toast({
-                title: '🔊 المتصفح ما رضيش يقرا',
-                description: 'اضغط مرة تانية على 🔊',
+                title: 'اضغط مرة تانية على 🔊',
                 variant: 'destructive',
               });
               ttsFailCountRef.current = 0;
@@ -169,18 +178,16 @@ const TranslatorPage = () => {
           }
         };
 
-        // Some browsers (Chrome) need a tick after cancel() before speak()
-        setTimeout(() => {
-          try {
-            window.speechSynthesis.speak(utter);
-          } catch (e) {
-            console.error('TTS speak() threw:', e);
-            setIsPlaying(false);
-          }
-        }, 60);
+        window.speechSynthesis.resume?.();
+        window.speechSynthesis.speak(utter);
       } catch (err) {
         console.error('TTS error:', err);
         setIsPlaying(false);
+        if (attempt < 1) {
+          setTimeout(() => doSpeak(attempt + 1), 250);
+        } else {
+          toast({ title: 'اضغط مرة تانية على 🔊', variant: 'destructive' });
+        }
       }
     };
 

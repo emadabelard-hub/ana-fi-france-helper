@@ -166,8 +166,10 @@ export interface CurrentDocumentState extends InvoiceDraft {
 
 export const saveDraft = (draft: Omit<InvoiceDraft, 'savedAt'>) => {
   try {
+    const key = getScopedDraftKey(DRAFT_KEY);
+    if (!key) return;
     const data: InvoiceDraft = { ...draft, savedAt: Date.now() };
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+    localStorage.setItem(key, JSON.stringify(data));
     broadcastDraftSaved(draft.documentType);
   } catch (e) {
     console.warn('Failed to save draft:', e);
@@ -178,7 +180,9 @@ export const saveDraft = (draft: Omit<InvoiceDraft, 'savedAt'>) => {
 
 export const loadDraft = (): InvoiceDraft | null => {
   try {
-    const raw = localStorage.getItem(DRAFT_KEY);
+    const key = getScopedDraftKey(DRAFT_KEY);
+    if (!key) return null;
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const draft: InvoiceDraft = JSON.parse(raw);
     // Expire drafts older than 48h
@@ -195,6 +199,8 @@ export const loadDraft = (): InvoiceDraft | null => {
 
 export const clearDraft = () => {
   try {
+    const key = getScopedDraftKey(DRAFT_KEY);
+    if (key) localStorage.removeItem(key);
     localStorage.removeItem(DRAFT_KEY);
   } catch (e) {
     console.warn('Failed to clear draft:', e);
@@ -205,6 +211,9 @@ export const clearDraft = () => {
 
 export const saveCurrentDocument = (document: Omit<CurrentDocumentState, 'savedAt'>) => {
   try {
+    const genericKey = getScopedDraftKey(CURRENT_DOCUMENT_KEY);
+    const typedKey = getScopedDraftKey(CURRENT_DOCUMENT_KEY_BY_TYPE(document.documentType));
+    if (!genericKey || !typedKey) return;
     // Only save if there's meaningful content (avoid persisting empty shells)
     const hasMeaningfulCurrentDocument =
       !!document.clientName?.trim() ||
@@ -221,9 +230,9 @@ export const saveCurrentDocument = (document: Omit<CurrentDocumentState, 'savedA
     const data: CurrentDocumentState = { ...document, savedAt: Date.now() };
     const serialized = JSON.stringify(data);
     // Generic slot (last touched, all types) for legacy callers
-    localStorage.setItem(CURRENT_DOCUMENT_KEY, serialized);
+    localStorage.setItem(genericKey, serialized);
     // Per-type slot (multi-document support)
-    localStorage.setItem(CURRENT_DOCUMENT_KEY_BY_TYPE(document.documentType), serialized);
+    localStorage.setItem(typedKey, serialized);
     broadcastDraftSaved(document.documentType);
   } catch (e) {
     console.warn('Failed to save current document:', e);

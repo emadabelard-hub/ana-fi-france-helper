@@ -921,6 +921,36 @@ export type Database = {
         }
         Relationships: []
       }
+      translation_history: {
+        Row: {
+          created_at: string
+          id: string
+          source_lang: string
+          source_text: string
+          target_lang: string
+          translated_text: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source_lang: string
+          source_text: string
+          target_lang: string
+          translated_text: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source_lang?: string
+          source_text?: string
+          target_lang?: string
+          translated_text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_activity_logs: {
         Row: {
           action: string

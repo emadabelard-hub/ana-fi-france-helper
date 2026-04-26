@@ -96,6 +96,10 @@ const TranslatorPage = () => {
   }, []);
 
   useEffect(() => {
+    if (showHistory) loadHistory();
+  }, [showHistory, loadHistory]);
+
+  useEffect(() => {
     return () => {
       stopSpeak();
       streamRef.current?.getTracks().forEach((t) => t.stop());

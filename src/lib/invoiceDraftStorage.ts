@@ -241,16 +241,19 @@ export const saveCurrentDocument = (document: Omit<CurrentDocumentState, 'savedA
 
 export const loadCurrentDocument = (documentType?: 'devis' | 'facture'): CurrentDocumentState | null => {
   try {
+    const genericKey = getScopedDraftKey(CURRENT_DOCUMENT_KEY);
+    if (!genericKey) return null;
     // Prefer per-type slot when a type is requested
     if (documentType) {
-      const rawTyped = localStorage.getItem(CURRENT_DOCUMENT_KEY_BY_TYPE(documentType));
+      const typedKey = getScopedDraftKey(CURRENT_DOCUMENT_KEY_BY_TYPE(documentType));
+      const rawTyped = typedKey ? localStorage.getItem(typedKey) : null;
       if (rawTyped) {
         const doc = JSON.parse(rawTyped) as CurrentDocumentState;
         if (doc.documentType === documentType) return doc;
       }
     }
 
-    const raw = localStorage.getItem(CURRENT_DOCUMENT_KEY);
+    const raw = localStorage.getItem(genericKey);
     if (!raw) return null;
 
     const document: CurrentDocumentState = JSON.parse(raw);
@@ -265,24 +268,28 @@ export const loadCurrentDocument = (documentType?: 'devis' | 'facture'): Current
 
 export const clearCurrentDocument = (documentType?: 'devis' | 'facture') => {
   try {
+    const genericKey = getScopedDraftKey(CURRENT_DOCUMENT_KEY);
     if (documentType) {
+      const typedKey = getScopedDraftKey(CURRENT_DOCUMENT_KEY_BY_TYPE(documentType));
+      if (typedKey) localStorage.removeItem(typedKey);
       localStorage.removeItem(CURRENT_DOCUMENT_KEY_BY_TYPE(documentType));
       // Clear generic slot only if it pointed to the same type
       try {
-        const raw = localStorage.getItem(CURRENT_DOCUMENT_KEY);
+        const raw = genericKey ? localStorage.getItem(genericKey) : null;
         if (raw) {
           const doc = JSON.parse(raw) as CurrentDocumentState;
-          if (doc.documentType === documentType) localStorage.removeItem(CURRENT_DOCUMENT_KEY);
+          if (doc.documentType === documentType && genericKey) localStorage.removeItem(genericKey);
         }
       } catch {
-        localStorage.removeItem(CURRENT_DOCUMENT_KEY);
+        if (genericKey) localStorage.removeItem(genericKey);
       }
       return;
     }
     // No type → wipe everything
-    localStorage.removeItem(CURRENT_DOCUMENT_KEY);
-    localStorage.removeItem(CURRENT_DOCUMENT_KEY_BY_TYPE('devis'));
-    localStorage.removeItem(CURRENT_DOCUMENT_KEY_BY_TYPE('facture'));
+    const scopedKeys = [CURRENT_DOCUMENT_KEY, CURRENT_DOCUMENT_KEY_BY_TYPE('devis'), CURRENT_DOCUMENT_KEY_BY_TYPE('facture')]
+      .map(getScopedDraftKey)
+      .filter(Boolean) as string[];
+    removeBrowserKeys([CURRENT_DOCUMENT_KEY, CURRENT_DOCUMENT_KEY_BY_TYPE('devis'), CURRENT_DOCUMENT_KEY_BY_TYPE('facture'), ...scopedKeys]);
   } catch (e) {
     console.warn('Failed to clear current document:', e);
   }
@@ -307,7 +314,9 @@ export const listAvailableDrafts = (): AvailableDraftSummary[] => {
   const now = Date.now();
   for (const type of types) {
     try {
-      const raw = localStorage.getItem(CURRENT_DOCUMENT_KEY_BY_TYPE(type));
+      const key = getScopedDraftKey(CURRENT_DOCUMENT_KEY_BY_TYPE(type));
+      if (!key) continue;
+      const raw = localStorage.getItem(key);
       if (!raw) continue;
       const doc = JSON.parse(raw) as CurrentDocumentState;
       if (!doc || doc.documentType !== type) continue;

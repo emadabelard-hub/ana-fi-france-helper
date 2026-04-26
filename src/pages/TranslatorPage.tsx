@@ -216,6 +216,27 @@ const TranslatorPage = () => {
   const startRecording = async () => {
     try {
       stopSpeak();
+
+      // Stability: fully reset previous instance before starting a new one
+      if (mediaRecorderRef.current) {
+        try {
+          if (mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+          }
+        } catch {
+          /* noop */
+        }
+        mediaRecorderRef.current = null;
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+      audioChunksRef.current = [];
+
+      // 300ms guard delay to avoid mic conflicts on rapid restart
+      await new Promise((r) => setTimeout(r, 300));
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       const mr = new MediaRecorder(stream);

@@ -73,19 +73,17 @@ const ClientsPage = () => {
     }
     setLoading(true);
 
+    // SECURITY: Always scope by user_id, even for admins. Admin panel is in /admin.
     const clientsQuery = supabase
       .from('clients')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     const chantiersQuery = supabase
       .from('chantiers')
-      .select('client_id');
-
-    if (!isAdmin) {
-      clientsQuery.eq('user_id', user.id);
-      chantiersQuery.eq('user_id', user.id);
-    }
+      .select('client_id')
+      .eq('user_id', user.id);
 
     const [{ data }, { data: chantiers }] = await Promise.all([clientsQuery, chantiersQuery]);
 
@@ -118,7 +116,7 @@ const ClientsPage = () => {
       contact_email: form.contact_email || null,
     };
     if (editingClient) {
-      await supabase.from('clients').update(payload).eq('id', editingClient.id);
+      await supabase.from('clients').update(payload).eq('id', editingClient.id).eq('user_id', user.id);
       toast({ title: isRTL ? 'تم التعديل' : 'Client modifié' });
     } else {
       await supabase.from('clients').insert({ ...payload, user_id: user.id });
@@ -131,7 +129,8 @@ const ClientsPage = () => {
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('clients').delete().eq('id', id);
+    if (!user) return;
+    await supabase.from('clients').delete().eq('id', id).eq('user_id', user.id);
     toast({ title: isRTL ? 'تم الحذف' : 'Client supprimé' });
     fetchClients();
   };

@@ -613,9 +613,11 @@ const DocumentsListPage = () => {
   };
 
   const handleMarkPaid = async (doc: DocumentRow) => {
+    if (!user) return;
     await (supabase.from('documents_comptables') as any)
       .update({ payment_status: 'paid' })
-      .eq('id', doc.id);
+      .eq('id', doc.id)
+      .eq('user_id', user.id);
     setDocuments(prev => prev.map(d =>
       d.id === doc.id ? { ...d, payment_status: 'paid' } : d
     ));

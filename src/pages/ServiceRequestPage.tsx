@@ -98,10 +98,13 @@ const ServiceRequestPage = () => {
   }, [messages]);
 
   const fetchRequests = async () => {
+    if (!user) { setIsLoadingRequests(false); return; }
     setIsLoadingRequests(true);
+    // SECURITY: Always scope by user_id
     const { data } = await supabase
       .from('service_requests')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     setRequests((data as ServiceRequest[]) || []);
     setIsLoadingRequests(false);

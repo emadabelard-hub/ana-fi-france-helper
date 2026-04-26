@@ -71,13 +71,11 @@ const ChantiersPage = () => {
   }, [user]);
 
   const fetchData = async () => {
+    if (!user) { setLoading(false); return; }
     setLoading(true);
-    const chantiersQuery = supabase.from('chantiers').select('*').order('created_at', { ascending: false });
-    const clientsQuery = supabase.from('clients').select('id, name');
-    if (!isAdmin) {
-      chantiersQuery.eq('user_id', user!.id);
-      clientsQuery.eq('user_id', user!.id);
-    }
+    // SECURITY: Always scope by user_id, even for admins. Admin panel is in /admin.
+    const chantiersQuery = supabase.from('chantiers').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+    const clientsQuery = supabase.from('clients').select('id, name').eq('user_id', user.id);
     const [{ data: ch }, { data: cl }] = await Promise.all([chantiersQuery, clientsQuery]);
     const clientMap: Record<string, string> = {};
     (cl || []).forEach(c => { clientMap[c.id] = c.name; });

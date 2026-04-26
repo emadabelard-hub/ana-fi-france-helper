@@ -78,18 +78,16 @@ const ArchiveAccountingPage = () => {
     const fetchAll = async () => {
       setLoading(true);
 
+      // SECURITY: Always scope by user_id, even for admins. Admin panel is in /admin.
       const docsQuery = (supabase.from('documents_comptables') as any)
         .select('id, document_type, document_number, client_name, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, client_address, chantier_id, payment_status, converted_to_invoice, linked_invoice_id')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       const expensesQuery = (supabase.from('expenses') as any)
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-
-      if (!isAdmin) {
-        docsQuery.eq('user_id', user.id);
-        expensesQuery.eq('user_id', user.id);
-      }
 
       const [docsRes, expRes] = await Promise.all([docsQuery, expensesQuery]);
 

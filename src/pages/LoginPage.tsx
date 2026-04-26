@@ -47,17 +47,22 @@ const LoginPage = () => {
 
   const getErrorMessage = (errorMsg: string): string => {
     const msg = errorMsg.toLowerCase();
-    if (msg.includes('invalid login credentials')) {
-      return 'Email ou mot de passe incorrect';
-    }
     if (msg.includes('email not confirmed')) {
-      return 'Compte non confirmé. Vérifiez votre email ou renvoyez le lien.';
+      return '📧 لازم تأكد الإيميل الأول — دور على الرسالة في صندوق الوارد أو Spam';
     }
-    if (msg.includes('user already registered')) {
-      return 'Cet email est déjà enregistré. Essayez de vous connecter.';
+    if (msg.includes('invalid login credentials') || msg.includes('invalid_credentials')) {
+      // Supabase ne distingue pas email inexistant / mauvais mot de passe pour la sécurité.
+      // On affiche un message couvrant les deux cas en Ammiya.
+      return '❌ الإيميل أو كلمة السر غلط — تأكد من البيانات أو أنشئ حساب جديد';
+    }
+    if (msg.includes('user not found') || msg.includes('user_not_found')) {
+      return '❌ البريد الإلكتروني ده مش موجود — تأكد من الإيميل أو أنشئ حساب جديد';
+    }
+    if (msg.includes('user already registered') || msg.includes('already registered')) {
+      return '⚠️ الإيميل ده مسجل قبل كده — جرب تسجل الدخول';
     }
     if (msg.includes('password')) {
-      return 'Erreur de mot de passe';
+      return '❌ كلمة السر غلط — حاول تاني أو اضغط "نسيت كلمة السر"';
     }
     return errorMsg;
   };

@@ -87,30 +87,16 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    const stream = body && typeof body === "object" && (body as any).stream === true;
+
     const direction =
       sourceLang === "ar"
-        ? "Arabe Égyptien (Ammiya) parlé sur chantier vers Français professionnel BTP de chantier en France"
-        : "Français professionnel BTP de chantier en France vers Arabe Égyptien (Ammiya) clair, naturel et compréhensible par un ouvrier BTP";
+        ? "Arabe Égyptien (Ammiya) chantier → Français pro BTP France"
+        : "Français pro BTP France → Arabe Égyptien (Ammiya) clair pour ouvrier BTP";
 
-    const systemPrompt = `Tu es un traducteur expert spécialisé BTP (bâtiment et travaux publics) opérant sur des chantiers en France.
-Ton rôle: traduire fidèlement et professionnellement entre artisans et clients/maîtres d'ouvrage.
-
-Direction: ${direction}.
-
-Contexte impératif:
-- Le contexte est TOUJOURS un chantier BTP en France (rénovation, second œuvre, gros œuvre, finitions).
-- L'auteur est un artisan, un chef de chantier, un client ou un maître d'œuvre.
-- La traduction doit être naturelle, fluide, professionnelle — comme un vrai chef de chantier bilingue.
-
-Règles strictes:
-1. Traduction directe, naturelle, professionnelle. JAMAIS de mot-à-mot maladroit.
-2. Utiliser SYSTÉMATIQUEMENT le vocabulaire technique BTP français standard (DTU, NF, terminologie chantier).
-3. Aucun commentaire, aucune explication, AUCUNE balise, AUCUN guillemet superflu. Retourne UNIQUEMENT la traduction finale.
-4. Pour l'arabe: utiliser EXCLUSIVEMENT l'égyptien (Ammiya) clair et professionnel, JAMAIS le darija marocain ni l'arabe littéraire (fusha).
-5. Préserver à l'identique: chiffres, mesures (m², ml, kg, m³), pourcentages, références produits, noms propres, marques.
-6. Si le texte source contient un terme du glossaire ci-dessous, utiliser OBLIGATOIREMENT la traduction officielle indiquée.
-7. Respecter le registre: formel pour devis/facture, oral et direct pour échanges chantier.
-
+    // Prompt minimal — vitesse maximale
+    const systemPrompt = `Traducteur BTP chantier France. ${direction}.
+Règles: traduction directe, naturelle, pro. Vocabulaire BTP français (NF/DTU). Préserver chiffres/mesures/marques. Arabe = Égyptien Ammiya uniquement (jamais Darija/Fusha). Retourne UNIQUEMENT la traduction, sans commentaire ni guillemets.
 ${BTP_GLOSSARY}`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -120,7 +106,9 @@ ${BTP_GLOSSARY}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
+        max_tokens: 150,
+        stream,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: text },
@@ -146,6 +134,13 @@ ${BTP_GLOSSARY}`;
       return new Response(JSON.stringify({ error: "Translation service unavailable" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Streaming: forward SSE directly
+    if (stream && aiResponse.body) {
+      return new Response(aiResponse.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
 

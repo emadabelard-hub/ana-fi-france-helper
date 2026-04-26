@@ -335,8 +335,8 @@ const LoginPage = () => {
                     try {
                       const { error } = await supabase.auth.resend({ type: 'signup', email: normalizeEmail(currentEmail) });
                       toast({
-                        title: error ? 'Erreur' : 'Lien envoyé ✓',
-                        description: error ? error.message : 'Vérifiez votre boîte mail',
+                        title: error ? 'تنبيه' : '✓ تم إرسال الرسالة',
+                        description: error ? error.message : 'تحقق من بريدك الإلكتروني (وصندوق Spam)',
                         variant: error ? 'destructive' : 'default',
                       });
                     } finally {
@@ -344,7 +344,7 @@ const LoginPage = () => {
                     }
                   }}
                 >
-                  {resendingConfirm ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Renvoyer le lien de confirmation'}
+                  {resendingConfirm ? <Loader2 className="h-4 w-4 animate-spin" /> : 'إعادة إرسال رسالة التأكيد'}
                 </Button>
               )}
 

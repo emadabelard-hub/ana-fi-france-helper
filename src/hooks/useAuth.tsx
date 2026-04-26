@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 import { AUTH_OPERATION_TIMEOUT_MS, getRecoveryContext, isAnonymousSession, normalizeEmail, PRIMARY_ADMIN_EMAIL, withAuthTimeout } from '@/lib/auth';
+import { clearInvoiceDraftBrowserState, setInvoiceDraftStorageUser } from '@/lib/invoiceDraftStorage';
 
 interface AuthResult {
   error: Error | null;
@@ -57,6 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         return;
       }
+      setInvoiceDraftStorageUser(nextSession?.user && !nextSession.user.is_anonymous ? nextSession.user.id : null);
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 
@@ -95,6 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session: existing } } = await supabase.auth.getSession();
 
         if (existing) {
+          setInvoiceDraftStorageUser(existing.user?.is_anonymous ? null : existing.user.id);
           setSession(existing);
           setUser(existing.user);
           finishLoading();
@@ -139,6 +142,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     if (!error && data.session) {
+      setInvoiceDraftStorageUser(data.user?.id ?? null);
       setSession(data.session);
       setUser(data.user);
       setIsLoading(false);
@@ -165,6 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     if (!error && data.session) {
+      setInvoiceDraftStorageUser(data.user?.id ?? null);
       setSession(data.session);
       setUser(data.user);
       setIsLoading(false);
@@ -180,6 +185,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data, error } = await supabase.auth.signInAnonymously();
 
     if (!error && data.session) {
+      setInvoiceDraftStorageUser(null);
       setSession(data.session);
       setUser(data.user);
       setIsLoading(false);
@@ -194,6 +200,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     (window as any).__setSigningOut?.(true);
 
     // 2. Immediately clear React state so UI updates
+    clearInvoiceDraftBrowserState();
+    setInvoiceDraftStorageUser(null);
     setUser(null);
     setSession(null);
 

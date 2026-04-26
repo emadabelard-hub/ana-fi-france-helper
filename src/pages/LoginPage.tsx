@@ -47,17 +47,22 @@ const LoginPage = () => {
 
   const getErrorMessage = (errorMsg: string): string => {
     const msg = errorMsg.toLowerCase();
-    if (msg.includes('invalid login credentials')) {
-      return 'Email ou mot de passe incorrect';
-    }
     if (msg.includes('email not confirmed')) {
-      return 'Compte non confirmé. Vérifiez votre email ou renvoyez le lien.';
+      return '📧 لازم تأكد الإيميل الأول — دور على الرسالة في صندوق الوارد أو Spam';
     }
-    if (msg.includes('user already registered')) {
-      return 'Cet email est déjà enregistré. Essayez de vous connecter.';
+    if (msg.includes('invalid login credentials') || msg.includes('invalid_credentials')) {
+      // Supabase ne distingue pas email inexistant / mauvais mot de passe pour la sécurité.
+      // On affiche un message couvrant les deux cas en Ammiya.
+      return '❌ الإيميل أو كلمة السر غلط — تأكد من البيانات أو أنشئ حساب جديد';
+    }
+    if (msg.includes('user not found') || msg.includes('user_not_found')) {
+      return '❌ البريد الإلكتروني ده مش موجود — تأكد من الإيميل أو أنشئ حساب جديد';
+    }
+    if (msg.includes('user already registered') || msg.includes('already registered')) {
+      return '⚠️ الإيميل ده مسجل قبل كده — جرب تسجل الدخول';
     }
     if (msg.includes('password')) {
-      return 'Erreur de mot de passe';
+      return '❌ كلمة السر غلط — حاول تاني أو اضغط "نسيت كلمة السر"';
     }
     return errorMsg;
   };
@@ -144,7 +149,7 @@ const LoginPage = () => {
 
         toast({
           variant: 'destructive',
-          title: 'Erreur',
+          title: 'تنبيه',
           description: getErrorMessage(result.error.message),
         });
         return;
@@ -152,14 +157,14 @@ const LoginPage = () => {
 
       if (!isLogin && result.needsEmailConfirmation) {
         toast({
-          title: 'Vérifiez votre email',
-          description: 'Compte créé. Confirmez votre email avant la connexion.',
+          title: '📧 تم إرسال رسالة تأكيد',
+          description: 'تم إرسال رسالة تأكيد على بريدك الإلكتروني — تحقق منها قبل تسجيل الدخول',
         });
         setIsLogin(true);
         return;
       }
 
-      toast({ title: 'Connexion réussie ✓' });
+      toast({ title: '✓ تم تسجيل الدخول' });
       const isPrimaryAdmin = submittedEmail === PRIMARY_ADMIN_EMAIL;
       navigate(isPrimaryAdmin ? '/admin' : '/', { replace: true });
     } finally {
@@ -330,8 +335,8 @@ const LoginPage = () => {
                     try {
                       const { error } = await supabase.auth.resend({ type: 'signup', email: normalizeEmail(currentEmail) });
                       toast({
-                        title: error ? 'Erreur' : 'Lien envoyé ✓',
-                        description: error ? error.message : 'Vérifiez votre boîte mail',
+                        title: error ? 'تنبيه' : '✓ تم إرسال الرسالة',
+                        description: error ? error.message : 'تحقق من بريدك الإلكتروني (وصندوق Spam)',
                         variant: error ? 'destructive' : 'default',
                       });
                     } finally {
@@ -339,7 +344,7 @@ const LoginPage = () => {
                     }
                   }}
                 >
-                  {resendingConfirm ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Renvoyer le lien de confirmation'}
+                  {resendingConfirm ? <Loader2 className="h-4 w-4 animate-spin" /> : 'إعادة إرسال رسالة التأكيد'}
                 </Button>
               )}
 

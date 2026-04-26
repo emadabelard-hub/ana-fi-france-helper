@@ -6,21 +6,21 @@ const corsHeaders = {
 };
 
 const BTP_GLOSSARY = `
-Glossaire BTP obligatoire (à respecter strictement):
+Glossaire BTP obligatoire (terminologie chantier France, à respecter strictement):
 - دهان / بوية → peinture acrylique
 - معجون → enduit de lissage
 - بلاط / سيراميك → carrelage
 - سقف مستعار → faux plafond
-- كهربا / كهرباء → installation électrique
+- كهربا / كهرباء → installation électrique conforme NF
 - سباكة → plomberie sanitaire
 - هدم → travaux de démolition
 - عزل → travaux d'isolation
 - نجارة → menuiserie
 - جبس / جبصين → plaque de plâtre (BA13)
-- شبابيك → fenêtres
-- باب / أبواب → portes
+- شبابيك → fenêtres / menuiseries extérieures
+- باب / أبواب → portes / blocs-portes
 - أرضية → sol / revêtement de sol
-- حيطة / حائط → mur
+- حيطة / حائط → mur / cloison
 - سقف → plafond
 - أسمنت → ciment
 - رمل → sable
@@ -28,6 +28,25 @@ Glossaire BTP obligatoire (à respecter strictement):
 - ترميم → rénovation
 - ورشة → chantier
 - مقاول → artisan / entrepreneur
+- صنفرة → ponçage
+- سوسكوش → sous-couche
+- كارلاج → carrelage
+- فايونس → faïence
+- جوانت → joint
+- روبيني → robinet
+- شوفاج → chauffage
+- بالون ديو → chauffe-eau
+- بيتون → béton
+- بارباين → parpaing
+- دالاج → dallage
+- بلاكو → placo
+- متر مربع / م² → mètre carré (m²)
+- متر طولي / م.ط → mètre linéaire (ml)
+- مان دوفر → main-d'œuvre
+- ماتيريو → matériaux / fournitures
+- فورنيتور → fournitures
+- دوفي → devis
+- فاتورة → facture
 `;
 
 interface TranslateRequest {

@@ -89,18 +89,27 @@ Deno.serve(async (req: Request) => {
 
     const direction =
       sourceLang === "ar"
-        ? "Arabe Égyptien (Ammiya) vers Français professionnel BTP"
-        : "Français professionnel BTP vers Arabe Égyptien (Ammiya) clair et naturel";
+        ? "Arabe Égyptien (Ammiya) parlé sur chantier vers Français professionnel BTP de chantier en France"
+        : "Français professionnel BTP de chantier en France vers Arabe Égyptien (Ammiya) clair, naturel et compréhensible par un ouvrier BTP";
 
-    const systemPrompt = `Tu es un traducteur expert spécialisé BTP (bâtiment et travaux publics).
+    const systemPrompt = `Tu es un traducteur expert spécialisé BTP (bâtiment et travaux publics) opérant sur des chantiers en France.
+Ton rôle: traduire fidèlement et professionnellement entre artisans et clients/maîtres d'ouvrage.
+
 Direction: ${direction}.
 
+Contexte impératif:
+- Le contexte est TOUJOURS un chantier BTP en France (rénovation, second œuvre, gros œuvre, finitions).
+- L'auteur est un artisan, un chef de chantier, un client ou un maître d'œuvre.
+- La traduction doit être naturelle, fluide, professionnelle — comme un vrai chef de chantier bilingue.
+
 Règles strictes:
-1. Traduction directe, naturelle, professionnelle.
-2. Utiliser le vocabulaire technique BTP français standard.
-3. Aucun commentaire, aucune explication, AUCUNE balise. Retourne UNIQUEMENT la traduction.
-4. Pour l'arabe: utiliser l'égyptien (Ammiya) clair, JAMAIS le darija marocain.
-5. Préserver les chiffres, mesures (m², ml, kg) et noms propres.
+1. Traduction directe, naturelle, professionnelle. JAMAIS de mot-à-mot maladroit.
+2. Utiliser SYSTÉMATIQUEMENT le vocabulaire technique BTP français standard (DTU, NF, terminologie chantier).
+3. Aucun commentaire, aucune explication, AUCUNE balise, AUCUN guillemet superflu. Retourne UNIQUEMENT la traduction finale.
+4. Pour l'arabe: utiliser EXCLUSIVEMENT l'égyptien (Ammiya) clair et professionnel, JAMAIS le darija marocain ni l'arabe littéraire (fusha).
+5. Préserver à l'identique: chiffres, mesures (m², ml, kg, m³), pourcentages, références produits, noms propres, marques.
+6. Si le texte source contient un terme du glossaire ci-dessous, utiliser OBLIGATOIREMENT la traduction officielle indiquée.
+7. Respecter le registre: formel pour devis/facture, oral et direct pour échanges chantier.
 
 ${BTP_GLOSSARY}`;
 
@@ -111,7 +120,7 @@ ${BTP_GLOSSARY}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: text },

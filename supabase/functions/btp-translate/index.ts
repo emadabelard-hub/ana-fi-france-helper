@@ -89,14 +89,14 @@ Deno.serve(async (req: Request) => {
 
     const stream = body && typeof body === "object" && (body as any).stream === true;
 
-    const direction =
-      sourceLang === "ar"
-        ? "Arabe Égyptien (Ammiya) chantier → Français pro BTP France"
-        : "Français pro BTP France → Arabe Égyptien (Ammiya) clair pour ouvrier BTP";
+    const sourceLabel = sourceLang === "ar" ? "Arabe Égyptien (Ammiya) BTP" : "Français BTP";
+    const targetLabel = targetLang === "ar" ? "Arabe Égyptien (Ammiya) BTP" : "Français BTP";
 
-    // Prompt minimal — vitesse maximale
-    const systemPrompt = `Traducteur BTP chantier France. ${direction}.
-Règles: traduction directe, naturelle, pro. Vocabulaire BTP français (NF/DTU). Préserver chiffres/mesures/marques. Arabe = Égyptien Ammiya uniquement (jamais Darija/Fusha). Retourne UNIQUEMENT la traduction, sans commentaire ni guillemets.
+    // Prompt strict minimal (selon spec utilisateur)
+    const userPrompt = `Traduis cette phrase de chantier BTP du ${sourceLabel} vers le ${targetLabel} en une seule phrase naturelle et professionnelle. Réponds uniquement avec la traduction sans explication. Phrase : ${text}`;
+
+    // Glossaire en system court pour garder précision BTP
+    const systemPrompt = `Traducteur BTP. Vocabulaire pro NF/DTU. Arabe = Égyptien Ammiya uniquement.
 ${BTP_GLOSSARY}`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -107,11 +107,11 @@ ${BTP_GLOSSARY}`;
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        max_tokens: 150,
+        max_tokens: 100,
         stream,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: text },
+          { role: "user", content: userPrompt },
         ],
       }),
     });

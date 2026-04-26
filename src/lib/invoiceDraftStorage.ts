@@ -9,10 +9,70 @@ const DRAFT_KEY = 'invoice_draft_v1';
 const CURRENT_DOCUMENT_KEY = 'currentDocument';
 // Per-document persistent drafts (one slot per type)
 const CURRENT_DOCUMENT_KEY_BY_TYPE = (type: 'devis' | 'facture') => `currentDocument_${type}_v1`;
+const ACTIVE_DRAFT_USER_KEY = 'invoice_draft_active_user_v1';
+const LEGACY_BROWSER_DRAFT_KEYS = [
+  DRAFT_KEY,
+  CURRENT_DOCUMENT_KEY,
+  CURRENT_DOCUMENT_KEY_BY_TYPE('devis'),
+  CURRENT_DOCUMENT_KEY_BY_TYPE('facture'),
+  'current_invoice_document',
+];
 // Drafts older than 48h are considered stale and offered for cleanup
 export const DRAFT_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 // Browser event broadcast on every successful auto-save (used by AutoSaveIndicator)
 export const DRAFT_SAVED_EVENT = 'invoice-draft:saved';
+
+const getActiveDraftUserId = () => {
+  try {
+    return sessionStorage.getItem(ACTIVE_DRAFT_USER_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const getScopedDraftKey = (key: string) => {
+  const userId = getActiveDraftUserId();
+  return userId ? `${key}:${userId}` : null;
+};
+
+const removeBrowserKeys = (keys: string[]) => {
+  for (const key of keys) {
+    try { localStorage.removeItem(key); } catch {}
+    try { sessionStorage.removeItem(key); } catch {}
+  }
+};
+
+const clearLegacyBrowserDrafts = () => removeBrowserKeys(LEGACY_BROWSER_DRAFT_KEYS);
+
+export const clearInvoiceDraftBrowserState = () => {
+  const userId = getActiveDraftUserId();
+  const scopedKeys = userId ? LEGACY_BROWSER_DRAFT_KEYS.map((key) => `${key}:${userId}`) : [];
+  removeBrowserKeys([
+    ...LEGACY_BROWSER_DRAFT_KEYS,
+    ...scopedKeys,
+    'quoteToInvoiceData',
+    'imageQuoteToInvoiceData',
+    'invoiceCreator_scroll_v1',
+    'lineItemEditor_items_v1',
+  ]);
+};
+
+export const setInvoiceDraftStorageUser = (userId: string | null) => {
+  const previousUserId = getActiveDraftUserId();
+
+  if (!userId) {
+    clearInvoiceDraftBrowserState();
+    try { sessionStorage.removeItem(ACTIVE_DRAFT_USER_KEY); } catch {}
+    return;
+  }
+
+  if (previousUserId && previousUserId !== userId) {
+    clearInvoiceDraftBrowserState();
+  }
+
+  try { sessionStorage.setItem(ACTIVE_DRAFT_USER_KEY, userId); } catch {}
+  clearLegacyBrowserDrafts();
+};
 
 const broadcastDraftSaved = (documentType: 'devis' | 'facture') => {
   try {
@@ -106,8 +166,10 @@ export interface CurrentDocumentState extends InvoiceDraft {
 
 export const saveDraft = (draft: Omit<InvoiceDraft, 'savedAt'>) => {
   try {
+    const key = getScopedDraftKey(DRAFT_KEY);
+    if (!key) return;
     const data: InvoiceDraft = { ...draft, savedAt: Date.now() };
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+    localStorage.setItem(key, JSON.stringify(data));
     broadcastDraftSaved(draft.documentType);
   } catch (e) {
     console.warn('Failed to save draft:', e);
@@ -118,7 +180,9 @@ export const saveDraft = (draft: Omit<InvoiceDraft, 'savedAt'>) => {
 
 export const loadDraft = (): InvoiceDraft | null => {
   try {
-    const raw = localStorage.getItem(DRAFT_KEY);
+    const key = getScopedDraftKey(DRAFT_KEY);
+    if (!key) return null;
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const draft: InvoiceDraft = JSON.parse(raw);
     // Expire drafts older than 48h
@@ -135,6 +199,8 @@ export const loadDraft = (): InvoiceDraft | null => {
 
 export const clearDraft = () => {
   try {
+    const key = getScopedDraftKey(DRAFT_KEY);
+    if (key) localStorage.removeItem(key);
     localStorage.removeItem(DRAFT_KEY);
   } catch (e) {
     console.warn('Failed to clear draft:', e);
@@ -145,6 +211,9 @@ export const clearDraft = () => {
 
 export const saveCurrentDocument = (document: Omit<CurrentDocumentState, 'savedAt'>) => {
   try {
+    const genericKey = getScopedDraftKey(CURRENT_DOCUMENT_KEY);
+    const typedKey = getScopedDraftKey(CURRENT_DOCUMENT_KEY_BY_TYPE(document.documentType));
+    if (!genericKey || !typedKey) return;
     // Only save if there's meaningful content (avoid persisting empty shells)
     const hasMeaningfulCurrentDocument =
       !!document.clientName?.trim() ||
@@ -161,9 +230,9 @@ export const saveCurrentDocument = (document: Omit<CurrentDocumentState, 'savedA
     const data: CurrentDocumentState = { ...document, savedAt: Date.now() };
     const serialized = JSON.stringify(data);
     // Generic slot (last touched, all types) for legacy callers
-    localStorage.setItem(CURRENT_DOCUMENT_KEY, serialized);
+    localStorage.setItem(genericKey, serialized);
     // Per-type slot (multi-document support)
-    localStorage.setItem(CURRENT_DOCUMENT_KEY_BY_TYPE(document.documentType), serialized);
+    localStorage.setItem(typedKey, serialized);
     broadcastDraftSaved(document.documentType);
   } catch (e) {
     console.warn('Failed to save current document:', e);
@@ -172,16 +241,19 @@ export const saveCurrentDocument = (document: Omit<CurrentDocumentState, 'savedA
 
 export const loadCurrentDocument = (documentType?: 'devis' | 'facture'): CurrentDocumentState | null => {
   try {
+    const genericKey = getScopedDraftKey(CURRENT_DOCUMENT_KEY);
+    if (!genericKey) return null;
     // Prefer per-type slot when a type is requested
     if (documentType) {
-      const rawTyped = localStorage.getItem(CURRENT_DOCUMENT_KEY_BY_TYPE(documentType));
+      const typedKey = getScopedDraftKey(CURRENT_DOCUMENT_KEY_BY_TYPE(documentType));
+      const rawTyped = typedKey ? localStorage.getItem(typedKey) : null;
       if (rawTyped) {
         const doc = JSON.parse(rawTyped) as CurrentDocumentState;
         if (doc.documentType === documentType) return doc;
       }
     }
 
-    const raw = localStorage.getItem(CURRENT_DOCUMENT_KEY);
+    const raw = localStorage.getItem(genericKey);
     if (!raw) return null;
 
     const document: CurrentDocumentState = JSON.parse(raw);
@@ -196,24 +268,28 @@ export const loadCurrentDocument = (documentType?: 'devis' | 'facture'): Current
 
 export const clearCurrentDocument = (documentType?: 'devis' | 'facture') => {
   try {
+    const genericKey = getScopedDraftKey(CURRENT_DOCUMENT_KEY);
     if (documentType) {
+      const typedKey = getScopedDraftKey(CURRENT_DOCUMENT_KEY_BY_TYPE(documentType));
+      if (typedKey) localStorage.removeItem(typedKey);
       localStorage.removeItem(CURRENT_DOCUMENT_KEY_BY_TYPE(documentType));
       // Clear generic slot only if it pointed to the same type
       try {
-        const raw = localStorage.getItem(CURRENT_DOCUMENT_KEY);
+        const raw = genericKey ? localStorage.getItem(genericKey) : null;
         if (raw) {
           const doc = JSON.parse(raw) as CurrentDocumentState;
-          if (doc.documentType === documentType) localStorage.removeItem(CURRENT_DOCUMENT_KEY);
+          if (doc.documentType === documentType && genericKey) localStorage.removeItem(genericKey);
         }
       } catch {
-        localStorage.removeItem(CURRENT_DOCUMENT_KEY);
+        if (genericKey) localStorage.removeItem(genericKey);
       }
       return;
     }
     // No type → wipe everything
-    localStorage.removeItem(CURRENT_DOCUMENT_KEY);
-    localStorage.removeItem(CURRENT_DOCUMENT_KEY_BY_TYPE('devis'));
-    localStorage.removeItem(CURRENT_DOCUMENT_KEY_BY_TYPE('facture'));
+    const scopedKeys = [CURRENT_DOCUMENT_KEY, CURRENT_DOCUMENT_KEY_BY_TYPE('devis'), CURRENT_DOCUMENT_KEY_BY_TYPE('facture')]
+      .map(getScopedDraftKey)
+      .filter(Boolean) as string[];
+    removeBrowserKeys([CURRENT_DOCUMENT_KEY, CURRENT_DOCUMENT_KEY_BY_TYPE('devis'), CURRENT_DOCUMENT_KEY_BY_TYPE('facture'), ...scopedKeys]);
   } catch (e) {
     console.warn('Failed to clear current document:', e);
   }
@@ -238,7 +314,9 @@ export const listAvailableDrafts = (): AvailableDraftSummary[] => {
   const now = Date.now();
   for (const type of types) {
     try {
-      const raw = localStorage.getItem(CURRENT_DOCUMENT_KEY_BY_TYPE(type));
+      const key = getScopedDraftKey(CURRENT_DOCUMENT_KEY_BY_TYPE(type));
+      if (!key) continue;
+      const raw = localStorage.getItem(key);
       if (!raw) continue;
       const doc = JSON.parse(raw) as CurrentDocumentState;
       if (!doc || doc.documentType !== type) continue;

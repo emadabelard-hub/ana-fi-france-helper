@@ -149,7 +149,7 @@ const LoginPage = () => {
 
         toast({
           variant: 'destructive',
-          title: 'Erreur',
+          title: 'تنبيه',
           description: getErrorMessage(result.error.message),
         });
         return;
@@ -157,14 +157,14 @@ const LoginPage = () => {
 
       if (!isLogin && result.needsEmailConfirmation) {
         toast({
-          title: 'Vérifiez votre email',
-          description: 'Compte créé. Confirmez votre email avant la connexion.',
+          title: '📧 تم إرسال رسالة تأكيد',
+          description: 'تم إرسال رسالة تأكيد على بريدك الإلكتروني — تحقق منها قبل تسجيل الدخول',
         });
         setIsLogin(true);
         return;
       }
 
-      toast({ title: 'Connexion réussie ✓' });
+      toast({ title: '✓ تم تسجيل الدخول' });
       const isPrimaryAdmin = submittedEmail === PRIMARY_ADMIN_EMAIL;
       navigate(isPrimaryAdmin ? '/admin' : '/', { replace: true });
     } finally {

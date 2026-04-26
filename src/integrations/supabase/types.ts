@@ -186,7 +186,7 @@ export type Database = {
           site_address?: string | null
           status?: string
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           budget?: number | null
@@ -248,7 +248,7 @@ export type Database = {
           street?: string | null
           tva_number?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           address?: string | null
@@ -346,7 +346,7 @@ export type Database = {
           tva_exempt?: boolean
           tva_rate?: number
           updated_at?: string
-          user_id: string
+          user_id?: string
           work_site_address?: string | null
         }
         Update: {
@@ -415,7 +415,7 @@ export type Database = {
           title: string
           tva_amount?: number
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           amount?: number

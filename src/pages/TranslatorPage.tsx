@@ -83,33 +83,109 @@ const TranslatorPage = () => {
     if (!error && data) setHistory(data as HistoryItem[]);
   }, [user]);
 
-  // ─── Native Web Speech TTS ───
+  // ─── Native Web Speech TTS — male voice + retry on failure ───
+  const ttsFailCountRef = useRef(0);
+
+  const pickMaleVoice = useCallback((lang: Lang): SpeechSynthesisVoice | null => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices.length) return null;
+
+    const langPrefix = lang === 'ar' ? 'ar' : 'fr';
+    const targetLang = lang === 'ar' ? 'ar-eg' : 'fr-fr';
+
+    // Male voice name patterns
+    const malePatterns = lang === 'ar'
+      ? [/majed/i, /tarik/i, /hamed/i, /maged/i]
+      : [/thomas/i, /paul/i, /google français/i, /google french/i, /henri/i, /nicolas/i];
+
+    const inLang = voices.filter((v) => v.lang.toLowerCase().startsWith(langPrefix));
+
+    // 1. Exact lang + male name
+    for (const pattern of malePatterns) {
+      const found = inLang.find((v) => pattern.test(v.name) && v.lang.toLowerCase().startsWith(targetLang));
+      if (found) return found;
+    }
+    // 2. Any lang variant + male name
+    for (const pattern of malePatterns) {
+      const found = inLang.find((v) => pattern.test(v.name));
+      if (found) return found;
+    }
+    // 3. Heuristic: explicit "male" / "homme" hint in name
+    const heuristic = inLang.find((v) => /male|homme|man\b/i.test(v.name));
+    if (heuristic) return heuristic;
+
+    // 4. First voice in correct exact locale
+    const exact = inLang.find((v) => v.lang.toLowerCase().startsWith(targetLang));
+    if (exact) return exact;
+
+    // 5. Fallback: first voice in language family
+    return inLang[0] || null;
+  }, []);
+
   const speak = useCallback((text: string, lang: Lang) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       console.warn('SpeechSynthesis not supported');
       return;
     }
-    try {
-      window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = lang === 'ar' ? 'ar-EG' : 'fr-FR';
-      utter.rate = 0.95;
-      utter.pitch = 1;
-      utter.volume = 1;
-      const voices = window.speechSynthesis.getVoices();
-      const preferred =
-        voices.find((v) => v.lang.toLowerCase().startsWith(utter.lang.toLowerCase())) ||
-        voices.find((v) => v.lang.toLowerCase().startsWith(lang === 'ar' ? 'ar' : 'fr'));
-      if (preferred) utter.voice = preferred;
-      utter.onstart = () => setIsPlaying(true);
-      utter.onend = () => setIsPlaying(false);
-      utter.onerror = () => setIsPlaying(false);
-      window.speechSynthesis.speak(utter);
-    } catch (err) {
-      console.error('TTS error:', err);
-      setIsPlaying(false);
-    }
-  }, []);
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    const doSpeak = (attempt: number) => {
+      try {
+        // Always cancel any in-flight utterance before starting a new one
+        window.speechSynthesis.cancel();
+
+        const utter = new SpeechSynthesisUtterance(trimmed);
+        utter.lang = lang === 'ar' ? 'ar-EG' : 'fr-FR';
+        utter.rate = 0.95;
+        utter.pitch = 0.92; // slightly lower → more masculine
+        utter.volume = 1;
+
+        const voice = pickMaleVoice(lang);
+        if (voice) utter.voice = voice;
+
+        utter.onstart = () => {
+          ttsFailCountRef.current = 0;
+          setIsPlaying(true);
+        };
+        utter.onend = () => setIsPlaying(false);
+        utter.onerror = (ev) => {
+          console.warn('TTS error event:', ev);
+          setIsPlaying(false);
+          // Auto-retry once
+          if (attempt < 1) {
+            setTimeout(() => doSpeak(attempt + 1), 200);
+          } else {
+            ttsFailCountRef.current += 1;
+            if (ttsFailCountRef.current >= 2) {
+              toast({
+                title: '🔊 المتصفح ما رضيش يقرا',
+                description: 'اضغط مرة تانية على 🔊',
+                variant: 'destructive',
+              });
+              ttsFailCountRef.current = 0;
+            }
+          }
+        };
+
+        // Some browsers (Chrome) need a tick after cancel() before speak()
+        setTimeout(() => {
+          try {
+            window.speechSynthesis.speak(utter);
+          } catch (e) {
+            console.error('TTS speak() threw:', e);
+            setIsPlaying(false);
+          }
+        }, 60);
+      } catch (err) {
+        console.error('TTS error:', err);
+        setIsPlaying(false);
+      }
+    };
+
+    doSpeak(0);
+  }, [pickMaleVoice, toast]);
 
   const stopSpeak = useCallback(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -140,6 +216,27 @@ const TranslatorPage = () => {
   const startRecording = async () => {
     try {
       stopSpeak();
+
+      // Stability: fully reset previous instance before starting a new one
+      if (mediaRecorderRef.current) {
+        try {
+          if (mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+          }
+        } catch {
+          /* noop */
+        }
+        mediaRecorderRef.current = null;
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+      audioChunksRef.current = [];
+
+      // 300ms guard delay to avoid mic conflicts on rapid restart
+      await new Promise((r) => setTimeout(r, 300));
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       const mr = new MediaRecorder(stream);

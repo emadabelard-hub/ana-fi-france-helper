@@ -35,13 +35,14 @@ const ChantierDetailPage = () => {
     if (!user || !id) return;
     (async () => {
       setLoading(true);
-      const { data: ch } = await supabase.from('chantiers').select('*').eq('id', id).single();
+      // SECURITY: Always scope by user_id
+      const { data: ch } = await supabase.from('chantiers').select('*').eq('id', id).eq('user_id', user.id).maybeSingle();
       if (ch) {
         setChantier(ch);
         const [{ data: cl }, { data: docs }, { data: exp }] = await Promise.all([
-          supabase.from('clients').select('*').eq('id', ch.client_id).single(),
-          supabase.from('documents_comptables').select('*').eq('chantier_id', id).order('created_at', { ascending: false }),
-          supabase.from('expenses').select('*').eq('chantier_id', id).order('expense_date', { ascending: false }),
+          supabase.from('clients').select('*').eq('id', ch.client_id).eq('user_id', user.id).maybeSingle(),
+          supabase.from('documents_comptables').select('*').eq('chantier_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('expenses').select('*').eq('chantier_id', id).eq('user_id', user.id).order('expense_date', { ascending: false }),
         ]);
         setClient(cl);
         setDocuments(docs || []);
@@ -63,9 +64,9 @@ const ChantierDetailPage = () => {
   const budgetAlert: 'red' | 'yellow' | null = budgetPct !== null ? (budgetPct >= 100 ? 'red' : budgetPct >= 80 ? 'yellow' : null) : null;
 
   const handleSaveBudget = async () => {
-    if (!id) return;
+    if (!id || !user) return;
     const val = budgetInput.trim() ? parseFloat(budgetInput) : null;
-    const { error } = await supabase.from('chantiers').update({ budget: val } as any).eq('id', id);
+    const { error } = await supabase.from('chantiers').update({ budget: val } as any).eq('id', id).eq('user_id', user.id);
     if (error) {
       toast({ title: isRTL ? 'خطأ' : 'Erreur', description: error.message, variant: 'destructive' });
       return;
@@ -277,7 +278,7 @@ const ChantierDetailPage = () => {
           isRTL={isRTL}
           userId={user.id}
           onExpenseAdded={async () => {
-            const { data: exp } = await supabase.from('expenses').select('*').eq('chantier_id', id!).order('expense_date', { ascending: false });
+            const { data: exp } = await supabase.from('expenses').select('*').eq('chantier_id', id!).eq('user_id', user.id).order('expense_date', { ascending: false });
             setExpenses(exp || []);
           }}
         />

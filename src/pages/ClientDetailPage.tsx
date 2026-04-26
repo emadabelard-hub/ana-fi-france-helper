@@ -73,9 +73,10 @@ const ClientDetailPage = () => {
   const fetchData = async () => {
     if (!user || !id) return;
     setLoading(true);
+    // SECURITY: Always scope by user_id
     const [{ data: clientData }, { data: chantiersData }] = await Promise.all([
-      supabase.from('clients').select('*').eq('id', id).single(),
-      supabase.from('chantiers').select('*').eq('client_id', id).order('created_at', { ascending: false }),
+      supabase.from('clients').select('*').eq('id', id).eq('user_id', user.id).maybeSingle(),
+      supabase.from('chantiers').select('*').eq('client_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
     ]);
     setClient(clientData);
     setChantiers(chantiersData || []);
@@ -87,7 +88,7 @@ const ClientDetailPage = () => {
   const handleSave = async () => {
     if (!user || !id || !form.name.trim()) return;
     if (editingChantier) {
-      await supabase.from('chantiers').update({ name: form.name, site_address: form.site_address || null, status: form.status, insurance_notes: form.insurance_notes || null } as any).eq('id', editingChantier.id);
+      await supabase.from('chantiers').update({ name: form.name, site_address: form.site_address || null, status: form.status, insurance_notes: form.insurance_notes || null } as any).eq('id', editingChantier.id).eq('user_id', user.id);
       toast({ title: isRTL ? 'تم التعديل' : 'Chantier modifié' });
     } else {
       await supabase.from('chantiers').insert({ user_id: user.id, client_id: id, name: form.name, site_address: form.site_address || null, status: form.status, insurance_notes: form.insurance_notes || null } as any);
@@ -100,7 +101,8 @@ const ClientDetailPage = () => {
   };
 
   const handleDelete = async (chantierId: string) => {
-    await supabase.from('chantiers').delete().eq('id', chantierId);
+    if (!user) return;
+    await supabase.from('chantiers').delete().eq('id', chantierId).eq('user_id', user.id);
     toast({ title: isRTL ? 'تم الحذف' : 'Chantier supprimé' });
     fetchData();
   };

@@ -9,10 +9,70 @@ const DRAFT_KEY = 'invoice_draft_v1';
 const CURRENT_DOCUMENT_KEY = 'currentDocument';
 // Per-document persistent drafts (one slot per type)
 const CURRENT_DOCUMENT_KEY_BY_TYPE = (type: 'devis' | 'facture') => `currentDocument_${type}_v1`;
+const ACTIVE_DRAFT_USER_KEY = 'invoice_draft_active_user_v1';
+const LEGACY_BROWSER_DRAFT_KEYS = [
+  DRAFT_KEY,
+  CURRENT_DOCUMENT_KEY,
+  CURRENT_DOCUMENT_KEY_BY_TYPE('devis'),
+  CURRENT_DOCUMENT_KEY_BY_TYPE('facture'),
+  'current_invoice_document',
+];
 // Drafts older than 48h are considered stale and offered for cleanup
 export const DRAFT_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 // Browser event broadcast on every successful auto-save (used by AutoSaveIndicator)
 export const DRAFT_SAVED_EVENT = 'invoice-draft:saved';
+
+const getActiveDraftUserId = () => {
+  try {
+    return sessionStorage.getItem(ACTIVE_DRAFT_USER_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const getScopedDraftKey = (key: string) => {
+  const userId = getActiveDraftUserId();
+  return userId ? `${key}:${userId}` : null;
+};
+
+const removeBrowserKeys = (keys: string[]) => {
+  for (const key of keys) {
+    try { localStorage.removeItem(key); } catch {}
+    try { sessionStorage.removeItem(key); } catch {}
+  }
+};
+
+const clearLegacyBrowserDrafts = () => removeBrowserKeys(LEGACY_BROWSER_DRAFT_KEYS);
+
+export const clearInvoiceDraftBrowserState = () => {
+  const userId = getActiveDraftUserId();
+  const scopedKeys = userId ? LEGACY_BROWSER_DRAFT_KEYS.map((key) => `${key}:${userId}`) : [];
+  removeBrowserKeys([
+    ...LEGACY_BROWSER_DRAFT_KEYS,
+    ...scopedKeys,
+    'quoteToInvoiceData',
+    'imageQuoteToInvoiceData',
+    'invoiceCreator_scroll_v1',
+    'lineItemEditor_items_v1',
+  ]);
+};
+
+export const setInvoiceDraftStorageUser = (userId: string | null) => {
+  const previousUserId = getActiveDraftUserId();
+
+  if (!userId) {
+    clearInvoiceDraftBrowserState();
+    try { sessionStorage.removeItem(ACTIVE_DRAFT_USER_KEY); } catch {}
+    return;
+  }
+
+  if (previousUserId && previousUserId !== userId) {
+    clearInvoiceDraftBrowserState();
+  }
+
+  try { sessionStorage.setItem(ACTIVE_DRAFT_USER_KEY, userId); } catch {}
+  clearLegacyBrowserDrafts();
+};
 
 const broadcastDraftSaved = (documentType: 'devis' | 'facture') => {
   try {

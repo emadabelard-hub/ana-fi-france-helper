@@ -108,7 +108,7 @@ const TranslatorPage = () => {
 
   const startRecording = async () => {
     try {
-      stopGlobalAudio();
+      stopSpeak();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       const mr = new MediaRecorder(stream);

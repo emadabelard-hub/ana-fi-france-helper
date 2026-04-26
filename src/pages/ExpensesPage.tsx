@@ -486,6 +486,7 @@ const ExpensesPage = () => {
         ? await supabase
             .from('documents_comptables')
             .select('id, document_number, document_type, client_name, client_address, subtotal_ht, tva_amount, tva_rate, total_ttc, tva_exempt, document_data, created_at, work_site_address, nature_operation')
+            .eq('user_id', user.id)
             .in('id', docIds)
         : { data: [] };
       const fullDocsMap = new Map((fullDocsData || []).map(d => [d.id, d]));
@@ -658,6 +659,7 @@ const ExpensesPage = () => {
         const { data: expenseRecords } = await supabase
           .from('expenses')
           .select('id, title, expense_date, receipt_url, chantier_id')
+          .eq('user_id', user.id)
           .in('id', expenseRows.map(e => e.id));
 
         for (const exp of (expenseRecords || [])) {

@@ -50,6 +50,7 @@ const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const PricingSettingsPage = lazy(() => import("./pages/PricingSettingsPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const VerifyDocumentPage = lazy(() => import("./pages/VerifyDocumentPage"));
+const TranslatorPage = lazy(() => import("./pages/TranslatorPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -133,6 +134,7 @@ const AppRoutes = () => {
             <Route path="/pro/pricing-settings" element={<PricingSettingsPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/verify/:id" element={<VerifyDocumentPage />} />
+            <Route path="/translator" element={<TranslatorPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

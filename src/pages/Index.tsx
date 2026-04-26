@@ -81,6 +81,18 @@ const Index = () => {
       border: 'border-[hsl(200,60%,80%)] dark:border-[hsl(220,40%,30%)]',
     },
     {
+      icon: <Languages size={32} className="text-white drop-shadow-md" />,
+      gradient: 'linear-gradient(135deg, #2563EB, #1E40AF)',
+      titleAr: 'مترجم فوري 🗣️',
+      titleFr: 'Traducteur instantané BTP 🗣️',
+      descAr: 'اتكلم بالعربي واسمع الفرنساوي على طول',
+      descFr: 'Parlez arabe ou français, traduction instantanée',
+      path: '/translator',
+      feature: 'فتح المترجم الفوري',
+      bg: 'bg-[#DBEAFE] dark:bg-[#0A1A3A]',
+      border: 'border-[hsl(217,91%,75%)] dark:border-[hsl(217,60%,30%)]',
+    },
+    {
       icon: <Wallet size={32} className="text-white drop-shadow-md" />,
       gradient: 'linear-gradient(135deg, #0D9488, #16A34A)',
       titleAr: 'إدارة الحسابات 💼',

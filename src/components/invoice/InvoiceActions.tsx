@@ -268,12 +268,12 @@ const InvoiceActions = ({
       if (docId) {
         // SECURITY: Scope by user_id (RLS protects too, but defence-in-depth)
         const { data: { user: authUser } } = await supabase.auth.getUser();
-        const updateQuery = supabase
+        if (!authUser?.id) return shareUrl;
+        const { error: updateError } = await supabase
           .from('documents_comptables')
           .update({ pdf_url: shareUrl })
-          .eq('id', docId);
-        if (authUser?.id) updateQuery.eq('user_id', authUser.id);
-        const { error: updateError } = await updateQuery;
+          .eq('id', docId)
+          .eq('user_id', authUser.id);
         if (updateError) {
           console.warn('[PDF Upload] Could not persist pdf_url:', updateError);
         }

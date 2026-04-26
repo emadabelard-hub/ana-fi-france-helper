@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { Mic, Square, Loader2, Volume2, Copy, Check, Trash2, History, MessageCircle, ArrowLeft } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Mic, Square, Loader2, Volume2, Copy, Check, Trash2, History, MessageCircle, ArrowLeft, Keyboard, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,6 +20,28 @@ interface HistoryItem {
   created_at: string;
 }
 
+// ─── iOS detection (Safari blocks autoplay TTS) ───
+const isIOS = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /iPad|iPhone|iPod/.test(ua) || (ua.includes('Mac') && 'ontouchend' in document);
+};
+
+// ─── Mic / SpeechRecognition support detection ───
+const hasSpeechRecognition = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return !!(
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition
+  );
+};
+
+const hasMediaRecorder = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return typeof (window as any).MediaRecorder !== 'undefined' &&
+    !!navigator.mediaDevices?.getUserMedia;
+};
+
 const TranslatorPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -34,11 +57,21 @@ const TranslatorPage = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
+  // Text input mode (alternative to voice — available everywhere)
+  const [textMode, setTextMode] = useState(false);
+  const [typedText, setTypedText] = useState('');
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
   const targetLang: Lang = sourceLang === 'ar' ? 'fr' : 'ar';
+
+  const ios = useMemo(() => isIOS(), []);
+  const voiceAvailable = useMemo(
+    () => hasMediaRecorder() || hasSpeechRecognition(),
+    [],
+  );
 
   const loadHistory = useCallback(async () => {
     if (!user) return;
@@ -50,7 +83,7 @@ const TranslatorPage = () => {
     if (!error && data) setHistory(data as HistoryItem[]);
   }, [user]);
 
-  // ─── Native Web Speech TTS (no API key, works offline on mobile) ───
+  // ─── Native Web Speech TTS ───
   const speak = useCallback((text: string, lang: Lang) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       console.warn('SpeechSynthesis not supported');
@@ -63,7 +96,6 @@ const TranslatorPage = () => {
       utter.rate = 0.95;
       utter.pitch = 1;
       utter.volume = 1;
-      // Try to pick a voice matching the language
       const voices = window.speechSynthesis.getVoices();
       const preferred =
         voices.find((v) => v.lang.toLowerCase().startsWith(utter.lang.toLowerCase())) ||
@@ -86,7 +118,6 @@ const TranslatorPage = () => {
     setIsPlaying(false);
   }, []);
 
-  // Pre-load voices (some browsers populate them async)
   useEffect(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     const handler = () => window.speechSynthesis.getVoices();
@@ -120,6 +151,7 @@ const TranslatorPage = () => {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
+        // Fire translation immediately, no delay
         void handleTranscribeAndTranslate(blob);
       };
       mediaRecorderRef.current = mr;
@@ -145,9 +177,113 @@ const TranslatorPage = () => {
     }
   };
 
+  // ─── Streaming translate (token-by-token) ───
+  const streamTranslation = useCallback(
+    async (text: string): Promise<string> => {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/btp-translate`;
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ text, sourceLang, targetLang, stream: true }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        // Fallback to non-stream JSON error parse
+        let msg = 'Translation failed';
+        try {
+          const j = await resp.json();
+          if (j?.error) msg = j.error;
+        } catch { /* noop */ }
+        throw new Error(msg);
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = '';
+      let assembled = '';
+      let streamDone = false;
+
+      setTranslatedText('');
+
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') { streamDone = true; break; }
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (delta) {
+              assembled += delta;
+              setTranslatedText(assembled);
+            }
+          } catch {
+            textBuffer = line + '\n' + textBuffer;
+            break;
+          }
+        }
+      }
+
+      return assembled.trim();
+    },
+    [sourceLang, targetLang],
+  );
+
+  const performTranslation = async (transcribed: string) => {
+    if (!transcribed) {
+      setIsProcessing(false);
+      return;
+    }
+    setOriginalText(transcribed);
+
+    try {
+      const translated = await streamTranslation(transcribed);
+      if (!translated) throw new Error('Empty translation');
+
+      // Save history
+      if (user) {
+        await supabase.from('translation_history').insert({
+          user_id: user.id,
+          source_lang: sourceLang,
+          target_lang: targetLang,
+          source_text: transcribed,
+          translated_text: translated,
+        });
+      }
+
+      // iOS Safari blocks autoplay TTS — only manual playback via 🔊 button
+      if (!ios) {
+        speak(translated, targetLang);
+      }
+    } catch (err) {
+      console.error('Translate error:', err);
+      toast({
+        title: '❌ خطأ في الترجمة',
+        description: 'حاول تاني بعد شوية',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleTranscribeAndTranslate = async (audioBlob: Blob) => {
     try {
-      // 1. Convert to base64
       const arrayBuffer = await audioBlob.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
       let binary = '';
@@ -157,7 +293,6 @@ const TranslatorPage = () => {
       }
       const audioBase64 = btoa(binary);
 
-      // 2. Transcribe via existing voice-field-input edge function
       const { data: transcribeData, error: transcribeError } = await supabase.functions.invoke(
         'voice-field-input',
         {
@@ -171,7 +306,6 @@ const TranslatorPage = () => {
 
       if (transcribeError) throw transcribeError;
 
-      // For Arabic source, prefer raw Arabic transcript; for French, use cleaned text
       const transcribed =
         sourceLang === 'ar'
           ? (transcribeData?.raw || transcribeData?.text || '').trim()
@@ -187,46 +321,27 @@ const TranslatorPage = () => {
         return;
       }
 
-      setOriginalText(transcribed);
-
-      // 3. Translate
-      const { data: translateData, error: translateError } = await supabase.functions.invoke(
-        'btp-translate',
-        {
-          body: { text: transcribed, sourceLang, targetLang },
-        },
-      );
-
-      if (translateError) throw translateError;
-
-      const translated = (translateData?.translated || '').trim();
-      if (!translated) throw new Error('Empty translation');
-
-      setTranslatedText(translated);
-
-      // 4. Save history
-      if (user) {
-        await supabase.from('translation_history').insert({
-          user_id: user.id,
-          source_lang: sourceLang,
-          target_lang: targetLang,
-          source_text: transcribed,
-          translated_text: translated,
-        });
-      }
-
-      // 5. Auto play TTS
-      void playTranslation(translated);
+      await performTranslation(transcribed);
     } catch (err) {
-      console.error('Translate error:', err);
+      console.error('Transcribe error:', err);
       toast({
         title: '❌ خطأ في الترجمة',
         description: 'حاول تاني بعد شوية',
         variant: 'destructive',
       });
-    } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleSubmitTyped = async () => {
+    const value = typedText.trim();
+    if (!value || isProcessing) return;
+    stopSpeak();
+    setOriginalText('');
+    setTranslatedText('');
+    setIsProcessing(true);
+    await performTranslation(value);
+    setTypedText('');
   };
 
   const playTranslation = (text?: string) => {
@@ -331,41 +446,116 @@ const TranslatorPage = () => {
           </button>
         </div>
 
-        {/* Mic button */}
-        <div className="flex flex-col items-center py-6">
-          <button
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={isProcessing}
-            className={cn(
-              'relative w-32 h-32 rounded-full flex items-center justify-center transition-all shadow-2xl',
-              isRecording
-                ? 'bg-red-500 scale-110 animate-pulse'
-                : 'bg-blue-500 hover:bg-blue-600 active:scale-95',
-              isProcessing && 'opacity-50 cursor-not-allowed',
+        {/* Voice input — hidden when text mode is active */}
+        {!textMode && (
+          <div className="flex flex-col items-center py-6">
+            <button
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isProcessing || !voiceAvailable}
+              className={cn(
+                'relative w-32 h-32 rounded-full flex items-center justify-center transition-all shadow-2xl',
+                isRecording
+                  ? 'bg-red-500 scale-110 animate-pulse'
+                  : 'bg-blue-500 hover:bg-blue-600 active:scale-95',
+                (isProcessing || !voiceAvailable) && 'opacity-50 cursor-not-allowed',
+              )}
+              aria-label={isRecording ? 'وقف' : 'ابدأ الكلام'}
+            >
+              {isProcessing ? (
+                <Loader2 className="h-12 w-12 text-white animate-spin" />
+              ) : isRecording ? (
+                <Square className="h-12 w-12 text-white fill-white" />
+              ) : (
+                <Mic className="h-14 w-14 text-white" />
+              )}
+              {isRecording && (
+                <span className="absolute inset-0 rounded-full border-4 border-red-300 animate-ping" />
+              )}
+            </button>
+            <p className="mt-4 text-sm font-cairo text-muted-foreground text-center">
+              {isProcessing
+                ? 'جاري الترجمة...'
+                : isRecording
+                ? 'بتسجل... اضغط لما تخلص'
+                : sourceLang === 'ar'
+                ? 'اضغط واتكلم بالعربي'
+                : 'Appuyez et parlez en français'}
+            </p>
+
+            {/* Guide message when voice unavailable (iOS Safari, etc.) */}
+            {!voiceAvailable && (
+              <p className="mt-3 text-xs font-cairo text-center text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30 rounded-lg px-3 py-2">
+                للاستماع للترجمة اضغط على 🔊 — للكتابة اضغط على ⌨️
+              </p>
             )}
-            aria-label={isRecording ? 'وقف' : 'ابدأ الكلام'}
+          </div>
+        )}
+
+        {/* Text input mode toggle (works on all devices: iOS + Android) */}
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setTextMode((m) => !m);
+              if (isRecording) stopRecording();
+            }}
+            className="gap-2 font-cairo border-2"
           >
-            {isProcessing ? (
-              <Loader2 className="h-12 w-12 text-white animate-spin" />
-            ) : isRecording ? (
-              <Square className="h-12 w-12 text-white fill-white" />
-            ) : (
-              <Mic className="h-14 w-14 text-white" />
-            )}
-            {isRecording && (
-              <span className="absolute inset-0 rounded-full border-4 border-red-300 animate-ping" />
-            )}
-          </button>
-          <p className="mt-4 text-sm font-cairo text-muted-foreground text-center">
-            {isProcessing
-              ? 'جاري الترجمة...'
-              : isRecording
-              ? 'بتسجل... اضغط لما تخلص'
-              : sourceLang === 'ar'
-              ? 'اضغط واتكلم بالعربي'
-              : 'Appuyez et parlez en français'}
-          </p>
+            <Keyboard className="h-4 w-4" />
+            {textMode ? 'ارجع للميكروفون 🎙️' : '⌨️ اكتب بدل ما تتكلم'}
+          </Button>
         </div>
+
+        {/* Text input area */}
+        {textMode && (
+          <Card className="p-4 border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+            <Textarea
+              value={typedText}
+              onChange={(e) => setTypedText(e.target.value)}
+              placeholder={
+                sourceLang === 'ar' ? 'اكتب جملتك هنا...' : 'Tapez votre phrase ici...'
+              }
+              dir={sourceLang === 'ar' ? 'rtl' : 'ltr'}
+              lang={sourceLang === 'ar' ? 'ar-EG' : 'fr-FR'}
+              className={cn(
+                'min-h-[100px] text-base resize-none',
+                sourceLang === 'ar' && 'font-cairo text-right',
+              )}
+              disabled={isProcessing}
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                  e.preventDefault();
+                  void handleSubmitTyped();
+                }
+              }}
+            />
+            <Button
+              onClick={() => void handleSubmitTyped()}
+              disabled={!typedText.trim() || isProcessing}
+              className="w-full mt-3 gap-2 bg-blue-500 hover:bg-blue-600 text-white font-cairo"
+            >
+              {isProcessing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              ترجم دلوقتي
+            </Button>
+          </Card>
+        )}
+
+        {/* Animated translation loading indicator */}
+        {isProcessing && (
+          <div className="flex items-center justify-center gap-2 py-2" aria-live="polite">
+            <span className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.3s]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.15s]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-bounce" />
+            <span className="ms-2 text-xs font-cairo text-blue-700 dark:text-blue-300">
+              جاري الترجمة...
+            </span>
+          </div>
+        )}
 
         {/* Original text */}
         {originalText && (
@@ -387,7 +577,7 @@ const TranslatorPage = () => {
           </Card>
         )}
 
-        {/* Translated text */}
+        {/* Translated text (streamed token-by-token) */}
         {translatedText && (
           <Card className="p-4 bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800">
             <div className="flex items-center justify-between mb-2">
@@ -413,21 +603,24 @@ const TranslatorPage = () => {
               dir={targetLang === 'ar' ? 'rtl' : 'ltr'}
             >
               {translatedText}
+              {isProcessing && <span className="inline-block w-1.5 h-4 ms-1 bg-blue-500 animate-pulse align-middle" />}
             </p>
 
-            <div className="grid grid-cols-2 gap-2 mt-4">
-              <Button onClick={handleCopy} variant="outline" className="gap-2">
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                <span className="font-cairo">{copied ? 'اتنسخ' : 'انسخ'}</span>
-              </Button>
-              <Button
-                onClick={handleWhatsApp}
-                className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-              >
-                <MessageCircle className="h-4 w-4" />
-                <span className="font-cairo">واتساب</span>
-              </Button>
-            </div>
+            {!isProcessing && (
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                <Button onClick={handleCopy} variant="outline" className="gap-2">
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  <span className="font-cairo">{copied ? 'اتنسخ' : 'انسخ'}</span>
+                </Button>
+                <Button
+                  onClick={handleWhatsApp}
+                  className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="font-cairo">واتساب</span>
+                </Button>
+              </div>
+            )}
           </Card>
         )}
 

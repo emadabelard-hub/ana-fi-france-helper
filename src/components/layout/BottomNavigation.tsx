@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Newspaper, User, Shield, HeadphonesIcon, Receipt, Bot } from 'lucide-react';
+import { Home, Newspaper, User, Shield, HeadphonesIcon, Receipt, Bot, Languages } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -51,6 +51,15 @@ const navItems = [
     color: 'text-emerald-400',
     activeBg: 'bg-emerald-400/15',
     dotColor: 'bg-emerald-400',
+  },
+  {
+    path: '/translator',
+    icon: Languages,
+    labelAr: 'ترجم',
+    labelFr: 'Traduire',
+    color: 'text-blue-500',
+    activeBg: 'bg-blue-500/15',
+    dotColor: 'bg-blue-500',
   },
   {
     path: '/profile',

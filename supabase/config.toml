@@ -59,3 +59,6 @@ verify_jwt = false
 
 [functions.translate-milestone-label]
 verify_jwt = false
+
+[functions.btp-translate]
+verify_jwt = false

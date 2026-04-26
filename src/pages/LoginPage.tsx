@@ -21,6 +21,7 @@ const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
@@ -276,16 +277,26 @@ const LoginPage = () => {
                 {!isLogin && (
                   <div className="space-y-2">
                     <Label className="font-bold">Confirmer</Label>
-                    <Input
-                      ref={confirmPasswordRef}
-                      name="confirmPassword"
-                      type="password"
-                      placeholder="••••••••"
-                      required
-                      autoComplete="new-password"
-                      className="text-[16px]"
-                      dir="ltr"
-                    />
+                    <div className="relative">
+                      <Input
+                        ref={confirmPasswordRef}
+                        name="confirmPassword"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        required
+                        autoComplete="new-password"
+                        className="text-[16px]"
+                        dir="ltr"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute top-1/2 -translate-y-1/2 text-muted-foreground right-3"
+                        tabIndex={-1}
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                 )}
                 <Button type="submit" className="w-full font-bold h-12 text-[16px]" disabled={isLoading}>

@@ -90,60 +90,16 @@ const TranslatorPage = () => {
     if (!error && data) setHistory(data as HistoryItem[]);
   }, [user]);
 
-  // ─── Native Web Speech TTS — direct mobile-safe playback ───
-  const ttsRunIdRef = useRef(0);
+  // ─── Native Web Speech TTS — simplified reliable playback ───
   const ttsTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const lastSpeakerPointerRef = useRef(0);
+  const ttsRunIdRef = useRef(0);
 
   const clearTtsTimers = useCallback(() => {
     ttsTimersRef.current.forEach((timer) => clearTimeout(timer));
     ttsTimersRef.current = [];
   }, []);
 
-  const queueTtsTimer = useCallback((callback: () => void, delay: number) => {
-    const timer = setTimeout(callback, delay);
-    ttsTimersRef.current.push(timer);
-    return timer;
-  }, []);
-
-  const pickMaleVoice = useCallback((lang: Lang): SpeechSynthesisVoice | null => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
-    const voices = window.speechSynthesis.getVoices();
-    if (!voices.length) return null;
-
-    const langPrefix = lang === 'ar' ? 'ar' : 'fr';
-    const targetLang = lang === 'ar' ? 'ar-eg' : 'fr-fr';
-
-    // Male voice name patterns
-    const malePatterns = lang === 'ar'
-      ? [/majed/i, /tarik/i, /hamed/i, /maged/i]
-      : [/thomas/i, /paul/i, /google français/i, /google french/i, /henri/i, /nicolas/i];
-
-    const inLang = voices.filter((v) => v.lang.toLowerCase().startsWith(langPrefix));
-
-    // 1. Exact lang + male name
-    for (const pattern of malePatterns) {
-      const found = inLang.find((v) => pattern.test(v.name) && v.lang.toLowerCase().startsWith(targetLang));
-      if (found) return found;
-    }
-    // 2. Any lang variant + male name
-    for (const pattern of malePatterns) {
-      const found = inLang.find((v) => pattern.test(v.name));
-      if (found) return found;
-    }
-    // 3. Heuristic: explicit "male" / "homme" hint in name
-    const heuristic = inLang.find((v) => /male|homme|man\b/i.test(v.name));
-    if (heuristic) return heuristic;
-
-    // 4. First voice in correct exact locale
-    const exact = inLang.find((v) => v.lang.toLowerCase().startsWith(targetLang));
-    if (exact) return exact;
-
-    // 5. Fallback: first voice in language family
-    return inLang[0] || null;
-  }, []);
-
-  const speak = useCallback((text: string, lang: Lang, gestureUtterance?: SpeechSynthesisUtterance) => {
+  const speak = useCallback((text: string, lang: Lang) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       console.warn('SpeechSynthesis not supported');
       return;
@@ -153,32 +109,26 @@ const TranslatorPage = () => {
 
     clearTtsTimers();
     setSpeakerHint('');
-    const runId = ttsRunIdRef.current + 1;
-    ttsRunIdRef.current = runId;
+    const runId = ++ttsRunIdRef.current;
     const synth = window.speechSynthesis;
 
+    synth.cancel();
+    setIsPlaying(false);
+
     const showSpeakerHelp = () => {
-      setSpeakerHint('اضغط مرة تانية على 🔊');
+      if (runId === ttsRunIdRef.current) setSpeakerHint('اضغط مرة تانية 🔊');
     };
 
-    const doSpeak = () => {
+    const start = (attempt: number) => {
+      if (runId !== ttsRunIdRef.current) return;
       try {
-        if (runId !== ttsRunIdRef.current) return;
-        clearTtsTimers();
-
-        const utter = gestureUtterance || new SpeechSynthesisUtterance(trimmed);
-        utter.text = trimmed;
-        utter.lang = lang === 'ar' ? 'ar-EG' : 'fr-FR';
+        const utter = new SpeechSynthesisUtterance(trimmed);
+        utter.lang = lang === 'ar' ? 'ar-SA' : 'fr-FR';
         utter.rate = 0.9;
-        utter.pitch = 0.88; // slightly lower → more masculine
+        utter.pitch = 1;
         utter.volume = 1;
 
-        const voice = pickMaleVoice(lang);
-        if (voice) utter.voice = voice;
-
         let started = false;
-        const estimatedDuration = Math.min(Math.max(trimmed.length * 85, 3000), 30000);
-
         utter.onstart = () => {
           if (runId !== ttsRunIdRef.current) return;
           started = true;
@@ -187,69 +137,53 @@ const TranslatorPage = () => {
         };
         utter.onend = () => {
           if (runId === ttsRunIdRef.current) {
-            clearTtsTimers();
             setIsPlaying(false);
           }
         };
-        utter.onerror = (ev) => {
+        utter.onerror = () => {
           if (runId !== ttsRunIdRef.current) return;
-          const error = String(ev.error || '');
-          if (error === 'canceled' || error === 'interrupted') {
-            setIsPlaying(false);
-            return;
-          }
-          console.warn('TTS error event:', ev);
           setIsPlaying(false);
-          showSpeakerHelp();
+          if (attempt >= 2) showSpeakerHelp();
         };
 
-        synth.cancel();
-        synth.resume?.();
         setIsPlaying(true);
         synth.speak(utter);
 
-        queueTtsTimer(() => {
+        const retryTimer = setTimeout(() => {
           if (runId !== ttsRunIdRef.current) return;
-          synth.resume?.();
-          if (!started && (synth.speaking || synth.pending)) started = true;
-        }, 120);
-
-        queueTtsTimer(() => {
-          if (runId !== ttsRunIdRef.current || started || synth.speaking || synth.pending) return;
+          if (started || synth.speaking || synth.pending) return;
+          synth.cancel();
           setIsPlaying(false);
-          showSpeakerHelp();
-        }, 850);
-
-        queueTtsTimer(() => {
-          if (runId !== ttsRunIdRef.current) return;
-          if (!synth.speaking && !synth.pending) setIsPlaying(false);
-        }, estimatedDuration);
+          if (attempt < 2) {
+            start(attempt + 1);
+          } else {
+            showSpeakerHelp();
+          }
+        }, 500);
+        ttsTimersRef.current.push(retryTimer);
       } catch (err) {
         console.error('TTS error:', err);
         setIsPlaying(false);
-        showSpeakerHelp();
+        if (attempt < 2) {
+          start(attempt + 1);
+        } else {
+          showSpeakerHelp();
+        }
       }
     };
 
-    doSpeak();
-  }, [clearTtsTimers, pickMaleVoice, queueTtsTimer]);
+    const startTimer = setTimeout(() => start(1), 200);
+    ttsTimersRef.current.push(startTimer);
+  }, [clearTtsTimers]);
 
   const stopSpeak = useCallback(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      ttsRunIdRef.current += 1;
       clearTtsTimers();
+      ttsRunIdRef.current += 1;
       window.speechSynthesis.cancel();
     }
     setIsPlaying(false);
   }, [clearTtsTimers]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    const handler = () => window.speechSynthesis.getVoices();
-    handler();
-    window.speechSynthesis.addEventListener('voiceschanged', handler);
-    return () => window.speechSynthesis.removeEventListener('voiceschanged', handler);
-  }, []);
 
   useEffect(() => {
     if (showHistory) loadHistory();
@@ -493,21 +427,10 @@ const TranslatorPage = () => {
   const playTranslation = (text?: string) => {
     const value = (text ?? translatedText).trim();
     if (!value) return;
-    const utter = typeof window !== 'undefined' && 'SpeechSynthesisUtterance' in window
-      ? new SpeechSynthesisUtterance(value)
-      : undefined;
-    speak(value, targetLang, utter);
-  };
-
-  const handleSpeakerPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
-    event.preventDefault();
-    lastSpeakerPointerRef.current = Date.now();
-    playTranslation();
+    speak(value, targetLang);
   };
 
   const handleSpeakerClick = () => {
-    if (Date.now() - lastSpeakerPointerRef.current < 600) return;
     playTranslation();
   };
 
@@ -748,7 +671,6 @@ const TranslatorPage = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onPointerDown={handleSpeakerPointerDown}
                 onClick={handleSpeakerClick}
                 className="h-7 px-2 text-blue-700 dark:text-blue-300"
                 aria-label="استمع"

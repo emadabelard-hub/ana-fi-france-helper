@@ -427,21 +427,10 @@ const TranslatorPage = () => {
   const playTranslation = (text?: string) => {
     const value = (text ?? translatedText).trim();
     if (!value) return;
-    const utter = typeof window !== 'undefined' && 'SpeechSynthesisUtterance' in window
-      ? new SpeechSynthesisUtterance(value)
-      : undefined;
-    speak(value, targetLang, utter);
-  };
-
-  const handleSpeakerPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
-    event.preventDefault();
-    lastSpeakerPointerRef.current = Date.now();
-    playTranslation();
+    speak(value, targetLang);
   };
 
   const handleSpeakerClick = () => {
-    if (Date.now() - lastSpeakerPointerRef.current < 600) return;
     playTranslation();
   };
 

@@ -750,7 +750,6 @@ const TranslatorPage = () => {
                 size="sm"
                 onPointerDown={handleSpeakerPointerDown}
                 onClick={handleSpeakerClick}
-                disabled={isPlaying}
                 className="h-7 px-2 text-blue-700 dark:text-blue-300"
                 aria-label="استمع"
               >
@@ -767,6 +766,12 @@ const TranslatorPage = () => {
               {translatedText}
               {isProcessing && <span className="inline-block w-1.5 h-4 ms-1 bg-blue-500 animate-pulse align-middle" />}
             </p>
+
+            {speakerHint && (
+              <p className="mt-3 text-sm font-cairo text-blue-700 dark:text-blue-300" dir="rtl">
+                {speakerHint}
+              </p>
+            )}
 
             {!isProcessing && (
               <div className="grid grid-cols-2 gap-2 mt-4">

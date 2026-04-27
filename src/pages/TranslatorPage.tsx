@@ -90,8 +90,7 @@ const TranslatorPage = () => {
     if (!error && data) setHistory(data as HistoryItem[]);
   }, [user]);
 
-  // ─── Native Web Speech TTS — male voice + retry on failure ───
-  const ttsFailCountRef = useRef(0);
+  // ─── Native Web Speech TTS — direct mobile-safe playback ───
   const ttsRunIdRef = useRef(0);
   const ttsTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const lastSpeakerPointerRef = useRef(0);
@@ -144,7 +143,7 @@ const TranslatorPage = () => {
     return inLang[0] || null;
   }, []);
 
-  const speak = useCallback((text: string, lang: Lang) => {
+  const speak = useCallback((text: string, lang: Lang, gestureUtterance?: SpeechSynthesisUtterance) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       console.warn('SpeechSynthesis not supported');
       return;
@@ -153,24 +152,22 @@ const TranslatorPage = () => {
     if (!trimmed) return;
 
     clearTtsTimers();
+    setSpeakerHint('');
     const runId = ttsRunIdRef.current + 1;
     ttsRunIdRef.current = runId;
     const synth = window.speechSynthesis;
 
     const showSpeakerHelp = () => {
-      ttsFailCountRef.current += 1;
-      if (ttsFailCountRef.current >= 2) {
-        toast({ title: 'اضغط مرة تانية على 🔊', variant: 'destructive' });
-        ttsFailCountRef.current = 0;
-      }
+      setSpeakerHint('اضغط مرة تانية على 🔊');
     };
 
-    const doSpeak = (attempt: number) => {
+    const doSpeak = () => {
       try {
         if (runId !== ttsRunIdRef.current) return;
         clearTtsTimers();
 
-        const utter = new SpeechSynthesisUtterance(trimmed);
+        const utter = gestureUtterance || new SpeechSynthesisUtterance(trimmed);
+        utter.text = trimmed;
         utter.lang = lang === 'ar' ? 'ar-EG' : 'fr-FR';
         utter.rate = 0.9;
         utter.pitch = 0.88; // slightly lower → more masculine
@@ -185,7 +182,7 @@ const TranslatorPage = () => {
         utter.onstart = () => {
           if (runId !== ttsRunIdRef.current) return;
           started = true;
-          ttsFailCountRef.current = 0;
+          setSpeakerHint('');
           setIsPlaying(true);
         };
         utter.onend = () => {
@@ -203,11 +200,7 @@ const TranslatorPage = () => {
           }
           console.warn('TTS error event:', ev);
           setIsPlaying(false);
-          if (attempt < 1) {
-            queueTtsTimer(() => doSpeak(attempt + 1), 180);
-          } else {
-            showSpeakerHelp();
-          }
+          showSpeakerHelp();
         };
 
         synth.cancel();
@@ -224,8 +217,7 @@ const TranslatorPage = () => {
         queueTtsTimer(() => {
           if (runId !== ttsRunIdRef.current || started || synth.speaking || synth.pending) return;
           setIsPlaying(false);
-          if (attempt < 1) doSpeak(attempt + 1);
-          else showSpeakerHelp();
+          showSpeakerHelp();
         }, 850);
 
         queueTtsTimer(() => {
@@ -235,16 +227,12 @@ const TranslatorPage = () => {
       } catch (err) {
         console.error('TTS error:', err);
         setIsPlaying(false);
-        if (attempt < 1) {
-          queueTtsTimer(() => doSpeak(attempt + 1), 180);
-        } else {
-          showSpeakerHelp();
-        }
+        showSpeakerHelp();
       }
     };
 
-    doSpeak(0);
-  }, [clearTtsTimers, pickMaleVoice, queueTtsTimer, toast]);
+    doSpeak();
+  }, [clearTtsTimers, pickMaleVoice, queueTtsTimer]);
 
   const stopSpeak = useCallback(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {

@@ -750,7 +750,8 @@ const TranslatorPage = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => playTranslation()}
+                onPointerDown={handleSpeakerPointerDown}
+                onClick={handleSpeakerClick}
                 disabled={isPlaying}
                 className="h-7 px-2 text-blue-700 dark:text-blue-300"
                 aria-label="استمع"

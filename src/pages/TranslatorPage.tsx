@@ -27,6 +27,11 @@ const isIOS = (): boolean => {
   return /iPad|iPhone|iPod/.test(ua) || (ua.includes('Mac') && 'ontouchend' in document);
 };
 
+const isMobileDevice = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '') || isIOS();
+};
+
 // ─── Mic / SpeechRecognition support detection ───
 const hasSpeechRecognition = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -53,6 +58,7 @@ const TranslatorPage = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [originalText, setOriginalText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
+  const [speakerHint, setSpeakerHint] = useState('');
   const [copied, setCopied] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -68,6 +74,7 @@ const TranslatorPage = () => {
   const targetLang: Lang = sourceLang === 'ar' ? 'fr' : 'ar';
 
   const ios = useMemo(() => isIOS(), []);
+  const mobileDevice = useMemo(() => isMobileDevice(), []);
   const voiceAvailable = useMemo(
     () => hasMediaRecorder() || hasSpeechRecognition(),
     [],

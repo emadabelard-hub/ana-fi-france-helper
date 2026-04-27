@@ -412,8 +412,8 @@ const TranslatorPage = () => {
         });
       }
 
-      // iOS Safari blocks autoplay TTS — only manual playback via 🔊 button
-      if (!ios) {
+      // Mobile browsers often require a direct user gesture for TTS — manual 🔊 is more reliable
+      if (!mobileDevice) {
         speak(translated, targetLang);
       }
     } catch (err) {
@@ -493,7 +493,10 @@ const TranslatorPage = () => {
   const playTranslation = (text?: string) => {
     const value = (text ?? translatedText).trim();
     if (!value) return;
-    speak(value, targetLang);
+    const utter = typeof window !== 'undefined' && 'SpeechSynthesisUtterance' in window
+      ? new SpeechSynthesisUtterance(value)
+      : undefined;
+    speak(value, targetLang, utter);
   };
 
   const handleSpeakerPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {

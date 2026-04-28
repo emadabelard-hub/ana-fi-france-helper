@@ -606,22 +606,6 @@ const TranslatorPage = () => {
               <span className="text-xs font-bold uppercase text-blue-700 dark:text-blue-300">
                 {targetLang === 'ar' ? '🇪🇬 الترجمة' : '🇫🇷 Traduction'}
               </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSpeakerClick}
-                disabled={isLoadingAudio}
-                className="h-7 px-2 text-blue-700 dark:text-blue-300"
-                aria-label="استمع"
-              >
-                {isLoadingAudio ? (
-                  <span className="text-base leading-none" aria-hidden="true">⏳</span>
-                ) : isPlaying ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <span className="text-base leading-none" aria-hidden="true">🔊</span>
-                )}
-              </Button>
             </div>
             <p
               className={cn(
@@ -633,12 +617,6 @@ const TranslatorPage = () => {
               {translatedText}
               {isProcessing && <span className="inline-block w-1.5 h-4 ms-1 bg-blue-500 animate-pulse align-middle" />}
             </p>
-
-            {speakerHint && (
-              <p className="mt-3 text-sm font-cairo text-blue-700 dark:text-blue-300" dir="rtl">
-                {speakerHint}
-              </p>
-            )}
 
             {!isProcessing && (
               <div className="grid grid-cols-2 gap-2 mt-4">

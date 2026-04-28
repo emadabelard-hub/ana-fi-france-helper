@@ -90,100 +90,91 @@ const TranslatorPage = () => {
     if (!error && data) setHistory(data as HistoryItem[]);
   }, [user]);
 
-  // ─── Native Web Speech TTS — simplified reliable playback ───
-  const ttsTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // ─── ElevenLabs TTS playback ───
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
   const ttsRunIdRef = useRef(0);
 
-  const clearTtsTimers = useCallback(() => {
-    ttsTimersRef.current.forEach((timer) => clearTimeout(timer));
-    ttsTimersRef.current = [];
+  const cleanupAudio = useCallback(() => {
+    if (audioRef.current) {
+      try { audioRef.current.pause(); } catch { /* noop */ }
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current = null;
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
   }, []);
 
-  const speak = useCallback((text: string, lang: Lang) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      console.warn('SpeechSynthesis not supported');
-      return;
-    }
+  const stopSpeak = useCallback(() => {
+    ttsRunIdRef.current += 1;
+    cleanupAudio();
+    setIsPlaying(false);
+    setIsLoadingAudio(false);
+  }, [cleanupAudio]);
+
+  const speak = useCallback(async (text: string, lang: Lang) => {
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    clearTtsTimers();
-    setSpeakerHint('');
     const runId = ++ttsRunIdRef.current;
-    const synth = window.speechSynthesis;
-
-    synth.cancel();
+    cleanupAudio();
+    setSpeakerHint('');
     setIsPlaying(false);
+    setIsLoadingAudio(true);
 
-    const showSpeakerHelp = () => {
-      if (runId === ttsRunIdRef.current) setSpeakerHint('اضغط مرة تانية 🔊');
-    };
+    try {
+      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
+        body: { text: trimmed, lang },
+      });
 
-    const start = (attempt: number) => {
       if (runId !== ttsRunIdRef.current) return;
-      try {
-        const utter = new SpeechSynthesisUtterance(trimmed);
-        utter.lang = lang === 'ar' ? 'ar-SA' : 'fr-FR';
-        utter.rate = 0.9;
-        utter.pitch = 1;
-        utter.volume = 1;
 
-        let started = false;
-        utter.onstart = () => {
-          if (runId !== ttsRunIdRef.current) return;
-          started = true;
-          setSpeakerHint('');
-          setIsPlaying(true);
-        };
-        utter.onend = () => {
-          if (runId === ttsRunIdRef.current) {
-            setIsPlaying(false);
-          }
-        };
-        utter.onerror = () => {
-          if (runId !== ttsRunIdRef.current) return;
-          setIsPlaying(false);
-          if (attempt >= 2) showSpeakerHelp();
-        };
+      if (error) throw error;
 
-        setIsPlaying(true);
-        synth.speak(utter);
+      // supabase-js returns a Blob for binary responses
+      const blob: Blob =
+        data instanceof Blob
+          ? data
+          : new Blob([data as ArrayBuffer], { type: 'audio/mpeg' });
 
-        const retryTimer = setTimeout(() => {
-          if (runId !== ttsRunIdRef.current) return;
-          if (started || synth.speaking || synth.pending) return;
-          synth.cancel();
-          setIsPlaying(false);
-          if (attempt < 2) {
-            start(attempt + 1);
-          } else {
-            showSpeakerHelp();
-          }
-        }, 500);
-        ttsTimersRef.current.push(retryTimer);
-      } catch (err) {
-        console.error('TTS error:', err);
-        setIsPlaying(false);
-        if (attempt < 2) {
-          start(attempt + 1);
-        } else {
-          showSpeakerHelp();
-        }
+      if (!blob || blob.size < 100) {
+        throw new Error('Empty audio');
       }
-    };
 
-    const startTimer = setTimeout(() => start(1), 200);
-    ttsTimersRef.current.push(startTimer);
-  }, [clearTtsTimers]);
+      const url = URL.createObjectURL(blob);
+      audioUrlRef.current = url;
 
-  const stopSpeak = useCallback(() => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      clearTtsTimers();
-      ttsRunIdRef.current += 1;
-      window.speechSynthesis.cancel();
+      const audio = new Audio(url);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        if (runId !== ttsRunIdRef.current) return;
+        setIsPlaying(false);
+        cleanupAudio();
+      };
+      audio.onerror = () => {
+        if (runId !== ttsRunIdRef.current) return;
+        setIsPlaying(false);
+        setIsLoadingAudio(false);
+        setSpeakerHint('مش قادر يشغل الصوت — حاول تاني');
+        cleanupAudio();
+      };
+
+      setIsLoadingAudio(false);
+      setIsPlaying(true);
+      await audio.play();
+    } catch (err) {
+      if (runId !== ttsRunIdRef.current) return;
+      console.error('ElevenLabs TTS error:', err);
+      setIsLoadingAudio(false);
+      setIsPlaying(false);
+      setSpeakerHint('مش قادر يشغل الصوت — حاول تاني');
     }
-    setIsPlaying(false);
-  }, [clearTtsTimers]);
+  }, [cleanupAudio]);
 
   useEffect(() => {
     if (showHistory) loadHistory();
@@ -672,10 +663,17 @@ const TranslatorPage = () => {
                 variant="ghost"
                 size="sm"
                 onClick={handleSpeakerClick}
+                disabled={isLoadingAudio}
                 className="h-7 px-2 text-blue-700 dark:text-blue-300"
                 aria-label="استمع"
               >
-                {isPlaying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Volume2 className="h-4 w-4" />}
+                {isLoadingAudio ? (
+                  <span className="text-base leading-none" aria-hidden="true">⏳</span>
+                ) : isPlaying ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <span className="text-base leading-none" aria-hidden="true">🔊</span>
+                )}
               </Button>
             </div>
             <p

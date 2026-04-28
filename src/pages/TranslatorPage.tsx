@@ -307,11 +307,6 @@ const TranslatorPage = () => {
           translated_text: translated,
         });
       }
-
-      // Mobile browsers often require a direct user gesture for TTS — manual 🔊 is more reliable
-      if (!mobileDevice) {
-        speak(translated, targetLang);
-      }
     } finally {
       setIsProcessing(false);
     }

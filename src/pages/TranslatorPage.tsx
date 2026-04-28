@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Mic, Square, Loader2, Volume2, Copy, Check, Trash2, History, MessageCircle, ArrowLeft, Keyboard, Send } from 'lucide-react';
+import { Mic, Square, Loader2, Copy, Check, Trash2, History, MessageCircle, ArrowLeft, Keyboard, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -55,10 +55,8 @@ const TranslatorPage = () => {
   const [sourceLang, setSourceLang] = useState<Lang>('ar');
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [originalText, setOriginalText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
-  const [speakerHint, setSpeakerHint] = useState('');
   const [copied, setCopied] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -90,91 +88,7 @@ const TranslatorPage = () => {
     if (!error && data) setHistory(data as HistoryItem[]);
   }, [user]);
 
-  // ─── ElevenLabs TTS playback ───
-  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioUrlRef = useRef<string | null>(null);
-  const ttsRunIdRef = useRef(0);
-
-  const cleanupAudio = useCallback(() => {
-    if (audioRef.current) {
-      try { audioRef.current.pause(); } catch { /* noop */ }
-      audioRef.current.onended = null;
-      audioRef.current.onerror = null;
-      audioRef.current = null;
-    }
-    if (audioUrlRef.current) {
-      URL.revokeObjectURL(audioUrlRef.current);
-      audioUrlRef.current = null;
-    }
-  }, []);
-
-  const stopSpeak = useCallback(() => {
-    ttsRunIdRef.current += 1;
-    cleanupAudio();
-    setIsPlaying(false);
-    setIsLoadingAudio(false);
-  }, [cleanupAudio]);
-
-  const speak = useCallback(async (text: string, lang: Lang) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-
-    const runId = ++ttsRunIdRef.current;
-    cleanupAudio();
-    setSpeakerHint('');
-    setIsPlaying(false);
-    setIsLoadingAudio(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
-        body: { text: trimmed, lang },
-      });
-
-      if (runId !== ttsRunIdRef.current) return;
-
-      if (error) throw error;
-
-      // supabase-js returns a Blob for binary responses
-      const blob: Blob =
-        data instanceof Blob
-          ? data
-          : new Blob([data as ArrayBuffer], { type: 'audio/mpeg' });
-
-      if (!blob || blob.size < 100) {
-        throw new Error('Empty audio');
-      }
-
-      const url = URL.createObjectURL(blob);
-      audioUrlRef.current = url;
-
-      const audio = new Audio(url);
-      audioRef.current = audio;
-
-      audio.onended = () => {
-        if (runId !== ttsRunIdRef.current) return;
-        setIsPlaying(false);
-        cleanupAudio();
-      };
-      audio.onerror = () => {
-        if (runId !== ttsRunIdRef.current) return;
-        setIsPlaying(false);
-        setIsLoadingAudio(false);
-        setSpeakerHint('مش قادر يشغل الصوت — حاول تاني');
-        cleanupAudio();
-      };
-
-      setIsLoadingAudio(false);
-      setIsPlaying(true);
-      await audio.play();
-    } catch (err) {
-      if (runId !== ttsRunIdRef.current) return;
-      console.error('ElevenLabs TTS error:', err);
-      setIsLoadingAudio(false);
-      setIsPlaying(false);
-      setSpeakerHint('مش قادر يشغل الصوت — حاول تاني');
-    }
-  }, [cleanupAudio]);
+  // ─── Voice playback removed: text-only translator ───
 
   useEffect(() => {
     if (showHistory) loadHistory();
@@ -182,15 +96,12 @@ const TranslatorPage = () => {
 
   useEffect(() => {
     return () => {
-      stopSpeak();
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, [stopSpeak]);
+  }, []);
 
   const startRecording = async () => {
     try {
-      stopSpeak();
-
       // Stability: fully reset previous instance before starting a new one
       if (mediaRecorderRef.current) {
         try {
@@ -396,11 +307,6 @@ const TranslatorPage = () => {
           translated_text: translated,
         });
       }
-
-      // Mobile browsers often require a direct user gesture for TTS — manual 🔊 is more reliable
-      if (!mobileDevice) {
-        speak(translated, targetLang);
-      }
     } finally {
       setIsProcessing(false);
     }
@@ -460,22 +366,11 @@ const TranslatorPage = () => {
   const handleSubmitTyped = async () => {
     const value = typedText.trim();
     if (!value || isProcessing) return;
-    stopSpeak();
     setOriginalText('');
     setTranslatedText('');
     setIsProcessing(true);
     await performTranslation(value);
     setTypedText('');
-  };
-
-  const playTranslation = (text?: string) => {
-    const value = (text ?? translatedText).trim();
-    if (!value) return;
-    speak(value, targetLang);
-  };
-
-  const handleSpeakerClick = () => {
-    playTranslation();
   };
 
   const handleCopy = async () => {
@@ -500,7 +395,6 @@ const TranslatorPage = () => {
   };
 
   const handleClear = () => {
-    stopSpeak();
     setOriginalText('');
     setTranslatedText('');
   };
@@ -712,22 +606,6 @@ const TranslatorPage = () => {
               <span className="text-xs font-bold uppercase text-blue-700 dark:text-blue-300">
                 {targetLang === 'ar' ? '🇪🇬 الترجمة' : '🇫🇷 Traduction'}
               </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSpeakerClick}
-                disabled={isLoadingAudio}
-                className="h-7 px-2 text-blue-700 dark:text-blue-300"
-                aria-label="استمع"
-              >
-                {isLoadingAudio ? (
-                  <span className="text-base leading-none" aria-hidden="true">⏳</span>
-                ) : isPlaying ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <span className="text-base leading-none" aria-hidden="true">🔊</span>
-                )}
-              </Button>
             </div>
             <p
               className={cn(
@@ -739,12 +617,6 @@ const TranslatorPage = () => {
               {translatedText}
               {isProcessing && <span className="inline-block w-1.5 h-4 ms-1 bg-blue-500 animate-pulse align-middle" />}
             </p>
-
-            {speakerHint && (
-              <p className="mt-3 text-sm font-cairo text-blue-700 dark:text-blue-300" dir="rtl">
-                {speakerHint}
-              </p>
-            )}
 
             {!isProcessing && (
               <div className="grid grid-cols-2 gap-2 mt-4">

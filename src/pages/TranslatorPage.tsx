@@ -102,8 +102,6 @@ const TranslatorPage = () => {
 
   const startRecording = async () => {
     try {
-      stopSpeak();
-
       // Stability: fully reset previous instance before starting a new one
       if (mediaRecorderRef.current) {
         try {

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Mic, Square, Loader2, Volume2, Copy, Check, Trash2, History, MessageCircle, ArrowLeft, Keyboard, Send } from 'lucide-react';
+import { Mic, Square, Loader2, Copy, Check, Trash2, History, MessageCircle, ArrowLeft, Keyboard, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

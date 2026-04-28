@@ -248,25 +248,40 @@ const TranslatorPage = () => {
     }
   };
 
-  // ─── Streaming translate (token-by-token) ───
+  // ─── Streaming translate (token-by-token) with 10s timeout ───
   const streamTranslation = useCallback(
     async (text: string): Promise<string> => {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/btp-translate`;
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ text, sourceLang, targetLang, stream: true }),
-      });
+      // CORRECTION 4 — explicit source/target instruction sent alongside the standard fields
+      const instruction =
+        sourceLang === 'ar'
+          ? "Traduis de l'arabe égyptien vers le français."
+          : "Traduis du français vers l'arabe égyptien.";
+
+      // CORRECTION 3 — 10s timeout via AbortController
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      let resp: Response;
+      try {
+        resp = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ text, sourceLang, targetLang, instruction, stream: true }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!resp.ok || !resp.body) {
-        // Fallback to non-stream JSON error parse
-        let msg = 'Translation failed';
+        let msg = `Translation failed (HTTP ${resp.status})`;
         try {
           const j = await resp.json();
           if (j?.error) msg = j.error;
@@ -316,23 +331,68 @@ const TranslatorPage = () => {
   );
 
   const performTranslation = async (transcribed: string) => {
-    if (!transcribed) {
+    // CORRECTION 1 — never send empty/null text to Gemini
+    const safeText = (transcribed ?? '').trim();
+    if (!safeText) {
+      console.warn('[Translator] Empty input — skipping Gemini call');
+      toast({
+        title: 'اتكلم الأول 🎤',
+        variant: 'destructive',
+      });
       setIsProcessing(false);
       return;
     }
-    setOriginalText(transcribed);
+
+    // CORRECTION 5 — always show captured/typed text in the UI before translating
+    setOriginalText(safeText);
+
+    // CORRECTION 2 — try/catch with one automatic retry, detailed console errors
+    let translated = '';
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        translated = await streamTranslation(safeText);
+        if (!translated) throw new Error('Empty translation');
+        lastError = null;
+        break;
+      } catch (err) {
+        lastError = err;
+        const isAbort = (err as any)?.name === 'AbortError';
+        console.error(
+          `[Translator] Gemini attempt ${attempt + 1} failed:`,
+          isAbort ? 'TIMEOUT (10s)' : err,
+        );
+        // CORRECTION 3 — do not retry on timeout, surface dedicated message
+        if (isAbort) break;
+      }
+    }
+
+    if (lastError) {
+      const isAbort = (lastError as any)?.name === 'AbortError';
+      if (isAbort) {
+        toast({
+          title: 'الترجمة بطيئة — حاول تاني',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: '❌ خطأ في الترجمة',
+          description: 'حاول تاني بعد شوية',
+          variant: 'destructive',
+        });
+      }
+      setIsProcessing(false);
+      return;
+    }
 
     try {
-      const translated = await streamTranslation(transcribed);
-      if (!translated) throw new Error('Empty translation');
-
       // Save history
       if (user) {
         await supabase.from('translation_history').insert({
           user_id: user.id,
           source_lang: sourceLang,
           target_lang: targetLang,
-          source_text: transcribed,
+          source_text: safeText,
           translated_text: translated,
         });
       }
@@ -341,13 +401,6 @@ const TranslatorPage = () => {
       if (!mobileDevice) {
         speak(translated, targetLang);
       }
-    } catch (err) {
-      console.error('Translate error:', err);
-      toast({
-        title: '❌ خطأ في الترجمة',
-        description: 'حاول تاني بعد شوية',
-        variant: 'destructive',
-      });
     } finally {
       setIsProcessing(false);
     }

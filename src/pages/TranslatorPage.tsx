@@ -663,10 +663,17 @@ const TranslatorPage = () => {
                 variant="ghost"
                 size="sm"
                 onClick={handleSpeakerClick}
+                disabled={isLoadingAudio}
                 className="h-7 px-2 text-blue-700 dark:text-blue-300"
                 aria-label="استمع"
               >
-                {isPlaying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Volume2 className="h-4 w-4" />}
+                {isLoadingAudio ? (
+                  <span className="text-base leading-none" aria-hidden="true">⏳</span>
+                ) : isPlaying ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <span className="text-base leading-none" aria-hidden="true">🔊</span>
+                )}
               </Button>
             </div>
             <p

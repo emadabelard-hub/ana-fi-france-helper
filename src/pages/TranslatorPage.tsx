@@ -366,22 +366,11 @@ const TranslatorPage = () => {
   const handleSubmitTyped = async () => {
     const value = typedText.trim();
     if (!value || isProcessing) return;
-    stopSpeak();
     setOriginalText('');
     setTranslatedText('');
     setIsProcessing(true);
     await performTranslation(value);
     setTypedText('');
-  };
-
-  const playTranslation = (text?: string) => {
-    const value = (text ?? translatedText).trim();
-    if (!value) return;
-    speak(value, targetLang);
-  };
-
-  const handleSpeakerClick = () => {
-    playTranslation();
   };
 
   const handleCopy = async () => {
@@ -406,7 +395,6 @@ const TranslatorPage = () => {
   };
 
   const handleClear = () => {
-    stopSpeak();
     setOriginalText('');
     setTranslatedText('');
   };

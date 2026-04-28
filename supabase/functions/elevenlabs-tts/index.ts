@@ -101,12 +101,12 @@ Deno.serve(async (req: Request) => {
     let voiceId: string;
     if (lang === "fr") {
       if (!cachedFrVoiceId) {
-        cachedFrVoiceId = await resolveVoiceId(ELEVENLABS_API_KEY, "Antoine", "fr");
+        cachedFrVoiceId = await resolveVoiceId(ELEVENLABS_API_KEY, "Adama", "fr");
       }
       voiceId = cachedFrVoiceId;
     } else {
       if (!cachedArVoiceId) {
-        cachedArVoiceId = await resolveVoiceId(ELEVENLABS_API_KEY, "Tariq", "ar");
+        cachedArVoiceId = await resolveVoiceId(ELEVENLABS_API_KEY, "Hanafi", "ar");
       }
       voiceId = cachedArVoiceId;
     }

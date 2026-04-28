@@ -92,8 +92,15 @@ Deno.serve(async (req: Request) => {
     const sourceLabel = sourceLang === "ar" ? "Arabe Égyptien (Ammiya) BTP" : "Français BTP";
     const targetLabel = targetLang === "ar" ? "Arabe Égyptien (Ammiya) BTP" : "Français BTP";
 
+    // CORRECTION 4 — explicit client instruction takes precedence to lock the source language
+    const explicitInstruction = typeof (body as any).instruction === "string"
+      ? String((body as any).instruction).trim()
+      : "";
+    const directionLine = explicitInstruction
+      || `Traduis du ${sourceLabel} vers le ${targetLabel}.`;
+
     // Prompt strict minimal (selon spec utilisateur)
-    const userPrompt = `Traduis cette phrase de chantier BTP du ${sourceLabel} vers le ${targetLabel} en une seule phrase naturelle et professionnelle. Réponds uniquement avec la traduction sans explication. Phrase : ${text}`;
+    const userPrompt = `${directionLine} Réponds uniquement avec la traduction sans explication, en une seule phrase naturelle et professionnelle. Phrase : ${text}`;
 
     // Glossaire en system court pour garder précision BTP
     const systemPrompt = `Traducteur BTP. Vocabulaire pro NF/DTU. Arabe = Égyptien Ammiya uniquement.

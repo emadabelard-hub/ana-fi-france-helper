@@ -96,10 +96,9 @@ const TranslatorPage = () => {
 
   useEffect(() => {
     return () => {
-      stopSpeak();
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, [stopSpeak]);
+  }, []);
 
   const startRecording = async () => {
     try {

@@ -175,10 +175,10 @@ const TermsContent = ({ isRTL }: { isRTL: boolean }) => {
           آخر تحديث: فبراير 2026
         </p>
         <Section title="1. قبول الشروط" isRTL={isRTL}>
-          <p>باستخدامك لتطبيق Ana Fi France، حضرتك بتوافق على الشروط دي. لو مش موافق، متستخدمش التطبيق.</p>
+          <p>باستخدامك لتطبيق Anafy Pro، حضرتك بتوافق على الشروط دي. لو مش موافق، متستخدمش التطبيق.</p>
         </Section>
         <Section title="2. وصف الخدمة" isRTL={isRTL}>
-          <p>Ana Fi France بيقدم أدوات رقمية للمقيمين في فرنسا:</p>
+          <p>Anafy Pro بيقدم أدوات رقمية للمقيمين في فرنسا:</p>
           <ul className="list-disc mr-6 space-y-1">
             <li>مساعد ذكي للاستشارات الإدارية</li>
             <li>إنشاء فواتير وعروض أسعار (Devis & Factures)</li>

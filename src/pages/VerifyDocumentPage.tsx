@@ -93,7 +93,7 @@ const VerifyDocumentPage = () => {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Document introuvable</h1>
           <p className="text-gray-600 mb-1">Ce document n'a pas pu être vérifié.</p>
           <p className="text-gray-600" dir="rtl">لم يتم العثور على هذه الوثيقة</p>
-          <p className="mt-6 text-xs text-gray-400">Ana Fi France Pro</p>
+          <p className="mt-6 text-xs text-gray-400">Anafy Pro</p>
         </div>
       </div>
     );
@@ -174,17 +174,17 @@ const VerifyDocumentPage = () => {
           {/* Authenticity message */}
           <div className="px-6 py-4 bg-green-50 border-t border-green-100">
             <p className="text-sm text-green-800 text-center leading-relaxed">
-              Ce document a été généré et authentifié via <strong>Ana Fi France Pro</strong>
+              Ce document a été généré et authentifié via <strong>Anafy Pro</strong>
             </p>
             <p className="text-sm text-green-800 text-center leading-relaxed mt-1" dir="rtl">
-              هذه الوثيقة أصلية وموثقة عبر <strong>Ana Fi France Pro</strong>
+              هذه الوثيقة أصلية وموثقة عبر <strong>Anafy Pro</strong>
             </p>
           </div>
         </div>
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-6">
-          Ana Fi France Pro · Vérification publique
+          Anafy Pro · Vérification publique
         </p>
       </div>
     </div>

@@ -103,7 +103,7 @@ const LanguageSchoolPage = () => {
                 {isRTL ? level.descAr : level.descFr}
               </p>
               {level.locked && (
-                <span className="text-[10px] text-slate-600 mt-1 inline-block">
+                <span className="text-[10px] text-slate-600 dark:text-slate-300 mt-1 inline-block">
                   {isRTL ? '🔒 مقفول' : '🔒 Verrouillé'}
                 </span>
               )}

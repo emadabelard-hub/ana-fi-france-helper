@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
 import { Sun, Moon, Loader2, LogIn, LogOut, UserPlus } from 'lucide-react';
+import anafyProLogo from '@/assets/anafy-pro-logo.png';
 
 const Header = () => {
   const { language, setLanguage, isRTL, t } = useLanguage();
@@ -56,9 +57,11 @@ const Header = () => {
           className={cn('flex items-center gap-1.5 cursor-pointer select-none', isRTL && 'flex-row-reverse')}
           onClick={handleLogoTap}
         >
-          <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center">
-            <span className="text-accent-foreground font-bold text-xs">AF</span>
-          </div>
+          <img
+            src={anafyProLogo}
+            alt="Anafy Pro"
+            className="h-9 w-auto object-contain shrink-0"
+          />
           <h1 className={cn('text-base font-bold', isRTL && 'font-cairo')}>
             {t('header.appName')}
           </h1>

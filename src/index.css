@@ -19,14 +19,15 @@ html, body {
   :root {
     /* LUXURY BANKING — Deep Navy Night Theme */
     --background: 222 30% 11%;
-    --foreground: 210 20% 92%;
+    /* Dark mode readability: titles near pure white (#F9FAFB ≈ 98%) */
+    --foreground: 210 20% 98%;
 
     /* Cards: subtle navy lift */
     --card: 222 25% 15%;
-    --card-foreground: 210 20% 92%;
+    --card-foreground: 210 20% 98%;
 
     --popover: 222 25% 15%;
-    --popover-foreground: 210 20% 92%;
+    --popover-foreground: 210 20% 98%;
 
     /* Primary: Warm Antique Gold */
     --primary: 37 40% 58%;
@@ -34,11 +35,11 @@ html, body {
 
     /* Secondary: Soft Deep Navy */
     --secondary: 222 28% 20%;
-    --secondary-foreground: 210 20% 90%;
+    --secondary-foreground: 210 20% 96%;
 
-    /* Muted: Calm navy-grey */
+    /* Muted: Calm navy-grey — secondary text light gray (#D1D5DB ≈ 84%), descriptions mid-light (#9CA3AF ≈ 68%) */
     --muted: 222 22% 18%;
-    --muted-foreground: 215 15% 55%;
+    --muted-foreground: 215 16% 72%;
 
     /* Accent: Warm Bronze */
     --accent: 37 40% 58%;
@@ -57,18 +58,18 @@ html, body {
 
     /* Chat */
     --chat-ai: 222 22% 18%;
-    --chat-ai-foreground: 210 20% 92%;
+    --chat-ai-foreground: 210 20% 96%;
     --chat-user: 37 40% 58%;
     --chat-user-foreground: 222 30% 11%;
     --chat-input: 222 28% 14%;
-    --chat-input-foreground: 210 20% 92%;
+    --chat-input-foreground: 210 20% 96%;
 
     --sidebar-background: 222 32% 9%;
-    --sidebar-foreground: 210 20% 92%;
+    --sidebar-foreground: 210 20% 96%;
     --sidebar-primary: 37 40% 58%;
     --sidebar-primary-foreground: 222 30% 11%;
     --sidebar-accent: 222 22% 18%;
-    --sidebar-accent-foreground: 210 20% 92%;
+    --sidebar-accent-foreground: 210 20% 96%;
     --sidebar-border: 222 18% 22%;
     --sidebar-ring: 37 40% 58%;
   }

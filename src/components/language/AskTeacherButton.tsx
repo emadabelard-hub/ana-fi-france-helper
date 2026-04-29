@@ -223,7 +223,7 @@ const AskTeacherButton = ({ currentPhrase, lessonTitle }: AskTeacherButtonProps)
             </div>
 
             {!user && (
-              <p className="text-[10px] text-slate-600 text-center font-cairo" dir="rtl">
+              <p className="text-[10px] text-slate-600 dark:text-slate-300 text-center font-cairo" dir="rtl">
                 سجّل دخولك للحصول على 5 أسئلة مجانية يومياً
               </p>
             )}

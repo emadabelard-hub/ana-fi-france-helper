@@ -77,8 +77,8 @@ const Index = () => {
       descFr: 'Et convertissez un devis en facture en un clic',
       path: '/document-hub',
       feature: 'فتح قسم الفواتير',
-      bg: 'bg-[#E3F2FD] dark:bg-[#1F2937]',
-      border: 'border-[hsl(200,60%,80%)] dark:border-[#374151]',
+      bg: 'bg-[#E3F2FD]',
+      border: 'border-[hsl(200,60%,80%)]',
     },
     {
       icon: <Languages size={32} className="text-white drop-shadow-md" />,
@@ -89,8 +89,8 @@ const Index = () => {
       descFr: 'Parlez arabe ou français, traduction instantanée',
       path: '/translator',
       feature: 'فتح المترجم الفوري',
-      bg: 'bg-[#DBEAFE] dark:bg-[#1F2937]',
-      border: 'border-[hsl(217,91%,75%)] dark:border-[#374151]',
+      bg: 'bg-[#DBEAFE]',
+      border: 'border-[hsl(217,91%,75%)]',
     },
     {
       icon: <Wallet size={32} className="text-white drop-shadow-md" />,
@@ -101,8 +101,8 @@ const Index = () => {
       descFr: 'Suivez vos dépenses et revenus facilement',
       path: '/expenses',
       feature: 'فتح قسم الحسابات',
-      bg: 'bg-[#E8F5E9] dark:bg-[#1F2937]',
-      border: 'border-[hsl(160,50%,75%)] dark:border-[#374151]',
+      bg: 'bg-[#E8F5E9]',
+      border: 'border-[hsl(160,50%,75%)]',
     },
     {
       icon: <Building2 size={32} className="text-white drop-shadow-md" />,
@@ -113,8 +113,8 @@ const Index = () => {
       descFr: 'SIRET et données légales',
       path: '/profile',
       feature: 'فتح بيانات شركتي',
-      bg: 'bg-[#E8EAF6] dark:bg-[#1F2937]',
-      border: 'border-[hsl(220,50%,80%)] dark:border-[#374151]',
+      bg: 'bg-[#E8EAF6]',
+      border: 'border-[hsl(220,50%,80%)]',
     },
     {
       icon: <Bot size={32} className="text-white drop-shadow-md" />,
@@ -125,8 +125,8 @@ const Index = () => {
       descFr: 'Posez votre question, je vous réponds',
       path: '/ai-assistant',
       feature: 'فتح المساعد الذكي',
-      bg: 'bg-[#F3E5F5] dark:bg-[#1F2937]',
-      border: 'border-[#E1BEE7] dark:border-[#374151]',
+      bg: 'bg-[#F3E5F5]',
+      border: 'border-[#E1BEE7]',
     },
     {
       icon: <FileText size={32} className="text-white drop-shadow-md" />,
@@ -137,8 +137,8 @@ const Index = () => {
       descFr: 'Rédigez votre CV en arabe et en français',
       path: '/pro/cv-generator',
       feature: 'فتح مولد السيرة الذاتية',
-      bg: 'bg-[#EEF2FF] dark:bg-[#1F2937]',
-      border: 'border-[hsl(230,60%,85%)] dark:border-[#374151]',
+      bg: 'bg-[#EEF2FF]',
+      border: 'border-[hsl(230,60%,85%)]',
     },
   ];
 
@@ -211,10 +211,10 @@ const Index = () => {
               {card.icon}
             </div>
             <div className={cn("flex-1 space-y-1", isRTL ? "text-right font-cairo" : "text-left")}>
-              <h3 className="text-[15px] font-bold leading-snug text-foreground dark:text-white">
+              <h3 className="text-[15px] font-bold leading-snug text-[#111827]">
                 {isRTL ? card.titleAr : card.titleFr}
               </h3>
-              <p className="text-[13px] font-medium leading-snug text-muted-foreground dark:text-[#D1D5DB]">
+              <p className="text-[13px] font-medium leading-snug text-[#374151]">
                 {isRTL ? card.descAr : card.descFr}
               </p>
             </div>

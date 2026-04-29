@@ -58,18 +58,18 @@ html, body {
 
     /* Chat */
     --chat-ai: 222 22% 18%;
-    --chat-ai-foreground: 210 20% 92%;
+    --chat-ai-foreground: 210 20% 96%;
     --chat-user: 37 40% 58%;
     --chat-user-foreground: 222 30% 11%;
     --chat-input: 222 28% 14%;
-    --chat-input-foreground: 210 20% 92%;
+    --chat-input-foreground: 210 20% 96%;
 
     --sidebar-background: 222 32% 9%;
-    --sidebar-foreground: 210 20% 92%;
+    --sidebar-foreground: 210 20% 96%;
     --sidebar-primary: 37 40% 58%;
     --sidebar-primary-foreground: 222 30% 11%;
     --sidebar-accent: 222 22% 18%;
-    --sidebar-accent-foreground: 210 20% 92%;
+    --sidebar-accent-foreground: 210 20% 96%;
     --sidebar-border: 222 18% 22%;
     --sidebar-ring: 37 40% 58%;
   }

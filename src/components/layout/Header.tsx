@@ -76,7 +76,7 @@ const Header = () => {
                 size="sm"
                 onClick={handleSignOut}
                 disabled={signingOut}
-                className="rounded-full h-7 px-2 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground text-xs font-bold gap-1"
+                className="rounded-full h-7 px-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold gap-1"
               >
                 {signingOut ? <Loader2 size={14} className="animate-spin" /> : <LogOut size={14} />}
                 <span className="hidden sm:inline">{isRTL ? 'خروج' : 'Déco'}</span>
@@ -87,7 +87,7 @@ const Header = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate('/login')}
-                  className="rounded-full h-7 px-2 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground text-xs font-bold gap-1"
+                  className="rounded-full h-7 px-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold gap-1"
                 >
                   <LogIn size={14} />
                   <span>{isRTL ? 'دخول' : 'Login'}</span>
@@ -96,7 +96,7 @@ const Header = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate('/login')}
-                  className="rounded-full h-7 px-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground text-xs font-bold gap-1"
+                  className="rounded-full h-7 px-2 bg-white/20 hover:bg-white/30 text-white text-xs font-bold gap-1"
                 >
                   <UserPlus size={14} />
                   <span className="hidden sm:inline">{isRTL ? 'حساب' : 'Join'}</span>
@@ -109,7 +109,7 @@ const Header = () => {
             variant="ghost"
             size="sm"
             onClick={toggleTheme}
-            className="rounded-full w-7 h-7 p-0 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
+            className="rounded-full w-7 h-7 p-0 bg-white/10 hover:bg-white/20 text-white"
           >
             {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           </Button>
@@ -120,7 +120,7 @@ const Header = () => {
             onClick={toggleLanguage}
             className={cn(
               'rounded-full px-3 py-1 h-7 font-medium text-xs',
-              'bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground'
+              'bg-white/10 hover:bg-white/20 text-white'
             )}
           >
             {language === 'fr' ? 'AR' : 'FR'}

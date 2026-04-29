@@ -48,9 +48,10 @@ const Header = () => {
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground',
+        'fixed top-0 left-0 right-0 z-50 text-white',
         'safe-area-pt'
       )}
+      style={{ backgroundColor: '#1E3A8A' }}
     >
       <div className={cn('flex items-center justify-between px-3 py-2', isRTL && 'flex-row-reverse')}>
         <div

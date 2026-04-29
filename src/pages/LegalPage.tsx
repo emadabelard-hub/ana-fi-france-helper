@@ -175,10 +175,10 @@ const TermsContent = ({ isRTL }: { isRTL: boolean }) => {
           آخر تحديث: فبراير 2026
         </p>
         <Section title="1. قبول الشروط" isRTL={isRTL}>
-          <p>باستخدامك لتطبيق Ana Fi France، حضرتك بتوافق على الشروط دي. لو مش موافق، متستخدمش التطبيق.</p>
+          <p>باستخدامك لتطبيق Anafy Pro، حضرتك بتوافق على الشروط دي. لو مش موافق، متستخدمش التطبيق.</p>
         </Section>
         <Section title="2. وصف الخدمة" isRTL={isRTL}>
-          <p>Ana Fi France بيقدم أدوات رقمية للمقيمين في فرنسا:</p>
+          <p>Anafy Pro بيقدم أدوات رقمية للمقيمين في فرنسا:</p>
           <ul className="list-disc mr-6 space-y-1">
             <li>مساعد ذكي للاستشارات الإدارية</li>
             <li>إنشاء فواتير وعروض أسعار (Devis & Factures)</li>
@@ -208,7 +208,7 @@ const TermsContent = ({ isRTL }: { isRTL: boolean }) => {
           </ul>
         </Section>
         <Section title="6. الملكية الفكرية" isRTL={isRTL}>
-          <p>كل حقوق التطبيق والتصميم والكود محفوظة لـ Ana Fi France. المستندات اللي بتعملها ملكك أنت.</p>
+          <p>كل حقوق التطبيق والتصميم والكود محفوظة لـ Anafy Pro. المستندات اللي بتعملها ملكك أنت.</p>
         </Section>
         <Section title="7. تعديل الشروط" isRTL={isRTL}>
           <p>ممكن نعدل الشروط دي في أي وقت. استمرارك في استخدام التطبيق بيعني موافقتك على التعديلات.</p>
@@ -221,10 +221,10 @@ const TermsContent = ({ isRTL }: { isRTL: boolean }) => {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">Dernière mise à jour : Février 2026</p>
       <Section title="1. Acceptation des conditions" isRTL={isRTL}>
-        <p>En utilisant Ana Fi France, vous acceptez ces conditions. Si vous n'êtes pas d'accord, veuillez ne pas utiliser l'application.</p>
+        <p>En utilisant Anafy Pro, vous acceptez ces conditions. Si vous n'êtes pas d'accord, veuillez ne pas utiliser l'application.</p>
       </Section>
       <Section title="2. Description du service" isRTL={isRTL}>
-        <p>Ana Fi France propose des outils numériques pour les résidents en France :</p>
+        <p>Anafy Pro propose des outils numériques pour les résidents en France :</p>
         <ul className="list-disc ml-6 space-y-1">
           <li>Assistant IA pour les consultations administratives</li>
           <li>Création de factures et devis</li>
@@ -254,7 +254,7 @@ const TermsContent = ({ isRTL }: { isRTL: boolean }) => {
         </ul>
       </Section>
       <Section title="6. Propriété intellectuelle" isRTL={isRTL}>
-        <p>Tous les droits sur l'application, le design et le code sont réservés à Ana Fi France. Les documents que vous créez vous appartiennent.</p>
+        <p>Tous les droits sur l'application, le design et le code sont réservés à Anafy Pro. Les documents que vous créez vous appartiennent.</p>
       </Section>
       <Section title="7. Modification des conditions" isRTL={isRTL}>
         <p>Nous pouvons modifier ces conditions à tout moment. Votre utilisation continue de l'application vaut acceptation des modifications.</p>

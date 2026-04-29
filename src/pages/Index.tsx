@@ -160,7 +160,7 @@ const Index = () => {
           </div>
           <div>
             <h1 className={cn("text-lg font-black tracking-tighter text-foreground uppercase italic leading-none", isRTL && "font-cairo")}>
-              {isRTL ? 'أنا في فرنسا 🇫🇷' : 'Ana Fi France 🇫🇷'}
+              {isRTL ? 'Anafy Pro 🇫🇷' : 'Anafy Pro 🇫🇷'}
             </h1>
             <p className={cn("text-xs text-muted-foreground mt-1", isRTL && "font-cairo")}>
               {isRTL

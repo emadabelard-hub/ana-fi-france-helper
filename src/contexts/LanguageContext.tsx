@@ -31,12 +31,12 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.admin': 'Admin',
 
     // ===== HEADER =====
-    'header.appName': 'Ana Fi France',
+    'header.appName': 'Anafy Pro',
     'header.consultations': 'Consultations',
     'header.proTools': 'Outils Pro',
     
     // ===== DASHBOARD =====
-    'dashboard.welcome': 'Bienvenue sur Ana Fi France',
+    'dashboard.welcome': 'Bienvenue sur Anafy Pro',
     'dashboard.subtitle': 'Votre assistant administratif intelligent',
     'dashboard.quickAccess': 'Accès Rapide',
     'dashboard.radioCard': 'Radio Égyptienne',
@@ -214,7 +214,7 @@ const translations: Record<Language, Record<string, string>> = {
     // ===== NEWS =====
     'news.title': 'Actualités',
     'news.subtitle': 'Suivez l\'info en direct',
-    'news.disclaimer': 'Liens vers des sources externes. Ana Fi France n\'est pas responsable du contenu.',
+    'news.disclaimer': 'Liens vers des sources externes. Anafy Pro n\'est pas responsable du contenu.',
     'nav.news': 'Actus',
 
     // ===== COURRIER =====
@@ -239,12 +239,12 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.admin': 'الإدارة',
 
     // ===== HEADER =====
-    'header.appName': 'أنا في فرنسا',
+    'header.appName': 'Anafy Pro',
     'header.consultations': 'استشارات',
     'header.proTools': 'دراعك اليمين',
     
     // ===== DASHBOARD =====
-    'dashboard.welcome': 'أهلاً بيك في أنا في فرنسا',
+    'dashboard.welcome': 'أهلاً بيك في Anafy Pro',
     'dashboard.subtitle': 'مساعدك الشخصي لكل حاجة إدارية',
     'dashboard.quickAccess': 'دخول سريع',
     'dashboard.radioCard': 'الراديو المصري',
@@ -424,7 +424,7 @@ const translations: Record<Language, Record<string, string>> = {
     // ===== NEWS =====
     'news.title': 'الأخبار',
     'news.subtitle': 'تابع آخر الأخبار',
-    'news.disclaimer': 'روابط لمصادر خارجية. أنا في فرنسا مش مسؤول عن المحتوى.',
+    'news.disclaimer': 'روابط لمصادر خارجية. Anafy Pro مش مسؤول عن المحتوى.',
     'nav.news': 'أخبار',
 
     // ===== COURRIER =====

@@ -30,7 +30,7 @@ const WelcomeModal = React.forwardRef<HTMLDivElement>((_, ref) => {
               <span className="text-accent-foreground font-black text-xl italic">AF</span>
             </div>
             <h2 className={`text-lg font-black ${isRTL ? 'font-cairo' : ''} text-accent leading-snug`}>
-              {isRTL ? 'أهلاً بك في أنا في فرنسا برو' : 'Bienvenue sur Ana Fi France Pro'}
+              {isRTL ? 'أهلاً بك في Anafy Pro' : 'Bienvenue sur Anafy Pro'}
             </h2>
           </div>
 

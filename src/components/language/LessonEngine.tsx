@@ -221,7 +221,7 @@ const LessonEngine = ({ onClose }: LessonEngineProps) => {
         </p>
 
         {/* Phrase sub-counter */}
-        <span className="text-[10px] text-slate-600 font-bold">
+        <span className="text-[10px] text-slate-600 dark:text-slate-300 font-bold">
           {phraseIdx + 1} / {phrases.length}
         </span>
 

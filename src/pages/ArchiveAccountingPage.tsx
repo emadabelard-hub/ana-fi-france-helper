@@ -18,7 +18,8 @@ import DocumentCard, { type DocumentItem } from '@/components/archive/DocumentCa
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SendToAccountantModal from '@/components/archive/SendToAccountantModal';
 import { useProfile } from '@/hooks/useProfile';
-import { generateProfessionalCSV, generateAccountingCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
+import { generateProfessionalCSV, generateAccountingCSV, generateFECCsv, computeVATSynthesis, downloadCSV, type CsvDocumentRow, type AccountingExportData } from '@/lib/csvExport';
+import VATSynthesisCard from '@/components/archive/VATSynthesisCard';
 
 const isStoredNatureType = (value: unknown): value is 'service' | 'goods' | 'mixed' =>
   value === 'service' || value === 'goods' || value === 'mixed';
@@ -299,30 +300,99 @@ const ArchiveAccountingPage = () => {
     navigate('/pro/documents', { state: { openDocumentId: doc.id } });
   };
 
-  const buildCsvRows = (): { invoices: CsvDocumentRow[]; expenses: CsvDocumentRow[] } => {
-    const invoices: CsvDocumentRow[] = facturesValidees.map(d => ({
-      date: d.rawData?.created_at || new Date().toISOString(),
-      type: 'facture' as const,
-      reference: d.number,
-      clientName: d.clientName || '',
-      totalHT: d.amountHT,
-      tvaRate: d.rawData?.tva_rate ?? 0,
-      tvaAmount: d.rawData?.tva_amount ?? 0,
-      totalTTC: d.amountTTC,
-      tvaExempt: d.rawData?.tva_exempt ?? false,
-    }));
-    const expRows: CsvDocumentRow[] = expenses.map(e => ({
-      date: e.rawData?.expense_date || e.rawData?.created_at || new Date().toISOString(),
-      type: 'expense' as const,
-      reference: e.clientName || '',
-      clientName: e.clientName || 'Fournisseur',
-      totalHT: e.amountHT,
-      tvaRate: e.rawData?.tva_amount && e.amountHT ? ((e.rawData.tva_amount / e.amountHT) * 100) : 0,
-      tvaAmount: e.rawData?.tva_amount ?? 0,
-      totalTTC: e.amountTTC,
-    }));
-    return { invoices, expenses: expRows };
+  // ── Période d'export (sélecteur de dates personnalisé en plus des presets) ──
+  const [exportStart, setExportStart] = useState<string>('');
+  const [exportEnd, setExportEnd] = useState<string>('');
+
+  const periodBoundaries = useMemo(() => {
+    // Si dates personnalisées renseignées, elles priment
+    if (exportStart && exportEnd) {
+      return { start: new Date(exportStart), end: new Date(exportEnd + 'T23:59:59') };
+    }
+    const now = new Date();
+    switch (periodFilter) {
+      case 'month':
+        return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59) };
+      case 'quarter': {
+        const q = Math.floor(now.getMonth() / 3);
+        return { start: new Date(now.getFullYear(), q * 3, 1), end: new Date(now.getFullYear(), q * 3 + 3, 0, 23, 59, 59) };
+      }
+      case 'year':
+        return { start: new Date(now.getFullYear(), 0, 1), end: new Date(now.getFullYear(), 11, 31, 23, 59, 59) };
+      default:
+        return null;
+    }
+  }, [periodFilter, exportStart, exportEnd]);
+
+  const periodLabel = useMemo(() => {
+    if (!periodBoundaries) return 'Toutes périodes';
+    const fmt = (d: Date) => d.toLocaleDateString('fr-FR');
+    return `Du ${fmt(periodBoundaries.start)} au ${fmt(periodBoundaries.end)}`;
+  }, [periodBoundaries]);
+
+  const inPeriod = (isoDate: string) => {
+    if (!periodBoundaries) return true;
+    const d = new Date(isoDate);
+    return d >= periodBoundaries.start && d <= periodBoundaries.end;
   };
+
+  const buildCsvRows = (): AccountingExportData => {
+    const invoices: CsvDocumentRow[] = facturesValidees
+      .filter(d => inPeriod(d.rawData?.created_at || ''))
+      .map(d => ({
+        date: d.rawData?.created_at || new Date().toISOString(),
+        type: 'facture' as const,
+        reference: d.number,
+        clientName: d.clientName || '',
+        documentNumber: d.number,
+        totalHT: d.amountHT,
+        tvaRate: d.rawData?.tva_rate ?? 0,
+        tvaAmount: d.rawData?.tva_amount ?? 0,
+        totalTTC: d.amountTTC,
+        tvaExempt: d.rawData?.tva_exempt ?? false,
+        paymentStatus: d.paymentStatus,
+        updatedAt: d.rawData?.updated_at,
+      }));
+    const expRows: CsvDocumentRow[] = expenses
+      .filter(e => inPeriod(e.rawData?.expense_date || e.rawData?.created_at || ''))
+      .map(e => ({
+        date: e.rawData?.expense_date || e.rawData?.created_at || new Date().toISOString(),
+        type: 'expense' as const,
+        reference: e.clientName || '',
+        clientName: e.clientName || 'Fournisseur',
+        totalHT: e.amountHT,
+        tvaRate: e.rawData?.tva_amount && e.amountHT ? ((e.rawData.tva_amount / e.amountHT) * 100) : 0,
+        tvaAmount: e.rawData?.tva_amount ?? 0,
+        totalTTC: e.amountTTC,
+        paymentStatus: 'paid',
+      }));
+
+    const p: any = profile || {};
+    return {
+      invoices,
+      expenses: expRows,
+      company: {
+        companyName: p.company_name || p.full_name || '',
+        siret: p.siret || '',
+        tvaNumber: p.numero_tva || '',
+        address: p.company_address || p.address || '',
+      },
+      period: {
+        start: periodBoundaries?.start.toISOString(),
+        end: periodBoundaries?.end.toISOString(),
+        label: periodLabel,
+      },
+    };
+  };
+
+  const vatSynthesis = useMemo(() => {
+    try {
+      const data = buildCsvRows();
+      if (data.invoices.length === 0 && data.expenses.length === 0) return null;
+      return computeVATSynthesis(data);
+    } catch { return null; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facturesValidees, expenses, periodBoundaries]);
 
   const handleExportCSV = () => {
     if (allItems.length === 0) return;
@@ -350,6 +420,25 @@ const ArchiveAccountingPage = () => {
       toast({ title: isRTL ? '✅ تم التصدير' : '✅ Export comptable réussi' });
     } catch (err: any) {
       toast({ title: '❌ Erreur', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const handleExportFEC = () => {
+    try {
+      const data = buildCsvRows();
+      const fec = generateFECCsv(data);
+      const blob = new Blob([fec], { type: 'text/plain;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const siret = ((profile as any)?.siret || 'FEC').replace(/\s+/g, '');
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      a.href = url;
+      a.download = `${siret}FEC${dateStr}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: isRTL ? '✅ تم تصدير FEC' : '✅ Export FEC réussi' });
+    } catch (err: any) {
+      toast({ title: '❌ Erreur FEC', description: err.message, variant: 'destructive' });
     }
   };
 
@@ -484,7 +573,36 @@ const ArchiveAccountingPage = () => {
         />
       </div>
 
-      {/* Tabs & Content */}
+      {/* Aperçu Synthèse TVA + Période d'export personnalisée */}
+      {vatSynthesis && (
+        <div className="mb-4 shrink-0">
+          <VATSynthesisCard synthesis={vatSynthesis} isRTL={isRTL} />
+        </div>
+      )}
+      <div className="mb-4 shrink-0 rounded-xl border border-border bg-card p-3" dir="ltr">
+        <div className="text-[11px] font-bold text-muted-foreground mb-2 uppercase tracking-wide">
+          Période d'export personnalisée (optionnel)
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] text-muted-foreground">Du</label>
+            <Input type="date" value={exportStart} onChange={e => setExportStart(e.target.value)} className="h-9 text-xs bg-background" lang="fr" />
+          </div>
+          <div>
+            <label className="text-[10px] text-muted-foreground">Au</label>
+            <Input type="date" value={exportEnd} onChange={e => setExportEnd(e.target.value)} className="h-9 text-xs bg-background" lang="fr" />
+          </div>
+        </div>
+        {(exportStart || exportEnd) && (
+          <button
+            onClick={() => { setExportStart(''); setExportEnd(''); }}
+            className="text-[10px] text-accent hover:underline mt-1"
+          >
+            Réinitialiser (utiliser les boutons préréglés)
+          </button>
+        )}
+      </div>
+
       <div className="flex-1 overflow-y-auto pb-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full bg-card border border-border p-1 rounded-xl mb-4">
@@ -553,6 +671,14 @@ const ArchiveAccountingPage = () => {
         >
           <Download className="h-4 w-4" />
           <span className={cn('text-xs', isRTL && 'font-cairo')}>{isRTL ? 'ملف المحاسب' : 'Export comptable'}</span>
+        </Button>
+        <Button
+          size="sm"
+          className="bg-blue-600 text-white hover:bg-blue-700 font-bold gap-1.5 rounded-full shadow-lg shadow-blue-600/20 px-4"
+          onClick={handleExportFEC}
+        >
+          <Download className="h-4 w-4" />
+          <span className={cn('text-xs', isRTL && 'font-cairo')}>{isRTL ? 'تصدير FEC' : 'Export FEC'}</span>
         </Button>
         <Button
           size="sm"

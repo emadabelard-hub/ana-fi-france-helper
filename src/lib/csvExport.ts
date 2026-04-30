@@ -460,14 +460,16 @@ export function generateAccountingCSV(data: AccountingExportData): string {
 
   let solde = 0;
   const dataRows = entries.map(e => {
-    // Solde cumulé : ventes encaissées + (achats payés sortants)
-    if (e.type === 'Vente' && e.lettrage === 'O') solde += e.ttc;
-    else if (e.type === 'Achat' && e.lettrage === 'O') solde -= e.ttc;
+    // Lettrage : O si date de règlement renseignée, sinon N
+    const lettrageEffectif: 'O' | 'N' = e.paymentDate && e.paymentDate.trim() !== '' ? 'O' : 'N';
+    // Solde cumulé : running balance — ventes en positif, achats en négatif (toutes lignes)
+    if (e.type === 'Vente') solde += e.ttc;
+    else solde -= e.ttc;
     return [
       e.date, e.piece, cleanCell(e.documentNumber), e.type, e.compte, cleanCell(e.compteLib),
       e.compteTiers, cleanCell(e.tiers), cleanCell(e.libelle),
       fmtNum(e.ht), fmtNum(e.tvaRate), fmtNum(e.tvaMontant), e.compteTVA, fmtNum(e.ttc),
-      e.paymentMode, cleanCell(e.paymentRef), e.dueDate, e.paymentDate, e.lettrage,
+      e.paymentMode, cleanCell(e.paymentRef), e.dueDate, e.paymentDate, lettrageEffectif,
       fmtNum(Math.round(solde * 100) / 100),
       'Validée',
     ].join(sep);

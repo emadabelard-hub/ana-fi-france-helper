@@ -674,6 +674,14 @@ const ArchiveAccountingPage = () => {
         </Button>
         <Button
           size="sm"
+          className="bg-blue-600 text-white hover:bg-blue-700 font-bold gap-1.5 rounded-full shadow-lg shadow-blue-600/20 px-4"
+          onClick={handleExportFEC}
+        >
+          <Download className="h-4 w-4" />
+          <span className={cn('text-xs', isRTL && 'font-cairo')}>{isRTL ? 'تصدير FEC' : 'Export FEC'}</span>
+        </Button>
+        <Button
+          size="sm"
           variant="outline"
           className="border-accent/30 text-accent hover:bg-accent/10 font-bold gap-1.5 rounded-full shadow-lg px-4"
           onClick={() => setShowAddExpense(true)}

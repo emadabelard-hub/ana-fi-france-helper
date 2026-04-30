@@ -573,7 +573,36 @@ const ArchiveAccountingPage = () => {
         />
       </div>
 
-      {/* Tabs & Content */}
+      {/* Aperçu Synthèse TVA + Période d'export personnalisée */}
+      {vatSynthesis && (
+        <div className="mb-4 shrink-0">
+          <VATSynthesisCard synthesis={vatSynthesis} isRTL={isRTL} />
+        </div>
+      )}
+      <div className="mb-4 shrink-0 rounded-xl border border-border bg-card p-3" dir="ltr">
+        <div className="text-[11px] font-bold text-muted-foreground mb-2 uppercase tracking-wide">
+          Période d'export personnalisée (optionnel)
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] text-muted-foreground">Du</label>
+            <Input type="date" value={exportStart} onChange={e => setExportStart(e.target.value)} className="h-9 text-xs bg-background" lang="fr" />
+          </div>
+          <div>
+            <label className="text-[10px] text-muted-foreground">Au</label>
+            <Input type="date" value={exportEnd} onChange={e => setExportEnd(e.target.value)} className="h-9 text-xs bg-background" lang="fr" />
+          </div>
+        </div>
+        {(exportStart || exportEnd) && (
+          <button
+            onClick={() => { setExportStart(''); setExportEnd(''); }}
+            className="text-[10px] text-accent hover:underline mt-1"
+          >
+            Réinitialiser (utiliser les boutons préréglés)
+          </button>
+        )}
+      </div>
+
       <div className="flex-1 overflow-y-auto pb-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full bg-card border border-border p-1 rounded-xl mb-4">

@@ -132,11 +132,32 @@ export interface CsvDocumentRow {
   tvaExempt?: boolean;
   documentNumber?: string | null;
   paymentMode?: string | null;
+  // Optionnels (déduits si absents)
+  paymentStatus?: 'paid' | 'unpaid' | string | null;
+  paymentDate?: string | null;        // date réelle du règlement
+  dueDate?: string | null;            // date d'échéance prévue
+  paymentReference?: string | null;   // réf. virement bancaire
+  updatedAt?: string | null;          // pour déduire la date de paiement
+}
+
+export interface CompanyHeaderInfo {
+  companyName?: string | null;
+  siret?: string | null;
+  tvaNumber?: string | null;
+  address?: string | null;
+}
+
+export interface PeriodInfo {
+  start?: string | null;  // ISO date
+  end?: string | null;    // ISO date
+  label?: string | null;  // ex: "Du 01/01/2026 au 31/03/2026"
 }
 
 export interface AccountingExportData {
   invoices: CsvDocumentRow[];
   expenses: CsvDocumentRow[];
+  company?: CompanyHeaderInfo;
+  period?: PeriodInfo;
 }
 
 // ── Legacy simple export (kept for backward compat) ──

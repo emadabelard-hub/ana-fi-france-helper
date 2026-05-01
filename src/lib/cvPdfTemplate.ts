@@ -98,12 +98,12 @@ function buildLeftColumn(data: CVData, photoDataUrl: string | undefined, display
 
   // Coordonnées
   const contact: string[] = [];
-  if (data.phone)   contact.push(`<div class="l-row"><span class="l-ico">📞</span><span>${esc(data.phone)}</span></div>`);
-  if (data.email)   contact.push(`<div class="l-row"><span class="l-ico">✉</span><span>${esc(data.email)}</span></div>`);
-  if (data.address) contact.push(`<div class="l-row"><span class="l-ico">📍</span><span>${esc(data.address)}</span></div>`);
+  if (data.phone)   contact.push(`<div class="l-row"><span class="l-ico">·</span><span>${esc(data.phone)}</span></div>`);
+  if (data.email)   contact.push(`<div class="l-row"><span class="l-ico">·</span><span>${esc(data.email)}</span></div>`);
+  if (data.address) contact.push(`<div class="l-row"><span class="l-ico">·</span><span>${esc(data.address)}</span></div>`);
   const age = calculateAge(data.birthDate);
-  if (age)                contact.push(`<div class="l-row"><span class="l-ico">🎂</span><span>${esc(age)}</span></div>`);
-  if (data.maritalStatus) contact.push(`<div class="l-row"><span class="l-ico">●</span><span>${esc(data.maritalStatus)}</span></div>`);
+  if (age)                contact.push(`<div class="l-row"><span class="l-ico">·</span><span>${esc(age)}</span></div>`);
+  if (data.maritalStatus) contact.push(`<div class="l-row"><span class="l-ico">·</span><span>${esc(data.maritalStatus)}</span></div>`);
   if (contact.length) {
     blocks.push(`<div class="l-block">${leftSectionTitle('Coordonnées')}${contact.join('')}</div>`);
   }
@@ -120,18 +120,18 @@ function buildLeftColumn(data: CVData, photoDataUrl: string | undefined, display
 
   // Compétences
   if (data.skills.length) {
-    const items = data.skills.map(s => `<div class="l-row"><span class="l-ico">▸</span><span>${esc(s)}</span></div>`).join('');
+    const items = data.skills.map(s => `<div class="l-row"><span class="l-ico">-</span><span>${esc(s)}</span></div>`).join('');
     blocks.push(`<div class="l-block">${leftSectionTitle('Compétences')}${items}</div>`);
   }
 
   // Permis
   if (data.drivingLicense) {
-    blocks.push(`<div class="l-block">${leftSectionTitle('Permis')}<div class="l-row"><span class="l-ico">🚗</span><span>Permis ${esc(data.drivingLicense)}</span></div></div>`);
+    blocks.push(`<div class="l-block">${leftSectionTitle('Permis')}<div class="l-row"><span class="l-ico">-</span><span>Permis ${esc(data.drivingLicense)}</span></div></div>`);
   }
 
   // Centres d'intérêt
   if (data.interests?.length) {
-    const items = data.interests.map(i => `<div class="l-row"><span class="l-ico">★</span><span>${esc(i)}</span></div>`).join('');
+    const items = data.interests.map(i => `<div class="l-row"><span class="l-ico">-</span><span>${esc(i)}</span></div>`).join('');
     blocks.push(`<div class="l-block">${leftSectionTitle("Centres d'intérêt")}${items}</div>`);
   }
 
@@ -193,10 +193,10 @@ const CSS = `
 html, body {
   width: 794px;
   height: 1123px;
-  background: #fff;
+  background: ${NAVY};
   font-family: 'Inter', 'Segoe UI', sans-serif;
-  font-size: 8.5pt;
-  line-height: 1.4;
+  font-size: 9.5pt;
+  line-height: 1.6;
   color: ${TEXT_DARK};
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -204,20 +204,24 @@ html, body {
 
 .cv-wrap {
   width: 794px;
+  min-height: 1123px;
   height: 1123px;
   display: flex;
+  align-items: stretch;
   position: relative;
 }
 
 /* ── LEFT column (33%) ── */
 .col-left {
   width: 33%;
+  min-height: 1123px;
+  height: 100%;
   background: ${NAVY};
   color: #ffffff;
-  padding: 16px 12px 40px;
+  padding: 16px 12px 40px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 .l-identity { text-align: center; }
 .l-photo {
@@ -249,25 +253,25 @@ html, body {
   width: 60%;
   margin: 4px auto 0;
 }
-.l-block { margin-top: 4px; }
+.l-block { margin-top: 14px; }
 .l-section-title {
   color: #ffffff;
-  font-size: 9pt;
+  font-size: 9.5pt;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding-bottom: 3px;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   border-bottom: 1px solid rgba(255,255,255,0.35);
 }
 .l-row {
-  font-size: 8pt;
+  font-size: 9pt;
   color: #ffffff;
   display: flex;
-  gap: 5px;
+  gap: 6px;
   align-items: flex-start;
-  margin-bottom: 3px;
-  line-height: 1.35;
+  margin-bottom: 4px;
+  line-height: 1.5;
   word-break: break-word;
 }
 .l-row-split { justify-content: space-between; }
@@ -277,29 +281,29 @@ html, body {
   width: 10px;
   display: inline-block;
 }
-.l-soft { color: ${NAVY_TEXT_SOFT}; font-style: italic; font-size: 7.5pt; }
+.l-soft { color: ${NAVY_TEXT_SOFT}; font-style: italic; font-size: 8.5pt; }
 
 /* ── RIGHT column (67%) ── */
 .col-right {
   width: 67%;
   background: #ffffff;
-  padding: 0 12px 40px;
+  padding: 0 14px 40px;
   position: relative;
 }
 .r-top-bar {
   height: 3px;
   background: ${ACCENT};
-  margin: 0 -12px 12px;
+  margin: 0 -14px 14px;
 }
-.r-section { margin-top: 10px; margin-bottom: 5px; }
+.r-section { margin-top: 14px; margin-bottom: 6px; }
 .r-section:first-of-type { margin-top: 0; }
 .r-section-title {
   color: ${ACCENT};
-  font-size: 9pt;
+  font-size: 9.5pt;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 .r-section-line {
   height: 1px;
@@ -307,16 +311,16 @@ html, body {
   width: 100%;
 }
 .r-body {
-  font-size: 8.5pt;
-  line-height: 1.45;
+  font-size: 9.5pt;
+  line-height: 1.6;
   color: ${TEXT_GRAY};
   text-align: justify;
-  margin-top: 4px;
+  margin-top: 5px;
 }
-.r-body-sm { font-size: 8.5pt; margin-top: 2px; }
+.r-body-sm { font-size: 9.5pt; margin-top: 3px; }
 
-.r-entry { margin-top: 6px; }
-.r-entry:first-child { margin-top: 4px; }
+.r-entry { margin-top: 8px; }
+.r-entry:first-child { margin-top: 5px; }
 .r-entry-head {
   display: flex;
   justify-content: space-between;

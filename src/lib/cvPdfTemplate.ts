@@ -281,29 +281,29 @@ html, body {
   width: 10px;
   display: inline-block;
 }
-.l-soft { color: ${NAVY_TEXT_SOFT}; font-style: italic; font-size: 7.5pt; }
+.l-soft { color: ${NAVY_TEXT_SOFT}; font-style: italic; font-size: 8.5pt; }
 
 /* ── RIGHT column (67%) ── */
 .col-right {
   width: 67%;
   background: #ffffff;
-  padding: 0 12px 40px;
+  padding: 0 14px 40px;
   position: relative;
 }
 .r-top-bar {
   height: 3px;
   background: ${ACCENT};
-  margin: 0 -12px 12px;
+  margin: 0 -14px 14px;
 }
-.r-section { margin-top: 10px; margin-bottom: 5px; }
+.r-section { margin-top: 14px; margin-bottom: 6px; }
 .r-section:first-of-type { margin-top: 0; }
 .r-section-title {
   color: ${ACCENT};
-  font-size: 9pt;
+  font-size: 9.5pt;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 .r-section-line {
   height: 1px;
@@ -311,16 +311,16 @@ html, body {
   width: 100%;
 }
 .r-body {
-  font-size: 8.5pt;
-  line-height: 1.45;
+  font-size: 9.5pt;
+  line-height: 1.6;
   color: ${TEXT_GRAY};
   text-align: justify;
-  margin-top: 4px;
+  margin-top: 5px;
 }
-.r-body-sm { font-size: 8.5pt; margin-top: 2px; }
+.r-body-sm { font-size: 9.5pt; margin-top: 3px; }
 
-.r-entry { margin-top: 6px; }
-.r-entry:first-child { margin-top: 4px; }
+.r-entry { margin-top: 8px; }
+.r-entry:first-child { margin-top: 5px; }
 .r-entry-head {
   display: flex;
   justify-content: space-between;

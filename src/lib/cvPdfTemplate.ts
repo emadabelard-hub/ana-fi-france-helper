@@ -253,25 +253,25 @@ html, body {
   width: 60%;
   margin: 4px auto 0;
 }
-.l-block { margin-top: 4px; }
+.l-block { margin-top: 14px; }
 .l-section-title {
   color: #ffffff;
-  font-size: 9pt;
+  font-size: 9.5pt;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding-bottom: 3px;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   border-bottom: 1px solid rgba(255,255,255,0.35);
 }
 .l-row {
-  font-size: 8pt;
+  font-size: 9pt;
   color: #ffffff;
   display: flex;
-  gap: 5px;
+  gap: 6px;
   align-items: flex-start;
-  margin-bottom: 3px;
-  line-height: 1.35;
+  margin-bottom: 4px;
+  line-height: 1.5;
   word-break: break-word;
 }
 .l-row-split { justify-content: space-between; }

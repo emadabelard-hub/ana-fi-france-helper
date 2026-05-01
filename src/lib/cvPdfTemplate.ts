@@ -1,23 +1,25 @@
 /**
- * CV PDF Template v2 — Standalone HTML for Browserless (Chrome Headless).
- * Same pipeline as invoices: buildCvHtml() → generate-pdf edge function.
+ * CV PDF Template v3 — Two-column layout (Browserless / Chrome Headless).
  *
- * Layout: Fixed A4 (794×1123px), padding 40px, max-width 714px centered.
- * Sizes: Name 22px, Title 14px, Sections 13px, Body 11px.
- * Rules: No block split, 1-page preferred, no empty pages.
+ * Layout:
+ *  - LEFT column 33%  → navy #1A2B4A, white text, photo + contact/langues/skills/permis/intérêts
+ *  - RIGHT column 67% → white, top accent bar #2E6DA4, profil + expériences + formation
+ *  - A4 single page, full-height columns, dense compact content.
  */
 
 import type { CVData } from '@/pages/CVGeneratorPage';
 
-const ACCENT = '#2c3e50';
-const TEXT = '#1f2937';
-const TEXT_MUTED = '#4b5563';
-const TEXT_LIGHT = '#6b7280';
-const BORDER = '#e5e7eb';
-const BORDER_LIGHT = '#f3f4f6';
+// ─── Palette ────────────────────────────────────────────────────────────────
+const NAVY = '#1A2B4A';
+const NAVY_TEXT_SOFT = '#B8D4F0';
+const ACCENT = '#2E6DA4';
+const SEP_LIGHT = '#DDE3EC';
+const TEXT_DARK = '#1f2937';
+const TEXT_GRAY = '#4b5563';
+const DATE_GRAY = '#8A9AB0';
+const FOOTER_GRAY = '#9ca3af';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
+// ─── Helpers ────────────────────────────────────────────────────────────────
 function calculateAge(birthDate: string): string {
   if (!birthDate) return '';
   const parts = birthDate.split('/');
@@ -35,17 +37,21 @@ function calculateAge(birthDate: string): string {
   return '';
 }
 
-function formatName(fullName: string): { firstName: string; lastName: string } {
-  if (!fullName?.trim()) return { firstName: '', lastName: '' };
+function formatName(fullName: string): { firstName: string; lastName: string; display: string } {
+  if (!fullName?.trim()) return { firstName: '', lastName: '', display: '' };
   const parts = fullName.trim().split(/\s+/);
-  if (parts.length === 1) return { firstName: '', lastName: parts[0].toUpperCase() };
+  if (parts.length === 1) {
+    const ln = parts[0].toUpperCase();
+    return { firstName: '', lastName: ln, display: ln };
+  }
   const lastName = parts[parts.length - 1].toUpperCase();
   const firstName = parts.slice(0, -1).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
-  return { firstName, lastName };
+  return { firstName, lastName, display: `${firstName} ${lastName}` };
 }
 
 function esc(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  if (s === undefined || s === null) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 const langMap: Record<string, string> = {
@@ -72,234 +78,313 @@ async function inlinePhoto(url?: string): Promise<string | undefined> {
   }
 }
 
-// ─── Section Builders ────────────────────────────────────────────────────────
-
-function sectionTitle(title: string): string {
-  return `<div class="section-title"><h2>${esc(title)}</h2><div class="title-line"></div></div>`;
+// ─── LEFT column builders ───────────────────────────────────────────────────
+function leftSectionTitle(title: string): string {
+  return `<div class="l-section-title">${esc(title)}</div>`;
 }
 
-function buildHeader(firstName: string, lastName: string, profession: string, personalInfo: string[], photoDataUrl?: string): string {
-  return `<div class="cv-header">
-  <div class="header-left">
-    <h1><span class="fn">${esc(firstName || 'Prénom')}</span> <span class="ln">${esc(lastName || 'NOM')}</span></h1>
-    <div class="header-accent"></div>
-    <p class="profession">${esc(profession || 'Votre Métier')}</p>
-    ${personalInfo.length ? `<p class="personal-info">${personalInfo.join(' · ')}</p>` : ''}
-  </div>
-  ${photoDataUrl ? `<img class="photo" src="${photoDataUrl}" alt="Photo" />` : ''}
-</div>`;
+function buildLeftColumn(data: CVData, photoDataUrl: string | undefined, displayName: string): string {
+  const blocks: string[] = [];
+
+  // Photo + identity
+  blocks.push(`
+    <div class="l-identity">
+      ${photoDataUrl ? `<img class="l-photo" src="${photoDataUrl}" alt="Photo" />` : ''}
+      <div class="l-name">${esc(displayName || 'Prénom NOM')}</div>
+      ${data.profession ? `<div class="l-title">${esc(data.profession)}</div>` : ''}
+      <div class="l-divider"></div>
+    </div>
+  `);
+
+  // Coordonnées
+  const contact: string[] = [];
+  if (data.phone)   contact.push(`<div class="l-row"><span class="l-ico">📞</span><span>${esc(data.phone)}</span></div>`);
+  if (data.email)   contact.push(`<div class="l-row"><span class="l-ico">✉</span><span>${esc(data.email)}</span></div>`);
+  if (data.address) contact.push(`<div class="l-row"><span class="l-ico">📍</span><span>${esc(data.address)}</span></div>`);
+  const age = calculateAge(data.birthDate);
+  if (age)                contact.push(`<div class="l-row"><span class="l-ico">🎂</span><span>${esc(age)}</span></div>`);
+  if (data.maritalStatus) contact.push(`<div class="l-row"><span class="l-ico">●</span><span>${esc(data.maritalStatus)}</span></div>`);
+  if (contact.length) {
+    blocks.push(`<div class="l-block">${leftSectionTitle('Coordonnées')}${contact.join('')}</div>`);
+  }
+
+  // Langues
+  if (data.languages.length) {
+    const items = data.languages.map(l => `
+      <div class="l-row l-row-split">
+        <span>${esc(l.name)}</span>
+        <span class="l-soft">${esc(langMap[l.level] || l.level)}</span>
+      </div>`).join('');
+    blocks.push(`<div class="l-block">${leftSectionTitle('Langues')}${items}</div>`);
+  }
+
+  // Compétences
+  if (data.skills.length) {
+    const items = data.skills.map(s => `<div class="l-row"><span class="l-ico">▸</span><span>${esc(s)}</span></div>`).join('');
+    blocks.push(`<div class="l-block">${leftSectionTitle('Compétences')}${items}</div>`);
+  }
+
+  // Permis
+  if (data.drivingLicense) {
+    blocks.push(`<div class="l-block">${leftSectionTitle('Permis')}<div class="l-row"><span class="l-ico">🚗</span><span>Permis ${esc(data.drivingLicense)}</span></div></div>`);
+  }
+
+  // Centres d'intérêt
+  if (data.interests?.length) {
+    const items = data.interests.map(i => `<div class="l-row"><span class="l-ico">★</span><span>${esc(i)}</span></div>`).join('');
+    blocks.push(`<div class="l-block">${leftSectionTitle("Centres d'intérêt")}${items}</div>`);
+  }
+
+  return `<aside class="col-left">${blocks.join('')}</aside>`;
 }
 
-function buildContact(data: CVData): string {
-  const items: string[] = [];
-  if (data.phone) items.push(`<span class="c-item">📞 ${esc(data.phone)}</span>`);
-  if (data.email) items.push(`<span class="c-item">✉ ${esc(data.email)}</span>`);
-  if (data.address) items.push(`<span class="c-item">📍 ${esc(data.address)}</span>`);
-  if (!items.length) return '';
-  return `<div class="cv-contact">${items.join('<span class="c-sep">|</span>')}</div>`;
+// ─── RIGHT column builders ──────────────────────────────────────────────────
+function rightSectionTitle(title: string): string {
+  return `<div class="r-section">
+    <div class="r-section-title">${esc(title)}</div>
+    <div class="r-section-line"></div>
+  </div>`;
 }
 
-function buildProfile(summary?: string): string {
-  if (!summary?.trim()) return '';
-  return `<div class="cv-section">${sectionTitle('Profil')}<p class="body-text">${esc(summary)}</p></div>`;
-}
+function buildRightColumn(data: CVData): string {
+  const blocks: string[] = [`<div class="r-top-bar"></div>`];
 
-function buildExperiences(experiences: CVData['experiences']): string {
-  if (!experiences.length) return '';
-  const items = experiences.map((exp, i) => `
-    <div class="entry${i > 0 ? ' entry-border' : ''}">
-      <div class="entry-row">
-        <div class="entry-main">
-          <p class="entry-title">${esc(exp.position)}</p>
-          <p class="entry-sub">${esc(exp.company)}</p>
+  // Profil
+  if (data.summary?.trim()) {
+    blocks.push(`${rightSectionTitle('Profil')}<p class="r-body">${esc(data.summary)}</p>`);
+  }
+
+  // Expériences
+  if (data.experiences.length) {
+    const items = data.experiences.map(exp => `
+      <div class="r-entry">
+        <div class="r-entry-head">
+          <span class="r-entry-title">${esc(exp.position)}</span>
+          <span class="r-entry-date">${esc(exp.startDate)} — ${esc(exp.endDate || 'Présent')}</span>
         </div>
-        <span class="entry-date">${esc(exp.startDate)} — ${esc(exp.endDate || 'Présent')}</span>
-      </div>
-      ${exp.description ? `<p class="body-text small">${esc(exp.description)}</p>` : ''}
-    </div>`).join('');
-  return `<div class="cv-section">${sectionTitle('Expériences Professionnelles')}${items}</div>`;
-}
+        <div class="r-entry-sub">${esc(exp.company)}</div>
+        ${exp.description ? `<p class="r-body r-body-sm">${esc(exp.description)}</p>` : ''}
+      </div>`).join('');
+    blocks.push(`${rightSectionTitle('Expériences professionnelles')}${items}`);
+  }
 
-function buildEducation(education: CVData['education']): string {
-  if (!education.length) return '';
-  const items = education.map((edu, i) => `
-    <div class="entry${i > 0 ? ' entry-border' : ''}">
-      <div class="entry-row">
-        <div class="entry-main">
-          <p class="entry-title">${esc(edu.degree)}</p>
-          <p class="entry-sub">${esc(edu.institution)}</p>
-          ${edu.field ? `<p class="entry-field">${esc(edu.field)}</p>` : ''}
+  // Formation
+  if (data.education.length) {
+    const items = data.education.map(edu => `
+      <div class="r-entry">
+        <div class="r-entry-head">
+          <span class="r-entry-title">${esc(edu.degree)}</span>
+          <span class="r-entry-date">${esc(edu.startDate)} — ${esc(edu.endDate)}</span>
         </div>
-        <span class="entry-date">${esc(edu.startDate)} — ${esc(edu.endDate)}</span>
-      </div>
-    </div>`).join('');
-  return `<div class="cv-section">${sectionTitle('Formation')}${items}</div>`;
+        <div class="r-entry-sub">${esc(edu.institution)}</div>
+        ${edu.field ? `<div class="r-entry-field">${esc(edu.field)}</div>` : ''}
+      </div>`).join('');
+    blocks.push(`${rightSectionTitle('Formation')}${items}`);
+  }
+
+  return `<main class="col-right">${blocks.join('')}</main>`;
 }
 
-function buildSkills(skills: string[]): string {
-  if (!skills.length) return '';
-  const tags = skills.map(s => `<span class="skill-tag">${esc(s)}</span>`).join('');
-  return `<div class="cv-section">${sectionTitle('Compétences')}<div class="skills-grid">${tags}</div></div>`;
-}
-
-function buildLanguages(languages: CVData['languages']): string {
-  if (!languages.length) return '';
-  const items = languages.map(l => `
-    <div class="lang-row">
-      <span class="lang-name">${esc(l.name)}</span>
-      <span class="lang-level">${esc(langMap[l.level] || l.level)}</span>
-    </div>`).join('');
-  return `<div class="cv-section">${sectionTitle('Langues')}${items}</div>`;
-}
-
-function buildLicense(license?: string): string {
-  if (!license) return '';
-  return `<div class="cv-section">${sectionTitle('Permis de Conduire')}<p class="body-text">Permis ${esc(license)}</p></div>`;
-}
-
-function buildInterests(interests?: string[]): string {
-  if (!interests?.length) return '';
-  return `<div class="cv-section">${sectionTitle("Centres d'Intérêt")}<p class="body-text">${interests.map(esc).join(' · ')}</p></div>`;
-}
-
-// ─── CSS ─────────────────────────────────────────────────────────────────────
-
+// ─── CSS ────────────────────────────────────────────────────────────────────
 const CSS = `
 @page { size: A4; margin: 0; }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
   width: 794px;
-  min-height: 1123px;
+  height: 1123px;
   background: #fff;
-  color: ${TEXT};
-  font-family: 'Inter', 'Urbanist', 'Segoe UI', sans-serif;
-  font-size: 11px;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 8.5pt;
   line-height: 1.4;
+  color: ${TEXT_DARK};
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
 
-body {
-  padding: 36px 40px 30px;
-  max-width: 794px;
-  margin: 0 auto;
+.cv-wrap {
+  width: 794px;
+  height: 1123px;
+  display: flex;
+  position: relative;
 }
 
-/* ── Header ── */
-.cv-header {
+/* ── LEFT column (33%) ── */
+.col-left {
+  width: 33%;
+  background: ${NAVY};
+  color: #ffffff;
+  padding: 16px 12px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.l-identity { text-align: center; }
+.l-photo {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ffffff;
+  margin: 0 auto 8px;
+  display: block;
+}
+.l-name {
+  color: #ffffff;
+  font-size: 16pt;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  margin-bottom: 3px;
+  word-break: break-word;
+}
+.l-title {
+  color: ${NAVY_TEXT_SOFT};
+  font-size: 10pt;
+  font-style: italic;
+  margin-bottom: 8px;
+}
+.l-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.6);
+  width: 60%;
+  margin: 4px auto 0;
+}
+.l-block { margin-top: 4px; }
+.l-section-title {
+  color: #ffffff;
+  font-size: 9pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-bottom: 3px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid rgba(255,255,255,0.35);
+}
+.l-row {
+  font-size: 8pt;
+  color: #ffffff;
+  display: flex;
+  gap: 5px;
+  align-items: flex-start;
+  margin-bottom: 3px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+.l-row-split { justify-content: space-between; }
+.l-ico {
+  color: ${NAVY_TEXT_SOFT};
+  flex-shrink: 0;
+  width: 10px;
+  display: inline-block;
+}
+.l-soft { color: ${NAVY_TEXT_SOFT}; font-style: italic; font-size: 7.5pt; }
+
+/* ── RIGHT column (67%) ── */
+.col-right {
+  width: 67%;
+  background: #ffffff;
+  padding: 0 12px 40px;
+  position: relative;
+}
+.r-top-bar {
+  height: 3px;
+  background: ${ACCENT};
+  margin: 0 -12px 12px;
+}
+.r-section { margin-top: 10px; margin-bottom: 5px; }
+.r-section:first-of-type { margin-top: 0; }
+.r-section-title {
+  color: ${ACCENT};
+  font-size: 9pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 3px;
+}
+.r-section-line {
+  height: 1px;
+  background: ${SEP_LIGHT};
+  width: 100%;
+}
+.r-body {
+  font-size: 8.5pt;
+  line-height: 1.45;
+  color: ${TEXT_GRAY};
+  text-align: justify;
+  margin-top: 4px;
+}
+.r-body-sm { font-size: 8.5pt; margin-top: 2px; }
+
+.r-entry { margin-top: 6px; }
+.r-entry:first-child { margin-top: 4px; }
+.r-entry-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  page-break-inside: avoid;
-  break-inside: avoid;
+  align-items: baseline;
+  gap: 8px;
 }
-.header-left { flex: 1; }
-.cv-header h1 { font-size: 22px; line-height: 1.15; margin-bottom: 3px; }
-.cv-header .fn { font-weight: 400; color: ${TEXT_MUTED}; }
-.cv-header .ln { font-weight: 700; color: ${TEXT}; letter-spacing: 0.05em; }
-.header-accent { height: 2.5px; background: ${ACCENT}; width: 45px; margin: 5px 0; }
-.profession { color: ${ACCENT}; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; margin-bottom: 2px; }
-.personal-info { font-size: 9.5px; color: ${TEXT_LIGHT}; letter-spacing: 0.02em; }
-.photo {
-  width: 68px; height: 68px; border-radius: 50%; object-fit: cover;
-  border: 2px solid ${ACCENT}; flex-shrink: 0; margin-left: 16px;
+.r-entry-title {
+  font-size: 9pt;
+  font-weight: 700;
+  color: #000000;
+  flex: 1;
 }
-
-/* ── Contact ── */
-.cv-contact {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
-  gap: 6px;
-  padding: 7px 0;
-  margin-bottom: 6px;
-  border-top: 1px solid ${BORDER};
-  border-bottom: 1px solid ${BORDER};
-  font-size: 9.5px; color: ${TEXT_MUTED};
-  page-break-inside: avoid; break-inside: avoid;
+.r-entry-date {
+  font-size: 8pt;
+  color: ${DATE_GRAY};
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.c-item { white-space: nowrap; }
-.c-sep { color: ${BORDER}; margin: 0 2px; }
-
-/* ── Sections ── */
-.cv-section {
-  margin-bottom: 8px;
-  page-break-inside: avoid;
-  break-inside: avoid;
+.r-entry-sub {
+  font-size: 8.5pt;
+  font-style: italic;
+  color: ${ACCENT};
+  margin-top: 1px;
 }
-.section-title { margin-bottom: 4px; }
-.section-title h2 {
-  font-size: 13px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.12em;
-  color: ${ACCENT}; margin-bottom: 2px;
-}
-.title-line { height: 1.5px; background: ${ACCENT}; width: 100%; }
-
-/* ── Body Text ── */
-.body-text { font-size: 11px; line-height: 1.4; color: ${TEXT}; }
-.body-text.small { font-size: 10px; line-height: 1.35; color: ${TEXT_MUTED}; margin-top: 2px; }
-
-/* ── Entries ── */
-.entry { margin-bottom: 4px; }
-.entry-border { padding-top: 4px; border-top: 1px solid ${BORDER_LIGHT}; }
-.entry-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-.entry-main { flex: 1; }
-.entry-title { font-size: 11px; font-weight: 600; color: ${TEXT}; }
-.entry-sub { font-size: 10px; color: ${TEXT_LIGHT}; }
-.entry-field { font-size: 9px; color: #9ca3af; font-style: italic; }
-.entry-date { font-size: 9px; color: ${ACCENT}; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
-
-/* ── Skills ── */
-.skills-grid { display: flex; flex-wrap: wrap; gap: 5px; }
-.skill-tag {
-  font-size: 10px; padding: 2px 8px;
-  background: #f1f5f9; color: ${TEXT_MUTED};
-  border-radius: 3px; border: 1px solid ${BORDER};
+.r-entry-field {
+  font-size: 8pt;
+  color: ${TEXT_GRAY};
+  margin-top: 1px;
 }
 
-/* ── Languages ── */
-.lang-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
-.lang-name { font-size: 11px; font-weight: 500; color: ${TEXT}; }
-.lang-level { font-size: 10px; font-style: italic; color: ${ACCENT}; }
+/* ── Footer ── */
+.cv-footer {
+  position: absolute;
+  bottom: 14px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 7.5pt;
+  color: ${FOOTER_GRAY};
+}
 
-/* ── Hide interactive ── */
+/* Hide interactive */
 button, [role="button"], input, select, textarea { display: none !important; }
 `;
 
-// ─── Main Builder ────────────────────────────────────────────────────────────
-
+// ─── Main builder ───────────────────────────────────────────────────────────
 export async function buildCvHtml(data: CVData): Promise<string> {
-  const { firstName, lastName } = formatName(data.fullName);
-  const age = calculateAge(data.birthDate);
-  const personalInfo: string[] = [];
-  if (age) personalInfo.push(age);
-  if (data.maritalStatus) personalInfo.push(esc(data.maritalStatus));
-  if (data.drivingLicense) personalInfo.push(`Permis ${esc(data.drivingLicense)}`);
-
+  const { display } = formatName(data.fullName);
   const photoDataUrl = await inlinePhoto(data.photoUrl);
 
-  const body = [
-    buildHeader(firstName, lastName, data.profession, personalInfo, photoDataUrl),
-    buildContact(data),
-    buildProfile(data.summary),
-    buildExperiences(data.experiences),
-    buildEducation(data.education),
-    buildSkills(data.skills),
-    buildLanguages(data.languages),
-    buildLicense(data.drivingLicense),
-    buildInterests(data.interests),
-  ].filter(Boolean).join('\n');
+  const left = buildLeftColumn(data, photoDataUrl, display);
+  const right = buildRightColumn(data);
+
+  const footerName = display || 'CV';
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>${CSS}</style>
 </head>
 <body>
-${body}
+<div class="cv-wrap">
+  ${left}
+  ${right}
+  <div class="cv-footer">CV — ${esc(footerName)} · Page 1/1</div>
+</div>
 </body>
 </html>`;
 }

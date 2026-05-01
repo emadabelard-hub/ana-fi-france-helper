@@ -193,10 +193,10 @@ const CSS = `
 html, body {
   width: 794px;
   height: 1123px;
-  background: #fff;
+  background: ${NAVY};
   font-family: 'Inter', 'Segoe UI', sans-serif;
-  font-size: 8.5pt;
-  line-height: 1.4;
+  font-size: 9.5pt;
+  line-height: 1.6;
   color: ${TEXT_DARK};
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -204,20 +204,24 @@ html, body {
 
 .cv-wrap {
   width: 794px;
+  min-height: 1123px;
   height: 1123px;
   display: flex;
+  align-items: stretch;
   position: relative;
 }
 
 /* ── LEFT column (33%) ── */
 .col-left {
   width: 33%;
+  min-height: 1123px;
+  height: 100%;
   background: ${NAVY};
   color: #ffffff;
-  padding: 16px 12px 40px;
+  padding: 16px 12px 40px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 .l-identity { text-align: center; }
 .l-photo {

@@ -98,12 +98,12 @@ function buildLeftColumn(data: CVData, photoDataUrl: string | undefined, display
 
   // Coordonnées
   const contact: string[] = [];
-  if (data.phone)   contact.push(`<div class="l-row"><span class="l-ico">📞</span><span>${esc(data.phone)}</span></div>`);
-  if (data.email)   contact.push(`<div class="l-row"><span class="l-ico">✉</span><span>${esc(data.email)}</span></div>`);
-  if (data.address) contact.push(`<div class="l-row"><span class="l-ico">📍</span><span>${esc(data.address)}</span></div>`);
+  if (data.phone)   contact.push(`<div class="l-row"><span class="l-ico">·</span><span>${esc(data.phone)}</span></div>`);
+  if (data.email)   contact.push(`<div class="l-row"><span class="l-ico">·</span><span>${esc(data.email)}</span></div>`);
+  if (data.address) contact.push(`<div class="l-row"><span class="l-ico">·</span><span>${esc(data.address)}</span></div>`);
   const age = calculateAge(data.birthDate);
-  if (age)                contact.push(`<div class="l-row"><span class="l-ico">🎂</span><span>${esc(age)}</span></div>`);
-  if (data.maritalStatus) contact.push(`<div class="l-row"><span class="l-ico">●</span><span>${esc(data.maritalStatus)}</span></div>`);
+  if (age)                contact.push(`<div class="l-row"><span class="l-ico">·</span><span>${esc(age)}</span></div>`);
+  if (data.maritalStatus) contact.push(`<div class="l-row"><span class="l-ico">·</span><span>${esc(data.maritalStatus)}</span></div>`);
   if (contact.length) {
     blocks.push(`<div class="l-block">${leftSectionTitle('Coordonnées')}${contact.join('')}</div>`);
   }
@@ -120,18 +120,18 @@ function buildLeftColumn(data: CVData, photoDataUrl: string | undefined, display
 
   // Compétences
   if (data.skills.length) {
-    const items = data.skills.map(s => `<div class="l-row"><span class="l-ico">▸</span><span>${esc(s)}</span></div>`).join('');
+    const items = data.skills.map(s => `<div class="l-row"><span class="l-ico">-</span><span>${esc(s)}</span></div>`).join('');
     blocks.push(`<div class="l-block">${leftSectionTitle('Compétences')}${items}</div>`);
   }
 
   // Permis
   if (data.drivingLicense) {
-    blocks.push(`<div class="l-block">${leftSectionTitle('Permis')}<div class="l-row"><span class="l-ico">🚗</span><span>Permis ${esc(data.drivingLicense)}</span></div></div>`);
+    blocks.push(`<div class="l-block">${leftSectionTitle('Permis')}<div class="l-row"><span class="l-ico">-</span><span>Permis ${esc(data.drivingLicense)}</span></div></div>`);
   }
 
   // Centres d'intérêt
   if (data.interests?.length) {
-    const items = data.interests.map(i => `<div class="l-row"><span class="l-ico">★</span><span>${esc(i)}</span></div>`).join('');
+    const items = data.interests.map(i => `<div class="l-row"><span class="l-ico">-</span><span>${esc(i)}</span></div>`).join('');
     blocks.push(`<div class="l-block">${leftSectionTitle("Centres d'intérêt")}${items}</div>`);
   }
 

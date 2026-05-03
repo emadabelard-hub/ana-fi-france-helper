@@ -362,6 +362,9 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 <ArSub fr={data.type} />
               </h2>
               <p className="text-[7pt] text-gray-500 mt-0.5">N° {data.number}</p>
+              {data.type === 'FACTURE' && data.sourceDevisNumber && (
+                <p className="text-[6pt] text-gray-400 mt-0.5 italic">Réf. devis : {data.sourceDevisNumber}</p>
+              )}
             </div>
             <DocumentQRCode
               documentId={data.documentId}

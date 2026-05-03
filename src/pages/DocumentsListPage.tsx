@@ -500,6 +500,27 @@ const DocumentsListPage = () => {
   const factures = filteredDocuments.filter(d => d.document_type === 'facture');
   const cvs = filteredDocuments.filter(d => d.document_type === 'cv');
 
+  // Sequential gap detection — flags any document whose immediate predecessor
+  // (same prefix + year) is missing from the user's full document set.
+  const sequenceGaps = useMemo(() => {
+    const re = /^([DF])-(\d{4})-(\d+)$/;
+    const present = new Set<string>();
+    for (const d of documents) {
+      const m = d.document_number?.match(re);
+      if (m) present.add(`${m[1]}-${m[2]}-${parseInt(m[3], 10)}`);
+    }
+    const gaps = new Map<string, string>(); // doc.id -> missing number label
+    for (const d of documents) {
+      const m = d.document_number?.match(re);
+      if (!m) continue;
+      const num = parseInt(m[3], 10);
+      if (num > 1 && !present.has(`${m[1]}-${m[2]}-${num - 1}`)) {
+        gaps.set(d.id, `${m[1]}-${m[2]}-${String(num - 1).padStart(3, '0')}`);
+      }
+    }
+    return gaps;
+  }, [documents]);
+
   // ============== EXPENSES helpers ==============
   const chantierMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -689,6 +710,16 @@ const DocumentsListPage = () => {
               <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 flex items-center gap-1">
                 <SendHorizontal className="h-2.5 w-2.5" />
                 {isRTL ? 'أُرسل للمحاسب' : 'Envoyé'}
+              </span>
+            )}
+            {sequenceGaps.has(doc.id) && (
+              <span
+                className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30"
+                title={isRTL
+                  ? `الرقم ${sequenceGaps.get(doc.id)} مفقود في التسلسل`
+                  : `Numéro ${sequenceGaps.get(doc.id)} manquant dans la séquence`}
+              >
+                ⚠ {isRTL ? `ثغرة: ${sequenceGaps.get(doc.id)}` : `Trou : ${sequenceGaps.get(doc.id)}`}
               </span>
             )}
           </div>

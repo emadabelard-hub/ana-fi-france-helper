@@ -500,6 +500,27 @@ const DocumentsListPage = () => {
   const factures = filteredDocuments.filter(d => d.document_type === 'facture');
   const cvs = filteredDocuments.filter(d => d.document_type === 'cv');
 
+  // Sequential gap detection — flags any document whose immediate predecessor
+  // (same prefix + year) is missing from the user's full document set.
+  const sequenceGaps = useMemo(() => {
+    const re = /^([DF])-(\d{4})-(\d+)$/;
+    const present = new Set<string>();
+    for (const d of documents) {
+      const m = d.document_number?.match(re);
+      if (m) present.add(`${m[1]}-${m[2]}-${parseInt(m[3], 10)}`);
+    }
+    const gaps = new Map<string, string>(); // doc.id -> missing number label
+    for (const d of documents) {
+      const m = d.document_number?.match(re);
+      if (!m) continue;
+      const num = parseInt(m[3], 10);
+      if (num > 1 && !present.has(`${m[1]}-${m[2]}-${num - 1}`)) {
+        gaps.set(d.id, `${m[1]}-${m[2]}-${String(num - 1).padStart(3, '0')}`);
+      }
+    }
+    return gaps;
+  }, [documents]);
+
   // ============== EXPENSES helpers ==============
   const chantierMap = useMemo(() => {
     const m: Record<string, string> = {};

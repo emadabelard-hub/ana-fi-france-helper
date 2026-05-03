@@ -712,6 +712,16 @@ const DocumentsListPage = () => {
                 {isRTL ? 'أُرسل للمحاسب' : 'Envoyé'}
               </span>
             )}
+            {sequenceGaps.has(doc.id) && (
+              <span
+                className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30"
+                title={isRTL
+                  ? `الرقم ${sequenceGaps.get(doc.id)} مفقود في التسلسل`
+                  : `Numéro ${sequenceGaps.get(doc.id)} manquant dans la séquence`}
+              >
+                ⚠ {isRTL ? `ثغرة: ${sequenceGaps.get(doc.id)}` : `Trou : ${sequenceGaps.get(doc.id)}`}
+              </span>
+            )}
           </div>
         </div>
 

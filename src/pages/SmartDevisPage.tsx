@@ -852,6 +852,15 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
 
       setChatMessages([{ role: 'assistant', content }]);
       setStep('chat');
+
+      // ✅ NEW LOGIC confirmation toast
+      toast({
+        title: isRTL ? 'تم إنشاء الديس حسب طلبك فقط ✓' : 'Devis créé selon votre demande uniquement ✓',
+        description: isRTL
+          ? 'الديس متعمل من النص بتاعك بس. الصورة كانت سياق فقط.'
+          : 'Le devis ne contient que ce que vous avez demandé. La photo n\'a servi que de contexte.',
+        className: 'mt-24 sm:mt-0',
+      });
     } catch (err: any) {
       const technicalMessage = err?.context?.body || err?.message || 'Unknown analysis error';
       toast({ variant: 'destructive', title: 'خطأ في التحليل', description: technicalMessage });

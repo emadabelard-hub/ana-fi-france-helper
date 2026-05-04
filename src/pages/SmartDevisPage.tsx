@@ -1721,7 +1721,7 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
           <CardHeader>
             <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
               <CardTitle className={cn("text-base", isRTL && "text-right font-cairo")}>
-                {isRTL ? 'ارفع الملفات' : 'Téléchargez les fichiers'}
+                {isRTL ? 'صف الشغلانة' : 'Décrivez la demande'}
               </CardTitle>
               <Badge variant="outline" className="text-xs">
                 {uploadedFiles.length}/{MAX_FILES}
@@ -1738,33 +1738,97 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
               onChange={handleFileUpload}
             />
 
-            {/* Dropzone */}
-            <div
-              onClick={() => uploadedFiles.length < MAX_FILES && fileInputRef.current?.click()}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={cn(
-                "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all",
-                isDragOver
-                  ? "border-primary bg-primary/5 scale-[1.02]"
-                  : "border-muted-foreground/30 hover:border-primary/50",
-                uploadedFiles.length >= MAX_FILES && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <Upload className={cn("h-8 w-8 mx-auto mb-2", isDragOver ? "text-primary" : "text-muted-foreground/50")} />
-              <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
+            {/* ═══════════════════════════════════════════════════════════
+                1️⃣ DEMANDE PRINCIPALE (texte + dictée) — OBLIGATOIRE
+                ═══════════════════════════════════════════════════════════ */}
+            <div className="space-y-2 rounded-xl border-2 border-primary/40 bg-primary/5 p-3">
+              <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
+                <label className={cn("text-sm font-bold text-foreground", isRTL && "font-cairo block text-right flex-1")}>
+                  {isRTL ? 'صف اللي عايزه بالضبط *' : 'Décrivez exactement ce que vous voulez *'}
+                </label>
+              </div>
+              <p className={cn("text-[11px] text-muted-foreground", isRTL && "font-cairo text-right")}>
                 {isRTL
-                  ? uploadedFiles.length >= MAX_FILES
-                    ? `وصلت الحد الأقصى (${MAX_FILES} ملفات)`
-                    : 'اسحب الملفات هنا أو اضغط لاختيار صور و PDF'
-                  : uploadedFiles.length >= MAX_FILES
-                    ? `Limite atteinte (${MAX_FILES} fichiers)`
-                    : 'Glissez-déposez ou cliquez pour sélectionner images & PDF'}
+                  ? 'اكتب أو دكتر طلبك. ده المصدر الأساسي للديس — الذكاء الاصطناعي هيرد عليه بس.'
+                  : 'Écrivez ou dictez votre demande. C\'est la source principale du devis — l\'IA répondra uniquement à ceci.'}
               </p>
-              <p className={cn("text-xs text-muted-foreground/60 mt-1", isRTL && "font-cairo")}>
-                {isRTL ? `حتى ${MAX_FILES} ملفات • الحد الأقصى 10 ميجا لكل ملف` : `Jusqu'à ${MAX_FILES} fichiers • 10 Mo max par fichier`}
+              <div className="relative">
+                <Textarea
+                  value={pastedText}
+                  onChange={(e) => setPastedText(e.target.value)}
+                  placeholder={isRTL
+                    ? 'مثال: عايز بنتيرة الحيطان بس في الصالة (٤٠م²)، لون أبيض. ميتعملش حاجة تانية.'
+                    : 'Ex : Peinture des murs du salon uniquement (40m²), couleur blanche. Rien d\'autre.'}
+                  className={cn("min-h-[120px] resize-none pr-14 bg-background", isRTL && "text-right font-cairo pl-14 pr-3")}
+                />
+                {('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) && (
+                  <Button
+                    type="button"
+                    variant={isVoiceListening ? 'destructive' : 'outline'}
+                    size="icon"
+                    className={cn(
+                      "absolute top-2 h-12 w-12 rounded-full shadow-md border-2",
+                      isRTL ? "left-2" : "right-2",
+                      isVoiceListening ? "animate-pulse border-destructive" : "border-blue-500 text-blue-500 hover:bg-blue-500/10"
+                    )}
+                    onClick={isVoiceListening ? stopVoiceInput : startVoiceInput}
+                  >
+                    {isVoiceListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+                  </Button>
+                )}
+              </div>
+              {isVoiceListening && (
+                <p className={cn("text-xs text-destructive font-medium animate-pulse", isRTL && "text-right font-cairo")}>
+                  {isRTL ? '🎙️ بسمعك... اتكلم دلوقتي' : '🎙️ Écoute en cours... Parlez maintenant'}
+                </p>
+              )}
+            </div>
+
+            {/* ═══════════════════════════════════════════════════════════
+                2️⃣ PHOTO (optionnelle) — sert de contexte visuel
+                ═══════════════════════════════════════════════════════════ */}
+            <div className="space-y-2">
+              <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-muted text-foreground text-xs font-bold">2</span>
+                <label className={cn("text-sm font-medium text-foreground", isRTL && "font-cairo block text-right flex-1")}>
+                  {isRTL ? 'أضف صورة للسياق (اختياري)' : 'Ajoutez une photo pour contexte (optionnel)'}
+                </label>
+              </div>
+              <p className={cn("text-[11px] text-muted-foreground", isRTL && "font-cairo text-right")}>
+                {isRTL
+                  ? 'الصورة بتساعد الذكاء الاصطناعي يقدر المساحات والأبعاد بس. مش هيضيف شغل من نفسه.'
+                  : 'La photo aide uniquement à estimer dimensions et surfaces. Aucun travail ne sera ajouté à partir de la photo.'}
               </p>
+
+              {/* Dropzone */}
+              <div
+                onClick={() => uploadedFiles.length < MAX_FILES && fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={cn(
+                  "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all",
+                  isDragOver
+                    ? "border-primary bg-primary/5 scale-[1.02]"
+                    : "border-muted-foreground/30 hover:border-primary/50",
+                  uploadedFiles.length >= MAX_FILES && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <Upload className={cn("h-7 w-7 mx-auto mb-2", isDragOver ? "text-primary" : "text-muted-foreground/50")} />
+                <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
+                  {isRTL
+                    ? uploadedFiles.length >= MAX_FILES
+                      ? `وصلت الحد الأقصى (${MAX_FILES} ملفات)`
+                      : 'اسحب الصور أو اضغط لاختيارها (اختياري)'
+                    : uploadedFiles.length >= MAX_FILES
+                      ? `Limite atteinte (${MAX_FILES} fichiers)`
+                      : 'Glissez ou cliquez pour ajouter des photos (optionnel)'}
+                </p>
+                <p className={cn("text-xs text-muted-foreground/60 mt-1", isRTL && "font-cairo")}>
+                  {isRTL ? `حتى ${MAX_FILES} ملفات • 10 ميجا/ملف` : `Jusqu'à ${MAX_FILES} fichiers • 10 Mo/fichier`}
+                </p>
+              </div>
             </div>
 
             {/* File Gallery */}

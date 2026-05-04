@@ -1893,41 +1893,7 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
               </div>
             </div>
 
-            {/* Pasted text area */}
-            <div className="space-y-2">
-              <label className={cn("text-sm font-medium text-muted-foreground", isRTL && "font-cairo block text-right")}>
-                {isRTL ? 'أو الصق هنا طلب الزبون (إيميل، واتساب، SMS...)' : 'Ou collez ici la demande du client (E-mail, WhatsApp, SMS...)'}
-              </label>
-              <div className="relative">
-                <Textarea
-                  value={pastedText}
-                  onChange={(e) => setPastedText(e.target.value)}
-                  placeholder={isRTL ? 'انسخ طلب الزبون أو اكتب تفاصيل الشغلانة هنا (مثلاً: أندوي، بنتيرة، هامش الربح...)' : 'Collez la demande du client ou décrivez les travaux ici (ex: enduit, peinture, marge...)'}
-                  className={cn("min-h-[100px] resize-none pr-14", isRTL && "text-right font-cairo pl-14 pr-3")}
-                />
-                {/* Voice input button */}
-                {('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) && (
-                  <Button
-                    type="button"
-                    variant={isVoiceListening ? 'destructive' : 'outline'}
-                    size="icon"
-                    className={cn(
-                      "absolute top-2 h-12 w-12 rounded-full shadow-md border-2",
-                      isRTL ? "left-2" : "right-2",
-                      isVoiceListening ? "animate-pulse border-destructive" : "border-blue-500 text-blue-500 hover:bg-blue-500/10"
-                    )}
-                    onClick={isVoiceListening ? stopVoiceInput : startVoiceInput}
-                  >
-                    {isVoiceListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
-                  </Button>
-                )}
-              </div>
-              {isVoiceListening && (
-                <p className={cn("text-xs text-destructive font-medium animate-pulse", isRTL && "text-right font-cairo")}>
-                  {isRTL ? '🎙️ بسمعك... اتكلم دلوقتي' : '🎙️ Écoute en cours... Parlez maintenant'}
-                </p>
-              )}
-            </div>
+            {/* Text area moved to top — see PRIMARY DEMAND block above */}
 
             <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
               <Button variant="outline" onClick={() => { setStep(inputType === 'photo' ? 'photo_guide' : 'select_input'); }} className="flex-1">

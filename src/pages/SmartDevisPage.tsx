@@ -552,7 +552,17 @@ const SmartDevisPage = () => {
 
   const handleAnalyze = async () => {
     console.log('[SmartDevis] handleAnalyze called, files:', uploadedFiles.length, 'text:', pastedText.trim().length);
-    if (uploadedFiles.length === 0 && !pastedText.trim()) return;
+    // NEW LOGIC: Text demand is the PRIMARY source. Photo is optional secondary context.
+    if (!pastedText.trim()) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '✍️ اكتب طلبك الأول' : 'Décrivez d\'abord votre demande',
+        description: isRTL
+          ? 'لازم تكتب أو تدكتر اللي عايزه. الصورة لوحدها مش كفاية.'
+          : 'La demande écrite/dictée est obligatoire. La photo seule ne suffit pas.',
+      });
+      return;
+    }
     setIsAnalyzing(true);
     try {
       const scopeInstruction = materialScope === 'main_oeuvre_seule'
@@ -566,21 +576,39 @@ const SmartDevisPage = () => {
         pro: 'GAMME PRO (matériaux de qualité professionnelle, finitions soignées, marques reconnues)',
         luxury: 'GAMME LUXURY (matériaux haut de gamme, finitions luxueuses, marques premium)',
       };
-      const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ CHOISIE: ${tierLabels[qualityTier]}. Adapte TOUTES les recommandations de matériaux, les descriptions techniques et les estimations de prix à cette gamme. Les matériaux proposés doivent correspondre au niveau de qualité choisi.`;
+      const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ CHOISIE: ${tierLabels[qualityTier]}. Adapte TOUTES les recommandations de matériaux, les descriptions techniques et les estimations de prix à cette gamme.`;
 
       const projectTypeInstruction = projectType === 'sous_traitance'
-        ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE. Ce devis est destiné à un donneur d'ordres (entreprise générale), PAS un client final. Applique des tarifs de sous-traitance : prix compétitifs, marges réduites (-15 à -25% par rapport au prix client final). Pas de marge de confort, prix serrés mais rentables.`
-        : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Ce devis est destiné au client final (particulier ou professionnel). Applique les tarifs normaux du marché avec les marges standard de l'artisan.`;
+        ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE. Tarifs compétitifs, marges réduites (-15 à -25%).`
+        : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Tarifs normaux marché avec marges standard.`;
 
-      const baseMessage = inputType === 'blueprint'
-        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction + tierInstruction + projectTypeInstruction
-        : inputType === 'document'
-        ? "Extrais les informations de ce document pour générer un devis." + scopeInstruction + tierInstruction + projectTypeInstruction
-        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité." + scopeInstruction + tierInstruction + projectTypeInstruction;
+      const hasPhoto = uploadedFiles.length > 0;
+      const userText = pastedText.trim();
 
-      const userMessage = pastedText.trim()
-        ? `${baseMessage}\n\nTexte/demande du client:\n${pastedText.trim()}`
-        : baseMessage;
+      // ═══════════════════════════════════════════════════════════
+      // NOUVELLE LOGIQUE — Demande = SOURCE PRINCIPALE
+      // Photo = contexte visuel SECONDAIRE (dimensions/surfaces)
+      // ═══════════════════════════════════════════════════════════
+      const userMessage =
+`⚠️ RÈGLE ABSOLUE — DEMANDE STRICTEMENT LIMITÉE :
+
+L'utilisateur demande UNIQUEMENT ceci :
+"""
+${userText}
+"""
+
+Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à estimer les dimensions et surfaces mentionnées dans la demande ci-dessus. La photo n\'est PAS une source de travaux supplémentaires.' : ''}
+
+🚫 INTERDIT :
+- N'ajoute AUCUN travail non mentionné explicitement dans la demande.
+- Si la photo montre d'autres problèmes (fissures, humidité, vétusté, etc.) qui ne sont PAS dans la demande → IGNORE-LES totalement.
+- N'invente pas de phases (préparation supports, étanchéité, finitions...) sauf si elles sont citées dans la demande.
+- Pas de "complétion intelligente" du chantier.
+
+✅ OBLIGATOIRE :
+- Génère un devis STRICTEMENT limité à ce qui est demandé dans le texte ci-dessus.
+- Si la demande est courte (1 seul travail), le devis ne doit contenir QUE ce travail.
+- Réponds UNIQUEMENT à la demande textuelle.${scopeInstruction}${tierInstruction}${projectTypeInstruction}`;
 
       const body: any = {
         action: 'analyze_image',
@@ -824,6 +852,15 @@ const SmartDevisPage = () => {
 
       setChatMessages([{ role: 'assistant', content }]);
       setStep('chat');
+
+      // ✅ NEW LOGIC confirmation toast
+      toast({
+        title: isRTL ? 'تم إنشاء الديس حسب طلبك فقط ✓' : 'Devis créé selon votre demande uniquement ✓',
+        description: isRTL
+          ? 'الديس متعمل من النص بتاعك بس. الصورة كانت سياق فقط.'
+          : 'Le devis ne contient que ce que vous avez demandé. La photo n\'a servi que de contexte.',
+        className: 'mt-24 sm:mt-0',
+      });
     } catch (err: any) {
       const technicalMessage = err?.context?.body || err?.message || 'Unknown analysis error';
       toast({ variant: 'destructive', title: 'خطأ في التحليل', description: technicalMessage });
@@ -1684,7 +1721,7 @@ const SmartDevisPage = () => {
           <CardHeader>
             <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
               <CardTitle className={cn("text-base", isRTL && "text-right font-cairo")}>
-                {isRTL ? 'ارفع الملفات' : 'Téléchargez les fichiers'}
+                {isRTL ? 'صف الشغلانة' : 'Décrivez la demande'}
               </CardTitle>
               <Badge variant="outline" className="text-xs">
                 {uploadedFiles.length}/{MAX_FILES}
@@ -1701,33 +1738,97 @@ const SmartDevisPage = () => {
               onChange={handleFileUpload}
             />
 
-            {/* Dropzone */}
-            <div
-              onClick={() => uploadedFiles.length < MAX_FILES && fileInputRef.current?.click()}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={cn(
-                "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all",
-                isDragOver
-                  ? "border-primary bg-primary/5 scale-[1.02]"
-                  : "border-muted-foreground/30 hover:border-primary/50",
-                uploadedFiles.length >= MAX_FILES && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <Upload className={cn("h-8 w-8 mx-auto mb-2", isDragOver ? "text-primary" : "text-muted-foreground/50")} />
-              <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
+            {/* ═══════════════════════════════════════════════════════════
+                1️⃣ DEMANDE PRINCIPALE (texte + dictée) — OBLIGATOIRE
+                ═══════════════════════════════════════════════════════════ */}
+            <div className="space-y-2 rounded-xl border-2 border-primary/40 bg-primary/5 p-3">
+              <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
+                <label className={cn("text-sm font-bold text-foreground", isRTL && "font-cairo block text-right flex-1")}>
+                  {isRTL ? 'صف اللي عايزه بالضبط *' : 'Décrivez exactement ce que vous voulez *'}
+                </label>
+              </div>
+              <p className={cn("text-[11px] text-muted-foreground", isRTL && "font-cairo text-right")}>
                 {isRTL
-                  ? uploadedFiles.length >= MAX_FILES
-                    ? `وصلت الحد الأقصى (${MAX_FILES} ملفات)`
-                    : 'اسحب الملفات هنا أو اضغط لاختيار صور و PDF'
-                  : uploadedFiles.length >= MAX_FILES
-                    ? `Limite atteinte (${MAX_FILES} fichiers)`
-                    : 'Glissez-déposez ou cliquez pour sélectionner images & PDF'}
+                  ? 'اكتب أو دكتر طلبك. ده المصدر الأساسي للديس — الذكاء الاصطناعي هيرد عليه بس.'
+                  : 'Écrivez ou dictez votre demande. C\'est la source principale du devis — l\'IA répondra uniquement à ceci.'}
               </p>
-              <p className={cn("text-xs text-muted-foreground/60 mt-1", isRTL && "font-cairo")}>
-                {isRTL ? `حتى ${MAX_FILES} ملفات • الحد الأقصى 10 ميجا لكل ملف` : `Jusqu'à ${MAX_FILES} fichiers • 10 Mo max par fichier`}
+              <div className="relative">
+                <Textarea
+                  value={pastedText}
+                  onChange={(e) => setPastedText(e.target.value)}
+                  placeholder={isRTL
+                    ? 'مثال: عايز بنتيرة الحيطان بس في الصالة (٤٠م²)، لون أبيض. ميتعملش حاجة تانية.'
+                    : 'Ex : Peinture des murs du salon uniquement (40m²), couleur blanche. Rien d\'autre.'}
+                  className={cn("min-h-[120px] resize-none pr-14 bg-background", isRTL && "text-right font-cairo pl-14 pr-3")}
+                />
+                {('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) && (
+                  <Button
+                    type="button"
+                    variant={isVoiceListening ? 'destructive' : 'outline'}
+                    size="icon"
+                    className={cn(
+                      "absolute top-2 h-12 w-12 rounded-full shadow-md border-2",
+                      isRTL ? "left-2" : "right-2",
+                      isVoiceListening ? "animate-pulse border-destructive" : "border-blue-500 text-blue-500 hover:bg-blue-500/10"
+                    )}
+                    onClick={isVoiceListening ? stopVoiceInput : startVoiceInput}
+                  >
+                    {isVoiceListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+                  </Button>
+                )}
+              </div>
+              {isVoiceListening && (
+                <p className={cn("text-xs text-destructive font-medium animate-pulse", isRTL && "text-right font-cairo")}>
+                  {isRTL ? '🎙️ بسمعك... اتكلم دلوقتي' : '🎙️ Écoute en cours... Parlez maintenant'}
+                </p>
+              )}
+            </div>
+
+            {/* ═══════════════════════════════════════════════════════════
+                2️⃣ PHOTO (optionnelle) — sert de contexte visuel
+                ═══════════════════════════════════════════════════════════ */}
+            <div className="space-y-2">
+              <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-muted text-foreground text-xs font-bold">2</span>
+                <label className={cn("text-sm font-medium text-foreground", isRTL && "font-cairo block text-right flex-1")}>
+                  {isRTL ? 'أضف صورة للسياق (اختياري)' : 'Ajoutez une photo pour contexte (optionnel)'}
+                </label>
+              </div>
+              <p className={cn("text-[11px] text-muted-foreground", isRTL && "font-cairo text-right")}>
+                {isRTL
+                  ? 'الصورة بتساعد الذكاء الاصطناعي يقدر المساحات والأبعاد بس. مش هيضيف شغل من نفسه.'
+                  : 'La photo aide uniquement à estimer dimensions et surfaces. Aucun travail ne sera ajouté à partir de la photo.'}
               </p>
+
+              {/* Dropzone */}
+              <div
+                onClick={() => uploadedFiles.length < MAX_FILES && fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={cn(
+                  "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all",
+                  isDragOver
+                    ? "border-primary bg-primary/5 scale-[1.02]"
+                    : "border-muted-foreground/30 hover:border-primary/50",
+                  uploadedFiles.length >= MAX_FILES && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <Upload className={cn("h-7 w-7 mx-auto mb-2", isDragOver ? "text-primary" : "text-muted-foreground/50")} />
+                <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
+                  {isRTL
+                    ? uploadedFiles.length >= MAX_FILES
+                      ? `وصلت الحد الأقصى (${MAX_FILES} ملفات)`
+                      : 'اسحب الصور أو اضغط لاختيارها (اختياري)'
+                    : uploadedFiles.length >= MAX_FILES
+                      ? `Limite atteinte (${MAX_FILES} fichiers)`
+                      : 'Glissez ou cliquez pour ajouter des photos (optionnel)'}
+                </p>
+                <p className={cn("text-xs text-muted-foreground/60 mt-1", isRTL && "font-cairo")}>
+                  {isRTL ? `حتى ${MAX_FILES} ملفات • 10 ميجا/ملف` : `Jusqu'à ${MAX_FILES} fichiers • 10 Mo/fichier`}
+                </p>
+              </div>
             </div>
 
             {/* File Gallery */}
@@ -1856,41 +1957,7 @@ const SmartDevisPage = () => {
               </div>
             </div>
 
-            {/* Pasted text area */}
-            <div className="space-y-2">
-              <label className={cn("text-sm font-medium text-muted-foreground", isRTL && "font-cairo block text-right")}>
-                {isRTL ? 'أو الصق هنا طلب الزبون (إيميل، واتساب، SMS...)' : 'Ou collez ici la demande du client (E-mail, WhatsApp, SMS...)'}
-              </label>
-              <div className="relative">
-                <Textarea
-                  value={pastedText}
-                  onChange={(e) => setPastedText(e.target.value)}
-                  placeholder={isRTL ? 'انسخ طلب الزبون أو اكتب تفاصيل الشغلانة هنا (مثلاً: أندوي، بنتيرة، هامش الربح...)' : 'Collez la demande du client ou décrivez les travaux ici (ex: enduit, peinture, marge...)'}
-                  className={cn("min-h-[100px] resize-none pr-14", isRTL && "text-right font-cairo pl-14 pr-3")}
-                />
-                {/* Voice input button */}
-                {('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) && (
-                  <Button
-                    type="button"
-                    variant={isVoiceListening ? 'destructive' : 'outline'}
-                    size="icon"
-                    className={cn(
-                      "absolute top-2 h-12 w-12 rounded-full shadow-md border-2",
-                      isRTL ? "left-2" : "right-2",
-                      isVoiceListening ? "animate-pulse border-destructive" : "border-blue-500 text-blue-500 hover:bg-blue-500/10"
-                    )}
-                    onClick={isVoiceListening ? stopVoiceInput : startVoiceInput}
-                  >
-                    {isVoiceListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
-                  </Button>
-                )}
-              </div>
-              {isVoiceListening && (
-                <p className={cn("text-xs text-destructive font-medium animate-pulse", isRTL && "text-right font-cairo")}>
-                  {isRTL ? '🎙️ بسمعك... اتكلم دلوقتي' : '🎙️ Écoute en cours... Parlez maintenant'}
-                </p>
-              )}
-            </div>
+            {/* Text area moved to top — see PRIMARY DEMAND block above */}
 
             <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
               <Button variant="outline" onClick={() => { setStep(inputType === 'photo' ? 'photo_guide' : 'select_input'); }} className="flex-1">
@@ -1898,7 +1965,7 @@ const SmartDevisPage = () => {
               </Button>
               <Button
                 onClick={handleAnalyze}
-                disabled={(uploadedFiles.length === 0 && !pastedText.trim()) || isAnalyzing}
+                disabled={!pastedText.trim() || isAnalyzing}
                 className="flex-1 bg-[#1a1a1a] hover:bg-[#333] text-white font-bold"
               >
                 {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}

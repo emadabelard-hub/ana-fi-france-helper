@@ -552,7 +552,17 @@ const SmartDevisPage = () => {
 
   const handleAnalyze = async () => {
     console.log('[SmartDevis] handleAnalyze called, files:', uploadedFiles.length, 'text:', pastedText.trim().length);
-    if (uploadedFiles.length === 0 && !pastedText.trim()) return;
+    // NEW LOGIC: Text demand is the PRIMARY source. Photo is optional secondary context.
+    if (!pastedText.trim()) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? '✍️ اكتب طلبك الأول' : 'Décrivez d\'abord votre demande',
+        description: isRTL
+          ? 'لازم تكتب أو تدكتر اللي عايزه. الصورة لوحدها مش كفاية.'
+          : 'La demande écrite/dictée est obligatoire. La photo seule ne suffit pas.',
+      });
+      return;
+    }
     setIsAnalyzing(true);
     try {
       const scopeInstruction = materialScope === 'main_oeuvre_seule'
@@ -566,21 +576,39 @@ const SmartDevisPage = () => {
         pro: 'GAMME PRO (matériaux de qualité professionnelle, finitions soignées, marques reconnues)',
         luxury: 'GAMME LUXURY (matériaux haut de gamme, finitions luxueuses, marques premium)',
       };
-      const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ CHOISIE: ${tierLabels[qualityTier]}. Adapte TOUTES les recommandations de matériaux, les descriptions techniques et les estimations de prix à cette gamme. Les matériaux proposés doivent correspondre au niveau de qualité choisi.`;
+      const tierInstruction = `\n\n🎯 GAMME DE QUALITÉ CHOISIE: ${tierLabels[qualityTier]}. Adapte TOUTES les recommandations de matériaux, les descriptions techniques et les estimations de prix à cette gamme.`;
 
       const projectTypeInstruction = projectType === 'sous_traitance'
-        ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE. Ce devis est destiné à un donneur d'ordres (entreprise générale), PAS un client final. Applique des tarifs de sous-traitance : prix compétitifs, marges réduites (-15 à -25% par rapport au prix client final). Pas de marge de confort, prix serrés mais rentables.`
-        : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Ce devis est destiné au client final (particulier ou professionnel). Applique les tarifs normaux du marché avec les marges standard de l'artisan.`;
+        ? `\n\n🏗️ TYPE DE PROJET: SOUS-TRAITANCE. Tarifs compétitifs, marges réduites (-15 à -25%).`
+        : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Tarifs normaux marché avec marges standard.`;
 
-      const baseMessage = inputType === 'blueprint'
-        ? "Analyse ce plan/croquis et lis les dimensions exactes indiquées." + scopeInstruction + tierInstruction + projectTypeInstruction
-        : inputType === 'document'
-        ? "Extrais les informations de ce document pour générer un devis." + scopeInstruction + tierInstruction + projectTypeInstruction
-        : "Analyse cette photo de chantier et estime les travaux nécessaires avec +10% de marge de sécurité." + scopeInstruction + tierInstruction + projectTypeInstruction;
+      const hasPhoto = uploadedFiles.length > 0;
+      const userText = pastedText.trim();
 
-      const userMessage = pastedText.trim()
-        ? `${baseMessage}\n\nTexte/demande du client:\n${pastedText.trim()}`
-        : baseMessage;
+      // ═══════════════════════════════════════════════════════════
+      // NOUVELLE LOGIQUE — Demande = SOURCE PRINCIPALE
+      // Photo = contexte visuel SECONDAIRE (dimensions/surfaces)
+      // ═══════════════════════════════════════════════════════════
+      const userMessage =
+`⚠️ RÈGLE ABSOLUE — DEMANDE STRICTEMENT LIMITÉE :
+
+L'utilisateur demande UNIQUEMENT ceci :
+"""
+${userText}
+"""
+
+Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à estimer les dimensions et surfaces mentionnées dans la demande ci-dessus. La photo n\'est PAS une source de travaux supplémentaires.' : ''}
+
+🚫 INTERDIT :
+- N'ajoute AUCUN travail non mentionné explicitement dans la demande.
+- Si la photo montre d'autres problèmes (fissures, humidité, vétusté, etc.) qui ne sont PAS dans la demande → IGNORE-LES totalement.
+- N'invente pas de phases (préparation supports, étanchéité, finitions...) sauf si elles sont citées dans la demande.
+- Pas de "complétion intelligente" du chantier.
+
+✅ OBLIGATOIRE :
+- Génère un devis STRICTEMENT limité à ce qui est demandé dans le texte ci-dessus.
+- Si la demande est courte (1 seul travail), le devis ne doit contenir QUE ce travail.
+- Réponds UNIQUEMENT à la demande textuelle.${scopeInstruction}${tierInstruction}${projectTypeInstruction}`;
 
       const body: any = {
         action: 'analyze_image',

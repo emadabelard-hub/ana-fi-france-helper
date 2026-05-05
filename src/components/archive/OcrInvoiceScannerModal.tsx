@@ -69,13 +69,17 @@ const OcrInvoiceScannerModal = ({ open, onOpenChange, isRTL, userId, onSaved }: 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+    // Reset input value so re-selecting the same file re-triggers onChange
+    e.target.value = '';
     setPhotoFile(f);
     setExtracted(null);
     setUnreadable(false);
+    const isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
     const reader = new FileReader();
     reader.onload = (ev) => {
       const b64 = ev.target?.result as string;
-      setPhotoPreview(b64);
+      // For PDFs we cannot show as <img>; use a placeholder preview state but still send to OCR
+      setPhotoPreview(isPdf ? null : b64);
       runScan(b64);
     };
     reader.readAsDataURL(f);

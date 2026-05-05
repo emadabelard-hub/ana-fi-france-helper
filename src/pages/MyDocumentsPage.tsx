@@ -192,7 +192,14 @@ const MyDocumentsPage = () => {
                 <div className="shrink-0 mt-1">{typeIcon(doc.type)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                    <p className="font-semibold truncate">{doc.numero || doc.nom_fichier}</p>
+                    <p className="font-semibold truncate flex items-center gap-2">
+                      {doc.numero || doc.nom_fichier}
+                      {(doc.status === 'ocr' || doc.nom_fichier?.startsWith('OCR_')) && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                          OCR
+                        </span>
+                      )}
+                    </p>
                     {doc.amount != null && (
                       <span dir="ltr" className="text-sm font-medium tabular-nums">
                         {doc.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €

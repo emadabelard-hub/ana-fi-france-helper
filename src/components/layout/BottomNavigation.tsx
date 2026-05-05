@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Newspaper, User, Shield, HeadphonesIcon, Receipt, Bot, Languages } from 'lucide-react';
+import { Home, Newspaper, User, Shield, HeadphonesIcon, Receipt, Bot, Languages, FolderOpen } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +33,15 @@ const navItems = [
     color: 'text-orange-400',
     activeBg: 'bg-orange-400/15',
     dotColor: 'bg-orange-400',
+  },
+  {
+    path: '/my-documents',
+    icon: FolderOpen,
+    labelAr: 'مستنداتي',
+    labelFr: 'Documents',
+    color: 'text-cyan-400',
+    activeBg: 'bg-cyan-400/15',
+    dotColor: 'bg-cyan-400',
   },
   {
     path: '/ai-assistant',

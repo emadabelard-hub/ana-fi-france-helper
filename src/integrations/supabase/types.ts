@@ -298,6 +298,48 @@ export type Database = {
         }
         Relationships: []
       }
+      documents: {
+        Row: {
+          amount: number | null
+          created_at: string
+          id: string
+          nom_fichier: string
+          numero: string | null
+          pdf_url: string
+          status: string | null
+          storage_path: string
+          taille_kb: number
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          nom_fichier: string
+          numero?: string | null
+          pdf_url: string
+          status?: string | null
+          storage_path: string
+          taille_kb?: number
+          type: string
+          user_id?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          nom_fichier?: string
+          numero?: string | null
+          pdf_url?: string
+          status?: string | null
+          storage_path?: string
+          taille_kb?: number
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       documents_comptables: {
         Row: {
           chantier_id: string | null

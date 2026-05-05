@@ -1,4 +1,5 @@
 import { buildPdfFromContainer, waitForLayout } from '@/lib/pdfEngine';
+import { archivePdf, type ArchiveDocType } from '@/lib/documentArchive';
 
 interface GenerateOfficialPdfBlobParams {
   invoiceElement: HTMLElement | null;
@@ -6,6 +7,13 @@ interface GenerateOfficialPdfBlobParams {
   onBeforeExport?: () => void | Promise<void>;
   onToggleArabic: (value: boolean) => void;
   showArabic: boolean;
+  archive?: {
+    type: ArchiveDocType;
+    numero?: string | null;
+    fileName: string;
+    amount?: number | null;
+    status?: string | null;
+  };
 }
 
 export async function generateOfficialPdfBlob({
@@ -14,6 +22,7 @@ export async function generateOfficialPdfBlob({
   onBeforeExport,
   onToggleArabic,
   showArabic,
+  archive,
 }: GenerateOfficialPdfBlobParams): Promise<Blob | null> {
   if (!invoiceElement) return null;
 
@@ -29,9 +38,16 @@ export async function generateOfficialPdfBlob({
     const container = invoiceElement.closest('.print-area') || invoiceElement.parentElement;
     if (!container) return null;
 
-    return await buildPdfFromContainer(container as HTMLElement, {
+    const blob = await buildPdfFromContainer(container as HTMLElement, {
       footerLabel,
     });
+
+    // Auto-archive in background (non-blocking, fail-silent)
+    if (blob && archive) {
+      archivePdf({ blob, ...archive }).catch((e) => console.warn('archive failed:', e));
+    }
+
+    return blob;
   } catch (error) {
     console.error('PDF generation error:', error);
     return null;

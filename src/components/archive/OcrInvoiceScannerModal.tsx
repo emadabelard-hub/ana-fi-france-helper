@@ -206,40 +206,67 @@ const OcrInvoiceScannerModal = ({ open, onOpenChange, isRTL, userId, onSaved }: 
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Camera input — forces capture on mobile */}
           <input
-            ref={fileInputRef}
+            ref={cameraInputRef}
             type="file"
             accept="image/*"
             capture="environment"
             className="hidden"
             onChange={handleFile}
           />
+          {/* Gallery / files input — JPG, PNG, HEIC, PDF (no capture attr) */}
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*,.heic,.heif,application/pdf"
+            className="hidden"
+            onChange={handleFile}
+          />
 
-          {!photoPreview ? (
-            <Button
-              variant="outline"
-              className="w-full h-32 border-dashed border-accent/40 hover:border-accent hover:bg-accent/5 flex flex-col gap-2"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Camera className="h-8 w-8 text-accent/70" />
-              <span className={cn('text-sm font-semibold', isRTL && 'font-cairo')}>
-                {isRTL ? 'التقط صورة الفاتورة' : 'Photographier la facture'}
-              </span>
-              <span className={cn('text-xs text-muted-foreground flex items-center gap-1', isRTL && 'font-cairo')}>
-                <Upload className="h-3 w-3" />
-                {isRTL ? 'أو اختر من المعرض' : 'ou choisir depuis la galerie'}
-              </span>
-            </Button>
+          {!photoPreview && !photoFile ? (
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                className="h-32 border-dashed border-accent/40 hover:border-accent hover:bg-accent/5 flex flex-col gap-2"
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                <Camera className="h-8 w-8 text-accent/70" />
+                <span className={cn('text-sm font-semibold', isRTL && 'font-cairo')}>
+                  {isRTL ? 'كاميرا' : 'Caméra'}
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-32 border-dashed border-accent/40 hover:border-accent hover:bg-accent/5 flex flex-col gap-2"
+                onClick={() => galleryInputRef.current?.click()}
+              >
+                <Upload className="h-8 w-8 text-accent/70" />
+                <span className={cn('text-sm font-semibold', isRTL && 'font-cairo')}>
+                  {isRTL ? 'من المعرض / ملف' : 'Galerie / Fichier'}
+                </span>
+                <span className={cn('text-[10px] text-muted-foreground', isRTL && 'font-cairo')}>
+                  JPG · PNG · HEIC · PDF
+                </span>
+              </Button>
+            </div>
           ) : (
             <div className="relative rounded-xl overflow-hidden border border-border">
-              <img src={photoPreview} alt="facture" className="w-full max-h-44 object-cover" />
+              {photoPreview ? (
+                <img src={photoPreview} alt="facture" className="w-full max-h-44 object-cover" />
+              ) : (
+                <div className="w-full h-32 flex items-center justify-center bg-muted/30 text-sm text-muted-foreground gap-2">
+                  <Upload className="h-5 w-5" />
+                  {photoFile?.name || 'PDF'}
+                </div>
+              )}
               <Button
                 size="sm" variant="secondary"
                 className="absolute bottom-2 right-2 gap-1.5"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => galleryInputRef.current?.click()}
                 disabled={scanning || saving}
               >
-                <Camera className="h-3.5 w-3.5" />
+                <Upload className="h-3.5 w-3.5" />
                 {isRTL ? 'تغيير' : 'Changer'}
               </Button>
             </div>

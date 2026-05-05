@@ -35,6 +35,15 @@ const navItems = [
     dotColor: 'bg-orange-400',
   },
   {
+    path: '/my-documents',
+    icon: FolderOpen,
+    labelAr: 'مستنداتي',
+    labelFr: 'Documents',
+    color: 'text-cyan-400',
+    activeBg: 'bg-cyan-400/15',
+    dotColor: 'bg-cyan-400',
+  },
+  {
     path: '/ai-assistant',
     icon: Bot,
     labelAr: 'مساعد',

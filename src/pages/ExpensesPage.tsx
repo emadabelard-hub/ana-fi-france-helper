@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
+import OcrInvoiceScannerModal from '@/components/archive/OcrInvoiceScannerModal';
 import UnpaidInvoicesBlock from '@/components/archive/UnpaidInvoicesBlock';
 import SecurityBadge from '@/components/shared/SecurityBadge';
 import { generateProfessionalCSV, generateAccountingCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
@@ -52,6 +53,7 @@ const ExpensesPage = () => {
 
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showOcrModal, setShowOcrModal] = useState(false);
   const [periodFilter, setPeriodFilter] = useState('all');
   const [showAccountingMenu, setShowAccountingMenu] = useState(false);
 
@@ -740,14 +742,25 @@ const ExpensesPage = () => {
         <h1 className={cn('text-xl font-bold text-foreground', isRTL && 'font-cairo')}>
           {isRTL ? '💰 إدارة الحسابات' : '💰 Gestion Comptable'}
         </h1>
-        <Button
-          size="sm"
-          className="gap-1 bg-accent text-accent-foreground hover:bg-accent/90"
-          onClick={() => setShowAddModal(true)}
-        >
-          <Plus className="h-4 w-4" />
-          {isRTL ? 'إضافة' : 'Ajouter'}
-        </Button>
+        <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1 border-accent/40 text-accent hover:bg-accent/10"
+            onClick={() => setShowOcrModal(true)}
+          >
+            <Receipt className="h-4 w-4" />
+            {isRTL ? '📷 مسح فاتورة' : 'Scanner'}
+          </Button>
+          <Button
+            size="sm"
+            className="gap-1 bg-accent text-accent-foreground hover:bg-accent/90"
+            onClick={() => setShowAddModal(true)}
+          >
+            <Plus className="h-4 w-4" />
+            {isRTL ? 'إضافة' : 'Ajouter'}
+          </Button>
+        </div>
       </div>
 
       {/* Comptabilité submenu */}
@@ -1155,6 +1168,14 @@ const ExpensesPage = () => {
         isRTL={isRTL}
         userId={user.id}
         onExpenseAdded={fetchAll}
+      />
+
+      <OcrInvoiceScannerModal
+        open={showOcrModal}
+        onOpenChange={setShowOcrModal}
+        isRTL={isRTL}
+        userId={user.id}
+        onSaved={fetchAll}
       />
     </div>
   );

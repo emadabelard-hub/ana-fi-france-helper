@@ -136,6 +136,7 @@ const AppRoutes = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/verify/:id" element={<VerifyDocumentPage />} />
             <Route path="/translator" element={<TranslatorPage />} />
+            <Route path="/my-documents" element={<MyDocumentsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

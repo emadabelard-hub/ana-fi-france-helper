@@ -46,7 +46,8 @@ const toIsoDate = (s: string | null): string => {
 
 const OcrInvoiceScannerModal = ({ open, onOpenChange, isRTL, userId, onSaved }: OcrInvoiceScannerModalProps) => {
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -68,13 +69,17 @@ const OcrInvoiceScannerModal = ({ open, onOpenChange, isRTL, userId, onSaved }: 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+    // Reset input value so re-selecting the same file re-triggers onChange
+    e.target.value = '';
     setPhotoFile(f);
     setExtracted(null);
     setUnreadable(false);
+    const isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
     const reader = new FileReader();
     reader.onload = (ev) => {
       const b64 = ev.target?.result as string;
-      setPhotoPreview(b64);
+      // For PDFs we cannot show as <img>; use a placeholder preview state but still send to OCR
+      setPhotoPreview(isPdf ? null : b64);
       runScan(b64);
     };
     reader.readAsDataURL(f);
@@ -201,40 +206,67 @@ const OcrInvoiceScannerModal = ({ open, onOpenChange, isRTL, userId, onSaved }: 
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Camera input — forces capture on mobile */}
           <input
-            ref={fileInputRef}
+            ref={cameraInputRef}
             type="file"
             accept="image/*"
             capture="environment"
             className="hidden"
             onChange={handleFile}
           />
+          {/* Gallery / files input — JPG, PNG, HEIC, PDF (no capture attr) */}
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*,.heic,.heif,application/pdf"
+            className="hidden"
+            onChange={handleFile}
+          />
 
-          {!photoPreview ? (
-            <Button
-              variant="outline"
-              className="w-full h-32 border-dashed border-accent/40 hover:border-accent hover:bg-accent/5 flex flex-col gap-2"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Camera className="h-8 w-8 text-accent/70" />
-              <span className={cn('text-sm font-semibold', isRTL && 'font-cairo')}>
-                {isRTL ? 'التقط صورة الفاتورة' : 'Photographier la facture'}
-              </span>
-              <span className={cn('text-xs text-muted-foreground flex items-center gap-1', isRTL && 'font-cairo')}>
-                <Upload className="h-3 w-3" />
-                {isRTL ? 'أو اختر من المعرض' : 'ou choisir depuis la galerie'}
-              </span>
-            </Button>
+          {!photoPreview && !photoFile ? (
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                className="h-32 border-dashed border-accent/40 hover:border-accent hover:bg-accent/5 flex flex-col gap-2"
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                <Camera className="h-8 w-8 text-accent/70" />
+                <span className={cn('text-sm font-semibold', isRTL && 'font-cairo')}>
+                  {isRTL ? 'كاميرا' : 'Caméra'}
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-32 border-dashed border-accent/40 hover:border-accent hover:bg-accent/5 flex flex-col gap-2"
+                onClick={() => galleryInputRef.current?.click()}
+              >
+                <Upload className="h-8 w-8 text-accent/70" />
+                <span className={cn('text-sm font-semibold', isRTL && 'font-cairo')}>
+                  {isRTL ? 'من المعرض / ملف' : 'Galerie / Fichier'}
+                </span>
+                <span className={cn('text-[10px] text-muted-foreground', isRTL && 'font-cairo')}>
+                  JPG · PNG · HEIC · PDF
+                </span>
+              </Button>
+            </div>
           ) : (
             <div className="relative rounded-xl overflow-hidden border border-border">
-              <img src={photoPreview} alt="facture" className="w-full max-h-44 object-cover" />
+              {photoPreview ? (
+                <img src={photoPreview} alt="facture" className="w-full max-h-44 object-cover" />
+              ) : (
+                <div className="w-full h-32 flex items-center justify-center bg-muted/30 text-sm text-muted-foreground gap-2">
+                  <Upload className="h-5 w-5" />
+                  {photoFile?.name || 'PDF'}
+                </div>
+              )}
               <Button
                 size="sm" variant="secondary"
                 className="absolute bottom-2 right-2 gap-1.5"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => galleryInputRef.current?.click()}
                 disabled={scanning || saving}
               >
-                <Camera className="h-3.5 w-3.5" />
+                <Upload className="h-3.5 w-3.5" />
                 {isRTL ? 'تغيير' : 'Changer'}
               </Button>
             </div>

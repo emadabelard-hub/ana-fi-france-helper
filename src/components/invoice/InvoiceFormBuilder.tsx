@@ -1765,6 +1765,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         onBeforeExport: prepareFreshAssetsForExport,
         onToggleArabic: setShowArabic,
         showArabic,
+        archive: {
+          type: documentType === 'facture' ? 'facture' : 'devis',
+          numero: data.number,
+          fileName: `${data.number}.pdf`,
+          amount: data.total,
+          status: 'finalized',
+        },
       });
 
       if (!pdfBlob) {

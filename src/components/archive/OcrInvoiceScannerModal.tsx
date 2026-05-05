@@ -46,7 +46,8 @@ const toIsoDate = (s: string | null): string => {
 
 const OcrInvoiceScannerModal = ({ open, onOpenChange, isRTL, userId, onSaved }: OcrInvoiceScannerModalProps) => {
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);

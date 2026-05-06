@@ -95,15 +95,12 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
   }, [allDocuments, devisDoc.id]);
 
   const stats = useMemo(() => {
-    let invoiced = 0;
+    const invoicedIds = Object.keys(milestoneInfoMap);
     let paid = 0;
-    for (const m of milestones) {
-      const status = milestoneInfoMap[m.id]?.status || getStoredMilestoneStatus(m);
-      if (status === 'en_attente') continue;
-      invoiced += 1;
-      if (status === 'payee') paid += 1;
+    for (const id of invoicedIds) {
+      if (milestoneInfoMap[id]?.status === 'payee') paid += 1;
     }
-    return { invoiced, paid, total: milestones.length };
+    return { invoiced: invoicedIds.length, paid, total: milestones.length };
   }, [milestones, milestoneInfoMap]);
 
   if (milestones.length === 0) return null;

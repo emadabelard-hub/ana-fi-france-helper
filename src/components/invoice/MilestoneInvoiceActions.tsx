@@ -63,6 +63,13 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
 
   const milestones: PaymentMilestone[] = devisDoc.document_data?.paymentMilestones || [];
 
+  const getStoredMilestoneStatus = (milestone: PaymentMilestone): MilestoneStatus => {
+    const rawStatus = String((milestone as any).statut || (milestone as any).status || '').toLowerCase();
+    if (rawStatus === 'facturée' || rawStatus === 'facturee') return 'facturee';
+    if (rawStatus === 'payée' || rawStatus === 'payee') return 'payee';
+    return 'en_attente';
+  };
+
   // Build a map: milestoneId → { invoiceId, status }
   // status: 'en_attente' (no active invoice), 'facturee' (invoice exists, unpaid), 'payee' (invoice paid)
   // Cancelled invoices are ignored → milestone returns to 'en_attente'.
@@ -187,7 +194,7 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
               : milestone.amount || 0;
           const label = getMilestoneLabel(index, milestones.length);
           const info = milestoneInfoMap[milestone.id];
-          const status: MilestoneStatus = info?.status || 'en_attente';
+          const status: MilestoneStatus = info?.status || getStoredMilestoneStatus(milestone);
           const isSelected = selectedId === milestone.id;
           const selectable = status === 'en_attente';
 

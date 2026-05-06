@@ -1764,7 +1764,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         ...(selectedChantierId && { linkedChantierId: selectedChantierId }),
         ...(documentType === 'facture' && isOfficialDocumentNumber(sourceDevisNumber, 'devis') && {
           sourceDevisNumber,
-          ...(prefillData?.sourceDocumentId && { sourceDevisId: prefillData.sourceDocumentId }),
+        }),
+        // Always store sourceDevisId when present (independent of source number format),
+        // so milestone invoices can be matched to the correct devis.
+        ...(documentType === 'facture' && prefillData?.sourceDocumentId && {
+          sourceDevisId: prefillData.sourceDocumentId,
         }),
         // Milestone invoice metadata (for installment tracking)
         ...(prefillData?.source === 'milestone_invoice' && prefillData?.milestoneId && {

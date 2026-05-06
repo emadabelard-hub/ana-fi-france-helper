@@ -764,17 +764,48 @@ const DocumentsListPage = () => {
           </div>
         )}
 
-        {/* Milestone schedule badge for devis */}
-        {isDevis && doc.document_data?.paymentMilestones?.length > 0 && (
-          <div className={cn("mt-3 flex items-center gap-2", isRTL && "flex-row-reverse")}>
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30">
-              📋 {isRTL ? `${doc.document_data.paymentMilestones.length} أقساط` : `${doc.document_data.paymentMilestones.length} échéances`}
-            </span>
-            <span className="text-[10px] text-muted-foreground">
-              {isRTL ? 'اضغط لإنشاء الفواتير' : 'Cliquez pour facturer'}
-            </span>
-          </div>
-        )}
+        {/* Milestone schedule badge for devis — live progress X/Y facturées */}
+        {isDevis && doc.document_data?.paymentMilestones?.length > 0 && (() => {
+          const milestones = doc.document_data.paymentMilestones as Array<{ id: string }>;
+          const total = milestones.length;
+          let invoiced = 0;
+          let paid = 0;
+          for (const m of milestones) {
+            const linked = documents.find((d: any) =>
+              d.document_type === 'facture' &&
+              d.status !== 'cancelled' &&
+              d.document_data?.milestoneId === m.id &&
+              d.document_data?.sourceDevisId === doc.id
+            );
+            if (linked) {
+              invoiced += 1;
+              if ((linked as any).payment_status === 'paid') paid += 1;
+            }
+          }
+          const allPaid = paid === total;
+          const allInvoiced = invoiced === total;
+          const remaining = total - invoiced;
+          return (
+            <div className={cn("mt-3 flex items-center gap-2 flex-wrap", isRTL && "flex-row-reverse")}>
+              <span className={cn(
+                "inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border",
+                allPaid
+                  ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
+                  : allInvoiced
+                    ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                    : "bg-amber-500/15 text-amber-500 border-amber-500/30",
+                isRTL && "font-cairo"
+              )}>
+                {allPaid
+                  ? (isRTL ? `✅ ${total}/${total} مدفوعة` : `✅ ${total}/${total} soldé`)
+                  : (isRTL
+                      ? `📋 ${invoiced}/${total} مفوترة — ${remaining} باقي${remaining > 1 ? 'ة' : ''}`
+                      : `📋 ${invoiced}/${total} échéance${total > 1 ? 's' : ''} facturée${invoiced > 1 ? 's' : ''} — ${remaining} restante${remaining > 1 ? 's' : ''}`)
+                }
+              </span>
+            </div>
+          );
+        })()}
 
         {/* Cancelled banner */}
         {doc.status === 'cancelled' && (

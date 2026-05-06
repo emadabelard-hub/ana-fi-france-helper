@@ -63,12 +63,12 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
 
   const milestones: PaymentMilestone[] = devisDoc.document_data?.paymentMilestones || [];
 
-  const getStoredMilestoneStatus = (milestone: PaymentMilestone): MilestoneStatus => {
-    const milestoneWithStatus = milestone as PaymentMilestone & { statut?: string; status?: string };
-    const rawStatus = String(milestoneWithStatus.statut || milestoneWithStatus.status || '').toLowerCase();
-    if (rawStatus === 'facturée' || rawStatus === 'facturee') return 'facturee';
-    if (rawStatus === 'payée' || rawStatus === 'payee') return 'payee';
-    return 'en_attente';
+  // Per-milestone invoiced check — single source of truth is milestoneInfoMap
+  // (built from actual invoice documents matching this devis + milestoneId).
+  // No fallback on milestone.statut to avoid global contamination.
+  const isMilestoneInvoiced = (milestoneId: string): boolean => {
+    const s = milestoneInfoMap[milestoneId]?.status;
+    return s === 'facturee' || s === 'payee';
   };
 
   // Build a map: milestoneId → { invoiceId, status }

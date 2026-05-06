@@ -1722,16 +1722,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         }
       }
 
-      if (isMilestoneInvoiceFlow && !isOfficialDocumentNumber(sourceDevisNumber, 'devis')) {
-        toast({
-          variant: 'destructive',
-          title: isRTL ? 'خطأ في الربط' : 'Erreur de liaison',
-          description: isRTL
-            ? 'رقم الدوفي المصدر غير صالح. أعد فتح إنشاء الفاتورة من الدوفي المرتبط.'
-            : 'Le numéro du devis source est invalide. Relancez la facture depuis le devis lié.',
-        });
-        return;
-      }
+      // Note: removed isOfficialDocumentNumber guard for milestone flow.
+      // The milestoneId-based check above (lines ~1664) is the single source of truth.
 
       let nextNumber = docNumber;
       if (!isOfficialDocumentNumber(nextNumber, documentType)) {

@@ -95,15 +95,12 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
   }, [allDocuments, devisDoc.id]);
 
   const stats = useMemo(() => {
-    let invoiced = 0;
+    const invoicedIds = Object.keys(milestoneInfoMap);
     let paid = 0;
-    for (const m of milestones) {
-      const status = milestoneInfoMap[m.id]?.status || getStoredMilestoneStatus(m);
-      if (status === 'en_attente') continue;
-      invoiced += 1;
-      if (status === 'payee') paid += 1;
+    for (const id of invoicedIds) {
+      if (milestoneInfoMap[id]?.status === 'payee') paid += 1;
     }
-    return { invoiced, paid, total: milestones.length };
+    return { invoiced: invoicedIds.length, paid, total: milestones.length };
   }, [milestones, milestoneInfoMap]);
 
   if (milestones.length === 0) return null;
@@ -122,16 +119,7 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
     if (!user || !selectedMilestone) return;
     const index = milestones.findIndex((m) => m.id === selectedMilestone.id);
 
-    if (!isOfficialDocumentNumber(devisDoc.document_number, 'devis')) {
-      toast({
-        variant: 'destructive',
-        title: isRTL ? 'خطأ في الربط' : 'Erreur de liaison',
-        description: isRTL
-          ? 'رقم الدوفي غير صالح. افتح الدوفي المحفوظ من المستندات.'
-          : 'Le numéro du devis source est invalide.',
-      });
-      return;
-    }
+    // Guard removed: per-milestone check (via milestoneId in DB) is the single source of truth.
 
     try {
       const prefill = buildMilestoneInvoicePrefill({

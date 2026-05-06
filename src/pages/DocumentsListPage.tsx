@@ -193,6 +193,21 @@ const DocumentsListPage = () => {
 
   useEffect(() => { fetchDocuments(); }, [user, authLoading]);
 
+  // Refresh documents when the tab regains focus (e.g. after creating a milestone invoice
+  // and navigating back). This ensures the milestone status badges update immediately.
+  useEffect(() => {
+    if (!user) return;
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible') fetchDocuments();
+    };
+    window.addEventListener('focus', fetchDocuments);
+    document.addEventListener('visibilitychange', handleVisible);
+    return () => {
+      window.removeEventListener('focus', fetchDocuments);
+      document.removeEventListener('visibilitychange', handleVisible);
+    };
+  }, [user]);
+
   useEffect(() => {
     let cancelled = false;
 

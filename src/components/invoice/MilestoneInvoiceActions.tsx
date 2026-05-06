@@ -122,16 +122,7 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
     if (!user || !selectedMilestone) return;
     const index = milestones.findIndex((m) => m.id === selectedMilestone.id);
 
-    if (!isOfficialDocumentNumber(devisDoc.document_number, 'devis')) {
-      toast({
-        variant: 'destructive',
-        title: isRTL ? 'خطأ في الربط' : 'Erreur de liaison',
-        description: isRTL
-          ? 'رقم الدوفي غير صالح. افتح الدوفي المحفوظ من المستندات.'
-          : 'Le numéro du devis source est invalide.',
-      });
-      return;
-    }
+    // Guard removed: per-milestone check (via milestoneId in DB) is the single source of truth.
 
     try {
       const prefill = buildMilestoneInvoicePrefill({

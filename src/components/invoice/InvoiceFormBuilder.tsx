@@ -1661,6 +1661,31 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         prefillData?.source === 'devis_conversion' &&
         Boolean(prefillData?.sourceDocumentId);
 
+      if (isMilestoneInvoiceFlow && prefillData?.sourceDocumentId && prefillData?.milestoneId) {
+        const { data: existingMilestoneInvoice, error: milestoneCheckError } = await (supabase
+          .from('documents_comptables') as any)
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('document_type', 'facture')
+          .eq('document_data->>sourceDevisId', prefillData.sourceDocumentId)
+          .eq('document_data->>milestoneId', prefillData.milestoneId)
+          .neq('status', 'cancelled')
+          .maybeSingle();
+
+        if (milestoneCheckError) throw milestoneCheckError;
+
+        if (existingMilestoneInvoice) {
+          toast({
+            variant: 'destructive',
+            title: isRTL ? 'تم إنشاء الفاتورة' : 'Échéance déjà facturée',
+            description: isRTL
+              ? 'تم إنشاء فاتورة بالفعل لهذا القسط فقط.'
+              : 'Une facture existe déjà pour cette échéance.',
+          });
+          return;
+        }
+      }
+
       if (isQuoteConversionFlow) {
         const { data: sourceDevis, error: sourceCheckError } = await (supabase
           .from('documents_comptables') as any)

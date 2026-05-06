@@ -63,12 +63,12 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
 
   const milestones: PaymentMilestone[] = devisDoc.document_data?.paymentMilestones || [];
 
-  const getStoredMilestoneStatus = (milestone: PaymentMilestone): MilestoneStatus => {
-    const milestoneWithStatus = milestone as PaymentMilestone & { statut?: string; status?: string };
-    const rawStatus = String(milestoneWithStatus.statut || milestoneWithStatus.status || '').toLowerCase();
-    if (rawStatus === 'facturée' || rawStatus === 'facturee') return 'facturee';
-    if (rawStatus === 'payée' || rawStatus === 'payee') return 'payee';
-    return 'en_attente';
+  // Per-milestone invoiced check — single source of truth is milestoneInfoMap
+  // (built from actual invoice documents matching this devis + milestoneId).
+  // No fallback on milestone.statut to avoid global contamination.
+  const isMilestoneInvoiced = (milestoneId: string): boolean => {
+    const s = milestoneInfoMap[milestoneId]?.status;
+    return s === 'facturee' || s === 'payee';
   };
 
   // Build a map: milestoneId → { invoiceId, status }
@@ -110,8 +110,8 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
 
   const selectedMilestone = milestones.find((m) => m.id === selectedId) || null;
   const selectedInfo = selectedId ? milestoneInfoMap[selectedId] : null;
-  const selectedStatus = selectedMilestone
-    ? selectedInfo?.status || getStoredMilestoneStatus(selectedMilestone)
+  const selectedStatus: MilestoneStatus | null = selectedMilestone
+    ? (selectedInfo?.status ?? 'en_attente')
     : null;
   const canCreate = selectedStatus === 'en_attente';
 
@@ -186,7 +186,7 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
               : milestone.amount || 0;
           const label = getMilestoneLabel(index, milestones.length);
           const info = milestoneInfoMap[milestone.id];
-          const status: MilestoneStatus = info?.status || getStoredMilestoneStatus(milestone);
+          const status: MilestoneStatus = info?.status ?? 'en_attente';
           const isSelected = selectedId === milestone.id;
           const selectable = status === 'en_attente';
 

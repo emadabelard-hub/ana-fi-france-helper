@@ -63,6 +63,14 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
 
   const milestones: PaymentMilestone[] = devisDoc.document_data?.paymentMilestones || [];
 
+  const getStoredMilestoneStatus = (milestone: PaymentMilestone): MilestoneStatus => {
+    const milestoneWithStatus = milestone as PaymentMilestone & { statut?: string; status?: string };
+    const rawStatus = String(milestoneWithStatus.statut || milestoneWithStatus.status || '').toLowerCase();
+    if (rawStatus === 'facturée' || rawStatus === 'facturee') return 'facturee';
+    if (rawStatus === 'payée' || rawStatus === 'payee') return 'payee';
+    return 'en_attente';
+  };
+
   // Build a map: milestoneId → { invoiceId, status }
   // status: 'en_attente' (no active invoice), 'facturee' (invoice exists, unpaid), 'payee' (invoice paid)
   // Cancelled invoices are ignored → milestone returns to 'en_attente'.
@@ -90,10 +98,10 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
     let invoiced = 0;
     let paid = 0;
     for (const m of milestones) {
-      const info = milestoneInfoMap[m.id];
-      if (!info) continue;
+      const status = milestoneInfoMap[m.id]?.status || getStoredMilestoneStatus(m);
+      if (status === 'en_attente') continue;
       invoiced += 1;
-      if (info.status === 'payee') paid += 1;
+      if (status === 'payee') paid += 1;
     }
     return { invoiced, paid, total: milestones.length };
   }, [milestones, milestoneInfoMap]);
@@ -105,7 +113,10 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
 
   const selectedMilestone = milestones.find((m) => m.id === selectedId) || null;
   const selectedInfo = selectedId ? milestoneInfoMap[selectedId] : null;
-  const canCreate = !!selectedMilestone && (!selectedInfo || selectedInfo.status === 'en_attente');
+  const selectedStatus = selectedMilestone
+    ? selectedInfo?.status || getStoredMilestoneStatus(selectedMilestone)
+    : null;
+  const canCreate = selectedStatus === 'en_attente';
 
   const handleCreate = async () => {
     if (!user || !selectedMilestone) return;
@@ -187,7 +198,7 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
               : milestone.amount || 0;
           const label = getMilestoneLabel(index, milestones.length);
           const info = milestoneInfoMap[milestone.id];
-          const status: MilestoneStatus = info?.status || 'en_attente';
+          const status: MilestoneStatus = info?.status || getStoredMilestoneStatus(milestone);
           const isSelected = selectedId === milestone.id;
           const selectable = status === 'en_attente';
 

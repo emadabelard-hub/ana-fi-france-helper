@@ -186,7 +186,7 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
               : milestone.amount || 0;
           const label = getMilestoneLabel(index, milestones.length);
           const info = milestoneInfoMap[milestone.id];
-          const status: MilestoneStatus = info?.status || getStoredMilestoneStatus(milestone);
+          const status: MilestoneStatus = info?.status ?? 'en_attente';
           const isSelected = selectedId === milestone.id;
           const selectable = status === 'en_attente';
 

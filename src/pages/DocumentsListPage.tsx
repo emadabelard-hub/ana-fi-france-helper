@@ -169,7 +169,7 @@ const DocumentsListPage = () => {
       .from('documents_comptables') as any)
       .select('id, document_type, document_number, client_name, client_address, subtotal_ht, tva_amount, total_ttc, status, created_at, nature_operation, document_data, work_site_address, sent_to_accountant_at, payment_status, converted_to_invoice, linked_invoice_id')
       .eq('user_id', user.id)
-      .neq('status', 'draft')
+      .not('status', 'in', '("draft","cancelled")')
       .order('created_at', { ascending: false });
 
     const expensesQuery = (supabase

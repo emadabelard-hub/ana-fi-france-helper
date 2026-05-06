@@ -228,9 +228,13 @@ const InvoiceCreatorPage = () => {
       const parsed = JSON.parse(raw);
       console.log(`READ ${storageKey}`, parsed);
       if (parsed?.items?.length > 0) {
-        if (isMilestonePrefillFlow) {
-          sessionStorage.removeItem(storageKey);
-        }
+        // NOTE: Do NOT remove sessionStorage here. The useMemo can run multiple
+        // times (StrictMode, re-mount due to key changes). Removing on first read
+        // makes subsequent reads return null, which causes the form to fall back
+        // to draft restoration with stale full-quote items — corrupting the
+        // milestone invoice (DB record gets the full quote total instead of
+        // the milestone amount). The session key is overwritten by the next
+        // milestone creation and cleared by the form after successful save.
         console.log(`[InvoiceCreator] ✅ Prefill from ${storageKey}:`, parsed.items.length, 'items');
         return parsed;
       }

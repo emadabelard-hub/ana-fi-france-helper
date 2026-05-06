@@ -1877,6 +1877,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       // Clear drafts after successful save to prevent ghost state on next new document
       clearDraft();
       clearCurrentDocument();
+      // Clear prefill session keys after a successful save so the next milestone
+      // creation starts from fresh data (and never falls back to stale full-quote
+      // items if the user navigates back into the creator).
+      try {
+        sessionStorage.removeItem('milestoneInvoiceData');
+        sessionStorage.removeItem('quoteToInvoiceData');
+      } catch {}
 
       toast({
         title: isRTL ? '✅ تم الحفظ' : '✅ Sauvegardé',

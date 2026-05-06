@@ -68,9 +68,10 @@ export function buildMilestoneInvoicePrefill({
   const displayedShare = `${formatPercent(milestoneSharePercent)}%`;
   const selectedMilestoneName = milestone.label?.trim() || milestoneLabel.fr;
 
-  // Désignation = description de l'échéance + pourcentage + numéro du devis
+  // Désignation = "Échéance N/Total — Réf. devis D-XXXX" + libellé + pourcentage
   // (jamais les lignes de désignation du devis source)
-  const designationFr = `${selectedMilestoneName} – ${displayedShare} selon devis n°${quote.documentNumber}`;
+  const echeanceTag = `Échéance ${milestoneIndex + 1}/${totalMilestones} — Réf. devis ${quote.documentNumber}`;
+  const designationFr = `${echeanceTag} — ${selectedMilestoneName} (${displayedShare})`;
   const designationAr = '';
   const formNatureOperation = docData.natureOperation === 'service'
     || docData.natureOperation === 'goods'

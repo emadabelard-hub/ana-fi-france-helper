@@ -110,8 +110,8 @@ const MilestoneInvoiceActions = ({ devisDoc, allDocuments, onViewInvoice }: Mile
 
   const selectedMilestone = milestones.find((m) => m.id === selectedId) || null;
   const selectedInfo = selectedId ? milestoneInfoMap[selectedId] : null;
-  const selectedStatus = selectedMilestone
-    ? selectedInfo?.status || getStoredMilestoneStatus(selectedMilestone)
+  const selectedStatus: MilestoneStatus | null = selectedMilestone
+    ? (selectedInfo?.status ?? 'en_attente')
     : null;
   const canCreate = selectedStatus === 'en_attente';
 

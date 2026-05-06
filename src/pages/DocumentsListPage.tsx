@@ -193,6 +193,14 @@ const DocumentsListPage = () => {
 
   useEffect(() => { fetchDocuments(); }, [user, authLoading]);
 
+  // Refetch on every navigation back to this route (e.g. returning from invoice-creator
+  // after creating a milestone invoice). Ensures milestone statuses update immediately.
+  useEffect(() => {
+    if (!user) return;
+    fetchDocuments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.key]);
+
   // Refresh documents when the tab regains focus (e.g. after creating a milestone invoice
   // and navigating back). This ensures the milestone status badges update immediately.
   useEffect(() => {

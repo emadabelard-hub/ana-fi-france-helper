@@ -1479,19 +1479,19 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
   INTERDIT: peinture piscine, pose liner
 
 🟤 SI chantierType = "facade":
-  CODES AUTORISÉS: FAC01-FAC06, CHA01, CHA02, CHA04
+  CODES AUTORISÉS: FAC01-FAC06 uniquement (CHA01/02/04 SEULEMENT si explicitement demandés)
   CODES INTERDITS: PEI01-PEI04, PIS01-PIS09
 
 🟢 SI chantierType = "peinture" ou "renovation" ou "mur":
-  CODES AUTORISÉS: PEI01-PEI04, CHA01, CHA02, CHA04
+  CODES AUTORISÉS: PEI01-PEI04 uniquement (CHA01/02/04 SEULEMENT si explicitement demandés)
   CODES INTERDITS: PIS01-PIS09, FAC01-FAC06
 
 🔶 SI chantierType = "toiture":
-  CODES AUTORISÉS: TOI01-TOI04, CHA01, CHA02, CHA04
+  CODES AUTORISÉS: TOI01-TOI04 uniquement (CHA01/02/04 SEULEMENT si explicitement demandés)
   CODES INTERDITS: PEI01-PEI04, PIS01-PIS09, FAC01-FAC06
 
 🔷 SI chantierType = "carrelage":
-  CODES AUTORISÉS: CR001-CR003, CHA01, CHA02, CHA04
+  CODES AUTORISÉS: CR001-CR003 uniquement (CHA01/02/04 SEULEMENT si explicitement demandés)
 
 🛁 SI chantierType = "salle_de_bain" ou "salle de bain" ou "bathroom":
   CODES AUTORISÉS: CR001-CR003 (carrelage sol/mur), PLB01-PLB09 (plomberie/sanitaire), 

@@ -891,7 +891,7 @@ const DocumentsListPage = () => {
                       isRTL && "font-cairo flex-row-reverse"
                     )}
                   >
-                    <span className="truncate">
+                    <span className="truncate min-w-0 flex-1 text-left">
                       🧾 {isRTL ? `قسط ${idx + 1}/${milestones.length} — ${labelText} ${sharePercent}% — ${formatCurrency(amount)}` : `Échéance ${idx + 1}/${milestones.length} — ${labelText} ${sharePercent}% — ${formatCurrency(amount)}`}
                     </span>
                     <span className="shrink-0 text-xs">

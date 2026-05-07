@@ -60,6 +60,13 @@ const AIAssistantPage = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Live-sync dictation transcript into input field during recording
+  useEffect(() => {
+    if (dictation.isRecording && dictation.transcript) {
+      setInput(dictation.transcript);
+    }
+  }, [dictation.transcript, dictation.isRecording]);
+
   const handleOnboardingSubmit = () => {
     const name = onboardingName.trim();
     if (!name) return;

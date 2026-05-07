@@ -136,10 +136,37 @@ const MyDocumentsPage = () => {
     });
   }, [docs, typeFilter, periodStart]);
 
-  const handleOpen = (doc: UnifiedDoc) => {
-    if (doc.source === 'comptable') {
-      navigate(`/pro/documents`);
+  const handleOpen = async (doc: UnifiedDoc) => {
+    if (doc.source !== 'comptable') return;
+    try {
+      const { data } = await supabase
+        .from('documents')
+        .select('pdf_url, storage_path')
+        .eq('numero', doc.document_number)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let pdfUrl: string | null = (data as any)?.pdf_url ?? null;
+      const storagePath: string | null = (data as any)?.storage_path ?? null;
+
+      // Refresh signed URL if we have a storage path (signed URLs expire)
+      if (storagePath) {
+        const { data: signed } = await supabase.storage
+          .from('documents')
+          .createSignedUrl(storagePath, 60 * 60);
+        if (signed?.signedUrl) pdfUrl = signed.signedUrl;
+      }
+
+      if (pdfUrl) {
+        window.open(pdfUrl, '_blank');
+        return;
+      }
+    } catch (err) {
+      console.warn('[MyDocs] open pdf failed:', err);
     }
+    // Fallback: navigate to documents list preview
+    navigate(`/pro/documents`);
   };
 
   const handleConfirmDelete = async () => {

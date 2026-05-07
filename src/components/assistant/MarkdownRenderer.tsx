@@ -44,13 +44,13 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
       const linkType = type === 'CV_LINK' ? 'cv' : type === 'PRO_LINK' ? 'pro' : 'solutions';
       const idx = smartLinks.length;
       smartLinks.push({ type: linkType as 'cv' | 'pro' | 'solutions', text: text.trim() });
-      return `__SMART_LINK_${idx}__`;
+      return `⟪SMARTLINK${idx}⟫`;
     }
   );
 
   // Helper to process smart link placeholders in any text
   const renderSmartLinks = (text: string): React.ReactNode => {
-    const smartLinkRegex = /__SMART_LINK_(\d+)__/g;
+    const smartLinkRegex = /⟪SMARTLINK(\d+)⟫/g;
     if (!smartLinkRegex.test(text)) return text;
     smartLinkRegex.lastIndex = 0;
     const parts: React.ReactNode[] = [];

@@ -2055,8 +2055,8 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
           </div>
 
           {/* Messages area — scrollable */}
-          <div className="flex-1 overflow-y-auto px-3 py-3">
-            <div className="max-w-2xl mx-auto space-y-3">
+          <div className="flex-1 overflow-y-auto px-4 py-6">
+            <div className="max-w-2xl mx-auto space-y-6">
               {/* Surface Estimates */}
               {surfaceEstimates.length > 0 && (
                 <Card className="border border-amber-500/20 bg-amber-500/5">

@@ -1353,6 +1353,13 @@ N'ajoute AUCUN travail standard, préparatoire, logistique ou de finition non de
 ⛔ INTERDIT d'ajouter automatiquement: "Évacuation des gravats", "Protection du chantier", "Nettoyage", "Préparation des supports", "Primaire", "Ponçage", "Décapage", "Bâches", ou toute autre étape implicite — SAUF si l'utilisateur les a explicitement demandées.
 ✅ Si l'utilisateur dit "peinture bleue satinée" → Mettre exactement "Peinture acrylique satinée bleue" dans la désignation, et RIEN d'autre.
 ✅ Reproduis fidèlement les termes employés par l'utilisateur dans la désignation.
+🎨 RÈGLE COULEUR & FINITION (OBLIGATOIRE): Si l'utilisateur mentionne une couleur (bleu, blanc, gris, rouge, beige, noir, etc.) et/ou une finition (mat, satiné, brillant, velours, laqué, etc.) — y compris en arabe/Ammiya (أزرق, أبيض, ساتيني, مطفي, لامع...) — tu DOIS les inclure explicitement dans la désignation française du travail.
+   Format obligatoire: "[Type de travail] — coloris [couleur] [finition]".
+   Exemples:
+   - "دهان أزرق ساتيني" → "Peinture acrylique satinée — coloris bleu satiné"
+   - "blanc mat" → "Peinture acrylique mate — coloris blanc mat"
+   - "gris brillant" → "Peinture brillante — coloris gris brillant"
+   ⛔ INTERDIT de générer "Travaux de peinture" générique quand une couleur ou finition est mentionnée.
 ⚠️ Les règles de phasage, séquence obligatoire et ajout de protection/nettoyage ci-dessous NE s'appliquent QUE si l'utilisateur a explicitement demandé ces étapes.
 
 ${tierInstruction}

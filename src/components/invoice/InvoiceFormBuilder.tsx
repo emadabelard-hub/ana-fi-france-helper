@@ -73,6 +73,8 @@ interface PrefillData {
   milestoneId?: string;
   milestoneIndex?: number;
   milestoneLabel?: string;
+  milestonePercent?: number;
+  milestoneMontantTTC?: number;
   // Advanced fields — TVA, payment, schedule, dates
   isAutoEntrepreneur?: boolean;
   selectedTvaRate?: 5.5 | 10 | 20;

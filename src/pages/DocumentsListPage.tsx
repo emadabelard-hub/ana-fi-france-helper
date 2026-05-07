@@ -825,13 +825,23 @@ const DocumentsListPage = () => {
           return (
             <div className={cn("mt-3 flex flex-col gap-2", isRTL && "items-stretch")}>
               {milestones.map((m, idx) => {
-                const linked = documents.find((d: any) => {
-                  if (d.document_type !== 'facture') return false;
-                  if (d.status === 'cancelled') return false;
-                  const srcId = d.document_data?.sourceDevisId;
-                  const mIdx = d.document_data?.milestoneIndex;
-                  return String(srcId) === String(doc.id) && String(mIdx) === String(idx);
-                });
+                const milestoneRow = milestoneInvoices.find((mi: any) =>
+                  String(mi.devis_id) === String(doc.id) &&
+                  Number(mi.milestone_index) === Number(idx) &&
+                  mi.statut !== 'cancelled'
+                );
+                const linked = milestoneRow
+                  ? (documents.find((d: any) => d.id === milestoneRow.facture_id) || {
+                      id: milestoneRow.facture_id,
+                      document_number: milestoneRow.facture_number,
+                    } as any)
+                  : documents.find((d: any) => {
+                      if (d.document_type !== 'facture') return false;
+                      if (d.status === 'cancelled') return false;
+                      const srcId = d.document_data?.sourceDevisId;
+                      const mIdx = d.document_data?.milestoneIndex;
+                      return String(srcId) === String(doc.id) && String(mIdx) === String(idx);
+                    });
                 const sharePercent = m.mode === 'percent'
                   ? (m.percent || 0)
                   : (totalTTC > 0 ? Math.round(((m.amount || 0) / totalTTC) * 10000) / 100 : 0);

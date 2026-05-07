@@ -706,7 +706,7 @@ const DocumentsListPage = () => {
     return (
       <div
         key={doc.id}
-        className="group relative rounded-xl border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,12%)] p-4 hover:border-[hsl(45,80%,55%)/0.6] transition-all duration-300 hover:shadow-[0_0_20px_hsl(45,80%,55%,0.1)] cursor-pointer"
+        className="group relative rounded-xl border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,12%)] p-4 hover:border-[hsl(45,80%,55%)/0.6] transition-all duration-300 hover:shadow-[0_0_20px_hsl(45,80%,55%,0.1)] cursor-pointer w-full min-w-0 overflow-hidden"
         onClick={() => handleOpenDocument(doc)}
       >
         {/* Gold accent line */}
@@ -848,7 +848,7 @@ const DocumentsListPage = () => {
                         isRTL && "font-cairo flex-row-reverse"
                       )}
                     >
-                      <span className="truncate">
+                      <span className="truncate min-w-0 flex-1 text-left">
                         ✅ {isRTL ? `قسط ${idx + 1}/${milestones.length} — ${labelText} — ${formatCurrency(amount)}` : `Échéance ${idx + 1}/${milestones.length} — ${labelText} — ${formatCurrency(amount)}`}
                       </span>
                       <span className="shrink-0 text-xs">
@@ -891,7 +891,7 @@ const DocumentsListPage = () => {
                       isRTL && "font-cairo flex-row-reverse"
                     )}
                   >
-                    <span className="truncate">
+                    <span className="truncate min-w-0 flex-1 text-left">
                       🧾 {isRTL ? `قسط ${idx + 1}/${milestones.length} — ${labelText} ${sharePercent}% — ${formatCurrency(amount)}` : `Échéance ${idx + 1}/${milestones.length} — ${labelText} ${sharePercent}% — ${formatCurrency(amount)}`}
                     </span>
                     <span className="shrink-0 text-xs">

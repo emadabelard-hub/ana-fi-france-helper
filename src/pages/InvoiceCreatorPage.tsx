@@ -423,7 +423,7 @@ const InvoiceCreatorPage = () => {
           </div>
         ) : activeDocumentType ? (
           <InvoiceFormBuilder 
-            key={`${activeDocumentType}-${prefillSource ?? urlSource ?? 'none'}-${prefillData?.source ?? 'base'}-${prefillData?.sourceDocumentId ?? prefillData?.sourceDocumentNumber ?? 'local'}-${prefillData?.milestoneId ?? 'default'}`}
+            key={`${activeDocumentType}-${prefillSource ?? urlSource ?? 'none'}-${prefillData?.source ?? 'base'}-${prefillData?.sourceDocumentId ?? prefillData?.sourceDocumentNumber ?? 'local'}-${prefillData?.milestoneIndex ?? prefillData?.milestoneId ?? 'default'}`}
             documentType={activeDocumentType}
             onBack={handleFormBack}
             prefillData={prefillData}

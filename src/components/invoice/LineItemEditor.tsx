@@ -314,6 +314,40 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
     }
   };
 
+  // Debounce timers for auto re-translation per line item
+  const arabicDebounceRef = useRef<Map<string, number>>(new Map());
+
+  // Auto re-translate Arabic → French 1s after user stops typing in the AR field
+  const scheduleArabicRetranslation = (id: string, arabicValue: string) => {
+    const existing = arabicDebounceRef.current.get(id);
+    if (existing) window.clearTimeout(existing);
+
+    const trimmed = arabicValue.trim();
+    if (!trimmed) return;
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('invoice-mentor', {
+          body: { action: 'reformulate_btp', text: trimmed },
+        });
+        if (error) {
+          console.warn('[LineItemEditor] auto retranslate error', error);
+          return;
+        }
+        const reformulated = data?.reformulation || data?.translation;
+        if (!reformulated) return;
+        // Only apply if the AR field hasn't changed since (stale guard)
+        const current = items.find(i => i.id === id);
+        if (!current || current.designation_ar.trim() !== trimmed) return;
+        updateItem(id, 'designation_fr', reformulated);
+      } catch (e) {
+        console.warn('[LineItemEditor] auto retranslate failed', e);
+      }
+    }, 1000);
+
+    arabicDebounceRef.current.set(id, timer);
+  };
+
   // Mark item as needing translation when Arabic field changes
   const handleArabicChange = (id: string, value: string) => {
     updateItem(id, 'designation_ar', value);
@@ -322,7 +356,17 @@ const LineItemEditor = ({ items, onItemsChange }: LineItemEditorProps) => {
     if (value.trim() && (!item?.designation_fr || item.designation_fr.trim() === '')) {
       setPendingTranslation(prev => new Set(prev).add(id));
     }
+    // Auto re-translate to French 1s after typing stops (works even when FR is already filled)
+    scheduleArabicRetranslation(id, value);
   };
+
+  useEffect(() => {
+    const timers = arabicDebounceRef.current;
+    return () => {
+      timers.forEach((t) => window.clearTimeout(t));
+      timers.clear();
+    };
+  }, []);
 
   // Force translation before adding - called when clicking the add button
   const forceTranslationIfNeeded = async () => {

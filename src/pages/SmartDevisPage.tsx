@@ -155,6 +155,23 @@ const SmartDevisPage = () => {
   const [refineNiveau, setRefineNiveau] = useState<'' | 'leger' | 'moyen' | 'important'>('');
   const [refineSurface, setRefineSurface] = useState<string>('');
 
+  // Chat dictation (same hook as المساعد الذكي)
+  const chatDictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
+  useEffect(() => {
+    if (chatDictation.isRecording && chatDictation.transcript) {
+      setChatInput(chatDictation.transcript);
+    }
+  }, [chatDictation.transcript, chatDictation.isRecording]);
+  const handleChatMicPress = useCallback(() => {
+    if (!chatDictation.isSupported) return;
+    if (!chatDictation.isRecording) chatDictation.start();
+    else {
+      chatDictation.stopRecording();
+      const cleaned = chatDictation.getCleanedText();
+      if (cleaned) setChatInput(cleaned);
+    }
+  }, [chatDictation]);
+
   const startVoiceInput = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;

@@ -2372,23 +2372,51 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
             </div>
           </div>
 
-          {/* Bottom bar — input + generate */}
-          <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm px-3 pt-2 pb-3 safe-area-pb">
-            <div className="max-w-2xl mx-auto space-y-2">
-              <div className={cn("flex gap-2 items-end", isRTL && "flex-row-reverse")}>
-                <Textarea
+          {/* Bottom bar — input (mic + textarea + send) */}
+          <div className="shrink-0 px-3 pt-3 border-t border-border bg-card/50 safe-area-pb" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <div className="max-w-2xl mx-auto">
+              <div className="relative flex items-end gap-2 bg-background p-1.5 rounded-3xl border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                <button
+                  type="button"
+                  onClick={handleChatMicPress}
+                  disabled={isChatLoading}
+                  className={cn(
+                    "w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all",
+                    chatDictation.isRecording
+                      ? "bg-red-500 text-white animate-pulse"
+                      : "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  )}
+                >
+                  <Mic size={20} />
+                </button>
+                <textarea
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
-                  placeholder={isRTL ? '💬 اكتب سؤالك أو تعديلك هنا...' : '💬 Posez votre question ou ajustement...'}
-                  className={cn("min-h-[44px] max-h-[100px] resize-none text-sm bg-muted/50 border-border/60 rounded-2xl", isRTL && "text-right font-cairo")}
-                  dir={isRTL ? 'rtl' : 'ltr'}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
+                  placeholder={isRTL ? 'اكتب سؤالك هنا...' : 'Écrivez votre question...'}
+                  disabled={isChatLoading}
+                  className={cn(
+                    "flex-1 bg-transparent text-[15px] font-medium px-2 py-2.5 outline-none text-foreground placeholder:text-muted-foreground resize-none min-h-[44px] max-h-[200px] leading-[1.5]",
+                    isRTL && "font-cairo text-right"
+                  )}
+                  dir="auto"
+                  rows={1}
+                  onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); } }}
                 />
-                <Button size="icon" onClick={handleChatSend} disabled={!chatInput.trim() || isChatLoading} className="shrink-0 h-11 w-11 rounded-full">
-                  {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                </Button>
+                <button
+                  type="button"
+                  onClick={handleChatSend}
+                  disabled={!chatInput.trim() || isChatLoading}
+                  className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5",
+                    chatInput.trim() && !isChatLoading
+                      ? "bg-primary text-primary-foreground shadow-md active:scale-90"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {isChatLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                </button>
               </div>
-              {/* Generate button removed — replaced by green كمل button in messages area */}
             </div>
           </div>
         </>

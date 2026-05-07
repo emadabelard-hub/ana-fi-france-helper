@@ -362,21 +362,10 @@ const InvoiceCreatorPage = () => {
         "flex items-center gap-4 py-4 shrink-0",
         isRTL && "flex-row-reverse"
       )}>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleNavigateBack}
-          className="shrink-0"
-        >
-          {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
-        </Button>
         <div className={cn(
           "flex items-center gap-3 flex-1",
           isRTL && "flex-row-reverse"
         )}>
-          <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
-            <PenLine className="h-5 w-5 text-green-600" />
-          </div>
           <div className={cn("flex-1", isRTL && "text-right")}>
             <h1 className={cn(
               "text-lg font-bold text-foreground",

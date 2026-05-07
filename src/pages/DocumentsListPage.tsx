@@ -712,7 +712,7 @@ const DocumentsListPage = () => {
         {/* Gold accent line */}
         <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-[hsl(45,80%,55%)] to-transparent opacity-60" />
 
-        <div className={cn("flex items-start justify-between gap-3", isRTL && "flex-row-reverse")}>
+        <div className={cn("flex items-start justify-between gap-2", isRTL && "flex-row-reverse")}>
           <div className={cn("flex items-center gap-3 flex-1 min-w-0", isRTL && "flex-row-reverse")}>
             <div className={cn(
               "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
@@ -726,22 +726,26 @@ const DocumentsListPage = () => {
             </div>
           </div>
 
-          {/* Status badges */}
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            <span className={cn(
-              "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
-              doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" :
-              doc.status === 'converted' ? "bg-blue-500/15 text-blue-400" :
-              doc.status === 'cancelled' ? "bg-red-500/15 text-red-400" :
-              "bg-amber-500/15 text-amber-400"
-            )}>
-              {doc.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') :
-               doc.status === 'converted' ? (isRTL ? 'تم التحويل' : 'Converti') :
-               doc.status === 'cancelled' ? (isRTL ? 'ملغاة' : 'Annulée') :
-               (isRTL ? 'مسودة' : 'Brouillon')}
-            </span>
+          {/* Primary status badge only — keeps right column narrow */}
+          <span className={cn(
+            "shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
+            doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" :
+            doc.status === 'converted' ? "bg-blue-500/15 text-blue-400" :
+            doc.status === 'cancelled' ? "bg-red-500/15 text-red-400" :
+            "bg-amber-500/15 text-amber-400"
+          )}>
+            {doc.status === 'finalized' ? (isRTL ? 'نهائي' : 'Finalisé') :
+             doc.status === 'converted' ? (isRTL ? 'تم التحويل' : 'Converti') :
+             doc.status === 'cancelled' ? (isRTL ? 'ملغاة' : 'Annulée') :
+             (isRTL ? 'مسودة' : 'Brouillon')}
+          </span>
+        </div>
+
+        {/* Secondary badges (accountant / sequence-gap) — own row to avoid squeezing */}
+        {(doc.sent_to_accountant_at || sequenceGaps.has(doc.id)) && (
+          <div className={cn("mt-2 flex items-center gap-1 flex-wrap", isRTL && "flex-row-reverse")}>
             {doc.sent_to_accountant_at && (
-              <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 flex items-center gap-1">
+              <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 inline-flex items-center gap-1">
                 <SendHorizontal className="h-2.5 w-2.5" />
                 {isRTL ? 'أُرسل للمحاسب' : 'Envoyé'}
               </span>
@@ -757,10 +761,10 @@ const DocumentsListPage = () => {
               </span>
             )}
           </div>
-        </div>
+        )}
 
-        {/* Financial row */}
-        <div className={cn("mt-3 flex items-center gap-4 text-xs", isRTL && "flex-row-reverse")}>
+        {/* Financial row — wraps on narrow viewports so HT/TTC/date stay visible */}
+        <div className={cn("mt-3 flex items-center gap-x-4 gap-y-1 text-xs flex-wrap", isRTL && "flex-row-reverse")}>
           <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
             <Calendar className="h-3 w-3 text-[hsl(0,0%,45%)]" />
             <span className="text-[hsl(0,0%,55%)]">{date}</span>

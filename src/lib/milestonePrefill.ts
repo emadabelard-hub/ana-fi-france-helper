@@ -64,7 +64,10 @@ export function buildMilestonePrefill({
   const displayedShare = `${formatPercent(sharePercent)}%`;
   const selectedMilestoneName = milestone.label?.trim() || milestoneLabel.fr;
   const echeanceTag = `Échéance ${milestoneIndex + 1}/${totalMilestones} — Réf. devis ${quote.documentNumber}`;
-  const designationFr = `${echeanceTag} — ${selectedMilestoneName} (${displayedShare})`;
+  const sourceItems = Array.isArray(docData.items) ? docData.items : [];
+  const firstItemLabel = (sourceItems[0]?.designation_fr || sourceItems[0]?.designation || '').toString().trim();
+  const workLabelPrefix = firstItemLabel ? `${firstItemLabel.split('\n')[0]} — ` : '';
+  const designationFr = `${workLabelPrefix}${echeanceTag} — ${selectedMilestoneName} (${displayedShare})`;
   const formNatureOperation = ['service', 'goods', 'mixed'].includes(docData.natureOperation)
     ? docData.natureOperation
     : undefined;

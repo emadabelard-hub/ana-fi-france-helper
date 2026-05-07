@@ -818,12 +818,13 @@ const DocumentsListPage = () => {
           return (
             <div className={cn("mt-3 flex flex-col gap-2", isRTL && "items-stretch")}>
               {milestones.map((m, idx) => {
-                const linked = documents.find((d: any) =>
-                  d.document_type === 'facture' &&
-                  d.status !== 'cancelled' &&
-                  d.document_data?.sourceDevisId === doc.id &&
-                  d.document_data?.milestoneIndex === idx
-                );
+                const linked = documents.find((d: any) => {
+                  if (d.document_type !== 'facture') return false;
+                  if (d.status === 'cancelled') return false;
+                  const srcId = d.document_data?.sourceDevisId;
+                  const mIdx = d.document_data?.milestoneIndex;
+                  return String(srcId) === String(doc.id) && String(mIdx) === String(idx);
+                });
                 const sharePercent = m.mode === 'percent'
                   ? (m.percent || 0)
                   : (totalTTC > 0 ? Math.round(((m.amount || 0) / totalTTC) * 10000) / 100 : 0);
@@ -839,22 +840,21 @@ const DocumentsListPage = () => {
                 );
                 if (linked) {
                   return (
-                    <Button
+                    <div
                       key={m.id || idx}
-                      size="sm"
-                      onClick={(e) => { e.stopPropagation(); openDocumentView(linked as any); }}
+                      onClick={(e) => e.stopPropagation()}
                       className={cn(
-                        "h-9 justify-between gap-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 font-bold",
+                        "h-9 px-3 rounded-md flex items-center justify-between gap-2 bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 font-bold cursor-default select-none",
                         isRTL && "font-cairo flex-row-reverse"
                       )}
                     >
-                      <span className="truncate min-w-0 flex-1 text-left">
-                        ✅ {isRTL ? `قسط ${idx + 1}/${milestones.length} — ${labelText} — ${formatCurrency(amount)}` : `Échéance ${idx + 1}/${milestones.length} — ${labelText} — ${formatCurrency(amount)}`}
+                      <span className="truncate min-w-0 flex-1 text-left text-sm">
+                        ✅ {linked.document_number} — {isRTL ? 'مفوترة' : 'Facturée'}
                       </span>
-                      <span className="shrink-0 text-xs">
-                        {isRTL ? 'مفوترة — عرض' : 'Facturée — Voir'}
+                      <span className="shrink-0 text-xs opacity-80">
+                        {isRTL ? `قسط ${idx + 1}/${milestones.length}` : `Éch. ${idx + 1}/${milestones.length}`}
                       </span>
-                    </Button>
+                    </div>
                   );
                 }
                 return (

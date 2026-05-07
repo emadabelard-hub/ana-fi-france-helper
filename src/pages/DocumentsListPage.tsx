@@ -960,6 +960,16 @@ const DocumentsListPage = () => {
               </Button>
             </>
           )}
+          {/* View button (always available) */}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs text-[hsl(45,80%,70%)] hover:text-[hsl(45,80%,80%)] hover:bg-[hsl(45,80%,55%)/0.1] gap-1"
+            onClick={(e) => { e.stopPropagation(); handleOpenDocument(doc); }}
+          >
+            <Eye className="h-3 w-3" />
+            {isRTL ? 'عرض' : 'Voir'}
+          </Button>
           <div className="flex-1" />
           {/* Cancel action for finalized/paid invoices */}
           {!isDevis && (doc.status === 'finalized' || doc.payment_status === 'paid') && doc.status !== 'cancelled' && (

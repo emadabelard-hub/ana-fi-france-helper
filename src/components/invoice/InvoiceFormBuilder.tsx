@@ -3459,7 +3459,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                                 // UNIQUEMENT à la confirmation finale ("تأكيد وتسجيل"),
                                 // jamais ici au clic. Ainsi : pas de numéros gaspillés,
                                 // pas de doublons, pas de trous dans la séquence.
-                                const prefill = buildMilestoneInvoicePrefill({
+                                const prefill = buildMilestonePrefill({
                                   quote: {
                                     documentNumber: sourceDocumentNumber,
                                     clientName: currentData.client?.name || clientName,

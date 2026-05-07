@@ -712,23 +712,10 @@ const DocumentsListPage = () => {
         {/* Gold accent line */}
         <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-[hsl(45,80%,55%)] to-transparent opacity-60" />
 
-        <div className={cn("flex items-start justify-between gap-2", isRTL && "flex-row-reverse")}>
-          <div className={cn("flex items-center gap-3 flex-1 min-w-0", isRTL && "flex-row-reverse")}>
-            <div className={cn(
-              "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-              isDevis ? "bg-amber-500/15 text-amber-400" : "bg-emerald-500/15 text-emerald-400"
-            )}>
-              {isDevis ? <FileText className="h-5 w-5" /> : <Receipt className="h-5 w-5" />}
-            </div>
-            <div className={cn("min-w-0 flex-1", isRTL && "text-right")}>
-              <p className="text-sm font-bold text-[hsl(45,80%,70%)] truncate">{doc.document_number}</p>
-              <p className="text-xs text-[hsl(0,0%,60%)] truncate">{doc.client_name || (isRTL ? 'بدون عميل' : 'Sans client')}</p>
-            </div>
-          </div>
-
-          {/* Primary status badge only — keeps right column narrow */}
+        {/* 1. Status badge on top */}
+        <div className={cn("flex items-center gap-2 flex-wrap", isRTL && "flex-row-reverse")}>
           <span className={cn(
-            "shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
+            "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
             doc.status === 'finalized' ? "bg-emerald-500/15 text-emerald-400" :
             doc.status === 'converted' ? "bg-blue-500/15 text-blue-400" :
             doc.status === 'cancelled' ? "bg-red-500/15 text-red-400" :
@@ -739,7 +726,23 @@ const DocumentsListPage = () => {
              doc.status === 'cancelled' ? (isRTL ? 'ملغاة' : 'Annulée') :
              (isRTL ? 'مسودة' : 'Brouillon')}
           </span>
+          <div className={cn(
+            "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
+            isDevis ? "bg-amber-500/15 text-amber-400" : "bg-emerald-500/15 text-emerald-400"
+          )}>
+            {isDevis ? <FileText className="h-4 w-4" /> : <Receipt className="h-4 w-4" />}
+          </div>
         </div>
+
+        {/* 2. Document number — large and bold */}
+        <p className={cn("mt-2 text-lg font-bold text-[hsl(45,80%,70%)] truncate", isRTL && "text-right")}>
+          {doc.document_number}
+        </p>
+
+        {/* 3. Client name */}
+        <p className={cn("mt-0.5 text-sm text-[hsl(0,0%,75%)] truncate", isRTL && "text-right")}>
+          {doc.client_name || (isRTL ? 'بدون عميل' : 'Sans client')}
+        </p>
 
         {/* Secondary badges (accountant / sequence-gap) — own row to avoid squeezing */}
         {(doc.sent_to_accountant_at || sequenceGaps.has(doc.id)) && (

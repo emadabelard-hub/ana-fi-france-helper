@@ -21,6 +21,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import AuthModal from '@/components/auth/AuthModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import DualModeAnalysis from '@/components/smart-devis/DualModeAnalysis';
+import { useAssistantDictation } from '@/hooks/useAssistantDictation';
 import {
   ArrowLeft, ArrowRight, Camera, Image as ImageIcon, FileText, Map,
   Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle, X, Upload,
@@ -153,6 +154,23 @@ const SmartDevisPage = () => {
   const [refineTechnique, setRefineTechnique] = useState<'' | 'aucun' | 'electricite' | 'plomberie' | 'les_deux'>('');
   const [refineNiveau, setRefineNiveau] = useState<'' | 'leger' | 'moyen' | 'important'>('');
   const [refineSurface, setRefineSurface] = useState<string>('');
+
+  // Chat dictation (same hook as المساعد الذكي)
+  const chatDictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
+  useEffect(() => {
+    if (chatDictation.isRecording && chatDictation.transcript) {
+      setChatInput(chatDictation.transcript);
+    }
+  }, [chatDictation.transcript, chatDictation.isRecording]);
+  const handleChatMicPress = useCallback(() => {
+    if (!chatDictation.isSupported) return;
+    if (!chatDictation.isRecording) chatDictation.start();
+    else {
+      chatDictation.stopRecording();
+      const cleaned = chatDictation.getCleanedText();
+      if (cleaned) setChatInput(cleaned);
+    }
+  }, [chatDictation]);
 
   const startVoiceInput = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -2037,8 +2055,8 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
           </div>
 
           {/* Messages area — scrollable */}
-          <div className="flex-1 overflow-y-auto px-3 py-3">
-            <div className="max-w-2xl mx-auto space-y-3">
+          <div className="flex-1 overflow-y-auto px-4 py-6">
+            <div className="max-w-2xl mx-auto space-y-6">
               {/* Surface Estimates */}
               {surfaceEstimates.length > 0 && (
                 <Card className="border border-amber-500/20 bg-amber-500/5">
@@ -2228,56 +2246,46 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
                 </Card>
               )}
 
-              {/* Chat messages */}
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={cn("flex", msg.role === 'user' ? (isRTL ? 'justify-start' : 'justify-end') : (isRTL ? 'justify-end' : 'justify-start'))}>
-                  {msg.role === 'assistant' && !isRTL && (
-                    <div className="shrink-0 mr-2 mt-1">
-                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+              {/* Chat messages — Claude.ai style (full width assistant, gold bubble user) */}
+              {chatMessages.map((msg, i) => {
+                if (msg.role === 'user') {
+                  return (
+                    <div key={i} className="flex justify-end">
+                      <div
+                        className={cn(
+                          "max-w-[85%] px-3 py-3 rounded-2xl rounded-br-sm whitespace-pre-wrap text-[15px] leading-[1.6]",
+                          isRTL ? "font-cairo text-right" : "text-left"
+                        )}
+                        style={{ backgroundColor: '#C9A227', color: '#000' }}
+                        dir={isRTL ? 'rtl' : 'ltr'}
+                      >
+                        {msg.content}
                       </div>
                     </div>
-                  )}
-                  <div className={cn(
-                    "max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm",
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-sm'
-                      : 'bg-card text-card-foreground border border-border/60 rounded-bl-sm'
-                  )}>
-                    {msg.role === 'assistant' ? (
-                      i === chatMessages.findIndex(m => m.role === 'assistant') && analysisData ? (
-                        <DualModeAnalysis analysisData={analysisData} fullContent={msg.content} isRTL={isRTL} />
-                      ) : (
-                        <MarkdownRenderer content={msg.content} isRTL={isRTL} />
-                      )
+                  );
+                }
+                const isFirstAssistantWithAnalysis =
+                  i === chatMessages.findIndex(m => m.role === 'assistant') && analysisData;
+                return (
+                  <div key={i} className="w-full">
+                    {isFirstAssistantWithAnalysis ? (
+                      <DualModeAnalysis analysisData={analysisData} fullContent={msg.content} isRTL={isRTL} />
                     ) : (
-                      <p className={cn("leading-relaxed", isRTL && "font-cairo text-right")} dir={isRTL ? 'rtl' : 'ltr'}>{msg.content}</p>
+                      <MarkdownRenderer
+                        content={msg.content}
+                        isRTL={isRTL}
+                        className="!text-[15px] !leading-[1.6] text-foreground"
+                      />
                     )}
-                    <p className={cn("text-[9px] mt-1.5 opacity-50", msg.role === 'user' ? 'text-right' : 'text-left')}>
-                      {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
                   </div>
-                  {msg.role === 'assistant' && isRTL && (
-                    <div className="shrink-0 ml-2 mt-1">
-                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
               {isChatLoading && chatMessages[chatMessages.length - 1]?.role !== 'assistant' && (
-                <div className={cn("flex items-center gap-2", isRTL ? 'justify-end flex-row-reverse' : 'justify-start')}>
-                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                  <div className="bg-card border border-border/60 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '75ms' }} />
-                      <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    </div>
-                  </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>{isRTL ? 'يكتب' : 'écrit'}</span>
+                  <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               )}
               {/* Analysis complete — navigate to manual devis creation */}
@@ -2364,23 +2372,51 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
             </div>
           </div>
 
-          {/* Bottom bar — input + generate */}
-          <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm px-3 pt-2 pb-3 safe-area-pb">
-            <div className="max-w-2xl mx-auto space-y-2">
-              <div className={cn("flex gap-2 items-end", isRTL && "flex-row-reverse")}>
-                <Textarea
+          {/* Bottom bar — input (mic + textarea + send) */}
+          <div className="shrink-0 px-3 pt-3 border-t border-border bg-card/50 safe-area-pb" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <div className="max-w-2xl mx-auto">
+              <div className="relative flex items-end gap-2 bg-background p-1.5 rounded-3xl border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                <button
+                  type="button"
+                  onClick={handleChatMicPress}
+                  disabled={isChatLoading}
+                  className={cn(
+                    "w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all",
+                    chatDictation.isRecording
+                      ? "bg-red-500 text-white animate-pulse"
+                      : "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  )}
+                >
+                  <Mic size={20} />
+                </button>
+                <textarea
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
-                  placeholder={isRTL ? '💬 اكتب سؤالك أو تعديلك هنا...' : '💬 Posez votre question ou ajustement...'}
-                  className={cn("min-h-[44px] max-h-[100px] resize-none text-sm bg-muted/50 border-border/60 rounded-2xl", isRTL && "text-right font-cairo")}
-                  dir={isRTL ? 'rtl' : 'ltr'}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
+                  placeholder={isRTL ? 'اكتب سؤالك هنا...' : 'Écrivez votre question...'}
+                  disabled={isChatLoading}
+                  className={cn(
+                    "flex-1 bg-transparent text-[15px] font-medium px-2 py-2.5 outline-none text-foreground placeholder:text-muted-foreground resize-none min-h-[44px] max-h-[200px] leading-[1.5]",
+                    isRTL && "font-cairo text-right"
+                  )}
+                  dir="auto"
+                  rows={1}
+                  onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); } }}
                 />
-                <Button size="icon" onClick={handleChatSend} disabled={!chatInput.trim() || isChatLoading} className="shrink-0 h-11 w-11 rounded-full">
-                  {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                </Button>
+                <button
+                  type="button"
+                  onClick={handleChatSend}
+                  disabled={!chatInput.trim() || isChatLoading}
+                  className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5",
+                    chatInput.trim() && !isChatLoading
+                      ? "bg-primary text-primary-foreground shadow-md active:scale-90"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {isChatLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                </button>
               </div>
-              {/* Generate button removed — replaced by green كمل button in messages area */}
             </div>
           </div>
         </>

@@ -1661,15 +1661,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         prefillData?.source === 'devis_conversion' &&
         Boolean(prefillData?.sourceDocumentId);
 
-      if (isMilestoneInvoiceFlow && prefillData?.sourceDocumentId && prefillData?.milestoneId) {
+      if (isMilestoneInvoiceFlow && prefillData?.sourceDocumentId && typeof prefillData?.milestoneIndex === 'number') {
         const { data: existingMilestoneInvoice, error: milestoneCheckError } = await (supabase
-          .from('documents_comptables') as any)
+          .from('milestone_invoices') as any)
           .select('id')
           .eq('user_id', user.id)
-          .eq('document_type', 'facture')
-          .eq('document_data->>sourceDevisId', prefillData.sourceDocumentId)
-          .eq('document_data->>milestoneId', prefillData.milestoneId)
-          .neq('status', 'cancelled')
+          .eq('devis_id', prefillData.sourceDocumentId)
+          .eq('milestone_index', prefillData.milestoneIndex)
+          .neq('statut', 'cancelled')
           .maybeSingle();
 
         if (milestoneCheckError) throw milestoneCheckError;

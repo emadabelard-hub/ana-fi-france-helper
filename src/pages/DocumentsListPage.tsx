@@ -185,7 +185,18 @@ const DocumentsListPage = () => {
 
     const [docsRes, expensesRes, chantiersRes] = await Promise.all([documentsQuery, expensesQuery, chantiersQuery]);
 
-    if (!docsRes.error && docsRes.data) setDocuments(docsRes.data);
+    if (!docsRes.error && docsRes.data) {
+      // Dédupliquer par (document_type, document_number) — garde le plus récent
+      // (les données arrivent déjà triées DESC par created_at)
+      const seen = new Set<string>();
+      const deduped = (docsRes.data as DocumentRow[]).filter((d) => {
+        const key = `${d.document_type}::${d.document_number}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      setDocuments(deduped);
+    }
     if (!expensesRes.error && expensesRes.data) setExpenses(expensesRes.data as ExpenseRow[]);
     if (!chantiersRes.error && chantiersRes.data) setChantiers(chantiersRes.data as { id: string; name: string }[]);
     setLoading(false);

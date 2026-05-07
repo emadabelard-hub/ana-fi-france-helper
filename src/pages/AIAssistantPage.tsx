@@ -539,16 +539,21 @@ const AIAssistantPage = () => {
       </div>
 
       {/* Input - positioned above bottom nav */}
-      <div className="p-3 border-t border-border bg-background shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-        <div className="relative flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-          {/* Mic button — opens fullscreen voice modal */}
+      <div className="px-3 pt-3 border-t border-border bg-card/50 shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+        <div className="relative flex items-end gap-2 bg-background p-1.5 rounded-3xl border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+          {/* Mic button */}
           <button
             type="button"
             onClick={handleVoiceMicPress}
             disabled={isLoading}
-            className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
+            className={cn(
+              "w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all",
+              dictation.isRecording
+                ? "bg-red-500 text-white animate-pulse"
+                : "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
+            )}
           >
-            <Mic size={22} />
+            <Mic size={20} />
           </button>
           <textarea
             value={input}
@@ -556,12 +561,12 @@ const AIAssistantPage = () => {
             placeholder={isRTL ? 'اكتب سؤالك هنا...' : 'Écrivez votre question...'}
             disabled={isLoading}
             className={cn(
-              "flex-1 bg-transparent text-sm font-medium px-3 py-2 outline-none text-foreground placeholder:text-muted-foreground resize-none min-h-[36px] max-h-[120px]",
+              "flex-1 bg-transparent text-[15px] font-medium px-2 py-2.5 outline-none text-foreground placeholder:text-muted-foreground resize-none min-h-[44px] max-h-[200px] leading-[1.5]",
               isRTL && "font-cairo text-right"
             )}
             dir="auto"
             rows={1}
-            onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; }}
+            onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); } }}
           />
           <button
@@ -569,21 +574,14 @@ const AIAssistantPage = () => {
             onClick={() => send()}
             disabled={!input.trim() || isLoading}
             className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all shrink-0",
+              "w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5",
               input.trim() && !isLoading
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted-foreground/20 text-muted-foreground"
+                ? "bg-primary text-primary-foreground shadow-md active:scale-90"
+                : "bg-muted text-muted-foreground"
             )}
           >
             <Send size={18} />
           </button>
-        </div>
-
-        {/* Subtitle */}
-        <div className="pt-2 pb-1 text-center">
-          <p className="text-xs font-bold text-foreground font-cairo" dir="rtl">
-            اسألني أي حاجة
-          </p>
         </div>
       </div>
 

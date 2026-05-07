@@ -14,7 +14,7 @@ import { useProfile, Profile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, FileText, Building2, User, MapPin, HardHat, Edit3, Truck, Wand2, Loader2, Calendar, HelpCircle, RotateCcw, Users, Save, Languages, SlidersHorizontal, ChevronDown, ChevronUp, Check, CreditCard, BarChart3, Shield, Receipt } from 'lucide-react';
-import { buildMilestoneInvoicePrefill } from '@/lib/milestoneInvoicePrefill';
+import { buildMilestonePrefill } from '@/lib/milestonePrefill';
 import FormProgressBar, { type ProgressSection } from './FormProgressBar';
 import StepNavigation, { StepButtons, type WizardStep } from './StepNavigation';
 import InvoiceDisplay, { InvoiceData, PaymentMilestone } from './InvoiceDisplay';
@@ -73,6 +73,8 @@ interface PrefillData {
   milestoneId?: string;
   milestoneIndex?: number;
   milestoneLabel?: string;
+  milestonePercent?: number;
+  milestoneMontantTTC?: number;
   // Advanced fields — TVA, payment, schedule, dates
   isAutoEntrepreneur?: boolean;
   selectedTvaRate?: 5.5 | 10 | 20;
@@ -1661,15 +1663,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         prefillData?.source === 'devis_conversion' &&
         Boolean(prefillData?.sourceDocumentId);
 
-      if (isMilestoneInvoiceFlow && prefillData?.sourceDocumentId && prefillData?.milestoneId) {
+      if (isMilestoneInvoiceFlow && prefillData?.sourceDocumentId && typeof prefillData?.milestoneIndex === 'number') {
         const { data: existingMilestoneInvoice, error: milestoneCheckError } = await (supabase
-          .from('documents_comptables') as any)
+          .from('milestone_invoices') as any)
           .select('id')
           .eq('user_id', user.id)
-          .eq('document_type', 'facture')
-          .eq('document_data->>sourceDevisId', prefillData.sourceDocumentId)
-          .eq('document_data->>milestoneId', prefillData.milestoneId)
-          .neq('status', 'cancelled')
+          .eq('devis_id', prefillData.sourceDocumentId)
+          .eq('milestone_index', prefillData.milestoneIndex)
+          .neq('statut', 'cancelled')
           .maybeSingle();
 
         if (milestoneCheckError) throw milestoneCheckError;
@@ -1762,35 +1763,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         ...(documentType === 'facture' && prefillData?.sourceDocumentId && {
           sourceDevisId: prefillData.sourceDocumentId,
         }),
-        // Milestone invoice metadata (for installment tracking)
-        ...(prefillData?.source === 'milestone_invoice' && prefillData?.milestoneId && {
-          milestoneId: prefillData.milestoneId,
-          milestoneLabel: prefillData.milestoneLabel,
-        }),
       };
-
-      // FORCE-INJECT milestoneId — robust fallback to sessionStorage if prefillData was lost.
-      if (documentType === 'facture') {
-        let resolvedMilestoneId: string | null = (linkedDocumentData as any).milestoneId ?? prefillData?.milestoneId ?? null;
-        if (!resolvedMilestoneId) {
-          try {
-            const raw = sessionStorage.getItem('milestoneInvoiceData');
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              resolvedMilestoneId = parsed?.milestoneId ?? null;
-              if (resolvedMilestoneId && !(linkedDocumentData as any).milestoneLabel && parsed?.milestoneLabel) {
-                (linkedDocumentData as any).milestoneLabel = parsed.milestoneLabel;
-              }
-            }
-          } catch (e) {
-            console.warn('[InvoiceFormBuilder] sessionStorage milestone fallback failed:', e);
-          }
-        }
-        if (resolvedMilestoneId) {
-          (linkedDocumentData as any).milestoneId = resolvedMilestoneId;
-        }
-        console.log('milestoneId à sauvegarder:', (linkedDocumentData as any).milestoneId ?? null);
-      }
 
       if (!invoiceRef.current) {
         toast({
@@ -1890,6 +1863,28 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               : 'La création d’une facture en doublon a été bloquée.',
           });
           return;
+        }
+      }
+
+      // Track milestone invoice in dedicated table (single source of truth)
+      if (isMilestoneInvoiceFlow && insertedDocument?.id && prefillData?.sourceDocumentId
+          && typeof prefillData?.milestoneIndex === 'number') {
+        const { error: milestoneInsertError } = await (supabase
+          .from('milestone_invoices') as any)
+          .insert({
+            user_id: user.id,
+            devis_id: prefillData.sourceDocumentId,
+            devis_number: prefillData.sourceDocumentNumber || sourceDevisNumber || '',
+            milestone_index: prefillData.milestoneIndex,
+            milestone_label: prefillData.milestoneLabel ?? null,
+            milestone_percent: prefillData.milestonePercent ?? null,
+            montant_ttc: prefillData.milestoneMontantTTC ?? data.total,
+            facture_id: insertedDocument.id,
+            facture_number: insertedDocument.document_number,
+            statut: 'facturee',
+          });
+        if (milestoneInsertError) {
+          console.error('[InvoiceFormBuilder] milestone_invoices insert failed:', milestoneInsertError);
         }
       }
 
@@ -3459,7 +3454,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
                                 // UNIQUEMENT à la confirmation finale ("تأكيد وتسجيل"),
                                 // jamais ici au clic. Ainsi : pas de numéros gaspillés,
                                 // pas de doublons, pas de trous dans la séquence.
-                                const prefill = buildMilestoneInvoicePrefill({
+                                const prefill = buildMilestonePrefill({
                                   quote: {
                                     documentNumber: sourceDocumentNumber,
                                     clientName: currentData.client?.name || clientName,

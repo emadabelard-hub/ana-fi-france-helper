@@ -24,28 +24,24 @@ type QuoteSourceLike = {
   documentData?: any;
 };
 
-const round2 = (value: number) => Math.round(value * 100) / 100;
+const round2 = (v: number) => Math.round(v * 100) / 100;
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+const formatCurrency = (a: number) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(a);
 
-const formatPercent = (value: number) =>
+const formatPercent = (v: number) =>
   new Intl.NumberFormat('fr-FR', {
     minimumFractionDigits: 0,
-    maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
-  }).format(value);
+    maximumFractionDigits: Number.isInteger(v) ? 0 : 2,
+  }).format(v);
 
 function getMilestoneInvoiceLabel(index: number, total: number): { fr: string; ar: string } {
-  if (index === 0) {
-    return { fr: "Facture d'acompte", ar: '\u0641\u0627\u062A\u0648\u0631\u0629 \u0645\u0642\u062F\u0645' };
-  }
-  if (index === total - 1) {
-    return { fr: 'Facture finale', ar: '\u0641\u0627\u062A\u0648\u0631\u0629 \u0646\u0647\u0627\u0626\u064A\u0629' };
-  }
-  return { fr: 'Facture interm\u00E9diaire', ar: '\u0641\u0627\u062A\u0648\u0631\u0629 \u0645\u0631\u062D\u0644\u064A\u0629' };
+  if (index === 0) return { fr: "Facture d'acompte", ar: 'فاتورة مقدم' };
+  if (index === total - 1) return { fr: 'Facture finale', ar: 'فاتورة نهائية' };
+  return { fr: 'Facture intermédiaire', ar: 'فاتورة مرحلية' };
 }
 
-export function buildMilestoneInvoicePrefill({
+export function buildMilestonePrefill({
   quote,
   milestone,
   milestoneIndex,
@@ -59,23 +55,17 @@ export function buildMilestoneInvoicePrefill({
   const docData = quote.documentData || {};
   const advancedData = extractAdvancedPrefillData(docData);
   const milestoneLabel = getMilestoneInvoiceLabel(milestoneIndex, totalMilestones);
-  const milestoneSharePercent = milestone.mode === 'percent'
+  const sharePercent = milestone.mode === 'percent'
     ? milestone.percent || 0
     : (quote.totalTTC > 0 ? round2(((milestone.amount || 0) / quote.totalTTC) * 100) : 0);
-  const milestoneProportion = milestoneSharePercent / 100;
-  const quoteSubtotalHT = docData.subtotalAfterDiscount ?? docData.subtotal ?? docData.subtotalHT ?? docData.totalHT ?? 0;
-  const milestoneHT = round2(quoteSubtotalHT * milestoneProportion);
-  const displayedShare = `${formatPercent(milestoneSharePercent)}%`;
+  const proportion = sharePercent / 100;
+  const subtotalHT = docData.subtotalAfterDiscount ?? docData.subtotal ?? docData.subtotalHT ?? docData.totalHT ?? 0;
+  const milestoneHT = round2(subtotalHT * proportion);
+  const displayedShare = `${formatPercent(sharePercent)}%`;
   const selectedMilestoneName = milestone.label?.trim() || milestoneLabel.fr;
-
-  // Désignation = "Échéance N/Total — Réf. devis D-XXXX" + libellé + pourcentage
-  // (jamais les lignes de désignation du devis source)
   const echeanceTag = `Échéance ${milestoneIndex + 1}/${totalMilestones} — Réf. devis ${quote.documentNumber}`;
   const designationFr = `${echeanceTag} — ${selectedMilestoneName} (${displayedShare})`;
-  const designationAr = '';
-  const formNatureOperation = docData.natureOperation === 'service'
-    || docData.natureOperation === 'goods'
-    || docData.natureOperation === 'mixed'
+  const formNatureOperation = ['service', 'goods', 'mixed'].includes(docData.natureOperation)
     ? docData.natureOperation
     : undefined;
 
@@ -92,19 +82,20 @@ export function buildMilestoneInvoicePrefill({
     natureOperation: formNatureOperation,
     items: [{
       designation_fr: designationFr,
-      designation_ar: designationAr,
+      designation_ar: '',
       quantity: 1,
       unit: 'forfait',
       unitPrice: milestoneHT,
     }],
     acompteLabel: `Acompte de ${displayedShare}`,
-    notes: `Facture d'\u00E9ch\u00E9ance : ${selectedMilestoneName}\nPaiement de ${displayedShare} sur devis n\u00B0 ${quote.documentNumber}\nMontant total du devis : ${formatCurrency(quote.totalTTC)} TTC`,
+    notes: `Facture d'échéance : ${selectedMilestoneName}\nPaiement de ${displayedShare} sur devis n° ${quote.documentNumber}\nMontant total du devis : ${formatCurrency(quote.totalTTC)} TTC`,
     source: 'milestone_invoice',
     sourceDocumentId: quote.id,
     sourceDocumentNumber: quote.documentNumber,
-    milestoneId: milestone.id,
     milestoneIndex,
     milestoneLabel: selectedMilestoneName,
+    milestonePercent: sharePercent,
+    milestoneMontantTTC: round2(quote.totalTTC * proportion),
     milestonesEnabled: false,
     paymentMilestones: [],
     acompteEnabled: false,

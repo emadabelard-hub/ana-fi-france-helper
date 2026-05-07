@@ -1366,7 +1366,6 @@ const DocumentsListPage = () => {
                 <div className={cn("pt-3 border-t border-border")}>
                   <MilestoneInvoiceActions
                     devisDoc={selectedDocument}
-                    allDocuments={documents}
                     onViewInvoice={(invoiceId) => {
                       const linked = documents.find(d => d.id === invoiceId);
                       if (linked) openDocumentView(linked as any);
@@ -1405,7 +1404,6 @@ const DocumentsListPage = () => {
                     <div className={cn("mt-6 pt-4 border-t border-border")}>
                       <MilestoneInvoiceActions
                         devisDoc={selectedDocument}
-                        allDocuments={documents}
                         onViewInvoice={(invoiceId) => {
                           const linked = documents.find(d => d.id === invoiceId);
                           if (linked) {

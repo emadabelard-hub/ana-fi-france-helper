@@ -558,6 +558,54 @@ export type Database = {
         }
         Relationships: []
       }
+      milestone_invoices: {
+        Row: {
+          created_at: string
+          devis_id: string
+          devis_number: string
+          facture_id: string | null
+          facture_number: string | null
+          id: string
+          milestone_index: number
+          milestone_label: string | null
+          milestone_percent: number | null
+          montant_ttc: number | null
+          statut: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          devis_id: string
+          devis_number: string
+          facture_id?: string | null
+          facture_number?: string | null
+          id?: string
+          milestone_index: number
+          milestone_label?: string | null
+          milestone_percent?: number | null
+          montant_ttc?: number | null
+          statut?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          devis_id?: string
+          devis_number?: string
+          facture_id?: string | null
+          facture_number?: string | null
+          id?: string
+          milestone_index?: number
+          milestone_label?: string | null
+          milestone_percent?: number | null
+          montant_ttc?: number | null
+          statut?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           accountant_email: string | null

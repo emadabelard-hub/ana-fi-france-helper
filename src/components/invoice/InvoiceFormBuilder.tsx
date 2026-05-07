@@ -1864,6 +1864,28 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         }
       }
 
+      // Track milestone invoice in dedicated table (single source of truth)
+      if (isMilestoneInvoiceFlow && insertedDocument?.id && prefillData?.sourceDocumentId
+          && typeof prefillData?.milestoneIndex === 'number') {
+        const { error: milestoneInsertError } = await (supabase
+          .from('milestone_invoices') as any)
+          .insert({
+            user_id: user.id,
+            devis_id: prefillData.sourceDocumentId,
+            devis_number: prefillData.sourceDocumentNumber || sourceDevisNumber || '',
+            milestone_index: prefillData.milestoneIndex,
+            milestone_label: prefillData.milestoneLabel ?? null,
+            milestone_percent: prefillData.milestonePercent ?? null,
+            montant_ttc: prefillData.milestoneMontantTTC ?? data.total,
+            facture_id: insertedDocument.id,
+            facture_number: insertedDocument.document_number,
+            statut: 'facturee',
+          });
+        if (milestoneInsertError) {
+          console.error('[InvoiceFormBuilder] milestone_invoices insert failed:', milestoneInsertError);
+        }
+      }
+
       // Clear drafts after successful save to prevent ghost state on next new document
       clearDraft();
       clearCurrentDocument();

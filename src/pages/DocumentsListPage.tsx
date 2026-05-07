@@ -184,7 +184,13 @@ const DocumentsListPage = () => {
       .select('id, name')
       .eq('user_id', user.id);
 
-    const [docsRes, expensesRes, chantiersRes] = await Promise.all([documentsQuery, expensesQuery, chantiersQuery]);
+    const milestoneQuery = (supabase
+      .from('milestone_invoices') as any)
+      .select('devis_id, milestone_index, facture_id, facture_number, statut')
+      .eq('user_id', user.id);
+
+    const [docsRes, expensesRes, chantiersRes, milestonesRes] = await Promise.all([documentsQuery, expensesQuery, chantiersQuery, milestoneQuery]);
+    if (!milestonesRes.error && milestonesRes.data) setMilestoneInvoices(milestonesRes.data);
 
     if (!docsRes.error && docsRes.data) {
       // Dédupliquer par (document_type, document_number) — garde le plus récent

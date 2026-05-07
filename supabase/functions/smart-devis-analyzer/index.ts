@@ -948,6 +948,19 @@ Décapage=ديكاباج, Démontage=ديمونتاج, Ragréage=راغرياج,
 Bandes=بوند, Calicot=كاليكو, Aspiration=أسبيراسيون
 
 ═══════════════════════════════════════
+  🚨 RÈGLE PRIORITAIRE MAXIMALE (SURPASSE TOUTE AUTRE RÈGLE)
+═══════════════════════════════════════
+Le workPlan ne doit contenir QUE les travaux explicitement mentionnés par l'utilisateur.
+N'ajoute JAMAIS automatiquement :
+- Évacuation des gravats / إخلاء المخلفات
+- Protection du chantier / حماية الشانتي
+- Installation chantier
+- Préparation supports / rebouchage / ponçage
+- Primaire / sous-couche / سوسكوش
+- Nettoyage final / تنظيف
+SAUF si l'utilisateur les mentionne EXPLICITEMENT dans son texte.
+
+═══════════════════════════════════════
   ❌ ممنوع (صارم)
 ═══════════════════════════════════════
 ⛔ ممنوع كلام عام — كل جملة لازم تكون عملية

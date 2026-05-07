@@ -89,6 +89,7 @@ const DocumentsListPage = () => {
   const location = useLocation();
   const { toast } = useToast();
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [milestoneInvoices, setMilestoneInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<string>('all');
@@ -183,7 +184,13 @@ const DocumentsListPage = () => {
       .select('id, name')
       .eq('user_id', user.id);
 
-    const [docsRes, expensesRes, chantiersRes] = await Promise.all([documentsQuery, expensesQuery, chantiersQuery]);
+    const milestoneQuery = (supabase
+      .from('milestone_invoices') as any)
+      .select('devis_id, milestone_index, facture_id, facture_number, statut')
+      .eq('user_id', user.id);
+
+    const [docsRes, expensesRes, chantiersRes, milestonesRes] = await Promise.all([documentsQuery, expensesQuery, chantiersQuery, milestoneQuery]);
+    if (!milestonesRes.error && milestonesRes.data) setMilestoneInvoices(milestonesRes.data);
 
     if (!docsRes.error && docsRes.data) {
       // Dédupliquer par (document_type, document_number) — garde le plus récent
@@ -818,13 +825,23 @@ const DocumentsListPage = () => {
           return (
             <div className={cn("mt-3 flex flex-col gap-2", isRTL && "items-stretch")}>
               {milestones.map((m, idx) => {
-                const linked = documents.find((d: any) => {
-                  if (d.document_type !== 'facture') return false;
-                  if (d.status === 'cancelled') return false;
-                  const srcId = d.document_data?.sourceDevisId;
-                  const mIdx = d.document_data?.milestoneIndex;
-                  return String(srcId) === String(doc.id) && String(mIdx) === String(idx);
-                });
+                const milestoneRow = milestoneInvoices.find((mi: any) =>
+                  String(mi.devis_id) === String(doc.id) &&
+                  Number(mi.milestone_index) === Number(idx) &&
+                  mi.statut !== 'cancelled'
+                );
+                const linked = milestoneRow
+                  ? (documents.find((d: any) => d.id === milestoneRow.facture_id) || {
+                      id: milestoneRow.facture_id,
+                      document_number: milestoneRow.facture_number,
+                    } as any)
+                  : documents.find((d: any) => {
+                      if (d.document_type !== 'facture') return false;
+                      if (d.status === 'cancelled') return false;
+                      const srcId = d.document_data?.sourceDevisId;
+                      const mIdx = d.document_data?.milestoneIndex;
+                      return String(srcId) === String(doc.id) && String(mIdx) === String(idx);
+                    });
                 const sharePercent = m.mode === 'percent'
                   ? (m.percent || 0)
                   : (totalTTC > 0 ? Math.round(((m.amount || 0) / totalTTC) * 10000) / 100 : 0);

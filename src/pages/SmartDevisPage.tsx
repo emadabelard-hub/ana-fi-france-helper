@@ -21,6 +21,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import AuthModal from '@/components/auth/AuthModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import DualModeAnalysis from '@/components/smart-devis/DualModeAnalysis';
+import { useAssistantDictation } from '@/hooks/useAssistantDictation';
 import {
   ArrowLeft, ArrowRight, Camera, Image as ImageIcon, FileText, Map,
   Send, Loader2, Trash2, Plus, Sparkles, CheckCircle2, Edit3, Download, HelpCircle, X, Upload,

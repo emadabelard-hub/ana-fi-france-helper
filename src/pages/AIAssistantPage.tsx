@@ -60,6 +60,13 @@ const AIAssistantPage = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Live-sync dictation transcript into input field during recording
+  useEffect(() => {
+    if (dictation.isRecording && dictation.transcript) {
+      setInput(dictation.transcript);
+    }
+  }, [dictation.transcript, dictation.isRecording]);
+
   const handleOnboardingSubmit = () => {
     const name = onboardingName.trim();
     if (!name) return;
@@ -452,7 +459,7 @@ const AIAssistantPage = () => {
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center opacity-60">
             <Sparkles size={40} className="text-primary mb-4" />
@@ -494,49 +501,44 @@ const AIAssistantPage = () => {
         {messages.map((msg, i) => {
           const isUser = msg.role === 'user';
           const textAr = isArabic(msg.content);
-          return (
-            <div key={i} className={cn("flex", isUser ? "justify-end" : "justify-start")}>
-              {!isUser && (
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mr-2 mt-1">
-                  <Sparkles size={14} className="text-primary" />
+          if (isUser) {
+            return (
+              <div key={i} className="flex justify-end">
+                <div
+                  className={cn(
+                    "max-w-[85%] px-3 py-3 rounded-2xl rounded-br-sm whitespace-pre-wrap text-[15px] leading-[1.6]",
+                    textAr ? "font-cairo text-right" : "text-left"
+                  )}
+                  style={{ backgroundColor: '#C9A227', color: '#000' }}
+                  dir={textAr ? "rtl" : "ltr"}
+                >
+                  {msg.content}
                 </div>
-              )}
-              <div
-                className={cn(
-                  "max-w-[85%] p-3.5 rounded-2xl shadow-sm",
-                  isUser
-                    ? "bg-primary text-primary-foreground rounded-br-none"
-                    : "bg-card text-card-foreground border border-border rounded-bl-none",
-                )}
-              >
-                {isUser ? (
-                  <span className={cn("text-[13px] leading-relaxed whitespace-pre-wrap", textAr ? "font-cairo text-right" : "text-left")} dir={textAr ? "rtl" : "ltr"}>
-                    {msg.content}
-                  </span>
-                ) : (
-                  <MarkdownRenderer content={msg.content} isRTL={textAr} onSmartLinkClick={(type) => {
-                    if (type === 'cv') navigate('/pro/cv-generator');
-                    else if (type === 'pro') navigate('/pro/invoice-creator');
-                    else if (type === 'solutions') navigate('/premium-consultation');
-                  }} />
-                )}
               </div>
+            );
+          }
+          return (
+            <div key={i} className="w-full">
+              <MarkdownRenderer
+                content={msg.content}
+                isRTL={textAr}
+                className="!text-[15px] !leading-[1.6] text-foreground"
+                onSmartLinkClick={(type) => {
+                  if (type === 'cv') navigate('/pro/cv-generator');
+                  else if (type === 'pro') navigate('/pro/invoice-creator');
+                  else if (type === 'solutions') navigate('/premium-consultation');
+                }}
+              />
             </div>
           );
         })}
 
         {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-          <div className="flex justify-start">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mr-2 mt-1">
-              <Sparkles size={14} className="text-primary" />
-            </div>
-            <div className="bg-card border border-border rounded-2xl rounded-bl-none p-3.5 shadow-sm">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-            </div>
+          <div className="flex items-center gap-1.5">
+            <span className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>{isRTL ? 'يكتب' : 'écrit'}</span>
+            <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
           </div>
         )}
 
@@ -544,16 +546,21 @@ const AIAssistantPage = () => {
       </div>
 
       {/* Input - positioned above bottom nav */}
-      <div className="p-3 border-t border-border bg-background shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-        <div className="relative flex items-center gap-2 bg-muted p-1.5 rounded-[2rem] border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-          {/* Mic button — opens fullscreen voice modal */}
+      <div className="px-3 pt-3 border-t border-border bg-card/50 shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+        <div className="relative flex items-end gap-2 bg-background p-1.5 rounded-3xl border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+          {/* Mic button */}
           <button
             type="button"
             onClick={handleVoiceMicPress}
             disabled={isLoading}
-            className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
+            className={cn(
+              "w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all",
+              dictation.isRecording
+                ? "bg-red-500 text-white animate-pulse"
+                : "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
+            )}
           >
-            <Mic size={22} />
+            <Mic size={20} />
           </button>
           <textarea
             value={input}
@@ -561,12 +568,12 @@ const AIAssistantPage = () => {
             placeholder={isRTL ? 'اكتب سؤالك هنا...' : 'Écrivez votre question...'}
             disabled={isLoading}
             className={cn(
-              "flex-1 bg-transparent text-sm font-medium px-3 py-2 outline-none text-foreground placeholder:text-muted-foreground resize-none min-h-[36px] max-h-[120px]",
+              "flex-1 bg-transparent text-[15px] font-medium px-2 py-2.5 outline-none text-foreground placeholder:text-muted-foreground resize-none min-h-[44px] max-h-[200px] leading-[1.5]",
               isRTL && "font-cairo text-right"
             )}
             dir="auto"
             rows={1}
-            onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; }}
+            onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); } }}
           />
           <button
@@ -574,21 +581,14 @@ const AIAssistantPage = () => {
             onClick={() => send()}
             disabled={!input.trim() || isLoading}
             className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all shrink-0",
+              "w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5",
               input.trim() && !isLoading
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted-foreground/20 text-muted-foreground"
+                ? "bg-primary text-primary-foreground shadow-md active:scale-90"
+                : "bg-muted text-muted-foreground"
             )}
           >
             <Send size={18} />
           </button>
-        </div>
-
-        {/* Subtitle */}
-        <div className="pt-2 pb-1 text-center">
-          <p className="text-xs font-bold text-foreground font-cairo" dir="rtl">
-            اسألني أي حاجة
-          </p>
         </div>
       </div>
 

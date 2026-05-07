@@ -494,49 +494,44 @@ const AIAssistantPage = () => {
         {messages.map((msg, i) => {
           const isUser = msg.role === 'user';
           const textAr = isArabic(msg.content);
-          return (
-            <div key={i} className={cn("flex", isUser ? "justify-end" : "justify-start")}>
-              {!isUser && (
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mr-2 mt-1">
-                  <Sparkles size={14} className="text-primary" />
+          if (isUser) {
+            return (
+              <div key={i} className="flex justify-end">
+                <div
+                  className={cn(
+                    "max-w-[85%] px-3 py-3 rounded-2xl rounded-br-sm whitespace-pre-wrap text-[15px] leading-[1.6]",
+                    textAr ? "font-cairo text-right" : "text-left"
+                  )}
+                  style={{ backgroundColor: '#C9A227', color: '#000' }}
+                  dir={textAr ? "rtl" : "ltr"}
+                >
+                  {msg.content}
                 </div>
-              )}
-              <div
-                className={cn(
-                  "max-w-[85%] p-3.5 rounded-2xl shadow-sm",
-                  isUser
-                    ? "bg-primary text-primary-foreground rounded-br-none"
-                    : "bg-card text-card-foreground border border-border rounded-bl-none",
-                )}
-              >
-                {isUser ? (
-                  <span className={cn("text-[13px] leading-relaxed whitespace-pre-wrap", textAr ? "font-cairo text-right" : "text-left")} dir={textAr ? "rtl" : "ltr"}>
-                    {msg.content}
-                  </span>
-                ) : (
-                  <MarkdownRenderer content={msg.content} isRTL={textAr} onSmartLinkClick={(type) => {
-                    if (type === 'cv') navigate('/pro/cv-generator');
-                    else if (type === 'pro') navigate('/pro/invoice-creator');
-                    else if (type === 'solutions') navigate('/premium-consultation');
-                  }} />
-                )}
               </div>
+            );
+          }
+          return (
+            <div key={i} className="w-full">
+              <MarkdownRenderer
+                content={msg.content}
+                isRTL={textAr}
+                className="!text-[15px] !leading-[1.6] text-foreground"
+                onSmartLinkClick={(type) => {
+                  if (type === 'cv') navigate('/pro/cv-generator');
+                  else if (type === 'pro') navigate('/pro/invoice-creator');
+                  else if (type === 'solutions') navigate('/premium-consultation');
+                }}
+              />
             </div>
           );
         })}
 
         {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-          <div className="flex justify-start">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mr-2 mt-1">
-              <Sparkles size={14} className="text-primary" />
-            </div>
-            <div className="bg-card border border-border rounded-2xl rounded-bl-none p-3.5 shadow-sm">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-            </div>
+          <div className="flex items-center gap-1.5">
+            <span className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>{isRTL ? 'يكتب' : 'écrit'}</span>
+            <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
           </div>
         )}
 

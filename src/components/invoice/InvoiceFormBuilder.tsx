@@ -1869,7 +1869,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       // Track milestone invoice in dedicated table (single source of truth)
       if (isMilestoneInvoiceFlow && insertedDocument?.id && prefillData?.sourceDocumentId
           && typeof prefillData?.milestoneIndex === 'number') {
-        const { error: milestoneInsertError } = await (supabase
+        const milestoneInsertResult = await (supabase
           .from('milestone_invoices') as any)
           .insert({
             user_id: user.id,
@@ -1882,11 +1882,26 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
             facture_id: insertedDocument.id,
             facture_number: insertedDocument.document_number,
             statut: 'facturee',
-          });
+          })
+          .select();
+        console.log('MILESTONE INSERT RESULT:', JSON.stringify(milestoneInsertResult));
+        const milestoneInsertError = milestoneInsertResult?.error;
         if (milestoneInsertError) {
           console.error('[InvoiceFormBuilder] milestone_invoices insert failed:', milestoneInsertError);
+          toast({
+            variant: 'destructive',
+            title: isRTL ? '❌ خطأ في تسجيل القسط' : '❌ Erreur enregistrement échéance',
+            description: milestoneInsertError.message || String(milestoneInsertError),
+          });
+        } else {
+          toast({
+            title: isRTL
+              ? `✅ تم تسجيل القسط ${(prefillData.milestoneIndex ?? 0) + 1}`
+              : `✅ Échéance ${(prefillData.milestoneIndex ?? 0) + 1} enregistrée`,
+          });
         }
       }
+
 
       // Clear drafts after successful save to prevent ghost state on next new document
       clearDraft();

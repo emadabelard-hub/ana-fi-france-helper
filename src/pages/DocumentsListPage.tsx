@@ -89,6 +89,7 @@ const DocumentsListPage = () => {
   const location = useLocation();
   const { toast } = useToast();
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [milestoneInvoices, setMilestoneInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<string>('all');

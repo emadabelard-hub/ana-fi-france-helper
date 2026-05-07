@@ -1441,22 +1441,6 @@ const DocumentsListPage = () => {
                     showArabic={true}
                   />
 
-                  {/* Milestone invoice actions inside full view for devis with payment schedule */}
-                  {selectedDocument.document_type === 'devis' &&
-                    selectedDocument.document_data?.paymentMilestones?.length > 0 && (
-                    <div className={cn("mt-6 pt-4 border-t border-border")}>
-                      <MilestoneInvoiceActions
-                        devisDoc={selectedDocument}
-                        onViewInvoice={(invoiceId) => {
-                          const linked = documents.find(d => d.id === invoiceId);
-                          if (linked) {
-                            setShowFullView(false);
-                            setTimeout(() => openDocumentView(linked as any), 100);
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
               </ScrollArea>
             </div>

@@ -1769,6 +1769,29 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         }),
       };
 
+      // FORCE-INJECT milestoneId — robust fallback to sessionStorage if prefillData was lost.
+      if (documentType === 'facture') {
+        let resolvedMilestoneId: string | null = (linkedDocumentData as any).milestoneId ?? prefillData?.milestoneId ?? null;
+        if (!resolvedMilestoneId) {
+          try {
+            const raw = sessionStorage.getItem('milestoneInvoiceData');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              resolvedMilestoneId = parsed?.milestoneId ?? null;
+              if (resolvedMilestoneId && !(linkedDocumentData as any).milestoneLabel && parsed?.milestoneLabel) {
+                (linkedDocumentData as any).milestoneLabel = parsed.milestoneLabel;
+              }
+            }
+          } catch (e) {
+            console.warn('[InvoiceFormBuilder] sessionStorage milestone fallback failed:', e);
+          }
+        }
+        if (resolvedMilestoneId) {
+          (linkedDocumentData as any).milestoneId = resolvedMilestoneId;
+        }
+        console.log('milestoneId à sauvegarder:', (linkedDocumentData as any).milestoneId ?? null);
+      }
+
       if (!invoiceRef.current) {
         toast({
           variant: 'destructive',

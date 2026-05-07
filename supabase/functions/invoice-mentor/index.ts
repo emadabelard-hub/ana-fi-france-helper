@@ -539,8 +539,21 @@ RÈGLES STRICTES :
 - Si la saisie correspond à une entrée de la table → utilise EXACTEMENT la traduction fournie.
 - Si la saisie ne correspond à aucune entrée → applique malgré tout la RÈGLE DES 3 ÉLÉMENTS pour produire une désignation professionnelle adaptée.
 - Vocabulaire métier conforme aux DTU (ragréage, sous-couche, enduit de rebouchage, joints époxy, NF C 15-100, NF DTU...).
-- N'invente JAMAIS de quantité, surface, prix, marque ou couleur non fournis.
-- Reste neutre : pas d'adjectifs commerciaux ("haut de gamme", "premium", "exceptionnel").`;
+- N'invente JAMAIS de quantité, surface, prix ou marque non fournis.
+- Reste neutre : pas d'adjectifs commerciaux ("haut de gamme", "premium", "exceptionnel").
+
+═══════════════════════════════════════════════════════════════════════
+🎨 RÈGLE COULEUR / FINITION (PRIORITAIRE) :
+═══════════════════════════════════════════════════════════════════════
+Si la saisie contient une COULEUR ou une FINITION (ex: "ازرق", "ازرق سماوي", "ابيض", "بيج", "ساتينيه", "مات", "لمعة", "satiné", "mat", "brillant", "bleu", "blanc", "ciel", "RAL ..."):
+- Tu DOIS l'inclure dans la désignation française finale au format : "— coloris [couleur traduite] [finition traduite]".
+- Tu DOIS dans ce cas IGNORER la traduction figée de la table de correspondance et produire une désignation enrichie qui contient la couleur/finition.
+- Traductions obligatoires des couleurs/finitions courantes :
+  • "ازرق" → "bleu" ; "ازرق سماوي" / "ازرق سما" → "bleu ciel" ; "ازرق غامق" → "bleu foncé"
+  • "ابيض" → "blanc" ; "اسود" → "noir" ; "احمر" → "rouge" ; "اصفر" → "jaune" ; "اخضر" → "vert" ; "بيج" → "beige" ; "رمادي" → "gris"
+  • "ساتينيه" / "ساتان" → "satiné" ; "مات" → "mat" ; "لمعة" / "لامع" → "brillant" ; "نصف لامع" → "semi-brillant"
+- Exemple obligatoire : saisie "أعمال الدهان سقف وحيطان باننيرة ازرق ساتينيه"
+  → "Fourniture et application de peinture acrylique satinée — coloris bleu — sur murs, plafond et plinthes, préparation du support, impression et finition incluses".`;
 
   const callOnce = async (strict: boolean) => {
     const userPrompt = strict

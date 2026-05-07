@@ -2246,56 +2246,46 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
                 </Card>
               )}
 
-              {/* Chat messages */}
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={cn("flex", msg.role === 'user' ? (isRTL ? 'justify-start' : 'justify-end') : (isRTL ? 'justify-end' : 'justify-start'))}>
-                  {msg.role === 'assistant' && !isRTL && (
-                    <div className="shrink-0 mr-2 mt-1">
-                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+              {/* Chat messages — Claude.ai style (full width assistant, gold bubble user) */}
+              {chatMessages.map((msg, i) => {
+                if (msg.role === 'user') {
+                  return (
+                    <div key={i} className="flex justify-end">
+                      <div
+                        className={cn(
+                          "max-w-[85%] px-3 py-3 rounded-2xl rounded-br-sm whitespace-pre-wrap text-[15px] leading-[1.6]",
+                          isRTL ? "font-cairo text-right" : "text-left"
+                        )}
+                        style={{ backgroundColor: '#C9A227', color: '#000' }}
+                        dir={isRTL ? 'rtl' : 'ltr'}
+                      >
+                        {msg.content}
                       </div>
                     </div>
-                  )}
-                  <div className={cn(
-                    "max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm",
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-sm'
-                      : 'bg-card text-card-foreground border border-border/60 rounded-bl-sm'
-                  )}>
-                    {msg.role === 'assistant' ? (
-                      i === chatMessages.findIndex(m => m.role === 'assistant') && analysisData ? (
-                        <DualModeAnalysis analysisData={analysisData} fullContent={msg.content} isRTL={isRTL} />
-                      ) : (
-                        <MarkdownRenderer content={msg.content} isRTL={isRTL} />
-                      )
+                  );
+                }
+                const isFirstAssistantWithAnalysis =
+                  i === chatMessages.findIndex(m => m.role === 'assistant') && analysisData;
+                return (
+                  <div key={i} className="w-full">
+                    {isFirstAssistantWithAnalysis ? (
+                      <DualModeAnalysis analysisData={analysisData} fullContent={msg.content} isRTL={isRTL} />
                     ) : (
-                      <p className={cn("leading-relaxed", isRTL && "font-cairo text-right")} dir={isRTL ? 'rtl' : 'ltr'}>{msg.content}</p>
+                      <MarkdownRenderer
+                        content={msg.content}
+                        isRTL={isRTL}
+                        className="!text-[15px] !leading-[1.6] text-foreground"
+                      />
                     )}
-                    <p className={cn("text-[9px] mt-1.5 opacity-50", msg.role === 'user' ? 'text-right' : 'text-left')}>
-                      {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
                   </div>
-                  {msg.role === 'assistant' && isRTL && (
-                    <div className="shrink-0 ml-2 mt-1">
-                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
               {isChatLoading && chatMessages[chatMessages.length - 1]?.role !== 'assistant' && (
-                <div className={cn("flex items-center gap-2", isRTL ? 'justify-end flex-row-reverse' : 'justify-start')}>
-                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                  <div className="bg-card border border-border/60 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '75ms' }} />
-                      <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    </div>
-                  </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>{isRTL ? 'يكتب' : 'écrit'}</span>
+                  <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               )}
               {/* Analysis complete — navigate to manual devis creation */}

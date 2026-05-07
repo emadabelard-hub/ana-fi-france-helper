@@ -18,7 +18,7 @@ import { extractAdvancedPrefillData } from '@/lib/prefillAdvancedData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
 import InvoiceDisplay from '@/components/invoice/InvoiceDisplay';
-import MilestoneInvoiceActions from '@/components/invoice/MilestoneInvoiceActions';
+import { buildMilestonePrefill } from '@/lib/milestonePrefill';
 import { ScrollArea } from '@/components/ui/scroll-area';
 interface DocumentRow {
   id: string;
@@ -787,45 +787,101 @@ const DocumentsListPage = () => {
           </div>
         )}
 
-        {/* Milestone schedule badge for devis — live progress X/Y facturées */}
+        {/* Per-milestone invoice creation buttons */}
         {isDevis && doc.document_data?.paymentMilestones?.length > 0 && (() => {
-          const milestones = doc.document_data.paymentMilestones as Array<{ id: string }>;
-          const total = milestones.length;
-          let invoiced = 0;
-          let paid = 0;
-          for (const m of milestones) {
-            const linked = documents.find((d: any) =>
-              d.document_type === 'facture' &&
-              d.status !== 'cancelled' &&
-              d.document_data?.milestoneId === m.id &&
-              d.document_data?.sourceDevisId === doc.id
-            );
-            if (linked) {
-              invoiced += 1;
-              if ((linked as any).payment_status === 'paid') paid += 1;
-            }
-          }
-          const allPaid = paid === total;
-          const allInvoiced = invoiced === total;
-          const remaining = total - invoiced;
+          const milestones = doc.document_data.paymentMilestones as Array<{
+            id: string;
+            label?: string;
+            mode: 'percent' | 'fixed';
+            percent?: number;
+            amount?: number;
+          }>;
+          const totalTTC = doc.total_ttc;
           return (
-            <div className={cn("mt-3 flex items-center gap-2 flex-wrap", isRTL && "flex-row-reverse")}>
-              <span className={cn(
-                "inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border",
-                allPaid
-                  ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
-                  : allInvoiced
-                    ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
-                    : "bg-amber-500/15 text-amber-500 border-amber-500/30",
-                isRTL && "font-cairo"
-              )}>
-                {allPaid
-                  ? (isRTL ? `✅ ${total}/${total} مدفوعة` : `✅ ${total}/${total} soldé`)
-                  : (isRTL
-                      ? `📋 ${invoiced}/${total} مفوترة — ${remaining} باقي${remaining > 1 ? 'ة' : ''}`
-                      : `📋 ${invoiced}/${total} échéance${total > 1 ? 's' : ''} facturée${invoiced > 1 ? 's' : ''} — ${remaining} restante${remaining > 1 ? 's' : ''}`)
+            <div className={cn("mt-3 flex flex-col gap-2", isRTL && "items-stretch")}>
+              {milestones.map((m, idx) => {
+                const linked = documents.find((d: any) =>
+                  d.document_type === 'facture' &&
+                  d.status !== 'cancelled' &&
+                  d.document_data?.sourceDevisId === doc.id &&
+                  d.document_data?.milestoneIndex === idx
+                );
+                const sharePercent = m.mode === 'percent'
+                  ? (m.percent || 0)
+                  : (totalTTC > 0 ? Math.round(((m.amount || 0) / totalTTC) * 10000) / 100 : 0);
+                const amount = m.mode === 'percent'
+                  ? (totalTTC * (m.percent || 0)) / 100
+                  : (m.amount || 0);
+                const labelText = m.label?.trim() || (
+                  idx === 0
+                    ? (isRTL ? 'مقدم' : 'Acompte')
+                    : idx === milestones.length - 1
+                      ? (isRTL ? 'الرصيد' : 'Solde')
+                      : (isRTL ? 'دفعة وسطى' : 'Intermédiaire')
+                );
+                if (linked) {
+                  return (
+                    <Button
+                      key={m.id || idx}
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); openDocumentView(linked as any); }}
+                      className={cn(
+                        "h-9 justify-between gap-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 font-bold",
+                        isRTL && "font-cairo flex-row-reverse"
+                      )}
+                    >
+                      <span className="truncate">
+                        ✅ {isRTL ? `قسط ${idx + 1}/${milestones.length} — ${labelText} — ${formatCurrency(amount)}` : `Échéance ${idx + 1}/${milestones.length} — ${labelText} — ${formatCurrency(amount)}`}
+                      </span>
+                      <span className="shrink-0 text-xs">
+                        {isRTL ? 'مفوترة — عرض' : 'Facturée — Voir'}
+                      </span>
+                    </Button>
+                  );
                 }
-              </span>
+                return (
+                  <Button
+                    key={m.id || idx}
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      try {
+                        const prefill = buildMilestonePrefill({
+                          quote: {
+                            id: doc.id,
+                            documentNumber: doc.document_number,
+                            clientName: doc.client_name,
+                            clientAddress: doc.client_address,
+                            workSiteAddress: doc.work_site_address,
+                            natureOperation: doc.nature_operation,
+                            totalTTC: doc.total_ttc,
+                            documentData: doc.document_data || {},
+                          },
+                          milestone: m,
+                          milestoneIndex: idx,
+                          totalMilestones: milestones.length,
+                        });
+                        sessionStorage.removeItem('quoteToInvoiceData');
+                        sessionStorage.setItem('milestoneInvoiceData', JSON.stringify(prefill));
+                        navigate('/pro/invoice-creator?type=facture&prefill=milestone');
+                      } catch (err) {
+                        console.error('[DocumentsListPage] milestone prefill error:', err);
+                      }
+                    }}
+                    className={cn(
+                      "h-9 justify-between gap-2 bg-[hsl(45,80%,55%)] hover:bg-[hsl(45,80%,45%)] text-[hsl(0,0%,8%)] font-bold",
+                      isRTL && "font-cairo flex-row-reverse"
+                    )}
+                  >
+                    <span className="truncate">
+                      🧾 {isRTL ? `قسط ${idx + 1}/${milestones.length} — ${labelText} ${sharePercent}% — ${formatCurrency(amount)}` : `Échéance ${idx + 1}/${milestones.length} — ${labelText} ${sharePercent}% — ${formatCurrency(amount)}`}
+                    </span>
+                    <span className="shrink-0 text-xs">
+                      {isRTL ? '← إنشاء فاتورة' : '→ Créer facture'}
+                    </span>
+                  </Button>
+                );
+              })}
             </div>
           );
         })()}
@@ -1360,19 +1416,6 @@ const DocumentsListPage = () => {
                 </div>
               )}
 
-              {/* Milestone invoice actions for devis with payment schedule */}
-              {selectedDocument.document_type === 'devis' &&
-                selectedDocument.document_data?.paymentMilestones?.length > 0 && (
-                <div className={cn("pt-3 border-t border-border")}>
-                  <MilestoneInvoiceActions
-                    devisDoc={selectedDocument}
-                    onViewInvoice={(invoiceId) => {
-                      const linked = documents.find(d => d.id === invoiceId);
-                      if (linked) openDocumentView(linked as any);
-                    }}
-                  />
-                </div>
-              )}
             </>
           )}
         </DialogContent>
@@ -1398,22 +1441,6 @@ const DocumentsListPage = () => {
                     showArabic={true}
                   />
 
-                  {/* Milestone invoice actions inside full view for devis with payment schedule */}
-                  {selectedDocument.document_type === 'devis' &&
-                    selectedDocument.document_data?.paymentMilestones?.length > 0 && (
-                    <div className={cn("mt-6 pt-4 border-t border-border")}>
-                      <MilestoneInvoiceActions
-                        devisDoc={selectedDocument}
-                        onViewInvoice={(invoiceId) => {
-                          const linked = documents.find(d => d.id === invoiceId);
-                          if (linked) {
-                            setShowFullView(false);
-                            setTimeout(() => openDocumentView(linked as any), 100);
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
               </ScrollArea>
             </div>

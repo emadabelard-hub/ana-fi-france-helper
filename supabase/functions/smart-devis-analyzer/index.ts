@@ -1539,9 +1539,15 @@ Tu peux utiliser "chantierType", "renovationType", "finishColor", le diagnostic 
   RÈGLE COULEUR DE FINITION (CRITIQUE)
 ═══════════════════════════════════════
 
-⛔ Si l'analyse mentionne une couleur (dans diagnostic, materials, workPlan, finishColor, ou userMessage):
-  → TOUJOURS l'inclure dans la designation_fr de la ligne de peinture/revêtement.
-  → Exemple: "bleu piscine" → "Peinture piscine bleue – 2 couches"
+⛔ Si l'analyse mentionne une couleur (dans diagnostic, materials, workPlan, finishColor, couleur, color, teinte, ou userMessage):
+  → La couleur extraite est OBLIGATOIREMENT injectée dans CHAQUE ligne de peinture (codes PEI*).
+  → Format strict obligatoire: "Peinture acrylique satinée — coloris bleu satiné"
+  → Exemples:
+     - finishColor "bleu satiné" → "Peinture acrylique satinée — coloris bleu satiné"
+     - finishColor "blanc mat" → "Peinture acrylique mate — coloris blanc mat"
+     - finishColor "gris brillant" → "Peinture brillante — coloris gris brillant"
+     - "bleu piscine" → "Peinture piscine bleue – 2 couches"
+  → ⛔ INTERDIT ABSOLU: générer "Travaux de peinture" générique. JAMAIS.
   → NE JAMAIS mettre "peinture blanche" par défaut si une autre couleur est spécifiée.
 
 ═══════════════════════════════════════

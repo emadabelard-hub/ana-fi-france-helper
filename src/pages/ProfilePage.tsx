@@ -480,6 +480,32 @@ const ProfilePage = () => {
                   </Select>
                 </div>
 
+                {/* Question CA avant la case */}
+                <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-2 text-right">
+                  <p className="text-sm font-semibold font-cairo">
+                    هل رقم أعمالك السنوي أقل من 91.900€ ؟
+                  </p>
+                  <div className="flex gap-2 flex-row-reverse">
+                    <Button type="button" size="sm"
+                      variant={formData.tva_exempt ? "default" : "outline"}
+                      onClick={() => setFormData(prev => ({ ...prev, tva_exempt: true }))}
+                      className="flex-1 font-cairo">
+                      نعم → فعّل المعفى
+                    </Button>
+                    <Button type="button" size="sm"
+                      variant={!formData.tva_exempt ? "default" : "outline"}
+                      onClick={() => setFormData(prev => ({ ...prev, tva_exempt: false }))}
+                      className="flex-1 font-cairo">
+                      لا → سجّل في TVA
+                    </Button>
+                  </div>
+                  {!formData.tva_exempt && (
+                    <p className="text-[11px] text-amber-500 font-cairo">
+                      ⚠️ لازم تسجل في TVA وتعمل تصريح كل 3 شهور.
+                    </p>
+                  )}
+                </div>
+
                 <div className={cn(
                   "flex items-start gap-3 p-3.5 rounded-xl border transition-colors flex-row-reverse",
                   formData.tva_exempt ? "border-green-500/40 bg-green-50 dark:bg-green-500/5" : "border-border/30 bg-secondary/30"
@@ -487,7 +513,35 @@ const ProfilePage = () => {
                   <Checkbox id="tva-exempt" checked={formData.tva_exempt}
                     onCheckedChange={(checked) => setFormData(prev => ({ ...prev, tva_exempt: !!checked }))} className="mt-0.5" />
                   <Label htmlFor="tva-exempt" className="flex-1 cursor-pointer text-right font-cairo">
-                    <span className="font-medium text-sm">معفى من TVA (Art. 293 B)</span>
+                    <span className="font-medium text-sm inline-flex items-center gap-1.5 flex-row-reverse">
+                      معفى من TVA (Art. 293 B)
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button type="button" onClick={(e) => e.preventDefault()}
+                            className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition shrink-0"
+                            aria-label="Info TVA">
+                            <Info className="h-3 w-3" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent side="top" align="center" dir="rtl"
+                          className="w-80 text-sm leading-relaxed font-cairo text-right">
+                          <div className="space-y-2">
+                            <p className="font-bold">أنت معفى من TVA لو رقم أعمالك السنوي أقل من :</p>
+                            <ul className="space-y-1 pr-4">
+                              <li>• 91.900€ لو شغلتك بناء أو صنايع</li>
+                              <li>• 36.800€ لو شغلتك خدمات</li>
+                            </ul>
+                            <div className="pt-2 border-t border-border space-y-1">
+                              <p>✅ <span className="font-semibold">لو معفى</span> → متحطش TVA في فواتيرك، وحط الجملة دي:</p>
+                              <p className="font-mono text-xs bg-muted p-2 rounded" dir="ltr">TVA non applicable — Art. 293 B CGI</p>
+                            </div>
+                            <div className="pt-2 border-t border-border">
+                              <p>⚠️ <span className="font-semibold">لو مش معفى</span> → حط TVA عادي في فواتيرك، وبتعمل تصريح TVA كل 3 شهور.</p>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </span>
                   </Label>
                 </div>
 

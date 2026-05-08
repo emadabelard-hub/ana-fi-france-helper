@@ -415,7 +415,7 @@ const ArchiveAccountingPage = () => {
       return computeVATSynthesis(data);
     } catch { return null; }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [facturesValidees, expenses, periodBoundaries]);
+  }, [facturesPayees, expenses, periodBoundaries]);
 
   const handleExportCSV = () => {
     if (allItems.length === 0) return;

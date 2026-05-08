@@ -1029,9 +1029,9 @@ const ExpensesPage = () => {
         <Button
           className={cn("w-full gap-2.5 bg-primary text-primary-foreground hover:bg-primary/90 h-14 rounded-xl shadow-md", isRTL && "flex-row-reverse font-cairo")}
           onClick={handleAccountantExport}
-          disabled={filtered.length === 0}
+          disabled={filtered.length === 0 || sendingToAccountant}
         >
-          <Download className="h-5 w-5" />
+          {sendingToAccountant ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
           <span className="font-bold" style={{ fontSize: '16px' }}>
             {isRTL ? 'تصدير بيانات المحاسب' : 'Export comptable'}
           </span>

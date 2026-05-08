@@ -105,6 +105,16 @@ const FinancialSummary = ({
         </div>
       </div>
 
+      {/* Badge Franchise TVA */}
+      {isTvaExempt && (
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+          <p className="text-[11px] font-bold text-emerald-300">
+            Franchise TVA — Art. 293B du CGI
+          </p>
+        </div>
+      )}
+
       {/* BLOC 2: ESTIMATIONS */}
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
         <div className={cn('flex items-center gap-2 mb-3', isRTL && 'flex-row-reverse')}>
@@ -112,22 +122,24 @@ const FinancialSummary = ({
             <AlertTriangle className="h-4 w-4 text-amber-400" />
           </div>
           <h3 className={cn('text-sm font-bold text-amber-400', isRTL && 'font-cairo')}>
-            Estimation fiscale
+            Estimation fiscale {tax.statusKind !== 'unknown' && `· ${tax.statusKind === 'auto-entrepreneur' ? 'Auto-entrepreneur' : tax.statusKind === 'societe' ? 'Société' : 'EI/EIRL'}`}
           </h3>
         </div>
-        <div className="grid grid-cols-2 gap-2.5 mb-3">
+        <div className={cn('grid gap-2.5 mb-3', tax.incomeTax > 0 ? 'grid-cols-2' : 'grid-cols-1')}>
           <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-              URSSAF ({urssafRate}%)
+              {isRTL ? tax.socialChargesLabelAr : tax.socialChargesLabelFr} ({tax.socialChargesRate}%)
             </span>
             <p className="text-base font-black text-amber-400">{fmt(urssafEstime)}</p>
           </div>
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-              Impôt société ({isRate}%)
-            </span>
-            <p className="text-base font-black text-amber-400">{fmt(isEstime)}</p>
-          </div>
+          {tax.incomeTax > 0 && (
+            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
+                {isRTL ? tax.incomeTaxLabelAr : tax.incomeTaxLabelFr}
+              </span>
+              <p className="text-base font-black text-amber-400">{fmt(isEstime)}</p>
+            </div>
+          )}
         </div>
         <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
           <p className="text-[11px] text-amber-300/90 leading-relaxed font-medium">

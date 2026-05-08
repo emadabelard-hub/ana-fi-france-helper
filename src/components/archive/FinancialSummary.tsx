@@ -65,8 +65,8 @@ const FinancialSummary = ({
     { label: 'Bénéfice avant impôt', value: beneficeAvantImpot, icon: Wallet, color: beneficeAvantImpot >= 0 ? 'text-blue-400' : 'text-red-400', bg: beneficeAvantImpot >= 0 ? 'bg-blue-500/10' : 'bg-red-500/10' },
     { label: 'Bénéfice net estimé', value: benefice, icon: Wallet, color: benefice >= 0 ? 'text-emerald-400' : 'text-red-400', bg: benefice >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' },
     { label: 'Trésorerie encaissée', value: tresorerieEncaissee, icon: Banknote, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
-    { label: 'TVA collectée', value: tvaCollectee, icon: Receipt, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { label: 'TVA déductible', value: tvaDeductible, icon: Receipt, color: 'text-violet-400', bg: 'bg-violet-500/10' },
+    { label: 'TVA collectée', value: effectiveTvaCollectee, icon: Receipt, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    { label: 'TVA déductible', value: effectiveTvaDeductible, icon: Receipt, color: 'text-violet-400', bg: 'bg-violet-500/10' },
     { label: 'TVA à payer', value: tvaAPayer, icon: Receipt, color: 'text-amber-400', bg: 'bg-amber-500/10' },
   ];
 

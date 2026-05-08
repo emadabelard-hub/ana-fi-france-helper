@@ -128,6 +128,16 @@ const ShbikLbikCard = ({
             </div>
           )}
 
+          {/* ── Franchise TVA badge ── */}
+          {isTvaExempt && (
+            <div className={cn('flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2', isRTL && 'flex-row-reverse')}>
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+              <span className={cn('text-[11px] font-bold text-emerald-300', isRTL && 'font-cairo')}>
+                Franchise TVA · Art. 293B CGI
+              </span>
+            </div>
+          )}
+
           {/* ── Reserve compact ── */}
           <div className="rounded-xl bg-[hsl(220,20%,16%)] px-4 py-3">
             <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
@@ -137,9 +147,12 @@ const ShbikLbikCard = ({
               <span className="text-sm font-black text-amber-400">{fmt(totalReserve)}</span>
             </div>
             <p className={cn('text-[10px] text-muted-foreground mt-1', isRTL && 'font-cairo text-right')}>
-              {isRTL
-                ? `TVA + URSSAF + ضرائب = ${fmt(totalReserve)}`
-                : `TVA + URSSAF + impôts = ${fmt(totalReserve)}`}
+              {(() => {
+                const socialLabel = isRTL ? tax.socialChargesLabelAr : tax.socialChargesLabelFr;
+                const tvaPart = isTvaExempt ? '' : 'TVA + ';
+                const isPart = tax.incomeTax > 0 ? (isRTL ? ' + ضرائب' : ' + IS') : '';
+                return `${tvaPart}${socialLabel}${isPart} = ${fmt(totalReserve)}`;
+              })()}
             </p>
           </div>
 

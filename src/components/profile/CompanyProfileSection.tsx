@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Building2, FileText, MapPin, Mail, Upload, Image, Loader2, Check, AlertCircle, Bell } from 'lucide-react';
+import { Building2, FileText, MapPin, Mail, Upload, Image, Loader2, Check, AlertCircle, Bell, Info } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

@@ -360,7 +360,7 @@ const ArchiveAccountingPage = () => {
   };
 
   const buildCsvRows = (): AccountingExportData => {
-    const invoices: CsvDocumentRow[] = facturesValidees
+    const invoices: CsvDocumentRow[] = facturesPayees
       .filter(d => inPeriod(d.rawData?.created_at || ''))
       .map(d => ({
         date: d.rawData?.created_at || new Date().toISOString(),

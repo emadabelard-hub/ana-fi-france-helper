@@ -576,6 +576,8 @@ const ArchiveAccountingPage = () => {
           debugPaidCount={facturesValidees.filter(d => d.paymentStatus === 'paid').length}
           debugUnpaidCount={facturesValidees.filter(d => d.paymentStatus !== 'paid').length}
           tresorerieEncaissee={tresorerieEncaissee}
+          legalStatus={(profile as any)?.legal_status}
+          isTvaExempt={isTvaExempt}
         />
       </div>
 
@@ -593,6 +595,7 @@ const ArchiveAccountingPage = () => {
           isTvaExempt={isTvaExempt}
           isRTL={isRTL}
           tresorerieEncaissee={tresorerieEncaissee}
+          legalStatus={(profile as any)?.legal_status}
         />
       </div>
 

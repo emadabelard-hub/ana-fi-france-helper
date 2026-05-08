@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, ChevronRight, Banknote } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronRight, Banknote, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { computeTaxes } from '@/lib/taxCalculations';
 
 interface ShbikLbikProps {
   totalIncome: number;
@@ -18,6 +19,7 @@ interface ShbikLbikProps {
   tresorerieEncaissee?: number;
   caEnAttenteHT?: number;
   caTotalFactureHT?: number;
+  legalStatus?: string | null;
 }
 
 const fmt = (n: number) =>
@@ -29,6 +31,7 @@ const ShbikLbikCard = ({
   isTvaExempt, isRTL, tresorerieEncaissee = 0,
   caEnAttenteHT = 0,
   caTotalFactureHT = 0,
+  legalStatus,
 }: ShbikLbikProps) => {
   const navigate = useNavigate();
   const [showDetail, setShowDetail] = useState(false);
@@ -36,10 +39,14 @@ const ShbikLbikCard = ({
   // ── Calculations — 100% encaissement ──
   const baseIncome = tresorerieEncaissee > 0 ? tresorerieEncaissee : totalIncome;
   const baseIncomeHT = totalIncomeHT > 0 ? totalIncomeHT : (tresorerieEncaissee > 0 ? tresorerieEncaissee / 1.1 : 0);
+  // Si franchise TVA → TVA collectée et à payer = 0
   const tvaNet = isTvaExempt ? 0 : Math.max(0, tvaCollectee - tvaDeductible);
-  const urssaf = baseIncomeHT * (urssafRate / 100);
-  const benefice = baseIncomeHT - totalExpensesHT - urssaf;
-  const impot = Math.max(0, benefice * (isRate / 100));
+
+  // Charges sociales + IS selon statut juridique
+  const tax = computeTaxes({ legalStatus, caHT: baseIncomeHT, depensesHT: totalExpensesHT, urssafRateOverride: urssafRate });
+  const urssaf = tax.socialCharges;
+  const impot = tax.incomeTax;
+  const benefice = baseIncomeHT - totalExpensesHT - urssaf - impot;
   const totalReserve = tvaNet + urssaf + impot;
   const disponible = baseIncome - totalExpenses - totalReserve;
   const aPrevoir = urssaf + impot;
@@ -121,6 +128,16 @@ const ShbikLbikCard = ({
             </div>
           )}
 
+          {/* ── Franchise TVA badge ── */}
+          {isTvaExempt && (
+            <div className={cn('flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2', isRTL && 'flex-row-reverse')}>
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+              <span className={cn('text-[11px] font-bold text-emerald-300', isRTL && 'font-cairo')}>
+                Franchise TVA · Art. 293B CGI
+              </span>
+            </div>
+          )}
+
           {/* ── Reserve compact ── */}
           <div className="rounded-xl bg-[hsl(220,20%,16%)] px-4 py-3">
             <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
@@ -130,9 +147,12 @@ const ShbikLbikCard = ({
               <span className="text-sm font-black text-amber-400">{fmt(totalReserve)}</span>
             </div>
             <p className={cn('text-[10px] text-muted-foreground mt-1', isRTL && 'font-cairo text-right')}>
-              {isRTL
-                ? `TVA + URSSAF + ضرائب = ${fmt(totalReserve)}`
-                : `TVA + URSSAF + impôts = ${fmt(totalReserve)}`}
+              {(() => {
+                const socialLabel = isRTL ? tax.socialChargesLabelAr : tax.socialChargesLabelFr;
+                const tvaPart = isTvaExempt ? '' : 'TVA + ';
+                const isPart = tax.incomeTax > 0 ? (isRTL ? ' + ضرائب' : ' + IS') : '';
+                return `${tvaPart}${socialLabel}${isPart} = ${fmt(totalReserve)}`;
+              })()}
             </p>
           </div>
 

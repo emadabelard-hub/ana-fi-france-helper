@@ -1,5 +1,6 @@
-import { TrendingUp, TrendingDown, Wallet, Receipt, AlertTriangle, Calculator, Banknote } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Receipt, AlertTriangle, Calculator, Banknote, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { computeTaxes } from '@/lib/taxCalculations';
 
 interface FinancialSummaryProps {
   caHT: number;
@@ -18,6 +19,8 @@ interface FinancialSummaryProps {
   tresorerieEncaissee?: number;
   caEnAttenteHT?: number;
   caTotalFactureHT?: number;
+  legalStatus?: string | null;
+  isTvaExempt?: boolean;
 }
 
 const fmt = (n: number) =>
@@ -33,19 +36,24 @@ const FinancialSummary = ({
   tresorerieEncaissee = 0,
   caEnAttenteHT = 0,
   caTotalFactureHT = 0,
+  legalStatus,
+  isTvaExempt = false,
 }: FinancialSummaryProps) => {
-  const tvaAPayer = Math.max(0, tvaCollectee - tvaDeductible);
+  // TVA : si franchise (Art.293B), TVA collectée et à payer = 0
+  const effectiveTvaCollectee = isTvaExempt ? 0 : tvaCollectee;
+  const effectiveTvaDeductible = isTvaExempt ? 0 : tvaDeductible;
+  const tvaAPayer = isTvaExempt ? 0 : Math.max(0, effectiveTvaCollectee - effectiveTvaDeductible);
 
-  // Bénéfice brut HT (pour base URSSAF/IS)
+  // Calcul charges/IS selon statut juridique
+  const tax = computeTaxes({ legalStatus, caHT, depensesHT, urssafRateOverride: urssafRate });
   const beneficeBrutHT = Math.max(0, caHT - depensesHT);
-  const urssafEstime = Math.round(beneficeBrutHT * (urssafRate / 100) * 100) / 100;
-  const isEstime = Math.max(0, Math.round((beneficeBrutHT - urssafEstime) * (isRate / 100) * 100) / 100);
+  const urssafEstime = tax.socialCharges;
+  const isEstime = tax.incomeTax;
 
-  // Bénéfice avant impôt = encaissé - TVA - URSSAF - dépenses
+  // Bénéfice avant impôt = encaissé - TVA - charges sociales - dépenses
   const beneficeAvantImpot = tresorerieEncaissee - tvaAPayer - urssafEstime - depensesHT;
 
-  // Bénéfice net estimé = encaissé - TVA à payer - dépenses - URSSAF - IS
-  // Ne peut jamais dépasser la trésorerie encaissée
+  // Bénéfice net estimé = encaissé - TVA - dépenses - charges - IS
   const rawBenefice = tresorerieEncaissee - tvaAPayer - depensesHT - urssafEstime - isEstime;
   const benefice = Math.min(rawBenefice, tresorerieEncaissee);
 
@@ -57,8 +65,8 @@ const FinancialSummary = ({
     { label: 'Bénéfice avant impôt', value: beneficeAvantImpot, icon: Wallet, color: beneficeAvantImpot >= 0 ? 'text-blue-400' : 'text-red-400', bg: beneficeAvantImpot >= 0 ? 'bg-blue-500/10' : 'bg-red-500/10' },
     { label: 'Bénéfice net estimé', value: benefice, icon: Wallet, color: benefice >= 0 ? 'text-emerald-400' : 'text-red-400', bg: benefice >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' },
     { label: 'Trésorerie encaissée', value: tresorerieEncaissee, icon: Banknote, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
-    { label: 'TVA collectée', value: tvaCollectee, icon: Receipt, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { label: 'TVA déductible', value: tvaDeductible, icon: Receipt, color: 'text-violet-400', bg: 'bg-violet-500/10' },
+    { label: 'TVA collectée', value: effectiveTvaCollectee, icon: Receipt, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    { label: 'TVA déductible', value: effectiveTvaDeductible, icon: Receipt, color: 'text-violet-400', bg: 'bg-violet-500/10' },
     { label: 'TVA à payer', value: tvaAPayer, icon: Receipt, color: 'text-amber-400', bg: 'bg-amber-500/10' },
   ];
 
@@ -97,6 +105,16 @@ const FinancialSummary = ({
         </div>
       </div>
 
+      {/* Badge Franchise TVA */}
+      {isTvaExempt && (
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+          <p className="text-[11px] font-bold text-emerald-300">
+            Franchise TVA — Art. 293B du CGI
+          </p>
+        </div>
+      )}
+
       {/* BLOC 2: ESTIMATIONS */}
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
         <div className={cn('flex items-center gap-2 mb-3', isRTL && 'flex-row-reverse')}>
@@ -104,22 +122,24 @@ const FinancialSummary = ({
             <AlertTriangle className="h-4 w-4 text-amber-400" />
           </div>
           <h3 className={cn('text-sm font-bold text-amber-400', isRTL && 'font-cairo')}>
-            Estimation fiscale
+            Estimation fiscale {tax.statusKind !== 'unknown' && `· ${tax.statusKind === 'auto-entrepreneur' ? 'Auto-entrepreneur' : tax.statusKind === 'societe' ? 'Société' : 'EI/EIRL'}`}
           </h3>
         </div>
-        <div className="grid grid-cols-2 gap-2.5 mb-3">
+        <div className={cn('grid gap-2.5 mb-3', tax.incomeTax > 0 ? 'grid-cols-2' : 'grid-cols-1')}>
           <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-              URSSAF ({urssafRate}%)
+              {isRTL ? tax.socialChargesLabelAr : tax.socialChargesLabelFr} ({tax.socialChargesRate}%)
             </span>
             <p className="text-base font-black text-amber-400">{fmt(urssafEstime)}</p>
           </div>
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-              Impôt société ({isRate}%)
-            </span>
-            <p className="text-base font-black text-amber-400">{fmt(isEstime)}</p>
-          </div>
+          {tax.incomeTax > 0 && (
+            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
+                {isRTL ? tax.incomeTaxLabelAr : tax.incomeTaxLabelFr}
+              </span>
+              <p className="text-base font-black text-amber-400">{fmt(isEstime)}</p>
+            </div>
+          )}
         </div>
         <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
           <p className="text-[11px] text-amber-300/90 leading-relaxed font-medium">

@@ -63,8 +63,36 @@ export default function GlobalErrorHandler() {
       return !event.error && message.length === 0;
     };
 
+    const RELOAD_KEY = "__stale_chunk_reload_at";
+    const isStaleChunkError = (value: unknown) => {
+      const message = normalizeErrorMessage(value);
+      return (
+        message.includes("failed to fetch dynamically imported module") ||
+        message.includes("importing a module script failed") ||
+        message.includes("chunkloaderror") ||
+        message.includes("loading chunk")
+      );
+    };
+
+    const reloadOnceForStaleChunk = () => {
+      try {
+        const last = Number(sessionStorage.getItem(RELOAD_KEY) || "0");
+        if (Date.now() - last < 10000) return;
+        sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+      } catch {
+        // ignore
+      }
+      window.location.reload();
+    };
+
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const message = normalizeErrorMessage(event.reason);
+
+      if (isStaleChunkError(event.reason)) {
+        event.preventDefault();
+        reloadOnceForStaleChunk();
+        return;
+      }
 
       if (!message || isNonCriticalError(event.reason)) {
         event.preventDefault();
@@ -77,6 +105,12 @@ export default function GlobalErrorHandler() {
     };
 
     const handleError = (event: ErrorEvent) => {
+      if (isStaleChunkError(event.error ?? event.message)) {
+        event.preventDefault();
+        reloadOnceForStaleChunk();
+        return;
+      }
+
       if (
         isResourceLoadError(event) ||
         isEmptyBrowserNoise(event) ||

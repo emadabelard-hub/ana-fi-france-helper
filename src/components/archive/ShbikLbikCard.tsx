@@ -35,7 +35,7 @@ const ShbikLbikCard = ({
 
   // ── Calculations — 100% encaissement ──
   const baseIncome = tresorerieEncaissee > 0 ? tresorerieEncaissee : totalIncome;
-  const baseIncomeHT = tresorerieEncaissee > 0 ? (totalIncomeHT > 0 ? totalIncomeHT : tresorerieEncaissee) : totalIncomeHT;
+  const baseIncomeHT = totalIncomeHT > 0 ? totalIncomeHT : (tresorerieEncaissee > 0 ? tresorerieEncaissee / 1.1 : 0);
   const tvaNet = isTvaExempt ? 0 : Math.max(0, tvaCollectee - tvaDeductible);
   const urssaf = baseIncomeHT * (urssafRate / 100);
   const benefice = baseIncomeHT - totalExpensesHT - urssaf;

@@ -1,5 +1,6 @@
-import { TrendingUp, TrendingDown, Wallet, Receipt, AlertTriangle, Calculator, Banknote } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Receipt, AlertTriangle, Calculator, Banknote, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { computeTaxes } from '@/lib/taxCalculations';
 
 interface FinancialSummaryProps {
   caHT: number;
@@ -18,6 +19,8 @@ interface FinancialSummaryProps {
   tresorerieEncaissee?: number;
   caEnAttenteHT?: number;
   caTotalFactureHT?: number;
+  legalStatus?: string | null;
+  isTvaExempt?: boolean;
 }
 
 const fmt = (n: number) =>

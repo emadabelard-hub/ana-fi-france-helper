@@ -404,42 +404,106 @@ const ExpensesPage = () => {
     downloadCSV(csv, `comptes_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
-  const handleAccountantExport = () => {
-    const invoiceRows: CsvDocumentRow[] = filtered
-      .filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted'))
-      .map(r => ({
-        date: r.date,
-        type: 'facture' as const,
-        reference: r.label,
-        clientName: r.clientName,
-        projectName: r.projectName,
-        totalHT: r.amountHT,
-        tvaRate: r.tvaAmount > 0 && r.amountHT > 0 ? (r.tvaAmount / r.amountHT) * 100 : 0,
-        tvaAmount: r.tvaAmount,
-        totalTTC: r.amount,
-        status: r.status,
-      }));
+  const [sendingToAccountant, setSendingToAccountant] = useState(false);
 
-    const expenseRows: CsvDocumentRow[] = filtered
-      .filter(r => r.type === 'expense')
-      .map(r => ({
-        date: r.date,
-        type: 'expense' as const,
-        reference: r.label,
-        clientName: r.clientName,
-        projectName: r.projectName,
-        totalHT: r.amountHT,
-        tvaRate: r.tvaAmount > 0 && r.amountHT > 0 ? (r.tvaAmount / r.amountHT) * 100 : 0,
-        tvaAmount: r.tvaAmount,
-        totalTTC: r.amount,
-      }));
+  const handleAccountantExport = async () => {
+    // 1. Vérifier email comptable enregistré dans le profil
+    const accountantEmail = (profile?.accountant_email || '').trim();
+    if (!accountantEmail) {
+      toast({
+        title: isRTL ? 'إيميل المحاسب مفقود' : 'Email comptable manquant',
+        description: isRTL ? 'أضف إيميل المحاسب في الإعدادات أولاً' : "Ajoutez l'email du comptable dans les paramètres",
+        variant: 'destructive',
+      });
+      navigate('/pro/settings');
+      return;
+    }
 
-    const csv = generateAccountingCSV({ invoices: invoiceRows, expenses: expenseRows });
-    downloadCSV(csv, `rapport_comptable_${new Date().toISOString().slice(0, 10)}.csv`);
-    toast({
-      title: isRTL ? 'تم التصدير بنجاح' : 'Export réussi',
-      description: isRTL ? 'تم تحميل تقرير المحاسب' : 'Le rapport comptable a été téléchargé',
-    });
+    if (filtered.length === 0 || sendingToAccountant) return;
+    setSendingToAccountant(true);
+
+    try {
+      const invoiceRows: CsvDocumentRow[] = filtered
+        .filter(r => r.type === 'facture' && (r.status === 'finalized' || r.status === 'converted'))
+        .map(r => ({
+          date: r.date,
+          type: 'facture' as const,
+          reference: r.label,
+          clientName: r.clientName,
+          projectName: r.projectName,
+          totalHT: r.amountHT,
+          tvaRate: r.tvaAmount > 0 && r.amountHT > 0 ? (r.tvaAmount / r.amountHT) * 100 : 0,
+          tvaAmount: r.tvaAmount,
+          totalTTC: r.amount,
+          status: r.status,
+          paymentStatus: r.paymentStatus,
+        }));
+
+      const expenseRows: CsvDocumentRow[] = filtered
+        .filter(r => r.type === 'expense')
+        .map(r => ({
+          date: r.date,
+          type: 'expense' as const,
+          reference: r.label,
+          clientName: r.clientName,
+          projectName: r.projectName,
+          totalHT: r.amountHT,
+          tvaRate: r.tvaAmount > 0 && r.amountHT > 0 ? (r.tvaAmount / r.amountHT) * 100 : 0,
+          tvaAmount: r.tvaAmount,
+          totalTTC: r.amount,
+        }));
+
+      const periodLabelMap: Record<string, string> = {
+        all: 'Toutes périodes',
+        month: 'Ce mois',
+        quarter: 'Ce trimestre',
+        year: 'Cette année',
+      };
+      const periodLabel = periodLabelMap[periodFilter] || 'Période en cours';
+      const artisanName = profile?.company_name || profile?.full_name || 'Artisan';
+
+      const { buildAccountantZip } = await import('@/lib/accountantPackage');
+      const pkg = await buildAccountantZip(
+        {
+          invoices: invoiceRows,
+          expenses: expenseRows,
+          company: {
+            companyName: profile?.company_name,
+            siret: profile?.siret,
+            tvaNumber: profile?.numero_tva,
+          },
+          period: { label: periodLabel },
+        },
+        { artisanName, periodLabel, companyName: profile?.company_name },
+      );
+
+      const { error } = await supabase.functions.invoke('email-accountant-zip', {
+        body: {
+          accountantEmail,
+          artisanName,
+          companyName: profile?.company_name,
+          periodLabel,
+          fileName: pkg.fileName,
+          zipBase64: pkg.zipBase64,
+          summary: pkg.summary,
+        },
+      });
+      if (error) throw error;
+
+      toast({
+        title: isRTL ? '✅ تم إرسال الملفات للمحاسب بنجاح' : '✅ Documents envoyés au comptable',
+        description: isRTL ? `إلى : ${accountantEmail}` : `Envoyé à : ${accountantEmail}`,
+      });
+    } catch (err: any) {
+      console.error('handleAccountantExport error:', err);
+      toast({
+        title: isRTL ? 'تعذر الإرسال' : "Échec de l'envoi",
+        description: err?.message || (isRTL ? 'حاول مرة أخرى لاحقًا' : 'Veuillez réessayer'),
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingToAccountant(false);
+    }
   };
 
   const handleArchiveDownload = async () => {

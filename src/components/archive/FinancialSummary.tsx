@@ -36,19 +36,24 @@ const FinancialSummary = ({
   tresorerieEncaissee = 0,
   caEnAttenteHT = 0,
   caTotalFactureHT = 0,
+  legalStatus,
+  isTvaExempt = false,
 }: FinancialSummaryProps) => {
-  const tvaAPayer = Math.max(0, tvaCollectee - tvaDeductible);
+  // TVA : si franchise (Art.293B), TVA collectée et à payer = 0
+  const effectiveTvaCollectee = isTvaExempt ? 0 : tvaCollectee;
+  const effectiveTvaDeductible = isTvaExempt ? 0 : tvaDeductible;
+  const tvaAPayer = isTvaExempt ? 0 : Math.max(0, effectiveTvaCollectee - effectiveTvaDeductible);
 
-  // Bénéfice brut HT (pour base URSSAF/IS)
+  // Calcul charges/IS selon statut juridique
+  const tax = computeTaxes({ legalStatus, caHT, depensesHT, urssafRateOverride: urssafRate });
   const beneficeBrutHT = Math.max(0, caHT - depensesHT);
-  const urssafEstime = Math.round(beneficeBrutHT * (urssafRate / 100) * 100) / 100;
-  const isEstime = Math.max(0, Math.round((beneficeBrutHT - urssafEstime) * (isRate / 100) * 100) / 100);
+  const urssafEstime = tax.socialCharges;
+  const isEstime = tax.incomeTax;
 
-  // Bénéfice avant impôt = encaissé - TVA - URSSAF - dépenses
+  // Bénéfice avant impôt = encaissé - TVA - charges sociales - dépenses
   const beneficeAvantImpot = tresorerieEncaissee - tvaAPayer - urssafEstime - depensesHT;
 
-  // Bénéfice net estimé = encaissé - TVA à payer - dépenses - URSSAF - IS
-  // Ne peut jamais dépasser la trésorerie encaissée
+  // Bénéfice net estimé = encaissé - TVA - dépenses - charges - IS
   const rawBenefice = tresorerieEncaissee - tvaAPayer - depensesHT - urssafEstime - isEstime;
   const benefice = Math.min(rawBenefice, tresorerieEncaissee);
 

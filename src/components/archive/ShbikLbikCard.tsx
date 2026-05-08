@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, ChevronRight, Banknote } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronRight, Banknote, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { computeTaxes } from '@/lib/taxCalculations';
 
 interface ShbikLbikProps {
   totalIncome: number;
@@ -18,6 +19,7 @@ interface ShbikLbikProps {
   tresorerieEncaissee?: number;
   caEnAttenteHT?: number;
   caTotalFactureHT?: number;
+  legalStatus?: string | null;
 }
 
 const fmt = (n: number) =>
@@ -29,6 +31,7 @@ const ShbikLbikCard = ({
   isTvaExempt, isRTL, tresorerieEncaissee = 0,
   caEnAttenteHT = 0,
   caTotalFactureHT = 0,
+  legalStatus,
 }: ShbikLbikProps) => {
   const navigate = useNavigate();
   const [showDetail, setShowDetail] = useState(false);
@@ -36,10 +39,14 @@ const ShbikLbikCard = ({
   // ── Calculations — 100% encaissement ──
   const baseIncome = tresorerieEncaissee > 0 ? tresorerieEncaissee : totalIncome;
   const baseIncomeHT = totalIncomeHT > 0 ? totalIncomeHT : (tresorerieEncaissee > 0 ? tresorerieEncaissee / 1.1 : 0);
+  // Si franchise TVA → TVA collectée et à payer = 0
   const tvaNet = isTvaExempt ? 0 : Math.max(0, tvaCollectee - tvaDeductible);
-  const urssaf = baseIncomeHT * (urssafRate / 100);
-  const benefice = baseIncomeHT - totalExpensesHT - urssaf;
-  const impot = Math.max(0, benefice * (isRate / 100));
+
+  // Charges sociales + IS selon statut juridique
+  const tax = computeTaxes({ legalStatus, caHT: baseIncomeHT, depensesHT: totalExpensesHT, urssafRateOverride: urssafRate });
+  const urssaf = tax.socialCharges;
+  const impot = tax.incomeTax;
+  const benefice = baseIncomeHT - totalExpensesHT - urssaf - impot;
   const totalReserve = tvaNet + urssaf + impot;
   const disponible = baseIncome - totalExpenses - totalReserve;
   const aPrevoir = urssaf + impot;

@@ -114,8 +114,8 @@ const ArchiveAccountingPage = () => {
           number: `EXP-${e.id.slice(0, 6).toUpperCase()}`,
           clientName: e.title,
           date: new Date(e.expense_date || e.created_at).toLocaleDateString('fr-FR'),
-          amountHT: e.amount,
-          amountTTC: e.amount + (e.tva_amount || 0),
+          amountHT: e.amount - (e.tva_amount || 0),
+          amountTTC: e.amount,
           status: 'paid' as const,
           rawData: e,
         })));

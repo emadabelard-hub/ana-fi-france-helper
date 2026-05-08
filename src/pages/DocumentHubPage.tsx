@@ -143,6 +143,7 @@ const DocumentHubPage = () => {
           tresorerieEncaissee={tresorerieEncaissee}
           caEnAttenteHT={caEnAttenteHT}
           caTotalFactureHT={caTotalFactureHT}
+          legalStatus={(profile as any)?.legal_status}
         />
       </div>
 

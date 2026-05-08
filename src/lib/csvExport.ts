@@ -449,6 +449,7 @@ export function generateAccountingCSV(data: AccountingExportData): string {
     || (period.start && period.end ? `Du ${formatDate(period.start)} au ${formatDate(period.end)}` : 'Toutes périodes');
   headerLines.push(`# Période couverte: ${cleanCell(periodLabel)}`);
   headerLines.push(`# Date de génération: ${generatedOn}`);
+  headerLines.push(`# Note: Export basé sur les encaissements réels`);
   headerLines.push('');
 
   const headers = [

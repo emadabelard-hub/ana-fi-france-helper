@@ -388,6 +388,45 @@ const CompanyProfileSection = () => {
             )}
           </div>
 
+          {/* Question CA avant la case */}
+          <div className={cn(
+            "p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 space-y-2",
+            isRTL && "text-right"
+          )}>
+            <p className={cn("text-sm font-semibold", isRTL && "font-cairo")}>
+              {isRTL
+                ? 'هل رقم أعمالك السنوي أقل من 91.900€ ؟'
+                : 'Votre chiffre d\'affaires annuel est-il inférieur à 91 900 € ?'}
+            </p>
+            <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.tva_exempt ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, tva_exempt: true }))}
+                className={cn("flex-1", isRTL && "font-cairo")}
+              >
+                {isRTL ? 'نعم → فعّل المعفى' : 'Oui → Activer la franchise'}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={!formData.tva_exempt ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, tva_exempt: false }))}
+                className={cn("flex-1", isRTL && "font-cairo")}
+              >
+                {isRTL ? 'لا → سجّل في TVA' : 'Non → Inscription TVA requise'}
+              </Button>
+            </div>
+            {!formData.tva_exempt && (
+              <p className={cn("text-[11px] text-amber-400", isRTL && "font-cairo")}>
+                {isRTL
+                  ? '⚠️ لازم تسجل في TVA وتعمل تصريح كل 3 شهور.'
+                  : '⚠️ Inscription à la TVA obligatoire + déclaration trimestrielle.'}
+              </p>
+            )}
+          </div>
+
           {/* TVA Exemption Checkbox */}
           <div className={cn(
             "flex items-start gap-3 p-3 rounded-lg border",
@@ -401,8 +440,58 @@ const CompanyProfileSection = () => {
               className="mt-0.5"
             />
             <Label htmlFor="tva-exempt" className={cn("flex-1 cursor-pointer", isRTL && "text-right font-cairo")}>
-              <span className="font-medium text-sm">
+              <span className={cn("font-medium text-sm inline-flex items-center gap-1.5 flex-wrap", isRTL && "flex-row-reverse")}>
                 {isRTL ? 'معفى من ضريبة القيمة المضافة (Art. 293 B)' : 'Exonéré de TVA (Art. 293 B du CGI)'}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(e) => e.preventDefault()}
+                      className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition shrink-0"
+                      aria-label="Info TVA"
+                    >
+                      <Info className="h-3 w-3" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    side="top"
+                    align="center"
+                    className={cn("w-80 text-sm leading-relaxed", isRTL && "font-cairo text-right")}
+                    dir={isRTL ? 'rtl' : 'ltr'}
+                  >
+                    {isRTL ? (
+                      <div className="space-y-2">
+                        <p className="font-bold">أنت معفى من TVA لو رقم أعمالك السنوي أقل من :</p>
+                        <ul className="space-y-1 pr-4">
+                          <li>• 91.900€ لو شغلتك بناء أو صنايع</li>
+                          <li>• 36.800€ لو شغلتك خدمات</li>
+                        </ul>
+                        <div className="pt-2 border-t border-border space-y-1">
+                          <p>✅ <span className="font-semibold">لو معفى</span> → متحطش TVA في فواتيرك، وحط الجملة دي:</p>
+                          <p className="font-mono text-xs bg-muted p-2 rounded" dir="ltr">TVA non applicable — Art. 293 B CGI</p>
+                        </div>
+                        <div className="pt-2 border-t border-border">
+                          <p>⚠️ <span className="font-semibold">لو مش معفى</span> → حط TVA عادي في فواتيرك، وبتعمل تصريح TVA كل 3 شهور.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="font-bold">Vous êtes exonéré de TVA si votre CA annuel est inférieur à :</p>
+                        <ul className="space-y-1 pl-4">
+                          <li>• 91 900 € pour le bâtiment / artisanat</li>
+                          <li>• 36 800 € pour les services</li>
+                        </ul>
+                        <div className="pt-2 border-t border-border space-y-1">
+                          <p>✅ <span className="font-semibold">Si exonéré</span> → pas de TVA sur vos factures + mention :</p>
+                          <p className="font-mono text-xs bg-muted p-2 rounded">TVA non applicable — Art. 293 B CGI</p>
+                        </div>
+                        <div className="pt-2 border-t border-border">
+                          <p>⚠️ <span className="font-semibold">Sinon</span> → TVA normale + déclaration trimestrielle.</p>
+                        </div>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
               </span>
               <p className={cn("text-xs text-muted-foreground mt-1", isRTL && "font-cairo")}>
                 {isRTL

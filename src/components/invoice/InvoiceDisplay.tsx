@@ -388,11 +388,17 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               {data.dueDate && (
                 <p>Échéance : <span className="text-gray-700 font-medium">{data.dueDate}</span></p>
               )}
-              {data.estimatedStartDate && (
+              {data.type === 'DEVIS' && data.estimatedStartDate && (
                 <p>Début estimé : <span className="text-gray-700 font-medium">{data.estimatedStartDate}</span></p>
               )}
-              {data.estimatedDuration && (
-                <p>Durée estimée : <span className="text-gray-700 font-medium">{data.estimatedDuration}</span></p>
+              {data.type === 'DEVIS' && data.estimatedDuration && (
+                <p>Durée estimée : <span className="text-gray-700 font-medium">{data.estimatedDuration}{/jour|يوم/i.test(data.estimatedDuration) ? '' : ' jours ouvrables'}</span></p>
+              )}
+              {data.type !== 'DEVIS' && (data as any).workStartDate && (
+                <p>Date de début des travaux : <span className="text-gray-700 font-medium">{(data as any).workStartDate}</span></p>
+              )}
+              {data.type !== 'DEVIS' && (data as any).workEndDate && (
+                <p>Date de fin des travaux : <span className="text-gray-700 font-medium">{(data as any).workEndDate}</span></p>
               )}
             </div>
           </div>

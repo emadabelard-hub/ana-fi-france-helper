@@ -114,8 +114,8 @@ const ArchiveAccountingPage = () => {
           number: `EXP-${e.id.slice(0, 6).toUpperCase()}`,
           clientName: e.title,
           date: new Date(e.expense_date || e.created_at).toLocaleDateString('fr-FR'),
-          amountHT: e.amount,
-          amountTTC: e.amount + (e.tva_amount || 0),
+          amountHT: e.amount - (e.tva_amount || 0),
+          amountTTC: e.amount,
           status: 'paid' as const,
           rawData: e,
         })));
@@ -162,38 +162,61 @@ const ArchiveAccountingPage = () => {
     return result;
   }, [allItems, activeTab, periodFilter, searchQuery]);
 
+  // ── Filtre période appliqué aux totaux dashboard ──
+  const dashboardPeriodStart = useMemo(() => {
+    if (periodFilter === 'all') return null;
+    const now = new Date();
+    switch (periodFilter) {
+      case 'month': return new Date(now.getFullYear(), now.getMonth(), 1);
+      case 'quarter': return new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+      case 'year': return new Date(now.getFullYear(), 0, 1);
+      default: return null;
+    }
+  }, [periodFilter]);
+
+  const inDashboardPeriod = (isoDate?: string) => {
+    if (!dashboardPeriodStart) return true;
+    if (!isoDate) return false;
+    return new Date(isoDate) >= dashboardPeriodStart;
+  };
+
   // ── Financial totals — 100% encaissement (factures payées uniquement) ──
   const totalFactures = useMemo(() => documents.filter(d => d.type === 'facture').length, [documents]);
   const facturesValidees = useMemo(() =>
     documents.filter(d => d.type === 'facture' && d.status === 'finalized'), [documents]);
   const ignoredFactures = useMemo(() => totalFactures - facturesValidees.length, [totalFactures, facturesValidees]);
 
-  // Seules les factures payées entrent dans les calculs
+  // Seules les factures payées entrent dans les calculs, filtrées par période
   const facturesPayees = useMemo(() =>
-    facturesValidees.filter(d => d.paymentStatus === 'paid'), [facturesValidees]);
+    facturesValidees.filter(d => d.paymentStatus === 'paid' && inDashboardPeriod(d.rawData?.created_at)),
+    [facturesValidees, dashboardPeriodStart]);
+
+  const expensesInPeriod = useMemo(() =>
+    expenses.filter(e => inDashboardPeriod(e.rawData?.expense_date || e.rawData?.created_at)),
+    [expenses, dashboardPeriodStart]);
 
   const caHT = useMemo(() =>
     facturesPayees.reduce((s, d) => s + d.amountHT, 0), [facturesPayees]);
   const depensesHT = useMemo(() =>
-    expenses.reduce((s, e) => s + e.amountHT, 0), [expenses]);
+    expensesInPeriod.reduce((s, e) => s + e.amountHT, 0), [expensesInPeriod]);
 
-  // TVA robuste : TTC - HT si les deux existent, sinon fallback TTC * 0.1667
+  // TVA robuste : TTC - HT si les deux existent, sinon fallback TTC * 0.0909 (TVA 10% BTP)
   const computeTvaForDoc = (d: DocumentItem) => {
     const ttc = d.amountTTC || 0;
     const ht = d.amountHT || 0;
     const dbTva = d.rawData?.tva_amount || 0;
     if (dbTva > 0) return dbTva;
     if (ht > 0 && ttc > ht) return Math.round((ttc - ht) * 100) / 100;
-    if (ht === 0 && ttc > 0) return Math.round(ttc * 0.1667 * 100) / 100;
+    if (ht === 0 && ttc > 0) return Math.round(ttc * 0.0909 * 100) / 100;
     return 0;
   };
 
   const tvaCollectee = useMemo(() =>
     facturesPayees.reduce((s, d) => s + computeTvaForDoc(d), 0), [facturesPayees]);
   const tvaDeductible = useMemo(() =>
-    expenses.reduce((s, e) => s + (e.rawData?.tva_amount || 0), 0), [expenses]);
+    expensesInPeriod.reduce((s, e) => s + (e.rawData?.tva_amount || 0), 0), [expensesInPeriod]);
 
-  // Trésorerie encaissée = factures payées (TTC)
+  // Trésorerie encaissée = factures payées (TTC) dans la période
   const tresorerieEncaissee = useMemo(() =>
     facturesPayees.reduce((s, d) => s + d.amountTTC, 0),
     [facturesPayees]);
@@ -337,7 +360,7 @@ const ArchiveAccountingPage = () => {
   };
 
   const buildCsvRows = (): AccountingExportData => {
-    const invoices: CsvDocumentRow[] = facturesValidees
+    const invoices: CsvDocumentRow[] = facturesPayees
       .filter(d => inPeriod(d.rawData?.created_at || ''))
       .map(d => ({
         date: d.rawData?.created_at || new Date().toISOString(),
@@ -392,7 +415,7 @@ const ArchiveAccountingPage = () => {
       return computeVATSynthesis(data);
     } catch { return null; }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [facturesValidees, expenses, periodBoundaries]);
+  }, [facturesPayees, expenses, periodBoundaries]);
 
   const handleExportCSV = () => {
     if (allItems.length === 0) return;

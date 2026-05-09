@@ -1087,7 +1087,11 @@ Règles :
         parsed = { analysis: content, suggestedItems: [] };
       }
 
-      return new Response(JSON.stringify(parsed), {
+      return new Response(JSON.stringify({
+        ...parsed,
+        dictatedHints: dictatedHints,
+        intentData: claudeIntent,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

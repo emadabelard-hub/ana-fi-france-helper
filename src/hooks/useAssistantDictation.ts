@@ -97,22 +97,22 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     recognition.lang = lang;
 
     recognition.onresult = (event: any) => {
-      let finalTranscript = '';
-      let interimTranscript = '';
+      // Rebuild from scratch every event using ALL results.
+      // Finals are accumulated; interim is shown but not stored.
+      let accumulated = '';
+      let interim = '';
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          accumulated += result[0].transcript + ' ';
         } else {
-          interimTranscript += event.results[i][0].transcript;
+          interim += result[0].transcript;
         }
       }
 
-      if (finalTranscript) {
-        finalTranscriptRef.current = (finalTranscriptRef.current + ' ' + finalTranscript).trim();
-      }
-
-      const display = (finalTranscriptRef.current + ' ' + interimTranscript).trim();
+      finalTranscriptRef.current = accumulated.trim();
+      const display = (accumulated + interim).trim();
       setTranscript(display);
     };
 

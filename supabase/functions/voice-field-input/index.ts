@@ -296,14 +296,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    }
-
-    if (!rawTranscript) {
-      return new Response(JSON.stringify({ error: "Aucune parole détectée." }), {
-        status: 422,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const cleanedText = await rewriteForConstruction(rawTranscript, lovableApiKey);
     if (cleanedText instanceof Response) return cleanedText;

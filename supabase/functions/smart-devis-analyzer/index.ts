@@ -878,6 +878,86 @@ Réponds en JSON avec cette structure:
       if (surfaceMatch) dictatedHints.surfaceHint = parseFloat(surfaceMatch[1].replace(",", "."));
       if (budgetMatch) dictatedHints.budgetHint = parseFloat(budgetMatch[1].replace(",", "."));
 
+      // ── Claude intent extraction (replaces brittle regex parsing) ──
+      const claudeDirectives: string[] = [];
+      let claudeIntent: any = null;
+      const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+      if (anthropicKey && rawUserMessage.trim().length > 0) {
+        try {
+          const intentResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': anthropicKey,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-5',
+              max_tokens: 1000,
+              messages: [{
+                role: 'user',
+                content: `Tu es expert BTP et tu comprends parfaitement l'arabe dialectal égyptien.
+Analyse cette demande et retourne UNIQUEMENT ce JSON sans aucune explication :
+
+Demande : "${rawUserMessage}"
+
+{
+  "travaux": "type en français",
+  "materiaux": "matériau exact ou null",
+  "couleur": "couleur en français ou null",
+  "finition": "satinée/mate/brillante ou null",
+  "zones": ["murs","plafond","sol"...],
+  "surface_m2": nombre ou null,
+  "prix_unitaire": nombre ou null,
+  "type_prestation": "fourniture_et_pose" ou "main_oeuvre_uniquement",
+  "mentions_speciales": "détails importants"
+}
+
+Règles :
+- مصنعية فقط / الماتريال على الزبون → main_oeuvre_uniquement
+- Par défaut → fourniture_et_pose
+- ب15 / 15 يورو → prix_unitaire = 15
+- أزرق ساتيني → couleur=bleue, finition=satinée
+- سقف وحيطان → zones=["murs","plafond"]
+- فلوتون → materiaux=parquet flottant`,
+              }],
+            }),
+          });
+          const intentData = await intentResponse.json();
+          const rawText = intentData?.content?.[0]?.text || '';
+          const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            claudeIntent = JSON.parse(jsonMatch[0]);
+          }
+        } catch (err) {
+          console.error('[claude-intent] failed:', err);
+        }
+      }
+
+      if (claudeIntent) {
+        const intent = claudeIntent;
+        if (intent.zones?.includes?.('murs') && intent.zones?.includes?.('plafond')) {
+          claudeDirectives.push("OBLIGATOIRE : 2 lignes séparées murs et plafond");
+        }
+        if (intent.couleur || intent.finition) {
+          const label = ['Peinture', intent.finition, intent.couleur].filter(Boolean).join(' ');
+          claudeDirectives.push(`designation_fr = "${label} — [zone]"`);
+        }
+        if (intent.type_prestation === 'main_oeuvre_uniquement') {
+          claudeDirectives.push("Main d'œuvre UNIQUEMENT — pas de fourniture");
+        }
+        if (intent.materiaux) {
+          claudeDirectives.push(`Matériau exact : ${intent.materiaux}`);
+        }
+        if (typeof intent.prix_unitaire === 'number' && intent.prix_unitaire > 0) {
+          claudeDirectives.push(`Prix imposé : ${intent.prix_unitaire}€ — ne pas écraser dans les guardrails`);
+          dictatedHints.unitPriceHint = intent.prix_unitaire;
+        }
+        if (typeof intent.surface_m2 === 'number' && intent.surface_m2 > 0) {
+          dictatedHints.surfaceHint = intent.surface_m2;
+        }
+      }
+
       // ── Correction 2: ceiling + walls detection ──
       const hasCeiling = /سقف|بلافون|plafond/i.test(rawUserMessage) || /plafond/i.test(translatedUserMessage);
       const hasWalls = /حيطان|حيط|جدران|murs?\b/i.test(rawUserMessage) || /murs?\b/i.test(translatedUserMessage);
@@ -913,7 +993,7 @@ Réponds en JSON avec cette structure:
         extraDirectives.push(`- OBLIGATOIRE : toutes les lignes de peinture doivent inclure la finition et la couleur dans designation_fr. Format : "${label} — [zone]" (ex : "${label} — murs", "${label} — plafond").`);
       }
 
-      const hintsBlock = (Object.keys(dictatedHints).length > 0 || extraDirectives.length > 0)
+      const hintsBlock = (Object.keys(dictatedHints).length > 0 || extraDirectives.length > 0 || claudeDirectives.length > 0)
         ? `\n\n📌 INDICATIONS DICTÉES PAR L'UTILISATEUR (à respecter strictement) :${
             dictatedHints.unitPriceHint !== undefined ? `\n- Prix unitaire imposé par l'artisan : ${dictatedHints.unitPriceHint} €/m² (utiliser cette valeur exacte, ne JAMAIS l'écraser)` : ""
           }${
@@ -922,6 +1002,8 @@ Réponds en JSON avec cette structure:
             dictatedHints.budgetHint !== undefined ? `\n- Budget cible : ${dictatedHints.budgetHint} €` : ""
           }${
             extraDirectives.length > 0 ? `\n${extraDirectives.join("\n")}` : ""
+          }${
+            claudeDirectives.length > 0 ? `\n\n📌 INDICATIONS EXACTES (Claude) :\n${claudeDirectives.map(d => `- ${d}`).join("\n")}` : ""
           }`
         : "";
 
@@ -1964,6 +2046,12 @@ Réponds UNIQUEMENT en JSON:
       }
 
       function computeGuardrailedPrice(item: GeneratedQuoteItem, aiPrice: number, isST: boolean, qualityProfileRef: { targetRatio: number }, itemCount: number): number {
+        // ── Dictated unit price hint (Claude intent / user dictation) bypasses guardrails ──
+        const hintRaw = (item as any)?.dictatedUnitPrice ?? (item as any)?.unitPriceHint;
+        const hint = typeof hintRaw === 'number' ? hintRaw : parseFloat(hintRaw);
+        if (Number.isFinite(hint) && hint > 0) {
+          return Math.round(hint);
+        }
         const rule = detectPricingRule(item);
         if (rule?.isLogistic && isST) return 0;
 

@@ -162,6 +162,7 @@ const AIAssistantPage = () => {
       return;
     }
     setVoiceModalOpen(true);
+    console.log('Modal opened, recording:', dictation.isRecording);
     if (!dictation.isRecording) {
       dictation.start();
     }
@@ -397,6 +398,7 @@ const AIAssistantPage = () => {
       }
     } catch {
       upsert(language === 'ar' ? 'حصل مشكلة، جرب تاني 🔄' : 'Erreur réseau, réessayez.');
+      setIsLoading(false);
     }
     setIsLoading(false);
   };

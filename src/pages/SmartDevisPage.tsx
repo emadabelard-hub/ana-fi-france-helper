@@ -162,12 +162,12 @@ const SmartDevisPage = () => {
       setChatInput(chatDictation.transcript);
     }
   }, [chatDictation.transcript, chatDictation.isRecording]);
-  const handleChatMicPress = useCallback(() => {
+  const handleChatMicPress = useCallback(async () => {
     if (!chatDictation.isSupported) return;
-    if (!chatDictation.isRecording) chatDictation.start();
-    else {
-      chatDictation.stopRecording();
-      const cleaned = chatDictation.getCleanedText();
+    if (!chatDictation.isRecording) {
+      await chatDictation.start();
+    } else {
+      const cleaned = await chatDictation.stopRecording();
       if (cleaned) setChatInput(cleaned);
     }
   }, [chatDictation]);

@@ -133,10 +133,14 @@ const AIAssistantPage = () => {
   };
 
   // ── Voice: dictation dedicated to this page ──
-  const handleVoiceSend = useCallback(() => {
+  const handleVoiceSend = useCallback(async () => {
     // Stop recording first to flush any in-flight result
-    if (dictation.isRecording) dictation.stopRecording();
-    const cleaned = dictation.getCleanedText();
+    let cleaned = '';
+    if (dictation.isRecording) {
+      cleaned = await dictation.stopRecording();
+    } else {
+      cleaned = dictation.getCleanedText();
+    }
     if (cleaned) {
       setInput(prev => (prev ? prev + ' ' + cleaned : cleaned));
       setUserHasEdited(false);
@@ -148,7 +152,7 @@ const AIAssistantPage = () => {
 
   const handleVoiceStop = useCallback(() => {
     // Pause recording but KEEP transcript visible so user can review
-    dictation.stopRecording();
+    void dictation.stopRecording();
   }, [dictation]);
 
   const handleVoiceCancel = useCallback(() => {

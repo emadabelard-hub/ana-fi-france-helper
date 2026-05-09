@@ -52,20 +52,21 @@ const SmartDevisPage = () => {
     for (const f of Array.from(files)) {
       if (!f.type.startsWith('image/')) continue;
       try {
-        const compressed = await compressImage(f);
-        const reader = new FileReader();
-        reader.onload = () => {
-          const dataUrl = reader.result as string;
-          const base64 = dataUrl.replace(/^data:[^;]+;base64,/, '');
-          setImages(prev => [...prev, {
-            id: generateId(),
-            data: base64,
-            name: f.name,
-            preview: dataUrl,
-            mimeType: 'image/jpeg',
-          }]);
-        };
-        reader.readAsDataURL(compressed);
+        const dataUrl: string = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result as string);
+          r.onerror = () => reject(r.error);
+          r.readAsDataURL(f);
+        });
+        const compressedDataUrl = await compressImage(dataUrl);
+        const base64 = compressedDataUrl.replace(/^data:[^;]+;base64,/, '');
+        setImages(prev => [...prev, {
+          id: generateId(),
+          data: base64,
+          name: f.name,
+          preview: compressedDataUrl,
+          mimeType: 'image/jpeg',
+        }]);
       } catch (e) {
         console.error('[SmartDevis] image error:', e);
       }

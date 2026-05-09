@@ -1008,7 +1008,11 @@ Règles :
           }`
         : "";
 
+      console.log('DIRECTIVES:', [...claudeDirectives, ...extraDirectives]);
+      console.log('HINTS BLOCK:', hintsBlock);
+
       const finalUserText = (translatedUserMessage || "Analyse ces fichiers et fais un diagnostic technique du chantier.") + hintsBlock;
+      console.log('FINAL USER TEXT:', finalUserText);
 
       if (hasFiles || hasLegacyImage) {
         const contentParts: any[] = [

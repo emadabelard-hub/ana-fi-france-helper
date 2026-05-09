@@ -1,20 +1,56 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Dictation hook dedicated to "مساعد الشانتي الذكي".
- * Simple, robust implementation using the Web Speech API.
+ * Uses MediaRecorder + voice-field-input edge function (Whisper),
+ * exactly like the translator. Web SpeechRecognition is abandoned
+ * because it causes repetitions on Android Chrome.
  */
 
 const MAX_DURATION_MS = 120_000;
 
-export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
+function pickSupportedMimeType() {
+  if (typeof MediaRecorder === 'undefined') return '';
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+    'audio/ogg;codecs=opus',
+    'audio/ogg',
+  ];
+  for (const mimeType of candidates) {
+    if (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported(mimeType)) {
+      return mimeType;
+    }
+  }
+  return '';
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      resolve(result.includes(',') ? result.split(',')[1] ?? '' : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Audio read failed'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+export function useAssistantDictation(_lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [duration, setDuration] = useState(0);
   const { toast } = useToast();
 
-  const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const mimeTypeRef = useRef('audio/webm');
+
   const finalTranscriptRef = useRef('');
   const isRecordingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -23,9 +59,11 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
 
   const isSupported =
     typeof window !== 'undefined' &&
-    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+    typeof navigator !== 'undefined' &&
+    !!navigator.mediaDevices?.getUserMedia &&
+    typeof MediaRecorder !== 'undefined';
 
-  const cleanup = useCallback(() => {
+  const clearTimers = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -34,167 +72,151 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
       clearTimeout(maxTimerRef.current);
       maxTimerRef.current = null;
     }
-    if (recognitionRef.current) {
-      const recognition = recognitionRef.current;
-      recognitionRef.current = null;
-      try {
-        recognition.onend = null;
-        recognition.onresult = null;
-        recognition.onerror = null;
-        recognition.stop();
-      } catch {
-        /* noop */
-      }
+  }, []);
+
+  const releaseStream = useCallback(() => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
     }
+    mediaRecorderRef.current = null;
+    chunksRef.current = [];
+  }, []);
+
+  const cleanup = useCallback(() => {
+    clearTimers();
+    releaseStream();
     isRecordingRef.current = false;
     setIsRecording(false);
     setDuration(0);
-  }, []);
+  }, [clearTimers, releaseStream]);
 
   useEffect(() => cleanup, [cleanup]);
 
-  const stopRecording = useCallback((): string => {
-    isRecordingRef.current = false;
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (maxTimerRef.current) {
-      clearTimeout(maxTimerRef.current);
-      maxTimerRef.current = null;
-    }
-    if (recognitionRef.current) {
-      const recognition = recognitionRef.current;
-      recognitionRef.current = null;
-      try {
-        recognition.onend = null;
-        recognition.onresult = null;
-        recognition.onerror = null;
-        recognition.stop();
-      } catch {
-        /* noop */
-      }
-    }
-    setIsRecording(false);
-    const finalText = (finalTranscriptRef.current || transcript).trim();
-    setTranscript(finalText);
-    return finalText;
-  }, [transcript]);
-
-  const start = useCallback(() => {
+  const start = useCallback(async (): Promise<boolean> => {
     if (!isSupported) return false;
+    if (isRecordingRef.current) return false;
 
     cleanup();
-
     finalTranscriptRef.current = '';
     setTranscript('');
 
-    const SpeechRecognition: any =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = lang;
-
-    let finalText = '';
-
-    recognition.onresult = (event: any) => {
-      // Récupérer UNIQUEMENT les nouveaux résultats finals
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          finalText += event.results[i][0].transcript + ' ';
-        }
-      }
-
-      // Afficher interim sans l'accumuler dans finalText
-      let interimText = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (!event.results[i].isFinal) {
-          interimText += event.results[i][0].transcript;
-        }
-      }
-
-      // Mettre à jour uniquement avec final + interim courant
-      finalTranscriptRef.current = finalText.trim();
-      setTranscript((finalText + interimText).trim());
-    };
-
-    recognition.onstart = () => {
-      finalText = '';
-      setTranscript('');
-    };
-
-    recognition.onerror = (event: any) => {
-      if (event.error === 'no-speech' || event.error === 'aborted') return;
-      console.error('Speech error:', event.error);
-      if (event.error === 'not-allowed') {
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+    } catch (err: any) {
+      console.error('Microphone permission error:', err);
+      if (err?.name === 'NotAllowedError') {
         toast({
           variant: 'destructive',
           title: '🎤 إذن الميكروفون مرفوض',
           description: 'افتح إعدادات المتصفح وفعّل الميكروفون لـ anafypro.com',
         });
-        return;
       }
-      toast({
-        variant: 'destructive',
-        title: 'خطأ في الميكروفون: ' + event.error,
-      });
-    };
-
-    recognition.onend = () => {
-      if (isRecordingRef.current && recognitionRef.current === recognition) {
-        // Sauvegarder le texte final AVANT restart
-        const savedText = finalText;
-
-        // Créer une NOUVELLE instance au lieu de redémarrer la même
-        const NewSpeechRecognition =
-          (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        const newRecognition = new NewSpeechRecognition();
-        newRecognition.continuous = true;
-        newRecognition.interimResults = true;
-        newRecognition.lang = recognition.lang;
-
-        // Copier tous les handlers sur la nouvelle instance
-        newRecognition.onresult = recognition.onresult;
-        newRecognition.onerror = recognition.onerror;
-        newRecognition.onend = recognition.onend;
-
-        // Remettre finalText à la valeur sauvegardée (pas à zéro) pour continuer l'accumulation
-        finalText = savedText;
-
-        // Remplacer la référence
-        recognitionRef.current = newRecognition;
-
-        try {
-          newRecognition.start();
-        } catch {
-          /* noop */
-        }
-      }
-    };
-
-    recognitionRef.current = recognition;
-    isRecordingRef.current = true;
-
-    try {
-      recognition.start();
-    } catch (err) {
-      console.error('Failed to start recognition:', err);
-      isRecordingRef.current = false;
       return false;
     }
 
+    const mimeType = pickSupportedMimeType();
+    const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+
+    mimeTypeRef.current = recorder.mimeType || mimeType || 'audio/webm';
+    mediaStreamRef.current = stream;
+    mediaRecorderRef.current = recorder;
+    chunksRef.current = [];
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) chunksRef.current.push(event.data);
+    };
+
+    try {
+      recorder.start();
+    } catch (err) {
+      console.error('Failed to start recorder:', err);
+      releaseStream();
+      return false;
+    }
+
+    isRecordingRef.current = true;
     setIsRecording(true);
     startTimeRef.current = Date.now();
     timerRef.current = setInterval(() => {
       setDuration(Math.floor((Date.now() - startTimeRef.current) / 1000));
     }, 500);
     maxTimerRef.current = setTimeout(() => {
-      stopRecording();
+      // Auto-stop after max duration
+      void stopRecording();
     }, MAX_DURATION_MS);
 
     return true;
-  }, [cleanup, isSupported, lang, stopRecording, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSupported, cleanup, releaseStream, toast]);
+
+  const stopRecording = useCallback(async (): Promise<string> => {
+    const recorder = mediaRecorderRef.current;
+    isRecordingRef.current = false;
+    setIsRecording(false);
+    clearTimers();
+
+    if (!recorder) {
+      return (finalTranscriptRef.current || '').trim();
+    }
+
+    let blob: Blob;
+    try {
+      blob = await new Promise<Blob>((resolve, reject) => {
+        recorder.onstop = () => {
+          resolve(new Blob(chunksRef.current, { type: mimeTypeRef.current }));
+        };
+        recorder.onerror = () => reject(new Error('Audio recording failed'));
+        try {
+          recorder.stop();
+        } catch (err) {
+          reject(err);
+        }
+      });
+    } catch (err) {
+      console.error('Recorder stop error:', err);
+      releaseStream();
+      return (finalTranscriptRef.current || '').trim();
+    }
+
+    releaseStream();
+
+    if (!blob.size) {
+      return (finalTranscriptRef.current || '').trim();
+    }
+
+    try {
+      const audioBase64 = await blobToBase64(blob);
+      const { data, error } = await supabase.functions.invoke('voice-field-input', {
+        body: {
+          audioBase64,
+          mimeType: blob.type || mimeTypeRef.current,
+          dualMode: false,
+        },
+      });
+      if (error) {
+        console.error('voice-field-input error:', error);
+        return (finalTranscriptRef.current || '').trim();
+      }
+      const text =
+        (typeof data?.text === 'string' && data.text.trim()) ||
+        (typeof data?.raw === 'string' && data.raw.trim()) ||
+        '';
+      finalTranscriptRef.current = text;
+      setTranscript(text);
+      return text;
+    } catch (err) {
+      console.error('Voice processing failed:', err);
+      return (finalTranscriptRef.current || '').trim();
+    }
+  }, [clearTimers, releaseStream]);
 
   const getCleanedText = useCallback((): string => {
     return (finalTranscriptRef.current || transcript).trim();

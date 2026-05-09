@@ -1966,6 +1966,12 @@ ${JSON.stringify(analysisData)}`;
       }
       
       // ── BYPASS work plan lock when Claude intent / dictated hints are present ──
+      console.log('BYPASS CHECK:', {
+        hasIntentData: !!analysisData?.intentData,
+        hasPriceHint: !!analysisData?.dictatedHints?.unitPriceHint,
+        dictatedHints: analysisData?.dictatedHints,
+        intentData: analysisData?.intentData
+      });
       const claudeBypass = !!(analysisData?.intentData || analysisData?.dictatedHints?.unitPriceHint);
       const { items: lockedItems, removedItems, workPlanSteps } = claudeBypass
         ? { items: rawItems, removedItems: [], workPlanSteps: [] }

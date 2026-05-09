@@ -143,8 +143,30 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
 
     recognition.onend = () => {
       if (isRecordingRef.current && recognitionRef.current === recognition) {
+        // Sauvegarder le texte final AVANT restart
+        const savedText = finalText;
+
+        // Créer une NOUVELLE instance au lieu de redémarrer la même
+        const NewSpeechRecognition =
+          (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        const newRecognition = new NewSpeechRecognition();
+        newRecognition.continuous = true;
+        newRecognition.interimResults = true;
+        newRecognition.lang = recognition.lang;
+
+        // Copier tous les handlers sur la nouvelle instance
+        newRecognition.onresult = recognition.onresult;
+        newRecognition.onerror = recognition.onerror;
+        newRecognition.onend = recognition.onend;
+
+        // Remettre finalText à la valeur sauvegardée (pas à zéro) pour continuer l'accumulation
+        finalText = savedText;
+
+        // Remplacer la référence
+        recognitionRef.current = newRecognition;
+
         try {
-          recognition.start();
+          newRecognition.start();
         } catch {
           /* noop */
         }

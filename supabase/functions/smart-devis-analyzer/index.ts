@@ -1712,6 +1712,7 @@ Réponds UNIQUEMENT en JSON:
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: aiMessages,
+          temperature: 0.2,
         }),
       });
 

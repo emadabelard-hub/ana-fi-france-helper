@@ -83,6 +83,7 @@ const AIAssistantPage = () => {
   useEffect(() => {
     if (dictation.isRecording && dictation.transcript && !userHasEdited) {
       setInput(dictation.transcript);
+      autoResizeTextarea();
     }
   }, [dictation.transcript, dictation.isRecording, userHasEdited]);
 

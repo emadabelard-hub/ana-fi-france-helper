@@ -929,6 +929,7 @@ Règles :
           if (jsonMatch) {
             claudeIntent = JSON.parse(jsonMatch[0]);
           }
+          console.log('CLAUDE INTENT:', JSON.stringify(claudeIntent));
         } catch (err) {
           console.error('[claude-intent] failed:', err);
         }

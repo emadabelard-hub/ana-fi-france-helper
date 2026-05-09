@@ -42,6 +42,7 @@ const SmartDevisPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [userText, setUserText] = useState('');
+  const [rawArabic, setRawArabic] = useState('');
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);

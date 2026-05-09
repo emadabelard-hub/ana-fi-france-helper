@@ -2,110 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 /**
- * Dictation hook dedicated to the "مساعد الشانتي الذكي" (AI Assistant) page.
- *
- * Rules:
- * - final transcript persists for the whole recording session
- * - only NEW final results are committed
- * - no replay from index 0, we respect event.resultIndex
- * - lastProcessedIndex guarantees zero re-processing of already-finalized segments
- * - a single SpeechRecognition instance lives at a time
- * - final results are debounced by 300ms before commit
+ * Dictation hook dedicated to "مساعد الشانتي الذكي".
+ * Simple, robust implementation using the Web Speech API.
  */
 
-const MAX_DURATION_MS = 120_000; // 2 min safety cap
-
-function normalizeChunk(input: string): string {
-  return input.replace(/\s+/g, ' ').trim();
-}
-
-function escapeRegex(input: string): string {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function isDuplicate(newText: string, existingText: string): boolean {
-  const next = normalizeChunk(newText);
-  const existing = normalizeChunk(existingText);
-
-  if (!next || !existing) return false;
-  return existing.includes(next);
-}
-
-function cleanText(input: string): string {
-  if (!input) return '';
-
-  const fillers = [
-    'euh', 'heu', 'hum', 'bah', 'ben', 'eh', 'du coup', 'genre', 'donc euh',
-    'يعني', 'ايه', 'آه', 'اه', 'أه', 'امم', 'إمم', 'ممم',
-  ];
-
-  let text = input.replace(/\s+/g, ' ').trim();
-
-  for (const filler of fillers) {
-    const fillerRegex = new RegExp(`(^|\\s)${escapeRegex(filler)}(?=\\s|$)`, 'giu');
-    text = text.replace(fillerRegex, ' ');
-  }
-
-  return text
-    .replace(/(\b\w+\b)(\s+\1\b)+/gi, '$1')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function capitalizeIfLatin(input: string): string {
-  if (!input) return input;
-  const [first, ...rest] = input;
-  return /[a-zà-ÿ]/i.test(first) ? `${first.toLocaleUpperCase()}${rest.join('')}` : input;
-}
-
-function formatText(input: string): string {
-  const cleaned = cleanText(input);
-  if (!cleaned) return '';
-
-  let formatted = capitalizeIfLatin(cleaned);
-  if (!/[.!?؟…]$/.test(formatted)) {
-    formatted += '.';
-  }
-
-  return formatted;
-}
-
-function addSoftPunctuation(input: string): string {
-  const text = input.trim();
-  if (!text) return '';
-  if (/[.!?؟…]$/.test(text)) return text;
-  return `${text}.`;
-}
-
-/** Light cleanup applied at send time: collapse spaces, remove repeated words/fillers. */
-function cleanFinalText(input: string): string {
-  if (!input) return '';
-  let text = cleanText(input);
-
-  const words = text.split(/\s+/).filter(Boolean);
-  const deduped: string[] = [];
-  for (const word of words) {
-    if (deduped.length === 0 || deduped[deduped.length - 1].toLowerCase() !== word.toLowerCase()) {
-      deduped.push(word);
-    }
-  }
-
-  const result = [...deduped];
-  for (let len = 4; len >= 2; len--) {
-    let i = 0;
-    while (i + len * 2 <= result.length) {
-      const a = result.slice(i, i + len).join(' ').toLowerCase();
-      const b = result.slice(i + len, i + len * 2).join(' ').toLowerCase();
-      if (a === b) {
-        result.splice(i + len, len);
-        continue;
-      }
-      i += 1;
-    }
-  }
-
-  return formatText(addSoftPunctuation(result.join(' ').trim()));
-}
+const MAX_DURATION_MS = 120_000;
 
 export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
   const [isRecording, setIsRecording] = useState(false);
@@ -115,90 +16,16 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
 
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef('');
-  const interimTranscriptRef = useRef('');
-  const lastFinalizedTextRef = useRef('');
-  const finalSegmentsRef = useRef<Record<number, string>>({});
-  const lastProcessedIndexRef = useRef(0);
-  const cycleBaseIndexRef = useRef(0);
   const isRecordingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const resultDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startTimeRef = useRef(0);
-  const sessionIdRef = useRef(0);
-  const pendingFinalResultsRef = useRef<Array<{ absoluteIndex: number; text: string }>>([]);
 
   const isSupported =
     typeof window !== 'undefined' &&
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
-  const rebuildFinalTranscript = useCallback(() => {
-    finalTranscriptRef.current = Object.keys(finalSegmentsRef.current)
-      .map(Number)
-      .sort((a, b) => a - b)
-      .map((key) => finalSegmentsRef.current[key])
-      .filter(Boolean)
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    return finalTranscriptRef.current;
-  }, []);
-
-  const syncTranscript = useCallback(() => {
-    const rawText = `${finalTranscriptRef.current} ${interimTranscriptRef.current}`.trim();
-    const cleaned = cleanText(rawText);
-    setTranscript(cleaned);
-    return cleaned;
-  }, []);
-
-  const commitFinalResults = useCallback((entries: Array<{ absoluteIndex: number; text: string }>) => {
-    if (entries.length === 0) return finalTranscriptRef.current;
-
-    let nextTranscript = finalTranscriptRef.current;
-    let lastAcceptedText = lastFinalizedTextRef.current;
-
-    for (const { absoluteIndex, text } of entries.sort((a, b) => a.absoluteIndex - b.absoluteIndex)) {
-      if (absoluteIndex < lastProcessedIndexRef.current) continue;
-
-      if (!text) {
-        lastProcessedIndexRef.current = absoluteIndex + 1;
-        continue;
-      }
-
-      if (isDuplicate(text, nextTranscript) || text === lastAcceptedText) {
-        lastProcessedIndexRef.current = absoluteIndex + 1;
-        continue;
-      }
-
-      finalSegmentsRef.current[absoluteIndex] = text;
-      nextTranscript = cleanText(`${nextTranscript} ${text}`);
-      lastAcceptedText = text;
-      lastProcessedIndexRef.current = absoluteIndex + 1;
-    }
-
-    lastFinalizedTextRef.current = lastAcceptedText;
-    finalTranscriptRef.current = rebuildFinalTranscript();
-    interimTranscriptRef.current = '';
-    return syncTranscript();
-  }, [rebuildFinalTranscript, syncTranscript]);
-
-  const flushPendingResults = useCallback(() => {
-    if (resultDebounceRef.current) {
-      clearTimeout(resultDebounceRef.current);
-      resultDebounceRef.current = null;
-    }
-
-    const pendingEntries = pendingFinalResultsRef.current;
-    pendingFinalResultsRef.current = [];
-
-    if (pendingEntries.length > 0) {
-      commitFinalResults(pendingEntries);
-    }
-  }, [commitFinalResults]);
-
   const cleanup = useCallback(() => {
-    flushPendingResults();
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -219,98 +46,95 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
         /* noop */
       }
     }
-    pendingFinalResultsRef.current = [];
     isRecordingRef.current = false;
     setIsRecording(false);
     setDuration(0);
-  }, [flushPendingResults]);
+  }, []);
 
   useEffect(() => cleanup, [cleanup]);
 
+  const stopRecording = useCallback((): string => {
+    isRecordingRef.current = false;
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (maxTimerRef.current) {
+      clearTimeout(maxTimerRef.current);
+      maxTimerRef.current = null;
+    }
+    if (recognitionRef.current) {
+      const recognition = recognitionRef.current;
+      recognitionRef.current = null;
+      try {
+        recognition.onend = null;
+        recognition.onresult = null;
+        recognition.onerror = null;
+        recognition.stop();
+      } catch {
+        /* noop */
+      }
+    }
+    setIsRecording(false);
+    const finalText = (finalTranscriptRef.current || transcript).trim();
+    setTranscript(finalText);
+    return finalText;
+  }, [transcript]);
+
   const start = useCallback(() => {
     if (!isSupported) return false;
-    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     cleanup();
-    sessionIdRef.current += 1;
-    const sessionId = sessionIdRef.current;
+
     finalTranscriptRef.current = '';
-    interimTranscriptRef.current = '';
-    lastFinalizedTextRef.current = '';
-    finalSegmentsRef.current = {};
-    lastProcessedIndexRef.current = 0;
-    cycleBaseIndexRef.current = 0;
-    pendingFinalResultsRef.current = [];
     setTranscript('');
 
-    const recognition = new SR();
+    const SpeechRecognition: any =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.lang = lang;
-    recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: any) => {
-      if (!isRecordingRef.current || recognitionRef.current !== recognition) return;
-
-      const finalResults: Array<{ absoluteIndex: number; text: string }> = [];
+      let finalTranscript = '';
+      let interimTranscript = '';
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (!result?.isFinal) continue;
-
-        const rawText = result?.[0]?.transcript ?? '';
-        const text = cleanText(normalizeChunk(rawText));
-        const absoluteIndex = cycleBaseIndexRef.current + i;
-
-        finalResults.push({ absoluteIndex, text });
-      }
-
-      if (finalResults.length === 0) return;
-
-      const mergedPending = new Map(
-        pendingFinalResultsRef.current.map((entry) => [entry.absoluteIndex, entry])
-      );
-
-      for (const entry of finalResults) {
-        mergedPending.set(entry.absoluteIndex, entry);
-      }
-
-      pendingFinalResultsRef.current = Array.from(mergedPending.values()).sort(
-        (a, b) => a.absoluteIndex - b.absoluteIndex
-      );
-
-      if (resultDebounceRef.current) {
-        clearTimeout(resultDebounceRef.current);
-      }
-
-      resultDebounceRef.current = setTimeout(() => {
-        resultDebounceRef.current = null;
-        if (!isRecordingRef.current || recognitionRef.current !== recognition || sessionIdRef.current !== sessionId) {
-          pendingFinalResultsRef.current = [];
-          return;
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
         }
+      }
 
-        const pendingEntries = pendingFinalResultsRef.current;
-        pendingFinalResultsRef.current = [];
-        commitFinalResults(pendingEntries);
-      }, 300);
+      if (finalTranscript) {
+        finalTranscriptRef.current = (finalTranscriptRef.current + ' ' + finalTranscript).trim();
+      }
+
+      const display = (finalTranscriptRef.current + ' ' + interimTranscript).trim();
+      setTranscript(display);
     };
 
-    recognition.onerror = (e: any) => {
-      if (e.error === 'no-speech' || e.error === 'aborted') return;
-      if (e.error === 'not-allowed') {
+    recognition.onerror = (event: any) => {
+      if (event.error === 'no-speech' || event.error === 'aborted') return;
+      console.error('Speech error:', event.error);
+      if (event.error === 'not-allowed') {
         toast({
           variant: 'destructive',
           title: '🎤 إذن الميكروفون مرفوض',
-          description: 'افتح إعدادات المتصفح وفعّل الميكروفون لـ anafypro.com'
+          description: 'افتح إعدادات المتصفح وفعّل الميكروفون لـ anafypro.com',
         });
+        return;
       }
-      console.error('Assistant dictation error:', e.error);
+      toast({
+        variant: 'destructive',
+        title: 'خطأ في الميكروفون: ' + event.error,
+      });
     };
 
     recognition.onend = () => {
       if (isRecordingRef.current && recognitionRef.current === recognition) {
-        cycleBaseIndexRef.current = lastProcessedIndexRef.current;
         try {
           recognition.start();
         } catch {
@@ -322,12 +146,13 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     recognitionRef.current = recognition;
     isRecordingRef.current = true;
 
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(() => recognition.start())
-      .catch(() => toast({ 
-        title: '🎤 إذن الميكروفون مطلوب',
-        description: 'اسمح للتطبيق باستخدام الميكروفون'
-      }));
+    try {
+      recognition.start();
+    } catch (err) {
+      console.error('Failed to start recognition:', err);
+      isRecordingRef.current = false;
+      return false;
+    }
 
     setIsRecording(true);
     startTimeRef.current = Date.now();
@@ -339,50 +164,15 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     }, MAX_DURATION_MS);
 
     return true;
-  }, [cleanup, isSupported, lang, rebuildFinalTranscript, toast]);
-
-  const stopRecording = useCallback((): string => {
-    isRecordingRef.current = false;
-    flushPendingResults();
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (maxTimerRef.current) {
-      clearTimeout(maxTimerRef.current);
-      maxTimerRef.current = null;
-    }
-    if (recognitionRef.current) {
-      const recognition = recognitionRef.current;
-      recognitionRef.current = null;
-      try {
-        recognition.onend = null;
-        recognition.onresult = null;
-        recognition.onerror = null;
-        recognition.stop();
-      } catch {
-        /* noop */
-      }
-    }
-    setIsRecording(false);
-    interimTranscriptRef.current = '';
-    const finalText = cleanText(finalTranscriptRef.current || transcript);
-    setTranscript(finalText);
-    return finalText;
-  }, [flushPendingResults, transcript]);
+  }, [cleanup, isSupported, lang, stopRecording, toast]);
 
   const getCleanedText = useCallback((): string => {
-    return cleanFinalText(finalTranscriptRef.current || transcript);
+    return (finalTranscriptRef.current || transcript).trim();
   }, [transcript]);
 
   const cancel = useCallback(() => {
     cleanup();
     finalTranscriptRef.current = '';
-    interimTranscriptRef.current = '';
-    lastFinalizedTextRef.current = '';
-    finalSegmentsRef.current = {};
-    lastProcessedIndexRef.current = 0;
-    cycleBaseIndexRef.current = 0;
     setTranscript('');
   }, [cleanup]);
 

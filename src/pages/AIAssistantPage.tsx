@@ -44,6 +44,8 @@ const AIAssistantPage = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>(null);
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+  const [userHasEdited, setUserHasEdited] = useState(false);
+  const [conversationLoaded, setConversationLoaded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
@@ -61,11 +63,50 @@ const AIAssistantPage = () => {
   }, [messages]);
 
   // Live-sync dictation transcript into input field during recording
+  // (only if user hasn't started typing manually — keyboard always wins)
   useEffect(() => {
-    if (dictation.isRecording && dictation.transcript) {
+    if (dictation.isRecording && dictation.transcript && !userHasEdited) {
       setInput(dictation.transcript);
     }
-  }, [dictation.transcript, dictation.isRecording]);
+  }, [dictation.transcript, dictation.isRecording, userHasEdited]);
+
+  // Load conversation history from Supabase on mount
+  useEffect(() => {
+    if (!user || conversationLoaded) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('assistant_conversations')
+          .select('messages')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (data?.messages && Array.isArray(data.messages)) {
+          setMessages(data.messages as Msg[]);
+        }
+      } catch (err) {
+        console.error('Load conversation error:', err);
+      } finally {
+        setConversationLoaded(true);
+      }
+    })();
+  }, [user, conversationLoaded]);
+
+  // Persist conversation on every change (after initial load)
+  useEffect(() => {
+    if (!user || !conversationLoaded || messages.length === 0) return;
+    const timeout = setTimeout(() => {
+      supabase
+        .from('assistant_conversations')
+        .upsert(
+          { user_id: user.id, messages: messages as any, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        )
+        .then(({ error }) => {
+          if (error) console.error('Persist conversation error:', error);
+        });
+    }, 600);
+    return () => clearTimeout(timeout);
+  }, [messages, user, conversationLoaded]);
 
   const handleOnboardingSubmit = () => {
     const name = onboardingName.trim();
@@ -249,6 +290,7 @@ const AIAssistantPage = () => {
     const userMsg: Msg = { role: 'user', content: text };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
+    setUserHasEdited(false);
     setIsLoading(true);
 
     // Intercept: agent comptable
@@ -564,7 +606,7 @@ const AIAssistantPage = () => {
           </button>
           <textarea
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => { setInput(e.target.value); setUserHasEdited(true); }}
             placeholder={isRTL ? 'اكتب سؤالك هنا...' : 'Écrivez votre question...'}
             disabled={isLoading}
             className={cn(
@@ -574,7 +616,13 @@ const AIAssistantPage = () => {
             dir="auto"
             rows={1}
             onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); } }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (input.trim() && !isLoading) send();
+              }
+            }}
           />
           <button
             type="button"

@@ -35,6 +35,20 @@ serve(async (req) => {
 
     const currentDate = new Date().toLocaleDateString('fr-FR');
 
+    const btpGlossary = `
+GLOSSAIRE BTP OBLIGATOIRE (correspondances arabe dialectal ↔ français professionnel) :
+- بوية / دهان → peinture
+- بلاط → carrelage
+- سوسكوش → sous-couche
+- بارباين → parpaing
+- كارلاج → carrelage
+- جبصين → placo BA13
+- سباكة → plomberie
+- كهربا → électricité
+- دوفي → devis
+- فاتورة → facture
+Tu DOIS reconnaître ces termes quand l'utilisateur les emploie et utiliser systématiquement la traduction française correcte dans toute rédaction professionnelle (devis, facture, description de travaux).`;
+
     // Build personalization block
     const personalizationFr = userName
       ? `\nPERSONNALISATION (OBLIGATOIRE):\n- L'utilisateur s'appelle "${userName}". Adresse-toi à lui/elle par son prénom.\n- Genre: ${userGender === 'female' ? 'Féminin. Utilise les accords féminins (ex: "Vous êtes concernée", "Chère ' + userName + '").' : 'Masculin. Utilise les accords masculins (ex: "Vous êtes concerné", "Cher ' + userName + '").'}\n`
@@ -176,6 +190,7 @@ ANALYSE STRATÉGIQUE APPROFONDIE (OBLIGATOIRE):
 Date du jour : ${currentDate}.
 ${personalizationFr}
 ${formattingRulesFr}
+${btpGlossary}
 ${categoryCtx}
 
 ${documentRedactionRulesFr}
@@ -198,6 +213,7 @@ RÈGLES DE RÉPONSE :
 التاريخ: ${currentDate}.
 ${personalizationAr}
 ${formattingRulesAr}
+${btpGlossary}
 ${categoryCtx}
 
 ${documentRedactionRulesAr}

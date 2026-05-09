@@ -601,7 +601,13 @@ const SmartDevisPage = () => {
         : `\n\n🏗️ TYPE DE PROJET: CLIENT DIRECT. Tarifs normaux marché avec marges standard.`;
 
       const hasPhoto = uploadedFiles.length > 0;
-      const userText = pastedText.trim();
+      let userText = pastedText.trim();
+      if (!userText) {
+        console.warn('[SmartDevis] userMessage vide — utilisation valeur par défaut');
+        userText = hasPhoto
+          ? 'Analyse la photo et propose un devis BTP standard.'
+          : 'Devis BTP standard.';
+      }
 
       // ═══════════════════════════════════════════════════════════
       // NOUVELLE LOGIQUE — Demande = SOURCE PRINCIPALE

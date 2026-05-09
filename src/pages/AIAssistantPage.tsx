@@ -44,6 +44,8 @@ const AIAssistantPage = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>(null);
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+  const [userHasEdited, setUserHasEdited] = useState(false);
+  const [conversationLoaded, setConversationLoaded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');

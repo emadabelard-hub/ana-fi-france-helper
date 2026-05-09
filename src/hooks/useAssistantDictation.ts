@@ -96,24 +96,32 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     recognition.interimResults = true;
     recognition.lang = lang;
 
-    recognition.onresult = (event: any) => {
-      // Rebuild from scratch every event using ALL results.
-      // Finals are accumulated; interim is shown but not stored.
-      let accumulated = '';
-      let interim = '';
+    let finalText = '';
 
-      for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          accumulated += result[0].transcript + ' ';
-        } else {
-          interim += result[0].transcript;
+    recognition.onresult = (event: any) => {
+      // Récupérer UNIQUEMENT les nouveaux résultats finals
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalText += event.results[i][0].transcript + ' ';
         }
       }
 
-      finalTranscriptRef.current = accumulated.trim();
-      const display = (accumulated + interim).trim();
-      setTranscript(display);
+      // Afficher interim sans l'accumuler dans finalText
+      let interimText = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (!event.results[i].isFinal) {
+          interimText += event.results[i][0].transcript;
+        }
+      }
+
+      // Mettre à jour uniquement avec final + interim courant
+      finalTranscriptRef.current = finalText.trim();
+      setTranscript((finalText + interimText).trim());
+    };
+
+    recognition.onstart = () => {
+      finalText = '';
+      setTranscript('');
     };
 
     recognition.onerror = (event: any) => {

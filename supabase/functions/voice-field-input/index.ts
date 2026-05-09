@@ -273,12 +273,29 @@ serve(async (req) => {
 
       // In dual mode: transcribe in Arabic for raw field, then rewrite to French
       // In normal mode: transcribe auto-detect, then rewrite to French
+      // In transcribeOnly mode: transcribe verbatim (no translation, no rewrite)
       const transcribed = await transcribeAudio(audioBytes, mimeType, openAiKey, {
-        forceLanguage: dualMode ? "ar" : undefined,
-        prompt: dualMode ? DUAL_MODE_TRANSCRIPTION_HINT : TRANSCRIPTION_HINT,
+        forceLanguage: forceLanguage ?? (dualMode || transcribeOnly ? "ar" : undefined),
+        prompt: dualMode || transcribeOnly ? DUAL_MODE_TRANSCRIPTION_HINT : TRANSCRIPTION_HINT,
       });
       if (transcribed instanceof Response) return transcribed;
-      rawTranscript = deduplicateTranscript(normalizeConstructionTranscript(transcribed));
+      rawTranscript = transcribeOnly
+        ? transcribed.trim()
+        : deduplicateTranscript(normalizeConstructionTranscript(transcribed));
+    }
+
+    if (!rawTranscript) {
+      return new Response(JSON.stringify({ error: "Aucune parole détectée." }), {
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (transcribeOnly) {
+      return new Response(JSON.stringify({ text: rawTranscript, raw: rawTranscript }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     }
 
     if (!rawTranscript) {

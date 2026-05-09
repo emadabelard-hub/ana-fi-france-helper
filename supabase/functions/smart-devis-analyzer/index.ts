@@ -2046,6 +2046,12 @@ Réponds UNIQUEMENT en JSON:
       }
 
       function computeGuardrailedPrice(item: GeneratedQuoteItem, aiPrice: number, isST: boolean, qualityProfileRef: { targetRatio: number }, itemCount: number): number {
+        // ── Dictated unit price hint (Claude intent / user dictation) bypasses guardrails ──
+        const hintRaw = (item as any)?.dictatedUnitPrice ?? (item as any)?.unitPriceHint;
+        const hint = typeof hintRaw === 'number' ? hintRaw : parseFloat(hintRaw);
+        if (Number.isFinite(hint) && hint > 0) {
+          return Math.round(hint);
+        }
         const rule = detectPricingRule(item);
         if (rule?.isLogistic && isST) return 0;
 

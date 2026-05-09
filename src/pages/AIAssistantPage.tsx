@@ -37,7 +37,7 @@ const AIAssistantPage = () => {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
-  const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const resetTextareaHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = '44px';

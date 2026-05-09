@@ -71,8 +71,31 @@ Deno.serve(async (req: Request) => {
 
     const body = (await req.json()) as TranslateRequest;
     const text = (body.text || "").trim();
-    const sourceLang = body.sourceLang;
-    const targetLang = body.targetLang;
+    let sourceLang = body.sourceLang;
+    let targetLang = body.targetLang;
+
+    // BUG 2 — Auto-detect Arabic vs French from Unicode ratio (>30% arabic chars → 'ar')
+    if (text) {
+      const arabicMatches = text.match(/[\u0600-\u06FF]/g);
+      const arabicCount = arabicMatches ? arabicMatches.length : 0;
+      const letterMatches = text.match(/[\p{L}]/gu);
+      const letterCount = letterMatches ? letterMatches.length : 0;
+      if (letterCount > 0) {
+        const arabicRatio = arabicCount / letterCount;
+        // Certitude ≥80% : on override le bouton sélectionné
+        if (arabicRatio >= 0.8) {
+          sourceLang = "ar";
+          targetLang = "fr";
+        } else if (arabicRatio < 0.05 && letterCount >= 3) {
+          // Texte clairement non arabe → français
+          sourceLang = "fr";
+          targetLang = "ar";
+        } else if (arabicRatio > 0.3) {
+          sourceLang = "ar";
+          targetLang = "fr";
+        }
+      }
+    }
 
     if (!text) {
       return new Response(JSON.stringify({ error: "Empty text" }), {

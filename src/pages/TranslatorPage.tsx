@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Mic, Square, Loader2, Copy, Check, Trash2, History, MessageCircle, ArrowLeft, Keyboard, Send } from 'lucide-react';
+import { Mic, Square, Loader2, Copy, Check, Trash2, History, MessageCircle, ArrowLeft, Keyboard, Send, Volume2, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -399,6 +399,49 @@ const TranslatorPage = () => {
     setTranslatedText('');
   };
 
+  // ─── Web Speech API TTS playback (FR voice for translation) ───
+  const handleSpeak = useCallback(() => {
+    if (!translatedText) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      toast({ title: '🔇 الصوت مش متاح', variant: 'destructive' });
+      return;
+    }
+    try {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(translatedText);
+      utter.lang = targetLang === 'ar' ? 'ar-EG' : 'fr-FR';
+      const voices = window.speechSynthesis.getVoices();
+      const match = voices.find((v) => v.lang.toLowerCase().startsWith(utter.lang.toLowerCase().slice(0, 2)));
+      if (match) utter.voice = match;
+      utter.rate = 0.95;
+      window.speechSynthesis.speak(utter);
+    } catch (err) {
+      console.error('TTS error:', err);
+    }
+  }, [translatedText, targetLang, toast]);
+
+  // ─── 8 phrases types BTP — clic = traduction auto FR → AR ───
+  const QUICK_PHRASES_FR = [
+    'Où est le chef de chantier ?',
+    'Livraison prévue à quelle heure ?',
+    'Pause déjeuner',
+    'Travaux terminés aujourd\u2019hui',
+    'Problème sur le chantier',
+    'Besoin de matériaux',
+    'Réunion de chantier',
+    'Facture à signer',
+  ];
+
+  const handleQuickPhrase = async (phrase: string) => {
+    if (isProcessing) return;
+    setSourceLang('fr');
+    setOriginalText('');
+    setTranslatedText('');
+    setIsProcessing(true);
+    await performTranslation(phrase);
+  };
+
+
   const handleDeleteHistoryItem = async (id: string) => {
     await supabase.from('translation_history').delete().eq('id', id);
     setHistory((prev) => prev.filter((h) => h.id !== id));
@@ -619,22 +662,61 @@ const TranslatorPage = () => {
             </p>
 
             {!isProcessing && (
-              <div className="grid grid-cols-2 gap-2 mt-4">
-                <Button onClick={handleCopy} variant="outline" className="gap-2">
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  <span className="font-cairo">{copied ? 'اتنسخ' : 'انسخ'}</span>
-                </Button>
+              <div className="space-y-2 mt-4">
                 <Button
-                  onClick={handleWhatsApp}
-                  className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={handleSpeak}
+                  variant="outline"
+                  className="w-full gap-2 border-2 border-blue-300 dark:border-blue-700"
                 >
-                  <MessageCircle className="h-4 w-4" />
-                  <span className="font-cairo">واتساب</span>
+                  <Volume2 className="h-4 w-4" />
+                  <span className="font-cairo">🔊 استمع</span>
                 </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button onClick={handleCopy} variant="outline" className="gap-2">
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    <span className="font-cairo">{copied ? 'اتنسخ' : 'انسخ'}</span>
+                  </Button>
+                  <Button
+                    onClick={handleWhatsApp}
+                    className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span className="font-cairo">واتساب</span>
+                  </Button>
+                </div>
               </div>
             )}
           </Card>
         )}
+
+        {/* 8 phrases types BTP — traduction automatique au clic */}
+        <Card className="p-4 border-2 border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="h-4 w-4 text-amber-600" />
+            <h3 className="text-sm font-bold font-cairo text-amber-900 dark:text-amber-100">
+              جمل جاهزة للورشة
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {QUICK_PHRASES_FR.map((phrase) => (
+              <button
+                key={phrase}
+                onClick={() => void handleQuickPhrase(phrase)}
+                disabled={isProcessing}
+                dir="ltr"
+                lang="fr"
+                className={cn(
+                  'text-left text-sm rounded-lg border-2 border-amber-200 dark:border-amber-800',
+                  'bg-card hover:bg-amber-100 dark:hover:bg-amber-900/30 px-3 py-2 transition-all',
+                  'active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+              >
+                {phrase}
+              </button>
+            ))}
+          </div>
+        </Card>
+
 
         {/* History */}
         {showHistory && (

@@ -190,6 +190,7 @@ ANALYSE STRATÉGIQUE APPROFONDIE (OBLIGATOIRE):
 Date du jour : ${currentDate}.
 ${personalizationFr}
 ${formattingRulesFr}
+${btpGlossary}
 ${categoryCtx}
 
 ${documentRedactionRulesFr}

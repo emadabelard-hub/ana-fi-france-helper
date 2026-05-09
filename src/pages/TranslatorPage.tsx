@@ -662,22 +662,61 @@ const TranslatorPage = () => {
             </p>
 
             {!isProcessing && (
-              <div className="grid grid-cols-2 gap-2 mt-4">
-                <Button onClick={handleCopy} variant="outline" className="gap-2">
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  <span className="font-cairo">{copied ? 'اتنسخ' : 'انسخ'}</span>
-                </Button>
+              <div className="space-y-2 mt-4">
                 <Button
-                  onClick={handleWhatsApp}
-                  className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={handleSpeak}
+                  variant="outline"
+                  className="w-full gap-2 border-2 border-blue-300 dark:border-blue-700"
                 >
-                  <MessageCircle className="h-4 w-4" />
-                  <span className="font-cairo">واتساب</span>
+                  <Volume2 className="h-4 w-4" />
+                  <span className="font-cairo">🔊 استمع</span>
                 </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button onClick={handleCopy} variant="outline" className="gap-2">
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    <span className="font-cairo">{copied ? 'اتنسخ' : 'انسخ'}</span>
+                  </Button>
+                  <Button
+                    onClick={handleWhatsApp}
+                    className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span className="font-cairo">واتساب</span>
+                  </Button>
+                </div>
               </div>
             )}
           </Card>
         )}
+
+        {/* 8 phrases types BTP — traduction automatique au clic */}
+        <Card className="p-4 border-2 border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="h-4 w-4 text-amber-600" />
+            <h3 className="text-sm font-bold font-cairo text-amber-900 dark:text-amber-100">
+              جمل جاهزة للورشة
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {QUICK_PHRASES_FR.map((phrase) => (
+              <button
+                key={phrase}
+                onClick={() => void handleQuickPhrase(phrase)}
+                disabled={isProcessing}
+                dir="ltr"
+                lang="fr"
+                className={cn(
+                  'text-left text-sm rounded-lg border-2 border-amber-200 dark:border-amber-800',
+                  'bg-card hover:bg-amber-100 dark:hover:bg-amber-900/30 px-3 py-2 transition-all',
+                  'active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+              >
+                {phrase}
+              </button>
+            ))}
+          </div>
+        </Card>
+
 
         {/* History */}
         {showHistory && (

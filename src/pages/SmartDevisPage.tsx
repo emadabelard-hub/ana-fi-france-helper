@@ -701,7 +701,20 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
       const data = await invokeAnalyzer(body);
       console.log('[SmartDevis] Analysis response keys:', data ? Object.keys(data) : 'null');
       console.log('[SmartDevis] suggestedItems count:', Array.isArray(data?.suggestedItems) ? data.suggestedItems.length : 0);
+      console.log('ITEMS REÇUS:', data?.suggestedItems);
       setAnalysisData(data);
+
+      // Pré-remplir directement le formulaire depuis suggestedItems
+      if (Array.isArray(data?.suggestedItems) && data.suggestedItems.length > 0) {
+        setLineItems(data.suggestedItems.map((item: any, idx: number) => ({
+          id: `ai-${Date.now()}-${idx}`,
+          designation_fr: item.designation_fr || '',
+          designation_ar: item.designation_ar || '',
+          quantity: typeof item.quantity === 'number' ? item.quantity : Number(item.quantity) || 1,
+          unit: item.unit || 'm²',
+          unitPrice: typeof item.unitPrice === 'number' ? item.unitPrice : Number(item.unitPrice) || 0,
+        })) as any);
+      }
 
       // Store surface estimates for editable display
       if (data.surfaceEstimates && Array.isArray(data.surfaceEstimates)) {

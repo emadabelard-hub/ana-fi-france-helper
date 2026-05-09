@@ -1065,6 +1065,8 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
           analysis_fr: analysisData?.analysis_fr,
           taskList: analysisData?.taskList,
           criticalRisks_fr: analysisData?.criticalRisks_fr,
+          dictatedHints: analysisData?.dictatedHints,
+          intentData: analysisData?.intentData,
         },
         conversationHistory: chatContext.length > 0 ? chatContext : undefined,
         materialQuality,

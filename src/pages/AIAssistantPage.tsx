@@ -290,6 +290,7 @@ const AIAssistantPage = () => {
     const userMsg: Msg = { role: 'user', content: text };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
+    setUserHasEdited(false);
     setIsLoading(true);
 
     // Intercept: agent comptable

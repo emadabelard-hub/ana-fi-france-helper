@@ -39,7 +39,7 @@ Règles ABSOLUES :
 2. Si couleur mentionnée (أزرق=bleu, أبيض=blanc, رمادي=gris, أسود=noir, أحمر=rouge, أصفر=jaune, أخضر=vert, بيج=beige) → inclure dans designation_fr
 3. Si finition mentionnée (ساتيني=satinée, مط=mate, برّاق=brillante) → inclure dans designation_fr
 4. Si سقف ET حيطان mentionnés → générer 2 lignes séparées (une murs, une plafond)
-5. Si prix mentionné (بـ X يورو / X€) → utiliser ce prix exactement comme unitPrice
+5. unitPrice : utiliser le prix mentionné par l'artisan s'il en indique un. Sinon mettre 0 — l'artisan remplira lui-même son prix.
 6. Si surface mentionnée (X متر / X m²) → utiliser comme quantity
 7. Matériau spécifique (فلوتون=parquet flottant, كارلاج إيطالي=carrelage italien, بانتيرة=peinture, بلاكو=placo) → mentionner dans designation_fr
 8. Ne jamais ajouter de travaux non demandés

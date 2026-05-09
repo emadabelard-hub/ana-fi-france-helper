@@ -1864,16 +1864,58 @@ Réponds UNIQUEMENT en JSON:
         content: "Donnees d'analyse:\n" + JSON.stringify(analysisData) + suggestedItemsRef + "\n\nREGLE CRITIQUE: Genere le devis final avec 100% de couverture du work_plan ET des suggestedItems.\n- Chaque etape du plan de travaux (workPlan_fr / workPlan_ar) DOIT avoir UNE ligne correspondante dans le devis.\n- Chaque item de suggestedItems DOIT etre reproduit dans le JSON final.\n- Ne saute AUCUNE etape. Si l'analyse mentionne une tache, elle DOIT apparaitre dans le tableau.\n- Analyse = Table. Pas d'exception.\n- Inclus les quantites realistes basees sur estimatedArea et surfaceEstimates."
       });
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
+      // ── Build hintsBlock from userRefinements / analysisData for Claude ──
+      const hintsParts: string[] = [];
+      if (userRefinements && typeof userRefinements === 'object') {
+        for (const [k, v] of Object.entries(userRefinements)) {
+          if (v !== null && v !== undefined && v !== '') hintsParts.push(`- ${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`);
+        }
+      }
+      if (analysisData?.dictatedHints) {
+        for (const [k, v] of Object.entries(analysisData.dictatedHints)) {
+          if (v !== null && v !== undefined && v !== '') hintsParts.push(`- ${k}: ${v}`);
+        }
+      }
+      const hintsBlock = hintsParts.length > 0 ? hintsParts.join('\n') : '(aucune directive supplémentaire)';
+
+      const anthropicKeyGen = Deno.env.get('ANTHROPIC_API_KEY');
+      const claudePrompt = `Tu es expert BTP français.
+Génère les lignes de devis en JSON en respectant STRICTEMENT ces directives :
+${hintsBlock}
+
+Règles absolues :
+- Si type_prestation = main_oeuvre_uniquement → designation_fr commence par 'Pose' sans 'Fourniture'
+- Si couleur + finition détectées → inclure dans TOUTES les lignes peinture
+- Si murs ET plafond → 2 lignes séparées
+- Si prix dicté → utiliser exactement ce prix
+
+Format JSON :
+{
+  "items": [{
+    "designation_fr": string,
+    "designation_ar": string,
+    "quantity": number,
+    "unit": string,
+    "unitPrice": number
+  }]
+}
+
+Données d'analyse :
+${JSON.stringify(analysisData)}`;
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
         headers: {
-          Authorization: "Bearer " + LOVABLE_API_KEY,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          'x-api-key': anthropicKeyGen || '',
+          'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: aiMessages,
+          model: 'claude-sonnet-4-5',
+          max_tokens: 4096,
           temperature: 0.2,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: claudePrompt }],
         }),
       });
 
@@ -1885,7 +1927,7 @@ Réponds UNIQUEMENT en JSON:
       }
 
       const aiData = await response.json();
-      const content = aiData.choices?.[0]?.message?.content || "";
+      const content = aiData?.content?.[0]?.text || "";
       
       let parsed;
       try {

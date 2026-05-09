@@ -1965,7 +1965,14 @@ ${JSON.stringify(analysisData)}`;
         }
       }
       
-      const { items: lockedItems, removedItems, workPlanSteps } = enforceWorkPlanLock(rawItems, analysisData);
+      // ── BYPASS work plan lock when Claude intent / dictated hints are present ──
+      const claudeBypass = !!(analysisData?.intentData || analysisData?.dictatedHints?.unitPriceHint);
+      const { items: lockedItems, removedItems, workPlanSteps } = claudeBypass
+        ? { items: rawItems, removedItems: [], workPlanSteps: [] }
+        : enforceWorkPlanLock(rawItems, analysisData);
+      if (claudeBypass) {
+        console.log('[generate_items] CLAUDE BYPASS active — skipping enforceWorkPlanLock & consolidatePaintingItems');
+      }
       const existingVerification = parsed?.verification && typeof parsed.verification === "object" ? parsed.verification : {};
       const existingCorrections = Array.isArray(existingVerification.corrections_applied)
         ? existingVerification.corrections_applied
@@ -2170,7 +2177,9 @@ ${JSON.stringify(analysisData)}`;
       // ═══════════════════════════════════════
       //   CONSOLIDATE PAINTING — merge prep into main line (Direct Client)
       // ═══════════════════════════════════════
-      const consolidatedItems = consolidatePaintingItems(pricedItems, detectPricingRule, isSousTraitance, tier);
+      const consolidatedItems = claudeBypass
+        ? pricedItems
+        : consolidatePaintingItems(pricedItems, detectPricingRule, isSousTraitance, tier);
       // Replace pricedItems reference for downstream use
       const finalPricedItems = consolidatedItems;
 

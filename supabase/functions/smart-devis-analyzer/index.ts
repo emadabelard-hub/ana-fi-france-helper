@@ -993,7 +993,7 @@ Règles :
         extraDirectives.push(`- OBLIGATOIRE : toutes les lignes de peinture doivent inclure la finition et la couleur dans designation_fr. Format : "${label} — [zone]" (ex : "${label} — murs", "${label} — plafond").`);
       }
 
-      const hintsBlock = (Object.keys(dictatedHints).length > 0 || extraDirectives.length > 0)
+      const hintsBlock = (Object.keys(dictatedHints).length > 0 || extraDirectives.length > 0 || claudeDirectives.length > 0)
         ? `\n\n📌 INDICATIONS DICTÉES PAR L'UTILISATEUR (à respecter strictement) :${
             dictatedHints.unitPriceHint !== undefined ? `\n- Prix unitaire imposé par l'artisan : ${dictatedHints.unitPriceHint} €/m² (utiliser cette valeur exacte, ne JAMAIS l'écraser)` : ""
           }${
@@ -1002,6 +1002,8 @@ Règles :
             dictatedHints.budgetHint !== undefined ? `\n- Budget cible : ${dictatedHints.budgetHint} €` : ""
           }${
             extraDirectives.length > 0 ? `\n${extraDirectives.join("\n")}` : ""
+          }${
+            claudeDirectives.length > 0 ? `\n\n📌 INDICATIONS EXACTES (Claude) :\n${claudeDirectives.map(d => `- ${d}`).join("\n")}` : ""
           }`
         : "";
 

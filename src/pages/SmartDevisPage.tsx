@@ -1114,46 +1114,22 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
       const data = await invokeAnalyzer(payload);
 
       // ===== STRICT LOCK: transmit items literally, in order, with no deduplication =====
-      const rawItems = Array.isArray(data.items) && data.items.length > 0
-        ? data.items
-        : (Array.isArray(data.suggestedItems) ? data.suggestedItems : []);
-
-      const items: LineItem[] = rawItems.map((item: any, idx: number) => {
-        const parsedQuantity = Number(item.quantity);
-        const quantity = Number.isFinite(parsedQuantity) ? parsedQuantity : 1;
-        const aiUnit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'Ens';
-        
-        // Look up user's material choice — prefer index match, fallback to text key
-        const key = `${(item.designation_fr || '').trim().toLowerCase()}|${(item.designation_ar || '').trim()}`;
-        const withMaterial = idx in materialChoicesByIndex
-          ? materialChoicesByIndex[idx]
-          : (key in materialChoicesByKey ? materialChoicesByKey[key] : (effectiveScope !== 'main_oeuvre_seule'));
-
-        // Pass AI text verbatim — no prefix modification
-        const finalFr = item.designation_fr || '';
-        const finalAr = item.designation_ar || '';
-
-        return {
-          id: generateId(),
-          designation_fr: finalFr,
-          designation_ar: finalAr,
-          quantity,
-          unit: aiUnit,
-          unitPrice: typeof item.unitPrice === 'number' && item.unitPrice > 0 ? item.unitPrice : 0,
-          total: (typeof item.unitPrice === 'number' && item.unitPrice > 0 ? item.unitPrice : 0) * quantity,
-          category: item.category,
-          catalogCode: typeof item.code === 'string' ? item.code.trim().toUpperCase() : undefined,
-          withMaterial,
-          isAiEstimate: typeof item.unitPrice === 'number' && item.unitPrice > 0,
-        };
-      });
+      // Réutiliser strictement les items déjà produits par Claude dans analyze_image
+      if (analysisData?.suggestedItems?.length > 0) {
+        setLineItems(analysisData.suggestedItems.map((item: any, idx: number) => ({
+          id: `ai-${Date.now()}-${idx}`,
+          designation_fr: item.designation_fr || '',
+          designation_ar: item.designation_ar || item.designation_fr || '',
+          quantity: Number(item.quantity) || 1,
+          unit: item.unit || 'm²',
+          unitPrice: Number(item.unitPrice) || 0,
+        })) as any);
+      }
 
       // Store devis_subject_fr from AI if available
       if (data.devis_subject_fr) {
         setAnalysisData((prev: any) => prev ? { ...prev, devis_subject_fr: data.devis_subject_fr } : prev);
       }
-
-      setLineItems(items);
       setStep('review');
 
       // Prices are now pre-filled by شبيك لبيك inline — no separate estimate-price call needed

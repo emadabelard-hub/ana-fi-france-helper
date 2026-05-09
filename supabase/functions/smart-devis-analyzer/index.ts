@@ -923,13 +923,22 @@ Règles :
               }],
             }),
           });
-          const intentData = await intentResponse.json();
-          const rawText = intentData?.content?.[0]?.text || '';
-          const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            claudeIntent = JSON.parse(jsonMatch[0]);
+          if (!intentResponse.ok) {
+            console.error('[claude-intent] HTTP error:', intentResponse.status);
+          } else {
+            const intentData = await intentResponse.json();
+            const rawText = intentData?.content?.[0]?.text || '';
+            console.log('[claude-intent] rawText:', rawText);
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                claudeIntent = JSON.parse(jsonMatch[0]);
+                console.log('CLAUDE INTENT:', JSON.stringify(claudeIntent));
+              } catch (e) {
+                console.error('[claude-intent] parse error:', e);
+              }
+            }
           }
-          console.log('CLAUDE INTENT:', JSON.stringify(claudeIntent));
         } catch (err) {
           console.error('[claude-intent] failed:', err);
         }

@@ -1248,6 +1248,61 @@ SAUF si l'utilisateur les mentionne EXPLICITEMENT dans son texte.
     // Action: generate_items - Final generation with preferences applied
     if (action === "generate_items") {
       const { analysisData, materialQuality, discountPercent, profitMarginPercent, materialScope, conversationHistory, userRefinements } = body;
+
+      // Si Claude intent disponible → retourner directement sans aucun autre traitement
+      if (analysisData?.intentData) {
+        const intent = analysisData.intentData;
+        const price = analysisData?.dictatedHints?.unitPriceHint || 0;
+        const surface = analysisData?.dictatedHints?.surfaceHint || 1;
+        const items: any[] = [];
+
+        const prefix = intent.type_prestation === 'main_oeuvre_uniquement'
+          ? 'Pose'
+          : 'Fourniture et pose';
+
+        const label = [
+          intent.travaux || 'peinture',
+          intent.finition,
+          intent.couleur
+        ].filter(Boolean).join(' ');
+
+        if (intent.zones?.includes('murs')) {
+          items.push({
+            designation_fr: `${prefix} ${label} — murs`,
+            designation_ar: `${prefix === 'Pose' ? 'مصنعية' : 'توريد وتركيب'} ${label} — حيطان`,
+            quantity: surface,
+            unit: 'm²',
+            unitPrice: price
+          });
+        }
+
+        if (intent.zones?.includes('plafond')) {
+          items.push({
+            designation_fr: `${prefix} ${label} — plafond`,
+            designation_ar: `${prefix === 'Pose' ? 'مصنعية' : 'توريد وتركيب'} ${label} — سقف`,
+            quantity: surface,
+            unit: 'm²',
+            unitPrice: price
+          });
+        }
+
+        if (items.length === 0 && intent.travaux) {
+          items.push({
+            designation_fr: `${prefix} ${label}`,
+            designation_ar: `${prefix === 'Pose' ? 'مصنعية' : 'توريد وتركيب'} ${label}`,
+            quantity: surface,
+            unit: 'm²',
+            unitPrice: price
+          });
+        }
+
+        return new Response(JSON.stringify({
+          items,
+          summary: {},
+          verification: {}
+        }), { headers: { 'Content-Type': 'application/json' }});
+      }
+
       const literalSuggestedItems = getLiteralSuggestedItems(analysisData);
 
       // ═══════════════════════════════════════

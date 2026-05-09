@@ -298,6 +298,7 @@ const AIAssistantPage = () => {
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setUserHasEdited(false);
+    resetTextareaHeight();
     setIsLoading(true);
 
     // Intercept: agent comptable

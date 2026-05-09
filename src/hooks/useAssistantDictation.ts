@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 /**
  * Dictation hook dedicated to the "مساعد الشانتي الذكي" (AI Assistant) page.
@@ -110,6 +111,7 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [duration, setDuration] = useState(0);
+  const { toast } = useToast();
 
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef('');
@@ -296,6 +298,13 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
 
     recognition.onerror = (e: any) => {
       if (e.error === 'no-speech' || e.error === 'aborted') return;
+      if (e.error === 'not-allowed') {
+        toast({
+          variant: 'destructive',
+          title: '🎤 إذن الميكروفون مرفوض',
+          description: 'افتح إعدادات المتصفح وفعّل الميكروفون لـ anafypro.com'
+        });
+      }
       console.error('Assistant dictation error:', e.error);
     };
 
@@ -313,12 +322,12 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     recognitionRef.current = recognition;
     isRecordingRef.current = true;
 
-    try {
-      recognition.start();
-    } catch {
-      cleanup();
-      return false;
-    }
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(() => recognition.start())
+      .catch(() => toast({ 
+        title: '🎤 إذن الميكروفون مطلوب',
+        description: 'اسمح للتطبيق باستخدام الميكروفون'
+      }));
 
     setIsRecording(true);
     startTimeRef.current = Date.now();
@@ -330,7 +339,7 @@ export function useAssistantDictation(lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
     }, MAX_DURATION_MS);
 
     return true;
-  }, [cleanup, isSupported, lang, rebuildFinalTranscript]);
+  }, [cleanup, isSupported, lang, rebuildFinalTranscript, toast]);
 
   const stopRecording = useCallback((): string => {
     isRecordingRef.current = false;

@@ -2177,7 +2177,9 @@ ${JSON.stringify(analysisData)}`;
       // ═══════════════════════════════════════
       //   CONSOLIDATE PAINTING — merge prep into main line (Direct Client)
       // ═══════════════════════════════════════
-      const consolidatedItems = consolidatePaintingItems(pricedItems, detectPricingRule, isSousTraitance, tier);
+      const consolidatedItems = claudeBypass
+        ? pricedItems
+        : consolidatePaintingItems(pricedItems, detectPricingRule, isSousTraitance, tier);
       // Replace pricedItems reference for downstream use
       const finalPricedItems = consolidatedItems;
 

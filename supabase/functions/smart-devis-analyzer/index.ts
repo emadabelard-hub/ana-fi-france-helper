@@ -903,6 +903,7 @@ Réponds en JSON avec cette structure:
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages,
+          temperature: 0.2,
         }),
       });
 

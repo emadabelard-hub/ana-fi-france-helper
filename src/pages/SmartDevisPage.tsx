@@ -214,6 +214,10 @@ const SmartDevisPage = () => {
               <Textarea
                 value={userText}
                 onChange={(e) => setUserText(e.target.value)}
+                onVoiceDual={(r) => {
+                  setRawArabic(r.raw || '');
+                  setUserText(r.text || r.raw || '');
+                }}
                 placeholder={isRTL
                   ? 'اكتب أو سجّل صوتياً : مثلاً "بنتيرة زرقا ساتيني للحيطان 25 متر بـ 18 يورو"'
                   : 'Décris le travail (arabe ou français)'}
@@ -222,10 +226,27 @@ const SmartDevisPage = () => {
                 dir={isRTL ? 'rtl' : 'ltr'}
                 className="resize-none"
               />
-              {userText.trim() && (
-                <div className="mt-2 rounded-md border border-primary/30 bg-primary/5 p-3" dir="rtl">
-                  <div className="text-xs text-muted-foreground mb-1">ما قلته :</div>
-                  <div className="text-sm whitespace-pre-wrap break-words">{userText.trim()}</div>
+              {(rawArabic.trim() || userText.trim()) && (
+                <div className="mt-3 space-y-2">
+                  {rawArabic.trim() && (
+                    <div className="rounded-md border border-border bg-muted p-3" dir="rtl">
+                      <div className="text-xs text-muted-foreground mb-1 font-cairo">ما قلته بالعربي :</div>
+                      <div className="text-sm whitespace-pre-wrap break-words font-cairo">{rawArabic.trim()}</div>
+                    </div>
+                  )}
+                  {userText.trim() && (
+                    <div className="rounded-md border border-primary/30 bg-background p-3" dir="ltr" lang="fr">
+                      <div className="text-xs text-muted-foreground mb-1">الترجمة للفرنسي / Traduction française :</div>
+                      <Textarea
+                        value={userText}
+                        onChange={(e) => setUserText(e.target.value)}
+                        rows={3}
+                        dir="ltr"
+                        lang="fr"
+                        className="resize-none border-0 bg-transparent p-0 focus-visible:ring-0"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

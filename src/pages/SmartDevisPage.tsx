@@ -706,14 +706,20 @@ Photo jointe : ${hasPhoto ? 'OUI' : 'NON'}${hasPhoto ? ' — sert UNIQUEMENT à 
 
       // Pré-remplir directement le formulaire depuis suggestedItems
       if (Array.isArray(data?.suggestedItems) && data.suggestedItems.length > 0) {
-        setLineItems(data.suggestedItems.map((item: any, idx: number) => ({
-          id: `ai-${Date.now()}-${idx}`,
-          designation_fr: item.designation_fr || '',
-          designation_ar: item.designation_ar || '',
-          quantity: typeof item.quantity === 'number' ? item.quantity : Number(item.quantity) || 1,
-          unit: item.unit || 'm²',
-          unitPrice: typeof item.unitPrice === 'number' ? item.unitPrice : Number(item.unitPrice) || 0,
-        })) as any);
+        setLineItems(data.suggestedItems.map((item: any, idx: number) => {
+          const fr = (item.designation_fr || '').trim();
+          const ar = (item.designation_ar || '').trim();
+          const mapped = {
+            id: `ai-${Date.now()}-${idx}`,
+            designation_fr: fr,
+            designation_ar: ar || fr,
+            quantity: typeof item.quantity === 'number' ? item.quantity : Number(item.quantity) || 1,
+            unit: item.unit || 'm²',
+            unitPrice: typeof item.unitPrice === 'number' ? item.unitPrice : Number(item.unitPrice) || 0,
+          };
+          console.log('ITEM MAPPÉ:', { fr: mapped.designation_fr, ar: mapped.designation_ar });
+          return mapped;
+        }) as any);
       }
 
       // Store surface estimates for editable display

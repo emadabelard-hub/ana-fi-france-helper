@@ -613,14 +613,23 @@ const AIAssistantPage = () => {
             <Mic size={20} />
           </button>
           <textarea
+            ref={textareaRef}
             value={input}
             onChange={e => { setInput(e.target.value); setUserHasEdited(true); }}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => { if (!input.trim()) { setIsInputFocused(false); resetTextareaHeight(); } }}
             placeholder={isRTL ? 'اكتب سؤالك هنا...' : 'Écrivez votre question...'}
             disabled={isLoading}
             className={cn(
-              "flex-1 bg-transparent text-[15px] font-medium px-2 py-2.5 outline-none text-foreground placeholder:text-muted-foreground resize-none min-h-[44px] max-h-[200px] leading-[1.5]",
+              "flex-1 text-[15px] font-medium px-2 py-2.5 outline-none text-foreground placeholder:text-muted-foreground resize-none leading-[1.5] rounded-lg transition-[height,background-color] duration-200 overflow-y-auto",
+              isInputFocused ? "bg-muted/40" : "bg-transparent",
               isRTL && "font-cairo text-right"
             )}
+            style={{
+              minHeight: isInputFocused ? (typeof window !== 'undefined' && window.innerWidth < 768 ? '40vh' : '120px') : '44px',
+              maxHeight: '200px',
+              transition: 'height 0.2s ease, min-height 0.2s ease, background-color 0.2s ease',
+            }}
             dir="auto"
             rows={1}
             onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }}

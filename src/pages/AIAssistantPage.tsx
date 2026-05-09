@@ -139,6 +139,8 @@ const AIAssistantPage = () => {
     const cleaned = dictation.getCleanedText();
     if (cleaned) {
       setInput(prev => (prev ? prev + ' ' + cleaned : cleaned));
+      setUserHasEdited(false);
+      autoResizeTextarea();
     }
     dictation.cancel();
     setVoiceModalOpen(false);

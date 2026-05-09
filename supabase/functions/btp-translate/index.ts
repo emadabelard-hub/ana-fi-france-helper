@@ -137,7 +137,7 @@ ${BTP_GLOSSARY}`;
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        max_tokens: 100,
+        max_tokens: 1000,
         stream,
         messages: [
           { role: "system", content: systemPrompt },

@@ -199,6 +199,8 @@ export function useAssistantDictation(_lang: 'fr-FR' | 'ar-EG' = 'ar-EG') {
           audioBase64,
           mimeType: blob.type || mimeTypeRef.current,
           dualMode: false,
+          transcribeOnly: true,
+          language: 'ar',
         },
       });
       if (error) {

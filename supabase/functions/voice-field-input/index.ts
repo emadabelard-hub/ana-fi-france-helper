@@ -233,6 +233,8 @@ serve(async (req) => {
     const rawTextInput = typeof body?.rawText === "string" ? body.rawText.trim() : "";
     const mimeType = typeof body?.mimeType === "string" && body.mimeType ? body.mimeType : "audio/webm";
     const dualMode = body?.dualMode === true;
+    const transcribeOnly = body?.transcribeOnly === true;
+    const forceLanguage = typeof body?.language === "string" ? body.language : undefined;
 
     if (!audioBase64 && !rawTextInput) {
       return new Response(JSON.stringify({ error: "Audio ou texte manquant." }), {

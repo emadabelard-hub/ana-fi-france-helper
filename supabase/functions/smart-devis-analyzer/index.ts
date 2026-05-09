@@ -550,30 +550,10 @@ Les translittérations sont RÉSERVÉES aux champs arabes (_ar) UNIQUEMENT.
 9. ❌ Ne JAMAIS lister uniquement des matériaux bruts (sacs, litres, kg) → raisonner en LOTS DE TRAVAUX
 
 ═══════════════════════════════════════
-  🏗️ RECONSTITUTION CHANTIER COMPLET (CRITIQUE)
+  🔒 RAPPEL — STRICTE FIDÉLITÉ À LA DEMANDE
 ═══════════════════════════════════════
-⚠️ Tu n'es PAS un simple descripteur d'image. Tu es un ARTISAN PROFESSIONNEL qui reconstruit la logique COMPLÈTE du chantier.
-
-RÈGLE D'OR:
-À partir des éléments visibles, déduis l'ENSEMBLE des travaux nécessaires pour livrer le chantier fini, même si certaines étapes ne sont pas visibles sur l'image.
-
-PHASES TOUJOURS À INCLURE (sauf si manifestement hors sujet):
-1. ✅ PRÉPARATION CHANTIER — protection (bâches, scotch), nettoyage initial, évacuation
-2. ✅ PRÉPARATION DES SUPPORTS — murs, sols, ragréage si nécessaire, rebouchage
-3. ✅ ÉTANCHÉITÉ — OBLIGATOIRE en zones humides (SDB, cuisine, douche, WC, terrasse)
-4. ✅ POSE DES REVÊTEMENTS — sols et murs (carrelage, peinture, parquet, faïence…)
-5. ✅ INSTALLATION DES ÉQUIPEMENTS — plomberie (sanitaires, robinetterie), électricité (prises, points lumineux), si présents ou logiques
-6. ✅ FINITIONS — joints, peinture finale, silicone, nettoyage de fin de chantier
-
-EXEMPLES DE COMPLÉTION INTELLIGENTE:
-- Image de SDB nue → inclure étanchéité (SPEC), carrelage sol+murs, plomberie sanitaire, électricité IP44, joints, finitions
-- Image de cuisine → préparation supports, faïence crédence, carrelage sol, plomberie évier, électricité plan de travail, finitions
-- Image de pièce à vivre → préparation murs/plafond, peinture, sol, plinthes, finitions
-
-⚠️ DISTINGUER:
-- VISIBLE (constaté) → mentionner dans diagnostic
-- DÉDUIT (logique métier) → inclure dans suggestedItems avec note "à confirmer sur site"
-- Quantités → toujours à 0 ou "à mesurer", JAMAIS inventées
+Le workPlan ne contient QUE les travaux explicitement mentionnés par l'utilisateur.
+N'ajoute AUCUNE phase implicite (préparation, étanchéité, finitions, nettoyage…) si elle n'est pas dans la demande.
 
 ═══════════════════════════════════════
   ✅ OBLIGATOIRE
@@ -853,9 +833,34 @@ Réponds en JSON avec cette structure:
       const hasFiles = Array.isArray(files) && files.length > 0;
       const hasLegacyImage = !hasFiles && imageData;
 
+      // ── Correction 5: translate Ammiya → French BTP terms before sending to Gemini ──
+      // ── Correction 4: extract dictated hints (price/m², surface, budget) from userMessage ──
+      const rawUserMessage = typeof userMessage === "string" ? userMessage : "";
+      const translatedUserMessage = translateArabicTerms(rawUserMessage);
+
+      const priceM2Match = translatedUserMessage.match(/(\d+(?:[.,]\d+)?)\s*€\s*\/\s*m[²2]/i);
+      const surfaceMatch = translatedUserMessage.match(/(\d+(?:[.,]\d+)?)\s*m[²2]\b/i);
+      const budgetMatch = translatedUserMessage.match(/(?<!\/)(\d{2,6}(?:[.,]\d+)?)\s*€(?!\s*\/)/);
+      const dictatedHints: Record<string, number> = {};
+      if (priceM2Match) dictatedHints.unitPriceHint = parseFloat(priceM2Match[1].replace(",", "."));
+      if (surfaceMatch) dictatedHints.surfaceHint = parseFloat(surfaceMatch[1].replace(",", "."));
+      if (budgetMatch) dictatedHints.budgetHint = parseFloat(budgetMatch[1].replace(",", "."));
+
+      const hintsBlock = Object.keys(dictatedHints).length > 0
+        ? `\n\n📌 INDICATIONS DICTÉES PAR L'UTILISATEUR (à respecter strictement) :${
+            dictatedHints.unitPriceHint !== undefined ? `\n- Prix unitaire imposé : ${dictatedHints.unitPriceHint} €/m² (utiliser cette valeur exacte)` : ""
+          }${
+            dictatedHints.surfaceHint !== undefined ? `\n- Surface mentionnée : ${dictatedHints.surfaceHint} m² (à reporter dans estimatedArea / surfaceEstimates)` : ""
+          }${
+            dictatedHints.budgetHint !== undefined ? `\n- Budget cible : ${dictatedHints.budgetHint} €` : ""
+          }`
+        : "";
+
+      const finalUserText = (translatedUserMessage || "Analyse ces fichiers et fais un diagnostic technique du chantier.") + hintsBlock;
+
       if (hasFiles || hasLegacyImage) {
         const contentParts: any[] = [
-          { type: "text", text: userMessage || "Analyse ces fichiers et fais un diagnostic technique du chantier." }
+          { type: "text", text: finalUserText }
         ];
 
       if (hasFiles) {
@@ -891,7 +896,7 @@ Réponds en JSON avec cette structure:
 
         messages.push({ role: "user", content: contentParts });
       } else {
-        messages.push({ role: "user", content: userMessage || "Analyse ce document." });
+        messages.push({ role: "user", content: finalUserText });
       }
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -903,6 +908,7 @@ Réponds en JSON avec cette structure:
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages,
+          temperature: 0.2,
         }),
       });
 
@@ -1711,6 +1717,7 @@ Réponds UNIQUEMENT en JSON:
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: aiMessages,
+          temperature: 0.2,
         }),
       });
 
@@ -2046,6 +2053,24 @@ Réponds UNIQUEMENT en JSON:
             }
           });
         }
+      }
+
+      // ── Correction 6: réinjecter les removedItems comme lignes optionnelles (badge "اختياري", prix 0) ──
+      const optionalItems = (removedItems || []).map((it: any) => ({
+        designation_fr: (it.designation_fr || it.designation_ar || "Travail optionnel").toString(),
+        designation_ar: (it.designation_ar || it.designation_fr || "اختياري").toString(),
+        quantity: typeof it.quantity === "number" ? it.quantity : 1,
+        unit: it.unit || "Ens",
+        unitPrice: 0,
+        total: 0,
+        category: it.category || "labor",
+        code: it.code || "",
+        optional: true,
+        badge_ar: "اختياري",
+        badge_fr: "Optionnel",
+      }));
+      if (optionalItems.length > 0) {
+        sortedItems = [...sortedItems, ...optionalItems];
       }
 
       parsed = {

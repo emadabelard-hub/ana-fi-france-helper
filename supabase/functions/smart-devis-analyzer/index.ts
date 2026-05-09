@@ -838,21 +838,77 @@ Réponds en JSON avec cette structure:
       const rawUserMessage = typeof userMessage === "string" ? userMessage : "";
       const translatedUserMessage = translateArabicTerms(rawUserMessage);
 
+      // ── Correction 4: dictated price/m² (FR + AR + mixed) ──
       const priceM2Match = translatedUserMessage.match(/(\d+(?:[.,]\d+)?)\s*€\s*\/\s*m[²2]/i);
       const surfaceMatch = translatedUserMessage.match(/(\d+(?:[.,]\d+)?)\s*m[²2]\b/i);
       const budgetMatch = translatedUserMessage.match(/(?<!\/)(\d{2,6}(?:[.,]\d+)?)\s*€(?!\s*\/)/);
+
+      // Source-language patterns (raw Arabic message, before translation)
+      // Arabic: "ب 50" / "50 جنيه" / "50 يورو" / "50 يوروه"
+      const arPriceMatch1 = rawUserMessage.match(/ب\s*(\d+(?:[.,]\d+)?)/);
+      const arPriceMatch2 = rawUserMessage.match(/(\d+(?:[.,]\d+)?)\s*(?:جنيه|يورو|يوروه|اورو)/);
+      // Mixed/loose: "50 euro" / "50 eur" / "50€"
+      const mixedPriceMatch = translatedUserMessage.match(/(\d+(?:[.,]\d+)?)\s*(?:euros?|eur|€)\b/i);
+
       const dictatedHints: Record<string, number> = {};
-      if (priceM2Match) dictatedHints.unitPriceHint = parseFloat(priceM2Match[1].replace(",", "."));
+      if (priceM2Match) {
+        dictatedHints.unitPriceHint = parseFloat(priceM2Match[1].replace(",", "."));
+      } else if (arPriceMatch1) {
+        dictatedHints.unitPriceHint = parseFloat(arPriceMatch1[1].replace(",", "."));
+      } else if (arPriceMatch2) {
+        dictatedHints.unitPriceHint = parseFloat(arPriceMatch2[1].replace(",", "."));
+      } else if (mixedPriceMatch) {
+        const v = parseFloat(mixedPriceMatch[1].replace(",", "."));
+        // avoid confusing with budget (>= 200€ usually budget, < 200 unit price hint)
+        if (v < 200) dictatedHints.unitPriceHint = v;
+      }
       if (surfaceMatch) dictatedHints.surfaceHint = parseFloat(surfaceMatch[1].replace(",", "."));
       if (budgetMatch) dictatedHints.budgetHint = parseFloat(budgetMatch[1].replace(",", "."));
 
-      const hintsBlock = Object.keys(dictatedHints).length > 0
+      // ── Correction 2: ceiling + walls detection ──
+      const hasCeiling = /سقف|بلافون|plafond/i.test(rawUserMessage) || /plafond/i.test(translatedUserMessage);
+      const hasWalls = /حيطان|حيط|جدران|murs?\b/i.test(rawUserMessage) || /murs?\b/i.test(translatedUserMessage);
+
+      // ── Correction 3: mandatory color + finish ──
+      const colorMap: [RegExp, string][] = [
+        [/أزرق|ازرق|bleue?/i, "bleue"],
+        [/أبيض|ابيض|blanche?/i, "blanche"],
+        [/رمادي|grise?/i, "grise"],
+        [/أسود|اسود|noire?/i, "noire"],
+        [/أحمر|احمر|rouge/i, "rouge"],
+        [/أصفر|اصفر|jaune/i, "jaune"],
+        [/أخضر|اخضر|verte?/i, "verte"],
+        [/بيج|beige/i, "beige"],
+      ];
+      const finishMap: [RegExp, string][] = [
+        [/ساتيني|ساتان|satinée?/i, "satinée"],
+        [/مط\b|matte?\b/i, "mate"],
+        [/لامع|brillante?/i, "brillante"],
+        [/نص لامع|semi[\s-]?brillante?/i, "semi-brillante"],
+      ];
+      let detectedColor = "";
+      for (const [rx, fr] of colorMap) { if (rx.test(rawUserMessage)) { detectedColor = fr; break; } }
+      let detectedFinish = "";
+      for (const [rx, fr] of finishMap) { if (rx.test(rawUserMessage)) { detectedFinish = fr; break; } }
+
+      const extraDirectives: string[] = [];
+      if (hasCeiling && hasWalls) {
+        extraDirectives.push("- OBLIGATOIRE : générer DEUX lignes peinture séparées : une pour les murs, une pour le plafond (jamais regroupées).");
+      }
+      if (detectedColor || detectedFinish) {
+        const label = ["Peinture", detectedFinish, detectedColor].filter(Boolean).join(" ");
+        extraDirectives.push(`- OBLIGATOIRE : toutes les lignes de peinture doivent inclure la finition et la couleur dans designation_fr. Format : "${label} — [zone]" (ex : "${label} — murs", "${label} — plafond").`);
+      }
+
+      const hintsBlock = (Object.keys(dictatedHints).length > 0 || extraDirectives.length > 0)
         ? `\n\n📌 INDICATIONS DICTÉES PAR L'UTILISATEUR (à respecter strictement) :${
-            dictatedHints.unitPriceHint !== undefined ? `\n- Prix unitaire imposé : ${dictatedHints.unitPriceHint} €/m² (utiliser cette valeur exacte)` : ""
+            dictatedHints.unitPriceHint !== undefined ? `\n- Prix unitaire imposé par l'artisan : ${dictatedHints.unitPriceHint} €/m² (utiliser cette valeur exacte, ne JAMAIS l'écraser)` : ""
           }${
             dictatedHints.surfaceHint !== undefined ? `\n- Surface mentionnée : ${dictatedHints.surfaceHint} m² (à reporter dans estimatedArea / surfaceEstimates)` : ""
           }${
             dictatedHints.budgetHint !== undefined ? `\n- Budget cible : ${dictatedHints.budgetHint} €` : ""
+          }${
+            extraDirectives.length > 0 ? `\n${extraDirectives.join("\n")}` : ""
           }`
         : "";
 

@@ -430,6 +430,14 @@ const TranslatorPage = () => {
     'Besoin de matériaux',
     'Réunion de chantier',
     'Facture à signer',
+    'Le client a payé',
+    'Demain je commence à 8h',
+    'Il manque du ciment',
+    'Le carrelage est livré',
+    'Sécurité : mets ton casque',
+    'Coupure d\u2019électricité sur le chantier',
+    'On termine demain',
+    'Envoie-moi le devis',
   ];
 
   const handleQuickPhrase = async (phrase: string) => {

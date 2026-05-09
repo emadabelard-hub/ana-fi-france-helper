@@ -833,9 +833,34 @@ Réponds en JSON avec cette structure:
       const hasFiles = Array.isArray(files) && files.length > 0;
       const hasLegacyImage = !hasFiles && imageData;
 
+      // ── Correction 5: translate Ammiya → French BTP terms before sending to Gemini ──
+      // ── Correction 4: extract dictated hints (price/m², surface, budget) from userMessage ──
+      const rawUserMessage = typeof userMessage === "string" ? userMessage : "";
+      const translatedUserMessage = translateArabicTerms(rawUserMessage);
+
+      const priceM2Match = translatedUserMessage.match(/(\d+(?:[.,]\d+)?)\s*€\s*\/\s*m[²2]/i);
+      const surfaceMatch = translatedUserMessage.match(/(\d+(?:[.,]\d+)?)\s*m[²2]\b/i);
+      const budgetMatch = translatedUserMessage.match(/(?<!\/)(\d{2,6}(?:[.,]\d+)?)\s*€(?!\s*\/)/);
+      const dictatedHints: Record<string, number> = {};
+      if (priceM2Match) dictatedHints.unitPriceHint = parseFloat(priceM2Match[1].replace(",", "."));
+      if (surfaceMatch) dictatedHints.surfaceHint = parseFloat(surfaceMatch[1].replace(",", "."));
+      if (budgetMatch) dictatedHints.budgetHint = parseFloat(budgetMatch[1].replace(",", "."));
+
+      const hintsBlock = Object.keys(dictatedHints).length > 0
+        ? `\n\n📌 INDICATIONS DICTÉES PAR L'UTILISATEUR (à respecter strictement) :${
+            dictatedHints.unitPriceHint !== undefined ? `\n- Prix unitaire imposé : ${dictatedHints.unitPriceHint} €/m² (utiliser cette valeur exacte)` : ""
+          }${
+            dictatedHints.surfaceHint !== undefined ? `\n- Surface mentionnée : ${dictatedHints.surfaceHint} m² (à reporter dans estimatedArea / surfaceEstimates)` : ""
+          }${
+            dictatedHints.budgetHint !== undefined ? `\n- Budget cible : ${dictatedHints.budgetHint} €` : ""
+          }`
+        : "";
+
+      const finalUserText = (translatedUserMessage || "Analyse ces fichiers et fais un diagnostic technique du chantier.") + hintsBlock;
+
       if (hasFiles || hasLegacyImage) {
         const contentParts: any[] = [
-          { type: "text", text: userMessage || "Analyse ces fichiers et fais un diagnostic technique du chantier." }
+          { type: "text", text: finalUserText }
         ];
 
       if (hasFiles) {
@@ -871,7 +896,7 @@ Réponds en JSON avec cette structure:
 
         messages.push({ role: "user", content: contentParts });
       } else {
-        messages.push({ role: "user", content: userMessage || "Analyse ce document." });
+        messages.push({ role: "user", content: finalUserText });
       }
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

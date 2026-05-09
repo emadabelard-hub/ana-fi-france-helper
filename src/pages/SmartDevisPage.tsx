@@ -221,6 +221,12 @@ const SmartDevisPage = () => {
                 dir={isRTL ? 'rtl' : 'ltr'}
                 className="resize-none"
               />
+              {userText.trim() && (
+                <div className="mt-2 rounded-md border border-primary/30 bg-primary/5 p-3" dir="rtl">
+                  <div className="text-xs text-muted-foreground mb-1">ما قلته :</div>
+                  <div className="text-sm whitespace-pre-wrap break-words">{userText.trim()}</div>
+                </div>
+              )}
             </div>
 
             {/* Photo */}

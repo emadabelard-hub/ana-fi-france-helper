@@ -399,6 +399,49 @@ const TranslatorPage = () => {
     setTranslatedText('');
   };
 
+  // ─── Web Speech API TTS playback (FR voice for translation) ───
+  const handleSpeak = useCallback(() => {
+    if (!translatedText) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      toast({ title: '🔇 الصوت مش متاح', variant: 'destructive' });
+      return;
+    }
+    try {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(translatedText);
+      utter.lang = targetLang === 'ar' ? 'ar-EG' : 'fr-FR';
+      const voices = window.speechSynthesis.getVoices();
+      const match = voices.find((v) => v.lang.toLowerCase().startsWith(utter.lang.toLowerCase().slice(0, 2)));
+      if (match) utter.voice = match;
+      utter.rate = 0.95;
+      window.speechSynthesis.speak(utter);
+    } catch (err) {
+      console.error('TTS error:', err);
+    }
+  }, [translatedText, targetLang, toast]);
+
+  // ─── 8 phrases types BTP — clic = traduction auto FR → AR ───
+  const QUICK_PHRASES_FR = [
+    'Où est le chef de chantier ?',
+    'Livraison prévue à quelle heure ?',
+    'Pause déjeuner',
+    'Travaux terminés aujourd\u2019hui',
+    'Problème sur le chantier',
+    'Besoin de matériaux',
+    'Réunion de chantier',
+    'Facture à signer',
+  ];
+
+  const handleQuickPhrase = async (phrase: string) => {
+    if (isProcessing) return;
+    setSourceLang('fr');
+    setOriginalText('');
+    setTranslatedText('');
+    setIsProcessing(true);
+    await performTranslation(phrase);
+  };
+
+
   const handleDeleteHistoryItem = async (id: string) => {
     await supabase.from('translation_history').delete().eq('id', id);
     setHistory((prev) => prev.filter((h) => h.id !== id));

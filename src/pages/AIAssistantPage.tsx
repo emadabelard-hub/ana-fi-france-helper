@@ -63,11 +63,50 @@ const AIAssistantPage = () => {
   }, [messages]);
 
   // Live-sync dictation transcript into input field during recording
+  // (only if user hasn't started typing manually — keyboard always wins)
   useEffect(() => {
-    if (dictation.isRecording && dictation.transcript) {
+    if (dictation.isRecording && dictation.transcript && !userHasEdited) {
       setInput(dictation.transcript);
     }
-  }, [dictation.transcript, dictation.isRecording]);
+  }, [dictation.transcript, dictation.isRecording, userHasEdited]);
+
+  // Load conversation history from Supabase on mount
+  useEffect(() => {
+    if (!user || conversationLoaded) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('assistant_conversations')
+          .select('messages')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (data?.messages && Array.isArray(data.messages)) {
+          setMessages(data.messages as Msg[]);
+        }
+      } catch (err) {
+        console.error('Load conversation error:', err);
+      } finally {
+        setConversationLoaded(true);
+      }
+    })();
+  }, [user, conversationLoaded]);
+
+  // Persist conversation on every change (after initial load)
+  useEffect(() => {
+    if (!user || !conversationLoaded || messages.length === 0) return;
+    const timeout = setTimeout(() => {
+      supabase
+        .from('assistant_conversations')
+        .upsert(
+          { user_id: user.id, messages: messages as any, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        )
+        .then(({ error }) => {
+          if (error) console.error('Persist conversation error:', error);
+        });
+    }, 600);
+    return () => clearTimeout(timeout);
+  }, [messages, user, conversationLoaded]);
 
   const handleOnboardingSubmit = () => {
     const name = onboardingName.trim();

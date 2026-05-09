@@ -606,7 +606,7 @@ const AIAssistantPage = () => {
           </button>
           <textarea
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => { setInput(e.target.value); setUserHasEdited(true); }}
             placeholder={isRTL ? 'اكتب سؤالك هنا...' : 'Écrivez votre question...'}
             disabled={isLoading}
             className={cn(
@@ -616,7 +616,13 @@ const AIAssistantPage = () => {
             dir="auto"
             rows={1}
             onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); } }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (input.trim() && !isLoading) send();
+              }
+            }}
           />
           <button
             type="button"

@@ -213,6 +213,7 @@ RÈGLES DE RÉPONSE :
 التاريخ: ${currentDate}.
 ${personalizationAr}
 ${formattingRulesAr}
+${btpGlossary}
 ${categoryCtx}
 
 ${documentRedactionRulesAr}

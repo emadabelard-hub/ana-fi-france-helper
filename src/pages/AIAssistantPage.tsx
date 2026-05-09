@@ -43,6 +43,15 @@ const AIAssistantPage = () => {
       textareaRef.current.style.height = '44px';
     }
   };
+  const autoResizeTextarea = () => {
+    const t = textareaRef.current;
+    if (!t) return;
+    // Defer to next frame so the new value is in the DOM before measuring
+    requestAnimationFrame(() => {
+      t.style.height = 'auto';
+      t.style.height = Math.min(t.scrollHeight, 200) + 'px';
+    });
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(true);
@@ -74,6 +83,7 @@ const AIAssistantPage = () => {
   useEffect(() => {
     if (dictation.isRecording && dictation.transcript && !userHasEdited) {
       setInput(dictation.transcript);
+      autoResizeTextarea();
     }
   }, [dictation.transcript, dictation.isRecording, userHasEdited]);
 
@@ -129,6 +139,8 @@ const AIAssistantPage = () => {
     const cleaned = dictation.getCleanedText();
     if (cleaned) {
       setInput(prev => (prev ? prev + ' ' + cleaned : cleaned));
+      setUserHasEdited(false);
+      autoResizeTextarea();
     }
     dictation.cancel();
     setVoiceModalOpen(false);

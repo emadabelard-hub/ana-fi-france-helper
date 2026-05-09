@@ -2055,6 +2055,24 @@ Réponds UNIQUEMENT en JSON:
         }
       }
 
+      // ── Correction 6: réinjecter les removedItems comme lignes optionnelles (badge "اختياري", prix 0) ──
+      const optionalItems = (removedItems || []).map((it: any) => ({
+        designation_fr: (it.designation_fr || it.designation_ar || "Travail optionnel").toString(),
+        designation_ar: (it.designation_ar || it.designation_fr || "اختياري").toString(),
+        quantity: typeof it.quantity === "number" ? it.quantity : 1,
+        unit: it.unit || "Ens",
+        unitPrice: 0,
+        total: 0,
+        category: it.category || "labor",
+        code: it.code || "",
+        optional: true,
+        badge_ar: "اختياري",
+        badge_fr: "Optionnel",
+      }));
+      if (optionalItems.length > 0) {
+        sortedItems = [...sortedItems, ...optionalItems];
+      }
+
       parsed = {
         ...parsed,
         items: sortedItems,

@@ -1061,14 +1061,19 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         const isEI = p.legal_status === 'auto-entrepreneur' || p.legal_status === 'ei';
         const statusLabel = isEI ? 'Auto-entrepreneur' : (p.legal_status === 'societe' ? 'Société' : p.legal_status);
         if (statusLabel) parts.push(statusLabel);
-        // EI/Auto-entrepreneur has no social capital
-        if (!isEI && p.capital_social) parts.push(`au capital de ${p.capital_social}`);
+        // Capital social — only if non-empty and not zero
+        const capitalRaw = (p.capital_social ?? '').toString().trim();
+        const capitalNumeric = parseFloat(capitalRaw.replace(/[^\d.,]/g, '').replace(',', '.'));
+        if (!isEI && capitalRaw && capitalNumeric > 0) {
+          parts.push(`au capital de ${capitalRaw}€`);
+        }
         if (p.siret) {
-          let siretPart = `SIRET : ${p.siret}`;
-          if (p.ville_immatriculation) siretPart += ` — RCS ${p.ville_immatriculation}`;
-          parts.push(siretPart);
-        } else if (p.ville_immatriculation) {
-          parts.push(`RCS ${p.ville_immatriculation}`);
+          parts.push(`SIRET : ${p.siret}`);
+        }
+        // RCS : "RCS [Ville] [9 premiers chiffres SIRET]" — skip if no city
+        if (p.ville_immatriculation) {
+          const siren = (p.siret || '').replace(/\D/g, '').slice(0, 9);
+          parts.push(siren ? `RCS ${p.ville_immatriculation} ${siren}` : `RCS ${p.ville_immatriculation}`);
         }
         if (p.code_naf) parts.push(`NAF : ${p.code_naf}`);
         // Keep tax ID in footer, while VAT legal mention is rendered once in the dedicated footer line.

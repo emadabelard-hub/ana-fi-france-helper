@@ -229,33 +229,87 @@ const CVGeneratorPage = () => {
   };
   const displayData = translatedData || cvData;
 
+  // ─── Fallback PDF builder via html2canvas + jsPDF (silent, on Browserless failure) ───
+  const buildCvPdfBlobFallback = useCallback(async (): Promise<Blob | null> => {
+    try {
+      const node = cvPreviewRef.current;
+      if (!node) {
+        console.warn('[CV PDF Fallback] No preview node available');
+        return null;
+      }
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
+      const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgH = (canvas.height * pageW) / canvas.width;
+      let heightLeft = imgH;
+      let position = 0;
+      pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
+      heightLeft -= pageH;
+      while (heightLeft > 0) {
+        position = heightLeft - imgH;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
+        heightLeft -= pageH;
+      }
+      return pdf.output('blob');
+    } catch (err) {
+      console.error('[CV PDF Fallback] error:', err);
+      return null;
+    }
+  }, []);
+
   // ─── Build PDF blob via Browserless (same engine as devis/factures) ───
   const buildCvPdfBlob = useCallback(async (): Promise<Blob | null> => {
     const html = await buildCvHtml(displayData);
+    if (!html || typeof html !== 'string' || html.trim().length < 50) {
+      console.error('[CV PDF] Empty or invalid HTML, skipping Browserless');
+      return await buildCvPdfBlobFallback();
+    }
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/generate-pdf`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': apikey,
-        'Authorization': `Bearer ${apikey}`,
-      },
-      body: JSON.stringify({
-        html,
-        marginMm: 0,
-        footerLabel: `CV — ${displayData.fullName || ''}`.trim(),
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('[CV PDF] Error:', response.status, errText);
-      return null;
+    try {
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': apikey,
+          'Authorization': `Bearer ${apikey}`,
+        },
+        body: JSON.stringify({
+          html,
+          marginMm: 0,
+          footerLabel: `CV — ${displayData.fullName || ''}`.trim(),
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('[CV PDF] Browserless error:', response.status, errText);
+        return await buildCvPdfBlobFallback();
+      }
+      return await response.blob();
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if ((err as Error)?.name === 'AbortError') {
+        console.error('[CV PDF] Browserless timeout (>30s), using fallback');
+      } else {
+        console.error('[CV PDF] Browserless exception, using fallback:', err);
+      }
+      return await buildCvPdfBlobFallback();
     }
-    return await response.blob();
-  }, [displayData]);
+  }, [displayData, buildCvPdfBlobFallback]);
 
   const buildCvFilename = useCallback((): string => {
     const name = sanitizeForFilename(displayData.fullName, 'CV');

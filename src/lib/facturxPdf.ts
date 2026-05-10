@@ -111,9 +111,12 @@ export function buildFacturXDataFromInvoice(invoiceData: {
   dueDate?: string;
   emitter: { name: string; siret: string; address: string; iban?: string; bic?: string };
   client: { name: string; address: string; siret?: string; siren?: string; tvaIntra?: string };
+  workSite?: { sameAsClient: boolean; address?: string };
+  natureOperation?: 'service' | 'goods' | 'mixed';
   items: Array<{ designation_fr: string; quantity: number; unit: string; unitPrice: number; total: number }>;
   subtotal: number;
   subtotalAfterDiscount?: number;
+  discountAmount?: number;
   tvaRate: number;
   tvaAmount: number;
   total: number;
@@ -141,6 +144,20 @@ export function buildFacturXDataFromInvoice(invoiceData: {
     tvaCategoryCode: invoiceData.tvaExempt ? 'E' : 'S',
   }));
 
+  // Worksite address (ShipToTradeParty)
+  const shipToAddress = invoiceData.workSite && !invoiceData.workSite.sameAsClient
+    ? invoiceData.workSite.address
+    : undefined;
+
+  // Nature de l'opération -> IncludedNote
+  const natureNote = invoiceData.natureOperation
+    ? (invoiceData.natureOperation === 'service'
+        ? 'Prestation de services'
+        : invoiceData.natureOperation === 'goods'
+          ? 'Livraison de biens'
+          : 'Opération mixte (biens et services)')
+    : undefined;
+
   return {
     invoiceNumber: `${invoiceData.type === 'FACTURE' ? 'FA' : 'DE'}-${invoiceData.number}`,
     typeCode: invoiceData.type === 'FACTURE' ? '380' : '380',
@@ -158,10 +175,15 @@ export function buildFacturXDataFromInvoice(invoiceData: {
     tvaRate: invoiceData.tvaRate,
     tvaAmount: invoiceData.tvaAmount,
     totalTTC: invoiceData.total,
+    allowanceAmount: invoiceData.discountAmount,
     tvaExempt: invoiceData.tvaExempt,
     tvaExemptReason: invoiceData.tvaExemptText,
     paymentTerms: invoiceData.paymentTerms,
     dueDate: invoiceData.dueDate,
+    paymentMeansIban: invoiceData.emitter.iban,
+    paymentMeansBic: invoiceData.emitter.bic,
+    shipToAddress,
+    includedNote: natureNote,
     lineItems,
   };
 }

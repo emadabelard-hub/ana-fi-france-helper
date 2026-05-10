@@ -317,7 +317,7 @@ html, body {
 }
 .r-body-sm { font-size: 9.5pt; margin-top: 3px; }
 
-.r-entry { margin-top: 8px; }
+.r-entry { margin-top: 8px; page-break-inside: avoid; break-inside: avoid; }
 .r-entry:first-child { margin-top: 5px; }
 .r-entry-head {
   display: flex;

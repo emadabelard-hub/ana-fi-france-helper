@@ -1,5 +1,6 @@
 import { PDFDocument, PDFName, PDFHexString, PDFString, PDFArray, PDFDict, PDFNumber } from 'https://esm.sh/pdf-lib@1.17.1';
 import { decode as decodeBase64 } from 'https://deno.land/std@0.224.0/encoding/base64.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -95,6 +96,21 @@ async function convertToPdfA3(pdfBytes: ArrayBuffer): Promise<Uint8Array> {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Auth check (paid API endpoint — require authenticated user)
+  const _authHeader = req.headers.get('Authorization');
+  if (!_authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  const _authClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_ANON_KEY') ?? '');
+  const { data: { user: _authUser }, error: _authError } = await _authClient.auth.getUser(_authHeader.replace('Bearer ', ''));
+  if (_authError || !_authUser || _authUser.is_anonymous) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {

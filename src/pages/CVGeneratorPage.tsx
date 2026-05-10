@@ -279,9 +279,10 @@ const CVGeneratorPage = () => {
       return null;
     }
 
+    // BUG 2 FIX: TTL 365 days instead of 24h to avoid dead WhatsApp links
     const { data: signedData, error: signedError } = await supabase.storage
       .from('signed-documents')
-      .createSignedUrl(storagePath, 60 * 60 * 24);
+      .createSignedUrl(storagePath, 60 * 60 * 24 * 365);
 
     if (signedError || !signedData?.signedUrl) {
       console.error('[CV Upload] Signed URL error:', signedError);

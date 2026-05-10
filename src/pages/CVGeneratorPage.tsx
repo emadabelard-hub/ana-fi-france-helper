@@ -411,15 +411,14 @@ const CVGeneratorPage = () => {
   const handleWhatsAppShare = useCallback(async () => {
     setIsSharing(true);
     try {
+      // BUG 1 FIX: single Browserless call, blob reused for upload + download
       let url = signedPdfUrl;
-      let blob: Blob | null = null;
+      const blob = await buildCvPdfBlob();
+      if (!blob) throw new Error('PDF generation failed');
       if (!url) {
-        blob = await buildCvPdfBlob();
-        if (!blob) throw new Error('PDF generation failed');
         url = await uploadCvPdf(blob);
       }
-      if (!blob) blob = await buildCvPdfBlob();
-      if (blob) downloadBlob(blob, buildCvFilename());
+      downloadBlob(blob, buildCvFilename());
       if (url) setSignedPdfUrl(url);
 
       const message = url

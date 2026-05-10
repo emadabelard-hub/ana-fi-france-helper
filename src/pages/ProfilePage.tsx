@@ -21,6 +21,7 @@ import { getProfileErrorMessage, logSupabaseError, uploadCompanyImage } from '@/
 import { getSignedAssetUrl } from '@/lib/storageUtils';
 import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
 import ResetDataSection from '@/components/profile/ResetDataSection';
+import GdprExportSection from '@/components/profile/GdprExportSection';
 import ArtisanSignatureSection from '@/components/profile/ArtisanSignatureSection';
 import StampUploadSection from '@/components/profile/StampUploadSection';
 
@@ -421,6 +422,7 @@ const ProfilePage = () => {
                 خروج
               </Button>
 
+              <GdprExportSection />
               <ResetDataSection />
               <DeleteAccountSection />
 

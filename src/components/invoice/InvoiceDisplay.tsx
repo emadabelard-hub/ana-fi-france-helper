@@ -49,6 +49,10 @@ export interface InvoiceData {
     address?: string;
   };
   natureOperation?: 'service' | 'goods' | 'mixed';
+  /** Factur-X BASIC: réf. bon de commande client (BT-13) */
+  purchaseOrderRef?: string;
+  /** Factur-X BASIC: date de réalisation/livraison (BT-72), format DD/MM/YYYY */
+  deliveryDate?: string;
   descriptionChantier?: string;
   descriptionChantierAr?: string;
   estimatedStartDate?: string;

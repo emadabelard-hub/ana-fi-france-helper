@@ -8,13 +8,13 @@ import CVAutoSaveIndicator from '@/components/cv/CVAutoSaveIndicator';
 import CVDraftResumeModal from '@/components/cv/CVDraftResumeModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Eye, Loader2, Sparkles, Pencil, AlertCircle, CheckCircle, Download, Share2, Image as ImageIcon } from 'lucide-react';
+import { FileText, Eye, Loader2, Sparkles, Pencil, AlertCircle, CheckCircle, Download, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
 import { buildCvHtml } from '@/lib/cvPdfTemplate';
-import html2canvas from 'html2canvas';
+// BUG 3 FIX: html2canvas no longer needed (Save as Image removed)
 import { saveCVDraft, loadCVDraft, clearCVDraft } from '@/lib/cvDraftStorage';
 
 export interface CVData {
@@ -100,7 +100,7 @@ const CVGeneratorPage = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  const [isImaging, setIsImaging] = useState(false);
+  // BUG 3 FIX: isImaging state removed
   const [savedDocId, setSavedDocId] = useState<string | null>(null);
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('edit');
@@ -279,9 +279,10 @@ const CVGeneratorPage = () => {
       return null;
     }
 
+    // BUG 2 FIX: TTL 365 days instead of 24h to avoid dead WhatsApp links
     const { data: signedData, error: signedError } = await supabase.storage
       .from('signed-documents')
-      .createSignedUrl(storagePath, 60 * 60 * 24);
+      .createSignedUrl(storagePath, 60 * 60 * 24 * 365);
 
     if (signedError || !signedData?.signedUrl) {
       console.error('[CV Upload] Signed URL error:', signedError);
@@ -410,15 +411,14 @@ const CVGeneratorPage = () => {
   const handleWhatsAppShare = useCallback(async () => {
     setIsSharing(true);
     try {
+      // BUG 1 FIX: single Browserless call, blob reused for upload + download
       let url = signedPdfUrl;
-      let blob: Blob | null = null;
+      const blob = await buildCvPdfBlob();
+      if (!blob) throw new Error('PDF generation failed');
       if (!url) {
-        blob = await buildCvPdfBlob();
-        if (!blob) throw new Error('PDF generation failed');
         url = await uploadCvPdf(blob);
       }
-      if (!blob) blob = await buildCvPdfBlob();
-      if (blob) downloadBlob(blob, buildCvFilename());
+      downloadBlob(blob, buildCvFilename());
       if (url) setSignedPdfUrl(url);
 
       const message = url
@@ -444,45 +444,7 @@ const CVGeneratorPage = () => {
     }
   }, [signedPdfUrl, displayData.fullName, isRTL, toast, buildCvPdfBlob, uploadCvPdf, buildCvFilename]);
 
-  // ─── Action 4: Save as Image (PNG of CV preview) ───
-  const handleSaveAsImage = useCallback(async () => {
-    if (!cvPreviewRef.current) return;
-    setIsImaging(true);
-    try {
-      const canvas = await html2canvas(cvPreviewRef.current, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        logging: false,
-      });
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          toast({
-            variant: 'destructive',
-            title: isRTL ? 'خطأ' : 'Erreur',
-            description: isRTL ? 'تعذر إنشاء الصورة' : 'Impossible de créer l\'image',
-          });
-          return;
-        }
-        const name = sanitizeForFilename(displayData.fullName, 'CV');
-        const date = new Date().toISOString().split('T')[0];
-        downloadBlob(blob, `CV-${name}-${date}.png`);
-        toast({
-          title: isRTL ? '🖼️ تم حفظ الصورة' : '🖼️ Image enregistrée',
-          description: isRTL ? 'تم تحميل السي في كصورة' : 'CV téléchargé en image PNG',
-        });
-      }, 'image/png');
-    } catch (err) {
-      console.error('[CV Image] error:', err);
-      toast({
-        variant: 'destructive',
-        title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'تعذر إنشاء الصورة' : 'Impossible de créer l\'image',
-      });
-    } finally {
-      setIsImaging(false);
-    }
-  }, [displayData.fullName, isRTL, toast]);
+  // BUG 3 FIX: handleSaveAsImage removed (PNG didn't match the PDF template).
 
   const hasData = cvData.fullName || cvData.profession || cvData.experiences.length > 0;
   const isCvReady = !!(displayData.fullName?.trim() || displayData.profession?.trim());
@@ -657,26 +619,7 @@ const CVGeneratorPage = () => {
                     )}
                   </Button>
 
-                  {/* 💾 Save as Image */}
-                  <Button
-                    onClick={handleSaveAsImage}
-                    disabled={!isCvReady || isImaging}
-                    variant="outline"
-                    className="w-full gap-2"
-                    size="lg"
-                  >
-                    {isImaging ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        {isRTL ? 'جاري الحفظ...' : 'Enregistrement...'}
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="h-5 w-5" />
-                        {isRTL ? '💾 حفظ كصورة' : '💾 Enregistrer en image'}
-                      </>
-                    )}
-                  </Button>
+                  {/* BUG 3 FIX: "Save as Image" button removed (PNG didn't match PDF template) */}
                 </div>
               )}
             >

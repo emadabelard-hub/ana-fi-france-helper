@@ -192,7 +192,7 @@ const CSS = `
 
 html, body {
   width: 794px;
-  height: 1123px;
+  min-height: 1123px;
   background: ${NAVY};
   font-family: 'Inter', 'Segoe UI', sans-serif;
   font-size: 9.5pt;
@@ -205,7 +205,6 @@ html, body {
 .cv-wrap {
   width: 794px;
   min-height: 1123px;
-  height: 1123px;
   display: flex;
   align-items: stretch;
   position: relative;
@@ -215,7 +214,6 @@ html, body {
 .col-left {
   width: 33%;
   min-height: 1123px;
-  height: 100%;
   background: ${NAVY};
   color: #ffffff;
   padding: 16px 12px 40px 16px;
@@ -253,7 +251,7 @@ html, body {
   width: 60%;
   margin: 4px auto 0;
 }
-.l-block { margin-top: 14px; }
+.l-block { margin-top: 14px; page-break-inside: avoid; break-inside: avoid; }
 .l-section-title {
   color: #ffffff;
   font-size: 9.5pt;
@@ -295,7 +293,7 @@ html, body {
   background: ${ACCENT};
   margin: 0 -14px 14px;
 }
-.r-section { margin-top: 14px; margin-bottom: 6px; }
+.r-section { margin-top: 14px; margin-bottom: 6px; page-break-inside: avoid; break-inside: avoid; }
 .r-section:first-of-type { margin-top: 0; }
 .r-section-title {
   color: ${ACCENT};
@@ -319,7 +317,7 @@ html, body {
 }
 .r-body-sm { font-size: 9.5pt; margin-top: 3px; }
 
-.r-entry { margin-top: 8px; }
+.r-entry { margin-top: 8px; page-break-inside: avoid; break-inside: avoid; }
 .r-entry:first-child { margin-top: 5px; }
 .r-entry-head {
   display: flex;

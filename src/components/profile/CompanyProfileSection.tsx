@@ -145,10 +145,15 @@ const CompanyProfileSection = () => {
       // Only allow digits
       const cleanValue = value.replace(/\D/g, '').slice(0, 14);
       setFormData(prev => ({ ...prev, [field]: cleanValue }));
-      
-      // Validate SIRET
-      if (cleanValue.length > 0 && cleanValue.length !== 14) {
-        setSiretError(isRTL ? 'رقم السيريت لازم يكون 14 رقم' : 'Le SIRET doit contenir 14 chiffres');
+
+      // Validate SIRET — exactly 14 digits required
+      const SIRET_REGEX = /^\d{14}$/;
+      if (cleanValue.length > 0 && !SIRET_REGEX.test(cleanValue)) {
+        setSiretError(
+          isRTL
+            ? 'رقم السيريت لازم يكون 14 رقم بالظبط'
+            : 'Le SIRET doit contenir exactement 14 chiffres'
+        );
       } else {
         setSiretError(null);
       }
@@ -204,6 +209,16 @@ const CompanyProfileSection = () => {
   };
 
   const handleSave = async () => {
+    // Block save if SIRET is non-empty and not exactly 14 digits
+    const SIRET_REGEX = /^\d{14}$/;
+    if (formData.siret && !SIRET_REGEX.test(formData.siret)) {
+      setSiretError(
+        isRTL
+          ? 'رقم السيريت لازم يكون 14 رقم بالظبط'
+          : 'Le SIRET doit contenir exactement 14 chiffres'
+      );
+      return;
+    }
     if (siretError) return;
 
     setIsSaving(true);

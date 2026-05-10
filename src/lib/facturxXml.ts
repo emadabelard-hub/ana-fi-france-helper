@@ -280,7 +280,9 @@ export function generateFacturXXml(data: FacturXData): string {
         <ram:Name>${escXml(data.buyerName)}</ram:Name>
         ${buyerLegalOrg}
         ${buyerPostal}
+        ${buyerTaxReg}
       </ram:BuyerTradeParty>
+      ${buyerOrderRef}
     </ram:ApplicableHeaderTradeAgreement>
 
     <ram:ApplicableHeaderTradeDelivery>
@@ -290,6 +292,7 @@ export function generateFacturXXml(data: FacturXData): string {
           <ram:CountryID>FR</ram:CountryID>
         </ram:PostalTradeAddress>
       </ram:ShipToTradeParty>` : ''}
+      ${deliveryEvent}
     </ram:ApplicableHeaderTradeDelivery>
 
     <ram:ApplicableHeaderTradeSettlement>

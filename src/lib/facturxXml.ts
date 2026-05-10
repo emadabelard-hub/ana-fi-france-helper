@@ -31,6 +31,11 @@ export interface FacturXData {
   buyerName: string;
   buyerAddress?: string;
   buyerSiret?: string;
+  buyerTvaNumber?: string;          // BT-48
+  // References
+  purchaseOrderRef?: string;        // BT-13
+  // Delivery
+  deliveryDate?: string;            // BT-72, DD/MM/YYYY
   // Amounts
   subtotalHT: number;
   tvaRate: number;

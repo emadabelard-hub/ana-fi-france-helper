@@ -213,110 +213,117 @@ function buildRightColumn(data: CVData, displayName: string): string {
 // ─── CSS ────────────────────────────────────────────────────────────────────
 const CSS = `
 @page { size: A4; margin: 0; }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+}
 html, body {
   width: 794px;
   min-height: 1123px;
-  background: ${NAVY};
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-family: 'DM Sans', 'Inter', sans-serif;
   font-size: 8px;
-  line-height: 1.4;
-  color: ${BODY};
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
-
 .cv-wrap {
   width: 794px;
   min-height: 1123px;
   display: flex;
   align-items: stretch;
-  position: relative;
 }
 
-/* ── LEFT (260px) ── */
+/* GAUCHE */
 .col-left {
-  width: 260px;
+  width: 270px;
   min-height: 1123px;
   background: ${NAVY};
-  color: #ffffff;
-  padding: 16px;
+  color: #fff;
+  padding: 36px 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  font-size: 8px;
+  position: relative;
 }
-.l-identity { text-align: center; }
+.col-left::after {
+  content: '';
+  position: absolute;
+  top: 0; right: -1px;
+  width: 3px; height: 100%;
+  background: linear-gradient(180deg, ${ACCENT}, ${ACCENT_DARK}, ${NAVY});
+}
 .l-photo {
-  width: 70px; height: 70px;
+  width: 90px; height: 90px;
   border-radius: 50%;
+  border: 3px solid ${ACCENT};
   object-fit: cover;
-  border: 2px solid #ffffff;
-  margin: 0 auto 8px;
   display: block;
+  margin: 0 auto 16px;
 }
-.l-photo-empty { background: ${NAVY_TAG}; }
+.l-photo-empty {
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  border: 3px solid ${ACCENT};
+  background: ${NAVY_TAG};
+  margin: 0 auto 16px;
+}
 .l-name {
-  color: #ffffff;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
-  line-height: 1.15;
-  margin-bottom: 3px;
-  word-break: break-word;
+  color: #fff;
+  text-align: center;
+  line-height: 1.2;
+  margin-bottom: 4px;
 }
 .l-title {
+  font-size: 9px;
   color: ${ACCENT_SOFT};
-  font-size: 10px;
-  font-style: italic;
-  margin-bottom: 8px;
+  text-align: center;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
 }
 .l-divider {
   height: 1px;
-  background: rgba(255,255,255,0.3);
-  width: 70%;
-  margin: 6px auto 0;
+  background: linear-gradient(90deg, transparent, ${ACCENT}, transparent);
+  margin-bottom: 18px;
 }
-.l-block { margin-top: 4px; page-break-inside: avoid; break-inside: avoid; }
-.l-section-head { margin-bottom: 6px; }
+.l-block { margin-bottom: 16px; page-break-inside: avoid; break-inside: avoid; }
+.l-section-head { margin-bottom: 8px; }
 .l-section-title {
-  color: #ffffff;
   font-size: 7px;
   font-weight: 700;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 3px;
-}
-.l-section-line {
-  height: 2px;
-  background: ${ACCENT};
-  width: 28px;
-}
-.l-row {
-  font-size: 8px;
-  color: #ffffff;
-  display: flex;
-  gap: 5px;
-  align-items: flex-start;
+  color: ${ACCENT};
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.l-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(232,168,124,0.3);
+}
+.l-section-line { display: none; }
+.l-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-size: 8px;
+  color: #CBD5E1;
   line-height: 1.4;
-  word-break: break-word;
 }
-.l-ico {
-  flex-shrink: 0;
-  width: 10px;
-  display: inline-block;
-}
-.l-soft { color: ${ACCENT_SOFT}; font-style: italic; font-size: 7.5px; }
-
-.l-lang { margin-bottom: 6px; }
+.l-ico { color: ${ACCENT}; flex-shrink: 0; }
+.l-lang { margin-bottom: 7px; }
 .l-lang-head {
   display: flex;
   justify-content: space-between;
   font-size: 8px;
-  color: #ffffff;
-  margin-bottom: 2px;
+  color: #fff;
+  margin-bottom: 3px;
 }
+.l-soft { color: ${ACCENT_SOFT}; font-size: 7.5px; }
 .l-lang-bar {
   height: 3px;
   background: ${NAVY_TAG};
@@ -325,135 +332,166 @@ html, body {
 }
 .l-lang-fill {
   height: 100%;
-  background: ${ACCENT};
+  background: linear-gradient(90deg, ${ACCENT}, ${ACCENT_DARK});
   border-radius: 2px;
 }
-
 .l-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .l-tag {
-  display: inline-block;
   background: ${NAVY_TAG};
-  color: #ffffff;
+  color: #CBD5E1;
   font-size: 7px;
-  padding: 3px 7px;
-  border-radius: 10px;
-  line-height: 1.2;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid #3D5166;
 }
-
 .l-badges { display: flex; flex-wrap: wrap; gap: 4px; }
 .l-badge {
-  display: inline-block;
   background: ${ACCENT};
-  color: #ffffff;
+  color: ${NAVY};
   font-size: 8px;
-  font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 12px;
-  line-height: 1.2;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.cert-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 5px;
+  font-size: 8px;
+  color: #CBD5E1;
+}
+.cert-dot {
+  width: 5px; height: 5px;
+  background: ${ACCENT};
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-/* ── RIGHT (534px) ── */
+/* DROITE */
 .col-right {
-  width: 534px;
+  flex: 1;
   min-height: 1123px;
-  background: #ffffff;
-  position: relative;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
 }
 .r-top-bar {
   height: 4px;
-  background: ${NAVY};
-  width: 100%;
+  background: linear-gradient(90deg, ${ACCENT}, ${NAVY});
 }
-.r-inner {
-  padding: 18px;
-  font-size: 8px;
+.r-header {
+  background: ${BG_LIGHT};
+  padding: 28px 28px 18px;
+  border-bottom: 1px solid ${SEP};
 }
-.r-header { margin-bottom: 12px; }
 .r-name {
-  color: ${NAVY};
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
+  color: ${NAVY};
   line-height: 1.1;
-  letter-spacing: 0.01em;
+  margin-bottom: 4px;
 }
 .r-job {
-  color: ${ACCENT};
-  font-size: 11px;
-  font-style: italic;
-  margin-top: 2px;
-}
-.r-header-line {
-  height: 1px;
-  background: ${SEP_LIGHT};
-  margin-top: 8px;
-}
-
-.r-section { margin-top: 12px; page-break-inside: avoid; break-inside: avoid; }
-.r-section:first-of-type { margin-top: 6px; }
-.r-section-head { margin-bottom: 6px; }
-.r-section-title {
-  color: ${NAVY};
-  font-size: 8.5px;
-  font-weight: 700;
+  font-size: 10px;
+  color: #64748B;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 3px;
 }
-.r-section-line {
-  height: 1.5px;
-  background: ${ACCENT};
-  width: 100%;
-}
-.r-body {
+.r-header-line { display: none; }
+.r-inner {
+  padding: 18px 28px;
+  flex: 1;
   font-size: 8px;
-  line-height: 1.4;
-  color: ${BODY};
-  text-align: justify;
 }
-.r-body-sm { font-size: 8px; margin-top: 3px; }
-
-.r-entry { margin-top: 7px; page-break-inside: avoid; break-inside: avoid; }
-.r-entry:first-child { margin-top: 0; }
+.r-section { margin-bottom: 16px; page-break-inside: avoid; break-inside: avoid; }
+.r-section-head { margin-bottom: 8px; }
+.r-section-title {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: ${NAVY};
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.r-section-title::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, ${ACCENT}, transparent);
+}
+.r-section-line { display: none; }
+.profil-text, .r-section:first-of-type .r-body {
+  font-size: 8.5px;
+  color: ${BODY};
+  line-height: 1.6;
+  text-align: justify;
+  padding: 10px 12px;
+  background: ${BG_LIGHT};
+  border-left: 3px solid ${ACCENT};
+}
+.r-entry {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed ${SEP};
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.r-entry:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
 .r-entry-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 6px;
+  align-items: flex-start;
+  margin-bottom: 2px;
+  gap: 8px;
 }
 .r-entry-title {
   font-size: 9px;
   font-weight: 700;
-  color: ${NAVY_DARK};
+  color: ${NAVY};
   flex: 1;
 }
 .r-entry-date {
-  font-size: 8px;
-  color: ${DATE_GRAY};
+  font-size: 7.5px;
+  color: #fff;
+  background: ${NAVY};
+  padding: 2px 8px;
+  border-radius: 10px;
   white-space: nowrap;
   flex-shrink: 0;
-  text-align: right;
 }
 .r-entry-sub {
   font-size: 8.5px;
   font-style: italic;
   color: ${ACCENT};
-  margin-top: 2px;
+  font-weight: 500;
+  margin-bottom: 3px;
 }
 .r-entry-field {
   font-size: 8px;
-  color: ${BODY};
-  margin-top: 1px;
+  color: ${ACCENT_SOFT};
+  margin-top: 2px;
 }
-
-/* ── Footer ── */
+.r-body {
+  font-size: 8px;
+  color: ${BODY};
+  line-height: 1.5;
+  margin-top: 3px;
+}
+.r-body-sm { font-size: 8px; margin-top: 3px; }
 .cv-footer {
-  position: absolute;
-  bottom: 10px;
-  left: 0;
-  right: 0;
+  padding: 8px 28px;
   text-align: center;
   font-size: 7px;
-  color: ${DATE_GRAY};
+  color: ${ACCENT_SOFT};
+  border-top: 1px solid ${SEP};
+  letter-spacing: 1px;
 }
 
 button, [role="button"], input, select, textarea { display: none !important; }

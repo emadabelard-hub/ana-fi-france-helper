@@ -192,7 +192,7 @@ const CSS = `
 
 html, body {
   width: 794px;
-  height: 1123px;
+  min-height: 1123px;
   background: ${NAVY};
   font-family: 'Inter', 'Segoe UI', sans-serif;
   font-size: 9.5pt;
@@ -205,7 +205,6 @@ html, body {
 .cv-wrap {
   width: 794px;
   min-height: 1123px;
-  height: 1123px;
   display: flex;
   align-items: stretch;
   position: relative;
@@ -215,7 +214,6 @@ html, body {
 .col-left {
   width: 33%;
   min-height: 1123px;
-  height: 100%;
   background: ${NAVY};
   color: #ffffff;
   padding: 16px 12px 40px 16px;

@@ -8,14 +8,17 @@
 import type { CVData } from '@/pages/CVGeneratorPage';
 
 // ─── Palette ────────────────────────────────────────────────────────────────
-const NAVY = '#1E3A5F';
+const NAVY = '#1C2B3A';
 const NAVY_DARK = '#1A1A2E';
-const NAVY_TAG = '#2A4F7A';
-const ACCENT = '#4A9FD4';
-const ACCENT_SOFT = '#90C4E8';
-const SEP_LIGHT = '#E0E8F0';
-const BODY = '#444444';
-const DATE_GRAY = '#8A9AB0';
+const NAVY_TAG = '#2E4057';
+const ACCENT = '#E8A87C';
+const ACCENT_DARK = '#D4876A';
+const ACCENT_SOFT = '#94A3B8';
+const SEP = '#E5E0D8';
+const SEP_LIGHT = '#E5E0D8';
+const BG_LIGHT = '#F8F6F3';
+const BODY = '#475569';
+const DATE_GRAY = '#94A3B8';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function calculateAge(birthDate: string): string {

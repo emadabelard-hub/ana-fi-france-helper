@@ -343,7 +343,7 @@ const InvoiceActions = ({
    * triggers a real download and silently uploads it to Storage.
    */
   const handlePDFClick = async () => {
-    const blob = await buildPdfBlob();
+    const blob = await buildPdfBlob({ embedFacturX: true });
     if (!blob) {
       toast({
         variant: 'destructive',

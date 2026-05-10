@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import ProtectedDocumentWrapper from '@/components/shared/ProtectedDocumentWrapper';
 import { buildCvHtml } from '@/lib/cvPdfTemplate';
-import html2canvas from 'html2canvas';
+// BUG 3 FIX: html2canvas no longer needed (Save as Image removed)
 import { saveCVDraft, loadCVDraft, clearCVDraft } from '@/lib/cvDraftStorage';
 
 export interface CVData {

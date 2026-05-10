@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { html, marginMm = 10, footerLabel } = body;
+    const { html, marginMm = 10, footerLabel, width, height, waitForNetworkIdle } = body;
 
     if (!html || typeof html !== 'string') {
       return new Response(

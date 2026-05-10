@@ -31,6 +31,11 @@ export interface FacturXData {
   buyerName: string;
   buyerAddress?: string;
   buyerSiret?: string;
+  buyerTvaNumber?: string;          // BT-48
+  // References
+  purchaseOrderRef?: string;        // BT-13
+  // Delivery
+  deliveryDate?: string;            // BT-72, DD/MM/YYYY
   // Amounts
   subtotalHT: number;
   tvaRate: number;
@@ -179,6 +184,29 @@ export function generateFacturXXml(data: FacturXData): string {
         </ram:PostalTradeAddress>`
     : '';
 
+  // BT-48 — Buyer VAT registration
+  const buyerTaxReg = data.buyerTvaNumber
+    ? `<ram:SpecifiedTaxRegistration>
+          <ram:ID schemeID="VA">${escXml(data.buyerTvaNumber)}</ram:ID>
+        </ram:SpecifiedTaxRegistration>`
+    : '';
+
+  // BT-13 — Buyer order referenced document
+  const buyerOrderRef = data.purchaseOrderRef
+    ? `<ram:BuyerOrderReferencedDocument>
+        <ram:IssuerAssignedID>${escXml(data.purchaseOrderRef)}</ram:IssuerAssignedID>
+      </ram:BuyerOrderReferencedDocument>`
+    : '';
+
+  // BT-72 — Actual delivery date
+  const deliveryEvent = data.deliveryDate
+    ? `<ram:ActualDeliverySupplyChainEvent>
+        <ram:OccurrenceDateTime>
+          <udt:DateTimeString format="102">${toDateFormat102(data.deliveryDate)}</udt:DateTimeString>
+        </ram:OccurrenceDateTime>
+      </ram:ActualDeliverySupplyChainEvent>`
+    : '';
+
   // Tax section
   const taxSection = data.tvaExempt
     ? `<ram:ApplicableTradeTax>
@@ -252,7 +280,9 @@ export function generateFacturXXml(data: FacturXData): string {
         <ram:Name>${escXml(data.buyerName)}</ram:Name>
         ${buyerLegalOrg}
         ${buyerPostal}
+        ${buyerTaxReg}
       </ram:BuyerTradeParty>
+      ${buyerOrderRef}
     </ram:ApplicableHeaderTradeAgreement>
 
     <ram:ApplicableHeaderTradeDelivery>
@@ -262,6 +292,7 @@ export function generateFacturXXml(data: FacturXData): string {
           <ram:CountryID>FR</ram:CountryID>
         </ram:PostalTradeAddress>
       </ram:ShipToTradeParty>` : ''}
+      ${deliveryEvent}
     </ram:ApplicableHeaderTradeDelivery>
 
     <ram:ApplicableHeaderTradeSettlement>

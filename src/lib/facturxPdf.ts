@@ -113,6 +113,8 @@ export function buildFacturXDataFromInvoice(invoiceData: {
   client: { name: string; address: string; siret?: string; siren?: string; tvaIntra?: string };
   workSite?: { sameAsClient: boolean; address?: string };
   natureOperation?: 'service' | 'goods' | 'mixed';
+  purchaseOrderRef?: string;
+  deliveryDate?: string;
   items: Array<{ designation_fr: string; quantity: number; unit: string; unitPrice: number; total: number }>;
   subtotal: number;
   subtotalAfterDiscount?: number;
@@ -171,6 +173,9 @@ export function buildFacturXDataFromInvoice(invoiceData: {
     buyerName: invoiceData.client.name,
     buyerAddress: invoiceData.client.address,
     buyerSiret: invoiceData.client.siret,
+    buyerTvaNumber: invoiceData.client.tvaIntra,
+    purchaseOrderRef: invoiceData.purchaseOrderRef,
+    deliveryDate: invoiceData.deliveryDate || invoiceData.date,
     subtotalHT: invoiceData.subtotalAfterDiscount ?? invoiceData.subtotal,
     tvaRate: invoiceData.tvaRate,
     tvaAmount: invoiceData.tvaAmount,

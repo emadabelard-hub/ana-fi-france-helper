@@ -288,7 +288,9 @@ const CVGeneratorPage = () => {
         body: JSON.stringify({
           html,
           marginMm: 0,
-          footerLabel: `CV — ${displayData.fullName || ''}`.trim(),
+          // No footerLabel: the CV template renders its own footer in HTML
+          // ("CV — [Nom] · Page 1/1"). Passing footerLabel would duplicate it
+          // and force a 5mm bottom margin that breaks the fixed 794×1123 layout.
         }),
         signal: controller.signal,
       });

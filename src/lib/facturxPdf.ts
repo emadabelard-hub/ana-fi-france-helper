@@ -113,6 +113,8 @@ export function buildFacturXDataFromInvoice(invoiceData: {
   client: { name: string; address: string; siret?: string; siren?: string; tvaIntra?: string };
   workSite?: { sameAsClient: boolean; address?: string };
   natureOperation?: 'service' | 'goods' | 'mixed';
+  purchaseOrderRef?: string;
+  deliveryDate?: string;
   items: Array<{ designation_fr: string; quantity: number; unit: string; unitPrice: number; total: number }>;
   subtotal: number;
   subtotalAfterDiscount?: number;

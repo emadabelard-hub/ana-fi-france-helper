@@ -444,45 +444,7 @@ const CVGeneratorPage = () => {
     }
   }, [signedPdfUrl, displayData.fullName, isRTL, toast, buildCvPdfBlob, uploadCvPdf, buildCvFilename]);
 
-  // ─── Action 4: Save as Image (PNG of CV preview) ───
-  const handleSaveAsImage = useCallback(async () => {
-    if (!cvPreviewRef.current) return;
-    setIsImaging(true);
-    try {
-      const canvas = await html2canvas(cvPreviewRef.current, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        logging: false,
-      });
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          toast({
-            variant: 'destructive',
-            title: isRTL ? 'خطأ' : 'Erreur',
-            description: isRTL ? 'تعذر إنشاء الصورة' : 'Impossible de créer l\'image',
-          });
-          return;
-        }
-        const name = sanitizeForFilename(displayData.fullName, 'CV');
-        const date = new Date().toISOString().split('T')[0];
-        downloadBlob(blob, `CV-${name}-${date}.png`);
-        toast({
-          title: isRTL ? '🖼️ تم حفظ الصورة' : '🖼️ Image enregistrée',
-          description: isRTL ? 'تم تحميل السي في كصورة' : 'CV téléchargé en image PNG',
-        });
-      }, 'image/png');
-    } catch (err) {
-      console.error('[CV Image] error:', err);
-      toast({
-        variant: 'destructive',
-        title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'تعذر إنشاء الصورة' : 'Impossible de créer l\'image',
-      });
-    } finally {
-      setIsImaging(false);
-    }
-  }, [displayData.fullName, isRTL, toast]);
+  // BUG 3 FIX: handleSaveAsImage removed (PNG didn't match the PDF template).
 
   const hasData = cvData.fullName || cvData.profession || cvData.experiences.length > 0;
   const isCvReady = !!(displayData.fullName?.trim() || displayData.profession?.trim());

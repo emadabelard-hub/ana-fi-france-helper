@@ -952,6 +952,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         address: workSiteSameAsClient ? undefined : workSiteAddress,
       },
       natureOperation,
+      purchaseOrderRef: purchaseOrderRef.trim() || undefined,
+      deliveryDate: deliveryDate
+        ? new Date(deliveryDate).toLocaleDateString('fr-FR')
+        : new Date().toLocaleDateString('fr-FR'),
       descriptionChantier: (descriptionChantierFr || descriptionChantier).trim() || undefined,
       descriptionChantierAr: descriptionChantierAr.trim() || undefined,
       estimatedStartDate: estimatedStartDate.trim() 

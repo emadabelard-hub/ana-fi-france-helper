@@ -8,7 +8,7 @@ import CVAutoSaveIndicator from '@/components/cv/CVAutoSaveIndicator';
 import CVDraftResumeModal from '@/components/cv/CVDraftResumeModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Eye, Loader2, Sparkles, Pencil, AlertCircle, CheckCircle, Download, Share2, Image as ImageIcon } from 'lucide-react';
+import { FileText, Eye, Loader2, Sparkles, Pencil, AlertCircle, CheckCircle, Download, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';

@@ -251,7 +251,7 @@ html, body {
   width: 60%;
   margin: 4px auto 0;
 }
-.l-block { margin-top: 14px; }
+.l-block { margin-top: 14px; page-break-inside: avoid; break-inside: avoid; }
 .l-section-title {
   color: #ffffff;
   font-size: 9.5pt;

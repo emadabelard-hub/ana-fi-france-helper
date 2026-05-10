@@ -37,12 +37,20 @@ export interface FacturXData {
   tvaAmount: number;
   totalTTC: number;
   currencyCode?: string;
+  // Allowance (discount) — applied at document level
+  allowanceAmount?: number;
   // Payment
   paymentTerms?: string;
   dueDate?: string; // DD/MM/YYYY
+  paymentMeansIban?: string;
+  paymentMeansBic?: string;
+  // Ship-to (worksite address)
+  shipToAddress?: string;
   // TVA exemption
   tvaExempt?: boolean;
   tvaExemptReason?: string;
+  // Free-text note (e.g., nature de l'opération)
+  includedNote?: string;
   // Line items (BASIC profile)
   lineItems?: FacturXLineItem[];
 }

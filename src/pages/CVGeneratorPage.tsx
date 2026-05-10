@@ -657,26 +657,7 @@ const CVGeneratorPage = () => {
                     )}
                   </Button>
 
-                  {/* 💾 Save as Image */}
-                  <Button
-                    onClick={handleSaveAsImage}
-                    disabled={!isCvReady || isImaging}
-                    variant="outline"
-                    className="w-full gap-2"
-                    size="lg"
-                  >
-                    {isImaging ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        {isRTL ? 'جاري الحفظ...' : 'Enregistrement...'}
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="h-5 w-5" />
-                        {isRTL ? '💾 حفظ كصورة' : '💾 Enregistrer en image'}
-                      </>
-                    )}
-                  </Button>
+                  {/* BUG 3 FIX: "Save as Image" button removed (PNG didn't match PDF template) */}
                 </div>
               )}
             >

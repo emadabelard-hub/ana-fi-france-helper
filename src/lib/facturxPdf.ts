@@ -3,8 +3,44 @@
  * Takes a jsPDF-generated PDF blob and embeds CII XML as an attachment
  * conforming to Factur-X / ZUGFeRD standard (PDF/A-3 with embedded XML).
  */
-import { PDFDocument, AFRelationship } from 'pdf-lib';
+import { PDFDocument, AFRelationship, PDFName, PDFHexString, PDFString } from 'pdf-lib';
 import { generateFacturXXml, type FacturXData, type FacturXLineItem } from './facturxXml';
+
+/**
+ * Build Factur-X compliant XMP metadata block.
+ */
+function buildFacturXXmp(params: {
+  title: string;
+  conformanceLevel: string; // BASIC | MINIMUM | EN 16931 ...
+  documentFileName?: string;
+}): string {
+  const { title, conformanceLevel, documentFileName = 'factur-x.xml' } = params;
+  const now = new Date().toISOString();
+  return `<?xpacket begin="\uFEFF" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Factur-X">
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about=""
+        xmlns:dc="http://purl.org/dc/elements/1.1/"
+        xmlns:xmp="http://ns.adobe.com/xap/1.0/"
+        xmlns:pdf="http://ns.adobe.com/pdf/1.3/"
+        xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/"
+        xmlns:fx="urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#">
+      <dc:title><rdf:Alt><rdf:li xml:lang="x-default">${title}</rdf:li></rdf:Alt></dc:title>
+      <xmp:CreateDate>${now}</xmp:CreateDate>
+      <xmp:ModifyDate>${now}</xmp:ModifyDate>
+      <xmp:CreatorTool>Ana Fi France - Factur-X 2026</xmp:CreatorTool>
+      <pdf:Producer>pdf-lib + Factur-X Generator</pdf:Producer>
+      <pdfaid:part>3</pdfaid:part>
+      <pdfaid:conformance>B</pdfaid:conformance>
+      <fx:DocumentType>INVOICE</fx:DocumentType>
+      <fx:DocumentFileName>${documentFileName}</fx:DocumentFileName>
+      <fx:Version>1.0</fx:Version>
+      <fx:ConformanceLevel>${conformanceLevel}</fx:ConformanceLevel>
+    </rdf:Description>
+  </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>`;
+}
 
 /**
  * Embed Factur-X XML into an existing PDF blob.
@@ -24,7 +60,8 @@ export async function embedFacturXInPdf(
 
   // Set PDF metadata for Factur-X compliance
   const hasLines = facturxData.lineItems && facturxData.lineItems.length > 0;
-  const profileLabel = hasLines ? 'Factur-X BASIC' : 'Factur-X MINIMUM';
+  const conformanceLevel = hasLines ? 'BASIC' : 'MINIMUM';
+  const profileLabel = `Factur-X ${conformanceLevel}`;
   pdfDoc.setTitle(`${facturxData.invoiceNumber}`);
   pdfDoc.setSubject(profileLabel);
   pdfDoc.setCreator('Ana Fi France - Factur-X 2026');
@@ -40,6 +77,24 @@ export async function embedFacturXInPdf(
     creationDate: new Date(),
     modificationDate: new Date(),
   });
+
+  // Inject Factur-X XMP metadata into the PDF Catalog
+  try {
+    const xmp = buildFacturXXmp({
+      title: facturxData.invoiceNumber,
+      conformanceLevel,
+    });
+    const xmpBytes = new TextEncoder().encode(xmp);
+    const metadataStream = pdfDoc.context.stream(xmpBytes, {
+      Type: 'Metadata',
+      Subtype: 'XML',
+      Length: xmpBytes.length,
+    });
+    const metadataRef = pdfDoc.context.register(metadataStream);
+    pdfDoc.catalog.set(PDFName.of('Metadata'), metadataRef);
+  } catch (e) {
+    console.warn('XMP metadata injection failed:', e);
+  }
 
   // Save and return as Blob
   const enhancedPdfBytes = await pdfDoc.save();

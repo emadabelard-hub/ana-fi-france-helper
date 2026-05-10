@@ -100,7 +100,7 @@ const CVGeneratorPage = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  const [isImaging, setIsImaging] = useState(false);
+  // BUG 3 FIX: isImaging state removed
   const [savedDocId, setSavedDocId] = useState<string | null>(null);
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('edit');

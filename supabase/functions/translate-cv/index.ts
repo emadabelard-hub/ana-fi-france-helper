@@ -23,16 +23,19 @@ async function callGateway({
   systemPrompt: string;
   userPrompt: string;
 }): Promise<string> {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  // AMÉLIORATION 1: Claude claude-sonnet-4-5 via Anthropic API directe
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview", // Cost-optimized model
+      model: "claude-sonnet-4-5",
+      max_tokens: 2000,
+      system: systemPrompt,
       messages: [
-        { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
     }),
@@ -40,7 +43,7 @@ async function callGateway({
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("AI gateway error:", response.status, errorText);
+    console.error("Anthropic API error:", response.status, errorText);
 
     if (response.status === 429) {
       throw new Error("Rate limit exceeded, please try again later");
@@ -48,11 +51,11 @@ async function callGateway({
     if (response.status === 402) {
       throw new Error("Payment required");
     }
-    throw new Error(`AI gateway error: ${response.status}`);
+    throw new Error(`Anthropic API error: ${response.status}`);
   }
 
   const aiResponse = await response.json();
-  const content = aiResponse.choices?.[0]?.message?.content;
+  const content = aiResponse.content?.[0]?.text;
   if (!content) throw new Error("No response from AI");
   return content;
 }

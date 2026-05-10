@@ -23,16 +23,19 @@ async function callGateway({
   systemPrompt: string;
   userPrompt: string;
 }): Promise<string> {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  // AMÉLIORATION 1: Claude claude-sonnet-4-5 via Anthropic API directe
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview", // Cost-optimized model
+      model: "claude-sonnet-4-5",
+      max_tokens: 2000,
+      system: systemPrompt,
       messages: [
-        { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
     }),
@@ -40,7 +43,7 @@ async function callGateway({
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("AI gateway error:", response.status, errorText);
+    console.error("Anthropic API error:", response.status, errorText);
 
     if (response.status === 429) {
       throw new Error("Rate limit exceeded, please try again later");
@@ -48,11 +51,11 @@ async function callGateway({
     if (response.status === 402) {
       throw new Error("Payment required");
     }
-    throw new Error(`AI gateway error: ${response.status}`);
+    throw new Error(`Anthropic API error: ${response.status}`);
   }
 
   const aiResponse = await response.json();
-  const content = aiResponse.choices?.[0]?.message?.content;
+  const content = aiResponse.content?.[0]?.text;
   if (!content) throw new Error("No response from AI");
   return content;
 }
@@ -80,9 +83,9 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error("ANTHROPIC_API_KEY is not configured");
     }
 
     const systemPromptBase = `Tu es un expert en rédaction de CV professionnels pour le marché du travail français.
@@ -90,12 +93,29 @@ Ta mission est de traduire les informations d'un CV de l'arabe (ou du dialecte �
 
 Règles importantes:
 1. Traduis TOUT le contenu en français professionnel et formel
-2. Adapte les termes aux standards français (ex: "سباك" → "Plombier qualifié")
+2. Adapte les termes aux standards français du BTP
 3. Améliore les descriptions pour qu'elles soient percutantes et professionnelles
 4. Garde les emails, téléphones et dates au format international
 5. Pour les noms propres, translittère-les en caractères latins de manière appropriée
-6. Utilise des verbes d'action pour les descriptions d'expérience
-7. Assure-toi que le résumé professionnel soit accrocheur et adapté au marché français
+6. Assure-toi que le résumé professionnel soit accrocheur et adapté au marché français
+
+📚 GLOSSAIRE BTP OBLIGATOIRE (à appliquer systématiquement) :
+- سباك → Plombier qualifié
+- كهربائي → Électricien
+- نجار → Menuisier
+- بناء → Maçon
+- دهان → Peintre en bâtiment
+- كارلاج → Carreleur
+- جبصين → Plaquiste
+- حداد → Ferronnier / Métallier
+- مقاول → Entrepreneur / Artisan
+- ورشة → Chantier
+- مشرف → Chef de chantier
+- مقاولة → Entreprise du bâtiment
+
+✍️ VERBES D'ACTION PROFESSIONNELS (à utiliser dans les descriptions d'expérience) :
+Réalisé, Géré, Supervisé, Installé, Coordonné, Assuré, Développé, Optimisé.
+Commence chaque description d'expérience par l'un de ces verbes au participe passé.
 
 Tu dois retourner UNIQUEMENT un objet JSON valide avec la même structure que l'entrée, mais avec tout le contenu traduit en français.`;
 
@@ -112,7 +132,7 @@ ${JSON.stringify(cvData, null, 2)}`;
 
     // First attempt
     let content = await callGateway({
-      apiKey: LOVABLE_API_KEY,
+      apiKey: ANTHROPIC_API_KEY,
       systemPrompt: systemPromptBase,
       userPrompt,
     });
@@ -121,7 +141,7 @@ ${JSON.stringify(cvData, null, 2)}`;
     if (hasForbiddenScripts(content)) {
       console.warn("Forbidden scripts detected in translate-cv output. Retrying...");
       content = await callGateway({
-        apiKey: LOVABLE_API_KEY,
+        apiKey: ANTHROPIC_API_KEY,
         systemPrompt: systemPromptBase + strictAlphabetRule,
         userPrompt,
       });

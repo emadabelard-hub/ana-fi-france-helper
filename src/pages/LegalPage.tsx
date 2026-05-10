@@ -120,48 +120,60 @@ const PrivacyContent = ({ isRTL }: { isRTL: boolean }) => {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">Dernière mise à jour : Février 2026</p>
-      <Section title="1. Données collectées" isRTL={isRTL}>
-        <p>Nous collectons uniquement les données que vous saisissez :</p>
-        <ul className="list-disc ml-6 space-y-1">
-          <li>Email et mot de passe (si vous créez un compte)</li>
-          <li>Nom, adresse et téléphone (optionnel)</li>
-          <li>Informations d'entreprise (SIRET, adresse, logo)</li>
-          <li>Factures et documents que vous créez</li>
-        </ul>
+      <p className="text-sm text-muted-foreground">Dernière mise à jour : Mai 2026</p>
+      <Section title="1. Responsable du traitement" isRTL={isRTL}>
+        <p>Anafy Pro est responsable du traitement des données personnelles collectées via l'application.</p>
+        <p>Contact : via la page « Support » de l'application ou le bouton « Suggestions » sur la page d'accueil.</p>
       </Section>
-      <Section title="2. Utilisation des données" isRTL={isRTL}>
-        <p>Vos données sont utilisées uniquement pour :</p>
+      <Section title="2. Données collectées et finalités" isRTL={isRTL}>
+        <p>Nous collectons uniquement les données que vous saisissez, pour les finalités suivantes :</p>
         <ul className="list-disc ml-6 space-y-1">
-          <li>Fournir les services (factures, assistant IA, CV)</li>
-          <li>Sauvegarder vos brouillons et paramètres</li>
-          <li>Améliorer l'application et corriger les bugs</li>
+          <li>Email et mot de passe → création et sécurisation de votre compte</li>
+          <li>Nom, adresse, téléphone (optionnel) → personnalisation des documents</li>
+          <li>Informations d'entreprise (SIRET, adresse, logo) → édition de devis/factures conformes</li>
+          <li>Factures, devis et notes de frais → archivage comptable et envoi à votre comptable</li>
+          <li>Logs techniques (page visitée, durée) → amélioration et sécurité du service</li>
         </ul>
         <p className="font-semibold text-foreground">Nous ne vendons jamais vos données. Jamais.</p>
       </Section>
-      <Section title="3. Protection des données" isRTL={isRTL}>
+      <Section title="3. Base légale" isRTL={isRTL}>
+        <p>Le traitement repose sur l'exécution du contrat de service (création de compte) et votre consentement explicite pour les données optionnelles.</p>
+      </Section>
+      <Section title="4. Durée de conservation" isRTL={isRTL}>
+        <ul className="list-disc ml-6 space-y-1">
+          <li>Données de compte : conservées tant que votre compte est actif</li>
+          <li>Documents comptables (devis, factures) : 10 ans (obligation légale française)</li>
+          <li>Logs d'activité : 12 mois maximum, purge automatique mensuelle</li>
+          <li>Après suppression du compte : effacement définitif sous 30 jours</li>
+        </ul>
+      </Section>
+      <Section title="5. Protection des données" isRTL={isRTL}>
         <p>Vos données sont protégées par :</p>
         <ul className="list-disc ml-6 space-y-1">
-          <li>Chiffrement SSL sur toutes les communications</li>
-          <li>Isolation complète des données par utilisateur (RLS)</li>
-          <li>Hébergement sécurisé sur des serveurs européens</li>
+          <li>Chiffrement SSL/TLS sur toutes les communications</li>
+          <li>Isolation complète des données par utilisateur (Row Level Security)</li>
+          <li>Accès limité aux administrateurs identifiés</li>
         </ul>
       </Section>
-      <Section title="4. Vos droits (RGPD)" isRTL={isRTL}>
-        <p>Vous avez le droit de :</p>
+      <Section title="6. Vos droits (RGPD)" isRTL={isRTL}>
+        <p>Conformément au RGPD, vous disposez des droits suivants :</p>
         <ul className="list-disc ml-6 space-y-1">
-          <li>Accéder à toutes vos données</li>
-          <li>Modifier ou rectifier vos informations</li>
-          <li>Supprimer votre compte et toutes vos données définitivement</li>
-          <li>Demander une copie de vos données</li>
+          <li><strong>Accès</strong> : consulter toutes vos données depuis la page « Compte »</li>
+          <li><strong>Rectification</strong> : modifier vos informations à tout moment</li>
+          <li><strong>Effacement</strong> : supprimer votre compte et toutes vos données depuis la page « Compte »</li>
+          <li><strong>Portabilité</strong> : exporter vos données au format JSON via le bouton « Exporter mes données »</li>
+          <li><strong>Opposition et limitation</strong> : nous contacter via le support</li>
+          <li><strong>Réclamation</strong> : auprès de la CNIL (www.cnil.fr)</li>
         </ul>
-        <p>Vous pouvez supprimer votre compte depuis la page "Compte" à tout moment.</p>
       </Section>
-      <Section title="5. Cookies" isRTL={isRTL}>
-        <p>Nous utilisons uniquement des cookies essentiels pour le fonctionnement de la session. Aucun cookie de suivi ou publicitaire.</p>
+      <Section title="7. Cookies" isRTL={isRTL}>
+        <p>Nous utilisons uniquement des cookies essentiels (session d'authentification, préférences de langue). Aucun cookie de suivi publicitaire ou analytique tiers.</p>
       </Section>
-      <Section title="6. Contact" isRTL={isRTL}>
-        <p>Pour toute question relative à la confidentialité, contactez-nous via le bouton "Suggestions" sur la page d'accueil.</p>
+      <Section title="8. Hébergement" isRTL={isRTL}>
+        <p>Les données sont hébergées au sein de l'Union Européenne par notre prestataire technique (Supabase / Lovable Cloud), conforme au RGPD.</p>
+      </Section>
+      <Section title="9. Contact" isRTL={isRTL}>
+        <p>Pour toute question relative à la confidentialité ou pour exercer vos droits, contactez-nous via la page « Support » de l'application.</p>
       </Section>
     </div>
   );

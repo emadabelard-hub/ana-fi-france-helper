@@ -12,6 +12,7 @@ import { ProfileProvider } from "@/hooks/useProfile";
 import MainLayout from "@/components/layout/MainLayout";
 import GlobalErrorHandler from "@/components/app/GlobalErrorHandler";
 import AuthSplashScreen from "@/components/auth/AuthSplashScreen";
+import CookieConsentBanner from "@/components/shared/CookieConsentBanner";
 import { Loader2 } from "lucide-react";
 import { loadCurrentDocument } from "@/lib/invoiceDraftStorage";
 
@@ -141,6 +142,7 @@ const AppRoutes = () => {
           </Routes>
         </Suspense>
       </MainLayout>
+      <CookieConsentBanner />
     </BrowserRouter>
   );
 };

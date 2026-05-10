@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,10 +67,17 @@ serve(async (req) => {
   }
 
   try {
-    // Light auth: accept any Bearer token (session or anon key)
+    // Strict auth: require authenticated (non-anonymous) user — paid API endpoint
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'يرجى تسجيل الدخول أولاً' }), {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const _authClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_ANON_KEY') ?? '');
+    const { data: { user: _authUser }, error: _authError } = await _authClient.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (_authError || !_authUser || _authUser.is_anonymous) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

@@ -122,15 +122,18 @@ serve(async (req) => {
   );
 
   try {
-    // Auth optionnelle (accept anonymes)
+    // Strict auth: require authenticated (non-anonymous) user — paid API endpoint
     const authHeader = req.headers.get("Authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.replace("Bearer ", "");
-      try {
-        await supabaseClient.auth.getUser(token);
-      } catch (_) {
-        /* ignore */
-      }
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: { user: _authUser }, error: _authError } = await supabaseClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (_authError || !_authUser || _authUser.is_anonymous) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const body = await req.json();

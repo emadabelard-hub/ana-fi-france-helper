@@ -145,6 +145,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Nature of operation
   const [natureOperation, setNatureOperation] = useState<'service' | 'goods' | 'mixed'>('service');
+
+  // Factur-X BASIC additional fields (collapsible "Informations complémentaires")
+  const [purchaseOrderRef, setPurchaseOrderRef] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState(''); // YYYY-MM-DD; defaults to today on submit if empty
+  const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
   
   // Description du chantier / objet du devis
   const [descriptionChantier, setDescriptionChantier] = useState(isImageQuotePrefill ? (prefillData?.descriptionChantier || '') : '');

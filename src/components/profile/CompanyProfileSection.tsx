@@ -209,6 +209,16 @@ const CompanyProfileSection = () => {
   };
 
   const handleSave = async () => {
+    // Block save if SIRET is non-empty and not exactly 14 digits
+    const SIRET_REGEX = /^\d{14}$/;
+    if (formData.siret && !SIRET_REGEX.test(formData.siret)) {
+      setSiretError(
+        isRTL
+          ? 'رقم السيريت لازم يكون 14 رقم بالظبط'
+          : 'Le SIRET doit contenir exactement 14 chiffres'
+      );
+      return;
+    }
     if (siretError) return;
 
     setIsSaving(true);

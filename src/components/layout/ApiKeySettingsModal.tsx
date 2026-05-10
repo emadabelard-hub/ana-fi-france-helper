@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Key, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -15,33 +17,83 @@ interface Props {
   onOpenChange: (v: boolean) => void;
 }
 
+const KEY_NAME = 'openai';
+
 const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
   const [key, setKey] = useState('');
   const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [testResult, setTestResult] = useState<'ok' | 'fail' | null>(null);
+  const [errorDetail, setErrorDetail] = useState('');
 
   useEffect(() => {
-    if (open) {
-      const stored = localStorage.getItem('user_ai_api_key') || '';
-      setKey(stored);
-      setSaved(!!stored);
-      setTestResult(null);
-    }
-  }, [open]);
+    if (!open) return;
+    setTestResult(null);
+    setErrorDetail('');
 
-  const handleSave = () => {
-    if (key.trim()) {
-      localStorage.setItem('user_ai_api_key', key.trim());
-      setSaved(true);
+    // Purge legacy localStorage key (migration)
+    try { localStorage.removeItem('user_ai_api_key'); } catch {}
+
+    if (!user) {
+      setKey('');
+      setSaved(false);
+      return;
+    }
+
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from('user_api_keys')
+        .select('encrypted_key')
+        .eq('user_id', user.id)
+        .eq('key_name', KEY_NAME)
+        .maybeSingle();
+      setKey(data?.encrypted_key || '');
+      setSaved(!!data?.encrypted_key);
+      setLoading(false);
+    })();
+  }, [open, user]);
+
+  const handleSave = async () => {
+    if (!user) return;
+    setLoading(true);
+    const trimmed = key.trim();
+    if (trimmed) {
+      const { error } = await supabase
+        .from('user_api_keys')
+        .upsert({
+          user_id: user.id,
+          key_name: KEY_NAME,
+          encrypted_key: trimmed,
+        }, { onConflict: 'user_id,key_name' });
+      if (!error) setSaved(true);
     } else {
-      localStorage.removeItem('user_ai_api_key');
+      await supabase
+        .from('user_api_keys')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('key_name', KEY_NAME);
       setSaved(false);
     }
+    setLoading(false);
   };
 
-  const [errorDetail, setErrorDetail] = useState('');
+  const handleDelete = async () => {
+    if (!user) return;
+    setLoading(true);
+    await supabase
+      .from('user_api_keys')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('key_name', KEY_NAME);
+    setKey('');
+    setSaved(false);
+    setTestResult(null);
+    setLoading(false);
+  };
 
   const handleTest = async () => {
     setTesting(true);
@@ -98,6 +150,12 @@ const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
               ? 'أدخل مفتاح الذكاء الاصطناعي المؤمن لتفعيل ميزة "اسأل المعلم".'
               : 'Entrez votre clé IA sécurisée pour activer "Demander au prof".'}
           </p>
+
+          {!user && (
+            <p className="text-xs text-destructive">
+              {isRTL ? 'يجب تسجيل الدخول أولاً' : 'Connectez-vous pour gérer votre clé.'}
+            </p>
+          )}
           
           <input
             type="password"
@@ -106,11 +164,12 @@ const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
             placeholder="sk-..."
             className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             dir="ltr"
+            disabled={!user || loading}
           />
 
           <div className="flex gap-2">
-            <Button onClick={handleSave} className="flex-1" disabled={!key.trim()}>
-              {saved ? (isRTL ? '✓ تم الحفظ' : '✓ Enregistré') : (isRTL ? 'حفظ' : 'Enregistrer')}
+            <Button onClick={handleSave} className="flex-1" disabled={!key.trim() || !user || loading}>
+              {loading ? <Loader2 size={16} className="animate-spin" /> : saved ? (isRTL ? '✓ تم الحفظ' : '✓ Enregistré') : (isRTL ? 'حفظ' : 'Enregistrer')}
             </Button>
             <Button variant="outline" onClick={handleTest} disabled={!key.trim() || testing} className="flex-1">
               {testing ? <Loader2 size={16} className="animate-spin" /> : (isRTL ? 'اختبار الاتصال' : 'Tester')}
@@ -135,10 +194,11 @@ const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
             </div>
           )}
 
-          {key.trim() && saved && (
+          {key.trim() && saved && user && (
             <button 
-              onClick={() => { localStorage.removeItem('user_ai_api_key'); setKey(''); setSaved(false); setTestResult(null); }}
+              onClick={handleDelete}
               className="text-xs text-destructive hover:underline"
+              disabled={loading}
             >
               {isRTL ? 'حذف المفتاح' : 'Supprimer la clé'}
             </button>

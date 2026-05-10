@@ -1110,6 +1110,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_api_keys: {
+        Row: {
+          created_at: string
+          encrypted_key: string
+          id: string
+          key_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_key: string
+          id?: string
+          key_name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_key?: string
+          id?: string
+          key_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_feedback: {
         Row: {
           created_at: string

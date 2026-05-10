@@ -2607,6 +2607,82 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       </Card>
       )}
 
+      {currentStep === 3 && (
+      /* Informations complémentaires (Factur-X BASIC) — collapsible, collapsed by default */
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <button
+            type="button"
+            onClick={() => setShowAdditionalInfo(v => !v)}
+            className={cn(
+              "w-full flex items-center justify-between gap-2 text-left",
+              isRTL && "flex-row-reverse"
+            )}
+          >
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+              <SlidersHorizontal className="h-5 w-5 text-primary" />
+              <h3 className={cn("font-bold", isRTL && "font-cairo")}>
+                {isRTL ? 'ℹ️ معلومات إضافية' : 'ℹ️ Informations complémentaires'}
+              </h3>
+            </div>
+            {showAdditionalInfo ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+
+          {showAdditionalInfo && (
+            <div className="space-y-3 pt-2">
+              <div>
+                <Label htmlFor="client-tva-number" className="text-sm">
+                  {isRTL ? 'رقم TVA الزبون (اختياري)' : 'N° TVA client (optionnel)'}
+                </Label>
+                <Input
+                  id="client-tva-number"
+                  value={clientTvaIntra}
+                  onChange={(e) => setClientTvaIntra(e.target.value)}
+                  placeholder="FR12345678901"
+                  lang="fr"
+                  dir="ltr"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="purchase-order-ref" className="text-sm">
+                  {isRTL ? 'مرجع طلب الشراء (اختياري)' : 'Réf. bon de commande (optionnel)'}
+                </Label>
+                <Input
+                  id="purchase-order-ref"
+                  value={purchaseOrderRef}
+                  onChange={(e) => setPurchaseOrderRef(e.target.value)}
+                  placeholder="BC-2026-001"
+                  lang="fr"
+                  dir="ltr"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="delivery-date" className="text-sm">
+                  {isRTL ? 'تاريخ الإنجاز' : 'Date de réalisation'}
+                </Label>
+                <Input
+                  id="delivery-date"
+                  type="date"
+                  value={deliveryDate}
+                  onChange={(e) => setDeliveryDate(e.target.value)}
+                  lang="fr"
+                  dir="ltr"
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isRTL ? 'إذا كان فارغ، نأخذ تاريخ الإصدار' : 'Par défaut : date d\'émission'}
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      )}
+
       {/* Objet du devis / Description du chantier */}
       {currentStep === 1 && (
       <Card className="border-violet-200/60 bg-violet-50/30 dark:border-violet-800/30 dark:bg-violet-950/10">

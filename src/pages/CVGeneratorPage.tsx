@@ -450,11 +450,11 @@ const CVGeneratorPage = () => {
         description: isRTL ? 'تم تحميل السي في بنجاح' : 'Votre CV a été téléchargé',
       });
     } catch (error) {
-      console.error('CV PDF generation error:', error);
+      console.error('CV PDF Error:', error);
       toast({
         variant: 'destructive',
-        title: isRTL ? 'خطأ في التحميل' : 'Erreur de téléchargement',
-        description: isRTL ? 'تعذر إنشاء ملف PDF.' : 'Impossible de générer le PDF.',
+        title: isRTL ? 'خطأ في إنشاء PDF' : 'Erreur PDF',
+        description: (error as Error)?.message || (isRTL ? 'تحقق من الاتصال وحاول مجدداً' : 'Vérifier la connexion et réessayer'),
       });
     } finally {
       setIsExporting(false);

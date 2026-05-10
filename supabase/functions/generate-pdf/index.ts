@@ -134,7 +134,6 @@ Deno.serve(async (req) => {
 
     // Build Puppeteer PDF options
     const pdfOptions: Record<string, unknown> = {
-      format: 'A4',
       printBackground: true,
       preferCSSPageSize: false,
       margin: {
@@ -145,23 +144,37 @@ Deno.serve(async (req) => {
       },
     };
 
+    // If explicit width/height are provided (e.g. CV fixed 794x1123), use them
+    // instead of A4 format so Browserless renders the exact pixel canvas.
+    if (width && height) {
+      pdfOptions.width = width;
+      pdfOptions.height = height;
+    } else {
+      pdfOptions.format = 'A4';
+    }
+
     if (footerLabel) {
       pdfOptions.displayHeaderFooter = true;
       pdfOptions.headerTemplate = '<span></span>';
       pdfOptions.footerTemplate = `<div style="font-size:9px;color:#555;text-align:center;width:100%;font-family:Arial,sans-serif;padding:0 10mm">${footerLabel} — Page <span class="pageNumber"></span> / <span class="totalPages"></span></div>`;
     }
 
-    console.log(`Generating PDF: ${(html.length / 1024).toFixed(1)}KB HTML, margin=${marginMm}mm, footer=${!!footerLabel}`);
+    console.log(`Generating PDF: ${(html.length / 1024).toFixed(1)}KB HTML, margin=${marginMm}mm, footer=${!!footerLabel}, custom-size=${!!(width && height)}`);
 
     // Call Browserless.io headless Chrome API
     const browserlessUrl = `https://chrome.browserless.io/pdf?token=${BROWSERLESS_API_KEY}`;
+    const browserlessPayload: Record<string, unknown> = {
+      html,
+      options: pdfOptions,
+    };
+    // Wait for fonts/CSS to fully load before snapshotting
+    if (waitForNetworkIdle) {
+      browserlessPayload.gotoOptions = { waitUntil: 'networkidle0', timeout: 25000 };
+    }
     const browserlessResponse = await fetch(browserlessUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        html,
-        options: pdfOptions,
-      }),
+      body: JSON.stringify(browserlessPayload),
     });
 
     if (!browserlessResponse.ok) {

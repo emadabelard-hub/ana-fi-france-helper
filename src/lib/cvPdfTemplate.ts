@@ -1,21 +1,19 @@
 /**
- * CV PDF Template v3 — Two-column layout (Browserless / Chrome Headless).
+ * CV PDF Template v4 — Two-column modern layout (A4 fixed 794×1123).
  *
- * Layout:
- *  - LEFT column 33%  → navy #1A2B4A, white text, photo + contact/langues/skills/permis/intérêts
- *  - RIGHT column 67% → white, top accent bar #2E6DA4, profil + expériences + formation
- *  - A4 single page, full-height columns, dense compact content.
+ *  - LEFT 33%  navy #1A2B4A (white text)  : photo, contact, langues, compétences, certifications, permis, intérêts
+ *  - RIGHT 67% white (#2E6DA4 accent bar) : profil, expériences, formation
  */
 
 import type { CVData } from '@/pages/CVGeneratorPage';
 
 // ─── Palette ────────────────────────────────────────────────────────────────
 const NAVY = '#1A2B4A';
-const NAVY_TEXT_SOFT = '#B8D4F0';
+const NAVY_SOFT = '#B8D4F0';
 const ACCENT = '#2E6DA4';
 const SEP_LIGHT = '#DDE3EC';
-const TEXT_DARK = '#1f2937';
-const TEXT_GRAY = '#4b5563';
+const TEXT_DARK = '#000000';
+const BODY = '#3A3A4A';
 const DATE_GRAY = '#8A9AB0';
 const FOOTER_GRAY = '#9ca3af';
 
@@ -78,7 +76,7 @@ async function inlinePhoto(url?: string): Promise<string | undefined> {
   }
 }
 
-// ─── LEFT column builders ───────────────────────────────────────────────────
+// ─── LEFT column ────────────────────────────────────────────────────────────
 function leftSectionTitle(title: string): string {
   return `<div class="l-section-title">${esc(title)}</div>`;
 }
@@ -86,7 +84,6 @@ function leftSectionTitle(title: string): string {
 function buildLeftColumn(data: CVData, photoDataUrl: string | undefined, displayName: string): string {
   const blocks: string[] = [];
 
-  // Photo + identity
   blocks.push(`
     <div class="l-identity">
       ${photoDataUrl ? `<img class="l-photo" src="${photoDataUrl}" alt="Photo" />` : ''}
@@ -124,21 +121,28 @@ function buildLeftColumn(data: CVData, photoDataUrl: string | undefined, display
     blocks.push(`<div class="l-block">${leftSectionTitle('Compétences')}${items}</div>`);
   }
 
+  // Certifications
+  const certifications = (data as any).certifications as string[] | undefined;
+  if (certifications?.length) {
+    const items = certifications.map(c => `<div class="l-row"><span class="l-ico">-</span><span>${esc(c)}</span></div>`).join('');
+    blocks.push(`<div class="l-block">${leftSectionTitle('Certifications')}${items}</div>`);
+  }
+
   // Permis
   if (data.drivingLicense) {
     blocks.push(`<div class="l-block">${leftSectionTitle('Permis')}<div class="l-row"><span class="l-ico">-</span><span>Permis ${esc(data.drivingLicense)}</span></div></div>`);
   }
 
-  // Centres d'intérêt
+  // Intérêts
   if (data.interests?.length) {
     const items = data.interests.map(i => `<div class="l-row"><span class="l-ico">-</span><span>${esc(i)}</span></div>`).join('');
-    blocks.push(`<div class="l-block">${leftSectionTitle("Centres d'intérêt")}${items}</div>`);
+    blocks.push(`<div class="l-block">${leftSectionTitle('Intérêts')}${items}</div>`);
   }
 
   return `<aside class="col-left">${blocks.join('')}</aside>`;
 }
 
-// ─── RIGHT column builders ──────────────────────────────────────────────────
+// ─── RIGHT column ───────────────────────────────────────────────────────────
 function rightSectionTitle(title: string): string {
   return `<div class="r-section">
     <div class="r-section-title">${esc(title)}</div>
@@ -147,14 +151,12 @@ function rightSectionTitle(title: string): string {
 }
 
 function buildRightColumn(data: CVData): string {
-  const blocks: string[] = [`<div class="r-top-bar"></div>`];
+  const blocks: string[] = [`<div class="r-top-bar"></div><div class="r-inner">`];
 
-  // Profil
   if (data.summary?.trim()) {
     blocks.push(`${rightSectionTitle('Profil')}<p class="r-body">${esc(data.summary)}</p>`);
   }
 
-  // Expériences
   if (data.experiences.length) {
     const items = data.experiences.map(exp => `
       <div class="r-entry">
@@ -168,7 +170,6 @@ function buildRightColumn(data: CVData): string {
     blocks.push(`${rightSectionTitle('Expériences professionnelles')}${items}`);
   }
 
-  // Formation
   if (data.education.length) {
     const items = data.education.map(edu => `
       <div class="r-entry">
@@ -182,6 +183,7 @@ function buildRightColumn(data: CVData): string {
     blocks.push(`${rightSectionTitle('Formation')}${items}`);
   }
 
+  blocks.push(`</div>`);
   return `<main class="col-right">${blocks.join('')}</main>`;
 }
 
@@ -192,175 +194,182 @@ const CSS = `
 
 html, body {
   width: 794px;
-  min-height: 1123px;
+  height: 1123px;
   background: ${NAVY};
   font-family: 'Inter', 'Segoe UI', sans-serif;
-  font-size: 9.5pt;
-  line-height: 1.6;
-  color: ${TEXT_DARK};
+  font-size: 8px;
+  line-height: 1.3;
+  color: ${BODY};
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+  overflow: hidden;
 }
 
 .cv-wrap {
   width: 794px;
-  min-height: 1123px;
+  height: 1123px;
   display: flex;
   align-items: stretch;
   position: relative;
+  overflow: hidden;
 }
 
-/* ── LEFT column (33%) ── */
+/* ── LEFT (33%) ── */
 .col-left {
   width: 33%;
-  min-height: 1123px;
+  height: 1123px;
   background: ${NAVY};
   color: #ffffff;
-  padding: 16px 12px 40px 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
+  overflow: hidden;
 }
 .l-identity { text-align: center; }
 .l-photo {
-  width: 72px; height: 72px;
+  width: 60px; height: 60px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #ffffff;
-  margin: 0 auto 8px;
+  border: 1.5px solid #ffffff;
+  margin: 0 auto 6px;
   display: block;
 }
 .l-name {
   color: #ffffff;
-  font-size: 16pt;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: 0.02em;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   word-break: break-word;
 }
 .l-title {
-  color: ${NAVY_TEXT_SOFT};
-  font-size: 10pt;
+  color: ${NAVY_SOFT};
+  font-size: 10px;
   font-style: italic;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .l-divider {
-  height: 1px;
-  background: rgba(255,255,255,0.6);
+  height: 0.5px;
+  background: #ffffff;
   width: 60%;
   margin: 4px auto 0;
 }
-.l-block { margin-top: 14px; page-break-inside: avoid; break-inside: avoid; }
+.l-block { margin-top: 8px; page-break-inside: avoid; break-inside: avoid; }
 .l-section-title {
   color: #ffffff;
-  font-size: 9.5pt;
+  font-size: 8px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  padding-bottom: 3px;
-  margin-bottom: 6px;
-  border-bottom: 1px solid rgba(255,255,255,0.35);
+  padding-bottom: 2px;
+  margin-bottom: 4px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.5);
 }
 .l-row {
-  font-size: 9pt;
+  font-size: 7.5px;
   color: #ffffff;
   display: flex;
-  gap: 6px;
+  gap: 4px;
   align-items: flex-start;
-  margin-bottom: 4px;
-  line-height: 1.5;
+  margin-bottom: 3px;
+  line-height: 1.35;
   word-break: break-word;
 }
 .l-row-split { justify-content: space-between; }
 .l-ico {
-  color: ${NAVY_TEXT_SOFT};
+  color: ${NAVY_SOFT};
   flex-shrink: 0;
-  width: 10px;
+  width: 6px;
   display: inline-block;
 }
-.l-soft { color: ${NAVY_TEXT_SOFT}; font-style: italic; font-size: 8.5pt; }
+.l-soft { color: ${NAVY_SOFT}; font-style: italic; font-size: 7px; }
 
-/* ── RIGHT column (67%) ── */
+/* ── RIGHT (67%) ── */
 .col-right {
   width: 67%;
+  height: 1123px;
   background: #ffffff;
-  padding: 0 14px 40px;
   position: relative;
+  overflow: hidden;
 }
 .r-top-bar {
   height: 3px;
   background: ${ACCENT};
-  margin: 0 -14px 14px;
+  width: 100%;
 }
-.r-section { margin-top: 14px; margin-bottom: 6px; page-break-inside: avoid; break-inside: avoid; }
+.r-inner {
+  padding: 14px;
+}
+.r-section { margin-top: 10px; margin-bottom: 4px; page-break-inside: avoid; break-inside: avoid; }
 .r-section:first-of-type { margin-top: 0; }
 .r-section-title {
   color: ${ACCENT};
-  font-size: 9.5pt;
+  font-size: 8px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .r-section-line {
-  height: 1px;
+  height: 0.5px;
   background: ${SEP_LIGHT};
   width: 100%;
 }
 .r-body {
-  font-size: 9.5pt;
-  line-height: 1.6;
-  color: ${TEXT_GRAY};
+  font-size: 8px;
+  line-height: 1.3;
+  color: ${BODY};
   text-align: justify;
-  margin-top: 5px;
+  margin-top: 4px;
 }
-.r-body-sm { font-size: 9.5pt; margin-top: 3px; }
+.r-body-sm { font-size: 8px; margin-top: 2px; }
 
-.r-entry { margin-top: 8px; page-break-inside: avoid; break-inside: avoid; }
-.r-entry:first-child { margin-top: 5px; }
+.r-entry { margin-top: 6px; page-break-inside: avoid; break-inside: avoid; }
+.r-entry:first-child { margin-top: 4px; }
 .r-entry-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: 6px;
 }
 .r-entry-title {
-  font-size: 9pt;
+  font-size: 8px;
   font-weight: 700;
-  color: #000000;
+  color: ${TEXT_DARK};
   flex: 1;
 }
 .r-entry-date {
-  font-size: 8pt;
+  font-size: 7.5px;
   color: ${DATE_GRAY};
   white-space: nowrap;
   flex-shrink: 0;
+  text-align: right;
 }
 .r-entry-sub {
-  font-size: 8.5pt;
+  font-size: 8px;
   font-style: italic;
   color: ${ACCENT};
   margin-top: 1px;
 }
 .r-entry-field {
-  font-size: 8pt;
-  color: ${TEXT_GRAY};
+  font-size: 7.5px;
+  color: ${BODY};
   margin-top: 1px;
 }
 
 /* ── Footer ── */
 .cv-footer {
   position: absolute;
-  bottom: 14px;
+  bottom: 8px;
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 7.5pt;
+  font-size: 7px;
   color: ${FOOTER_GRAY};
 }
 
-/* Hide interactive */
 button, [role="button"], input, select, textarea { display: none !important; }
 `;
 

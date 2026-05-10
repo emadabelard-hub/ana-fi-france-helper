@@ -3,7 +3,7 @@
  * Takes a jsPDF-generated PDF blob and embeds CII XML as an attachment
  * conforming to Factur-X / ZUGFeRD standard (PDF/A-3 with embedded XML).
  */
-import { PDFDocument, AFRelationship, PDFName, PDFHexString, PDFString } from 'pdf-lib';
+import { PDFDocument, AFRelationship, PDFName } from 'pdf-lib';
 import { generateFacturXXml, type FacturXData, type FacturXLineItem } from './facturxXml';
 
 /**

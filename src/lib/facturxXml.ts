@@ -37,12 +37,20 @@ export interface FacturXData {
   tvaAmount: number;
   totalTTC: number;
   currencyCode?: string;
+  // Allowance (discount) — applied at document level
+  allowanceAmount?: number;
   // Payment
   paymentTerms?: string;
   dueDate?: string; // DD/MM/YYYY
+  paymentMeansIban?: string;
+  paymentMeansBic?: string;
+  // Ship-to (worksite address)
+  shipToAddress?: string;
   // TVA exemption
   tvaExempt?: boolean;
   tvaExemptReason?: string;
+  // Free-text note (e.g., nature de l'opération)
+  includedNote?: string;
   // Line items (BASIC profile)
   lineItems?: FacturXLineItem[];
 }
@@ -227,6 +235,9 @@ export function generateFacturXXml(data: FacturXData): string {
     <ram:IssueDateTime>
       <udt:DateTimeString format="102">${issueDate102}</udt:DateTimeString>
     </ram:IssueDateTime>
+    ${data.includedNote ? `<ram:IncludedNote>
+      <ram:Content>${escXml(data.includedNote)}</ram:Content>
+    </ram:IncludedNote>` : ''}
   </rsm:ExchangedDocument>
 
   <rsm:SupplyChainTradeTransaction>${lineItemsXml}
@@ -244,14 +255,41 @@ export function generateFacturXXml(data: FacturXData): string {
       </ram:BuyerTradeParty>
     </ram:ApplicableHeaderTradeAgreement>
 
-    <ram:ApplicableHeaderTradeDelivery/>
+    <ram:ApplicableHeaderTradeDelivery>
+      ${data.shipToAddress ? `<ram:ShipToTradeParty>
+        <ram:PostalTradeAddress>
+          <ram:LineOne>${escXml(data.shipToAddress)}</ram:LineOne>
+          <ram:CountryID>FR</ram:CountryID>
+        </ram:PostalTradeAddress>
+      </ram:ShipToTradeParty>` : ''}
+    </ram:ApplicableHeaderTradeDelivery>
 
     <ram:ApplicableHeaderTradeSettlement>
       <ram:InvoiceCurrencyCode>${currency}</ram:InvoiceCurrencyCode>
+      ${data.paymentMeansIban ? `<ram:SpecifiedTradeSettlementPaymentMeans>
+        <ram:TypeCode>30</ram:TypeCode>
+        <ram:PayeePartyCreditorFinancialAccount>
+          <ram:IBANID>${escXml(data.paymentMeansIban)}</ram:IBANID>
+        </ram:PayeePartyCreditorFinancialAccount>
+        ${data.paymentMeansBic ? `<ram:PayeeSpecifiedCreditorFinancialInstitution>
+          <ram:BICID>${escXml(data.paymentMeansBic)}</ram:BICID>
+        </ram:PayeeSpecifiedCreditorFinancialInstitution>` : ''}
+      </ram:SpecifiedTradeSettlementPaymentMeans>` : ''}
       ${taxSection}
+      ${data.allowanceAmount && data.allowanceAmount > 0 ? `<ram:SpecifiedTradeAllowanceCharge>
+        <ram:ChargeIndicator><udt:Indicator>false</udt:Indicator></ram:ChargeIndicator>
+        <ram:ActualAmount>${fmt(data.allowanceAmount)}</ram:ActualAmount>
+        <ram:Reason>Remise commerciale</ram:Reason>
+        <ram:CategoryTradeTax>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>${data.tvaExempt ? 'E' : 'S'}</ram:CategoryCode>
+          <ram:RateApplicablePercent>${fmt(data.tvaExempt ? 0 : data.tvaRate)}</ram:RateApplicablePercent>
+        </ram:CategoryTradeTax>
+      </ram:SpecifiedTradeAllowanceCharge>` : ''}
       ${dueDateSection}
       <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
-        <ram:LineTotalAmount>${fmt(data.subtotalHT)}</ram:LineTotalAmount>
+        <ram:LineTotalAmount>${fmt(data.subtotalHT + (data.allowanceAmount || 0))}</ram:LineTotalAmount>
+        ${data.allowanceAmount && data.allowanceAmount > 0 ? `<ram:AllowanceTotalAmount>${fmt(data.allowanceAmount)}</ram:AllowanceTotalAmount>` : ''}
         <ram:TaxBasisTotalAmount>${fmt(data.subtotalHT)}</ram:TaxBasisTotalAmount>
         <ram:TaxTotalAmount currencyID="${currency}">${fmt(data.tvaAmount)}</ram:TaxTotalAmount>
         <ram:GrandTotalAmount>${fmt(data.totalTTC)}</ram:GrandTotalAmount>

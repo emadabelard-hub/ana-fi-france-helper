@@ -293,7 +293,7 @@ html, body {
   background: ${ACCENT};
   margin: 0 -14px 14px;
 }
-.r-section { margin-top: 14px; margin-bottom: 6px; }
+.r-section { margin-top: 14px; margin-bottom: 6px; page-break-inside: avoid; break-inside: avoid; }
 .r-section:first-of-type { margin-top: 0; }
 .r-section-title {
   color: ${ACCENT};

@@ -760,6 +760,29 @@ const InvoiceActions = ({
         </>
       ) : null}
 
+      <Dialog open={!!signatureChoice} onOpenChange={(o) => !o && setSignatureChoice(null)}>
+        <DialogContent className={cn(isRTL && "font-cairo")}>
+          <DialogHeader>
+            <DialogTitle className={cn(isRTL && "text-right")}>
+              {isRTL ? '✍️ إرسال رابط التوقيع' : '✍️ Envoyer le lien de signature'}
+            </DialogTitle>
+            <DialogDescription className={cn(isRTL && "text-right")}>
+              {isRTL ? 'اختر طريقة الإرسال للزبون' : 'Choisissez le mode d\'envoi au client'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <Button onClick={sendSignatureViaWhatsApp} className="w-full py-5 bg-green-600 hover:bg-green-700">
+              <MessageCircle className="h-5 w-5 mr-2" />
+              {isRTL ? '📲 واتساب' : 'WhatsApp'}
+            </Button>
+            <Button onClick={sendSignatureViaEmail} variant="outline" className="w-full py-5">
+              <Mail className="h-5 w-5 mr-2" />
+              {isRTL ? '✉️ إيميل' : 'Email'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <SmartReviewModal
         open={showSmartReview}
         onOpenChange={setShowSmartReview}

@@ -14,7 +14,18 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, ArrowRight, Camera, Loader2, Plus, Sparkles, Trash2, X, Send } from 'lucide-react';
-import DismissibleTip from '@/components/shared/DismissibleTip';
+
+const INTRO_TIP_KEY = 'smart_devis_intro_tip_v1';
+const introTipTitle = '💡 كيف تستخدم الديڤي الذكي ؟';
+const introTipText = `① اكتب أو اتكلم بالعربي وصف الشغل اللي عايزه
+   مثال : 'دهان حيطان وسقف ٢٠٠ متر بنتيرة أزرق'
+② ممكن تضيف الأسعار مباشرة
+   مثال : 'دهان حيطان بـ ٢٢ يورو المتر'
+③ ممكن تحدد الوحدة
+   مثال : 'تركيب باركيه فورفيه' أو 'سباكة ٣ نقط'
+④ بعد التحليل تقدر تعدل أي حاجة بإيدك
+⑤ اضغط التالي لإنشاء الديڤي`;
+
 
 interface UploadedImage {
   id: string;

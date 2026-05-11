@@ -127,7 +127,8 @@ Deno.serve(async (req) => {
         pdfBytes = archivedDownload.bytes;
         console.log("[signature-finalize] original PDF downloaded from archive:", archivedDownload.ref);
       }
-    } else {
+    }
+    if (!pdfBytes && /^https?:\/\//i.test(doc.pdf_url)) {
       const r = await fetch(doc.pdf_url);
       if (!r.ok) {
         console.error("[signature-finalize] fetch original PDF failed:", r.status);

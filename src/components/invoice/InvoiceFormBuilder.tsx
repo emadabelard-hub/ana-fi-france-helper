@@ -2663,7 +2663,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
               <div>
                 <Label htmlFor="purchase-order-ref" className="text-sm flex items-center gap-1.5">
-                  <span>{isRTL ? 'مرجع طلب الشراء (اختياري)' : 'Réf. bon de commande (optionnel)'}</span>
+                  <span>{isRTL ? 'مرجع طلب الشراء (البون دو كوماند) (اختياري)' : 'Réf. bon de commande (optionnel)'}</span>
                   <Popover>
                     <PopoverTrigger asChild>
                       <button

@@ -14,7 +14,7 @@ import { calculateInvoiceTotals, validateInvoiceTotalsConsistency } from '@/lib/
 import { supabase } from '@/integrations/supabase/client';
 import type { InvoiceData } from './InvoiceDisplay';
 import { embedFacturXInPdf, buildFacturXDataFromInvoice } from '@/lib/facturxPdf';
-import { buildPdfFromContainer, waitForLayout } from '@/lib/pdfEngine';
+import { buildPdfFromContainer, buildHtmlSnapshot, waitForLayout } from '@/lib/pdfEngine';
 
 
 interface SuggestedAddon {

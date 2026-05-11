@@ -93,6 +93,10 @@ const SignaturePage = () => {
 
   const handleSubmit = async () => {
     if (!token || !padRef.current) return;
+    if (!info?.original_pdf_url) {
+      toast.error('Le PDF doit être affiché avant signature');
+      return;
+    }
     if (signerName.trim().length < 2) {
       toast.error('Veuillez saisir votre nom complet');
       return;
@@ -208,27 +212,34 @@ const SignaturePage = () => {
           )}
         </Card>
 
-        {/* Step 1: PDF preview before signing */}
-        {info.status !== 'signed' && info.original_pdf_url && (
+        {info.status !== 'signed' && (
           <Card className="p-4 space-y-2">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
               <p className="text-sm font-medium">Veuillez lire le document avant de signer</p>
             </div>
-            <iframe
-              src={info.original_pdf_url}
-              title="Document à signer"
-              className="w-full border rounded bg-white"
-              style={{ height: '70vh', minHeight: 480 }}
-            />
-            <a
-              href={info.original_pdf_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-primary underline"
-            >
-              Ouvrir le PDF dans un nouvel onglet
-            </a>
+            {info.original_pdf_url ? (
+              <>
+                <iframe
+                  src={info.original_pdf_url}
+                  title="Document à signer"
+                  className="w-full border rounded bg-white"
+                  style={{ height: '70vh', minHeight: 480 }}
+                />
+                <a
+                  href={info.original_pdf_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary underline"
+                >
+                  Ouvrir le PDF dans un nouvel onglet
+                </a>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded">
+                Le PDF est momentanément indisponible. La signature est bloquée tant que le document n'est pas visible.
+              </p>
+            )}
           </Card>
         )}
 
@@ -260,6 +271,18 @@ const SignaturePage = () => {
                 Envoyer par email
               </Button>
             </div>
+
+            {info.signed_pdf_url && (
+              <div className="text-left space-y-2 pt-2">
+                <p className="text-sm font-medium">Exemplaire signé</p>
+                <iframe
+                  src={info.signed_pdf_url}
+                  title="Document signé"
+                  className="w-full border rounded bg-white"
+                  style={{ height: '70vh', minHeight: 480 }}
+                />
+              </div>
+            )}
 
             {showEmailField && (
               <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto pt-2">

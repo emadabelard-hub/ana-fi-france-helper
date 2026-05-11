@@ -61,10 +61,12 @@ Deno.serve(async (req) => {
       .eq("token", token)
       .maybeSingle();
     if (sigErr || !sigRow) {
+      console.error("[signature-finalize] signature_requests lookup failed:", sigErr?.message, "token:", token);
       return new Response(JSON.stringify({ error: "Lien invalide" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    console.log("[signature-finalize] sigRow loaded:", sigRow.id, "status:", sigRow.status);
     if (sigRow.status === "signed") {
       return new Response(JSON.stringify({ error: "Document déjà signé" }), {
         status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -72,20 +74,24 @@ Deno.serve(async (req) => {
     }
 
     // Load document
-    const { data: doc } = await admin
+    const { data: doc, error: docErr } = await admin
       .from("documents_comptables")
       .select("pdf_url, document_number, document_type, client_name")
       .eq("id", sigRow.document_id)
       .maybeSingle();
+    if (docErr) console.error("[signature-finalize] documents_comptables error:", docErr.message);
     if (!doc?.pdf_url) {
+      console.error("[signature-finalize] no pdf_url for document_id:", sigRow.document_id);
       return new Response(JSON.stringify({ error: "Document PDF introuvable" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    console.log("[signature-finalize] doc.pdf_url:", doc.pdf_url);
 
     // Load original PDF bytes (resolve from any bucket / signed URL / plain path)
     let pdfBytes: Uint8Array | null = null;
     const ref = resolveStorageRef(doc.pdf_url);
+    console.log("[signature-finalize] storage ref:", ref);
     if (ref) {
       const { data: blob, error: dlErr } = await admin.storage.from(ref.bucket).download(ref.path);
       if (dlErr || !blob) {

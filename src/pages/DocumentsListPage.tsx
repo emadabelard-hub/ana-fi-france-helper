@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Plus, FileText, Receipt, Trash2, Eye, ArrowRightLeft, Calendar, Euro, Copy, Download, Filter, Search, SendHorizontal, Loader2, CheckCircle, Ban, Wallet, Pencil, Save, X, Tag, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { extractAdvancedPrefillData } from '@/lib/prefillAdvancedData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
 import InvoiceDisplay from '@/components/invoice/InvoiceDisplay';
+import InvoiceActions from '@/components/invoice/InvoiceActions';
 import { buildMilestonePrefill } from '@/lib/milestonePrefill';
 import { ScrollArea } from '@/components/ui/scroll-area';
 interface DocumentRow {
@@ -96,8 +97,10 @@ const DocumentsListPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
   const [selectedDocumentData, setSelectedDocumentData] = useState<any | null>(null);
+  const [selectedShowArabic, setSelectedShowArabic] = useState(true);
   const [showFullView, setShowFullView] = useState(false);
   const [converting, setConverting] = useState(false);
+  const selectedInvoiceRef = useRef<HTMLDivElement>(null);
 
   // Expenses state
   const [expenses, setExpenses] = useState<ExpenseRow[]>([]);

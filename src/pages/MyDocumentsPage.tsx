@@ -61,7 +61,7 @@ const MyDocumentsPage = () => {
     let alive = true;
     (async () => {
       setLoading(true);
-      const [comptables, expenses] = await Promise.all([
+      const [comptables, expenses, signatures] = await Promise.all([
         supabase
           .from('documents_comptables')
           .select('id, document_type, document_number, client_name, subtotal_ht, total_ttc, status, payment_status, created_at, document_data')
@@ -70,12 +70,25 @@ const MyDocumentsPage = () => {
           .from('expenses')
           .select('id, title, amount, tva_amount, expense_date, created_at, sent_to_accountant_at')
           .order('created_at', { ascending: false }),
+        supabase
+          .from('signature_requests')
+          .select('document_id, status, signed_at, created_at')
+          .order('created_at', { ascending: false }),
       ]);
       if (!alive) return;
+
+      // Map latest signature per document_id
+      const sigByDoc = new Map<string, { status: string; signed_at: string | null }>();
+      for (const s of (signatures.data || []) as any[]) {
+        if (!sigByDoc.has(s.document_id)) {
+          sigByDoc.set(s.document_id, { status: s.status, signed_at: s.signed_at });
+        }
+      }
 
       const merged: UnifiedDoc[] = [];
       if (comptables.data) {
         for (const d of comptables.data as any[]) {
+          const sig = sigByDoc.get(d.id);
           merged.push({
             id: d.id,
             source: 'comptable',
@@ -88,6 +101,8 @@ const MyDocumentsPage = () => {
             payment_status: d.payment_status,
             created_at: d.created_at,
             document_data: d.document_data,
+            signature_status: sig ? (sig.status as 'pending' | 'signed') : null,
+            signed_at: sig?.signed_at || null,
           });
         }
       }

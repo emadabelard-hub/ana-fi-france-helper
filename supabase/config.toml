@@ -62,3 +62,12 @@ verify_jwt = false
 
 [functions.btp-translate]
 verify_jwt = false
+
+[functions.signature-info]
+verify_jwt = false
+
+[functions.signature-finalize]
+verify_jwt = false
+
+[functions.signature-email-copy]
+verify_jwt = false

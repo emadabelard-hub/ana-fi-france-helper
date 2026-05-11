@@ -119,7 +119,7 @@ const Index = () => {
     {
       icon: <Bot size={32} className="text-white drop-shadow-md" />,
       gradient: 'linear-gradient(135deg, #8A2BE2, #6A1FB0)',
-      titleAr: 'مساعد الشانتي الذكي 🤖',
+      titleAr: 'المساعد الذكي 🤖',
       titleFr: 'Assistant Chantier IA 🤖',
       descAr: 'اسأل وانا اجاوب',
       descFr: 'Posez votre question, je vous réponds',

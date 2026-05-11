@@ -956,6 +956,8 @@ export type Database = {
           id: string
           signature_data: string | null
           signed_at: string | null
+          signed_pdf_path: string | null
+          signed_pdf_url: string | null
           signer_name: string | null
           status: string
           token: string
@@ -969,6 +971,8 @@ export type Database = {
           id?: string
           signature_data?: string | null
           signed_at?: string | null
+          signed_pdf_path?: string | null
+          signed_pdf_url?: string | null
           signer_name?: string | null
           status?: string
           token?: string
@@ -982,6 +986,8 @@ export type Database = {
           id?: string
           signature_data?: string | null
           signed_at?: string | null
+          signed_pdf_path?: string | null
+          signed_pdf_url?: string | null
           signer_name?: string | null
           status?: string
           token?: string
@@ -1293,9 +1299,11 @@ export type Database = {
         Args: { _token: string }
         Returns: {
           created_at: string
+          document_id: string
           document_snapshot: Json
           id: string
           signed_at: string
+          signed_pdf_url: string
           signer_name: string
           status: string
         }[]

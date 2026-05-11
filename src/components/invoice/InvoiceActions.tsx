@@ -92,6 +92,7 @@ const InvoiceActions = ({
   const [signedPdfBlob, setSignedPdfBlob] = useState<Blob | null>(null);
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [signatureChoice, setSignatureChoice] = useState<{ url: string; token: string } | null>(null);
   const SAFETY_BLOCK_MESSAGE = 'Erreur de calcul – document bloqué pour sécurité';
 
   // Pre-PDF integrity check: verify TVA and totals are consistent

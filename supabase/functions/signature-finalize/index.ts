@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     // Load signature request
     const { data: sigRow, error: sigErr } = await admin
       .from("signature_requests")
-      .select("id, document_id, user_id, status, document_snapshot")
+      .select("id, document_id, user_id, status, document_snapshot, html_snapshot")
       .eq("token", token)
       .maybeSingle();
     if (sigErr || !sigRow) {

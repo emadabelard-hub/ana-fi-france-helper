@@ -83,11 +83,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Load original PDF bytes (via storage if path detected, else direct fetch)
+    // Load original PDF bytes (resolve from any bucket / signed URL / plain path)
     let pdfBytes: Uint8Array | null = null;
-    const originalPath = pathFromSignedUrl(doc.pdf_url, SIGNED_BUCKET);
-    if (originalPath) {
-      const { data: blob, error: dlErr } = await admin.storage.from(SIGNED_BUCKET).download(originalPath);
+    const ref = resolveStorageRef(doc.pdf_url);
+    if (ref) {
+      const { data: blob, error: dlErr } = await admin.storage.from(ref.bucket).download(ref.path);
       if (dlErr || !blob) {
         return new Response(JSON.stringify({ error: "Téléchargement PDF échoué: " + (dlErr?.message || "inconnu") }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

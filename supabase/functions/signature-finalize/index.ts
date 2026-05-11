@@ -95,6 +95,7 @@ Deno.serve(async (req) => {
     if (ref) {
       const { data: blob, error: dlErr } = await admin.storage.from(ref.bucket).download(ref.path);
       if (dlErr || !blob) {
+        console.error("[signature-finalize] storage download failed:", ref.bucket, ref.path, dlErr?.message);
         return new Response(JSON.stringify({ error: "Téléchargement PDF échoué: " + (dlErr?.message || "inconnu") }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -103,12 +104,14 @@ Deno.serve(async (req) => {
     } else {
       const r = await fetch(doc.pdf_url);
       if (!r.ok) {
+        console.error("[signature-finalize] fetch original PDF failed:", r.status);
         return new Response(JSON.stringify({ error: "Téléchargement PDF échoué" }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       pdfBytes = new Uint8Array(await r.arrayBuffer());
     }
+    console.log("[signature-finalize] original PDF bytes:", pdfBytes.byteLength);
 
     // Decode signature data URL (PNG)
     const m = signature_data.match(/^data:image\/(png|jpeg);base64,(.+)$/);
@@ -120,27 +123,33 @@ Deno.serve(async (req) => {
     const sigBytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
 
     // Stamp signature onto the last page of the PDF
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const sigImage = m[1] === "png" ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes);
-    const pages = pdfDoc.getPages();
-    const lastPage = pages[pages.length - 1];
-    const { width, height } = lastPage.getSize();
+    let signedPdfBytes: Uint8Array;
+    try {
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const sigImage = m[1] === "png" ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes);
+      const pages = pdfDoc.getPages();
+      const lastPage = pages[pages.length - 1];
+      const { width } = lastPage.getSize();
 
-    // Place signature in lower-right area (typical "Signature client" zone)
-    const targetW = Math.min(180, width * 0.4);
-    const ratio = sigImage.height / sigImage.width;
-    const targetH = targetW * ratio;
-    const x = width - targetW - 50;
-    const y = 90;
+      const targetW = Math.min(180, width * 0.4);
+      const ratioImg = sigImage.height / sigImage.width;
+      const targetH = targetW * ratioImg;
+      const x = width - targetW - 50;
+      const y = 90;
 
-    lastPage.drawImage(sigImage, { x, y, width: targetW, height: targetH });
+      lastPage.drawImage(sigImage, { x, y, width: targetW, height: targetH });
+      const dateStr = new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+      lastPage.drawText(`Signé par ${signer_name}`, { x, y: y - 12, size: 8 });
+      lastPage.drawText(`Le ${dateStr} — Bon pour accord`, { x, y: y - 22, size: 8 });
 
-    // Add signer name + date below the signature
-    const dateStr = new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
-    lastPage.drawText(`Signé par ${signer_name}`, { x, y: y - 12, size: 8 });
-    lastPage.drawText(`Le ${dateStr} — Bon pour accord`, { x, y: y - 22, size: 8 });
-
-    const signedPdfBytes = await pdfDoc.save();
+      signedPdfBytes = await pdfDoc.save();
+    } catch (pdfErr: any) {
+      console.error("[signature-finalize] pdf-lib stamp error:", pdfErr?.message || pdfErr);
+      return new Response(JSON.stringify({ error: "Erreur traitement PDF: " + (pdfErr?.message || "inconnue") }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    console.log("[signature-finalize] signed PDF bytes:", signedPdfBytes.byteLength);
 
     // Upload signed PDF
     const signedPath = `${sigRow.user_id}/${sigRow.document_id}_signed.pdf`;
@@ -148,10 +157,12 @@ Deno.serve(async (req) => {
       .from(SIGNED_BUCKET)
       .upload(signedPath, signedPdfBytes, { contentType: "application/pdf", upsert: true });
     if (upErr) {
+      console.error("[signature-finalize] storage upload failed:", signedPath, upErr.message);
       return new Response(JSON.stringify({ error: "Upload signé échoué: " + upErr.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    console.log("[signature-finalize] uploaded signed PDF to:", signedPath);
 
     const { data: signedUrlData } = await admin.storage
       .from(SIGNED_BUCKET)

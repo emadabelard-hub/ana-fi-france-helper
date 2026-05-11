@@ -207,6 +207,18 @@ const SmartDevisPage = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        <DismissibleTip
+          storageKey="smart_devis_intro_tip_v1"
+          title="💡 كيف تستخدم الديڤي الذكي ؟"
+          text={`① اكتب أو اتكلم بالعربي وصف الشغل اللي عايزه
+   مثال : 'دهان حيطان وسقف ٢٠٠ متر بنتيرة أزرق'
+② ممكن تضيف الأسعار مباشرة
+   مثال : 'دهان حيطان بـ ٢٢ يورو المتر'
+③ ممكن تحدد الوحدة
+   مثال : 'تركيب باركيه فورفيه' أو 'سباكة ٣ نقط'
+④ بعد التحليل تقدر تعدل أي حاجة بإيدك
+⑤ اضغط التالي لإنشاء الديڤي`}
+        />
         {/* Step 1: Input */}
         <Card>
           <CardContent className="p-4 space-y-4">

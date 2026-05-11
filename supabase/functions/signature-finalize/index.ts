@@ -188,38 +188,55 @@ Deno.serve(async (req) => {
 
         if (artisanEmail) {
           const subject = `✅ Devis n° ${docNumber} signé par ${clientName}`;
+          const MAX_ATTACH = 5 * 1024 * 1024; // 5MB
+          const tooLarge = signedPdfBytes.byteLength > MAX_ATTACH;
           const html = `<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1a1a2e;white-space:pre-line;">
 Bonjour ${artisanName},
 
 ${clientName} a signé le devis n° ${docNumber} le ${dateOnly}.
 
-Le document signé est disponible dans vos documents.
+${tooLarge && signedPdfUrl
+  ? `Le document signé est trop volumineux pour être joint à cet email.\nTélécharger votre exemplaire signé : ${signedPdfUrl}`
+  : "Le document signé est disponible dans vos documents et joint à cet email."}
 
 Cordialement,
 Anafy
 </div>`;
-          await fetch("https://api.resend.com/emails", {
+          const payload: any = {
+            from: "Anafy <noreply@resend.dev>",
+            to: [artisanEmail],
+            subject,
+            html,
+          };
+          if (!tooLarge) {
+            payload.attachments = [{
+              filename: `devis-${docNumber}-signe.pdf`,
+              content: bytesToBase64(signedPdfBytes),
+              type: "application/pdf",
+            }];
+          }
+          const r = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: {
               Authorization: `Bearer ${RESEND_API_KEY}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              from: "Anafy <noreply@resend.dev>",
-              to: [artisanEmail],
-              subject,
-              html,
-              attachments: [{
-                filename: `devis-${docNumber}-signe.pdf`,
-                content: bytesToBase64(signedPdfBytes),
-                type: "application/pdf",
-              }],
-            }),
+            body: JSON.stringify(payload),
           });
+          if (!r.ok) {
+            const t = await r.text();
+            console.error("[signature-finalize] Resend error:", r.status, t);
+          } else {
+            console.log("[signature-finalize] artisan email sent, attached:", !tooLarge);
+          }
+        } else {
+          console.warn("[signature-finalize] no artisan email on profile");
         }
       } catch (mailErr) {
         console.error("[signature-finalize] email error (non-blocking):", mailErr);
       }
+    } else {
+      console.warn("[signature-finalize] RESEND_API_KEY missing, skipping email");
     }
 
     return new Response(JSON.stringify({

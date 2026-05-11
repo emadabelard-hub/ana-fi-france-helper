@@ -617,6 +617,18 @@ const InvoiceActions = ({
             }
           </Button>
 
+          <Button
+            onClick={handleSendForSignature}
+            variant="outline"
+            className={cn(
+              "w-full py-5 border-primary/40 hover:bg-primary/5",
+              isRTL && "font-cairo flex-row-reverse"
+            )}
+          >
+            <PenLine className="h-5 w-5 mr-2" />
+            {isRTL ? '✍️ إرسال للتوقيع' : '✍️ Envoyer pour signature'}
+          </Button>
+
           {/* PDF export options */}
           <div className="space-y-2">
             <p className={cn("text-xs font-medium text-muted-foreground", isRTL && "text-right font-cairo")}>

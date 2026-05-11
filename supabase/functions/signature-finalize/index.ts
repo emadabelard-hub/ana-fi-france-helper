@@ -15,13 +15,13 @@ const corsHeaders = {
 };
 
 const SIGNED_BUCKET = "signed-documents";
+const DOCUMENTS_BUCKET = "documents";
 
-function pathFromSignedUrl(url: string | null | undefined, bucket: string): string | null {
+function resolveStorageRef(url: string | null | undefined): { bucket: string; path: string } | null {
   if (!url) return null;
-  const m = url.match(new RegExp(`/object/sign/${bucket}/([^?]+)`));
-  if (m) return decodeURIComponent(m[1]);
-  const m2 = url.match(new RegExp(`/object/public/${bucket}/([^?]+)`));
-  if (m2) return decodeURIComponent(m2[1]);
+  const m1 = url.match(/\/object\/(?:sign|public)\/([^/]+)\/([^?]+)/);
+  if (m1) return { bucket: m1[1], path: decodeURIComponent(m1[2]) };
+  if (!/^https?:\/\//i.test(url)) return { bucket: DOCUMENTS_BUCKET, path: url };
   return null;
 }
 
@@ -83,11 +83,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Load original PDF bytes (via storage if path detected, else direct fetch)
+    // Load original PDF bytes (resolve from any bucket / signed URL / plain path)
     let pdfBytes: Uint8Array | null = null;
-    const originalPath = pathFromSignedUrl(doc.pdf_url, SIGNED_BUCKET);
-    if (originalPath) {
-      const { data: blob, error: dlErr } = await admin.storage.from(SIGNED_BUCKET).download(originalPath);
+    const ref = resolveStorageRef(doc.pdf_url);
+    if (ref) {
+      const { data: blob, error: dlErr } = await admin.storage.from(ref.bucket).download(ref.path);
       if (dlErr || !blob) {
         return new Response(JSON.stringify({ error: "Téléchargement PDF échoué: " + (dlErr?.message || "inconnu") }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

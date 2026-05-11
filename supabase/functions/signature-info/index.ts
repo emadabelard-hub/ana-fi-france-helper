@@ -9,16 +9,19 @@ const corsHeaders = {
 };
 
 const SIGNED_BUCKET = "signed-documents";
+const DOCUMENTS_BUCKET = "documents";
 const URL_TTL = 60 * 60; // 1h
 
-function pathFromSignedUrl(url: string | null | undefined, bucket: string): string | null {
+// Extract a {bucket, path} pair from a stored pdf_url which may be:
+// - a Supabase signed URL (.../object/sign/<bucket>/<path>?token=...)
+// - a Supabase public URL  (.../object/public/<bucket>/<path>)
+// - a plain storage path "<userId>/.../file.pdf" (legacy / fallback)
+function resolveStorageRef(url: string | null | undefined): { bucket: string; path: string } | null {
   if (!url) return null;
-  // Format: https://<host>/storage/v1/object/sign/<bucket>/<path>?token=...
-  const m = url.match(new RegExp(`/object/sign/${bucket}/([^?]+)`));
-  if (m) return decodeURIComponent(m[1]);
-  // Fallback: maybe public URL
-  const m2 = url.match(new RegExp(`/object/public/${bucket}/([^?]+)`));
-  if (m2) return decodeURIComponent(m2[1]);
+  const m1 = url.match(/\/object\/(?:sign|public)\/([^/]+)\/([^?]+)/);
+  if (m1) return { bucket: m1[1], path: decodeURIComponent(m1[2]) };
+  // Not a URL → treat as plain path inside documents bucket
+  if (!/^https?:\/\//i.test(url)) return { bucket: DOCUMENTS_BUCKET, path: url };
   return null;
 }
 
@@ -54,12 +57,12 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     let originalSignedUrl: string | null = null;
-    const originalPath = pathFromSignedUrl(doc?.pdf_url, SIGNED_BUCKET);
-    if (originalPath) {
-      const { data: u } = await admin.storage.from(SIGNED_BUCKET).createSignedUrl(originalPath, URL_TTL);
+    const ref = resolveStorageRef(doc?.pdf_url);
+    if (ref) {
+      const { data: u } = await admin.storage.from(ref.bucket).createSignedUrl(ref.path, URL_TTL);
       originalSignedUrl = u?.signedUrl || null;
-    } else if (doc?.pdf_url) {
-      // Use raw URL (might still be valid)
+    }
+    if (!originalSignedUrl && doc?.pdf_url && /^https?:\/\//i.test(doc.pdf_url)) {
       originalSignedUrl = doc.pdf_url;
     }
 

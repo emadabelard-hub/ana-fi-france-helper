@@ -98,51 +98,62 @@ const AppRoutes = () => {
   return (
     <BrowserRouter>
       <RouteResumeManager />
-      <MainLayout>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/home" element={<Index />} />
-            <Route path="/news" element={<NewsPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/pro" element={<ProPage />} />
-            <Route path="/pro/invoice-creator" element={<InvoiceCreatorPage />} />
-            <Route path="/pro/smart-devis" element={<SmartDevisPage />} />
-            <Route path="/pro/quote-to-invoice" element={<QuoteToInvoicePage />} />
-            <Route path="/pro/image-quote-to-invoice" element={<ImageQuoteToInvoicePage />} />
-            <Route path="/pro/documents" element={<DocumentsListPage />} />
-            <Route path="/pro/archive" element={<ArchiveAccountingPage />} />
-            <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />
-            <Route path="/pro/cv-generator" element={<CVGeneratorPage />} />
-            <Route path="/pro/settings" element={<ProSettingsPage />} />
-            <Route path="/ai-assistant" element={<AIAssistantPage />} />
-            <Route path="/premium-consultation" element={<PremiumConsultationPage />} />
-            <Route path="/consultations" element={<ConsultationsPage />} />
-            <Route path="/pro/peinture" element={<PeinturePage />} />
-            <Route path="/language-school" element={<LanguageSchoolPage />} />
-            <Route path="/universal-admin-assistant" element={<UniversalAdminAssistantPage />} />
-            <Route path="/service-request" element={<ServiceRequestPage />} />
-            <Route path="/payment-success" element={<PaymentSuccessPage />} />
-            <Route path="/support" element={<SupportPage />} />
-            <Route path="/expenses" element={<ExpensesPage />} />
-            <Route path="/accounts" element={<ExpensesPage />} />
-            <Route path="/document-hub" element={<DocumentHubPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="/legal" element={<LegalPage />} />
-            <Route path="/clients" element={<ClientsPage />} />
-            <Route path="/clients/:id" element={<ClientDetailPage />} />
-            <Route path="/chantiers" element={<ChantiersPage />} />
-            <Route path="/chantiers/:id" element={<ChantierDetailPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/pro/pricing-settings" element={<PricingSettingsPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/verify/:id" element={<VerifyDocumentPage />} />
-            <Route path="/translator" element={<TranslatorPage />} />
-            <Route path="/my-documents" element={<MyDocumentsPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </MainLayout>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Public signature page — no MainLayout/auth */}
+          <Route path="/sign/:token" element={<SignaturePage />} />
+          <Route
+            path="*"
+            element={
+              <MainLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/home" element={<Index />} />
+                    <Route path="/news" element={<NewsPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/pro" element={<ProPage />} />
+                    <Route path="/pro/invoice-creator" element={<InvoiceCreatorPage />} />
+                    <Route path="/pro/smart-devis" element={<SmartDevisPage />} />
+                    <Route path="/pro/quote-to-invoice" element={<QuoteToInvoicePage />} />
+                    <Route path="/pro/image-quote-to-invoice" element={<ImageQuoteToInvoicePage />} />
+                    <Route path="/pro/documents" element={<DocumentsListPage />} />
+                    <Route path="/pro/archive" element={<ArchiveAccountingPage />} />
+                    <Route path="/pro/admin-assistant" element={<ProAdminAssistantPage />} />
+                    <Route path="/pro/cv-generator" element={<CVGeneratorPage />} />
+                    <Route path="/pro/settings" element={<ProSettingsPage />} />
+                    <Route path="/ai-assistant" element={<AIAssistantPage />} />
+                    <Route path="/premium-consultation" element={<PremiumConsultationPage />} />
+                    <Route path="/consultations" element={<ConsultationsPage />} />
+                    <Route path="/pro/peinture" element={<PeinturePage />} />
+                    <Route path="/language-school" element={<LanguageSchoolPage />} />
+                    <Route path="/universal-admin-assistant" element={<UniversalAdminAssistantPage />} />
+                    <Route path="/service-request" element={<ServiceRequestPage />} />
+                    <Route path="/payment-success" element={<PaymentSuccessPage />} />
+                    <Route path="/support" element={<SupportPage />} />
+                    <Route path="/expenses" element={<ExpensesPage />} />
+                    <Route path="/accounts" element={<ExpensesPage />} />
+                    <Route path="/document-hub" element={<DocumentHubPage />} />
+                    <Route path="/admin" element={<AdminPage />} />
+                    <Route path="/legal" element={<LegalPage />} />
+                    <Route path="/clients" element={<ClientsPage />} />
+                    <Route path="/clients/:id" element={<ClientDetailPage />} />
+                    <Route path="/chantiers" element={<ChantiersPage />} />
+                    <Route path="/chantiers/:id" element={<ChantierDetailPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/pro/pricing-settings" element={<PricingSettingsPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/verify/:id" element={<VerifyDocumentPage />} />
+                    <Route path="/translator" element={<TranslatorPage />} />
+                    <Route path="/my-documents" element={<MyDocumentsPage />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </MainLayout>
+            }
+          />
+        </Routes>
+      </Suspense>
       <CookieConsentBanner />
     </BrowserRouter>
   );

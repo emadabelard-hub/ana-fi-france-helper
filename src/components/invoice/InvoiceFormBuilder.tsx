@@ -283,6 +283,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const itemsRef = useRef(items);
   const [savingDraft, setSavingDraft] = useState(false);
   const [isSavingOfficialDocument, setIsSavingOfficialDocument] = useState(false);
+  const [savedOfficialDocumentId, setSavedOfficialDocumentId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [currentStep, setCurrentStep] = useState(() => {
     if (prefillData || skipDraftRestore) return 0;
@@ -1115,6 +1116,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
   const invoiceData: InvoiceData = {
     ...rawInvoiceData,
+    documentId: savedOfficialDocumentId || undefined,
     items: validationResult.items.map(vi => ({
       designation_fr: vi.designation_fr,
       designation_ar: vi.designation_ar || vi.designation_fr,
@@ -1845,6 +1847,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         .select('id, document_number')
         .single();
       if (error) throw error;
+
+      if (insertedDocument?.id) {
+        setSavedOfficialDocumentId(insertedDocument.id);
+      }
 
       if (isQuoteConversionFlow && insertedDocument?.id) {
         const { data: updatedSource, error: updateSourceError } = await (supabase

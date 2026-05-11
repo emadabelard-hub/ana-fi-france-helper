@@ -233,8 +233,14 @@ const SmartDevisPage = () => {
                 <div className="mt-3 space-y-2">
                   {rawArabic.trim() && (
                     <div className="rounded-md border border-border bg-muted p-3" dir="rtl">
-                      <div className="text-xs text-muted-foreground mb-1 font-cairo">ما قلته بالعربي :</div>
-                      <div className="text-sm whitespace-pre-wrap break-words font-cairo">{rawArabic.trim()}</div>
+                      <div className="text-xs text-muted-foreground mb-1 font-cairo">ما قلته بالعربي (تقدر تعدّل) :</div>
+                      <Textarea
+                        value={rawArabic}
+                        onChange={(e) => setRawArabic(e.target.value)}
+                        rows={3}
+                        dir="rtl"
+                        className="resize-none border-0 bg-transparent p-0 focus-visible:ring-0 font-cairo"
+                      />
                     </div>
                   )}
                   {userText.trim() && (

@@ -61,10 +61,12 @@ Deno.serve(async (req) => {
       .eq("token", token)
       .maybeSingle();
     if (sigErr || !sigRow) {
+      console.error("[signature-finalize] signature_requests lookup failed:", sigErr?.message, "token:", token);
       return new Response(JSON.stringify({ error: "Lien invalide" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    console.log("[signature-finalize] sigRow loaded:", sigRow.id, "status:", sigRow.status);
     if (sigRow.status === "signed") {
       return new Response(JSON.stringify({ error: "Document déjà signé" }), {
         status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -72,23 +74,28 @@ Deno.serve(async (req) => {
     }
 
     // Load document
-    const { data: doc } = await admin
+    const { data: doc, error: docErr } = await admin
       .from("documents_comptables")
       .select("pdf_url, document_number, document_type, client_name")
       .eq("id", sigRow.document_id)
       .maybeSingle();
+    if (docErr) console.error("[signature-finalize] documents_comptables error:", docErr.message);
     if (!doc?.pdf_url) {
+      console.error("[signature-finalize] no pdf_url for document_id:", sigRow.document_id);
       return new Response(JSON.stringify({ error: "Document PDF introuvable" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    console.log("[signature-finalize] doc.pdf_url:", doc.pdf_url);
 
     // Load original PDF bytes (resolve from any bucket / signed URL / plain path)
     let pdfBytes: Uint8Array | null = null;
     const ref = resolveStorageRef(doc.pdf_url);
+    console.log("[signature-finalize] storage ref:", ref);
     if (ref) {
       const { data: blob, error: dlErr } = await admin.storage.from(ref.bucket).download(ref.path);
       if (dlErr || !blob) {
+        console.error("[signature-finalize] storage download failed:", ref.bucket, ref.path, dlErr?.message);
         return new Response(JSON.stringify({ error: "Téléchargement PDF échoué: " + (dlErr?.message || "inconnu") }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -97,12 +104,14 @@ Deno.serve(async (req) => {
     } else {
       const r = await fetch(doc.pdf_url);
       if (!r.ok) {
+        console.error("[signature-finalize] fetch original PDF failed:", r.status);
         return new Response(JSON.stringify({ error: "Téléchargement PDF échoué" }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       pdfBytes = new Uint8Array(await r.arrayBuffer());
     }
+    console.log("[signature-finalize] original PDF bytes:", pdfBytes.byteLength);
 
     // Decode signature data URL (PNG)
     const m = signature_data.match(/^data:image\/(png|jpeg);base64,(.+)$/);
@@ -114,27 +123,33 @@ Deno.serve(async (req) => {
     const sigBytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
 
     // Stamp signature onto the last page of the PDF
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const sigImage = m[1] === "png" ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes);
-    const pages = pdfDoc.getPages();
-    const lastPage = pages[pages.length - 1];
-    const { width, height } = lastPage.getSize();
+    let signedPdfBytes: Uint8Array;
+    try {
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const sigImage = m[1] === "png" ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes);
+      const pages = pdfDoc.getPages();
+      const lastPage = pages[pages.length - 1];
+      const { width } = lastPage.getSize();
 
-    // Place signature in lower-right area (typical "Signature client" zone)
-    const targetW = Math.min(180, width * 0.4);
-    const ratio = sigImage.height / sigImage.width;
-    const targetH = targetW * ratio;
-    const x = width - targetW - 50;
-    const y = 90;
+      const targetW = Math.min(180, width * 0.4);
+      const ratioImg = sigImage.height / sigImage.width;
+      const targetH = targetW * ratioImg;
+      const x = width - targetW - 50;
+      const y = 90;
 
-    lastPage.drawImage(sigImage, { x, y, width: targetW, height: targetH });
+      lastPage.drawImage(sigImage, { x, y, width: targetW, height: targetH });
+      const dateStr = new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+      lastPage.drawText(`Signé par ${signer_name}`, { x, y: y - 12, size: 8 });
+      lastPage.drawText(`Le ${dateStr} — Bon pour accord`, { x, y: y - 22, size: 8 });
 
-    // Add signer name + date below the signature
-    const dateStr = new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
-    lastPage.drawText(`Signé par ${signer_name}`, { x, y: y - 12, size: 8 });
-    lastPage.drawText(`Le ${dateStr} — Bon pour accord`, { x, y: y - 22, size: 8 });
-
-    const signedPdfBytes = await pdfDoc.save();
+      signedPdfBytes = await pdfDoc.save();
+    } catch (pdfErr: any) {
+      console.error("[signature-finalize] pdf-lib stamp error:", pdfErr?.message || pdfErr);
+      return new Response(JSON.stringify({ error: "Erreur traitement PDF: " + (pdfErr?.message || "inconnue") }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    console.log("[signature-finalize] signed PDF bytes:", signedPdfBytes.byteLength);
 
     // Upload signed PDF
     const signedPath = `${sigRow.user_id}/${sigRow.document_id}_signed.pdf`;
@@ -142,10 +157,12 @@ Deno.serve(async (req) => {
       .from(SIGNED_BUCKET)
       .upload(signedPath, signedPdfBytes, { contentType: "application/pdf", upsert: true });
     if (upErr) {
+      console.error("[signature-finalize] storage upload failed:", signedPath, upErr.message);
       return new Response(JSON.stringify({ error: "Upload signé échoué: " + upErr.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    console.log("[signature-finalize] uploaded signed PDF to:", signedPath);
 
     const { data: signedUrlData } = await admin.storage
       .from(SIGNED_BUCKET)
@@ -188,38 +205,55 @@ Deno.serve(async (req) => {
 
         if (artisanEmail) {
           const subject = `✅ Devis n° ${docNumber} signé par ${clientName}`;
+          const MAX_ATTACH = 5 * 1024 * 1024; // 5MB
+          const tooLarge = signedPdfBytes.byteLength > MAX_ATTACH;
           const html = `<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1a1a2e;white-space:pre-line;">
 Bonjour ${artisanName},
 
 ${clientName} a signé le devis n° ${docNumber} le ${dateOnly}.
 
-Le document signé est disponible dans vos documents.
+${tooLarge && signedPdfUrl
+  ? `Le document signé est trop volumineux pour être joint à cet email.\nTélécharger votre exemplaire signé : ${signedPdfUrl}`
+  : "Le document signé est disponible dans vos documents et joint à cet email."}
 
 Cordialement,
 Anafy
 </div>`;
-          await fetch("https://api.resend.com/emails", {
+          const payload: any = {
+            from: "Anafy <noreply@resend.dev>",
+            to: [artisanEmail],
+            subject,
+            html,
+          };
+          if (!tooLarge) {
+            payload.attachments = [{
+              filename: `devis-${docNumber}-signe.pdf`,
+              content: bytesToBase64(signedPdfBytes),
+              type: "application/pdf",
+            }];
+          }
+          const r = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: {
               Authorization: `Bearer ${RESEND_API_KEY}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              from: "Anafy <noreply@resend.dev>",
-              to: [artisanEmail],
-              subject,
-              html,
-              attachments: [{
-                filename: `devis-${docNumber}-signe.pdf`,
-                content: bytesToBase64(signedPdfBytes),
-                type: "application/pdf",
-              }],
-            }),
+            body: JSON.stringify(payload),
           });
+          if (!r.ok) {
+            const t = await r.text();
+            console.error("[signature-finalize] Resend error:", r.status, t);
+          } else {
+            console.log("[signature-finalize] artisan email sent, attached:", !tooLarge);
+          }
+        } else {
+          console.warn("[signature-finalize] no artisan email on profile");
         }
       } catch (mailErr) {
         console.error("[signature-finalize] email error (non-blocking):", mailErr);
       }
+    } else {
+      console.warn("[signature-finalize] RESEND_API_KEY missing, skipping email");
     }
 
     return new Response(JSON.stringify({

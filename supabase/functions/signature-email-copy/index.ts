@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
     const { data: sigRow } = await admin
       .from("signature_requests")
-      .select("document_id, signer_name, signed_at, signed_pdf_path, user_id")
+      .select("document_id, signer_name, signed_at, signed_pdf_path, signed_pdf_url, user_id")
       .eq("token", token)
       .maybeSingle();
     if (!sigRow?.signed_pdf_path) {
@@ -72,16 +72,34 @@ Deno.serve(async (req) => {
       : "";
 
     const subject = `Devis signé — n° ${docNumber}`;
+    const tooLarge = pdfBytes.byteLength > 5 * 1024 * 1024;
     const html = `<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1a1a2e;white-space:pre-line;">
 Bonjour ${sigRow.signer_name || ""},
 
 Vous avez signé le devis n° ${docNumber} le ${dateStr}${timeStr ? " à " + timeStr : ""}.
 
-Veuillez trouver ci-joint votre exemplaire signé.
+${tooLarge && sigRow.signed_pdf_url
+  ? `Votre exemplaire signé est trop volumineux pour être joint à cet email.
+Télécharger votre exemplaire signé : ${sigRow.signed_pdf_url}`
+  : "Veuillez trouver ci-joint votre exemplaire signé."}
 
 Cordialement,
 ${artisanName}
 </div>`;
+
+    const payload: any = {
+      from: "Anafy <noreply@resend.dev>",
+      to: [recipient_email],
+      subject,
+      html,
+    };
+    if (!tooLarge) {
+      payload.attachments = [{
+        filename: `devis-${docNumber}-signe.pdf`,
+        content: bytesToBase64(pdfBytes),
+        type: "application/pdf",
+      }];
+    }
 
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -89,17 +107,7 @@ ${artisanName}
         Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: "Anafy <noreply@resend.dev>",
-        to: [recipient_email],
-        subject,
-        html,
-        attachments: [{
-          filename: `devis-${docNumber}-signe.pdf`,
-          content: bytesToBase64(pdfBytes),
-          type: "application/pdf",
-        }],
-      }),
+      body: JSON.stringify(payload),
     });
     if (!r.ok) {
       const t = await r.text();

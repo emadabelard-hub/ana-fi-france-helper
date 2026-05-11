@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Loader2, CheckCircle2, RotateCcw, ShieldCheck } from 'lucide-react';
+import { Loader2, CheckCircle2, RotateCcw, ShieldCheck, Download, Mail, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Snapshot {
@@ -18,13 +18,17 @@ interface Snapshot {
   artisan_name?: string;
 }
 
-interface SignatureRow {
+interface SignatureInfo {
   id: string;
   status: string;
   signer_name: string | null;
   signed_at: string | null;
   document_snapshot: Snapshot;
   created_at: string;
+  original_pdf_url: string | null;
+  signed_pdf_url: string | null;
+  document_number?: string;
+  document_type?: string;
 }
 
 const formatEUR = (n: number) =>
@@ -34,29 +38,37 @@ const SignaturePage = () => {
   const { token } = useParams<{ token: string }>();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [row, setRow] = useState<SignatureRow | null>(null);
+  const [info, setInfo] = useState<SignatureInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [signerName, setSignerName] = useState('');
   const [isEmpty, setIsEmpty] = useState(true);
+  const [emailing, setEmailing] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState('');
+  const [showEmailField, setShowEmailField] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const padRef = useRef<SignaturePadLib | null>(null);
 
+  const loadInfo = async () => {
+    if (!token) return;
+    const { data, error } = await supabase.functions.invoke('signature-info', { body: { token } });
+    if (error || !data || (data as any).error) {
+      setError((data as any)?.error || 'Lien invalide ou expiré');
+    } else {
+      setInfo(data as SignatureInfo);
+    }
+  };
+
   useEffect(() => {
     (async () => {
-      if (!token) return;
-      const { data, error } = await supabase.rpc('get_signature_request_by_token', { _token: token });
-      if (error || !data || (Array.isArray(data) && data.length === 0)) {
-        setError('Lien invalide ou expiré');
-      } else {
-        setRow(Array.isArray(data) ? (data[0] as any) : (data as any));
-      }
+      await loadInfo();
       setLoading(false);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   useEffect(() => {
-    if (!row || row.status === 'signed') return;
+    if (!info || info.status === 'signed') return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ratio = Math.max(window.devicePixelRatio || 1, 1);
@@ -72,7 +84,7 @@ const SignaturePage = () => {
     padRef.current = pad;
     pad.addEventListener('endStroke', () => setIsEmpty(pad.isEmpty()));
     return () => pad.off();
-  }, [row]);
+  }, [info]);
 
   const handleClear = () => {
     padRef.current?.clear();
@@ -91,20 +103,39 @@ const SignaturePage = () => {
     }
     setSubmitting(true);
     const dataUrl = padRef.current.toDataURL('image/png');
-    const { error } = await supabase.rpc('submit_signature', {
-      _token: token,
-      _signer_name: signerName.trim(),
-      _signature_data: dataUrl,
+    const { data, error } = await supabase.functions.invoke('signature-finalize', {
+      body: { token, signer_name: signerName.trim(), signature_data: dataUrl },
     });
     setSubmitting(false);
-    if (error) {
-      toast.error(error.message || 'Erreur lors de la signature');
+    if (error || !data || (data as any).error) {
+      const msg = (data as any)?.error || error?.message || 'Erreur lors de la signature';
+      toast.error(msg);
       return;
     }
     toast.success('Document signé avec succès');
-    // refresh row
-    const { data } = await supabase.rpc('get_signature_request_by_token', { _token: token });
-    if (data) setRow(Array.isArray(data) ? (data[0] as any) : (data as any));
+    await loadInfo();
+  };
+
+  const handleDownload = () => {
+    if (info?.signed_pdf_url) window.open(info.signed_pdf_url, '_blank', 'noopener');
+  };
+
+  const handleSendEmail = async () => {
+    if (!token || !emailRecipient.trim()) {
+      toast.error('Saisissez votre email');
+      return;
+    }
+    setEmailing(true);
+    const { data, error } = await supabase.functions.invoke('signature-email-copy', {
+      body: { token, recipient_email: emailRecipient.trim() },
+    });
+    setEmailing(false);
+    if (error || !data || (data as any).error) {
+      toast.error((data as any)?.error || error?.message || 'Envoi impossible');
+      return;
+    }
+    toast.success('Email envoyé');
+    setShowEmailField(false);
   };
 
   if (loading) {
@@ -115,7 +146,7 @@ const SignaturePage = () => {
     );
   }
 
-  if (error || !row) {
+  if (error || !info) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="p-6 max-w-md text-center">
@@ -128,28 +159,32 @@ const SignaturePage = () => {
     );
   }
 
-  const snap = row.document_snapshot || {};
+  const snap = info.document_snapshot || {};
+  const docNumber = info.document_number || snap.document_number || '—';
   const docDate = snap.date ? new Date(snap.date).toLocaleDateString('fr-FR') : '';
-  const docTypeLabel = (snap.document_type || 'document').toLowerCase() === 'facture' ? 'la facture' : 'le devis';
+  const docType = (info.document_type || snap.document_type || 'document').toLowerCase();
+  const docTypeLabel = docType === 'facture' ? 'la facture' : 'le devis';
+
+  const signedAt = info.signed_at ? new Date(info.signed_at) : null;
+  const signedDate = signedAt ? signedAt.toLocaleDateString('fr-FR') : '';
+  const signedTime = signedAt ? signedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
 
   return (
-    <div className="min-h-screen bg-muted/30 py-8 px-4">
-      <div className="max-w-xl mx-auto space-y-4">
+    <div className="min-h-screen bg-muted/30 py-6 px-4">
+      <div className="max-w-3xl mx-auto space-y-4">
         <div className="text-center">
           <ShieldCheck className="h-10 w-10 text-primary mx-auto" />
           <h1 className="text-2xl font-bold mt-2">Signature électronique</h1>
-          <p className="text-sm text-muted-foreground">
-            Document à signer en ligne
-          </p>
+          <p className="text-sm text-muted-foreground">Document à signer en ligne</p>
         </div>
 
         <Card className="p-5 space-y-3">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                {snap.document_type === 'facture' ? 'Facture' : 'Devis'} n°
+                {docType === 'facture' ? 'Facture' : 'Devis'} n°
               </p>
-              <p className="text-lg font-bold">{snap.document_number || '—'}</p>
+              <p className="text-lg font-bold">{docNumber}</p>
             </div>
             {docDate && <p className="text-sm text-muted-foreground">{docDate}</p>}
           </div>
@@ -173,18 +208,72 @@ const SignaturePage = () => {
           )}
         </Card>
 
-        {row.status === 'signed' ? (
-          <Card className="p-6 text-center bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300">
+        {/* Step 1: PDF preview before signing */}
+        {info.status !== 'signed' && info.original_pdf_url && (
+          <Card className="p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              <p className="text-sm font-medium">Veuillez lire le document avant de signer</p>
+            </div>
+            <iframe
+              src={info.original_pdf_url}
+              title="Document à signer"
+              className="w-full border rounded bg-white"
+              style={{ height: '70vh', minHeight: 480 }}
+            />
+            <a
+              href={info.original_pdf_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary underline"
+            >
+              Ouvrir le PDF dans un nouvel onglet
+            </a>
+          </Card>
+        )}
+
+        {info.status === 'signed' ? (
+          <Card className="p-6 text-center bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 space-y-4">
             <CheckCircle2 className="h-12 w-12 text-emerald-600 mx-auto" />
-            <p className="mt-3 text-lg font-semibold">Document signé</p>
-            <p className="text-sm text-muted-foreground">
-              Signé par <strong>{row.signer_name}</strong>
-              {row.signed_at && <> le {new Date(row.signed_at).toLocaleDateString('fr-FR')}</>}
-            </p>
-            {row.document_snapshot?.artisan_name && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Une copie a été transmise à {row.document_snapshot.artisan_name}.
+            <div>
+              <p className="text-lg font-semibold">✅ Document signé avec succès</p>
+              <p className="text-sm mt-2">Bonjour {info.signer_name},</p>
+              <p className="text-sm">
+                Vous avez signé le {docType === 'facture' ? 'la facture' : 'le devis'} n° <strong>{docNumber}</strong>
+                {signedDate && <> le {signedDate}</>}
+                {signedTime && <> à {signedTime}</>}.
               </p>
+              {snap.artisan_name && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Une copie a été transmise à {snap.artisan_name}.
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button onClick={handleDownload} disabled={!info.signed_pdf_url} className="gap-2">
+                <Download className="h-4 w-4" />
+                Télécharger mon exemplaire signé
+              </Button>
+              <Button variant="outline" onClick={() => setShowEmailField((v) => !v)} className="gap-2">
+                <Mail className="h-4 w-4" />
+                Envoyer par email
+              </Button>
+            </div>
+
+            {showEmailField && (
+              <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto pt-2">
+                <Input
+                  type="email"
+                  placeholder="votre@email.com"
+                  value={emailRecipient}
+                  onChange={(e) => setEmailRecipient(e.target.value)}
+                  lang="fr"
+                />
+                <Button onClick={handleSendEmail} disabled={emailing}>
+                  {emailing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Envoyer'}
+                </Button>
+              </div>
             )}
           </Card>
         ) : (
@@ -223,15 +312,11 @@ const SignaturePage = () => {
             </div>
 
             <p className="text-xs text-muted-foreground leading-relaxed bg-muted/50 p-3 rounded">
-              En signant, vous acceptez {docTypeLabel} n° <strong>{snap.document_number}</strong>
+              En signant, vous acceptez {docTypeLabel} n° <strong>{docNumber}</strong>
               {docDate && <> du {docDate}</>} — Mention manuscrite : <em>Bon pour accord</em>
             </p>
 
-            <Button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="w-full py-6 text-base"
-            >
+            <Button onClick={handleSubmit} disabled={submitting} className="w-full py-6 text-base">
               {submitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <CheckCircle2 className="h-5 w-5 mr-2" />}
               Je signe et accepte
             </Button>

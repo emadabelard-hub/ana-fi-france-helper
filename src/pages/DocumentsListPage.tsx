@@ -1484,10 +1484,20 @@ const DocumentsListPage = () => {
               </div>
               <ScrollArea className="flex-1">
                 <div className="p-4">
-                  <InvoiceDisplay
-                    data={selectedDocumentData}
-                    showArabic={true}
+                  <InvoiceActions
+                    invoiceData={selectedDocumentData}
+                    invoiceRef={selectedInvoiceRef}
+                    showArabic={selectedShowArabic}
+                    onToggleArabic={setSelectedShowArabic}
+                    isPaid={true}
                   />
+
+                  <div ref={selectedInvoiceRef} className="print-area mt-4">
+                    <InvoiceDisplay
+                      data={selectedDocumentData}
+                      showArabic={selectedShowArabic}
+                    />
+                  </div>
 
                 </div>
               </ScrollArea>

@@ -35,6 +35,8 @@ interface UnifiedDoc {
   payment_status?: string | null;
   created_at: string;
   document_data?: any;
+  signature_status?: 'pending' | 'signed' | null;
+  signed_at?: string | null;
 }
 
 const formatCurrency = (n: number) =>
@@ -59,7 +61,7 @@ const MyDocumentsPage = () => {
     let alive = true;
     (async () => {
       setLoading(true);
-      const [comptables, expenses] = await Promise.all([
+      const [comptables, expenses, signatures] = await Promise.all([
         supabase
           .from('documents_comptables')
           .select('id, document_type, document_number, client_name, subtotal_ht, total_ttc, status, payment_status, created_at, document_data')
@@ -68,12 +70,25 @@ const MyDocumentsPage = () => {
           .from('expenses')
           .select('id, title, amount, tva_amount, expense_date, created_at, sent_to_accountant_at')
           .order('created_at', { ascending: false }),
+        supabase
+          .from('signature_requests')
+          .select('document_id, status, signed_at, created_at')
+          .order('created_at', { ascending: false }),
       ]);
       if (!alive) return;
+
+      // Map latest signature per document_id
+      const sigByDoc = new Map<string, { status: string; signed_at: string | null }>();
+      for (const s of (signatures.data || []) as any[]) {
+        if (!sigByDoc.has(s.document_id)) {
+          sigByDoc.set(s.document_id, { status: s.status, signed_at: s.signed_at });
+        }
+      }
 
       const merged: UnifiedDoc[] = [];
       if (comptables.data) {
         for (const d of comptables.data as any[]) {
+          const sig = sigByDoc.get(d.id);
           merged.push({
             id: d.id,
             source: 'comptable',
@@ -86,6 +101,8 @@ const MyDocumentsPage = () => {
             payment_status: d.payment_status,
             created_at: d.created_at,
             document_data: d.document_data,
+            signature_status: sig ? (sig.status as 'pending' | 'signed') : null,
+            signed_at: sig?.signed_at || null,
           });
         }
       }
@@ -223,6 +240,16 @@ const MyDocumentsPage = () => {
                doc.status === 'converted' ? t('تم التحويل', 'Converti') :
                doc.status === 'cancelled' ? t('ملغاة', 'Annulée') :
                t('مسودة', 'Brouillon')}
+            </span>
+          )}
+          {doc.signature_status === 'pending' && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider bg-amber-500/15 text-amber-400">
+              🟡 {t('بانتظار التوقيع', 'En attente de signature')}
+            </span>
+          )}
+          {doc.signature_status === 'signed' && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider bg-emerald-500/15 text-emerald-400">
+              ✅ {t('موقّع', 'Signé')}{doc.signed_at ? ` ${new Date(doc.signed_at).toLocaleDateString('fr-FR')}` : ''}
             </span>
           )}
           <div className={cn(

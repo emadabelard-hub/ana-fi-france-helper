@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Copy, Eye, EyeOff, Share2, ShieldCheck, ExternalLink, Download } from 'lucide-react';
+import { FileText, Copy, Eye, EyeOff, Share2, ShieldCheck, ExternalLink, Download, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -471,6 +471,82 @@ const InvoiceActions = ({
     }
   };
 
+  /** Create a signature request and open WhatsApp with the public sign link. */
+  const handleSendForSignature = async () => {
+    const docId = (invoiceData as { documentId?: string }).documentId;
+    if (!user || !docId) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL
+          ? 'احفظ المستند الأول قبل الإرسال للتوقيع'
+          : "Enregistrez d'abord le document avant de l'envoyer pour signature",
+      });
+      return;
+    }
+
+    try {
+      const { data: existing } = await supabase
+        .from('signature_requests')
+        .select('token, status')
+        .eq('document_id', docId)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let token: string | null = existing?.status === 'pending' ? (existing as any).token : null;
+
+      if (!token) {
+        const snapshot = {
+          document_number: invoiceData.number,
+          document_type: invoiceData.type,
+          client_name: invoiceData.client?.name,
+          total_ttc: invoiceData.total,
+          nature_operation: (invoiceData as any).natureOperation || (invoiceData as any).objet || '',
+          date: new Date().toISOString(),
+          artisan_name: (invoiceData as any).company?.name || '',
+        };
+        const { data: created, error } = await supabase
+          .from('signature_requests')
+          .insert({ document_id: docId, user_id: user.id, document_snapshot: snapshot })
+          .select('token')
+          .single();
+        if (error || !created) {
+          console.error('[Signature] create error:', error);
+          toast({
+            variant: 'destructive',
+            title: isRTL ? 'خطأ' : 'Erreur',
+            description: isRTL ? 'تعذر إنشاء رابط التوقيع' : 'Impossible de créer le lien de signature',
+          });
+          return;
+        }
+        token = (created as any).token;
+      }
+
+      const baseUrl = window.location.origin.includes('lovable')
+        ? window.location.origin
+        : 'https://anafypro.com';
+      const signUrl = `${baseUrl}/sign/${token}`;
+
+      const clientName = invoiceData.client?.name || '';
+      const artisanName = (invoiceData as any).company?.name || '';
+      const docTypeLower = (invoiceData.type || 'devis').toLowerCase();
+      const message = `Bonjour ${clientName},\n\nVeuillez signer le ${docTypeLower} n° ${invoiceData.number} en cliquant sur ce lien :\n${signUrl}\n\nMerci${artisanName ? ` — ${artisanName}` : ''}`;
+
+      try { await navigator.clipboard.writeText(signUrl); } catch { /* ignore */ }
+
+      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+
+      toast({
+        title: isRTL ? '📲 رابط التوقيع جاهز' : '📲 Lien de signature prêt',
+        description: isRTL ? 'تم نسخ الرابط وفتح الواتساب' : 'Lien copié et WhatsApp ouvert',
+      });
+    } catch (e) {
+      console.error('[Signature] unexpected:', e);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Arabic Toggle */}
@@ -539,6 +615,18 @@ const InvoiceActions = ({
               ? (isRTL ? '⏳ جاري الحفظ...' : '⏳ Sauvegarde...')
               : (isRTL ? '📲 ابعت بالواتساب' : '📲 Envoyer par WhatsApp')
             }
+          </Button>
+
+          <Button
+            onClick={handleSendForSignature}
+            variant="outline"
+            className={cn(
+              "w-full py-5 border-primary/40 hover:bg-primary/5",
+              isRTL && "font-cairo flex-row-reverse"
+            )}
+          >
+            <PenLine className="h-5 w-5 mr-2" />
+            {isRTL ? '✍️ إرسال للتوقيع' : '✍️ Envoyer pour signature'}
           </Button>
 
           {/* PDF export options */}

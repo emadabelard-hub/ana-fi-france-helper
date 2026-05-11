@@ -35,6 +35,8 @@ interface UnifiedDoc {
   payment_status?: string | null;
   created_at: string;
   document_data?: any;
+  signature_status?: 'pending' | 'signed' | null;
+  signed_at?: string | null;
 }
 
 const formatCurrency = (n: number) =>

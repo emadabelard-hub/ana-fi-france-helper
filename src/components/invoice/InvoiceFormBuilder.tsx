@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
@@ -2661,8 +2662,33 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               </div>
 
               <div>
-                <Label htmlFor="purchase-order-ref" className="text-sm">
-                  {isRTL ? 'مرجع طلب الشراء (اختياري)' : 'Réf. bon de commande (optionnel)'}
+                <Label htmlFor="purchase-order-ref" className="text-sm flex items-center gap-1.5">
+                  <span>{isRTL ? 'مرجع طلب الشراء (اختياري)' : 'Réf. bon de commande (optionnel)'}</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={isRTL ? 'معلومات' : 'Info'}
+                        className="inline-flex items-center justify-center h-5 w-5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                      >
+                        <HelpCircle className="h-4 w-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="top"
+                      align="start"
+                      className="w-72 text-sm leading-relaxed font-cairo"
+                      dir="rtl"
+                    >
+                      <p className="whitespace-pre-line text-right">
+{`مرجع طلب الشراء هو الرقم اللي بيديهولك الزبون لما بيكون شركة أو مقاول كبير.
+
+مثال : لو شغلت مع شركة وقالولك "الفاتورة دي تحت طلب شراء BC-2026-142" حط الرقم ده هنا.
+
+لو زبونك شخص عادي أو مش بيديك رقم، سيبها فاضية.`}
+                      </p>
+                    </PopoverContent>
+                  </Popover>
                 </Label>
                 <Input
                   id="purchase-order-ref"

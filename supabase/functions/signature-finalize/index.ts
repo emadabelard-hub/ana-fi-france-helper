@@ -17,12 +17,17 @@ const corsHeaders = {
 const SIGNED_BUCKET = "signed-documents";
 const DOCUMENTS_BUCKET = "documents";
 
-function resolveStorageRef(url: string | null | undefined): { bucket: string; path: string } | null {
-  if (!url) return null;
+function resolveStorageRefs(url: string | null | undefined): { bucket: string; path: string }[] {
+  if (!url) return [];
   const m1 = url.match(/\/object\/(?:sign|public)\/([^/]+)\/([^?]+)/);
-  if (m1) return { bucket: m1[1], path: decodeURIComponent(m1[2]) };
-  if (!/^https?:\/\//i.test(url)) return { bucket: DOCUMENTS_BUCKET, path: url };
-  return null;
+  if (m1) return [{ bucket: m1[1], path: decodeURIComponent(m1[2]) }];
+  if (!/^https?:\/\//i.test(url)) {
+    return [
+      { bucket: DOCUMENTS_BUCKET, path: url },
+      { bucket: SIGNED_BUCKET, path: url },
+    ];
+  }
+  return [];
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -32,6 +37,15 @@ function bytesToBase64(bytes: Uint8Array): string {
     bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
   return btoa(bin);
+}
+
+async function downloadFirstPdf(admin: any, refs: { bucket: string; path: string }[]): Promise<{ bytes: Uint8Array; ref: { bucket: string; path: string } } | null> {
+  for (const ref of refs) {
+    const { data: blob, error } = await admin.storage.from(ref.bucket).download(ref.path);
+    if (blob) return { bytes: new Uint8Array(await blob.arrayBuffer()), ref };
+    console.error("[signature-finalize] storage download failed:", ref.bucket, ref.path, error?.message || JSON.stringify(error || {}));
+  }
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -90,17 +104,29 @@ Deno.serve(async (req) => {
 
     // Load original PDF bytes (resolve from any bucket / signed URL / plain path)
     let pdfBytes: Uint8Array | null = null;
-    const ref = resolveStorageRef(doc.pdf_url);
-    console.log("[signature-finalize] storage ref:", ref);
-    if (ref) {
-      const { data: blob, error: dlErr } = await admin.storage.from(ref.bucket).download(ref.path);
-      if (dlErr || !blob) {
-        console.error("[signature-finalize] storage download failed:", ref.bucket, ref.path, dlErr?.message);
-        return new Response(JSON.stringify({ error: "Téléchargement PDF échoué: " + (dlErr?.message || "inconnu") }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+    const refs = resolveStorageRefs(doc.pdf_url);
+    console.log("[signature-finalize] storage refs:", refs);
+    const downloaded = await downloadFirstPdf(admin, refs);
+    if (downloaded) {
+      pdfBytes = downloaded.bytes;
+      console.log("[signature-finalize] original PDF downloaded from:", downloaded.ref);
+    } else if (doc.document_number) {
+      const { data: archived, error: archiveErr } = await admin
+        .from("documents")
+        .select("storage_path, pdf_url")
+        .eq("user_id", sigRow.user_id)
+        .eq("numero", doc.document_number)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (archiveErr) console.error("[signature-finalize] archive lookup failed:", archiveErr.message);
+      const archiveRefs = resolveStorageRefs(archived?.storage_path || archived?.pdf_url);
+      console.log("[signature-finalize] archive storage refs:", archiveRefs);
+      const archivedDownload = await downloadFirstPdf(admin, archiveRefs);
+      if (archivedDownload) {
+        pdfBytes = archivedDownload.bytes;
+        console.log("[signature-finalize] original PDF downloaded from archive:", archivedDownload.ref);
       }
-      pdfBytes = new Uint8Array(await blob.arrayBuffer());
     } else {
       const r = await fetch(doc.pdf_url);
       if (!r.ok) {
@@ -110,6 +136,11 @@ Deno.serve(async (req) => {
         });
       }
       pdfBytes = new Uint8Array(await r.arrayBuffer());
+    }
+    if (!pdfBytes) {
+      return new Response(JSON.stringify({ error: "Téléchargement PDF échoué: fichier introuvable" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     console.log("[signature-finalize] original PDF bytes:", pdfBytes.byteLength);
 

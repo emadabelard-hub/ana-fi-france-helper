@@ -519,8 +519,8 @@ const InvoiceActions = ({
           console.error('[Signature] create error:', error);
           toast({
             variant: 'destructive',
-            title: isRTL ? 'خطأ' : 'Erreur',
-            description: isRTL ? 'تعذر إنشاء رابط التوقيع' : 'Impossible de créer le lien de signature',
+            title: isRTL ? 'خطأ في إنشاء الرابط' : 'Erreur création lien',
+            description: error?.message || (isRTL ? 'تعذر إنشاء رابط التوقيع' : 'Impossible de créer le lien de signature'),
           });
           return;
         }

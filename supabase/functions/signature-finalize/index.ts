@@ -15,13 +15,13 @@ const corsHeaders = {
 };
 
 const SIGNED_BUCKET = "signed-documents";
+const DOCUMENTS_BUCKET = "documents";
 
-function pathFromSignedUrl(url: string | null | undefined, bucket: string): string | null {
+function resolveStorageRef(url: string | null | undefined): { bucket: string; path: string } | null {
   if (!url) return null;
-  const m = url.match(new RegExp(`/object/sign/${bucket}/([^?]+)`));
-  if (m) return decodeURIComponent(m[1]);
-  const m2 = url.match(new RegExp(`/object/public/${bucket}/([^?]+)`));
-  if (m2) return decodeURIComponent(m2[1]);
+  const m1 = url.match(/\/object\/(?:sign|public)\/([^/]+)\/([^?]+)/);
+  if (m1) return { bucket: m1[1], path: decodeURIComponent(m1[2]) };
+  if (!/^https?:\/\//i.test(url)) return { bucket: DOCUMENTS_BUCKET, path: url };
   return null;
 }
 

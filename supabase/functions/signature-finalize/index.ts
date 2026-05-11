@@ -161,18 +161,46 @@ Deno.serve(async (req) => {
       const sigImage = m[1] === "png" ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes);
       const pages = pdfDoc.getPages();
       const lastPage = pages[pages.length - 1];
-      const { width } = lastPage.getSize();
+      const { width: pageW } = lastPage.getSize();
 
-      const targetW = Math.min(180, width * 0.4);
+      // Approximate coordinates of the "Le client" box inside the
+      // "Acceptation du devis" zone (left column, just above the legal footer).
+      // The box spans roughly the left ~62% of the page width.
+      const boxLeft = 32;
+      const boxRight = Math.max(boxLeft + 200, pageW * 0.62);
+      const boxWidth = boxRight - boxLeft;
+
+      const dateObj = new Date();
+      const dateOnly = dateObj.toLocaleDateString("fr-FR");
+      const timeOnly = dateObj.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+
+      // Vertical anchor: bottom of the client box (above legal footer).
+      // Legal footer sits ~55pt above page bottom; client box ~70pt tall.
+      const boxBottomY = 70;
+      const sigAreaH = 22;
+      const sigAreaY = boxBottomY + 4;          // signature image area
+      const sigAreaX = boxLeft + 8;
+      const sigAreaW = boxWidth - 16;
+
+      // Draw signature image, scaled to fit the signature placeholder
       const ratioImg = sigImage.height / sigImage.width;
-      const targetH = targetW * ratioImg;
-      const x = width - targetW - 50;
-      const y = 90;
+      let sigW = sigAreaW * 0.55;
+      let sigH = sigW * ratioImg;
+      if (sigH > sigAreaH) { sigH = sigAreaH; sigW = sigH / ratioImg; }
+      const sigX = sigAreaX + (sigAreaW - sigW) / 2;
+      const sigY = sigAreaY + (sigAreaH - sigH) / 2;
+      lastPage.drawImage(sigImage, { x: sigX, y: sigY, width: sigW, height: sigH });
 
-      lastPage.drawImage(sigImage, { x, y, width: targetW, height: targetH });
-      const dateStr = new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
-      lastPage.drawText(`Signé par ${signer_name}`, { x, y: y - 12, size: 8 });
-      lastPage.drawText(`Le ${dateStr} — Bon pour accord`, { x, y: y - 22, size: 8 });
+      // Nom field (left column of grid, above signature area)
+      const fieldsY = sigAreaY + sigAreaH + 10;
+      const nomX = boxLeft + 14;
+      const dateX = boxLeft + boxWidth / 2 + 4;
+      lastPage.drawText(signer_name, { x: nomX, y: fieldsY, size: 8 });
+      lastPage.drawText(dateOnly, { x: dateX, y: fieldsY, size: 8 });
+
+      // "✅ Signé électroniquement le ... à ..." just under the signature area
+      const stampLine = `Signé électroniquement le ${dateOnly} à ${timeOnly}`;
+      lastPage.drawText(stampLine, { x: sigAreaX, y: boxBottomY - 8, size: 6.5 });
 
       signedPdfBytes = await pdfDoc.save();
     } catch (pdfErr: any) {

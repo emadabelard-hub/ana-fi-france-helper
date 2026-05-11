@@ -586,7 +586,7 @@ const InvoiceActions = ({
     if (!signatureChoice) return;
     const clientName = invoiceData.client?.name || '';
     const artisanName = (invoiceData as any).company?.name || '';
-    const message = `مرحباً ${clientName}،\n\nيرجى التوقيع على العرض رقم ${invoiceData.number}\nعبر الرابط التالي :\n${signatureChoice.url}\n\nشكراً — ${artisanName}`;
+    const message = `Bonjour ${clientName},\n\nVeuillez signer le devis n° ${invoiceData.number} en cliquant sur ce lien :\n${signatureChoice.url}\n\nMerci — ${artisanName}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
     setSignatureChoice(null);
   };
@@ -595,10 +595,11 @@ const InvoiceActions = ({
     if (!signatureChoice) return;
     const clientName = invoiceData.client?.name || '';
     const artisanName = (invoiceData as any).company?.name || '';
+    const artisanPhone = (invoiceData as any).company?.phone || '';
     const clientEmail = (invoiceData.client as any)?.email || '';
-    const docTypeLower = (invoiceData.type || 'devis').toLowerCase();
-    const subject = `Signature requise — ${invoiceData.number}`;
-    const body = `Bonjour ${clientName},\n\nVeuillez signer le ${docTypeLower} n° ${invoiceData.number} via le lien suivant :\n${signatureChoice.url}\n\nMerci — ${artisanName}`;
+    const objet = (invoiceData as any).objet || (invoiceData as any).object || 'les travaux';
+    const subject = `Signature requise — Devis n° ${invoiceData.number}`;
+    const body = `Bonjour ${clientName},\n\nVeuillez trouver ci-joint le devis n° ${invoiceData.number} pour ${objet}.\n\nPour signer électroniquement, cliquez sur le lien suivant :\n${signatureChoice.url}\n\nCordialement,\n${artisanName}${artisanPhone ? `\n${artisanPhone}` : ''}`;
     window.location.href = `mailto:${clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     setSignatureChoice(null);
   };

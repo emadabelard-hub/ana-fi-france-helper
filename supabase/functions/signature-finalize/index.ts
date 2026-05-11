@@ -48,6 +48,43 @@ async function downloadFirstPdf(admin: any, refs: { bucket: string; path: string
   return null;
 }
 
+async function stampWithPdfLib(
+  pdfBytes: Uint8Array,
+  sigBytes: Uint8Array,
+  sigKind: "png" | "jpeg",
+  signer_name: string,
+  dateOnly: string,
+  timeOnly: string,
+): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.load(pdfBytes);
+  const sigImage = sigKind === "png" ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes);
+  const pages = pdfDoc.getPages();
+  const lastPage = pages[pages.length - 1];
+  const { width: pageW } = lastPage.getSize();
+  const boxLeft = 32;
+  const boxRight = Math.max(boxLeft + 200, pageW * 0.62);
+  const boxWidth = boxRight - boxLeft;
+  const boxBottomY = 70;
+  const sigAreaH = 22;
+  const sigAreaY = boxBottomY + 4;
+  const sigAreaX = boxLeft + 8;
+  const sigAreaW = boxWidth - 16;
+  const ratioImg = sigImage.height / sigImage.width;
+  let sigW = sigAreaW * 0.55;
+  let sigH = sigW * ratioImg;
+  if (sigH > sigAreaH) { sigH = sigAreaH; sigW = sigH / ratioImg; }
+  const sigX = sigAreaX + (sigAreaW - sigW) / 2;
+  const sigY = sigAreaY + (sigAreaH - sigH) / 2;
+  lastPage.drawImage(sigImage, { x: sigX, y: sigY, width: sigW, height: sigH });
+  const fieldsY = sigAreaY + sigAreaH + 10;
+  const nomX = boxLeft + 14;
+  const dateX = boxLeft + boxWidth / 2 + 4;
+  lastPage.drawText(signer_name, { x: nomX, y: fieldsY, size: 8 });
+  lastPage.drawText(dateOnly, { x: dateX, y: fieldsY, size: 8 });
+  lastPage.drawText(`Signé électroniquement le ${dateOnly} à ${timeOnly}`, { x: sigAreaX, y: boxBottomY - 8, size: 6.5 });
+  return await pdfDoc.save();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {

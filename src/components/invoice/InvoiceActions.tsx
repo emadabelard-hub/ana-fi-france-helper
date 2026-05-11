@@ -532,22 +532,38 @@ const InvoiceActions = ({
         : 'https://anafypro.com';
       const signUrl = `${baseUrl}/sign/${token}`;
 
-      const clientName = invoiceData.client?.name || '';
-      const artisanName = (invoiceData as any).company?.name || '';
-      const docTypeLower = (invoiceData.type || 'devis').toLowerCase();
-      const message = `Bonjour ${clientName},\n\nVeuillez signer le ${docTypeLower} n° ${invoiceData.number} en cliquant sur ce lien :\n${signUrl}\n\nMerci${artisanName ? ` — ${artisanName}` : ''}`;
-
       try { await navigator.clipboard.writeText(signUrl); } catch { /* ignore */ }
 
-      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
-
-      toast({
-        title: isRTL ? '📲 رابط التوقيع جاهز' : '📲 Lien de signature prêt',
-        description: isRTL ? 'تم نسخ الرابط وفتح الواتساب' : 'Lien copié et WhatsApp ouvert',
-      });
-    } catch (e) {
+      setSignatureChoice({ url: signUrl, token: token! });
+    } catch (e: any) {
       console.error('[Signature] unexpected:', e);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: e?.message || String(e),
+      });
     }
+  };
+
+  const sendSignatureViaWhatsApp = () => {
+    if (!signatureChoice) return;
+    const clientName = invoiceData.client?.name || '';
+    const artisanName = (invoiceData as any).company?.name || '';
+    const message = `مرحباً ${clientName}،\n\nيرجى التوقيع على العرض رقم ${invoiceData.number}\nعبر الرابط التالي :\n${signatureChoice.url}\n\nشكراً — ${artisanName}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+    setSignatureChoice(null);
+  };
+
+  const sendSignatureViaEmail = () => {
+    if (!signatureChoice) return;
+    const clientName = invoiceData.client?.name || '';
+    const artisanName = (invoiceData as any).company?.name || '';
+    const clientEmail = (invoiceData.client as any)?.email || '';
+    const docTypeLower = (invoiceData.type || 'devis').toLowerCase();
+    const subject = `Signature requise — ${invoiceData.number}`;
+    const body = `Bonjour ${clientName},\n\nVeuillez signer le ${docTypeLower} n° ${invoiceData.number} via le lien suivant :\n${signatureChoice.url}\n\nMerci — ${artisanName}`;
+    window.location.href = `mailto:${clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setSignatureChoice(null);
   };
 
   return (

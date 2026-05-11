@@ -57,12 +57,12 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     let originalSignedUrl: string | null = null;
-    const originalPath = pathFromSignedUrl(doc?.pdf_url, SIGNED_BUCKET);
-    if (originalPath) {
-      const { data: u } = await admin.storage.from(SIGNED_BUCKET).createSignedUrl(originalPath, URL_TTL);
+    const ref = resolveStorageRef(doc?.pdf_url);
+    if (ref) {
+      const { data: u } = await admin.storage.from(ref.bucket).createSignedUrl(ref.path, URL_TTL);
       originalSignedUrl = u?.signedUrl || null;
-    } else if (doc?.pdf_url) {
-      // Use raw URL (might still be valid)
+    }
+    if (!originalSignedUrl && doc?.pdf_url && /^https?:\/\//i.test(doc.pdf_url)) {
       originalSignedUrl = doc.pdf_url;
     }
 

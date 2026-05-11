@@ -15,6 +15,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, ArrowRight, Camera, Loader2, Plus, Sparkles, Trash2, X, Send } from 'lucide-react';
 
+const INTRO_TIP_KEY = 'smart_devis_intro_tip_v1';
+const introTipTitle = '💡 كيف تستخدم الديڤي الذكي ؟';
+const introTipText = `① اكتب أو اتكلم بالعربي وصف الشغل اللي عايزه
+   مثال : 'دهان حيطان وسقف ٢٠٠ متر بنتيرة أزرق'
+② ممكن تضيف الأسعار مباشرة
+   مثال : 'دهان حيطان بـ ٢٢ يورو المتر'
+③ ممكن تحدد الوحدة
+   مثال : 'تركيب باركيه فورفيه' أو 'سباكة ٣ نقط'
+④ بعد التحليل تقدر تعدل أي حاجة بإيدك
+⑤ اضغط التالي لإنشاء الديڤي`;
+
+
 interface UploadedImage {
   id: string;
   data: string; // base64 (no prefix)
@@ -47,6 +59,14 @@ const SmartDevisPage = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [subjectFr, setSubjectFr] = useState('');
+  const [showIntroTip, setShowIntroTip] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem(INTRO_TIP_KEY) !== 'true'; } catch { return true; }
+  });
+  const dismissIntroTip = () => {
+    setShowIntroTip(false);
+    try { localStorage.setItem(INTRO_TIP_KEY, 'true'); } catch {}
+  };
 
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -77,8 +97,10 @@ const SmartDevisPage = () => {
   const removeImage = (id: string) => setImages(prev => prev.filter(i => i.id !== id));
 
   const handleAnalyze = async () => {
-    const text = userText.trim();
-    if (!text && images.length === 0) {
+    const arabic = rawArabic.trim();
+    const french = userText.trim();
+    const combined = [arabic, french].filter(Boolean).join('\n');
+    if (!combined && images.length === 0) {
       toast({
         variant: 'destructive',
         title: isRTL ? 'اكتب وصف الشغل أو ارفع صورة' : 'Décris le travail ou ajoute une photo',
@@ -92,7 +114,7 @@ const SmartDevisPage = () => {
       const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', {
         body: {
           action: 'analyze_image',
-          userMessage: text,
+          userMessage: combined,
           imageData: firstImg?.data,
           mimeType: firstImg?.mimeType,
         },
@@ -204,6 +226,22 @@ const SmartDevisPage = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {showIntroTip && (
+          <div className="relative rounded-md border border-accent/30 bg-accent/10 p-4 animate-in fade-in slide-in-from-top-2 duration-300" dir="rtl">
+            <button
+              type="button"
+              onClick={dismissIntroTip}
+              className="absolute top-2 left-2 h-6 w-6 rounded-full hover:bg-accent/20 flex items-center justify-center"
+              aria-label="اقفل"
+            >
+              <X className="h-3 w-3" />
+            </button>
+            <div className="font-cairo text-right pr-2">
+              <div className="font-semibold text-foreground mb-2">{introTipTitle}</div>
+              <div className="text-muted-foreground text-sm whitespace-pre-line leading-relaxed">{introTipText}</div>
+            </div>
+          </div>
+        )}
         {/* Step 1: Input */}
         <Card>
           <CardContent className="p-4 space-y-4">
@@ -230,8 +268,14 @@ const SmartDevisPage = () => {
                 <div className="mt-3 space-y-2">
                   {rawArabic.trim() && (
                     <div className="rounded-md border border-border bg-muted p-3" dir="rtl">
-                      <div className="text-xs text-muted-foreground mb-1 font-cairo">ما قلته بالعربي :</div>
-                      <div className="text-sm whitespace-pre-wrap break-words font-cairo">{rawArabic.trim()}</div>
+                      <div className="text-xs text-muted-foreground mb-1 font-cairo">ما قلته بالعربي (تقدر تعدّل) :</div>
+                      <Textarea
+                        value={rawArabic}
+                        onChange={(e) => setRawArabic(e.target.value)}
+                        rows={3}
+                        dir="rtl"
+                        className="resize-none border-0 bg-transparent p-0 focus-visible:ring-0 font-cairo"
+                      />
                     </div>
                   )}
                   {userText.trim() && (

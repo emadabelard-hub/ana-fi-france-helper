@@ -20,14 +20,14 @@ Tu génères des devis professionnels français.`;
 function buildClaudeUserPrompt(userMessage: string): string {
   return `L'artisan demande : ${userMessage}
 
-Génère les lignes de devis en JSON STRICT :
+Génère les lignes de devis en JSON STRICT, en NUMÉROTANT chaque ligne dans designation_fr et designation_ar :
 {
   "items": [
     {
-      "designation_fr": "texte français exact",
-      "designation_ar": "نص عربي",
+      "designation_fr": "1 - texte français exact",
+      "designation_ar": "١ - نص عربي",
       "quantity": nombre,
-      "unit": "m²" ou "forfait" ou "u",
+      "unit": "m²" ou "forfait" ou "u" ou "ml" ou "h",
       "unitPrice": nombre
     }
   ],
@@ -35,14 +35,16 @@ Génère les lignes de devis en JSON STRICT :
 }
 
 Règles ABSOLUES :
-1. Si مصنعية فقط / الماتريال على الزبون → designation_fr commence par "Pose" uniquement
-2. Si couleur mentionnée (أزرق=bleu, أبيض=blanc, رمادي=gris, أسود=noir, أحمر=rouge, أصفر=jaune, أخضر=vert, بيج=beige) → inclure dans designation_fr
-3. Si finition mentionnée (ساتيني=satinée, مط=mate, برّاق=brillante) → inclure dans designation_fr
-4. Si سقف ET حيطان mentionnés → générer 2 lignes séparées (une murs, une plafond)
-5. unitPrice : utiliser le prix mentionné par l'artisan s'il en indique un. Sinon mettre 0 — l'artisan remplira lui-même son prix.
-6. Si surface mentionnée (X متر / X m²) → utiliser comme quantity
-7. Matériau spécifique (فلوتون=parquet flottant, كارلاج إيطالي=carrelage italien, بانتيرة=peinture, بلاكو=placo) → mentionner dans designation_fr
-8. Ne jamais ajouter de travaux non demandés
+1. NUMÉROTATION OBLIGATOIRE : chaque designation_fr commence par "N - " (ex: "1 - Pose de carrelage", "2 - Peinture murs"). Idem en arabe avec chiffres arabes (١ - ، ٢ - ، ٣ -).
+2. RESPECTER L'UNITÉ mentionnée par l'artisan : m², forfait, u, ml, h, etc. Ne jamais convertir.
+3. RESPECTER LE PRIX mentionné par l'artisan (ex: "بـ ٢٢ يورو المتر" → unitPrice: 22). Sinon mettre 0.
+4. RESPECTER LA QUANTITÉ mentionnée (ex: "٢٠٠ متر" → quantity: 200).
+5. Si مصنعية فقط / الماتريال على الزبون → designation_fr commence par "N - Pose" uniquement
+6. Si couleur mentionnée (أزرق=bleu, أبيض=blanc, رمادي=gris, أسود=noir, أحمر=rouge, أصفر=jaune, أخضر=vert, بيج=beige) → inclure dans designation_fr
+7. Si finition mentionnée (ساتيني=satinée, مط=mate, برّاق=brillante) → inclure dans designation_fr
+8. Si سقف ET حيطان mentionnés → générer 2 lignes séparées et numérotées (1 - murs, 2 - plafond)
+9. Matériau spécifique (فلوتون=parquet flottant, كارلاج إيطالي=carrelage italien, بانتيرة=peinture, بلاكو=placo) → mentionner dans designation_fr
+10. Ne jamais ajouter de travaux non demandés.
 
 Réponds UNIQUEMENT avec le JSON, sans texte avant ni après, sans markdown.`;
 }

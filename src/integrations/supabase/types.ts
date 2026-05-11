@@ -948,6 +948,48 @@ export type Database = {
         }
         Relationships: []
       }
+      signature_requests: {
+        Row: {
+          created_at: string
+          document_id: string
+          document_snapshot: Json
+          id: string
+          signature_data: string | null
+          signed_at: string | null
+          signer_name: string | null
+          status: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          document_snapshot?: Json
+          id?: string
+          signature_data?: string | null
+          signed_at?: string | null
+          signer_name?: string | null
+          status?: string
+          token?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          document_snapshot?: Json
+          id?: string
+          signature_data?: string | null
+          signed_at?: string | null
+          signer_name?: string | null
+          status?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
           admin_reply: string | null
@@ -1247,6 +1289,17 @@ export type Database = {
         Args: { _document_type: string; _user_id: string }
         Returns: string
       }
+      get_signature_request_by_token: {
+        Args: { _token: string }
+        Returns: {
+          created_at: string
+          document_snapshot: Json
+          id: string
+          signed_at: string
+          signer_name: string
+          status: string
+        }[]
+      }
       increment_promo_clicks: {
         Args: { p_promo_id: string }
         Returns: undefined
@@ -1256,6 +1309,10 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      submit_signature: {
+        Args: { _signature_data: string; _signer_name: string; _token: string }
+        Returns: Json
+      }
     }
     Enums: {
       lesson_category:

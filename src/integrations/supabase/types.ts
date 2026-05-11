@@ -953,6 +953,7 @@ export type Database = {
           created_at: string
           document_id: string
           document_snapshot: Json
+          html_snapshot: string | null
           id: string
           signature_data: string | null
           signed_at: string | null
@@ -968,6 +969,7 @@ export type Database = {
           created_at?: string
           document_id: string
           document_snapshot?: Json
+          html_snapshot?: string | null
           id?: string
           signature_data?: string | null
           signed_at?: string | null
@@ -983,6 +985,7 @@ export type Database = {
           created_at?: string
           document_id?: string
           document_snapshot?: Json
+          html_snapshot?: string | null
           id?: string
           signature_data?: string | null
           signed_at?: string | null

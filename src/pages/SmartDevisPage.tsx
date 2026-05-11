@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, ArrowRight, Camera, Loader2, Plus, Sparkles, Trash2, X, Send } from 'lucide-react';
+import DismissibleTip from '@/components/shared/DismissibleTip';
 
 interface UploadedImage {
   id: string;

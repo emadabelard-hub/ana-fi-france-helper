@@ -3,6 +3,8 @@ import { FileText, Copy, Eye, EyeOff, Share2, ShieldCheck, ExternalLink, Downloa
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { MessageCircle, Mail } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -90,6 +92,7 @@ const InvoiceActions = ({
   const [signedPdfBlob, setSignedPdfBlob] = useState<Blob | null>(null);
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [signatureChoice, setSignatureChoice] = useState<{ url: string; token: string } | null>(null);
   const SAFETY_BLOCK_MESSAGE = 'Erreur de calcul – document bloqué pour sécurité';
 
   // Pre-PDF integrity check: verify TVA and totals are consistent
@@ -516,8 +519,8 @@ const InvoiceActions = ({
           console.error('[Signature] create error:', error);
           toast({
             variant: 'destructive',
-            title: isRTL ? 'خطأ' : 'Erreur',
-            description: isRTL ? 'تعذر إنشاء رابط التوقيع' : 'Impossible de créer le lien de signature',
+            title: isRTL ? 'خطأ في إنشاء الرابط' : 'Erreur création lien',
+            description: error?.message || (isRTL ? 'تعذر إنشاء رابط التوقيع' : 'Impossible de créer le lien de signature'),
           });
           return;
         }
@@ -529,22 +532,38 @@ const InvoiceActions = ({
         : 'https://anafypro.com';
       const signUrl = `${baseUrl}/sign/${token}`;
 
-      const clientName = invoiceData.client?.name || '';
-      const artisanName = (invoiceData as any).company?.name || '';
-      const docTypeLower = (invoiceData.type || 'devis').toLowerCase();
-      const message = `Bonjour ${clientName},\n\nVeuillez signer le ${docTypeLower} n° ${invoiceData.number} en cliquant sur ce lien :\n${signUrl}\n\nMerci${artisanName ? ` — ${artisanName}` : ''}`;
-
       try { await navigator.clipboard.writeText(signUrl); } catch { /* ignore */ }
 
-      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
-
-      toast({
-        title: isRTL ? '📲 رابط التوقيع جاهز' : '📲 Lien de signature prêt',
-        description: isRTL ? 'تم نسخ الرابط وفتح الواتساب' : 'Lien copié et WhatsApp ouvert',
-      });
-    } catch (e) {
+      setSignatureChoice({ url: signUrl, token: token! });
+    } catch (e: any) {
       console.error('[Signature] unexpected:', e);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: e?.message || String(e),
+      });
     }
+  };
+
+  const sendSignatureViaWhatsApp = () => {
+    if (!signatureChoice) return;
+    const clientName = invoiceData.client?.name || '';
+    const artisanName = (invoiceData as any).company?.name || '';
+    const message = `مرحباً ${clientName}،\n\nيرجى التوقيع على العرض رقم ${invoiceData.number}\nعبر الرابط التالي :\n${signatureChoice.url}\n\nشكراً — ${artisanName}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+    setSignatureChoice(null);
+  };
+
+  const sendSignatureViaEmail = () => {
+    if (!signatureChoice) return;
+    const clientName = invoiceData.client?.name || '';
+    const artisanName = (invoiceData as any).company?.name || '';
+    const clientEmail = (invoiceData.client as any)?.email || '';
+    const docTypeLower = (invoiceData.type || 'devis').toLowerCase();
+    const subject = `Signature requise — ${invoiceData.number}`;
+    const body = `Bonjour ${clientName},\n\nVeuillez signer le ${docTypeLower} n° ${invoiceData.number} via le lien suivant :\n${signatureChoice.url}\n\nMerci — ${artisanName}`;
+    window.location.href = `mailto:${clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setSignatureChoice(null);
   };
 
   return (
@@ -740,6 +759,29 @@ const InvoiceActions = ({
           </div>
         </>
       ) : null}
+
+      <Dialog open={!!signatureChoice} onOpenChange={(o) => !o && setSignatureChoice(null)}>
+        <DialogContent className={cn(isRTL && "font-cairo")}>
+          <DialogHeader>
+            <DialogTitle className={cn(isRTL && "text-right")}>
+              {isRTL ? '✍️ إرسال رابط التوقيع' : '✍️ Envoyer le lien de signature'}
+            </DialogTitle>
+            <DialogDescription className={cn(isRTL && "text-right")}>
+              {isRTL ? 'اختر طريقة الإرسال للزبون' : 'Choisissez le mode d\'envoi au client'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <Button onClick={sendSignatureViaWhatsApp} className="w-full py-5 bg-green-600 hover:bg-green-700">
+              <MessageCircle className="h-5 w-5 mr-2" />
+              {isRTL ? '📲 واتساب' : 'WhatsApp'}
+            </Button>
+            <Button onClick={sendSignatureViaEmail} variant="outline" className="w-full py-5">
+              <Mail className="h-5 w-5 mr-2" />
+              {isRTL ? '✉️ إيميل' : 'Email'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <SmartReviewModal
         open={showSmartReview}

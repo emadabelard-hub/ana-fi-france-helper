@@ -53,33 +53,15 @@ Deno.serve(async (req) => {
     const senderName = companyName || artisanName || "Artisan";
     const period = periodLabel || "période en cours";
     const subject = `Documents comptables — ${senderName} — ${period}`;
-    const inv = summary?.invoices ?? 0;
-    const exp = summary?.expenses ?? 0;
-    const totalTTC = summary?.totalTTC ?? 0;
-    const netVAT = summary?.netVAT ?? 0;
 
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; color:#1a1a2e;">
-        <h2 style="color:#1a1a2e;margin-bottom:8px;">Documents comptables — ${senderName}</h2>
-        <p>Bonjour,</p>
-        <p>Veuillez trouver ci-joint, sous forme d'archive ZIP, les documents comptables de
-        <strong>${senderName}</strong> pour la période : <strong>${period}</strong>.</p>
-        <p>L'archive contient :</p>
-        <ul>
-          <li><strong>rapport_comptable.xlsx</strong> — journal détaillé des écritures (ventes &amp; achats)</li>
-          <li><strong>rapport_FEC.txt</strong> — Fichier des Écritures Comptables (norme DGFiP)</li>
-          <li><strong>synthese_TVA.xlsx</strong> — synthèse de la TVA collectée et déductible</li>
-        </ul>
-        <h3 style="margin-top:24px;color:#1a1a2e;">Récapitulatif des chiffres clés</h3>
-        <table style="width:100%;border-collapse:collapse;margin:8px 0 24px;">
-          <tr style="background:#f5f5f7;"><td style="padding:8px;border:1px solid #e5e7eb;"><strong>Nombre de factures</strong></td><td style="padding:8px;border:1px solid #e5e7eb;">${inv}</td></tr>
-          <tr><td style="padding:8px;border:1px solid #e5e7eb;"><strong>Nombre de notes de frais</strong></td><td style="padding:8px;border:1px solid #e5e7eb;">${exp}</td></tr>
-          <tr style="background:#f5f5f7;"><td style="padding:8px;border:1px solid #e5e7eb;"><strong>Total facturé TTC</strong></td><td style="padding:8px;border:1px solid #e5e7eb;">${fmtEUR(totalTTC)}</td></tr>
-          <tr><td style="padding:8px;border:1px solid #e5e7eb;"><strong>Net de TVA à déclarer</strong></td><td style="padding:8px;border:1px solid #e5e7eb;">${fmtEUR(netVAT)}</td></tr>
-        </table>
-        <p>Je reste à votre disposition pour toute information complémentaire.</p>
-        <p style="margin-top:24px;">Cordialement,<br/><strong>${senderName}</strong></p>
-        <p style="color:#888;font-size:12px;margin-top:32px;">Envoyé automatiquement via Anafy.</p>
+      <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; color:#1a1a2e; white-space: pre-line;">
+Bonjour,
+
+Veuillez trouver ci-joint les documents comptables de ${senderName} pour la période ${period}.
+
+Cordialement,
+${senderName}
       </div>
     `;
 

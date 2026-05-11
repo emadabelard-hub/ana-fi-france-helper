@@ -178,32 +178,15 @@ Deno.serve(async (req) => {
     const emailBody = {
       from: "Ana Fi France <noreply@resend.dev>",
       to: [accountantEmail],
-      subject: `📩 Documents comptables - ${companyName} (${periodLabels[period] || period})`,
+      subject: `Documents comptables — ${companyName} — ${periodLabels[period] || period}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #1a1a2e;">Documents comptables - ${companyName}</h2>
-          <p>Bonjour,</p>
-          <p>Veuillez trouver ci-joint le récapitulatif comptable ${periodLabels[period] || ""} de <strong>${companyName}</strong>.</p>
-          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-            <tr style="background: #f0f0f0;">
-              <td style="padding: 8px; border: 1px solid #ddd;"><strong>Factures</strong></td>
-              <td style="padding: 8px; border: 1px solid #ddd;">${allDocs.length}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; border: 1px solid #ddd;"><strong>Notes de frais</strong></td>
-              <td style="padding: 8px; border: 1px solid #ddd;">${allExpenses.length}</td>
-            </tr>
-            <tr style="background: #f0f0f0;">
-              <td style="padding: 8px; border: 1px solid #ddd;"><strong>Total factures TTC</strong></td>
-              <td style="padding: 8px; border: 1px solid #ddd;">${allDocs.reduce((s: number, d: any) => s + (d.total_ttc || 0), 0).toFixed(2)} €</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; border: 1px solid #ddd;"><strong>Total dépenses</strong></td>
-              <td style="padding: 8px; border: 1px solid #ddd;">${allExpenses.reduce((s: number, e: any) => s + (e.amount || 0) + (e.tva_amount || 0), 0).toFixed(2)} €</td>
-            </tr>
-          </table>
-          <p>Le fichier CSV détaillé est joint à cet email.</p>
-          <p style="color: #888; font-size: 12px;">Envoyé automatiquement via Ana Fi France</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; white-space: pre-line;">
+Bonjour,
+
+Veuillez trouver ci-joint les documents comptables de ${companyName} pour la période ${periodLabels[period] || period}.
+
+Cordialement,
+${companyName}
         </div>
       `,
       attachments: [

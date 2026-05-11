@@ -78,8 +78,10 @@ const SmartDevisPage = () => {
   const removeImage = (id: string) => setImages(prev => prev.filter(i => i.id !== id));
 
   const handleAnalyze = async () => {
-    const text = userText.trim();
-    if (!text && images.length === 0) {
+    const arabic = rawArabic.trim();
+    const french = userText.trim();
+    const combined = [arabic, french].filter(Boolean).join('\n');
+    if (!combined && images.length === 0) {
       toast({
         variant: 'destructive',
         title: isRTL ? 'اكتب وصف الشغل أو ارفع صورة' : 'Décris le travail ou ajoute une photo',
@@ -93,7 +95,7 @@ const SmartDevisPage = () => {
       const { data, error } = await supabase.functions.invoke('smart-devis-analyzer', {
         body: {
           action: 'analyze_image',
-          userMessage: text,
+          userMessage: combined,
           imageData: firstImg?.data,
           mimeType: firstImg?.mimeType,
         },

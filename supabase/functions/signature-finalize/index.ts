@@ -48,6 +48,43 @@ async function downloadFirstPdf(admin: any, refs: { bucket: string; path: string
   return null;
 }
 
+async function stampWithPdfLib(
+  pdfBytes: Uint8Array,
+  sigBytes: Uint8Array,
+  sigKind: "png" | "jpeg",
+  signer_name: string,
+  dateOnly: string,
+  timeOnly: string,
+): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.load(pdfBytes);
+  const sigImage = sigKind === "png" ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes);
+  const pages = pdfDoc.getPages();
+  const lastPage = pages[pages.length - 1];
+  const { width: pageW } = lastPage.getSize();
+  const boxLeft = 32;
+  const boxRight = Math.max(boxLeft + 200, pageW * 0.62);
+  const boxWidth = boxRight - boxLeft;
+  const boxBottomY = 70;
+  const sigAreaH = 22;
+  const sigAreaY = boxBottomY + 4;
+  const sigAreaX = boxLeft + 8;
+  const sigAreaW = boxWidth - 16;
+  const ratioImg = sigImage.height / sigImage.width;
+  let sigW = sigAreaW * 0.55;
+  let sigH = sigW * ratioImg;
+  if (sigH > sigAreaH) { sigH = sigAreaH; sigW = sigH / ratioImg; }
+  const sigX = sigAreaX + (sigAreaW - sigW) / 2;
+  const sigY = sigAreaY + (sigAreaH - sigH) / 2;
+  lastPage.drawImage(sigImage, { x: sigX, y: sigY, width: sigW, height: sigH });
+  const fieldsY = sigAreaY + sigAreaH + 10;
+  const nomX = boxLeft + 14;
+  const dateX = boxLeft + boxWidth / 2 + 4;
+  lastPage.drawText(signer_name, { x: nomX, y: fieldsY, size: 8 });
+  lastPage.drawText(dateOnly, { x: dateX, y: fieldsY, size: 8 });
+  lastPage.drawText(`Signé électroniquement le ${dateOnly} à ${timeOnly}`, { x: sigAreaX, y: boxBottomY - 8, size: 6.5 });
+  return await pdfDoc.save();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -71,7 +108,7 @@ Deno.serve(async (req) => {
     // Load signature request
     const { data: sigRow, error: sigErr } = await admin
       .from("signature_requests")
-      .select("id, document_id, user_id, status, document_snapshot")
+      .select("id, document_id, user_id, status, document_snapshot, html_snapshot")
       .eq("token", token)
       .maybeSingle();
     if (sigErr || !sigRow) {
@@ -154,60 +191,59 @@ Deno.serve(async (req) => {
     }
     const sigBytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
 
-    // Stamp signature onto the last page of the PDF
+    // Build signed PDF
     let signedPdfBytes: Uint8Array;
-    try {
-      const pdfDoc = await PDFDocument.load(pdfBytes);
-      const sigImage = m[1] === "png" ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes);
-      const pages = pdfDoc.getPages();
-      const lastPage = pages[pages.length - 1];
-      const { width: pageW } = lastPage.getSize();
+    const signedAtDate = new Date();
+    const signedDateStr = signedAtDate.toLocaleDateString("fr-FR");
+    const signedTimeStr = signedAtDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const escapeHtml = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-      // Approximate coordinates of the "Le client" box inside the
-      // "Acceptation du devis" zone (left column, just above the legal footer).
-      // The box spans roughly the left ~62% of the page width.
-      const boxLeft = 32;
-      const boxRight = Math.max(boxLeft + 200, pageW * 0.62);
-      const boxWidth = boxRight - boxLeft;
+    const htmlSnapshot: string | null = (sigRow as any).html_snapshot || null;
+    const BROWSERLESS_API_KEY = Deno.env.get("BROWSERLESS_API_KEY");
 
-      const dateObj = new Date();
-      const dateOnly = dateObj.toLocaleDateString("fr-FR");
-      const timeOnly = dateObj.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    if (htmlSnapshot && BROWSERLESS_API_KEY) {
+      try {
+        // Inject client signature into the "Le client" zone
+        const safeName = escapeHtml(signer_name.trim());
+        const nameHtml = `<div data-sig-slot="name" style="font-size:7pt;font-weight:600;color:#111;line-height:1.1;padding-bottom:1px;border-bottom:1px solid #111">${safeName}</div>`;
+        const dateHtml = `<div data-sig-slot="date" style="font-size:7pt;font-weight:600;color:#111;line-height:1.1;padding-bottom:1px;border-bottom:1px solid #111">${signedDateStr}</div>`;
+        const sigHtml = `<div data-sig-slot="signature" style="text-align:center;border:1px solid #111;border-radius:2px;padding:2px"><img src="${signature_data}" style="max-width:150px;max-height:60px;display:inline-block"/><div style="font-size:6pt;color:#059669;font-weight:600;margin-top:1px">✅ Signé électroniquement</div></div>`;
 
-      // Vertical anchor: bottom of the client box (above legal footer).
-      // Legal footer sits ~55pt above page bottom; client box ~70pt tall.
-      const boxBottomY = 70;
-      const sigAreaH = 22;
-      const sigAreaY = boxBottomY + 4;          // signature image area
-      const sigAreaX = boxLeft + 8;
-      const sigAreaW = boxWidth - 16;
+        let html = htmlSnapshot;
+        html = html.replace(/<div\b[^>]*\bdata-sig-slot=["']name["'][^>]*>[\s\S]*?<\/div>/i, nameHtml);
+        html = html.replace(/<div\b[^>]*\bdata-sig-slot=["']date["'][^>]*>[\s\S]*?<\/div>/i, dateHtml);
+        html = html.replace(/<div\b[^>]*\bdata-sig-slot=["']signature["'][^>]*>[\s\S]*?<\/div>/i, sigHtml);
 
-      // Draw signature image, scaled to fit the signature placeholder
-      const ratioImg = sigImage.height / sigImage.width;
-      let sigW = sigAreaW * 0.55;
-      let sigH = sigW * ratioImg;
-      if (sigH > sigAreaH) { sigH = sigAreaH; sigW = sigH / ratioImg; }
-      const sigX = sigAreaX + (sigAreaW - sigW) / 2;
-      const sigY = sigAreaY + (sigAreaH - sigH) / 2;
-      lastPage.drawImage(sigImage, { x: sigX, y: sigY, width: sigW, height: sigH });
-
-      // Nom field (left column of grid, above signature area)
-      const fieldsY = sigAreaY + sigAreaH + 10;
-      const nomX = boxLeft + 14;
-      const dateX = boxLeft + boxWidth / 2 + 4;
-      lastPage.drawText(signer_name, { x: nomX, y: fieldsY, size: 8 });
-      lastPage.drawText(dateOnly, { x: dateX, y: fieldsY, size: 8 });
-
-      // "✅ Signé électroniquement le ... à ..." just under the signature area
-      const stampLine = `Signé électroniquement le ${dateOnly} à ${timeOnly}`;
-      lastPage.drawText(stampLine, { x: sigAreaX, y: boxBottomY - 8, size: 6.5 });
-
-      signedPdfBytes = await pdfDoc.save();
-    } catch (pdfErr: any) {
-      console.error("[signature-finalize] pdf-lib stamp error:", pdfErr?.message || pdfErr);
-      return new Response(JSON.stringify({ error: "Erreur traitement PDF: " + (pdfErr?.message || "inconnue") }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+        const browserlessUrl = `https://chrome.browserless.io/pdf?token=${BROWSERLESS_API_KEY}`;
+        const browserlessRes = await fetch(browserlessUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            html,
+            options: {
+              printBackground: true,
+              preferCSSPageSize: false,
+              format: "A4",
+              margin: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" },
+            },
+            gotoOptions: { waitUntil: "networkidle0", timeout: 25000 },
+          }),
+        });
+        if (!browserlessRes.ok) {
+          const t = await browserlessRes.text();
+          throw new Error(`Browserless ${browserlessRes.status}: ${t.slice(0, 300)}`);
+        }
+        signedPdfBytes = new Uint8Array(await browserlessRes.arrayBuffer());
+        console.log("[signature-finalize] signed PDF generated via HTML snapshot:", signedPdfBytes.byteLength);
+      } catch (htmlErr: any) {
+        console.error("[signature-finalize] HTML regen failed, falling back to pdf-lib stamp:", htmlErr?.message || htmlErr);
+        signedPdfBytes = await stampWithPdfLib(pdfBytes, sigBytes, m[1] as "png" | "jpeg", signer_name, signedDateStr, signedTimeStr);
+      }
+    } else {
+      if (!htmlSnapshot) console.log("[signature-finalize] no html_snapshot, using pdf-lib stamp");
+      if (!BROWSERLESS_API_KEY) console.warn("[signature-finalize] BROWSERLESS_API_KEY missing, using pdf-lib stamp");
+      signedPdfBytes = await stampWithPdfLib(pdfBytes, sigBytes, m[1] as "png" | "jpeg", signer_name, signedDateStr, signedTimeStr);
     }
     console.log("[signature-finalize] signed PDF bytes:", signedPdfBytes.byteLength);
 

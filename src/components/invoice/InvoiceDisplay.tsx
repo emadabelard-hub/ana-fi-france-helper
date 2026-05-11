@@ -747,15 +747,15 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 <div className="grid grid-cols-2 gap-1 mb-0.5">
                   <div>
                     <p className="text-[5.5pt] text-gray-400 mb-0.5">Nom :</p>
-                    <div className="h-2.5" style={{ borderBottom: '1px dotted #d1d5db' }} />
+                    <div data-sig-slot="name" className="h-2.5" style={{ borderBottom: '1px dotted #d1d5db' }} />
                   </div>
                   <div>
                     <p className="text-[5.5pt] text-gray-400 mb-0.5">Date :</p>
-                    <div className="h-2.5" style={{ borderBottom: '1px dotted #d1d5db' }} />
+                    <div data-sig-slot="date" className="h-2.5" style={{ borderBottom: '1px dotted #d1d5db' }} />
                   </div>
                 </div>
                 <p className="text-[5.5pt] text-gray-400 mb-0.5">Signature :</p>
-                <div className="h-5 rounded" style={{ border: '1px dashed #d5d5d5' }} />
+                <div data-sig-slot="signature" className="h-5 rounded" style={{ border: '1px dashed #d5d5d5' }} />
               </div>
 
               {/* Artisan signature & stamp — smaller */}

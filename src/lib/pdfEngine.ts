@@ -292,6 +292,29 @@ export async function buildPdfFromContainer(
   }
 }
 
+/**
+ * Build the full HTML used for PDF generation, with images inlined as base64.
+ * Used to snapshot a document for later server-side regeneration (e.g. signed PDF).
+ */
+export async function buildHtmlSnapshot(
+  container: HTMLElement,
+  marginMm = 10,
+): Promise<string> {
+  // Activate render mode for consistent sizing
+  const invoicePages = Array.from(container.querySelectorAll('.french-invoice')) as HTMLElement[];
+  invoicePages.forEach((p) => p.classList.add('pdf-render-mode'));
+  await waitForLayout(120);
+  await waitForImages(container);
+  try {
+    const css = collectAllCSS();
+    let bodyHTML = container.innerHTML;
+    bodyHTML = await inlineLocalImages(bodyHTML);
+    return buildFullHTML(bodyHTML, css, marginMm);
+  } finally {
+    invoicePages.forEach((p) => p.classList.remove('pdf-render-mode'));
+  }
+}
+
 async function buildPdfViaBrowserless(
   container: HTMLElement,
   marginMm: number,

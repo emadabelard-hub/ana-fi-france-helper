@@ -476,8 +476,7 @@ const InvoiceActions = ({
 
   /** Create a signature request and open WhatsApp with the public sign link. */
   const handleSendForSignature = async () => {
-    const docId = (invoiceData as { documentId?: string }).documentId;
-    if (!user || !docId) {
+    if (!user) {
       toast({
         variant: 'destructive',
         title: isRTL ? 'خطأ' : 'Erreur',
@@ -489,6 +488,44 @@ const InvoiceActions = ({
     }
 
     try {
+      let docId = (invoiceData as { documentId?: string }).documentId;
+
+      if (!docId && invoiceData.number) {
+        const documentType = invoiceData.type?.toLowerCase().includes('fact') ? 'facture' : 'devis';
+        const { data: savedDocument, error: lookupError } = await supabase
+          .from('documents_comptables')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('document_type', documentType)
+          .eq('document_number', invoiceData.number)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (lookupError) {
+          console.error('[Signature] document lookup error:', lookupError);
+          toast({
+            variant: 'destructive',
+            title: isRTL ? 'خطأ في البحث عن المستند' : 'Erreur recherche document',
+            description: lookupError.message,
+          });
+          return;
+        }
+
+        docId = savedDocument?.id;
+      }
+
+      if (!docId) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'خطأ' : 'Erreur',
+          description: isRTL
+            ? 'احفظ المستند الأول قبل الإرسال للتوقيع'
+            : "Enregistrez d'abord le document avant de l'envoyer pour signature",
+        });
+        return;
+      }
+
       const { data: existing } = await supabase
         .from('signature_requests')
         .select('token, status')

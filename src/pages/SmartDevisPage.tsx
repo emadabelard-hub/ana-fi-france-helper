@@ -207,18 +207,22 @@ const SmartDevisPage = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        <DismissibleTip
-          storageKey="smart_devis_intro_tip_v1"
-          title="💡 كيف تستخدم الديڤي الذكي ؟"
-          text={`① اكتب أو اتكلم بالعربي وصف الشغل اللي عايزه
-   مثال : 'دهان حيطان وسقف ٢٠٠ متر بنتيرة أزرق'
-② ممكن تضيف الأسعار مباشرة
-   مثال : 'دهان حيطان بـ ٢٢ يورو المتر'
-③ ممكن تحدد الوحدة
-   مثال : 'تركيب باركيه فورفيه' أو 'سباكة ٣ نقط'
-④ بعد التحليل تقدر تعدل أي حاجة بإيدك
-⑤ اضغط التالي لإنشاء الديڤي`}
-        />
+        {showIntroTip && (
+          <div className="relative rounded-md border border-accent/30 bg-accent/10 p-4 animate-in fade-in slide-in-from-top-2 duration-300" dir="rtl">
+            <button
+              type="button"
+              onClick={dismissIntroTip}
+              className="absolute top-2 left-2 h-6 w-6 rounded-full hover:bg-accent/20 flex items-center justify-center"
+              aria-label="اقفل"
+            >
+              <X className="h-3 w-3" />
+            </button>
+            <div className="font-cairo text-right pr-2">
+              <div className="font-semibold text-foreground mb-2">{introTipTitle}</div>
+              <div className="text-muted-foreground text-sm whitespace-pre-line leading-relaxed">{introTipText}</div>
+            </div>
+          </div>
+        )}
         {/* Step 1: Input */}
         <Card>
           <CardContent className="p-4 space-y-4">

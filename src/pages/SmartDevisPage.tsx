@@ -59,6 +59,14 @@ const SmartDevisPage = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [subjectFr, setSubjectFr] = useState('');
+  const [showIntroTip, setShowIntroTip] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem(INTRO_TIP_KEY) !== 'true'; } catch { return true; }
+  });
+  const dismissIntroTip = () => {
+    setShowIntroTip(false);
+    try { localStorage.setItem(INTRO_TIP_KEY, 'true'); } catch {}
+  };
 
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;

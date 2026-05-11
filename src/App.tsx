@@ -53,6 +53,7 @@ const LoginPage = lazy(() => import("./pages/LoginPage"));
 const VerifyDocumentPage = lazy(() => import("./pages/VerifyDocumentPage"));
 const TranslatorPage = lazy(() => import("./pages/TranslatorPage"));
 const MyDocumentsPage = lazy(() => import("./pages/MyDocumentsPage"));
+const SignaturePage = lazy(() => import("./pages/SignaturePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (

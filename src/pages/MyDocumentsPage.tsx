@@ -242,6 +242,16 @@ const MyDocumentsPage = () => {
                t('مسودة', 'Brouillon')}
             </span>
           )}
+          {doc.signature_status === 'pending' && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider bg-amber-500/15 text-amber-400">
+              🟡 {t('بانتظار التوقيع', 'En attente de signature')}
+            </span>
+          )}
+          {doc.signature_status === 'signed' && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider bg-emerald-500/15 text-emerald-400">
+              ✅ {t('موقّع', 'Signé')}{doc.signed_at ? ` ${new Date(doc.signed_at).toLocaleDateString('fr-FR')}` : ''}
+            </span>
+          )}
           <div className={cn(
             'w-7 h-7 rounded-lg flex items-center justify-center shrink-0',
             isDevis ? 'bg-amber-500/15 text-amber-400' :

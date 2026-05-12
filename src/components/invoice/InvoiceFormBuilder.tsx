@@ -937,6 +937,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         phone: profile?.phone || '',
         email: profile?.email || '',
         legalStatus: profile?.legal_status || undefined,
+        codeNaf: (profile as any)?.code_naf || undefined,
         iban: (profile as any)?.iban || undefined,
         bic: (profile as any)?.bic || undefined,
       },
@@ -1659,6 +1660,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           description: isRTL
             ? 'يجب إدخال اسم العميل قبل الحفظ'
             : 'Vous devez renseigner le nom du client avant de sauvegarder.',
+        });
+        return;
+      }
+
+      // Prestataire address is mandatory before generating any official document
+      if (!profile?.company_address?.trim()) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '⚠️ عنوان المقاول ناقص' : '⚠️ Adresse prestataire manquante',
+          description: isRTL
+            ? 'لازم تكمل عنوان الشركة في البروفايل قبل ما تطلع الفاتورة.'
+            : 'Veuillez renseigner l’adresse de votre entreprise dans votre profil avant de générer la facture.',
         });
         return;
       }

@@ -32,6 +32,7 @@ export interface InvoiceData {
     email?: string;
     decennale?: string;
     legalStatus?: string;
+    codeNaf?: string;
     iban?: string;
     bic?: string;
   };
@@ -346,11 +347,22 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             )}
             <h1 className="text-[10pt] font-bold text-gray-900 leading-tight tracking-tight">
               {data.emitter.name}
-              {(data.emitter.legalStatus === 'auto-entrepreneur' || data.emitter.legalStatus === 'ei') && (
-                <span className="text-[6.5pt] font-medium text-gray-400 ml-1">EI</span>
-              )}
+              {(() => {
+                const ls = (data.emitter.legalStatus || '').trim();
+                if (!ls) return null;
+                const map: Record<string, string> = {
+                  'auto-entrepreneur': 'Auto-entrepreneur',
+                  'ei': 'EI',
+                  'societe': 'Société',
+                };
+                const label = map[ls.toLowerCase()] || ls.toUpperCase();
+                return <span className="text-[7pt] font-medium text-gray-500 ml-1">— {label}</span>;
+              })()}
             </h1>
             <p className="text-[6.5pt] text-gray-500 mt-0.5">SIRET : {data.emitter.siret}</p>
+            {data.emitter.codeNaf && (
+              <p className="text-[6.5pt] text-gray-500">Code NAF/APE : {data.emitter.codeNaf}</p>
+            )}
             <p className="text-[6.5pt] text-gray-500 whitespace-pre-line leading-snug">{data.emitter.address}</p>
             {data.emitter.phone && <p className="text-[6.5pt] text-gray-500">Tél : {data.emitter.phone}</p>}
             {data.emitter.email && <p className="text-[6.5pt] text-gray-500">{data.emitter.email}</p>}
@@ -367,7 +379,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               </h2>
               <p className="text-[7pt] text-gray-500 mt-0.5">N° {data.number}</p>
               {data.type === 'FACTURE' && data.sourceDevisNumber && (
-                <p className="text-[6pt] text-gray-400 mt-0.5 italic">Réf. devis : {data.sourceDevisNumber}</p>
+                <p className="text-[7pt] text-gray-700 mt-0.5 font-semibold">Réf. devis : {data.sourceDevisNumber}</p>
               )}
             </div>
             <DocumentQRCode
@@ -375,7 +387,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               documentNumber={data.number}
               date={data.date}
               totalTTC={data.total}
-              size={42}
+              size={64}
             />
           </div>
         </div>
@@ -460,19 +472,19 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </colgroup>
           <thead style={{ display: 'table-header-group' }}>
             <tr style={{ backgroundColor: '#f3f4f6' }}>
-              <th className="py-1 px-1.5 text-left text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1 px-1.5 text-left text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ border: '1px solid #ccc' }}>
                 <ArSub fr="Désignation" />
               </th>
-              <th className="py-1 px-1 text-center text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1 px-1 text-center text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ border: '1px solid #ccc' }}>
                 <ArSub fr="Qté" />
               </th>
-              <th className="py-1 px-1 text-center text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1 px-1 text-center text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ border: '1px solid #ccc' }}>
                 <ArSub fr="Unité" />
               </th>
-              <th className="py-1 px-1.5 text-right text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1 px-1.5 text-right text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ border: '1px solid #ccc' }}>
                 <ArSub fr="P.U HT" />
               </th>
-              <th className="py-1 px-1.5 text-right text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1 px-1.5 text-right text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ border: '1px solid #ccc' }}>
                 <ArSub fr="Total HT" />
               </th>
             </tr>
@@ -507,7 +519,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                     )}
                     <tr
                       style={{
-                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafafa',
+                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9f9f9',
                         pageBreakInside: 'avoid',
                         breakInside: 'avoid',
                       }}
@@ -520,7 +532,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                           wordWrap: 'break-word',
                           overflowWrap: 'break-word',
                           overflow: 'visible',
-                          borderBottom: '1px solid #f0f0f0',
+                          border: '1px solid #ccc',
                           ...(isSectionTitle && index > 0 ? { paddingTop: '6px' } : {}),
                         }}
                       >
@@ -571,16 +583,16 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                           </span>
                         )}
                       </td>
-                      <td className="py-0.5 px-1 text-center text-gray-700 text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                      <td className="py-0.5 px-1 text-center text-gray-700 text-[7pt]" style={{ verticalAlign: 'middle', border: '1px solid #ccc' }}>
                         {item.quantity}
                       </td>
-                      <td className="py-0.5 px-1 text-center text-[6.5pt] text-gray-500" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                      <td className="py-0.5 px-1 text-center text-[6.5pt] text-gray-500" style={{ verticalAlign: 'middle', border: '1px solid #ccc' }}>
                         {item.unit}
                       </td>
-                      <td className="py-0.5 px-1.5 text-right text-gray-700 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                      <td className="py-0.5 px-1.5 text-right text-gray-700 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', border: '1px solid #ccc' }}>
                         {formatNumber(item.unitPrice)} €
                       </td>
-                      <td className="py-0.5 px-1.5 text-right font-semibold text-gray-900 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                      <td className="py-0.5 px-1.5 text-right font-semibold text-gray-900 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', border: '1px solid #ccc' }}>
                         {formatNumber(item.total)} €
                       </td>
                     </tr>

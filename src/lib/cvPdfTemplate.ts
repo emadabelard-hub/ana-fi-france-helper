@@ -508,12 +508,17 @@ html, body {
 }
 .r-body-sm { font-size: 8px; margin-top: 3px; }
 .cv-footer {
-  padding: 8px 28px;
+  position: absolute;
+  left: 35%;
+  right: 0;
+  bottom: 0;
+  padding: 6px 20px;
   text-align: center;
   font-size: 7px;
   color: ${ACCENT_SOFT};
   border-top: 1px solid ${SEP};
   letter-spacing: 1px;
+  background: #fff;
 }
 
 button, [role="button"], input, select, textarea { display: none !important; }

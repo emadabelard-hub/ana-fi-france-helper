@@ -228,18 +228,26 @@ html, body {
   print-color-adjust: exact;
   overflow: hidden;
 }
-.cv-wrap {
+.cv-page {
   width: 210mm;
   min-height: 297mm;
   max-height: 297mm;
   height: 297mm;
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
   overflow: hidden;
   page-break-inside: avoid;
   break-inside: avoid;
   position: relative;
+}
+.cv-wrap {
+  width: 210mm;
+  min-height: 297mm;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  page-break-inside: avoid;
+  break-inside: avoid;
+  position: relative;
+  transform-origin: top left;
 }
 
 /* GAUCHE — 35% */

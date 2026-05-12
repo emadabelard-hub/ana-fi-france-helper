@@ -220,30 +220,43 @@ const CSS = `
   box-sizing: border-box; margin: 0; padding: 0;
 }
 html, body {
-  width: 794px;
-  min-height: 1123px;
+  width: 210mm;
+  height: 297mm;
   font-family: 'DM Sans', 'Inter', sans-serif;
-  font-size: 8px;
+  font-size: 11px;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+  overflow: hidden;
 }
 .cv-wrap {
-  width: 794px;
-  min-height: 1123px;
+  width: 210mm;
+  min-height: 297mm;
+  max-height: 297mm;
+  height: 297mm;
   display: flex;
+  flex-direction: row;
   align-items: stretch;
+  overflow: hidden;
+  page-break-inside: avoid;
+  break-inside: avoid;
+  position: relative;
 }
 
-/* GAUCHE */
+/* GAUCHE — 35% */
 .col-left {
-  width: 270px;
-  min-height: 1123px;
+  width: 35%;
+  height: 100%;
+  min-height: 297mm;
+  max-height: 297mm;
   background: ${NAVY};
   color: #fff;
-  padding: 36px 24px;
+  padding: 28px 18px;
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 .col-left::after {
   content: '';
@@ -371,13 +384,19 @@ html, body {
   flex-shrink: 0;
 }
 
-/* DROITE */
+/* DROITE — 65% */
 .col-right {
-  flex: 1;
-  min-height: 1123px;
+  width: 65%;
+  height: 100%;
+  min-height: 297mm;
+  max-height: 297mm;
   background: #fff;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  padding: 0;
 }
 .r-top-bar {
   height: 4px;
@@ -489,12 +508,17 @@ html, body {
 }
 .r-body-sm { font-size: 8px; margin-top: 3px; }
 .cv-footer {
-  padding: 8px 28px;
+  position: absolute;
+  left: 35%;
+  right: 0;
+  bottom: 0;
+  padding: 6px 20px;
   text-align: center;
   font-size: 7px;
   color: ${ACCENT_SOFT};
   border-top: 1px solid ${SEP};
   letter-spacing: 1px;
+  background: #fff;
 }
 
 button, [role="button"], input, select, textarea { display: none !important; }

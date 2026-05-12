@@ -249,6 +249,7 @@ export type Database = {
           is_b2b: boolean
           name: string
           postal_code: string | null
+          siren: string | null
           siret: string | null
           street: string | null
           tva_number: string | null
@@ -268,6 +269,7 @@ export type Database = {
           is_b2b?: boolean
           name: string
           postal_code?: string | null
+          siren?: string | null
           siret?: string | null
           street?: string | null
           tva_number?: string | null
@@ -287,6 +289,7 @@ export type Database = {
           is_b2b?: boolean
           name?: string
           postal_code?: string | null
+          siren?: string | null
           siret?: string | null
           street?: string | null
           tva_number?: string | null

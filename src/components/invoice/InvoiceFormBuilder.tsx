@@ -937,6 +937,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         phone: profile?.phone || '',
         email: profile?.email || '',
         legalStatus: profile?.legal_status || undefined,
+        codeNaf: (profile as any)?.code_naf || undefined,
         iban: (profile as any)?.iban || undefined,
         bic: (profile as any)?.bic || undefined,
       },

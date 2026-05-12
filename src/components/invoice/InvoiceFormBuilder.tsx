@@ -1664,6 +1664,18 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         return;
       }
 
+      // Prestataire address is mandatory before generating any official document
+      if (!profile?.company_address?.trim()) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '⚠️ عنوان المقاول ناقص' : '⚠️ Adresse prestataire manquante',
+          description: isRTL
+            ? 'لازم تكمل عنوان الشركة في البروفايل قبل ما تطلع الفاتورة.'
+            : 'Veuillez renseigner l’adresse de votre entreprise dans votre profil avant de générer la facture.',
+        });
+        return;
+      }
+
       const resolvedAssets = await getFreshSignedUrls();
 
       let data = {

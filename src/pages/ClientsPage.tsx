@@ -100,11 +100,25 @@ const ClientsPage = () => {
 
   const handleSave = async () => {
     if (!user || !form.name.trim()) return;
+    // Validation bloquante : adresse complète + téléphone + email obligatoires
+    if (!form.street.trim() || !form.postal_code.trim() || !form.city.trim()) {
+      toast({ variant: 'destructive', title: isRTL ? 'العنوان ناقص' : 'Adresse incomplète', description: isRTL ? 'كمّل الشارع والرمز البريدي والمدينة' : 'Renseignez la rue, le code postal et la ville.' });
+      return;
+    }
+    if (!form.contact_phone.trim()) {
+      toast({ variant: 'destructive', title: isRTL ? 'الهاتف ناقص' : 'Téléphone manquant', description: isRTL ? 'أدخل رقم هاتف العميل' : 'Le numéro de téléphone du client est requis.' });
+      return;
+    }
+    if (!form.contact_email.trim() || !/^\S+@\S+\.\S+$/.test(form.contact_email.trim())) {
+      toast({ variant: 'destructive', title: isRTL ? 'الإيميل ناقص' : 'Email manquant', description: isRTL ? 'إيميل العميل لازم لإرسال الفاتورة' : 'L’email du client est requis (envoi facture).' });
+      return;
+    }
     const composedAddress = [form.street, form.postal_code, form.city].filter(Boolean).join(', ');
     const payload: any = {
       name: form.name,
       client_type: form.client_type,
       company_name: form.company_name || null,
+      siren: form.siren || null,
       siret: form.siret || null,
       tva_number: form.tva_number || null,
       is_b2b: form.client_type === 'professionnel',

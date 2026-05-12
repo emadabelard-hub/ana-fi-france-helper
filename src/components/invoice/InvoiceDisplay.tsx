@@ -347,11 +347,22 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             )}
             <h1 className="text-[10pt] font-bold text-gray-900 leading-tight tracking-tight">
               {data.emitter.name}
-              {(data.emitter.legalStatus === 'auto-entrepreneur' || data.emitter.legalStatus === 'ei') && (
-                <span className="text-[6.5pt] font-medium text-gray-400 ml-1">EI</span>
-              )}
+              {(() => {
+                const ls = (data.emitter.legalStatus || '').trim();
+                if (!ls) return null;
+                const map: Record<string, string> = {
+                  'auto-entrepreneur': 'Auto-entrepreneur',
+                  'ei': 'EI',
+                  'societe': 'Société',
+                };
+                const label = map[ls.toLowerCase()] || ls.toUpperCase();
+                return <span className="text-[7pt] font-medium text-gray-500 ml-1">— {label}</span>;
+              })()}
             </h1>
             <p className="text-[6.5pt] text-gray-500 mt-0.5">SIRET : {data.emitter.siret}</p>
+            {data.emitter.codeNaf && (
+              <p className="text-[6.5pt] text-gray-500">Code NAF/APE : {data.emitter.codeNaf}</p>
+            )}
             <p className="text-[6.5pt] text-gray-500 whitespace-pre-line leading-snug">{data.emitter.address}</p>
             {data.emitter.phone && <p className="text-[6.5pt] text-gray-500">Tél : {data.emitter.phone}</p>}
             {data.emitter.email && <p className="text-[6.5pt] text-gray-500">{data.emitter.email}</p>}
@@ -368,7 +379,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               </h2>
               <p className="text-[7pt] text-gray-500 mt-0.5">N° {data.number}</p>
               {data.type === 'FACTURE' && data.sourceDevisNumber && (
-                <p className="text-[6pt] text-gray-400 mt-0.5 italic">Réf. devis : {data.sourceDevisNumber}</p>
+                <p className="text-[7pt] text-gray-700 mt-0.5 font-semibold">Réf. devis : {data.sourceDevisNumber}</p>
               )}
             </div>
             <DocumentQRCode
@@ -376,7 +387,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               documentNumber={data.number}
               date={data.date}
               totalTTC={data.total}
-              size={42}
+              size={64}
             />
           </div>
         </div>

@@ -519,7 +519,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                     )}
                     <tr
                       style={{
-                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafafa',
+                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9f9f9',
                         pageBreakInside: 'avoid',
                         breakInside: 'avoid',
                       }}
@@ -532,7 +532,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                           wordWrap: 'break-word',
                           overflowWrap: 'break-word',
                           overflow: 'visible',
-                          borderBottom: '1px solid #f0f0f0',
+                          border: '1px solid #ccc',
                           ...(isSectionTitle && index > 0 ? { paddingTop: '6px' } : {}),
                         }}
                       >
@@ -583,16 +583,16 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                           </span>
                         )}
                       </td>
-                      <td className="py-0.5 px-1 text-center text-gray-700 text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                      <td className="py-0.5 px-1 text-center text-gray-700 text-[7pt]" style={{ verticalAlign: 'middle', border: '1px solid #ccc' }}>
                         {item.quantity}
                       </td>
-                      <td className="py-0.5 px-1 text-center text-[6.5pt] text-gray-500" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                      <td className="py-0.5 px-1 text-center text-[6.5pt] text-gray-500" style={{ verticalAlign: 'middle', border: '1px solid #ccc' }}>
                         {item.unit}
                       </td>
-                      <td className="py-0.5 px-1.5 text-right text-gray-700 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                      <td className="py-0.5 px-1.5 text-right text-gray-700 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', border: '1px solid #ccc' }}>
                         {formatNumber(item.unitPrice)} €
                       </td>
-                      <td className="py-0.5 px-1.5 text-right font-semibold text-gray-900 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', borderBottom: '1px solid #f0f0f0' }}>
+                      <td className="py-0.5 px-1.5 text-right font-semibold text-gray-900 tabular-nums text-[7pt]" style={{ verticalAlign: 'middle', border: '1px solid #ccc' }}>
                         {formatNumber(item.total)} €
                       </td>
                     </tr>

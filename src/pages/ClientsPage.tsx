@@ -47,7 +47,7 @@ const ClientsPage = () => {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [form, setForm] = useState({ name: '', client_type: 'particulier', company_name: '', siren: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' });
+  const [form, setForm] = useState({ name: '', client_type: 'particulier', company_name: '', siren: '', siren: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' });
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [isRealAdmin, setIsRealAdmin] = useState(false);
@@ -125,7 +125,7 @@ const ClientsPage = () => {
     }
     setShowForm(false);
     setEditingClient(null);
-    setForm({ name: '', client_type: 'particulier', company_name: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' });
+    setForm({ name: '', client_type: 'particulier', company_name: '', siren: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' });
     fetchClients();
   };
 
@@ -181,7 +181,7 @@ const ClientsPage = () => {
             {isRTL ? `${clients.length} عميل` : `${clients.length} client${clients.length > 1 ? 's' : ''}`}
           </p>
         </div>
-        <Button size="sm" onClick={() => { setEditingClient(null); setForm({ name: '', client_type: 'particulier', company_name: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' }); setShowForm(true); }}>
+        <Button size="sm" onClick={() => { setEditingClient(null); setForm({ name: '', client_type: 'particulier', company_name: '', siren: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' }); setShowForm(true); }}>
           <Plus className="h-4 w-4 mr-1" />
           {isRTL ? 'إضافة' : 'Ajouter'}
         </Button>

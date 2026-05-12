@@ -32,6 +32,7 @@ export interface InvoiceData {
     email?: string;
     decennale?: string;
     legalStatus?: string;
+    codeNaf?: string;
     iban?: string;
     bic?: string;
   };

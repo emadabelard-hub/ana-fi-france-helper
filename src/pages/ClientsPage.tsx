@@ -22,6 +22,7 @@ interface Client {
   name: string;
   client_type: string;
   company_name: string | null;
+  siren: string | null;
   siret: string | null;
   tva_number: string | null;
   address: string | null;
@@ -46,7 +47,7 @@ const ClientsPage = () => {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [form, setForm] = useState({ name: '', client_type: 'particulier', company_name: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' });
+  const [form, setForm] = useState({ name: '', client_type: 'particulier', company_name: '', siren: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' });
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [isRealAdmin, setIsRealAdmin] = useState(false);
@@ -99,11 +100,25 @@ const ClientsPage = () => {
 
   const handleSave = async () => {
     if (!user || !form.name.trim()) return;
+    // Validation bloquante : adresse complète + téléphone + email obligatoires
+    if (!form.street.trim() || !form.postal_code.trim() || !form.city.trim()) {
+      toast({ variant: 'destructive', title: isRTL ? 'العنوان ناقص' : 'Adresse incomplète', description: isRTL ? 'كمّل الشارع والرمز البريدي والمدينة' : 'Renseignez la rue, le code postal et la ville.' });
+      return;
+    }
+    if (!form.contact_phone.trim()) {
+      toast({ variant: 'destructive', title: isRTL ? 'الهاتف ناقص' : 'Téléphone manquant', description: isRTL ? 'أدخل رقم هاتف العميل' : 'Le numéro de téléphone du client est requis.' });
+      return;
+    }
+    if (!form.contact_email.trim() || !/^\S+@\S+\.\S+$/.test(form.contact_email.trim())) {
+      toast({ variant: 'destructive', title: isRTL ? 'الإيميل ناقص' : 'Email manquant', description: isRTL ? 'إيميل العميل لازم لإرسال الفاتورة' : 'L’email du client est requis (envoi facture).' });
+      return;
+    }
     const composedAddress = [form.street, form.postal_code, form.city].filter(Boolean).join(', ');
     const payload: any = {
       name: form.name,
       client_type: form.client_type,
       company_name: form.company_name || null,
+      siren: form.siren || null,
       siret: form.siret || null,
       tva_number: form.tva_number || null,
       is_b2b: form.client_type === 'professionnel',
@@ -124,7 +139,7 @@ const ClientsPage = () => {
     }
     setShowForm(false);
     setEditingClient(null);
-    setForm({ name: '', client_type: 'particulier', company_name: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' });
+    setForm({ name: '', client_type: 'particulier', company_name: '', siren: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' });
     fetchClients();
   };
 
@@ -137,7 +152,7 @@ const ClientsPage = () => {
 
   const openEdit = (c: Client) => {
     setEditingClient(c);
-    setForm({ name: c.name, client_type: c.client_type || 'particulier', company_name: c.company_name || '', siret: c.siret || '', tva_number: c.tva_number || '', street: c.street || '', postal_code: c.postal_code || '', city: c.city || '', contact_name: c.contact_name || '', contact_phone: c.contact_phone || '', contact_email: c.contact_email || '' });
+    setForm({ name: c.name, client_type: c.client_type || 'particulier', company_name: c.company_name || '', siren: (c as any).siren || '', siret: c.siret || '', tva_number: c.tva_number || '', street: c.street || '', postal_code: c.postal_code || '', city: c.city || '', contact_name: c.contact_name || '', contact_phone: c.contact_phone || '', contact_email: c.contact_email || '' });
     setShowForm(true);
   };
 
@@ -180,7 +195,7 @@ const ClientsPage = () => {
             {isRTL ? `${clients.length} عميل` : `${clients.length} client${clients.length > 1 ? 's' : ''}`}
           </p>
         </div>
-        <Button size="sm" onClick={() => { setEditingClient(null); setForm({ name: '', client_type: 'particulier', company_name: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' }); setShowForm(true); }}>
+        <Button size="sm" onClick={() => { setEditingClient(null); setForm({ name: '', client_type: 'particulier', company_name: '', siren: '', siret: '', tva_number: '', street: '', postal_code: '', city: '', contact_name: '', contact_phone: '', contact_email: '' }); setShowForm(true); }}>
           <Plus className="h-4 w-4 mr-1" />
           {isRTL ? 'إضافة' : 'Ajouter'}
         </Button>
@@ -308,6 +323,7 @@ const ClientsPage = () => {
             {form.client_type === 'professionnel' && (
               <div className="space-y-3 pl-2 border-l-2 border-primary/20">
                 <Input placeholder={isRTL ? 'اسم الشركة (Raison Sociale)' : 'Raison Sociale'} value={form.company_name} onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))} />
+                <Input placeholder={isRTL ? 'SIREN (9 رقم)' : 'SIREN (9 chiffres)'} value={form.siren} onChange={e => setForm(f => ({ ...f, siren: e.target.value.replace(/\D/g, '').slice(0, 9) }))} maxLength={9} className="font-mono" />
                 <Input placeholder={isRTL ? 'رقم السجل التجاري SIRET (14 رقم)' : 'SIRET (14 chiffres)'} value={form.siret} onChange={e => setForm(f => ({ ...f, siret: e.target.value.replace(/\D/g, '').slice(0, 14) }))} maxLength={14} className="font-mono" />
                 <Input placeholder={isRTL ? 'رقم الضريبة TVA (مثال: FR 12 345678901)' : 'N° TVA Intracommunautaire'} value={form.tva_number} onChange={e => setForm(f => ({ ...f, tva_number: e.target.value }))} className="font-mono" />
                 <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
@@ -319,19 +335,19 @@ const ClientsPage = () => {
             {/* Split address */}
             <div className="space-y-1.5">
               <label className={cn("text-sm font-medium", isRTL && "font-cairo block text-right")}>
-                {isRTL ? 'العنوان الكامل' : 'Adresse complète'}
+                {isRTL ? 'العنوان الكامل *' : 'Adresse complète *'}
               </label>
-              <Input placeholder={isRTL ? 'الشارع (Rue)' : 'Rue'} value={form.street} onChange={e => setForm(f => ({ ...f, street: e.target.value }))} />
+              <Input placeholder={isRTL ? 'الشارع (Rue) *' : 'Rue *'} value={form.street} onChange={e => setForm(f => ({ ...f, street: e.target.value }))} />
               <div className="grid grid-cols-2 gap-2">
-                <Input placeholder={isRTL ? 'الرمز البريدي' : 'Code Postal'} value={form.postal_code} onChange={e => setForm(f => ({ ...f, postal_code: e.target.value.replace(/\D/g, '').slice(0, 5) }))} maxLength={5} className="font-mono" />
-                <Input placeholder={isRTL ? 'المدينة (Ville)' : 'Ville'} value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
+                <Input placeholder={isRTL ? 'الرمز البريدي *' : 'Code Postal *'} value={form.postal_code} onChange={e => setForm(f => ({ ...f, postal_code: e.target.value.replace(/\D/g, '').slice(0, 5) }))} maxLength={5} className="font-mono" />
+                <Input placeholder={isRTL ? 'المدينة (Ville) *' : 'Ville *'} value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
               </div>
             </div>
 
             <Input placeholder={isRTL ? 'جهة الاتصال' : 'Contact'} value={form.contact_name} onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))} />
-            <Input placeholder={isRTL ? 'الهاتف' : 'Téléphone'} value={form.contact_phone} onChange={e => setForm(f => ({ ...f, contact_phone: e.target.value }))} />
-            <Input placeholder="Email" value={form.contact_email} onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))} />
-            <Button className="w-full" onClick={handleSave} disabled={!form.name.trim()}>
+            <Input placeholder={isRTL ? 'الهاتف *' : 'Téléphone *'} value={form.contact_phone} onChange={e => setForm(f => ({ ...f, contact_phone: e.target.value }))} />
+            <Input placeholder="Email *" value={form.contact_email} onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))} />
+            <Button className="w-full" onClick={handleSave} disabled={!form.name.trim() || !form.street.trim() || !form.postal_code.trim() || !form.city.trim() || !form.contact_phone.trim() || !form.contact_email.trim()}>
               {editingClient ? (isRTL ? 'حفظ التعديلات' : 'Enregistrer') : (isRTL ? 'إضافة' : 'Ajouter')}
             </Button>
           </div>

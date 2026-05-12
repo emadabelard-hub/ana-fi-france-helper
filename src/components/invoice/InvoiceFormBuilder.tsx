@@ -1664,14 +1664,41 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         return;
       }
 
-      // Prestataire address is mandatory before generating any official document
-      if (!profile?.company_address?.trim()) {
+      // Validations bloquantes — Profil prestataire
+      const p: any = profile || {};
+      const prestataireMissing: string[] = [];
+      if (!p.company_address?.trim()) prestataireMissing.push(isRTL ? 'عنوان الشركة' : 'Adresse de l’entreprise');
+      if (!p.siret || !/^\d{14}$/.test(String(p.siret))) prestataireMissing.push('SIRET (14 chiffres)');
+      if (!p.code_naf?.trim()) prestataireMissing.push('Code NAF/APE');
+      if (!p.legal_status?.trim()) prestataireMissing.push(isRTL ? 'الشكل القانوني' : 'Forme juridique');
+      // TVA intracommunautaire requise sauf pour auto-entrepreneur en franchise
+      const isFranchise = Boolean(p.tva_exempt) || p.legal_status === 'auto-entrepreneur';
+      if (!isFranchise && !p.numero_tva?.trim()) prestataireMissing.push('N° TVA intracommunautaire');
+      if (!p.assureur_name?.trim() || !p.assurance_policy_number?.trim()) {
+        prestataireMissing.push(isRTL ? 'تأمين عشري (اسم + رقم العقد)' : 'Assurance décennale (assureur + n° police)');
+      }
+      if (prestataireMissing.length > 0) {
         toast({
           variant: 'destructive',
-          title: isRTL ? '⚠️ عنوان المقاول ناقص' : '⚠️ Adresse prestataire manquante',
-          description: isRTL
-            ? 'لازم تكمل عنوان الشركة في البروفايل قبل ما تطلع الفاتورة.'
-            : 'Veuillez renseigner l’adresse de votre entreprise dans votre profil avant de générer la facture.',
+          title: isRTL ? '⚠️ بروفايل ناقص' : '⚠️ Profil prestataire incomplet',
+          description: (isRTL ? 'كمّل دول في بروفايلك: ' : 'Complétez dans votre profil : ') + prestataireMissing.join(', '),
+        });
+        return;
+      }
+
+      // Validations bloquantes — Fiche client
+      const clientMissing: string[] = [];
+      if (!clientAddress.trim()) clientMissing.push(isRTL ? 'عنوان العميل' : 'Adresse du client');
+      if (!clientPhone.trim()) clientMissing.push(isRTL ? 'هاتف العميل' : 'Téléphone du client');
+      if (!clientEmail.trim() || !/^\S+@\S+\.\S+$/.test(clientEmail.trim())) clientMissing.push(isRTL ? 'إيميل العميل' : 'Email du client');
+      if (clientIsB2B && !clientSiren.trim() && !(clientTvaIntra.trim())) {
+        clientMissing.push(isRTL ? 'SIREN/SIRET أو TVA للزبون المهني' : 'SIREN/SIRET ou TVA du client B2B');
+      }
+      if (clientMissing.length > 0) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? '⚠️ بيانات العميل ناقصة' : '⚠️ Fiche client incomplète',
+          description: (isRTL ? 'كمّل: ' : 'Complétez : ') + clientMissing.join(', '),
         });
         return;
       }

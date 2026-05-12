@@ -472,19 +472,19 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </colgroup>
           <thead style={{ display: 'table-header-group' }}>
             <tr style={{ backgroundColor: '#f3f4f6' }}>
-              <th className="py-1 px-1.5 text-left text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1 px-1.5 text-left text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ border: '1px solid #ccc' }}>
                 <ArSub fr="Désignation" />
               </th>
-              <th className="py-1 px-1 text-center text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1 px-1 text-center text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ border: '1px solid #ccc' }}>
                 <ArSub fr="Qté" />
               </th>
-              <th className="py-1 px-1 text-center text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1 px-1 text-center text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ border: '1px solid #ccc' }}>
                 <ArSub fr="Unité" />
               </th>
-              <th className="py-1 px-1.5 text-right text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1 px-1.5 text-right text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ border: '1px solid #ccc' }}>
                 <ArSub fr="P.U HT" />
               </th>
-              <th className="py-1 px-1.5 text-right text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ borderBottom: '2px solid #d1d5db' }}>
+              <th className="py-1 px-1.5 text-right text-[6.5pt] font-bold text-gray-700 uppercase tracking-wide" style={{ border: '1px solid #ccc' }}>
                 <ArSub fr="Total HT" />
               </th>
             </tr>

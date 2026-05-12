@@ -228,18 +228,26 @@ html, body {
   print-color-adjust: exact;
   overflow: hidden;
 }
-.cv-wrap {
+.cv-page {
   width: 210mm;
   min-height: 297mm;
   max-height: 297mm;
   height: 297mm;
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
   overflow: hidden;
   page-break-inside: avoid;
   break-inside: avoid;
   position: relative;
+}
+.cv-wrap {
+  width: 210mm;
+  min-height: 297mm;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  page-break-inside: avoid;
+  break-inside: avoid;
+  position: relative;
+  transform-origin: top left;
 }
 
 /* GAUCHE — 35% */
@@ -543,11 +551,42 @@ export async function buildCvHtml(data: CVData): Promise<string> {
 <style>${CSS}</style>
 </head>
 <body>
-<div class="cv-wrap">
-  ${left}
-  ${right}
-  <div class="cv-footer">CV — ${esc(footerName)}${footerJob} · Page 1/1</div>
+<div class="cv-page">
+  <div class="cv-wrap" id="cvWrap">
+    ${left}
+    ${right}
+    <div class="cv-footer">CV — ${esc(footerName)}${footerJob} · Page 1/1</div>
+  </div>
 </div>
+<script>
+(function(){
+  // Auto-fit: shrink base font-size from 11px down to 8px (step 0.5px)
+  // until .cv-wrap fits within the strict A4 page (297mm). If still
+  // overflowing at the minimum, apply a final transform: scale() fallback.
+  function fit(){
+    var wrap = document.getElementById('cvWrap');
+    if(!wrap) return;
+    var page = wrap.parentElement;
+    var maxH = page.clientHeight;
+    var size = 11;
+    document.documentElement.style.fontSize = size + 'px';
+    while(wrap.scrollHeight > maxH && size > 8){
+      size -= 0.5;
+      document.documentElement.style.fontSize = size + 'px';
+    }
+    if(wrap.scrollHeight > maxH){
+      var s = Math.max(0.6, maxH / wrap.scrollHeight);
+      wrap.style.transform = 'scale(' + s + ')';
+      wrap.style.width = (210 / s) + 'mm';
+    }
+  }
+  if(document.readyState === 'complete'){ fit(); }
+  else { window.addEventListener('load', fit); }
+  // Re-run after webfonts settle
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fit); }
+  setTimeout(fit, 400);
+})();
+</script>
 </body>
 </html>`;
 }

@@ -323,6 +323,7 @@ const ClientsPage = () => {
             {form.client_type === 'professionnel' && (
               <div className="space-y-3 pl-2 border-l-2 border-primary/20">
                 <Input placeholder={isRTL ? 'اسم الشركة (Raison Sociale)' : 'Raison Sociale'} value={form.company_name} onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))} />
+                <Input placeholder={isRTL ? 'SIREN (9 رقم)' : 'SIREN (9 chiffres)'} value={form.siren} onChange={e => setForm(f => ({ ...f, siren: e.target.value.replace(/\D/g, '').slice(0, 9) }))} maxLength={9} className="font-mono" />
                 <Input placeholder={isRTL ? 'رقم السجل التجاري SIRET (14 رقم)' : 'SIRET (14 chiffres)'} value={form.siret} onChange={e => setForm(f => ({ ...f, siret: e.target.value.replace(/\D/g, '').slice(0, 14) }))} maxLength={14} className="font-mono" />
                 <Input placeholder={isRTL ? 'رقم الضريبة TVA (مثال: FR 12 345678901)' : 'N° TVA Intracommunautaire'} value={form.tva_number} onChange={e => setForm(f => ({ ...f, tva_number: e.target.value }))} className="font-mono" />
                 <p className={cn("text-[10px] text-muted-foreground", isRTL && "font-cairo text-right")}>
@@ -334,19 +335,19 @@ const ClientsPage = () => {
             {/* Split address */}
             <div className="space-y-1.5">
               <label className={cn("text-sm font-medium", isRTL && "font-cairo block text-right")}>
-                {isRTL ? 'العنوان الكامل' : 'Adresse complète'}
+                {isRTL ? 'العنوان الكامل *' : 'Adresse complète *'}
               </label>
-              <Input placeholder={isRTL ? 'الشارع (Rue)' : 'Rue'} value={form.street} onChange={e => setForm(f => ({ ...f, street: e.target.value }))} />
+              <Input placeholder={isRTL ? 'الشارع (Rue) *' : 'Rue *'} value={form.street} onChange={e => setForm(f => ({ ...f, street: e.target.value }))} />
               <div className="grid grid-cols-2 gap-2">
-                <Input placeholder={isRTL ? 'الرمز البريدي' : 'Code Postal'} value={form.postal_code} onChange={e => setForm(f => ({ ...f, postal_code: e.target.value.replace(/\D/g, '').slice(0, 5) }))} maxLength={5} className="font-mono" />
-                <Input placeholder={isRTL ? 'المدينة (Ville)' : 'Ville'} value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
+                <Input placeholder={isRTL ? 'الرمز البريدي *' : 'Code Postal *'} value={form.postal_code} onChange={e => setForm(f => ({ ...f, postal_code: e.target.value.replace(/\D/g, '').slice(0, 5) }))} maxLength={5} className="font-mono" />
+                <Input placeholder={isRTL ? 'المدينة (Ville) *' : 'Ville *'} value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
               </div>
             </div>
 
             <Input placeholder={isRTL ? 'جهة الاتصال' : 'Contact'} value={form.contact_name} onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))} />
-            <Input placeholder={isRTL ? 'الهاتف' : 'Téléphone'} value={form.contact_phone} onChange={e => setForm(f => ({ ...f, contact_phone: e.target.value }))} />
-            <Input placeholder="Email" value={form.contact_email} onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))} />
-            <Button className="w-full" onClick={handleSave} disabled={!form.name.trim()}>
+            <Input placeholder={isRTL ? 'الهاتف *' : 'Téléphone *'} value={form.contact_phone} onChange={e => setForm(f => ({ ...f, contact_phone: e.target.value }))} />
+            <Input placeholder="Email *" value={form.contact_email} onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))} />
+            <Button className="w-full" onClick={handleSave} disabled={!form.name.trim() || !form.street.trim() || !form.postal_code.trim() || !form.city.trim() || !form.contact_phone.trim() || !form.contact_email.trim()}>
               {editingClient ? (isRTL ? 'حفظ التعديلات' : 'Enregistrer') : (isRTL ? 'إضافة' : 'Ajouter')}
             </Button>
           </div>

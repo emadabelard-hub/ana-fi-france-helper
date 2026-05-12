@@ -384,13 +384,19 @@ html, body {
   flex-shrink: 0;
 }
 
-/* DROITE */
+/* DROITE — 65% */
 .col-right {
-  flex: 1;
-  min-height: 1123px;
+  width: 65%;
+  height: 100%;
+  min-height: 297mm;
+  max-height: 297mm;
   background: #fff;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  padding: 0;
 }
 .r-top-bar {
   height: 4px;

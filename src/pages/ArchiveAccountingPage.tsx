@@ -221,6 +221,13 @@ const ArchiveAccountingPage = () => {
     facturesPayees.reduce((s, d) => s + d.amountTTC, 0),
     [facturesPayees]);
 
+  // Créances impayées HT (factures finalisées non payées et non annulées) dans la période
+  const caEnAttenteHT = useMemo(() =>
+    facturesValidees
+      .filter(d => d.paymentStatus !== 'paid' && d.status !== ('cancelled' as any) && inDashboardPeriod(d.rawData?.created_at))
+      .reduce((s, d) => s + (d.amountHT || 0), 0),
+    [facturesValidees, dashboardPeriodStart]);
+
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
   const isRate = (profile as any)?.is_rate ?? 15;
   const isTvaExempt = (profile as any)?.tva_exempt ?? false;
@@ -554,6 +561,22 @@ const ArchiveAccountingPage = () => {
         <Sparkles className={cn('absolute top-1/2 -translate-y-1/2 h-4 w-4 text-accent/50', isRTL ? 'left-3' : 'right-3')} />
       </div>
 
+      {/* Avertissement comptable */}
+      <div
+        className="mb-4 shrink-0 rounded-xl border p-3 flex items-start gap-2"
+        style={{ backgroundColor: '#FFF8E1', borderColor: '#F59E0B' }}
+      >
+        <span className="text-base leading-none mt-0.5">⚠️</span>
+        <p
+          className={cn('text-[12px] leading-snug font-medium', isRTL && 'text-right font-cairo')}
+          style={{ color: '#7C5A00' }}
+        >
+          {isRTL
+            ? 'هذه الأرقام مبنية على فواتيرك فقط. للحسابات الدقيقة بما فيها الرواتب والمصاريف، تواصل مع محاسبك.'
+            : 'Ces chiffres sont basés uniquement sur vos factures. Pour un calcul précis incluant charges et salaires, consultez votre comptable.'}
+        </p>
+      </div>
+
       {/* Unpaid Invoices - Top priority */}
       <div className="mb-4 shrink-0">
         <UnpaidInvoicesBlock documents={documents} isRTL={isRTL} />
@@ -569,14 +592,8 @@ const ArchiveAccountingPage = () => {
           urssafRate={urssafRate}
           isRate={isRate}
           isRTL={isRTL}
-          debugFacturesCount={facturesValidees.length}
-          debugDepensesCount={expenses.length}
-          debugTotalFactures={totalFactures}
-          debugIgnoredFactures={ignoredFactures}
-          debugPaidCount={facturesValidees.filter(d => d.paymentStatus === 'paid').length}
-          debugUnpaidCount={facturesValidees.filter(d => d.paymentStatus !== 'paid').length}
           tresorerieEncaissee={tresorerieEncaissee}
-          legalStatus={(profile as any)?.legal_status}
+          caEnAttenteHT={caEnAttenteHT}
           isTvaExempt={isTvaExempt}
         />
       </div>

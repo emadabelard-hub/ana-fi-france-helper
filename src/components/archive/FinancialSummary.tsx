@@ -1,17 +1,16 @@
-import { TrendingUp, TrendingDown, Wallet, Receipt, AlertTriangle, Calculator, Banknote, ShieldCheck } from 'lucide-react';
+import { TrendingDown, Banknote, Receipt, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { computeTaxes } from '@/lib/taxCalculations';
 
 interface FinancialSummaryProps {
   caHT: number;
   depensesHT: number;
   tvaCollectee: number;
   tvaDeductible: number;
-  urssafRate: number;
-  isRate: number;
+  urssafRate?: number;
+  isRate?: number;
   isRTL: boolean;
-  debugFacturesCount: number;
-  debugDepensesCount: number;
+  debugFacturesCount?: number;
+  debugDepensesCount?: number;
   debugTotalFactures?: number;
   debugIgnoredFactures?: number;
   debugPaidCount?: number;
@@ -27,125 +26,69 @@ const fmt = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
 const FinancialSummary = ({
-  caHT, depensesHT,
-  tvaCollectee, tvaDeductible,
-  urssafRate, isRate, isRTL,
-  debugFacturesCount, debugDepensesCount,
-  debugTotalFactures = 0, debugIgnoredFactures = 0,
-  debugPaidCount = 0, debugUnpaidCount = 0,
+  depensesHT,
+  tvaCollectee,
+  tvaDeductible,
+  isRTL,
   tresorerieEncaissee = 0,
   caEnAttenteHT = 0,
-  caTotalFactureHT = 0,
-  legalStatus,
   isTvaExempt = false,
 }: FinancialSummaryProps) => {
-  // TVA : si franchise (Art.293B), TVA collectée et à payer = 0
   const effectiveTvaCollectee = isTvaExempt ? 0 : tvaCollectee;
   const effectiveTvaDeductible = isTvaExempt ? 0 : tvaDeductible;
-  const tvaAPayer = isTvaExempt ? 0 : Math.max(0, effectiveTvaCollectee - effectiveTvaDeductible);
+  const tvaAReverser = isTvaExempt ? 0 : Math.max(0, effectiveTvaCollectee - effectiveTvaDeductible);
 
-  // Calcul charges/IS selon statut juridique
-  const tax = computeTaxes({ legalStatus, caHT, depensesHT, urssafRateOverride: urssafRate });
-  const beneficeBrutHT = Math.max(0, caHT - depensesHT);
-  const urssafEstime = tax.socialCharges;
-  const isEstime = tax.incomeTax;
-
-  // Bénéfice avant impôt = encaissé - TVA - charges sociales - dépenses
-  const beneficeAvantImpot = tresorerieEncaissee - tvaAPayer - urssafEstime - depensesHT;
-
-  // Bénéfice net estimé = encaissé - TVA - dépenses - charges - IS
-  const rawBenefice = tresorerieEncaissee - tvaAPayer - depensesHT - urssafEstime - isEstime;
-  const benefice = Math.min(rawBenefice, tresorerieEncaissee);
-
-  const realRows = [
-    { label: "CA encaissé (HT)", value: caHT, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { label: 'CA en attente (HT)', value: caEnAttenteHT, icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-500/10' },
-    { label: 'CA total facturé (HT)', value: caTotalFactureHT, icon: TrendingUp, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { label: 'Dépenses (HT)', value: depensesHT, icon: TrendingDown, color: 'text-red-400', bg: 'bg-red-500/10' },
-    { label: 'Bénéfice avant impôt', value: beneficeAvantImpot, icon: Wallet, color: beneficeAvantImpot >= 0 ? 'text-blue-400' : 'text-red-400', bg: beneficeAvantImpot >= 0 ? 'bg-blue-500/10' : 'bg-red-500/10' },
-    { label: 'Bénéfice net estimé', value: benefice, icon: Wallet, color: benefice >= 0 ? 'text-emerald-400' : 'text-red-400', bg: benefice >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' },
-    { label: 'Trésorerie encaissée', value: tresorerieEncaissee, icon: Banknote, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
-    { label: 'TVA collectée', value: effectiveTvaCollectee, icon: Receipt, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { label: 'TVA déductible', value: effectiveTvaDeductible, icon: Receipt, color: 'text-violet-400', bg: 'bg-violet-500/10' },
-    { label: 'TVA à payer', value: tvaAPayer, icon: Receipt, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+  const cards = [
+    {
+      labelFr: 'Total dépenses',
+      labelAr: 'إجمالي المصروفات',
+      value: depensesHT,
+      icon: TrendingDown,
+      color: 'text-red-400',
+      bg: 'bg-red-500/10',
+    },
+    {
+      labelFr: 'Argent encaissé',
+      labelAr: 'الأموال المحصَّلة',
+      value: tresorerieEncaissee,
+      icon: Banknote,
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/10',
+    },
+    {
+      labelFr: 'TVA à reverser',
+      labelAr: 'تقرير TVA',
+      value: tvaAReverser,
+      icon: Receipt,
+      color: 'text-amber-400',
+      bg: 'bg-amber-500/10',
+    },
+    {
+      labelFr: 'Impayés',
+      labelAr: 'المستحقات غير المدفوعة',
+      value: caEnAttenteHT,
+      icon: AlertCircle,
+      color: 'text-orange-400',
+      bg: 'bg-orange-500/10',
+    },
   ];
 
   return (
-    <div className="space-y-4">
-      {/* BLOC 1: DONNÉES RÉELLES */}
-      <div className="rounded-xl border border-border bg-card p-4">
-        <div className={cn('flex items-center gap-2 mb-3', isRTL && 'flex-row-reverse')}>
-          <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center">
-            <Calculator className="h-4 w-4 text-emerald-400" />
-          </div>
-          <h3 className={cn('text-sm font-bold text-foreground', isRTL && 'font-cairo')}>
-            Données réelles
-          </h3>
-        </div>
-        <div className="grid grid-cols-2 gap-2.5">
-          {realRows.map((row) => (
-            <div key={row.label} className={cn('rounded-lg border border-border/50 p-2.5', row.bg, 'bg-opacity-30')}>
-              <div className={cn('flex items-center gap-1.5 mb-1', isRTL && 'flex-row-reverse')}>
-                <row.icon className={cn('h-3.5 w-3.5', row.color)} />
-                <span className={cn('text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight', isRTL && 'font-cairo')}>
-                  {row.label}
-                </span>
-              </div>
-              <p className={cn('text-base font-black tracking-tight', row.color, isRTL && 'text-right')}>
-                {fmt(row.value)}
-              </p>
-            </div>
-          ))}
-        </div>
-        {/* Debug temporaire */}
-        <div className="mt-2 rounded-lg border border-border/50 bg-muted/30 p-2 text-[10px] text-muted-foreground font-mono">
-          <p>🔍 DEBUG — Total factures: {debugTotalFactures} | Finalisées: {debugFacturesCount} | Ignorées (brouillon/devis): {debugIgnoredFactures} | Dépenses: {debugDepensesCount}</p>
-          <p>💳 Payées: {debugPaidCount} | Non payées: {debugUnpaidCount}</p>
-          <p>CA_HT: {fmt(caHT)} | Trésorerie: {fmt(tresorerieEncaissee)} | Dépenses_HT: {fmt(depensesHT)} | Bénéfice: {fmt(benefice)}</p>
-        </div>
-      </div>
-
-      {/* Badge Franchise TVA */}
-      {isTvaExempt && (
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
-          <p className="text-[11px] font-bold text-emerald-300">
-            Franchise TVA — Art. 293B du CGI
-          </p>
-        </div>
-      )}
-
-      {/* BLOC 2: ESTIMATIONS */}
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-        <div className={cn('flex items-center gap-2 mb-3', isRTL && 'flex-row-reverse')}>
-          <div className="w-7 h-7 rounded-lg bg-amber-500/15 flex items-center justify-center">
-            <AlertTriangle className="h-4 w-4 text-amber-400" />
-          </div>
-          <h3 className={cn('text-sm font-bold text-amber-400', isRTL && 'font-cairo')}>
-            Estimation fiscale {tax.statusKind !== 'unknown' && `· ${tax.statusKind === 'auto-entrepreneur' ? 'Auto-entrepreneur' : tax.statusKind === 'societe' ? 'Société' : 'EI/EIRL'}`}
-          </h3>
-        </div>
-        <div className={cn('grid gap-2.5 mb-3', tax.incomeTax > 0 ? 'grid-cols-2' : 'grid-cols-1')}>
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-              {isRTL ? tax.socialChargesLabelAr : tax.socialChargesLabelFr} ({tax.socialChargesRate}%)
-            </span>
-            <p className="text-base font-black text-amber-400">{fmt(urssafEstime)}</p>
-          </div>
-          {tax.incomeTax > 0 && (
-            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
-              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-                {isRTL ? tax.incomeTaxLabelAr : tax.incomeTaxLabelFr}
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="grid grid-cols-2 gap-2.5">
+        {cards.map((row) => (
+          <div key={row.labelFr} className={cn('rounded-lg border border-border/50 p-2.5', row.bg, 'bg-opacity-30')}>
+            <div className={cn('flex items-center gap-1.5 mb-1', isRTL && 'flex-row-reverse')}>
+              <row.icon className={cn('h-3.5 w-3.5', row.color)} />
+              <span className={cn('text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight', isRTL && 'font-cairo')}>
+                {isRTL ? row.labelAr : row.labelFr}
               </span>
-              <p className="text-base font-black text-amber-400">{fmt(isEstime)}</p>
             </div>
-          )}
-        </div>
-        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
-          <p className="text-[11px] text-amber-300/90 leading-relaxed font-medium">
-            ⚠️ Estimation indicative. Ne remplace pas un expert-comptable.
-          </p>
-        </div>
+            <p className={cn('text-base font-black tracking-tight', row.color, isRTL && 'text-right')}>
+              {fmt(row.value)}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );

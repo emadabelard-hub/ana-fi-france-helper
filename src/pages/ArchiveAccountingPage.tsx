@@ -221,6 +221,13 @@ const ArchiveAccountingPage = () => {
     facturesPayees.reduce((s, d) => s + d.amountTTC, 0),
     [facturesPayees]);
 
+  // Créances impayées HT (factures finalisées non payées et non annulées) dans la période
+  const caEnAttenteHT = useMemo(() =>
+    facturesValidees
+      .filter(d => d.paymentStatus !== 'paid' && d.status !== ('cancelled' as any) && inDashboardPeriod(d.rawData?.created_at))
+      .reduce((s, d) => s + (d.amountHT || 0), 0),
+    [facturesValidees, dashboardPeriodStart]);
+
   const urssafRate = (profile as any)?.urssaf_rate ?? 21.2;
   const isRate = (profile as any)?.is_rate ?? 15;
   const isTvaExempt = (profile as any)?.tva_exempt ?? false;

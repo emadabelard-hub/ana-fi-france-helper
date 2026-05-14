@@ -37,6 +37,8 @@ interface UnifiedDoc {
   document_data?: any;
   signature_status?: 'pending' | 'signed' | null;
   signed_at?: string | null;
+  receipt_url?: string | null;
+  receipt_mime?: 'pdf' | 'image' | null;
 }
 
 const formatCurrency = (n: number) =>

@@ -12,6 +12,7 @@
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { Client as PgClient } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 // pdfjs-dist legacy build runs in Deno without DOM
 import * as pdfjs from "https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.mjs";
 
@@ -19,12 +20,13 @@ const SUPABASE_URL =
   Deno.env.get("SUPABASE_URL") ?? Deno.env.get("VITE_SUPABASE_URL")!;
 const ANON_KEY =
   Deno.env.get("SUPABASE_ANON_KEY") ??
+  Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY") ??
   Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY")!;
-const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const DB_URL = Deno.env.get("SUPABASE_DB_URL")!;
 
 assert(SUPABASE_URL, "SUPABASE_URL missing");
-assert(ANON_KEY, "SUPABASE_ANON_KEY missing");
-assert(SERVICE_ROLE, "SUPABASE_SERVICE_ROLE_KEY missing");
+assert(ANON_KEY, "ANON_KEY missing");
+assert(DB_URL, "SUPABASE_DB_URL missing");
 
 const CLAUSES = [
   "Réserve de propriété",

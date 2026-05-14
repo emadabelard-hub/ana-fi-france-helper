@@ -149,26 +149,8 @@ const Index = () => {
     <div
       dir={isRTL ? 'rtl' : 'ltr'}
       className="min-h-screen overflow-x-hidden relative"
-      style={{ backgroundColor: COLORS.pageBg, fontFamily, transform: `translateY(${pullDistance}px)`, transition: startYRef.current === null ? 'transform 0.25s ease' : 'none' }}
+      style={{ backgroundColor: COLORS.pageBg, fontFamily }}
     >
-      {(pullDistance > 10 || isRefreshing) && (
-        <div
-          className="absolute left-0 right-0 flex items-center justify-center gap-2 text-white/90 text-[12px] font-bold pointer-events-none"
-          style={{ top: -40, height: 40 }}
-        >
-          <Loader2
-            className={cn('h-4 w-4', isRefreshing && 'animate-spin')}
-            style={{ transform: !isRefreshing ? `rotate(${Math.min(pullDistance * 3, 360)}deg)` : undefined }}
-          />
-          <span>
-            {isRefreshing
-              ? (isRTL ? 'جاري التحديث...' : 'Actualisation...')
-              : pullDistance >= PULL_THRESHOLD
-                ? (isRTL ? 'حرّر للتحديث' : 'Relâchez pour actualiser')
-                : (isRTL ? 'اسحب للتحديث' : 'Tirez pour actualiser')}
-          </span>
-        </div>
-      )}
       <WelcomeModal />
 
       {/* HERO HEADER */}

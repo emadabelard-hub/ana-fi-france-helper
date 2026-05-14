@@ -205,9 +205,6 @@ const Index = () => {
       dir={isRTL ? 'rtl' : 'ltr'}
       className="min-h-screen overflow-x-hidden relative"
       style={{ backgroundColor: COLORS.pageBg, fontFamily, transform: `translateY(${pullDistance}px)`, transition: startYRef.current === null ? 'transform 0.25s ease' : 'none' }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       {(pullDistance > 10 || isRefreshing) && (
         <div

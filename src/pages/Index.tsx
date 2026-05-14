@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -6,7 +6,7 @@ import WelcomeModal from '@/components/home/WelcomeModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2, Loader2 } from 'lucide-react';
+import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2 } from 'lucide-react';
 
 const COLORS = {
   navy: '#1B4F8A',
@@ -96,79 +96,24 @@ const Index = () => {
     fetchData();
   }, [fetchData]);
 
-  // Pull-to-refresh
-  const [pullDistance, setPullDistance] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const startYRef = useRef<number | null>(null);
-  const pullDistanceRef = useRef(0);
-  const isRefreshingRef = useRef(false);
-  const PULL_THRESHOLD = 80;
-
   useEffect(() => {
-    pullDistanceRef.current = pullDistance;
-  }, [pullDistance]);
-
-  useEffect(() => {
-    isRefreshingRef.current = isRefreshing;
-  }, [isRefreshing]);
-
-  const refreshPublishedApp = useCallback(async () => {
-    if (isRefreshingRef.current) return;
-    isRefreshingRef.current = true;
-    setIsRefreshing(true);
-    try {
-      if ('caches' in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map(k => caches.delete(k)));
+    const cleanupOldCaches = async () => {
+      try {
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r => r.unregister()));
+        }
+      } catch (e) {
+        console.warn('cache cleanup failed', e);
       }
-      if ('serviceWorker' in navigator) {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(r => r.unregister()));
-      }
-    } catch (e) {
-      console.warn('refresh cleanup failed', e);
-    } finally {
-      window.location.reload();
-    }
+    };
+
+    cleanupOldCaches();
   }, []);
-
-  useEffect(() => {
-    const onTouchStart = (e: TouchEvent) => {
-      if (window.scrollY > 0 || isRefreshingRef.current) {
-        startYRef.current = null;
-        return;
-      }
-      startYRef.current = e.touches[0]?.clientY ?? null;
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (startYRef.current === null) return;
-      const delta = (e.touches[0]?.clientY ?? 0) - startYRef.current;
-      if (delta <= 0 || window.scrollY > 0) return;
-      e.preventDefault();
-      setPullDistance(Math.min(delta * 0.65, 130));
-    };
-
-    const onTouchEnd = () => {
-      if (startYRef.current === null) return;
-      startYRef.current = null;
-      if (pullDistanceRef.current >= PULL_THRESHOLD) {
-        refreshPublishedApp();
-      } else {
-        setPullDistance(0);
-      }
-    };
-
-    window.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: false, capture: true });
-    window.addEventListener('touchend', onTouchEnd, { passive: true, capture: true });
-
-    return () => {
-      window.removeEventListener('touchstart', onTouchStart, { capture: true });
-      window.removeEventListener('touchmove', onTouchMove, { capture: true });
-      window.removeEventListener('touchend', onTouchEnd, { capture: true });
-    };
-  }, [refreshPublishedApp]);
 
   const firstName = (() => {
     const full = profile?.full_name?.trim();

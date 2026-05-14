@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Newspaper, User, Shield, HeadphonesIcon, Wallet } from 'lucide-react';
+import { Home, Newspaper, User, Shield, HeadphonesIcon } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,15 +24,6 @@ const navItems = [
     color: 'text-amber-400',
     activeBg: 'bg-amber-400/15',
     dotColor: 'bg-amber-400',
-  },
-  {
-    path: '/expenses',
-    icon: Wallet,
-    labelAr: 'حساباتي',
-    labelFr: 'Mes Comptes',
-    color: 'text-indigo-400',
-    activeBg: 'bg-indigo-400/15',
-    dotColor: 'bg-indigo-400',
   },
   {
     path: '/support',
@@ -110,8 +101,7 @@ const BottomNavigation = () => {
         {items.map((item) => {
           const isActive =
             location.pathname === item.path ||
-            (item.path === '/' && location.pathname === '/home') ||
-            (item.path === '/expenses' && location.pathname === '/accounts');
+            (item.path === '/' && location.pathname === '/home');
           const Icon = item.icon;
 
           return (

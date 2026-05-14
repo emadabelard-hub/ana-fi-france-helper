@@ -115,6 +115,7 @@ const Index = () => {
     { emoji: '✨', ar: 'دوفي ذكي', fr: 'Devis intelligent', path: '/pro/smart-devis' },
     { emoji: '📊', ar: 'محاسبة الشركة', fr: 'Comptabilité', path: '/pro/archive' },
     { emoji: '📁', ar: 'مستنداتي المحاسبية', fr: 'Mes documents', path: '/my-documents' },
+    { emoji: '💰', ar: 'حساباتي', fr: 'Mes Comptes', path: '/expenses' },
   ];
 
   const statusBadge = (d: RecentDoc) => {

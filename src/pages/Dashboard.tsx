@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, PenLine, FileText, User, Wallet, Settings, TrendingUp, Banknote } from 'lucide-react';
+import { Camera, PenLine, FileText, User, Wallet, Settings, TrendingUp, Banknote, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -12,26 +12,40 @@ import { useAuth } from '@/hooks/useAuth';
 const fmt = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 
+const PULL_THRESHOLD = 80;
+
 const Dashboard = () => {
-  const { isRTL } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [ca, setCa] = useState(0);
   const [tresorerie, setTresorerie] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const startYRef = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const fetchData = useCallback(async () => {
+    if (!user) return;
+    const { data: docs } = await supabase
+      .from('documents_comptables')
+      .select('subtotal_ht, total_ttc, status, payment_status, document_type')
+      .eq('user_id', user.id);
+    const paid = (docs || []).filter((d: any) => d.document_type === 'facture' && d.status === 'finalized' && d.payment_status === 'paid');
+    setCa(paid.reduce((s: number, d: any) => s + (d.subtotal_ht || 0), 0));
+    setTresorerie(paid.reduce((s: number, d: any) => s + (d.subtotal_ht || 0), 0));
+  }, [user]);
 
   useEffect(() => {
-    if (!user) return;
-    const fetch = async () => {
-      const { data: docs } = await supabase
-        .from('documents_comptables')
-        .select('subtotal_ht, total_ttc, status, payment_status, document_type')
-        .eq('user_id', user.id);
-      const paid = (docs || []).filter((d: any) => d.document_type === 'facture' && d.status === 'finalized' && d.payment_status === 'paid');
-      setCa(paid.reduce((s: number, d: any) => s + (d.subtotal_ht || 0), 0));
-      setTresorerie(paid.reduce((s: number, d: any) => s + (d.subtotal_ht || 0), 0));
-    };
-    fetch();
-  }, [user]);
+    fetchData();
+  }, [fetchData]);
+
+  const doRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await fetchData();
+    setIsRefreshing(false);
+    setPullDistance(0);
+  }, [fetchData]);
 
   const actionCards = [
     {

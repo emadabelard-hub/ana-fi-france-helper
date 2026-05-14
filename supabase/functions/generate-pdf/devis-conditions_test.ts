@@ -99,24 +99,32 @@ Assurance Décennale — Zone: France Métropolitaine. Validité du devis: 30 jo
 </div></div></div></body></html>`;
 }
 
-// ── Auth: provision a confirmed test user via service role ───────────────────
+// ── Auth: signup via REST + force-confirm via direct DB connection ──────────
 async function getAccessToken(): Promise<{ token: string; userId: string }> {
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
   const email = `e2e-pdf-${Date.now()}@example.com`;
   const password = "E2eTestPdf!23";
-
-  const { data: created, error: createErr } =
-    await admin.auth.admin.createUser({ email, password, email_confirm: true });
-  if (createErr) throw createErr;
-
   const userClient = createClient(SUPABASE_URL, ANON_KEY);
+
+  const { error: signupErr } = await userClient.auth.signUp({ email, password });
+  if (signupErr) throw signupErr;
+
+  // Force email confirmation directly in the DB (test environment only).
+  const pg = new PgClient(DB_URL);
+  await pg.connect();
+  try {
+    await pg.queryArray(
+      "UPDATE auth.users SET email_confirmed_at = now(), confirmed_at = now() WHERE email = $1",
+      [email],
+    );
+  } finally {
+    await pg.end();
+  }
+
   const { data: signed, error: signErr } =
     await userClient.auth.signInWithPassword({ email, password });
   if (signErr || !signed.session) throw signErr ?? new Error("no session");
 
-  return { token: signed.session.access_token, userId: created.user!.id };
+  return { token: signed.session.access_token, userId: signed.user!.id };
 }
 
 // ── PDF text extraction with pdfjs-dist ──────────────────────────────────────

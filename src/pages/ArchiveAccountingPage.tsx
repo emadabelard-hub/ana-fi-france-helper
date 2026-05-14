@@ -12,14 +12,12 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 import FinancialSummary from '@/components/archive/FinancialSummary';
-import UnpaidInvoicesBlock from '@/components/archive/UnpaidInvoicesBlock';
 import ShbikLbikCard from '@/components/archive/ShbikLbikCard';
 import DocumentCard, { type DocumentItem } from '@/components/archive/DocumentCard';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SendToAccountantModal from '@/components/archive/SendToAccountantModal';
 import { useProfile } from '@/hooks/useProfile';
-import { generateProfessionalCSV, generateAccountingCSV, generateFECCsv, computeVATSynthesis, downloadCSV, type CsvDocumentRow, type AccountingExportData } from '@/lib/csvExport';
-import VATSynthesisCard from '@/components/archive/VATSynthesisCard';
+import { generateProfessionalCSV, generateAccountingCSV, generateFECCsv, downloadCSV, type CsvDocumentRow, type AccountingExportData } from '@/lib/csvExport';
 
 const isStoredNatureType = (value: unknown): value is 'service' | 'goods' | 'mixed' =>
   value === 'service' || value === 'goods' || value === 'mixed';
@@ -415,15 +413,6 @@ const ArchiveAccountingPage = () => {
     };
   };
 
-  const vatSynthesis = useMemo(() => {
-    try {
-      const data = buildCsvRows();
-      if (data.invoices.length === 0 && data.expenses.length === 0) return null;
-      return computeVATSynthesis(data);
-    } catch { return null; }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [facturesPayees, expenses, periodBoundaries]);
-
   const handleExportCSV = () => {
     if (allItems.length === 0) return;
     const allRows: CsvDocumentRow[] = allItems.map(d => ({
@@ -546,6 +535,22 @@ const ArchiveAccountingPage = () => {
         </div>
       </section>
 
+      {/* Avertissement comptable — EN PREMIER */}
+      <div
+        className="mb-4 shrink-0 rounded-xl border p-3 flex items-start gap-2"
+        style={{ backgroundColor: '#FFF8E1', borderColor: '#F59E0B' }}
+      >
+        <span className="text-base leading-none mt-0.5">⚠️</span>
+        <p
+          className={cn('text-[12px] leading-snug font-medium', isRTL && 'text-right font-cairo')}
+          style={{ color: '#7C5A00' }}
+        >
+          {isRTL
+            ? 'هذه الأرقام مبنية على فواتيرك فقط — تواصل مع محاسبك للحسابات الدقيقة'
+            : 'Ces chiffres sont basés uniquement sur vos factures — consultez votre comptable pour les calculs exacts'}
+        </p>
+      </div>
+
       {/* Search */}
       <div className="relative mb-4 shrink-0">
         <Search className={cn('absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none', isRTL ? 'right-3' : 'left-3')} />
@@ -559,27 +564,6 @@ const ArchiveAccountingPage = () => {
           )}
         />
         <Sparkles className={cn('absolute top-1/2 -translate-y-1/2 h-4 w-4 text-accent/50', isRTL ? 'left-3' : 'right-3')} />
-      </div>
-
-      {/* Avertissement comptable */}
-      <div
-        className="mb-4 shrink-0 rounded-xl border p-3 flex items-start gap-2"
-        style={{ backgroundColor: '#FFF8E1', borderColor: '#F59E0B' }}
-      >
-        <span className="text-base leading-none mt-0.5">⚠️</span>
-        <p
-          className={cn('text-[12px] leading-snug font-medium', isRTL && 'text-right font-cairo')}
-          style={{ color: '#7C5A00' }}
-        >
-          {isRTL
-            ? 'هذه الأرقام مبنية على فواتيرك فقط. للحسابات الدقيقة بما فيها الرواتب والمصاريف، تواصل مع محاسبك.'
-            : 'Ces chiffres sont basés uniquement sur vos factures. Pour un calcul précis incluant charges et salaires, consultez votre comptable.'}
-        </p>
-      </div>
-
-      {/* Unpaid Invoices - Top priority */}
-      <div className="mb-4 shrink-0">
-        <UnpaidInvoicesBlock documents={documents} isRTL={isRTL} />
       </div>
 
       {/* Financial Summary */}
@@ -598,7 +582,7 @@ const ArchiveAccountingPage = () => {
         />
       </div>
 
-      {/* ShbikLbik */}
+      {/* ShbikLbik — Assistant simplifié */}
       <div className="mb-4 shrink-0">
         <ShbikLbikCard
           totalIncome={caHT + tvaCollectee}
@@ -613,37 +597,8 @@ const ArchiveAccountingPage = () => {
           isRTL={isRTL}
           tresorerieEncaissee={tresorerieEncaissee}
           legalStatus={(profile as any)?.legal_status}
+          simplified
         />
-      </div>
-
-      {/* Aperçu Synthèse TVA + Période d'export personnalisée */}
-      {vatSynthesis && (
-        <div className="mb-4 shrink-0">
-          <VATSynthesisCard synthesis={vatSynthesis} isRTL={isRTL} />
-        </div>
-      )}
-      <div className="mb-4 shrink-0 rounded-xl border border-border bg-card p-3" dir="ltr">
-        <div className="text-[11px] font-bold text-muted-foreground mb-2 uppercase tracking-wide">
-          Période d'export personnalisée (optionnel)
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-[10px] text-muted-foreground">Du</label>
-            <Input type="date" value={exportStart} onChange={e => setExportStart(e.target.value)} className="h-9 text-xs bg-background" lang="fr" />
-          </div>
-          <div>
-            <label className="text-[10px] text-muted-foreground">Au</label>
-            <Input type="date" value={exportEnd} onChange={e => setExportEnd(e.target.value)} className="h-9 text-xs bg-background" lang="fr" />
-          </div>
-        </div>
-        {(exportStart || exportEnd) && (
-          <button
-            onClick={() => { setExportStart(''); setExportEnd(''); }}
-            className="text-[10px] text-accent hover:underline mt-1"
-          >
-            Réinitialiser (utiliser les boutons préréglés)
-          </button>
-        )}
       </div>
 
       <div className="flex-1 overflow-y-auto pb-4">

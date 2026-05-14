@@ -142,7 +142,39 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-[80vh] flex flex-col justify-center py-8 px-2">
+    <div
+      ref={containerRef}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="min-h-[80vh] flex flex-col justify-center py-8 px-2 overflow-y-auto"
+    >
+      {/* Pull to refresh indicator */}
+      <div
+        className="flex items-center justify-center transition-all duration-150 overflow-hidden"
+        style={{
+          height: pullDistance,
+          opacity: pullDistance > 10 ? 1 : 0,
+        }}
+      >
+        <div className="flex flex-col items-center gap-1">
+          <Loader2
+            className={cn(
+              'h-5 w-5 text-primary transition-transform duration-300',
+              isRefreshing && 'animate-spin',
+              !isRefreshing && pullDistance >= PULL_THRESHOLD && 'rotate-180'
+            )}
+          />
+          <span className="text-[11px] text-muted-foreground font-cairo">
+            {isRefreshing
+              ? (isRTL ? 'جاري التحديث...' : 'Actualisation...')
+              : pullDistance >= PULL_THRESHOLD
+                ? (isRTL ? 'افلت للتحديث' : 'Relâchez pour actualiser')
+                : (isRTL ? 'اسحب للتحديث' : 'Tirez pour actualiser')}
+          </span>
+        </div>
+      </div>
+
       {/* Legal Compliance Banner */}
       <div className="max-w-md mx-auto w-full">
         <LegalComplianceBanner />

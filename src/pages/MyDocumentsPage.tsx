@@ -314,6 +314,30 @@ const MyDocumentsPage = () => {
           </p>
         )}
 
+        {/* Receipt preview for expenses */}
+        {doc.source === 'expense' && doc.receipt_url && (
+          <div className="mt-3 rounded-lg overflow-hidden border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,8%)]">
+            {doc.receipt_mime === 'image' ? (
+              <img
+                src={doc.receipt_url}
+                alt={doc.document_number}
+                loading="lazy"
+                className="w-full h-32 object-cover"
+              />
+            ) : (
+              <div className="w-full h-32 flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,55%)]">
+                <FileText className="h-10 w-10 text-red-400" />
+                <span className="text-[10px] uppercase tracking-wider">PDF</span>
+              </div>
+            )}
+          </div>
+        )}
+        {doc.source === 'expense' && !doc.receipt_url && (
+          <div className="mt-3 rounded-lg border border-dashed border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,8%)] h-20 flex items-center justify-center text-[11px] text-[hsl(0,0%,45%)]">
+            {t('لا يوجد ملف مرفق', 'Aucun fichier joint')}
+          </div>
+        )}
+
         {/* 4. TTC / HT / date */}
         <div className={cn('mt-3 flex items-center gap-x-4 gap-y-1 text-xs flex-wrap', isRTL && 'flex-row-reverse')}>
           <div className={cn('flex items-center gap-1', isRTL && 'flex-row-reverse')}>
@@ -348,6 +372,30 @@ const MyDocumentsPage = () => {
               <Eye className="h-3.5 w-3.5 mr-1" />
               {t('عرض', 'Voir')}
             </Button>
+          )}
+          {doc.source === 'expense' && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                disabled={!doc.receipt_url}
+                onClick={(e) => { e.stopPropagation(); handleOpen(doc); }}
+              >
+                <Eye className="h-3.5 w-3.5 mr-1" />
+                {t('عرض', 'Voir')}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                disabled={!doc.receipt_url}
+                onClick={(e) => { e.stopPropagation(); handleDownloadReceipt(doc); }}
+              >
+                <Download className="h-3.5 w-3.5 mr-1" />
+                {t('تحميل', 'Télécharger')}
+              </Button>
+            </>
           )}
           <Button
             size="sm"

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { MessageCircle, ArrowUpRight, ArrowDownRight, Receipt, TrendingUp } from 'lucide-react';
+import { MessageCircle, ArrowUpRight, ArrowDownRight, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ShbikLbikProps {
@@ -51,13 +51,6 @@ const ShbikLbikCard = (props: ShbikLbikProps) => {
       icon: Receipt,
       color: 'text-amber-400',
       bg: 'bg-amber-500/10',
-    },
-    {
-      label: isRTL ? 'الكومول السنوي' : 'Cumul annuel',
-      value: totalIncomeHT,
-      icon: TrendingUp,
-      color: 'text-sky-400',
-      bg: 'bg-sky-500/10',
     },
   ];
 

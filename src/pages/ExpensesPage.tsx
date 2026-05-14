@@ -801,6 +801,22 @@ const ExpensesPage = () => {
 
   return (
     <div className="py-4 space-y-4">
+      {/* Avertissement comptable — EN PREMIER */}
+      <div
+        className="rounded-xl border p-3 flex items-start gap-2"
+        style={{ backgroundColor: '#FFF8E1', borderColor: '#F59E0B' }}
+      >
+        <span className="text-base leading-none mt-0.5">⚠️</span>
+        <p
+          className={cn('text-[12px] leading-snug font-medium', isRTL && 'text-right font-cairo')}
+          style={{ color: '#7C5A00' }}
+        >
+          {isRTL
+            ? 'هذه الأرقام مبنية على فواتيرك فقط — تواصل مع محاسبك للحسابات الدقيقة'
+            : 'Ces chiffres sont basés uniquement sur vos factures — consultez votre comptable pour les calculs exacts'}
+        </p>
+      </div>
+
       {/* Header */}
       <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <h1 className={cn('text-xl font-bold text-foreground', isRTL && 'font-cairo')}>
@@ -865,8 +881,8 @@ const ExpensesPage = () => {
         </CardContent>
       </Card>
 
-      {/* 4 Large Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* 2 Summary Cards */}
+      <div className="grid grid-cols-2 gap-3">
         <Card className="border-cyan-500/20 bg-cyan-500/5">
           <CardContent className="p-4 text-center">
             <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center mx-auto mb-2">
@@ -890,52 +906,6 @@ const ExpensesPage = () => {
             <p className="text-lg font-black text-red-400">{formatCurrency(totalExpenses)}</p>
           </CardContent>
         </Card>
-
-        <Card className={cn('border-indigo-500/20', profitBeforeIS >= 0 ? 'bg-indigo-500/5' : 'bg-red-500/5')}>
-          <CardContent className="p-4 text-center">
-            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2", profitBeforeIS >= 0 ? "bg-indigo-500/10" : "bg-red-500/10")}>
-              <Wallet className={cn("h-5 w-5", profitBeforeIS >= 0 ? "text-indigo-400" : "text-red-400")} />
-            </div>
-            <p className={cn("text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1", isRTL && "font-cairo")}>
-              {isRTL ? 'الربح قبل الضرائب' : 'Bénéfice avant impôt'}
-            </p>
-            <p className={cn("text-lg font-black", profitBeforeIS >= 0 ? "text-indigo-400" : "text-red-400")}>
-              {formatCurrency(profitBeforeIS)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className={cn('border-blue-500/20', netProfit >= 0 ? 'bg-blue-500/5' : 'bg-red-500/5')}>
-          <CardContent className="p-4 text-center">
-            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2", netProfit >= 0 ? "bg-blue-500/10" : "bg-red-500/10")}>
-              <Wallet className={cn("h-5 w-5", netProfit >= 0 ? "text-blue-400" : "text-red-400")} />
-            </div>
-            <p className={cn("text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1", isRTL && "font-cairo")}>
-              {isRTL ? 'صافي الربح المقدّر' : 'Bénéfice net estimé'}
-            </p>
-            <p className={cn("text-lg font-black", netProfit >= 0 ? "text-blue-400" : "text-red-400")}>
-              {formatCurrency(netProfit)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Breakdown under Net Profit */}
-      <div className={cn(
-        "mx-2 rounded-xl bg-muted/60 border border-border/50 px-4 py-3 flex items-center gap-3 flex-wrap justify-center",
-        isRTL && "font-cairo flex-row-reverse"
-      )}>
-        <span className="text-[16px] sm:text-[18px] text-violet-400 inline-flex items-center gap-1.5">
-          <Shield size={18} className="shrink-0" />
-          {isRTL ? 'بعد خصم الأورساف: ' : 'URSSAF: '}
-          <span className="font-bold">{formatCurrency(totalURSSAF)}</span>
-        </span>
-        <span className="text-muted-foreground text-lg">|</span>
-        <span className="text-[16px] sm:text-[18px] text-amber-400 inline-flex items-center gap-1.5">
-          <Landmark size={18} className="shrink-0" />
-          {isRTL ? 'ضريبة تقديرية: ' : 'IS estimé: '}
-          <span className="font-bold">{formatCurrency(estimatedIS)}</span>
-        </span>
       </div>
 
       {/* TVA Summary Card */}

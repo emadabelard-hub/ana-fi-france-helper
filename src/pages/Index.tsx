@@ -124,15 +124,32 @@ const Index = () => {
     if (pullDistance >= PULL_THRESHOLD && !isRefreshing) {
       setIsRefreshing(true);
       try {
-        await fetchData();
+        // Vide les caches du Service Worker pour récupérer la dernière version publiée
+        if ('caches' in window) {
+          try {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+          } catch (e) {
+            console.warn('cache clear failed', e);
+          }
+        }
+        if ('serviceWorker' in navigator) {
+          try {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(r => r.update()));
+          } catch (e) {
+            console.warn('SW update failed', e);
+          }
+        }
+        // Recharge l'app en bypass cache pour appliquer les nouvelles modifs
+        window.location.reload();
       } finally {
-        setIsRefreshing(false);
-        setPullDistance(0);
+        // no-op : la page va recharger
       }
     } else {
       setPullDistance(0);
     }
-  }, [pullDistance, isRefreshing, fetchData]);
+  }, [pullDistance, isRefreshing]);
 
   const firstName = (() => {
     const full = profile?.full_name?.trim();

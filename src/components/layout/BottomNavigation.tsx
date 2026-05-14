@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Newspaper, User, Shield, HeadphonesIcon, Receipt, Bot, Languages, FolderOpen } from 'lucide-react';
+import { Home, Newspaper, User, Shield, HeadphonesIcon } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,49 +26,13 @@ const navItems = [
     dotColor: 'bg-amber-400',
   },
   {
-    path: '/expenses',
-    icon: Receipt,
-    labelAr: 'حساباتي',
-    labelFr: 'Comptes',
-    color: 'text-orange-400',
-    activeBg: 'bg-orange-400/15',
-    dotColor: 'bg-orange-400',
-  },
-  {
-    path: '/my-documents',
-    icon: FolderOpen,
-    labelAr: 'مستنداتي',
-    labelFr: 'Documents',
-    color: 'text-cyan-400',
-    activeBg: 'bg-cyan-400/15',
-    dotColor: 'bg-cyan-400',
-  },
-  {
-    path: '/ai-assistant',
-    icon: Bot,
-    labelAr: 'مساعد',
-    labelFr: 'Assistant',
-    color: 'text-violet-400',
-    activeBg: 'bg-violet-400/15',
-    dotColor: 'bg-violet-400',
-  },
-  {
     path: '/support',
     icon: HeadphonesIcon,
-    labelAr: 'مساعدة',
-    labelFr: 'Support',
+    labelAr: 'تواصل معنا',
+    labelFr: 'Contact',
     color: 'text-emerald-400',
     activeBg: 'bg-emerald-400/15',
     dotColor: 'bg-emerald-400',
-  },
-  {
-    path: '/translator',
-    icon: Languages,
-    labelAr: 'ترجم',
-    labelFr: 'Traduire',
-    color: 'text-blue-500',
-    activeBg: 'bg-blue-500/15',
-    dotColor: 'bg-blue-500',
   },
   {
     path: '/profile',

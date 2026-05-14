@@ -12,14 +12,12 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 import FinancialSummary from '@/components/archive/FinancialSummary';
-import UnpaidInvoicesBlock from '@/components/archive/UnpaidInvoicesBlock';
 import ShbikLbikCard from '@/components/archive/ShbikLbikCard';
 import DocumentCard, { type DocumentItem } from '@/components/archive/DocumentCard';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import SendToAccountantModal from '@/components/archive/SendToAccountantModal';
 import { useProfile } from '@/hooks/useProfile';
-import { generateProfessionalCSV, generateAccountingCSV, generateFECCsv, computeVATSynthesis, downloadCSV, type CsvDocumentRow, type AccountingExportData } from '@/lib/csvExport';
-import VATSynthesisCard from '@/components/archive/VATSynthesisCard';
+import { generateProfessionalCSV, generateAccountingCSV, generateFECCsv, downloadCSV, type CsvDocumentRow, type AccountingExportData } from '@/lib/csvExport';
 
 const isStoredNatureType = (value: unknown): value is 'service' | 'goods' | 'mixed' =>
   value === 'service' || value === 'goods' || value === 'mixed';
@@ -414,15 +412,6 @@ const ArchiveAccountingPage = () => {
       },
     };
   };
-
-  const vatSynthesis = useMemo(() => {
-    try {
-      const data = buildCsvRows();
-      if (data.invoices.length === 0 && data.expenses.length === 0) return null;
-      return computeVATSynthesis(data);
-    } catch { return null; }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [facturesPayees, expenses, periodBoundaries]);
 
   const handleExportCSV = () => {
     if (allItems.length === 0) return;

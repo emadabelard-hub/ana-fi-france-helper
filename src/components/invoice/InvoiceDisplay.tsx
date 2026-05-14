@@ -811,6 +811,19 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
               </p>
             </div>
 
+            {/* ── CONDITIONS GÉNÉRALES — devis only, small sober text ── */}
+            {data.type === 'DEVIS' && (
+              <div className="pdf-keep-together mt-2 pt-1.5" style={{ borderTop: '1px solid #d1d5db' }}>
+                <p className="text-[7pt] font-bold text-gray-500 mb-1 tracking-wide" style={{ textTransform: 'uppercase' }}>Conditions Générales</p>
+                <div className="text-[6.5pt] text-gray-400 leading-snug space-y-0.5">
+                  <p><span className="font-semibold text-gray-500">4. Réserve de propriété</span> — Les matériaux et fournitures livrés restent la propriété de l'entreprise jusqu'au paiement intégral de la facture.</p>
+                  <p><span className="font-semibold text-gray-500">5. Suspension de chantier</span> — En cas de non-paiement à l'échéance, l'entreprise se réserve le droit de suspendre les travaux sans mise en demeure préalable.</p>
+                  <p><span className="font-semibold text-gray-500">6. Garantie décennale</span> — Les travaux sont couverts par notre assurance décennale conformément aux articles 1792 et suivants du Code civil.</p>
+                  <p><span className="font-semibold text-gray-500">7. Litiges</span> — En cas de litige, le Tribunal compétent sera celui du lieu d'exécution des travaux.</p>
+                </div>
+              </div>
+            )}
+
         </div>{/* end invoice-totals-signature-block */}
 
         {/* Online Payment Section */}

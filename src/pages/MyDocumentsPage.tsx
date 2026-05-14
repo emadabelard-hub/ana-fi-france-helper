@@ -70,7 +70,7 @@ const MyDocumentsPage = () => {
           .order('created_at', { ascending: false }),
         supabase
           .from('expenses')
-          .select('id, title, amount, tva_amount, expense_date, created_at, sent_to_accountant_at')
+          .select('id, title, amount, tva_amount, expense_date, created_at, sent_to_accountant_at, receipt_url')
           .order('created_at', { ascending: false }),
         supabase
           .from('signature_requests')

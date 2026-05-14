@@ -813,7 +813,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
             {/* ── CONDITIONS GÉNÉRALES — devis only, small sober text ── */}
             {data.type === 'DEVIS' && (
-              <div className="mt-2 pt-1.5" style={{ pageBreakInside: 'avoid', breakInside: 'avoid', borderTop: '1px solid #d1d5db' }}>
+              <div className="invoice-conditions-block mt-2 pt-1.5" style={{ pageBreakInside: 'avoid', breakInside: 'avoid', borderTop: '1px solid #d1d5db' }}>
                 <p className="text-[7pt] font-bold text-gray-500 mb-1 tracking-wide" style={{ textTransform: 'uppercase' }}>Conditions Générales</p>
                 <div className="text-[6.5pt] text-gray-400 leading-snug space-y-0.5">
                   <p><span className="font-semibold text-gray-500">4. Réserve de propriété</span> — Les matériaux et fournitures livrés restent la propriété de l'entreprise jusqu'au paiement intégral de la facture.</p>

@@ -28,8 +28,8 @@ const navItems = [
   {
     path: '/expenses',
     icon: Wallet,
-    labelAr: 'المحاسبة',
-    labelFr: 'Comptabilité',
+    labelAr: 'حساباتي',
+    labelFr: 'Mes Comptes',
     color: 'text-indigo-400',
     activeBg: 'bg-indigo-400/15',
     dotColor: 'bg-indigo-400',

@@ -112,6 +112,10 @@ const MyDocumentsPage = () => {
         for (const e of expenses.data as any[]) {
           const amt = Number(e.amount) || 0;
           const tva = Number(e.tva_amount) || 0;
+          const url: string | null = e.receipt_url || null;
+          const mime: 'pdf' | 'image' | null = url
+            ? (/\.pdf($|\?)/i.test(url) ? 'pdf' : 'image')
+            : null;
           merged.push({
             id: e.id,
             source: 'expense',
@@ -122,6 +126,8 @@ const MyDocumentsPage = () => {
             total_ttc: amt,
             status: null,
             created_at: e.created_at,
+            receipt_url: url,
+            receipt_mime: mime,
           });
         }
       }

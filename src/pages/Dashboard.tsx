@@ -47,6 +47,42 @@ const Dashboard = () => {
     setPullDistance(0);
   }, [fetchData]);
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (isRefreshing) return;
+    const container = containerRef.current;
+    if (!container) return;
+    if (container.scrollTop <= 0) {
+      startYRef.current = e.touches[0].clientY;
+    }
+  }, [isRefreshing]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (isRefreshing) return;
+    const container = containerRef.current;
+    if (!container) return;
+    if (container.scrollTop > 0) {
+      setPullDistance(0);
+      return;
+    }
+    const delta = e.touches[0].clientY - startYRef.current;
+    if (delta > 0) {
+      const damped = Math.min(delta * 0.5, 120);
+      setPullDistance(damped);
+      if (damped >= PULL_THRESHOLD) {
+        e.preventDefault();
+      }
+    }
+  }, [isRefreshing]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (isRefreshing) return;
+    if (pullDistance >= PULL_THRESHOLD) {
+      doRefresh();
+    } else {
+      setPullDistance(0);
+    }
+  }, [isRefreshing, pullDistance, doRefresh]);
+
   const actionCards = [
     {
       icon: Camera,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, FileText, Receipt, FileSpreadsheet, Trash2, Eye, Calendar, Euro, CheckCircle } from 'lucide-react';
+import { Loader2, FileText, Receipt, FileSpreadsheet, Trash2, Eye, Calendar, Euro, CheckCircle, Download, FileImage, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -37,6 +37,8 @@ interface UnifiedDoc {
   document_data?: any;
   signature_status?: 'pending' | 'signed' | null;
   signed_at?: string | null;
+  receipt_url?: string | null;
+  receipt_mime?: 'pdf' | 'image' | null;
 }
 
 const formatCurrency = (n: number) =>
@@ -68,7 +70,7 @@ const MyDocumentsPage = () => {
           .order('created_at', { ascending: false }),
         supabase
           .from('expenses')
-          .select('id, title, amount, tva_amount, expense_date, created_at, sent_to_accountant_at')
+          .select('id, title, amount, tva_amount, expense_date, created_at, sent_to_accountant_at, receipt_url')
           .order('created_at', { ascending: false }),
         supabase
           .from('signature_requests')
@@ -110,6 +112,10 @@ const MyDocumentsPage = () => {
         for (const e of expenses.data as any[]) {
           const amt = Number(e.amount) || 0;
           const tva = Number(e.tva_amount) || 0;
+          const url: string | null = e.receipt_url || null;
+          const mime: 'pdf' | 'image' | null = url
+            ? (/\.pdf($|\?)/i.test(url) ? 'pdf' : 'image')
+            : null;
           merged.push({
             id: e.id,
             source: 'expense',
@@ -120,6 +126,8 @@ const MyDocumentsPage = () => {
             total_ttc: amt,
             status: null,
             created_at: e.created_at,
+            receipt_url: url,
+            receipt_mime: mime,
           });
         }
       }
@@ -154,7 +162,14 @@ const MyDocumentsPage = () => {
   }, [docs, typeFilter, periodStart]);
 
   const handleOpen = async (doc: UnifiedDoc) => {
-    if (doc.source !== 'comptable') return;
+    if (doc.source === 'expense') {
+      if (doc.receipt_url) {
+        window.open(doc.receipt_url, '_blank');
+      } else {
+        toast({ title: t('لا يوجد ملف مرفق', 'Aucun fichier joint') });
+      }
+      return;
+    }
     try {
       const { data } = await supabase
         .from('documents')
@@ -184,6 +199,29 @@ const MyDocumentsPage = () => {
     }
     // Fallback: navigate to documents list preview
     navigate(`/pro/documents`);
+  };
+
+  const handleDownloadReceipt = async (doc: UnifiedDoc) => {
+    if (!doc.receipt_url) {
+      toast({ title: t('لا يوجد ملف مرفق', 'Aucun fichier joint') });
+      return;
+    }
+    try {
+      const res = await fetch(doc.receipt_url);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ext = doc.receipt_mime === 'pdf' ? 'pdf' : (doc.receipt_url.split('.').pop()?.split('?')[0] || 'jpg');
+      a.download = `${(doc.document_number || 'facture').replace(/[^\w.-]+/g, '_')}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.warn('[MyDocs] download failed:', err);
+      window.open(doc.receipt_url, '_blank');
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -276,6 +314,30 @@ const MyDocumentsPage = () => {
           </p>
         )}
 
+        {/* Receipt preview for expenses */}
+        {doc.source === 'expense' && doc.receipt_url && (
+          <div className="mt-3 rounded-lg overflow-hidden border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,8%)]">
+            {doc.receipt_mime === 'image' ? (
+              <img
+                src={doc.receipt_url}
+                alt={doc.document_number}
+                loading="lazy"
+                className="w-full h-32 object-cover"
+              />
+            ) : (
+              <div className="w-full h-32 flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,55%)]">
+                <FileText className="h-10 w-10 text-red-400" />
+                <span className="text-[10px] uppercase tracking-wider">PDF</span>
+              </div>
+            )}
+          </div>
+        )}
+        {doc.source === 'expense' && !doc.receipt_url && (
+          <div className="mt-3 rounded-lg border border-dashed border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,8%)] h-20 flex items-center justify-center text-[11px] text-[hsl(0,0%,45%)]">
+            {t('لا يوجد ملف مرفق', 'Aucun fichier joint')}
+          </div>
+        )}
+
         {/* 4. TTC / HT / date */}
         <div className={cn('mt-3 flex items-center gap-x-4 gap-y-1 text-xs flex-wrap', isRTL && 'flex-row-reverse')}>
           <div className={cn('flex items-center gap-1', isRTL && 'flex-row-reverse')}>
@@ -310,6 +372,30 @@ const MyDocumentsPage = () => {
               <Eye className="h-3.5 w-3.5 mr-1" />
               {t('عرض', 'Voir')}
             </Button>
+          )}
+          {doc.source === 'expense' && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                disabled={!doc.receipt_url}
+                onClick={(e) => { e.stopPropagation(); handleOpen(doc); }}
+              >
+                <Eye className="h-3.5 w-3.5 mr-1" />
+                {t('عرض', 'Voir')}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                disabled={!doc.receipt_url}
+                onClick={(e) => { e.stopPropagation(); handleDownloadReceipt(doc); }}
+              >
+                <Download className="h-3.5 w-3.5 mr-1" />
+                {t('تحميل', 'Télécharger')}
+              </Button>
+            </>
           )}
           <Button
             size="sm"

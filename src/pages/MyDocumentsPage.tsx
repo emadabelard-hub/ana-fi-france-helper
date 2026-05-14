@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, FileText, Receipt, FileSpreadsheet, Trash2, Eye, Calendar, Euro, CheckCircle } from 'lucide-react';
+import { Loader2, FileText, Receipt, FileSpreadsheet, Trash2, Eye, Calendar, Euro, CheckCircle, Download, FileImage, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/contexts/LanguageContext';

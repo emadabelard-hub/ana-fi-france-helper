@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -6,7 +6,7 @@ import WelcomeModal from '@/components/home/WelcomeModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2 } from 'lucide-react';
+import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2, Loader2 } from 'lucide-react';
 
 const COLORS = {
   navy: '#1B4F8A',
@@ -57,44 +57,82 @@ const Index = () => {
     }
   }, []);
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
-    const load = async () => {
-      const { data: docs } = await supabase
-        .from('documents_comptables')
-        .select('id, document_number, client_name, subtotal_ht, total_ttc, status, payment_status, document_type, created_at')
-        .eq('user_id', user.id)
-        .eq('document_type', 'facture')
-        .order('created_at', { ascending: false });
+    const { data: docs } = await supabase
+      .from('documents_comptables')
+      .select('id, document_number, client_name, subtotal_ht, total_ttc, status, payment_status, document_type, created_at')
+      .eq('user_id', user.id)
+      .eq('document_type', 'facture')
+      .order('created_at', { ascending: false });
 
-      const list = (docs || []) as any[];
-      const issued = list.filter(d => ['finalized', 'converted'].includes(d.status));
-      const paid = issued.filter(d => d.payment_status === 'paid');
-      const unpaid = issued.filter(d => d.payment_status !== 'paid' && d.status !== 'cancelled');
+    const list = (docs || []) as any[];
+    const issued = list.filter(d => ['finalized', 'converted'].includes(d.status));
+    const paid = issued.filter(d => d.payment_status === 'paid');
+    const unpaid = issued.filter(d => d.payment_status !== 'paid' && d.status !== 'cancelled');
 
-      const sumTTC = (arr: any[]) => arr.reduce((s, d) => s + (Number(d.total_ttc) || 0), 0);
-      const sumHT = (arr: any[]) => arr.reduce((s, d) => s + (Number(d.subtotal_ht) || 0), 0);
+    const sumTTC = (arr: any[]) => arr.reduce((s, d) => s + (Number(d.total_ttc) || 0), 0);
+    const sumHT = (arr: any[]) => arr.reduce((s, d) => s + (Number(d.subtotal_ht) || 0), 0);
 
-      setVolumeAffaires(sumTTC(issued));
-      setRevenusEncaisses(sumTTC(paid));
-      setCreancesTotal(sumTTC(unpaid));
-      setCreancesCount(unpaid.length);
-      // Bénéfice net estimé : marge sur encaissé moins charges sociales (URSSAF)
-      const urssafRate = (profile?.urssaf_rate ?? 22) / 100;
-      setBeneficeNet(sumHT(paid) * (1 - urssafRate));
+    setVolumeAffaires(sumTTC(issued));
+    setRevenusEncaisses(sumTTC(paid));
+    setCreancesTotal(sumTTC(unpaid));
+    setCreancesCount(unpaid.length);
+    const urssafRate = (profile?.urssaf_rate ?? 22) / 100;
+    setBeneficeNet(sumHT(paid) * (1 - urssafRate));
 
-      setRecentDocs(issued.slice(0, 3).map(d => ({
-        id: d.id,
-        document_number: d.document_number,
-        client_name: d.client_name,
-        total_ttc: Number(d.total_ttc) || 0,
-        payment_status: d.payment_status,
-        status: d.status,
-        created_at: d.created_at,
-      })));
-    };
-    load();
+    setRecentDocs(issued.slice(0, 3).map(d => ({
+      id: d.id,
+      document_number: d.document_number,
+      client_name: d.client_name,
+      total_ttc: Number(d.total_ttc) || 0,
+      payment_status: d.payment_status,
+      status: d.status,
+      created_at: d.created_at,
+    })));
   }, [user, profile?.urssaf_rate]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Pull-to-refresh
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const startYRef = useRef<number | null>(null);
+  const PULL_THRESHOLD = 80;
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (window.scrollY > 0 || isRefreshing) {
+      startYRef.current = null;
+      return;
+    }
+    startYRef.current = e.touches[0].clientY;
+  }, [isRefreshing]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (startYRef.current === null) return;
+    const delta = e.touches[0].clientY - startYRef.current;
+    if (delta > 0) {
+      setPullDistance(Math.min(delta * 0.5, 120));
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (startYRef.current === null) return;
+    startYRef.current = null;
+    if (pullDistance >= PULL_THRESHOLD && !isRefreshing) {
+      setIsRefreshing(true);
+      try {
+        await fetchData();
+      } finally {
+        setIsRefreshing(false);
+        setPullDistance(0);
+      }
+    } else {
+      setPullDistance(0);
+    }
+  }, [pullDistance, isRefreshing, fetchData]);
 
   const firstName = (() => {
     const full = profile?.full_name?.trim();

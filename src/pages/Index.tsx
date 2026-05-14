@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -6,7 +6,7 @@ import WelcomeModal from '@/components/home/WelcomeModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2, Loader2 } from 'lucide-react';
+import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2 } from 'lucide-react';
 
 const COLORS = {
   navy: '#1B4F8A',
@@ -96,60 +96,24 @@ const Index = () => {
     fetchData();
   }, [fetchData]);
 
-  // Pull-to-refresh
-  const [pullDistance, setPullDistance] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const startYRef = useRef<number | null>(null);
-  const PULL_THRESHOLD = 80;
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (window.scrollY > 0 || isRefreshing) {
-      startYRef.current = null;
-      return;
-    }
-    startYRef.current = e.touches[0].clientY;
-  }, [isRefreshing]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (startYRef.current === null) return;
-    const delta = e.touches[0].clientY - startYRef.current;
-    if (delta > 0) {
-      setPullDistance(Math.min(delta * 0.5, 120));
-    }
-  }, []);
-
-  const handleTouchEnd = useCallback(async () => {
-    if (startYRef.current === null) return;
-    startYRef.current = null;
-    if (pullDistance >= PULL_THRESHOLD && !isRefreshing) {
-      setIsRefreshing(true);
+  useEffect(() => {
+    const cleanupOldCaches = async () => {
       try {
-        // Vide les caches du Service Worker pour récupérer la dernière version publiée
         if ('caches' in window) {
-          try {
-            const keys = await caches.keys();
-            await Promise.all(keys.map(k => caches.delete(k)));
-          } catch (e) {
-            console.warn('cache clear failed', e);
-          }
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
         }
         if ('serviceWorker' in navigator) {
-          try {
-            const regs = await navigator.serviceWorker.getRegistrations();
-            await Promise.all(regs.map(r => r.update()));
-          } catch (e) {
-            console.warn('SW update failed', e);
-          }
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r => r.unregister()));
         }
-        // Recharge l'app en bypass cache pour appliquer les nouvelles modifs
-        window.location.reload();
-      } finally {
-        // no-op : la page va recharger
+      } catch (e) {
+        console.warn('cache cleanup failed', e);
       }
-    } else {
-      setPullDistance(0);
-    }
-  }, [pullDistance, isRefreshing]);
+    };
+
+    cleanupOldCaches();
+  }, []);
 
   const firstName = (() => {
     const full = profile?.full_name?.trim();
@@ -185,29 +149,8 @@ const Index = () => {
     <div
       dir={isRTL ? 'rtl' : 'ltr'}
       className="min-h-screen overflow-x-hidden relative"
-      style={{ backgroundColor: COLORS.pageBg, fontFamily, transform: `translateY(${pullDistance}px)`, transition: startYRef.current === null ? 'transform 0.25s ease' : 'none' }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      style={{ backgroundColor: COLORS.pageBg, fontFamily }}
     >
-      {(pullDistance > 10 || isRefreshing) && (
-        <div
-          className="absolute left-0 right-0 flex items-center justify-center gap-2 text-white/90 text-[12px] font-bold pointer-events-none"
-          style={{ top: -40, height: 40 }}
-        >
-          <Loader2
-            className={cn('h-4 w-4', isRefreshing && 'animate-spin')}
-            style={{ transform: !isRefreshing ? `rotate(${Math.min(pullDistance * 3, 360)}deg)` : undefined }}
-          />
-          <span>
-            {isRefreshing
-              ? (isRTL ? 'جاري التحديث...' : 'Actualisation...')
-              : pullDistance >= PULL_THRESHOLD
-                ? (isRTL ? 'حرّر للتحديث' : 'Relâchez pour actualiser')
-                : (isRTL ? 'اسحب للتحديث' : 'Tirez pour actualiser')}
-          </span>
-        </div>
-      )}
       <WelcomeModal />
 
       {/* HERO HEADER */}

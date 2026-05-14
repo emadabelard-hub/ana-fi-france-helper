@@ -162,7 +162,14 @@ const MyDocumentsPage = () => {
   }, [docs, typeFilter, periodStart]);
 
   const handleOpen = async (doc: UnifiedDoc) => {
-    if (doc.source !== 'comptable') return;
+    if (doc.source === 'expense') {
+      if (doc.receipt_url) {
+        window.open(doc.receipt_url, '_blank');
+      } else {
+        toast({ title: t('لا يوجد ملف مرفق', 'Aucun fichier joint') });
+      }
+      return;
+    }
     try {
       const { data } = await supabase
         .from('documents')
@@ -192,6 +199,29 @@ const MyDocumentsPage = () => {
     }
     // Fallback: navigate to documents list preview
     navigate(`/pro/documents`);
+  };
+
+  const handleDownloadReceipt = async (doc: UnifiedDoc) => {
+    if (!doc.receipt_url) {
+      toast({ title: t('لا يوجد ملف مرفق', 'Aucun fichier joint') });
+      return;
+    }
+    try {
+      const res = await fetch(doc.receipt_url);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ext = doc.receipt_mime === 'pdf' ? 'pdf' : (doc.receipt_url.split('.').pop()?.split('?')[0] || 'jpg');
+      a.download = `${(doc.document_number || 'facture').replace(/[^\w.-]+/g, '_')}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.warn('[MyDocs] download failed:', err);
+      window.open(doc.receipt_url, '_blank');
+    }
   };
 
   const handleConfirmDelete = async () => {

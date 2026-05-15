@@ -748,8 +748,8 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 ? 'Le client déclare avoir pris connaissance des conditions ci-dessus et accepte le présent devis.'
                 : 'Le client déclare avoir pris connaissance de la présente facture.'}
             </p>
-            <p className="text-[7pt] text-gray-500 text-center mb-2">
-              Mention manuscrite : « <span className="italic font-medium">Bon pour accord</span> »
+            <p className="text-[7pt] text-gray-500 text-center mb-2 italic font-medium">
+              Bon pour accord — Lu et approuvé
             </p>
 
             <div className="flex justify-between items-start gap-3">

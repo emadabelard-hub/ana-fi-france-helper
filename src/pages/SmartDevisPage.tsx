@@ -213,7 +213,7 @@ const SmartDevisPage = () => {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/pro')} aria-label="back">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="back">
             <Arrow className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
@@ -266,51 +266,77 @@ const SmartDevisPage = () => {
               />
               {(rawArabic.trim() || userText.trim()) && (
                 <div className="mt-3 space-y-2">
-                  {rawArabic.trim() && (
-                    <div className="rounded-md border border-border bg-muted p-3" dir="rtl">
-                      <div className="text-xs text-muted-foreground mb-1 font-cairo">ما قلته بالعربي (تقدر تعدّل) :</div>
-                      <Textarea
-                        value={rawArabic}
-                        onChange={(e) => setRawArabic(e.target.value)}
-                        rows={3}
-                        dir="rtl"
-                        className="resize-none border-0 bg-transparent p-0 focus-visible:ring-0 font-cairo"
-                      />
-                    </div>
-                  )}
                   {lineItems.length > 0 ? (
-                    <div className="rounded-md border border-primary/30 bg-background p-3" dir="ltr" lang="fr">
-                      <div className="text-xs text-muted-foreground mb-2">الترجمة للفرنسي / Traduction française :</div>
-                      <ol className="list-decimal list-inside space-y-1 text-sm text-foreground">
-                        {lineItems.map((it, idx) => {
-                          const label = (it.designation_fr || it.designation_ar || '').trim() || `Ligne ${idx + 1}`;
-                          const qty = Number(it.quantity) || 0;
-                          const pu = Number(it.unitPrice) || 0;
-                          return (
-                            <li key={it.id} className="leading-snug">
-                              <span className="font-medium">{label}</span>
-                              {(qty > 0 || pu > 0 || it.unit) && (
-                                <span className="text-muted-foreground">
-                                  {' — '}{qty} {it.unit}{pu > 0 ? ` × ${pu.toFixed(2).replace('.', ',')} €` : ''}
-                                </span>
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ol>
-                    </div>
-                  ) : userText.trim() && (
-                    <div className="rounded-md border border-primary/30 bg-background p-3" dir="ltr" lang="fr">
-                      <div className="text-xs text-muted-foreground mb-1">الترجمة للفرنسي / Traduction française :</div>
-                      <Textarea
-                        value={userText}
-                        onChange={(e) => setUserText(e.target.value)}
-                        rows={3}
-                        dir="ltr"
-                        lang="fr"
-                        className="resize-none border-0 bg-transparent p-0 focus-visible:ring-0"
-                      />
-                    </div>
+                    <>
+                      <div className="rounded-md border border-border bg-muted p-3" dir="rtl">
+                        <div className="text-xs text-muted-foreground mb-2 font-cairo">ما قلته بالعربي (تقدر تعدّل) :</div>
+                        <ol className="list-decimal list-inside space-y-1 text-sm text-foreground font-cairo">
+                          {lineItems.map((it, idx) => {
+                            const label = (it.designation_ar || it.designation_fr || '').trim() || `بند ${idx + 1}`;
+                            const qty = Number(it.quantity) || 0;
+                            const pu = Number(it.unitPrice) || 0;
+                            return (
+                              <li key={it.id} className="leading-snug">
+                                <span className="font-medium">{label}</span>
+                                {(qty > 0 || pu > 0 || it.unit) && (
+                                  <span className="text-muted-foreground">
+                                    {' — '}{qty} {it.unit}{pu > 0 ? ` × ${pu.toFixed(2).replace('.', ',')} €` : ''}
+                                  </span>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      </div>
+                      <div className="rounded-md border border-primary/30 bg-background p-3" dir="ltr" lang="fr">
+                        <div className="text-xs text-muted-foreground mb-2">الترجمة للفرنسي / Traduction française :</div>
+                        <ol className="list-decimal list-inside space-y-1 text-sm text-foreground">
+                          {lineItems.map((it, idx) => {
+                            const label = (it.designation_fr || it.designation_ar || '').trim() || `Ligne ${idx + 1}`;
+                            const qty = Number(it.quantity) || 0;
+                            const pu = Number(it.unitPrice) || 0;
+                            return (
+                              <li key={it.id} className="leading-snug">
+                                <span className="font-medium">{label}</span>
+                                {(qty > 0 || pu > 0 || it.unit) && (
+                                  <span className="text-muted-foreground">
+                                    {' — '}{qty} {it.unit}{pu > 0 ? ` × ${pu.toFixed(2).replace('.', ',')} €` : ''}
+                                  </span>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {rawArabic.trim() && (
+                        <div className="rounded-md border border-border bg-muted p-3" dir="rtl">
+                          <div className="text-xs text-muted-foreground mb-1 font-cairo">ما قلته بالعربي (تقدر تعدّل) :</div>
+                          <Textarea
+                            value={rawArabic}
+                            onChange={(e) => setRawArabic(e.target.value)}
+                            rows={3}
+                            dir="rtl"
+                            className="resize-none border-0 bg-transparent p-0 focus-visible:ring-0 font-cairo"
+                          />
+                        </div>
+                      )}
+                      {userText.trim() && (
+                        <div className="rounded-md border border-primary/30 bg-background p-3" dir="ltr" lang="fr">
+                          <div className="text-xs text-muted-foreground mb-1">الترجمة للفرنسي / Traduction française :</div>
+                          <Textarea
+                            value={userText}
+                            onChange={(e) => setUserText(e.target.value)}
+                            rows={3}
+                            dir="ltr"
+                            lang="fr"
+                            className="resize-none border-0 bg-transparent p-0 focus-visible:ring-0"
+                          />
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}

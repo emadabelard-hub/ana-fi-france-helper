@@ -336,7 +336,7 @@ const SignaturePage = () => {
 
             <p className="text-xs text-muted-foreground leading-relaxed bg-muted/50 p-3 rounded">
               En signant, vous acceptez {docTypeLabel} n° <strong>{docNumber}</strong>
-              {docDate && <> du {docDate}</>} — Mention manuscrite : <em>Bon pour accord</em>
+              {docDate && <> du {docDate}</>} — <em>Bon pour accord — Lu et approuvé</em>
             </p>
 
             <Button onClick={handleSubmit} disabled={submitting} className="w-full py-6 text-base">

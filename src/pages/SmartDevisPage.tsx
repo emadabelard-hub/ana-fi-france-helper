@@ -279,30 +279,16 @@ const SmartDevisPage = () => {
         <Card>
           <CardContent className="p-4 space-y-4">
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium">
-                  {isRTL ? 'وصف الشغل' : 'Description du travail'}
-                </label>
-                <VoiceInputButton
-                  onResult={(t) => setUserText(t)}
-                  onDualResult={(r) => {
-                    setRawArabic(r.raw || '');
-                    setUserText(r.text || r.raw || '');
-                  }}
-                />
-              </div>
+              <label className="block text-sm font-medium">
+                {isRTL ? 'وصف الشغل' : 'Description du travail'}
+              </label>
               <Textarea
                 value={userText}
                 onChange={(e) => setUserText(e.target.value)}
-                onVoiceDual={(r) => {
-                  setRawArabic(r.raw || '');
-                  setUserText(r.text || r.raw || '');
-                }}
                 placeholder={isRTL
                   ? 'اكتب أو سجّل صوتياً : مثلاً "بنتيرة زرقا ساتيني للحيطان 25 متر بـ 18 يورو"'
                   : 'Décris le travail (arabe ou français)'}
                 rows={4}
-                enableVoice
                 dir={isRTL ? 'rtl' : 'ltr'}
                 className="resize-none"
               />
@@ -311,8 +297,18 @@ const SmartDevisPage = () => {
                   {lineItems.length > 0 ? (
                     <>
                       <div className="rounded-md border border-border bg-muted p-3" dir="rtl">
-                        <div className="text-xs text-muted-foreground mb-2 font-cairo">
-                          ما قلته بالعربي (تقدر تعدّل) :
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-xs text-muted-foreground font-cairo">
+                            ما قلته بالعربي (تقدر تعدّل) :
+                          </div>
+                          <VoiceInputButton
+                            onResult={() => {}}
+                            onDualResult={(r) => {
+                              const raw = r.raw || '';
+                              if (!raw) return;
+                              setRawArabic(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + raw);
+                            }}
+                          />
                         </div>
                         <Textarea
                           value={rawArabic}
@@ -347,7 +343,17 @@ const SmartDevisPage = () => {
                     <>
                       {rawArabic.trim() && (
                         <div className="rounded-md border border-border bg-muted p-3" dir="rtl">
-                          <div className="text-xs text-muted-foreground mb-1 font-cairo">ما قلته بالعربي (تقدر تعدّل) :</div>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="text-xs text-muted-foreground font-cairo">ما قلته بالعربي (تقدر تعدّل) :</div>
+                            <VoiceInputButton
+                              onResult={() => {}}
+                              onDualResult={(r) => {
+                                const raw = r.raw || '';
+                                if (!raw) return;
+                                setRawArabic(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + raw);
+                              }}
+                            />
+                          </div>
                           <Textarea
                             value={rawArabic}
                             onChange={(e) => setRawArabic(e.target.value)}

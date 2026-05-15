@@ -279,30 +279,16 @@ const SmartDevisPage = () => {
         <Card>
           <CardContent className="p-4 space-y-4">
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium">
-                  {isRTL ? 'وصف الشغل' : 'Description du travail'}
-                </label>
-                <VoiceInputButton
-                  onResult={(t) => setUserText(t)}
-                  onDualResult={(r) => {
-                    setRawArabic(r.raw || '');
-                    setUserText(r.text || r.raw || '');
-                  }}
-                />
-              </div>
+              <label className="block text-sm font-medium">
+                {isRTL ? 'وصف الشغل' : 'Description du travail'}
+              </label>
               <Textarea
                 value={userText}
                 onChange={(e) => setUserText(e.target.value)}
-                onVoiceDual={(r) => {
-                  setRawArabic(r.raw || '');
-                  setUserText(r.text || r.raw || '');
-                }}
                 placeholder={isRTL
                   ? 'اكتب أو سجّل صوتياً : مثلاً "بنتيرة زرقا ساتيني للحيطان 25 متر بـ 18 يورو"'
                   : 'Décris le travail (arabe ou français)'}
                 rows={4}
-                enableVoice
                 dir={isRTL ? 'rtl' : 'ltr'}
                 className="resize-none"
               />

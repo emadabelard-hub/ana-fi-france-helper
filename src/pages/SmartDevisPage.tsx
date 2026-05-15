@@ -3,7 +3,7 @@
 // Step 2: 1 appel analyze_image
 // Step 3: Affichage direct des items dans formulaire éditable
 // Step 4: Bouton final → /pro/invoice-creator
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
@@ -68,6 +68,16 @@ const SmartDevisPage = () => {
     setShowIntroTip(false);
     try { localStorage.setItem(INTRO_TIP_KEY, 'true'); } catch {}
   };
+
+  useEffect(() => {
+    if (lineItems.length === 0) return;
+    if (!rawArabic.trim()) return;
+    const timer = setTimeout(() => {
+      handleAnalyze();
+    }, 1500);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawArabic, lineItems.length]);
 
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;

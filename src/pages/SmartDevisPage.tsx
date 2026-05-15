@@ -297,8 +297,18 @@ const SmartDevisPage = () => {
                   {lineItems.length > 0 ? (
                     <>
                       <div className="rounded-md border border-border bg-muted p-3" dir="rtl">
-                        <div className="text-xs text-muted-foreground mb-2 font-cairo">
-                          ما قلته بالعربي (تقدر تعدّل) :
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-xs text-muted-foreground font-cairo">
+                            ما قلته بالعربي (تقدر تعدّل) :
+                          </div>
+                          <VoiceInputButton
+                            onResult={() => {}}
+                            onDualResult={(r) => {
+                              const raw = r.raw || '';
+                              if (!raw) return;
+                              setRawArabic(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + raw);
+                            }}
+                          />
                         </div>
                         <Textarea
                           value={rawArabic}

@@ -291,6 +291,13 @@ const SmartDevisPage = () => {
                 rows={4}
                 dir={isRTL ? 'rtl' : 'ltr'}
                 className="resize-none"
+                enableVoice
+                onVoiceDual={(r) => {
+                  const raw = (r.raw || '').trim();
+                  const fr = (r.text || '').trim();
+                  if (raw) setRawArabic(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + raw);
+                  if (fr) setUserText(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + fr);
+                }}
               />
               {(rawArabic.trim() || userText.trim()) && (
                 <div className="mt-3 space-y-2">

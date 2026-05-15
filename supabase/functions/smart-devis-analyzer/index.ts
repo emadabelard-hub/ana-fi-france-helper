@@ -45,6 +45,7 @@ Règles ABSOLUES :
 8. Si سقف ET حيطان mentionnés → générer 2 lignes séparées et numérotées (1 - murs, 2 - plafond)
 9. Matériau spécifique (فلوتون=parquet flottant, كارلاج إيطالي=carrelage italien, بانتيرة=peinture, بلاكو=placo) → mentionner dans designation_fr
 10. Ne jamais ajouter de travaux non demandés.
+11. RÈGLE FORFAIT (PRIORITAIRE) : Si l'artisan mentionne "forfait" ou "فورفيه" avec un montant → générer UNE SEULE ligne. designation_fr = description complète de la prestation, unit = "forfait", quantity = 1, unitPrice = le montant mentionné. NE JAMAIS décortiquer en plusieurs lignes dans ce cas.
 
 Réponds UNIQUEMENT avec le JSON, sans texte avant ni après, sans markdown.`;
 }

@@ -167,6 +167,30 @@ const SmartDevisPage = () => {
     unitPrice: 0,
   }]);
 
+  const [translatingItemId, setTranslatingItemId] = useState<string | null>(null);
+  const translateItemAr = async (item: LineItem) => {
+    const ar = (item.designation_ar || '').trim();
+    if (!ar) {
+      toast({ variant: 'destructive', title: isRTL ? 'الوصف بالعربي فاضي' : 'Description arabe vide' });
+      return;
+    }
+    setTranslatingItemId(item.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('btp-translate', {
+        body: { text: ar, sourceLang: 'ar', targetLang: 'fr' },
+      });
+      if (error) throw error;
+      const fr = String(data?.translated || '').trim();
+      if (fr) updateItem(item.id, { designation_fr: fr });
+      else throw new Error('Empty translation');
+    } catch (e: any) {
+      console.error('[SmartDevis] translate item error:', e);
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ في الترجمة' : 'Erreur traduction', description: e?.message });
+    } finally {
+      setTranslatingItemId(null);
+    }
+  };
+
   const grandTotal = lineItems.reduce((s, it) => s + (it.quantity * it.unitPrice), 0);
 
   const handleCreateDevis = () => {

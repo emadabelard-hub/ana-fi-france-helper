@@ -278,7 +278,28 @@ const SmartDevisPage = () => {
                       />
                     </div>
                   )}
-                  {userText.trim() && (
+                  {lineItems.length > 0 ? (
+                    <div className="rounded-md border border-primary/30 bg-background p-3" dir="ltr" lang="fr">
+                      <div className="text-xs text-muted-foreground mb-2">الترجمة للفرنسي / Traduction française :</div>
+                      <ol className="list-decimal list-inside space-y-1 text-sm text-foreground">
+                        {lineItems.map((it, idx) => {
+                          const label = (it.designation_fr || it.designation_ar || '').trim() || `Ligne ${idx + 1}`;
+                          const qty = Number(it.quantity) || 0;
+                          const pu = Number(it.unitPrice) || 0;
+                          return (
+                            <li key={it.id} className="leading-snug">
+                              <span className="font-medium">{label}</span>
+                              {(qty > 0 || pu > 0 || it.unit) && (
+                                <span className="text-muted-foreground">
+                                  {' — '}{qty} {it.unit}{pu > 0 ? ` × ${pu.toFixed(2).replace('.', ',')} €` : ''}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </div>
+                  ) : userText.trim() && (
                     <div className="rounded-md border border-primary/30 bg-background p-3" dir="ltr" lang="fr">
                       <div className="text-xs text-muted-foreground mb-1">الترجمة للفرنسي / Traduction française :</div>
                       <Textarea

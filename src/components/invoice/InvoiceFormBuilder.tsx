@@ -2167,7 +2167,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           className={cn("text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive gap-1 text-[10px] px-2 py-1 h-7", isRTL && "font-cairo flex-row-reverse")}
         >
           <Trash2 className="h-3 w-3" />
-          {isRTL ? 'امسح بيانات المستند السابق' : 'Effacer le document précédent'}
+          {isRTL ? 'اعمل دوفي من اول وجديد' : 'Recommencer un nouveau devis'}
         </Button>
       </div>
 
@@ -4259,26 +4259,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               {isRTL ? '👁️ افتح المعاينة قبل التأكيد' : '👁️ Ouvrir l’aperçu avant validation'}
             </Button>
 
-            {/* Secondary row */}
-            <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onBack}
-                className={cn("flex-1", isRTL && "font-cairo")}
-              >
-                {isRTL ? '← رجوع' : '← Retour'}
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleFinishDocument}
-                className={cn("text-destructive hover:text-destructive", isRTL && "font-cairo")}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         </div>
       ) : null}

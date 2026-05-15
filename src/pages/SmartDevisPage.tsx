@@ -77,7 +77,7 @@ const SmartDevisPage = () => {
     }, 1500);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawArabic, lineItems.length]);
+  }, [rawArabic]);
 
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;

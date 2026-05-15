@@ -734,29 +734,6 @@ const InvoiceActions = ({
             </div>
           </div>
 
-          {/* CORRECTION 4 — "Save as image" replaced by "Download PDF" */}
-          <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePDFClick}
-              className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              {isRTL ? '💾 تحميل PDF' : '💾 Télécharger PDF'}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyText}
-              disabled={isUploading}
-              className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              {isRTL ? '🔗 نسخ الرابط' : '🔗 Copier le lien'}
-            </Button>
-          </div>
-
           {/* Official Platform Links – Factur-X 2026 */}
           <div className="mt-4 border border-border rounded-lg p-4 space-y-3 bg-muted/30">
             <h3 className={cn(

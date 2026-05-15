@@ -372,6 +372,23 @@ const SmartDevisPage = () => {
                       )}
                     </>
                   )}
+                  {rawArabic.trim() && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAnalyze}
+                      disabled={analyzing}
+                      className="w-full font-cairo"
+                    >
+                      {analyzing ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Languages className="h-4 w-4 mr-2" />
+                      )}
+                      ترجم ↓
+                    </Button>
+                  )}
                 </div>
               )}
             </div>

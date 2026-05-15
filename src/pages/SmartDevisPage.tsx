@@ -484,12 +484,33 @@ const SmartDevisPage = () => {
                       lang="fr"
                       dir="ltr"
                     />
-                    <Input
-                      value={item.designation_ar}
-                      onChange={(e) => updateItem(item.id, { designation_ar: e.target.value })}
-                      placeholder="الوصف بالعربي"
-                      dir="rtl"
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        value={item.designation_ar}
+                        onChange={(e) => updateItem(item.id, { designation_ar: e.target.value })}
+                        placeholder="الوصف بالعربي"
+                        dir="rtl"
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => translateItemAr(item)}
+                        disabled={translatingItemId === item.id || !item.designation_ar.trim()}
+                        className="shrink-0 font-cairo"
+                        aria-label="ترجم"
+                      >
+                        {translatingItemId === item.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Languages className="h-3 w-3 mr-1" />
+                            ترجم
+                          </>
+                        )}
+                      </Button>
+                    </div>
 
                     <div className="grid grid-cols-3 gap-2">
                       <div>

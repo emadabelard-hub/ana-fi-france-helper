@@ -781,56 +781,6 @@ const ExpensesPage = () => {
         </Card>
       </div>
 
-      {/* TVA Summary Card */}
-      <Card className="border-amber-500/20 bg-amber-500/5">
-        <CardContent className="p-4">
-          <div className={cn('flex items-center gap-2 flex-1', isRTL && 'flex-row-reverse')}>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <Calculator className="h-4 w-4 text-amber-400" />
-            </div>
-            <h3 className={cn('text-sm font-bold text-foreground', isRTL && 'font-cairo')}>
-              {isRTL ? '📊 تقرير الضريبة (TVA)' : '📊 Rapport TVA'}
-            </h3>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help shrink-0" />
-                </TooltipTrigger>
-                <TooltipContent side={isRTL ? 'left' : 'right'} className="max-w-[240px] text-xs">
-                  <p className={cn(isRTL && 'font-cairo text-right')}>
-                    {isRTL
-                      ? 'هذا هو المبلغ التقديري للضريبة المستحقة للدولة بعد خصم مصاريفك'
-                      : 'Estimation de la TVA due à l\'État après déduction de vos dépenses'}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className={cn('text-center', isRTL && 'font-cairo')}>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                {isRTL ? 'TVA محصّلة' : 'TVA Collectée'}
-              </p>
-              <p className="text-sm font-black text-emerald-400">{formatCurrency(tvaCollectee)}</p>
-            </div>
-            <div className={cn('text-center', isRTL && 'font-cairo')}>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                {isRTL ? 'TVA قابلة للخصم' : 'TVA Déductible'}
-              </p>
-              <p className="text-sm font-black text-red-400">{formatCurrency(tvaDeductible)}</p>
-            </div>
-            <div className={cn('text-center', isRTL && 'font-cairo')}>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                {isRTL ? 'صافي TVA' : 'TVA Nette'}
-              </p>
-              <p className={cn('text-sm font-black', tvaNet >= 0 ? 'text-amber-400' : 'text-emerald-400')}>
-                {formatCurrency(tvaNet)}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Export Buttons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Button

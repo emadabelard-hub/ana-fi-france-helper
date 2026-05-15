@@ -13,7 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, ArrowRight, Camera, Loader2, Plus, Sparkles, Trash2, X, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, Loader2, Plus, Sparkles, Trash2, X, Send, Languages } from 'lucide-react';
+import VoiceInputButton from '@/components/shared/VoiceInputButton';
 
 const INTRO_TIP_KEY = 'smart_devis_intro_tip_v1';
 const introTipTitle = '💡 كيف تستخدم الديڤي الذكي ؟';
@@ -166,6 +167,30 @@ const SmartDevisPage = () => {
     unitPrice: 0,
   }]);
 
+  const [translatingItemId, setTranslatingItemId] = useState<string | null>(null);
+  const translateItemAr = async (item: LineItem) => {
+    const ar = (item.designation_ar || '').trim();
+    if (!ar) {
+      toast({ variant: 'destructive', title: isRTL ? 'الوصف بالعربي فاضي' : 'Description arabe vide' });
+      return;
+    }
+    setTranslatingItemId(item.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('btp-translate', {
+        body: { text: ar, sourceLang: 'ar', targetLang: 'fr' },
+      });
+      if (error) throw error;
+      const fr = String(data?.translated || '').trim();
+      if (fr) updateItem(item.id, { designation_fr: fr });
+      else throw new Error('Empty translation');
+    } catch (e: any) {
+      console.error('[SmartDevis] translate item error:', e);
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ في الترجمة' : 'Erreur traduction', description: e?.message });
+    } finally {
+      setTranslatingItemId(null);
+    }
+  };
+
   const grandTotal = lineItems.reduce((s, it) => s + (it.quantity * it.unitPrice), 0);
 
   const handleCreateDevis = () => {
@@ -246,9 +271,18 @@ const SmartDevisPage = () => {
         <Card>
           <CardContent className="p-4 space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">
-                {isRTL ? 'وصف الشغل' : 'Description du travail'}
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium">
+                  {isRTL ? 'وصف الشغل' : 'Description du travail'}
+                </label>
+                <VoiceInputButton
+                  onResult={(t) => setUserText(t)}
+                  onDualResult={(r) => {
+                    setRawArabic(r.raw || '');
+                    setUserText(r.text || r.raw || '');
+                  }}
+                />
+              </div>
               <Textarea
                 value={userText}
                 onChange={(e) => setUserText(e.target.value)}
@@ -337,6 +371,23 @@ const SmartDevisPage = () => {
                         </div>
                       )}
                     </>
+                  )}
+                  {rawArabic.trim() && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAnalyze}
+                      disabled={analyzing}
+                      className="w-full font-cairo"
+                    >
+                      {analyzing ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Languages className="h-4 w-4 mr-2" />
+                      )}
+                      ترجم ↓
+                    </Button>
                   )}
                 </div>
               )}
@@ -433,12 +484,33 @@ const SmartDevisPage = () => {
                       lang="fr"
                       dir="ltr"
                     />
-                    <Input
-                      value={item.designation_ar}
-                      onChange={(e) => updateItem(item.id, { designation_ar: e.target.value })}
-                      placeholder="الوصف بالعربي"
-                      dir="rtl"
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        value={item.designation_ar}
+                        onChange={(e) => updateItem(item.id, { designation_ar: e.target.value })}
+                        placeholder="الوصف بالعربي"
+                        dir="rtl"
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => translateItemAr(item)}
+                        disabled={translatingItemId === item.id || !item.designation_ar.trim()}
+                        className="shrink-0 font-cairo"
+                        aria-label="ترجم"
+                      >
+                        {translatingItemId === item.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Languages className="h-3 w-3 mr-1" />
+                            ترجم
+                          </>
+                        )}
+                      </Button>
+                    </div>
 
                     <div className="grid grid-cols-3 gap-2">
                       <div>

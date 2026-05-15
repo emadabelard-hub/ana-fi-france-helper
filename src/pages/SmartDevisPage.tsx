@@ -70,10 +70,8 @@ const SmartDevisPage = () => {
   };
 
   useEffect(() => {
-    if (lineItems.length === 0) return;
-    if (!rawArabic.trim()) return;
     const timer = setTimeout(() => {
-      handleAnalyze();
+      if (rawArabic.trim()) handleAnalyze();
     }, 1500);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps

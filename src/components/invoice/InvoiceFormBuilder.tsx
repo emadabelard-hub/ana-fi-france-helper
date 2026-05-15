@@ -4259,26 +4259,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               {isRTL ? '👁️ افتح المعاينة قبل التأكيد' : '👁️ Ouvrir l’aperçu avant validation'}
             </Button>
 
-            {/* Secondary row */}
-            <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onBack}
-                className={cn("flex-1", isRTL && "font-cairo")}
-              >
-                {isRTL ? '← رجوع' : '← Retour'}
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleFinishDocument}
-                className={cn("text-destructive hover:text-destructive", isRTL && "font-cairo")}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         </div>
       ) : null}

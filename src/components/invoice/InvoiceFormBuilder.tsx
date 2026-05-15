@@ -1689,8 +1689,6 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       // Validations bloquantes — Fiche client
       const clientMissing: string[] = [];
       if (!clientAddress.trim()) clientMissing.push(isRTL ? 'عنوان العميل' : 'Adresse du client');
-      if (!clientPhone.trim()) clientMissing.push(isRTL ? 'هاتف العميل' : 'Téléphone du client');
-      if (!clientEmail.trim() || !/^\S+@\S+\.\S+$/.test(clientEmail.trim())) clientMissing.push(isRTL ? 'إيميل العميل' : 'Email du client');
       if (clientIsB2B && !clientSiren.trim() && !(clientTvaIntra.trim())) {
         clientMissing.push(isRTL ? 'SIREN/SIRET أو TVA للزبون المهني' : 'SIREN/SIRET ou TVA du client B2B');
       }

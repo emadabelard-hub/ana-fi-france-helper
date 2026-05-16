@@ -12,9 +12,9 @@ const navItems = [
     icon: Newspaper,
     labelAr: 'الأخبار',
     labelFr: 'Actualités',
-    color: 'text-red-500',
-    activeBg: 'bg-red-500/15',
-    dotColor: 'bg-red-500',
+    color: 'text-amber-400',
+    activeBg: 'bg-amber-400/15',
+    dotColor: 'bg-amber-400',
   },
   {
     path: '/',

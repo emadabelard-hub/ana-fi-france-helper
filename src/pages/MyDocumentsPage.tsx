@@ -171,9 +171,6 @@ const MyDocumentsPage = () => {
       return;
     }
 
-    // Open blank window SYNCHRONOUSLY before any await
-    const popup = window.open('about:blank', '_blank');
-
     try {
       const { data } = await supabase
         .from('documents')
@@ -193,13 +190,12 @@ const MyDocumentsPage = () => {
         if (signed?.signedUrl) pdfUrl = signed.signedUrl;
       }
 
-      if (pdfUrl && popup) {
-        popup.location.href = pdfUrl;
+      if (pdfUrl) {
+        window.location.href = pdfUrl;
         return;
       }
     } catch (err) {
       console.warn('[MyDocs] open pdf failed:', err);
-      if (popup) popup.close();
     }
 
     navigate('/pro/documents');

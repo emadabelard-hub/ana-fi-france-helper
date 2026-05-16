@@ -191,7 +191,9 @@ const MyDocumentsPage = () => {
       }
 
       if (pdfUrl) {
-        window.location.href = pdfUrl;
+        const downloadName = `${(doc.document_number || 'document').replace(/[^\w.-]+/g, '_')}.pdf`;
+        const sep = pdfUrl.includes('?') ? '&' : '?';
+        window.location.href = `${pdfUrl}${sep}download=${encodeURIComponent(downloadName)}`;
         return;
       }
     } catch (err) {

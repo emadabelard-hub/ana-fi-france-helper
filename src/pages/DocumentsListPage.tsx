@@ -1216,7 +1216,15 @@ const DocumentsListPage = () => {
                             size="sm"
                             variant="ghost"
                             className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 gap-1"
-                            onClick={() => window.open(pdfUrl, '_blank', 'noopener,noreferrer')}
+                            onClick={() => {
+                              const a = document.createElement('a');
+                              a.href = pdfUrl;
+                              a.download = `${(cv.document_number || 'document').replace(/[^\w.-]+/g, '_')}.pdf`;
+                              a.rel = 'noopener';
+                              document.body.appendChild(a);
+                              a.click();
+                              a.remove();
+                            }}
                           >
                             <Download className="h-3 w-3" />
                             {isRTL ? 'تحميل PDF' : 'Télécharger PDF'}

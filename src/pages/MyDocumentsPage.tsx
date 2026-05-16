@@ -191,7 +191,13 @@ const MyDocumentsPage = () => {
       }
 
       if (pdfUrl) {
-        window.open(pdfUrl, '_blank');
+        const a = document.createElement('a');
+        a.href = pdfUrl;
+        a.download = `${(doc.document_number || 'document').replace(/[^\w.-]+/g, '_')}.pdf`;
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
         return;
       }
     } catch (err) {

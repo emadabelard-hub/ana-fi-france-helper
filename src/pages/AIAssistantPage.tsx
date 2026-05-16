@@ -414,7 +414,7 @@ const AIAssistantPage = () => {
   // Onboarding screen to collect name & gender
   if (showOnboarding) {
     return (
-      <div className="flex flex-col h-[calc(100dvh-3.5rem-3.5rem)] bg-background">
+      <div className="flex flex-col h-[calc(100dvh-3.5rem-3.5rem)] bg-[#FAFAF7]">
         <header className="flex items-center gap-3 p-4 border-b border-border bg-card shrink-0">
           <button onClick={() => navigate('/')} className="p-2 rounded-full hover:bg-muted">
             <ArrowLeft size={20} className={cn("text-foreground", isRTL && "rotate-180")} />
@@ -512,7 +512,7 @@ const AIAssistantPage = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-3.5rem-3.5rem)] bg-background">
+    <div className="flex flex-col h-[calc(100dvh-3.5rem-3.5rem)] bg-[#FAFAF7]">
       {/* Header */}
       <header className="flex items-center gap-3 p-4 border-b border-border bg-card shrink-0">
         <button onClick={() => navigate('/')} className="p-2 rounded-full hover:bg-muted">

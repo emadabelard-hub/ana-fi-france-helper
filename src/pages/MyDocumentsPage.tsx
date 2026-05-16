@@ -170,6 +170,11 @@ const MyDocumentsPage = () => {
       }
       return;
     }
+
+    // Open the tab SYNCHRONOUSLY inside the click handler so mobile Chrome
+    // doesn't block it as a popup. We assign the real URL once it's ready.
+    const popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
+
     try {
       const { data } = await supabase
         .from('documents')
@@ -182,7 +187,6 @@ const MyDocumentsPage = () => {
       let pdfUrl: string | null = (data as any)?.pdf_url ?? null;
       const storagePath: string | null = (data as any)?.storage_path ?? null;
 
-      // Refresh signed URL if we have a storage path (signed URLs expire)
       if (storagePath) {
         const { data: signed } = await supabase.storage
           .from('documents')
@@ -191,13 +195,18 @@ const MyDocumentsPage = () => {
       }
 
       if (pdfUrl) {
-        window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+        if (popup && !popup.closed) {
+          popup.location.href = pdfUrl;
+        } else {
+          window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+        }
         return;
       }
     } catch (err) {
       console.warn('[MyDocs] open pdf failed:', err);
     }
-    // Fallback: navigate to documents list preview
+
+    if (popup && !popup.closed) popup.close();
     navigate(`/pro/documents`);
   };
 

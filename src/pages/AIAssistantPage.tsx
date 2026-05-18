@@ -94,16 +94,48 @@ const AIAssistantPage = () => {
 
   // Load conversation history from Supabase on mount
   useEffect(() => {
+  // Load conversation list from Supabase on mount, purge >30d, open most recent
+  const refreshConversations = useCallback(async (): Promise<ConversationSummary[]> => {
+    if (!user) return [];
+    // Auto-delete conversations older than 30 days (based on updated_at)
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase
+      .from('assistant_conversations')
+      .delete()
+      .eq('user_id', user.id)
+      .lt('updated_at', cutoff);
+
+    const { data, error } = await supabase
+      .from('assistant_conversations')
+      .select('id, title, updated_at')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false });
+    if (error) {
+      console.error('List conversations error:', error);
+      return [];
+    }
+    const list = (data || []) as ConversationSummary[];
+    setConversations(list);
+    return list;
+  }, [user]);
+
+  useEffect(() => {
     if (!user || conversationLoaded) return;
     (async () => {
       try {
-        const { data } = await supabase
-          .from('assistant_conversations')
-          .select('messages')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        if (data?.messages && Array.isArray(data.messages)) {
-          setMessages(data.messages as Msg[]);
+        const list = await refreshConversations();
+        if (list.length > 0) {
+          // Open the most recent conversation
+          const first = list[0];
+          setCurrentConversationId(first.id);
+          const { data } = await supabase
+            .from('assistant_conversations')
+            .select('messages')
+            .eq('id', first.id)
+            .maybeSingle();
+          if (data?.messages && Array.isArray(data.messages)) {
+            setMessages(data.messages as Msg[]);
+          }
         }
       } catch (err) {
         console.error('Load conversation error:', err);
@@ -111,24 +143,98 @@ const AIAssistantPage = () => {
         setConversationLoaded(true);
       }
     })();
-  }, [user, conversationLoaded]);
+  }, [user, conversationLoaded, refreshConversations]);
 
-  // Persist conversation on every change (after initial load)
+  // Persist current conversation on every change (after initial load)
   useEffect(() => {
     if (!user || !conversationLoaded || messages.length === 0) return;
-    const timeout = setTimeout(() => {
-      supabase
-        .from('assistant_conversations')
-        .upsert(
-          { user_id: user.id, messages: messages as any, updated_at: new Date().toISOString() },
-          { onConflict: 'user_id' }
-        )
-        .then(({ error }) => {
+    const timeout = setTimeout(async () => {
+      try {
+        const firstUserMsg = messages.find(m => m.role === 'user')?.content || '';
+        const autoTitle = firstUserMsg.trim().slice(0, 60) || null;
+
+        if (currentConversationId) {
+          const { error } = await supabase
+            .from('assistant_conversations')
+            .update({
+              messages: messages as any,
+              title: autoTitle,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', currentConversationId)
+            .eq('user_id', user.id);
           if (error) console.error('Persist conversation error:', error);
-        });
+        } else {
+          const { data, error } = await supabase
+            .from('assistant_conversations')
+            .insert({
+              user_id: user.id,
+              messages: messages as any,
+              title: autoTitle,
+            })
+            .select('id')
+            .single();
+          if (error) {
+            console.error('Create conversation error:', error);
+          } else if (data?.id) {
+            setCurrentConversationId(data.id);
+          }
+        }
+        // Refresh list (titles / order)
+        void refreshConversations();
+      } catch (err) {
+        console.error('Persist conversation error:', err);
+      }
     }, 600);
     return () => clearTimeout(timeout);
-  }, [messages, user, conversationLoaded]);
+  }, [messages, user, conversationLoaded, currentConversationId, refreshConversations]);
+
+  const handleNewConversation = useCallback(() => {
+    setCurrentConversationId(null);
+    setMessages([]);
+    setActiveCategory(null);
+    setShowConversationList(false);
+  }, []);
+
+  const handleSelectConversation = useCallback(async (id: string) => {
+    if (!user || id === currentConversationId) {
+      setShowConversationList(false);
+      return;
+    }
+    try {
+      const { data } = await supabase
+        .from('assistant_conversations')
+        .select('messages')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setCurrentConversationId(id);
+      setMessages((data?.messages as Msg[]) || []);
+      setShowConversationList(false);
+    } catch (err) {
+      console.error('Open conversation error:', err);
+    }
+  }, [user, currentConversationId]);
+
+  const handleDeleteConversation = useCallback(async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+    try {
+      await supabase
+        .from('assistant_conversations')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      if (id === currentConversationId) {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+      void refreshConversations();
+    } catch (err) {
+      console.error('Delete conversation error:', err);
+    }
+  }, [user, currentConversationId, refreshConversations]);
+
 
   const handleOnboardingSubmit = () => {
     const name = onboardingName.trim();

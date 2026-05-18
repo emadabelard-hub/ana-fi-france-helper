@@ -43,6 +43,7 @@ interface LineItem {
   quantity: number;
   unit: string;
   unitPrice: number;
+  lot?: string;
 }
 
 const generateId = () => `id-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -139,6 +140,7 @@ const SmartDevisPage = () => {
         quantity: Number(it.quantity) || 1,
         unit: String(it.unit || 'm²'),
         unitPrice: Number(it.unitPrice) || 0,
+        lot: typeof it.lot === 'string' && it.lot.trim() ? it.lot.trim() : undefined,
       }));
 
       setLineItems(mapped);

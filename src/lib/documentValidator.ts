@@ -93,6 +93,7 @@ export interface DocumentItem {
   unit: string;
   unitPrice: number;
   total: number;
+  lot?: string;
 }
 
 export interface ValidationCorrection {

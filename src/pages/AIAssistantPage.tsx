@@ -92,8 +92,6 @@ const AIAssistantPage = () => {
     }
   }, [dictation.transcript, dictation.isRecording, userHasEdited]);
 
-  // Load conversation history from Supabase on mount
-  useEffect(() => {
   // Load conversation list from Supabase on mount, purge >30d, open most recent
   const refreshConversations = useCallback(async (): Promise<ConversationSummary[]> => {
     if (!user) return [];

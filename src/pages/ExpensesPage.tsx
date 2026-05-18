@@ -60,6 +60,7 @@ const ExpensesPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showOcrModal, setShowOcrModal] = useState(false);
   const [periodFilter, setPeriodFilter] = useState('all');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
   const [showAccountingMenu, setShowAccountingMenu] = useState(false);
 
   const [rows, setRows] = useState<UnifiedRow[]>([]);

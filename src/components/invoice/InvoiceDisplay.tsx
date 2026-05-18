@@ -71,6 +71,7 @@ export interface InvoiceData {
     unit: string;
     unitPrice: number;
     total: number;
+    lot?: string;
   }>;
   subtotal: number;
   discountType?: 'percent' | 'fixed';

@@ -865,6 +865,89 @@ const ExpensesPage = () => {
       {/* Unpaid invoices reminder block */}
       <UnpaidInvoicesBlock documents={documentItems} isRTL={isRTL} />
 
+      {/* Test data diagnostic / reset panel */}
+      {totalPaidCount > 0 && (
+        <Card className="border-amber-500/30 bg-amber-50/40 dark:bg-amber-900/10">
+          <CardContent className="p-3 space-y-2">
+            <button
+              type="button"
+              onClick={() => setShowDiagnostic(s => !s)}
+              className={cn('w-full flex items-center justify-between gap-2', isRTL && 'flex-row-reverse')}
+            >
+              <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span className={cn('text-sm font-bold text-amber-800 dark:text-amber-300', isRTL && 'font-cairo')}>
+                  {isRTL
+                    ? `🧪 تشخيص: ${totalPaidCount} فاتورة مدفوعة`
+                    : `🧪 Diagnostic : ${totalPaidCount} facture${totalPaidCount > 1 ? 's' : ''} marquée${totalPaidCount > 1 ? 's' : ''} payée${totalPaidCount > 1 ? 's' : ''}`}
+                </span>
+              </div>
+              {showDiagnostic ? <ChevronUp className="h-4 w-4 text-amber-700" /> : <ChevronDown className="h-4 w-4 text-amber-700" />}
+            </button>
+
+            {showDiagnostic && (
+              <div className="space-y-1.5 pt-1">
+                <p className={cn('text-[11px] text-muted-foreground', isRTL && 'text-right font-cairo')}>
+                  {isRTL
+                    ? 'إذا كانت هذه بيانات اختبار، اضغط لإعادة التعيين إلى "غير مدفوع".'
+                    : 'Si ce sont des données de test, réinitialisez-les à « impayé » par client.'}
+                </p>
+                {paidByClient.map(c => (
+                  <div
+                    key={c.clientName}
+                    className={cn(
+                      'flex items-center justify-between gap-2 rounded-md bg-background/60 border border-border px-2.5 py-1.5',
+                      isRTL && 'flex-row-reverse'
+                    )}
+                  >
+                    <div className={cn('flex-1 min-w-0', isRTL && 'text-right')}>
+                      <p className="text-xs font-semibold truncate">{c.clientName}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {c.count} × · {formatCurrency(c.total)}
+                      </p>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-[11px] border-amber-500/40 text-amber-700 dark:text-amber-400 gap-1 shrink-0"
+                          disabled={resettingClient === c.clientName}
+                        >
+                          {resettingClient === c.clientName
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <RotateCcw className="h-3 w-3" />}
+                          {isRTL ? 'غير مدفوع' : 'Impayé'}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className={cn(isRTL && 'text-right font-cairo')}>
+                            {isRTL ? 'تأكيد إعادة التعيين' : 'Confirmer la réinitialisation'}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className={cn(isRTL && 'text-right font-cairo')}>
+                            {isRTL
+                              ? `سيتم وضع علامة "غير مدفوع" على ${c.count} فاتورة لـ ${c.clientName}. لن يتم حذف أي مستند.`
+                              : `${c.count} facture(s) de "${c.clientName}" (${formatCurrency(c.total)}) seront marquées comme impayées. Aucun document ne sera supprimé.`}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Annuler'}</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleResetClientPaid(c.clientName)}>
+                            {isRTL ? 'تأكيد' : 'Confirmer'}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+
 
       <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <h2 className={cn('text-base font-bold text-foreground', isRTL && 'font-cairo')}>

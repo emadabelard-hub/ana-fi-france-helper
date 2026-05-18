@@ -13,9 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Receipt, Plus, TrendingUp, TrendingDown, Wallet, Banknote,
   Loader2, Download, Eye, FileText, Archive,
-  ChevronDown, ChevronUp, Users, HardHat, Calculator, Info, Landmark, Shield
+  ChevronDown, ChevronUp, Users, HardHat, Calculator, Info, Landmark, Shield,
+  AlertTriangle, RotateCcw
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import OcrInvoiceScannerModal from '@/components/archive/OcrInvoiceScannerModal';
 import UnpaidInvoicesBlock from '@/components/archive/UnpaidInvoicesBlock';

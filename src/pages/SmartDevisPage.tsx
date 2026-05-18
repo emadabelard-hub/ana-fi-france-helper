@@ -140,6 +140,7 @@ const SmartDevisPage = () => {
         quantity: Number(it.quantity) || 1,
         unit: String(it.unit || 'm²'),
         unitPrice: Number(it.unitPrice) || 0,
+        lot: typeof it.lot === 'string' && it.lot.trim() ? it.lot.trim() : undefined,
       }));
 
       setLineItems(mapped);

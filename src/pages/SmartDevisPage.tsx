@@ -43,6 +43,7 @@ interface LineItem {
   quantity: number;
   unit: string;
   unitPrice: number;
+  lot?: string;
 }
 
 const generateId = () => `id-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

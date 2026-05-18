@@ -258,6 +258,35 @@ ${deepStrategyAr}
 11. كل مصطلح فرنسي تقني لازم يتكتب بالحروف العربية بين قوسين (مثلاً: CAF (كاف)، Préfecture (بريفكتير)، APL (أ بي إل)).
 12. روابط ذكية (إلزامي): لو ردك فيه كلام عن سي في أو البحث عن شغل، أضف في الآخر: [CV_LINK]لو حابب تعمل سي في مطابق للمواصفات المطلوبة اضغط هنا ← صانع CV[/CV_LINK]. لو ردك فيه كلام عن فاتورة أو عرض سعر أو أدوات مهنية، أضف: [PRO_LINK]لو محتاج تعمل عرض سعر أو فاتورة احترافية اضغط هنا ← أدوات البرو[/PRO_LINK]. لو ردك فيه كلام عن تحليل مستندات أو استشارة قانونية أو صياغة رد رسمي أو عقد أو نزاع أو مشاكل إدارية معقدة، أضف: [SOLUTIONS_LINK]للمساعدة في تحليل المستندات أو الحصول على استشارة قانونية ومهنية، اضغط هنا ← المستشار القانوني والمهني[/SOLUTIONS_LINK].`;
 
+    // Inject attachment into the last user message if present
+    const outgoingMessages = Array.isArray(messages) ? [...messages] : [];
+    if (attachment && outgoingMessages.length > 0) {
+      const lastIdx = outgoingMessages.length - 1;
+      const last = outgoingMessages[lastIdx];
+      if (last?.role === 'user') {
+        const question = (typeof userQuestion === 'string' && userQuestion.trim())
+          ? userQuestion.trim()
+          : (language === 'fr'
+              ? "Analyse ce document et explique-moi son contenu, les points importants et ce que je dois faire."
+              : "حلل المستند ده واشرحلي محتواه والنقاط المهمة وإيه اللي لازم أعمله.");
+        if (attachment.kind === 'image' && typeof attachment.dataUrl === 'string') {
+          outgoingMessages[lastIdx] = {
+            role: 'user',
+            content: [
+              { type: 'text', text: question },
+              { type: 'image_url', image_url: { url: attachment.dataUrl } },
+            ],
+          };
+        } else if (attachment.kind === 'pdf' && typeof attachment.text === 'string') {
+          const pdfText = attachment.text.slice(0, 50000);
+          const prefix = language === 'fr'
+            ? `[Document PDF joint : "${attachment.name || 'document.pdf'}"]\nContenu extrait :\n"""\n${pdfText}\n"""\n\nQuestion de l'utilisateur :\n`
+            : `[مستند PDF مرفق: "${attachment.name || 'document.pdf'}"]\nالمحتوى المستخرج:\n"""\n${pdfText}\n"""\n\nسؤال المستخدم:\n`;
+          outgoingMessages[lastIdx] = { role: 'user', content: prefix + question };
+        }
+      }
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -268,7 +297,7 @@ ${deepStrategyAr}
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          ...(messages || []),
+          ...outgoingMessages,
         ],
         stream: true,
       }),

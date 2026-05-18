@@ -63,6 +63,7 @@ interface PrefillData {
     quantity: number;
     unit: string;
     unitPrice: number;
+    lot?: string;
   }>;
   notes?: string;
   source?: string;

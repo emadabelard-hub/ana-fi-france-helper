@@ -515,6 +515,12 @@ const AIAssistantPage = () => {
         },
         body: JSON.stringify({
           messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
+          attachment: currentAttachment
+            ? currentAttachment.kind === 'image'
+              ? { kind: 'image', name: currentAttachment.name, dataUrl: currentAttachment.dataUrl }
+              : { kind: 'pdf', name: currentAttachment.name, text: currentAttachment.text }
+            : null,
+          userQuestion: text || null,
           language: language === 'ar' ? 'ar' : 'fr',
           userName: userInfo?.name || null,
           userGender: userInfo?.gender || null,

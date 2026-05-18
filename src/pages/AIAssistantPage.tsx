@@ -623,19 +623,124 @@ const AIAssistantPage = () => {
   return (
     <div className="flex flex-col h-[calc(100dvh-3.5rem-3.5rem)] bg-background">
       {/* Header */}
-      <header className="flex items-center gap-3 p-4 border-b border-border bg-card shrink-0">
+      <header className="flex items-center gap-2 p-4 border-b border-border bg-card shrink-0">
         <button onClick={() => navigate('/')} className="p-2 rounded-full hover:bg-muted">
           <ArrowLeft size={20} className={cn("text-foreground", isRTL && "rotate-180")} />
         </button>
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <Sparkles size={18} className="text-primary" />
           </div>
-          <h1 className={cn("font-bold text-foreground text-lg", isRTL && "font-cairo")}>
+          <h1 className={cn("font-bold text-foreground text-lg truncate", isRTL && "font-cairo")}>
             {isRTL ? 'المساعد الذكي' : 'Assistant IA'}
           </h1>
         </div>
+        <button
+          onClick={() => setShowConversationList(v => !v)}
+          className={cn(
+            "p-2 rounded-full hover:bg-muted transition-colors",
+            showConversationList && "bg-muted"
+          )}
+          aria-label={isRTL ? 'المحادثات' : 'Conversations'}
+          title={isRTL ? 'المحادثات' : 'Conversations'}
+        >
+          <History size={18} className="text-foreground" />
+        </button>
+        <button
+          onClick={handleNewConversation}
+          className="p-2 rounded-full hover:bg-muted transition-colors"
+          aria-label={isRTL ? 'محادثة جديدة' : 'Nouvelle conversation'}
+          title={isRTL ? 'محادثة جديدة' : 'Nouvelle conversation'}
+        >
+          <MessageSquarePlus size={18} className="text-primary" />
+        </button>
       </header>
+
+      {/* Conversation list dropdown */}
+      {showConversationList && (
+        <div className="absolute inset-0 z-40 bg-black/30 animate-fade-in" onClick={() => setShowConversationList(false)}>
+          <div
+            className={cn(
+              "absolute top-0 right-0 h-full w-[85%] max-w-sm bg-card border-l border-border shadow-xl flex flex-col",
+              isRTL && "left-0 right-auto border-l-0 border-r"
+            )}
+            onClick={(e) => e.stopPropagation()}
+            dir={isRTL ? 'rtl' : 'ltr'}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h2 className={cn("font-bold text-foreground", isRTL && "font-cairo")}>
+                {isRTL ? 'المحادثات' : 'Conversations'}
+              </h2>
+              <button onClick={() => setShowConversationList(false)} className="p-1 rounded-full hover:bg-muted">
+                <X size={18} className="text-foreground" />
+              </button>
+            </div>
+            <button
+              onClick={handleNewConversation}
+              className={cn(
+                "flex items-center gap-2 mx-3 my-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary font-bold text-sm hover:bg-primary/20 transition-colors",
+                isRTL && "font-cairo flex-row-reverse text-right"
+              )}
+            >
+              <MessageSquarePlus size={16} />
+              {isRTL ? 'محادثة جديدة' : 'Nouvelle conversation'}
+            </button>
+            <div className="flex-1 overflow-y-auto px-2 pb-4">
+              {conversations.length === 0 ? (
+                <p className={cn("text-center text-sm text-muted-foreground py-6", isRTL && "font-cairo")}>
+                  {isRTL ? 'مفيش محادثات لسه' : 'Aucune conversation'}
+                </p>
+              ) : (
+                <ul className="space-y-1">
+                  {conversations.map(c => {
+                    const isActive = c.id === currentConversationId;
+                    const titleAr = c.title ? isArabic(c.title) : isRTL;
+                    const dateStr = new Date(c.updated_at).toLocaleDateString(isRTL ? 'ar-EG' : 'fr-FR', { day: '2-digit', month: 'short', year: '2-digit' });
+                    return (
+                      <li key={c.id}>
+                        <button
+                          onClick={() => handleSelectConversation(c.id)}
+                          className={cn(
+                            "w-full group flex items-start gap-2 px-3 py-2.5 rounded-lg transition-colors text-left",
+                            isActive ? "bg-primary/10" : "hover:bg-muted"
+                          )}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={cn(
+                                "text-sm font-medium text-foreground truncate",
+                                titleAr && "font-cairo text-right",
+                              )}
+                              dir={titleAr ? 'rtl' : 'ltr'}
+                            >
+                              {c.title || (isRTL ? 'محادثة جديدة' : 'Nouvelle conversation')}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">{dateStr}</p>
+                          </div>
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => handleDeleteConversation(c.id, e)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDeleteConversation(c.id, e as any); }}
+                            className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer"
+                            aria-label={isRTL ? 'حذف' : 'Supprimer'}
+                          >
+                            <Trash2 size={14} />
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+            <p className={cn("px-4 py-2 text-[10px] text-muted-foreground text-center border-t border-border", isRTL && "font-cairo")}>
+              {isRTL ? 'المحادثات بتتمسح أوتوماتيكي بعد 30 يوم' : 'Suppression auto après 30 jours'}
+            </p>
+          </div>
+        </div>
+      )}
+
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">

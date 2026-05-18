@@ -72,6 +72,7 @@ const ExpensesPage = () => {
   const [archiving, setArchiving] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [resettingClient, setResettingClient] = useState<string | null>(null);
+  const [resettingAll, setResettingAll] = useState(false);
 
 
   const formatEUR0 = (n: number) =>

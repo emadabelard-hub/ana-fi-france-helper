@@ -684,14 +684,17 @@ const DocumentsListPage = () => {
 
   const handleMarkPaid = async (doc: DocumentRow) => {
     if (!user) return;
+    const next = doc.payment_status === 'paid' ? 'unpaid' : 'paid';
     await (supabase.from('documents_comptables') as any)
-      .update({ payment_status: 'paid' })
+      .update({ payment_status: next })
       .eq('id', doc.id)
       .eq('user_id', user.id);
     setDocuments(prev => prev.map(d =>
-      d.id === doc.id ? { ...d, payment_status: 'paid' } : d
+      d.id === doc.id ? { ...d, payment_status: next } : d
     ));
-    toast({ title: isRTL ? '✅ تم الدفع' : '✅ Marqué comme payé' });
+    toast({ title: next === 'paid'
+      ? (isRTL ? '✅ تم الدفع' : '✅ Marqué comme payé')
+      : (isRTL ? '↩ غير مدفوع' : '↩ Marqué comme non payé') });
   };
 
   if (authLoading) {

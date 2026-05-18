@@ -320,6 +320,46 @@ const ExpensesPage = () => {
     }
   };
 
+  const handleResetTestData = async () => {
+    if (!user || !isAdmin) return;
+    setResettingTestData(true);
+    try {
+      // 1) Mark ALL invoices as unpaid (no deletion)
+      const { error: e1 } = await supabase
+        .from('documents_comptables')
+        .update({ payment_status: 'unpaid' })
+        .eq('user_id', user.id)
+        .eq('document_type', 'facture');
+      if (e1) throw e1;
+
+      // 2) Delete ALL expenses for this user (no invoices/quotes touched)
+      const { error: e2 } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('user_id', user.id);
+      if (e2) throw e2;
+
+      toast({
+        title: isRTL ? '✅ تم إعادة تعيين بيانات الاختبار' : '✅ Données de test réinitialisées',
+        description: isRTL
+          ? 'كل الفواتير "غير مدفوعة" وكل المصروفات اتمسحت.'
+          : 'Toutes les factures sont impayées et toutes les dépenses ont été supprimées.',
+      });
+      await fetchAll();
+    } catch (e: any) {
+      console.error('Reset test data error:', e);
+      toast({
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: e?.message || '',
+        variant: 'destructive',
+      });
+    } finally {
+      setResettingTestData(false);
+    }
+  };
+
+
+
 
 
   const tvaCollectee = useMemo(() =>

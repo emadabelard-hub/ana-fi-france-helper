@@ -16,7 +16,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, language, userName, userGender, category } = await req.json();
+    const { messages, language, userName, userGender, category, attachment, userQuestion } = await req.json();
 
     if (
       Array.isArray(messages) &&

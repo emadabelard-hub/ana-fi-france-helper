@@ -1053,22 +1053,36 @@ const ExpensesPage = () => {
 
 
       {/* Unified Timeline */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <Card className="border-dashed border-border">
-          <CardContent className="py-12 text-center">
-            <Receipt className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
-            <p className={cn('text-sm text-muted-foreground', isRTL && 'font-cairo')}>
-              {isRTL ? 'لا توجد عمليات بعد' : 'Aucune opération enregistrée'}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
+      {(() => {
+        const visibleRows = filtered.filter(r => {
+          if (paymentFilter === 'all') return true;
+          if (r.type !== 'facture') return false;
+          if (paymentFilter === 'paid') return r.paymentStatus === 'paid';
+          return r.paymentStatus !== 'paid';
+        });
+        if (loading) {
+          return (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            </div>
+          );
+        }
+        if (visibleRows.length === 0) {
+          return (
+            <Card className="border-dashed border-border">
+              <CardContent className="py-12 text-center">
+                <Receipt className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+                <p className={cn('text-sm text-muted-foreground', isRTL && 'font-cairo')}>
+                  {isRTL ? 'لا توجد عمليات بعد' : 'Aucune opération enregistrée'}
+                </p>
+              </CardContent>
+            </Card>
+          );
+        }
+        return (
         <div className="space-y-2">
-          {filtered.map(row => {
+          {visibleRows.map(row => {
+
           const tc = typeConfig[row.type];
             const date = new Date(row.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
             const isOverdue = row.type === 'facture' && (new Date().getTime() - new Date(row.date).getTime()) > 30 * 24 * 60 * 60 * 1000;

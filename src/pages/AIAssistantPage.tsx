@@ -424,13 +424,58 @@ const AIAssistantPage = () => {
     }
   };
 
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(file);
+    });
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const isImage = /^image\/(jpe?g|png)$/i.test(file.type);
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    if (!isImage && !isPdf) {
+      toast({ variant: 'destructive', title: isRTL ? 'نوع الملف غير مدعوم' : 'Format non supporté', description: isRTL ? 'JPG, PNG أو PDF فقط' : 'JPG, PNG ou PDF uniquement' });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ variant: 'destructive', title: isRTL ? 'الملف كبير أوي' : 'Fichier trop volumineux', description: isRTL ? 'الحد الأقصى 10 ميجا' : 'Max 10 Mo' });
+      return;
+    }
+    setIsProcessingFile(true);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      if (isImage) {
+        setAttachment({ kind: 'image', name: file.name, dataUrl });
+      } else {
+        const text = await extractTextFromPDF(dataUrl);
+        setAttachment({ kind: 'pdf', name: file.name, text: text.slice(0, 50000) });
+      }
+    } catch (err) {
+      console.error('File processing error:', err);
+      toast({ variant: 'destructive', title: isRTL ? 'حصل مشكلة في الملف' : 'Erreur de lecture du fichier' });
+    } finally {
+      setIsProcessingFile(false);
+    }
+  };
+
   const send = async () => {
     const text = input.trim();
-    if (!text || isLoading) return;
+    if ((!text && !attachment) || isLoading) return;
 
-    const userMsg: Msg = { role: 'user', content: text };
+    const currentAttachment = attachment;
+    const displayText = text || (currentAttachment
+      ? (isRTL ? `📎 ${currentAttachment.name}` : `📎 ${currentAttachment.name}`)
+      : '');
+
+    const userMsg: Msg = { role: 'user', content: displayText };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
+    setAttachment(null);
     setUserHasEdited(false);
     setIsInputFocused(false);
     resetTextareaHeight();
@@ -438,7 +483,7 @@ const AIAssistantPage = () => {
     setIsLoading(true);
 
     // Intercept: agent comptable
-    if (isAccountingCommand(text)) {
+    if (!currentAttachment && isAccountingCommand(text)) {
       const report = await generateAccountingReport();
       setMessages(prev => [...prev, { role: 'assistant', content: report }]);
       setIsLoading(false);

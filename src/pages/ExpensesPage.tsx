@@ -315,6 +315,9 @@ const ExpensesPage = () => {
     } finally {
       setResettingAll(false);
     }
+  };
+
+
 
   const tvaCollectee = useMemo(() =>
     paidInvoices.reduce((s, r) => s + computeRowTva(r), 0),

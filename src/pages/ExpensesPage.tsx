@@ -927,6 +927,44 @@ const ExpensesPage = () => {
                     ? 'إذا كانت هذه بيانات اختبار، اضغط لإعادة التعيين إلى "غير مدفوع".'
                     : 'Si ce sont des données de test, réinitialisez-les à « impayé » par client.'}
                 </p>
+
+                {/* Reset ALL button */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className={cn('w-full h-8 text-xs gap-1.5', isRTL && 'font-cairo flex-row-reverse')}
+                      disabled={resettingAll}
+                    >
+                      {resettingAll
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <RotateCcw className="h-3.5 w-3.5" />}
+                      {isRTL
+                        ? `إعادة تعيين الكل (${totalPaidCount})`
+                        : `Tout réinitialiser (${totalPaidCount})`}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className={cn(isRTL && 'text-right font-cairo')}>
+                        {isRTL ? 'تأكيد إعادة تعيين الكل' : 'Réinitialiser toutes les factures payées'}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className={cn(isRTL && 'text-right font-cairo')}>
+                        {isRTL
+                          ? `سيتم وضع علامة "غير مدفوع" على ${totalPaidCount} فاتورة. لن يتم حذف أي مستند.`
+                          : `${totalPaidCount} facture(s) seront marquées comme impayées. Aucun document ne sera supprimé.`}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Annuler'}</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleResetAllPaid}>
+                        {isRTL ? 'تأكيد' : 'Confirmer'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
                 {paidByClient.map(c => (
                   <div
                     key={c.clientName}

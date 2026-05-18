@@ -20,6 +20,7 @@ export interface LineItem {
   unit: string;
   unitPrice: number;
   total: number;
+  lot?: string;
 }
 
 interface LineItemEditorProps {

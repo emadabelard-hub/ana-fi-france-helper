@@ -126,6 +126,7 @@ export interface InvoiceDraft {
     unit: string;
     unitPrice: number;
     total: number;
+    lot?: string;
   }>;
   natureOperation?: 'service' | 'goods' | 'mixed';
   assureurName?: string;

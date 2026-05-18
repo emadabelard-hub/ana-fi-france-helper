@@ -63,6 +63,7 @@ interface PrefillData {
     quantity: number;
     unit: string;
     unitPrice: number;
+    lot?: string;
   }>;
   notes?: string;
   source?: string;
@@ -222,6 +223,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         unit: item.unit || 'U',
         unitPrice: item.unitPrice || 0,
         total: (item.quantity || 1) * (item.unitPrice || 0),
+        lot: typeof (item as any).lot === 'string' && (item as any).lot.trim() ? (item as any).lot.trim() : undefined,
       }));
     }
     return [{
@@ -737,6 +739,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           unit: item.unit || 'U',
           unitPrice: item.unitPrice || 0,
           total: (item.quantity || 1) * (item.unitPrice || 0),
+          lot: typeof (item as any).lot === 'string' && (item as any).lot.trim() ? (item as any).lot.trim() : undefined,
         }));
         setItems(newItems);
         const attemptedIds = new Set(newItems.map(item => item.id));
@@ -978,6 +981,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         unit: item.unit,
         unitPrice: item.unitPrice,
         total: item.total,
+        lot: typeof (item as any).lot === 'string' && (item as any).lot.trim() ? (item as any).lot.trim() : undefined,
       })),
       subtotal,
       discountType: discountEnabled && discountAmt > 0 ? discountType : undefined,
@@ -1126,6 +1130,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       unit: vi.unit,
       unitPrice: vi.unitPrice,
       total: vi.total,
+      lot: typeof (vi as any).lot === 'string' && (vi as any).lot.trim() ? (vi as any).lot.trim() : undefined,
     })),
     subtotal: Math.round(validatedSubtotal * 100) / 100,
     discountAmount: validatedDiscountAmt > 0 ? validatedDiscountAmt : undefined,

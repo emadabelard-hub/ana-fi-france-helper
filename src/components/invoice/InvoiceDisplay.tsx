@@ -259,17 +259,18 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   const displayedTvaMention = vatFooterMention.trim();
 
   // ── LOT DETECTION — auto-group items by trade (corps d'état) ──
+  // Standard BTP categories. Order = priority: most specific first.
+  // Each lot name is unique — items of the same trade are merged into one lot.
   const LOT_RULES: { lot: string; keywords: RegExp }[] = [
-    { lot: 'Installation chantier', keywords: /\b(installation\s+(de\s+)?chantier|protection|b[âa]che|signalisation|tri\s+s[ée]lectif|mise\s+en\s+place\s+(des|de)\s+protections|تجهيز\s*ال?ورشة|حماية)/i },
-    { lot: 'Démolition et dépose', keywords: /\b(d[ée]molition|d[ée]pose|[ée]vacuation\s+(des\s+)?gravats|gravats|d[ée]chets\s+de\s+chantier|هدم|شيل\s*ال?هدم|إخلاء\s*ال?مخلفات)/i },
-    { lot: 'Maçonnerie et étanchéité', keywords: /\b(ma[çc]onnerie|[ée]tanch[ée]it[ée]|ragr[ée]age|chape|enduit\s+ext|hydrofuge|بناء|عزل\s*مائي)/i },
-    { lot: 'Peinture et enduits', keywords: /\b(peinture|enduit(?!\s+ext)|sous[- ]couche|impression|pon[çc]age|rebouchage|fa[çc]ade|دهان|بانتير|معجون|صباغة)/i },
-    { lot: 'Revêtements sol', keywords: /\b(rev[êe]tement\s+(de\s+)?sol|parquet|stratifi[ée]|moquette|lino|pvc\s+sol|أرضية(?!\s*بلاط))/i },
-    { lot: 'Carrelage et faïence', keywords: /\b(carrelage|fa[ïi]ence|joints?\s+de\s+carrelage|pose\s+de\s+carrelage|بلاط|تبليط|سيراميك|زليج)/i },
-    { lot: 'Plomberie sanitaire', keywords: /\b(plomberie|sanitaire|robinetterie|[ée]tanch[ée]it[ée]\s+plomberie|wc|lavabo|douche|baignoire|سباكة|بلومبري)/i },
-    { lot: 'Électricité', keywords: /\b([ée]lectri|c[âa]blage|prise|interrupteur|tableau\s+[ée]lectrique|nf\s+c\s*15-?100|كهرباء|كهربا|مقابس|مفاتيح)/i },
-    { lot: 'Menuiserie', keywords: /\b(menuiserie|porte|fen[êe]tre|placard|quincaillerie|نجارة|أبواب)/i },
-    { lot: 'Nettoyage', keywords: /\b(nettoyage|remise\s+en\s+[ée]tat|fin\s+de\s+chantier|تنظيف)/i },
+    { lot: 'DÉMOLITION ET DÉPOSE', keywords: /\b(d[ée]molition|d[ée]pose|[ée]vacuation\s+(des\s+)?gravats|gravats|d[ée]chets\s+de\s+chantier|curage|هدم|شيل\s*ال?هدم|إخلاء\s*ال?مخلفات)/i },
+    { lot: 'CARRELAGE ET FAÏENCE', keywords: /\b(carrelage|fa[ïi]ence|joints?\s+de\s+carrelage|pose\s+de\s+carrelage|بلاط|تبليط|سيراميك|زليج)/i },
+    { lot: 'PLOMBERIE SANITAIRE', keywords: /\b(plomberie|sanitaire|robinet(?:terie)?|[ée]vier|wc|lavabo|douche|baignoire|mitigeur|chauffe[- ]eau|canalisation|سباكة|بلومبري|حنفية|مغسلة|دش|بانيو)/i },
+    { lot: 'ÉLECTRICITÉ', keywords: /\b([ée]lectri|c[âa]blage|prise|interrupteur|tableau\s+[ée]lectrique|disjoncteur|luminaire|nf\s+c\s*15-?100|كهرباء|كهربا|مقابس|مفاتيح|تابلو)/i },
+    { lot: 'MENUISERIE', keywords: /\b(menuiserie|porte|fen[êe]tre|volet|placard|quincaillerie|huisserie|baie\s+vitr[ée]e|نجارة|أبواب|شبابيك)/i },
+    { lot: 'REVÊTEMENTS SOL', keywords: /\b(rev[êe]tement\s+(de\s+)?sol|parquet|stratifi[ée]|moquette|lino|pvc\s+sol|sol\s+souple|أرضية(?!\s*بلاط))/i },
+    { lot: 'MAÇONNERIE ET ÉTANCHÉITÉ', keywords: /\b(ma[çc]onnerie|[ée]tanch[ée]it[ée]|ragr[ée]age|chape|enduit\s+ext|hydrofuge|parpaing|b[ée]ton|cloison\s+(en\s+)?b[ée]ton|بناء|عزل\s*مائي|إسمنت)/i },
+    { lot: 'PEINTURE ET ENDUITS', keywords: /\b(peinture|enduit(?!\s+ext)|sous[- ]couche|impression|pon[çc]age|rebouchage|fa[çc]ade|placo|pl[âa]tre(?:rie)?|fa[ux\s]+plafond|دهان|بانتير|معجون|صباغة|جبس)/i },
+    { lot: 'NETTOYAGE ET DIVERS', keywords: /\b(nettoyage|remise\s+en\s+[ée]tat|fin\s+de\s+chantier|installation\s+(de\s+)?chantier|protection|b[âa]che|signalisation|tri\s+s[ée]lectif|d[ée]placement|transport|divers|تنظيف|تجهيز\s*ال?ورشة|حماية)/i },
   ];
 
   const detectLot = (item: { designation_fr: string; designation_ar?: string }): string | null => {

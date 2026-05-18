@@ -286,6 +286,36 @@ const ExpensesPage = () => {
     }
   };
 
+  const handleResetAllPaid = async () => {
+    if (!user) return;
+    setResettingAll(true);
+    try {
+      const { error } = await supabase
+        .from('documents_comptables')
+        .update({ payment_status: 'unpaid' })
+        .eq('user_id', user.id)
+        .eq('document_type', 'facture')
+        .eq('status', 'finalized')
+        .eq('payment_status', 'paid');
+      if (error) throw error;
+      toast({
+        title: isRTL ? '✅ تم' : '✅ Réinitialisé',
+        description: isRTL
+          ? `تم وضع علامة "غير مدفوع" على ${totalPaidCount} فاتورة`
+          : `${totalPaidCount} facture(s) marquée(s) comme impayées`,
+      });
+      await fetchAll();
+    } catch (e: any) {
+      console.error('Reset all paid status error:', e);
+      toast({
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: e?.message || '',
+        variant: 'destructive',
+      });
+    } finally {
+      setResettingAll(false);
+    }
+
   const tvaCollectee = useMemo(() =>
     paidInvoices.reduce((s, r) => s + computeRowTva(r), 0),
     [paidInvoices]);

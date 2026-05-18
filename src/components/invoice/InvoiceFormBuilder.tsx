@@ -981,6 +981,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         unit: item.unit,
         unitPrice: item.unitPrice,
         total: item.total,
+        lot: typeof (item as any).lot === 'string' && (item as any).lot.trim() ? (item as any).lot.trim() : undefined,
       })),
       subtotal,
       discountType: discountEnabled && discountAmt > 0 ? discountType : undefined,

@@ -235,6 +235,55 @@ const ExpensesPage = () => {
     filtered.filter(r => r.type === 'facture' && r.status === 'finalized' && r.paymentStatus === 'paid'),
     [filtered]);
 
+  // Diagnostic: paid invoices grouped by client (over ALL data, ignoring period filter)
+  const paidByClient = useMemo(() => {
+    const map: Record<string, { count: number; total: number }> = {};
+    rows.forEach(r => {
+      if (r.type === 'facture' && r.status === 'finalized' && r.paymentStatus === 'paid') {
+        const k = r.clientName || '(sans nom)';
+        if (!map[k]) map[k] = { count: 0, total: 0 };
+        map[k].count += 1;
+        map[k].total += r.amount;
+      }
+    });
+    return Object.entries(map)
+      .map(([clientName, v]) => ({ clientName, ...v }))
+      .sort((a, b) => b.total - a.total);
+  }, [rows]);
+  const totalPaidCount = paidByClient.reduce((s, c) => s + c.count, 0);
+
+  const handleResetClientPaid = async (clientName: string) => {
+    if (!user) return;
+    setResettingClient(clientName);
+    try {
+      const { error } = await supabase
+        .from('documents_comptables')
+        .update({ payment_status: 'unpaid' })
+        .eq('user_id', user.id)
+        .eq('document_type', 'facture')
+        .eq('status', 'finalized')
+        .eq('payment_status', 'paid')
+        .eq('client_name', clientName);
+      if (error) throw error;
+      toast({
+        title: isRTL ? '✅ تم' : '✅ Réinitialisé',
+        description: isRTL
+          ? `تم وضع علامة "غير مدفوع" على فواتير ${clientName}`
+          : `Factures de ${clientName} marquées comme impayées`,
+      });
+      await fetchAll();
+    } catch (e: any) {
+      console.error('Reset paid status error:', e);
+      toast({
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: e?.message || '',
+        variant: 'destructive',
+      });
+    } finally {
+      setResettingClient(null);
+    }
+  };
+
   const tvaCollectee = useMemo(() =>
     paidInvoices.reduce((s, r) => s + computeRowTva(r), 0),
     [paidInvoices]);

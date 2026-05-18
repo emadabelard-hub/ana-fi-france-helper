@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import JSZip from 'jszip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -52,6 +53,7 @@ const formatCurrency = (n: number) =>
 const ExpensesPage = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const { isAdmin } = useAdminAuth();
   const { toast } = useToast();
   const { profile } = useProfile();
   const navigate = useNavigate();
@@ -73,6 +75,7 @@ const ExpensesPage = () => {
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [resettingClient, setResettingClient] = useState<string | null>(null);
   const [resettingAll, setResettingAll] = useState(false);
+  const [resettingTestData, setResettingTestData] = useState(false);
 
 
   const formatEUR0 = (n: number) =>
@@ -316,6 +319,46 @@ const ExpensesPage = () => {
       setResettingAll(false);
     }
   };
+
+  const handleResetTestData = async () => {
+    if (!user || !isAdmin) return;
+    setResettingTestData(true);
+    try {
+      // 1) Mark ALL invoices as unpaid (no deletion)
+      const { error: e1 } = await supabase
+        .from('documents_comptables')
+        .update({ payment_status: 'unpaid' })
+        .eq('user_id', user.id)
+        .eq('document_type', 'facture');
+      if (e1) throw e1;
+
+      // 2) Delete ALL expenses for this user (no invoices/quotes touched)
+      const { error: e2 } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('user_id', user.id);
+      if (e2) throw e2;
+
+      toast({
+        title: isRTL ? '✅ تم إعادة تعيين بيانات الاختبار' : '✅ Données de test réinitialisées',
+        description: isRTL
+          ? 'كل الفواتير "غير مدفوعة" وكل المصروفات اتمسحت.'
+          : 'Toutes les factures sont impayées et toutes les dépenses ont été supprimées.',
+      });
+      await fetchAll();
+    } catch (e: any) {
+      console.error('Reset test data error:', e);
+      toast({
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: e?.message || '',
+        variant: 'destructive',
+      });
+    } finally {
+      setResettingTestData(false);
+    }
+  };
+
+
 
 
 
@@ -1173,6 +1216,55 @@ const ExpensesPage = () => {
       })()}
 
 
+
+      {/* Admin-only: full test-data reset */}
+      {isAdmin && (
+        <Card className="border-red-500/30 bg-red-50/30 dark:bg-red-900/10">
+          <CardContent className="p-3 space-y-2">
+            <p className={cn('text-[11px] font-semibold text-red-700 dark:text-red-300 uppercase tracking-wider', isRTL && 'text-right font-cairo')}>
+              {isRTL ? '🛠️ أدوات المسؤول' : '🛠️ Outils administrateur'}
+            </p>
+            <p className={cn('text-[11px] text-muted-foreground', isRTL && 'text-right font-cairo')}>
+              {isRTL
+                ? 'يضع كل الفواتير "غير مدفوعة" ويحذف كل المصروفات. لا يتم حذف أي فاتورة أو دوفي.'
+                : 'Marque toutes les factures comme impayées et supprime toutes les dépenses. Aucune facture ni devis n\'est supprimé.'}
+            </p>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className={cn('w-full h-9 text-xs gap-1.5', isRTL && 'font-cairo flex-row-reverse')}
+                  disabled={resettingTestData}
+                >
+                  {resettingTestData
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <RotateCcw className="h-3.5 w-3.5" />}
+                  {isRTL ? 'إعادة تعيين بيانات الاختبار' : 'Réinitialiser les données de test'}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className={cn(isRTL && 'text-right font-cairo')}>
+                    {isRTL ? 'تأكيد إعادة التعيين' : 'Confirmer la réinitialisation'}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className={cn(isRTL && 'text-right font-cairo')}>
+                    {isRTL
+                      ? 'كل الفواتير ستصبح "غير مدفوعة" وكل المصروفات هتتحذف. الفواتير والدوفيهات لن تُحذف.'
+                      : 'Toutes les factures passeront en « impayé » et toutes les dépenses seront supprimées. Aucune facture ni devis ne sera supprimé.'}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Annuler'}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResetTestData}>
+                    {isRTL ? 'تأكيد' : 'Confirmer'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Security Badge */}
       <SecurityBadge />

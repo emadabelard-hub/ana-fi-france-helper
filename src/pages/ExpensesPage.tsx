@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import JSZip from 'jszip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
+const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -53,7 +53,17 @@ const formatCurrency = (n: number) =>
 const ExpensesPage = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
-  const { isAdmin } = useAdminAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user || user.is_anonymous) { setIsAdmin(false); return; }
+      if (user.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL) { setIsAdmin(true); return; }
+      const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
+      if (!cancelled) setIsAdmin(data === true);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
   const { toast } = useToast();
   const { profile } = useProfile();
   const navigate = useNavigate();

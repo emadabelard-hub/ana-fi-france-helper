@@ -1022,22 +1022,35 @@ const ExpensesPage = () => {
 
 
 
-      <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
+      <div className={cn('flex items-center justify-between gap-2 flex-wrap', isRTL && 'flex-row-reverse')}>
         <h2 className={cn('text-base font-bold text-foreground', isRTL && 'font-cairo')}>
           {isRTL ? '📋 آخر العمليات' : '📋 Dernières Opérations'}
         </h2>
-        <Select value={periodFilter} onValueChange={setPeriodFilter}>
-          <SelectTrigger className="w-28 h-8 text-xs bg-background border-border">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{isRTL ? 'الكل' : 'Tout'}</SelectItem>
-            <SelectItem value="month">{isRTL ? 'هذا الشهر' : 'Ce mois'}</SelectItem>
-            <SelectItem value="quarter">{isRTL ? 'هذا الربع' : 'Ce trimestre'}</SelectItem>
-            <SelectItem value="year">{isRTL ? 'هذه السنة' : 'Cette année'}</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+          <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as 'all' | 'paid' | 'unpaid')}>
+            <SelectTrigger className="w-32 h-8 text-xs bg-background border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isRTL ? 'كل الفواتير' : 'Toutes factures'}</SelectItem>
+              <SelectItem value="paid">{isRTL ? 'مدفوعة فقط' : 'Payées'}</SelectItem>
+              <SelectItem value="unpaid">{isRTL ? 'غير مدفوعة فقط' : 'Impayées'}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+            <SelectTrigger className="w-28 h-8 text-xs bg-background border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isRTL ? 'الكل' : 'Tout'}</SelectItem>
+              <SelectItem value="month">{isRTL ? 'هذا الشهر' : 'Ce mois'}</SelectItem>
+              <SelectItem value="quarter">{isRTL ? 'هذا الربع' : 'Ce trimestre'}</SelectItem>
+              <SelectItem value="year">{isRTL ? 'هذه السنة' : 'Cette année'}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
 
       {/* Unified Timeline */}
       {loading ? (

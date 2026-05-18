@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Send, Sparkles, Mic, ScanLine } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X, Trash2 } from 'lucide-react';
 import RoomScannerModal from '@/components/scanner/RoomScannerModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,8 @@ import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { useAssistantDictation } from '@/hooks/useAssistantDictation';
 import FullscreenVoiceModal from '@/components/assistant/FullscreenVoiceModal';
+
+type ConversationSummary = { id: string; title: string | null; updated_at: string };
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
@@ -62,6 +64,9 @@ const AIAssistantPage = () => {
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const [userHasEdited, setUserHasEdited] = useState(false);
   const [conversationLoaded, setConversationLoaded] = useState(false);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [showConversationList, setShowConversationList] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
@@ -87,18 +92,48 @@ const AIAssistantPage = () => {
     }
   }, [dictation.transcript, dictation.isRecording, userHasEdited]);
 
-  // Load conversation history from Supabase on mount
+  // Load conversation list from Supabase on mount, purge >30d, open most recent
+  const refreshConversations = useCallback(async (): Promise<ConversationSummary[]> => {
+    if (!user) return [];
+    // Auto-delete conversations older than 30 days (based on updated_at)
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase
+      .from('assistant_conversations')
+      .delete()
+      .eq('user_id', user.id)
+      .lt('updated_at', cutoff);
+
+    const { data, error } = await supabase
+      .from('assistant_conversations')
+      .select('id, title, updated_at')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false });
+    if (error) {
+      console.error('List conversations error:', error);
+      return [];
+    }
+    const list = (data || []) as ConversationSummary[];
+    setConversations(list);
+    return list;
+  }, [user]);
+
   useEffect(() => {
     if (!user || conversationLoaded) return;
     (async () => {
       try {
-        const { data } = await supabase
-          .from('assistant_conversations')
-          .select('messages')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        if (data?.messages && Array.isArray(data.messages)) {
-          setMessages(data.messages as Msg[]);
+        const list = await refreshConversations();
+        if (list.length > 0) {
+          // Open the most recent conversation
+          const first = list[0];
+          setCurrentConversationId(first.id);
+          const { data } = await supabase
+            .from('assistant_conversations')
+            .select('messages')
+            .eq('id', first.id)
+            .maybeSingle();
+          if (data?.messages && Array.isArray(data.messages)) {
+            setMessages(data.messages as Msg[]);
+          }
         }
       } catch (err) {
         console.error('Load conversation error:', err);
@@ -106,24 +141,98 @@ const AIAssistantPage = () => {
         setConversationLoaded(true);
       }
     })();
-  }, [user, conversationLoaded]);
+  }, [user, conversationLoaded, refreshConversations]);
 
-  // Persist conversation on every change (after initial load)
+  // Persist current conversation on every change (after initial load)
   useEffect(() => {
     if (!user || !conversationLoaded || messages.length === 0) return;
-    const timeout = setTimeout(() => {
-      supabase
-        .from('assistant_conversations')
-        .upsert(
-          { user_id: user.id, messages: messages as any, updated_at: new Date().toISOString() },
-          { onConflict: 'user_id' }
-        )
-        .then(({ error }) => {
+    const timeout = setTimeout(async () => {
+      try {
+        const firstUserMsg = messages.find(m => m.role === 'user')?.content || '';
+        const autoTitle = firstUserMsg.trim().slice(0, 60) || null;
+
+        if (currentConversationId) {
+          const { error } = await supabase
+            .from('assistant_conversations')
+            .update({
+              messages: messages as any,
+              title: autoTitle,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', currentConversationId)
+            .eq('user_id', user.id);
           if (error) console.error('Persist conversation error:', error);
-        });
+        } else {
+          const { data, error } = await supabase
+            .from('assistant_conversations')
+            .insert({
+              user_id: user.id,
+              messages: messages as any,
+              title: autoTitle,
+            })
+            .select('id')
+            .single();
+          if (error) {
+            console.error('Create conversation error:', error);
+          } else if (data?.id) {
+            setCurrentConversationId(data.id);
+          }
+        }
+        // Refresh list (titles / order)
+        void refreshConversations();
+      } catch (err) {
+        console.error('Persist conversation error:', err);
+      }
     }, 600);
     return () => clearTimeout(timeout);
-  }, [messages, user, conversationLoaded]);
+  }, [messages, user, conversationLoaded, currentConversationId, refreshConversations]);
+
+  const handleNewConversation = useCallback(() => {
+    setCurrentConversationId(null);
+    setMessages([]);
+    setActiveCategory(null);
+    setShowConversationList(false);
+  }, []);
+
+  const handleSelectConversation = useCallback(async (id: string) => {
+    if (!user || id === currentConversationId) {
+      setShowConversationList(false);
+      return;
+    }
+    try {
+      const { data } = await supabase
+        .from('assistant_conversations')
+        .select('messages')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setCurrentConversationId(id);
+      setMessages((data?.messages as Msg[]) || []);
+      setShowConversationList(false);
+    } catch (err) {
+      console.error('Open conversation error:', err);
+    }
+  }, [user, currentConversationId]);
+
+  const handleDeleteConversation = useCallback(async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+    try {
+      await supabase
+        .from('assistant_conversations')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      if (id === currentConversationId) {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+      void refreshConversations();
+    } catch (err) {
+      console.error('Delete conversation error:', err);
+    }
+  }, [user, currentConversationId, refreshConversations]);
+
 
   const handleOnboardingSubmit = () => {
     const name = onboardingName.trim();
@@ -512,21 +621,126 @@ const AIAssistantPage = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-3.5rem-3.5rem)] bg-background">
+    <div className="relative flex flex-col h-[calc(100dvh-3.5rem-3.5rem)] bg-background">
       {/* Header */}
-      <header className="flex items-center gap-3 p-4 border-b border-border bg-card shrink-0">
+      <header className="flex items-center gap-2 p-4 border-b border-border bg-card shrink-0">
         <button onClick={() => navigate('/')} className="p-2 rounded-full hover:bg-muted">
           <ArrowLeft size={20} className={cn("text-foreground", isRTL && "rotate-180")} />
         </button>
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <Sparkles size={18} className="text-primary" />
           </div>
-          <h1 className={cn("font-bold text-foreground text-lg", isRTL && "font-cairo")}>
+          <h1 className={cn("font-bold text-foreground text-lg truncate", isRTL && "font-cairo")}>
             {isRTL ? 'المساعد الذكي' : 'Assistant IA'}
           </h1>
         </div>
+        <button
+          onClick={() => setShowConversationList(v => !v)}
+          className={cn(
+            "p-2 rounded-full hover:bg-muted transition-colors",
+            showConversationList && "bg-muted"
+          )}
+          aria-label={isRTL ? 'المحادثات' : 'Conversations'}
+          title={isRTL ? 'المحادثات' : 'Conversations'}
+        >
+          <History size={18} className="text-foreground" />
+        </button>
+        <button
+          onClick={handleNewConversation}
+          className="p-2 rounded-full hover:bg-muted transition-colors"
+          aria-label={isRTL ? 'محادثة جديدة' : 'Nouvelle conversation'}
+          title={isRTL ? 'محادثة جديدة' : 'Nouvelle conversation'}
+        >
+          <MessageSquarePlus size={18} className="text-primary" />
+        </button>
       </header>
+
+      {/* Conversation list dropdown */}
+      {showConversationList && (
+        <div className="absolute inset-0 z-40 bg-black/30 animate-fade-in" onClick={() => setShowConversationList(false)}>
+          <div
+            className={cn(
+              "absolute top-0 right-0 h-full w-[85%] max-w-sm bg-card border-l border-border shadow-xl flex flex-col",
+              isRTL && "left-0 right-auto border-l-0 border-r"
+            )}
+            onClick={(e) => e.stopPropagation()}
+            dir={isRTL ? 'rtl' : 'ltr'}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h2 className={cn("font-bold text-foreground", isRTL && "font-cairo")}>
+                {isRTL ? 'المحادثات' : 'Conversations'}
+              </h2>
+              <button onClick={() => setShowConversationList(false)} className="p-1 rounded-full hover:bg-muted">
+                <X size={18} className="text-foreground" />
+              </button>
+            </div>
+            <button
+              onClick={handleNewConversation}
+              className={cn(
+                "flex items-center gap-2 mx-3 my-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary font-bold text-sm hover:bg-primary/20 transition-colors",
+                isRTL && "font-cairo flex-row-reverse text-right"
+              )}
+            >
+              <MessageSquarePlus size={16} />
+              {isRTL ? 'محادثة جديدة' : 'Nouvelle conversation'}
+            </button>
+            <div className="flex-1 overflow-y-auto px-2 pb-4">
+              {conversations.length === 0 ? (
+                <p className={cn("text-center text-sm text-muted-foreground py-6", isRTL && "font-cairo")}>
+                  {isRTL ? 'مفيش محادثات لسه' : 'Aucune conversation'}
+                </p>
+              ) : (
+                <ul className="space-y-1">
+                  {conversations.map(c => {
+                    const isActive = c.id === currentConversationId;
+                    const titleAr = c.title ? isArabic(c.title) : isRTL;
+                    const dateStr = new Date(c.updated_at).toLocaleDateString(isRTL ? 'ar-EG' : 'fr-FR', { day: '2-digit', month: 'short', year: '2-digit' });
+                    return (
+                      <li key={c.id}>
+                        <button
+                          onClick={() => handleSelectConversation(c.id)}
+                          className={cn(
+                            "w-full group flex items-start gap-2 px-3 py-2.5 rounded-lg transition-colors text-left",
+                            isActive ? "bg-primary/10" : "hover:bg-muted"
+                          )}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={cn(
+                                "text-sm font-medium text-foreground truncate",
+                                titleAr && "font-cairo text-right",
+                              )}
+                              dir={titleAr ? 'rtl' : 'ltr'}
+                            >
+                              {c.title || (isRTL ? 'محادثة جديدة' : 'Nouvelle conversation')}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">{dateStr}</p>
+                          </div>
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => handleDeleteConversation(c.id, e)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDeleteConversation(c.id, e as any); }}
+                            className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer"
+                            aria-label={isRTL ? 'حذف' : 'Supprimer'}
+                          >
+                            <Trash2 size={14} />
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+            <p className={cn("px-4 py-2 text-[10px] text-muted-foreground text-center border-t border-border", isRTL && "font-cairo")}>
+              {isRTL ? 'المحادثات بتتمسح أوتوماتيكي بعد 30 يوم' : 'Suppression auto après 30 jours'}
+            </p>
+          </div>
+        </div>
+      )}
+
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">

@@ -1169,7 +1169,9 @@ const ExpensesPage = () => {
             );
           })}
         </div>
-      )}
+        );
+      })()}
+
 
 
       {/* Security Badge */}

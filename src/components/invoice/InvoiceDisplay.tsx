@@ -492,8 +492,10 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </thead>
           <tbody>
             {(() => {
-              let previousLot: string | null = null;
-              return data.items.map((item, index) => {
+              // Pre-compute lot for each item, then stably reorder items so all
+              // items belonging to the same lot are contiguous — guarantees each
+              // lot header appears exactly once per document.
+              const enriched = data.items.map((item, originalIndex) => {
                 const designLower = item.designation_fr.toLowerCase();
                 const isSectionTitle = item.designation_fr.toUpperCase().startsWith('ZONE') ||
                   ['fourniture et pose', 'main d\'œuvre', 'dépose', 'repose', 'finitions', 'sous-traitance',
@@ -501,9 +503,22 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                    'plâtrerie', 'isolation', 'démolition', 'ravalement', 'étanchéité', 'toiture', 'terrassement']
                     .some(kw => designLower.startsWith(kw)) ||
                   (item.quantity === 0 && item.unitPrice === 0);
+                const lot = !isSectionTitle ? detectLot(item) : null;
+                return { item, originalIndex, isSectionTitle, lot };
+              });
 
-                // Detect lot only for real billable items (skip explicit section titles to avoid double-headers)
-                const currentLot = !isSectionTitle ? detectLot(item) : null;
+              const lotOrder = LOT_RULES.map(r => r.lot);
+              const sorted = [...enriched].sort((a, b) => {
+                // Items without a detected lot (section titles, generic lines)
+                // keep their original position at the top of the table.
+                const aRank = a.lot ? lotOrder.indexOf(a.lot) + 1 : 0;
+                const bRank = b.lot ? lotOrder.indexOf(b.lot) + 1 : 0;
+                if (aRank !== bRank) return aRank - bRank;
+                return a.originalIndex - b.originalIndex;
+              });
+
+              let previousLot: string | null = null;
+              return sorted.map(({ item, isSectionTitle, lot: currentLot }, index) => {
                 const showLotHeader = currentLot && currentLot !== previousLot;
                 if (currentLot) previousLot = currentLot;
 

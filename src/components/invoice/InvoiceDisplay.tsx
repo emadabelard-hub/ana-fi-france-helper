@@ -284,7 +284,22 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
     { lot: 'NETTOYAGE ET DIVERS', keywords: /\b(nettoyage|remise\s+en\s+[ée]tat|fin\s+de\s+chantier|installation\s+(de\s+)?chantier|protection|b[âa]che|signalisation|tri\s+s[ée]lectif|d[ée]placement|transport|divers|تنظيف|تجهيز\s*ال?ورشة|حماية)/i },
   ];
 
-  const detectLot = (item: { designation_fr: string; designation_ar?: string }): string => {
+  const detectLot = (item: { designation_fr: string; designation_ar?: string; lot?: string }): string => {
+    // 1. Prefer explicit lot from AI response (Claude smart-devis-analyzer) ──
+    //    Normalize "LOT — NAME" / "LOT - NAME" / "NAME" → canonical LOT_ORDER entry.
+    const explicit = (item as any).lot;
+    if (typeof explicit === 'string' && explicit.trim()) {
+      const cleaned = explicit
+        .trim()
+        .replace(/^lot\s*[—\-–:]\s*/i, '')
+        .toUpperCase()
+        .trim();
+      const match = LOT_ORDER.find(
+        (l) => l.toUpperCase() === cleaned || cleaned.includes(l.toUpperCase()),
+      );
+      if (match) return match;
+    }
+    // 2. Fallback — keyword detection on the designation text.
     const text = `${item.designation_fr || ''} ${item.designation_ar || ''}`;
     for (const { lot, keywords } of LOT_RULES) {
       if (keywords.test(text)) return lot;

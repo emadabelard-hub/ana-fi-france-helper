@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X, Trash2 } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X, Trash2, Paperclip, FileText, Loader2 } from 'lucide-react';
+import { extractTextFromPDF } from '@/lib/pdfExtractor';
 import RoomScannerModal from '@/components/scanner/RoomScannerModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import { useNavigate } from 'react-router-dom';
@@ -68,6 +69,13 @@ const AIAssistantPage = () => {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [showConversationList, setShowConversationList] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [attachment, setAttachment] = useState<
+    | { kind: 'image'; name: string; dataUrl: string }
+    | { kind: 'pdf'; name: string; text: string }
+    | null
+  >(null);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const { toast } = useToast();
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
 
@@ -416,13 +424,58 @@ const AIAssistantPage = () => {
     }
   };
 
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(file);
+    });
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const isImage = /^image\/(jpe?g|png)$/i.test(file.type);
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    if (!isImage && !isPdf) {
+      toast({ variant: 'destructive', title: isRTL ? 'نوع الملف غير مدعوم' : 'Format non supporté', description: isRTL ? 'JPG, PNG أو PDF فقط' : 'JPG, PNG ou PDF uniquement' });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ variant: 'destructive', title: isRTL ? 'الملف كبير أوي' : 'Fichier trop volumineux', description: isRTL ? 'الحد الأقصى 10 ميجا' : 'Max 10 Mo' });
+      return;
+    }
+    setIsProcessingFile(true);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      if (isImage) {
+        setAttachment({ kind: 'image', name: file.name, dataUrl });
+      } else {
+        const text = await extractTextFromPDF(dataUrl);
+        setAttachment({ kind: 'pdf', name: file.name, text: text.slice(0, 50000) });
+      }
+    } catch (err) {
+      console.error('File processing error:', err);
+      toast({ variant: 'destructive', title: isRTL ? 'حصل مشكلة في الملف' : 'Erreur de lecture du fichier' });
+    } finally {
+      setIsProcessingFile(false);
+    }
+  };
+
   const send = async () => {
     const text = input.trim();
-    if (!text || isLoading) return;
+    if ((!text && !attachment) || isLoading) return;
 
-    const userMsg: Msg = { role: 'user', content: text };
+    const currentAttachment = attachment;
+    const displayText = text || (currentAttachment
+      ? (isRTL ? `📎 ${currentAttachment.name}` : `📎 ${currentAttachment.name}`)
+      : '');
+
+    const userMsg: Msg = { role: 'user', content: displayText };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
+    setAttachment(null);
     setUserHasEdited(false);
     setIsInputFocused(false);
     resetTextareaHeight();
@@ -430,7 +483,7 @@ const AIAssistantPage = () => {
     setIsLoading(true);
 
     // Intercept: agent comptable
-    if (isAccountingCommand(text)) {
+    if (!currentAttachment && isAccountingCommand(text)) {
       const report = await generateAccountingReport();
       setMessages(prev => [...prev, { role: 'assistant', content: report }]);
       setIsLoading(false);
@@ -462,6 +515,12 @@ const AIAssistantPage = () => {
         },
         body: JSON.stringify({
           messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
+          attachment: currentAttachment
+            ? currentAttachment.kind === 'image'
+              ? { kind: 'image', name: currentAttachment.name, dataUrl: currentAttachment.dataUrl }
+              : { kind: 'pdf', name: currentAttachment.name, text: currentAttachment.text }
+            : null,
+          userQuestion: text || null,
           language: language === 'ar' ? 'ar' : 'fr',
           userName: userInfo?.name || null,
           userGender: userInfo?.gender || null,
@@ -831,6 +890,47 @@ const AIAssistantPage = () => {
 
       {/* Input - positioned above bottom nav */}
       <div className="px-3 pt-3 border-t border-border bg-card/50 shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+        {/* Attachment preview */}
+        {(attachment || isProcessingFile) && (
+          <div className="mb-2 flex items-center gap-2 bg-muted/60 border border-border rounded-xl p-2">
+            {isProcessingFile ? (
+              <>
+                <Loader2 size={16} className="animate-spin text-muted-foreground shrink-0" />
+                <span className={cn("text-xs text-muted-foreground flex-1 truncate", isRTL && "font-cairo text-right")}>
+                  {isRTL ? 'جاري قراءة الملف...' : 'Lecture du fichier...'}
+                </span>
+              </>
+            ) : attachment ? (
+              <>
+                {attachment.kind === 'image' ? (
+                  <img src={attachment.dataUrl} alt="" className="w-10 h-10 rounded-md object-cover shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                    <FileText size={18} className="text-primary" />
+                  </div>
+                )}
+                <span className={cn("text-xs font-medium text-foreground flex-1 truncate", isRTL && "font-cairo text-right")}>
+                  {attachment.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAttachment(null)}
+                  className="p-1 rounded-full hover:bg-muted text-muted-foreground shrink-0"
+                  aria-label={isRTL ? 'حذف' : 'Retirer'}
+                >
+                  <X size={14} />
+                </button>
+              </>
+            ) : null}
+          </div>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf"
+          className="hidden"
+          onChange={handleFileSelected}
+        />
         <div className="relative flex items-end gap-2 bg-background p-1.5 rounded-3xl border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
           {/* Mic button */}
           <button
@@ -845,6 +945,17 @@ const AIAssistantPage = () => {
             )}
           >
             <Mic size={20} />
+          </button>
+          {/* File attach button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading || isProcessingFile}
+            aria-label={isRTL ? 'إرفاق ملف' : 'Joindre un fichier'}
+            title={isRTL ? 'إرفاق صورة أو PDF' : 'Joindre une image ou un PDF'}
+            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 text-muted-foreground hover:bg-muted transition-all disabled:opacity-50"
+          >
+            <Paperclip size={20} />
           </button>
           <textarea
             ref={textareaRef}
@@ -871,17 +982,17 @@ const AIAssistantPage = () => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 e.stopPropagation();
-                if (input.trim() && !isLoading) send();
+                if ((input.trim() || attachment) && !isLoading) send();
               }
             }}
           />
           <button
             type="button"
             onClick={() => send()}
-            disabled={!input.trim() || isLoading}
+            disabled={(!input.trim() && !attachment) || isLoading}
             className={cn(
               "w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5",
-              input.trim() && !isLoading
+              (input.trim() || attachment) && !isLoading
                 ? "bg-primary text-primary-foreground shadow-md active:scale-90"
                 : "bg-muted text-muted-foreground"
             )}

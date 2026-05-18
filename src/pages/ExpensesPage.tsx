@@ -53,6 +53,7 @@ const formatCurrency = (n: number) =>
 const ExpensesPage = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const { isAdmin } = useAdminAuth();
   const { toast } = useToast();
   const { profile } = useProfile();
   const navigate = useNavigate();

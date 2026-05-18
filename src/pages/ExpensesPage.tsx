@@ -60,6 +60,7 @@ const ExpensesPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showOcrModal, setShowOcrModal] = useState(false);
   const [periodFilter, setPeriodFilter] = useState('all');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
   const [showAccountingMenu, setShowAccountingMenu] = useState(false);
 
   const [rows, setRows] = useState<UnifiedRow[]>([]);
@@ -71,6 +72,7 @@ const ExpensesPage = () => {
   const [archiving, setArchiving] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [resettingClient, setResettingClient] = useState<string | null>(null);
+  const [resettingAll, setResettingAll] = useState(false);
 
 
   const formatEUR0 = (n: number) =>
@@ -283,6 +285,39 @@ const ExpensesPage = () => {
       setResettingClient(null);
     }
   };
+
+  const handleResetAllPaid = async () => {
+    if (!user) return;
+    setResettingAll(true);
+    try {
+      const { error } = await supabase
+        .from('documents_comptables')
+        .update({ payment_status: 'unpaid' })
+        .eq('user_id', user.id)
+        .eq('document_type', 'facture')
+        .eq('status', 'finalized')
+        .eq('payment_status', 'paid');
+      if (error) throw error;
+      toast({
+        title: isRTL ? '✅ تم' : '✅ Réinitialisé',
+        description: isRTL
+          ? `تم وضع علامة "غير مدفوع" على ${totalPaidCount} فاتورة`
+          : `${totalPaidCount} facture(s) marquée(s) comme impayées`,
+      });
+      await fetchAll();
+    } catch (e: any) {
+      console.error('Reset all paid status error:', e);
+      toast({
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: e?.message || '',
+        variant: 'destructive',
+      });
+    } finally {
+      setResettingAll(false);
+    }
+  };
+
+
 
   const tvaCollectee = useMemo(() =>
     paidInvoices.reduce((s, r) => s + computeRowTva(r), 0),
@@ -892,6 +927,44 @@ const ExpensesPage = () => {
                     ? 'إذا كانت هذه بيانات اختبار، اضغط لإعادة التعيين إلى "غير مدفوع".'
                     : 'Si ce sont des données de test, réinitialisez-les à « impayé » par client.'}
                 </p>
+
+                {/* Reset ALL button */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className={cn('w-full h-8 text-xs gap-1.5', isRTL && 'font-cairo flex-row-reverse')}
+                      disabled={resettingAll}
+                    >
+                      {resettingAll
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <RotateCcw className="h-3.5 w-3.5" />}
+                      {isRTL
+                        ? `إعادة تعيين الكل (${totalPaidCount})`
+                        : `Tout réinitialiser (${totalPaidCount})`}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className={cn(isRTL && 'text-right font-cairo')}>
+                        {isRTL ? 'تأكيد إعادة تعيين الكل' : 'Réinitialiser toutes les factures payées'}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className={cn(isRTL && 'text-right font-cairo')}>
+                        {isRTL
+                          ? `سيتم وضع علامة "غير مدفوع" على ${totalPaidCount} فاتورة. لن يتم حذف أي مستند.`
+                          : `${totalPaidCount} facture(s) seront marquées comme impayées. Aucun document ne sera supprimé.`}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Annuler'}</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleResetAllPaid}>
+                        {isRTL ? 'تأكيد' : 'Confirmer'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
                 {paidByClient.map(c => (
                   <div
                     key={c.clientName}
@@ -949,40 +1022,67 @@ const ExpensesPage = () => {
 
 
 
-      <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
+      <div className={cn('flex items-center justify-between gap-2 flex-wrap', isRTL && 'flex-row-reverse')}>
         <h2 className={cn('text-base font-bold text-foreground', isRTL && 'font-cairo')}>
           {isRTL ? '📋 آخر العمليات' : '📋 Dernières Opérations'}
         </h2>
-        <Select value={periodFilter} onValueChange={setPeriodFilter}>
-          <SelectTrigger className="w-28 h-8 text-xs bg-background border-border">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{isRTL ? 'الكل' : 'Tout'}</SelectItem>
-            <SelectItem value="month">{isRTL ? 'هذا الشهر' : 'Ce mois'}</SelectItem>
-            <SelectItem value="quarter">{isRTL ? 'هذا الربع' : 'Ce trimestre'}</SelectItem>
-            <SelectItem value="year">{isRTL ? 'هذه السنة' : 'Cette année'}</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+          <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as 'all' | 'paid' | 'unpaid')}>
+            <SelectTrigger className="w-32 h-8 text-xs bg-background border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isRTL ? 'كل الفواتير' : 'Toutes factures'}</SelectItem>
+              <SelectItem value="paid">{isRTL ? 'مدفوعة فقط' : 'Payées'}</SelectItem>
+              <SelectItem value="unpaid">{isRTL ? 'غير مدفوعة فقط' : 'Impayées'}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+            <SelectTrigger className="w-28 h-8 text-xs bg-background border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isRTL ? 'الكل' : 'Tout'}</SelectItem>
+              <SelectItem value="month">{isRTL ? 'هذا الشهر' : 'Ce mois'}</SelectItem>
+              <SelectItem value="quarter">{isRTL ? 'هذا الربع' : 'Ce trimestre'}</SelectItem>
+              <SelectItem value="year">{isRTL ? 'هذه السنة' : 'Cette année'}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
+
       {/* Unified Timeline */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <Card className="border-dashed border-border">
-          <CardContent className="py-12 text-center">
-            <Receipt className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
-            <p className={cn('text-sm text-muted-foreground', isRTL && 'font-cairo')}>
-              {isRTL ? 'لا توجد عمليات بعد' : 'Aucune opération enregistrée'}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
+      {(() => {
+        const visibleRows = filtered.filter(r => {
+          if (paymentFilter === 'all') return true;
+          if (r.type !== 'facture') return false;
+          if (paymentFilter === 'paid') return r.paymentStatus === 'paid';
+          return r.paymentStatus !== 'paid';
+        });
+        if (loading) {
+          return (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            </div>
+          );
+        }
+        if (visibleRows.length === 0) {
+          return (
+            <Card className="border-dashed border-border">
+              <CardContent className="py-12 text-center">
+                <Receipt className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+                <p className={cn('text-sm text-muted-foreground', isRTL && 'font-cairo')}>
+                  {isRTL ? 'لا توجد عمليات بعد' : 'Aucune opération enregistrée'}
+                </p>
+              </CardContent>
+            </Card>
+          );
+        }
+        return (
         <div className="space-y-2">
-          {filtered.map(row => {
+          {visibleRows.map(row => {
+
           const tc = typeConfig[row.type];
             const date = new Date(row.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
             const isOverdue = row.type === 'facture' && (new Date().getTime() - new Date(row.date).getTime()) > 30 * 24 * 60 * 60 * 1000;
@@ -1069,7 +1169,9 @@ const ExpensesPage = () => {
             );
           })}
         </div>
-      )}
+        );
+      })()}
+
 
 
       {/* Security Badge */}

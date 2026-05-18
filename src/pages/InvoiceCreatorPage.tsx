@@ -194,11 +194,12 @@ const InvoiceCreatorPage = () => {
             clientPhone: parsed.clientPhone || '',
             descriptionChantier: parsed.description || '',
             items: parsed.items.map((it: any) => ({
-              designation_fr: it.designation || '',
-              designation_ar: '',
+              designation_fr: it.designation_fr || it.designation || '',
+              designation_ar: it.designation_ar || '',
               quantity: Number(it.quantity) || 1,
               unit: it.unit || 'forfait',
               unitPrice: Number(it.unitPrice) || 0,
+              lot: typeof it.lot === 'string' && it.lot.trim() ? it.lot.trim() : undefined,
             })),
             notes: '',
           };

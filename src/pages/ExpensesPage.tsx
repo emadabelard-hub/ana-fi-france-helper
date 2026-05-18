@@ -1217,6 +1217,55 @@ const ExpensesPage = () => {
 
 
 
+      {/* Admin-only: full test-data reset */}
+      {isAdmin && (
+        <Card className="border-red-500/30 bg-red-50/30 dark:bg-red-900/10">
+          <CardContent className="p-3 space-y-2">
+            <p className={cn('text-[11px] font-semibold text-red-700 dark:text-red-300 uppercase tracking-wider', isRTL && 'text-right font-cairo')}>
+              {isRTL ? '🛠️ أدوات المسؤول' : '🛠️ Outils administrateur'}
+            </p>
+            <p className={cn('text-[11px] text-muted-foreground', isRTL && 'text-right font-cairo')}>
+              {isRTL
+                ? 'يضع كل الفواتير "غير مدفوعة" ويحذف كل المصروفات. لا يتم حذف أي فاتورة أو دوفي.'
+                : 'Marque toutes les factures comme impayées et supprime toutes les dépenses. Aucune facture ni devis n\'est supprimé.'}
+            </p>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className={cn('w-full h-9 text-xs gap-1.5', isRTL && 'font-cairo flex-row-reverse')}
+                  disabled={resettingTestData}
+                >
+                  {resettingTestData
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <RotateCcw className="h-3.5 w-3.5" />}
+                  {isRTL ? 'إعادة تعيين بيانات الاختبار' : 'Réinitialiser les données de test'}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className={cn(isRTL && 'text-right font-cairo')}>
+                    {isRTL ? 'تأكيد إعادة التعيين' : 'Confirmer la réinitialisation'}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className={cn(isRTL && 'text-right font-cairo')}>
+                    {isRTL
+                      ? 'كل الفواتير ستصبح "غير مدفوعة" وكل المصروفات هتتحذف. الفواتير والدوفيهات لن تُحذف.'
+                      : 'Toutes les factures passeront en « impayé » et toutes les dépenses seront supprimées. Aucune facture ni devis ne sera supprimé.'}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Annuler'}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResetTestData}>
+                    {isRTL ? 'تأكيد' : 'Confirmer'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Security Badge */}
       <SecurityBadge />
 

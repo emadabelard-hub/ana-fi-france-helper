@@ -69,6 +69,13 @@ const AIAssistantPage = () => {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [showConversationList, setShowConversationList] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [attachment, setAttachment] = useState<
+    | { kind: 'image'; name: string; dataUrl: string }
+    | { kind: 'pdf'; name: string; text: string }
+    | null
+  >(null);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const { toast } = useToast();
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
 

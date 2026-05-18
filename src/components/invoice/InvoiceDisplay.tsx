@@ -276,11 +276,11 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
   const LOT_RULES: { lot: string; keywords: RegExp }[] = [
     { lot: 'DÉMOLITION ET DÉPOSE', keywords: /\b(d[ée]molition|d[ée]pose|[ée]vacuation\s+(des\s+)?gravats|gravats|d[ée]chets\s+de\s+chantier|curage|هدم|شيل\s*ال?هدم|إخلاء\s*ال?مخلفات)/i },
     { lot: 'CARRELAGE ET FAÏENCE', keywords: /\b(carrelage|fa[ïi]ence|joints?\s+de\s+carrelage|pose\s+de\s+carrelage|بلاط|تبليط|سيراميك|زليج)/i },
-    { lot: 'PLOMBERIE SANITAIRE', keywords: /\b(plomberie|sanitaire|robinet(?:terie)?|[ée]vier|wc|lavabo|douche|baignoire|mitigeur|chauffe[- ]eau|canalisation|سباكة|بلومبري|حنفية|مغسلة|دش|بانيو)/i },
+    { lot: 'PLOMBERIE SANITAIRE', keywords: /\b(plomberie|sanitaire|robinet(?:terie)?|[ée]vier|wc|lavabo|douche|baignoire|mitigeur|chauffe[- ]eau|canalisation|chaudi[èe]re|radiateur|climatisation|clim|chauffage|سباكة|بلومبري|حنفية|مغسلة|دش|بانيو)/i },
     { lot: 'ÉLECTRICITÉ', keywords: /\b([ée]lectri|c[âa]blage|prise|interrupteur|tableau\s+[ée]lectrique|disjoncteur|luminaire|domotique|[ée]clairage\s+connect[ée]|nf\s+c\s*15-?100|كهرباء|كهربا|مقابس|مفاتيح|تابلو)/i },
     { lot: 'MENUISERIE', keywords: /\b(menuiserie|porte|fen[êe]tre|volet|placard|quincaillerie|huisserie|baie\s+vitr[ée]e|نجارة|أبواب|شبابيك)/i },
     { lot: 'REVÊTEMENTS SOL', keywords: /\b(rev[êe]tement\s+(de\s+)?sol|parquet|stratifi[ée]|moquette|lino|pvc\s+sol|sol\s+souple|أرضية(?!\s*بلاط))/i },
-    { lot: 'MAÇONNERIE ET ÉTANCHÉITÉ', keywords: /\b(ma[çc]onnerie|isolation\s+(thermique|acoustique)|[ée]tanch[ée]it[ée]|ragr[ée]age|chape|enduit\s+ext|hydrofuge|parpaing|b[ée]ton|cloison\s+(en\s+)?b[ée]ton|بناء|عزل\s*مائي|إسمنت)/i },
+    { lot: 'MAÇONNERIE ET ÉTANCHÉITÉ', keywords: /\b(ma[çc]onnerie|isolation\s+(thermique|acoustique)|[ée]tanch[ée]it[ée]|ragr[ée]age|chape|enduit\s+ext|hydrofuge|parpaing|b[ée]ton|cloison\s+(en\s+)?b[ée]ton|terrassement|fondation|nivellement|بناء|عزل\s*مائي|إسمنت)/i },
     { lot: 'PEINTURE ET ENDUITS', keywords: /\b(peinture|enduit(?!\s+ext)|sous[- ]couche|impression|pon[çc]age|rebouchage|fa[çc]ade|placo|pl[âa]tre(?:rie)?|fa[ux\s]+plafond|دهان|بانتير|معجون|صباغة|جبس)/i },
     { lot: 'NETTOYAGE ET DIVERS', keywords: /\b(nettoyage|remise\s+en\s+[ée]tat|fin\s+de\s+chantier|installation\s+(de\s+)?chantier|protection|b[âa]che|signalisation|tri\s+s[ée]lectif|d[ée]placement|transport|divers|تنظيف|تجهيز\s*ال?ورشة|حماية)/i },
   ];

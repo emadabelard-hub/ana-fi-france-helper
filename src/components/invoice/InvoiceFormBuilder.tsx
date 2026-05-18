@@ -223,6 +223,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         unit: item.unit || 'U',
         unitPrice: item.unitPrice || 0,
         total: (item.quantity || 1) * (item.unitPrice || 0),
+        lot: typeof (item as any).lot === 'string' && (item as any).lot.trim() ? (item as any).lot.trim() : undefined,
       }));
     }
     return [{

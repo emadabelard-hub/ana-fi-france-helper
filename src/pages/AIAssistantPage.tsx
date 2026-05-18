@@ -538,7 +538,7 @@ const AIAssistantPage = () => {
           </div>
         </header>
 
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex justify-center p-6">
           <div className="w-full max-w-sm space-y-6 animate-fade-in">
             <div className="text-center space-y-2">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-2 animate-[scale-in_0.5s_ease-out]">

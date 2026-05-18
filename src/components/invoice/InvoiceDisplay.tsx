@@ -583,7 +583,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                         ) : (
                           <span className="leading-snug block text-left text-gray-700 text-[7pt]">
                             {(() => {
-                              const text = item.designation_fr;
+                              const text = item.designation_fr.replace(/^\d+\s*[-–—)\\.]\s*/, '');
                               const dashIdx = text.indexOf(' - ');
                               const colonIdx = text.indexOf(' : ');
                               const splitIdx = dashIdx >= 0 && (colonIdx < 0 || dashIdx < colonIdx) ? dashIdx : colonIdx;

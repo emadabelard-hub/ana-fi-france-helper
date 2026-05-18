@@ -1130,6 +1130,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       unit: vi.unit,
       unitPrice: vi.unitPrice,
       total: vi.total,
+      lot: typeof (vi as any).lot === 'string' && (vi as any).lot.trim() ? (vi as any).lot.trim() : undefined,
     })),
     subtotal: Math.round(validatedSubtotal * 100) / 100,
     discountAmount: validatedDiscountAmt > 0 ? validatedDiscountAmt : undefined,

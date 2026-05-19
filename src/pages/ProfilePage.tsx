@@ -513,6 +513,14 @@ const ProfilePage = () => {
               <div className="bg-white dark:bg-card rounded-2xl p-5 shadow-sm border border-border/20 space-y-5">
                 <p className="text-xs text-muted-foreground font-cairo text-right">المعلومات دي هتظهر على كل فواتيرك ودوفيهاتك</p>
 
+                {/* Scan Kbis */}
+                <input ref={kbisInputRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf" className="hidden" onChange={(e) => handleScanDocument(e, 'kbis')} />
+                <Button type="button" variant="outline" onClick={() => kbisInputRef.current?.click()} disabled={isScanningKbis}
+                  className="w-full h-12 rounded-xl border-[#BFA071]/40 bg-[#BFA071]/5 hover:bg-[#BFA071]/10 text-foreground font-cairo flex items-center justify-center gap-2 flex-row-reverse">
+                  {isScanningKbis ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4 text-[#BFA071]" />}
+                  <span>📄 سكان أو حمّل الكيبيس</span>
+                </Button>
+
                 <div className="space-y-2">
                   <FieldLabel icon={Building2} label="اسم الشركة" filled={!!formData.company_name.trim()} />
                   <StyledInput value={formData.company_name} onChange={(e) => handleChange('company_name', e.target.value)} placeholder="شركة البناء للمقاولات" />

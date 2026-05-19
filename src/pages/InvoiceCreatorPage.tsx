@@ -13,7 +13,8 @@ import SecurityBadge from '@/components/shared/SecurityBadge';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 // useNavigationGuard removed — was blocking navigation
-import { clearCurrentDocument, clearDraft, loadCurrentDocument, listAvailableDrafts } from '@/lib/invoiceDraftStorage';
+import { supabase } from '@/integrations/supabase/client';
+import { clearCurrentDocument, clearDraft, loadCloudDraft, loadCurrentDocument, listAvailableDrafts, setInvoiceDraftStorageUser } from '@/lib/invoiceDraftStorage';
 import NumberingOnboardingModal from '@/components/invoice/NumberingOnboardingModal';
 import DraftResumeModal from '@/components/invoice/DraftResumeModal';
 import {
@@ -65,14 +66,42 @@ const InvoiceCreatorPage = () => {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!urlDocType && !prefillSource) {
-      setResumedDocumentType(loadCurrentDocument()?.documentType ?? null);
-    }
-    if (urlDocType) {
-      setHasExistingDraftForUrlType(!!loadCurrentDocument(urlDocType));
-    }
-    setDraftLookupReady(true);
-  }, [authLoading, urlDocType, prefillSource]);
+
+    let cancelled = false;
+    setDraftLookupReady(false);
+
+    const resolveDraftLookup = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const sessionUser = session?.user ?? null;
+        setInvoiceDraftStorageUser(sessionUser && !sessionUser.is_anonymous ? sessionUser.id : null);
+
+        const localCurrentDocument = loadCurrentDocument(urlDocType ?? undefined);
+        const cloudDraft = sessionUser?.id && !sessionUser.is_anonymous
+          ? await loadCloudDraft(urlDocType ?? undefined)
+          : null;
+
+        if (cancelled) return;
+
+        if (!urlDocType && !prefillSource) {
+          setResumedDocumentType(localCurrentDocument?.documentType ?? cloudDraft?.documentType ?? null);
+        } else {
+          setResumedDocumentType(null);
+        }
+        setHasExistingDraftForUrlType(urlDocType ? (!!localCurrentDocument || !!cloudDraft) : false);
+      } catch (err) {
+        console.warn('Draft lookup failed:', err);
+      } finally {
+        if (!cancelled) setDraftLookupReady(true);
+      }
+    };
+
+    resolveDraftLookup();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, user?.id, user?.is_anonymous, urlDocType, prefillSource]);
 
   const [documentType, setDocumentType] = useState<'devis' | 'facture' | null>(urlDocType ?? null);
   const [showTypeModal, setShowTypeModal] = useState(false);

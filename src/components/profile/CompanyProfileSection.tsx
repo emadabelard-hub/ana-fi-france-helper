@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Building2, FileText, MapPin, Mail, Upload, Image, Loader2, Check, AlertCircle, Bell, Info } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Building2, FileText, MapPin, Mail, Upload, Image, Loader2, Check, AlertCircle, Bell, Info, ScanLine } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { extractTextFromPDF } from '@/lib/pdfExtractor';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

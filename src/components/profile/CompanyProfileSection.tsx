@@ -143,6 +143,7 @@ const CompanyProfileSection = () => {
     }
   };
 
+  const [formData, setFormData] = useState<CompanyFormData>({
     company_name: '',
     siret: '',
     company_address: '',

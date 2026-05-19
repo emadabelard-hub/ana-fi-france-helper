@@ -369,6 +369,29 @@ const CompanyProfileSection = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Scan Kbis */}
+          <input
+            ref={kbisInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,application/pdf"
+            className="hidden"
+            onChange={(e) => handleScanDocument(e, 'kbis')}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className={cn("w-full font-cairo", isRTL && "flex-row-reverse")}
+            onClick={() => kbisInputRef.current?.click()}
+            disabled={isScanningKbis}
+          >
+            {isScanningKbis ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ScanLine className="h-4 w-4" />
+            )}
+            <span>📄 سكان أو حمّل الكيبيس</span>
+          </Button>
+
           {/* Company Name */}
           <div className="space-y-2">
             <Label className={cn("flex items-center gap-2", isRTL && "flex-row-reverse font-cairo")}>

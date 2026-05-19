@@ -13,7 +13,7 @@ import SecurityBadge from '@/components/shared/SecurityBadge';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 // useNavigationGuard removed — was blocking navigation
-import { clearCurrentDocument, clearDraft, loadCurrentDocument, listAvailableDrafts } from '@/lib/invoiceDraftStorage';
+import { clearCurrentDocument, clearDraft, loadCloudDraft, loadCurrentDocument, listAvailableDrafts } from '@/lib/invoiceDraftStorage';
 import NumberingOnboardingModal from '@/components/invoice/NumberingOnboardingModal';
 import DraftResumeModal from '@/components/invoice/DraftResumeModal';
 import {
@@ -65,14 +65,32 @@ const InvoiceCreatorPage = () => {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!urlDocType && !prefillSource) {
-      setResumedDocumentType(loadCurrentDocument()?.documentType ?? null);
-    }
-    if (urlDocType) {
-      setHasExistingDraftForUrlType(!!loadCurrentDocument(urlDocType));
-    }
-    setDraftLookupReady(true);
-  }, [authLoading, urlDocType, prefillSource]);
+
+    let cancelled = false;
+
+    const resolveDraftLookup = async () => {
+      const localCurrentDocument = loadCurrentDocument(urlDocType ?? undefined);
+      const cloudDraft = user?.id && !user.is_anonymous
+        ? await loadCloudDraft(urlDocType ?? undefined)
+        : null;
+
+      if (cancelled) return;
+
+      if (!urlDocType && !prefillSource) {
+        setResumedDocumentType(localCurrentDocument?.documentType ?? cloudDraft?.documentType ?? null);
+      }
+      if (urlDocType) {
+        setHasExistingDraftForUrlType(!!localCurrentDocument || !!cloudDraft);
+      }
+      setDraftLookupReady(true);
+    };
+
+    resolveDraftLookup();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, user?.id, user?.is_anonymous, urlDocType, prefillSource]);
 
   const [documentType, setDocumentType] = useState<'devis' | 'facture' | null>(urlDocType ?? null);
   const [showTypeModal, setShowTypeModal] = useState(false);

@@ -73,7 +73,19 @@ const ProfilePage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<TabKey>('company');
+  const [activeTab, setActiveTab] = useState<TabKey>('account');
+  const tabBarRef = useRef<HTMLDivElement>(null);
+  const accountTabRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    // Ensure حسابي tab is fully visible on mount (RTL: right side)
+    const el = accountTabRef.current;
+    if (el) {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ inline: 'end', block: 'nearest' });
+      });
+    }
+  }, []);
   const [showApiKey, setShowApiKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);

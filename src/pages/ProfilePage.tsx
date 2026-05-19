@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, LogOut, User, Loader2, Shield, Key, Building2, FileText, MapPin, Mail, Phone, Upload, Image, Check, AlertCircle, Briefcase, CreditCard, Landmark, ShieldCheck, PenTool, Stamp, CheckCircle2, Circle, PartyPopper, Info } from 'lucide-react';
+import { Save, LogOut, User, Loader2, Shield, Key, Building2, FileText, MapPin, Mail, Phone, Upload, Image, Check, AlertCircle, Briefcase, CreditCard, Landmark, ShieldCheck, PenTool, Stamp, CheckCircle2, Circle, PartyPopper, Info, ScanLine } from 'lucide-react';
+import { extractTextFromPDF } from '@/lib/pdfExtractor';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import ApiKeySettingsModal from '@/components/layout/ApiKeySettingsModal';
 import { Button } from '@/components/ui/button';

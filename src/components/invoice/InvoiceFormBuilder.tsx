@@ -642,22 +642,27 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     });
   }, [documentType, selectedClientId, selectedChantierId, clientName, clientAddress, clientPhone, clientEmail, clientSiren, clientTvaIntra, clientIsB2B, workSiteSameAsClient, workSiteAddress, includeTravelCosts, travelDescription, travelPrice, includeWasteCosts, wasteDescription, wastePrice, isAutoEntrepreneur, selectedTvaRate, projectTvaType, validityDuration, dueDateDays, acompteEnabled, acomptePercent, acompteMode, acompteFixedAmount, delaiPaiement, moyenPaiement, docNumber, items, natureOperation, assureurName, assureurAddress, policyNumber, geographicCoverage, paymentMilestones, milestonesEnabled, descriptionChantier, descriptionChantierAr, descriptionChantierFr, estimatedStartDate, estimatedDuration, discountEnabled, discountType, discountValue, currentStep, showPreview, showArabic, includePhotosInPdf, sitePhotos, tempValues]);
 
+  // Auto-save is gated on BOTH draftRestored AND a confirmed authenticated
+  // user id. Without a stable user id, the scoped draft keys resolve to null
+  // and an empty form-mount would otherwise silently clobber cloud data.
+  const autoSaveEnabled = draftRestored && !!user?.id && !user.is_anonymous;
+
   useEffect(() => {
-    if (!draftRestored) return;
+    if (!autoSaveEnabled) return;
     persistCurrentDocumentState();
-  }, [draftRestored, persistCurrentDocumentState]);
+  }, [autoSaveEnabled, persistCurrentDocumentState]);
 
   // --- AUTO-SAVE draft on every change (debounced) ---
   useEffect(() => {
-    if (!draftRestored) return;
+    if (!autoSaveEnabled) return;
     const timer = setTimeout(() => {
       saveCurrentDraftSnapshot();
     }, 600);
     return () => clearTimeout(timer);
-  }, [draftRestored, saveCurrentDraftSnapshot]);
+  }, [autoSaveEnabled, saveCurrentDraftSnapshot]);
 
   useEffect(() => {
-    if (!draftRestored) return;
+    if (!autoSaveEnabled) return;
 
     const flushDraftNow = () => {
       persistCurrentDocumentState();
@@ -679,7 +684,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       window.removeEventListener('beforeunload', flushDraftNow);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [draftRestored, persistCurrentDocumentState, saveCurrentDraftSnapshot]);
+  }, [autoSaveEnabled, persistCurrentDocumentState, saveCurrentDraftSnapshot]);
 
   // Handle prefill data from quote-to-invoice conversion or Smart Devis
   // CRITICAL: This effect MUST reliably inject items into the form.

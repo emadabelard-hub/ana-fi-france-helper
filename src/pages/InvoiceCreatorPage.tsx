@@ -118,15 +118,18 @@ const InvoiceCreatorPage = () => {
 
   // On a fresh creation entry, wipe any previously persisted document state so the form
   // always starts at step 1/8 with empty client data — independent of any prior session.
+  // Runs once draft lookup has resolved and confirmed this really is a fresh entry.
+  const freshWipeDoneRef = useRef(false);
   useEffect(() => {
+    if (!draftLookupReady) return;
     if (!isFreshCreationEntry) return;
+    if (freshWipeDoneRef.current) return;
+    freshWipeDoneRef.current = true;
     clearCurrentDocument();
     clearDraft();
     try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
     try { sessionStorage.removeItem('invoiceCreator_scroll_v1'); } catch {}
-    // run only once on mount for this fresh entry
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [draftLookupReady, isFreshCreationEntry]);
   const activeDocumentType = urlDocType ?? documentType;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const SCROLL_KEY = 'invoiceCreator_scroll_v1';

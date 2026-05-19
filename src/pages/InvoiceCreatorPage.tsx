@@ -13,7 +13,8 @@ import SecurityBadge from '@/components/shared/SecurityBadge';
 import InvoiceFormBuilder from '@/components/invoice/InvoiceFormBuilder';
 import InvoiceGuideModal from '@/components/invoice/InvoiceGuideModal';
 // useNavigationGuard removed — was blocking navigation
-import { clearCurrentDocument, clearDraft, loadCloudDraft, loadCurrentDocument, listAvailableDrafts } from '@/lib/invoiceDraftStorage';
+import { supabase } from '@/integrations/supabase/client';
+import { clearCurrentDocument, clearDraft, loadCloudDraft, loadCurrentDocument, listAvailableDrafts, setInvoiceDraftStorageUser } from '@/lib/invoiceDraftStorage';
 import NumberingOnboardingModal from '@/components/invoice/NumberingOnboardingModal';
 import DraftResumeModal from '@/components/invoice/DraftResumeModal';
 import {
@@ -71,8 +72,12 @@ const InvoiceCreatorPage = () => {
 
     const resolveDraftLookup = async () => {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const sessionUser = session?.user ?? null;
+        setInvoiceDraftStorageUser(sessionUser && !sessionUser.is_anonymous ? sessionUser.id : null);
+
         const localCurrentDocument = loadCurrentDocument(urlDocType ?? undefined);
-        const cloudDraft = user?.id && !user.is_anonymous
+        const cloudDraft = sessionUser?.id && !sessionUser.is_anonymous
           ? await loadCloudDraft(urlDocType ?? undefined)
           : null;
 

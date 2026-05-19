@@ -356,7 +356,22 @@ export const listAvailableDrafts = (): AvailableDraftSummary[] => {
 
 // ── Cloud Storage (Supabase) ──
 
+const draftHasMeaningfulContent = (draft: Omit<InvoiceDraft, 'savedAt'>) => {
+  if (draft.clientName?.trim()) return true;
+  if (draft.clientAddress?.trim()) return true;
+  if (draft.descriptionChantier?.trim()) return true;
+  if (draft.descriptionChantierFr?.trim()) return true;
+  if (draft.descriptionChantierAr?.trim()) return true;
+  if (draft.items && draft.items.some(i =>
+    i.designation_fr?.trim() || i.designation_ar?.trim() || (i.unitPrice ?? 0) > 0
+  )) return true;
+  return false;
+};
+
 export const saveCloudDraft = async (draft: Omit<InvoiceDraft, 'savedAt'>) => {
+  // Guard: never let an empty form-mount clobber a real cloud draft.
+  if (!draftHasMeaningfulContent(draft)) return;
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 

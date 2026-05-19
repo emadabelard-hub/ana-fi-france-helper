@@ -385,8 +385,11 @@ const InvoiceCreatorPage = () => {
     handleBackToTypeSelection();
   };
   
-  // Show loading while profile loads
-  if (user && profileLoading) {
+  // Show loading while profile loads OR while auth/draft lookup is still in
+  // flight — we must NOT mount InvoiceFormBuilder before the active-user scope
+  // is known, otherwise its restore effect reads an empty draft and then the
+  // auto-save layer would overwrite the real cloud draft.
+  if (authLoading || !draftLookupReady || (user && profileLoading)) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
         <div className="animate-pulse text-muted-foreground">

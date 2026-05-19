@@ -67,22 +67,28 @@ const InvoiceCreatorPage = () => {
     if (authLoading) return;
 
     let cancelled = false;
+    setDraftLookupReady(false);
 
     const resolveDraftLookup = async () => {
-      const localCurrentDocument = loadCurrentDocument(urlDocType ?? undefined);
-      const cloudDraft = user?.id && !user.is_anonymous
-        ? await loadCloudDraft(urlDocType ?? undefined)
-        : null;
+      try {
+        const localCurrentDocument = loadCurrentDocument(urlDocType ?? undefined);
+        const cloudDraft = user?.id && !user.is_anonymous
+          ? await loadCloudDraft(urlDocType ?? undefined)
+          : null;
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (!urlDocType && !prefillSource) {
-        setResumedDocumentType(localCurrentDocument?.documentType ?? cloudDraft?.documentType ?? null);
+        if (!urlDocType && !prefillSource) {
+          setResumedDocumentType(localCurrentDocument?.documentType ?? cloudDraft?.documentType ?? null);
+        } else {
+          setResumedDocumentType(null);
+        }
+        setHasExistingDraftForUrlType(urlDocType ? (!!localCurrentDocument || !!cloudDraft) : false);
+      } catch (err) {
+        console.warn('Draft lookup failed:', err);
+      } finally {
+        if (!cancelled) setDraftLookupReady(true);
       }
-      if (urlDocType) {
-        setHasExistingDraftForUrlType(!!localCurrentDocument || !!cloudDraft);
-      }
-      setDraftLookupReady(true);
     };
 
     resolveDraftLookup();

@@ -939,6 +939,28 @@ const CompanyProfileSection = () => {
               ? '💡 هتظهر على الفاتورة عشان الزبون يعمل فيرمون (virement) بسهولة'
               : '💡 Apparaîtront sur vos factures pour faciliter les virements'}
           </CardDescription>
+          {/* Scan RIB */}
+          <input
+            ref={ribInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,application/pdf"
+            className="hidden"
+            onChange={(e) => handleScanDocument(e, 'rib')}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className={cn("w-full font-cairo", isRTL && "flex-row-reverse")}
+            onClick={() => ribInputRef.current?.click()}
+            disabled={isScanningRib}
+          >
+            {isScanningRib ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ScanLine className="h-4 w-4" />
+            )}
+            <span>🏦 سكان أو حمّل الريب</span>
+          </Button>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className={cn(isRTL && "font-cairo")}>IBAN</Label>

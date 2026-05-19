@@ -658,6 +658,14 @@ const ProfilePage = () => {
                   <CreditCard className="h-4 w-4 text-[#BFA071]" />
                   البيانات البنكية
                 </p>
+
+                {/* Scan RIB */}
+                <input ref={ribInputRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf" className="hidden" onChange={(e) => handleScanDocument(e, 'rib')} />
+                <Button type="button" variant="outline" onClick={() => ribInputRef.current?.click()} disabled={isScanningRib}
+                  className="w-full h-12 rounded-xl border-[#BFA071]/40 bg-[#BFA071]/5 hover:bg-[#BFA071]/10 text-foreground font-cairo flex items-center justify-center gap-2 flex-row-reverse">
+                  {isScanningRib ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4 text-[#BFA071]" />}
+                  <span>🏦 سكان أو حمّل الريب</span>
+                </Button>
                 <div className="space-y-2">
                   <FieldLabel icon={CreditCard} label="IBAN" />
                   <StyledInput value={formData.iban} onChange={(e) => handleChange('iban', e.target.value.toUpperCase())} placeholder="FR76 1234..." className="font-mono text-sm text-left" dir="ltr" />

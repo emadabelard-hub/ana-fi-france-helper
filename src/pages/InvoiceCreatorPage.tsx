@@ -36,7 +36,7 @@ import {
 // Version 1.1.2 - Stable Build
 const InvoiceCreatorPage = () => {
   const { isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -46,10 +46,7 @@ const InvoiceCreatorPage = () => {
   const isSmartDevisFlow = prefillSource === 'smart';
   const isMilestonePrefillFlow = prefillSource === 'milestone';
   const expectsStoredPrefill = prefillSource === 'quote' || isSmartDevisFlow || isMilestonePrefillFlow;
-  const resumedDocumentType = !urlDocType && !prefillSource
-    ? loadCurrentDocument()?.documentType ?? null
-    : null;
-  
+
   const urlSource = searchParams.get('source');
   const isImageQuoteFlow = urlSource === 'image-quote';
 
@@ -57,11 +54,43 @@ const InvoiceCreatorPage = () => {
   // via the URL flag `?fresh=1`. Otherwise, if a draft exists for the requested
   // type, we resume it silently (Correction 1: no question, exact same step).
   const forceFresh = searchParams.get('fresh') === '1';
-  const existingDraftForUrlType = urlDocType ? loadCurrentDocument(urlDocType) : null;
-  const hasResumableDraftForUrlType = !!existingDraftForUrlType && !forceFresh;
 
-  const [documentType, setDocumentType] = useState<'devis' | 'facture' | null>(urlDocType ?? resumedDocumentType);
-  const [showTypeModal, setShowTypeModal] = useState(!urlDocType && !resumedDocumentType);
+  // Draft lookups are deferred until Supabase auth resolves — reading them
+  // during the very first render returns null because the active-user scope
+  // key isn't set yet, which then triggered a "fresh creation" entry and
+  // wiped the cloud draft. We populate these AFTER `authLoading` flips false.
+  const [draftLookupReady, setDraftLookupReady] = useState(false);
+  const [resumedDocumentType, setResumedDocumentType] = useState<'devis' | 'facture' | null>(null);
+  const [hasExistingDraftForUrlType, setHasExistingDraftForUrlType] = useState(false);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!urlDocType && !prefillSource) {
+      setResumedDocumentType(loadCurrentDocument()?.documentType ?? null);
+    }
+    if (urlDocType) {
+      setHasExistingDraftForUrlType(!!loadCurrentDocument(urlDocType));
+    }
+    setDraftLookupReady(true);
+  }, [authLoading, urlDocType, prefillSource]);
+
+  const [documentType, setDocumentType] = useState<'devis' | 'facture' | null>(urlDocType ?? null);
+  const [showTypeModal, setShowTypeModal] = useState(false);
+
+  // Once auth + draft lookup resolved, sync documentType & type modal from
+  // the resumed draft (if any). Without this, a cold load with no URL type
+  // would show the type modal even though a draft exists.
+  useEffect(() => {
+    if (!draftLookupReady) return;
+    if (urlDocType) return;
+    if (resumedDocumentType) {
+      setDocumentType(resumedDocumentType);
+      setShowTypeModal(false);
+    } else if (!prefillSource) {
+      setShowTypeModal(true);
+    }
+  }, [draftLookupReady, urlDocType, resumedDocumentType, prefillSource]);
+
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showNumberingOnboarding, setShowNumberingOnboarding] = useState(false);
@@ -75,22 +104,32 @@ const InvoiceCreatorPage = () => {
   //  - explicit ?fresh=1 flag, OR
   //  - urlDocType present AND no prefill AND no existing draft for that type.
   // Otherwise (draft exists), we resume silently at the saved step.
+  // NOTE: this is computed AFTER draft lookup so we never falsely flag a
+  // logged-in user with a draft as a "fresh" entry.
   const isFreshCreationEntry =
-    forceFresh ||
-    (!!urlDocType && !prefillSource && !isImageQuoteFlow && !existingDraftForUrlType);
-  const [isNewDocument, setIsNewDocument] = useState(isFreshCreationEntry);
+    draftLookupReady && (
+      forceFresh ||
+      (!!urlDocType && !prefillSource && !isImageQuoteFlow && !hasExistingDraftForUrlType)
+    );
+  const [isNewDocument, setIsNewDocument] = useState(false);
+  useEffect(() => {
+    if (draftLookupReady) setIsNewDocument(isFreshCreationEntry);
+  }, [draftLookupReady, isFreshCreationEntry]);
 
   // On a fresh creation entry, wipe any previously persisted document state so the form
   // always starts at step 1/8 with empty client data — independent of any prior session.
+  // Runs once draft lookup has resolved and confirmed this really is a fresh entry.
+  const freshWipeDoneRef = useRef(false);
   useEffect(() => {
+    if (!draftLookupReady) return;
     if (!isFreshCreationEntry) return;
+    if (freshWipeDoneRef.current) return;
+    freshWipeDoneRef.current = true;
     clearCurrentDocument();
     clearDraft();
     try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
     try { sessionStorage.removeItem('invoiceCreator_scroll_v1'); } catch {}
-    // run only once on mount for this fresh entry
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [draftLookupReady, isFreshCreationEntry]);
   const activeDocumentType = urlDocType ?? documentType;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const SCROLL_KEY = 'invoiceCreator_scroll_v1';
@@ -346,8 +385,11 @@ const InvoiceCreatorPage = () => {
     handleBackToTypeSelection();
   };
   
-  // Show loading while profile loads
-  if (user && profileLoading) {
+  // Show loading while profile loads OR while auth/draft lookup is still in
+  // flight — we must NOT mount InvoiceFormBuilder before the active-user scope
+  // is known, otherwise its restore effect reads an empty draft and then the
+  // auto-save layer would overwrite the real cloud draft.
+  if (authLoading || !draftLookupReady || (user && profileLoading)) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
         <div className="animate-pulse text-muted-foreground">

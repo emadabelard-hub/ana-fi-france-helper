@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, LogOut, User, Loader2, Shield, Key, Building2, FileText, MapPin, Mail, Phone, Upload, Image, Check, AlertCircle, Briefcase, CreditCard, Landmark, ShieldCheck, PenTool, Stamp, CheckCircle2, Circle, PartyPopper, Info } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -73,7 +73,19 @@ const ProfilePage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<TabKey>('company');
+  const [activeTab, setActiveTab] = useState<TabKey>('account');
+  const tabBarRef = useRef<HTMLDivElement>(null);
+  const accountTabRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    // Ensure حسابي tab is fully visible on mount (RTL: right side)
+    const el = accountTabRef.current;
+    if (el) {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ inline: 'end', block: 'nearest' });
+      });
+    }
+  }, []);
   const [showApiKey, setShowApiKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -318,7 +330,7 @@ const ProfilePage = () => {
 
         {/* ═══════ TAB BAR ═══════ */}
         <div className="sticky top-0 z-20 bg-[#FAFAFA] dark:bg-background border-b border-border/20">
-          <div className="overflow-x-auto scrollbar-none">
+          <div ref={tabBarRef} className="overflow-x-auto scrollbar-none">
             <div className="flex gap-1 px-4 py-2 min-w-max flex-row-reverse">
               {TABS.map(tab => {
                 const isActive = activeTab === tab.key;
@@ -326,6 +338,7 @@ const ProfilePage = () => {
                 return (
                   <button
                     key={tab.key}
+                    ref={tab.key === 'account' ? accountTabRef : undefined}
                     onClick={() => setActiveTab(tab.key)}
                     className={cn(
                       "relative flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium font-cairo transition-all whitespace-nowrap",

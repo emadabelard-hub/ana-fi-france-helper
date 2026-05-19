@@ -22,8 +22,15 @@ export const DRAFT_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 // Browser event broadcast on every successful auto-save (used by AutoSaveIndicator)
 export const DRAFT_SAVED_EVENT = 'invoice-draft:saved';
 
+// IMPORTANT: store the active user id in localStorage (NOT sessionStorage).
+// sessionStorage is wiped when the tab/PWA is closed, which caused all scoped
+// draft keys to become unreadable on next launch — the form would mount empty
+// and then overwrite the cloud draft with that empty state.
 const getActiveDraftUserId = () => {
   try {
+    const fromLocal = localStorage.getItem(ACTIVE_DRAFT_USER_KEY);
+    if (fromLocal) return fromLocal;
+    // Backwards-compat: read any leftover sessionStorage value from older builds.
     return sessionStorage.getItem(ACTIVE_DRAFT_USER_KEY);
   } catch {
     return null;
@@ -61,15 +68,19 @@ export const setInvoiceDraftStorageUser = (userId: string | null) => {
   const previousUserId = getActiveDraftUserId();
 
   if (!userId) {
-    clearInvoiceDraftBrowserState();
+    // Sign-out: drop the scope marker but DO NOT wipe drafts — we want them
+    // back when the same user signs in again on this device.
+    try { localStorage.removeItem(ACTIVE_DRAFT_USER_KEY); } catch {}
     try { sessionStorage.removeItem(ACTIVE_DRAFT_USER_KEY); } catch {}
     return;
   }
 
   if (previousUserId && previousUserId !== userId) {
+    // Different user on the same device → clear the previous user's drafts.
     clearInvoiceDraftBrowserState();
   }
 
+  try { localStorage.setItem(ACTIVE_DRAFT_USER_KEY, userId); } catch {}
   try { sessionStorage.setItem(ACTIVE_DRAFT_USER_KEY, userId); } catch {}
   clearLegacyBrowserDrafts();
 };

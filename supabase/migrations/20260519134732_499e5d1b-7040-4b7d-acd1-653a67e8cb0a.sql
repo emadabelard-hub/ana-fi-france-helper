@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.invoice_drafts_user_document_type_uidx;

@@ -95,6 +95,64 @@ const ProfilePage = () => {
   const [siretError, setSiretError] = useState<string | null>(null);
   const [signedLogoUrl, setSignedLogoUrl] = useState<string | null>(null);
   const [signedHeaderUrl, setSignedHeaderUrl] = useState<string | null>(null);
+  const [isScanningKbis, setIsScanningKbis] = useState(false);
+  const [isScanningRib, setIsScanningRib] = useState(false);
+  const kbisInputRef = useRef<HTMLInputElement>(null);
+  const ribInputRef = useRef<HTMLInputElement>(null);
+
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
+  const handleScanDocument = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    docType: 'kbis' | 'rib'
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const setLoading = docType === 'kbis' ? setIsScanningKbis : setIsScanningRib;
+    setLoading(true);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const payload: any = { docType };
+      if (file.type === 'application/pdf') {
+        payload.text = await extractTextFromPDF(dataUrl);
+      } else {
+        payload.imageBase64 = dataUrl;
+      }
+      const { data, error } = await supabase.functions.invoke('scan-company-doc', { body: payload });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const updates: Record<string, string> = {};
+      if (docType === 'kbis') {
+        if (data.company_name) updates.company_name = data.company_name;
+        if (data.siret) updates.siret = String(data.siret).replace(/\D/g, '').slice(0, 14);
+        if (data.company_address) updates.company_address = data.company_address;
+        if (data.code_naf) updates.code_naf = data.code_naf;
+        if (data.capital_social) updates.capital_social = data.capital_social;
+        if (data.ville_immatriculation) updates.ville_immatriculation = data.ville_immatriculation;
+      } else {
+        if (data.iban) updates.iban = String(data.iban).replace(/\s/g, '').toUpperCase();
+        if (data.bic) updates.bic = String(data.bic).replace(/\s/g, '').toUpperCase();
+      }
+      if (Object.keys(updates).length === 0) {
+        toast({ variant: 'destructive', title: 'لم يتم استخراج البيانات', description: 'حاول بصورة أوضح' });
+        return;
+      }
+      setFormData(prev => ({ ...prev, ...updates }));
+      toast({ title: '✅ تم تعبئة البيانات، راجعها قبل الحفظ' });
+    } catch (err) {
+      console.error('scan document error', err);
+      toast({ variant: 'destructive', title: 'فشل المسح', description: err instanceof Error ? err.message : 'خطأ' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [formData, setFormData] = useState({
     full_name: '', job: '', company_name: '', siret: '', company_address: '',

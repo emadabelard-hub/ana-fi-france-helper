@@ -1190,9 +1190,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   ];
 
   useEffect(() => {
-    if (!draftRestored) return;
+    if (!autoSaveEnabled) return;
     persistCurrentDocumentState({ currentStep });
-  }, [draftRestored, currentStep, persistCurrentDocumentState]);
+  }, [autoSaveEnabled, currentStep, persistCurrentDocumentState]);
 
   const canProceedFromStep = (step: number): boolean => {
     switch (step) {

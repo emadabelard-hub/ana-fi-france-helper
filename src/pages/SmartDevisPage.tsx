@@ -60,6 +60,7 @@ const SmartDevisPage = () => {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [scanning, setScanning] = useState(false);
   const [subjectFr, setSubjectFr] = useState('');
   const [showIntroTip, setShowIntroTip] = useState(() => {
     if (typeof window === 'undefined') return false;

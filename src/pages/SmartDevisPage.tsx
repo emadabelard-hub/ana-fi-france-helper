@@ -60,6 +60,7 @@ const SmartDevisPage = () => {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [scanning, setScanning] = useState(false);
   const [subjectFr, setSubjectFr] = useState('');
   const [showIntroTip, setShowIntroTip] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -105,6 +106,67 @@ const SmartDevisPage = () => {
   }, []);
 
   const removeImage = (id: string) => setImages(prev => prev.filter(i => i.id !== id));
+
+  const handleScanFile = useCallback(async (file: File | null) => {
+    if (!file) return;
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    if (!allowed.includes(file.type)) {
+      toast({ variant: 'destructive', title: isRTL ? 'نوع الملف غير مدعوم' : 'Type de fichier non supporté' });
+      return;
+    }
+    setScanning(true);
+    try {
+      let base64: string;
+      let mimeType = file.type;
+      if (file.type.startsWith('image/')) {
+        const dataUrl: string = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result as string);
+          r.onerror = () => reject(r.error);
+          r.readAsDataURL(file);
+        });
+        const compressed = await compressImage(dataUrl);
+        base64 = compressed.replace(/^data:[^;]+;base64,/, '');
+        mimeType = 'image/jpeg';
+      } else {
+        // PDF
+        const dataUrl: string = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result as string);
+          r.onerror = () => reject(r.error);
+          r.readAsDataURL(file);
+        });
+        base64 = dataUrl.replace(/^data:[^;]+;base64,/, '');
+      }
+
+      const { data, error } = await supabase.functions.invoke('scan-devis-document', {
+        body: { fileData: base64, mimeType },
+      });
+      if (error) throw error;
+
+      const items = Array.isArray(data?.items) ? data.items : [];
+      const mapped: LineItem[] = items.map((it: any, idx: number) => ({
+        id: `scan-${Date.now()}-${idx}`,
+        designation_fr: String(it.designation_fr || '').trim(),
+        designation_ar: String(it.designation_ar || '').trim(),
+        quantity: Number(it.quantity) > 0 ? Number(it.quantity) : 1,
+        unit: String(it.unit || 'u'),
+        unitPrice: Number(it.unitPrice) > 0 ? Number(it.unitPrice) : 0,
+      }));
+
+      if (mapped.length === 0) {
+        toast({ variant: 'destructive', title: isRTL ? 'لم نتمكن من استخراج أي بند' : 'Aucun poste extrait' });
+      } else {
+        setLineItems(mapped);
+        toast({ title: '✅ تم تحليل الوثيقة، راجع البنود وأضف الأسعار' });
+      }
+    } catch (e: any) {
+      console.error('[SmartDevis] scan error:', e);
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ في تحليل الوثيقة' : 'Erreur d\'analyse', description: e?.message });
+    } finally {
+      setScanning(false);
+    }
+  }, [toast, isRTL]);
 
   const handleAnalyze = async () => {
     const arabic = rawArabic.trim();
@@ -408,44 +470,34 @@ const SmartDevisPage = () => {
               )}
             </div>
 
-            {/* Photo */}
+            {/* Smart document scanner (image or PDF) */}
             <div>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
-                multiple
+                accept="image/jpeg,image/jpg,image/png,application/pdf"
                 className="hidden"
-                onChange={(e) => { handleFiles(e.target.files); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                onChange={(e) => { handleScanFile(e.target.files?.[0] || null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
               />
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full"
+                className="w-full font-cairo"
+                disabled={scanning}
+                dir="rtl"
               >
-                <Camera className="h-4 w-4 mr-2" />
-                {isRTL ? 'إضافة صورة (اختياري)' : 'Ajouter une photo (optionnel)'}
+                {scanning ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    جاري تحليل الوثيقة...
+                  </>
+                ) : (
+                  <>📎 سكان أو حمّل وثيقة</>
+                )}
               </Button>
-
-              {images.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {images.map(img => (
-                    <div key={img.id} className="relative w-20 h-20 rounded-md overflow-hidden border border-border">
-                      <img src={img.preview} alt={img.name} className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(img.id)}
-                        className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full p-0.5"
-                        aria-label="remove"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
+
 
             <Button
               onClick={handleAnalyze}

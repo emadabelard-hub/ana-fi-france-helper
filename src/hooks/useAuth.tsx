@@ -125,6 +125,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  // Admin session keeper: proactively refresh token on focus/visibility and every 20 min
+  useEffect(() => {
+    if (!isPrimaryAdmin) return;
+
+    const refresh = async () => {
+      try {
+        await supabase.auth.refreshSession();
+      } catch (e) {
+        console.warn('[admin-session-keeper] refresh failed:', e);
+      }
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+
+    const interval = window.setInterval(refresh, 20 * 60 * 1000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', onVisible);
+
+    // Initial refresh to extend expiry immediately
+    refresh();
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [isPrimaryAdmin]);
+
   const signUp = async (email: string, password: string): Promise<AuthResult> => {
     const normalizedEmail = normalizeEmail(email);
 

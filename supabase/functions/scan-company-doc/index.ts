@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, x-supabase-client-platform, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const SCHEMAS: Record<string, any> = {
@@ -40,6 +41,20 @@ function parseDataUrl(dataUrl: string): { mediaType: string; data: string } {
   return { mediaType: "image/jpeg", data: dataUrl };
 }
 
+function extractJsonObject(value: string): Record<string, unknown> {
+  try {
+    return JSON.parse(value);
+  } catch {
+    const match = value.match(/\{[\s\S]*\}/);
+    if (!match) return {};
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      return {};
+    }
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -62,72 +77,74 @@ serve(async (req) => {
       });
     }
 
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    console.log("[scan-company-doc] ANTHROPIC_API_KEY present:", !!ANTHROPIC_API_KEY);
     console.log("[scan-company-doc] LOVABLE_API_KEY present:", !!LOVABLE_API_KEY);
-    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const instruction = docType === "kbis"
-      ? `Analyse ce document Kbis français. Extrais les champs via l'outil fourni. Si un champ est absent, omets-le. SIRET = 14 chiffres uniquement.`
-      : `Analyse ce RIB français. Extrais IBAN (sans espaces, majuscules) et BIC/SWIFT via l'outil fourni.`;
+      ? `Analyse ce document Kbis français. Extrais uniquement les champs visibles. SIRET = 14 chiffres uniquement. Réponds avec un JSON strict.`
+      : `Analyse ce RIB français. Extrais uniquement IBAN sans espaces en majuscules et BIC/SWIFT. Réponds avec un JSON strict.`;
 
     const userContent: any[] = [{ type: "text", text: instruction }];
     if (imageBase64) {
       const { mediaType, data } = parseDataUrl(imageBase64);
       console.log("[scan-company-doc] Image mediaType:", mediaType, "dataLength:", data.length);
       userContent.push({
-        type: "image",
-        source: { type: "base64", media_type: mediaType, data },
+        type: "image_url",
+        image_url: { url: `data:${mediaType};base64,${data}` },
       });
     } else {
       console.log("[scan-company-doc] Using PDF text, length:", text.length);
       userContent.push({ type: "text", text: `Contenu extrait du PDF :\n${text}` });
     }
 
-    console.log("[scan-company-doc] Calling Anthropic API...");
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    console.log("[scan-company-doc] Calling Lovable AI Gateway...");
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1024,
-        tools: [schema],
-        tool_choice: { type: "tool", name: schema.name },
+        model: "google/gemini-2.5-flash",
         messages: [{ role: "user", content: userContent }],
+        tools: [{
+          type: "function",
+          function: {
+            name: schema.name,
+            description: schema.description,
+            parameters: schema.input_schema,
+          },
+        }],
+        tool_choice: { type: "function", function: { name: schema.name } },
       }),
     });
 
-    console.log("[scan-company-doc] Anthropic HTTP status:", response.status, response.statusText);
+    console.log("[scan-company-doc] Gateway HTTP status:", response.status, response.statusText);
 
     if (!response.ok) {
       const errBody = await response.text();
-      console.error("[scan-company-doc] Anthropic error body:", errBody);
+      console.error("[scan-company-doc] Gateway error body:", errBody);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Service busy" }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`Anthropic API error ${response.status}: ${errBody}`);
+      throw new Error(`AI Gateway error ${response.status}: ${errBody}`);
     }
 
     const data = await response.json();
-    console.log("[scan-company-doc] Anthropic response shape:", JSON.stringify({
+    const message = data.choices?.[0]?.message ?? {};
+    console.log("[scan-company-doc] Gateway response shape:", JSON.stringify({
       id: data.id,
-      type: data.type,
-      role: data.role,
       model: data.model,
-      stop_reason: data.stop_reason,
-      contentTypes: Array.isArray(data.content) ? data.content.map((c: any) => c.type) : null,
+      finish_reason: data.choices?.[0]?.finish_reason,
+      hasToolCalls: Array.isArray(message.tool_calls),
       usage: data.usage,
     }));
 
-    const toolUse = data.content?.find((c: any) => c.type === "tool_use");
-    const extracted = toolUse?.input ?? {};
+    const args = message.tool_calls?.[0]?.function?.arguments;
+    const extracted = args ? extractJsonObject(args) : extractJsonObject(message.content ?? "{}");
     console.log("[scan-company-doc] Extracted fields:", Object.keys(extracted));
 
     return new Response(JSON.stringify(extracted), {

@@ -408,44 +408,34 @@ const SmartDevisPage = () => {
               )}
             </div>
 
-            {/* Photo */}
+            {/* Smart document scanner (image or PDF) */}
             <div>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
-                multiple
+                accept="image/jpeg,image/jpg,image/png,application/pdf"
                 className="hidden"
-                onChange={(e) => { handleFiles(e.target.files); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                onChange={(e) => { handleScanFile(e.target.files?.[0] || null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
               />
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full"
+                className="w-full font-cairo"
+                disabled={scanning}
+                dir="rtl"
               >
-                <Camera className="h-4 w-4 mr-2" />
-                {isRTL ? 'إضافة صورة (اختياري)' : 'Ajouter une photo (optionnel)'}
+                {scanning ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    جاري تحليل الوثيقة...
+                  </>
+                ) : (
+                  <>📎 سكان أو حمّل وثيقة</>
+                )}
               </Button>
-
-              {images.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {images.map(img => (
-                    <div key={img.id} className="relative w-20 h-20 rounded-md overflow-hidden border border-border">
-                      <img src={img.preview} alt={img.name} className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(img.id)}
-                        className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full p-0.5"
-                        aria-label="remove"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
+
 
             <Button
               onClick={handleAnalyze}

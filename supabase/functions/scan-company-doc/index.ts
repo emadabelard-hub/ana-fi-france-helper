@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, x-supabase-client-platform, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const SCHEMAS: Record<string, any> = {
@@ -39,6 +39,20 @@ function parseDataUrl(dataUrl: string): { mediaType: string; data: string } {
   const m = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (m) return { mediaType: m[1], data: m[2] };
   return { mediaType: "image/jpeg", data: dataUrl };
+}
+
+function extractJsonObject(value: string): Record<string, unknown> {
+  try {
+    return JSON.parse(value);
+  } catch {
+    const match = value.match(/\{[\s\S]*\}/);
+    if (!match) return {};
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      return {};
+    }
+  }
 }
 
 serve(async (req) => {

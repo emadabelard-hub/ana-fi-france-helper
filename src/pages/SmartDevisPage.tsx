@@ -107,6 +107,67 @@ const SmartDevisPage = () => {
 
   const removeImage = (id: string) => setImages(prev => prev.filter(i => i.id !== id));
 
+  const handleScanFile = useCallback(async (file: File | null) => {
+    if (!file) return;
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    if (!allowed.includes(file.type)) {
+      toast({ variant: 'destructive', title: isRTL ? 'نوع الملف غير مدعوم' : 'Type de fichier non supporté' });
+      return;
+    }
+    setScanning(true);
+    try {
+      let base64: string;
+      let mimeType = file.type;
+      if (file.type.startsWith('image/')) {
+        const dataUrl: string = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result as string);
+          r.onerror = () => reject(r.error);
+          r.readAsDataURL(file);
+        });
+        const compressed = await compressImage(dataUrl);
+        base64 = compressed.replace(/^data:[^;]+;base64,/, '');
+        mimeType = 'image/jpeg';
+      } else {
+        // PDF
+        const dataUrl: string = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result as string);
+          r.onerror = () => reject(r.error);
+          r.readAsDataURL(file);
+        });
+        base64 = dataUrl.replace(/^data:[^;]+;base64,/, '');
+      }
+
+      const { data, error } = await supabase.functions.invoke('scan-devis-document', {
+        body: { fileData: base64, mimeType },
+      });
+      if (error) throw error;
+
+      const items = Array.isArray(data?.items) ? data.items : [];
+      const mapped: LineItem[] = items.map((it: any, idx: number) => ({
+        id: `scan-${Date.now()}-${idx}`,
+        designation_fr: String(it.designation_fr || '').trim(),
+        designation_ar: String(it.designation_ar || '').trim(),
+        quantity: Number(it.quantity) > 0 ? Number(it.quantity) : 1,
+        unit: String(it.unit || 'u'),
+        unitPrice: Number(it.unitPrice) > 0 ? Number(it.unitPrice) : 0,
+      }));
+
+      if (mapped.length === 0) {
+        toast({ variant: 'destructive', title: isRTL ? 'لم نتمكن من استخراج أي بند' : 'Aucun poste extrait' });
+      } else {
+        setLineItems(mapped);
+        toast({ title: '✅ تم تحليل الوثيقة، راجع البنود وأضف الأسعار' });
+      }
+    } catch (e: any) {
+      console.error('[SmartDevis] scan error:', e);
+      toast({ variant: 'destructive', title: isRTL ? 'خطأ في تحليل الوثيقة' : 'Erreur d\'analyse', description: e?.message });
+    } finally {
+      setScanning(false);
+    }
+  }, [toast, isRTL]);
+
   const handleAnalyze = async () => {
     const arabic = rawArabic.trim();
     const french = userText.trim();

@@ -77,72 +77,75 @@ serve(async (req) => {
       });
     }
 
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    console.log("[scan-company-doc] ANTHROPIC_API_KEY present:", !!ANTHROPIC_API_KEY);
     console.log("[scan-company-doc] LOVABLE_API_KEY present:", !!LOVABLE_API_KEY);
-    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const instruction = docType === "kbis"
-      ? `Analyse ce document Kbis français. Extrais les champs via l'outil fourni. Si un champ est absent, omets-le. SIRET = 14 chiffres uniquement.`
-      : `Analyse ce RIB français. Extrais IBAN (sans espaces, majuscules) et BIC/SWIFT via l'outil fourni.`;
+      ? `Analyse ce document Kbis français. Extrais uniquement les champs visibles. SIRET = 14 chiffres uniquement. Réponds avec un JSON strict.`
+      : `Analyse ce RIB français. Extrais uniquement IBAN sans espaces en majuscules et BIC/SWIFT. Réponds avec un JSON strict.`;
 
     const userContent: any[] = [{ type: "text", text: instruction }];
     if (imageBase64) {
       const { mediaType, data } = parseDataUrl(imageBase64);
       console.log("[scan-company-doc] Image mediaType:", mediaType, "dataLength:", data.length);
       userContent.push({
-        type: "image",
-        source: { type: "base64", media_type: mediaType, data },
+        type: "image_url",
+        image_url: { url: `data:${mediaType};base64,${data}` },
       });
     } else {
       console.log("[scan-company-doc] Using PDF text, length:", text.length);
       userContent.push({ type: "text", text: `Contenu extrait du PDF :\n${text}` });
     }
 
-    console.log("[scan-company-doc] Calling Anthropic API...");
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    console.log("[scan-company-doc] Calling Lovable AI Gateway...");
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 1024,
-        tools: [schema],
-        tool_choice: { type: "tool", name: schema.name },
+        model: "google/gemini-2.5-flash",
         messages: [{ role: "user", content: userContent }],
+        response_format: { type: "json_object" },
+        tools: [{
+          type: "function",
+          function: {
+            name: schema.name,
+            description: schema.description,
+            parameters: schema.input_schema,
+          },
+        }],
+        tool_choice: { type: "function", function: { name: schema.name } },
       }),
     });
 
-    console.log("[scan-company-doc] Anthropic HTTP status:", response.status, response.statusText);
+    console.log("[scan-company-doc] Gateway HTTP status:", response.status, response.statusText);
 
     if (!response.ok) {
       const errBody = await response.text();
-      console.error("[scan-company-doc] Anthropic error body:", errBody);
+      console.error("[scan-company-doc] Gateway error body:", errBody);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Service busy" }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`Anthropic API error ${response.status}: ${errBody}`);
+      throw new Error(`AI Gateway error ${response.status}: ${errBody}`);
     }
 
     const data = await response.json();
-    console.log("[scan-company-doc] Anthropic response shape:", JSON.stringify({
+    const message = data.choices?.[0]?.message ?? {};
+    console.log("[scan-company-doc] Gateway response shape:", JSON.stringify({
       id: data.id,
-      type: data.type,
-      role: data.role,
       model: data.model,
-      stop_reason: data.stop_reason,
-      contentTypes: Array.isArray(data.content) ? data.content.map((c: any) => c.type) : null,
+      finish_reason: data.choices?.[0]?.finish_reason,
+      hasToolCalls: Array.isArray(message.tool_calls),
       usage: data.usage,
     }));
 
-    const toolUse = data.content?.find((c: any) => c.type === "tool_use");
-    const extracted = toolUse?.input ?? {};
+    const args = message.tool_calls?.[0]?.function?.arguments;
+    const extracted = args ? extractJsonObject(args) : extractJsonObject(message.content ?? "{}");
     console.log("[scan-company-doc] Extracted fields:", Object.keys(extracted));
 
     return new Response(JSON.stringify(extracted), {

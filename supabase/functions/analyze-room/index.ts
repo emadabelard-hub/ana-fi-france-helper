@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
+import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -29,7 +30,7 @@ serve(async (req) => {
 
   try {
     const { imageBase64, language } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     if (!imageBase64) {
@@ -68,9 +69,7 @@ Return this exact JSON format:
       }
     }
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
+    const response = await anthropicCompatFetch({
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -99,8 +98,7 @@ Return this exact JSON format:
             },
           ],
         }),
-      }
-    );
+      });
 
     if (!response.ok) {
       const status = response.status;

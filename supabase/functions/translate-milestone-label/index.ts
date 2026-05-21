@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -72,7 +73,7 @@ EXEMPLES:
     : `Tu es un traducteur professionnel. Traduis ce libellé d'échéance de paiement français vers l'arabe égyptien dialectal (Ammiya) compréhensible par un artisan.
 Réponds UNIQUEMENT par la traduction, sans guillemets ni explication. Ne recopie jamais le texte source.`;
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await anthropicCompatFetch({
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -125,7 +126,7 @@ serve(async (req) => {
     }
 
     // 2. Fallback to AI for free-form text
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "Translation service not configured" }), {
         status: 500,

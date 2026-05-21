@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -35,7 +36,7 @@ serve(async (req) => {
     }
 
     // Use Lovable AI to generate email content
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     let emailHtml = `<div style="font-family:Arial,sans-serif;direction:rtl;padding:20px;max-width:600px;margin:0 auto;">
       <div style="background:#f59e0b;padding:16px;border-radius:8px 8px 0 0;text-align:center;">
         <h2 style="color:#fff;margin:0;">🛠️ رد من فريق نصوح</h2>
@@ -54,7 +55,7 @@ serve(async (req) => {
 
     if (LOVABLE_API_KEY) {
       try {
-        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const aiResp = await anthropicCompatFetch({
           method: "POST",
           headers: {
             Authorization: `Bearer ${LOVABLE_API_KEY}`,

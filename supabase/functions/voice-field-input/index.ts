@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
+import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -177,7 +178,7 @@ Exemples:
 - "بانتيرة ازرق ساتينيه" -> "Peinture bleue satinée"
 - "بانتيرة ازرق ساتينيه وتوريد وتركيب باركيه لوز" -> "Peinture bleue satinée et fourniture et pose de parquet en losange"`;
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await anthropicCompatFetch({
     method: "POST",
     headers: {
       Authorization: `Bearer ${lovableApiKey}`,
@@ -260,7 +261,7 @@ serve(async (req) => {
     }
 
     const openAiKey = Deno.env.get("OPENAI_API_KEY");
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const lovableApiKey = Deno.env.get("ANTHROPIC_API_KEY");
 
     if (!lovableApiKey || (!rawTextInput && !openAiKey)) {
       return new Response(JSON.stringify({ error: "Configuration vocale incomplète." }), {

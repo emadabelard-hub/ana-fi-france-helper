@@ -3,7 +3,7 @@
 // translates to Anthropic, then returns an OpenAI-shaped response (including SSE streaming).
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022";
+const ANTHROPIC_MODEL = "claude-sonnet-4-5-20250929";
 
 type AnyObj = Record<string, any>;
 

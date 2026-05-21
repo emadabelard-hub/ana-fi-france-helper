@@ -11,6 +11,17 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // --- Shared-secret gate: only the pg_cron job may invoke this function ---
+  const expected = Deno.env.get('CRON_SECRET');
+  const provided = req.headers.get('x-cron-secret');
+  if (!expected || !provided || provided !== expected) {
+    console.warn('[purge-activity-logs] unauthorized invocation rejected');
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+    );
+  }
+
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,

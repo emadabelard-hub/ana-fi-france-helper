@@ -36,7 +36,7 @@ serve(async (req) => {
     }
 
     // Use Lovable AI to generate email content
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     let emailHtml = `<div style="font-family:Arial,sans-serif;direction:rtl;padding:20px;max-width:600px;margin:0 auto;">
       <div style="background:#f59e0b;padding:16px;border-radius:8px 8px 0 0;text-align:center;">
         <h2 style="color:#fff;margin:0;">🛠️ رد من فريق نصوح</h2>

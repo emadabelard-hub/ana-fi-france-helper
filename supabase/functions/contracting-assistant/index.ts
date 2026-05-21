@@ -172,7 +172,7 @@ serve(async (req) => {
     const { description, location, estimatedDuration, materialBuyer } = await req.json();
     if (!description) throw new Error("وصف المشروع ناقص");
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const materialContext = materialBuyer === 'client'

@@ -126,7 +126,7 @@ serve(async (req) => {
     }
 
     // 2. Fallback to AI for free-form text
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "Translation service not configured" }), {
         status: 500,

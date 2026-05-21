@@ -254,7 +254,7 @@ serve(async (req) => {
     //  ACTION : chat — conversation interactive (conservé)
     // ──────────────────────────────────────────────────────────────────────
     if (action === "chat") {
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      const LOVABLE_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
       if (!LOVABLE_API_KEY) throw new Error("AI service not configured");
 
       const systemPrompt = `أنت شبيك لبيك — EXPERT BTP terrain، chef de chantier + artisan confirmé في فرنسا.

@@ -261,7 +261,7 @@ serve(async (req) => {
     }
 
     const openAiKey = Deno.env.get("OPENAI_API_KEY");
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const lovableApiKey = Deno.env.get("ANTHROPIC_API_KEY");
 
     if (!lovableApiKey || (!rawTextInput && !openAiKey)) {
       return new Response(JSON.stringify({ error: "Configuration vocale incomplète." }), {

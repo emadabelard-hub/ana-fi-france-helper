@@ -1,6 +1,7 @@
 // BTP Translator: Arabic (Egyptian) <-> French with construction vocabulary
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
+import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -146,7 +147,7 @@ Deno.serve(async (req: Request) => {
     const systemPrompt = `Traducteur BTP. Vocabulaire pro NF/DTU. Arabe = Égyptien Ammiya uniquement.
 ${BTP_GLOSSARY}`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await anthropicCompatFetch({
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 // Version for deployment tracking
+import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
 const VERSION = "v1.0.2";
 const DEPLOYED_AT = new Date().toISOString();
 
@@ -129,7 +130,7 @@ Le document est encodé en base64 au format ${mimeType}.
 IMPORTANT: Traduis tout texte arabe en français professionnel.`;
 
     const callAI = async (systemPrompt: string): Promise<ExtractedData> => {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await anthropicCompatFetch({
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -39,7 +40,7 @@ Règles strictes :
 - Ne pas inventer de prestations qui ne sont pas dans la description.
 - Tu réponds UNIQUEMENT via l'outil "fill_quote".`;
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await anthropicCompatFetch({
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -154,7 +155,7 @@ Prix de référence du marché (€/${unit}):
 
 Ajuste selon la complexité décrite. Sois réaliste.`;
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await anthropicCompatFetch({
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -421,7 +422,7 @@ ${strict ? "- Interdiction stricte d'utiliser un alphabet autre que latin (fran�
 
   const callOnce = async (strict: boolean) => {
     const prompt = buildPrompt(strict);
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await anthropicCompatFetch({
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -560,7 +561,7 @@ Si la saisie contient une COULEUR ou une FINITION (ex: "ازرق", "ازرق س�
       ? `Texte: "${text}"\n\nRappel: AUCUN caractère non latin. Réponds uniquement par la désignation française.`
       : `Texte: "${text}"`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await anthropicCompatFetch({
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -697,7 +698,7 @@ Prix de référence du marché:
 Génère des lignes réalistes pour une FACTURE de travaux terminés.`;
 
   try {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await anthropicCompatFetch({
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -824,7 +825,7 @@ Prix de référence du marché:
 Génère des lignes réalistes et complètes.`;
 
   try {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await anthropicCompatFetch({
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -1260,7 +1261,7 @@ serve(async (req) => {
       { role: "user", content: message }
     ];
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await anthropicCompatFetch({
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,

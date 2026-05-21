@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
+import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -290,7 +291,7 @@ Format de réponse :
       ];
       if (userMessage) messages.push({ role: "user", content: userMessage });
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await anthropicCompatFetch({
         method: "POST",
         headers: {
           Authorization: "Bearer " + LOVABLE_API_KEY,

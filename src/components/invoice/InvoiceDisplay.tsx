@@ -832,7 +832,6 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
 
           {/* Legal Footer — inside end-block so it's never isolated */}
           <div className="invoice-iban-block invoice-footer-block mt-1.5 pt-1 text-center" style={{ borderTop: '1px solid #e5e7eb' }}>
-              {displayedTvaMention && <p className="text-[6pt] text-gray-500 leading-snug font-medium italic">{displayedTvaMention}</p>}
               {cleanLegalFooter && <p className="text-[5.5pt] text-gray-300 leading-snug whitespace-pre-line">{cleanLegalFooter}</p>}
               {data.emitter.iban && (
                 <p className="text-[6pt] text-gray-400 mt-0.5">

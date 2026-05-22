@@ -55,12 +55,14 @@ const SimpleChatMessage = ({
 
       {/* Message Bubble */}
       <div
+        dir={!isUser && textIsArabic ? "rtl" : undefined}
         className={cn(
           "max-w-[85%] p-3.5 rounded-2xl shadow-sm",
           isUser
             ? "bg-primary text-primary-foreground rounded-br-none text-[13px] leading-relaxed whitespace-pre-wrap"
             : "bg-card text-card-foreground border border-border rounded-bl-none",
           isUser && textIsArabic ? "font-cairo text-right" : isUser ? "text-left" : "",
+          !isUser && textIsArabic && "font-cairo text-right",
           !isUser && "ml-10"
         )}
       >

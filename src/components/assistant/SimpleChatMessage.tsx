@@ -46,11 +46,15 @@ const SimpleChatMessage = ({
   const textIsArabic = isArabic(contentForDetection);
 
   // Detect formal document content (letter/email/admin doc)
-  const isFormalDocument = /Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée]/i.test(content);
+  const isFrenchFormalDocument = /Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée]/i.test(content);
+  const isArabicFormalDocument = /السيد|السيدة|الموضوع|تحية طيبة|المحترم|بموجب هذا/i.test(content);
+  const isFormalDocument = isFrenchFormalDocument || isArabicFormalDocument;
 
-  // RULE: if isFormalDocument is true → ALWAYS LTR left, no exceptions (ignore content language).
+  // French formal docs → LTR left; Arabic formal docs → RTL right
   const documentStyle: React.CSSProperties | undefined =
-    !isUser && isFormalDocument ? { textAlign: 'left', direction: 'ltr' } : undefined;
+    !isUser && isFormalDocument
+      ? (isArabicFormalDocument ? { textAlign: 'right', direction: 'rtl' } : { textAlign: 'left', direction: 'ltr' })
+      : undefined;
 
   return (
     <div className={cn("flex flex-col", isUser ? "items-end" : "items-start")}>

@@ -834,6 +834,46 @@ const ExpensesPage = () => {
         </p>
       </div>
 
+      {/* Facturation électronique 2026 banner */}
+      <div
+        className={cn(
+          'rounded-xl border p-4 flex items-start gap-3',
+          isRTL && 'flex-row-reverse text-right'
+        )}
+        style={{ backgroundColor: '#FFFBEB', borderColor: '#F59E0B' }}
+      >
+        <span className="text-xl leading-none shrink-0 mt-0.5">📄</span>
+        <div className="flex-1 space-y-2">
+          <h3
+            className={cn('text-sm font-bold', isRTL && 'font-cairo')}
+            style={{ color: '#92400E' }}
+          >
+            {isRTL ? '📄 الفوترة الإلكترونية 2026' : '📄 Facturation électronique 2026'}
+          </h3>
+          <p
+            className={cn('text-[12px] leading-relaxed', isRTL && 'font-cairo')}
+            style={{ color: '#78350F' }}
+          >
+            {isRTL
+              ? 'من سبتمبر 2026، لازم تستقبل فواتيرك إلكترونياً عبر منصة معتمدة — مجاناً مع Tiime'
+              : 'À partir de septembre 2026, vous devez recevoir vos factures électroniquement via une plateforme agréée — gratuitement avec Tiime'}
+          </p>
+          <a
+            href="https://www.tiime.fr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              'inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors',
+              isRTL && 'font-cairo flex-row-reverse'
+            )}
+            style={{ backgroundColor: '#F59E0B', color: '#fff' }}
+          >
+            <span>🔗</span>
+            {isRTL ? 'إنشاء حساب Tiime مجاناً' : 'Créer un compte Tiime gratuitement'}
+          </a>
+        </div>
+      </div>
+
       {/* Header */}
       <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <h1 className={cn('text-xl font-bold text-foreground', isRTL && 'font-cairo')}>

@@ -48,7 +48,7 @@ const PurchaseConfirmModal = ({
         service_key: serviceKey,
         price_eur: finalPrice,
         is_bundle: isBundle,
-        status: 'completed',
+        status: 'pending',
       });
     } catch (e) {
       // Non-blocking in demo mode

@@ -69,7 +69,7 @@ const SimpleChatMessage = ({
 
       {/* Message Bubble */}
       <div
-        dir={documentStyle ? "ltr" : (!isUser && textIsArabic ? "rtl" : undefined)}
+        dir={documentStyle?.direction as 'ltr' | 'rtl' | undefined || (!isUser && textIsArabic ? "rtl" : undefined)}
         style={documentStyle}
         className={cn(
           "max-w-[85%] p-3.5 rounded-2xl shadow-sm",
@@ -78,15 +78,15 @@ const SimpleChatMessage = ({
             : "bg-card text-card-foreground border border-border rounded-bl-none",
           isUser && textIsArabic ? "font-cairo text-right" : isUser ? "text-left" : "",
           !isUser && textIsArabic && !documentStyle && "font-cairo text-right",
-          !isUser && documentStyle && "text-left",
+          !isUser && documentStyle && (documentStyle.direction === 'rtl' ? "font-cairo text-right" : "text-left"),
           !isUser && "ml-10"
         )}
       >
         {isUser ? content : (
           <MarkdownRenderer
             content={content}
-            isRTL={documentStyle ? false : textIsArabic}
-            forceLTR={!!documentStyle}
+            isRTL={!isUser && isArabicFormalDocument ? true : (documentStyle ? false : textIsArabic)}
+            forceLTR={!!documentStyle && documentStyle.direction === 'ltr'}
           />
         )}
       </div>

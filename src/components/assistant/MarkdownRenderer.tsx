@@ -8,13 +8,15 @@ interface MarkdownRendererProps {
   isRTL?: boolean;
   className?: string;
   onSmartLinkClick?: (linkType: 'cv' | 'pro' | 'solutions') => void;
+  /** Force LTR direction and left alignment on the wrapper and every child element. */
+  forceLTR?: boolean;
 }
 
 /**
  * Premium markdown renderer for AI chat responses.
  * Uses react-markdown for robust rendering of bold, bullets, headings, separators, etc.
  */
-const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick }: MarkdownRendererProps) => {
+const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick, forceLTR = false }: MarkdownRendererProps) => {
   // Pre-process: fix malformed markdown that AI sometimes produces
   // 1. Ensure single * at line start become proper list items (need space after *)
   // 2. Clean up stray ** that aren't proper bold (e.g. isolated ** on a line)

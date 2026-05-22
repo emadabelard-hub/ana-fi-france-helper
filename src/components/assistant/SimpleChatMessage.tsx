@@ -42,6 +42,18 @@ const SimpleChatMessage = ({
   const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
   const textIsArabic = isArabic(content);
 
+  // Detect formal document content (letter/email/admin doc)
+  const isFormalDocument = /Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée]/i.test(content);
+  const hasLatin = /[A-Za-z]/.test(content);
+  const isFullyArabic = textIsArabic && !hasLatin;
+
+  let documentStyle: React.CSSProperties | undefined;
+  if (!isUser && isFormalDocument) {
+    documentStyle = isFullyArabic
+      ? { textAlign: 'right', direction: 'rtl' }
+      : { textAlign: 'left', direction: 'ltr' };
+  }
+
   return (
     <div className={cn("flex flex-col", isUser ? "items-end" : "items-start")}>
       {/* Avatar for AI messages */}
@@ -55,19 +67,21 @@ const SimpleChatMessage = ({
 
       {/* Message Bubble */}
       <div
-        dir={!isUser && textIsArabic ? "rtl" : undefined}
+        dir={documentStyle ? undefined : (!isUser && textIsArabic ? "rtl" : undefined)}
+        style={documentStyle}
         className={cn(
           "max-w-[85%] p-3.5 rounded-2xl shadow-sm",
           isUser
             ? "bg-primary text-primary-foreground rounded-br-none text-[13px] leading-relaxed whitespace-pre-wrap"
             : "bg-card text-card-foreground border border-border rounded-bl-none",
           isUser && textIsArabic ? "font-cairo text-right" : isUser ? "text-left" : "",
-          !isUser && textIsArabic && "font-cairo text-right",
+          !isUser && textIsArabic && !documentStyle && "font-cairo text-right",
+          !isUser && isFullyArabic && documentStyle && "font-cairo",
           !isUser && "ml-10"
         )}
       >
         {isUser ? content : (
-          <MarkdownRenderer content={content} isRTL={textIsArabic} />
+          <MarkdownRenderer content={content} isRTL={documentStyle ? isFullyArabic : textIsArabic} />
         )}
       </div>
 

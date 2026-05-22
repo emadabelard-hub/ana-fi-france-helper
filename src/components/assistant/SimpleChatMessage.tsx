@@ -47,15 +47,10 @@ const SimpleChatMessage = ({
 
   // Detect formal document content (letter/email/admin doc)
   const isFormalDocument = /Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée]/i.test(content);
-  const hasLatin = /[A-Za-z]/.test(contentForDetection);
-  const isFullyArabic = textIsArabic && !hasLatin;
 
-  let documentStyle: React.CSSProperties | undefined;
-  if (!isUser && isFormalDocument) {
-    documentStyle = isFullyArabic
-      ? { textAlign: 'right', direction: 'rtl' }
-      : { textAlign: 'left', direction: 'ltr' };
-  }
+  // RULE: if isFormalDocument is true → ALWAYS LTR left, no exceptions (ignore content language).
+  const documentStyle: React.CSSProperties | undefined =
+    !isUser && isFormalDocument ? { textAlign: 'left', direction: 'ltr' } : undefined;
 
   return (
     <div className={cn("flex flex-col", isUser ? "items-end" : "items-start")}>
@@ -70,7 +65,7 @@ const SimpleChatMessage = ({
 
       {/* Message Bubble */}
       <div
-        dir={documentStyle ? undefined : (!isUser && textIsArabic ? "rtl" : undefined)}
+        dir={documentStyle ? "ltr" : (!isUser && textIsArabic ? "rtl" : undefined)}
         style={documentStyle}
         className={cn(
           "max-w-[85%] p-3.5 rounded-2xl shadow-sm",
@@ -79,12 +74,16 @@ const SimpleChatMessage = ({
             : "bg-card text-card-foreground border border-border rounded-bl-none",
           isUser && textIsArabic ? "font-cairo text-right" : isUser ? "text-left" : "",
           !isUser && textIsArabic && !documentStyle && "font-cairo text-right",
-          !isUser && isFullyArabic && documentStyle && "font-cairo",
+          !isUser && documentStyle && "text-left",
           !isUser && "ml-10"
         )}
       >
         {isUser ? content : (
-          <MarkdownRenderer content={content} isRTL={documentStyle ? isFullyArabic : textIsArabic} />
+          <MarkdownRenderer
+            content={content}
+            isRTL={documentStyle ? false : textIsArabic}
+            forceLTR={!!documentStyle}
+          />
         )}
       </div>
 

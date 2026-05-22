@@ -8,13 +8,15 @@ interface MarkdownRendererProps {
   isRTL?: boolean;
   className?: string;
   onSmartLinkClick?: (linkType: 'cv' | 'pro' | 'solutions') => void;
+  /** Force LTR direction and left alignment on the wrapper and every child element. */
+  forceLTR?: boolean;
 }
 
 /**
  * Premium markdown renderer for AI chat responses.
  * Uses react-markdown for robust rendering of bold, bullets, headings, separators, etc.
  */
-const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick }: MarkdownRendererProps) => {
+const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick, forceLTR = false }: MarkdownRendererProps) => {
   // Pre-process: fix malformed markdown that AI sometimes produces
   // 1. Ensure single * at line start become proper list items (need space after *)
   // 2. Clean up stray ** that aren't proper bold (e.g. isolated ** on a line)
@@ -85,28 +87,34 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
   };
 
   // Custom components for react-markdown
+  // When forceLTR is on, override any inherited RTL with inline style on every node.
+  const ltrStyle: React.CSSProperties | undefined = forceLTR
+    ? { direction: 'ltr', textAlign: 'left', unicodeBidi: 'plaintext' }
+    : undefined;
+  const effectiveRTL = forceLTR ? false : isRTL;
+
   const components: Record<string, React.FC<any>> = {
     h2: ({ children }) => (
-      <h2 className="text-xl font-extrabold mt-8 mb-4 text-foreground">{processChildren(children)}</h2>
+      <h2 dir={forceLTR ? 'ltr' : undefined} style={ltrStyle} className="text-xl font-extrabold mt-8 mb-4 text-foreground">{processChildren(children)}</h2>
     ),
     h3: ({ children }) => (
-      <h3 className="text-lg font-extrabold mt-8 mb-4 text-foreground">{processChildren(children)}</h3>
+      <h3 dir={forceLTR ? 'ltr' : undefined} style={ltrStyle} className="text-lg font-extrabold mt-8 mb-4 text-foreground">{processChildren(children)}</h3>
     ),
     p: ({ children }) => (
-      <p className="mb-6 leading-relaxed text-foreground last:mb-0">{processChildren(children)}</p>
+      <p dir={forceLTR ? 'ltr' : undefined} style={ltrStyle} className="mb-6 leading-relaxed text-foreground last:mb-0">{processChildren(children)}</p>
     ),
     ul: ({ children }) => (
-      <ul className={cn("list-disc mb-6 space-y-4", isRTL ? "pr-6" : "ml-6")}>
+      <ul dir={forceLTR ? 'ltr' : undefined} style={ltrStyle} className={cn("list-disc mb-6 space-y-4", effectiveRTL ? "pr-6" : "ml-6")}>
         {children}
       </ul>
     ),
     ol: ({ children }) => (
-      <ol className={cn("list-decimal mb-6 space-y-4", isRTL ? "pr-6" : "ml-6")}>
+      <ol dir={forceLTR ? 'ltr' : undefined} style={ltrStyle} className={cn("list-decimal mb-6 space-y-4", effectiveRTL ? "pr-6" : "ml-6")}>
         {children}
       </ol>
     ),
     li: ({ children }) => (
-      <li className={cn("leading-relaxed text-foreground", isRTL ? "pr-2" : "pl-2")}>{processChildren(children)}</li>
+      <li dir={forceLTR ? 'ltr' : undefined} style={ltrStyle} className={cn("leading-relaxed text-foreground", effectiveRTL ? "pr-2" : "pl-2")}>{processChildren(children)}</li>
     ),
     hr: () => (
       <hr className="border-border my-8" />
@@ -124,14 +132,16 @@ const MarkdownRenderer = ({ content, isRTL = false, className, onSmartLinkClick 
 
   return (
     <div
+      style={ltrStyle}
       className={cn(
         "text-[15px]",
         "leading-[1.9]",
-        isRTL ? "font-cairo text-right" : "text-left",
+        effectiveRTL ? "font-cairo text-right" : "text-left",
         "[&>*+*]:mt-5",
+        forceLTR && "[&_*]:!text-left [&_*]:![direction:ltr]",
         className
       )}
-      dir={isRTL ? "rtl" : "ltr"}
+      dir={effectiveRTL ? "rtl" : "ltr"}
     >
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {processedContent}

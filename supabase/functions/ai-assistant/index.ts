@@ -303,6 +303,8 @@ ${categoryCtx}
 
 ${documentRedactionRulesAr}
 
+${courrierAgentModeAr}
+
 ${deepStrategyAr}
 
 قواعد الرد (أسلوب محادثة طبيعي — إلزامي):

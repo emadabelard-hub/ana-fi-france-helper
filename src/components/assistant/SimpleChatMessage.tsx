@@ -39,12 +39,15 @@ const SimpleChatMessage = ({
   onActionClick,
 }: SimpleChatMessageProps) => {
   const isUser = role === 'user';
+  // Strip bracketed placeholders like [تاريخ الإيداع] before language detection
+  // so Arabic placeholder words inside a French document don't trigger RTL.
+  const contentForDetection = content.replace(/\[[^\]]*\]/g, '');
   const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
-  const textIsArabic = isArabic(content);
+  const textIsArabic = isArabic(contentForDetection);
 
   // Detect formal document content (letter/email/admin doc)
   const isFormalDocument = /Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée]/i.test(content);
-  const hasLatin = /[A-Za-z]/.test(content);
+  const hasLatin = /[A-Za-z]/.test(contentForDetection);
   const isFullyArabic = textIsArabic && !hasLatin;
 
   let documentStyle: React.CSSProperties | undefined;

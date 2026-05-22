@@ -766,9 +766,6 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
             <p className="text-gray-600 font-semibold mb-0.5"><ArSub fr="Conditions de règlement:" /></p>
             <ul className="space-y-0 ml-1">
               <li>• {data.paymentTerms}</li>
-              {data.paymentDeadline === 'immediate' && (
-                <li className="text-gray-600 font-medium">• Paiement à réception de la facture.</li>
-              )}
               {detectedGarantieYears && (
                 <li className="text-gray-700 font-semibold">
                   • Garantie sur l'ensemble des travaux : {detectedGarantieYears} an{detectedGarantieYears > 1 ? 's' : ''} à compter de la réception du chantier.

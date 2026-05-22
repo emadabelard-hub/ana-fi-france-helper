@@ -45,15 +45,13 @@ const SimpleChatMessage = ({
   const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
   const textIsArabic = isArabic(contentForDetection);
 
-  // Detect formal document content (letter/email/admin doc)
-  const isFrenchFormalDocument = /Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée]/i.test(content);
-  const isArabicFormalDocument = /السيد|السيدة|الموضوع|تحية طيبة|المحترم|بموجب هذا/i.test(content);
-  const isFormalDocument = isFrenchFormalDocument || isArabicFormalDocument;
+  // Detect formal document content (letter/email/admin doc) — French only → always LTR left
+  const isFormalDocument = /Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée]/i.test(content);
 
-  // French formal docs → LTR left; Arabic formal docs → RTL right
+  // French formal docs → LTR left
   const documentStyle: React.CSSProperties | undefined =
     !isUser && isFormalDocument
-      ? (isArabicFormalDocument ? { textAlign: 'right', direction: 'rtl' } : { textAlign: 'left', direction: 'ltr' })
+      ? { textAlign: 'left', direction: 'ltr' }
       : undefined;
 
   return (
@@ -78,15 +76,15 @@ const SimpleChatMessage = ({
             : "bg-card text-card-foreground border border-border rounded-bl-none",
           isUser && textIsArabic ? "font-cairo text-right" : isUser ? "text-left" : "",
           !isUser && textIsArabic && !documentStyle && "font-cairo text-right",
-          !isUser && documentStyle && (documentStyle.direction === 'rtl' ? "font-cairo text-right" : "text-left"),
+          !isUser && documentStyle && "text-left",
           !isUser && "ml-10"
         )}
       >
         {isUser ? content : (
           <MarkdownRenderer
             content={content}
-            isRTL={!isUser && isArabicFormalDocument ? true : (documentStyle ? false : textIsArabic)}
-            forceLTR={!!documentStyle && documentStyle.direction === 'ltr'}
+            isRTL={documentStyle ? false : textIsArabic}
+            forceLTR={!!documentStyle}
           />
         )}
       </div>

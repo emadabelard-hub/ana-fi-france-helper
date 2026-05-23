@@ -12,6 +12,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { useAssistantDictation } from '@/hooks/useAssistantDictation';
 import FullscreenVoiceModal from '@/components/assistant/FullscreenVoiceModal';
+import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 
 type ConversationSummary = { id: string; title: string | null; updated_at: string };
 

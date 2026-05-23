@@ -12,6 +12,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { useAssistantDictation } from '@/hooks/useAssistantDictation';
 import FullscreenVoiceModal from '@/components/assistant/FullscreenVoiceModal';
+import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 
 type ConversationSummary = { id: string; title: string | null; updated_at: string };
 
@@ -49,6 +50,8 @@ const fillPlaceholders = (text: string, p: any): string => {
   const phone = (p?.phone || '').trim();
   const email = (p?.email || '').trim();
   const address = (p?.address || '').trim();
+  const company = (p?.company_name || '').trim();
+  const siret = (p?.siret || '').trim();
   const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const replacements: Array<[RegExp, string]> = [
     [/\[\s*Pr[ée]nom\s+Nom\s*\]/gi, fullName],
@@ -57,6 +60,8 @@ const fillPlaceholders = (text: string, p: any): string => {
     [/\[\s*Code\s*postal\s+Ville\s*\]/gi, ''],
     [/\[\s*T[ée]l[ée]phone\s*\]/gi, phone],
     [/\[\s*Email\s*\]/gi, email],
+    [/\[\s*SIRET\s*\]/gi, siret],
+    [/\[\s*Entreprise\s*\]/gi, company],
     [/\[\s*Ville\s*,?\s*le\s*JJ\s*mois\s*AAAA\s*\]/gi, today],
     [/\[\s*Date\s*\]/gi, today],
   ];
@@ -83,6 +88,40 @@ interface UserInfo {
   name: string;
   gender: 'male' | 'female';
 }
+
+type MissingField = { key: string; label: string; placeholder: string; type?: string };
+
+const detectMissingInfoForm = (content: string): { fields: MissingField[] } | null => {
+  if (!content || !content.includes('missing_info_form')) return null;
+  // Try fenced JSON code blocks first, then any raw JSON object containing the marker.
+  const candidates: string[] = [];
+  const fenced = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/gi);
+  if (fenced) for (const f of fenced) {
+    const m = f.match(/\{[\s\S]*\}/);
+    if (m) candidates.push(m[0]);
+  }
+  // Also try to find a bare {...} containing "missing_info_form"
+  const bareMatches = content.match(/\{[\s\S]*?"type"\s*:\s*"missing_info_form"[\s\S]*?\}/g);
+  if (bareMatches) candidates.push(...bareMatches);
+  for (const c of candidates) {
+    try {
+      const parsed = JSON.parse(c);
+      if (parsed?.type === 'missing_info_form' && Array.isArray(parsed.fields)) {
+        const fields = parsed.fields
+          .filter((f: any) => f && typeof f.key === 'string' && typeof f.label === 'string')
+          .map((f: any) => ({
+            key: String(f.key),
+            label: String(f.label),
+            placeholder: String(f.placeholder || ''),
+            type: f.type ? String(f.type) : undefined,
+          }));
+        if (fields.length > 0) return { fields };
+      }
+    } catch {}
+  }
+  return null;
+};
+
 
 const AIAssistantPage = () => {
   const { language, isRTL } = useLanguage();
@@ -182,20 +221,11 @@ const AIAssistantPage = () => {
     if (!user || conversationLoaded) return;
     (async () => {
       try {
-        const list = await refreshConversations();
-        if (list.length > 0) {
-          // Open the most recent conversation
-          const first = list[0];
-          setCurrentConversationId(first.id);
-          const { data } = await supabase
-            .from('assistant_conversations')
-            .select('messages')
-            .eq('id', first.id)
-            .maybeSingle();
-          if (data?.messages && Array.isArray(data.messages)) {
-            setMessages(data.messages as Msg[]);
-          }
-        }
+        // Bug 1 fix: only load the list, NEVER auto-open the most recent.
+        // Each new page visit starts with an empty context.
+        await refreshConversations();
+        setCurrentConversationId(null);
+        setMessages([]);
       } catch (err) {
         console.error('Load conversation error:', err);
       } finally {
@@ -516,9 +546,10 @@ const AIAssistantPage = () => {
     }
   };
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (overrideText?: string) => {
+    const text = (typeof overrideText === 'string' ? overrideText : input).trim();
     if ((!text && !attachment) || isLoading) return;
+
 
     const currentAttachment = attachment;
     const displayText = text || (currentAttachment
@@ -575,13 +606,16 @@ const AIAssistantPage = () => {
             : null,
           userQuestion: text || null,
           language: language === 'ar' ? 'ar' : 'fr',
-          userName: userInfo?.name || null,
+          userName: (profile?.full_name?.trim().split(/\s+/)[0]) || userInfo?.name || null,
           userGender: userInfo?.gender || null,
           userProfile: profile ? {
             full_name: profile.full_name || null,
             address: profile.address || null,
             phone: profile.phone || null,
-            email: profile.email || null,
+            email: profile.email || user?.email || null,
+            company_name: profile.company_name || null,
+            siret: profile.siret || null,
+            company_address: profile.company_address || null,
           } : null,
           category: activeCategory,
         }),
@@ -919,10 +953,19 @@ const AIAssistantPage = () => {
               </div>
             );
           }
-          const { preface, letter: rawLetter } = splitLetter(msg.content);
+          const missingForm = detectMissingInfoForm(msg.content);
+          // Strip the JSON block from the visible content if it was a form payload
+          const visibleContent = missingForm
+            ? msg.content
+                .replace(/```(?:json)?\s*\{[\s\S]*?"missing_info_form"[\s\S]*?\}\s*```/gi, '')
+                .replace(/\{[\s\S]*?"type"\s*:\s*"missing_info_form"[\s\S]*?\}/g, '')
+                .trim()
+            : msg.content;
+          const { preface, letter: rawLetter } = splitLetter(visibleContent);
           const letter = rawLetter ? fillPlaceholders(rawLetter, profile) : null;
           const isFormalFrench = !!letter;
-          const copyText = letter ? stripMarkdownForCopy(letter) : msg.content;
+          const copyText = letter ? stripMarkdownForCopy(letter) : visibleContent;
+          const isLastAssistant = i === messages.length - 1;
           return (
             <div key={i} className="w-full relative">
               <button
@@ -953,19 +996,45 @@ const AIAssistantPage = () => {
               )}
 
               {/* Either the formal French letter, or the regular response */}
-              <div {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
-                <MarkdownRenderer
-                  content={letter ?? msg.content}
-                  isRTL={isFormalFrench ? false : textAr}
-                  forceLTR={isFormalFrench}
-                  className="!text-[15px] !leading-[1.6] text-foreground"
-                  onSmartLinkClick={(type) => {
-                    if (type === 'cv') navigate('/pro/cv-generator');
-                    else if (type === 'pro') navigate('/pro/invoice-creator');
-                    else if (type === 'solutions') navigate('/premium-consultation');
-                  }}
-                />
-              </div>
+              {visibleContent && (
+                <div {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
+                  <MarkdownRenderer
+                    content={letter ?? visibleContent}
+                    isRTL={isFormalFrench ? false : textAr}
+                    forceLTR={isFormalFrench}
+                    className="!text-[15px] !leading-[1.6] text-foreground"
+                    onSmartLinkClick={(type) => {
+                      if (type === 'cv') navigate('/pro/cv-generator');
+                      else if (type === 'pro') navigate('/pro/invoice-creator');
+                      else if (type === 'solutions') navigate('/premium-consultation');
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Bug 4: Inline missing info form */}
+              {missingForm && isLastAssistant && !isLoading && (
+                <div className="mt-3">
+                  <MissingInfoForm
+                    fields={missingForm.fields}
+                    isRTL={isRTL}
+                    onCancel={() => {
+                      setMessages(prev => prev.map((m, idx) =>
+                        idx === i ? { ...m, content: visibleContent || (isRTL ? '(تم الإلغاء)' : '(annulé)') } : m
+                      ));
+                    }}
+                    onSubmit={(data) => {
+                      const summary = Object.entries(data)
+                        .map(([k, v]) => `- ${k}: ${v}`)
+                        .join('\n');
+                      const reply = (isRTL
+                        ? 'هاكي البيانات الناقصة:\n'
+                        : 'Voici les informations manquantes :\n') + summary;
+                      void send(reply);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           );
         })}
@@ -1073,7 +1142,8 @@ const AIAssistantPage = () => {
             rows={1}
             onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              // Bug 5: Enter alone = newline (default behavior). Shift+Enter = send.
+              if (e.key === 'Enter' && e.shiftKey) {
                 e.preventDefault();
                 e.stopPropagation();
                 if ((input.trim() || attachment) && !isLoading) send();

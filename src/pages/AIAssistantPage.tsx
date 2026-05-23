@@ -27,6 +27,58 @@ const CATEGORIES: { key: CategoryKey; emoji: string; labelAr: string; labelFr: s
 
 const STREAM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
 
+const LETTER_MARKER = '===الرسالة_الرسمية===';
+
+const splitLetter = (content: string): { preface: string; letter: string | null } => {
+  const idx = content.indexOf(LETTER_MARKER);
+  if (idx !== -1) {
+    const preface = content.slice(0, idx).trim();
+    let after = content.slice(idx + LETTER_MARKER.length);
+    const next = after.match(/===[^=\n]+===/);
+    if (next && typeof next.index === 'number') after = after.slice(0, next.index);
+    return { preface, letter: after.trim() };
+  }
+  // Fallback: detect formal French letter without explicit marker
+  const isFormal = /(Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée])/i.test(content);
+  if (isFormal) return { preface: '', letter: content.trim() };
+  return { preface: content, letter: null };
+};
+
+const fillPlaceholders = (text: string, p: any): string => {
+  const fullName = (p?.full_name || '').trim();
+  const phone = (p?.phone || '').trim();
+  const email = (p?.email || '').trim();
+  const address = (p?.address || '').trim();
+  const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const replacements: Array<[RegExp, string]> = [
+    [/\[\s*Pr[ée]nom\s+Nom\s*\]/gi, fullName],
+    [/\[\s*Nom\s+Pr[ée]nom\s*\]/gi, fullName],
+    [/\[\s*Adresse\s*\]/gi, address],
+    [/\[\s*Code\s*postal\s+Ville\s*\]/gi, ''],
+    [/\[\s*T[ée]l[ée]phone\s*\]/gi, phone],
+    [/\[\s*Email\s*\]/gi, email],
+    [/\[\s*Ville\s*,?\s*le\s*JJ\s*mois\s*AAAA\s*\]/gi, today],
+    [/\[\s*Date\s*\]/gi, today],
+  ];
+  let out = text;
+  for (const [re, val] of replacements) out = out.replace(re, val);
+  // Clean lines that became empty after substitution
+  out = out.replace(/^[ \t]+$/gm, '').replace(/\n{3,}/g, '\n\n');
+  return out;
+};
+
+const stripMarkdownForCopy = (text: string): string => {
+  return text
+    .replace(/===[^=\n]+===/g, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*-{3,}\s*$/gm, '')
+    .replace(/^\s*={3,}\s*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
+
 interface UserInfo {
   name: string;
   gender: 'male' | 'female';

@@ -863,7 +863,24 @@ const AIAssistantPage = () => {
           }
           const isFormalFrench = /Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée]/i.test(msg.content);
           return (
-            <div key={i} className="w-full" {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
+            <div key={i} className="w-full relative" {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(msg.content);
+                    setCopiedIndex(i);
+                    toast({ title: '✅ Copié !', description: 'Texte prêt à coller' });
+                    setTimeout(() => setCopiedIndex(null), 2000);
+                  } catch {
+                    toast({ title: 'Erreur', description: 'Impossible de copier', variant: 'destructive' });
+                  }
+                }}
+                className="absolute top-2 end-2 z-10 p-1.5 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Copier"
+                title="Copier"
+              >
+                {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
+              </button>
               <MarkdownRenderer
                 content={msg.content}
                 isRTL={isFormalFrench ? false : textAr}

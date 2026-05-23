@@ -919,13 +919,16 @@ const AIAssistantPage = () => {
               </div>
             );
           }
-          const isFormalFrench = /Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée]/i.test(msg.content);
+          const { preface, letter: rawLetter } = splitLetter(msg.content);
+          const letter = rawLetter ? fillPlaceholders(rawLetter, profile) : null;
+          const isFormalFrench = !!letter;
+          const copyText = letter ? stripMarkdownForCopy(letter) : msg.content;
           return (
-            <div key={i} className="w-full relative" {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
+            <div key={i} className="w-full relative">
               <button
                 onClick={async () => {
                   try {
-                    await navigator.clipboard.writeText(msg.content);
+                    await navigator.clipboard.writeText(copyText);
                     setCopiedIndex(i);
                     toast({ title: '✅ Copié !', description: 'Texte prêt à coller' });
                     setTimeout(() => setCopiedIndex(null), 2000);
@@ -939,17 +942,30 @@ const AIAssistantPage = () => {
               >
                 {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
               </button>
-              <MarkdownRenderer
-                content={msg.content}
-                isRTL={isFormalFrench ? false : textAr}
-                forceLTR={isFormalFrench}
-                className="!text-[15px] !leading-[1.6] text-foreground"
-                onSmartLinkClick={(type) => {
-                  if (type === 'cv') navigate('/pro/cv-generator');
-                  else if (type === 'pro') navigate('/pro/invoice-creator');
-                  else if (type === 'solutions') navigate('/premium-consultation');
-                }}
-              />
+
+              {/* Optional Arabic preface (only when letter present) */}
+              {letter && preface && (
+                <MarkdownRenderer
+                  content={preface}
+                  isRTL={isArabic(preface)}
+                  className="!text-[15px] !leading-[1.6] text-foreground mb-3"
+                />
+              )}
+
+              {/* Either the formal French letter, or the regular response */}
+              <div {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
+                <MarkdownRenderer
+                  content={letter ?? msg.content}
+                  isRTL={isFormalFrench ? false : textAr}
+                  forceLTR={isFormalFrench}
+                  className="!text-[15px] !leading-[1.6] text-foreground"
+                  onSmartLinkClick={(type) => {
+                    if (type === 'cv') navigate('/pro/cv-generator');
+                    else if (type === 'pro') navigate('/pro/invoice-creator');
+                    else if (type === 'solutions') navigate('/premium-consultation');
+                  }}
+                />
+              </div>
             </div>
           );
         })}

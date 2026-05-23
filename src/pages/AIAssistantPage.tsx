@@ -546,9 +546,10 @@ const AIAssistantPage = () => {
     }
   };
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (overrideText?: string) => {
+    const text = (typeof overrideText === 'string' ? overrideText : input).trim();
     if ((!text && !attachment) || isLoading) return;
+
 
     const currentAttachment = attachment;
     const displayText = text || (currentAttachment

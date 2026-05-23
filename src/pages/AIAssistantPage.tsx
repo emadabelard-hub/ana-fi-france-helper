@@ -1075,47 +1075,50 @@ const AIAssistantPage = () => {
 
       {/* Input - positioned above bottom nav */}
       <div className="px-3 pt-3 border-t border-border bg-card/50 shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-        {/* Attachment preview */}
-        {(attachment || isProcessingFile) && (
-          <div className="mb-2 flex items-center gap-2 bg-muted/60 border border-border rounded-xl p-2">
-            {isProcessingFile ? (
-              <>
+        {/* Attachments preview */}
+        {(attachments.length > 0 || isProcessingFile) && (
+          <div className="mb-2 space-y-1.5">
+            {isProcessingFile && (
+              <div className="flex items-center gap-2 bg-muted/60 border border-border rounded-xl p-2">
                 <Loader2 size={16} className="animate-spin text-muted-foreground shrink-0" />
                 <span className={cn("text-xs text-muted-foreground flex-1 truncate", isRTL && "font-cairo text-right")}>
-                  {isRTL ? 'جاري قراءة الملف...' : 'Lecture du fichier...'}
+                  {isRTL ? 'جاري قراءة الملفات...' : 'Lecture des fichiers...'}
                 </span>
-              </>
-            ) : attachment ? (
-              <>
-                {attachment.kind === 'image' ? (
-                  <img src={attachment.dataUrl} alt="" className="w-10 h-10 rounded-md object-cover shrink-0" />
+              </div>
+            )}
+            {attachments.map((att, idx) => (
+              <div key={idx} className="flex items-center gap-2 bg-muted/60 border border-border rounded-xl p-2">
+                {att.kind === 'image' ? (
+                  <img src={att.dataUrl} alt="" className="w-10 h-10 rounded-md object-cover shrink-0" />
                 ) : (
                   <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                     <FileText size={18} className="text-primary" />
                   </div>
                 )}
                 <span className={cn("text-xs font-medium text-foreground flex-1 truncate", isRTL && "font-cairo text-right")}>
-                  {attachment.name}
+                  {att.name}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setAttachment(null)}
+                  onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
                   className="p-1 rounded-full hover:bg-muted text-muted-foreground shrink-0"
                   aria-label={isRTL ? 'حذف' : 'Retirer'}
                 >
                   <X size={14} />
                 </button>
-              </>
-            ) : null}
+              </div>
+            ))}
           </div>
         )}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf"
+          multiple
           className="hidden"
           onChange={handleFileSelected}
         />
+
         <div className="relative flex items-end gap-2 bg-background p-1.5 rounded-3xl border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
           {/* Mic button */}
           <button

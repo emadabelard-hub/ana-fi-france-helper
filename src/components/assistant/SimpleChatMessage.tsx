@@ -67,7 +67,7 @@ const SimpleChatMessage = ({
 
       {/* Message Bubble */}
       <div
-        dir={documentStyle?.direction as 'ltr' | 'rtl' | undefined || (!isUser && textIsArabic ? "rtl" : undefined)}
+        dir={documentStyle ? 'ltr' : (!isUser && textIsArabic ? 'rtl' : undefined)}
         style={documentStyle}
         className={cn(
           "max-w-[85%] p-3.5 rounded-2xl shadow-sm",

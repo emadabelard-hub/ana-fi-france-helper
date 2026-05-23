@@ -272,6 +272,13 @@ Madame, Monsieur,
 - في الخطوة 4: المستند لوحده فقط. صفر تعليق. صفر مقدمة. صفر خاتمة. صفر خطوات مرقمة بالعربي.
 `;
 
+    const profileBlock = userProfile ? `
+PROFIL_UTILISATEUR (données réelles à utiliser SYSTÉMATIQUEMENT dans les courriers à la place des placeholders [Prénom Nom], [Adresse], [Téléphone], [Email]) :
+- Nom complet : ${userProfile.full_name || '(inconnu — laisser le placeholder)'}
+- Adresse : ${userProfile.address || '(inconnue — laisser le placeholder)'}
+- Téléphone : ${userProfile.phone || '(inconnu — laisser le placeholder)'}
+- Email : ${userProfile.email || '(inconnu — laisser le placeholder)'}
+` : '';
 
     const systemPrompt = language === 'fr'
       ? `${absoluteRulesFr}

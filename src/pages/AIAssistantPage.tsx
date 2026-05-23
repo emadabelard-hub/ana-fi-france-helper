@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X, Trash2, Paperclip, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X, Trash2, Paperclip, FileText, Loader2, Copy, Check } from 'lucide-react';
 import { extractTextFromPDF } from '@/lib/pdfExtractor';
 import RoomScannerModal from '@/components/scanner/RoomScannerModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
@@ -76,6 +76,7 @@ const AIAssistantPage = () => {
     | null
   >(null);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const { toast } = useToast();
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
 
@@ -862,7 +863,24 @@ const AIAssistantPage = () => {
           }
           const isFormalFrench = /Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée]/i.test(msg.content);
           return (
-            <div key={i} className="w-full" {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
+            <div key={i} className="w-full relative" {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(msg.content);
+                    setCopiedIndex(i);
+                    toast({ title: '✅ Copié !', description: 'Texte prêt à coller' });
+                    setTimeout(() => setCopiedIndex(null), 2000);
+                  } catch {
+                    toast({ title: 'Erreur', description: 'Impossible de copier', variant: 'destructive' });
+                  }
+                }}
+                className="absolute top-2 end-2 z-10 p-1.5 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Copier"
+                title="Copier"
+              >
+                {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
+              </button>
               <MarkdownRenderer
                 content={msg.content}
                 isRTL={isFormalFrench ? false : textAr}

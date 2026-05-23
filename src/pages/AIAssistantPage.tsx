@@ -1071,7 +1071,8 @@ const AIAssistantPage = () => {
             rows={1}
             onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              // Bug 5: Enter alone = newline (default behavior). Shift+Enter = send.
+              if (e.key === 'Enter' && e.shiftKey) {
                 e.preventDefault();
                 e.stopPropagation();
                 if ((input.trim() || attachment) && !isLoading) send();

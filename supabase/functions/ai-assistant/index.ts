@@ -17,7 +17,13 @@ serve(async (req) => {
       });
     }
 
-    const { messages, language, userName, userGender, category, attachment, userQuestion, userProfile } = await req.json();
+    const { messages, language, userName: rawUserName, userGender, category, attachment, userQuestion, userProfile } = await req.json();
+
+    // Bug 2 fix: ALWAYS prefer the real first name from the Supabase profile.
+    const profileFirstName = (typeof userProfile?.full_name === 'string' && userProfile.full_name.trim())
+      ? userProfile.full_name.trim().split(/\s+/)[0]
+      : null;
+    const userName = profileFirstName || rawUserName || null;
 
     if (
       Array.isArray(messages) &&

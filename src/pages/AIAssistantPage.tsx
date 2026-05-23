@@ -161,11 +161,10 @@ const AIAssistantPage = () => {
   const [showConversationList, setShowConversationList] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [attachment, setAttachment] = useState<
+  type Attachment =
     | { kind: 'image'; name: string; dataUrl: string }
-    | { kind: 'pdf'; name: string; text: string }
-    | null
-  >(null);
+    | { kind: 'pdf'; name: string; text: string };
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const { toast } = useToast();
@@ -516,50 +515,52 @@ const AIAssistantPage = () => {
     });
 
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files || []);
     e.target.value = '';
-    if (!file) return;
-    const isImage = /^image\/(jpe?g|png)$/i.test(file.type);
-    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
-    if (!isImage && !isPdf) {
-      toast({ variant: 'destructive', title: isRTL ? 'نوع الملف غير مدعوم' : 'Format non supporté', description: isRTL ? 'JPG, PNG أو PDF فقط' : 'JPG, PNG ou PDF uniquement' });
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ variant: 'destructive', title: isRTL ? 'الملف كبير أوي' : 'Fichier trop volumineux', description: isRTL ? 'الحد الأقصى 10 ميجا' : 'Max 10 Mo' });
-      return;
-    }
+    if (files.length === 0) return;
     setIsProcessingFile(true);
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      if (isImage) {
-        setAttachment({ kind: 'image', name: file.name, dataUrl });
-      } else {
-        const text = await extractTextFromPDF(dataUrl);
-        setAttachment({ kind: 'pdf', name: file.name, text: text.slice(0, 50000) });
+    const added: Attachment[] = [];
+    for (const file of files) {
+      const isImage = /^image\/(jpe?g|png)$/i.test(file.type);
+      const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+      if (!isImage && !isPdf) {
+        toast({ variant: 'destructive', title: isRTL ? 'نوع الملف غير مدعوم' : 'Format non supporté', description: file.name });
+        continue;
       }
-    } catch (err) {
-      console.error('File processing error:', err);
-      toast({ variant: 'destructive', title: isRTL ? 'حصل مشكلة في الملف' : 'Erreur de lecture du fichier' });
-    } finally {
-      setIsProcessingFile(false);
+      if (file.size > 10 * 1024 * 1024) {
+        toast({ variant: 'destructive', title: isRTL ? 'الملف كبير أوي' : 'Fichier trop volumineux', description: file.name });
+        continue;
+      }
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        if (isImage) {
+          added.push({ kind: 'image', name: file.name, dataUrl });
+        } else {
+          const text = await extractTextFromPDF(dataUrl);
+          added.push({ kind: 'pdf', name: file.name, text: text.slice(0, 50000) });
+        }
+      } catch (err) {
+        console.error('File processing error:', err);
+        toast({ variant: 'destructive', title: isRTL ? 'حصل مشكلة في الملف' : 'Erreur de lecture', description: file.name });
+      }
     }
+    if (added.length > 0) setAttachments(prev => [...prev, ...added]);
+    setIsProcessingFile(false);
   };
 
   const send = async (overrideText?: string) => {
     const text = (typeof overrideText === 'string' ? overrideText : input).trim();
-    if ((!text && !attachment) || isLoading) return;
+    if ((!text && attachments.length === 0) || isLoading) return;
 
-
-    const currentAttachment = attachment;
-    const displayText = text || (currentAttachment
-      ? (isRTL ? `📎 ${currentAttachment.name}` : `📎 ${currentAttachment.name}`)
+    const currentAttachments = attachments;
+    const displayText = text || (currentAttachments.length > 0
+      ? `📎 ${currentAttachments.map(a => a.name).join(', ')}`
       : '');
 
     const userMsg: Msg = { role: 'user', content: displayText };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
-    setAttachment(null);
+    setAttachments([]);
     setUserHasEdited(false);
     setIsInputFocused(false);
     resetTextareaHeight();
@@ -567,7 +568,7 @@ const AIAssistantPage = () => {
     setIsLoading(true);
 
     // Intercept: agent comptable
-    if (!currentAttachment && isAccountingCommand(text)) {
+    if (currentAttachments.length === 0 && isAccountingCommand(text)) {
       const report = await generateAccountingReport();
       setMessages(prev => [...prev, { role: 'assistant', content: report }]);
       setIsLoading(false);
@@ -591,6 +592,29 @@ const AIAssistantPage = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+      // Bug 3: Always fetch latest profile inline if not loaded yet
+      let liveProfile: any = profile;
+      if (!liveProfile && user?.id) {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('full_name, address, phone, email, company_name, siret, company_address')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (data) liveProfile = data;
+        } catch (e) { console.warn('inline profile fetch failed', e); }
+      }
+
+      const userProfilePayload = liveProfile || user ? {
+        full_name: liveProfile?.full_name || null,
+        address: liveProfile?.address || null,
+        phone: liveProfile?.phone || null,
+        email: liveProfile?.email || user?.email || null,
+        company_name: liveProfile?.company_name || null,
+        siret: liveProfile?.siret || null,
+        company_address: liveProfile?.company_address || null,
+      } : null;
+
       const resp = await fetch(STREAM_URL, {
         method: 'POST',
         headers: {
@@ -599,27 +623,25 @@ const AIAssistantPage = () => {
         },
         body: JSON.stringify({
           messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
-          attachment: currentAttachment
-            ? currentAttachment.kind === 'image'
-              ? { kind: 'image', name: currentAttachment.name, dataUrl: currentAttachment.dataUrl }
-              : { kind: 'pdf', name: currentAttachment.name, text: currentAttachment.text }
+          attachment: currentAttachments[0]
+            ? currentAttachments[0].kind === 'image'
+              ? { kind: 'image', name: currentAttachments[0].name, dataUrl: currentAttachments[0].dataUrl }
+              : { kind: 'pdf', name: currentAttachments[0].name, text: currentAttachments[0].text }
             : null,
+          attachments: currentAttachments.map(a =>
+            a.kind === 'image'
+              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
+              : { kind: 'pdf', name: a.name, text: a.text }
+          ),
           userQuestion: text || null,
           language: language === 'ar' ? 'ar' : 'fr',
-          userName: (profile?.full_name?.trim().split(/\s+/)[0]) || userInfo?.name || null,
+          userName: (liveProfile?.full_name?.trim().split(/\s+/)[0]) || userInfo?.name || null,
           userGender: userInfo?.gender || null,
-          userProfile: profile ? {
-            full_name: profile.full_name || null,
-            address: profile.address || null,
-            phone: profile.phone || null,
-            email: profile.email || user?.email || null,
-            company_name: profile.company_name || null,
-            siret: profile.siret || null,
-            company_address: profile.company_address || null,
-          } : null,
+          userProfile: userProfilePayload,
           category: activeCategory,
         }),
       });
+
 
       if (!resp.ok || !resp.body) {
         let errorMsg = language === 'ar' 
@@ -1053,47 +1075,50 @@ const AIAssistantPage = () => {
 
       {/* Input - positioned above bottom nav */}
       <div className="px-3 pt-3 border-t border-border bg-card/50 shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-        {/* Attachment preview */}
-        {(attachment || isProcessingFile) && (
-          <div className="mb-2 flex items-center gap-2 bg-muted/60 border border-border rounded-xl p-2">
-            {isProcessingFile ? (
-              <>
+        {/* Attachments preview */}
+        {(attachments.length > 0 || isProcessingFile) && (
+          <div className="mb-2 space-y-1.5">
+            {isProcessingFile && (
+              <div className="flex items-center gap-2 bg-muted/60 border border-border rounded-xl p-2">
                 <Loader2 size={16} className="animate-spin text-muted-foreground shrink-0" />
                 <span className={cn("text-xs text-muted-foreground flex-1 truncate", isRTL && "font-cairo text-right")}>
-                  {isRTL ? 'جاري قراءة الملف...' : 'Lecture du fichier...'}
+                  {isRTL ? 'جاري قراءة الملفات...' : 'Lecture des fichiers...'}
                 </span>
-              </>
-            ) : attachment ? (
-              <>
-                {attachment.kind === 'image' ? (
-                  <img src={attachment.dataUrl} alt="" className="w-10 h-10 rounded-md object-cover shrink-0" />
+              </div>
+            )}
+            {attachments.map((att, idx) => (
+              <div key={idx} className="flex items-center gap-2 bg-muted/60 border border-border rounded-xl p-2">
+                {att.kind === 'image' ? (
+                  <img src={att.dataUrl} alt="" className="w-10 h-10 rounded-md object-cover shrink-0" />
                 ) : (
                   <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                     <FileText size={18} className="text-primary" />
                   </div>
                 )}
                 <span className={cn("text-xs font-medium text-foreground flex-1 truncate", isRTL && "font-cairo text-right")}>
-                  {attachment.name}
+                  {att.name}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setAttachment(null)}
+                  onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
                   className="p-1 rounded-full hover:bg-muted text-muted-foreground shrink-0"
                   aria-label={isRTL ? 'حذف' : 'Retirer'}
                 >
                   <X size={14} />
                 </button>
-              </>
-            ) : null}
+              </div>
+            ))}
           </div>
         )}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf"
+          multiple
           className="hidden"
           onChange={handleFileSelected}
         />
+
         <div className="relative flex items-end gap-2 bg-background p-1.5 rounded-3xl border border-border focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
           {/* Mic button */}
           <button
@@ -1142,27 +1167,33 @@ const AIAssistantPage = () => {
             rows={1}
             onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }}
             onKeyDown={(e) => {
-              // Bug 5: Enter alone = newline (default behavior). Shift+Enter = send.
+              // Bug 4: Enter SEUL = saut de ligne. Shift+Entrée = envoyer.
+              if (e.key === 'Enter' && !e.shiftKey) {
+                // Bloque tout listener parent qui pourrait envoyer, laisse le default newline.
+                e.stopPropagation();
+                return;
+              }
               if (e.key === 'Enter' && e.shiftKey) {
                 e.preventDefault();
                 e.stopPropagation();
-                if ((input.trim() || attachment) && !isLoading) send();
+                if ((input.trim() || attachments.length > 0) && !isLoading) send();
               }
             }}
           />
           <button
             type="button"
             onClick={() => send()}
-            disabled={(!input.trim() && !attachment) || isLoading}
+            disabled={(!input.trim() && attachments.length === 0) || isLoading}
             className={cn(
               "w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5",
-              (input.trim() || attachment) && !isLoading
+              (input.trim() || attachments.length > 0) && !isLoading
                 ? "bg-primary text-primary-foreground shadow-md active:scale-90"
                 : "bg-muted text-muted-foreground"
             )}
           >
             <Send size={18} />
           </button>
+
         </div>
       </div>
 

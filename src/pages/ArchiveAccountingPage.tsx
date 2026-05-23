@@ -313,6 +313,7 @@ const ArchiveAccountingPage = () => {
         quantity: item.quantity || 1,
         unit: item.unit || 'm²',
         unitPrice: item.unitPrice || 0,
+        lot: typeof item.lot === 'string' ? item.lot : (item.lot ?? ''),
       })),
       descriptionChantier: getStoredWorkDescription(docData, raw.nature_operation),
       source: 'devis_conversion',

@@ -287,6 +287,7 @@ Tu es 'Ana Fi France', un conseiller stratégique de haut niveau pour TOUTE la c
 
 Date du jour : ${currentDate}.
 ${personalizationFr}
+${profileBlock}
 ${formattingRulesFr}
 ${btpGlossary}
 ${categoryCtx}

@@ -550,18 +550,17 @@ const AIAssistantPage = () => {
 
   const send = async (overrideText?: string) => {
     const text = (typeof overrideText === 'string' ? overrideText : input).trim();
-    if ((!text && !attachment) || isLoading) return;
+    if ((!text && attachments.length === 0) || isLoading) return;
 
-
-    const currentAttachment = attachment;
-    const displayText = text || (currentAttachment
-      ? (isRTL ? `📎 ${currentAttachment.name}` : `📎 ${currentAttachment.name}`)
+    const currentAttachments = attachments;
+    const displayText = text || (currentAttachments.length > 0
+      ? `📎 ${currentAttachments.map(a => a.name).join(', ')}`
       : '');
 
     const userMsg: Msg = { role: 'user', content: displayText };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
-    setAttachment(null);
+    setAttachments([]);
     setUserHasEdited(false);
     setIsInputFocused(false);
     resetTextareaHeight();
@@ -569,7 +568,7 @@ const AIAssistantPage = () => {
     setIsLoading(true);
 
     // Intercept: agent comptable
-    if (!currentAttachment && isAccountingCommand(text)) {
+    if (currentAttachments.length === 0 && isAccountingCommand(text)) {
       const report = await generateAccountingReport();
       setMessages(prev => [...prev, { role: 'assistant', content: report }]);
       setIsLoading(false);
@@ -593,6 +592,29 @@ const AIAssistantPage = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+      // Bug 3: Always fetch latest profile inline if not loaded yet
+      let liveProfile: any = profile;
+      if (!liveProfile && user?.id) {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('full_name, address, phone, email, company_name, siret, company_address')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (data) liveProfile = data;
+        } catch (e) { console.warn('inline profile fetch failed', e); }
+      }
+
+      const userProfilePayload = liveProfile || user ? {
+        full_name: liveProfile?.full_name || null,
+        address: liveProfile?.address || null,
+        phone: liveProfile?.phone || null,
+        email: liveProfile?.email || user?.email || null,
+        company_name: liveProfile?.company_name || null,
+        siret: liveProfile?.siret || null,
+        company_address: liveProfile?.company_address || null,
+      } : null;
+
       const resp = await fetch(STREAM_URL, {
         method: 'POST',
         headers: {
@@ -601,27 +623,25 @@ const AIAssistantPage = () => {
         },
         body: JSON.stringify({
           messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
-          attachment: currentAttachment
-            ? currentAttachment.kind === 'image'
-              ? { kind: 'image', name: currentAttachment.name, dataUrl: currentAttachment.dataUrl }
-              : { kind: 'pdf', name: currentAttachment.name, text: currentAttachment.text }
+          attachment: currentAttachments[0]
+            ? currentAttachments[0].kind === 'image'
+              ? { kind: 'image', name: currentAttachments[0].name, dataUrl: currentAttachments[0].dataUrl }
+              : { kind: 'pdf', name: currentAttachments[0].name, text: currentAttachments[0].text }
             : null,
+          attachments: currentAttachments.map(a =>
+            a.kind === 'image'
+              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
+              : { kind: 'pdf', name: a.name, text: a.text }
+          ),
           userQuestion: text || null,
           language: language === 'ar' ? 'ar' : 'fr',
-          userName: (profile?.full_name?.trim().split(/\s+/)[0]) || userInfo?.name || null,
+          userName: (liveProfile?.full_name?.trim().split(/\s+/)[0]) || userInfo?.name || null,
           userGender: userInfo?.gender || null,
-          userProfile: profile ? {
-            full_name: profile.full_name || null,
-            address: profile.address || null,
-            phone: profile.phone || null,
-            email: profile.email || user?.email || null,
-            company_name: profile.company_name || null,
-            siret: profile.siret || null,
-            company_address: profile.company_address || null,
-          } : null,
+          userProfile: userProfilePayload,
           category: activeCategory,
         }),
       });
+
 
       if (!resp.ok || !resp.body) {
         let errorMsg = language === 'ar' 

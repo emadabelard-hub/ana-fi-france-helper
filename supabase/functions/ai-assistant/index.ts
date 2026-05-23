@@ -279,11 +279,16 @@ Madame, Monsieur,
 `;
 
     const profileBlock = userProfile ? `
-PROFIL_UTILISATEUR (données réelles à utiliser SYSTÉMATIQUEMENT dans les courriers à la place des placeholders [Prénom Nom], [Adresse], [Téléphone], [Email]) :
+PROFIL_UTILISATEUR (données réelles à utiliser SYSTÉMATIQUEMENT dans les courriers à la place des placeholders [Prénom Nom], [Adresse], [Téléphone], [Email], [SIRET], [Entreprise]) :
 - Nom complet : ${userProfile.full_name || '(inconnu — laisser le placeholder)'}
 - Adresse : ${userProfile.address || '(inconnue — laisser le placeholder)'}
 - Téléphone : ${userProfile.phone || '(inconnu — laisser le placeholder)'}
 - Email : ${userProfile.email || '(inconnu — laisser le placeholder)'}
+- Entreprise : ${userProfile.company_name || '(non renseignée)'}
+- SIRET : ${userProfile.siret || '(non renseigné)'}
+- Adresse entreprise : ${userProfile.company_address || '(non renseignée)'}
+
+🚨 INTERDICTION ABSOLUE : N'invente JAMAIS de prénom, nom, adresse, SIRET ou email. N'utilise QUE les valeurs ci-dessus. Si une valeur est marquée "(inconnu...)", laisse le placeholder tel quel dans le courrier — ne le remplace pas par une valeur inventée comme "Mohamed" ou autre.
 ` : '';
 
     const systemPrompt = language === 'fr'

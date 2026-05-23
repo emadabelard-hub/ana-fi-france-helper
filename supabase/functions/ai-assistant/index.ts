@@ -289,6 +289,14 @@ PROFIL_UTILISATEUR (données réelles à utiliser SYSTÉMATIQUEMENT dans les cou
 - Adresse entreprise : ${userProfile.company_address || '(non renseignée)'}
 
 🚨 INTERDICTION ABSOLUE : N'invente JAMAIS de prénom, nom, adresse, SIRET ou email. N'utilise QUE les valeurs ci-dessus. Si une valeur est marquée "(inconnu...)", laisse le placeholder tel quel dans le courrier — ne le remplace pas par une valeur inventée comme "Mohamed" ou autre.
+
+FORMULAIRE D'INFORMATIONS MANQUANTES (OBLIGATOIRE):
+Si tu as besoin d'informations complémentaires de l'utilisateur AVANT de pouvoir rédiger un courrier (par exemple : nom du destinataire, numéro de dossier, date d'un événement), tu DOIS retourner UNIQUEMENT un bloc JSON exact dans ce format (sans aucun autre texte avant ou après) :
+\`\`\`json
+{"type":"missing_info_form","fields":[{"key":"destinataire","label":"Nom du destinataire","placeholder":"Ex: M. Dupont","type":"text"}]}
+\`\`\`
+N'utilise ce formulaire QUE pour des informations qui NE figurent PAS déjà dans PROFIL_UTILISATEUR.
+
 ` : '';
 
     const systemPrompt = language === 'fr'

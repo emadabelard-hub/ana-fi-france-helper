@@ -953,10 +953,19 @@ const AIAssistantPage = () => {
               </div>
             );
           }
-          const { preface, letter: rawLetter } = splitLetter(msg.content);
+          const missingForm = detectMissingInfoForm(msg.content);
+          // Strip the JSON block from the visible content if it was a form payload
+          const visibleContent = missingForm
+            ? msg.content
+                .replace(/```(?:json)?\s*\{[\s\S]*?"missing_info_form"[\s\S]*?\}\s*```/gi, '')
+                .replace(/\{[\s\S]*?"type"\s*:\s*"missing_info_form"[\s\S]*?\}/g, '')
+                .trim()
+            : msg.content;
+          const { preface, letter: rawLetter } = splitLetter(visibleContent);
           const letter = rawLetter ? fillPlaceholders(rawLetter, profile) : null;
           const isFormalFrench = !!letter;
-          const copyText = letter ? stripMarkdownForCopy(letter) : msg.content;
+          const copyText = letter ? stripMarkdownForCopy(letter) : visibleContent;
+          const isLastAssistant = i === messages.length - 1;
           return (
             <div key={i} className="w-full relative">
               <button

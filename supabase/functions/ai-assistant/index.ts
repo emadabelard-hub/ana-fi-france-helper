@@ -313,6 +313,7 @@ RÈGLES DE RÉPONSE (STYLE CONVERSATIONNEL — OBLIGATOIRE) :
 
 التاريخ: ${currentDate}.
 ${personalizationAr}
+${profileBlock}
 ${formattingRulesAr}
 ${btpGlossary}
 ${categoryCtx}

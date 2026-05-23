@@ -49,6 +49,8 @@ const fillPlaceholders = (text: string, p: any): string => {
   const phone = (p?.phone || '').trim();
   const email = (p?.email || '').trim();
   const address = (p?.address || '').trim();
+  const company = (p?.company_name || '').trim();
+  const siret = (p?.siret || '').trim();
   const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const replacements: Array<[RegExp, string]> = [
     [/\[\s*Pr[ée]nom\s+Nom\s*\]/gi, fullName],
@@ -57,6 +59,8 @@ const fillPlaceholders = (text: string, p: any): string => {
     [/\[\s*Code\s*postal\s+Ville\s*\]/gi, ''],
     [/\[\s*T[ée]l[ée]phone\s*\]/gi, phone],
     [/\[\s*Email\s*\]/gi, email],
+    [/\[\s*SIRET\s*\]/gi, siret],
+    [/\[\s*Entreprise\s*\]/gi, company],
     [/\[\s*Ville\s*,?\s*le\s*JJ\s*mois\s*AAAA\s*\]/gi, today],
     [/\[\s*Date\s*\]/gi, today],
   ];

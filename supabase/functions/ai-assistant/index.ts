@@ -17,7 +17,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, language, userName, userGender, category, attachment, userQuestion } = await req.json();
+    const { messages, language, userName, userGender, category, attachment, userQuestion, userProfile } = await req.json();
 
     if (
       Array.isArray(messages) &&
@@ -234,7 +234,14 @@ RÈGLES DE RÉPONSE ABSOLUES (PRIORITÉ MAXIMALE — AUCUNE EXCEPTION) :
 قول: "تمام فاهم كل حاجة! دلوقتي هكتبلك الجواب بالفرنساوي رسمي ومظبوط. جاهز؟"
 
 الخطوة 4 — كتابة الجواب:
-ممنوع منعاً باتاً تكتب أي كلمة قبل أو بعد المستند. ممنوع جمل زي "تفضل الجواب" أو "خلاص الجواب جاهز" أو أي تعليق أو شرح. ابدأ مباشرة بعلامة ===الرسالة_الرسمية=== ثم المستند بالهيكل ده بالظبط وانتهي عند آخر سطر فيه (الاسم) من غير أي إضافة:
+🚨 قاعدة مطلقة لا استثناء فيها:
+- ممنوع منعاً باتاً تكتب أي حرف عربي قبل أو بعد المستند.
+- ممنوع جمل زي "تفضل الجواب" أو "خلاص الجواب جاهز" أو "تقدر تنسخه" أو أي شرح أو تعليق أو خطوات مرقمة.
+- ممنوع تكتب نصايح أو ملاحظات بعد الجواب. لو عايز تدي نصيحة، استنى رسالة المستخدم الجاية وابعتها في رد منفصل.
+- الرد كله = علامة البداية ===الرسالة_الرسمية=== + المستند + خلاص. ولا حرف زيادة.
+- استخدم بيانات المستخدم الحقيقية (الاسم، العنوان، التليفون، الإيميل) المعطاة في PROFIL_UTILISATEUR بدل ما تسيب [Prénom Nom] أو [Adresse]... لو في معلومة ناقصة بس، سيب البلاكهولدر.
+
+ابدأ مباشرة بعلامة ===الرسالة_الرسمية=== ثم المستند بالهيكل ده بالظبط وانتهي عند آخر سطر فيه (الاسم) من غير أي إضافة:
 
 ===الرسالة_الرسمية===
 [Prénom Nom]                          [Ville, le JJ mois AAAA]
@@ -258,13 +265,20 @@ Madame, Monsieur,
 [Prénom Nom]
 
 قواعد إلزامية في وضع الوكيل:
-- رسايلك ليك للمستخدم لازم تبقى عامية مصرية بس، حتى لو الجواب نفسه فرنساوي.
+- رسايلك ليك للمستخدم في الخطوات 1-3 لازم تبقى عامية مصرية بس.
 - ممنوع تكتب الجواب قبل ما تجمع كل المعلومات المطلوبة وتاخد تأكيد المستخدم.
 - لو المعلومة ناقصة، اسأل تاني بلطف.
 - في وضع الوكيل ده، قواعد "حد أقصى 8 سطور" و"سؤال متابعة واحد" مش بتنطبق — اتبع تسلسل الخطوات بالظبط.
-- في الخطوة 4: ممنوع أي مقدمة أو خاتمة أو تعليق حوالين المستند. المستند لوحده فقط.
+- في الخطوة 4: المستند لوحده فقط. صفر تعليق. صفر مقدمة. صفر خاتمة. صفر خطوات مرقمة بالعربي.
 `;
 
+    const profileBlock = userProfile ? `
+PROFIL_UTILISATEUR (données réelles à utiliser SYSTÉMATIQUEMENT dans les courriers à la place des placeholders [Prénom Nom], [Adresse], [Téléphone], [Email]) :
+- Nom complet : ${userProfile.full_name || '(inconnu — laisser le placeholder)'}
+- Adresse : ${userProfile.address || '(inconnue — laisser le placeholder)'}
+- Téléphone : ${userProfile.phone || '(inconnu — laisser le placeholder)'}
+- Email : ${userProfile.email || '(inconnu — laisser le placeholder)'}
+` : '';
 
     const systemPrompt = language === 'fr'
       ? `${absoluteRulesFr}
@@ -273,6 +287,7 @@ Tu es 'Ana Fi France', un conseiller stratégique de haut niveau pour TOUTE la c
 
 Date du jour : ${currentDate}.
 ${personalizationFr}
+${profileBlock}
 ${formattingRulesFr}
 ${btpGlossary}
 ${categoryCtx}
@@ -298,6 +313,7 @@ RÈGLES DE RÉPONSE (STYLE CONVERSATIONNEL — OBLIGATOIRE) :
 
 التاريخ: ${currentDate}.
 ${personalizationAr}
+${profileBlock}
 ${formattingRulesAr}
 ${btpGlossary}
 ${categoryCtx}

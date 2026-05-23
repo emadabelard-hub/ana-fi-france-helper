@@ -996,19 +996,45 @@ const AIAssistantPage = () => {
               )}
 
               {/* Either the formal French letter, or the regular response */}
-              <div {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
-                <MarkdownRenderer
-                  content={letter ?? msg.content}
-                  isRTL={isFormalFrench ? false : textAr}
-                  forceLTR={isFormalFrench}
-                  className="!text-[15px] !leading-[1.6] text-foreground"
-                  onSmartLinkClick={(type) => {
-                    if (type === 'cv') navigate('/pro/cv-generator');
-                    else if (type === 'pro') navigate('/pro/invoice-creator');
-                    else if (type === 'solutions') navigate('/premium-consultation');
-                  }}
-                />
-              </div>
+              {visibleContent && (
+                <div {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
+                  <MarkdownRenderer
+                    content={letter ?? visibleContent}
+                    isRTL={isFormalFrench ? false : textAr}
+                    forceLTR={isFormalFrench}
+                    className="!text-[15px] !leading-[1.6] text-foreground"
+                    onSmartLinkClick={(type) => {
+                      if (type === 'cv') navigate('/pro/cv-generator');
+                      else if (type === 'pro') navigate('/pro/invoice-creator');
+                      else if (type === 'solutions') navigate('/premium-consultation');
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Bug 4: Inline missing info form */}
+              {missingForm && isLastAssistant && !isLoading && (
+                <div className="mt-3">
+                  <MissingInfoForm
+                    fields={missingForm.fields}
+                    isRTL={isRTL}
+                    onCancel={() => {
+                      setMessages(prev => prev.map((m, idx) =>
+                        idx === i ? { ...m, content: visibleContent || (isRTL ? '(تم الإلغاء)' : '(annulé)') } : m
+                      ));
+                    }}
+                    onSubmit={(data) => {
+                      const summary = Object.entries(data)
+                        .map(([k, v]) => `- ${k}: ${v}`)
+                        .join('\n');
+                      const reply = (isRTL
+                        ? 'هاكي البيانات الناقصة:\n'
+                        : 'Voici les informations manquantes :\n') + summary;
+                      void send(reply);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           );
         })}

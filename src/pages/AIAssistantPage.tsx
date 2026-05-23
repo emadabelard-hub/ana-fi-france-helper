@@ -161,11 +161,10 @@ const AIAssistantPage = () => {
   const [showConversationList, setShowConversationList] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [attachment, setAttachment] = useState<
+  type Attachment =
     | { kind: 'image'; name: string; dataUrl: string }
-    | { kind: 'pdf'; name: string; text: string }
-    | null
-  >(null);
+    | { kind: 'pdf'; name: string; text: string };
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const { toast } = useToast();

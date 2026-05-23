@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.get_next_document_number(uuid, text) TO authenticated;

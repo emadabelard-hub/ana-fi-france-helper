@@ -182,20 +182,11 @@ const AIAssistantPage = () => {
     if (!user || conversationLoaded) return;
     (async () => {
       try {
-        const list = await refreshConversations();
-        if (list.length > 0) {
-          // Open the most recent conversation
-          const first = list[0];
-          setCurrentConversationId(first.id);
-          const { data } = await supabase
-            .from('assistant_conversations')
-            .select('messages')
-            .eq('id', first.id)
-            .maybeSingle();
-          if (data?.messages && Array.isArray(data.messages)) {
-            setMessages(data.messages as Msg[]);
-          }
-        }
+        // Bug 1 fix: only load the list, NEVER auto-open the most recent.
+        // Each new page visit starts with an empty context.
+        await refreshConversations();
+        setCurrentConversationId(null);
+        setMessages([]);
       } catch (err) {
         console.error('Load conversation error:', err);
       } finally {

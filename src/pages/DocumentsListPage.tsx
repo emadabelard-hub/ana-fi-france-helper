@@ -426,6 +426,7 @@ const DocumentsListPage = () => {
         quantity: item.quantity || 1,
         unit: item.unit || 'm²',
         unitPrice: item.unitPrice || 0,
+        lot: typeof item.lot === 'string' ? item.lot : (item.lot ?? ''),
       })),
       notes: docData.legalMentions || '',
       descriptionChantier: getStoredWorkDescription(docData, doc.nature_operation),

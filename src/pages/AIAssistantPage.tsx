@@ -87,7 +87,39 @@ const stripMarkdownForCopy = (text: string): string => {
 interface UserInfo {
   name: string;
   gender: 'male' | 'female';
-}
+type MissingField = { key: string; label: string; placeholder: string; type?: string };
+
+const detectMissingInfoForm = (content: string): { fields: MissingField[] } | null => {
+  if (!content || !content.includes('missing_info_form')) return null;
+  // Try fenced JSON code blocks first, then any raw JSON object containing the marker.
+  const candidates: string[] = [];
+  const fenced = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/gi);
+  if (fenced) for (const f of fenced) {
+    const m = f.match(/\{[\s\S]*\}/);
+    if (m) candidates.push(m[0]);
+  }
+  // Also try to find a bare {...} containing "missing_info_form"
+  const bareMatches = content.match(/\{[\s\S]*?"type"\s*:\s*"missing_info_form"[\s\S]*?\}/g);
+  if (bareMatches) candidates.push(...bareMatches);
+  for (const c of candidates) {
+    try {
+      const parsed = JSON.parse(c);
+      if (parsed?.type === 'missing_info_form' && Array.isArray(parsed.fields)) {
+        const fields = parsed.fields
+          .filter((f: any) => f && typeof f.key === 'string' && typeof f.label === 'string')
+          .map((f: any) => ({
+            key: String(f.key),
+            label: String(f.label),
+            placeholder: String(f.placeholder || ''),
+            type: f.type ? String(f.type) : undefined,
+          }));
+        if (fields.length > 0) return { fields };
+      }
+    } catch {}
+  }
+  return null;
+};
+
 
 const AIAssistantPage = () => {
   const { language, isRTL } = useLanguage();

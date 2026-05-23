@@ -87,6 +87,8 @@ const stripMarkdownForCopy = (text: string): string => {
 interface UserInfo {
   name: string;
   gender: 'male' | 'female';
+}
+
 type MissingField = { key: string; label: string; placeholder: string; type?: string };
 
 const detectMissingInfoForm = (content: string): { fields: MissingField[] } | null => {

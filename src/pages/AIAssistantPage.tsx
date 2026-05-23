@@ -1167,27 +1167,33 @@ const AIAssistantPage = () => {
             rows={1}
             onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }}
             onKeyDown={(e) => {
-              // Bug 5: Enter alone = newline (default behavior). Shift+Enter = send.
+              // Bug 4: Enter SEUL = saut de ligne. Shift+Entrée = envoyer.
+              if (e.key === 'Enter' && !e.shiftKey) {
+                // Bloque tout listener parent qui pourrait envoyer, laisse le default newline.
+                e.stopPropagation();
+                return;
+              }
               if (e.key === 'Enter' && e.shiftKey) {
                 e.preventDefault();
                 e.stopPropagation();
-                if ((input.trim() || attachment) && !isLoading) send();
+                if ((input.trim() || attachments.length > 0) && !isLoading) send();
               }
             }}
           />
           <button
             type="button"
             onClick={() => send()}
-            disabled={(!input.trim() && !attachment) || isLoading}
+            disabled={(!input.trim() && attachments.length === 0) || isLoading}
             className={cn(
               "w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5",
-              (input.trim() || attachment) && !isLoading
+              (input.trim() || attachments.length > 0) && !isLoading
                 ? "bg-primary text-primary-foreground shadow-md active:scale-90"
                 : "bg-muted text-muted-foreground"
             )}
           >
             <Send size={18} />
           </button>
+
         </div>
       </div>
 

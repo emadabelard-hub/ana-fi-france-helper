@@ -577,6 +577,12 @@ const AIAssistantPage = () => {
           language: language === 'ar' ? 'ar' : 'fr',
           userName: userInfo?.name || null,
           userGender: userInfo?.gender || null,
+          userProfile: profile ? {
+            full_name: profile.full_name || null,
+            address: profile.address || null,
+            phone: profile.phone || null,
+            email: profile.email || null,
+          } : null,
           category: activeCategory,
         }),
       });

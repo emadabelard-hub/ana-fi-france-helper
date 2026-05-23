@@ -485,9 +485,9 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
           </thead>
           <tbody>
             {(() => {
-              // Pre-compute lot for each item, then stably reorder items so all
-              // items belonging to the same lot are contiguous — guarantees each
-              // lot header appears exactly once per document.
+              // Strict passthrough : on conserve l'ordre des articles tel quel,
+              // et on affiche un en-tête de lot chaque fois que le lot change.
+              // Aucun tri, aucun regroupement automatique.
               const enriched = data.items.map((item, originalIndex) => {
                 const designLower = item.designation_fr.toLowerCase();
                 const isSectionTitle = item.designation_fr.toUpperCase().startsWith('ZONE') ||
@@ -500,17 +500,13 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                 return { item, originalIndex, isSectionTitle, lot };
               });
 
-              const sorted = [...enriched].sort((a, b) => {
-                const aRank = LOT_ORDER.indexOf(a.lot);
-                const bRank = LOT_ORDER.indexOf(b.lot);
-                if (aRank !== bRank) return aRank - bRank;
-                return a.originalIndex - b.originalIndex;
-              });
+              const sorted = enriched;
 
               let previousLot: string | null = null;
               return sorted.map(({ item, isSectionTitle, lot: currentLot }, index) => {
-                const showLotHeader = currentLot && currentLot !== previousLot;
-                if (currentLot) previousLot = currentLot;
+                const showLotHeader = !!currentLot && currentLot !== previousLot;
+                previousLot = currentLot;
+
 
                 return (
                   <React.Fragment key={`row-${index}`}>

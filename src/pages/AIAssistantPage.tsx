@@ -860,11 +860,13 @@ const AIAssistantPage = () => {
               </div>
             );
           }
+          const isFormalFrench = /Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée]/i.test(msg.content);
           return (
-            <div key={i} className="w-full">
+            <div key={i} className="w-full" {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
               <MarkdownRenderer
                 content={msg.content}
-                isRTL={textAr}
+                isRTL={isFormalFrench ? false : textAr}
+                forceLTR={isFormalFrench}
                 className="!text-[15px] !leading-[1.6] text-foreground"
                 onSmartLinkClick={(type) => {
                   if (type === 'cv') navigate('/pro/cv-generator');

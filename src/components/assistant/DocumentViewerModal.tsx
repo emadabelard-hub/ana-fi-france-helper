@@ -158,12 +158,12 @@ const DocumentViewerModal = ({
                   style={{
                     direction: 'ltr',
                     textAlign: 'justify',
-                    fontFamily: 'Arial, Roboto, sans-serif',
+                    fontFamily: 'Arial, "Times New Roman", serif',
+                    fontSize: '11pt',
+                    lineHeight: 1.5,
                   }}
                 >
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed" style={{ textAlign: 'justify' }}>
-                    {documentText}
-                  </div>
+                  <FormattedLetter text={documentText} />
 
                   {/* Leave space for signature bottom-right */}
                   <div className="mt-10 flex justify-end">

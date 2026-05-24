@@ -26,6 +26,165 @@ interface DocumentViewerModalProps {
   dispatchInfo?: DispatchInfo;
 }
 
+/**
+ * Parse and render a formal French letter with proper layout:
+ * - Sender block (left) + Date (right) on same row
+ * - Recipient block below
+ * - Separator line
+ * - Bold + underlined "Objet"
+ * - Body
+ */
+const FormattedLetter = ({ text }: { text: string }) => {
+  const raw = (text || '').replace(/\r\n/g, '\n').trim();
+  const lines = raw.split('\n');
+
+  const dateRegex = /((?:[A-ZÀ-Ý][a-zà-ÿ\-]+),?\s*le\s+[^\n]+?\d{4})/;
+  const recipientRegex = /^\s*(À l'attention|A l'attention|Madame,?\s*$|Monsieur,?\s*$)/i;
+  const objetRegex = /^\s*Objet\s*:/i;
+
+  // Find date line/index
+  let dateText = '';
+  let dateLineIdx = -1;
+  for (let i = 0; i < Math.min(lines.length, 15); i++) {
+    const m = lines[i].match(dateRegex);
+    if (m) {
+      dateText = m[1].trim();
+      dateLineIdx = i;
+      break;
+    }
+  }
+
+  // Find recipient start (À l'attention)
+  let recipientStart = -1;
+  let recipientEnd = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*(À|A) l'attention/i.test(lines[i])) {
+      recipientStart = i;
+      break;
+    }
+  }
+
+  // Find objet line
+  let objetIdx = -1;
+  let objetText = '';
+  for (let i = 0; i < lines.length; i++) {
+    if (objetRegex.test(lines[i])) {
+      objetIdx = i;
+      objetText = lines[i].replace(/^\s*Objet\s*:\s*/i, '').trim();
+      // Multi-line objet (until blank line)
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim() !== '' && !/^(Madame|Monsieur|Madame,|Monsieur,)/i.test(lines[j].trim())) {
+        objetText += ' ' + lines[j].trim();
+        j++;
+      }
+      objetIdx = i;
+      break;
+    }
+  }
+
+  // Recipient end = blank line before objet (or before body)
+  if (recipientStart !== -1) {
+    const upper = objetIdx !== -1 ? objetIdx : lines.length;
+    recipientEnd = upper;
+    for (let i = recipientStart + 1; i < upper; i++) {
+      if (lines[i].trim() === '') {
+        recipientEnd = i;
+        break;
+      }
+    }
+  }
+
+  // Sender block = lines before recipient (or objet), excluding date
+  const senderEnd = recipientStart !== -1
+    ? recipientStart
+    : (objetIdx !== -1 ? objetIdx : Math.min(6, lines.length));
+
+  const senderLines: string[] = [];
+  for (let i = 0; i < senderEnd; i++) {
+    if (i === dateLineIdx) {
+      // Strip the date portion from the line; keep remainder (e.g. name)
+      const remainder = lines[i].replace(dateRegex, '').trim();
+      if (remainder) senderLines.push(remainder);
+    } else {
+      const t = lines[i].trim();
+      if (t) senderLines.push(t);
+    }
+  }
+
+  const recipientLines: string[] = [];
+  if (recipientStart !== -1) {
+    for (let i = recipientStart; i < recipientEnd; i++) {
+      const t = lines[i].trim();
+      if (t) recipientLines.push(t);
+    }
+  }
+
+  // Body = everything after objet block (skip objet lines + trailing blank)
+  let bodyStart = lines.length;
+  if (objetIdx !== -1) {
+    bodyStart = objetIdx + 1;
+    while (bodyStart < lines.length && lines[bodyStart].trim() !== '' && /^[^A-ZÀ-Ý]/.test(lines[bodyStart].trim()) === false && bodyStart === objetIdx + 1) {
+      // skip continuation of objet (already merged)
+      bodyStart++;
+      break;
+    }
+    // Skip blank lines
+    while (bodyStart < lines.length && lines[bodyStart].trim() === '') bodyStart++;
+    // Skip any continuation lines we already merged into objetText
+    // (heuristic: skip until we hit "Madame"/"Monsieur" salutation or any non-empty line)
+  } else if (recipientEnd !== -1) {
+    bodyStart = recipientEnd;
+    while (bodyStart < lines.length && lines[bodyStart].trim() === '') bodyStart++;
+  } else {
+    bodyStart = senderEnd;
+    while (bodyStart < lines.length && lines[bodyStart].trim() === '') bodyStart++;
+  }
+
+  const bodyText = lines.slice(bodyStart).join('\n').trim();
+
+  return (
+    <div style={{ fontFamily: 'Arial, "Times New Roman", serif', fontSize: '11pt', lineHeight: 1.6 }}>
+      {/* Sender + Date row */}
+      <div className="flex justify-between items-start gap-6 mb-8">
+        <div className="text-left">
+          {senderLines.map((line, idx) => (
+            <div key={idx} style={{ fontWeight: idx === 0 ? 700 : 400 }}>
+              {line}
+            </div>
+          ))}
+        </div>
+        {dateText && (
+          <div className="text-right whitespace-nowrap">{dateText}</div>
+        )}
+      </div>
+
+      {/* Recipient block */}
+      {recipientLines.length > 0 && (
+        <div className="mb-6 ml-auto text-left" style={{ maxWidth: '60%', marginLeft: 'auto' }}>
+          {recipientLines.map((line, idx) => (
+            <div key={idx}>{line}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Separator */}
+      <hr className="my-6 border-t border-border" />
+
+      {/* Objet */}
+      {objetText && (
+        <div className="mb-6" style={{ fontWeight: 700, textDecoration: 'underline' }}>
+          Objet : {objetText}
+        </div>
+      )}
+
+      {/* Body */}
+      <div className="whitespace-pre-wrap" style={{ textAlign: 'justify' }}>
+        {bodyText}
+      </div>
+    </div>
+  );
+};
+
 const DocumentViewerModal = ({
   open,
   onOpenChange,
@@ -158,12 +317,12 @@ const DocumentViewerModal = ({
                   style={{
                     direction: 'ltr',
                     textAlign: 'justify',
-                    fontFamily: 'Arial, Roboto, sans-serif',
+                    fontFamily: 'Arial, "Times New Roman", serif',
+                    fontSize: '11pt',
+                    lineHeight: 1.5,
                   }}
                 >
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed" style={{ textAlign: 'justify' }}>
-                    {documentText}
-                  </div>
+                  <FormattedLetter text={documentText} />
 
                   {/* Leave space for signature bottom-right */}
                   <div className="mt-10 flex justify-end">

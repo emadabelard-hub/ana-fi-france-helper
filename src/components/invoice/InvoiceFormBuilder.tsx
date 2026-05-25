@@ -1988,6 +1988,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       // Clear drafts after successful save to prevent ghost state on next new document
       clearDraft();
       clearCurrentDocument();
+      try { localStorage.removeItem('draft_quote_step'); localStorage.removeItem('draft_invoice_step'); } catch {}
       // Clear prefill session keys after a successful save so the next milestone
       // creation starts from fresh data (and never falls back to stale full-quote
       // items if the user navigates back into the creator).

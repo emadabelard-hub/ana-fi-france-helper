@@ -2079,6 +2079,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
     clearDraft();
     clearCurrentDocument();
+    try { localStorage.removeItem('draft_quote_step'); localStorage.removeItem('draft_invoice_step'); } catch {}
     setClientName('');
     setClientAddress('');
     setClientPhone('');

@@ -716,6 +716,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     // Clear stale drafts and localStorage to prevent ghost data
     clearDraft();
     clearCurrentDocument();
+    try { localStorage.removeItem('draft_quote_step'); localStorage.removeItem('draft_invoice_step'); } catch {}
     try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
     
     // Reset docNumber to the reserved invoice number when provided, otherwise use placeholder

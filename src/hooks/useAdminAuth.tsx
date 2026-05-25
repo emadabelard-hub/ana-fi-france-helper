@@ -9,7 +9,7 @@ interface AdminAuthContextType {
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
-const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
+// Admin identity is verified server-side via the `is_admin` RPC.
 
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
@@ -23,11 +23,6 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
-    if (user.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL) {
-      setIsAdmin(true);
-      setIsLoading(false);
-      return true;
-    }
 
     try {
       // Check if user exists in admin_users table using the is_admin function

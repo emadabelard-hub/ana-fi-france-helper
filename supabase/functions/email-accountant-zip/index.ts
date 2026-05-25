@@ -50,28 +50,60 @@ Deno.serve(async (req) => {
       });
     }
 
-    const senderName = companyName || artisanName || "Artisan";
-    const period = periodLabel || "période en cours";
-    const subject = `Documents comptables — ${senderName} — ${period}`;
+    // --- Input validation & sanitization ---
+    const escapeHtml = (s: unknown): string =>
+      String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const recipient = String(accountantEmail).trim();
+    if (!emailRe.test(recipient) || recipient.length > 254) {
+      return new Response(JSON.stringify({ error: "Adresse email destinataire invalide" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Sanitize filename: only safe characters, force .zip extension
+    const rawName = String(fileName).replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
+    const safeFileName = rawName.toLowerCase().endsWith(".zip") ? rawName : `${rawName}.zip`;
+
+    // Cap attachment size (~15 MB base64)
+    if (typeof zipBase64 !== "string" || zipBase64.length > 20_000_000) {
+      return new Response(JSON.stringify({ error: "Pièce jointe trop volumineuse" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const senderNameRaw = (companyName || artisanName || "Artisan").toString().slice(0, 120);
+    const periodRaw = (periodLabel || "période en cours").toString().slice(0, 120);
+    const senderNameSafe = escapeHtml(senderNameRaw);
+    const periodSafe = escapeHtml(periodRaw);
+    const subject = `Documents comptables — ${senderNameRaw} — ${periodRaw}`;
 
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; color:#1a1a2e; white-space: pre-line;">
 Bonjour,
 
-Veuillez trouver ci-joint les documents comptables de ${senderName} pour la période ${period}.
+Veuillez trouver ci-joint les documents comptables de ${senderNameSafe} pour la période ${periodSafe}.
 
 Cordialement,
-${senderName}
+${senderNameSafe}
       </div>
     `;
 
     const emailPayload = {
       from: "Anafy <noreply@resend.dev>",
-      to: [accountantEmail],
+      to: [recipient],
       subject,
       html,
       attachments: [
-        { filename: fileName, content: zipBase64, type: "application/zip" },
+        { filename: safeFileName, content: zipBase64, type: "application/zip" },
       ],
     };
 

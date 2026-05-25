@@ -1,7 +1,11 @@
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-export const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
+// Admin identity is not stored client-side. Admin status is determined
+// server-side via the `is_admin` RPC against the `admin_users` table.
+// This empty sentinel keeps legacy comparisons compiling while ensuring
+// they always fall through to the server-side check.
+export const PRIMARY_ADMIN_EMAIL = '';
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
 

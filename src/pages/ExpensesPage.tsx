@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import JSZip from 'jszip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
-const PRIMARY_ADMIN_EMAIL = 'emadabelard@gmail.com';
+// Admin identity is verified server-side via the `is_admin` RPC.
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -58,7 +58,7 @@ const ExpensesPage = () => {
     let cancelled = false;
     (async () => {
       if (!user || user.is_anonymous) { setIsAdmin(false); return; }
-      if (user.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL) { setIsAdmin(true); return; }
+      
       const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
       if (!cancelled) setIsAdmin(data === true);
     })();

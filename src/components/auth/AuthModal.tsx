@@ -242,9 +242,17 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       setPassword('');
       setConfirmPassword('');
 
-      const isPrimaryAdmin = normalizedEmail === PRIMARY_ADMIN_EMAIL || result.isPrimaryAdmin === true;
-      if (isPrimaryAdmin) {
-        navigate('/admin', { replace: true });
+      // Check admin status server-side via RPC; redirect accordingly.
+      try {
+        const { data: { user: signedInUser } } = await supabase.auth.getUser();
+        if (signedInUser?.id) {
+          const { data: isAdmin } = await supabase.rpc('is_admin', { _user_id: signedInUser.id });
+          if (isAdmin === true) {
+            navigate('/admin', { replace: true });
+          }
+        }
+      } catch (e) {
+        console.error('is_admin check failed:', e);
       }
     } catch (error) {
       console.error('Auth error:', error);

@@ -165,8 +165,18 @@ const LoginPage = () => {
       }
 
       toast({ title: '✓ تم تسجيل الدخول' });
-      const isPrimaryAdmin = submittedEmail === PRIMARY_ADMIN_EMAIL;
-      navigate(isPrimaryAdmin ? '/admin' : '/', { replace: true });
+      // Check admin status server-side via RPC; redirect accordingly.
+      try {
+        const { data: { user: signedInUser } } = await supabase.auth.getUser();
+        if (signedInUser?.id) {
+          const { data: isAdmin } = await supabase.rpc('is_admin', { _user_id: signedInUser.id });
+          navigate(isAdmin === true ? '/admin' : '/', { replace: true });
+          return;
+        }
+      } catch (e) {
+        console.error('is_admin check failed:', e);
+      }
+      navigate('/', { replace: true });
     } finally {
       setIsLoading(false);
     }

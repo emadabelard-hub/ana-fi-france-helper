@@ -428,6 +428,17 @@ const MyDocumentsPage = () => {
               </Button>
             </>
           )}
+          {doc.source === 'comptable' && doc.type === 'facture' && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs border-emerald-500/40 text-emerald-400 hover:text-emerald-300"
+              onClick={(e) => { e.stopPropagation(); handleSendFacturX(doc); }}
+            >
+              <Send className="h-3.5 w-3.5 mr-1" />
+              {t('إرسال Factur-X', 'Envoyer Factur-X')}
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"

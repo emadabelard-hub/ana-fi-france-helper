@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { downloadFacturXXml, CHORUS_PRO_URL } from '@/lib/facturxExport';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -224,6 +225,36 @@ const MyDocumentsPage = () => {
     }
   };
 
+  const handleSendFacturX = async (doc: UnifiedDoc) => {
+    try {
+      const [{ data: full }, { data: profile }] = await Promise.all([
+        supabase
+          .from('documents_comptables')
+          .select('document_number, client_name, client_address, subtotal_ht, tva_rate, tva_amount, total_ttc, tva_exempt, work_site_address, nature_operation, created_at, document_data')
+          .eq('id', doc.id)
+          .maybeSingle(),
+        supabase
+          .from('profiles')
+          .select('company_name, full_name, siret, company_address, address, numero_tva, iban, bic, tva_exempt')
+          .eq('user_id', user!.id)
+          .maybeSingle(),
+      ]);
+      if (!full) {
+        toast({ title: t('فاتورة غير موجودة', 'Facture introuvable') });
+        return;
+      }
+      downloadFacturXXml(full as any, profile as any);
+      window.open(CHORUS_PRO_URL, '_blank', 'noopener,noreferrer');
+      toast({
+        title: t('تم إنشاء Factur-X', 'Factur-X généré'),
+        description: t('تم تحميل XML — افتح Chorus Pro للإرسال', 'XML téléchargé — Chorus Pro ouvert pour envoi'),
+      });
+    } catch (err) {
+      console.error('[MyDocs] FacturX export failed:', err);
+      toast({ title: t('خطأ Factur-X', 'Erreur Factur-X'), variant: 'destructive' });
+    }
+  };
+
   const handleConfirmDelete = async () => {
     if (!toDelete) return;
     const doc = toDelete;
@@ -396,6 +427,17 @@ const MyDocumentsPage = () => {
                 {t('تحميل', 'Télécharger')}
               </Button>
             </>
+          )}
+          {doc.source === 'comptable' && doc.type === 'facture' && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs border-emerald-500/40 text-emerald-400 hover:text-emerald-300"
+              onClick={(e) => { e.stopPropagation(); handleSendFacturX(doc); }}
+            >
+              <Send className="h-3.5 w-3.5 mr-1" />
+              {t('إرسال Factur-X', 'Envoyer Factur-X')}
+            </Button>
           )}
           <Button
             size="sm"

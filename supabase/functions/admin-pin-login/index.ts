@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
-const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') ?? 'emadabelard@gmail.com'
+const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL')
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -16,8 +16,8 @@ Deno.serve(async (req) => {
     const { pin } = await req.json()
     const adminPin = Deno.env.get('ADMIN_PIN')
 
-    if (!adminPin) {
-      return new Response(JSON.stringify({ error: 'PIN not configured' }), {
+    if (!adminPin || !ADMIN_EMAIL) {
+      return new Response(JSON.stringify({ error: 'Admin login not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })

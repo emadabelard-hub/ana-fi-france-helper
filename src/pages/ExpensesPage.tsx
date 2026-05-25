@@ -58,7 +58,7 @@ const ExpensesPage = () => {
     let cancelled = false;
     (async () => {
       if (!user || user.is_anonymous) { setIsAdmin(false); return; }
-      if (user.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL) { setIsAdmin(true); return; }
+      
       const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
       if (!cancelled) setIsAdmin(data === true);
     })();

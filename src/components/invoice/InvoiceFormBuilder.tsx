@@ -288,10 +288,22 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [isSavingOfficialDocument, setIsSavingOfficialDocument] = useState(false);
   const [savedOfficialDocumentId, setSavedOfficialDocumentId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const stepStorageKey = documentType === 'devis' ? 'draft_quote_step' : 'draft_invoice_step';
   const [currentStep, setCurrentStep] = useState(() => {
     if (prefillData || skipDraftRestore) return 0;
+    try {
+      const raw = localStorage.getItem(stepStorageKey);
+      if (raw !== null) {
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed) && parsed >= 0 && parsed <= 7) return parsed;
+      }
+    } catch {}
     return loadCurrentDocument(documentType)?.currentStep ?? 0;
   });
+
+  useEffect(() => {
+    try { localStorage.setItem(stepStorageKey, String(currentStep)); } catch {}
+  }, [currentStep, stepStorageKey]);
 
   const saveCurrentDraftSnapshot = useCallback(() => {
     saveDraft({

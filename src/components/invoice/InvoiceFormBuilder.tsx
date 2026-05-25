@@ -288,10 +288,22 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const [isSavingOfficialDocument, setIsSavingOfficialDocument] = useState(false);
   const [savedOfficialDocumentId, setSavedOfficialDocumentId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const stepStorageKey = documentType === 'devis' ? 'draft_quote_step' : 'draft_invoice_step';
   const [currentStep, setCurrentStep] = useState(() => {
     if (prefillData || skipDraftRestore) return 0;
+    try {
+      const raw = localStorage.getItem(stepStorageKey);
+      if (raw !== null) {
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed) && parsed >= 0 && parsed <= 7) return parsed;
+      }
+    } catch {}
     return loadCurrentDocument(documentType)?.currentStep ?? 0;
   });
+
+  useEffect(() => {
+    try { localStorage.setItem(stepStorageKey, String(currentStep)); } catch {}
+  }, [currentStep, stepStorageKey]);
 
   const saveCurrentDraftSnapshot = useCallback(() => {
     saveDraft({
@@ -704,6 +716,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     // Clear stale drafts and localStorage to prevent ghost data
     clearDraft();
     clearCurrentDocument();
+    try { localStorage.removeItem('draft_quote_step'); localStorage.removeItem('draft_invoice_step'); } catch {}
     try { localStorage.removeItem('lineItemEditor_items_v1'); } catch {}
     
     // Reset docNumber to the reserved invoice number when provided, otherwise use placeholder
@@ -1975,6 +1988,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       // Clear drafts after successful save to prevent ghost state on next new document
       clearDraft();
       clearCurrentDocument();
+      try { localStorage.removeItem('draft_quote_step'); localStorage.removeItem('draft_invoice_step'); } catch {}
       // Clear prefill session keys after a successful save so the next milestone
       // creation starts from fresh data (and never falls back to stale full-quote
       // items if the user navigates back into the creator).
@@ -2065,6 +2079,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
     clearDraft();
     clearCurrentDocument();
+    try { localStorage.removeItem('draft_quote_step'); localStorage.removeItem('draft_invoice_step'); } catch {}
     setClientName('');
     setClientAddress('');
     setClientPhone('');

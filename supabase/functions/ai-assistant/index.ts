@@ -62,7 +62,7 @@ Tu DOIS reconnaître ces termes quand l'utilisateur les emploie et utiliser syst
       : '';
 
     const personalizationAr = userName
-      ? `\nتخصيص الردود (إلزامي):\n- اسم المستخدم "${userName}". نادي عليه باسمه.\n- النوع: ${userGender === 'female' ? 'أنثى. استخدم صيغة المؤنث (مثلاً: "يا ست ' + userName + '"، "إنتِ محتاجة"، "عندك حق").' : 'ذكر. استخدم صيغة المذكر (مثلاً: "يا ' + userName + '"، "إنت محتاج"، "عندك حق").'}\n`
+      ? `\nتخصيص الردود (إلزامي):\n- اسم المستخدم "${userName}". نادي عليه باسمه.\n- النوع: ${userGender === 'female' ? (userProfile?.dialect && userProfile?.dialect !== 'egyptien' ? 'أنثى. استخدم صيغة المؤنث (مثلاً: "يا ' + userName + '"، "أنتِ بحاجة"، "عندك حق").' : 'أنثى. استخدم صيغة المؤنث (مثلاً: "يا ست ' + userName + '"، "إنتِ محتاجة"، "عندك حق").') : (userProfile?.dialect && userProfile?.dialect !== 'egyptien' ? 'ذكر. استخدم صيغة المذكر (مثلاً: "يا ' + userName + '"، "أنت بحاجة"، "عندك حق").' : 'ذكر. استخدم صيغة المذكر (مثلاً: "يا ' + userName + '"، "إنت محتاج"، "عندك حق").')}\n`
       : '';
 
     const formattingRulesFr = `

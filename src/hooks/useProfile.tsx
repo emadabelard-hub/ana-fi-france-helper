@@ -48,7 +48,7 @@ export interface Profile {
   credits_balance: number;
   daily_message_count: number;
   last_message_date: string | null;
-  dialect: 'egyptien' | 'algerien' | 'marocain' | 'tunisien' | null;
+  dialect: string | null;
   created_at: string;
   updated_at: string;
 }

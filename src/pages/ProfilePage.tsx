@@ -495,6 +495,7 @@ const ProfilePage = () => {
                 خروج
               </Button>
 
+              <DialectSelector />
               <GdprExportSection />
               <ResetDataSection />
               <DeleteAccountSection />

@@ -382,6 +382,20 @@ ${override}
       }
     }
 
+    // --- AUTO DIALECT MIRRORING (Arabic only, when no explicit override) ---
+    // Detect the dialect used by the user across the conversation and reply in the same one.
+    // If ambiguous or mixed → Egyptian by default. Generated documents stay in professional French.
+    if (language !== 'fr' && (!dialect || dialect === 'egyptien')) {
+      finalSystemPrompt = `${finalSystemPrompt}
+
+🗣️ كشف اللهجة تلقائياً (قاعدة إلزامية):
+- حلّل آخر رسائل المستخدم وحدّد اللهجة العربية المستخدمة: مصري، مغربي، جزائري، تونسي، شامي (سوري/لبناني/فلسطيني/أردني)، خليجي، عراقي، سوداني، يمني، ليبي…
+- ردّ دائماً بنفس لهجة المستخدم بالضبط (مفردات، تعابير، طريقة النطق المكتوبة).
+- لو اللهجة غامضة أو مختلطة أو الرسالة قصيرة جداً → استخدم المصري كافتراضي.
+- لا تخلط لهجتين في نفس الرد. ثبّت اللهجة المكتشفة طول المحادثة إلا لو المستخدم غيّر بوضوح.
+- استثناء واحد فقط: المستندات المُولَّدة (devis, factures, courriers, contrats, lettres administratives) تبقى دائماً بالفرنسية المهنية الرسمية مهما كانت لهجة المحادثة.`;
+    }
+
 
     // Inject attachment(s) into the last user message if present
     const outgoingMessages = Array.isArray(messages) ? [...messages] : [];

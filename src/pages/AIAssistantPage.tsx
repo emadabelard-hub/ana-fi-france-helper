@@ -592,9 +592,9 @@ const AIAssistantPage = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      // Bug 3: Always fetch latest profile inline if not loaded yet
-      let liveProfile: any = profile;
-      if (!liveProfile && user?.id) {
+      // Always fetch latest profile fresh from Supabase on every message send
+      let liveProfile: any = null;
+      if (user?.id) {
         try {
           const { data } = await supabase
             .from('profiles')
@@ -604,6 +604,7 @@ const AIAssistantPage = () => {
           if (data) liveProfile = data;
         } catch (e) { console.warn('inline profile fetch failed', e); }
       }
+      if (!liveProfile) liveProfile = profile;
 
       const userProfilePayload = liveProfile || user ? {
         full_name: liveProfile?.full_name || null,

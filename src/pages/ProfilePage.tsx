@@ -23,6 +23,7 @@ import { getSignedAssetUrl } from '@/lib/storageUtils';
 import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
 import ResetDataSection from '@/components/profile/ResetDataSection';
 import GdprExportSection from '@/components/profile/GdprExportSection';
+import DialectSelector from '@/components/profile/DialectSelector';
 import ArtisanSignatureSection from '@/components/profile/ArtisanSignatureSection';
 import StampUploadSection from '@/components/profile/StampUploadSection';
 
@@ -494,6 +495,7 @@ const ProfilePage = () => {
                 خروج
               </Button>
 
+              <DialectSelector />
               <GdprExportSection />
               <ResetDataSection />
               <DeleteAccountSection />

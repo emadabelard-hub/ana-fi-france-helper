@@ -598,7 +598,7 @@ const AIAssistantPage = () => {
         try {
           const { data } = await supabase
             .from('profiles')
-            .select('full_name, address, phone, email, company_name, siret, company_address')
+            .select('full_name, address, phone, email, company_name, siret, company_address, dialect')
             .eq('user_id', user.id)
             .maybeSingle();
           if (data) liveProfile = data;
@@ -613,6 +613,7 @@ const AIAssistantPage = () => {
         company_name: liveProfile?.company_name || null,
         siret: liveProfile?.siret || null,
         company_address: liveProfile?.company_address || null,
+        dialect: (liveProfile as any)?.dialect || null,
       } : null;
 
       const resp = await fetch(STREAM_URL, {

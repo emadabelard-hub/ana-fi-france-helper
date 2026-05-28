@@ -361,6 +361,28 @@ ${deepStrategyAr}
 11. كل مصطلح فرنسي تقني لازم يتكتب بالحروف العربية بين قوسين (مثلاً: CAF (كاف)، Préfecture (بريفكتير)، APL (أ بي إل)).
 12. روابط ذكية (إلزامي): لو ردك فيه كلام عن سي في أو البحث عن شغل، أضف في الآخر: [CV_LINK]لو حابب تعمل سي في مطابق للمواصفات المطلوبة اضغط هنا ← صانع CV[/CV_LINK]. لو ردك فيه كلام عن فاتورة أو عرض سعر أو أدوات مهنية، أضف: [PRO_LINK]لو محتاج تعمل عرض سعر أو فاتورة احترافية اضغط هنا ← أدوات البرو[/PRO_LINK]. لو ردك فيه كلام عن تحليل مستندات أو استشارة قانونية أو صياغة رد رسمي أو عقد أو نزاع أو مشاكل إدارية معقدة، أضف: [SOLUTIONS_LINK]للمساعدة في تحليل المستندات أو الحصول على استشارة قانونية ومهنية، اضغط هنا ← المستشار القانوني والمهني[/SOLUTIONS_LINK].`;
 
+    // --- DIALECT OVERRIDE (Arabic only, opt-in via profile) ---
+    // If the user picked a non-Egyptian dialect, append an overriding persona block.
+    // Egyptian (or unset) = no change at all — existing prompt is used verbatim.
+    const dialect = typeof userProfile?.dialect === 'string' ? userProfile.dialect : null;
+    let finalSystemPrompt = systemPrompt;
+    if (language !== 'fr' && dialect && dialect !== 'egyptien') {
+      const dialectPrompts: Record<string, string> = {
+        algerien: `أنت مساعد ذكي اسمك "صاحبي" متخصص في مساعدة الحرفيين الجزائريين في فرنسا. تحكي بالدارجة الجزائرية دايما — مش بالعربي الفصيح ومش بالفرنساوي. شخصيتك مباشر وعملي. تحية البداية: "واش راك؟ أنا صاحبي، كيفاش نعاونك؟"`,
+        marocain: `أنت مساعد ذكي اسمك "خويا" متخصص في مساعدة الحرفيين المغاربة في فرنسا. تحكي بالدارجة المغربية دايما — ماشي بالعربية الفصحى وماشي بالفرنسية. شخصيتك ودود وعملي. تحية البداية: "لاباس عليك؟ أنا خويا، فاش نقدر نعاونك؟"`,
+        tunisien: `أنت مساعد ذكي اسمك "صاحبك" متخصص في مساعدة الحرفيين التونسيين في فرنسا. تحكي بالتونسي دايما — موش بالفصحى وموش بالفرنساوي. شخصيتك سريع ومباشر. تحية البداية: "أهلا بيك، أنا صاحبك، بش نعاونك؟"`,
+      };
+      const override = dialectPrompts[dialect];
+      if (override) {
+        finalSystemPrompt = `${systemPrompt}
+
+🚨 تحديث الهوية واللهجة (يلغي أي تعريف سابق للشخصية واللهجة فقط — كل القواعد الأخرى تبقى كما هي):
+${override}
+استخدم اللهجة دي في كل ردودك. حافظ على نفس القواعد والمحتوى المهني، بس بدّل الأسلوب واللهجة فقط.`;
+      }
+    }
+
+
     // Inject attachment(s) into the last user message if present
     const outgoingMessages = Array.isArray(messages) ? [...messages] : [];
     const attList: any[] = Array.isArray(attachments) && attachments.length > 0
@@ -404,7 +426,7 @@ ${deepStrategyAr}
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: finalSystemPrompt },
           ...outgoingMessages,
         ],
         stream: true,

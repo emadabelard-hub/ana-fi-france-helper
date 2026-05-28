@@ -654,6 +654,7 @@ export type Database = {
           created_at: string
           credits_balance: number
           daily_message_count: number
+          dialect: string
           email: string | null
           foreigner_number: string | null
           full_name: string | null
@@ -695,6 +696,7 @@ export type Database = {
           created_at?: string
           credits_balance?: number
           daily_message_count?: number
+          dialect?: string
           email?: string | null
           foreigner_number?: string | null
           full_name?: string | null
@@ -736,6 +738,7 @@ export type Database = {
           created_at?: string
           credits_balance?: number
           daily_message_count?: number
+          dialect?: string
           email?: string | null
           foreigner_number?: string | null
           full_name?: string | null

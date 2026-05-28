@@ -396,6 +396,10 @@ ${override}
 - استثناء واحد فقط: المستندات المُولَّدة (devis, factures, courriers, contrats, lettres administratives) تبقى دائماً بالفرنسية المهنية الرسمية مهما كانت لهجة المحادثة.`;
     }
 
+    finalSystemPrompt = `IMPORTANT : Détecte le dialecte arabe de l'utilisateur et réponds TOUJOURS dans ce même dialecte. Ne réponds JAMAIS en égyptien si l'utilisateur écrit en algérien, marocain, tunisien, syrien ou soudanais. L'égyptien est uniquement le fallback si le dialecte est indétectable. Les documents restent toujours en français professionnel.\n\n${finalSystemPrompt}`;
+
+
+
 
     // Inject attachment(s) into the last user message if present
     const outgoingMessages = Array.isArray(messages) ? [...messages] : [];

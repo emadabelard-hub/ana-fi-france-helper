@@ -33,6 +33,8 @@ const categories = [
 const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, preselectedDocumentId }: AddExpenseModalProps) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
@@ -216,6 +218,23 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
               className="hidden"
               onChange={handleFileSelect}
             />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*,application/pdf"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+
+
 
             {receiptPreview ? (
               <div className="relative rounded-xl overflow-hidden border border-border">
@@ -242,16 +261,30 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
                 </div>
               </div>
             ) : (
-              <Button
-                variant="outline"
-                className="w-full h-24 border-dashed border-accent/30 hover:border-accent/60 hover:bg-accent/5 flex flex-col gap-2"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="h-6 w-6 text-accent/60" />
-                <span className={cn('text-xs text-muted-foreground', isRTL && 'font-cairo')}>
-                  {isRTL ? 'التقط صورة أو اختر ملف' : 'Prendre une photo ou choisir un fichier'}
-                </span>
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-24 border-dashed border-accent/30 hover:border-accent/60 hover:bg-accent/5 flex flex-col gap-2"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <Camera className="h-6 w-6 text-accent/60" />
+                  <span className={cn('text-xs text-muted-foreground', isRTL && 'font-cairo')}>
+                    {isRTL ? '📷 التقاط صورة' : '📷 Prendre une photo'}
+                  </span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-24 border-dashed border-accent/30 hover:border-accent/60 hover:bg-accent/5 flex flex-col gap-2"
+                  onClick={() => galleryInputRef.current?.click()}
+                >
+                  <Upload className="h-6 w-6 text-accent/60" />
+                  <span className={cn('text-xs text-muted-foreground', isRTL && 'font-cairo')}>
+                    {isRTL ? '🖼️ اختر من المكتبة' : '🖼️ Choisir un fichier'}
+                  </span>
+                </Button>
+              </div>
             )}
           </div>
 

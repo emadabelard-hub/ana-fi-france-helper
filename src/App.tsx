@@ -110,6 +110,7 @@ const AppRoutes = () => {
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/home" element={<Index />} />
+                    <Route path="/index" element={<Index />} />
                     <Route path="/news" element={<NewsPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/pro" element={<ProPage />} />

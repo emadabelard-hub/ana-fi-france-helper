@@ -352,6 +352,78 @@ Anafy
       console.warn("[signature-finalize] RESEND_API_KEY missing, skipping email");
     }
 
+    // Send confirmation email to the client (devis only)
+    if (RESEND_API_KEY && (doc.document_type === 'devis' || !doc.document_type)) {
+      try {
+        const snap: any = sigRow.document_snapshot || {};
+        const clientNameForLookup: string = snap.client_name || doc.client_name || '';
+        let clientEmail: string | null = snap.client_email || null;
+        if (!clientEmail && clientNameForLookup) {
+          const { data: clientRow } = await admin
+            .from("clients")
+            .select("contact_email")
+            .eq("user_id", sigRow.user_id)
+            .eq("name", clientNameForLookup)
+            .maybeSingle();
+          clientEmail = clientRow?.contact_email || null;
+        }
+
+        if (clientEmail) {
+          const { data: profile2 } = await admin
+            .from("profiles")
+            .select("company_name, full_name")
+            .eq("user_id", sigRow.user_id)
+            .maybeSingle();
+          const companyName = profile2?.company_name || profile2?.full_name || "Votre artisan";
+          const docNumber = doc.document_number || "—";
+          const totalTtc = typeof snap.total_ttc === 'number'
+            ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(snap.total_ttc)
+            : '—';
+          const subject = `Confirmation de signature — Devis N°${docNumber}`;
+          const html = `<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1a1a2e;white-space:pre-line;">
+Bonjour ${escapeHtml(signer_name.trim())},
+
+Nous vous confirmons la bonne réception de votre signature électronique concernant le devis suivant :
+
+• Numéro de devis : ${escapeHtml(docNumber)}
+• Montant TTC : ${totalTtc}
+• Date de signature : ${signedDateStr}
+• Heure de signature : ${signedTimeStr}
+
+Ce devis signé constitue un accord ferme entre vous et la société ${escapeHtml(companyName)}.
+
+Nous vous remercions de votre confiance et restons à votre disposition pour toute question.
+
+Cordialement,
+${escapeHtml(companyName)}
+</div>`;
+          const r2 = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${RESEND_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: "Anafy <noreply@resend.dev>",
+              to: [clientEmail],
+              subject,
+              html,
+            }),
+          });
+          if (!r2.ok) {
+            const t = await r2.text();
+            console.error("[signature-finalize] client confirmation Resend error:", r2.status, t);
+          } else {
+            console.log("[signature-finalize] client confirmation email sent to:", clientEmail);
+          }
+        } else {
+          console.warn("[signature-finalize] no client email found, skipping client confirmation");
+        }
+      } catch (mailErr) {
+        console.error("[signature-finalize] client confirmation error (non-blocking):", mailErr);
+      }
+    }
+
     return new Response(JSON.stringify({
       ok: true,
       signed_pdf_url: signedPdfUrl,

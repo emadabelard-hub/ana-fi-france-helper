@@ -156,7 +156,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         }
       }
 
-      const { error } = await (supabase.from('expenses') as any).insert({
+      const expensePayload = {
         user_id: userId,
         title: title.trim(),
         amount: parseFloat(amount),
@@ -167,8 +167,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         receipt_url: receiptUrl,
         document_id: selectedDocId || null,
         chantier_id: selectedChantierId,
-      });
+      };
+      console.log('[AddExpenseModal] Insert payload:', expensePayload);
 
+      const { error } = await (supabase.from('expenses') as any).insert(expensePayload);
+
+      console.log('[AddExpenseModal] Insert result error:', error);
       if (error) throw error;
 
       toast({ title: isRTL ? '✅ تمت إضافة المصروف' : '✅ Dépense ajoutée' });

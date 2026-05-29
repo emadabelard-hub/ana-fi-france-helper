@@ -148,12 +148,14 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
       if (receiptFile) {
         const ext = receiptFile.name.split('.').pop();
         const path = `${userId}/${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from('expense-receipts')
-          .upload(path, receiptFile);
-        if (!uploadError) {
-          receiptUrl = path;
+          .upload(path, receiptFile, { upsert: false, contentType: receiptFile.type });
+        console.log('[AddExpenseModal] Upload result:', { uploadData, uploadError });
+        if (uploadError) {
+          throw uploadError;
         }
+        receiptUrl = path;
       }
 
       const expensePayload = {
@@ -210,8 +212,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
-              capture="environment"
+              accept="image/*,application/pdf"
               className="hidden"
               onChange={handleFileSelect}
             />

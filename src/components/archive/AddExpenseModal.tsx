@@ -210,8 +210,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
-              capture="environment"
+              accept="image/*,application/pdf"
               className="hidden"
               onChange={handleFileSelect}
             />

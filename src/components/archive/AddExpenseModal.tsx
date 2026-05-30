@@ -131,12 +131,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
   };
 
   const handleSave = async () => {
-    if (!title.trim() || !amount || !selectedClientId || !selectedChantierId) {
+    if (!title.trim() || !amount) {
       toast({
         title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
         description: isRTL
-          ? 'العنوان والمبلغ والعميل والشانتييه مطلوبين'
-          : 'Titre, montant, client et chantier sont obligatoires',
+          ? 'العنوان والمبلغ مطلوبين'
+          : 'Titre et montant sont obligatoires',
         variant: 'destructive',
       });
       return;
@@ -170,7 +170,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         notes: notes.trim() || null,
         receipt_url: receiptUrl,
         document_id: selectedDocId || null,
-        chantier_id: selectedChantierId,
+        chantier_id: selectedChantierId || null,
       };
       console.log('[AddExpenseModal] Insert payload:', expensePayload);
 
@@ -366,7 +366,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* Client & Chantier Link */}
           <div className="space-y-1.5">
               <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-                {isRTL ? 'اختر العميل *' : 'Sélectionner un client *'}
+                {isRTL ? 'اختر العميل' : 'Sélectionner un client'}
               </Label>
               <Select value={selectedClientId} onValueChange={(v) => { setSelectedClientId(v); setSelectedChantierId(''); }}>
                 <SelectTrigger className="bg-background border-border text-sm">
@@ -382,7 +382,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
 
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'اختر المشروع *' : 'Sélectionner un chantier *'}
+              {isRTL ? 'اختر المشروع' : 'Sélectionner un chantier'}
             </Label>
             <Select value={selectedChantierId} onValueChange={setSelectedChantierId} disabled={!selectedClientId || chantiersList.length === 0}>
               <SelectTrigger className="bg-background border-border text-sm">

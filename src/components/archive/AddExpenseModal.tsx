@@ -366,7 +366,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* Client & Chantier Link */}
           <div className="space-y-1.5">
               <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-                {isRTL ? 'اختر العميل *' : 'Sélectionner un client *'}
+                {isRTL ? 'اختر العميل' : 'Sélectionner un client'}
               </Label>
               <Select value={selectedClientId} onValueChange={(v) => { setSelectedClientId(v); setSelectedChantierId(''); }}>
                 <SelectTrigger className="bg-background border-border text-sm">

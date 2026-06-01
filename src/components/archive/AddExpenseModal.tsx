@@ -87,7 +87,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
     setSelectedClientId(''); setSelectedChantierId('');
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setReceiptFile(file);

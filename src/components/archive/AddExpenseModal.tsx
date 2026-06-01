@@ -32,15 +32,15 @@ const categories = [
 
 const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, preselectedDocumentId }: AddExpenseModalProps) => {
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState(null);
+  const [receiptFile, setReceiptFile] = useState(null);
   const [documents, setDocuments] = useState<{ id: string; label: string }[]>([]);
-  const [selectedDocId, setSelectedDocId] = useState<string>(preselectedDocumentId || '');
+  const [selectedDocId, setSelectedDocId] = useState(preselectedDocumentId || '');
   const [clientsList, setClientsList] = useState<{ id: string; name: string }[]>([]);
   const [chantiersList, setChantiersList] = useState<{ id: string; name: string }[]>([]);
   const [selectedClientId, setSelectedClientId] = useState('');
@@ -157,7 +157,11 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         if (uploadError) {
           throw uploadError;
         }
-        receiptUrl = path;
+        
+        const { data: signedUrlData } = await supabase.storage
+          .from('expense-receipts')
+          .createSignedUrl(path, 3600);
+        receiptUrl = signedUrlData?.signedUrl || path;
       }
 
       const expensePayload = {
@@ -170,6 +174,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         notes: notes.trim() || null,
         receipt_url: receiptUrl,
         document_id: selectedDocId || null,
+        client_id: selectedClientId || null,
         chantier_id: selectedChantierId || null,
       };
       console.log('[AddExpenseModal] Insert payload:', expensePayload);
@@ -233,8 +238,6 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
               className="hidden"
               onChange={handleFileSelect}
             />
-
-
 
             {receiptPreview ? (
               <div className="relative rounded-xl overflow-hidden border border-border">

@@ -461,6 +461,7 @@ export type Database = {
           amount: number
           category: string
           chantier_id: string | null
+          client_id: string | null
           created_at: string
           document_id: string | null
           expense_date: string
@@ -477,6 +478,7 @@ export type Database = {
           amount?: number
           category?: string
           chantier_id?: string | null
+          client_id?: string | null
           created_at?: string
           document_id?: string | null
           expense_date?: string
@@ -493,6 +495,7 @@ export type Database = {
           amount?: number
           category?: string
           chantier_id?: string | null
+          client_id?: string | null
           created_at?: string
           document_id?: string | null
           expense_date?: string
@@ -511,6 +514,13 @@ export type Database = {
             columns: ["chantier_id"]
             isOneToOne: false
             referencedRelation: "chantiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {

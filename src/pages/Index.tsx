@@ -6,7 +6,7 @@ import WelcomeModal from '@/components/home/WelcomeModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2 } from 'lucide-react';
+import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2, Sparkles, FolderOpen, BarChart2 } from 'lucide-react';
 
 const COLORS = {
   navy: '#1B4F8A',
@@ -129,12 +129,11 @@ const Index = () => {
     : "'Poppins', system-ui, sans-serif";
 
   const quickActions = [
-    { emoji: '⚡', ar: 'دوفي جديد', fr: 'Nouveau devis', path: '/pro/invoice-creator?type=devis' },
-    { emoji: '📄', ar: 'فاتورة جديدة', fr: 'Nouvelle facture', path: '/pro/invoice-creator?type=facture' },
-    { emoji: '✨', ar: 'دوفي ذكي', fr: 'Devis intelligent', path: '/pro/smart-devis' },
-    
-    { emoji: '📁', ar: 'مستنداتي المحاسبية', fr: 'Mes documents', path: '/my-documents' },
-    { emoji: '💰', ar: 'حساباتي', fr: 'Mes Comptes', path: '/expenses' },
+    { icon: FilePlus, ar: 'دوفي جديد', fr: 'Nouveau devis', path: '/pro/invoice-creator?type=devis' },
+    { icon: FileText, ar: 'فاتورة جديدة', fr: 'Nouvelle facture', path: '/pro/invoice-creator?type=facture' },
+    { icon: Sparkles, ar: 'دوفي ذكي', fr: 'Devis intelligent', path: '/pro/smart-devis' },
+    { icon: FolderOpen, ar: 'مستنداتي المحاسبية', fr: 'Mes documents', path: '/my-documents' },
+    { icon: BarChart2, ar: 'حساباتي', fr: 'Mes Comptes', path: '/expenses' },
   ];
 
   const statusBadge = (d: RecentDoc) => {
@@ -266,7 +265,7 @@ const Index = () => {
               className="rounded-2xl bg-white p-4 shadow-sm border active:scale-[0.97] transition flex flex-col items-center justify-center gap-1.5"
               style={{ borderColor: '#E5E9F0', minHeight: 88 }}
             >
-              <span className="text-2xl leading-none">{a.emoji}</span>
+              {(() => { const Icon = a.icon; return <Icon size={24} style={{ color: COLORS.gold }} className="leading-none" />; })()}
               <span className="text-[12px] font-bold text-center" style={{ color: COLORS.navyDark }}>
                 {isRTL ? a.ar : a.fr}
               </span>

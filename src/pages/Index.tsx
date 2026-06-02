@@ -134,6 +134,7 @@ const Index = () => {
     { icon: Sparkles, ar: 'دوفي ذكي', fr: 'Devis intelligent', path: '/pro/smart-devis' },
     { icon: FolderOpen, ar: 'مستنداتي المحاسبية', fr: 'Mes documents', path: '/my-documents' },
     { icon: BarChart2, ar: 'حساباتي', fr: 'Mes Comptes', path: '/expenses' },
+    { icon: Users, ar: 'العملاء', fr: 'Mes Clients', path: '/clients' },
   ];
 
   const statusBadge = (d: RecentDoc) => {

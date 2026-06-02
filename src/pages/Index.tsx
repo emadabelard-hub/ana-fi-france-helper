@@ -265,7 +265,7 @@ const Index = () => {
               className="rounded-2xl bg-white p-4 shadow-sm border active:scale-[0.97] transition flex flex-col items-center justify-center gap-1.5"
               style={{ borderColor: '#E5E9F0', minHeight: 88 }}
             >
-              <span className="text-2xl leading-none">{a.emoji}</span>
+              {(() => { const Icon = a.icon; return <Icon size={24} style={{ color: COLORS.gold }} className="leading-none" />; })()}
               <span className="text-[12px] font-bold text-center" style={{ color: COLORS.navyDark }}>
                 {isRTL ? a.ar : a.fr}
               </span>

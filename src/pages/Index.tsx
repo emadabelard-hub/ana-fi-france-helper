@@ -129,12 +129,11 @@ const Index = () => {
     : "'Poppins', system-ui, sans-serif";
 
   const quickActions = [
-    { emoji: '⚡', ar: 'دوفي جديد', fr: 'Nouveau devis', path: '/pro/invoice-creator?type=devis' },
-    { emoji: '📄', ar: 'فاتورة جديدة', fr: 'Nouvelle facture', path: '/pro/invoice-creator?type=facture' },
-    { emoji: '✨', ar: 'دوفي ذكي', fr: 'Devis intelligent', path: '/pro/smart-devis' },
-    
-    { emoji: '📁', ar: 'مستنداتي المحاسبية', fr: 'Mes documents', path: '/my-documents' },
-    { emoji: '💰', ar: 'حساباتي', fr: 'Mes Comptes', path: '/expenses' },
+    { icon: FilePlus, ar: 'دوفي جديد', fr: 'Nouveau devis', path: '/pro/invoice-creator?type=devis' },
+    { icon: FileText, ar: 'فاتورة جديدة', fr: 'Nouvelle facture', path: '/pro/invoice-creator?type=facture' },
+    { icon: Sparkles, ar: 'دوفي ذكي', fr: 'Devis intelligent', path: '/pro/smart-devis' },
+    { icon: FolderOpen, ar: 'مستنداتي المحاسبية', fr: 'Mes documents', path: '/my-documents' },
+    { icon: BarChart2, ar: 'حساباتي', fr: 'Mes Comptes', path: '/expenses' },
   ];
 
   const statusBadge = (d: RecentDoc) => {

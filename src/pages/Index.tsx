@@ -6,7 +6,7 @@ import WelcomeModal from '@/components/home/WelcomeModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2 } from 'lucide-react';
+import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2, Sparkles, FolderOpen, BarChart2 } from 'lucide-react';
 
 const COLORS = {
   navy: '#1B4F8A',

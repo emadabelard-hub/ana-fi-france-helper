@@ -54,6 +54,7 @@ const VerifyDocumentPage = lazy(() => import("./pages/VerifyDocumentPage"));
 const TranslatorPage = lazy(() => import("./pages/TranslatorPage"));
 const MyDocumentsPage = lazy(() => import("./pages/MyDocumentsPage"));
 const SignaturePage = lazy(() => import("./pages/SignaturePage"));
+const ChantierReportPage = lazy(() => import("./pages/ChantierReportPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -147,6 +148,7 @@ const AppRoutes = () => {
                     <Route path="/verify/:id" element={<VerifyDocumentPage />} />
                     <Route path="/translator" element={<TranslatorPage />} />
                     <Route path="/my-documents" element={<MyDocumentsPage />} />
+                    <Route path="/chantier-report" element={<ChantierReportPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

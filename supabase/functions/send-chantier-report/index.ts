@@ -95,13 +95,13 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `${fromName} <noreply@anafypro.com>`,
+        from: `${fromName.replace(/[<>"\r\n]/g, '')} <noreply@anafypro.com>`,
         to: [to],
         subject: finalSubject,
         html: finalHtml,
         attachments: [
           {
-            filename: fileName,
+            filename: safeFileName,
             content: pdfBase64,
           },
         ],

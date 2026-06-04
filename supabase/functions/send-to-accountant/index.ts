@@ -126,6 +126,28 @@ Deno.serve(async (req) => {
     const { period, accountantEmail } = await req.json();
     if (!accountantEmail) throw new Error("Missing accountant email");
 
+    // Input validation
+    const htmlEscape = (s: unknown): string =>
+      String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const recipient = String(accountantEmail).trim();
+    if (!emailRe.test(recipient) || recipient.length > 254) {
+      return new Response(JSON.stringify({ error: "Invalid accountant email" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const allowedPeriods = ["month", "quarter", "year"];
+    if (!allowedPeriods.includes(period)) {
+      return new Response(JSON.stringify({ error: "Invalid period" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const periodStart = getPeriodStart(period);
 

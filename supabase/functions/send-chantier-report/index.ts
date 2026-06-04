@@ -66,12 +66,23 @@ Deno.serve(async (req) => {
     }
 
     const fromName = companyName || 'AnafyPro';
-    const finalSubject = subject || `Rapport de chantier — ${fromName}`;
+    const htmlEscape = (s: unknown): string =>
+      String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    const fromNameSafe = htmlEscape(fromName);
+    const messageRawSafe = htmlEscape(message || `Veuillez trouver ci-joint le rapport de chantier de ${fromName}.`);
+    const subjectSafe = subject ? String(subject).slice(0, 200) : `Rapport de chantier — ${fromName}`;
+    const safeFileName = String(fileName).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'rapport.pdf';
+    const finalSubject = subjectSafe;
     const finalHtml = `
       <div style="font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.6">
         <p>Bonjour,</p>
-        <p>${(message || `Veuillez trouver ci-joint le rapport de chantier de ${fromName}.`).replace(/\n/g, '<br/>')}</p>
-        <p>Cordialement,<br/><strong>${fromName}</strong></p>
+        <p>${messageRawSafe.replace(/\n/g, '<br/>')}</p>
+        <p>Cordialement,<br/><strong>${fromNameSafe}</strong></p>
         <hr style="border:none;border-top:1px solid #ddd;margin:16px 0"/>
         <p style="font-size:12px;color:#888">Envoyé via AnafyPro</p>
       </div>
@@ -84,13 +95,13 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `${fromName} <noreply@anafypro.com>`,
+        from: `${fromName.replace(/[<>"\r\n]/g, '')} <noreply@anafypro.com>`,
         to: [to],
         subject: finalSubject,
         html: finalHtml,
         attachments: [
           {
-            filename: fileName,
+            filename: safeFileName,
             content: pdfBase64,
           },
         ],

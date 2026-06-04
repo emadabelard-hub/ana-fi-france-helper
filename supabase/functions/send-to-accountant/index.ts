@@ -197,23 +197,27 @@ Deno.serve(async (req) => {
     };
 
     // Send email via Resend
+    const periodLabel = periodLabels[period] || period;
+    const companyNameSafe = htmlEscape(companyName);
+    const periodSafe = htmlEscape(periodLabel);
+    const safeFileNameBase = `comptabilite_${companyName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80)}_${new Date().toISOString().slice(0, 10)}`;
     const emailBody = {
       from: "Ana Fi France <noreply@resend.dev>",
-      to: [accountantEmail],
-      subject: `Documents comptables — ${companyName} — ${periodLabels[period] || period}`,
+      to: [recipient],
+      subject: `Documents comptables — ${companyName} — ${periodLabel}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; white-space: pre-line;">
 Bonjour,
 
-Veuillez trouver ci-joint les documents comptables de ${companyName} pour la période ${periodLabels[period] || period}.
+Veuillez trouver ci-joint les documents comptables de ${companyNameSafe} pour la période ${periodSafe}.
 
 Cordialement,
-${companyName}
+${companyNameSafe}
         </div>
       `,
       attachments: [
         {
-          filename: `comptabilite_${companyName.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.csv`,
+          filename: `${safeFileNameBase}.csv`,
           content: csvBase64,
           type: "text/csv",
         },

@@ -450,10 +450,13 @@ const ArchiveAccountingPage = () => {
       const blob = new Blob([fec], { type: 'text/plain;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      const siret = ((profile as any)?.siret || 'FEC').replace(/\s+/g, '');
-      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const siretRaw = ((profile as any)?.siret || '').replace(/\s+/g, '');
+      const siren = siretRaw.length >= 9 ? siretRaw.slice(0, 9) : siretRaw.padStart(9, '0');
+      const closingDate = periodBoundaries?.end
+        ? periodBoundaries.end.toISOString().slice(0, 10).replace(/-/g, '')
+        : new Date().toISOString().slice(0, 10).replace(/-/g, '');
       a.href = url;
-      a.download = `${siret}FEC${dateStr}.txt`;
+      a.download = `FEC${siren}_${closingDate}.txt`;
       a.click();
       URL.revokeObjectURL(url);
       toast({ title: isRTL ? '✅ تم تصدير FEC' : '✅ Export FEC réussi' });

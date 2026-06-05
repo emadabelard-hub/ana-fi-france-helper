@@ -300,16 +300,20 @@ Deno.serve(async (req) => {
         const dateOnly = new Date(signedAt).toLocaleDateString("fr-FR");
 
         if (artisanEmail) {
-          const subject = `✅ Devis n° ${docNumber} signé par ${clientName}`;
+          const docNumberSafe = escapeHtml(docNumber);
+          const artisanNameSafe = escapeHtml(artisanName);
+          const clientNameSafe = escapeHtml(clientName);
+          const signedUrlSafe = escapeHtml(signedPdfUrl || "");
+          const subject = `✅ Devis n° ${docNumber} signé par ${clientName}`.slice(0, 200);
           const MAX_ATTACH = 5 * 1024 * 1024; // 5MB
           const tooLarge = signedPdfBytes.byteLength > MAX_ATTACH;
           const html = `<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1a1a2e;white-space:pre-line;">
-Bonjour ${artisanName},
+Bonjour ${artisanNameSafe},
 
-${clientName} a signé le devis n° ${docNumber} le ${dateOnly}.
+${clientNameSafe} a signé le devis n° ${docNumberSafe} le ${dateOnly}.
 
 ${tooLarge && signedPdfUrl
-  ? `Le document signé est trop volumineux pour être joint à cet email.\nTélécharger votre exemplaire signé : ${signedPdfUrl}`
+  ? `Le document signé est trop volumineux pour être joint à cet email.\nTélécharger votre exemplaire signé : ${signedUrlSafe}`
   : "Le document signé est disponible dans vos documents et joint à cet email."}
 
 Cordialement,

@@ -26,6 +26,7 @@ import GdprExportSection from '@/components/profile/GdprExportSection';
 import DialectSelector from '@/components/profile/DialectSelector';
 import ArtisanSignatureSection from '@/components/profile/ArtisanSignatureSection';
 import StampUploadSection from '@/components/profile/StampUploadSection';
+import AccountantAccessSection from '@/components/profile/AccountantAccessSection';
 
 /* ─── Tab definitions ─── */
 type TabKey = 'account' | 'company' | 'insurance' | 'signature' | 'stamp' | 'accountant';

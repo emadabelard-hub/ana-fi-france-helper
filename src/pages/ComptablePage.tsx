@@ -338,7 +338,7 @@ const ComptablePage = () => {
             <Archive className="h-5 w-5" style={{ color: '#BFA071' }} />
             <h2 className="font-semibold text-gray-900">Téléchargements groupés</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Button
               onClick={handleBulkInvoices}
               disabled={bulkLoading !== null || factures.length === 0}

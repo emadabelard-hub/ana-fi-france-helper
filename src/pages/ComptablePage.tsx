@@ -207,6 +207,17 @@ const ComptablePage = () => {
     } finally { setBulkLoading(null); }
   };
 
+  const handleBulkExpenses = async () => {
+    if (!data) return;
+    setBulkLoading('depenses');
+    try {
+      const zip = new JSZip();
+      await zipExpenses(zip, 'Depenses');
+      const blob = await zip.generateAsync({ type: 'blob' });
+      triggerBlobDownload(blob, `Depenses_${safeName(data.company?.company_name || 'export')}.zip`);
+    } finally { setBulkLoading(null); }
+  };
+
   const handleBulkAll = async () => {
     if (!data) return;
     setBulkLoading('all');

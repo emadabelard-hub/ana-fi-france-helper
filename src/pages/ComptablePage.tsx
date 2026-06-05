@@ -349,6 +349,15 @@ const ComptablePage = () => {
               <span className="font-medium">Télécharger toutes les factures</span>
             </Button>
             <Button
+              onClick={handleBulkExpenses}
+              disabled={bulkLoading !== null || data.expenses.length === 0}
+              variant="outline"
+              className="gap-2 justify-start h-auto py-3 border-gray-300 text-gray-900 bg-white hover:bg-gray-50"
+            >
+              {bulkLoading === 'depenses' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
+              <span className="font-medium">Télécharger toutes les dépenses</span>
+            </Button>
+            <Button
               onClick={handleBulkQuotes}
               disabled={bulkLoading !== null || devis.length === 0}
               variant="outline"

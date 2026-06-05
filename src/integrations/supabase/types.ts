@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      accountant_access: {
+        Row: {
+          access_token: string
+          accountant_email: string
+          accountant_name: string
+          created_at: string
+          id: string
+          is_active: boolean
+          user_id: string
+        }
+        Insert: {
+          access_token?: string
+          accountant_email: string
+          accountant_name: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          accountant_email?: string
+          accountant_name?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string

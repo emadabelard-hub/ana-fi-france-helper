@@ -74,3 +74,9 @@ verify_jwt = false
 
 [functions.scan-company-doc]
 verify_jwt = false
+
+[functions.invite-accountant]
+verify_jwt = false
+
+[functions.accountant-data]
+verify_jwt = false

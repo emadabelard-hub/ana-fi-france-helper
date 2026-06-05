@@ -1,10 +1,11 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Loader2, AlertCircle, Download, FileText, Receipt, Building2, ShieldCheck, FileSpreadsheet } from 'lucide-react';
+import { Loader2, AlertCircle, Download, FileText, Receipt, Building2, ShieldCheck, FileSpreadsheet, Package, Archive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
 
 interface Doc {
   id: string;

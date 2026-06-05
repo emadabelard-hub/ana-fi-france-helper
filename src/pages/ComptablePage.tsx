@@ -129,6 +129,130 @@ const ComptablePage = () => {
     XLSX.writeFile(wb, filename);
   };
 
+  const fetchSignedUrl = async (path: string): Promise<string | null> => {
+    try {
+      const { data: resp, error: err } = await supabase.functions.invoke('accountant-data', { body: { token, action: 'sign-url', path } });
+      if (err || (resp as any)?.error || !(resp as any)?.url) return null;
+      return (resp as any).url as string;
+    } catch { return null; }
+  };
+
+  const buildFecBlob = (): Blob | null => {
+    if (!data) return null;
+    const rows: (string | number)[][] = [];
+    rows.push(['JournalCode', 'JournalLib', 'EcritureNum', 'EcritureDate', 'CompteNum', 'CompteLib', 'PieceRef', 'PieceDate', 'EcritureLib', 'Debit', 'Credit', 'Montantdevise', 'Idevise']);
+    let n = 1;
+    for (const d of data.documents) {
+      if (d.document_type !== 'facture') continue;
+      const dateStr = (d.created_at || '').slice(0, 10).replace(/-/g, '');
+      rows.push(['VTE', 'Ventes', String(n), dateStr, '411000', d.client_name || 'Client', d.document_number, dateStr, `Facture ${d.document_number}`, Number(d.total_ttc || 0), 0, 0, 'EUR']);
+      rows.push(['VTE', 'Ventes', String(n), dateStr, '707000', 'Ventes HT', d.document_number, dateStr, `Facture ${d.document_number}`, 0, Number(d.subtotal_ht || 0), 0, 'EUR']);
+      if (Number(d.tva_amount || 0) > 0) {
+        rows.push(['VTE', 'Ventes', String(n), dateStr, '445710', 'TVA collectée', d.document_number, dateStr, `TVA ${d.document_number}`, 0, Number(d.tva_amount || 0), 0, 'EUR']);
+      }
+      n++;
+    }
+    for (const e of data.expenses) {
+      const dateStr = (e.expense_date || '').replace(/-/g, '');
+      const ht = Number(e.amount || 0) - Number(e.tva_amount || 0);
+      rows.push(['HA', 'Achats', String(n), dateStr, '606000', e.category || 'Achats', String(e.id).slice(0, 8), dateStr, e.title || 'Dépense', ht, 0, 0, 'EUR']);
+      if (Number(e.tva_amount || 0) > 0) {
+        rows.push(['HA', 'Achats', String(n), dateStr, '445660', 'TVA déductible', String(e.id).slice(0, 8), dateStr, `TVA ${e.title}`, Number(e.tva_amount), 0, 0, 'EUR']);
+      }
+      rows.push(['HA', 'Achats', String(n), dateStr, '401000', 'Fournisseur', String(e.id).slice(0, 8), dateStr, e.title || 'Dépense', 0, Number(e.amount || 0), 0, 'EUR']);
+      n++;
+    }
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'FEC');
+    const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer;
+    return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  };
+
+  const safeName = (s: string) => (s || 'doc').replace(/[^\w.\-]+/g, '_');
+
+  const triggerBlobDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const zipDocs = async (docs: Doc[], folder: string | null, zip: JSZip) => {
+    for (const d of docs) {
+      if (!d.pdf_url) continue;
+      const url = await fetchSignedUrl(d.pdf_url);
+      if (!url) continue;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        const name = `${safeName(d.document_number)}.pdf`;
+        (folder ? zip.folder(folder)! : zip).file(name, blob);
+      } catch { /* skip */ }
+    }
+  };
+
+  const zipExpenses = async (zip: JSZip, folder: string) => {
+    if (!data) return;
+    const f = zip.folder(folder)!;
+    for (const e of data.expenses) {
+      if (!e.receipt_url) continue;
+      const url = await fetchSignedUrl(e.receipt_url);
+      if (!url) continue;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        const ext = (blob.type.includes('pdf') ? 'pdf' : blob.type.split('/')[1] || 'bin').split(';')[0];
+        f.file(`${safeName(e.title || e.id.slice(0, 8))}_${e.id.slice(0, 6)}.${ext}`, blob);
+      } catch { /* skip */ }
+    }
+  };
+
+  const handleBulkInvoices = async () => {
+    if (!data) return;
+    setBulkLoading('factures');
+    try {
+      const zip = new JSZip();
+      await zipDocs(data.documents.filter(d => d.document_type === 'facture'), null, zip);
+      const blob = await zip.generateAsync({ type: 'blob' });
+      triggerBlobDownload(blob, `Factures_${safeName(data.company?.company_name || 'export')}.zip`);
+    } finally { setBulkLoading(null); }
+  };
+
+  const handleBulkQuotes = async () => {
+    if (!data) return;
+    setBulkLoading('devis');
+    try {
+      const zip = new JSZip();
+      await zipDocs(data.documents.filter(d => d.document_type === 'devis'), null, zip);
+      const blob = await zip.generateAsync({ type: 'blob' });
+      triggerBlobDownload(blob, `Devis_${safeName(data.company?.company_name || 'export')}.zip`);
+    } finally { setBulkLoading(null); }
+  };
+
+  const handleBulkAll = async () => {
+    if (!data) return;
+    setBulkLoading('all');
+    try {
+      const zip = new JSZip();
+      await zipDocs(data.documents.filter(d => d.document_type === 'facture'), 'Factures', zip);
+      await zipDocs(data.documents.filter(d => d.document_type === 'devis'), 'Devis', zip);
+      await zipExpenses(zip, 'Depenses');
+      const fec = buildFecBlob();
+      if (fec) {
+        const siren = (data.company?.siret || '').replace(/\D/g, '').slice(0, 9) || '000000000';
+        const t = new Date();
+        const fname = `FEC${siren}_${t.getFullYear()}${String(t.getMonth() + 1).padStart(2, '0')}${String(t.getDate()).padStart(2, '0')}.xlsx`;
+        zip.file(fname, fec);
+      }
+      const blob = await zip.generateAsync({ type: 'blob' });
+      triggerBlobDownload(blob, `Dossier_complet_${safeName(data.company?.company_name || 'export')}.zip`);
+    } finally { setBulkLoading(null); }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

@@ -43,6 +43,12 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const recipient = String(recipient_email).trim();
+    if (!EMAIL_RE.test(recipient) || recipient.length > 254) {
+      return new Response(JSON.stringify({ error: "Email invalide" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: sigRow } = await admin
       .from("signature_requests")

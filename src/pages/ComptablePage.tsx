@@ -347,6 +347,42 @@ const ComptablePage = () => {
           </Button>
         </Card>
 
+        {/* Bulk ZIP downloads */}
+        <Card className="p-5 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Archive className="h-5 w-5 text-[#BFA071]" />
+            <h2 className="font-semibold">Téléchargements groupés</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Button
+              onClick={handleBulkInvoices}
+              disabled={bulkLoading !== null || factures.length === 0}
+              variant="outline"
+              className="gap-2 justify-start h-auto py-3"
+            >
+              {bulkLoading === 'factures' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              <span dir="rtl" className="font-medium">تحميل كل الفواتير</span>
+            </Button>
+            <Button
+              onClick={handleBulkQuotes}
+              disabled={bulkLoading !== null || devis.length === 0}
+              variant="outline"
+              className="gap-2 justify-start h-auto py-3"
+            >
+              {bulkLoading === 'devis' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              <span dir="rtl" className="font-medium">تحميل كل الديفي</span>
+            </Button>
+            <Button
+              onClick={handleBulkAll}
+              disabled={bulkLoading !== null}
+              className="gap-2 justify-start h-auto py-3 bg-[#BFA071] hover:bg-[#a98a5e] text-white"
+            >
+              {bulkLoading === 'all' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
+              <span dir="rtl" className="font-medium">تحميل كل المستندات</span>
+            </Button>
+          </div>
+        </Card>
+
         {/* Factures */}
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">

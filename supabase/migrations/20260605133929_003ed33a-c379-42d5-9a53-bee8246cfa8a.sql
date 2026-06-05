@@ -1,0 +1,1 @@
+ALTER TABLE public.accountant_access ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ NULL;

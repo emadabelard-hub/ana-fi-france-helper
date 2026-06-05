@@ -20,6 +20,7 @@ export type Database = {
           accountant_email: string
           accountant_name: string
           created_at: string
+          expires_at: string | null
           id: string
           is_active: boolean
           user_id: string
@@ -29,6 +30,7 @@ export type Database = {
           accountant_email: string
           accountant_name: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           is_active?: boolean
           user_id: string
@@ -38,6 +40,7 @@ export type Database = {
           accountant_email?: string
           accountant_name?: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           is_active?: boolean
           user_id?: string

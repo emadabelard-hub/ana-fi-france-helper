@@ -30,12 +30,17 @@ Deno.serve(async (req) => {
 
     const { data: access, error: accessErr } = await svc
       .from('accountant_access')
-      .select('user_id, is_active, accountant_name, accountant_email')
+      .select('user_id, is_active, accountant_name, accountant_email, expires_at')
       .eq('access_token', token)
       .maybeSingle();
 
     if (accessErr || !access || !access.is_active) {
       return new Response(JSON.stringify({ error: 'invalid_token' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (access.expires_at && new Date(access.expires_at as string).getTime() < Date.now()) {
+      return new Response(JSON.stringify({ error: 'expired_token' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

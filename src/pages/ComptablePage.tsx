@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Loader2, AlertCircle, Download, FileText, Receipt, Building2, ShieldCheck, FileSpreadsheet, Package, Archive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -63,7 +63,9 @@ const ComptablePage = () => {
         const { data: resp, error: err } = await supabase.functions.invoke('accountant-data', { body: { token } });
         if (!mounted) return;
         if (err) { setError("Accès refusé"); setLoading(false); return; }
-        if ((resp as any)?.error) { setError("Accès refusé ou lien désactivé"); setLoading(false); return; }
+        const r = resp as any;
+        if (r?.error === 'expired_token') { setError("Ce lien a expiré."); setLoading(false); return; }
+        if (r?.error) { setError("Accès refusé ou lien désactivé"); setLoading(false); return; }
         setData(resp as AccountantPayload);
       } catch {
         if (mounted) setError("Erreur de connexion");
@@ -89,44 +91,6 @@ const ComptablePage = () => {
       a.click();
       a.remove();
     } catch (e) { console.error(e); }
-  };
-
-  const handleFecExport = () => {
-    if (!data) return;
-    const siren = (data.company?.siret || '').replace(/\D/g, '').slice(0, 9) || '000000000';
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    const filename = `FEC${siren}_${yyyy}${mm}${dd}.xlsx`;
-
-    const rows: (string | number)[][] = [];
-    rows.push(['JournalCode', 'JournalLib', 'EcritureNum', 'EcritureDate', 'CompteNum', 'CompteLib', 'PieceRef', 'PieceDate', 'EcritureLib', 'Debit', 'Credit', 'Montantdevise', 'Idevise']);
-    let n = 1;
-    for (const d of data.documents) {
-      if (d.document_type !== 'facture') continue;
-      const dateStr = (d.created_at || '').slice(0, 10).replace(/-/g, '');
-      rows.push(['VTE', 'Ventes', String(n), dateStr, '411000', d.client_name || 'Client', d.document_number, dateStr, `Facture ${d.document_number}`, Number(d.total_ttc || 0), 0, 0, 'EUR']);
-      rows.push(['VTE', 'Ventes', String(n), dateStr, '707000', 'Ventes HT', d.document_number, dateStr, `Facture ${d.document_number}`, 0, Number(d.subtotal_ht || 0), 0, 'EUR']);
-      if (Number(d.tva_amount || 0) > 0) {
-        rows.push(['VTE', 'Ventes', String(n), dateStr, '445710', 'TVA collectée', d.document_number, dateStr, `TVA ${d.document_number}`, 0, Number(d.tva_amount || 0), 0, 'EUR']);
-      }
-      n++;
-    }
-    for (const e of data.expenses) {
-      const dateStr = (e.expense_date || '').replace(/-/g, '');
-      const ht = Number(e.amount || 0) - Number(e.tva_amount || 0);
-      rows.push(['HA', 'Achats', String(n), dateStr, '606000', e.category || 'Achats', String(e.id).slice(0, 8), dateStr, e.title || 'Dépense', ht, 0, 0, 'EUR']);
-      if (Number(e.tva_amount || 0) > 0) {
-        rows.push(['HA', 'Achats', String(n), dateStr, '445660', 'TVA déductible', String(e.id).slice(0, 8), dateStr, `TVA ${e.title}`, Number(e.tva_amount), 0, 0, 'EUR']);
-      }
-      rows.push(['HA', 'Achats', String(n), dateStr, '401000', 'Fournisseur', String(e.id).slice(0, 8), dateStr, e.title || 'Dépense', 0, Number(e.amount || 0), 0, 'EUR']);
-      n++;
-    }
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'FEC');
-    XLSX.writeFile(wb, filename);
   };
 
   const fetchSignedUrl = async (path: string): Promise<string | null> => {
@@ -167,6 +131,16 @@ const ComptablePage = () => {
     XLSX.utils.book_append_sheet(wb, ws, 'FEC');
     const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer;
     return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  };
+
+  const handleFecExport = () => {
+    if (!data) return;
+    const fec = buildFecBlob();
+    if (!fec) return;
+    const siren = (data.company?.siret || '').replace(/\D/g, '').slice(0, 9) || '000000000';
+    const t = new Date();
+    const fname = `FEC${siren}_${t.getFullYear()}${String(t.getMonth() + 1).padStart(2, '0')}${String(t.getDate()).padStart(2, '0')}.xlsx`;
+    triggerBlobDownload(fec, fname);
   };
 
   const safeName = (s: string) => (s || 'doc').replace(/[^\w.\-]+/g, '_');
@@ -255,10 +229,10 @@ const ComptablePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center" style={{ colorScheme: 'light' }}>
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Vérification de l'accès…</p>
+          <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#1a2a44' }} />
+          <p className="text-sm text-gray-600">Vérification de l'accès…</p>
         </div>
       </div>
     );
@@ -266,13 +240,13 @@ const ComptablePage = () => {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <Card className="max-w-md w-full p-8 text-center space-y-4">
-          <div className="mx-auto w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
-            <AlertCircle className="h-7 w-7 text-destructive" />
+      <div className="min-h-screen bg-white flex items-center justify-center p-6" style={{ colorScheme: 'light' }}>
+        <Card className="max-w-md w-full p-8 text-center space-y-4 bg-white border border-gray-200">
+          <div className="mx-auto w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+            <AlertCircle className="h-7 w-7 text-red-600" />
           </div>
-          <h1 className="text-xl font-bold">Accès refusé</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-xl font-bold text-gray-900">Accès refusé</h1>
+          <p className="text-sm text-gray-600">
             {error || "Ce lien n'est plus valide ou a été désactivé par son propriétaire."}
           </p>
         </Card>
@@ -284,12 +258,12 @@ const ComptablePage = () => {
   const devis = data.documents.filter(d => d.document_type === 'devis');
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] dark:bg-background pb-24">
+    <div className="min-h-screen bg-white text-gray-900 pb-24" style={{ colorScheme: 'light' }} dir="ltr" lang="fr">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#1a2a44] to-[#243b5c] text-white">
+      <div className="text-white" style={{ background: 'linear-gradient(135deg,#1a2a44,#243b5c)' }}>
         <div className="max-w-5xl mx-auto px-6 py-8">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#BFA071] flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#BFA071' }}>
               <Building2 className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
@@ -313,96 +287,97 @@ const ComptablePage = () => {
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
         {/* Summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground">Chiffre d'affaires</p>
-            <p className="text-xl font-bold mt-1">{fmtEUR(data.summary.caTotal)}</p>
+          <Card className="p-4 bg-white border border-gray-200">
+            <p className="text-xs text-gray-500">Chiffre d'affaires</p>
+            <p className="text-xl font-bold mt-1 text-gray-900">{fmtEUR(data.summary.caTotal)}</p>
           </Card>
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground">TVA collectée</p>
-            <p className="text-xl font-bold mt-1">{fmtEUR(data.summary.tvaCollected)}</p>
+          <Card className="p-4 bg-white border border-gray-200">
+            <p className="text-xs text-gray-500">TVA collectée</p>
+            <p className="text-xl font-bold mt-1 text-gray-900">{fmtEUR(data.summary.tvaCollected)}</p>
           </Card>
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground">TVA déductible</p>
-            <p className="text-xl font-bold mt-1">{fmtEUR(data.summary.tvaDeductible)}</p>
+          <Card className="p-4 bg-white border border-gray-200">
+            <p className="text-xs text-gray-500">TVA déductible</p>
+            <p className="text-xl font-bold mt-1 text-gray-900">{fmtEUR(data.summary.tvaDeductible)}</p>
           </Card>
-          <Card className="p-4 border-[#BFA071]/30 bg-[#BFA071]/5">
-            <p className="text-xs text-muted-foreground">NET TVA</p>
-            <p className="text-xl font-bold mt-1 text-[#BFA071]">{fmtEUR(data.summary.netVat)}</p>
+          <Card className="p-4 border bg-[#FBF7EE]" style={{ borderColor: '#BFA071' }}>
+            <p className="text-xs text-gray-600">NET TVA</p>
+            <p className="text-xl font-bold mt-1" style={{ color: '#8a6d3b' }}>{fmtEUR(data.summary.netVat)}</p>
           </Card>
         </div>
 
         {/* FEC export */}
-        <Card className="p-5 flex flex-wrap items-center justify-between gap-4">
+        <Card className="p-5 flex flex-wrap items-center justify-between gap-4 bg-white border border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-              <FileSpreadsheet className="h-5 w-5 text-green-600" />
+            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+              <FileSpreadsheet className="h-5 w-5 text-green-700" />
             </div>
             <div>
-              <p className="font-semibold">Export FEC officiel</p>
-              <p className="text-xs text-muted-foreground">Fichier des écritures comptables (art. A47 A-1 LPF)</p>
+              <p className="font-semibold text-gray-900">Export FEC officiel</p>
+              <p className="text-xs text-gray-500">Fichier des écritures comptables (art. A47 A-1 LPF)</p>
             </div>
           </div>
-          <Button onClick={handleFecExport} className="gap-2 bg-[#1a2a44] hover:bg-[#243b5c]">
+          <Button onClick={handleFecExport} className="gap-2 text-white" style={{ background: '#BFA071' }}>
             <Download className="h-4 w-4" /> Télécharger FEC
           </Button>
         </Card>
 
         {/* Bulk ZIP downloads */}
-        <Card className="p-5 space-y-3">
+        <Card className="p-5 space-y-3 bg-white border border-gray-200">
           <div className="flex items-center gap-2 mb-1">
-            <Archive className="h-5 w-5 text-[#BFA071]" />
-            <h2 className="font-semibold">Téléchargements groupés</h2>
+            <Archive className="h-5 w-5" style={{ color: '#BFA071' }} />
+            <h2 className="font-semibold text-gray-900">Téléchargements groupés</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Button
               onClick={handleBulkInvoices}
               disabled={bulkLoading !== null || factures.length === 0}
               variant="outline"
-              className="gap-2 justify-start h-auto py-3"
+              className="gap-2 justify-start h-auto py-3 border-gray-300 text-gray-900 bg-white hover:bg-gray-50"
             >
               {bulkLoading === 'factures' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              <span dir="rtl" className="font-medium">تحميل كل الفواتير</span>
+              <span className="font-medium">Télécharger toutes les factures</span>
             </Button>
             <Button
               onClick={handleBulkQuotes}
               disabled={bulkLoading !== null || devis.length === 0}
               variant="outline"
-              className="gap-2 justify-start h-auto py-3"
+              className="gap-2 justify-start h-auto py-3 border-gray-300 text-gray-900 bg-white hover:bg-gray-50"
             >
               {bulkLoading === 'devis' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              <span dir="rtl" className="font-medium">تحميل كل الديفي</span>
+              <span className="font-medium">Télécharger tous les devis</span>
             </Button>
             <Button
               onClick={handleBulkAll}
               disabled={bulkLoading !== null}
-              className="gap-2 justify-start h-auto py-3 bg-[#BFA071] hover:bg-[#a98a5e] text-white"
+              className="gap-2 justify-start h-auto py-3 text-white"
+              style={{ background: '#1a2a44' }}
             >
               {bulkLoading === 'all' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
-              <span dir="rtl" className="font-medium">تحميل كل المستندات</span>
+              <span className="font-medium">Télécharger tous les documents</span>
             </Button>
           </div>
         </Card>
 
         {/* Factures */}
-        <Card className="p-5">
+        <Card className="p-5 bg-white border border-gray-200">
           <div className="flex items-center gap-2 mb-4">
-            <FileText className="h-5 w-5 text-[#BFA071]" />
-            <h2 className="font-semibold">Factures ({factures.length})</h2>
+            <FileText className="h-5 w-5" style={{ color: '#BFA071' }} />
+            <h2 className="font-semibold text-gray-900">Factures ({factures.length})</h2>
           </div>
           {factures.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucune facture.</p>
+            <p className="text-sm text-gray-500">Aucune facture.</p>
           ) : (
             <div className="space-y-2">
               {factures.map(d => (
-                <div key={d.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/40 hover:bg-secondary/30">
+                <div key={d.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm">{d.document_number}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {fmtDate(d.created_at)} · {d.client_name || '—'} · <span className={d.payment_status === 'paid' ? 'text-green-600 font-medium' : 'text-amber-600'}>{d.payment_status === 'paid' ? 'Payée' : 'En attente'}</span>
+                    <p className="font-semibold text-sm text-gray-900">{d.document_number}</p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {fmtDate(d.created_at)} · {d.client_name || '—'} · <span className={d.payment_status === 'paid' ? 'text-green-700 font-medium' : 'text-amber-700'}>{d.payment_status === 'paid' ? 'Payée' : 'En attente'}</span>
                     </p>
                   </div>
-                  <p className="text-sm font-bold shrink-0">{fmtEUR(Number(d.total_ttc || 0))}</p>
-                  <Button variant="outline" size="sm" disabled={!d.pdf_url} onClick={() => handleDownload(d.pdf_url, `${d.document_number}.pdf`)}>
+                  <p className="text-sm font-bold shrink-0 text-gray-900">{fmtEUR(Number(d.total_ttc || 0))}</p>
+                  <Button variant="outline" size="sm" disabled={!d.pdf_url} onClick={() => handleDownload(d.pdf_url, `${d.document_number}.pdf`)} className="border-gray-300 text-gray-900 bg-white hover:bg-gray-50">
                     <Download className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -412,23 +387,23 @@ const ComptablePage = () => {
         </Card>
 
         {/* Devis */}
-        <Card className="p-5">
+        <Card className="p-5 bg-white border border-gray-200">
           <div className="flex items-center gap-2 mb-4">
-            <FileText className="h-5 w-5 text-[#BFA071]" />
-            <h2 className="font-semibold">Devis ({devis.length})</h2>
+            <FileText className="h-5 w-5" style={{ color: '#BFA071' }} />
+            <h2 className="font-semibold text-gray-900">Devis ({devis.length})</h2>
           </div>
           {devis.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucun devis.</p>
+            <p className="text-sm text-gray-500">Aucun devis.</p>
           ) : (
             <div className="space-y-2">
               {devis.map(d => (
-                <div key={d.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/40 hover:bg-secondary/30">
+                <div key={d.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm">{d.document_number}</p>
-                    <p className="text-xs text-muted-foreground truncate">{fmtDate(d.created_at)} · {d.client_name || '—'}</p>
+                    <p className="font-semibold text-sm text-gray-900">{d.document_number}</p>
+                    <p className="text-xs text-gray-500 truncate">{fmtDate(d.created_at)} · {d.client_name || '—'}</p>
                   </div>
-                  <p className="text-sm font-bold shrink-0">{fmtEUR(Number(d.total_ttc || 0))}</p>
-                  <Button variant="outline" size="sm" disabled={!d.pdf_url} onClick={() => handleDownload(d.pdf_url, `${d.document_number}.pdf`)}>
+                  <p className="text-sm font-bold shrink-0 text-gray-900">{fmtEUR(Number(d.total_ttc || 0))}</p>
+                  <Button variant="outline" size="sm" disabled={!d.pdf_url} onClick={() => handleDownload(d.pdf_url, `${d.document_number}.pdf`)} className="border-gray-300 text-gray-900 bg-white hover:bg-gray-50">
                     <Download className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -438,32 +413,47 @@ const ComptablePage = () => {
         </Card>
 
         {/* Dépenses */}
-        <Card className="p-5">
+        <Card className="p-5 bg-white border border-gray-200">
           <div className="flex items-center gap-2 mb-4">
-            <Receipt className="h-5 w-5 text-[#BFA071]" />
-            <h2 className="font-semibold">Dépenses ({data.expenses.length})</h2>
+            <Receipt className="h-5 w-5" style={{ color: '#BFA071' }} />
+            <h2 className="font-semibold text-gray-900">Dépenses ({data.expenses.length})</h2>
           </div>
           {data.expenses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucune dépense.</p>
+            <p className="text-sm text-gray-500">Aucune dépense.</p>
           ) : (
             <div className="space-y-2">
-              {data.expenses.map(e => (
-                <div key={e.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/40 hover:bg-secondary/30">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm truncate">{e.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">{fmtDate(e.expense_date)} · {e.category || '—'}</p>
+              {data.expenses.map(e => {
+                const ttc = Number(e.amount || 0);
+                const tva = Number(e.tva_amount || 0);
+                const ht = ttc - tva;
+                return (
+                  <div key={e.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm text-gray-900 truncate">{e.title}</p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {fmtDate(e.expense_date)} · {e.category || '—'}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        HT : <strong>{fmtEUR(ht)}</strong> · TVA : <strong>{fmtEUR(tva)}</strong> · TTC : <strong>{fmtEUR(ttc)}</strong>
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline" size="sm"
+                      disabled={!e.receipt_url}
+                      onClick={() => handleDownload(e.receipt_url, `justificatif-${e.id.slice(0, 8)}`)}
+                      className="border-gray-300 text-gray-900 bg-white hover:bg-gray-50 gap-1.5"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Justificatif</span>
+                    </Button>
                   </div>
-                  <p className="text-sm font-bold shrink-0">{fmtEUR(Number(e.amount || 0))}</p>
-                  <Button variant="outline" size="sm" disabled={!e.receipt_url} onClick={() => handleDownload(e.receipt_url, `recu-${e.id.slice(0, 8)}`)}>
-                    <Download className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>
 
-        <p className="text-center text-xs text-muted-foreground pt-4">
+        <p className="text-center text-xs text-gray-500 pt-4">
           Données fournies par AnafyPro · Accès sécurisé en lecture seule
         </p>
       </div>

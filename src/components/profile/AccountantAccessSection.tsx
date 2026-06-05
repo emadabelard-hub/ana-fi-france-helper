@@ -24,6 +24,7 @@ const AccountantAccessSection = ({ companyName }: { companyName?: string }) => {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [duration, setDuration] = useState<'permanent' | '30' | '60' | '90'>('permanent');
   const [sending, setSending] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -56,9 +57,12 @@ const AccountantAccessSection = ({ companyName }: { companyName?: string }) => {
     }
     setSending(true);
     try {
+      const expiresAt = duration === 'permanent'
+        ? null
+        : new Date(Date.now() + Number(duration) * 86400000).toISOString();
       const { data: inserted, error: insertErr } = await supabase
         .from('accountant_access')
-        .insert({ user_id: user.id, accountant_name: trimmedName, accountant_email: trimmedEmail })
+        .insert({ user_id: user.id, accountant_name: trimmedName, accountant_email: trimmedEmail, expires_at: expiresAt } as any)
         .select('id, access_token')
         .single();
       if (insertErr || !inserted) {
@@ -160,6 +164,34 @@ const AccountantAccessSection = ({ companyName }: { companyName?: string }) => {
             lang="fr"
             className="h-12 rounded-xl text-left font-[Inter]"
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2 text-[13px] font-medium text-foreground/70 flex-row-reverse font-cairo">
+            مدة الوصول
+          </Label>
+          <div className="grid grid-cols-4 gap-2">
+            {([
+              { v: 'permanent', l: 'دائم' },
+              { v: '30', l: '30 يوم' },
+              { v: '60', l: '60 يوم' },
+              { v: '90', l: '90 يوم' },
+            ] as const).map(opt => (
+              <button
+                key={opt.v}
+                type="button"
+                onClick={() => setDuration(opt.v)}
+                className={cn(
+                  "h-11 rounded-xl text-xs font-cairo border transition",
+                  duration === opt.v
+                    ? "bg-[#BFA071] text-white border-[#BFA071]"
+                    : "bg-white dark:bg-card text-foreground border-border/40"
+                )}
+              >
+                {opt.l}
+              </button>
+            ))}
+          </div>
         </div>
 
         <Button

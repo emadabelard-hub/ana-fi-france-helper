@@ -207,6 +207,17 @@ const ComptablePage = () => {
     } finally { setBulkLoading(null); }
   };
 
+  const handleBulkExpenses = async () => {
+    if (!data) return;
+    setBulkLoading('depenses');
+    try {
+      const zip = new JSZip();
+      await zipExpenses(zip, 'Depenses');
+      const blob = await zip.generateAsync({ type: 'blob' });
+      triggerBlobDownload(blob, `Depenses_${safeName(data.company?.company_name || 'export')}.zip`);
+    } finally { setBulkLoading(null); }
+  };
+
   const handleBulkAll = async () => {
     if (!data) return;
     setBulkLoading('all');
@@ -327,7 +338,7 @@ const ComptablePage = () => {
             <Archive className="h-5 w-5" style={{ color: '#BFA071' }} />
             <h2 className="font-semibold text-gray-900">Téléchargements groupés</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Button
               onClick={handleBulkInvoices}
               disabled={bulkLoading !== null || factures.length === 0}
@@ -336,6 +347,15 @@ const ComptablePage = () => {
             >
               {bulkLoading === 'factures' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               <span className="font-medium">Télécharger toutes les factures</span>
+            </Button>
+            <Button
+              onClick={handleBulkExpenses}
+              disabled={bulkLoading !== null || data.expenses.length === 0}
+              variant="outline"
+              className="gap-2 justify-start h-auto py-3 border-gray-300 text-gray-900 bg-white hover:bg-gray-50"
+            >
+              {bulkLoading === 'depenses' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
+              <span className="font-medium">Télécharger toutes les dépenses</span>
             </Button>
             <Button
               onClick={handleBulkQuotes}

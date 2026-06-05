@@ -87,31 +87,36 @@ Deno.serve(async (req) => {
       ? new Date(sigRow.signed_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
       : "";
 
-    const subject = `Devis signé — n° ${docNumber}`;
+    const docNumberSafe = escapeHtml(docNumber);
+    const signerSafe = escapeHtml(sigRow.signer_name || "");
+    const artisanSafe = escapeHtml(artisanName);
+    const urlSafe = escapeHtml(sigRow.signed_pdf_url || "");
+    const subject = `Devis signé — n° ${docNumber}`.slice(0, 200);
     const tooLarge = pdfBytes.byteLength > 5 * 1024 * 1024;
     const html = `<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1a1a2e;white-space:pre-line;">
-Bonjour ${sigRow.signer_name || ""},
+Bonjour ${signerSafe},
 
-Vous avez signé le devis n° ${docNumber} le ${dateStr}${timeStr ? " à " + timeStr : ""}.
+Vous avez signé le devis n° ${docNumberSafe} le ${dateStr}${timeStr ? " à " + timeStr : ""}.
 
 ${tooLarge && sigRow.signed_pdf_url
   ? `Votre exemplaire signé est trop volumineux pour être joint à cet email.
-Télécharger votre exemplaire signé : ${sigRow.signed_pdf_url}`
+Télécharger votre exemplaire signé : ${urlSafe}`
   : "Veuillez trouver ci-joint votre exemplaire signé."}
 
 Cordialement,
-${artisanName}
+${artisanSafe}
 </div>`;
 
+    const safeFileName = `devis-${String(docNumber).replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80)}-signe.pdf`;
     const payload: any = {
       from: "Anafy <noreply@resend.dev>",
-      to: [recipient_email],
+      to: [recipient],
       subject,
       html,
     };
     if (!tooLarge) {
       payload.attachments = [{
-        filename: `devis-${docNumber}-signe.pdf`,
+        filename: safeFileName,
         content: bytesToBase64(pdfBytes),
         type: "application/pdf",
       }];

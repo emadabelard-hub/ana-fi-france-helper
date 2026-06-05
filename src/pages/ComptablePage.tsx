@@ -53,6 +53,7 @@ const ComptablePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<AccountantPayload | null>(null);
+  const [bulkLoading, setBulkLoading] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;

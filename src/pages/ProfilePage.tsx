@@ -28,7 +28,7 @@ import ArtisanSignatureSection from '@/components/profile/ArtisanSignatureSectio
 import StampUploadSection from '@/components/profile/StampUploadSection';
 
 /* ─── Tab definitions ─── */
-type TabKey = 'account' | 'company' | 'insurance' | 'signature' | 'stamp';
+type TabKey = 'account' | 'company' | 'insurance' | 'signature' | 'stamp' | 'accountant';
 
 const TABS: { key: TabKey; icon: string; label: string }[] = [
   { key: 'account', icon: '👤', label: 'حسابي' },
@@ -36,6 +36,7 @@ const TABS: { key: TabKey; icon: string; label: string }[] = [
   { key: 'insurance', icon: '🛡', label: 'التأمين' },
   { key: 'signature', icon: '✍️', label: 'التوقيع' },
   { key: 'stamp', icon: '🧾', label: 'الطابع' },
+  { key: 'accountant', icon: '📊', label: 'المحاسب' },
 ];
 
 /* ─── Small UI helpers ─── */
@@ -784,6 +785,11 @@ const ProfilePage = () => {
           {/* ── TAB: الطابع ── */}
           {activeTab === 'stamp' && (
             <StampUploadSection />
+          )}
+
+          {/* ── TAB: المحاسب ── */}
+          {activeTab === 'accountant' && (
+            <AccountantAccessSection companyName={formData.company_name} />
           )}
 
           {/* ═══════ GLOBAL SAVE BUTTON ═══════ */}

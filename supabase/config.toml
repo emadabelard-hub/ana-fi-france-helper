@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.accountant-data]
 verify_jwt = false
+
+[functions.admin-diagnostic]
+verify_jwt = false

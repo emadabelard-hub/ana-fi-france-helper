@@ -19,6 +19,7 @@ import {
   Settings,
   TrendingUp,
   ShieldAlert,
+  Stethoscope,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -37,6 +38,7 @@ import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
 import SystemHealthCard from '@/components/admin/SystemHealthCard';
 import AdminAlertBanner from '@/components/admin/AdminAlertBanner';
 import AdminDashboard from '@/components/admin/AdminDashboard';
+import SystemDiagnosticManager from '@/components/admin/SystemDiagnosticManager';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();
@@ -210,7 +212,7 @@ const AdminPage = () => {
               {isRTL ? 'دروس' : 'Leçons'}
             </TabsTrigger>
           </TabsList>
-          <TabsList className={cn('grid w-full grid-cols-2', isRTL && 'direction-rtl')}>
+          <TabsList className={cn('grid w-full grid-cols-3', isRTL && 'direction-rtl')}>
             <TabsTrigger value="questions" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
               <HelpCircle className="h-4 w-4" />
               {isRTL ? 'أسئلة' : 'Questions'}
@@ -218,6 +220,10 @@ const AdminPage = () => {
             <TabsTrigger value="support" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
               <HeadphonesIcon className="h-4 w-4" />
               {isRTL ? 'تذاكر' : 'Tickets'}
+            </TabsTrigger>
+            <TabsTrigger value="diagnostic" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
+              <Stethoscope className="h-4 w-4" />
+              Diagnostic
             </TabsTrigger>
           </TabsList>
 
@@ -250,6 +256,9 @@ const AdminPage = () => {
           </TabsContent>
           <TabsContent value="support" className="mt-6">
             <SupportTicketsManager isRTL={isRTL} />
+          </TabsContent>
+          <TabsContent value="diagnostic" className="mt-6">
+            <SystemDiagnosticManager isRTL={isRTL} />
           </TabsContent>
         </Tabs>
       </div>

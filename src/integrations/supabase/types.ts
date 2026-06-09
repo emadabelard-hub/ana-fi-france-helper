@@ -47,6 +47,51 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_diagnostic_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          details: Json | null
+          email_sent: boolean
+          id: string
+          message: string
+          occurrences: number
+          resolved: boolean
+          resolved_at: string | null
+          severity: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          details?: Json | null
+          email_sent?: boolean
+          id?: string
+          message: string
+          occurrences?: number
+          resolved?: boolean
+          resolved_at?: string | null
+          severity?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          details?: Json | null
+          email_sent?: boolean
+          id?: string
+          message?: string
+          occurrences?: number
+          resolved?: boolean
+          resolved_at?: string | null
+          severity?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string

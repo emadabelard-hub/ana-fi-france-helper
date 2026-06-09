@@ -180,6 +180,7 @@ const AIAssistantPage = () => {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [copiedBlock, setCopiedBlock] = useState<number | null>(null);
   const { toast } = useToast();
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
 

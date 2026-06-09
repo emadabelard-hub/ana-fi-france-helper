@@ -257,6 +257,9 @@ const AdminPage = () => {
           <TabsContent value="support" className="mt-6">
             <SupportTicketsManager isRTL={isRTL} />
           </TabsContent>
+          <TabsContent value="diagnostic" className="mt-6">
+            <SystemDiagnosticManager isRTL={isRTL} />
+          </TabsContent>
         </Tabs>
       </div>
     </div>

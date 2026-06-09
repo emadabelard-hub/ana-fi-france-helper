@@ -1034,20 +1034,65 @@ const AIAssistantPage = () => {
                 />
               )}
 
-              {/* Either the formal French letter, or the regular response */}
+              {/* Either the formal French letter, the commercial client block, or the regular response */}
               {visibleContent && (
-                <div {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
-                  <MarkdownRenderer
-                    content={letter ?? visibleContent}
-                    isRTL={isFormalFrench ? false : textAr}
-                    forceLTR={isFormalFrench}
-                    className="!text-[15px] !leading-[1.6] text-foreground"
-                    onSmartLinkClick={(type) => {
-                      if (type === 'cv') navigate('/pro/cv-generator');
-                      else if (type === 'pro') navigate('/pro/invoice-creator');
-                      else if (type === 'solutions') navigate('/premium-consultation');
-                    }}
-                  />
+                <div {...(isFormalFrench || clientBlock.hasBlock ? { dir: 'ltr' as const } : {})}>
+                  {clientBlock.hasBlock ? (
+                    <>
+                      <MarkdownRenderer
+                        content={clientBlock.arabicText}
+                        isRTL={true}
+                        className="!text-[15px] !leading-[1.6] text-foreground mb-3"
+                      />
+                      <MarkdownRenderer
+                        content={clientBlock.frenchText}
+                        isRTL={false}
+                        forceLTR={true}
+                        className="!text-[15px] !leading-[1.6] text-foreground"
+                        onSmartLinkClick={(type) => {
+                          if (type === 'cv') navigate('/pro/cv-generator');
+                          else if (type === 'pro') navigate('/pro/invoice-creator');
+                          else if (type === 'solutions') navigate('/premium-consultation');
+                        }}
+                      />
+                      <button
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(stripMarkdownForCopy(clientBlock.frenchText));
+                            setCopiedBlock(i);
+                            setTimeout(() => setCopiedBlock(null), 2000);
+                          } catch {
+                            // silent
+                          }
+                        }}
+                        className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
+                      >
+                        {copiedBlock === i ? (
+                          <>
+                            <Check size={14} className="text-green-500" />
+                            <span className="font-cairo">تم النسخ ✓</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={14} />
+                            <span className="font-cairo">نسخ الرسالة</span>
+                          </>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <MarkdownRenderer
+                      content={letter ?? visibleContent}
+                      isRTL={isFormalFrench ? false : textAr}
+                      forceLTR={isFormalFrench}
+                      className="!text-[15px] !leading-[1.6] text-foreground"
+                      onSmartLinkClick={(type) => {
+                        if (type === 'cv') navigate('/pro/cv-generator');
+                        else if (type === 'pro') navigate('/pro/invoice-creator');
+                        else if (type === 'solutions') navigate('/premium-consultation');
+                      }}
+                    />
+                  )}
                 </div>
               )}
 

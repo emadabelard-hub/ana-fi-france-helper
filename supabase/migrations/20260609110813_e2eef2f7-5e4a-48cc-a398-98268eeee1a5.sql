@@ -1,0 +1,1 @@
+CREATE POLICY "Service role can insert alerts" ON public.admin_diagnostic_alerts FOR INSERT TO service_role WITH CHECK (true);

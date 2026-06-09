@@ -19,6 +19,7 @@ import {
   Settings,
   TrendingUp,
   ShieldAlert,
+  Stethoscope,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';

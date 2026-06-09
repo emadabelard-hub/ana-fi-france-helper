@@ -29,6 +29,8 @@ const CATEGORIES: { key: CategoryKey; emoji: string; labelAr: string; labelFr: s
 const STREAM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
 
 const LETTER_MARKER = '===الرسالة_الرسمية===';
+const CLIENT_BLOCK_MARKER = '--- À envoyer au client ---';
+const ARABIC_BLOCK_MARKER = '--- بالعربي ---';
 
 const splitLetter = (content: string): { preface: string; letter: string | null } => {
   const idx = content.indexOf(LETTER_MARKER);
@@ -43,6 +45,17 @@ const splitLetter = (content: string): { preface: string; letter: string | null 
   const isFormal = /(Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée])/i.test(content);
   if (isFormal) return { preface: '', letter: content.trim() };
   return { preface: content, letter: null };
+};
+
+const extractClientBlock = (content: string): { hasBlock: boolean; arabicText: string; frenchText: string } => {
+  const idx = content.indexOf(CLIENT_BLOCK_MARKER);
+  if (idx !== -1) {
+    let before = content.slice(0, idx).trim();
+    before = before.replace(ARABIC_BLOCK_MARKER, '').trim();
+    const after = content.slice(idx + CLIENT_BLOCK_MARKER.length).trim();
+    return { hasBlock: true, arabicText: before, frenchText: after };
+  }
+  return { hasBlock: false, arabicText: content, frenchText: '' };
 };
 
 const fillPlaceholders = (text: string, p: any): string => {

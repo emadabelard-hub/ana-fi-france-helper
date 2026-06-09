@@ -38,6 +38,7 @@ import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
 import SystemHealthCard from '@/components/admin/SystemHealthCard';
 import AdminAlertBanner from '@/components/admin/AdminAlertBanner';
 import AdminDashboard from '@/components/admin/AdminDashboard';
+import SystemDiagnosticManager from '@/components/admin/SystemDiagnosticManager';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();

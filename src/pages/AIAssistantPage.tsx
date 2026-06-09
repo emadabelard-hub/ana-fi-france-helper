@@ -1003,6 +1003,7 @@ const AIAssistantPage = () => {
           const letter = rawLetter ? fillPlaceholders(rawLetter, profile) : null;
           const isFormalFrench = !!letter;
           const copyText = letter ? stripMarkdownForCopy(letter) : visibleContent;
+          const clientBlock = !letter ? extractClientBlock(visibleContent) : { hasBlock: false, arabicText: visibleContent, frenchText: '' };
           const isLastAssistant = i === messages.length - 1;
           return (
             <div key={i} className="w-full relative">

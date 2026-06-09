@@ -29,6 +29,8 @@ const CATEGORIES: { key: CategoryKey; emoji: string; labelAr: string; labelFr: s
 const STREAM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
 
 const LETTER_MARKER = '===الرسالة_الرسمية===';
+const CLIENT_BLOCK_MARKER = '--- À envoyer au client ---';
+const ARABIC_BLOCK_MARKER = '--- بالعربي ---';
 
 const splitLetter = (content: string): { preface: string; letter: string | null } => {
   const idx = content.indexOf(LETTER_MARKER);
@@ -43,6 +45,17 @@ const splitLetter = (content: string): { preface: string; letter: string | null 
   const isFormal = /(Madame|Monsieur|Objet\s*:|Par la présente|Je soussign[ée])/i.test(content);
   if (isFormal) return { preface: '', letter: content.trim() };
   return { preface: content, letter: null };
+};
+
+const extractClientBlock = (content: string): { hasBlock: boolean; arabicText: string; frenchText: string } => {
+  const idx = content.indexOf(CLIENT_BLOCK_MARKER);
+  if (idx !== -1) {
+    let before = content.slice(0, idx).trim();
+    before = before.replace(ARABIC_BLOCK_MARKER, '').trim();
+    const after = content.slice(idx + CLIENT_BLOCK_MARKER.length).trim();
+    return { hasBlock: true, arabicText: before, frenchText: after };
+  }
+  return { hasBlock: false, arabicText: content, frenchText: '' };
 };
 
 const fillPlaceholders = (text: string, p: any): string => {
@@ -167,6 +180,7 @@ const AIAssistantPage = () => {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [copiedBlock, setCopiedBlock] = useState<number | null>(null);
   const { toast } = useToast();
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
 
@@ -989,6 +1003,7 @@ const AIAssistantPage = () => {
           const letter = rawLetter ? fillPlaceholders(rawLetter, profile) : null;
           const isFormalFrench = !!letter;
           const copyText = letter ? stripMarkdownForCopy(letter) : visibleContent;
+          const clientBlock = !letter ? extractClientBlock(visibleContent) : { hasBlock: false, arabicText: visibleContent, frenchText: '' };
           const isLastAssistant = i === messages.length - 1;
           return (
             <div key={i} className="w-full relative">
@@ -1019,20 +1034,65 @@ const AIAssistantPage = () => {
                 />
               )}
 
-              {/* Either the formal French letter, or the regular response */}
+              {/* Either the formal French letter, the commercial client block, or the regular response */}
               {visibleContent && (
-                <div {...(isFormalFrench ? { dir: 'ltr' as const } : {})}>
-                  <MarkdownRenderer
-                    content={letter ?? visibleContent}
-                    isRTL={isFormalFrench ? false : textAr}
-                    forceLTR={isFormalFrench}
-                    className="!text-[15px] !leading-[1.6] text-foreground"
-                    onSmartLinkClick={(type) => {
-                      if (type === 'cv') navigate('/pro/cv-generator');
-                      else if (type === 'pro') navigate('/pro/invoice-creator');
-                      else if (type === 'solutions') navigate('/premium-consultation');
-                    }}
-                  />
+                <div {...(isFormalFrench || clientBlock.hasBlock ? { dir: 'ltr' as const } : {})}>
+                  {clientBlock.hasBlock ? (
+                    <>
+                      <MarkdownRenderer
+                        content={clientBlock.arabicText}
+                        isRTL={true}
+                        className="!text-[15px] !leading-[1.6] text-foreground mb-3"
+                      />
+                      <MarkdownRenderer
+                        content={clientBlock.frenchText}
+                        isRTL={false}
+                        forceLTR={true}
+                        className="!text-[15px] !leading-[1.6] text-foreground"
+                        onSmartLinkClick={(type) => {
+                          if (type === 'cv') navigate('/pro/cv-generator');
+                          else if (type === 'pro') navigate('/pro/invoice-creator');
+                          else if (type === 'solutions') navigate('/premium-consultation');
+                        }}
+                      />
+                      <button
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(stripMarkdownForCopy(clientBlock.frenchText));
+                            setCopiedBlock(i);
+                            setTimeout(() => setCopiedBlock(null), 2000);
+                          } catch {
+                            // silent
+                          }
+                        }}
+                        className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
+                      >
+                        {copiedBlock === i ? (
+                          <>
+                            <Check size={14} className="text-green-500" />
+                            <span className="font-cairo">تم النسخ ✓</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={14} />
+                            <span className="font-cairo">نسخ الرسالة</span>
+                          </>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <MarkdownRenderer
+                      content={letter ?? visibleContent}
+                      isRTL={isFormalFrench ? false : textAr}
+                      forceLTR={isFormalFrench}
+                      className="!text-[15px] !leading-[1.6] text-foreground"
+                      onSmartLinkClick={(type) => {
+                        if (type === 'cv') navigate('/pro/cv-generator');
+                        else if (type === 'pro') navigate('/pro/invoice-creator');
+                        else if (type === 'solutions') navigate('/premium-consultation');
+                      }}
+                    />
+                  )}
                 </div>
               )}
 

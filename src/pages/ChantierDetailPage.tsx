@@ -231,8 +231,10 @@ const ChantierDetailPage = () => {
         <TabsList className="w-full shrink-0">
           <TabsTrigger value="documents" className="flex-1 gap-1"><FileText className="h-3.5 w-3.5" />{isRTL ? 'مستندات' : 'Documents'}</TabsTrigger>
           <TabsTrigger value="expenses" className="flex-1 gap-1"><Receipt className="h-3.5 w-3.5" />{isRTL ? 'حسابات' : 'Dépenses'}</TabsTrigger>
+          <TabsTrigger value="reports" className="flex-1 gap-1"><ClipboardList className="h-3.5 w-3.5" />{isRTL ? 'التقارير' : 'Rapports'}</TabsTrigger>
         </TabsList>
         <TabsContent value="documents" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
+
           {documents.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground py-8">{isRTL ? 'لا توجد مستندات مرتبطة' : 'Aucun document lié'}</p>
           ) : documents.map(doc => (

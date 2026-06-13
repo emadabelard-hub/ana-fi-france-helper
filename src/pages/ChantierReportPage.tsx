@@ -48,6 +48,9 @@ const renderTextToImage = async (
   div.textContent = text;
   document.body.appendChild(div);
   try {
+    if (document.fonts && typeof (document.fonts as any).ready?.then === 'function') {
+      try { await (document.fonts as any).ready; } catch {}
+    }
     const canvas = await html2canvas(div, {
       scale: 2,
       backgroundColor: opts?.bg || '#ffffff',

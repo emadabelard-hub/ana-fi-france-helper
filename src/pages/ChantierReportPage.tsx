@@ -895,12 +895,12 @@ const ChantierReportPage = () => {
           <div className="flex flex-col gap-2 pt-2">
             <Button
               onClick={handleDownload}
-              disabled={generating}
+              disabled={generating || translating}
               className="w-full text-white font-bold h-12"
               style={{ background: COLORS.navy }}
             >
-              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              تحميل التقرير
+              {(generating || translating) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {translating ? 'جاري الترجمة...' : 'تحميل التقرير'}
             </Button>
             <Button
               onClick={() => {

@@ -79,6 +79,8 @@ const ChantierReportPage = () => {
   const [reportDate, setReportDate] = useState(todayISO());
   const [clientsList, setClientsList] = useState<Array<{ id: string; name: string; address: string | null }>>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [chantiersList, setChantiersList] = useState<Array<{ id: string; name: string; site_address: string | null }>>([]);
+  const [selectedChantierId, setSelectedChantierId] = useState<string>('');
 
   const [workerCount, setWorkerCount] = useState('');
   const [workerNames, setWorkerNames] = useState('');
@@ -121,6 +123,29 @@ const ChantierReportPage = () => {
     };
     loadClients();
   }, [user]);
+
+  // Load chantiers when client changes
+  useEffect(() => {
+    if (!user || !selectedClientId) {
+      setChantiersList([]);
+      setSelectedChantierId('');
+      return;
+    }
+    const loadChantiers = async () => {
+      const { data, error } = await supabase
+        .from('chantiers')
+        .select('id, name, site_address')
+        .eq('user_id', user.id)
+        .eq('client_id', selectedClientId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.warn('chantiers load failed', error);
+        return;
+      }
+      setChantiersList((data || []) as any);
+    };
+    loadChantiers();
+  }, [user, selectedClientId]);
 
   // Init signature pads + resize for retina
   useEffect(() => {
@@ -174,6 +199,7 @@ const ChantierReportPage = () => {
 
   const validate = (): string | null => {
     if (!selectedClientId) return 'اختر العميل أولاً';
+    if (!selectedChantierId) return 'اختر الشانتي أولاً';
     if (!chantierAddress.trim()) return 'عنوان الشانتي مطلوب';
     if (!workDone.trim()) return 'الأعمال المنجزة مطلوبة';
     return null;
@@ -550,11 +576,9 @@ const ChantierReportPage = () => {
                 value={selectedClientId}
                 onValueChange={(v) => {
                   setSelectedClientId(v);
-                  const c = clientsList.find((x) => x.id === v);
-                  if (c) {
-                    setChantierName(c.name);
-                    setChantierAddress(c.address || '');
-                  }
+                  setSelectedChantierId('');
+                  setChantierName('');
+                  setChantierAddress('');
                 }}
               >
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
@@ -566,6 +590,33 @@ const ChantierReportPage = () => {
               </Select>
             </div>
           )}
+          <div>
+            <Label className="text-sm">اختر الشانتي *</Label>
+            <Select
+              value={selectedChantierId}
+              onValueChange={(v) => {
+                setSelectedChantierId(v);
+                const ch = chantiersList.find((x) => x.id === v);
+                if (ch) {
+                  setChantierName(ch.name);
+                  setChantierAddress(ch.site_address || '');
+                } else {
+                  setChantierName('');
+                  setChantierAddress('');
+                }
+              }}
+              disabled={!selectedClientId}
+            >
+              <SelectTrigger disabled={!selectedClientId}>
+                <SelectValue placeholder={!selectedClientId ? 'اختر العميل أولاً' : (chantiersList.length === 0 ? 'لا توجد شانتيات لهذا العميل' : '—')} />
+              </SelectTrigger>
+              <SelectContent>
+                {chantiersList.map((ch) => (
+                  <SelectItem key={ch.id} value={ch.id}>{ch.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label className="text-sm">عنوان الشانتي</Label>
             <Input value={chantierAddress} readOnly className="bg-gray-50" />

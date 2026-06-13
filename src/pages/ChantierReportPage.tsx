@@ -531,18 +531,54 @@ const ChantierReportPage = () => {
         {/* Chantier info */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
           <h2 className="font-bold" style={{ color: COLORS.navyDark }}>معلومات الشانتي</h2>
+          {clientsList.length === 0 ? (
+            <div>
+              <Label className="text-sm">اختر العميل *</Label>
+              <button
+                type="button"
+                onClick={() => navigate('/clients')}
+                className="block w-full text-right text-sm mt-2 px-3 py-2 rounded border border-dashed"
+                style={{ borderColor: COLORS.gold, color: COLORS.navyDark }}
+              >
+                أضف عميلاً أولاً ←
+              </button>
+            </div>
+          ) : (
+            <div>
+              <Label className="text-sm">اختر العميل *</Label>
+              <Select
+                value={selectedClientId}
+                onValueChange={(v) => {
+                  setSelectedClientId(v);
+                  const c = clientsList.find((x) => x.id === v);
+                  if (c) {
+                    setChantierName(c.name);
+                    setChantierAddress(c.address || '');
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  {clientsList.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
-            <Label className="text-sm">اسم الشانتي *</Label>
-            <Input value={chantierName} onChange={(e) => setChantierName(e.target.value)} placeholder="..." />
-          </div>
-          <div>
-            <Label className="text-sm">عنوان الشانتي *</Label>
-            <Input value={chantierAddress} onChange={(e) => setChantierAddress(e.target.value)} placeholder="..." />
+            <Label className="text-sm">عنوان الشانتي</Label>
+            <Input value={chantierAddress} readOnly className="bg-gray-50" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-sm">رقم الشانتي</Label>
-              <Input value={reportNumber} readOnly className="bg-gray-50" dir="ltr" />
+              <Label className="text-sm">رقم التقرير</Label>
+              <Input
+                value={reportNumber}
+                onChange={(e) => setReportNumber(e.target.value)}
+                placeholder="..."
+                dir="ltr"
+              />
             </div>
             <div>
               <Label className="text-sm">التاريخ</Label>

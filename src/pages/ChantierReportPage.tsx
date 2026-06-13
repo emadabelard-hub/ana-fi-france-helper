@@ -77,6 +77,8 @@ const ChantierReportPage = () => {
   const [chantierName, setChantierName] = useState('');
   const [chantierAddress, setChantierAddress] = useState('');
   const [reportDate, setReportDate] = useState(todayISO());
+  const [clientsList, setClientsList] = useState<Array<{ id: string; name: string; address: string | null }>>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
 
   const [workerCount, setWorkerCount] = useState('');
   const [workerNames, setWorkerNames] = useState('');
@@ -102,31 +104,22 @@ const ChantierReportPage = () => {
   const [lastPdfBase64, setLastPdfBase64] = useState<string | null>(null);
   const [lastFileName, setLastFileName] = useState<string | null>(null);
 
-  // Compute the next CH-YYYY-XXXX number (scoped to user, based on existing reports)
+  // Load clients from Supabase
   useEffect(() => {
     if (!user) return;
-    const compute = async () => {
-      const year = new Date().getFullYear();
+    const loadClients = async () => {
       const { data, error } = await supabase
-        .from('documents')
-        .select('numero')
+        .from('clients')
+        .select('id, name, address')
         .eq('user_id', user.id)
-        .eq('type', 'rapport_chantier')
-        .order('created_at', { ascending: false })
-        .limit(200);
+        .order('name', { ascending: true });
       if (error) {
-        setReportNumber(`CH-${year}-0001`);
+        console.warn('clients load failed', error);
         return;
       }
-      let max = 0;
-      const re = new RegExp(`^CH-${year}-(\\d+)$`);
-      (data || []).forEach((r: any) => {
-        const m = re.exec(String(r.numero || ''));
-        if (m) max = Math.max(max, parseInt(m[1], 10));
-      });
-      setReportNumber(`CH-${year}-${String(max + 1).padStart(4, '0')}`);
+      setClientsList((data || []) as any);
     };
-    compute();
+    loadClients();
   }, [user]);
 
   // Init signature pads + resize for retina
@@ -180,7 +173,7 @@ const ChantierReportPage = () => {
     WEATHER_OPTIONS.find((x) => x.value === w)?.fr || w;
 
   const validate = (): string | null => {
-    if (!chantierName.trim()) return 'اسم الشانتي مطلوب';
+    if (!selectedClientId) return 'اختر العميل أولاً';
     if (!chantierAddress.trim()) return 'عنوان الشانتي مطلوب';
     if (!workDone.trim()) return 'الأعمال المنجزة مطلوبة';
     return null;
@@ -401,7 +394,7 @@ const ChantierReportPage = () => {
     const blob = doc.output('blob');
     const base64Full = doc.output('datauristring');
     const base64 = base64Full.split(',')[1] || '';
-    const fileName = `Rapport_${reportNumber}.pdf`;
+    const fileName = `Rapport_${reportNumber || 'chantier'}.pdf`;
     return { blob, base64, fileName };
   };
 
@@ -538,18 +531,54 @@ const ChantierReportPage = () => {
         {/* Chantier info */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
           <h2 className="font-bold" style={{ color: COLORS.navyDark }}>معلومات الشانتي</h2>
+          {clientsList.length === 0 ? (
+            <div>
+              <Label className="text-sm">اختر العميل *</Label>
+              <button
+                type="button"
+                onClick={() => navigate('/clients')}
+                className="block w-full text-right text-sm mt-2 px-3 py-2 rounded border border-dashed"
+                style={{ borderColor: COLORS.gold, color: COLORS.navyDark }}
+              >
+                أضف عميلاً أولاً ←
+              </button>
+            </div>
+          ) : (
+            <div>
+              <Label className="text-sm">اختر العميل *</Label>
+              <Select
+                value={selectedClientId}
+                onValueChange={(v) => {
+                  setSelectedClientId(v);
+                  const c = clientsList.find((x) => x.id === v);
+                  if (c) {
+                    setChantierName(c.name);
+                    setChantierAddress(c.address || '');
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  {clientsList.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
-            <Label className="text-sm">اسم الشانتي *</Label>
-            <Input value={chantierName} onChange={(e) => setChantierName(e.target.value)} placeholder="..." />
-          </div>
-          <div>
-            <Label className="text-sm">عنوان الشانتي *</Label>
-            <Input value={chantierAddress} onChange={(e) => setChantierAddress(e.target.value)} placeholder="..." />
+            <Label className="text-sm">عنوان الشانتي</Label>
+            <Input value={chantierAddress} readOnly className="bg-gray-50" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-sm">رقم الشانتي</Label>
-              <Input value={reportNumber} readOnly className="bg-gray-50" dir="ltr" />
+              <Label className="text-sm">رقم التقرير</Label>
+              <Input
+                value={reportNumber}
+                onChange={(e) => setReportNumber(e.target.value)}
+                placeholder="..."
+                dir="ltr"
+              />
             </div>
             <div>
               <Label className="text-sm">التاريخ</Label>

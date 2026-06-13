@@ -394,7 +394,7 @@ const ChantierReportPage = () => {
     const blob = doc.output('blob');
     const base64Full = doc.output('datauristring');
     const base64 = base64Full.split(',')[1] || '';
-    const fileName = `Rapport_${reportNumber}.pdf`;
+    const fileName = `Rapport_${reportNumber || 'chantier'}.pdf`;
     return { blob, base64, fileName };
   };
 

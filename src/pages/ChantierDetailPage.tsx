@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, HardHat, FileText, Receipt, TrendingUp, TrendingDown, Wallet, MapPin, AlertTriangle, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, HardHat, FileText, Receipt, TrendingUp, TrendingDown, Wallet, MapPin, AlertTriangle, Plus, ClipboardList, Download } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

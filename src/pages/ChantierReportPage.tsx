@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, ClipboardList, Camera, Download, Mail, Trash2, Loader2, Eraser } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ClipboardList, Camera, Download, Trash2, Loader2, Eraser } from 'lucide-react';
 import { Image as ImageIcon } from 'lucide-react';
 import SignaturePad from 'signature_pad';
 import jsPDF from 'jspdf';

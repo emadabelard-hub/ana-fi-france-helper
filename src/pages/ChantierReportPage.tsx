@@ -264,7 +264,9 @@ const ChantierReportPage = () => {
     return null;
   };
 
-  const generatePdf = async (): Promise<{ blob: Blob; base64: string; fileName: string } | null> => {
+  const generatePdf = async (
+    overrides?: { workDone?: string; materials?: string; observations?: string }
+  ): Promise<{ blob: Blob; base64: string; fileName: string } | null> => {
     const err = validate();
     if (err) {
       toast({ title: 'حقول ناقصة', description: err, variant: 'destructive' });

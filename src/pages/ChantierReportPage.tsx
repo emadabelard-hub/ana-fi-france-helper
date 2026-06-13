@@ -685,6 +685,9 @@ const ChantierReportPage = () => {
                   setSelectedClientId(v);
                   setSelectedChantierId('');
                   setChantierName('');
+                  // Fallback synchrone : utiliser le nom déjà présent dans la liste
+                  const preset = clientsList.find((c) => c.id === v);
+                  if (preset?.name) setClientName(preset.name);
                   // Ne pas vider l'adresse : on va la remplacer par celle du client ci-dessous
                   try {
                     const { data: clientFull, error: clientErr } = await supabase

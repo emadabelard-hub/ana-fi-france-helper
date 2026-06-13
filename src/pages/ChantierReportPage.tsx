@@ -515,10 +515,38 @@ const ChantierReportPage = () => {
     return { blob, base64, fileName };
   };
 
+  const translateField = async (text: string): Promise<string> => {
+    const t = (text || '').trim();
+    if (!t || !hasArabic(t)) return text;
+    try {
+      const { data, error } = await supabase.functions.invoke('btp-translate', {
+        body: { text: t, sourceLang: 'ar', targetLang: 'fr' },
+      });
+      if (error) throw error;
+      const fr = String(data?.translated || '').trim();
+      return fr || text;
+    } catch (e) {
+      console.error('[ChantierReport] translation failed:', e);
+      return text;
+    }
+  };
+
   const handleDownload = async () => {
+    setTranslating(true);
+    let overrides: { workDone: string; materials: string; observations: string };
+    try {
+      const [wd, mt, ob] = await Promise.all([
+        translateField(workDone),
+        translateField(materials),
+        translateField(observations),
+      ]);
+      overrides = { workDone: wd, materials: mt, observations: ob };
+    } finally {
+      setTranslating(false);
+    }
     setGenerating(true);
     try {
-      const result = await generatePdf();
+      const result = await generatePdf(overrides);
       if (!result) return;
       // Trigger download
       const url = URL.createObjectURL(result.blob);

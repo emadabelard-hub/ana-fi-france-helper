@@ -574,11 +574,39 @@ const ChantierReportPage = () => {
               <Label className="text-sm">اختر العميل *</Label>
               <Select
                 value={selectedClientId}
-                onValueChange={(v) => {
+                onValueChange={async (v) => {
                   setSelectedClientId(v);
                   setSelectedChantierId('');
                   setChantierName('');
                   setChantierAddress('');
+                  try {
+                    const { data: clientFull, error: clientErr } = await supabase
+                      .from('clients')
+                      .select('*')
+                      .eq('id', v)
+                      .maybeSingle();
+                    console.log('[ChantierReport] client complet:', clientFull, 'error:', clientErr);
+                    if (clientFull) {
+                      const obj = clientFull as Record<string, unknown>;
+                      const priorityKeys = ['address', 'adresse', 'client_address', 'site_address'];
+                      let found: string | null = null;
+                      for (const k of priorityKeys) {
+                        const val = obj[k];
+                        if (typeof val === 'string' && val.trim()) { found = val; break; }
+                      }
+                      if (!found) {
+                        for (const k of Object.keys(obj)) {
+                          if (/address|adresse/i.test(k)) {
+                            const val = obj[k];
+                            if (typeof val === 'string' && val.trim()) { found = val; break; }
+                          }
+                        }
+                      }
+                      if (found) setChantierAddress(found);
+                    }
+                  } catch (e) {
+                    console.log('[ChantierReport] erreur fetch client:', e);
+                  }
                 }}
               >
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
@@ -588,6 +616,7 @@ const ChantierReportPage = () => {
                   ))}
                 </SelectContent>
               </Select>
+
             </div>
           )}
           <div>

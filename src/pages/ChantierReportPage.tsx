@@ -484,16 +484,17 @@ const ChantierReportPage = () => {
       ].filter(Boolean).join('\n');
 
       const payload = {
-        recipientEmail: clientEmail.trim(),
-        clientName: clientName || '',
-        chantierName: chantierName || '',
-        reportDate: new Date(reportDate).toLocaleDateString('fr-FR'),
-        reportContent,
-        companyName: profile?.company_name || 'AnafyPro',
+        recipient_email: clientEmail.trim(),
+        subject: `${chantierName || 'Chantier'} — ${new Date(reportDate).toLocaleDateString('fr-FR')}`,
+        client_name: clientName || '',
+        chantier_name: chantierName || '',
+        report_date: new Date(reportDate).toLocaleDateString('fr-FR'),
+        report_content: reportContent,
+        company_name: profile?.company_name || 'AnafyPro',
       };
-      console.log('[send-chantier-report] payload:', payload);
+      console.log('[signature-email-copy] payload:', payload);
 
-      const { data, error } = await supabase.functions.invoke('send-chantier-report', {
+      const { data, error } = await supabase.functions.invoke('signature-email-copy', {
         body: payload,
       });
       if (error) throw error;

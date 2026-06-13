@@ -151,6 +151,17 @@ const ChantierReportPage = () => {
   const [lastPdfBase64, setLastPdfBase64] = useState<string | null>(null);
   const [lastFileName, setLastFileName] = useState<string | null>(null);
 
+  // Auto-generate report number on mount if empty
+  useEffect(() => {
+    if (!reportNumber) {
+      const d = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const num = `RC-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+      setReportNumber(num);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Load clients from Supabase
   useEffect(() => {
     if (!user) return;

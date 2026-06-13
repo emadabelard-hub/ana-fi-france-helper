@@ -276,7 +276,44 @@ const ChantierDetailPage = () => {
             </Card>
           ))}
         </TabsContent>
+        <TabsContent value="reports" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
+          {reports.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-8">{isRTL ? 'لا توجد تقارير' : 'Aucun rapport'}</p>
+          ) : reports.map((r: any) => (
+            <Card key={r.id} className="border-border/50">
+              <CardContent className="p-3">
+                <div className={cn("flex items-center justify-between gap-2", isRTL && "flex-row-reverse")}>
+                  <div className={cn("flex items-center gap-2 min-w-0", isRTL && "flex-row-reverse")}>
+                    <ClipboardList className="h-4 w-4 text-amber-600 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{r.report_number || '—'}</p>
+                      <p className="text-[10px] text-muted-foreground">{r.report_date ? new Date(r.report_date).toLocaleDateString('fr-FR') : ''}</p>
+                    </div>
+                  </div>
+                  {r.pdf_url && (
+                    <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={async () => {
+                      try {
+                        let url = r.pdf_url as string;
+                        if (!/^https?:\/\//i.test(url)) {
+                          const { data } = await supabase.storage.from('documents').createSignedUrl(url, 600);
+                          if (data?.signedUrl) url = data.signedUrl;
+                        }
+                        window.open(url, '_blank');
+                      } catch (e) {
+                        console.warn('open pdf failed', e);
+                      }
+                    }}>
+                      <Download className="h-3.5 w-3.5" />
+                      <span className="text-xs">PDF</span>
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
       </Tabs>
+
 
       {user && (
         <AddExpenseModal

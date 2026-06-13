@@ -14,7 +14,53 @@ import { ArrowLeft, ArrowRight, ClipboardList, Camera, Download, Trash2, Loader2
 import { Image as ImageIcon } from 'lucide-react';
 import SignaturePad from 'signature_pad';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { archivePdf } from '@/lib/documentArchive';
+
+const hasArabic = (s: string) => /[\u0600-\u06FF]/.test(s || '');
+
+const renderTextToImage = async (
+  text: string,
+  widthMm: number,
+  opts?: { bold?: boolean; color?: string; bg?: string; align?: 'right' | 'left' }
+): Promise<{ dataUrl: string; heightMm: number } | null> => {
+  if (!text || !text.trim()) return null;
+  const pxPerMm = 96 / 25.4;
+  const widthPx = Math.max(50, Math.round(widthMm * pxPerMm));
+  const div = document.createElement('div');
+  div.style.cssText = [
+    'position:fixed',
+    'left:-99999px',
+    'top:0',
+    `width:${widthPx}px`,
+    'direction:rtl',
+    `text-align:${opts?.align || 'right'}`,
+    "font-family:'IBM Plex Sans Arabic','Tajawal','Noto Naskh Arabic',Arial,sans-serif",
+    'font-size:14px',
+    'line-height:1.55',
+    `color:${opts?.color || '#212121'}`,
+    `font-weight:${opts?.bold ? '700' : '400'}`,
+    `background:${opts?.bg || '#ffffff'}`,
+    'white-space:pre-wrap',
+    'word-wrap:break-word',
+    'padding:2px 0',
+  ].join(';');
+  div.textContent = text;
+  document.body.appendChild(div);
+  try {
+    const canvas = await html2canvas(div, {
+      scale: 2,
+      backgroundColor: opts?.bg || '#ffffff',
+      logging: false,
+      useCORS: true,
+    });
+    const dataUrl = canvas.toDataURL('image/png');
+    const heightMm = (canvas.height / canvas.width) * widthMm;
+    return { dataUrl, heightMm };
+  } finally {
+    document.body.removeChild(div);
+  }
+};
 
 const COLORS = {
   navy: '#1B4F8A',

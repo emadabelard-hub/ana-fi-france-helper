@@ -41,15 +41,18 @@ const ChantierDetailPage = () => {
       const { data: ch } = await supabase.from('chantiers').select('*').eq('id', id).eq('user_id', user.id).maybeSingle();
       if (ch) {
         setChantier(ch);
-        const [{ data: cl }, { data: docs }, { data: exp }] = await Promise.all([
+        const [{ data: cl }, { data: docs }, { data: exp }, { data: reps }] = await Promise.all([
           supabase.from('clients').select('*').eq('id', ch.client_id).eq('user_id', user.id).maybeSingle(),
           supabase.from('documents_comptables').select('*').eq('chantier_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
           supabase.from('expenses').select('*').eq('chantier_id', id).eq('user_id', user.id).order('expense_date', { ascending: false }),
+          (supabase.from('chantier_reports' as any) as any).select('*').eq('chantier_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
         ]);
         setClient(cl);
         setDocuments(docs || []);
         setExpenses(exp || []);
+        setReports(reps || []);
       }
+
       setLoading(false);
     })();
   }, [user, id]);

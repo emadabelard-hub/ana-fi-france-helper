@@ -173,7 +173,7 @@ const ChantierReportPage = () => {
     WEATHER_OPTIONS.find((x) => x.value === w)?.fr || w;
 
   const validate = (): string | null => {
-    if (!chantierName.trim()) return 'اسم الشانتي مطلوب';
+    if (!selectedClientId) return 'اختر العميل أولاً';
     if (!chantierAddress.trim()) return 'عنوان الشانتي مطلوب';
     if (!workDone.trim()) return 'الأعمال المنجزة مطلوبة';
     return null;

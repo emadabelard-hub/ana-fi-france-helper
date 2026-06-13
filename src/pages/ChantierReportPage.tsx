@@ -333,7 +333,8 @@ const ChantierReportPage = () => {
       `Nom : ${chantierName}\n` +
       `Adresse : ${chantierAddress}`;
     const chantierImg = await renderTextToImage(chantierBlockText, pageW - margin * 2 - 6, {
-      align: 'right',
+      align: 'left',
+      direction: 'ltr',
     });
     const blockH = Math.max(22, (chantierImg?.heightMm || 0) + 10);
     doc.setDrawColor(220, 220, 220);

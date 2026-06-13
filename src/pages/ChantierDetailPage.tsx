@@ -26,10 +26,12 @@ const ChantierDetailPage = () => {
   const [client, setClient] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
   const [showAddExpense, setShowAddExpense] = useState(false);
+
 
   useEffect(() => {
     if (!user || !id) return;

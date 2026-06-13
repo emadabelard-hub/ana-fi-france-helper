@@ -14,7 +14,53 @@ import { ArrowLeft, ArrowRight, ClipboardList, Camera, Download, Trash2, Loader2
 import { Image as ImageIcon } from 'lucide-react';
 import SignaturePad from 'signature_pad';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { archivePdf } from '@/lib/documentArchive';
+
+const hasArabic = (s: string) => /[\u0600-\u06FF]/.test(s || '');
+
+const renderTextToImage = async (
+  text: string,
+  widthMm: number,
+  opts?: { bold?: boolean; color?: string; bg?: string; align?: 'right' | 'left' }
+): Promise<{ dataUrl: string; heightMm: number } | null> => {
+  if (!text || !text.trim()) return null;
+  const pxPerMm = 96 / 25.4;
+  const widthPx = Math.max(50, Math.round(widthMm * pxPerMm));
+  const div = document.createElement('div');
+  div.style.cssText = [
+    'position:fixed',
+    'left:-99999px',
+    'top:0',
+    `width:${widthPx}px`,
+    'direction:rtl',
+    `text-align:${opts?.align || 'right'}`,
+    "font-family:'IBM Plex Sans Arabic','Tajawal','Noto Naskh Arabic',Arial,sans-serif",
+    'font-size:14px',
+    'line-height:1.55',
+    `color:${opts?.color || '#212121'}`,
+    `font-weight:${opts?.bold ? '700' : '400'}`,
+    `background:${opts?.bg || '#ffffff'}`,
+    'white-space:pre-wrap',
+    'word-wrap:break-word',
+    'padding:2px 0',
+  ].join(';');
+  div.textContent = text;
+  document.body.appendChild(div);
+  try {
+    const canvas = await html2canvas(div, {
+      scale: 2,
+      backgroundColor: opts?.bg || '#ffffff',
+      logging: false,
+      useCORS: true,
+    });
+    const dataUrl = canvas.toDataURL('image/png');
+    const heightMm = (canvas.height / canvas.width) * widthMm;
+    return { dataUrl, heightMm };
+  } finally {
+    document.body.removeChild(div);
+  }
+};
 
 const COLORS = {
   navy: '#1B4F8A',
@@ -104,6 +150,17 @@ const ChantierReportPage = () => {
   const [generating, setGenerating] = useState(false);
   const [lastPdfBase64, setLastPdfBase64] = useState<string | null>(null);
   const [lastFileName, setLastFileName] = useState<string | null>(null);
+
+  // Auto-generate report number on mount if empty
+  useEffect(() => {
+    if (!reportNumber) {
+      const d = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const num = `RC-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+      setReportNumber(num);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load clients from Supabase
   useEffect(() => {
@@ -265,22 +322,40 @@ const ChantierReportPage = () => {
     y = 40;
     doc.setTextColor(33, 33, 33);
 
-    // Chantier identification block
+    // Chantier identification block (Arabic-safe)
+    const chantierBlockText =
+      `Nom : ${chantierName}\n` +
+      `Adresse : ${chantierAddress}`;
+    const chantierImg = await renderTextToImage(chantierBlockText, pageW - margin * 2 - 6, {
+      align: 'right',
+    });
+    const blockH = Math.max(22, (chantierImg?.heightMm || 0) + 10);
     doc.setDrawColor(220, 220, 220);
     doc.setFillColor(248, 249, 252);
-    doc.roundedRect(margin, y, pageW - margin * 2, 22, 2, 2, 'F');
+    doc.roundedRect(margin, y, pageW - margin * 2, blockH, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
+    doc.setTextColor(15, 42, 94);
     doc.text('CHANTIER', margin + 3, y + 5);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(`Nom : ${chantierName}`, margin + 3, y + 11);
-    const addrLines = doc.splitTextToSize(`Adresse : ${chantierAddress}`, pageW - margin * 2 - 6);
-    doc.text(addrLines, margin + 3, y + 16);
-    y += 28;
+    if (chantierImg) {
+      doc.addImage(
+        chantierImg.dataUrl,
+        'PNG',
+        margin + 3,
+        y + 7,
+        pageW - margin * 2 - 6,
+        chantierImg.heightMm
+      );
+    }
+    y += blockH + 6;
 
-    const writeSection = (title: string, content: string) => {
+    const writeSection = async (title: string, content: string) => {
       if (!content.trim()) return;
+      // Title (French, safe with helvetica)
+      if (y + 12 > pageH - 30) {
+        doc.addPage();
+        y = margin;
+      }
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
       doc.setTextColor(15, 42, 94);
@@ -289,26 +364,38 @@ const ChantierReportPage = () => {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       doc.setTextColor(33, 33, 33);
-      const lines = doc.splitTextToSize(content, pageW - margin * 2);
-      // page break if needed
-      if (y + lines.length * 5 > pageH - 30) {
-        doc.addPage();
-        y = margin;
+
+      if (hasArabic(content)) {
+        const img = await renderTextToImage(content, pageW - margin * 2, { align: 'right' });
+        if (img) {
+          if (y + img.heightMm > pageH - 30) {
+            doc.addPage();
+            y = margin;
+          }
+          doc.addImage(img.dataUrl, 'PNG', margin, y, pageW - margin * 2, img.heightMm);
+          y += img.heightMm + 4;
+        }
+      } else {
+        const lines = doc.splitTextToSize(content, pageW - margin * 2);
+        if (y + lines.length * 5 > pageH - 30) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(lines, margin, y);
+        y += lines.length * 5 + 4;
       }
-      doc.text(lines, margin, y);
-      y += lines.length * 5 + 4;
     };
 
-    writeSection(
+    await writeSection(
       'Personnel présent',
       `${workerCount ? `Nombre d'ouvriers : ${workerCount}` : ''}${
         workerNames ? `\nNoms : ${workerNames}` : ''
       }${hoursWorked ? `\nHeures travaillées : ${hoursWorked}` : ''}`.trim()
     );
-    writeSection('Météo', weatherLabelFR(weather));
-    writeSection('Travaux réalisés', workDone);
-    writeSection('Matériaux utilisés', materials);
-    writeSection('Observations / Problèmes', observations);
+    await writeSection('Météo', weatherLabelFR(weather));
+    await writeSection('Travaux réalisés', workDone);
+    await writeSection('Matériaux utilisés', materials);
+    await writeSection('Observations / Problèmes', observations);
 
     // Photos: 2 per row, new pages as needed
     if (photos.length) {

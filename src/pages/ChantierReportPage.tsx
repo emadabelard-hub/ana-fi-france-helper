@@ -767,17 +767,9 @@ const ChantierReportPage = () => {
 
         </section>
 
-        {/* Email + actions */}
+        {/* Actions */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
           <h2 className="font-bold" style={{ color: COLORS.navyDark }}>الإرسال للعميل</h2>
-          <Input
-            type="email"
-            placeholder="email@client.com"
-            value={clientEmail}
-            onChange={(e) => setClientEmail(e.target.value)}
-            dir="ltr"
-            lang="fr"
-          />
 
           <div className="flex flex-col gap-2 pt-2">
             <Button
@@ -790,13 +782,24 @@ const ChantierReportPage = () => {
               تحميل التقرير
             </Button>
             <Button
-              onClick={handleSendEmail}
-              disabled={sending}
+              onClick={() => {
+                const text = encodeURIComponent(buildShareText());
+                window.open(`whatsapp://send?phone=&text=${text}`, '_blank');
+              }}
               className="w-full font-bold h-12"
-              style={{ background: COLORS.gold, color: '#0F2A5E' }}
+              style={{ background: '#25D366', color: '#fff' }}
             >
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-              إرسال للعميل
+              📱 إرسال واتساب
+            </Button>
+            <Button
+              onClick={() => {
+                const text = encodeURIComponent(buildShareText());
+                window.open(`sms:?body=${text}`, '_blank');
+              }}
+              className="w-full font-bold h-12"
+              style={{ background: '#007AFF', color: '#fff' }}
+            >
+              💬 إرسال SMS
             </Button>
           </div>
         </section>

@@ -397,16 +397,68 @@ const ChantierReportPage = () => {
       }
     };
 
-    await writeSection(
+    // Two-column layout: left = Personnel + Météo, right = Travaux + Matériaux + Observations
+    const colGap = 6;
+    const colW = (pageW - margin * 2 - colGap) / 2;
+    const leftX = margin;
+    const rightX = margin + colW + colGap;
+    const colStartY = y;
+
+    const writeSectionAt = async (
+      title: string,
+      content: string,
+      x: number,
+      width: number,
+      startY: number,
+    ): Promise<number> => {
+      if (!content.trim()) return startY;
+      let cy = startY;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(15, 42, 94);
+      doc.text(title, x, cy);
+      cy += 5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(33, 33, 33);
+      if (hasArabic(content)) {
+        const img = await renderTextToImage(content, width, { align: 'right' });
+        if (img) {
+          doc.addImage(img.dataUrl, 'PNG', x, cy, width, img.heightMm);
+          cy += img.heightMm + 4;
+        }
+      } else {
+        const lines = doc.splitTextToSize(content, width);
+        doc.text(lines, x, cy);
+        cy += lines.length * 5 + 4;
+      }
+      return cy;
+    };
+
+    const workerNamesOneLine = workerNames
+      .split(/[\n,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(', ');
+
+    let leftY = colStartY;
+    leftY = await writeSectionAt(
       'Personnel présent',
       `${workerCount ? `Nombre d'ouvriers : ${workerCount}` : ''}${
-        workerNames ? `\nNoms : ${workerNames}` : ''
-      }${hoursWorked ? `\nHeures travaillées : ${hoursWorked}` : ''}`.trim()
+        workerNamesOneLine ? `\nNoms : ${workerNamesOneLine}` : ''
+      }${hoursWorked ? `\nHeures travaillées : ${hoursWorked}` : ''}`.trim(),
+      leftX,
+      colW,
+      leftY,
     );
-    await writeSection('Météo', weatherLabelFR(weather));
-    await writeSection('Travaux réalisés', overrides?.workDone ?? workDone);
-    await writeSection('Matériaux utilisés', overrides?.materials ?? materials);
-    await writeSection('Observations / Problèmes', overrides?.observations ?? observations);
+    leftY = await writeSectionAt('Météo', weatherLabelFR(weather), leftX, colW, leftY);
+
+    let rightY = colStartY;
+    rightY = await writeSectionAt('Travaux réalisés', overrides?.workDone ?? workDone, rightX, colW, rightY);
+    rightY = await writeSectionAt('Matériaux utilisés', overrides?.materials ?? materials, rightX, colW, rightY);
+    rightY = await writeSectionAt('Observations / Problèmes', overrides?.observations ?? observations, rightX, colW, rightY);
+
+    y = Math.max(leftY, rightY);
 
     // Photos: 2 per row, new pages as needed
     if (photos.length) {

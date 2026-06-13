@@ -124,6 +124,29 @@ const ChantierReportPage = () => {
     loadClients();
   }, [user]);
 
+  // Load chantiers when client changes
+  useEffect(() => {
+    if (!user || !selectedClientId) {
+      setChantiersList([]);
+      setSelectedChantierId('');
+      return;
+    }
+    const loadChantiers = async () => {
+      const { data, error } = await supabase
+        .from('chantiers')
+        .select('id, name, site_address')
+        .eq('user_id', user.id)
+        .eq('client_id', selectedClientId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.warn('chantiers load failed', error);
+        return;
+      }
+      setChantiersList((data || []) as any);
+    };
+    loadChantiers();
+  }, [user, selectedClientId]);
+
   // Init signature pads + resize for retina
   useEffect(() => {
     const init = (canvas: HTMLCanvasElement | null): SignaturePad | null => {

@@ -266,6 +266,78 @@ export type Database = {
         }
         Relationships: []
       }
+      chantier_reports: {
+        Row: {
+          chantier_id: string | null
+          client_id: string | null
+          created_at: string
+          hours_worked: string | null
+          id: string
+          materials_fr: string | null
+          observations_fr: string | null
+          pdf_url: string | null
+          report_date: string | null
+          report_number: string | null
+          supervisor_name: string | null
+          user_id: string
+          weather: string | null
+          work_done_fr: string | null
+          worker_count: number | null
+          worker_names: string | null
+        }
+        Insert: {
+          chantier_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          hours_worked?: string | null
+          id?: string
+          materials_fr?: string | null
+          observations_fr?: string | null
+          pdf_url?: string | null
+          report_date?: string | null
+          report_number?: string | null
+          supervisor_name?: string | null
+          user_id: string
+          weather?: string | null
+          work_done_fr?: string | null
+          worker_count?: number | null
+          worker_names?: string | null
+        }
+        Update: {
+          chantier_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          hours_worked?: string | null
+          id?: string
+          materials_fr?: string | null
+          observations_fr?: string | null
+          pdf_url?: string | null
+          report_date?: string | null
+          report_number?: string | null
+          supervisor_name?: string | null
+          user_id?: string
+          weather?: string | null
+          work_done_fr?: string | null
+          worker_count?: number | null
+          worker_names?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chantier_reports_chantier_id_fkey"
+            columns: ["chantier_id"]
+            isOneToOne: false
+            referencedRelation: "chantiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chantier_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chantiers: {
         Row: {
           budget: number | null

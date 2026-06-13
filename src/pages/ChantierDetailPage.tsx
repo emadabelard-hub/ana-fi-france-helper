@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, HardHat, FileText, Receipt, TrendingUp, TrendingDown, Wallet, MapPin, AlertTriangle, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, HardHat, FileText, Receipt, TrendingUp, TrendingDown, Wallet, MapPin, AlertTriangle, Plus, ClipboardList, Download } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,10 +26,12 @@ const ChantierDetailPage = () => {
   const [client, setClient] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
   const [showAddExpense, setShowAddExpense] = useState(false);
+
 
   useEffect(() => {
     if (!user || !id) return;
@@ -39,15 +41,18 @@ const ChantierDetailPage = () => {
       const { data: ch } = await supabase.from('chantiers').select('*').eq('id', id).eq('user_id', user.id).maybeSingle();
       if (ch) {
         setChantier(ch);
-        const [{ data: cl }, { data: docs }, { data: exp }] = await Promise.all([
+        const [{ data: cl }, { data: docs }, { data: exp }, { data: reps }] = await Promise.all([
           supabase.from('clients').select('*').eq('id', ch.client_id).eq('user_id', user.id).maybeSingle(),
           supabase.from('documents_comptables').select('*').eq('chantier_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
           supabase.from('expenses').select('*').eq('chantier_id', id).eq('user_id', user.id).order('expense_date', { ascending: false }),
+          (supabase.from('chantier_reports' as any) as any).select('*').eq('chantier_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
         ]);
         setClient(cl);
         setDocuments(docs || []);
         setExpenses(exp || []);
+        setReports(reps || []);
       }
+
       setLoading(false);
     })();
   }, [user, id]);
@@ -226,8 +231,10 @@ const ChantierDetailPage = () => {
         <TabsList className="w-full shrink-0">
           <TabsTrigger value="documents" className="flex-1 gap-1"><FileText className="h-3.5 w-3.5" />{isRTL ? 'مستندات' : 'Documents'}</TabsTrigger>
           <TabsTrigger value="expenses" className="flex-1 gap-1"><Receipt className="h-3.5 w-3.5" />{isRTL ? 'حسابات' : 'Dépenses'}</TabsTrigger>
+          <TabsTrigger value="reports" className="flex-1 gap-1"><ClipboardList className="h-3.5 w-3.5" />{isRTL ? 'التقارير' : 'Rapports'}</TabsTrigger>
         </TabsList>
         <TabsContent value="documents" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
+
           {documents.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground py-8">{isRTL ? 'لا توجد مستندات مرتبطة' : 'Aucun document lié'}</p>
           ) : documents.map(doc => (
@@ -269,7 +276,44 @@ const ChantierDetailPage = () => {
             </Card>
           ))}
         </TabsContent>
+        <TabsContent value="reports" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
+          {reports.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-8">{isRTL ? 'لا توجد تقارير' : 'Aucun rapport'}</p>
+          ) : reports.map((r: any) => (
+            <Card key={r.id} className="border-border/50">
+              <CardContent className="p-3">
+                <div className={cn("flex items-center justify-between gap-2", isRTL && "flex-row-reverse")}>
+                  <div className={cn("flex items-center gap-2 min-w-0", isRTL && "flex-row-reverse")}>
+                    <ClipboardList className="h-4 w-4 text-amber-600 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{r.report_number || '—'}</p>
+                      <p className="text-[10px] text-muted-foreground">{r.report_date ? new Date(r.report_date).toLocaleDateString('fr-FR') : ''}</p>
+                    </div>
+                  </div>
+                  {r.pdf_url && (
+                    <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={async () => {
+                      try {
+                        let url = r.pdf_url as string;
+                        if (!/^https?:\/\//i.test(url)) {
+                          const { data } = await supabase.storage.from('documents').createSignedUrl(url, 600);
+                          if (data?.signedUrl) url = data.signedUrl;
+                        }
+                        window.open(url, '_blank');
+                      } catch (e) {
+                        console.warn('open pdf failed', e);
+                      }
+                    }}>
+                      <Download className="h-3.5 w-3.5" />
+                      <span className="text-xs">PDF</span>
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
       </Tabs>
+
 
       {user && (
         <AddExpenseModal

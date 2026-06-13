@@ -560,7 +560,7 @@ const ChantierReportPage = () => {
       URL.revokeObjectURL(url);
 
       // Archive
-      await archivePdf({
+      const archived = await archivePdf({
         blob: result.blob,
         type: 'rapport_chantier' as any,
         numero: reportNumber,
@@ -568,9 +568,35 @@ const ChantierReportPage = () => {
         status: 'final',
       });
 
+      // Save report entry in chantier_reports (with French-translated texts)
+      if (user) {
+        try {
+          const { error: insertErr } = await (supabase.from('chantier_reports' as any) as any).insert({
+            user_id: user.id,
+            chantier_id: selectedChantierId || null,
+            client_id: selectedClientId || null,
+            report_number: reportNumber,
+            report_date: reportDate,
+            worker_count: workerCount ? parseInt(workerCount, 10) || null : null,
+            worker_names: workerNames || null,
+            hours_worked: hoursWorked || null,
+            weather: weatherLabelFR(weather),
+            work_done_fr: overrides.workDone || null,
+            materials_fr: overrides.materials || null,
+            observations_fr: overrides.observations || null,
+            supervisor_name: chefName || null,
+            pdf_url: archived?.pdf_url || null,
+          });
+          if (insertErr) console.warn('[chantier_reports] insert failed:', insertErr.message);
+        } catch (e) {
+          console.warn('[chantier_reports] save error:', e);
+        }
+      }
+
       setLastPdfBase64(result.base64);
       setLastFileName(result.fileName);
       toast({ title: 'تم تحميل التقرير', description: reportNumber });
+
     } catch (e: any) {
       console.error(e);
       toast({ title: 'خطأ', description: e?.message || 'PDF error', variant: 'destructive' });

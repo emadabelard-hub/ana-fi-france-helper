@@ -457,53 +457,15 @@ const ChantierReportPage = () => {
     }
   };
 
-  const handleSendEmail = async () => {
-    if (!clientEmail.trim()) {
-      toast({ title: 'يرجى إدخال بريد العميل الإلكتروني', variant: 'destructive' });
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail.trim())) {
-      toast({ title: 'بريد إلكتروني غير صحيح', variant: 'destructive' });
-      return;
-    }
-    setSending(true);
-    try {
-      const reportContent = [
-        `Numéro de rapport : ${reportNumber}`,
-        `Date : ${new Date(reportDate).toLocaleDateString('fr-FR')}`,
-        `Météo : ${WEATHER_OPTIONS.find((w) => w.value === weather)?.fr || ''}`,
-        workerCount ? `Nombre d'ouvriers : ${workerCount}` : '',
-        workerNames ? `Équipe : ${workerNames}` : '',
-        hoursWorked ? `Heures travaillées : ${hoursWorked}` : '',
-        workDone ? `\nTravaux réalisés :\n${workDone}` : '',
-        materials ? `\nMatériaux utilisés :\n${materials}` : '',
-        observations ? `\nObservations :\n${observations}` : '',
-        photos.length ? `\nPhotos jointes au rapport : ${photos.length}` : '',
-      ].filter(Boolean).join('\n');
-
-      const payload = {
-        recipient_email: clientEmail.trim(),
-        subject: `${chantierName || 'Chantier'} — ${new Date(reportDate).toLocaleDateString('fr-FR')}`,
-        client_name: clientName || '',
-        chantier_name: chantierName || '',
-        report_date: new Date(reportDate).toLocaleDateString('fr-FR'),
-        report_content: reportContent,
-        company_name: profile?.company_name || 'AnafyPro',
-      };
-      console.log('[signature-email-copy] payload:', payload);
-
-      const { data, error } = await supabase.functions.invoke('signature-email-copy', {
-        body: payload,
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      toast({ title: 'تم الإرسال', description: clientEmail });
-    } catch (e: any) {
-      console.error(e);
-      toast({ title: 'فشل الإرسال', description: e?.message || 'Email error', variant: 'destructive' });
-    } finally {
-      setSending(false);
-    }
+  const buildShareText = (): string => {
+    const lines = [
+      `Rapport de chantier — ${chantierName || 'Chantier'}`,
+      `Date : ${new Date(reportDate).toLocaleDateString('fr-FR')}`,
+      workerCount ? `Ouvriers : ${workerCount}` : '',
+      hoursWorked ? `Heures : ${hoursWorked}` : '',
+      workDone ? `Travaux réalisés : ${workDone}` : '',
+    ].filter(Boolean);
+    return lines.join('\n');
   };
 
   const clearSig = (which: 'chef' | 'client') => {

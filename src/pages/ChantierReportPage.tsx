@@ -22,7 +22,7 @@ const hasArabic = (s: string) => /[\u0600-\u06FF]/.test(s || '');
 const renderTextToImage = async (
   text: string,
   widthMm: number,
-  opts?: { bold?: boolean; color?: string; bg?: string; align?: 'right' | 'left' }
+  opts?: { bold?: boolean; color?: string; bg?: string; align?: 'right' | 'left'; direction?: 'rtl' | 'ltr' }
 ): Promise<{ dataUrl: string; heightMm: number } | null> => {
   if (!text || !text.trim()) return null;
   const pxPerMm = 96 / 25.4;
@@ -33,7 +33,7 @@ const renderTextToImage = async (
     'left:-99999px',
     'top:0',
     `width:${widthPx}px`,
-    'direction:rtl',
+    `direction:${opts?.direction || 'rtl'}`,
     `text-align:${opts?.align || 'right'}`,
     "font-family:'IBM Plex Sans Arabic','Tajawal','Noto Naskh Arabic',Arial,sans-serif",
     'font-size:14px',
@@ -333,7 +333,8 @@ const ChantierReportPage = () => {
       `Nom : ${chantierName}\n` +
       `Adresse : ${chantierAddress}`;
     const chantierImg = await renderTextToImage(chantierBlockText, pageW - margin * 2 - 6, {
-      align: 'right',
+      align: 'left',
+      direction: 'ltr',
     });
     const blockH = Math.max(22, (chantierImg?.heightMm || 0) + 10);
     doc.setDrawColor(220, 220, 220);
@@ -474,7 +475,7 @@ const ChantierReportPage = () => {
       }
     };
 
-    drawSigBox(margin, 'Chef de chantier', chefName, chefPadRef.current);
+    drawSigBox(margin, 'Responsable de chantier', chefName, chefPadRef.current);
     y += sigBoxH + 6;
 
     // Stamp (optional, top-right of last page)

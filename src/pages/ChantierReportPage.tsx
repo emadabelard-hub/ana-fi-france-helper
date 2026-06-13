@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, ClipboardList, Camera, Download, Mail, Trash2, Loader2, Eraser } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ClipboardList, Camera, Download, Trash2, Loader2, Eraser } from 'lucide-react';
 import { Image as ImageIcon } from 'lucide-react';
 import SignaturePad from 'signature_pad';
 import jsPDF from 'jspdf';
@@ -95,7 +95,6 @@ const ChantierReportPage = () => {
 
   const [chefName, setChefName] = useState('');
   const [clientName, setClientName] = useState('');
-  const [clientEmail, setClientEmail] = useState('');
 
   const chefSigRef = useRef<HTMLCanvasElement>(null);
   const clientSigRef = useRef<HTMLCanvasElement>(null);
@@ -103,7 +102,6 @@ const ChantierReportPage = () => {
   const clientPadRef = useRef<SignaturePad | null>(null);
 
   const [generating, setGenerating] = useState(false);
-  const [sending, setSending] = useState(false);
   const [lastPdfBase64, setLastPdfBase64] = useState<string | null>(null);
   const [lastFileName, setLastFileName] = useState<string | null>(null);
 
@@ -459,53 +457,15 @@ const ChantierReportPage = () => {
     }
   };
 
-  const handleSendEmail = async () => {
-    if (!clientEmail.trim()) {
-      toast({ title: 'يرجى إدخال بريد العميل الإلكتروني', variant: 'destructive' });
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail.trim())) {
-      toast({ title: 'بريد إلكتروني غير صحيح', variant: 'destructive' });
-      return;
-    }
-    setSending(true);
-    try {
-      const reportContent = [
-        `Numéro de rapport : ${reportNumber}`,
-        `Date : ${new Date(reportDate).toLocaleDateString('fr-FR')}`,
-        `Météo : ${WEATHER_OPTIONS.find((w) => w.value === weather)?.fr || ''}`,
-        workerCount ? `Nombre d'ouvriers : ${workerCount}` : '',
-        workerNames ? `Équipe : ${workerNames}` : '',
-        hoursWorked ? `Heures travaillées : ${hoursWorked}` : '',
-        workDone ? `\nTravaux réalisés :\n${workDone}` : '',
-        materials ? `\nMatériaux utilisés :\n${materials}` : '',
-        observations ? `\nObservations :\n${observations}` : '',
-        photos.length ? `\nPhotos jointes au rapport : ${photos.length}` : '',
-      ].filter(Boolean).join('\n');
-
-      const payload = {
-        recipient_email: clientEmail.trim(),
-        subject: `${chantierName || 'Chantier'} — ${new Date(reportDate).toLocaleDateString('fr-FR')}`,
-        client_name: clientName || '',
-        chantier_name: chantierName || '',
-        report_date: new Date(reportDate).toLocaleDateString('fr-FR'),
-        report_content: reportContent,
-        company_name: profile?.company_name || 'AnafyPro',
-      };
-      console.log('[signature-email-copy] payload:', payload);
-
-      const { data, error } = await supabase.functions.invoke('signature-email-copy', {
-        body: payload,
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      toast({ title: 'تم الإرسال', description: clientEmail });
-    } catch (e: any) {
-      console.error(e);
-      toast({ title: 'فشل الإرسال', description: e?.message || 'Email error', variant: 'destructive' });
-    } finally {
-      setSending(false);
-    }
+  const buildShareText = (): string => {
+    const lines = [
+      `Rapport de chantier — ${chantierName || 'Chantier'}`,
+      `Date : ${new Date(reportDate).toLocaleDateString('fr-FR')}`,
+      workerCount ? `Ouvriers : ${workerCount}` : '',
+      hoursWorked ? `Heures : ${hoursWorked}` : '',
+      workDone ? `Travaux réalisés : ${workDone}` : '',
+    ].filter(Boolean);
+    return lines.join('\n');
   };
 
   const clearSig = (which: 'chef' | 'client') => {
@@ -807,17 +767,9 @@ const ChantierReportPage = () => {
 
         </section>
 
-        {/* Email + actions */}
+        {/* Actions */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
           <h2 className="font-bold" style={{ color: COLORS.navyDark }}>الإرسال للعميل</h2>
-          <Input
-            type="email"
-            placeholder="email@client.com"
-            value={clientEmail}
-            onChange={(e) => setClientEmail(e.target.value)}
-            dir="ltr"
-            lang="fr"
-          />
 
           <div className="flex flex-col gap-2 pt-2">
             <Button
@@ -830,13 +782,24 @@ const ChantierReportPage = () => {
               تحميل التقرير
             </Button>
             <Button
-              onClick={handleSendEmail}
-              disabled={sending}
+              onClick={() => {
+                const text = encodeURIComponent(buildShareText());
+                window.open(`whatsapp://send?phone=&text=${text}`, '_blank');
+              }}
               className="w-full font-bold h-12"
-              style={{ background: COLORS.gold, color: '#0F2A5E' }}
+              style={{ background: '#25D366', color: '#fff' }}
             >
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-              إرسال للعميل
+              📱 إرسال واتساب
+            </Button>
+            <Button
+              onClick={() => {
+                const text = encodeURIComponent(buildShareText());
+                window.open(`sms:?body=${text}`, '_blank');
+              }}
+              className="w-full font-bold h-12"
+              style={{ background: '#007AFF', color: '#fff' }}
+            >
+              💬 إرسال SMS
             </Button>
           </div>
         </section>

@@ -322,22 +322,40 @@ const ChantierReportPage = () => {
     y = 40;
     doc.setTextColor(33, 33, 33);
 
-    // Chantier identification block
+    // Chantier identification block (Arabic-safe)
+    const chantierBlockText =
+      `Nom : ${chantierName}\n` +
+      `Adresse : ${chantierAddress}`;
+    const chantierImg = await renderTextToImage(chantierBlockText, pageW - margin * 2 - 6, {
+      align: 'right',
+    });
+    const blockH = Math.max(22, (chantierImg?.heightMm || 0) + 10);
     doc.setDrawColor(220, 220, 220);
     doc.setFillColor(248, 249, 252);
-    doc.roundedRect(margin, y, pageW - margin * 2, 22, 2, 2, 'F');
+    doc.roundedRect(margin, y, pageW - margin * 2, blockH, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
+    doc.setTextColor(15, 42, 94);
     doc.text('CHANTIER', margin + 3, y + 5);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(`Nom : ${chantierName}`, margin + 3, y + 11);
-    const addrLines = doc.splitTextToSize(`Adresse : ${chantierAddress}`, pageW - margin * 2 - 6);
-    doc.text(addrLines, margin + 3, y + 16);
-    y += 28;
+    if (chantierImg) {
+      doc.addImage(
+        chantierImg.dataUrl,
+        'PNG',
+        margin + 3,
+        y + 7,
+        pageW - margin * 2 - 6,
+        chantierImg.heightMm
+      );
+    }
+    y += blockH + 6;
 
-    const writeSection = (title: string, content: string) => {
+    const writeSection = async (title: string, content: string) => {
       if (!content.trim()) return;
+      // Title (French, safe with helvetica)
+      if (y + 12 > pageH - 30) {
+        doc.addPage();
+        y = margin;
+      }
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
       doc.setTextColor(15, 42, 94);
@@ -346,26 +364,38 @@ const ChantierReportPage = () => {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       doc.setTextColor(33, 33, 33);
-      const lines = doc.splitTextToSize(content, pageW - margin * 2);
-      // page break if needed
-      if (y + lines.length * 5 > pageH - 30) {
-        doc.addPage();
-        y = margin;
+
+      if (hasArabic(content)) {
+        const img = await renderTextToImage(content, pageW - margin * 2, { align: 'right' });
+        if (img) {
+          if (y + img.heightMm > pageH - 30) {
+            doc.addPage();
+            y = margin;
+          }
+          doc.addImage(img.dataUrl, 'PNG', margin, y, pageW - margin * 2, img.heightMm);
+          y += img.heightMm + 4;
+        }
+      } else {
+        const lines = doc.splitTextToSize(content, pageW - margin * 2);
+        if (y + lines.length * 5 > pageH - 30) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(lines, margin, y);
+        y += lines.length * 5 + 4;
       }
-      doc.text(lines, margin, y);
-      y += lines.length * 5 + 4;
     };
 
-    writeSection(
+    await writeSection(
       'Personnel présent',
       `${workerCount ? `Nombre d'ouvriers : ${workerCount}` : ''}${
         workerNames ? `\nNoms : ${workerNames}` : ''
       }${hoursWorked ? `\nHeures travaillées : ${hoursWorked}` : ''}`.trim()
     );
-    writeSection('Météo', weatherLabelFR(weather));
-    writeSection('Travaux réalisés', workDone);
-    writeSection('Matériaux utilisés', materials);
-    writeSection('Observations / Problèmes', observations);
+    await writeSection('Météo', weatherLabelFR(weather));
+    await writeSection('Travaux réalisés', workDone);
+    await writeSection('Matériaux utilisés', materials);
+    await writeSection('Observations / Problèmes', observations);
 
     // Photos: 2 per row, new pages as needed
     if (photos.length) {

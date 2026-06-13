@@ -329,8 +329,11 @@ const ChantierReportPage = () => {
     doc.setTextColor(33, 33, 33);
 
     // Chantier identification block (Arabic-safe)
+    const resolvedClientName =
+      (clientName && clientName.trim()) ||
+      (clientsList.find((c) => c.id === selectedClientId)?.name ?? '');
     const chantierBlockText =
-      `Client : ${clientName}\n` +
+      (resolvedClientName ? `Client : ${resolvedClientName}\n` : '') +
       `Nom du chantier : ${chantierName}\n` +
       `Adresse : ${chantierAddress}`;
     const chantierImg = await renderTextToImage(chantierBlockText, pageW - margin * 2 - 6, {

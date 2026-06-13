@@ -329,8 +329,11 @@ const ChantierReportPage = () => {
     doc.setTextColor(33, 33, 33);
 
     // Chantier identification block (Arabic-safe)
+    const resolvedClientName =
+      (clientName && clientName.trim()) ||
+      (clientsList.find((c) => c.id === selectedClientId)?.name ?? '');
     const chantierBlockText =
-      `Client : ${clientName}\n` +
+      (resolvedClientName ? `Client : ${resolvedClientName}\n` : '') +
       `Nom du chantier : ${chantierName}\n` +
       `Adresse : ${chantierAddress}`;
     const chantierImg = await renderTextToImage(chantierBlockText, pageW - margin * 2 - 6, {
@@ -685,6 +688,9 @@ const ChantierReportPage = () => {
                   setSelectedClientId(v);
                   setSelectedChantierId('');
                   setChantierName('');
+                  // Fallback synchrone : utiliser le nom déjà présent dans la liste
+                  const preset = clientsList.find((c) => c.id === v);
+                  if (preset?.name) setClientName(preset.name);
                   // Ne pas vider l'adresse : on va la remplacer par celle du client ci-dessous
                   try {
                     const { data: clientFull, error: clientErr } = await supabase

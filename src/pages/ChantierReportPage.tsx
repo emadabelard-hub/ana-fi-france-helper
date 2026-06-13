@@ -151,6 +151,7 @@ const ChantierReportPage = () => {
   const clientPadRef = useRef<SignaturePad | null>(null);
 
   const [generating, setGenerating] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [lastPdfBase64, setLastPdfBase64] = useState<string | null>(null);
   const [lastFileName, setLastFileName] = useState<string | null>(null);
 

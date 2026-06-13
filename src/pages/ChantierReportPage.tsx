@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, ArrowRight, ClipboardList, Camera, Download, Mail, Trash2, Loader2, Eraser } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 import SignaturePad from 'signature_pad';
 import jsPDF from 'jspdf';
 import { archivePdf } from '@/lib/documentArchive';
@@ -383,7 +384,6 @@ const ChantierReportPage = () => {
     };
 
     drawSigBox(margin, 'Chef de chantier', chefName, chefPadRef.current);
-    drawSigBox(margin + sigBoxW + 6, 'Client', clientName, clientPadRef.current);
     y += sigBoxH + 6;
 
     // Stamp (optional, top-right of last page)
@@ -702,20 +702,36 @@ const ChantierReportPage = () => {
         {/* Photos */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
           <h2 className="font-bold" style={{ color: COLORS.navyDark }}>الصور</h2>
-          <label
-            className="flex items-center justify-center gap-2 border-2 border-dashed rounded-lg py-4 cursor-pointer"
-            style={{ borderColor: COLORS.gold, color: COLORS.navyDark }}
-          >
-            <Camera size={20} />
-            <span className="text-sm font-medium">إضافة صور</span>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handlePhotoUpload}
-            />
-          </label>
+          <div className="flex gap-2">
+            <label
+              className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed rounded-lg py-4 cursor-pointer"
+              style={{ borderColor: COLORS.gold, color: COLORS.navyDark }}
+            >
+              <Camera size={20} />
+              <span className="text-sm font-medium">تصوير</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handlePhotoUpload}
+              />
+            </label>
+            <label
+              className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed rounded-lg py-4 cursor-pointer"
+              style={{ borderColor: COLORS.gold, color: COLORS.navyDark }}
+            >
+              <ImageIcon size={20} />
+              <span className="text-sm font-medium">من المعرض</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handlePhotoUpload}
+              />
+            </label>
+          </div>
           {photos.length > 0 && (
             <div className="grid grid-cols-3 gap-2">
               {photos.map((p) => (
@@ -739,7 +755,7 @@ const ChantierReportPage = () => {
           <h2 className="font-bold" style={{ color: COLORS.navyDark }}>التوقيعات</h2>
 
           <div className="space-y-2">
-            <Label className="text-sm">رئيس الورشة</Label>
+            <Label className="text-sm">مسئول الشانتي</Label>
             <Input
               placeholder="الاسم الكامل"
               value={chefName}
@@ -759,26 +775,6 @@ const ChantierReportPage = () => {
             </button>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm">العميل</Label>
-            <Input
-              placeholder="الاسم الكامل"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-            />
-            <div className="rounded-lg border border-gray-300 bg-white" dir="ltr">
-              <canvas
-                ref={clientSigRef}
-                style={{ width: '100%', height: 140, display: 'block', touchAction: 'none' }}
-              />
-            </div>
-            <button
-              onClick={() => clearSig('client')}
-              className="flex items-center gap-1 text-xs text-gray-600"
-            >
-              <Eraser size={14} /> مسح
-            </button>
-          </div>
         </section>
 
         {/* Email + actions */}

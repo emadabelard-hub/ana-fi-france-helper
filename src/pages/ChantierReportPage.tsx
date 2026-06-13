@@ -873,8 +873,9 @@ const ChantierReportPage = () => {
             </Button>
             <Button
               onClick={() => {
-                const text = encodeURIComponent(buildShareText());
-                window.open(`whatsapp://send?phone=&text=${text}`, '_blank');
+                const dateStr = new Date(reportDate).toLocaleDateString('fr-FR');
+                const msg = `Bonjour, veuillez trouver ci-joint le rapport de chantier du ${dateStr}. Merci de télécharger le PDF depuis Anafy Pro.`;
+                window.open(`whatsapp://send?phone=&text=${encodeURIComponent(msg)}`, '_blank');
               }}
               className="w-full font-bold h-12"
               style={{ background: '#25D366', color: '#fff' }}
@@ -891,6 +892,9 @@ const ChantierReportPage = () => {
             >
               💬 إرسال SMS
             </Button>
+            <p className="text-xs text-gray-500 text-center pt-1">
+              💡 تحميل التقرير أولاً ثم مشاركته عبر واتساب
+            </p>
           </div>
         </section>
       </div>

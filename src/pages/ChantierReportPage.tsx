@@ -330,7 +330,8 @@ const ChantierReportPage = () => {
 
     // Chantier identification block (Arabic-safe)
     const chantierBlockText =
-      `Nom : ${chantierName}\n` +
+      `Client : ${clientName}\n` +
+      `Nom du chantier : ${chantierName}\n` +
       `Adresse : ${chantierAddress}`;
     const chantierImg = await renderTextToImage(chantierBlockText, pageW - margin * 2 - 6, {
       align: 'left',
@@ -694,6 +695,9 @@ const ChantierReportPage = () => {
                     console.log('[ChantierReport] client complet:', clientFull, 'error:', clientErr);
                     if (clientFull) {
                       const obj = clientFull as Record<string, unknown>;
+                      if (typeof obj.name === 'string' && obj.name.trim()) {
+                        setClientName(obj.name.trim());
+                      }
                       const priorityKeys = ['address', 'adresse', 'client_address', 'site_address'];
                       let found: string | null = null;
                       for (const k of priorityKeys) {

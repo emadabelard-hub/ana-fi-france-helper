@@ -575,11 +575,9 @@ const ChantierReportPage = () => {
                 value={selectedClientId}
                 onValueChange={(v) => {
                   setSelectedClientId(v);
-                  const c = clientsList.find((x) => x.id === v);
-                  if (c) {
-                    setChantierName(c.name);
-                    setChantierAddress(c.address || '');
-                  }
+                  setSelectedChantierId('');
+                  setChantierName('');
+                  setChantierAddress('');
                 }}
               >
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
@@ -591,6 +589,33 @@ const ChantierReportPage = () => {
               </Select>
             </div>
           )}
+          <div>
+            <Label className="text-sm">اختر الشانتي *</Label>
+            <Select
+              value={selectedChantierId}
+              onValueChange={(v) => {
+                setSelectedChantierId(v);
+                const ch = chantiersList.find((x) => x.id === v);
+                if (ch) {
+                  setChantierName(ch.name);
+                  setChantierAddress(ch.site_address || '');
+                } else {
+                  setChantierName('');
+                  setChantierAddress('');
+                }
+              }}
+              disabled={!selectedClientId}
+            >
+              <SelectTrigger disabled={!selectedClientId}>
+                <SelectValue placeholder={!selectedClientId ? 'اختر العميل أولاً' : (chantiersList.length === 0 ? 'لا توجد شانتيات لهذا العميل' : '—')} />
+              </SelectTrigger>
+              <SelectContent>
+                {chantiersList.map((ch) => (
+                  <SelectItem key={ch.id} value={ch.id}>{ch.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label className="text-sm">عنوان الشانتي</Label>
             <Input value={chantierAddress} readOnly className="bg-gray-50" />

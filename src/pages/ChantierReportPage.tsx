@@ -721,7 +721,7 @@ const ChantierReportPage = () => {
               className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed rounded-lg py-4 cursor-pointer"
               style={{ borderColor: COLORS.gold, color: COLORS.navyDark }}
             >
-              <Image size={20} />
+              <ImageIcon size={20} />
               <span className="text-sm font-medium">من المعرض</span>
               <input
                 type="file"

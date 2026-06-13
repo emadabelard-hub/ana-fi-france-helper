@@ -330,7 +330,8 @@ const ChantierReportPage = () => {
 
     // Chantier identification block (Arabic-safe)
     const chantierBlockText =
-      `Nom : ${chantierName}\n` +
+      `Client : ${clientName}\n` +
+      `Nom du chantier : ${chantierName}\n` +
       `Adresse : ${chantierAddress}`;
     const chantierImg = await renderTextToImage(chantierBlockText, pageW - margin * 2 - 6, {
       align: 'left',

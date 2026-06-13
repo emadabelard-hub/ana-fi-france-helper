@@ -151,6 +151,7 @@ const ChantierReportPage = () => {
   const clientPadRef = useRef<SignaturePad | null>(null);
 
   const [generating, setGenerating] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [lastPdfBase64, setLastPdfBase64] = useState<string | null>(null);
   const [lastFileName, setLastFileName] = useState<string | null>(null);
 
@@ -264,7 +265,9 @@ const ChantierReportPage = () => {
     return null;
   };
 
-  const generatePdf = async (): Promise<{ blob: Blob; base64: string; fileName: string } | null> => {
+  const generatePdf = async (
+    overrides?: { workDone?: string; materials?: string; observations?: string }
+  ): Promise<{ blob: Blob; base64: string; fileName: string } | null> => {
     const err = validate();
     if (err) {
       toast({ title: 'حقول ناقصة', description: err, variant: 'destructive' });
@@ -396,9 +399,9 @@ const ChantierReportPage = () => {
       }${hoursWorked ? `\nHeures travaillées : ${hoursWorked}` : ''}`.trim()
     );
     await writeSection('Météo', weatherLabelFR(weather));
-    await writeSection('Travaux réalisés', workDone);
-    await writeSection('Matériaux utilisés', materials);
-    await writeSection('Observations / Problèmes', observations);
+    await writeSection('Travaux réalisés', overrides?.workDone ?? workDone);
+    await writeSection('Matériaux utilisés', overrides?.materials ?? materials);
+    await writeSection('Observations / Problèmes', overrides?.observations ?? observations);
 
     // Photos: 2 per row, new pages as needed
     if (photos.length) {
@@ -512,10 +515,38 @@ const ChantierReportPage = () => {
     return { blob, base64, fileName };
   };
 
+  const translateField = async (text: string): Promise<string> => {
+    const t = (text || '').trim();
+    if (!t || !hasArabic(t)) return text;
+    try {
+      const { data, error } = await supabase.functions.invoke('btp-translate', {
+        body: { text: t, sourceLang: 'ar', targetLang: 'fr' },
+      });
+      if (error) throw error;
+      const fr = String(data?.translated || '').trim();
+      return fr || text;
+    } catch (e) {
+      console.error('[ChantierReport] translation failed:', e);
+      return text;
+    }
+  };
+
   const handleDownload = async () => {
+    setTranslating(true);
+    let overrides: { workDone: string; materials: string; observations: string };
+    try {
+      const [wd, mt, ob] = await Promise.all([
+        translateField(workDone),
+        translateField(materials),
+        translateField(observations),
+      ]);
+      overrides = { workDone: wd, materials: mt, observations: ob };
+    } finally {
+      setTranslating(false);
+    }
     setGenerating(true);
     try {
-      const result = await generatePdf();
+      const result = await generatePdf(overrides);
       if (!result) return;
       // Trigger download
       const url = URL.createObjectURL(result.blob);
@@ -864,12 +895,12 @@ const ChantierReportPage = () => {
           <div className="flex flex-col gap-2 pt-2">
             <Button
               onClick={handleDownload}
-              disabled={generating}
+              disabled={generating || translating}
               className="w-full text-white font-bold h-12"
               style={{ background: COLORS.navy }}
             >
-              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              تحميل التقرير
+              {(generating || translating) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {translating ? 'جاري الترجمة...' : 'تحميل التقرير'}
             </Button>
             <Button
               onClick={() => {

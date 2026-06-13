@@ -77,6 +77,8 @@ const ChantierReportPage = () => {
   const [chantierName, setChantierName] = useState('');
   const [chantierAddress, setChantierAddress] = useState('');
   const [reportDate, setReportDate] = useState(todayISO());
+  const [clientsList, setClientsList] = useState<Array<{ id: string; name: string; address: string | null }>>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
 
   const [workerCount, setWorkerCount] = useState('');
   const [workerNames, setWorkerNames] = useState('');

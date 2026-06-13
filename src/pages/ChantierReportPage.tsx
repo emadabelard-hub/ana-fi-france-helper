@@ -460,44 +460,41 @@ const ChantierReportPage = () => {
   };
 
   const handleSendEmail = async () => {
-    if (!clientEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail.trim())) {
+    if (!clientEmail.trim()) {
+      toast({ title: 'يرجى إدخال بريد العميل الإلكتروني', variant: 'destructive' });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail.trim())) {
       toast({ title: 'بريد إلكتروني غير صحيح', variant: 'destructive' });
       return;
     }
     setSending(true);
     try {
-      let pdfBase64 = lastPdfBase64;
-      let fileName = lastFileName;
-      if (!pdfBase64 || !fileName) {
-        const result = await generatePdf();
-        if (!result) {
-          setSending(false);
-          return;
-        }
-        pdfBase64 = result.base64;
-        fileName = result.fileName;
-        await archivePdf({
-          blob: result.blob,
-          type: 'rapport_chantier' as any,
-          numero: reportNumber,
-          fileName,
-          status: 'final',
-        });
-        setLastPdfBase64(pdfBase64);
-        setLastFileName(fileName);
-      }
+      const reportContent = [
+        `Numéro de rapport : ${reportNumber}`,
+        `Date : ${new Date(reportDate).toLocaleDateString('fr-FR')}`,
+        `Météo : ${WEATHER_OPTIONS.find((w) => w.value === weather)?.fr || ''}`,
+        workerCount ? `Nombre d'ouvriers : ${workerCount}` : '',
+        workerNames ? `Équipe : ${workerNames}` : '',
+        hoursWorked ? `Heures travaillées : ${hoursWorked}` : '',
+        workDone ? `\nTravaux réalisés :\n${workDone}` : '',
+        materials ? `\nMatériaux utilisés :\n${materials}` : '',
+        observations ? `\nObservations :\n${observations}` : '',
+        photos.length ? `\nPhotos jointes au rapport : ${photos.length}` : '',
+      ].filter(Boolean).join('\n');
+
+      const payload = {
+        recipientEmail: clientEmail.trim(),
+        clientName: clientName || '',
+        chantierName: chantierName || '',
+        reportDate: new Date(reportDate).toLocaleDateString('fr-FR'),
+        reportContent,
+        companyName: profile?.company_name || 'AnafyPro',
+      };
+      console.log('[send-chantier-report] payload:', payload);
 
       const { data, error } = await supabase.functions.invoke('send-chantier-report', {
-        body: {
-          to: clientEmail.trim(),
-          subject: `Rapport de chantier ${reportNumber} — ${chantierName}`,
-          message: `Vous trouverez ci-joint le rapport du chantier "${chantierName}" du ${new Date(
-            reportDate
-          ).toLocaleDateString('fr-FR')}.`,
-          pdfBase64,
-          fileName,
-          companyName: profile?.company_name || 'AnafyPro',
-        },
+        body: payload,
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);

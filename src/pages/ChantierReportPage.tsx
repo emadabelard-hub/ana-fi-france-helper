@@ -578,7 +578,7 @@ const ChantierReportPage = () => {
                   setSelectedClientId(v);
                   setSelectedChantierId('');
                   setChantierName('');
-                  setChantierAddress('');
+                  // Ne pas vider l'adresse : on va la remplacer par celle du client ci-dessous
                   try {
                     const { data: clientFull, error: clientErr } = await supabase
                       .from('clients')
@@ -628,10 +628,13 @@ const ChantierReportPage = () => {
                 const ch = chantiersList.find((x) => x.id === v);
                 if (ch) {
                   setChantierName(ch.name);
-                  setChantierAddress(ch.site_address || '');
+                  // Si le chantier a sa propre adresse, l'utiliser. Sinon, conserver
+                  // l'adresse du client déjà affichée (ne pas vider le champ).
+                  if (ch.site_address && ch.site_address.trim()) {
+                    setChantierAddress(ch.site_address);
+                  }
                 } else {
                   setChantierName('');
-                  setChantierAddress('');
                 }
               }}
               disabled={!selectedClientId}

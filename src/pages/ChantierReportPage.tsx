@@ -398,9 +398,9 @@ const ChantierReportPage = () => {
       }${hoursWorked ? `\nHeures travaillées : ${hoursWorked}` : ''}`.trim()
     );
     await writeSection('Météo', weatherLabelFR(weather));
-    await writeSection('Travaux réalisés', workDone);
-    await writeSection('Matériaux utilisés', materials);
-    await writeSection('Observations / Problèmes', observations);
+    await writeSection('Travaux réalisés', overrides?.workDone ?? workDone);
+    await writeSection('Matériaux utilisés', overrides?.materials ?? materials);
+    await writeSection('Observations / Problèmes', overrides?.observations ?? observations);
 
     // Photos: 2 per row, new pages as needed
     if (photos.length) {

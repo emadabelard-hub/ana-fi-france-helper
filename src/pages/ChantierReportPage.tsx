@@ -199,6 +199,7 @@ const ChantierReportPage = () => {
 
   const validate = (): string | null => {
     if (!selectedClientId) return 'اختر العميل أولاً';
+    if (!selectedChantierId) return 'اختر الشانتي أولاً';
     if (!chantierAddress.trim()) return 'عنوان الشانتي مطلوب';
     if (!workDone.trim()) return 'الأعمال المنجزة مطلوبة';
     return null;

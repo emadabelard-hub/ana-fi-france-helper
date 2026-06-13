@@ -104,31 +104,22 @@ const ChantierReportPage = () => {
   const [lastPdfBase64, setLastPdfBase64] = useState<string | null>(null);
   const [lastFileName, setLastFileName] = useState<string | null>(null);
 
-  // Compute the next CH-YYYY-XXXX number (scoped to user, based on existing reports)
+  // Load clients from Supabase
   useEffect(() => {
     if (!user) return;
-    const compute = async () => {
-      const year = new Date().getFullYear();
+    const loadClients = async () => {
       const { data, error } = await supabase
-        .from('documents')
-        .select('numero')
+        .from('clients')
+        .select('id, name, address')
         .eq('user_id', user.id)
-        .eq('type', 'rapport_chantier')
-        .order('created_at', { ascending: false })
-        .limit(200);
+        .order('name', { ascending: true });
       if (error) {
-        setReportNumber(`CH-${year}-0001`);
+        console.warn('clients load failed', error);
         return;
       }
-      let max = 0;
-      const re = new RegExp(`^CH-${year}-(\\d+)$`);
-      (data || []).forEach((r: any) => {
-        const m = re.exec(String(r.numero || ''));
-        if (m) max = Math.max(max, parseInt(m[1], 10));
-      });
-      setReportNumber(`CH-${year}-${String(max + 1).padStart(4, '0')}`);
+      setClientsList((data || []) as any);
     };
-    compute();
+    loadClients();
   }, [user]);
 
   // Init signature pads + resize for retina

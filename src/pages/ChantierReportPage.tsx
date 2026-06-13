@@ -95,7 +95,6 @@ const ChantierReportPage = () => {
 
   const [chefName, setChefName] = useState('');
   const [clientName, setClientName] = useState('');
-  const [clientEmail, setClientEmail] = useState('');
 
   const chefSigRef = useRef<HTMLCanvasElement>(null);
   const clientSigRef = useRef<HTMLCanvasElement>(null);
@@ -103,7 +102,6 @@ const ChantierReportPage = () => {
   const clientPadRef = useRef<SignaturePad | null>(null);
 
   const [generating, setGenerating] = useState(false);
-  const [sending, setSending] = useState(false);
   const [lastPdfBase64, setLastPdfBase64] = useState<string | null>(null);
   const [lastFileName, setLastFileName] = useState<string | null>(null);
 

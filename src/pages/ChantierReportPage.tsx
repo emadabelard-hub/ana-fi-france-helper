@@ -204,28 +204,30 @@ const ChantierReportPage = () => {
   }, [user, isTeamMode]);
 
   // Mode verrouillé : pré-remplir depuis le chantier ciblé (URL ou assignment)
+  // Utilise une RPC SECURITY DEFINER pour récupérer également le client et
+  // le profil du patron, auxquels le chef d'équipe n'a pas accès via RLS.
   useEffect(() => {
     if (!user || !isTeamMode || !lockedChantierId) return;
     (async () => {
-      const { data: ch } = await supabase
-        .from('chantiers')
-        .select('id, name, site_address, client_id')
-        .eq('id', lockedChantierId)
+      const { data, error } = await supabase
+        .rpc('get_team_chantier_context', { _chantier_id: lockedChantierId })
         .maybeSingle();
-      if (!ch) return;
-      setChantiersList([{ id: ch.id, name: ch.name, site_address: ch.site_address }] as any);
-      setSelectedChantierId(ch.id);
-      setChantierName(ch.name);
-      if (ch.site_address) setChantierAddress(ch.site_address);
-      setSelectedClientId(ch.client_id || '');
-      if (ch.client_id) {
-        const { data: cl } = await supabase
-          .from('clients')
-          .select('name')
-          .eq('id', ch.client_id)
-          .maybeSingle();
-        if (cl?.name) setClientName(cl.name);
+      if (error || !data) {
+        console.warn('[ChantierReport] context load failed', error);
+        return;
       }
+      setChantiersList([{ id: data.chantier_id, name: data.chantier_name, site_address: data.site_address }] as any);
+      setSelectedChantierId(data.chantier_id);
+      setChantierName(data.chantier_name || '');
+      if (data.site_address) setChantierAddress(data.site_address);
+      setSelectedClientId(data.client_id || '');
+      if (data.client_name) setClientName(data.client_name);
+      setPatronProfile({
+        company_name: data.patron_company_name,
+        siret: data.patron_siret,
+        company_address: data.patron_company_address,
+        logo_url: data.patron_logo_url,
+      });
     })();
   }, [user, isTeamMode, lockedChantierId]);
 

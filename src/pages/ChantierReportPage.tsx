@@ -156,6 +156,12 @@ const ChantierReportPage = () => {
 
   const [chefName, setChefName] = useState('');
   const [clientName, setClientName] = useState('');
+  const [patronProfile, setPatronProfile] = useState<{
+    company_name: string | null;
+    siret: string | null;
+    company_address: string | null;
+    logo_url: string | null;
+  } | null>(null);
 
   const chefSigRef = useRef<HTMLCanvasElement>(null);
   const clientSigRef = useRef<HTMLCanvasElement>(null);

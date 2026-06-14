@@ -211,6 +211,14 @@ const ChantierReportPage = () => {
       // Client info is hidden from the chef d'équipe — keep selectedClientId empty
       // but try to pull client name via the chantier owner if needed for the PDF.
       setSelectedClientId(ch.client_id || '');
+      if (ch.client_id) {
+        const { data: cl } = await supabase
+          .from('clients')
+          .select('name')
+          .eq('id', ch.client_id)
+          .maybeSingle();
+        if (cl?.name) setClientName(cl.name);
+      }
     })();
   }, [user, isTeamMode, teamAssignment]);
 

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Home, Newspaper, User, Shield, HeadphonesIcon } from 'lucide-react';
+import { Home, Newspaper, User, Shield, HeadphonesIcon, ClipboardList } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useTeamRole } from '@/hooks/useTeamRole';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -93,7 +94,32 @@ const BottomNavigation = () => {
     };
   }, [authLoading, isPrimaryAdmin, user]);
 
-  const items = isAdmin ? [...navItems, adminItem] : navItems;
+  const { isTeamMemberOnly } = useTeamRole();
+
+  const teamItems = [
+    {
+      path: '/chantier-report',
+      icon: ClipboardList,
+      labelAr: 'تقرير الشانتي',
+      labelFr: 'Rapport',
+      color: 'text-amber-400',
+      activeBg: 'bg-amber-400/15',
+      dotColor: 'bg-amber-400',
+    },
+    {
+      path: '/support',
+      icon: HeadphonesIcon,
+      labelAr: 'تواصل معنا',
+      labelFr: 'Contact',
+      color: 'text-emerald-400',
+      activeBg: 'bg-emerald-400/15',
+      dotColor: 'bg-emerald-400',
+    },
+  ];
+
+  const items = isTeamMemberOnly
+    ? teamItems
+    : (isAdmin ? [...navItems, adminItem] : navItems);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border safe-area-pb">

@@ -657,8 +657,9 @@ const ChantierReportPage = () => {
       // Save report entry in chantier_reports (with French-translated texts)
       if (user) {
         try {
+          const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
           const { error: insertErr } = await (supabase.from('chantier_reports' as any) as any).insert({
-            user_id: user.id,
+            user_id: ownerUserId,
             chantier_id: selectedChantierId || null,
             client_id: selectedClientId || null,
             report_number: reportNumber,
@@ -672,6 +673,8 @@ const ChantierReportPage = () => {
             observations_fr: overrides.observations || null,
             supervisor_name: chefName || null,
             pdf_url: archived?.pdf_url || null,
+            submitted_by: user.id,
+            submitted_by_name: isTeamMode ? (chefName || user.email || null) : null,
           });
           if (insertErr) console.warn('[chantier_reports] insert failed:', insertErr.message);
         } catch (e) {

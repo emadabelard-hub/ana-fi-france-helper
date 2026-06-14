@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useTeamRole } from '@/hooks/useTeamRole';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -119,9 +120,17 @@ const downscaleImage = async (dataUrl: string, maxDim = 1280, quality = 0.82): P
 
 const ChantierReportPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { profile } = useProfile();
   const { isRTL } = useLanguage();
+  const { assignments, isTeamMemberOnly } = useTeamRole();
+  const queryChantierId = searchParams.get('chantierId');
+  const teamAssignment = useMemo(
+    () => assignments.find((a) => a.chantier_id === queryChantierId) || assignments[0] || null,
+    [assignments, queryChantierId],
+  );
+  const isTeamMode = isTeamMemberOnly && !!teamAssignment;
 
   const [reportNumber, setReportNumber] = useState<string>('');
   const [chantierName, setChantierName] = useState('');

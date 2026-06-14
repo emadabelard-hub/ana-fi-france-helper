@@ -2766,7 +2766,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
               <div>
                 <Label htmlFor="delivery-date" className="text-sm">
-                  {isRTL ? 'تاريخ الإنجاز' : 'Date de réalisation'}
+                  {isRTL ? 'تاريخ نهاية العمل في الشانتي' : 'Date de réalisation'}
                 </Label>
                 <Input
                   id="delivery-date"

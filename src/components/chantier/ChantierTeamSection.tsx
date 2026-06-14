@@ -109,7 +109,7 @@ const ChantierTeamSection = ({ chantierId, userId, isRTL }: Props) => {
           <h3 className={cn('text-sm font-bold', isRTL && 'font-cairo')}>
             {isRTL ? 'الفريق' : 'Équipe'}
           </h3>
-          <Button size="sm" onClick={handleInvite} disabled={creating} className="gap-1.5">
+          <Button size="sm" onClick={handleInvite} disabled={creating} className="gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white shadow-md">
             {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
             <span className={cn('text-xs font-bold', isRTL && 'font-cairo')}>
               {isRTL ? '➕ دعوة مسئول الشانتي' : 'Inviter chef d\'équipe'}

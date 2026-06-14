@@ -175,9 +175,10 @@ const ChantierReportPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load clients from Supabase
+  // Load clients from Supabase (patron mode only)
   useEffect(() => {
     if (!user) return;
+    if (isTeamMode) return;
     const loadClients = async () => {
       const { data, error } = await supabase
         .from('clients')
@@ -191,7 +192,27 @@ const ChantierReportPage = () => {
       setClientsList((data || []) as any);
     };
     loadClients();
-  }, [user]);
+  }, [user, isTeamMode]);
+
+  // Team mode: preload the single assigned chantier and lock the selectors
+  useEffect(() => {
+    if (!user || !isTeamMode || !teamAssignment) return;
+    (async () => {
+      const { data: ch } = await supabase
+        .from('chantiers')
+        .select('id, name, site_address, client_id')
+        .eq('id', teamAssignment.chantier_id)
+        .maybeSingle();
+      if (!ch) return;
+      setChantiersList([{ id: ch.id, name: ch.name, site_address: ch.site_address }] as any);
+      setSelectedChantierId(ch.id);
+      setChantierName(ch.name);
+      if (ch.site_address) setChantierAddress(ch.site_address);
+      // Client info is hidden from the chef d'équipe — keep selectedClientId empty
+      // but try to pull client name via the chantier owner if needed for the PDF.
+      setSelectedClientId(ch.client_id || '');
+    })();
+  }, [user, isTeamMode, teamAssignment]);
 
   // Load chantiers when client changes
   useEffect(() => {

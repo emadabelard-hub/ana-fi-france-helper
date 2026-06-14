@@ -531,7 +531,7 @@ const ChantierReportPage = () => {
       }
     };
 
-    drawSigBox(margin, 'Responsable de chantier', chefName, chefPadRef.current);
+    drawSigBox(pageW - margin - sigBoxW, 'Responsable de chantier', chefName, chefPadRef.current);
     y += sigBoxH + 6;
 
     // Stamp (optional, top-right of last page)

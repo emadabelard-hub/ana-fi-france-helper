@@ -862,6 +862,7 @@ const ChantierReportPage = () => {
               </SelectContent>
             </Select>
           </div>
+          )}
           <div>
             <Label className="text-sm">عنوان الشانتي</Label>
             <Input value={chantierAddress} readOnly className="bg-gray-50" />

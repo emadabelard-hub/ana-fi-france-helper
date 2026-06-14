@@ -331,10 +331,21 @@ const ChantierReportPage = () => {
     doc.setFillColor(15, 42, 94); // navyDark
     doc.rect(0, 0, pageW, 32, 'F');
 
+    // En mode chef d'équipe, l'en-tête doit refléter l'entreprise du PATRON,
+    // pas celle du chef d'équipe connecté.
+    const headerProfile = isTeamMode && patronProfile
+      ? patronProfile
+      : {
+          company_name: profile?.company_name ?? null,
+          siret: profile?.siret ?? null,
+          company_address: profile?.company_address ?? null,
+          logo_url: profile?.logo_url ?? null,
+        };
+
     // Logo (optional)
-    if (profile?.logo_url) {
+    if (headerProfile.logo_url) {
       try {
-        const resp = await fetch(profile.logo_url);
+        const resp = await fetch(headerProfile.logo_url);
         const blob = await resp.blob();
         const dataUrl: string = await new Promise((resolve, reject) => {
           const r = new FileReader();
@@ -351,11 +362,11 @@ const ChantierReportPage = () => {
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
-    doc.text(profile?.company_name || 'Entreprise', margin + 24, 14);
+    doc.text(headerProfile.company_name || 'Entreprise', margin + 24, 14);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    if (profile?.siret) doc.text(`SIRET : ${profile.siret}`, margin + 24, 20);
-    if (profile?.company_address) doc.text(profile.company_address, margin + 24, 25);
+    if (headerProfile.siret) doc.text(`SIRET : ${headerProfile.siret}`, margin + 24, 20);
+    if (headerProfile.company_address) doc.text(headerProfile.company_address, margin + 24, 25);
 
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');

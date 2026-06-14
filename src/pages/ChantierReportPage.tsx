@@ -130,7 +130,10 @@ const ChantierReportPage = () => {
     () => assignments.find((a) => a.chantier_id === queryChantierId) || assignments[0] || null,
     [assignments, queryChantierId],
   );
-  const isTeamMode = isTeamMemberOnly && !!teamAssignment;
+  // Mode verrouillé/pré-rempli : dès qu'un chantierId est fourni dans l'URL
+  // (lien d'invitation) OU que l'utilisateur est strictement chef d'équipe.
+  const isTeamMode = !!queryChantierId || (isTeamMemberOnly && !!teamAssignment);
+  const lockedChantierId = queryChantierId || teamAssignment?.chantier_id || null;
 
   const [reportNumber, setReportNumber] = useState<string>('');
   const [chantierName, setChantierName] = useState('');

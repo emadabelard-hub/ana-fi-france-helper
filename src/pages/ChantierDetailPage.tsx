@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import ChantierTeamSection from '@/components/chantier/ChantierTeamSection';
 
 const fmt = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
@@ -185,6 +186,13 @@ const ChantierDetailPage = () => {
         </button>
       )}
 
+      {/* Team Section */}
+      {user && id && (
+        <div className="mb-3">
+          <ChantierTeamSection chantierId={id} userId={user.id} isRTL={isRTL} />
+        </div>
+      )}
+
       {/* Quick Actions */}
       <div className={cn("flex items-center gap-2 mb-3", isRTL && "flex-row-reverse")}>
         <Button
@@ -287,7 +295,10 @@ const ChantierDetailPage = () => {
                     <ClipboardList className="h-4 w-4 text-amber-600 shrink-0" />
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{r.report_number || '—'}</p>
-                      <p className="text-[10px] text-muted-foreground">{r.report_date ? new Date(r.report_date).toLocaleDateString('fr-FR') : ''}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {r.report_date ? new Date(r.report_date).toLocaleDateString('fr-FR') : ''}
+                        {r.submitted_by_name ? ` · ${r.submitted_by_name}` : ''}
+                      </p>
                     </div>
                   </div>
                   {r.pdf_url && (

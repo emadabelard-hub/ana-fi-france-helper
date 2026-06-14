@@ -55,6 +55,7 @@ const TranslatorPage = lazy(() => import("./pages/TranslatorPage"));
 const MyDocumentsPage = lazy(() => import("./pages/MyDocumentsPage"));
 const SignaturePage = lazy(() => import("./pages/SignaturePage"));
 const ChantierReportPage = lazy(() => import("./pages/ChantierReportPage"));
+const InvitePage = lazy(() => import("./pages/InvitePage"));
 const ComptablePage = lazy(() => import("./pages/ComptablePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -106,6 +107,8 @@ const AppRoutes = () => {
           <Route path="/sign/:token" element={<SignaturePage />} />
           {/* Public accountant access page — token-based, no MainLayout/auth */}
           <Route path="/comptable" element={<ComptablePage />} />
+          {/* Public chantier invitation page — token-based, no MainLayout */}
+          <Route path="/invite/:token" element={<InvitePage />} />
           <Route
             path="*"
             element={

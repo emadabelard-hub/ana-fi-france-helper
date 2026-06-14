@@ -6,6 +6,7 @@ import WelcomeModal from '@/components/home/WelcomeModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useTeamRole } from '@/hooks/useTeamRole';
 import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2, Sparkles, FolderOpen, BarChart2, Users, ClipboardList } from 'lucide-react';
 
 const COLORS = {
@@ -37,6 +38,13 @@ const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { isTeamMemberOnly, loading: teamLoading } = useTeamRole();
+
+  useEffect(() => {
+    if (!teamLoading && isTeamMemberOnly) {
+      navigate('/chantier-report', { replace: true });
+    }
+  }, [teamLoading, isTeamMemberOnly, navigate]);
 
   const [volumeAffaires, setVolumeAffaires] = useState(0);
   const [revenusEncaisses, setRevenusEncaisses] = useState(0);

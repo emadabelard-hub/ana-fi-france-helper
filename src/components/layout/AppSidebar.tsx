@@ -1,12 +1,16 @@
 import { LayoutDashboard, Users, HardHat, Wallet } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTeamRole } from '@/hooks/useTeamRole';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 
 const AppSidebar = () => {
   const { isRTL } = useLanguage();
   const location = useLocation();
+  const { isTeamMemberOnly } = useTeamRole();
+
+  if (isTeamMemberOnly) return null;
 
   const items = [
     {

@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useTeamRole } from '@/hooks/useTeamRole';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -119,9 +120,17 @@ const downscaleImage = async (dataUrl: string, maxDim = 1280, quality = 0.82): P
 
 const ChantierReportPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { profile } = useProfile();
   const { isRTL } = useLanguage();
+  const { assignments, isTeamMemberOnly } = useTeamRole();
+  const queryChantierId = searchParams.get('chantierId');
+  const teamAssignment = useMemo(
+    () => assignments.find((a) => a.chantier_id === queryChantierId) || assignments[0] || null,
+    [assignments, queryChantierId],
+  );
+  const isTeamMode = isTeamMemberOnly && !!teamAssignment;
 
   const [reportNumber, setReportNumber] = useState<string>('');
   const [chantierName, setChantierName] = useState('');
@@ -166,9 +175,10 @@ const ChantierReportPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load clients from Supabase
+  // Load clients from Supabase (patron mode only)
   useEffect(() => {
     if (!user) return;
+    if (isTeamMode) return;
     const loadClients = async () => {
       const { data, error } = await supabase
         .from('clients')
@@ -182,7 +192,27 @@ const ChantierReportPage = () => {
       setClientsList((data || []) as any);
     };
     loadClients();
-  }, [user]);
+  }, [user, isTeamMode]);
+
+  // Team mode: preload the single assigned chantier and lock the selectors
+  useEffect(() => {
+    if (!user || !isTeamMode || !teamAssignment) return;
+    (async () => {
+      const { data: ch } = await supabase
+        .from('chantiers')
+        .select('id, name, site_address, client_id')
+        .eq('id', teamAssignment.chantier_id)
+        .maybeSingle();
+      if (!ch) return;
+      setChantiersList([{ id: ch.id, name: ch.name, site_address: ch.site_address }] as any);
+      setSelectedChantierId(ch.id);
+      setChantierName(ch.name);
+      if (ch.site_address) setChantierAddress(ch.site_address);
+      // Client info is hidden from the chef d'équipe — keep selectedClientId empty
+      // but try to pull client name via the chantier owner if needed for the PDF.
+      setSelectedClientId(ch.client_id || '');
+    })();
+  }, [user, isTeamMode, teamAssignment]);
 
   // Load chantiers when client changes
   useEffect(() => {
@@ -258,9 +288,9 @@ const ChantierReportPage = () => {
     WEATHER_OPTIONS.find((x) => x.value === w)?.fr || w;
 
   const validate = (): string | null => {
-    if (!selectedClientId) return 'اختر العميل أولاً';
+    if (!isTeamMode && !selectedClientId) return 'اختر العميل أولاً';
     if (!selectedChantierId) return 'اختر الشانتي أولاً';
-    if (!chantierAddress.trim()) return 'عنوان الشانتي مطلوب';
+    if (!isTeamMode && !chantierAddress.trim()) return 'عنوان الشانتي مطلوب';
     if (!workDone.trim()) return 'الأعمال المنجزة مطلوبة';
     return null;
   };
@@ -627,8 +657,9 @@ const ChantierReportPage = () => {
       // Save report entry in chantier_reports (with French-translated texts)
       if (user) {
         try {
+          const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
           const { error: insertErr } = await (supabase.from('chantier_reports' as any) as any).insert({
-            user_id: user.id,
+            user_id: ownerUserId,
             chantier_id: selectedChantierId || null,
             client_id: selectedClientId || null,
             report_number: reportNumber,
@@ -642,6 +673,8 @@ const ChantierReportPage = () => {
             observations_fr: overrides.observations || null,
             supervisor_name: chefName || null,
             pdf_url: archived?.pdf_url || null,
+            submitted_by: user.id,
+            submitted_by_name: isTeamMode ? (chefName || user.email || null) : null,
           });
           if (insertErr) console.warn('[chantier_reports] insert failed:', insertErr.message);
         } catch (e) {
@@ -719,7 +752,12 @@ const ChantierReportPage = () => {
         {/* Chantier info */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
           <h2 className="font-bold" style={{ color: COLORS.navyDark }}>معلومات الشانتي</h2>
-          {clientsList.length === 0 ? (
+          {isTeamMode ? (
+            <div className="text-sm text-gray-700">
+              <Label className="text-sm">الشانتي</Label>
+              <div className="px-3 py-2 mt-1 rounded bg-gray-50 border font-bold">{chantierName || '—'}</div>
+            </div>
+          ) : clientsList.length === 0 ? (
             <div>
               <Label className="text-sm">اختر العميل *</Label>
               <button

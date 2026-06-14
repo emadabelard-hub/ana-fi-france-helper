@@ -770,11 +770,20 @@ const ChantierReportPage = () => {
         {/* En-tête (info société, lecture seule) */}
         <section className="bg-white rounded-xl p-4 shadow-sm">
           <h2 className="font-bold mb-2" style={{ color: COLORS.navyDark }}>معلومات الشركة</h2>
-          <div className="text-sm text-gray-700 space-y-1">
-            <div><strong>{profile?.company_name || '—'}</strong></div>
-            {profile?.siret && <div>SIRET : {profile.siret}</div>}
-            {profile?.company_address && <div>{profile.company_address}</div>}
-          </div>
+          {(() => {
+            const shown = isTeamMode && patronProfile ? patronProfile : {
+              company_name: profile?.company_name ?? null,
+              siret: profile?.siret ?? null,
+              company_address: profile?.company_address ?? null,
+            };
+            return (
+              <div className="text-sm text-gray-700 space-y-1">
+                <div><strong>{shown.company_name || '—'}</strong></div>
+                {shown.siret && <div>SIRET : {shown.siret}</div>}
+                {shown.company_address && <div>{shown.company_address}</div>}
+              </div>
+            );
+          })()}
         </section>
 
         {/* Chantier info */}

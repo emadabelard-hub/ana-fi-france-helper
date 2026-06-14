@@ -1574,6 +1574,21 @@ export type Database = {
           status: string
         }[]
       }
+      get_team_chantier_context: {
+        Args: { _chantier_id: string }
+        Returns: {
+          chantier_id: string
+          chantier_name: string
+          client_id: string
+          client_name: string
+          patron_company_address: string
+          patron_company_name: string
+          patron_logo_url: string
+          patron_siret: string
+          patron_user_id: string
+          site_address: string
+        }[]
+      }
       increment_promo_clicks: {
         Args: { p_promo_id: string }
         Returns: undefined

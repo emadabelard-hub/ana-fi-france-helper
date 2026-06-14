@@ -319,6 +319,15 @@ const ChantierDetailPage = () => {
         </TabsContent>
       </Tabs>
 
+      {/* Team Section - always visible after reports */}
+      {user && id && (
+        <div className="mt-4 mb-3">
+          <ChantierTeamSection chantierId={id} userId={user.id} isRTL={isRTL} />
+        </div>
+      )}
+
+
+
 
       {user && (
         <AddExpenseModal

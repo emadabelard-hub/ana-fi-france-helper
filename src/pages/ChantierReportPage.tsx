@@ -197,22 +197,20 @@ const ChantierReportPage = () => {
     loadClients();
   }, [user, isTeamMode]);
 
-  // Team mode: preload the single assigned chantier and lock the selectors
+  // Mode verrouillé : pré-remplir depuis le chantier ciblé (URL ou assignment)
   useEffect(() => {
-    if (!user || !isTeamMode || !teamAssignment) return;
+    if (!user || !isTeamMode || !lockedChantierId) return;
     (async () => {
       const { data: ch } = await supabase
         .from('chantiers')
         .select('id, name, site_address, client_id')
-        .eq('id', teamAssignment.chantier_id)
+        .eq('id', lockedChantierId)
         .maybeSingle();
       if (!ch) return;
       setChantiersList([{ id: ch.id, name: ch.name, site_address: ch.site_address }] as any);
       setSelectedChantierId(ch.id);
       setChantierName(ch.name);
       if (ch.site_address) setChantierAddress(ch.site_address);
-      // Client info is hidden from the chef d'équipe — keep selectedClientId empty
-      // but try to pull client name via the chantier owner if needed for the PDF.
       setSelectedClientId(ch.client_id || '');
       if (ch.client_id) {
         const { data: cl } = await supabase
@@ -223,7 +221,7 @@ const ChantierReportPage = () => {
         if (cl?.name) setClientName(cl.name);
       }
     })();
-  }, [user, isTeamMode, teamAssignment]);
+  }, [user, isTeamMode, lockedChantierId]);
 
   // Load chantiers when client changes
   useEffect(() => {

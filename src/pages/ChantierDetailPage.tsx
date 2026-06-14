@@ -186,6 +186,13 @@ const ChantierDetailPage = () => {
         </button>
       )}
 
+      {/* Team Section */}
+      {user && id && (
+        <div className="mb-3">
+          <ChantierTeamSection chantierId={id} userId={user.id} isRTL={isRTL} />
+        </div>
+      )}
+
       {/* Quick Actions */}
       <div className={cn("flex items-center gap-2 mb-3", isRTL && "flex-row-reverse")}>
         <Button

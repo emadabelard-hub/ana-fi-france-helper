@@ -156,6 +156,12 @@ const ChantierReportPage = () => {
 
   const [chefName, setChefName] = useState('');
   const [clientName, setClientName] = useState('');
+  const [patronProfile, setPatronProfile] = useState<{
+    company_name: string | null;
+    siret: string | null;
+    company_address: string | null;
+    logo_url: string | null;
+  } | null>(null);
 
   const chefSigRef = useRef<HTMLCanvasElement>(null);
   const clientSigRef = useRef<HTMLCanvasElement>(null);
@@ -198,28 +204,30 @@ const ChantierReportPage = () => {
   }, [user, isTeamMode]);
 
   // Mode verrouillé : pré-remplir depuis le chantier ciblé (URL ou assignment)
+  // Utilise une RPC SECURITY DEFINER pour récupérer également le client et
+  // le profil du patron, auxquels le chef d'équipe n'a pas accès via RLS.
   useEffect(() => {
     if (!user || !isTeamMode || !lockedChantierId) return;
     (async () => {
-      const { data: ch } = await supabase
-        .from('chantiers')
-        .select('id, name, site_address, client_id')
-        .eq('id', lockedChantierId)
+      const { data, error } = await supabase
+        .rpc('get_team_chantier_context', { _chantier_id: lockedChantierId })
         .maybeSingle();
-      if (!ch) return;
-      setChantiersList([{ id: ch.id, name: ch.name, site_address: ch.site_address }] as any);
-      setSelectedChantierId(ch.id);
-      setChantierName(ch.name);
-      if (ch.site_address) setChantierAddress(ch.site_address);
-      setSelectedClientId(ch.client_id || '');
-      if (ch.client_id) {
-        const { data: cl } = await supabase
-          .from('clients')
-          .select('name')
-          .eq('id', ch.client_id)
-          .maybeSingle();
-        if (cl?.name) setClientName(cl.name);
+      if (error || !data) {
+        console.warn('[ChantierReport] context load failed', error);
+        return;
       }
+      setChantiersList([{ id: data.chantier_id, name: data.chantier_name, site_address: data.site_address }] as any);
+      setSelectedChantierId(data.chantier_id);
+      setChantierName(data.chantier_name || '');
+      if (data.site_address) setChantierAddress(data.site_address);
+      setSelectedClientId(data.client_id || '');
+      if (data.client_name) setClientName(data.client_name);
+      setPatronProfile({
+        company_name: data.patron_company_name,
+        siret: data.patron_siret,
+        company_address: data.patron_company_address,
+        logo_url: data.patron_logo_url,
+      });
     })();
   }, [user, isTeamMode, lockedChantierId]);
 
@@ -323,10 +331,21 @@ const ChantierReportPage = () => {
     doc.setFillColor(15, 42, 94); // navyDark
     doc.rect(0, 0, pageW, 32, 'F');
 
+    // En mode chef d'équipe, l'en-tête doit refléter l'entreprise du PATRON,
+    // pas celle du chef d'équipe connecté.
+    const headerProfile = isTeamMode && patronProfile
+      ? patronProfile
+      : {
+          company_name: profile?.company_name ?? null,
+          siret: profile?.siret ?? null,
+          company_address: profile?.company_address ?? null,
+          logo_url: profile?.logo_url ?? null,
+        };
+
     // Logo (optional)
-    if (profile?.logo_url) {
+    if (headerProfile.logo_url) {
       try {
-        const resp = await fetch(profile.logo_url);
+        const resp = await fetch(headerProfile.logo_url);
         const blob = await resp.blob();
         const dataUrl: string = await new Promise((resolve, reject) => {
           const r = new FileReader();
@@ -343,11 +362,11 @@ const ChantierReportPage = () => {
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
-    doc.text(profile?.company_name || 'Entreprise', margin + 24, 14);
+    doc.text(headerProfile.company_name || 'Entreprise', margin + 24, 14);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    if (profile?.siret) doc.text(`SIRET : ${profile.siret}`, margin + 24, 20);
-    if (profile?.company_address) doc.text(profile.company_address, margin + 24, 25);
+    if (headerProfile.siret) doc.text(`SIRET : ${headerProfile.siret}`, margin + 24, 20);
+    if (headerProfile.company_address) doc.text(headerProfile.company_address, margin + 24, 25);
 
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
@@ -751,11 +770,20 @@ const ChantierReportPage = () => {
         {/* En-tête (info société, lecture seule) */}
         <section className="bg-white rounded-xl p-4 shadow-sm">
           <h2 className="font-bold mb-2" style={{ color: COLORS.navyDark }}>معلومات الشركة</h2>
-          <div className="text-sm text-gray-700 space-y-1">
-            <div><strong>{profile?.company_name || '—'}</strong></div>
-            {profile?.siret && <div>SIRET : {profile.siret}</div>}
-            {profile?.company_address && <div>{profile.company_address}</div>}
-          </div>
+          {(() => {
+            const shown = isTeamMode && patronProfile ? patronProfile : {
+              company_name: profile?.company_name ?? null,
+              siret: profile?.siret ?? null,
+              company_address: profile?.company_address ?? null,
+            };
+            return (
+              <div className="text-sm text-gray-700 space-y-1">
+                <div><strong>{shown.company_name || '—'}</strong></div>
+                {shown.siret && <div>SIRET : {shown.siret}</div>}
+                {shown.company_address && <div>{shown.company_address}</div>}
+              </div>
+            );
+          })()}
         </section>
 
         {/* Chantier info */}

@@ -266,6 +266,47 @@ export type Database = {
         }
         Relationships: []
       }
+      chantier_invitations: {
+        Row: {
+          chantier_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          phone: string | null
+          status: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          chantier_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string | null
+          status?: string
+          token?: string
+          user_id: string
+        }
+        Update: {
+          chantier_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string | null
+          status?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chantier_invitations_chantier_id_fkey"
+            columns: ["chantier_id"]
+            isOneToOne: false
+            referencedRelation: "chantiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chantier_reports: {
         Row: {
           chantier_id: string | null
@@ -278,6 +319,8 @@ export type Database = {
           pdf_url: string | null
           report_date: string | null
           report_number: string | null
+          submitted_by: string | null
+          submitted_by_name: string | null
           supervisor_name: string | null
           user_id: string
           weather: string | null
@@ -296,6 +339,8 @@ export type Database = {
           pdf_url?: string | null
           report_date?: string | null
           report_number?: string | null
+          submitted_by?: string | null
+          submitted_by_name?: string | null
           supervisor_name?: string | null
           user_id: string
           weather?: string | null
@@ -314,6 +359,8 @@ export type Database = {
           pdf_url?: string | null
           report_date?: string | null
           report_number?: string | null
+          submitted_by?: string | null
+          submitted_by_name?: string | null
           supervisor_name?: string | null
           user_id?: string
           weather?: string | null
@@ -334,6 +381,41 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chantier_team_members: {
+        Row: {
+          chantier_id: string
+          created_at: string
+          id: string
+          member_user_id: string
+          patron_user_id: string
+          role: string
+        }
+        Insert: {
+          chantier_id: string
+          created_at?: string
+          id?: string
+          member_user_id: string
+          patron_user_id: string
+          role?: string
+        }
+        Update: {
+          chantier_id?: string
+          created_at?: string
+          id?: string
+          member_user_id?: string
+          patron_user_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chantier_team_members_chantier_id_fkey"
+            columns: ["chantier_id"]
+            isOneToOne: false
+            referencedRelation: "chantiers"
             referencedColumns: ["id"]
           },
         ]
@@ -1448,6 +1530,18 @@ export type Database = {
       }
     }
     Functions: {
+      accept_chantier_invitation: { Args: { _token: string }; Returns: Json }
+      get_chantier_invitation: {
+        Args: { _token: string }
+        Returns: {
+          chantier_id: string
+          chantier_name: string
+          expires_at: string
+          id: string
+          patron_user_id: string
+          status: string
+        }[]
+      }
       get_document_verification: {
         Args: { _document_id: string }
         Returns: {
@@ -1489,6 +1583,10 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_chantier_team_member: {
+        Args: { _chantier_id: string; _user_id: string }
+        Returns: boolean
+      }
       submit_signature: {
         Args: { _signature_data: string; _signer_name: string; _token: string }
         Returns: Json

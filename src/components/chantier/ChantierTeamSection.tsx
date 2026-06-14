@@ -11,6 +11,7 @@ interface Props {
   chantierId: string;
   userId: string;
   isRTL: boolean;
+  chantierName?: string;
 }
 
 interface Invitation {

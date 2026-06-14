@@ -65,7 +65,7 @@ const ChantierTeamSection = ({ chantierId, userId, isRTL }: Props) => {
       if (error) throw error;
       const token = (data as any).token;
       const link = `${window.location.origin}/invite/${token}`;
-      const msg = `السلام عليكم، دعوتك على Anafy Pro باش تكتب تقرير الشانتي. اضغط على الرابط : ${link}`;
+      const msg = `Bonjour, vous êtes invité à rejoindre Anafy Pro en tant que responsable de chantier. Cliquez sur ce lien pour accéder : ${link}`;
       const wa = `https://wa.me/?text=${encodeURIComponent(msg)}`;
       window.open(wa, '_blank');
       await load();

@@ -753,10 +753,16 @@ const ChantierReportPage = () => {
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
           <h2 className="font-bold" style={{ color: COLORS.navyDark }}>معلومات الشانتي</h2>
           {isTeamMode ? (
-            <div className="text-sm text-gray-700">
-              <Label className="text-sm">الشانتي</Label>
-              <div className="px-3 py-2 mt-1 rounded bg-gray-50 border font-bold">{chantierName || '—'}</div>
-            </div>
+            <>
+              <div className="text-sm text-gray-700">
+                <Label className="text-sm">العميل</Label>
+                <div className="px-3 py-2 mt-1 rounded bg-gray-50 border font-bold">{clientName || '—'}</div>
+              </div>
+              <div className="text-sm text-gray-700">
+                <Label className="text-sm">الشانتي</Label>
+                <div className="px-3 py-2 mt-1 rounded bg-gray-50 border font-bold">{chantierName || '—'}</div>
+              </div>
+            </>
           ) : clientsList.length === 0 ? (
             <div>
               <Label className="text-sm">اختر العميل *</Label>

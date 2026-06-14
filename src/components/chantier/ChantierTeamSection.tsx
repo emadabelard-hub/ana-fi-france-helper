@@ -67,8 +67,8 @@ const ChantierTeamSection = ({ chantierId, userId, isRTL, chantierName }: Props)
       const token = (data as any).token;
       const link = `${window.location.origin}/invite/${token}`;
       const msg = chantierName
-        ? `Bonjour, vous êtes invité à rejoindre le chantier ${chantierName} sur Anafy Pro. Cliquez sur ce lien pour accéder : ${link}`
-        : `Bonjour, vous êtes invité à rejoindre Anafy Pro en tant que responsable de chantier. Cliquez sur ce lien pour accéder : ${link}`;
+        ? `Bonjour, vous êtes invité à rejoindre le chantier ${chantierName} sur Anafy Pro en tant que responsable de chantier. Cliquez sur ce lien pour remplir vos rapports : ${link}`
+        : `Bonjour, vous êtes invité à rejoindre Anafy Pro en tant que responsable de chantier. Cliquez sur ce lien pour remplir vos rapports : ${link}`;
       const wa = `https://wa.me/?text=${encodeURIComponent(msg)}`;
       window.open(wa, '_blank');
       await load();

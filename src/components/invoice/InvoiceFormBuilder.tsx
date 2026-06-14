@@ -2766,7 +2766,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
 
               <div>
                 <Label htmlFor="delivery-date" className="text-sm">
-                  {isRTL ? 'تاريخ الإنجاز' : 'Date de réalisation'}
+                  {isRTL ? 'تاريخ نهاية العمل في الشانتي' : 'Date de réalisation'}
                 </Label>
                 <Input
                   id="delivery-date"
@@ -2968,12 +2968,21 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
               <Label className={cn("text-xs", isRTL && "font-cairo")}>
                 {isRTL ? 'المدة المقدرة' : 'Durée estimée des travaux'}
               </Label>
-              <Input
-                value={estimatedDuration}
-                onChange={(e) => setEstimatedDuration(e.target.value)}
-                placeholder={isRTL ? 'مثال: 5 أيام' : 'Ex: 5 jours ouvrés'}
-                className={cn("text-sm", isRTL && "text-right font-cairo")}
-              />
+              <div className="relative">
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={estimatedDuration}
+                  onChange={(e) => setEstimatedDuration(e.target.value)}
+                  placeholder={isRTL ? 'مثال: 5' : 'Ex: 5 jours ouvrés'}
+                  className={cn("text-sm", isRTL && "text-right font-cairo")}
+                />
+                {isRTL && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none font-cairo">
+                    يوم عمل
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <p className={cn("text-[10px] text-muted-foreground", isRTL && "text-right font-cairo")}>

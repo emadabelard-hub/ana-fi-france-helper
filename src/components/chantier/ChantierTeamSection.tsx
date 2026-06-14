@@ -11,6 +11,7 @@ interface Props {
   chantierId: string;
   userId: string;
   isRTL: boolean;
+  chantierName?: string;
 }
 
 interface Invitation {
@@ -28,7 +29,7 @@ interface Member {
   created_at: string;
 }
 
-const ChantierTeamSection = ({ chantierId, userId, isRTL }: Props) => {
+const ChantierTeamSection = ({ chantierId, userId, isRTL, chantierName }: Props) => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -65,7 +66,9 @@ const ChantierTeamSection = ({ chantierId, userId, isRTL }: Props) => {
       if (error) throw error;
       const token = (data as any).token;
       const link = `${window.location.origin}/invite/${token}`;
-      const msg = `Bonjour, vous êtes invité à rejoindre Anafy Pro en tant que responsable de chantier. Cliquez sur ce lien pour accéder : ${link}`;
+      const msg = chantierName
+        ? `Bonjour, vous êtes invité à rejoindre le chantier ${chantierName} sur Anafy Pro. Cliquez sur ce lien pour accéder : ${link}`
+        : `Bonjour, vous êtes invité à rejoindre Anafy Pro en tant que responsable de chantier. Cliquez sur ce lien pour accéder : ${link}`;
       const wa = `https://wa.me/?text=${encodeURIComponent(msg)}`;
       window.open(wa, '_blank');
       await load();

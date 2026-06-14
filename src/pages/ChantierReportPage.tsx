@@ -211,6 +211,14 @@ const ChantierReportPage = () => {
       // Client info is hidden from the chef d'équipe — keep selectedClientId empty
       // but try to pull client name via the chantier owner if needed for the PDF.
       setSelectedClientId(ch.client_id || '');
+      if (ch.client_id) {
+        const { data: cl } = await supabase
+          .from('clients')
+          .select('name')
+          .eq('id', ch.client_id)
+          .maybeSingle();
+        if (cl?.name) setClientName(cl.name);
+      }
     })();
   }, [user, isTeamMode, teamAssignment]);
 
@@ -753,10 +761,16 @@ const ChantierReportPage = () => {
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
           <h2 className="font-bold" style={{ color: COLORS.navyDark }}>معلومات الشانتي</h2>
           {isTeamMode ? (
-            <div className="text-sm text-gray-700">
-              <Label className="text-sm">الشانتي</Label>
-              <div className="px-3 py-2 mt-1 rounded bg-gray-50 border font-bold">{chantierName || '—'}</div>
-            </div>
+            <>
+              <div className="text-sm text-gray-700">
+                <Label className="text-sm">العميل</Label>
+                <div className="px-3 py-2 mt-1 rounded bg-gray-50 border font-bold">{clientName || '—'}</div>
+              </div>
+              <div className="text-sm text-gray-700">
+                <Label className="text-sm">الشانتي</Label>
+                <div className="px-3 py-2 mt-1 rounded bg-gray-50 border font-bold">{chantierName || '—'}</div>
+              </div>
+            </>
           ) : clientsList.length === 0 ? (
             <div>
               <Label className="text-sm">اختر العميل *</Label>
@@ -825,6 +839,7 @@ const ChantierReportPage = () => {
 
             </div>
           )}
+          {!isTeamMode && (
           <div>
             <Label className="text-sm">اختر الشانتي *</Label>
             <Select
@@ -855,6 +870,7 @@ const ChantierReportPage = () => {
               </SelectContent>
             </Select>
           </div>
+          )}
           <div>
             <Label className="text-sm">عنوان الشانتي</Label>
             <Input value={chantierAddress} readOnly className="bg-gray-50" />

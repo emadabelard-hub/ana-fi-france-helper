@@ -831,6 +831,7 @@ const ChantierReportPage = () => {
 
             </div>
           )}
+          {!isTeamMode && (
           <div>
             <Label className="text-sm">اختر الشانتي *</Label>
             <Select

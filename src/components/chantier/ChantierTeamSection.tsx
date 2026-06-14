@@ -29,7 +29,7 @@ interface Member {
   created_at: string;
 }
 
-const ChantierTeamSection = ({ chantierId, userId, isRTL }: Props) => {
+const ChantierTeamSection = ({ chantierId, userId, isRTL, chantierName }: Props) => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [invitations, setInvitations] = useState<Invitation[]>([]);

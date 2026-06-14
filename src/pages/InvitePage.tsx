@@ -18,11 +18,65 @@ interface Invitation {
   chantier_name: string | null;
 }
 
+type Lang = 'fr' | 'ar' | null;
+
+const TXT = {
+  fr: {
+    title: "Invitation à rejoindre un chantier",
+    chantier: "Chantier",
+    signup: "Nouveau compte",
+    signin: "J'ai déjà un compte",
+    name: "Nom",
+    namePh: "Votre nom",
+    email: "Email",
+    password: "Mot de passe",
+    submitSignup: "Créer un compte et accepter l'invitation",
+    submitSignin: "Se connecter et accepter l'invitation",
+    missing: "Informations manquantes",
+    missingDesc: "Email + mot de passe (6 caractères minimum)",
+    error: "Erreur",
+    invalid: "Lien d'invitation invalide",
+    used: "Cette invitation a déjà été utilisée ou annulée",
+    expired: "Le lien d'invitation a expiré (48 heures)",
+    notFound: "Invitation introuvable",
+    login: "Se connecter",
+    accepting: "Acceptation de l'invitation...",
+    created: "Compte créé",
+    createdDesc: "Vérifiez votre email puis cliquez à nouveau sur le lien",
+    accepted: "Invitation acceptée",
+  },
+  ar: {
+    title: "دعوة للانضمام كمسئول شانتي",
+    chantier: "الشانتي",
+    signup: "حساب جديد",
+    signin: "عندي حساب",
+    name: "الاسم",
+    namePh: "اسمك",
+    email: "الإيميل",
+    password: "كلمة السر",
+    submitSignup: "إنشاء حساب وقبول الدعوة",
+    submitSignin: "دخول وقبول الدعوة",
+    missing: "بيانات ناقصة",
+    missingDesc: "إيميل + كلمة سر (6 أحرف على الأقل)",
+    error: "خطأ",
+    invalid: "رابط الدعوة غير صالح",
+    used: "هذه الدعوة استُعملت أو أُلغيت",
+    expired: "انتهت صلاحية رابط الدعوة (48 ساعة)",
+    notFound: "الدعوة غير موجودة",
+    login: "تسجيل الدخول",
+    accepting: "جاري قبول الدعوة...",
+    created: "تم إنشاء الحساب",
+    createdDesc: "تأكد إيميلك وارجع للضغط على الرابط",
+    accepted: "تم قبول الدعوة",
+  },
+};
+
 const InvitePage = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { user, signIn, signUp, isLoading: authLoading } = useAuth();
 
+  const [lang, setLang] = useState<Lang>(null);
   const [loading, setLoading] = useState(true);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +86,9 @@ const InvitePage = () => {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+
+  const t = TXT[lang || 'ar'];
+  const isRTL = lang === 'ar';
 
   // Load invitation
   useEffect(() => {
@@ -43,33 +100,32 @@ const InvitePage = () => {
         if (error) throw error;
         const inv = Array.isArray(data) ? data[0] : data;
         if (!inv) {
-          setError('رابط الدعوة غير صالح');
+          setError('invalid');
         } else if (inv.status !== 'pending') {
-          setError('هذه الدعوة استُعملت أو أُلغيت');
+          setError('used');
         } else if (new Date(inv.expires_at).getTime() < Date.now()) {
-          setError('انتهت صلاحية رابط الدعوة (48 ساعة)');
+          setError('expired');
         } else {
           setInvitation(inv as Invitation);
         }
       } catch (e: any) {
         console.warn('[invite] load failed', e);
-        setError(e?.message || 'رابط الدعوة غير صالح');
+        setError('invalid');
       } finally {
         setLoading(false);
       }
     })();
   }, [token]);
 
-  // If already authenticated, accept immediately
   const acceptInvitation = async () => {
     if (!token) return;
     const { data, error } = await (supabase.rpc as any)('accept_chantier_invitation', { _token: token });
     if (error) {
-      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+      toast({ title: t.error, description: error.message, variant: 'destructive' });
       return;
     }
     const chId = (data as any)?.chantier_id;
-    toast({ title: 'تم قبول الدعوة' });
+    toast({ title: t.accepted });
     navigate(`/chantier-report?chantierId=${chId || ''}`, { replace: true });
   };
 
@@ -87,7 +143,7 @@ const InvitePage = () => {
     const email = (emailRef.current?.value || '').trim();
     const password = passwordRef.current?.value || '';
     if (!email || password.length < 6) {
-      toast({ title: 'بيانات ناقصة', description: 'إيميل + كلمة سر (6 أحرف على الأقل)', variant: 'destructive' });
+      toast({ title: t.missing, description: t.missingDesc, variant: 'destructive' });
       return;
     }
     setSubmitting(true);
@@ -95,14 +151,13 @@ const InvitePage = () => {
       const fn = mode === 'signup' ? signUp : signIn;
       const { error, needsEmailConfirmation } = await fn(email, password);
       if (error) {
-        toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+        toast({ title: t.error, description: error.message, variant: 'destructive' });
         return;
       }
       if (mode === 'signup' && needsEmailConfirmation) {
-        toast({ title: 'تم إنشاء الحساب', description: 'تأكد إيميلك وارجع للضغط على الرابط' });
+        toast({ title: t.created, description: t.createdDesc });
         return;
       }
-      // acceptInvitation will fire from effect above
     } finally {
       setSubmitting(false);
     }
@@ -116,14 +171,32 @@ const InvitePage = () => {
     );
   }
 
-  if (error || !invitation) {
+  // Language selector first
+  if (!lang && !error && invitation) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4 bg-background">
         <Card className="max-w-md w-full">
-          <CardHeader><CardTitle className="font-cairo text-center">رابط غير صالح</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-center">Anafy Pro</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button className="w-full" variant="outline" onClick={() => setLang('fr')}>Français</Button>
+            <Button className="w-full font-cairo" variant="outline" onClick={() => setLang('ar')}>العربية</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error || !invitation) {
+    const errMsg = error === 'used' ? t.used : error === 'expired' ? t.expired : error === 'invalid' ? t.invalid : t.notFound;
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4" dir={isRTL ? 'rtl' : 'ltr'}>
+        <Card className="max-w-md w-full">
+          <CardHeader><CardTitle className={isRTL ? 'font-cairo text-center' : 'text-center'}>{t.invalid}</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-center text-muted-foreground font-cairo">{error || 'الدعوة غير موجودة'}</p>
-            <Button className="w-full mt-4" onClick={() => navigate('/login')}>تسجيل الدخول</Button>
+            <p className={isRTL ? 'text-center text-muted-foreground font-cairo' : 'text-center text-muted-foreground'}>{errMsg}</p>
+            <Button className={isRTL ? 'w-full mt-4 font-cairo' : 'w-full mt-4'} onClick={() => navigate('/login')}>{t.login}</Button>
           </CardContent>
         </Card>
       </div>
@@ -135,47 +208,47 @@ const InvitePage = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-2">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="font-cairo text-sm text-muted-foreground">جاري قبول الدعوة...</p>
+          <p className={isRTL ? 'font-cairo text-sm text-muted-foreground' : 'text-sm text-muted-foreground'}>{t.accepting}</p>
         </div>
       </div>
     );
   }
 
+  const fc = isRTL ? 'font-cairo' : '';
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-background" dir="rtl">
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
       <Card className="max-w-md w-full">
         <CardHeader>
-          <CardTitle className="font-cairo text-center">
-            دعوة للانضمام كمسئول شانتي
-          </CardTitle>
+          <CardTitle className={`${fc} text-center`}>{t.title}</CardTitle>
           {invitation.chantier_name && (
-            <p className="text-center text-sm text-muted-foreground font-cairo mt-2">
-              الشانتي: <strong>{invitation.chantier_name}</strong>
+            <p className={`text-center text-sm text-muted-foreground mt-2 ${fc}`}>
+              {t.chantier}: <strong>{invitation.chantier_name}</strong>
             </p>
           )}
         </CardHeader>
         <CardContent>
           <div className="flex gap-2 mb-4">
-            <Button type="button" variant={mode === 'signup' ? 'default' : 'outline'} className="flex-1 font-cairo" onClick={() => setMode('signup')}>حساب جديد</Button>
-            <Button type="button" variant={mode === 'signin' ? 'default' : 'outline'} className="flex-1 font-cairo" onClick={() => setMode('signin')}>عندي حساب</Button>
+            <Button type="button" variant={mode === 'signup' ? 'default' : 'outline'} className={`flex-1 ${fc}`} onClick={() => setMode('signup')}>{t.signup}</Button>
+            <Button type="button" variant={mode === 'signin' ? 'default' : 'outline'} className={`flex-1 ${fc}`} onClick={() => setMode('signin')}>{t.signin}</Button>
           </div>
           <form onSubmit={handleSubmit} className="space-y-3">
             {mode === 'signup' && (
               <div>
-                <Label className="font-cairo">الاسم</Label>
-                <Input ref={nameRef} placeholder="اسمك" dir="rtl" />
+                <Label className={fc}>{t.name}</Label>
+                <Input ref={nameRef} placeholder={t.namePh} dir={isRTL ? 'rtl' : 'ltr'} />
               </div>
             )}
             <div>
-              <Label className="font-cairo">الإيميل</Label>
+              <Label className={fc}>{t.email}</Label>
               <Input ref={emailRef} type="email" placeholder="email@example.com" dir="ltr" required />
             </div>
             <div>
-              <Label className="font-cairo">كلمة السر</Label>
+              <Label className={fc}>{t.password}</Label>
               <Input ref={passwordRef} type="password" placeholder="••••••" dir="ltr" required minLength={6} />
             </div>
-            <Button type="submit" className="w-full font-cairo" disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (mode === 'signup' ? 'إنشاء حساب وقبول الدعوة' : 'دخول وقبول الدعوة')}
+            <Button type="submit" className={`w-full ${fc}`} disabled={submitting}>
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (mode === 'signup' ? t.submitSignup : t.submitSignin)}
             </Button>
           </form>
         </CardContent>

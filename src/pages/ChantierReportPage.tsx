@@ -219,7 +219,7 @@ const ChantierReportPage = () => {
       setChantiersList([{ id: data.chantier_id, name: data.chantier_name, site_address: data.site_address }] as any);
       setSelectedChantierId(data.chantier_id);
       setChantierName(data.chantier_name || '');
-      if (data.site_address) setChantierAddress(data.site_address);
+      setChantierAddress(data.site_address || data.client_address || '');
       setSelectedClientId(data.client_id || '');
       if (data.client_name) setClientName(data.client_name);
       setPatronProfile({

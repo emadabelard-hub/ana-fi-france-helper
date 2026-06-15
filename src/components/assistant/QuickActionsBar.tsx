@@ -28,7 +28,7 @@ const QuickActionsBar = ({ onAction, className }: QuickActionsBarProps) => {
         )}
       >
         <Mail className="h-4 w-4" />
-        <span>مراسلات الجهات الرسمية والحكومية والإدارية والطبية وغيره</span>
+        <span>{isRTL ? "مراسلات الجهات الرسمية والحكومية والإدارية والطبية وغيره" : "Courriers officiels, administratifs, médicaux, etc."}</span>
       </button>
     </div>
   );

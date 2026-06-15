@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AccountantAccess {
   id: string;
@@ -20,6 +21,8 @@ interface AccountantAccess {
 const AccountantAccessSection = ({ companyName }: { companyName?: string }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isRTL } = useLanguage();
+  const tr = (ar: string, fr: string) => isRTL ? ar : fr;
   const [list, setList] = useState<AccountantAccess[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');

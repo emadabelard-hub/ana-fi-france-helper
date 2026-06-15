@@ -72,6 +72,15 @@ const StyledInput = ({ className, ...props }: React.ComponentProps<typeof Input>
 
 const ProfilePage = () => {
   const { isRTL } = useLanguage();
+  const tr = (ar: string, fr: string) => isRTL ? ar : fr;
+  const tabLabel: Record<TabKey, { ar: string; fr: string }> = {
+    account: { ar: 'حسابي', fr: 'Mon profil' },
+    company: { ar: 'شركتي', fr: 'Mon entreprise' },
+    insurance: { ar: 'التأمين', fr: 'Assurance' },
+    signature: { ar: 'التوقيع', fr: 'Signature' },
+    stamp: { ar: 'الطابع', fr: 'Tampon' },
+    accountant: { ar: 'المحاسب', fr: 'Comptable' },
+  };
   const { user, signOut, isLoading: authLoading, isPrimaryAdmin } = useAuth();
   const { profile, isLoading, updateProfile } = useProfile();
   const { toast } = useToast();

@@ -36,9 +36,11 @@ const DialectSelector = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Languages className="h-5 w-5" />
-          لهجة المساعد
+          {isRTL ? "لهجة المساعد" : "Dialecte de l'assistant"}
         </CardTitle>
-        <CardDescription>اختار اللهجة اللي تحب المساعد يحكي بيها معاك.</CardDescription>
+        <CardDescription>
+          {isRTL ? "اختار اللهجة اللي تحب المساعد يحكي بيها معاك." : "Choisissez le dialecte avec lequel vous souhaitez que l'assistant vous parle."}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Label className="mb-2 block">Dialecte de l'assistant</Label>

@@ -72,6 +72,15 @@ const StyledInput = ({ className, ...props }: React.ComponentProps<typeof Input>
 
 const ProfilePage = () => {
   const { isRTL } = useLanguage();
+  const tr = (ar: string, fr: string) => isRTL ? ar : fr;
+  const tabLabel: Record<TabKey, { ar: string; fr: string }> = {
+    account: { ar: 'حسابي', fr: 'Mon profil' },
+    company: { ar: 'شركتي', fr: 'Mon entreprise' },
+    insurance: { ar: 'التأمين', fr: 'Assurance' },
+    signature: { ar: 'التوقيع', fr: 'Signature' },
+    stamp: { ar: 'الطابع', fr: 'Tampon' },
+    accountant: { ar: 'المحاسب', fr: 'Comptable' },
+  };
   const { user, signOut, isLoading: authLoading, isPrimaryAdmin } = useAuth();
   const { profile, isLoading, updateProfile } = useProfile();
   const { toast } = useToast();
@@ -308,10 +317,10 @@ const ProfilePage = () => {
 
   /* ─── Status summary items ─── */
   const statusItems = useMemo(() => [
-    { label: 'جاهز للفواتير', done: progressPercent === 100 },
-    { label: 'التأمين مضاف', done: !!formData.assureur_name.trim() && !!formData.assurance_policy_number.trim() },
-    { label: 'التوقيع محفوظ', done: !!profile?.artisan_signature_url },
-  ], [progressPercent, formData, profile]);
+    { label: tr('جاهز للفواتير', 'Prêt à facturer'), done: progressPercent === 100 },
+    { label: tr('التأمين مضاف', 'Assurance ajoutée'), done: !!formData.assureur_name.trim() && !!formData.assurance_policy_number.trim() },
+    { label: tr('التوقيع محفوظ', 'Signature enregistrée'), done: !!profile?.artisan_signature_url },
+  ], [progressPercent, formData, profile, isRTL]);
 
   const userInitial = formData.full_name
     ? formData.full_name.charAt(0).toUpperCase()
@@ -375,7 +384,7 @@ const ProfilePage = () => {
                 {progressPercent}%
               </span>
               <span className="text-xs text-muted-foreground font-cairo">
-                ملفك {progressPercent === 100 ? 'مكتمل' : 'غير مكتمل'}
+                {tr('ملفك', 'Profil')} {progressPercent === 100 ? tr('مكتمل', 'complété') : tr('غير مكتمل', 'incomplet')}
               </span>
             </div>
             <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
@@ -384,7 +393,7 @@ const ProfilePage = () => {
             {progressPercent === 100 && (
               <div className="flex items-center gap-2 p-2 rounded-xl bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 flex-row-reverse">
                 <PartyPopper className="h-4 w-4 text-green-500 shrink-0" />
-                <p className="text-[11px] font-semibold text-green-700 dark:text-green-400 font-cairo">ملفك القانوني مكتمل 🎉</p>
+                <p className="text-[11px] font-semibold text-green-700 dark:text-green-400 font-cairo">{tr('ملفك القانوني مكتمل 🎉', 'Votre profil légal est complet 🎉')}</p>
               </div>
             )}
           </div>
@@ -410,7 +419,7 @@ const ProfilePage = () => {
                     )}
                   >
                     <span>{tab.icon}</span>
-                    <span>{tab.label}</span>
+                    <span>{tr(tabLabel[tab.key].ar, tabLabel[tab.key].fr)}</span>
                     {hasWarning && !isActive && (
                       <span className="absolute -top-1 -left-1 w-3 h-3 rounded-full bg-destructive border-2 border-[#FAFAFA] dark:border-background" />
                     )}
@@ -429,15 +438,15 @@ const ProfilePage = () => {
             <div className="space-y-4">
               <div className="bg-white dark:bg-card rounded-2xl p-5 shadow-sm border border-border/20 space-y-5">
                 <div className="space-y-2">
-                  <FieldLabel icon={User} label="الاسم الكامل" filled={isFieldFilled('full_name')} />
+                  <FieldLabel icon={User} label={tr('الاسم الكامل', 'Nom complet')} filled={isFieldFilled('full_name')} />
                   <StyledInput value={formData.full_name} onChange={(e) => handleChange('full_name', e.target.value)} placeholder="اكتب اسمك الكامل" />
                 </div>
                 <div className="space-y-2">
-                  <FieldLabel icon={Briefcase} label="المهنة" required filled={isFieldFilled('job')} />
+                  <FieldLabel icon={Briefcase} label={tr('المهنة', 'Métier')} required filled={isFieldFilled('job')} />
                   <StyledInput value={formData.job} onChange={(e) => handleChange('job', e.target.value)} placeholder="مثال: كهربائي، سبّاك، مقاول عام" />
                 </div>
                 <div className="space-y-2">
-                  <FieldLabel icon={Phone} label="رقم الهاتف" filled={!!formData.phone.trim()} />
+                  <FieldLabel icon={Phone} label={tr('رقم الهاتف', 'Téléphone')} filled={!!formData.phone.trim()} />
                   <StyledInput value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="06 12 34 56 78" className="font-[Inter] text-left" dir="ltr" />
                 </div>
               </div>
@@ -515,33 +524,33 @@ const ProfilePage = () => {
             <div className="space-y-4">
               {/* Company Info Card */}
               <div className="bg-white dark:bg-card rounded-2xl p-5 shadow-sm border border-border/20 space-y-5">
-                <p className="text-xs text-muted-foreground font-cairo text-right">المعلومات دي هتظهر على كل فواتيرك ودوفيهاتك</p>
+                <p className="text-xs text-muted-foreground font-cairo text-right">{tr('المعلومات دي هتظهر على كل فواتيرك ودوفيهاتك', 'Ces informations apparaîtront sur tous vos devis et factures')}</p>
 
                 {/* Scan Kbis */}
                 <input ref={kbisInputRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf" className="hidden" onChange={(e) => handleScanDocument(e, 'kbis')} />
                 <Button type="button" variant="outline" onClick={() => kbisInputRef.current?.click()} disabled={isScanningKbis}
                   className="w-full h-12 rounded-xl border-[#BFA071]/40 bg-[#BFA071]/5 hover:bg-[#BFA071]/10 text-foreground font-cairo flex items-center justify-center gap-2 flex-row-reverse">
                   {isScanningKbis ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4 text-[#BFA071]" />}
-                  <span>📄 سكان أو حمّل الكيبيس</span>
+                  <span>📄 {tr('سكان أو حمّل الكيبيس', 'Scanner ou importer le Kbis')}</span>
                 </Button>
 
                 <div className="space-y-2">
-                  <FieldLabel icon={Building2} label="اسم الشركة" filled={!!formData.company_name.trim()} />
+                  <FieldLabel icon={Building2} label={tr('اسم الشركة', 'Nom de l\'entreprise')} filled={!!formData.company_name.trim()} />
                   <StyledInput value={formData.company_name} onChange={(e) => handleChange('company_name', e.target.value)} placeholder="شركة البناء للمقاولات" />
                 </div>
 
                 <div className="space-y-2">
-                  <FieldLabel icon={FileText} label="رقم السيريت (SIRET)" filled={isFieldFilled('siret')} />
+                  <FieldLabel icon={FileText} label={tr('رقم السيريت (SIRET)', 'Numéro SIRET')} filled={isFieldFilled('siret')} />
                   <StyledInput value={formData.siret} onChange={(e) => handleChange('siret', e.target.value)} placeholder="12345678901234" maxLength={14}
                     className={cn("font-mono text-left", siretError && "border-destructive")} dir="ltr" />
                   {siretError && <p className="text-xs text-destructive flex items-center gap-1 flex-row-reverse"><AlertCircle className="h-3 w-3" />{siretError}</p>}
                   {formData.siret.length === 14 && !siretError && (
-                    <p className="text-xs text-green-500 flex items-center gap-1 flex-row-reverse"><Check className="h-3 w-3" />رقم سيريت صحيح ✓</p>
+                    <p className="text-xs text-green-500 flex items-center gap-1 flex-row-reverse"><Check className="h-3 w-3" />{tr('رقم سيريت صحيح', 'SIRET valide')} ✓</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <FieldLabel icon={Mail} label="الإيميل المهني" filled={isFieldFilled('email')} />
+                  <FieldLabel icon={Mail} label={tr('الإيميل المهني', 'Email professionnel')} filled={isFieldFilled('email')} />
                   <StyledInput type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="contact@entreprise.fr" className="font-[Inter] text-left" dir="ltr" />
                 </div>
 
@@ -757,22 +766,22 @@ const ProfilePage = () => {
                 <ShieldCheck className="h-5 w-5 text-[#BFA071]" />
                 <p className="text-sm font-semibold text-foreground font-cairo">التأمين العشري (Décennale)</p>
               </div>
-              <p className="text-xs text-muted-foreground font-cairo text-right">هذا القسم منفصل عن بيانات الشركة – ضروري قانونياً</p>
+              <p className="text-xs text-muted-foreground font-cairo text-right">{tr('هذا القسم منفصل عن بيانات الشركة – ضروري قانونياً', 'Cette section est distincte des données de l\'entreprise – obligatoire légalement')}</p>
 
               <div className="space-y-2">
-                <FieldLabel icon={Building2} label="اسم شركة التأمين" required filled={isFieldFilled('assureur_name')} />
+                <FieldLabel icon={Building2} label={tr('اسم شركة التأمين', 'Nom de la compagnie d\'assurance')} required filled={isFieldFilled('assureur_name')} />
                 <StyledInput value={formData.assureur_name} onChange={(e) => handleChange('assureur_name', e.target.value)} placeholder="AXA France" />
               </div>
               <div className="space-y-2">
-                <FieldLabel icon={MapPin} label="عنوان شركة التأمين" />
+                <FieldLabel icon={MapPin} label={tr('عنوان شركة التأمين', 'Adresse de la compagnie d\'assurance')} />
                 <StyledInput value={formData.assureur_address} onChange={(e) => handleChange('assureur_address', e.target.value)} placeholder="25 av. Matignon, Paris" />
               </div>
               <div className="space-y-2">
-                <FieldLabel icon={FileText} label="رقم البوليصة" required filled={isFieldFilled('assurance_policy_number')} />
+                <FieldLabel icon={FileText} label={tr('رقم البوليصة', 'Numéro de police')} required filled={isFieldFilled('assurance_policy_number')} />
                 <StyledInput value={formData.assurance_policy_number} onChange={(e) => handleChange('assurance_policy_number', e.target.value)} placeholder="RC-2024-123456" className="font-mono text-left" dir="ltr" />
               </div>
               <div className="space-y-2">
-                <FieldLabel icon={MapPin} label="التغطية الجغرافية" />
+                <FieldLabel icon={MapPin} label={tr('التغطية الجغرافية', 'Couverture géographique')} />
                 <StyledInput value={formData.assurance_geographic_coverage} onChange={(e) => handleChange('assurance_geographic_coverage', e.target.value)} placeholder="France métropolitaine" />
               </div>
             </div>
@@ -801,14 +810,14 @@ const ProfilePage = () => {
               className="w-full gap-2.5 h-14 text-base font-semibold rounded-2xl shadow-lg shadow-[#BFA071]/20 bg-gradient-to-l from-[#BFA071] to-[#D4B896] hover:from-[#A8894F] hover:to-[#C4A880] text-white transition-all font-cairo"
             >
               {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-              حفظ التعديلات
+              {tr('حفظ التعديلات', 'Enregistrer les modifications')}
             </Button>
           </div>
 
           {/* Factur-X notice */}
           <div className="rounded-2xl bg-accent/10 border border-accent/20 p-3">
             <p className="text-[11px] text-muted-foreground leading-relaxed text-right font-cairo">
-              ℹ️ هذه المعلومات ضرورية لإنشاء عروض أسعار وفواتير قانونية مطابقة لنظام Factur-X.
+              ℹ️ {tr('هذه المعلومات ضرورية لإنشاء عروض أسعار وفواتير قانونية مطابقة لنظام Factur-X.', 'Ces informations sont nécessaires pour créer des devis et factures conformes au système Factur-X.')}
             </p>
           </div>
         </div>

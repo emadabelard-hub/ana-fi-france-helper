@@ -1579,6 +1579,7 @@ export type Database = {
         Returns: {
           chantier_id: string
           chantier_name: string
+          client_address: string
           client_id: string
           client_name: string
           patron_company_address: string

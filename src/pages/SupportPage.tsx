@@ -103,7 +103,7 @@ const SupportPage = () => {
       }
     } catch (e) {
       console.error('Support chat error:', e);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'عذراً يا معلم، حصل مشكلة. جرب تاني بعد شوية 🙏' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: isRTL ? ERROR_MSG_AR : ERROR_MSG_FR }]);
     } finally {
       setIsStreaming(false);
     }

@@ -739,6 +739,7 @@ const ChantierReportPage = () => {
   };
 
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+  const tr = (ar: string, fr: string) => (isRTL ? ar : fr);
 
   return (
     <div

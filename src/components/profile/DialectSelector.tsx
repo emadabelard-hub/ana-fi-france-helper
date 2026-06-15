@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useProfile } from '@/hooks/useProfile';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Languages } from 'lucide-react';
 
 type Dialect = 'egyptien' | 'algerien' | 'marocain' | 'tunisien';

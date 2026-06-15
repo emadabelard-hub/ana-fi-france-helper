@@ -439,11 +439,11 @@ const ProfilePage = () => {
               <div className="bg-white dark:bg-card rounded-2xl p-5 shadow-sm border border-border/20 space-y-5">
                 <div className="space-y-2">
                   <FieldLabel icon={User} label={tr('الاسم الكامل', 'Nom complet')} filled={isFieldFilled('full_name')} />
-                  <StyledInput value={formData.full_name} onChange={(e) => handleChange('full_name', e.target.value)} placeholder="اكتب اسمك الكامل" />
+                  <StyledInput value={formData.full_name} onChange={(e) => handleChange('full_name', e.target.value)} placeholder={tr('اكتب اسمك الكامل', 'Saisissez votre nom complet')} />
                 </div>
                 <div className="space-y-2">
                   <FieldLabel icon={Briefcase} label={tr('المهنة', 'Métier')} required filled={isFieldFilled('job')} />
-                  <StyledInput value={formData.job} onChange={(e) => handleChange('job', e.target.value)} placeholder="مثال: كهربائي، سبّاك، مقاول عام" />
+                  <StyledInput value={formData.job} onChange={(e) => handleChange('job', e.target.value)} placeholder={tr('مثال: كهربائي، سبّاك، مقاول عام', 'Ex : électricien, plombier, maçon')} />
                 </div>
                 <div className="space-y-2">
                   <FieldLabel icon={Phone} label={tr('رقم الهاتف', 'Téléphone')} filled={!!formData.phone.trim()} />
@@ -458,8 +458,8 @@ const ProfilePage = () => {
                     <Shield className="h-5 w-5 text-accent" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-sm text-foreground font-cairo">لوحة الإدارة</p>
-                    <p className="text-xs text-muted-foreground font-cairo mt-0.5">مراقبة النظام والإحصائيات</p>
+                    <p className="font-semibold text-sm text-foreground font-cairo">{tr('لوحة الإدارة', 'Administration')}</p>
+                    <p className="text-xs text-muted-foreground font-cairo mt-0.5">{tr('مراقبة النظام والإحصائيات', 'Supervision et statistiques')}</p>
                   </div>
                 </button>
               )}
@@ -469,8 +469,8 @@ const ProfilePage = () => {
                   <Briefcase className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-sm text-foreground font-cairo">إعدادات التعريفة</p>
-                  <p className="text-xs text-muted-foreground font-cairo mt-0.5">خصّص أسعارك المرجعية</p>
+                  <p className="font-semibold text-sm text-foreground font-cairo">{tr('إعدادات التعريفة', 'Paramètres tarifaires')}</p>
+                  <p className="text-xs text-muted-foreground font-cairo mt-0.5">{tr('خصّص أسعارك المرجعية', 'Personnalisez vos tarifs de référence')}</p>
                 </div>
               </button>
 
@@ -480,7 +480,7 @@ const ProfilePage = () => {
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                       <Key className="h-5 w-5 text-primary" />
                     </div>
-                    <p className="font-semibold text-sm text-foreground font-cairo">مفتاح API</p>
+                    <p className="font-semibold text-sm text-foreground font-cairo">{tr('مفتاح API', 'Clé API')}</p>
                   </button>
                   <ApiKeySettingsModal open={showApiKey} onOpenChange={setShowApiKey} />
                 </>
@@ -495,7 +495,7 @@ const ProfilePage = () => {
                     <Shield className="h-4 w-4 text-primary" />
                   </div>
                   <p className="text-xs text-foreground/70 leading-relaxed flex-1 text-right font-cairo">
-                    بياناتك محمية ومشفرة وفقاً للمعايير الأوروبية (RGPD). نحن لا نشارك بياناتك مع أي جهة خارجية.
+                    {tr('بياناتك محمية ومشفرة وفقاً للمعايير الأوروبية (RGPD). نحن لا نشارك بياناتك مع أي جهة خارجية.', 'Vos données sont protégées et chiffrées conformément aux normes européennes (RGPD). Nous ne partageons jamais vos données avec des tiers.')}
                   </p>
                 </div>
               </div>
@@ -503,7 +503,7 @@ const ProfilePage = () => {
               <Button variant="outline" onClick={handleSignOut}
                 className="w-full gap-2 h-12 rounded-2xl border-destructive/20 text-destructive hover:bg-destructive/5 font-semibold font-cairo">
                 <LogOut className="h-4 w-4" />
-                خروج
+                {tr('خروج', 'Déconnexion')}
               </Button>
 
               <DialectSelector />
@@ -512,9 +512,9 @@ const ProfilePage = () => {
               <DeleteAccountSection />
 
               <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
-                <button onClick={() => navigate('/legal')} className="hover:text-primary underline">سياسة الخصوصية</button>
+                <button onClick={() => navigate('/legal')} className="hover:text-primary underline">{tr('سياسة الخصوصية', 'Politique de confidentialité')}</button>
                 <span className="text-border">•</span>
-                <button onClick={() => navigate('/legal#terms')} className="hover:text-primary underline">شروط الاستخدام</button>
+                <button onClick={() => navigate('/legal#terms')} className="hover:text-primary underline">{tr('شروط الاستخدام', "Conditions d'utilisation")}</button>
               </div>
             </div>
           )}
@@ -536,7 +536,7 @@ const ProfilePage = () => {
 
                 <div className="space-y-2">
                   <FieldLabel icon={Building2} label={tr('اسم الشركة', 'Nom de l\'entreprise')} filled={!!formData.company_name.trim()} />
-                  <StyledInput value={formData.company_name} onChange={(e) => handleChange('company_name', e.target.value)} placeholder="شركة البناء للمقاولات" />
+                  <StyledInput value={formData.company_name} onChange={(e) => handleChange('company_name', e.target.value)} placeholder={tr('شركة البناء للمقاولات', 'SARL Construction Bâtiment')} />
                 </div>
 
                 <div className="space-y-2">
@@ -555,22 +555,22 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <FieldLabel icon={MapPin} label="عنوان المقر" filled={isFieldFilled('company_address')} />
-                  <StyledInput value={formData.company_address} onChange={(e) => handleChange('company_address', e.target.value)} placeholder="العنوان الكامل" />
+                  <FieldLabel icon={MapPin} label={tr('عنوان المقر', 'Adresse du siège')} filled={isFieldFilled('company_address')} />
+                  <StyledInput value={formData.company_address} onChange={(e) => handleChange('company_address', e.target.value)} placeholder={tr('العنوان الكامل', 'Adresse complète')} />
                 </div>
               </div>
 
               {/* Legal Status Card */}
               <div className="bg-white dark:bg-card rounded-2xl p-5 shadow-sm border border-border/20 space-y-5">
                 <div className="space-y-2">
-                  <FieldLabel icon={FileText} label="الشكل القانوني" />
+                  <FieldLabel icon={FileText} label={tr('الشكل القانوني', 'Statut juridique')} />
                   <Select value={formData.legal_status} onValueChange={(v) => handleChange('legal_status', v)}>
                     <SelectTrigger className="h-12 rounded-xl border-border/30 bg-white dark:bg-secondary/50 text-[15px] font-cairo">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto-entrepreneur">أوتو أونتروبرونور</SelectItem>
-                      <SelectItem value="societe">شركة (SARL, SAS, إلخ)</SelectItem>
+                      <SelectItem value="auto-entrepreneur">{tr('أوتو أونتروبرونور', 'Auto-entrepreneur')}</SelectItem>
+                      <SelectItem value="societe">{tr('شركة (SARL, SAS, إلخ)', 'Société (SARL, SAS, etc.)')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -578,25 +578,25 @@ const ProfilePage = () => {
                 {/* Question CA avant la case */}
                 <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-2 text-right">
                   <p className="text-sm font-semibold font-cairo">
-                    هل رقم أعمالك السنوي أقل من 91.900€ ؟
+                    {tr('هل رقم أعمالك السنوي أقل من 91.900€ ؟', "Votre chiffre d'affaires annuel est-il inférieur à 91 900 € ?")}
                   </p>
                   <div className="flex gap-2 flex-row-reverse">
                     <Button type="button" size="sm"
                       variant={formData.tva_exempt ? "default" : "outline"}
                       onClick={() => setFormData(prev => ({ ...prev, tva_exempt: true }))}
                       className="flex-1 font-cairo">
-                      نعم → فعّل المعفى
+                      {tr('نعم → فعّل المعفى', 'Oui → Activer la franchise')}
                     </Button>
                     <Button type="button" size="sm"
                       variant={!formData.tva_exempt ? "default" : "outline"}
                       onClick={() => setFormData(prev => ({ ...prev, tva_exempt: false }))}
                       className="flex-1 font-cairo">
-                      لا → سجّل في TVA
+                      {tr('لا → سجّل في TVA', 'Non → Inscription TVA')}
                     </Button>
                   </div>
                   {!formData.tva_exempt && (
                     <p className="text-[11px] text-amber-500 font-cairo">
-                      ⚠️ لازم تسجل في TVA وتعمل تصريح كل 3 شهور.
+                      {tr('⚠️ لازم تسجل في TVA وتعمل تصريح كل 3 شهور.', '⚠️ Inscription à la TVA obligatoire avec déclaration trimestrielle.')}
                     </p>
                   )}
                 </div>
@@ -609,7 +609,7 @@ const ProfilePage = () => {
                     onCheckedChange={(checked) => setFormData(prev => ({ ...prev, tva_exempt: !!checked }))} className="mt-0.5" />
                   <Label htmlFor="tva-exempt" className="flex-1 cursor-pointer text-right font-cairo">
                     <span className="font-medium text-sm inline-flex items-center gap-1.5 flex-row-reverse">
-                      معفى من TVA (Art. 293 B)
+                      {tr('معفى من TVA (Art. 293 B)', 'Exonéré de TVA (Art. 293 B du CGI)')}
                       <Popover>
                         <PopoverTrigger asChild>
                           <button type="button" onClick={(e) => e.preventDefault()}
@@ -642,25 +642,25 @@ const ProfilePage = () => {
 
                 {!formData.tva_exempt && formData.legal_status === 'societe' && (
                   <div className="space-y-2">
-                    <FieldLabel icon={FileText} label="رقم TVA Intracommunautaire" />
+                    <FieldLabel icon={FileText} label={tr('رقم TVA Intracommunautaire', 'N° TVA Intracommunautaire')} />
                     <StyledInput value={formData.numero_tva} onChange={(e) => handleChange('numero_tva', e.target.value)} placeholder="FR 12 345678901" className="font-mono text-left" dir="ltr" />
                   </div>
                 )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <FieldLabel icon={Landmark} label="رأس المال" />
+                    <FieldLabel icon={Landmark} label={tr('رأس المال', 'Capital social')} />
                     <StyledInput value={formData.capital_social} onChange={(e) => handleChange('capital_social', e.target.value)}
                       placeholder={formData.legal_status === 'auto-entrepreneur' ? '0 €' : '1 000 €'} />
                   </div>
                   <div className="space-y-2">
-                    <FieldLabel icon={FileText} label="كود NAF" />
+                    <FieldLabel icon={FileText} label={tr('كود NAF', 'Code NAF')} />
                     <StyledInput value={formData.code_naf} onChange={(e) => handleChange('code_naf', e.target.value)} placeholder="4334Z" className="font-mono text-left" dir="ltr" />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <FieldLabel icon={MapPin} label="مدينة التسجيل (RCS/RM)" />
+                  <FieldLabel icon={MapPin} label={tr('مدينة التسجيل (RCS/RM)', "Ville d'immatriculation (RCS/RM)")} />
                   <StyledInput value={formData.ville_immatriculation} onChange={(e) => handleChange('ville_immatriculation', e.target.value)} placeholder="Paris" />
                 </div>
               </div>
@@ -669,7 +669,7 @@ const ProfilePage = () => {
               <div className="bg-white dark:bg-card rounded-2xl p-5 shadow-sm border border-border/20 space-y-5">
                 <p className="text-sm font-semibold text-foreground font-cairo text-right flex items-center gap-2 flex-row-reverse">
                   <CreditCard className="h-4 w-4 text-[#BFA071]" />
-                  البيانات البنكية
+                  {tr('البيانات البنكية', 'Coordonnées bancaires')}
                 </p>
 
                 {/* Scan RIB */}
@@ -677,7 +677,7 @@ const ProfilePage = () => {
                 <Button type="button" variant="outline" onClick={() => ribInputRef.current?.click()} disabled={isScanningRib}
                   className="w-full h-12 rounded-xl border-[#BFA071]/40 bg-[#BFA071]/5 hover:bg-[#BFA071]/10 text-foreground font-cairo flex items-center justify-center gap-2 flex-row-reverse">
                   {isScanningRib ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4 text-[#BFA071]" />}
-                  <span>🏦 سكان أو حمّل الريب</span>
+                  <span>🏦 {tr('سكان أو حمّل الريب', 'Scanner ou importer le RIB')}</span>
                 </Button>
                 <div className="space-y-2">
                   <FieldLabel icon={CreditCard} label="IBAN" />
@@ -688,7 +688,7 @@ const ProfilePage = () => {
                   <StyledInput value={formData.bic} onChange={(e) => handleChange('bic', e.target.value.toUpperCase())} placeholder="BNPAFRPP" className="font-mono text-sm text-left" dir="ltr" />
                 </div>
                 <div className="space-y-2">
-                  <FieldLabel icon={Mail} label="بريد المحاسب (اختياري)" filled={!!formData.accountant_email?.trim()} />
+                  <FieldLabel icon={Mail} label={tr('بريد المحاسب (اختياري)', 'Email du comptable (optionnel)')} filled={!!formData.accountant_email?.trim()} />
                   <StyledInput type="email" value={formData.accountant_email} onChange={(e) => handleChange('accountant_email', e.target.value)} placeholder="comptable@example.com" className="font-mono text-sm text-left" dir="ltr" />
                 </div>
               </div>
@@ -697,7 +697,7 @@ const ProfilePage = () => {
               <div className="bg-white dark:bg-card rounded-2xl p-5 shadow-sm border border-border/20 space-y-5">
                 <p className="text-sm font-semibold text-foreground font-cairo text-right flex items-center gap-2 flex-row-reverse">
                   <Image className="h-4 w-4 text-[#BFA071]" />
-                  الشعار والهيدر
+                  {tr('الشعار والهيدر', 'Logo et en-tête')}
                 </p>
                 <RadioGroup value={formData.header_type} onValueChange={(v) => handleChange('header_type', v)} className="space-y-2">
                   <div className={cn(
@@ -705,14 +705,14 @@ const ProfilePage = () => {
                     formData.header_type === 'automatic' ? "border-[#BFA071]/40 bg-[#BFA071]/5" : "border-border/30"
                   )}>
                     <RadioGroupItem value="automatic" id="auto-h" />
-                    <Label htmlFor="auto-h" className="flex-1 cursor-pointer text-sm text-right font-cairo">تلقائي (لوجو + نص)</Label>
+                    <Label htmlFor="auto-h" className="flex-1 cursor-pointer text-sm text-right font-cairo">{tr('تلقائي (لوجو + نص)', 'Automatique (Logo + Texte)')}</Label>
                   </div>
                   <div className={cn(
                     "flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors flex-row-reverse",
                     formData.header_type === 'full_image' ? "border-[#BFA071]/40 bg-[#BFA071]/5" : "border-border/30"
                   )}>
                     <RadioGroupItem value="full_image" id="full-h" />
-                    <Label htmlFor="full-h" className="flex-1 cursor-pointer text-sm text-right font-cairo">صورة كاملة (بانر)</Label>
+                    <Label htmlFor="full-h" className="flex-1 cursor-pointer text-sm text-right font-cairo">{tr('صورة كاملة (بانر)', 'Image complète (Bannière)')}</Label>
                   </div>
                 </RadioGroup>
 
@@ -764,7 +764,7 @@ const ProfilePage = () => {
             <div className="bg-white dark:bg-card rounded-2xl p-5 shadow-sm border border-border/20 space-y-5">
               <div className="flex items-center gap-2 flex-row-reverse">
                 <ShieldCheck className="h-5 w-5 text-[#BFA071]" />
-                <p className="text-sm font-semibold text-foreground font-cairo">التأمين العشري (Décennale)</p>
+                <p className="text-sm font-semibold text-foreground font-cairo">{tr('التأمين العشري (Décennale)', 'Assurance Décennale')}</p>
               </div>
               <p className="text-xs text-muted-foreground font-cairo text-right">{tr('هذا القسم منفصل عن بيانات الشركة – ضروري قانونياً', 'Cette section est distincte des données de l\'entreprise – obligatoire légalement')}</p>
 

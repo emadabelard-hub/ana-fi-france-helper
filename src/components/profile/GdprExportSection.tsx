@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const GdprExportSection = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isRTL } = useLanguage();
   const [loading, setLoading] = useState(false);
 
   const handleExport = async () => {
@@ -78,7 +80,7 @@ const GdprExportSection = () => {
       className="w-full gap-2 h-12 rounded-2xl border-primary/20 text-primary hover:bg-primary/5 font-semibold font-cairo"
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-      تصدير بياناتي الشخصية
+      {isRTL ? 'تصدير بياناتي الشخصية' : 'Exporter mes données personnelles'}
     </Button>
   );
 };

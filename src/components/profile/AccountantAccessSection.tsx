@@ -148,7 +148,7 @@ const AccountantAccessSection = ({ companyName }: { companyName?: string }) => {
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="مثال: محمد بن علي"
+            placeholder={isRTL ? "مثال: محمد بن علي" : "Ex : Jean Dupont"}
             className="h-12 rounded-xl text-right font-cairo"
           />
         </div>

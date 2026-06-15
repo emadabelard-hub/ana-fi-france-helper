@@ -16,6 +16,7 @@ const OPTIONS: { value: Dialect; label: string; sub: string }[] = [
 ];
 
 const DialectSelector = () => {
+  const { isRTL } = useLanguage();
   const { profile, updateProfile } = useProfile();
   const [value, setValue] = useState<Dialect>('egyptien');
 

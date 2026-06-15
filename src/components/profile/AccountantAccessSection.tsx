@@ -131,19 +131,19 @@ const AccountantAccessSection = ({ companyName }: { companyName?: string }) => {
         <div className="flex items-start gap-3 flex-row-reverse">
           <ShieldCheck className="h-5 w-5 text-[#BFA071] shrink-0 mt-0.5" />
           <p className="text-xs text-foreground/80 leading-relaxed flex-1 text-right font-cairo">
-            ادعُ محاسبك للوصول إلى بياناتك المالية في وضع القراءة فقط. يتلقى رابطاً آمناً عبر الإيميل ويرى الفواتير والمصاريف ويُحمّل FEC.
+            {tr('ادعُ محاسبك للوصول إلى بياناتك المالية في وضع القراءة فقط. يتلقى رابطاً آمناً عبر الإيميل ويرى الفواتير والمصاريف ويُحمّل FEC.', 'Invitez votre comptable à accéder à vos données financières en lecture seule. Il recevra un lien sécurisé par email et pourra voir les factures, dépenses et télécharger le FEC.')}
           </p>
         </div>
       </div>
 
       {/* Invite form */}
       <div className="bg-white dark:bg-card rounded-2xl p-5 shadow-sm border border-border/20 space-y-4">
-        <p className="text-sm font-semibold text-foreground font-cairo text-right">دعوة محاسب جديد</p>
+        <p className="text-sm font-semibold text-foreground font-cairo text-right">{tr('دعوة محاسب جديد', 'Inviter un nouveau comptable')}</p>
 
         <div className="space-y-2">
           <Label className="flex items-center gap-2 text-[13px] font-medium text-foreground/70 flex-row-reverse font-cairo">
             <User className="h-3.5 w-3.5 text-primary/50" />
-            اسم المحاسب
+            {tr('اسم المحاسب', 'Nom du comptable')}
           </Label>
           <Input
             value={name}
@@ -156,7 +156,7 @@ const AccountantAccessSection = ({ companyName }: { companyName?: string }) => {
         <div className="space-y-2">
           <Label className="flex items-center gap-2 text-[13px] font-medium text-foreground/70 flex-row-reverse font-cairo">
             <Mail className="h-3.5 w-3.5 text-primary/50" />
-            إيميل المحاسب
+            {tr('إيميل المحاسب', 'Email du comptable')}
           </Label>
           <Input
             type="email"
@@ -171,14 +171,14 @@ const AccountantAccessSection = ({ companyName }: { companyName?: string }) => {
 
         <div className="space-y-2">
           <Label className="flex items-center gap-2 text-[13px] font-medium text-foreground/70 flex-row-reverse font-cairo">
-            مدة الوصول
+            {tr('مدة الوصول', 'Durée d\'accès')}
           </Label>
           <div className="grid grid-cols-4 gap-2">
             {([
-              { v: 'permanent', l: 'دائم' },
-              { v: '30', l: '30 يوم' },
-              { v: '60', l: '60 يوم' },
-              { v: '90', l: '90 يوم' },
+              { v: 'permanent', lAr: 'دائم', lFr: 'Permanent' },
+              { v: '30', lAr: '30 يوم', lFr: '30 jours' },
+              { v: '60', lAr: '60 يوم', lFr: '60 jours' },
+              { v: '90', lAr: '90 يوم', lFr: '90 jours' },
             ] as const).map(opt => (
               <button
                 key={opt.v}
@@ -191,7 +191,7 @@ const AccountantAccessSection = ({ companyName }: { companyName?: string }) => {
                     : "bg-white dark:bg-card text-foreground border-border/40"
                 )}
               >
-                {opt.l}
+                {tr(opt.lAr, opt.lFr)}
               </button>
             ))}
           </div>
@@ -203,13 +203,13 @@ const AccountantAccessSection = ({ companyName }: { companyName?: string }) => {
           className="w-full h-12 rounded-xl bg-gradient-to-l from-[#BFA071] to-[#D4B896] hover:from-[#A8894F] hover:to-[#C4A880] text-white font-semibold font-cairo gap-2"
         >
           {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          إرسال الدعوة
+          {tr('إرسال الدعوة', 'Envoyer l\'invitation')}
         </Button>
       </div>
 
       {/* Active accesses */}
       <div className="space-y-3">
-        <p className="text-sm font-semibold text-foreground font-cairo text-right">الوصول النشط</p>
+        <p className="text-sm font-semibold text-foreground font-cairo text-right">{tr('الوصول النشط', 'Accès actifs')}</p>
         {loading ? (
           <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
         ) : list.length === 0 ? (
@@ -233,7 +233,7 @@ const AccountantAccessSection = ({ companyName }: { companyName?: string }) => {
                   <p className="font-semibold text-sm font-cairo">{item.accountant_name}</p>
                   <p className="text-xs text-muted-foreground font-[Inter]" dir="ltr" style={{ textAlign: 'right' }}>{item.accountant_email}</p>
                   <p className="text-[10px] text-muted-foreground font-cairo mt-1">
-                    {item.is_active ? '🟢 نشط' : '⚪ معطّل'} · {new Date(item.created_at).toLocaleDateString('fr-FR')}
+                    {item.is_active ? `🟢 ${tr('نشط', 'Actif')}` : '⚪ معطّل'} · {new Date(item.created_at).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
               </div>
@@ -241,14 +241,14 @@ const AccountantAccessSection = ({ companyName }: { companyName?: string }) => {
               <div className="flex gap-2 flex-row-reverse">
                 <Button variant="outline" size="sm" onClick={() => copyLink(item)} className="flex-1 gap-1.5 font-cairo">
                   {copiedId === item.id ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-                  نسخ الرابط
+                  {tr('نسخ الرابط', 'Copier le lien')}
                 </Button>
                 <Button
                   variant="outline" size="sm" onClick={() => handleToggle(item)}
                   className={cn("gap-1.5 font-cairo", item.is_active ? "text-amber-600 border-amber-300" : "text-green-600 border-green-300")}
                 >
                   <Power className="h-3.5 w-3.5" />
-                  {item.is_active ? 'تعطيل' : 'تفعيل'}
+                  {item.is_active ? tr('تعطيل', 'Désactiver') : 'تفعيل'}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => handleDelete(item)} className="gap-1.5 text-destructive border-destructive/30 font-cairo">
                   <Trash2 className="h-3.5 w-3.5" />

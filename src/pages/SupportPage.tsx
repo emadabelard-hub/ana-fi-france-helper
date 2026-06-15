@@ -31,7 +31,7 @@ const SupportPage = () => {
 
   // Chat state
   const [messages, setMessages] = useState<ChatMsg[]>([
-    { role: 'assistant', content: INITIAL_MSG },
+    { role: 'assistant', content: isRTL ? INITIAL_MSG_AR : INITIAL_MSG_FR },
   ]);
   const [isStreaming, setIsStreaming] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);

@@ -739,6 +739,7 @@ const ChantierReportPage = () => {
   };
 
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+  const tr = (ar: string, fr: string) => (isRTL ? ar : fr);
 
   return (
     <div
@@ -760,7 +761,7 @@ const ChantierReportPage = () => {
           <BackIcon size={20} color="#fff" />
         </button>
         <ClipboardList size={24} style={{ color: COLORS.gold }} />
-        <h1 className="text-white text-lg font-bold flex-1">تقرير الشانتي</h1>
+        <h1 className="text-white text-lg font-bold flex-1">{tr('تقرير الشانتي', 'Rapport de chantier')}</h1>
         <span className="text-xs px-2 py-1 rounded" style={{ background: COLORS.gold, color: '#0F2A5E', fontWeight: 700 }}>
           {reportNumber || '—'}
         </span>
@@ -769,7 +770,7 @@ const ChantierReportPage = () => {
       <div className="px-4 py-5 space-y-5 max-w-2xl mx-auto">
         {/* En-tête (info société, lecture seule) */}
         <section className="bg-white rounded-xl p-4 shadow-sm">
-          <h2 className="font-bold mb-2" style={{ color: COLORS.navyDark }}>معلومات الشركة</h2>
+          <h2 className="font-bold mb-2" style={{ color: COLORS.navyDark }}>{tr('معلومات الشركة', "Informations de l'entreprise")}</h2>
           {(() => {
             const shown = isTeamMode && patronProfile ? patronProfile : {
               company_name: profile?.company_name ?? null,
@@ -788,21 +789,21 @@ const ChantierReportPage = () => {
 
         {/* Chantier info */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
-          <h2 className="font-bold" style={{ color: COLORS.navyDark }}>معلومات الشانتي</h2>
+          <h2 className="font-bold" style={{ color: COLORS.navyDark }}>{tr('معلومات الشانتي', 'Informations du chantier')}</h2>
           {isTeamMode ? (
             <>
               <div className="text-sm text-gray-700">
-                <Label className="text-sm">العميل</Label>
+                <Label className="text-sm">{tr('العميل', 'Client')}</Label>
                 <div className="px-3 py-2 mt-1 rounded bg-gray-50 border font-bold">{clientName || '—'}</div>
               </div>
               <div className="text-sm text-gray-700">
-                <Label className="text-sm">الشانتي</Label>
+                <Label className="text-sm">{tr('الشانتي', 'Chantier')}</Label>
                 <div className="px-3 py-2 mt-1 rounded bg-gray-50 border font-bold">{chantierName || '—'}</div>
               </div>
             </>
           ) : clientsList.length === 0 ? (
             <div>
-              <Label className="text-sm">اختر العميل *</Label>
+              <Label className="text-sm">{tr('اختر العميل *', 'Client *')}</Label>
               <button
                 type="button"
                 onClick={() => navigate('/clients')}
@@ -814,7 +815,7 @@ const ChantierReportPage = () => {
             </div>
           ) : (
             <div>
-              <Label className="text-sm">اختر العميل *</Label>
+              <Label className="text-sm">{tr('اختر العميل *', 'Client *')}</Label>
               <Select
                 value={selectedClientId}
                 onValueChange={async (v) => {
@@ -870,7 +871,7 @@ const ChantierReportPage = () => {
           )}
           {!isTeamMode && (
           <div>
-            <Label className="text-sm">اختر الشانتي *</Label>
+            <Label className="text-sm">{tr('اختر الشانتي *', 'Chantier *')}</Label>
             <Select
               value={selectedChantierId}
               onValueChange={(v) => {
@@ -890,7 +891,7 @@ const ChantierReportPage = () => {
               disabled={!selectedClientId}
             >
               <SelectTrigger disabled={!selectedClientId}>
-                <SelectValue placeholder={!selectedClientId ? 'اختر العميل أولاً' : (chantiersList.length === 0 ? 'لا توجد شانتيات لهذا العميل' : '—')} />
+                <SelectValue placeholder={!selectedClientId ? tr('اختر العميل أولاً', "Sélectionnez d'abord un client") : (chantiersList.length === 0 ? tr('لا توجد شانتيات لهذا العميل', 'Aucun chantier pour ce client') : '—')} />
               </SelectTrigger>
               <SelectContent>
                 {chantiersList.map((ch) => (
@@ -901,12 +902,12 @@ const ChantierReportPage = () => {
           </div>
           )}
           <div>
-            <Label className="text-sm">عنوان الشانتي</Label>
+            <Label className="text-sm">{tr('عنوان الشانتي', 'Adresse du chantier')}</Label>
             <Input value={chantierAddress} readOnly className="bg-gray-50" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-sm">رقم التقرير</Label>
+              <Label className="text-sm">{tr('رقم التقرير', 'Numéro du rapport')}</Label>
               <Input
                 value={reportNumber}
                 onChange={(e) => setReportNumber(e.target.value)}
@@ -915,7 +916,7 @@ const ChantierReportPage = () => {
               />
             </div>
             <div>
-              <Label className="text-sm">التاريخ</Label>
+              <Label className="text-sm">{tr('التاريخ', 'Date')}</Label>
               <Input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} dir="ltr" />
             </div>
           </div>
@@ -923,10 +924,10 @@ const ChantierReportPage = () => {
 
         {/* Corps */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
-          <h2 className="font-bold" style={{ color: COLORS.navyDark }}>تفاصيل اليوم</h2>
+          <h2 className="font-bold" style={{ color: COLORS.navyDark }}>{tr('تفاصيل اليوم', 'Détails de la journée')}</h2>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-sm">عدد العمال</Label>
+              <Label className="text-sm">{tr('عدد العمال', "Nombre d'ouvriers")}</Label>
               <Input
                 type="number"
                 inputMode="numeric"
@@ -936,7 +937,7 @@ const ChantierReportPage = () => {
               />
             </div>
             <div>
-              <Label className="text-sm">ساعات العمل</Label>
+              <Label className="text-sm">{tr('ساعات العمل', 'Heures travaillées')}</Label>
               <Input
                 type="number"
                 inputMode="decimal"
@@ -947,7 +948,7 @@ const ChantierReportPage = () => {
             </div>
           </div>
           <div>
-            <Label className="text-sm">أسماء العمال (اختياري)</Label>
+            <Label className="text-sm">{tr('أسماء العمال (اختياري)', 'Noms des ouvriers (optionnel)')}</Label>
             <Textarea
               rows={2}
               value={workerNames}
@@ -956,7 +957,7 @@ const ChantierReportPage = () => {
             />
           </div>
           <div>
-            <Label className="text-sm">الطقس</Label>
+            <Label className="text-sm">{tr('الطقس', 'Météo')}</Label>
             <Select value={weather} onValueChange={(v: Weather) => setWeather(v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -969,15 +970,15 @@ const ChantierReportPage = () => {
             </Select>
           </div>
           <div>
-            <Label className="text-sm">الأعمال المنجزة *</Label>
+            <Label className="text-sm">{tr('الأعمال المنجزة *', 'Travaux réalisés *')}</Label>
             <Textarea rows={3} value={workDone} onChange={(e) => setWorkDone(e.target.value)} />
           </div>
           <div>
-            <Label className="text-sm">المواد المستعملة</Label>
+            <Label className="text-sm">{tr('المواد المستعملة', 'Matériaux utilisés')}</Label>
             <Textarea rows={2} value={materials} onChange={(e) => setMaterials(e.target.value)} />
           </div>
           <div>
-            <Label className="text-sm">ملاحظات / مشاكل</Label>
+            <Label className="text-sm">{tr('ملاحظات / مشاكل', 'Observations')}</Label>
             <Textarea rows={2} value={observations} onChange={(e) => setObservations(e.target.value)} />
           </div>
         </section>
@@ -991,7 +992,7 @@ const ChantierReportPage = () => {
               style={{ borderColor: COLORS.gold, color: COLORS.navyDark }}
             >
               <Camera size={20} />
-              <span className="text-sm font-medium">تصوير</span>
+              <span className="text-sm font-medium">{tr('تصوير', 'Prendre une photo')}</span>
               <input
                 type="file"
                 accept="image/*"
@@ -1005,7 +1006,7 @@ const ChantierReportPage = () => {
               style={{ borderColor: COLORS.gold, color: COLORS.navyDark }}
             >
               <ImageIcon size={20} />
-              <span className="text-sm font-medium">من المعرض</span>
+              <span className="text-sm font-medium">{tr('من المعرض', 'Depuis la galerie')}</span>
               <input
                 type="file"
                 accept="image/*"
@@ -1035,10 +1036,10 @@ const ChantierReportPage = () => {
 
         {/* Signatures */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-4">
-          <h2 className="font-bold" style={{ color: COLORS.navyDark }}>التوقيعات</h2>
+          <h2 className="font-bold" style={{ color: COLORS.navyDark }}>{tr('التوقيعات', 'Signatures')}</h2>
 
           <div className="space-y-2">
-            <Label className="text-sm">مسئول الشانتي</Label>
+            <Label className="text-sm">{tr('مسئول الشانتي', 'Responsable de chantier')}</Label>
             <Input
               placeholder="الاسم الكامل"
               value={chefName}

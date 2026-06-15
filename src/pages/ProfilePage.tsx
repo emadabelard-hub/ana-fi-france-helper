@@ -317,10 +317,10 @@ const ProfilePage = () => {
 
   /* ─── Status summary items ─── */
   const statusItems = useMemo(() => [
-    { label: 'جاهز للفواتير', done: progressPercent === 100 },
-    { label: 'التأمين مضاف', done: !!formData.assureur_name.trim() && !!formData.assurance_policy_number.trim() },
-    { label: 'التوقيع محفوظ', done: !!profile?.artisan_signature_url },
-  ], [progressPercent, formData, profile]);
+    { label: tr('جاهز للفواتير', 'Prêt à facturer'), done: progressPercent === 100 },
+    { label: tr('التأمين مضاف', 'Assurance ajoutée'), done: !!formData.assureur_name.trim() && !!formData.assurance_policy_number.trim() },
+    { label: tr('التوقيع محفوظ', 'Signature enregistrée'), done: !!profile?.artisan_signature_url },
+  ], [progressPercent, formData, profile, isRTL]);
 
   const userInitial = formData.full_name
     ? formData.full_name.charAt(0).toUpperCase()
@@ -384,7 +384,7 @@ const ProfilePage = () => {
                 {progressPercent}%
               </span>
               <span className="text-xs text-muted-foreground font-cairo">
-                ملفك {progressPercent === 100 ? 'مكتمل' : 'غير مكتمل'}
+                {tr('ملفك', 'Profil')} {progressPercent === 100 ? tr('مكتمل', 'complété') : tr('غير مكتمل', 'incomplet')}
               </span>
             </div>
             <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
@@ -393,7 +393,7 @@ const ProfilePage = () => {
             {progressPercent === 100 && (
               <div className="flex items-center gap-2 p-2 rounded-xl bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 flex-row-reverse">
                 <PartyPopper className="h-4 w-4 text-green-500 shrink-0" />
-                <p className="text-[11px] font-semibold text-green-700 dark:text-green-400 font-cairo">ملفك القانوني مكتمل 🎉</p>
+                <p className="text-[11px] font-semibold text-green-700 dark:text-green-400 font-cairo">{tr('ملفك القانوني مكتمل 🎉', 'Votre profil légal est complet 🎉')}</p>
               </div>
             )}
           </div>
@@ -419,7 +419,7 @@ const ProfilePage = () => {
                     )}
                   >
                     <span>{tab.icon}</span>
-                    <span>{tab.label}</span>
+                    <span>{tr(tabLabel[tab.key].ar, tabLabel[tab.key].fr)}</span>
                     {hasWarning && !isActive && (
                       <span className="absolute -top-1 -left-1 w-3 h-3 rounded-full bg-destructive border-2 border-[#FAFAFA] dark:border-background" />
                     )}
@@ -438,15 +438,15 @@ const ProfilePage = () => {
             <div className="space-y-4">
               <div className="bg-white dark:bg-card rounded-2xl p-5 shadow-sm border border-border/20 space-y-5">
                 <div className="space-y-2">
-                  <FieldLabel icon={User} label="الاسم الكامل" filled={isFieldFilled('full_name')} />
+                  <FieldLabel icon={User} label={tr('الاسم الكامل', 'Nom complet')} filled={isFieldFilled('full_name')} />
                   <StyledInput value={formData.full_name} onChange={(e) => handleChange('full_name', e.target.value)} placeholder="اكتب اسمك الكامل" />
                 </div>
                 <div className="space-y-2">
-                  <FieldLabel icon={Briefcase} label="المهنة" required filled={isFieldFilled('job')} />
+                  <FieldLabel icon={Briefcase} label={tr('المهنة', 'Métier')} required filled={isFieldFilled('job')} />
                   <StyledInput value={formData.job} onChange={(e) => handleChange('job', e.target.value)} placeholder="مثال: كهربائي، سبّاك، مقاول عام" />
                 </div>
                 <div className="space-y-2">
-                  <FieldLabel icon={Phone} label="رقم الهاتف" filled={!!formData.phone.trim()} />
+                  <FieldLabel icon={Phone} label={tr('رقم الهاتف', 'Téléphone')} filled={!!formData.phone.trim()} />
                   <StyledInput value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="06 12 34 56 78" className="font-[Inter] text-left" dir="ltr" />
                 </div>
               </div>
@@ -524,14 +524,14 @@ const ProfilePage = () => {
             <div className="space-y-4">
               {/* Company Info Card */}
               <div className="bg-white dark:bg-card rounded-2xl p-5 shadow-sm border border-border/20 space-y-5">
-                <p className="text-xs text-muted-foreground font-cairo text-right">المعلومات دي هتظهر على كل فواتيرك ودوفيهاتك</p>
+                <p className="text-xs text-muted-foreground font-cairo text-right">{tr('المعلومات دي هتظهر على كل فواتيرك ودوفيهاتك', 'Ces informations apparaîtront sur tous vos devis et factures')}</p>
 
                 {/* Scan Kbis */}
                 <input ref={kbisInputRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf" className="hidden" onChange={(e) => handleScanDocument(e, 'kbis')} />
                 <Button type="button" variant="outline" onClick={() => kbisInputRef.current?.click()} disabled={isScanningKbis}
                   className="w-full h-12 rounded-xl border-[#BFA071]/40 bg-[#BFA071]/5 hover:bg-[#BFA071]/10 text-foreground font-cairo flex items-center justify-center gap-2 flex-row-reverse">
                   {isScanningKbis ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4 text-[#BFA071]" />}
-                  <span>📄 سكان أو حمّل الكيبيس</span>
+                  <span>📄 {tr('سكان أو حمّل الكيبيس', 'Scanner ou importer le Kbis')}</span>
                 </Button>
 
                 <div className="space-y-2">

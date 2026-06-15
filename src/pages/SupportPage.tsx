@@ -16,7 +16,10 @@ interface ChatMsg {
   content: string;
 }
 
-const INITIAL_MSG = 'أهلاً يا معلم! أؤمرني، محتاج مساعدة في الدوفي، ولا عندك فكرة تخلي التطبيق أحسن؟ 🛠️';
+const INITIAL_MSG_AR = 'أهلاً يا معلم! أؤمرني، محتاج مساعدة في الدوفي، ولا عندك فكرة تخلي التطبيق أحسن؟ 🛠️';
+const INITIAL_MSG_FR = 'Bonjour ! Je suis Nossouh, votre assistant. Besoin d\'aide sur un devis, une facture, ou une idée pour améliorer l\'application ? 🛠️';
+const ERROR_MSG_AR = 'عذراً يا معلم، حصل مشكلة. جرب تاني بعد شوية 🙏';
+const ERROR_MSG_FR = 'Désolé, une erreur est survenue. Veuillez réessayer dans un instant 🙏';
 
 const SupportPage = () => {
   const { language } = useLanguage();
@@ -28,7 +31,7 @@ const SupportPage = () => {
 
   // Chat state
   const [messages, setMessages] = useState<ChatMsg[]>([
-    { role: 'assistant', content: INITIAL_MSG },
+    { role: 'assistant', content: isRTL ? INITIAL_MSG_AR : INITIAL_MSG_FR },
   ]);
   const [isStreaming, setIsStreaming] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -100,7 +103,7 @@ const SupportPage = () => {
       }
     } catch (e) {
       console.error('Support chat error:', e);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'عذراً يا معلم، حصل مشكلة. جرب تاني بعد شوية 🙏' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: isRTL ? ERROR_MSG_AR : ERROR_MSG_FR }]);
     } finally {
       setIsStreaming(false);
     }

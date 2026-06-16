@@ -1055,7 +1055,7 @@ const ChantierReportPage = () => {
               onClick={() => clearSig('chef')}
               className="flex items-center gap-1 text-xs text-gray-600"
             >
-              <Eraser size={14} /> مسح
+              <Eraser size={14} /> {tr('مسح', 'Effacer')}
             </button>
           </div>
 

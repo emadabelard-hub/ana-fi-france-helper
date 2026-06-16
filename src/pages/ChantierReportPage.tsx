@@ -1041,7 +1041,7 @@ const ChantierReportPage = () => {
           <div className="space-y-2">
             <Label className="text-sm">{tr('مسئول الشانتي', 'Responsable de chantier')}</Label>
             <Input
-              placeholder="الاسم الكامل"
+              placeholder={tr('الاسم الكامل', 'Nom complet')}
               value={chefName}
               onChange={(e) => setChefName(e.target.value)}
             />

@@ -401,6 +401,9 @@ function buildEntries(data: AccountingExportData): { entries: AccountingEntry[];
       dueDate: r.dueDate ? formatDate(r.dueDate) : inferDueDate(r.date),
       paymentDate: expensePaid ? (r.paymentDate ? formatDate(r.paymentDate) : date) : '',
       lettrage: expensePaid ? 'O' : 'N',
+      category: r.category ?? null,
+      expenseId: r.expenseId ?? null,
+
     });
   }
 

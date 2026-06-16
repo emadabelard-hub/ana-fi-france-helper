@@ -138,7 +138,11 @@ export interface CsvDocumentRow {
   dueDate?: string | null;            // date d'échéance prévue
   paymentReference?: string | null;   // réf. virement bancaire
   updatedAt?: string | null;          // pour déduire la date de paiement
+  // Spécifique dépenses (FEC – journal ACH)
+  category?: string | null;
+  expenseId?: string | null;
 }
+
 
 export interface CompanyHeaderInfo {
   companyName?: string | null;

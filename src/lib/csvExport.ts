@@ -285,7 +285,28 @@ interface AccountingEntry {
   dueDate: string;
   paymentDate: string;
   lettrage: 'O' | 'N';
+  // Spécifique dépenses (FEC ACH)
+  category?: string | null;
+  expenseId?: string | null;
 }
+
+// Mapping catégorie de dépense → compte de charge (PCG) pour le journal ACH
+const EXPENSE_CATEGORY_ACCOUNTS: Record<string, { compte: string; lib: string }> = {
+  materials: { compte: '601000', lib: 'Achats matières premières' },
+  tools:     { compte: '606300', lib: 'Petit équipement et outillage' },
+  transport: { compte: '606240', lib: 'Carburants et transport' },
+  food:      { compte: '625700', lib: 'Réceptions et repas' },
+  office:    { compte: '606400', lib: 'Fournitures de bureau' },
+  insurance: { compte: '616000', lib: "Primes d'assurance" },
+  telecom:   { compte: '626000', lib: 'Frais de télécommunication' },
+  other:     { compte: '606800', lib: 'Autres fournitures' },
+};
+
+function getExpenseAccount(category: string | null | undefined): { compte: string; lib: string } {
+  const key = (category || '').toLowerCase().trim();
+  return EXPENSE_CATEGORY_ACCOUNTS[key] || EXPENSE_CATEGORY_ACCOUNTS.other;
+}
+
 
 function buildEntries(data: AccountingExportData): { entries: AccountingEntry[]; errors: string[] } {
   TIERS_NAME_CACHE.clear();

@@ -614,31 +614,42 @@ export function generateFECCsv(data: AccountingExportData): string {
         ].join(TAB));
       }
     } else {
-      // Débit charge (601/625) : HT
+      // Mapping catégorie → compte de charge (601000, 606300, …) avec fallback 606800
+      const acc = getExpenseAccount(e.category);
+      const compteCharge = acc.compte;
+      const compteChargeLib = acc.lib;
+      const pieceRef = cleanFEC(e.expenseId || e.documentNumber);
+      const ht = Math.round(e.ht * 100) / 100;
+      const tva = Math.round(e.tvaMontant * 100) / 100;
+      const ttc = Math.round(e.ttc * 100) / 100;
+
+      // Débit compte de charge selon catégorie : HT (ou TTC si TVA = 0)
       lines.push([
         journalCode, journalLib, numStr, dateEcr,
-        e.compte, cleanFEC(e.compteLib), '', '',
-        cleanFEC(e.documentNumber), dateEcr, cleanFEC(e.libelle),
-        fecAmount(e.ht), fecAmount(0),
+        compteCharge, cleanFEC(compteChargeLib), '', '',
+        pieceRef, dateEcr, cleanFEC(e.libelle),
+        fecAmount(tva > 0 ? ht : ttc), fecAmount(0),
         '', '', dateEcr, '0,00', 'EUR',
       ].join(TAB));
-      // Débit TVA déductible (44566) si applicable
-      if (e.tvaMontant > 0 && e.compteTVA) {
+      // Débit TVA déductible (445660) si applicable
+      if (tva > 0) {
         lines.push([
           journalCode, journalLib, numStr, dateEcr,
-          e.compteTVA, 'TVA déductible', '', '',
-          cleanFEC(e.documentNumber), dateEcr, cleanFEC(e.libelle),
-          fecAmount(e.tvaMontant), fecAmount(0),
+          '445660', 'TVA déductible', '', '',
+          pieceRef, dateEcr, cleanFEC(e.libelle),
+          fecAmount(tva), fecAmount(0),
           '', '', dateEcr, '0,00', 'EUR',
         ].join(TAB));
       }
-      // Crédit fournisseur (401) : TTC
+      // Crédit fournisseur (401000) : TTC
       lines.push([
         journalCode, journalLib, numStr, dateEcr,
-        e.compteTiers, 'Fournisseurs', cleanFEC(e.tiers), cleanFEC(e.tiers),
-        cleanFEC(e.documentNumber), dateEcr, cleanFEC(e.libelle),
-        fecAmount(0), fecAmount(e.ttc),
+        '401000', 'Fournisseurs', cleanFEC(e.tiers), cleanFEC(e.tiers),
+        pieceRef, dateEcr, cleanFEC(e.libelle),
+        fecAmount(0), fecAmount(ttc),
         e.lettrage === 'O' ? 'L' + numStr : '', dateLet, dateEcr, '0,00', 'EUR',
+      ].join(TAB));
+
       ].join(TAB));
     }
   }

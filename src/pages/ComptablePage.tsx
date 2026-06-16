@@ -211,6 +211,40 @@ const ComptablePage = () => {
     triggerBlobDownload(fec, fname);
   };
 
+  const handleFecTxtExport = async () => {
+    if (!data) return;
+    const fec = buildFecBlob();
+    if (!fec) return;
+    // Réutilise exactement les données du xlsx (même logique, même équilibre) en relisant le buffer.
+    const buf = await fec.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' }) as any[][];
+    const fmtAmt = (v: any) => {
+      const n = Number(v) || 0;
+      return (Math.round(n * 100) / 100).toFixed(2).replace('.', ',');
+    };
+    const sanitize = (v: any) => String(v ?? '').replace(/[\t\r\n]/g, ' ');
+    const lines: string[] = [];
+    rows.forEach((r, i) => {
+      if (!r || r.length === 0) return;
+      const cells = r.slice(0, 13).map((c, idx) => {
+        if (i === 0) return sanitize(c);
+        // Colonnes 9,10,11 = Debit, Credit, Montantdevise → format FR
+        if (idx === 9 || idx === 10 || idx === 11) return fmtAmt(c);
+        return sanitize(c);
+      });
+      while (cells.length < 13) cells.push('');
+      lines.push(cells.join('\t'));
+    });
+    const txt = lines.join('\r\n');
+    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+    const siret = (data.company?.siret || '').replace(/\D/g, '').slice(0, 14) || '00000000000000';
+    const t = new Date();
+    const fname = `FEC${siret}_${t.getFullYear()}${String(t.getMonth() + 1).padStart(2, '0')}${String(t.getDate()).padStart(2, '0')}.txt`;
+    triggerBlobDownload(blob, fname);
+  };
+
   const safeName = (s: string) => (s || 'doc').replace(/[^\w.\-]+/g, '_');
 
   const triggerBlobDownload = (blob: Blob, filename: string) => {

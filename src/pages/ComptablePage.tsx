@@ -429,9 +429,14 @@ const ComptablePage = () => {
               <p className="text-xs text-gray-500">Fichier des écritures comptables (art. A47 A-1 LPF)</p>
             </div>
           </div>
-          <Button onClick={handleFecExport} className="gap-2 text-white" style={{ background: '#BFA071' }}>
-            <Download className="h-4 w-4" /> Télécharger FEC
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={handleFecExport} className="gap-2 text-white" style={{ background: '#BFA071' }}>
+              <Download className="h-4 w-4" /> FEC (.xlsx)
+            </Button>
+            <Button onClick={handleFecTxtExport} variant="outline" className="gap-2" style={{ borderColor: '#BFA071', color: '#8a6d3b' }}>
+              <Download className="h-4 w-4" /> FEC officiel (.txt)
+            </Button>
+          </div>
         </Card>
 
         {/* Bulk ZIP downloads */}

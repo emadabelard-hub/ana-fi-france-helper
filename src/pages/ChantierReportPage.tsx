@@ -963,7 +963,7 @@ const ChantierReportPage = () => {
               <SelectContent>
                 {WEATHER_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>
-                    {o.ar} — {o.fr}
+                    {isRTL ? `${o.ar} — ${o.fr}` : o.fr}
                   </SelectItem>
                 ))}
               </SelectContent>

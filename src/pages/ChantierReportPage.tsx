@@ -1063,7 +1063,7 @@ const ChantierReportPage = () => {
 
         {/* Actions */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
-          <h2 className="font-bold" style={{ color: COLORS.navyDark }}>الإرسال للعميل</h2>
+          <h2 className="font-bold" style={{ color: COLORS.navyDark }}>{tr('الإرسال للعميل', 'Envoyer au client')}</h2>
 
           <div className="flex flex-col gap-2 pt-2">
             <Button
@@ -1073,7 +1073,7 @@ const ChantierReportPage = () => {
               style={{ background: COLORS.navy }}
             >
               {(generating || translating) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              {translating ? 'جاري الترجمة...' : 'تحميل التقرير'}
+              {translating ? tr('جاري الترجمة...', 'Traduction...') : tr('تحميل التقرير', 'Télécharger le rapport')}
             </Button>
             <Button
               onClick={() => {
@@ -1084,7 +1084,7 @@ const ChantierReportPage = () => {
               className="w-full font-bold h-12"
               style={{ background: '#25D366', color: '#fff' }}
             >
-              📱 إرسال واتساب
+              📱 {tr('إرسال واتساب', 'Envoyer par WhatsApp')}
             </Button>
             <Button
               onClick={() => {
@@ -1094,10 +1094,10 @@ const ChantierReportPage = () => {
               className="w-full font-bold h-12"
               style={{ background: '#007AFF', color: '#fff' }}
             >
-              💬 إرسال SMS
+              💬 {tr('إرسال SMS', 'Envoyer par SMS')}
             </Button>
             <p className="text-xs text-gray-500 text-center pt-1">
-              💡 تحميل التقرير أولاً ثم مشاركته عبر واتساب
+              💡 {tr('تحميل التقرير أولاً ثم مشاركته عبر واتساب', 'Téléchargez d\'abord le rapport puis partagez-le sur WhatsApp')}
             </p>
           </div>
         </section>

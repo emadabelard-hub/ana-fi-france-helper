@@ -570,15 +570,21 @@ export function generateFECCsv(data: AccountingExportData): string {
   const lines: string[] = [headers.join(TAB)];
   let ecritureNum = 0;
 
-  for (const e of entries) {
+  // Ordre FEC : journal VTE d'abord (intact), puis journal ACH (numérotation continue).
+  const ventes = entries.filter(e => e.type === 'Vente');
+  const achats = entries.filter(e => e.type === 'Achat');
+  const ordered = [...ventes, ...achats];
+
+  for (const e of ordered) {
     ecritureNum += 1;
     const numStr = String(ecritureNum).padStart(6, '0');
     const journalCode = e.type === 'Vente' ? 'VTE' : 'ACH';
-    const journalLib = e.type === 'Vente' ? 'Journal des ventes' : 'Journal des achats';
+    const journalLib = e.type === 'Vente' ? 'Journal des ventes' : 'Achats';
     const dateEcr = fecDate(e.isoDate);
     const dateLet = e.lettrage === 'O' && e.paymentDate
       ? fecDate(new Date(e.paymentDate.split('/').reverse().join('-')).toISOString().slice(0, 10))
       : '';
+
 
     if (e.type === 'Vente') {
       // Débit client (411) : TTC

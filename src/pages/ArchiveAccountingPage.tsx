@@ -394,7 +394,10 @@ const ArchiveAccountingPage = () => {
         tvaAmount: e.rawData?.tva_amount ?? 0,
         totalTTC: e.amountTTC,
         paymentStatus: 'paid',
+        category: e.rawData?.category ?? null,
+        expenseId: e.rawData?.id ?? e.id ?? null,
       }));
+
 
     const p: any = profile || {};
     return {

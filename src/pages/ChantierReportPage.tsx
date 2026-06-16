@@ -985,7 +985,7 @@ const ChantierReportPage = () => {
 
         {/* Photos */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
-          <h2 className="font-bold" style={{ color: COLORS.navyDark }}>الصور</h2>
+          <h2 className="font-bold" style={{ color: COLORS.navyDark }}>{tr('الصور', 'Photos')}</h2>
           <div className="flex gap-2">
             <label
               className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed rounded-lg py-4 cursor-pointer"

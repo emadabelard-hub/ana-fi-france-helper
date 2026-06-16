@@ -103,29 +103,97 @@ const ComptablePage = () => {
 
   const buildFecBlob = (): Blob | null => {
     if (!data) return null;
+    const round2 = (x: number) => Math.round((Number(x) || 0) * 100) / 100;
     const rows: (string | number)[][] = [];
     rows.push(['JournalCode', 'JournalLib', 'EcritureNum', 'EcritureDate', 'CompteNum', 'CompteLib', 'PieceRef', 'PieceDate', 'EcritureLib', 'Debit', 'Credit', 'Montantdevise', 'Idevise']);
     let n = 1;
+    // Suivi des écritures pour contrôle d'équilibre par EcritureNum
+    const balanceByNum: Record<string, { debit: number; credit: number }> = {};
+    const pushRow = (r: (string | number)[]) => {
+      const num = String(r[2]);
+      const debit = Number(r[9]) || 0;
+      const credit = Number(r[10]) || 0;
+      if (!balanceByNum[num]) balanceByNum[num] = { debit: 0, credit: 0 };
+      balanceByNum[num].debit += debit;
+      balanceByNum[num].credit += credit;
+      rows.push(r);
+    };
+
     for (const d of data.documents) {
       if (d.document_type !== 'facture') continue;
       const dateStr = (d.created_at || '').slice(0, 10).replace(/-/g, '');
-      rows.push(['VTE', 'Ventes', String(n), dateStr, '411000', d.client_name || 'Client', d.document_number, dateStr, `Facture ${d.document_number}`, Number(d.total_ttc || 0), 0, 0, 'EUR']);
-      rows.push(['VTE', 'Ventes', String(n), dateStr, '707000', 'Ventes HT', d.document_number, dateStr, `Facture ${d.document_number}`, 0, Number(d.subtotal_ht || 0), 0, 'EUR']);
-      if (Number(d.tva_amount || 0) > 0) {
-        rows.push(['VTE', 'Ventes', String(n), dateStr, '445710', 'TVA collectée', d.document_number, dateStr, `TVA ${d.document_number}`, 0, Number(d.tva_amount || 0), 0, 'EUR']);
+      // Recalcul strict : on reconstruit le TTC depuis HT + TVA recalculés.
+      // Regroupement par taux : si plusieurs taux existent dans lines[], on crée une ligne 445710 par taux.
+      const lines: any[] = Array.isArray((d as any).lines) ? (d as any).lines : [];
+      const htByRate: Record<string, number> = {};
+      const tvaByRate: Record<string, number> = {};
+      let htTotal = 0;
+      let tvaTotal = 0;
+      if (lines.length > 0) {
+        for (const ln of lines) {
+          const lineHt = Number(ln.total_ht ?? ln.totalHT ?? ((Number(ln.quantity || 0)) * Number(ln.unit_price || ln.unitPrice || 0))) || 0;
+          const rate = Number(ln.tva_rate ?? ln.tvaRate ?? d.tva_rate ?? 0) || 0;
+          const lineTva = round2(lineHt * rate / 100);
+          const key = rate.toFixed(2);
+          htByRate[key] = (htByRate[key] || 0) + lineHt;
+          tvaByRate[key] = (tvaByRate[key] || 0) + lineTva;
+          htTotal += lineHt;
+          tvaTotal += lineTva;
+        }
+        htTotal = round2(htTotal);
+        tvaTotal = round2(tvaTotal);
+      } else {
+        // Fallback : utiliser les champs stockés mais TVA recalculée à partir du taux pour garantir l'équilibre
+        htTotal = round2(Number(d.subtotal_ht || 0));
+        const rate = Number(d.tva_rate || 0);
+        tvaTotal = rate > 0 ? round2(htTotal * rate / 100) : round2(Number(d.tva_amount || 0));
+        const key = (rate || 0).toFixed(2);
+        htByRate[key] = htTotal;
+        tvaByRate[key] = tvaTotal;
+      }
+      const ttc = round2(htTotal + tvaTotal);
+      pushRow(['VTE', 'Ventes', String(n), dateStr, '411000', d.client_name || 'Client', d.document_number, dateStr, `Facture ${d.document_number}`, ttc, 0, 0, 'EUR']);
+      pushRow(['VTE', 'Ventes', String(n), dateStr, '707000', 'Ventes HT', d.document_number, dateStr, `Facture ${d.document_number}`, 0, htTotal, 0, 'EUR']);
+      for (const key of Object.keys(tvaByRate)) {
+        const tvaAmt = round2(tvaByRate[key]);
+        if (tvaAmt > 0) {
+          const rateLabel = parseFloat(key).toFixed(2).replace(/\.00$/, '');
+          pushRow(['VTE', 'Ventes', String(n), dateStr, '445710', `TVA collectée ${rateLabel}%`, d.document_number, dateStr, `TVA ${d.document_number}`, 0, tvaAmt, 0, 'EUR']);
+        }
       }
       n++;
     }
     for (const e of data.expenses) {
       const dateStr = (e.expense_date || '').replace(/-/g, '');
-      const ht = Number(e.amount || 0) - Number(e.tva_amount || 0);
-      rows.push(['HA', 'Achats', String(n), dateStr, '606000', e.category || 'Achats', String(e.id).slice(0, 8), dateStr, e.title || 'Dépense', ht, 0, 0, 'EUR']);
-      if (Number(e.tva_amount || 0) > 0) {
-        rows.push(['HA', 'Achats', String(n), dateStr, '445660', 'TVA déductible', String(e.id).slice(0, 8), dateStr, `TVA ${e.title}`, Number(e.tva_amount), 0, 0, 'EUR']);
+      const ht = round2(Number(e.amount || 0) - Number(e.tva_amount || 0));
+      const tva = round2(Number(e.tva_amount || 0));
+      const ttc = round2(ht + tva);
+      pushRow(['ACH', 'Achats', String(n), dateStr, '606000', e.category || 'Achats', String(e.id).slice(0, 8), dateStr, e.title || 'Dépense', ht, 0, 0, 'EUR']);
+      if (tva > 0) {
+        pushRow(['ACH', 'Achats', String(n), dateStr, '445660', 'TVA déductible', String(e.id).slice(0, 8), dateStr, `TVA ${e.title}`, tva, 0, 0, 'EUR']);
       }
-      rows.push(['HA', 'Achats', String(n), dateStr, '401000', 'Fournisseur', String(e.id).slice(0, 8), dateStr, e.title || 'Dépense', 0, Number(e.amount || 0), 0, 'EUR']);
+      pushRow(['ACH', 'Achats', String(n), dateStr, '401000', 'Fournisseur', String(e.id).slice(0, 8), dateStr, e.title || 'Dépense', 0, ttc, 0, 'EUR']);
       n++;
     }
+
+    // Contrôle automatique d'équilibre (FEC)
+    let totalDebit = 0;
+    let totalCredit = 0;
+    const unbalanced: string[] = [];
+    for (const [num, b] of Object.entries(balanceByNum)) {
+      totalDebit += b.debit;
+      totalCredit += b.credit;
+      if (Math.abs(round2(b.debit) - round2(b.credit)) > 0.01) {
+        unbalanced.push(`EcritureNum ${num}: débit ${round2(b.debit)} ≠ crédit ${round2(b.credit)}`);
+      }
+    }
+    if (unbalanced.length > 0) {
+      console.warn('[FEC] Écritures déséquilibrées détectées:', unbalanced);
+    }
+    if (Math.abs(round2(totalDebit) - round2(totalCredit)) > 0.01) {
+      console.warn(`[FEC] Total débit ${round2(totalDebit)} ≠ Total crédit ${round2(totalCredit)} (écart ${round2(totalDebit - totalCredit)})`);
+    }
+
     const ws = XLSX.utils.aoa_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'FEC');

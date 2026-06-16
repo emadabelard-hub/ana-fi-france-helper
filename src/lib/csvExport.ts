@@ -650,7 +650,7 @@ export function generateFECCsv(data: AccountingExportData): string {
         e.lettrage === 'O' ? 'L' + numStr : '', dateLet, dateEcr, '0,00', 'EUR',
       ].join(TAB));
 
-      ].join(TAB));
+
     }
   }
 

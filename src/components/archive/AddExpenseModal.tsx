@@ -160,7 +160,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         
         const { data: signedUrlData } = await supabase.storage
           .from('expense-receipts')
-          .createSignedUrl(path, 3600);
+          .createSignedUrl(path, 60 * 60 * 24 * 365);
         receiptUrl = signedUrlData?.signedUrl || path;
       }
 

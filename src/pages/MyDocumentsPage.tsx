@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { downloadFacturXXml, CHORUS_PRO_URL } from '@/lib/facturxExport';
+import { refreshExpenseReceiptUrl } from '@/lib/storageUtils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -165,7 +166,8 @@ const MyDocumentsPage = () => {
   const handleOpen = async (doc: UnifiedDoc) => {
     if (doc.source === 'expense') {
       if (doc.receipt_url) {
-        window.open(doc.receipt_url, '_blank');
+        const fresh = await refreshExpenseReceiptUrl(doc.receipt_url);
+        window.open(fresh || doc.receipt_url, '_blank');
       } else {
         toast({ title: t('لا يوجد ملف مرفق', 'Aucun fichier joint') });
       }
@@ -208,7 +210,13 @@ const MyDocumentsPage = () => {
       return;
     }
     try {
-      const res = await fetch(doc.receipt_url);
+      const fresh = (await refreshExpenseReceiptUrl(doc.receipt_url)) || doc.receipt_url;
+      let res = await fetch(fresh);
+      if (!res.ok && fresh !== doc.receipt_url) {
+        // retry once with re-refreshed URL
+        const retry = (await refreshExpenseReceiptUrl(doc.receipt_url)) || doc.receipt_url;
+        res = await fetch(retry);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -221,7 +229,8 @@ const MyDocumentsPage = () => {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       console.warn('[MyDocs] download failed:', err);
-      window.open(doc.receipt_url, '_blank');
+      const fresh = (await refreshExpenseReceiptUrl(doc.receipt_url)) || doc.receipt_url;
+      window.open(fresh, '_blank');
     }
   };
 
@@ -354,6 +363,14 @@ const MyDocumentsPage = () => {
                 alt={doc.document_number}
                 loading="lazy"
                 className="w-full h-32 object-cover"
+                data-retry="0"
+                onError={async (e) => {
+                  const el = e.currentTarget as HTMLImageElement;
+                  if (el.dataset.retry === '1') return;
+                  el.dataset.retry = '1';
+                  const fresh = await refreshExpenseReceiptUrl(doc.receipt_url!);
+                  if (fresh) el.src = fresh;
+                }}
               />
             ) : (
               <div className="w-full h-32 flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,55%)]">

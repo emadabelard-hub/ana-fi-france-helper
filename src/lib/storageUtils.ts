@@ -74,3 +74,40 @@ export async function resolveAssetUrls(urls: {
 
   return { logoUrl, artisanSignatureUrl, stampUrl, headerImageUrl };
 }
+
+/**
+ * Extract the storage path from a signed/public URL of any bucket.
+ */
+export function extractStoragePath(value: string | null | undefined, bucket: string): string | null {
+  if (!value) return null;
+  const normalized = value.trim();
+  if (!normalized) return null;
+  if (!normalized.includes('://') && !normalized.startsWith('blob:') && !normalized.startsWith('data:')) {
+    return normalized.replace(new RegExp(`^${bucket}/`), '').split('?')[0] || null;
+  }
+  const marker = `${bucket}/`;
+  const idx = normalized.indexOf(marker);
+  if (idx === -1) return null;
+  return normalized.substring(idx + marker.length).split('?')[0] || null;
+}
+
+/**
+ * Force-refresh a signed URL for the expense-receipts bucket.
+ * Returns null if the path cannot be extracted or signing fails.
+ */
+export async function refreshExpenseReceiptUrl(
+  url: string | null | undefined,
+  expiresIn = 60 * 60
+): Promise<string | null> {
+  if (!url) return null;
+  const path = extractStoragePath(url, 'expense-receipts');
+  if (!path) return url;
+  const { data, error } = await supabase.storage
+    .from('expense-receipts')
+    .createSignedUrl(path, expiresIn);
+  if (error || !data?.signedUrl) {
+    console.warn('[refreshExpenseReceiptUrl] failed:', error?.message);
+    return null;
+  }
+  return data.signedUrl;
+}

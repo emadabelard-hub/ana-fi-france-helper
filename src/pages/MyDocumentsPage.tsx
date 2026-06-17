@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { downloadFacturXXml, CHORUS_PRO_URL } from '@/lib/facturxExport';
+import { refreshExpenseReceiptUrl } from '@/lib/storageUtils';
 import {
   AlertDialog,
   AlertDialogAction,

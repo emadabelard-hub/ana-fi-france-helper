@@ -166,7 +166,8 @@ const MyDocumentsPage = () => {
   const handleOpen = async (doc: UnifiedDoc) => {
     if (doc.source === 'expense') {
       if (doc.receipt_url) {
-        window.open(doc.receipt_url, '_blank');
+        const fresh = await refreshExpenseReceiptUrl(doc.receipt_url);
+        window.open(fresh || doc.receipt_url, '_blank');
       } else {
         toast({ title: t('لا يوجد ملف مرفق', 'Aucun fichier joint') });
       }

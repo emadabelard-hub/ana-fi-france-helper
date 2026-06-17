@@ -363,6 +363,14 @@ const MyDocumentsPage = () => {
                 alt={doc.document_number}
                 loading="lazy"
                 className="w-full h-32 object-cover"
+                data-retry="0"
+                onError={async (e) => {
+                  const el = e.currentTarget as HTMLImageElement;
+                  if (el.dataset.retry === '1') return;
+                  el.dataset.retry = '1';
+                  const fresh = await refreshExpenseReceiptUrl(doc.receipt_url!);
+                  if (fresh) el.src = fresh;
+                }}
               />
             ) : (
               <div className="w-full h-32 flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,55%)]">

@@ -210,7 +210,13 @@ const MyDocumentsPage = () => {
       return;
     }
     try {
-      const res = await fetch(doc.receipt_url);
+      const fresh = (await refreshExpenseReceiptUrl(doc.receipt_url)) || doc.receipt_url;
+      let res = await fetch(fresh);
+      if (!res.ok && fresh !== doc.receipt_url) {
+        // retry once with re-refreshed URL
+        const retry = (await refreshExpenseReceiptUrl(doc.receipt_url)) || doc.receipt_url;
+        res = await fetch(retry);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -223,7 +229,8 @@ const MyDocumentsPage = () => {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       console.warn('[MyDocs] download failed:', err);
-      window.open(doc.receipt_url, '_blank');
+      const fresh = (await refreshExpenseReceiptUrl(doc.receipt_url)) || doc.receipt_url;
+      window.open(fresh, '_blank');
     }
   };
 

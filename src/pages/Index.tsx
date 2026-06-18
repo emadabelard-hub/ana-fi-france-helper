@@ -312,6 +312,83 @@ const Index = () => {
         </div>
       </div>
 
+      {/* VAT ESTIMATION */}
+      {user && (
+        <div className="px-4 mt-3">
+          <div
+            className="rounded-2xl p-4 border shadow-sm"
+            style={{ background: '#FFF8E8', borderColor: '#EBD9A8' }}
+          >
+            <div className={cn('flex items-center justify-between mb-3', isRTL && 'flex-row-reverse')}>
+              <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+                <span className="text-base">🧾</span>
+                <span className="text-[12px] font-extrabold uppercase" style={{ color: COLORS.goldDark }}>
+                  {isRTL ? 'تقدير الـ TVA' : 'Estimation TVA'}
+                </span>
+              </div>
+              <span className="text-[10px] font-bold" style={{ color: COLORS.navyDark }}>{periodLabel}</span>
+            </div>
+
+            <div className={cn('flex gap-1.5 mb-3', isRTL && 'flex-row-reverse')}>
+              {([
+                { k: 'month' as VatPeriod, fr: 'Ce mois', ar: 'هذا الشهر' },
+                { k: 'quarter' as VatPeriod, fr: 'Trimestre', ar: 'الربع' },
+                { k: 'year' as VatPeriod, fr: 'Année', ar: 'السنة' },
+              ]).map(opt => (
+                <button
+                  key={opt.k}
+                  onClick={() => setVatPeriod(opt.k)}
+                  className="flex-1 text-[10px] font-bold px-2 py-1.5 rounded-lg border transition"
+                  style={
+                    vatPeriod === opt.k
+                      ? { background: COLORS.goldDark, color: '#fff', borderColor: COLORS.goldDark }
+                      : { background: '#fff', color: COLORS.navyDark, borderColor: '#EBD9A8' }
+                  }
+                >
+                  {isRTL ? opt.ar : opt.fr}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-1.5 text-[12px]" dir="ltr">
+              <div className={cn('flex justify-between', isRTL && 'flex-row-reverse')}>
+                <span className="text-gray-600" style={isRTL ? { fontFamily: "'Tajawal', sans-serif" } : undefined}>
+                  {isRTL ? 'الـ TVA المحصلة' : 'TVA collectée'}
+                </span>
+                <span className="font-extrabold" style={{ color: COLORS.navyDark }}>{fmtEUR2(tvaCollectee)}</span>
+              </div>
+              <div className={cn('flex justify-between', isRTL && 'flex-row-reverse')}>
+                <span className="text-gray-600" style={isRTL ? { fontFamily: "'Tajawal', sans-serif" } : undefined}>
+                  {isRTL ? 'الـ TVA القابلة للخصم' : 'TVA déductible'}
+                </span>
+                <span className="font-extrabold" style={{ color: COLORS.navyDark }}>- {fmtEUR2(tvaDeductible)}</span>
+              </div>
+              <div
+                className={cn('flex justify-between rounded-lg px-3 py-2 mt-2 font-extrabold', isRTL && 'flex-row-reverse')}
+                style={
+                  tvaNette >= 0
+                    ? { background: '#FDECEC', color: '#B91C1C' }
+                    : { background: '#DCFCE7', color: '#15803D' }
+                }
+              >
+                <span style={isRTL ? { fontFamily: "'Tajawal', sans-serif" } : undefined}>
+                  {tvaNette >= 0
+                    ? (isRTL ? 'الصافي المستحق' : 'TVA nette à payer')
+                    : (isRTL ? 'رصيد TVA' : 'Crédit TVA')}
+                </span>
+                <span>{fmtEUR2(Math.abs(tvaNette))}</span>
+              </div>
+            </div>
+
+            <p className={cn('text-[10px] text-gray-500 mt-3 leading-snug', isRTL && 'text-right')}>
+              {isRTL
+                ? 'تقدير إرشادي مبني على فواتيرك المدفوعة ومصاريفك. يجب التحقق منه مع محاسبك.'
+                : 'Estimation indicative basée sur vos factures payées et dépenses. À faire valider par votre comptable.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* QUICK ACTIONS */}
       <div className="px-4 mt-6">
         <h2 className={cn('text-[13px] font-bold mb-3', isRTL && 'text-right')} style={{ color: COLORS.navyDark }}>

@@ -22,6 +22,23 @@ const COLORS = {
 const fmtEUR = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0);
 
+const fmtEUR2 = (n: number) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
+
+type VatPeriod = 'month' | 'quarter' | 'year';
+
+const getPeriodBounds = (p: VatPeriod): { start: Date; end: Date } => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  if (p === 'month') return { start: new Date(y, m, 1), end: new Date(y, m + 1, 1) };
+  if (p === 'quarter') {
+    const qStart = Math.floor(m / 3) * 3;
+    return { start: new Date(y, qStart, 1), end: new Date(y, qStart + 3, 1) };
+  }
+  return { start: new Date(y, 0, 1), end: new Date(y + 1, 0, 1) };
+};
+
 interface RecentDoc {
   id: string;
   document_number: string;
@@ -52,6 +69,9 @@ const Index = () => {
   const [creancesCount, setCreancesCount] = useState(0);
   const [beneficeNet, setBeneficeNet] = useState(0);
   const [recentDocs, setRecentDocs] = useState<RecentDoc[]>([]);
+  const [vatPeriod, setVatPeriod] = useState<VatPeriod>('month');
+  const [paidInvoices, setPaidInvoices] = useState<Array<{ tva_amount: number; created_at: string }>>([]);
+  const [allExpenses, setAllExpenses] = useState<Array<{ tva_amount: number; expense_date: string | null; created_at: string }>>([]);
 
   // Load Google Fonts (Tajawal + Poppins)
   useEffect(() => {
@@ -69,15 +89,22 @@ const Index = () => {
     if (!user) return;
     const { data: docs } = await supabase
       .from('documents_comptables')
-      .select('id, document_number, client_name, subtotal_ht, total_ttc, status, payment_status, document_type, created_at')
+      .select('id, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, payment_status, document_type, created_at')
       .eq('user_id', user.id)
       .eq('document_type', 'facture')
       .order('created_at', { ascending: false });
+
+    const { data: expensesData } = await supabase
+      .from('expenses')
+      .select('tva_amount, expense_date, created_at')
+      .eq('user_id', user.id);
+    setAllExpenses((expensesData || []) as any[]);
 
     const list = (docs || []) as any[];
     const issued = list.filter(d => ['finalized', 'converted'].includes(d.status));
     const paid = issued.filter(d => d.payment_status === 'paid');
     const unpaid = issued.filter(d => d.payment_status !== 'paid' && d.status !== 'cancelled');
+    setPaidInvoices(paid.map(d => ({ tva_amount: Number(d.tva_amount) || 0, created_at: d.created_at })));
 
     const sumTTC = (arr: any[]) => arr.reduce((s, d) => s + (Number(d.total_ttc) || 0), 0);
     const sumHT = (arr: any[]) => arr.reduce((s, d) => s + (Number(d.subtotal_ht) || 0), 0);
@@ -144,6 +171,30 @@ const Index = () => {
     { icon: BarChart2, ar: 'حساباتي', fr: 'Mes Comptes', path: '/expenses' },
     { icon: ClipboardList, ar: 'تقرير الشانتي', fr: 'Rapport chantier', path: '/chantier-report' },
   ];
+
+  const { tvaCollectee, tvaDeductible, tvaNette, periodLabel } = (() => {
+    const { start, end } = getPeriodBounds(vatPeriod);
+    const inRange = (iso?: string | null) => {
+      if (!iso) return false;
+      const t = new Date(iso).getTime();
+      return t >= start.getTime() && t < end.getTime();
+    };
+    const collectee = paidInvoices.filter(d => inRange(d.created_at))
+      .reduce((s, d) => s + (Number(d.tva_amount) || 0), 0);
+    const deductible = allExpenses.filter(e => inRange(e.expense_date || e.created_at))
+      .reduce((s, e) => s + (Number(e.tva_amount) || 0), 0);
+    const labels: Record<VatPeriod, { ar: string; fr: string }> = {
+      month: { ar: 'هذا الشهر', fr: 'Ce mois' },
+      quarter: { ar: 'هذا الربع', fr: 'Ce trimestre' },
+      year: { ar: 'هذه السنة', fr: 'Cette année' },
+    };
+    return {
+      tvaCollectee: collectee,
+      tvaDeductible: deductible,
+      tvaNette: collectee - deductible,
+      periodLabel: isRTL ? labels[vatPeriod].ar : labels[vatPeriod].fr,
+    };
+  })();
 
   const statusBadge = (d: RecentDoc) => {
     const isPaid = d.payment_status === 'paid';
@@ -260,6 +311,83 @@ const Index = () => {
           </p>
         </div>
       </div>
+
+      {/* VAT ESTIMATION */}
+      {user && (
+        <div className="px-4 mt-3">
+          <div
+            className="rounded-2xl p-4 border shadow-sm"
+            style={{ background: '#FFF8E8', borderColor: '#EBD9A8' }}
+          >
+            <div className={cn('flex items-center justify-between mb-3', isRTL && 'flex-row-reverse')}>
+              <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+                <span className="text-base">🧾</span>
+                <span className="text-[12px] font-extrabold uppercase" style={{ color: COLORS.goldDark }}>
+                  {isRTL ? 'تقدير الـ TVA' : 'Estimation TVA'}
+                </span>
+              </div>
+              <span className="text-[10px] font-bold" style={{ color: COLORS.navyDark }}>{periodLabel}</span>
+            </div>
+
+            <div className={cn('flex gap-1.5 mb-3', isRTL && 'flex-row-reverse')}>
+              {([
+                { k: 'month' as VatPeriod, fr: 'Ce mois', ar: 'هذا الشهر' },
+                { k: 'quarter' as VatPeriod, fr: 'Trimestre', ar: 'الربع' },
+                { k: 'year' as VatPeriod, fr: 'Année', ar: 'السنة' },
+              ]).map(opt => (
+                <button
+                  key={opt.k}
+                  onClick={() => setVatPeriod(opt.k)}
+                  className="flex-1 text-[10px] font-bold px-2 py-1.5 rounded-lg border transition"
+                  style={
+                    vatPeriod === opt.k
+                      ? { background: COLORS.goldDark, color: '#fff', borderColor: COLORS.goldDark }
+                      : { background: '#fff', color: COLORS.navyDark, borderColor: '#EBD9A8' }
+                  }
+                >
+                  {isRTL ? opt.ar : opt.fr}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-1.5 text-[12px]" dir="ltr">
+              <div className={cn('flex justify-between', isRTL && 'flex-row-reverse')}>
+                <span className="text-gray-600" style={isRTL ? { fontFamily: "'Tajawal', sans-serif" } : undefined}>
+                  {isRTL ? 'الـ TVA المحصلة' : 'TVA collectée'}
+                </span>
+                <span className="font-extrabold" style={{ color: COLORS.navyDark }}>{fmtEUR2(tvaCollectee)}</span>
+              </div>
+              <div className={cn('flex justify-between', isRTL && 'flex-row-reverse')}>
+                <span className="text-gray-600" style={isRTL ? { fontFamily: "'Tajawal', sans-serif" } : undefined}>
+                  {isRTL ? 'الـ TVA القابلة للخصم' : 'TVA déductible'}
+                </span>
+                <span className="font-extrabold" style={{ color: COLORS.navyDark }}>- {fmtEUR2(tvaDeductible)}</span>
+              </div>
+              <div
+                className={cn('flex justify-between rounded-lg px-3 py-2 mt-2 font-extrabold', isRTL && 'flex-row-reverse')}
+                style={
+                  tvaNette >= 0
+                    ? { background: '#FDECEC', color: '#B91C1C' }
+                    : { background: '#DCFCE7', color: '#15803D' }
+                }
+              >
+                <span style={isRTL ? { fontFamily: "'Tajawal', sans-serif" } : undefined}>
+                  {tvaNette >= 0
+                    ? (isRTL ? 'الصافي المستحق' : 'TVA nette à payer')
+                    : (isRTL ? 'رصيد TVA' : 'Crédit TVA')}
+                </span>
+                <span>{fmtEUR2(Math.abs(tvaNette))}</span>
+              </div>
+            </div>
+
+            <p className={cn('text-[10px] text-gray-500 mt-3 leading-snug', isRTL && 'text-right')}>
+              {isRTL
+                ? 'تقدير إرشادي مبني على فواتيرك المدفوعة ومصاريفك. يجب التحقق منه مع محاسبك.'
+                : 'Estimation indicative basée sur vos factures payées et dépenses. À faire valider par votre comptable.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* QUICK ACTIONS */}
       <div className="px-4 mt-6">

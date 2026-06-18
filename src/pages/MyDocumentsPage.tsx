@@ -196,13 +196,19 @@ const MyDocumentsPage = () => {
   const handleOpen = async (doc: UnifiedDoc) => {
     if (doc.source === 'expense') {
       if (doc.receipt_url) {
-        const fresh = await refreshExpenseReceiptUrl(doc.receipt_url);
-        window.open(fresh || doc.receipt_url, '_blank');
+        const fresh = await refreshExpenseReceiptUrl(doc.receipt_url, 3600);
+        if (fresh) {
+          setSignedReceipts((prev) => ({ ...prev, [doc.id]: fresh }));
+          window.open(fresh, '_blank');
+        } else {
+          toast({ title: t('تعذّر فتح الملف', 'Impossible d’ouvrir le fichier'), variant: 'destructive' });
+        }
       } else {
         toast({ title: t('لا يوجد ملف مرفق', 'Aucun fichier joint') });
       }
       return;
     }
+
     try {
       const { data } = await supabase
         .from('documents')

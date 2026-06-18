@@ -57,6 +57,8 @@ const MyDocumentsPage = () => {
   const [typeFilter, setTypeFilter] = useState<DocType>('all');
   const [period, setPeriod] = useState<Period>('month');
   const [toDelete, setToDelete] = useState<UnifiedDoc | null>(null);
+  const [signedReceipts, setSignedReceipts] = useState<Record<string, string>>({});
+
 
   const t = (ar: string, fr: string) => (isRTL ? ar : fr);
 
@@ -145,6 +147,34 @@ const MyDocumentsPage = () => {
     };
   }, [user]);
 
+  // Always regenerate fresh signed URLs for expense receipts on display,
+  // including for older expenses whose stored URL may be an expired signed URL.
+  useEffect(() => {
+    const expenseDocs = docs.filter((d) => d.source === 'expense' && d.receipt_url);
+    if (expenseDocs.length === 0) return;
+    let alive = true;
+    (async () => {
+      const entries = await Promise.all(
+        expenseDocs.map(async (d) => {
+          const fresh = await refreshExpenseReceiptUrl(d.receipt_url!, 3600);
+          return [d.id, fresh] as const;
+        })
+      );
+      if (!alive) return;
+      setSignedReceipts((prev) => {
+        const next = { ...prev };
+        for (const [id, url] of entries) {
+          if (url) next[id] = url;
+        }
+        return next;
+      });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [docs]);
+
+
   const periodStart = useMemo(() => {
     const now = new Date();
     if (period === 'month') return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -166,13 +196,19 @@ const MyDocumentsPage = () => {
   const handleOpen = async (doc: UnifiedDoc) => {
     if (doc.source === 'expense') {
       if (doc.receipt_url) {
-        const fresh = await refreshExpenseReceiptUrl(doc.receipt_url);
-        window.open(fresh || doc.receipt_url, '_blank');
+        const fresh = await refreshExpenseReceiptUrl(doc.receipt_url, 3600);
+        if (fresh) {
+          setSignedReceipts((prev) => ({ ...prev, [doc.id]: fresh }));
+          window.open(fresh, '_blank');
+        } else {
+          toast({ title: t('تعذّر فتح الملف', 'Impossible d’ouvrir le fichier'), variant: 'destructive' });
+        }
       } else {
         toast({ title: t('لا يوجد ملف مرفق', 'Aucun fichier joint') });
       }
       return;
     }
+
     try {
       const { data } = await supabase
         .from('documents')
@@ -209,14 +245,25 @@ const MyDocumentsPage = () => {
       toast({ title: t('لا يوجد ملف مرفق', 'Aucun fichier joint') });
       return;
     }
+    // Always generate a fresh signed Storage URL — never fall back to the raw
+    // stored value (which can be a relative path resolved against the app origin).
+    let fresh = await refreshExpenseReceiptUrl(doc.receipt_url, 3600);
+    if (!fresh) {
+      toast({ title: t('تعذّر تحميل الملف', 'Téléchargement impossible'), variant: 'destructive' });
+      return;
+    }
+    setSignedReceipts((prev) => ({ ...prev, [doc.id]: fresh! }));
     try {
-      const fresh = (await refreshExpenseReceiptUrl(doc.receipt_url)) || doc.receipt_url;
       let res = await fetch(fresh);
-      if (!res.ok && fresh !== doc.receipt_url) {
-        // retry once with re-refreshed URL
-        const retry = (await refreshExpenseReceiptUrl(doc.receipt_url)) || doc.receipt_url;
-        res = await fetch(retry);
+      if (!res.ok) {
+        const retry = await refreshExpenseReceiptUrl(doc.receipt_url, 3600);
+        if (retry) {
+          fresh = retry;
+          setSignedReceipts((prev) => ({ ...prev, [doc.id]: retry }));
+          res = await fetch(retry);
+        }
       }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -229,10 +276,11 @@ const MyDocumentsPage = () => {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       console.warn('[MyDocs] download failed:', err);
-      const fresh = (await refreshExpenseReceiptUrl(doc.receipt_url)) || doc.receipt_url;
+      // Last-resort: open the signed URL in a new tab (still a real Storage URL).
       window.open(fresh, '_blank');
     }
   };
+
 
   const handleSendFacturX = async (doc: UnifiedDoc) => {
     try {
@@ -359,7 +407,7 @@ const MyDocumentsPage = () => {
           <div className="mt-3 rounded-lg overflow-hidden border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,8%)]">
             {doc.receipt_mime === 'image' ? (
               <img
-                src={doc.receipt_url}
+                src={signedReceipts[doc.id] || doc.receipt_url}
                 alt={doc.document_number}
                 loading="lazy"
                 className="w-full h-32 object-cover"
@@ -368,10 +416,14 @@ const MyDocumentsPage = () => {
                   const el = e.currentTarget as HTMLImageElement;
                   if (el.dataset.retry === '1') return;
                   el.dataset.retry = '1';
-                  const fresh = await refreshExpenseReceiptUrl(doc.receipt_url!);
-                  if (fresh) el.src = fresh;
+                  const fresh = await refreshExpenseReceiptUrl(doc.receipt_url!, 3600);
+                  if (fresh) {
+                    setSignedReceipts((prev) => ({ ...prev, [doc.id]: fresh }));
+                    el.src = fresh;
+                  }
                 }}
               />
+
             ) : (
               <div className="w-full h-32 flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,55%)]">
                 <FileText className="h-10 w-10 text-red-400" />

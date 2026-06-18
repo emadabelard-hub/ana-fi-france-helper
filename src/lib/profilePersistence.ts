@@ -294,16 +294,21 @@ export const saveProfileForUser = async (
       fields: Object.keys(cleaned),
     });
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('profiles')
       .update(cleaned)
-      .eq('user_id', user.id)
-      .select()
-      .single();
+      .eq('user_id', user.id);
 
     if (error) throw error;
 
-    return { created: false, profile: data };
+    return {
+      created: false,
+      profile: {
+        ...existingProfile,
+        ...cleaned,
+        updated_at: new Date().toISOString(),
+      } as ProfileRecord,
+    };
   });
 };
 

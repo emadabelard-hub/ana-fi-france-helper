@@ -147,6 +147,34 @@ const MyDocumentsPage = () => {
     };
   }, [user]);
 
+  // Always regenerate fresh signed URLs for expense receipts on display,
+  // including for older expenses whose stored URL may be an expired signed URL.
+  useEffect(() => {
+    const expenseDocs = docs.filter((d) => d.source === 'expense' && d.receipt_url);
+    if (expenseDocs.length === 0) return;
+    let alive = true;
+    (async () => {
+      const entries = await Promise.all(
+        expenseDocs.map(async (d) => {
+          const fresh = await refreshExpenseReceiptUrl(d.receipt_url!, 3600);
+          return [d.id, fresh] as const;
+        })
+      );
+      if (!alive) return;
+      setSignedReceipts((prev) => {
+        const next = { ...prev };
+        for (const [id, url] of entries) {
+          if (url) next[id] = url;
+        }
+        return next;
+      });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [docs]);
+
+
   const periodStart = useMemo(() => {
     const now = new Date();
     if (period === 'month') return new Date(now.getFullYear(), now.getMonth(), 1);

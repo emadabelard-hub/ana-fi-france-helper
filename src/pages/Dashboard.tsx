@@ -329,6 +329,77 @@ const Dashboard = () => {
         </section>
       )}
 
+      {/* Estimation TVA */}
+      {user && (
+        <section className="max-w-md mx-auto w-full mt-3">
+          <div className="rounded-2xl bg-gradient-to-br from-amber-500/15 to-orange-600/5 border border-amber-500/20 p-4">
+            <div className={cn('flex items-center justify-between gap-2 mb-3', isRTL && 'flex-row-reverse')}>
+              <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+                <span className="text-base">🧾</span>
+                <span className={cn('text-[12px] font-bold text-amber-500', isRTL && 'font-cairo')}>
+                  {isRTL ? 'تقدير الـ TVA' : 'Estimation TVA'}
+                </span>
+              </div>
+              <span className={cn('text-[10px] text-muted-foreground', isRTL && 'font-cairo')}>{periodLabel}</span>
+            </div>
+
+            {/* Period toggle */}
+            <div className={cn('flex gap-1 mb-3', isRTL && 'flex-row-reverse')}>
+              {([
+                { k: 'month' as VatPeriod, fr: 'Ce mois', ar: 'هذا الشهر' },
+                { k: 'quarter' as VatPeriod, fr: 'Trimestre', ar: 'الربع' },
+                { k: 'year' as VatPeriod, fr: 'Année', ar: 'السنة' },
+              ]).map(opt => (
+                <button
+                  key={opt.k}
+                  onClick={() => setVatPeriod(opt.k)}
+                  className={cn(
+                    'flex-1 text-[10px] px-2 py-1 rounded-lg border transition-colors',
+                    isRTL && 'font-cairo',
+                    vatPeriod === opt.k
+                      ? 'bg-amber-500/20 border-amber-500/40 text-amber-600 dark:text-amber-300 font-bold'
+                      : 'bg-transparent border-border text-muted-foreground'
+                  )}
+                >
+                  {isRTL ? opt.ar : opt.fr}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-1.5 text-[12px]" dir="ltr">
+              <div className={cn('flex justify-between', isRTL && 'flex-row-reverse')}>
+                <span className={cn('text-muted-foreground', isRTL && 'font-cairo')}>{isRTL ? 'الـ TVA المحصلة' : 'TVA collectée'}</span>
+                <span className="font-mono font-bold text-foreground">{fmt2(tvaCollectee)}</span>
+              </div>
+              <div className={cn('flex justify-between', isRTL && 'flex-row-reverse')}>
+                <span className={cn('text-muted-foreground', isRTL && 'font-cairo')}>{isRTL ? 'الـ TVA القابلة للخصم' : 'TVA déductible'}</span>
+                <span className="font-mono font-bold text-foreground">- {fmt2(tvaDeductible)}</span>
+              </div>
+              <div className={cn(
+                'flex justify-between rounded-lg px-3 py-2 mt-2 font-bold',
+                tvaNette >= 0
+                  ? 'bg-orange-500/15 text-orange-700 dark:text-orange-300'
+                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+                isRTL && 'flex-row-reverse'
+              )}>
+                <span className={cn(isRTL && 'font-cairo')}>
+                  {tvaNette >= 0
+                    ? (isRTL ? 'الصافي المستحق' : 'TVA nette à payer')
+                    : (isRTL ? 'رصيد TVA' : 'Crédit TVA')}
+                </span>
+                <span className="font-mono">{fmt2(Math.abs(tvaNette))}</span>
+              </div>
+            </div>
+
+            <p className={cn('text-[9px] text-muted-foreground mt-3 leading-snug', isRTL && 'font-cairo text-right')}>
+              {isRTL
+                ? 'تقدير إرشادي مبني على فواتيرك المدفوعة ومصاريفك. يجب التحقق منه مع محاسبك.'
+                : 'Estimation indicative basée sur vos factures payées et dépenses. À faire valider par votre comptable.'}
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* Simple Footer */}
       <section className="text-center mt-8">
         <p className="text-sm text-muted-foreground font-cairo">

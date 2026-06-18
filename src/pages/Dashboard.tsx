@@ -12,7 +12,12 @@ import { useAuth } from '@/hooks/useAuth';
 const fmt = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 
+const fmt2 = (n: number) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
 const PULL_THRESHOLD = 80;
+
+type VatPeriod = 'month' | 'quarter' | 'year';
 
 const Dashboard = () => {
   const { isRTL, t } = useLanguage();
@@ -20,6 +25,9 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [ca, setCa] = useState(0);
   const [tresorerie, setTresorerie] = useState(0);
+  const [paidInvoices, setPaidInvoices] = useState<any[]>([]);
+  const [expensesAll, setExpensesAll] = useState<any[]>([]);
+  const [vatPeriod, setVatPeriod] = useState<VatPeriod>('quarter');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const startYRef = useRef(0);
@@ -27,18 +35,67 @@ const Dashboard = () => {
 
   const fetchData = useCallback(async () => {
     if (!user) return;
-    const { data: docs } = await supabase
-      .from('documents_comptables')
-      .select('subtotal_ht, total_ttc, status, payment_status, document_type')
-      .eq('user_id', user.id);
+    const [{ data: docs }, { data: exps }] = await Promise.all([
+      supabase
+        .from('documents_comptables')
+        .select('subtotal_ht, total_ttc, tva_amount, status, payment_status, document_type, created_at, updated_at')
+        .eq('user_id', user.id),
+      supabase
+        .from('expenses')
+        .select('amount, tva_amount, expense_date')
+        .eq('user_id', user.id),
+    ]);
     const paid = (docs || []).filter((d: any) => d.document_type === 'facture' && d.status === 'finalized' && d.payment_status === 'paid');
     setCa(paid.reduce((s: number, d: any) => s + (d.subtotal_ht || 0), 0));
     setTresorerie(paid.reduce((s: number, d: any) => s + (d.subtotal_ht || 0), 0));
+    setPaidInvoices(paid);
+    setExpensesAll(exps || []);
   }, [user]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Bornes de la période sélectionnée (mois / trimestre / année en cours)
+  const periodBounds = (() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    if (vatPeriod === 'month') return { start: new Date(y, m, 1), end: new Date(y, m + 1, 1) };
+    if (vatPeriod === 'year') return { start: new Date(y, 0, 1), end: new Date(y + 1, 0, 1) };
+    const qStart = Math.floor(m / 3) * 3;
+    return { start: new Date(y, qStart, 1), end: new Date(y, qStart + 3, 1) };
+  })();
+
+  const inPeriod = (iso?: string | null) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    return d >= periodBounds.start && d < periodBounds.end;
+  };
+
+  const tvaCollectee = paidInvoices
+    .filter((d: any) => inPeriod(d.updated_at || d.created_at))
+    .reduce((s: number, d: any) => s + (Number(d.tva_amount) || 0), 0);
+
+  const tvaDeductible = expensesAll
+    .filter((e: any) => inPeriod(e.expense_date))
+    .reduce((s: number, e: any) => s + (Number(e.tva_amount) || 0), 0);
+
+  const tvaNette = tvaCollectee - tvaDeductible;
+
+  const periodLabel = (() => {
+    const y = periodBounds.start.getFullYear();
+    if (vatPeriod === 'month') {
+      return periodBounds.start.toLocaleDateString(isRTL ? 'ar-EG' : 'fr-FR', { month: 'long', year: 'numeric' });
+    }
+    if (vatPeriod === 'year') return String(y);
+    const q = Math.floor(periodBounds.start.getMonth() / 3) + 1;
+    if (isRTL) {
+      const qNames = ['الأول', 'الثاني', 'الثالث', 'الرابع'];
+      return `الربع ${qNames[q - 1]} ${y}`;
+    }
+    return `T${q} ${y}`;
+  })();
 
   const doRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -267,6 +324,77 @@ const Dashboard = () => {
             <p className={cn('text-xl font-black text-cyan-400', isRTL && 'text-right')}>{fmt(tresorerie)}</p>
             <p className={cn('text-[9px] text-muted-foreground mt-1', isRTL && 'font-cairo text-right')}>
               {isRTL ? 'الفواتير المدفوعة فقط' : 'Factures payées uniquement'}
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* Estimation TVA */}
+      {user && (
+        <section className="max-w-md mx-auto w-full mt-3">
+          <div className="rounded-2xl bg-gradient-to-br from-amber-500/15 to-orange-600/5 border border-amber-500/20 p-4">
+            <div className={cn('flex items-center justify-between gap-2 mb-3', isRTL && 'flex-row-reverse')}>
+              <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+                <span className="text-base">🧾</span>
+                <span className={cn('text-[12px] font-bold text-amber-500', isRTL && 'font-cairo')}>
+                  {isRTL ? 'تقدير الـ TVA' : 'Estimation TVA'}
+                </span>
+              </div>
+              <span className={cn('text-[10px] text-muted-foreground', isRTL && 'font-cairo')}>{periodLabel}</span>
+            </div>
+
+            {/* Period toggle */}
+            <div className={cn('flex gap-1 mb-3', isRTL && 'flex-row-reverse')}>
+              {([
+                { k: 'month' as VatPeriod, fr: 'Ce mois', ar: 'هذا الشهر' },
+                { k: 'quarter' as VatPeriod, fr: 'Trimestre', ar: 'الربع' },
+                { k: 'year' as VatPeriod, fr: 'Année', ar: 'السنة' },
+              ]).map(opt => (
+                <button
+                  key={opt.k}
+                  onClick={() => setVatPeriod(opt.k)}
+                  className={cn(
+                    'flex-1 text-[10px] px-2 py-1 rounded-lg border transition-colors',
+                    isRTL && 'font-cairo',
+                    vatPeriod === opt.k
+                      ? 'bg-amber-500/20 border-amber-500/40 text-amber-600 dark:text-amber-300 font-bold'
+                      : 'bg-transparent border-border text-muted-foreground'
+                  )}
+                >
+                  {isRTL ? opt.ar : opt.fr}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-1.5 text-[12px]" dir="ltr">
+              <div className={cn('flex justify-between', isRTL && 'flex-row-reverse')}>
+                <span className={cn('text-muted-foreground', isRTL && 'font-cairo')}>{isRTL ? 'الـ TVA المحصلة' : 'TVA collectée'}</span>
+                <span className="font-mono font-bold text-foreground">{fmt2(tvaCollectee)}</span>
+              </div>
+              <div className={cn('flex justify-between', isRTL && 'flex-row-reverse')}>
+                <span className={cn('text-muted-foreground', isRTL && 'font-cairo')}>{isRTL ? 'الـ TVA القابلة للخصم' : 'TVA déductible'}</span>
+                <span className="font-mono font-bold text-foreground">- {fmt2(tvaDeductible)}</span>
+              </div>
+              <div className={cn(
+                'flex justify-between rounded-lg px-3 py-2 mt-2 font-bold',
+                tvaNette >= 0
+                  ? 'bg-orange-500/15 text-orange-700 dark:text-orange-300'
+                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+                isRTL && 'flex-row-reverse'
+              )}>
+                <span className={cn(isRTL && 'font-cairo')}>
+                  {tvaNette >= 0
+                    ? (isRTL ? 'الصافي المستحق' : 'TVA nette à payer')
+                    : (isRTL ? 'رصيد TVA' : 'Crédit TVA')}
+                </span>
+                <span className="font-mono">{fmt2(Math.abs(tvaNette))}</span>
+              </div>
+            </div>
+
+            <p className={cn('text-[9px] text-muted-foreground mt-3 leading-snug', isRTL && 'font-cairo text-right')}>
+              {isRTL
+                ? 'تقدير إرشادي مبني على فواتيرك المدفوعة ومصاريفك. يجب التحقق منه مع محاسبك.'
+                : 'Estimation indicative basée sur vos factures payées et dépenses. À faire valider par votre comptable.'}
             </p>
           </div>
         </section>

@@ -104,6 +104,7 @@ const Index = () => {
     const issued = list.filter(d => ['finalized', 'converted'].includes(d.status));
     const paid = issued.filter(d => d.payment_status === 'paid');
     const unpaid = issued.filter(d => d.payment_status !== 'paid' && d.status !== 'cancelled');
+    setPaidInvoices(paid.map(d => ({ tva_amount: Number(d.tva_amount) || 0, created_at: d.created_at })));
 
     const sumTTC = (arr: any[]) => arr.reduce((s, d) => s + (Number(d.total_ttc) || 0), 0);
     const sumHT = (arr: any[]) => arr.reduce((s, d) => s + (Number(d.subtotal_ht) || 0), 0);

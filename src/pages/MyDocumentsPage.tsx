@@ -57,6 +57,8 @@ const MyDocumentsPage = () => {
   const [typeFilter, setTypeFilter] = useState<DocType>('all');
   const [period, setPeriod] = useState<Period>('month');
   const [toDelete, setToDelete] = useState<UnifiedDoc | null>(null);
+  const [signedReceipts, setSignedReceipts] = useState<Record<string, string>>({});
+
 
   const t = (ar: string, fr: string) => (isRTL ? ar : fr);
 

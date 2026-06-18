@@ -97,7 +97,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     const attempt = async (retry: boolean): Promise<{ error: Error | null | unknown }> => {
       try {
         const activeUser = await getAuthenticatedProfileUser();
-        const { created, profile: savedProfile } = await saveProfileForUser(activeUser, updates as Profile);
+        const { created, profile: savedProfile } = await saveProfileForUser(activeUser, updates as Profile, profile);
 
         setProfile(savedProfile);
         toast({
@@ -127,7 +127,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return attempt(true);
-  }, [toast]);
+  }, [profile, toast]);
 
   return (
     <ProfileContext.Provider value={{ profile, isLoading, updateProfile, refetch: fetchProfile }}>

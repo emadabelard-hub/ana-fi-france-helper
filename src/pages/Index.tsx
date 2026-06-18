@@ -69,6 +69,9 @@ const Index = () => {
   const [creancesCount, setCreancesCount] = useState(0);
   const [beneficeNet, setBeneficeNet] = useState(0);
   const [recentDocs, setRecentDocs] = useState<RecentDoc[]>([]);
+  const [vatPeriod, setVatPeriod] = useState<VatPeriod>('month');
+  const [paidInvoices, setPaidInvoices] = useState<Array<{ tva_amount: number; created_at: string }>>([]);
+  const [allExpenses, setAllExpenses] = useState<Array<{ tva_amount: number; expense_date: string | null; created_at: string }>>([]);
 
   // Load Google Fonts (Tajawal + Poppins)
   useEffect(() => {

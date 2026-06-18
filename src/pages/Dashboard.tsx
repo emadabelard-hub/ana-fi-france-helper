@@ -12,7 +12,12 @@ import { useAuth } from '@/hooks/useAuth';
 const fmt = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 
+const fmt2 = (n: number) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
 const PULL_THRESHOLD = 80;
+
+type VatPeriod = 'month' | 'quarter' | 'year';
 
 const Dashboard = () => {
   const { isRTL, t } = useLanguage();
@@ -20,6 +25,9 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [ca, setCa] = useState(0);
   const [tresorerie, setTresorerie] = useState(0);
+  const [paidInvoices, setPaidInvoices] = useState<any[]>([]);
+  const [expensesAll, setExpensesAll] = useState<any[]>([]);
+  const [vatPeriod, setVatPeriod] = useState<VatPeriod>('quarter');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const startYRef = useRef(0);
@@ -27,18 +35,67 @@ const Dashboard = () => {
 
   const fetchData = useCallback(async () => {
     if (!user) return;
-    const { data: docs } = await supabase
-      .from('documents_comptables')
-      .select('subtotal_ht, total_ttc, status, payment_status, document_type')
-      .eq('user_id', user.id);
+    const [{ data: docs }, { data: exps }] = await Promise.all([
+      supabase
+        .from('documents_comptables')
+        .select('subtotal_ht, total_ttc, tva_amount, status, payment_status, document_type, created_at, updated_at')
+        .eq('user_id', user.id),
+      supabase
+        .from('expenses')
+        .select('amount, tva_amount, expense_date')
+        .eq('user_id', user.id),
+    ]);
     const paid = (docs || []).filter((d: any) => d.document_type === 'facture' && d.status === 'finalized' && d.payment_status === 'paid');
     setCa(paid.reduce((s: number, d: any) => s + (d.subtotal_ht || 0), 0));
     setTresorerie(paid.reduce((s: number, d: any) => s + (d.subtotal_ht || 0), 0));
+    setPaidInvoices(paid);
+    setExpensesAll(exps || []);
   }, [user]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Bornes de la période sélectionnée (mois / trimestre / année en cours)
+  const periodBounds = (() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    if (vatPeriod === 'month') return { start: new Date(y, m, 1), end: new Date(y, m + 1, 1) };
+    if (vatPeriod === 'year') return { start: new Date(y, 0, 1), end: new Date(y + 1, 0, 1) };
+    const qStart = Math.floor(m / 3) * 3;
+    return { start: new Date(y, qStart, 1), end: new Date(y, qStart + 3, 1) };
+  })();
+
+  const inPeriod = (iso?: string | null) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    return d >= periodBounds.start && d < periodBounds.end;
+  };
+
+  const tvaCollectee = paidInvoices
+    .filter((d: any) => inPeriod(d.updated_at || d.created_at))
+    .reduce((s: number, d: any) => s + (Number(d.tva_amount) || 0), 0);
+
+  const tvaDeductible = expensesAll
+    .filter((e: any) => inPeriod(e.expense_date))
+    .reduce((s: number, e: any) => s + (Number(e.tva_amount) || 0), 0);
+
+  const tvaNette = tvaCollectee - tvaDeductible;
+
+  const periodLabel = (() => {
+    const y = periodBounds.start.getFullYear();
+    if (vatPeriod === 'month') {
+      return periodBounds.start.toLocaleDateString(isRTL ? 'ar-EG' : 'fr-FR', { month: 'long', year: 'numeric' });
+    }
+    if (vatPeriod === 'year') return String(y);
+    const q = Math.floor(periodBounds.start.getMonth() / 3) + 1;
+    if (isRTL) {
+      const qNames = ['الأول', 'الثاني', 'الثالث', 'الرابع'];
+      return `الربع ${qNames[q - 1]} ${y}`;
+    }
+    return `T${q} ${y}`;
+  })();
 
   const doRefresh = useCallback(async () => {
     setIsRefreshing(true);

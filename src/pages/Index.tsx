@@ -89,10 +89,16 @@ const Index = () => {
     if (!user) return;
     const { data: docs } = await supabase
       .from('documents_comptables')
-      .select('id, document_number, client_name, subtotal_ht, total_ttc, status, payment_status, document_type, created_at')
+      .select('id, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, payment_status, document_type, created_at')
       .eq('user_id', user.id)
       .eq('document_type', 'facture')
       .order('created_at', { ascending: false });
+
+    const { data: expensesData } = await supabase
+      .from('expenses')
+      .select('tva_amount, expense_date, created_at')
+      .eq('user_id', user.id);
+    setAllExpenses((expensesData || []) as any[]);
 
     const list = (docs || []) as any[];
     const issued = list.filter(d => ['finalized', 'converted'].includes(d.status));

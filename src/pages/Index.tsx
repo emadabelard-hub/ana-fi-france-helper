@@ -172,6 +172,30 @@ const Index = () => {
     { icon: ClipboardList, ar: 'تقرير الشانتي', fr: 'Rapport chantier', path: '/chantier-report' },
   ];
 
+  const { tvaCollectee, tvaDeductible, tvaNette, periodLabel } = (() => {
+    const { start, end } = getPeriodBounds(vatPeriod);
+    const inRange = (iso?: string | null) => {
+      if (!iso) return false;
+      const t = new Date(iso).getTime();
+      return t >= start.getTime() && t < end.getTime();
+    };
+    const collectee = paidInvoices.filter(d => inRange(d.created_at))
+      .reduce((s, d) => s + (Number(d.tva_amount) || 0), 0);
+    const deductible = allExpenses.filter(e => inRange(e.expense_date || e.created_at))
+      .reduce((s, e) => s + (Number(e.tva_amount) || 0), 0);
+    const labels: Record<VatPeriod, { ar: string; fr: string }> = {
+      month: { ar: 'هذا الشهر', fr: 'Ce mois' },
+      quarter: { ar: 'هذا الربع', fr: 'Ce trimestre' },
+      year: { ar: 'هذه السنة', fr: 'Cette année' },
+    };
+    return {
+      tvaCollectee: collectee,
+      tvaDeductible: deductible,
+      tvaNette: collectee - deductible,
+      periodLabel: isRTL ? labels[vatPeriod].ar : labels[vatPeriod].fr,
+    };
+  })();
+
   const statusBadge = (d: RecentDoc) => {
     const isPaid = d.payment_status === 'paid';
     const isLate = !isPaid && d.due_date && new Date(d.due_date) < new Date();

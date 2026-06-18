@@ -22,6 +22,23 @@ const COLORS = {
 const fmtEUR = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0);
 
+const fmtEUR2 = (n: number) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
+
+type VatPeriod = 'month' | 'quarter' | 'year';
+
+const getPeriodBounds = (p: VatPeriod): { start: Date; end: Date } => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  if (p === 'month') return { start: new Date(y, m, 1), end: new Date(y, m + 1, 1) };
+  if (p === 'quarter') {
+    const qStart = Math.floor(m / 3) * 3;
+    return { start: new Date(y, qStart, 1), end: new Date(y, qStart + 3, 1) };
+  }
+  return { start: new Date(y, 0, 1), end: new Date(y + 1, 0, 1) };
+};
+
 interface RecentDoc {
   id: string;
   document_number: string;

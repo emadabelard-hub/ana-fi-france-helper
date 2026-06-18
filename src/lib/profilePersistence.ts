@@ -239,11 +239,12 @@ export const ensureProfileExists = async (user: User): Promise<ProfileRecord> =>
 
 export const saveProfileForUser = async (
   user: User,
-  updates: Partial<ProfileRecord>
+  updates: Partial<ProfileRecord>,
+  knownProfile?: ProfileRecord | null
 ): Promise<{ created: boolean; profile: ProfileRecord }> => {
   return withSingleAbortRetry('profile:save', async () => {
     const cleaned = sanitizeProfileUpdates(updates);
-    const existingProfile = await getProfileByUserId(user.id);
+    const existingProfile = knownProfile ?? await getProfileByUserId(user.id);
 
     if (!existingProfile) {
       console.info('[profile:save] Inserting profile', {
@@ -266,16 +267,21 @@ export const saveProfileForUser = async (
               return { created: false, profile: retryProfile };
             }
 
-            const { data: updatedProfile, error: updateError } = await supabase
+            const { error: updateError } = await supabase
               .from('profiles')
               .update(cleaned)
-              .eq('user_id', user.id)
-              .select()
-              .single();
+              .eq('user_id', user.id);
 
             if (updateError) throw updateError;
 
-            return { created: false, profile: updatedProfile };
+            return {
+              created: false,
+              profile: {
+                ...retryProfile,
+                ...cleaned,
+                updated_at: new Date().toISOString(),
+              } as ProfileRecord,
+            };
           }
         }
 

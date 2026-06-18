@@ -407,7 +407,7 @@ const MyDocumentsPage = () => {
           <div className="mt-3 rounded-lg overflow-hidden border border-[hsl(45,60%,35%)/0.3] bg-[hsl(0,0%,8%)]">
             {doc.receipt_mime === 'image' ? (
               <img
-                src={doc.receipt_url}
+                src={signedReceipts[doc.id] || doc.receipt_url}
                 alt={doc.document_number}
                 loading="lazy"
                 className="w-full h-32 object-cover"
@@ -416,10 +416,14 @@ const MyDocumentsPage = () => {
                   const el = e.currentTarget as HTMLImageElement;
                   if (el.dataset.retry === '1') return;
                   el.dataset.retry = '1';
-                  const fresh = await refreshExpenseReceiptUrl(doc.receipt_url!);
-                  if (fresh) el.src = fresh;
+                  const fresh = await refreshExpenseReceiptUrl(doc.receipt_url!, 3600);
+                  if (fresh) {
+                    setSignedReceipts((prev) => ({ ...prev, [doc.id]: fresh }));
+                    el.src = fresh;
+                  }
                 }}
               />
+
             ) : (
               <div className="w-full h-32 flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,55%)]">
                 <FileText className="h-10 w-10 text-red-400" />

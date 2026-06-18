@@ -92,22 +92,37 @@ export function extractStoragePath(value: string | null | undefined, bucket: str
 }
 
 /**
- * Force-refresh a signed URL for the expense-receipts bucket.
- * Returns null if the path cannot be extracted or signing fails.
+ * Force-refresh a signed URL for an expense receipt.
+ * Receipts can live in either the 'expense-receipts' bucket (manual uploads)
+ * or the 'documents' bucket under '<userId>/notes-frais/...' (OCR uploads).
+ * Returns null if signing fails in both buckets.
  */
 export async function refreshExpenseReceiptUrl(
   url: string | null | undefined,
   expiresIn = 60 * 60
 ): Promise<string | null> {
   if (!url) return null;
-  const path = extractStoragePath(url, 'expense-receipts');
-  if (!path) return url;
-  const { data, error } = await supabase.storage
-    .from('expense-receipts')
-    .createSignedUrl(path, expiresIn);
-  if (error || !data?.signedUrl) {
-    console.warn('[refreshExpenseReceiptUrl] failed:', error?.message);
-    return null;
+
+  // Pick the most likely bucket based on path hints, then fall back to the other.
+  const looksLikeDocumentsBucket =
+    /\/notes-frais\//.test(url) || /\/documents\//.test(url);
+  const buckets = looksLikeDocumentsBucket
+    ? (['documents', 'expense-receipts'] as const)
+    : (['expense-receipts', 'documents'] as const);
+
+  for (const bucket of buckets) {
+    const path = extractStoragePath(url, bucket);
+    if (!path) continue;
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, expiresIn);
+    if (!error && data?.signedUrl) {
+      return data.signedUrl;
+    }
+    if (error) {
+      console.warn(`[refreshExpenseReceiptUrl] ${bucket} failed:`, error.message);
+    }
   }
-  return data.signedUrl;
+  return null;
 }
+

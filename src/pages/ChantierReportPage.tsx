@@ -985,7 +985,49 @@ const ChantierReportPage = () => {
               <Input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} dir="ltr" />
             </div>
           </div>
+
+          {/* Géolocalisation (optionnelle) */}
+          <div className="pt-1">
+            {!gpsPosition ? (
+              <button
+                type="button"
+                onClick={captureLocation}
+                disabled={gpsLoading}
+                className="w-full flex items-center justify-center gap-2 border-2 border-dashed rounded-lg py-3 text-sm font-medium disabled:opacity-60"
+                style={{ borderColor: COLORS.gold, color: COLORS.navyDark }}
+              >
+                {gpsLoading ? <Loader2 size={16} className="animate-spin" /> : <MapPin size={16} />}
+                {gpsLoading
+                  ? tr('جاري تحديد الموقع...', 'Localisation en cours...')
+                  : tr('📍 إضافة موقعي الحالي', '📍 Ajouter ma position actuelle')}
+              </button>
+            ) : (
+              <div
+                className="flex items-start justify-between gap-2 rounded-lg p-3 border"
+                style={{ borderColor: COLORS.gold, background: '#FAF7EE' }}
+              >
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <MapPin size={16} style={{ color: COLORS.navyDark, marginTop: 2 }} />
+                  <div className="text-xs text-gray-700 break-words" dir="ltr">
+                    {formatGpsForDisplay(gpsPosition)}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={removeLocation}
+                  className="p-1 rounded text-gray-500 hover:text-red-600"
+                  aria-label={tr('إزالة', 'Retirer')}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+            {gpsError && (
+              <p className="text-xs text-gray-500 mt-2">{gpsError}</p>
+            )}
+          </div>
         </section>
+
 
         {/* Corps */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">

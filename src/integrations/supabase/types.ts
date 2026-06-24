@@ -312,6 +312,10 @@ export type Database = {
           chantier_id: string | null
           client_id: string | null
           created_at: string
+          created_at_timestamp: string | null
+          gps_address: string | null
+          gps_latitude: number | null
+          gps_longitude: number | null
           hours_worked: string | null
           id: string
           materials_fr: string | null
@@ -332,6 +336,10 @@ export type Database = {
           chantier_id?: string | null
           client_id?: string | null
           created_at?: string
+          created_at_timestamp?: string | null
+          gps_address?: string | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
           hours_worked?: string | null
           id?: string
           materials_fr?: string | null
@@ -352,6 +360,10 @@ export type Database = {
           chantier_id?: string | null
           client_id?: string | null
           created_at?: string
+          created_at_timestamp?: string | null
+          gps_address?: string | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
           hours_worked?: string | null
           id?: string
           materials_fr?: string | null

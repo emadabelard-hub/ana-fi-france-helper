@@ -667,6 +667,10 @@ const ChantierReportPage = () => {
 
     // Footer
     const totalPages = doc.getNumberOfPages();
+    const pad2 = (n: number) => String(n).padStart(2, '0');
+    const genDateStr = `${pad2(generatedAt.getDate())}/${pad2(generatedAt.getMonth() + 1)}/${generatedAt.getFullYear()}`;
+    const genTimeStr = `${pad2(generatedAt.getHours())}:${pad2(generatedAt.getMinutes())}`;
+    const generatedLine = `Rapport généré le ${genDateStr} à ${genTimeStr}`;
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
@@ -674,8 +678,9 @@ const ChantierReportPage = () => {
       doc.text(
         `${profile?.company_name || ''} — Rapport de chantier ${reportNumber}`,
         margin,
-        pageH - 6
+        pageH - 10
       );
+      doc.text(generatedLine, margin, pageH - 6);
       doc.text(`Page ${i} / ${totalPages}`, pageW - margin, pageH - 6, { align: 'right' });
     }
 
@@ -683,7 +688,7 @@ const ChantierReportPage = () => {
     const base64Full = doc.output('datauristring');
     const base64 = base64Full.split(',')[1] || '';
     const fileName = `Rapport_${reportNumber || 'chantier'}.pdf`;
-    return { blob, base64, fileName };
+    return { blob, base64, fileName, generatedAt };
   };
 
   const translateField = async (text: string): Promise<string> => {

@@ -448,7 +448,8 @@ const ChantierReportPage = () => {
     const chantierBlockText =
       (resolvedClientName ? `Client : ${resolvedClientName}\n` : '') +
       `Nom du chantier : ${chantierName}\n` +
-      `Adresse : ${chantierAddress}`;
+      `Adresse : ${chantierAddress}` +
+      (gpsPosition ? `\nPosition GPS : ${formatGpsForDisplay(gpsPosition)}` : '');
     const chantierImg = await renderTextToImage(chantierBlockText, pageW - margin * 2 - 6, {
       align: 'left',
       direction: 'ltr',

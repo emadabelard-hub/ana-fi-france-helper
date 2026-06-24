@@ -154,6 +154,10 @@ const ChantierReportPage = () => {
 
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
 
+  const [gpsPosition, setGpsPosition] = useState<{ lat: number; lng: number; address: string | null } | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+
   const [chefName, setChefName] = useState('');
   const [clientName, setClientName] = useState('');
   const [patronProfile, setPatronProfile] = useState<{

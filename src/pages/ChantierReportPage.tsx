@@ -305,6 +305,56 @@ const ChantierReportPage = () => {
 
   const removePhoto = (id: string) => setPhotos((p) => p.filter((x) => x.id !== id));
 
+  const captureLocation = async () => {
+    setGpsError(null);
+    if (!('geolocation' in navigator)) {
+      setGpsError(tr('الموقع غير مدعوم', 'Géolocalisation non supportée'));
+      return;
+    }
+    setGpsLoading(true);
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        });
+      });
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      let address: string | null = null;
+      try {
+        const resp = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+          { headers: { 'Accept': 'application/json' } }
+        );
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && typeof data.display_name === 'string' && data.display_name.trim()) {
+            address = data.display_name.trim();
+          }
+        }
+      } catch (e) {
+        console.warn('[ChantierReport] reverse geocode failed', e);
+      }
+      setGpsPosition({ lat, lng, address });
+    } catch (e: any) {
+      console.warn('[ChantierReport] geolocation error', e);
+      setGpsError(tr('الموقع غير مسموح', 'Localisation non autorisée'));
+    } finally {
+      setGpsLoading(false);
+    }
+  };
+
+  const removeLocation = () => {
+    setGpsPosition(null);
+    setGpsError(null);
+  };
+
+  const formatGpsForDisplay = (g: { lat: number; lng: number; address: string | null }): string =>
+    g.address || `${g.lat.toFixed(6)}, ${g.lng.toFixed(6)}`;
+
+
   const weatherLabelFR = (w: Weather) =>
     WEATHER_OPTIONS.find((x) => x.value === w)?.fr || w;
 

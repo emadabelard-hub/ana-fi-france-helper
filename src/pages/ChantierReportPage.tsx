@@ -764,6 +764,10 @@ const ChantierReportPage = () => {
             pdf_url: archived?.pdf_url || null,
             submitted_by: user.id,
             submitted_by_name: isTeamMode ? (chefName || user.email || null) : null,
+            created_at_timestamp: result.generatedAt.toISOString(),
+            gps_latitude: gpsPosition?.lat ?? null,
+            gps_longitude: gpsPosition?.lng ?? null,
+            gps_address: gpsPosition ? formatGpsForDisplay(gpsPosition) : null,
           });
           if (insertErr) console.warn('[chantier_reports] insert failed:', insertErr.message);
         } catch (e) {

@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, ClipboardList, Camera, Download, Trash2, Loader2, Eraser } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ClipboardList, Camera, Download, Trash2, Loader2, Eraser, MapPin, X } from 'lucide-react';
 import { Image as ImageIcon } from 'lucide-react';
 import SignaturePad from 'signature_pad';
 import jsPDF from 'jspdf';
@@ -153,6 +153,10 @@ const ChantierReportPage = () => {
   const [weather, setWeather] = useState<Weather>('ensoleille');
 
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
+
+  const [gpsPosition, setGpsPosition] = useState<{ lat: number; lng: number; address: string | null } | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
 
   const [chefName, setChefName] = useState('');
   const [clientName, setClientName] = useState('');
@@ -301,6 +305,56 @@ const ChantierReportPage = () => {
 
   const removePhoto = (id: string) => setPhotos((p) => p.filter((x) => x.id !== id));
 
+  const captureLocation = async () => {
+    setGpsError(null);
+    if (!('geolocation' in navigator)) {
+      setGpsError(tr('الموقع غير مدعوم', 'Géolocalisation non supportée'));
+      return;
+    }
+    setGpsLoading(true);
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        });
+      });
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      let address: string | null = null;
+      try {
+        const resp = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+          { headers: { 'Accept': 'application/json' } }
+        );
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && typeof data.display_name === 'string' && data.display_name.trim()) {
+            address = data.display_name.trim();
+          }
+        }
+      } catch (e) {
+        console.warn('[ChantierReport] reverse geocode failed', e);
+      }
+      setGpsPosition({ lat, lng, address });
+    } catch (e: any) {
+      console.warn('[ChantierReport] geolocation error', e);
+      setGpsError(tr('الموقع غير مسموح', 'Localisation non autorisée'));
+    } finally {
+      setGpsLoading(false);
+    }
+  };
+
+  const removeLocation = () => {
+    setGpsPosition(null);
+    setGpsError(null);
+  };
+
+  const formatGpsForDisplay = (g: { lat: number; lng: number; address: string | null }): string =>
+    g.address || `${g.lat.toFixed(6)}, ${g.lng.toFixed(6)}`;
+
+
   const weatherLabelFR = (w: Weather) =>
     WEATHER_OPTIONS.find((x) => x.value === w)?.fr || w;
 
@@ -313,8 +367,9 @@ const ChantierReportPage = () => {
   };
 
   const generatePdf = async (
-    overrides?: { workDone?: string; materials?: string; observations?: string }
-  ): Promise<{ blob: Blob; base64: string; fileName: string } | null> => {
+    overrides?: { workDone?: string; materials?: string; observations?: string },
+    generatedAt: Date = new Date(),
+  ): Promise<{ blob: Blob; base64: string; fileName: string; generatedAt: Date } | null> => {
     const err = validate();
     if (err) {
       toast({ title: 'حقول ناقصة', description: err, variant: 'destructive' });
@@ -393,7 +448,8 @@ const ChantierReportPage = () => {
     const chantierBlockText =
       (resolvedClientName ? `Client : ${resolvedClientName}\n` : '') +
       `Nom du chantier : ${chantierName}\n` +
-      `Adresse : ${chantierAddress}`;
+      `Adresse : ${chantierAddress}` +
+      (gpsPosition ? `\nPosition GPS : ${formatGpsForDisplay(gpsPosition)}` : '');
     const chantierImg = await renderTextToImage(chantierBlockText, pageW - margin * 2 - 6, {
       align: 'left',
       direction: 'ltr',
@@ -611,6 +667,10 @@ const ChantierReportPage = () => {
 
     // Footer
     const totalPages = doc.getNumberOfPages();
+    const pad2 = (n: number) => String(n).padStart(2, '0');
+    const genDateStr = `${pad2(generatedAt.getDate())}/${pad2(generatedAt.getMonth() + 1)}/${generatedAt.getFullYear()}`;
+    const genTimeStr = `${pad2(generatedAt.getHours())}:${pad2(generatedAt.getMinutes())}`;
+    const generatedLine = `Rapport généré le ${genDateStr} à ${genTimeStr}`;
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
@@ -618,8 +678,9 @@ const ChantierReportPage = () => {
       doc.text(
         `${profile?.company_name || ''} — Rapport de chantier ${reportNumber}`,
         margin,
-        pageH - 6
+        pageH - 10
       );
+      doc.text(generatedLine, margin, pageH - 6);
       doc.text(`Page ${i} / ${totalPages}`, pageW - margin, pageH - 6, { align: 'right' });
     }
 
@@ -627,7 +688,7 @@ const ChantierReportPage = () => {
     const base64Full = doc.output('datauristring');
     const base64 = base64Full.split(',')[1] || '';
     const fileName = `Rapport_${reportNumber || 'chantier'}.pdf`;
-    return { blob, base64, fileName };
+    return { blob, base64, fileName, generatedAt };
   };
 
   const translateField = async (text: string): Promise<string> => {
@@ -703,6 +764,10 @@ const ChantierReportPage = () => {
             pdf_url: archived?.pdf_url || null,
             submitted_by: user.id,
             submitted_by_name: isTeamMode ? (chefName || user.email || null) : null,
+            created_at_timestamp: result.generatedAt.toISOString(),
+            gps_latitude: gpsPosition?.lat ?? null,
+            gps_longitude: gpsPosition?.lng ?? null,
+            gps_address: gpsPosition ? formatGpsForDisplay(gpsPosition) : null,
           });
           if (insertErr) console.warn('[chantier_reports] insert failed:', insertErr.message);
         } catch (e) {
@@ -920,7 +985,49 @@ const ChantierReportPage = () => {
               <Input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} dir="ltr" />
             </div>
           </div>
+
+          {/* Géolocalisation (optionnelle) */}
+          <div className="pt-1">
+            {!gpsPosition ? (
+              <button
+                type="button"
+                onClick={captureLocation}
+                disabled={gpsLoading}
+                className="w-full flex items-center justify-center gap-2 border-2 border-dashed rounded-lg py-3 text-sm font-medium disabled:opacity-60"
+                style={{ borderColor: COLORS.gold, color: COLORS.navyDark }}
+              >
+                {gpsLoading ? <Loader2 size={16} className="animate-spin" /> : <MapPin size={16} />}
+                {gpsLoading
+                  ? tr('جاري تحديد الموقع...', 'Localisation en cours...')
+                  : tr('📍 إضافة موقعي الحالي', '📍 Ajouter ma position actuelle')}
+              </button>
+            ) : (
+              <div
+                className="flex items-start justify-between gap-2 rounded-lg p-3 border"
+                style={{ borderColor: COLORS.gold, background: '#FAF7EE' }}
+              >
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <MapPin size={16} style={{ color: COLORS.navyDark, marginTop: 2 }} />
+                  <div className="text-xs text-gray-700 break-words" dir="ltr">
+                    {formatGpsForDisplay(gpsPosition)}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={removeLocation}
+                  className="p-1 rounded text-gray-500 hover:text-red-600"
+                  aria-label={tr('إزالة', 'Retirer')}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+            {gpsError && (
+              <p className="text-xs text-gray-500 mt-2">{gpsError}</p>
+            )}
+          </div>
         </section>
+
 
         {/* Corps */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">

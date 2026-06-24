@@ -367,8 +367,9 @@ const ChantierReportPage = () => {
   };
 
   const generatePdf = async (
-    overrides?: { workDone?: string; materials?: string; observations?: string }
-  ): Promise<{ blob: Blob; base64: string; fileName: string } | null> => {
+    overrides?: { workDone?: string; materials?: string; observations?: string },
+    generatedAt: Date = new Date(),
+  ): Promise<{ blob: Blob; base64: string; fileName: string; generatedAt: Date } | null> => {
     const err = validate();
     if (err) {
       toast({ title: 'حقول ناقصة', description: err, variant: 'destructive' });

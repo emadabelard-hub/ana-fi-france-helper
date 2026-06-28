@@ -161,6 +161,7 @@ const AppRoutes = () => {
                     <Route path="/my-documents" element={<MyDocumentsPage />} />
                     <Route path="/chantier-report" element={<ChantierReportPage />} />
                     <Route path="/paiement-creation" element={<PaiementCreationPage />} />
+                    <Route path="/ma-creation" element={<MaCreationPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

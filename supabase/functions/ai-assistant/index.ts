@@ -475,7 +475,61 @@ Message J+30 : "Bonjour M. [Nom], sauf erreur de ma part, la facture n°[Numéro
 Message J+45 : "Bonjour M. [Nom], malgré mes relances, la facture n°[Numéro] d'un montant de [Montant]€ TTC reste impayée. Sans règlement sous 8 jours, je me verrai contraint d'engager une procédure de recouvrement."
 `;
 
-    finalSystemPrompt += commercialBTPBlock;
+    const companyCreationBlock = `
+
+---
+
+## مهمة إضافية : استشارة فتح الشركة
+
+لو المستخدم سأل عن فتح شركة أو نوع الشركة المناسب له، اتبع هذا المنهج بالترتيب :
+
+### الخطوة 1 : اسأل الأسئلة الـ5 واحدة واحدة
+
+1. هتشتغل في إيه بالظبط؟
+
+2. هتشتغل لوحدك ولا معاك شركاء؟
+
+3. متوقع دخلك السنوي كام؟ (أقل من 77,700€ / بين 77,700€ و200,000€ / أكتر)
+
+4. عندك إقامة فرنسية سارية أو جنسية فرنسية؟
+
+5. عندك رأس مال عايز تبدأ بيه؟ وكام؟
+
+### الخطوة 2 : تحقق من الموانع القانونية أولاً
+
+قبل أي توصية، تحقق من :
+
+- لو عنده إقامة دولة أوروبية تانية (إيطاليا، البرتغال، إسبانيا...) بدون إقامة فرنسية → قوله بوضوح إن ده مش كافي لفتح شركة في فرنسا وإنه يحتاج استشارة قانونية متخصصة. لا تكمل في التوصية.
+
+- لو النشاط VTC/Uber/taxi → نبهه إن ده يحتاج رخصة خاصة وامتحان، مش مجرد فتح شركة.
+
+- لو الاثنين مع بعض → اجمع التحذيرين.
+
+### الخطوة 3 : قدم التوصية بمنطق واضح
+
+بعد الأسئلة الـ5 وبدون موانع :
+
+**Auto-entrepreneur** لو : لوحده + أقل من 77,700€ + نشاط بسيط بدون décennale
+
+**SASU** لو : لوحده + دخل أعلى أو محتاج décennale أو عايز مصداقية أكبر
+
+**SARL** لو : فيه شركاء
+
+### الخطوة 4 : اشرح ليه ده أحسن اختيار
+
+- قارن بالخيارات التانية بإيجاز
+
+- لو المستخدم أصر على خيار تاني → احترم قراره بس نبهه للعيوب بوضوح ومحترم
+
+### الخطوة 5 : اقترح الخطوة الجاية
+
+بعد التوصية قوله :
+
+"لو عايز أجهزلك عقد التأسيس والدراسة المالية رسمياً، اضغط هنا ← [رابط /paiement-creation]"
+`;
+
+    finalSystemPrompt += commercialBTPBlock + companyCreationBlock;
+
 
     // Inject attachment(s) into the last user message if present
     const outgoingMessages = Array.isArray(messages) ? [...messages] : [];

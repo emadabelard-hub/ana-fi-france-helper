@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, FileText, BarChart3, Package, Download, Plus, Trash2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { buildStatutsPdf, buildPrevisionnelPdf } from "@/lib/creationPdf";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,31 +65,22 @@ export default function PaiementCreationPage() {
     setPrevisionnelUrl(null);
     try {
       if (needStatuts) {
-        const { data, error } = await supabase.functions.invoke("generate-statuts", {
-          body: {
-            companyName, companyType, activity, capital, address,
-            managerName, managerBirthDate, managerNationality, managerAddress,
-            associes: companyType === "SARL" ? associes : undefined,
-            product,
-          },
+        const blob = buildStatutsPdf({
+          companyName, companyType, activity, capital, address,
+          managerName, managerBirthDate, managerNationality, managerAddress,
+          associes: companyType === "SARL" ? associes : undefined,
         });
-        if (error) throw error;
-        if (!data?.url) throw new Error("PDF non généré");
-        setPdfUrl(data.url);
+        setPdfUrl(URL.createObjectURL(blob));
       }
       if (needPrevi) {
-        const { data, error } = await supabase.functions.invoke("generate-previsionnel", {
-          body: {
-            type_societe: companyType,
-            activite: activity,
-            capital,
-            chiffre_affaires_estime: caEstime,
-            is_btp: isBtp,
-          },
+        const blob = buildPrevisionnelPdf({
+          type_societe: companyType,
+          activite: activity,
+          capital,
+          chiffre_affaires_estime: caEstime,
+          is_btp: isBtp,
         });
-        if (error) throw error;
-        if (!data?.url) throw new Error("PDF non généré");
-        setPrevisionnelUrl(data.url);
+        setPrevisionnelUrl(URL.createObjectURL(blob));
       }
       if (needPrevi && !needStatuts) {
         toast.success("✅ الدراسة المالية جاهزة! ده الملف اللي هتاخده معاك للبنك عشان تفتح الحساب البنكي للشركة.");

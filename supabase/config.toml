@@ -87,3 +87,6 @@ verify_jwt = false
 [functions.send-chantier-report]
 verify_jwt = false
 
+
+[functions.wizard-societe]
+verify_jwt = false

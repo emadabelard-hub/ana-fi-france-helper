@@ -49,14 +49,50 @@ serve(async (req) => {
     const residence = String(answers.residence || "").toLowerCase();
     const activite = String(answers.activite || "").toLowerCase();
 
-    const euForeignResidence = /(italie|italien|italienne|italie|espagne|espagnol|allemagne|portugal|belgique|pays-bas|hollande|إيطالي|ايطالي|اسبان|إسبان|ألماني|برتغال|بلجيك)/i.test(residence + " " + all)
-      && !/(france|française|francais|résidence française|إقامة فرنسي|فرنسي|جنسية فرنسي|لاجئ|حماية دولية|refugié|réfugié|protection)/i.test(residence + " " + all);
+    const residenceScope = residence + " " + all;
+    const hasFrenchTie = /(france|française|francais|résidence française|إقامة فرنسي|إقامة فرنسية|فرنسي|جنسية فرنسي|لاجئ|حماية دولية|refugié|réfugié|protection)/i.test(residenceScope);
+
+    const euCountryPatterns: Array<{ re: RegExp; ar: string }> = [
+      { re: /(portugal|portugais|portugaise|برتغال|برتغالي)/i, ar: "البرتغالية" },
+      { re: /(italie|italien|italienne|إيطالي|ايطالي|إيطاليا|ايطاليا)/i, ar: "الإيطالية" },
+      { re: /(espagne|espagnol|espagnole|اسبان|إسبان|اسبانيا|إسبانيا)/i, ar: "الإسبانية" },
+      { re: /(belgique|belge|بلجيك|بلجيكا)/i, ar: "البلجيكية" },
+      { re: /(pays-bas|hollande|néerlandais|neerlandais|هولندا|هولندي)/i, ar: "الهولندية" },
+      { re: /(allemagne|allemand|allemande|ألماني|الماني|ألمانيا|المانيا)/i, ar: "الألمانية" },
+      { re: /(autriche|autrichien|نمسا|نمساوي)/i, ar: "النمساوية" },
+      { re: /(grèce|grece|grec|يونان|يوناني)/i, ar: "اليونانية" },
+      { re: /(irlande|irlandais|إيرلندا|ايرلندا)/i, ar: "الإيرلندية" },
+      { re: /(pologne|polonais|بولندا|بولوني)/i, ar: "البولندية" },
+      { re: /(roumanie|roumain|رومانيا|روماني)/i, ar: "الرومانية" },
+      { re: /(bulgarie|bulgare|بلغاريا|بلغاري)/i, ar: "البلغارية" },
+      { re: /(hongrie|hongrois|مجر|مجري|هنغاريا)/i, ar: "المجرية" },
+      { re: /(suède|suede|suédois|suedois|سويد|سويدي)/i, ar: "السويدية" },
+      { re: /(danemark|danois|دنمارك|دنماركي)/i, ar: "الدنماركية" },
+      { re: /(finlande|finlandais|فنلندا|فنلندي)/i, ar: "الفنلندية" },
+      { re: /(luxembourg|لوكسمبورغ)/i, ar: "اللوكسمبورغية" },
+      { re: /(croatie|croate|كرواتيا|كرواتي)/i, ar: "الكرواتية" },
+      { re: /(tchèque|tcheque|تشيك|تشيكي)/i, ar: "التشيكية" },
+      { re: /(slovaquie|slovaque|سلوفاكيا)/i, ar: "السلوفاكية" },
+      { re: /(slovénie|slovenie|سلوفينيا)/i, ar: "السلوفينية" },
+      { re: /(chypre|قبرص)/i, ar: "القبرصية" },
+      { re: /(malte|مالطا)/i, ar: "المالطية" },
+      { re: /(estonie|إستونيا|استونيا)/i, ar: "الإستونية" },
+      { re: /(lettonie|لاتفيا)/i, ar: "اللاتفية" },
+      { re: /(lituanie|ليتوانيا)/i, ar: "الليتوانية" },
+    ];
+
+    const matchedCountries = euCountryPatterns.filter((c) => c.re.test(residenceScope)).map((c) => c.ar);
+    const noResidenceForeign = /(لا إقامة|بدون إقامة|ماعنديش إقامة|معنديش إقامة|مفيش إقامة|sans résidence|sans titre|pas de résidence|pas de titre)/i.test(residenceScope)
+      && /(étranger|etranger|خارج فرنسا|بلد تاني|بلد آخر|أجنبي|اجنبي)/i.test(residenceScope);
+
+    const euForeignResidence = (matchedCountries.length > 0 || noResidenceForeign) && !hasFrenchTie;
 
     const vtcActivity = /(uber|vtc|taxi|chauffeur|توصيل|أوبر|اوبر|تاكسي|سواق)/i.test(activite + " " + all);
 
     const messages: string[] = [];
     if (euForeignResidence) {
-      messages.push(`يا صديقي، الإقامة الإيطالية مش بتسمحلك تفتح شركة في فرنسا مباشرة 🚫 عشان تفتح شركة في فرنسا لازم يكون عندك إما إقامة فرنسية سارية، أو جنسية فرنسية، أو وضع لاجئ/حماية دولية في فرنسا. نصيحتي: اتواصل مع une association d'aide aux entrepreneurs étrangers أو استشر محامي متخصص في droit des étrangers.`);
+      const label = matchedCountries.length > 0 ? matchedCountries.join(" / ") : "الأجنبية";
+      messages.push(`🚫 لازم أكون صريح معاك يا صديقي — الإقامة ${label} لوحدها مش كافية عشان تفتح شركة في فرنسا قانونياً. محتاج إقامة فرنسية سارية أو جنسية فرنسية أو وضع لاجئ في فرنسا. نصيحتي تتواصل مع association d'aide aux entrepreneurs étrangers أو محامي متخصص في droit des étrangers قبل ما تبدأ أي إجراءات. أنا مش عايزك تضيع فلوس ووقت في حاجة مش هتتم. 🙏`);
     }
     if (vtcActivity) {
       messages.push(`شغل Uber و VTC في فرنسا محتاج رخصة خاصة (carte professionnelle VTC) وامتحان صعب بالفرنساوي، وده غير فتح الشركة العادية. ده موضوع تخصصي خارج نطاق مساعدتي — نصيحتي تتواصل مع un organisme agréé VTC.`);

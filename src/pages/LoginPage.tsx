@@ -183,7 +183,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="ltr">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 gap-6" dir="ltr">
       <Card className="w-full max-w-md border-border/50 shadow-xl">
         <CardHeader className="text-center space-y-2">
           <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground font-black text-xl mx-auto shadow-lg">
@@ -197,6 +197,7 @@ const LoginPage = () => {
                 : 'Créer un compte'}
           </CardTitle>
         </CardHeader>
+
         <CardContent className="space-y-4">
           {isForgotPassword ? (
             resetEmailSent ? (

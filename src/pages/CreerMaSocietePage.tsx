@@ -150,7 +150,32 @@ const CreerMaSocietePage = () => {
 
       {/* Chat area */}
       <main className="pt-14 pb-24 px-3 max-w-2xl mx-auto">
-        <div ref={scrollRef} className="space-y-3 py-4">
+        {showChecklist && (
+          <div className="my-6 rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+            <h2 className="text-right text-lg font-bold text-card-foreground">✅ شروط فتح شركة في فرنسا</h2>
+            <ul className="space-y-2 text-right text-sm text-card-foreground" dir="rtl">
+              <li>• مواطن فرنسي أو إقامة فرنسية سارية</li>
+              <li>• أو مواطن دولة الاتحاد الأوروبي (برتغال، إيطاليا، إسبانيا...)</li>
+              <li>• أو وضع لاجئ / حماية دولية معترف بيه في فرنسا</li>
+              <li>• عمر 18 سنة أو أكتر</li>
+              <li>• مش محكوم عليك بحكم يمنعك من الإدارة</li>
+            </ul>
+            <div className="text-right text-sm text-muted-foreground" dir="rtl">
+              ❓ مش متأكد من وضعك؟
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button variant="outline" className="w-full font-bold" onClick={() => navigate('/assistant')}>
+                اسأل شبيك لبيك
+              </Button>
+              <Button className="w-full font-bold" onClick={() => setShowChecklist(false)}>
+                ✅ أنا مؤهل — هبدأ دلوقتي
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!showChecklist && (
+          <div ref={scrollRef} className="space-y-3 py-4">
           {messages.map((m, i) => (
             <div key={i} className={cn('flex', m.role === 'user' ? 'justify-start' : 'justify-end')}>
               <div

@@ -63,7 +63,13 @@ const CreerMaSocietePage = () => {
     setAnalyzing(true);
     try {
       const { data, error } = await supabase.functions.invoke('wizard-societe', {
-        body: { answers: finalAnswers },
+        body: {
+          answers: finalAnswers,
+          conversationHistory: messages.slice(0, -1).map(m => ({
+            role: m.role === 'bot' ? 'assistant' : 'user',
+            content: m.content,
+          })),
+        },
       });
       if (error) throw error;
       setRecommendation(data?.content || 'حصل خطأ في التحليل. حاول تاني.');

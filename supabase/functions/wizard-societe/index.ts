@@ -189,6 +189,7 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
+          ...(conversationHistory || []),
           { role: "user", content: userMessage },
         ],
       }),

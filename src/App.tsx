@@ -110,6 +110,8 @@ const AppRoutes = () => {
           <Route path="/comptable" element={<ComptablePage />} />
           {/* Public chantier invitation page — token-based, no MainLayout */}
           <Route path="/invite/:token" element={<InvitePage />} />
+          {/* Public company creation wizard — no auth required */}
+          <Route path="/creer-ma-societe" element={<CreerMaSocietePage />} />
           <Route
             path="*"
             element={

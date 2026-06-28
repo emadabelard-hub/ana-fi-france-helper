@@ -245,7 +245,20 @@ export default function PaiementCreationPage() {
           </p>
           <Button asChild className="w-full">
             <a href={pdfUrl} target="_blank" rel="noopener noreferrer" download>
-              <Download className="ml-2 h-4 w-4" /> تحميل PDF
+              <Download className="ml-2 h-4 w-4" /> تحميل عقد التأسيس
+            </a>
+          </Button>
+        </Card>
+      )}
+
+      {previsionnelUrl && (
+        <Card className="p-5 space-y-3 bg-blue-50 dark:bg-blue-950/30 border-blue-500">
+          <p className="font-semibold">
+            ✅ الدراسة المالية جاهزة! ده الملف اللي هتاخده معاك للبنك عشان تفتح الحساب البنكي للشركة.
+          </p>
+          <Button asChild className="w-full">
+            <a href={previsionnelUrl} target="_blank" rel="noopener noreferrer" download>
+              <Download className="ml-2 h-4 w-4" /> تحميل الدراسة المالية
             </a>
           </Button>
         </Card>

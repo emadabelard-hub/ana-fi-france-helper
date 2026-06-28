@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,9 +36,12 @@ export default function PaiementCreationPage() {
   const [managerAddress, setManagerAddress] = useState("");
   const [associes, setAssocies] = useState<Associe[]>([{ name: "", percent: 100 }]);
   const [product, setProduct] = useState("package");
+  const [caEstime, setCaEstime] = useState<number>(50000);
+  const [isBtp, setIsBtp] = useState(true);
 
   const [generating, setGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [previsionnelUrl, setPrevisionnelUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) navigate("/login");

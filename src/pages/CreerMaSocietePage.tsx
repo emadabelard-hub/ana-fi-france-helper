@@ -48,6 +48,7 @@ const CreerMaSocietePage = () => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [analyzing, setAnalyzing] = useState(false);
   const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [showChecklist, setShowChecklist] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 

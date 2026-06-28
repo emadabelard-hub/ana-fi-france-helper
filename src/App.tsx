@@ -58,6 +58,7 @@ const ChantierReportPage = lazy(() => import("./pages/ChantierReportPage"));
 const InvitePage = lazy(() => import("./pages/InvitePage"));
 const ComptablePage = lazy(() => import("./pages/ComptablePage"));
 const CreerMaSocietePage = lazy(() => import("./pages/CreerMaSocietePage"));
+const PaiementCreationPage = lazy(() => import("./pages/PaiementCreationPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -158,6 +159,7 @@ const AppRoutes = () => {
                     <Route path="/translator" element={<TranslatorPage />} />
                     <Route path="/my-documents" element={<MyDocumentsPage />} />
                     <Route path="/chantier-report" element={<ChantierReportPage />} />
+                    <Route path="/paiement-creation" element={<PaiementCreationPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

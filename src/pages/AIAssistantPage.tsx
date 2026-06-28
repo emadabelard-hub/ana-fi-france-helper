@@ -931,6 +931,21 @@ const AIAssistantPage = () => {
         </div>
       )}
 
+      {/* Hero banner: créer ma société */}
+      <div
+        className="mx-4 mb-6 mt-4 shrink-0 rounded-[16px] text-white flex flex-col items-center justify-center gap-1.5 min-h-[140px] px-4 text-center"
+        style={{ background: 'linear-gradient(90deg, #1E3A8A, #2563EB)' }}
+      >
+        <div className="text-[32px] leading-none">🏗️</div>
+        <h2 className="text-[20px] font-bold leading-tight font-cairo">عايز تفتح شركتك في فرنسا؟</h2>
+        <p className="text-[14px] font-medium text-white/80 leading-tight font-cairo">خليني أساعدك من الأوراق لحد الـ Kbis 🇫🇷</p>
+        <button
+          onClick={() => navigate('/creer-ma-societe')}
+          className="mt-2 bg-white font-bold text-[#1E3A8A] rounded-[25px] px-8 py-3 text-[16px] shadow-lg hover:bg-white/90 transition-colors font-cairo"
+        >
+          ابدأ مجاناً دلوقتي ←
+        </button>
+      </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">

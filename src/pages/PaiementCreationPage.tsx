@@ -48,26 +48,56 @@ export default function PaiementCreationPage() {
   }, [isLoading, user, navigate]);
 
   const handleGenerate = async () => {
-    if (!companyName || !activity || !address || !managerName) {
+    const needStatuts = product === "statuts" || product === "package";
+    const needPrevi = product === "financial" || product === "package";
+
+    if (needStatuts && (!companyName || !activity || !address || !managerName)) {
       toast.error("املأ الحقول المطلوبة");
+      return;
+    }
+    if (needPrevi && (!activity || !caEstime || caEstime <= 0)) {
+      toast.error("اكتب الإيرادات السنوية المتوقعة");
       return;
     }
     toast.info("قريباً — الدفع هيكون متاح قريباً! ✅");
     setGenerating(true);
     setPdfUrl(null);
+    setPrevisionnelUrl(null);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-statuts", {
-        body: {
-          companyName, companyType, activity, capital, address,
-          managerName, managerBirthDate, managerNationality, managerAddress,
-          associes: companyType === "SARL" ? associes : undefined,
-          product,
-        },
-      });
-      if (error) throw error;
-      if (!data?.url) throw new Error("PDF non généré");
-      setPdfUrl(data.url);
-      toast.success("✅ تم توليد عقد التأسيس!");
+      if (needStatuts) {
+        const { data, error } = await supabase.functions.invoke("generate-statuts", {
+          body: {
+            companyName, companyType, activity, capital, address,
+            managerName, managerBirthDate, managerNationality, managerAddress,
+            associes: companyType === "SARL" ? associes : undefined,
+            product,
+          },
+        });
+        if (error) throw error;
+        if (!data?.url) throw new Error("PDF non généré");
+        setPdfUrl(data.url);
+      }
+      if (needPrevi) {
+        const { data, error } = await supabase.functions.invoke("generate-previsionnel", {
+          body: {
+            type_societe: companyType,
+            activite: activity,
+            capital,
+            chiffre_affaires_estime: caEstime,
+            is_btp: isBtp,
+          },
+        });
+        if (error) throw error;
+        if (!data?.url) throw new Error("PDF non généré");
+        setPrevisionnelUrl(data.url);
+      }
+      if (needPrevi && !needStatuts) {
+        toast.success("✅ الدراسة المالية جاهزة! ده الملف اللي هتاخده معاك للبنك عشان تفتح الحساب البنكي للشركة.");
+      } else if (needStatuts && needPrevi) {
+        toast.success("✅ تم توليد عقد التأسيس + الدراسة المالية!");
+      } else {
+        toast.success("✅ تم توليد عقد التأسيس!");
+      }
     } catch (e) {
       console.error(e);
       toast.error(e instanceof Error ? e.message : "خطأ");

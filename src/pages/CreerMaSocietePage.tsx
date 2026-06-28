@@ -252,7 +252,8 @@ const CreerMaSocietePage = () => {
               </div>
             </>
           )}
-        </div>
+          </div>
+        )}
       </main>
 
       {/* Input bar */}

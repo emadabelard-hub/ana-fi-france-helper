@@ -57,6 +57,7 @@ const SignaturePage = lazy(() => import("./pages/SignaturePage"));
 const ChantierReportPage = lazy(() => import("./pages/ChantierReportPage"));
 const InvitePage = lazy(() => import("./pages/InvitePage"));
 const ComptablePage = lazy(() => import("./pages/ComptablePage"));
+const CreerMaSocietePage = lazy(() => import("./pages/CreerMaSocietePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (

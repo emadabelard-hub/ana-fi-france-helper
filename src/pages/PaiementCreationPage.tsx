@@ -202,6 +202,17 @@ export default function PaiementCreationPage() {
             ))}
           </>
         )}
+
+        <hr />
+        <h2 className="text-xl font-bold">📊 الدراسة المالية</h2>
+        <div className="space-y-2">
+          <Label>الإيرادات السنوية المتوقعة (CA annuel en €)</Label>
+          <Input type="number" value={caEstime} onChange={e => setCaEstime(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <Checkbox checked={isBtp} onCheckedChange={(v) => setIsBtp(Boolean(v))} />
+          <span>نوع النشاط BTP ؟ (يضيف التأمين العشري)</span>
+        </label>
       </Card>
 
       <Card className="p-5 space-y-4">

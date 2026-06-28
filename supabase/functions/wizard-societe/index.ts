@@ -103,6 +103,26 @@ serve(async (req) => {
       });
     }
 
+    const userMessage = Object.values(answers).filter((v) => typeof v === "string").join(" ");
+
+    const PAYS_BLOQUES = ["برتغال","يرتغال","إيطاليا","طاليا","إسبانيا","سبانيا","بلجيكا","هولندا","ألمانيا","المغرب","الجزائر","تونس","ليبيا","مصر","تركيا","باكستان"];
+
+    const tousLesMessages = [
+      ...(conversationHistory || []).map(m => m.content),
+      userMessage
+    ].join(" ");
+
+    const paysTrouve = PAYS_BLOQUES.find(p => tousLesMessages.includes(p));
+
+    if (paysTrouve) {
+      return new Response(
+        JSON.stringify({ 
+          message: "🚫 يا صديقي، فاهم إن عندك إقامة خارج فرنسا — وده بيمنعك قانونياً من فتح شركة في فرنسا دلوقتي. مش رأيي، ده القانون الفرنسي. لازم يكون عندك إقامة فرنسية سارية أو جنسية فرنسية أو وضع لاجئ معترف بيه في فرنسا. نصيحتي تتواصل مع محامي متخصص في droit des étrangers قبل ما تصرف أي فلوس. 🙏" 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 

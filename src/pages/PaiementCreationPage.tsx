@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,35 +36,68 @@ export default function PaiementCreationPage() {
   const [managerAddress, setManagerAddress] = useState("");
   const [associes, setAssocies] = useState<Associe[]>([{ name: "", percent: 100 }]);
   const [product, setProduct] = useState("package");
+  const [caEstime, setCaEstime] = useState<number>(50000);
+  const [isBtp, setIsBtp] = useState(true);
 
   const [generating, setGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [previsionnelUrl, setPrevisionnelUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) navigate("/login");
   }, [isLoading, user, navigate]);
 
   const handleGenerate = async () => {
-    if (!companyName || !activity || !address || !managerName) {
+    const needStatuts = product === "statuts" || product === "package";
+    const needPrevi = product === "financial" || product === "package";
+
+    if (needStatuts && (!companyName || !activity || !address || !managerName)) {
       toast.error("املأ الحقول المطلوبة");
+      return;
+    }
+    if (needPrevi && (!activity || !caEstime || caEstime <= 0)) {
+      toast.error("اكتب الإيرادات السنوية المتوقعة");
       return;
     }
     toast.info("قريباً — الدفع هيكون متاح قريباً! ✅");
     setGenerating(true);
     setPdfUrl(null);
+    setPrevisionnelUrl(null);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-statuts", {
-        body: {
-          companyName, companyType, activity, capital, address,
-          managerName, managerBirthDate, managerNationality, managerAddress,
-          associes: companyType === "SARL" ? associes : undefined,
-          product,
-        },
-      });
-      if (error) throw error;
-      if (!data?.url) throw new Error("PDF non généré");
-      setPdfUrl(data.url);
-      toast.success("✅ تم توليد عقد التأسيس!");
+      if (needStatuts) {
+        const { data, error } = await supabase.functions.invoke("generate-statuts", {
+          body: {
+            companyName, companyType, activity, capital, address,
+            managerName, managerBirthDate, managerNationality, managerAddress,
+            associes: companyType === "SARL" ? associes : undefined,
+            product,
+          },
+        });
+        if (error) throw error;
+        if (!data?.url) throw new Error("PDF non généré");
+        setPdfUrl(data.url);
+      }
+      if (needPrevi) {
+        const { data, error } = await supabase.functions.invoke("generate-previsionnel", {
+          body: {
+            type_societe: companyType,
+            activite: activity,
+            capital,
+            chiffre_affaires_estime: caEstime,
+            is_btp: isBtp,
+          },
+        });
+        if (error) throw error;
+        if (!data?.url) throw new Error("PDF non généré");
+        setPrevisionnelUrl(data.url);
+      }
+      if (needPrevi && !needStatuts) {
+        toast.success("✅ الدراسة المالية جاهزة! ده الملف اللي هتاخده معاك للبنك عشان تفتح الحساب البنكي للشركة.");
+      } else if (needStatuts && needPrevi) {
+        toast.success("✅ تم توليد عقد التأسيس + الدراسة المالية!");
+      } else {
+        toast.success("✅ تم توليد عقد التأسيس!");
+      }
     } catch (e) {
       console.error(e);
       toast.error(e instanceof Error ? e.message : "خطأ");
@@ -168,6 +202,17 @@ export default function PaiementCreationPage() {
             ))}
           </>
         )}
+
+        <hr />
+        <h2 className="text-xl font-bold">📊 الدراسة المالية</h2>
+        <div className="space-y-2">
+          <Label>الإيرادات السنوية المتوقعة (CA annuel en €)</Label>
+          <Input type="number" value={caEstime} onChange={e => setCaEstime(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <Checkbox checked={isBtp} onCheckedChange={(v) => setIsBtp(Boolean(v))} />
+          <span>نوع النشاط BTP ؟ (يضيف التأمين العشري)</span>
+        </label>
       </Card>
 
       <Card className="p-5 space-y-4">
@@ -200,7 +245,20 @@ export default function PaiementCreationPage() {
           </p>
           <Button asChild className="w-full">
             <a href={pdfUrl} target="_blank" rel="noopener noreferrer" download>
-              <Download className="ml-2 h-4 w-4" /> تحميل PDF
+              <Download className="ml-2 h-4 w-4" /> تحميل عقد التأسيس
+            </a>
+          </Button>
+        </Card>
+      )}
+
+      {previsionnelUrl && (
+        <Card className="p-5 space-y-3 bg-blue-50 dark:bg-blue-950/30 border-blue-500">
+          <p className="font-semibold">
+            ✅ الدراسة المالية جاهزة! ده الملف اللي هتاخده معاك للبنك عشان تفتح الحساب البنكي للشركة.
+          </p>
+          <Button asChild className="w-full">
+            <a href={previsionnelUrl} target="_blank" rel="noopener noreferrer" download>
+              <Download className="ml-2 h-4 w-4" /> تحميل الدراسة المالية
             </a>
           </Button>
         </Card>

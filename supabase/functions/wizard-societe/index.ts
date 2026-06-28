@@ -96,7 +96,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { answers } = await req.json();
+    const { answers, conversationHistory } = await req.json();
     if (!answers || typeof answers !== "object") {
       return new Response(JSON.stringify({ error: "Invalid answers" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },

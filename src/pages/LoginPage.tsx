@@ -385,17 +385,6 @@ const LoginPage = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* Public footer */}
-      <div className="mt-6 text-center">
-        <a
-          href="/creer-ma-societe"
-          className="inline-block text-sm font-bold text-primary hover:underline font-cairo"
-          dir="rtl"
-        >
-          افتح شركتك 🚀
-        </a>
-      </div>
     </div>
   );
 };

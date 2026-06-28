@@ -90,3 +90,6 @@ verify_jwt = false
 
 [functions.wizard-societe]
 verify_jwt = false
+
+[functions.generate-statuts]
+verify_jwt = true

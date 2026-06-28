@@ -59,6 +59,7 @@ const InvitePage = lazy(() => import("./pages/InvitePage"));
 const ComptablePage = lazy(() => import("./pages/ComptablePage"));
 const CreerMaSocietePage = lazy(() => import("./pages/CreerMaSocietePage"));
 const PaiementCreationPage = lazy(() => import("./pages/PaiementCreationPage"));
+const MaCreationPage = lazy(() => import("./pages/MaCreationPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (

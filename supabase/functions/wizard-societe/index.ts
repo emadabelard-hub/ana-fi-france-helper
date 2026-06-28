@@ -44,6 +44,34 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    // ============= Pre-validation: blocking cases =============
+    const all = Object.values(answers).filter((v) => typeof v === "string").join(" ").toLowerCase();
+    const residence = String(answers.residence || "").toLowerCase();
+    const activite = String(answers.activite || "").toLowerCase();
+
+    const euForeignResidence = /(italie|italien|italienne|italie|espagne|espagnol|allemagne|portugal|belgique|pays-bas|hollande|إيطالي|ايطالي|اسبان|إسبان|ألماني|برتغال|بلجيك)/i.test(residence + " " + all)
+      && !/(france|française|francais|résidence française|إقامة فرنسي|فرنسي|جنسية فرنسي|لاجئ|حماية دولية|refugié|réfugié|protection)/i.test(residence + " " + all);
+
+    const vtcActivity = /(uber|vtc|taxi|chauffeur|توصيل|أوبر|اوبر|تاكسي|سواق)/i.test(activite + " " + all);
+
+    const messages: string[] = [];
+    if (euForeignResidence) {
+      messages.push(`يا صديقي، الإقامة الإيطالية مش بتسمحلك تفتح شركة في فرنسا مباشرة 🚫 عشان تفتح شركة في فرنسا لازم يكون عندك إما إقامة فرنسية سارية، أو جنسية فرنسية، أو وضع لاجئ/حماية دولية في فرنسا. نصيحتي: اتواصل مع une association d'aide aux entrepreneurs étrangers أو استشر محامي متخصص في droit des étrangers.`);
+    }
+    if (vtcActivity) {
+      messages.push(`شغل Uber و VTC في فرنسا محتاج رخصة خاصة (carte professionnelle VTC) وامتحان صعب بالفرنساوي، وده غير فتح الشركة العادية. ده موضوع تخصصي خارج نطاق مساعدتي — نصيحتي تتواصل مع un organisme agréé VTC.`);
+    }
+
+    if (messages.length > 0) {
+      const intro = messages.length > 1
+        ? `يا صديقي، في عندك عقبتين مش واحدة، خليني أوضحهم:\n\n`
+        : "";
+      const blocked = intro + messages.map((m, i) => messages.length > 1 ? `${i + 1}. ${m}` : m).join("\n\n");
+      return new Response(JSON.stringify({ content: blocked, blocked: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const userMessage = `إجابات المستخدم:
 - النشاط: ${answers.activite || "غير محدد"}
 - لوحده ولا مع شركاء: ${answers.associes || "غير محدد"}

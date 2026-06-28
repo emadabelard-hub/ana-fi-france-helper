@@ -385,7 +385,7 @@ const LoginPage = () => {
           )}
         </CardContent>
       </Card>
-
+    </div>
   );
 };
 

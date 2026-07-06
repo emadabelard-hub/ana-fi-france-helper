@@ -89,7 +89,14 @@ const ArchiveAccountingPage = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      const [docsRes, expRes] = await Promise.all([docsQuery, expensesQuery]);
+      const supplierInvoicesQuery = (supabase.from('supplier_invoices') as any)
+        .select('id, invoice_number, supplier_reference, invoice_date, amount_ht, tva_rate, amount_tva, amount_ttc, status, suppliers(name)')
+        .eq('user_id', user.id)
+        .order('invoice_date', { ascending: false });
+
+      const [docsRes, expRes, supRes] = await Promise.all([docsQuery, expensesQuery, supplierInvoicesQuery]);
+
+      if (supRes?.data) setSupplierInvoices(supRes.data);
 
       if (docsRes.data) {
         setDocuments(docsRes.data.map((d: any) => ({

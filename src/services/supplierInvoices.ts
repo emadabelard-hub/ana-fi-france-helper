@@ -49,7 +49,7 @@ const T_LINE = "supplier_invoice_lines" as any;
 export async function listSuppliers(): Promise<Supplier[]> {
   const { data, error } = await supabase.from(T_SUP).select("*").order("name");
   if (error) throw error;
-  return (data ?? []) as Supplier[];
+  return (data ?? []) as unknown as Supplier[];
 }
 
 export async function createSupplier(payload: Partial<Supplier> & { name: string }): Promise<Supplier> {
@@ -57,11 +57,11 @@ export async function createSupplier(payload: Partial<Supplier> & { name: string
   if (!user) throw new Error("Not authenticated");
   const { data, error } = await supabase
     .from(T_SUP)
-    .insert({ ...payload, user_id: user.id })
+    .insert({ ...payload, user_id: user.id } as any)
     .select("*")
     .single();
   if (error) throw error;
-  return data as Supplier;
+  return data as unknown as Supplier;
 }
 
 export async function listSupplierInvoices(): Promise<SupplierInvoice[]> {
@@ -70,7 +70,7 @@ export async function listSupplierInvoices(): Promise<SupplierInvoice[]> {
     .select("*, supplier:suppliers(*)")
     .order("invoice_date", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as SupplierInvoice[];
+  return (data ?? []) as unknown as SupplierInvoice[];
 }
 
 export async function getSupplierInvoice(id: string): Promise<{ invoice: SupplierInvoice; lines: SupplierInvoiceLine[] }> {
@@ -86,13 +86,17 @@ export async function getSupplierInvoice(id: string): Promise<{ invoice: Supplie
     .eq("supplier_invoice_id", id)
     .order("created_at");
   if (e2) throw e2;
-  return { invoice: invoice as SupplierInvoice, lines: (lines ?? []) as SupplierInvoiceLine[] };
+  return {
+    invoice: invoice as unknown as SupplierInvoice,
+    lines: (lines ?? []) as unknown as SupplierInvoiceLine[],
+  };
 }
 
 export async function markSupplierInvoicePaid(id: string) {
-  const { error } = await supabase.from(T_INV).update({ status: "paid" }).eq("id", id);
+  const { error } = await supabase.from(T_INV).update({ status: "paid" } as any).eq("id", id);
   if (error) throw error;
 }
+
 
 export async function ocrSupplierInvoice(fileBase64: string, mimeType: string) {
   const { data, error } = await supabase.functions.invoke("ocr-supplier-invoice", {

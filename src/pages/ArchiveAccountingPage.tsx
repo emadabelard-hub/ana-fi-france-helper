@@ -34,6 +34,7 @@ const ArchiveAccountingPage = () => {
   const { toast } = useToast();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [expenses, setExpenses] = useState<DocumentItem[]>([]);
+  const [supplierInvoices, setSupplierInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [periodFilter, setPeriodFilter] = useState('all');
@@ -88,7 +89,14 @@ const ArchiveAccountingPage = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      const [docsRes, expRes] = await Promise.all([docsQuery, expensesQuery]);
+      const supplierInvoicesQuery = (supabase.from('supplier_invoices') as any)
+        .select('id, invoice_number, supplier_reference, invoice_date, amount_ht, tva_rate, amount_tva, amount_ttc, status, suppliers(name)')
+        .eq('user_id', user.id)
+        .order('invoice_date', { ascending: false });
+
+      const [docsRes, expRes, supRes] = await Promise.all([docsQuery, expensesQuery, supplierInvoicesQuery]);
+
+      if (supRes?.data) setSupplierInvoices(supRes.data);
 
       if (docsRes.data) {
         setDocuments(docsRes.data.map((d: any) => ({
@@ -449,7 +457,28 @@ const ArchiveAccountingPage = () => {
   const handleExportFEC = () => {
     try {
       const data = buildCsvRows();
-      const fec = generateFECCsv(data);
+      // Ajout du journal ACH : factures fournisseurs importées
+      const supplierRows: CsvDocumentRow[] = supplierInvoices
+        .filter((s: any) => inPeriod(s.invoice_date))
+        .map((s: any) => ({
+          date: s.invoice_date,
+          type: 'expense' as const,
+          reference: s.invoice_number,
+          clientName: s.suppliers?.name || 'Fournisseur',
+          documentNumber: s.invoice_number,
+          totalHT: Number(s.amount_ht) || 0,
+          tvaRate: Number(s.tva_rate) || 0,
+          tvaAmount: Number(s.amount_tva) || 0,
+          totalTTC: Number(s.amount_ttc) || 0,
+          paymentStatus: s.status === 'paid' ? 'paid' : 'unpaid',
+          category: 'materials',
+          expenseId: s.invoice_number,
+        }));
+      const dataWithSuppliers: AccountingExportData = {
+        ...data,
+        expenses: [...data.expenses, ...supplierRows],
+      };
+      const fec = generateFECCsv(dataWithSuppliers);
       const blob = new Blob([fec], { type: 'text/plain;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

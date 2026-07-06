@@ -18,15 +18,6 @@ const navItems = [
     dotColor: 'bg-indigo-400',
   },
   {
-    path: '/news',
-    icon: Newspaper,
-    labelAr: 'الأخبار',
-    labelFr: 'Actualités',
-    color: 'text-red-500',
-    activeBg: 'bg-red-500/15',
-    dotColor: 'bg-red-500',
-  },
-  {
     path: '/',
     icon: Home,
     labelAr: 'الرئيسية',

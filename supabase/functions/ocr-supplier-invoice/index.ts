@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,24 +10,25 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-  const authClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-  );
-  const { data: { user }, error: authErr } = await authClient.auth.getUser(authHeader.replace("Bearer ", ""));
-  if (authErr || !user || user.is_anonymous) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    );
+    const { data: { user }, error: authErr } = await authClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (authErr || !user || user.is_anonymous) {
+      console.error("auth failed", authErr);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { fileBase64, mimeType } = await req.json();
     if (!fileBase64) {
       return new Response(JSON.stringify({ error: "No file provided" }), {
@@ -36,45 +36,62 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY is not configured");
+      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY missing" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const isPdf = (mimeType || "").includes("pdf");
-    const content: any[] = [
-      {
-        type: "text",
-        text: `Tu es un extracteur OCR de factures fournisseurs françaises (BTP).
-Extrais ces champs et renvoie STRICTEMENT du JSON valide :
-- supplier_name: nom du fournisseur/vendeur
-- supplier_reference: numéro de facture du fournisseur (si visible)
-- invoice_date: date au format YYYY-MM-DD
-- amount_ht: montant HT (nombre)
-- tva_rate: taux TVA (0, 5.5, 10 ou 20)
-- amount_tva: montant TVA (nombre)
-- amount_ttc: montant TTC (nombre)
-- description: nature de l'achat en français (courte)
-- category_code: code comptable français parmi 601000 (achats fournitures), 602000 (autres approvisionnements), 606100 (électricité), 606300 (petit équipement), 611000 (sous-traitance), 613000 (locations), 615000 (entretien), 616000 (assurances), 618000 (documentation), 622600 (honoraires), 624100 (transports), 625100 (déplacements), 626000 (télécom). Choisis le plus pertinent.
+    const mt = (mimeType || "").toLowerCase();
+    const isPdf = mt.includes("pdf");
+    const dataUrl = fileBase64.startsWith("data:")
+      ? fileBase64
+      : `data:${mimeType || (isPdf ? "application/pdf" : "image/jpeg")};base64,${fileBase64}`;
 
-Si un champ est illisible → null. Réponds UNIQUEMENT en JSON.`,
-      },
+    const systemPrompt = `Tu es un extracteur OCR de factures fournisseurs françaises (BTP).
+Extrais ces champs et renvoie STRICTEMENT du JSON valide (aucun texte autour) :
+{
+  "supplier_name": string|null,
+  "supplier_reference": string|null,
+  "invoice_date": "YYYY-MM-DD"|null,
+  "amount_ht": number|null,
+  "tva_rate": 0|5.5|10|20|null,
+  "amount_tva": number|null,
+  "amount_ttc": number|null,
+  "description": string|null,
+  "category_code": "601000"|"602000"|"606100"|"606300"|"611000"|"613000"|"615000"|"616000"|"618000"|"622600"|"624100"|"625100"|"626000"|null
+}
+Codes: 601000 achats fournitures, 602000 autres approvisionnements, 606100 électricité, 606300 petit équipement, 611000 sous-traitance, 613000 locations, 615000 entretien, 616000 assurances, 618000 documentation, 622600 honoraires, 624100 transports, 625100 déplacements, 626000 télécom.
+Si un champ est illisible → null.`;
+
+    const userContent: any[] = [
+      { type: "text", text: "Extrais les données de cette facture fournisseur." },
     ];
-
     if (isPdf) {
-      content.push({ type: "file", file: { filename: "facture.pdf", file_data: `data:${mimeType};base64,${fileBase64}` } });
+      userContent.push({
+        type: "file",
+        file: { filename: "facture.pdf", file_data: dataUrl },
+      });
     } else {
-      const dataUrl = fileBase64.startsWith("data:") ? fileBase64 : `data:${mimeType || "image/jpeg"};base64,${fileBase64}`;
-      content.push({ type: "image_url", image_url: { url: dataUrl } });
+      userContent.push({ type: "image_url", image_url: { url: dataUrl } });
     }
 
     const payload = {
       model: "google/gemini-2.5-flash",
-      messages: [{ role: "user", content }],
-      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent },
+      ],
     };
 
-    const response = await anthropicCompatFetch({
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(payload),
     });
 
@@ -91,7 +108,7 @@ Si un champ est illisible → null. Réponds UNIQUEMENT en JSON.`,
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ error: "ai_failed" }), {
+      return new Response(JSON.stringify({ error: "ai_failed", details: t }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -105,6 +122,8 @@ Si un champ est illisible → null. Réponds UNIQUEMENT en JSON.`,
       const m = String(raw).match(/\{[\s\S]*\}/);
       if (m) { try { parsed = JSON.parse(m[0]); } catch { parsed = {}; } }
     }
+
+    console.log("ocr-supplier-invoice extracted:", JSON.stringify(parsed));
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

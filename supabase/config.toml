@@ -96,3 +96,9 @@ verify_jwt = true
 
 [functions.generate-previsionnel]
 verify_jwt = true
+
+[functions.ocr-supplier-invoice]
+verify_jwt = false
+
+[functions.create-supplier-invoice]
+verify_jwt = false

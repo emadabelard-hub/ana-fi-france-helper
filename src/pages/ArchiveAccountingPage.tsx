@@ -457,7 +457,28 @@ const ArchiveAccountingPage = () => {
   const handleExportFEC = () => {
     try {
       const data = buildCsvRows();
-      const fec = generateFECCsv(data);
+      // Ajout du journal ACH : factures fournisseurs importées
+      const supplierRows: CsvDocumentRow[] = supplierInvoices
+        .filter((s: any) => inPeriod(s.invoice_date))
+        .map((s: any) => ({
+          date: s.invoice_date,
+          type: 'expense' as const,
+          reference: s.invoice_number,
+          clientName: s.suppliers?.name || 'Fournisseur',
+          documentNumber: s.invoice_number,
+          totalHT: Number(s.amount_ht) || 0,
+          tvaRate: Number(s.tva_rate) || 0,
+          tvaAmount: Number(s.amount_tva) || 0,
+          totalTTC: Number(s.amount_ttc) || 0,
+          paymentStatus: s.status === 'paid' ? 'paid' : 'unpaid',
+          category: 'materials',
+          expenseId: s.invoice_number,
+        }));
+      const dataWithSuppliers: AccountingExportData = {
+        ...data,
+        expenses: [...data.expenses, ...supplierRows],
+      };
+      const fec = generateFECCsv(dataWithSuppliers);
       const blob = new Blob([fec], { type: 'text/plain;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

@@ -1,0 +1,1 @@
+ALTER TABLE public.document_counters DROP CONSTRAINT document_counters_document_type_check; ALTER TABLE public.document_counters ADD CONSTRAINT document_counters_document_type_check CHECK (document_type = ANY (ARRAY['devis'::text, 'facture'::text, 'supplier_invoice'::text]));

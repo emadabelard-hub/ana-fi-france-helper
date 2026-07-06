@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Newspaper, User, Shield, HeadphonesIcon, ClipboardList } from 'lucide-react';
+import { Home, BarChart3, User, Shield, HeadphonesIcon, ClipboardList } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,6 +8,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 const navItems = [
+  {
+    path: '/accounting/supplier-invoices',
+    icon: BarChart3,
+    labelAr: 'المحاسبة',
+    labelFr: 'Comptabilité',
+    color: 'text-indigo-400',
+    activeBg: 'bg-indigo-400/15',
+    dotColor: 'bg-indigo-400',
+  },
   {
     path: '/news',
     icon: Newspaper,

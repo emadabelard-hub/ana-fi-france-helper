@@ -132,6 +132,57 @@ export default function SupplierInvoiceDetailPage() {
         </Card>
       )}
 
+      {/* Écritures comptables générées (Journal ACH) */}
+      {(() => {
+        const ht = Number(invoice.amount_ht) || 0;
+        const tva = Number(invoice.amount_tva) || 0;
+        const ttc = Number(invoice.amount_ttc) || 0;
+        const rows = [
+          { compte: "601000", libelle: isRTL ? "مشتريات مواد أولية" : "Achats matières premières", debit: ht, credit: 0 },
+          ...(tva > 0 ? [{ compte: "445660", libelle: isRTL ? "ضريبة قابلة للخصم" : "TVA déductible", debit: tva, credit: 0 }] : []),
+          { compte: "401000", libelle: isRTL ? "المورّدون" : "Fournisseurs", debit: 0, credit: ttc },
+        ];
+        return (
+          <Card className="p-4 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">{isRTL ? "المحاسبة — يومية ACH" : "Comptabilité — Journal ACH"}</h3>
+              <Badge variant="outline" className="font-mono text-xs">ACH</Badge>
+            </div>
+            <div className="text-xs text-muted-foreground mb-3">
+              {isRTL ? "القيود المُولَّدة تلقائياً وتُدرَج في تصدير FEC" : "Écritures générées automatiquement et incluses dans l'export FEC"}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm" dir="ltr">
+                <thead>
+                  <tr className="text-xs text-muted-foreground border-b">
+                    <th className="text-left py-1.5 pr-2">Compte</th>
+                    <th className="text-left py-1.5 pr-2">Libellé</th>
+                    <th className="text-right py-1.5 pr-2">Débit</th>
+                    <th className="text-right py-1.5">Crédit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, i) => (
+                    <tr key={i} className="border-b last:border-b-0">
+                      <td className="py-1.5 pr-2 font-mono">{r.compte}</td>
+                      <td className="py-1.5 pr-2">{r.libelle}</td>
+                      <td className="py-1.5 pr-2 text-right font-medium">{r.debit > 0 ? formatEUR(r.debit) : "—"}</td>
+                      <td className="py-1.5 text-right font-medium">{r.credit > 0 ? formatEUR(r.credit) : "—"}</td>
+                    </tr>
+                  ))}
+                  <tr className="font-semibold">
+                    <td colSpan={2} className="py-1.5 pr-2 text-right">Total</td>
+                    <td className="py-1.5 pr-2 text-right">{formatEUR(ht + tva)}</td>
+                    <td className="py-1.5 text-right">{formatEUR(ttc)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        );
+      })()}
+
+
       <div className="flex gap-2 flex-wrap">
         {invoice.pdf_url && (
           <Button variant="outline" asChild>

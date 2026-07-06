@@ -60,6 +60,8 @@ const ComptablePage = lazy(() => import("./pages/ComptablePage"));
 const CreerMaSocietePage = lazy(() => import("./pages/CreerMaSocietePage"));
 const PaiementCreationPage = lazy(() => import("./pages/PaiementCreationPage"));
 const MaCreationPage = lazy(() => import("./pages/MaCreationPage"));
+const SupplierInvoicesPage = lazy(() => import("./pages/accounting/SupplierInvoicesPage"));
+const SupplierInvoiceDetailPage = lazy(() => import("./pages/accounting/SupplierInvoiceDetailPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -162,6 +164,8 @@ const AppRoutes = () => {
                     <Route path="/chantier-report" element={<ChantierReportPage />} />
                     <Route path="/paiement-creation" element={<PaiementCreationPage />} />
                     <Route path="/ma-creation" element={<MaCreationPage />} />
+                    <Route path="/accounting/supplier-invoices" element={<SupplierInvoicesPage />} />
+                    <Route path="/accounting/supplier-invoices/:id" element={<SupplierInvoiceDetailPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

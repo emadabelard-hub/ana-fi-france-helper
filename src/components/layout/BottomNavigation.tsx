@@ -126,8 +126,10 @@ const BottomNavigation = () => {
       <div className="flex items-center justify-between gap-0.5 py-1.5 px-1 overflow-x-auto no-scrollbar">
         {items.map((item) => {
           const isActive =
-            location.pathname === item.path ||
-            (item.path === '/' && location.pathname === '/home');
+            item.path === '/accounting/supplier-invoices'
+              ? location.pathname.startsWith('/accounting')
+              : location.pathname === item.path ||
+                (item.path === '/' && location.pathname === '/home');
           const Icon = item.icon;
 
           return (

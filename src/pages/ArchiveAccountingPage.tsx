@@ -34,6 +34,7 @@ const ArchiveAccountingPage = () => {
   const { toast } = useToast();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [expenses, setExpenses] = useState<DocumentItem[]>([]);
+  const [supplierInvoices, setSupplierInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [periodFilter, setPeriodFilter] = useState('all');

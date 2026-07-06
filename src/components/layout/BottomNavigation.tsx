@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Newspaper, User, Shield, HeadphonesIcon, ClipboardList } from 'lucide-react';
+import { Home, BarChart3, User, Shield, HeadphonesIcon, ClipboardList } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,13 +9,13 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   {
-    path: '/news',
-    icon: Newspaper,
-    labelAr: 'الأخبار',
-    labelFr: 'Actualités',
-    color: 'text-red-500',
-    activeBg: 'bg-red-500/15',
-    dotColor: 'bg-red-500',
+    path: '/accounting/supplier-invoices',
+    icon: BarChart3,
+    labelAr: 'المحاسبة',
+    labelFr: 'Comptabilité',
+    color: 'text-indigo-400',
+    activeBg: 'bg-indigo-400/15',
+    dotColor: 'bg-indigo-400',
   },
   {
     path: '/',
@@ -126,8 +126,10 @@ const BottomNavigation = () => {
       <div className="flex items-center justify-between gap-0.5 py-1.5 px-1 overflow-x-auto no-scrollbar">
         {items.map((item) => {
           const isActive =
-            location.pathname === item.path ||
-            (item.path === '/' && location.pathname === '/home');
+            item.path === '/accounting/supplier-invoices'
+              ? location.pathname.startsWith('/accounting')
+              : location.pathname === item.path ||
+                (item.path === '/' && location.pathname === '/home');
           const Icon = item.icon;
 
           return (

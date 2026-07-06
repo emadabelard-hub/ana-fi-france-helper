@@ -1295,6 +1295,148 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_invoice_lines: {
+        Row: {
+          amount_ht: number
+          category_code: string | null
+          created_at: string
+          description: string | null
+          id: string
+          supplier_invoice_id: string
+        }
+        Insert: {
+          amount_ht?: number
+          category_code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          supplier_invoice_id: string
+        }
+        Update: {
+          amount_ht?: number
+          category_code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          supplier_invoice_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_invoice_lines_supplier_invoice_id_fkey"
+            columns: ["supplier_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_invoices: {
+        Row: {
+          amount_ht: number
+          amount_ttc: number
+          amount_tva: number
+          created_at: string
+          factur_x_url: string | null
+          id: string
+          invoice_date: string
+          invoice_number: string
+          notes: string | null
+          pdf_url: string | null
+          source: string
+          status: string
+          supplier_id: string | null
+          supplier_reference: string | null
+          tva_rate: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_ht?: number
+          amount_ttc?: number
+          amount_tva?: number
+          created_at?: string
+          factur_x_url?: string | null
+          id?: string
+          invoice_date: string
+          invoice_number: string
+          notes?: string | null
+          pdf_url?: string | null
+          source?: string
+          status?: string
+          supplier_id?: string | null
+          supplier_reference?: string | null
+          tva_rate?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_ht?: number
+          amount_ttc?: number
+          amount_tva?: number
+          created_at?: string
+          factur_x_url?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          notes?: string | null
+          pdf_url?: string | null
+          source?: string
+          status?: string
+          supplier_id?: string | null
+          supplier_reference?: string | null
+          tva_rate?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_invoices_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          bic: string | null
+          created_at: string
+          email: string | null
+          iban: string | null
+          id: string
+          name: string
+          phone: string | null
+          siret: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bic?: string | null
+          created_at?: string
+          email?: string | null
+          iban?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          siret?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bic?: string | null
+          created_at?: string
+          email?: string | null
+          iban?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          siret?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
           admin_reply: string | null
@@ -1604,6 +1746,10 @@ export type Database = {
       }
       get_next_document_number: {
         Args: { _document_type: string; _user_id: string }
+        Returns: string
+      }
+      get_next_supplier_invoice_number: {
+        Args: { _user_id: string }
         Returns: string
       }
       get_signature_request_by_token: {

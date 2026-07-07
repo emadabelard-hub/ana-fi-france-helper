@@ -37,6 +37,7 @@ export default function SupplierInvoicesPage() {
   const [items, setItems] = useState<SupplierInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [importOpen, setImportOpen] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<"all" | "manual" | "pdp">("all");
 
   const reload = async () => {
     setLoading(true);
@@ -51,6 +52,10 @@ export default function SupplierInvoicesPage() {
   };
 
   useEffect(() => { reload(); }, []);
+
+  const visibleItems = sourceFilter === "all"
+    ? items
+    : items.filter((i) => (i.source || "manual") === sourceFilter);
 
   const totalTTC = items.reduce((s, i) => s + Number(i.amount_ttc || 0), 0);
 
@@ -74,16 +79,31 @@ export default function SupplierInvoicesPage() {
         {isRTL ? "استيراد فاتورة" : "Importer une facture"}
       </Button>
 
+      <div className="mb-3 flex items-center gap-2">
+        <label className="text-xs text-muted-foreground">
+          {isRTL ? "المصدر" : "Source"}
+        </label>
+        <select
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value as "all" | "manual" | "pdp")}
+          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+        >
+          <option value="all">{isRTL ? "الكل" : "Tous"}</option>
+          <option value="manual">Manual</option>
+          <option value="pdp">PDP</option>
+        </select>
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : items.length === 0 ? (
+      ) : visibleItems.length === 0 ? (
         <Card className="p-8 text-center text-muted-foreground">
           <FileText className="h-10 w-10 mx-auto mb-2 opacity-40" />
           <p>{isRTL ? "لا توجد فواتير بعد" : "Aucune facture fournisseur pour l'instant"}</p>
         </Card>
       ) : (
         <div className="space-y-2">
-          {items.map((inv) => (
+          {visibleItems.map((inv) => (
             <button
               key={inv.id}
               onClick={() => navigate(`/accounting/supplier-invoices/${inv.id}`)}
@@ -95,6 +115,12 @@ export default function SupplierInvoicesPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-mono text-xs font-semibold text-primary">{inv.invoice_number}</span>
                       <Badge variant="outline" className={statusStyle(inv.status)}>{statusLabel(inv.status, isRTL)}</Badge>
+                      <Badge
+                        variant="outline"
+                        className={inv.source === "pdp" ? "bg-purple-100 text-purple-800 border-purple-200" : "bg-slate-100 text-slate-700 border-slate-200"}
+                      >
+                        {inv.source === "pdp" ? "PDP" : "Manual"}
+                      </Badge>
                     </div>
                     <div className="font-medium truncate">{inv.supplier?.name || (isRTL ? "بدون مورّد" : "Sans fournisseur")}</div>
                     <div className="text-xs text-muted-foreground">

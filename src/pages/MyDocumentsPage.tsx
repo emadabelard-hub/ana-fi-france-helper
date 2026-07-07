@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { downloadFacturXXml, CHORUS_PRO_URL } from '@/lib/facturxExport';
+import { downloadFacturXXml, uploadFacturXXml, CHORUS_PRO_URL } from '@/lib/facturxExport';
 import { refreshExpenseReceiptUrl } from '@/lib/storageUtils';
 import {
   AlertDialog,
@@ -514,25 +514,51 @@ const MyDocumentsPage = () => {
             <Button
               size="sm"
               variant="outline"
-              disabled={!doc.facturx_url}
-              className="h-8 text-xs bg-[hsl(0,0%,20%)] border-[hsl(0,0%,30%)] text-[hsl(0,0%,85%)] hover:bg-[hsl(0,0%,25%)] hover:text-white disabled:opacity-50"
+              className="h-8 text-xs bg-[hsl(0,0%,20%)] border-[hsl(0,0%,30%)] text-[hsl(0,0%,85%)] hover:bg-[hsl(0,0%,25%)] hover:text-white"
               onClick={async (e) => {
                 e.stopPropagation();
-                if (!doc.facturx_url) return;
                 try {
                   const safe = (doc.document_number || 'facture').replace(/[^\w.-]+/g, '_');
                   const filename = `facturx-Facture-${safe}.xml`;
-                  const res = await fetch(doc.facturx_url);
+                  let url = doc.facturx_url;
+
+                  // Legacy invoices: generate + upload + persist now.
+                  if (!url) {
+                    if (!user?.id) throw new Error('not authenticated');
+                    const [{ data: full }, { data: profile }] = await Promise.all([
+                      supabase
+                        .from('documents_comptables')
+                        .select('document_number, client_name, client_address, subtotal_ht, tva_rate, tva_amount, total_ttc, tva_exempt, work_site_address, nature_operation, created_at, document_data')
+                        .eq('id', doc.id)
+                        .maybeSingle(),
+                      supabase
+                        .from('profiles')
+                        .select('company_name, full_name, siret, company_address, address, numero_tva, iban, bic, tva_exempt')
+                        .eq('user_id', user.id)
+                        .maybeSingle(),
+                    ]);
+                    if (!full) throw new Error('invoice not found');
+                    const signed = await uploadFacturXXml(user.id, full as any, profile as any);
+                    if (!signed) throw new Error('upload failed');
+                    await supabase
+                      .from('documents_comptables')
+                      .update({ facturx_url: signed })
+                      .eq('id', doc.id);
+                    url = signed;
+                    setDocs((prev) => prev.map((d) => (d.id === doc.id ? { ...d, facturx_url: signed } : d)));
+                  }
+
+                  const res = await fetch(url);
                   if (!res.ok) throw new Error(`HTTP ${res.status}`);
                   const blob = await res.blob();
-                  const url = URL.createObjectURL(blob);
+                  const objUrl = URL.createObjectURL(blob);
                   const a = document.createElement('a');
-                  a.href = url;
+                  a.href = objUrl;
                   a.download = filename;
                   document.body.appendChild(a);
                   a.click();
                   a.remove();
-                  setTimeout(() => URL.revokeObjectURL(url), 1000);
+                  setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
                   toast({ title: t('تم تنزيل XML Factur-X', 'XML Factur-X téléchargé'), description: filename });
                 } catch (err) {
                   console.error('[MyDocs] XML Factur-X download error:', err);

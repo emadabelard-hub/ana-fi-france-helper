@@ -103,6 +103,7 @@ const DocumentsListPage = () => {
   const [showFullView, setShowFullView] = useState(false);
   const [converting, setConverting] = useState(false);
   const [formatChoiceDoc, setFormatChoiceDoc] = useState<DocumentRow | null>(null);
+  const [facturxStatus, setFacturxStatus] = useState<'idle' | 'loading' | 'success'>('idle');
   const selectedInvoiceRef = useRef<HTMLDivElement>(null);
 
   // Expenses state

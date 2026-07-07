@@ -657,6 +657,7 @@ export type Database = {
           document_data: Json
           document_number: string
           document_type: string
+          facturx_url: string | null
           id: string
           linked_invoice_id: string | null
           nature_operation: string | null
@@ -682,6 +683,7 @@ export type Database = {
           document_data?: Json
           document_number: string
           document_type?: string
+          facturx_url?: string | null
           id?: string
           linked_invoice_id?: string | null
           nature_operation?: string | null
@@ -707,6 +709,7 @@ export type Database = {
           document_data?: Json
           document_number?: string
           document_type?: string
+          facturx_url?: string | null
           id?: string
           linked_invoice_id?: string | null
           nature_operation?: string | null

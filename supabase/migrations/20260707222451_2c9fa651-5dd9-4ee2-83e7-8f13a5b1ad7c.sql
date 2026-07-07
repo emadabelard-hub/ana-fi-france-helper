@@ -1,0 +1,1 @@
+ALTER TABLE public.documents_comptables ADD COLUMN IF NOT EXISTS facturx_url TEXT;

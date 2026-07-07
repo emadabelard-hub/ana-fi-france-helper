@@ -102,6 +102,7 @@ const DocumentsListPage = () => {
   const [selectedShowArabic, setSelectedShowArabic] = useState(true);
   const [showFullView, setShowFullView] = useState(false);
   const [converting, setConverting] = useState(false);
+  const [formatChoiceDoc, setFormatChoiceDoc] = useState<DocumentRow | null>(null);
   const selectedInvoiceRef = useRef<HTMLDivElement>(null);
 
   // Expenses state

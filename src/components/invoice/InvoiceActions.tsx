@@ -380,6 +380,29 @@ const InvoiceActions = ({
     }
   };
 
+  /**
+   * Download the raw Factur-X CII XML.
+   */
+  const handleDownloadXmlFacturX = () => {
+    try {
+      const xml = generateFacturXXml(buildFacturXDataFromInvoice(invoiceData));
+      const filename = `facturx-Facture-${sanitizeForFilename(invoiceData.number, 'SansNumero')}.xml`;
+      downloadBlob(new Blob([xml], { type: 'application/xml;charset=utf-8' }), filename);
+      toast({
+        title: isRTL ? '✅ تم التحميل' : '✅ Téléchargé',
+        description: isRTL ? 'XML Factur-X جاهز' : 'XML Factur-X téléchargé',
+      });
+    } catch (error) {
+      console.error('XML Factur-X download error:', error);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'فشل تحميل XML Factur-X' : 'Échec du téléchargement XML Factur-X',
+      });
+    }
+  };
+
+
   const handleSmartReviewConfirm = async (addons: SuggestedAddon[]) => {
     setShowSmartReview(false);
     

@@ -38,6 +38,7 @@ interface InvoiceActionsProps {
   onBeforeExport?: () => void | Promise<void>;
   isPaid?: boolean;
   status?: string | null;
+  documentNumber?: string;
 }
 
 // ───────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ const InvoiceActions = ({
   onBeforeExport,
   isPaid: _isPaid = false,
   status,
+  documentNumber,
 }: InvoiceActionsProps) => {
   // TRIAL PHASE: All features unlocked — set to `_isPaid` to reactivate payments
   const isPaid = true;
@@ -385,8 +387,9 @@ const InvoiceActions = ({
    */
   const handleDownloadXmlFacturX = () => {
     try {
-      const xml = generateFacturXXml(buildFacturXDataFromInvoice(invoiceData));
-      const filename = `facturx-Facture-${sanitizeForFilename(invoiceData.number, 'SansNumero')}.xml`;
+      const number = documentNumber || invoiceData.number;
+      const xml = generateFacturXXml(buildFacturXDataFromInvoice({ ...invoiceData, number }));
+      const filename = `facturx-Facture-${sanitizeForFilename(number, 'SansNumero')}.xml`;
       downloadBlob(new Blob([xml], { type: 'application/xml;charset=utf-8' }), filename);
       toast({
         title: isRTL ? '✅ تم التحميل' : '✅ Téléchargé',
@@ -756,6 +759,17 @@ const InvoiceActions = ({
                 <ShieldCheck className="h-4 w-4 mr-2" />
                 {isRTL ? 'PDF Factur-X' : 'PDF Factur-X'}
               </Button>
+              {invoiceData.type?.toLowerCase() === 'facture' && status === 'finalized' && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleDownloadXmlFacturX}
+                  className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  [📄 XML Factur-X]
+                </Button>
+              )}
             </div>
           </div>
 

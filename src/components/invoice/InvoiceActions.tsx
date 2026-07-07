@@ -756,7 +756,7 @@ const InvoiceActions = ({
                 <ShieldCheck className="h-4 w-4 mr-2" />
                 {isRTL ? 'PDF Factur-X' : 'PDF Factur-X'}
               </Button>
-              {invoiceData.type === 'facture' && status === 'finalized' && (
+              {invoiceData.type?.toLowerCase() === 'facture' && status === 'finalized' && (
                 <Button
                   variant="secondary"
                   size="sm"

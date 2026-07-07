@@ -1470,6 +1470,13 @@ const DocumentsListPage = () => {
                 </div>
               )}
 
+              {selectedDocument.document_type === 'facture' && (
+                <SendInvoiceToClientSection
+                  documentId={selectedDocument.id}
+                  defaultEmail={(selectedDocument as any).document_data?.client?.email || (selectedDocument as any).document_data?.clientEmail || ''}
+                />
+              )}
+
             </>
           )}
         </DialogContent>

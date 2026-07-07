@@ -523,7 +523,7 @@ const MyDocumentsPage = () => {
                     body: { document_id: doc.id, user_id: user.id },
                   });
                   if (error) throw error;
-                  const xmlString = typeof xmlContent === 'string' ? xmlContent : new TextDecoder().decode(xmlContent as any);
+                  const xmlString = typeof xmlContent?.xml === 'string' ? xmlContent.xml : (typeof xmlContent === 'string' ? xmlContent : new TextDecoder().decode(xmlContent as any));
                   const blob = new Blob([xmlString], { type: 'application/xml' });
                   const url = URL.createObjectURL(blob);
                   const link = document.createElement('a');

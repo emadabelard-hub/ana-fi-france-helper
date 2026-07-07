@@ -1,5 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 interface RequestBody {
   document_id?: string;
@@ -195,13 +200,9 @@ ${lines}
   </SupplyChainTradeTransaction>
 </Invoice>`;
 
-    return new Response(xml, {
+    return new Response(JSON.stringify({ xml }), {
       status: 200,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/xml; charset=utf-8',
-        'Content-Disposition': `attachment; filename="facturx-${(invoice.document_number || 'facture').replace(/[^\w.-]+/g, '_')}.xml"`,
-      },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
     return new Response(

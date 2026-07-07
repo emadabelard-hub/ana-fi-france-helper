@@ -387,8 +387,9 @@ const InvoiceActions = ({
    */
   const handleDownloadXmlFacturX = () => {
     try {
-      const xml = generateFacturXXml(buildFacturXDataFromInvoice(invoiceData));
-      const filename = `facturx-Facture-${sanitizeForFilename(invoiceData.number, 'SansNumero')}.xml`;
+      const number = documentNumber || invoiceData.number;
+      const xml = generateFacturXXml(buildFacturXDataFromInvoice({ ...invoiceData, number }));
+      const filename = `facturx-Facture-${sanitizeForFilename(number, 'SansNumero')}.xml`;
       downloadBlob(new Blob([xml], { type: 'application/xml;charset=utf-8' }), filename);
       toast({
         title: isRTL ? '✅ تم التحميل' : '✅ Téléchargé',

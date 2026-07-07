@@ -1733,14 +1733,22 @@ const DocumentsListPage = () => {
                     toast({ title: isRTL ? 'فاتورة غير موجودة' : 'Facture introuvable', variant: 'destructive' });
                     return;
                   }
+                  if (full.document_number !== d.document_number) {
+                    console.error('[DocsList] Factur-X mismatch:', { modal: d.document_number, fetched: full.document_number });
+                    setFacturxStatus('idle');
+                    toast({ title: isRTL ? 'عدم تطابق رقم الفاتورة' : 'Numéro de facture incohérent', variant: 'destructive' });
+                    return;
+                  }
+                  const safeNumber = d.document_number.replace(/[^\w.-]+/g, '_');
                   downloadFacturXXml(
                     full as any,
                     profile as any,
-                    `facturx-Facture-${(full.document_number || 'facture').replace(/[^\w.-]+/g, '_')}.pdf`,
+                    `facturx-Facture-${safeNumber}.pdf`,
                   );
                   setFacturxStatus('success');
                   toast({
                     title: isRTL ? 'تم إنشاء Factur-X' : 'Factur-X généré',
+                    description: `facturx-Facture-${safeNumber}.pdf`,
                   });
                   setTimeout(() => {
                     setFacturxStatus('idle');

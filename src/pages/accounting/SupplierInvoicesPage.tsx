@@ -37,6 +37,7 @@ export default function SupplierInvoicesPage() {
   const [items, setItems] = useState<SupplierInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [importOpen, setImportOpen] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<"all" | "manual" | "pdp">("all");
 
   const reload = async () => {
     setLoading(true);
@@ -51,6 +52,10 @@ export default function SupplierInvoicesPage() {
   };
 
   useEffect(() => { reload(); }, []);
+
+  const visibleItems = sourceFilter === "all"
+    ? items
+    : items.filter((i) => (i.source || "manual") === sourceFilter);
 
   const totalTTC = items.reduce((s, i) => s + Number(i.amount_ttc || 0), 0);
 

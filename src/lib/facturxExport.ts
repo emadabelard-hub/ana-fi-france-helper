@@ -5,6 +5,9 @@
  * Does NOT modify the existing PDF.
  */
 import { generateFacturXXml, type FacturXData, type FacturXLineItem } from './facturxXml';
+import { supabase } from '@/integrations/supabase/client';
+
+export const FACTURX_BUCKET = 'factures-facturx';
 
 interface BuildArgs {
   invoice: {

@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS view_pdp_supplier_invoices ON public.supplier_invoices;

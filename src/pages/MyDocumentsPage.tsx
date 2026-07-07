@@ -41,6 +41,7 @@ interface UnifiedDoc {
   signed_at?: string | null;
   receipt_url?: string | null;
   receipt_mime?: 'pdf' | 'image' | null;
+  facturx_url?: string | null;
 }
 
 const formatCurrency = (n: number) =>
@@ -70,7 +71,7 @@ const MyDocumentsPage = () => {
       const [comptables, expenses, signatures] = await Promise.all([
         supabase
           .from('documents_comptables')
-          .select('id, document_type, document_number, client_name, subtotal_ht, total_ttc, status, payment_status, created_at, document_data')
+          .select('id, document_type, document_number, client_name, subtotal_ht, total_ttc, status, payment_status, created_at, document_data, facturx_url')
           .order('created_at', { ascending: false }),
         supabase
           .from('expenses')
@@ -109,6 +110,7 @@ const MyDocumentsPage = () => {
             document_data: d.document_data,
             signature_status: sig ? (sig.status as 'pending' | 'signed') : null,
             signed_at: sig?.signed_at || null,
+            facturx_url: d.facturx_url || null,
           });
         }
       }

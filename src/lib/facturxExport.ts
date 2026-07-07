@@ -97,13 +97,13 @@ export function buildFacturXDataFromInvoice({ invoice, profile }: BuildArgs): Fa
   };
 }
 
-export function downloadFacturXXml(invoice: BuildArgs['invoice'], profile: BuildArgs['profile']) {
+export function downloadFacturXXml(invoice: BuildArgs['invoice'], profile: BuildArgs['profile'], filename?: string) {
   const xml = generateFacturXXml(buildFacturXDataFromInvoice({ invoice, profile }));
   const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `facturx-${(invoice.document_number || 'facture').replace(/[^\w.-]+/g, '_')}.xml`;
+  a.download = filename || `facturx-${(invoice.document_number || 'facture').replace(/[^\w.-]+/g, '_')}.xml`;
   document.body.appendChild(a);
   a.click();
   a.remove();

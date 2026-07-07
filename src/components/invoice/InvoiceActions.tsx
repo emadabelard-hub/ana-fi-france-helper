@@ -14,6 +14,7 @@ import { calculateInvoiceTotals, validateInvoiceTotalsConsistency } from '@/lib/
 import { supabase } from '@/integrations/supabase/client';
 import type { InvoiceData } from './InvoiceDisplay';
 import { embedFacturXInPdf, buildFacturXDataFromInvoice } from '@/lib/facturxPdf';
+import { generateFacturXXml } from '@/lib/facturxXml';
 import { buildPdfFromContainer, buildHtmlSnapshot, waitForLayout } from '@/lib/pdfEngine';
 
 
@@ -36,6 +37,7 @@ interface InvoiceActionsProps {
   onUpdateInvoice?: (updatedData: InvoiceData) => void;
   onBeforeExport?: () => void | Promise<void>;
   isPaid?: boolean;
+  status?: string | null;
 }
 
 // ───────────────────────────────────────────────────────────
@@ -82,6 +84,7 @@ const InvoiceActions = ({
   onUpdateInvoice,
   onBeforeExport,
   isPaid: _isPaid = false,
+  status,
 }: InvoiceActionsProps) => {
   // TRIAL PHASE: All features unlocked — set to `_isPaid` to reactivate payments
   const isPaid = true;
@@ -376,6 +379,29 @@ const InvoiceActions = ({
       });
     }
   };
+
+  /**
+   * Download the raw Factur-X CII XML.
+   */
+  const handleDownloadXmlFacturX = () => {
+    try {
+      const xml = generateFacturXXml(buildFacturXDataFromInvoice(invoiceData));
+      const filename = `facturx-Facture-${sanitizeForFilename(invoiceData.number, 'SansNumero')}.xml`;
+      downloadBlob(new Blob([xml], { type: 'application/xml;charset=utf-8' }), filename);
+      toast({
+        title: isRTL ? '✅ تم التحميل' : '✅ Téléchargé',
+        description: isRTL ? 'XML Factur-X جاهز' : 'XML Factur-X téléchargé',
+      });
+    } catch (error) {
+      console.error('XML Factur-X download error:', error);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: isRTL ? 'فشل تحميل XML Factur-X' : 'Échec du téléchargement XML Factur-X',
+      });
+    }
+  };
+
 
   const handleSmartReviewConfirm = async (addons: SuggestedAddon[]) => {
     setShowSmartReview(false);

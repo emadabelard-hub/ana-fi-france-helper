@@ -989,7 +989,6 @@ const DocumentsListPage = () => {
               </Button>
             </>
           )}
-          {/* View button (always available) */}
           <Button
             size="sm"
             variant="ghost"
@@ -999,6 +998,45 @@ const DocumentsListPage = () => {
             <Eye className="h-3 w-3" />
             {isRTL ? 'عرض' : 'Voir'}
           </Button>
+          {/* XML Factur-X: only for finalized invoices */}
+          {!isDevis && doc.status === 'finalized' && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs bg-[hsl(0,0%,20%)] text-[hsl(0,0%,85%)] hover:bg-[hsl(0,0%,25%)] hover:text-white gap-1"
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (!user) return;
+                try {
+                  const [{ data: full }, { data: profile }] = await Promise.all([
+                    supabase
+                      .from('documents_comptables')
+                      .select('document_number, client_name, client_address, subtotal_ht, tva_rate, tva_amount, total_ttc, tva_exempt, work_site_address, nature_operation, created_at, document_data')
+                      .eq('id', doc.id)
+                      .maybeSingle(),
+                    supabase
+                      .from('profiles')
+                      .select('company_name, full_name, siret, company_address, address, numero_tva, iban, bic, tva_exempt')
+                      .eq('user_id', user.id)
+                      .maybeSingle(),
+                  ]);
+                  if (!full) {
+                    toast({ title: isRTL ? 'فاتورة غير موجودة' : 'Facture introuvable', variant: 'destructive' });
+                    return;
+                  }
+                  const safe = (doc.document_number || 'facture').replace(/[^\w.-]+/g, '_');
+                  downloadFacturXXml(full as any, profile as any, `facturx-Facture-${safe}.xml`);
+                  toast({ title: isRTL ? 'تم تنزيل XML Factur-X' : 'XML Factur-X téléchargé', description: `facturx-Facture-${safe}.xml` });
+                } catch (err) {
+                  console.error('[DocsList] XML Factur-X error:', err);
+                  toast({ title: isRTL ? 'خطأ XML Factur-X' : 'Erreur XML Factur-X', variant: 'destructive' });
+                }
+              }}
+            >
+              <Download className="h-3 w-3" />
+              {isRTL ? 'XML Factur-X' : 'XML Factur-X'}
+            </Button>
+          )}
           <div className="flex-1" />
           {/* Cancel action for finalized/paid invoices */}
           {!isDevis && (doc.status === 'finalized' || doc.payment_status === 'paid') && doc.status !== 'cancelled' && (

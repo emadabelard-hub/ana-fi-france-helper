@@ -1690,6 +1690,11 @@ const DocumentsListPage = () => {
             <DialogTitle className={isRTL ? 'text-right font-cairo' : ''}>
               {isRTL ? 'اختر صيغة الفاتورة' : 'Choisir format facture'}
             </DialogTitle>
+            {formatChoiceDoc?.document_number && (
+              <div className={`text-sm text-muted-foreground font-mono ${isRTL ? 'text-right' : ''}`}>
+                {formatChoiceDoc.document_number}
+              </div>
+            )}
           </DialogHeader>
           <div className="flex flex-col gap-2 mt-2">
             <Button

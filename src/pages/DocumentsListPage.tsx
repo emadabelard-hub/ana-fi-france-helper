@@ -1679,6 +1679,72 @@ const DocumentsListPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Format PDF choice modal */}
+      <Dialog open={!!formatChoiceDoc} onOpenChange={(v) => { if (!v) setFormatChoiceDoc(v ? formatChoiceDoc : null); }}>
+        <DialogContent className="max-w-sm" dir={isRTL ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle className={isRTL ? 'text-right font-cairo' : ''}>
+              {isRTL ? 'اختر صيغة الفاتورة' : 'Choisir format facture'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 mt-2">
+            <Button
+              className="w-full h-12"
+              onClick={() => {
+                const d = formatChoiceDoc;
+                setFormatChoiceDoc(null);
+                if (d) handleOpenDocument(d);
+              }}
+            >
+              {isRTL ? 'PDF كلاسيكي' : 'PDF classique'}
+            </Button>
+            <Button
+              className="w-full h-12"
+              variant="secondary"
+              onClick={async () => {
+                const d = formatChoiceDoc;
+                setFormatChoiceDoc(null);
+                if (!d || !user) return;
+                try {
+                  const [{ data: full }, { data: profile }] = await Promise.all([
+                    supabase
+                      .from('documents_comptables')
+                      .select('document_number, client_name, client_address, subtotal_ht, tva_rate, tva_amount, total_ttc, tva_exempt, work_site_address, nature_operation, created_at, document_data')
+                      .eq('id', d.id)
+                      .maybeSingle(),
+                    supabase
+                      .from('profiles')
+                      .select('company_name, full_name, siret, company_address, address, numero_tva, iban, bic, tva_exempt')
+                      .eq('user_id', user.id)
+                      .maybeSingle(),
+                  ]);
+                  if (!full) {
+                    toast({ title: isRTL ? 'فاتورة غير موجودة' : 'Facture introuvable', variant: 'destructive' });
+                    return;
+                  }
+                  downloadFacturXXml(full as any, profile as any);
+                  toast({
+                    title: isRTL ? 'تم إنشاء Factur-X' : 'Factur-X généré',
+                  });
+                } catch (err) {
+                  console.error('[DocsList] Factur-X export failed:', err);
+                  toast({ title: isRTL ? 'خطأ Factur-X' : 'Erreur Factur-X', variant: 'destructive' });
+                }
+              }}
+            >
+              {isRTL ? 'PDF Factur-X' : 'PDF Factur-X'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => setFormatChoiceDoc(null)}
+            >
+              {isRTL ? 'إغلاق' : 'Fermer'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

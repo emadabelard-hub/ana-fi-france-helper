@@ -809,6 +809,35 @@ export type Database = {
           },
         ]
       }
+      invoice_access_log: {
+        Row: {
+          accessed_at: string
+          action: string
+          id: string
+          token_id: string
+        }
+        Insert: {
+          accessed_at?: string
+          action: string
+          id?: string
+          token_id: string
+        }
+        Update: {
+          accessed_at?: string
+          action?: string
+          id?: string
+          token_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_access_log_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_drafts: {
         Row: {
           created_at: string
@@ -835,6 +864,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      invoice_tokens: {
+        Row: {
+          client_email: string
+          created_at: string
+          document_id: string
+          downloaded_at: string | null
+          expires_at: string
+          id: string
+          status: string
+          token: string
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          client_email: string
+          created_at?: string
+          document_id: string
+          downloaded_at?: string | null
+          expires_at: string
+          id?: string
+          status?: string
+          token: string
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          client_email?: string
+          created_at?: string
+          document_id?: string
+          downloaded_at?: string | null
+          expires_at?: string
+          id?: string
+          status?: string
+          token?: string
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_tokens_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents_comptables"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lessons: {
         Row: {

@@ -62,6 +62,7 @@ const PaiementCreationPage = lazy(() => import("./pages/PaiementCreationPage"));
 const MaCreationPage = lazy(() => import("./pages/MaCreationPage"));
 const SupplierInvoicesPage = lazy(() => import("./pages/accounting/SupplierInvoicesPage"));
 const SupplierInvoiceDetailPage = lazy(() => import("./pages/accounting/SupplierInvoiceDetailPage"));
+const PublicInvoicePage = lazy(() => import("./pages/PublicInvoicePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (

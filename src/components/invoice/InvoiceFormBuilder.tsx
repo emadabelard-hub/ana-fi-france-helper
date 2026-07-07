@@ -1914,6 +1914,42 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         setSavedOfficialDocumentId(insertedDocument.id);
       }
 
+      // NEW: Save the Factur-X XML to Storage and persist its URL on the invoice
+      if (insertedDocument?.id && documentType === 'facture') {
+        try {
+          const { uploadFacturXXml } = await import('@/lib/facturxExport');
+          const { data: profileRow } = await supabase
+            .from('profiles')
+            .select('company_name, full_name, siret, company_address, address, numero_tva, iban, bic, tva_exempt')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          const invoiceForXml = {
+            document_number: data.number,
+            client_name: data.client.name,
+            client_address: data.client.address,
+            subtotal_ht: data.subtotal,
+            tva_rate: data.tvaRate,
+            tva_amount: data.tvaAmount,
+            total_ttc: data.total,
+            tva_exempt: data.tvaExempt,
+            work_site_address: data.workSite?.address || '',
+            nature_operation: data.descriptionChantier || '',
+            created_at: new Date().toISOString(),
+            document_data: linkedDocumentData,
+          };
+          const facturxUrl = await uploadFacturXXml(user.id, invoiceForXml as any, profileRow as any);
+          if (facturxUrl) {
+            await (supabase.from('documents_comptables') as any)
+              .update({ facturx_url: facturxUrl })
+              .eq('id', insertedDocument.id)
+              .eq('user_id', user.id);
+          }
+        } catch (fxErr) {
+          console.warn('[FacturX] persistence failed:', fxErr);
+        }
+      }
+
+
       if (isQuoteConversionFlow && insertedDocument?.id) {
         const { data: updatedSource, error: updateSourceError } = await (supabase
           .from('documents_comptables') as any)

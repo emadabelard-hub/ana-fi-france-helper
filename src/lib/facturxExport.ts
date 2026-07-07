@@ -5,6 +5,9 @@
  * Does NOT modify the existing PDF.
  */
 import { generateFacturXXml, type FacturXData, type FacturXLineItem } from './facturxXml';
+import { supabase } from '@/integrations/supabase/client';
+
+export const FACTURX_BUCKET = 'factures-facturx';
 
 interface BuildArgs {
   invoice: {
@@ -112,3 +115,43 @@ export function downloadFacturXXml(invoice: BuildArgs['invoice'], profile: Build
 
 /** Chorus Pro public portal — official DGFiP B2G/B2B e-invoicing entry point. */
 export const CHORUS_PRO_URL = 'https://chorus-pro.gouv.fr';
+
+/**
+ * Generate the Factur-X XML for an invoice and upload it to Supabase Storage.
+ * Returns a long-lived signed URL, or null on failure.
+ * The file is stored at: {user_id}/facturx-Facture-{document_number}.xml
+ */
+export async function uploadFacturXXml(
+  userId: string,
+  invoice: BuildArgs['invoice'],
+  profile: BuildArgs['profile']
+): Promise<string | null> {
+  try {
+    const xml = generateFacturXXml(buildFacturXDataFromInvoice({ invoice, profile }));
+    const safe = (invoice.document_number || 'facture').replace(/[^\w.-]+/g, '_');
+    const path = `${userId}/facturx-Facture-${safe}.xml`;
+    const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
+
+    const { error: upErr } = await supabase.storage
+      .from(FACTURX_BUCKET)
+      .upload(path, blob, { contentType: 'application/xml', upsert: true });
+    if (upErr) {
+      console.error('[FacturX Upload] Storage error:', upErr);
+      return null;
+    }
+
+    // 10 years validity (bucket is private)
+    const { data: signed, error: signErr } = await supabase.storage
+      .from(FACTURX_BUCKET)
+      .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+    if (signErr || !signed?.signedUrl) {
+      console.error('[FacturX Upload] Signed URL error:', signErr);
+      return null;
+    }
+    return signed.signedUrl;
+  } catch (err) {
+    console.error('[FacturX Upload] Unexpected error:', err);
+    return null;
+  }
+}
+

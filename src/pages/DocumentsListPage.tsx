@@ -993,7 +993,7 @@ const DocumentsListPage = () => {
             size="sm"
             variant="ghost"
             className="h-7 text-xs text-[hsl(45,80%,70%)] hover:text-[hsl(45,80%,80%)] hover:bg-[hsl(45,80%,55%)/0.1] gap-1"
-            onClick={(e) => { e.stopPropagation(); handleOpenDocument(doc); }}
+            onClick={(e) => { e.stopPropagation(); setFormatChoiceDoc(doc); }}
           >
             <Eye className="h-3 w-3" />
             {isRTL ? 'عرض' : 'Voir'}

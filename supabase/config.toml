@@ -118,4 +118,8 @@ verify_jwt = false
 [functions.get-user-api-key]
 verify_jwt = false
 
+[functions.generate-factur-x]
+verify_jwt = true
+
+
 

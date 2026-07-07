@@ -103,6 +103,7 @@ const DocumentsListPage = () => {
   const [showFullView, setShowFullView] = useState(false);
   const [converting, setConverting] = useState(false);
   const [formatChoiceDoc, setFormatChoiceDoc] = useState<DocumentRow | null>(null);
+  const [facturxStatus, setFacturxStatus] = useState<'idle' | 'loading' | 'success'>('idle');
   const selectedInvoiceRef = useRef<HTMLDivElement>(null);
 
   // Expenses state
@@ -1704,10 +1705,11 @@ const DocumentsListPage = () => {
             <Button
               className="w-full h-12"
               variant="secondary"
+              disabled={facturxStatus === 'loading'}
               onClick={async () => {
                 const d = formatChoiceDoc;
-                setFormatChoiceDoc(null);
                 if (!d || !user) return;
+                setFacturxStatus('loading');
                 try {
                   const [{ data: full }, { data: profile }] = await Promise.all([
                     supabase
@@ -1722,6 +1724,7 @@ const DocumentsListPage = () => {
                       .maybeSingle(),
                   ]);
                   if (!full) {
+                    setFacturxStatus('idle');
                     toast({ title: isRTL ? 'فاتورة غير موجودة' : 'Facture introuvable', variant: 'destructive' });
                     return;
                   }
@@ -1730,16 +1733,28 @@ const DocumentsListPage = () => {
                     profile as any,
                     `facturx-Facture-${(full.document_number || 'facture').replace(/[^\w.-]+/g, '_')}.pdf`,
                   );
+                  setFacturxStatus('success');
                   toast({
                     title: isRTL ? 'تم إنشاء Factur-X' : 'Factur-X généré',
                   });
+                  setTimeout(() => {
+                    setFacturxStatus('idle');
+                    setFormatChoiceDoc(null);
+                  }, 1200);
                 } catch (err) {
                   console.error('[DocsList] Factur-X export failed:', err);
+                  setFacturxStatus('idle');
                   toast({ title: isRTL ? 'خطأ Factur-X' : 'Erreur Factur-X', variant: 'destructive' });
                 }
               }}
             >
-              {isRTL ? 'PDF Factur-X' : 'PDF Factur-X'}
+              {facturxStatus === 'loading' ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" />{isRTL ? 'جاري الإنشاء…' : 'Génération…'}</>
+              ) : facturxStatus === 'success' ? (
+                <><CheckCircle className="h-4 w-4 mr-2" />{isRTL ? 'تم التنزيل' : 'Téléchargé'}</>
+              ) : (
+                <>{isRTL ? 'PDF Factur-X' : 'PDF Factur-X'}</>
+              )}
             </Button>
             <Button
               variant="ghost"

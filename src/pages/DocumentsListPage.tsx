@@ -1506,6 +1506,7 @@ const DocumentsListPage = () => {
                     onToggleArabic={setSelectedShowArabic}
                     isPaid={true}
                     status={selectedDocument.status}
+                    documentNumber={selectedDocument.document_number}
                   />
 
                   <div ref={selectedInvoiceRef} className="print-area mt-4">

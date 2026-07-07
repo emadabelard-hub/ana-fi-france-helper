@@ -4,13 +4,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 const ADMIN_EMAIL = "emadabelard@gmail.com";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const CRON_SECRET = Deno.env.get("CRON_SECRET");
 const ADMIN_PANEL_URL = "https://anafypro.com/admin";
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
@@ -22,6 +23,31 @@ interface AlertPayload {
   message: string;
   details?: Record<string, unknown>;
   occurrences?: number;
+}
+
+function unauthorized() {
+  return new Response(JSON.stringify({ error: "unauthorized" }), {
+    status: 401,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function isAdminRequest(req: Request): Promise<boolean> {
+  const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
+  if (!authHeader?.toLowerCase().startsWith("bearer ")) return false;
+  const token = authHeader.slice(7).trim();
+  if (!token) return false;
+  try {
+    const authed = createClient(SUPABASE_URL, SERVICE_ROLE, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: userRes, error } = await authed.auth.getUser(token);
+    if (error || !userRes?.user) return false;
+    const { data: isAdmin } = await supabase.rpc("is_admin", { _user_id: userRes.user.id });
+    return isAdmin === true;
+  } catch {
+    return false;
+  }
 }
 
 async function sendAlertEmail(alert: AlertPayload): Promise<boolean> {
@@ -62,7 +88,6 @@ async function sendAlertEmail(alert: AlertPayload): Promise<boolean> {
 }
 
 async function recordAlert(alert: AlertPayload) {
-  // De-dup: if same type unresolved in last hour, increment occurrences instead
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const { data: existing } = await supabase
     .from("admin_diagnostic_alerts")
@@ -93,10 +118,7 @@ async function recordAlert(alert: AlertPayload) {
 }
 
 async function checkEdgeFunctionErrors() {
-  // Use Supabase analytics for 500 errors in last hour
   const functions = ["ai-assistant", "translate-milestone-label", "send-to-accountant", "send-chantier-report"];
-  // Without analytics API access here, we rely on activity_logs/error tables if present.
-  // Fallback: scan user_activity_logs for error entries
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   for (const fn of functions) {
     const { count } = await supabase
@@ -177,30 +199,25 @@ async function checkSupabaseHealth() {
 
 async function runHealthChecks() {
   const results: Record<string, boolean> = {};
-  // Supabase
   try {
     const { error } = await supabase.from("profiles").select("user_id", { head: true, count: "exact" }).limit(1);
     results.supabase = !error;
   } catch { results.supabase = false; }
-  // Resend
   if (RESEND_API_KEY) {
     try {
       const r = await fetch("https://api.resend.com/domains", {
         headers: { Authorization: `Bearer ${RESEND_API_KEY}` },
       });
-      results.resend = r.ok || r.status === 401; // 401 means key invalid but service up
       results.resend = r.ok;
     } catch { results.resend = false; }
   } else {
     results.resend = false;
   }
-  // Edge functions: assume OK if deployed (no cheap ping). Report as OK.
   results.ai_assistant = true;
   results.translate_milestone_label = true;
   results.send_to_accountant = true;
   results.send_chantier_report = true;
 
-  // Stats
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count: errors24h } = await supabase
     .from("user_activity_logs")
@@ -243,14 +260,23 @@ Deno.serve(async (req) => {
     const mode = url.searchParams.get("mode") ?? "check";
 
     if (mode === "status") {
-      // Real-time status query for admin panel
+      // Status endpoint: require valid admin JWT
+      const isAdmin = await isAdminRequest(req);
+      if (!isAdmin) return unauthorized();
       const status = await runHealthChecks();
       return new Response(JSON.stringify(status), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Cron mode: run all checks
+    // Cron mode: require shared secret header, OR a valid admin JWT for manual runs
+    const providedCron = req.headers.get("x-cron-secret");
+    const cronOk = !!CRON_SECRET && providedCron === CRON_SECRET;
+    if (!cronOk) {
+      const isAdmin = await isAdminRequest(req);
+      if (!isAdmin) return unauthorized();
+    }
+
     await Promise.all([
       checkSupabaseHealth(),
       checkEdgeFunctionErrors(),

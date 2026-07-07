@@ -45,14 +45,16 @@ const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
 
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from('user_api_keys')
-        .select('encrypted_key')
-        .eq('user_id', user.id)
-        .eq('key_name', KEY_NAME)
-        .maybeSingle();
-      setKey(data?.encrypted_key || '');
-      setSaved(!!data?.encrypted_key);
+      const { data, error } = await supabase.functions.invoke('get-user-api-key', {
+        body: { key_name: KEY_NAME },
+      });
+      if (!error && data?.has_key) {
+        setKey(data.api_key || '');
+        setSaved(true);
+      } else {
+        setKey('');
+        setSaved(false);
+      }
       setLoading(false);
     })();
   }, [open, user]);
@@ -62,20 +64,14 @@ const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
     setLoading(true);
     const trimmed = key.trim();
     if (trimmed) {
-      const { error } = await supabase
-        .from('user_api_keys')
-        .upsert({
-          user_id: user.id,
-          key_name: KEY_NAME,
-          encrypted_key: trimmed,
-        }, { onConflict: 'user_id,key_name' });
+      const { error } = await supabase.functions.invoke('save-user-api-key', {
+        body: { key_name: KEY_NAME, api_key: trimmed, action: 'save' },
+      });
       if (!error) setSaved(true);
     } else {
-      await supabase
-        .from('user_api_keys')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('key_name', KEY_NAME);
+      await supabase.functions.invoke('save-user-api-key', {
+        body: { key_name: KEY_NAME, action: 'delete' },
+      });
       setSaved(false);
     }
     setLoading(false);
@@ -84,11 +80,9 @@ const ApiKeySettingsModal = ({ open, onOpenChange }: Props) => {
   const handleDelete = async () => {
     if (!user) return;
     setLoading(true);
-    await supabase
-      .from('user_api_keys')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('key_name', KEY_NAME);
+    await supabase.functions.invoke('save-user-api-key', {
+      body: { key_name: KEY_NAME, action: 'delete' },
+    });
     setKey('');
     setSaved(false);
     setTestResult(null);

@@ -1,0 +1,1 @@
+ALTER TABLE public.supplier_invoices ADD COLUMN IF NOT EXISTS chorus_reference VARCHAR(255) UNIQUE;

@@ -756,6 +756,17 @@ const InvoiceActions = ({
                 <ShieldCheck className="h-4 w-4 mr-2" />
                 {isRTL ? 'PDF Factur-X' : 'PDF Factur-X'}
               </Button>
+              {invoiceData.type === 'facture' && status === 'finalized' && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleDownloadXmlFacturX}
+                  className={cn("flex-1", isRTL && "flex-row-reverse font-cairo")}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  [📄 XML Factur-X]
+                </Button>
+              )}
             </div>
           </div>
 

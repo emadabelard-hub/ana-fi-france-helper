@@ -38,6 +38,7 @@ interface InvoiceActionsProps {
   onBeforeExport?: () => void | Promise<void>;
   isPaid?: boolean;
   status?: string | null;
+  documentNumber?: string;
 }
 
 // ───────────────────────────────────────────────────────────

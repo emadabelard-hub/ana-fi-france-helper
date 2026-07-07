@@ -62,6 +62,7 @@ const PaiementCreationPage = lazy(() => import("./pages/PaiementCreationPage"));
 const MaCreationPage = lazy(() => import("./pages/MaCreationPage"));
 const SupplierInvoicesPage = lazy(() => import("./pages/accounting/SupplierInvoicesPage"));
 const SupplierInvoiceDetailPage = lazy(() => import("./pages/accounting/SupplierInvoiceDetailPage"));
+const PublicInvoicePage = lazy(() => import("./pages/PublicInvoicePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -116,6 +117,8 @@ const AppRoutes = () => {
           <Route path="/invite/:token" element={<InvitePage />} />
           {/* Public company creation wizard — no auth required */}
           <Route path="/creer-ma-societe" element={<CreerMaSocietePage />} />
+          {/* Public invoice portal — token-based, no auth */}
+          <Route path="/invoice/:token" element={<PublicInvoicePage />} />
           <Route
             path="*"
             element={

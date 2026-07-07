@@ -102,3 +102,13 @@ verify_jwt = false
 
 [functions.create-supplier-invoice]
 verify_jwt = false
+
+[functions.send-invoice-to-client]
+verify_jwt = true
+
+[functions.get-invoice-by-token]
+verify_jwt = false
+
+[functions.mark-invoice-downloaded]
+verify_jwt = false
+

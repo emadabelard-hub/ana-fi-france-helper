@@ -18,6 +18,7 @@ import { extractAdvancedPrefillData } from '@/lib/prefillAdvancedData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { generateProfessionalCSV, downloadCSV, type CsvDocumentRow } from '@/lib/csvExport';
 import InvoiceDisplay from '@/components/invoice/InvoiceDisplay';
+import SendInvoiceToClientSection from '@/components/invoice/SendInvoiceToClientSection';
 import InvoiceActions from '@/components/invoice/InvoiceActions';
 import { buildMilestonePrefill } from '@/lib/milestonePrefill';
 import { ScrollArea } from '@/components/ui/scroll-area';

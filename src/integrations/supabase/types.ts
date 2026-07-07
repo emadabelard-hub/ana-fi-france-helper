@@ -1411,6 +1411,7 @@ export type Database = {
           amount_ht: number
           amount_ttc: number
           amount_tva: number
+          chorus_reference: string
           created_at: string
           factur_x_url: string | null
           id: string
@@ -1424,12 +1425,13 @@ export type Database = {
           supplier_reference: string | null
           tva_rate: number
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           amount_ht?: number
           amount_ttc?: number
           amount_tva?: number
+          chorus_reference?: string
           created_at?: string
           factur_x_url?: string | null
           id?: string
@@ -1443,12 +1445,13 @@ export type Database = {
           supplier_reference?: string | null
           tva_rate?: number
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           amount_ht?: number
           amount_ttc?: number
           amount_tva?: number
+          chorus_reference?: string
           created_at?: string
           factur_x_url?: string | null
           id?: string
@@ -1462,7 +1465,7 @@ export type Database = {
           supplier_reference?: string | null
           tva_rate?: number
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {

@@ -1723,7 +1723,11 @@ const DocumentsListPage = () => {
                     toast({ title: isRTL ? 'فاتورة غير موجودة' : 'Facture introuvable', variant: 'destructive' });
                     return;
                   }
-                  downloadFacturXXml(full as any, profile as any);
+                  downloadFacturXXml(
+                    full as any,
+                    profile as any,
+                    `facturx-Facture-${(full.document_number || 'facture').replace(/[^\w.-]+/g, '_')}.pdf`,
+                  );
                   toast({
                     title: isRTL ? 'تم إنشاء Factur-X' : 'Factur-X généré',
                   });

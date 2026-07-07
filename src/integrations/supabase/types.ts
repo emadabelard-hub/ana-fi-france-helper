@@ -1428,7 +1428,7 @@ export type Database = {
           supplier_reference: string | null
           tva_rate: number
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           amount_ht?: number
@@ -1448,7 +1448,7 @@ export type Database = {
           supplier_reference?: string | null
           tva_rate?: number
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           amount_ht?: number
@@ -1468,7 +1468,7 @@ export type Database = {
           supplier_reference?: string | null
           tva_rate?: number
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {

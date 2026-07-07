@@ -117,6 +117,8 @@ const AppRoutes = () => {
           <Route path="/invite/:token" element={<InvitePage />} />
           {/* Public company creation wizard — no auth required */}
           <Route path="/creer-ma-societe" element={<CreerMaSocietePage />} />
+          {/* Public invoice portal — token-based, no auth */}
+          <Route path="/invoice/:token" element={<PublicInvoicePage />} />
           <Route
             path="*"
             element={

@@ -86,6 +86,7 @@ const InvoiceActions = ({
   onBeforeExport,
   isPaid: _isPaid = false,
   status,
+  documentNumber,
 }: InvoiceActionsProps) => {
   // TRIAL PHASE: All features unlocked — set to `_isPaid` to reactivate payments
   const isPaid = true;

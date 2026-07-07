@@ -519,20 +519,24 @@ const MyDocumentsPage = () => {
                 e.stopPropagation();
                 try {
                   if (!user?.id) throw new Error('not authenticated');
-                  const { data: xmlContent, error } = await supabase.functions.invoke('generate-factur-x', {
-                    body: { document_id: doc.id, user_id: user.id },
-                  });
-                  if (error) throw error;
-                  const xmlString = typeof xmlContent?.xml === 'string' ? xmlContent.xml : (typeof xmlContent === 'string' ? xmlContent : new TextDecoder().decode(xmlContent as any));
-                  const blob = new Blob([xmlString], { type: 'application/xml' });
-                  const url = URL.createObjectURL(blob);
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = `facturx-Facture-${doc.document_number}.xml`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  URL.revokeObjectURL(url);
+                  const [{ data: invoice, error: invoiceError }, { data: profile, error: profileError }] = await Promise.all([
+                    supabase
+                      .from('documents_comptables')
+                      .select('document_number, client_name, client_address, subtotal_ht, tva_rate, tva_amount, total_ttc, tva_exempt, work_site_address, nature_operation, created_at, document_data')
+                      .eq('id', doc.id)
+                      .maybeSingle(),
+                    supabase
+                      .from('profiles')
+                      .select('company_name, full_name, siret, company_address, address, numero_tva, iban, bic, tva_exempt')
+                      .eq('user_id', user.id)
+                      .maybeSingle(),
+                  ]);
+                  if (invoiceError) throw invoiceError;
+                  if (profileError) console.warn('[Factur-X] Profil incomplet:', profileError);
+                  if (!invoice) throw new Error('invoice not found');
+                  const safeNumber = (doc.document_number || 'facture').replace(/[^\w.-]+/g, '_');
+                  downloadFacturXXml(invoice as any, profile as any, `facturx-Facture-${safeNumber}.xml`);
+                  toast({ title: t('تم تنزيل XML Factur-X', 'XML Factur-X téléchargé') });
                 } catch (err) {
                   console.error('Erreur téléchargement XML:', err);
                   toast({ title: t('خطأ XML Factur-X', 'Erreur XML Factur-X'), variant: 'destructive' });

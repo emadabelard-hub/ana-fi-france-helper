@@ -37,6 +37,7 @@ interface InvoiceActionsProps {
   onUpdateInvoice?: (updatedData: InvoiceData) => void;
   onBeforeExport?: () => void | Promise<void>;
   isPaid?: boolean;
+  status?: string | null;
 }
 
 // ───────────────────────────────────────────────────────────

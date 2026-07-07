@@ -112,3 +112,10 @@ verify_jwt = false
 [functions.mark-invoice-downloaded]
 verify_jwt = false
 
+[functions.save-user-api-key]
+verify_jwt = false
+
+[functions.get-user-api-key]
+verify_jwt = false
+
+

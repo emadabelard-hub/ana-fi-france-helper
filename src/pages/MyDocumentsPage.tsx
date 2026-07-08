@@ -518,45 +518,72 @@ const MyDocumentsPage = () => {
               className="h-8 text-xs bg-[hsl(0,0%,20%)] border-[hsl(0,0%,30%)] text-[hsl(0,0%,85%)] hover:bg-[hsl(0,0%,25%)] hover:text-white"
               onClick={async (e) => {
                 e.stopPropagation();
+
                 try {
-                  if (!user?.id) throw new Error('not authenticated');
+                  if (!user?.id) {
+                    throw new Error("Utilisateur non authentifié");
+                  }
 
                   const { data, error } = await supabase.functions.invoke(
-                    'generate-factur-x',
+                    "generate-factur-x",
                     {
-                      body: { document_id: doc.id, user_id: user.id },
+                      body: {
+                        document_id: doc.id,
+                        user_id: user.id,
+                      },
                     }
                   );
 
+                  console.log("DATA :", data);
+                  console.log("ERROR :", error);
+
                   toast({
-                    title: `DEBUG: data = ${JSON.stringify(data).substring(0, 100)}`,
+                    title: "DEBUG FACTUR-X",
+                    description: `DATA = ${JSON.stringify(data)?.substring(0, 200)} | ERROR = ${JSON.stringify(error)}`,
                   });
 
-                  if (error) throw error;
-
-                  const xmlString = data?.xml;
-
-                  if (!xmlString) {
-                    toast({
-                      title: `ERREUR: data.xml undefined. data = ${JSON.stringify(data)}`,
-                      variant: 'destructive',
-                    });
-                    throw new Error('No XML generated');
+                  if (error) {
+                    throw error;
                   }
 
-                  const blob = new Blob([xmlString], { type: 'application/octet-stream' });
+                  const xmlString =
+                    typeof data === "string"
+                      ? data
+                      : data?.xml || data?.facturx || data?.content || null;
+
+                  if (!xmlString) {
+                    throw new Error(
+                      `Aucun XML reçu depuis generate-factur-x. Réponse : ${JSON.stringify(data)}`
+                    );
+                  }
+
+                  const blob = new Blob([xmlString], {
+                    type: "application/xml;charset=utf-8",
+                  });
+
                   const url = URL.createObjectURL(blob);
-                  const link = document.createElement('a');
+
+                  const link = document.createElement("a");
                   link.href = url;
-                  link.download = `facturx-Facture-${doc.document_number}.xml`;
+                  link.download = `FacturX-${doc.document_number}.xml`;
+
                   document.body.appendChild(link);
                   link.click();
                   document.body.removeChild(link);
+
                   URL.revokeObjectURL(url);
-                } catch (err: any) {
+
                   toast({
-                    title: `ERREUR: ${err?.message ?? String(err)}`,
-                    variant: 'destructive',
+                    title: "Succès",
+                    description: "Le fichier XML Factur-X a été téléchargé.",
+                  });
+                } catch (err: any) {
+                  console.error("ERREUR FACTUR-X :", err);
+
+                  toast({
+                    title: "Erreur Factur-X",
+                    description: err?.message || "Erreur inconnue",
+                    variant: "destructive",
                   });
                 }
               }}

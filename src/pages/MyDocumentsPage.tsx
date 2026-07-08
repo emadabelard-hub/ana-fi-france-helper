@@ -9,7 +9,8 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { downloadFacturXXml, uploadFacturXXml, CHORUS_PRO_URL } from '@/lib/facturxExport';
+import { downloadFacturXXml, uploadFacturXXml, CHORUS_PRO_URL, buildFacturXDataFromInvoice } from '@/lib/facturxExport';
+import { generateFacturXXml } from '@/lib/facturxXml';
 import { refreshExpenseReceiptUrl } from '@/lib/storageUtils';
 import {
   AlertDialog,
@@ -535,7 +536,18 @@ const MyDocumentsPage = () => {
                   if (profileError) console.warn('[Factur-X] Profil incomplet:', profileError);
                   if (!invoice) throw new Error('invoice not found');
                   const safeNumber = (doc.document_number || 'facture').replace(/[^\w.-]+/g, '_');
-                  downloadFacturXXml(invoice as any, profile as any, `facturx-Facture-${safeNumber}.xml`);
+                  const xmlString = generateFacturXXml(buildFacturXDataFromInvoice({ invoice: invoice as any, profile: profile as any }));
+                  const blob = new Blob([xmlString], { type: 'application/octet-stream' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `facturx-Facture-${safeNumber}.xml`;
+                  link.style.display = 'none';
+                  link.setAttribute('download', `facturx-Facture-${safeNumber}.xml`);
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                  setTimeout(() => URL.revokeObjectURL(url), 1000);
                   toast({ title: t('تم تنزيل XML Factur-X', 'XML Factur-X téléchargé') });
                 } catch (err) {
                   console.error('Erreur téléchargement XML:', err);

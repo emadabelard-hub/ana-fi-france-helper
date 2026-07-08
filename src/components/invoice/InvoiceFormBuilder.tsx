@@ -39,6 +39,8 @@ import { validateDocument } from '@/lib/documentValidator';
 import { calculateInvoiceTotals, validateInvoiceTotalsConsistency } from '@/lib/invoiceTotals';
 import { isOfficialDocumentNumber, reserveOfficialDocumentNumber } from '@/lib/documentNumbers';
 import { generateOfficialPdfBlob } from '@/lib/invoicePdf';
+import { embedFacturXInPdf, buildFacturXDataFromInvoice } from '@/lib/facturxPdf';
+import { archivePdf } from '@/lib/documentArchive';
 import { waitForLayout } from '@/lib/pdfEngine';
 import { useAuth } from '@/hooks/useAuth';
 import type { VoiceResult } from '@/hooks/useFieldVoice';
@@ -1854,14 +1856,17 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         return;
       }
 
+      const isFacture = documentType === 'facture';
+
       const pdfBlob = await generateOfficialPdfBlob({
         invoiceElement: invoiceRef.current,
         footerLabel: `${data.type} n° ${data.number}`,
         onBeforeExport: prepareFreshAssetsForExport,
         onToggleArabic: setShowArabic,
         showArabic,
-        archive: {
-          type: documentType === 'facture' ? 'facture' : 'devis',
+        // For factures, we archive the Factur-X version below (with embedded XML)
+        archive: isFacture ? undefined : {
+          type: 'devis',
           numero: data.number,
           fileName: `${data.number}.pdf`,
           amount: data.total,
@@ -1880,7 +1885,30 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         return;
       }
 
-      const pdfUrl = await uploadOfficialPdf(pdfBlob, data.number);
+      // For factures: embed Factur-X XML into the PDF so the STORED file is Factur-X compliant
+      let storedPdfBlob = pdfBlob;
+      if (isFacture) {
+        try {
+          const facturxData = buildFacturXDataFromInvoice(invoiceData);
+          storedPdfBlob = await embedFacturXInPdf(pdfBlob, facturxData);
+          console.log('✅ Factur-X XML embedded before storage');
+        } catch (fxError) {
+          console.warn('⚠️ Factur-X embedding failed, storing standard PDF:', fxError);
+          storedPdfBlob = pdfBlob;
+        }
+
+        // Archive the Factur-X version (non-blocking)
+        archivePdf({
+          blob: storedPdfBlob,
+          type: 'facture',
+          numero: data.number,
+          fileName: `${data.number}.pdf`,
+          amount: data.total,
+          status: 'finalized',
+        }).catch((e) => console.warn('archive facturx failed:', e));
+      }
+
+      const pdfUrl = await uploadOfficialPdf(storedPdfBlob, data.number);
 
       // Uniqueness already verified above (pre-upload check)
 

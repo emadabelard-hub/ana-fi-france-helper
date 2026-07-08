@@ -274,6 +274,13 @@ const CVGeneratorPage = () => {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) {
+      console.error('[CV PDF] No active session, using fallback');
+      return await buildCvPdfBlobFallback();
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
@@ -283,7 +290,7 @@ const CVGeneratorPage = () => {
         headers: {
           'Content-Type': 'application/json',
           'apikey': apikey,
-          'Authorization': `Bearer ${apikey}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           html,

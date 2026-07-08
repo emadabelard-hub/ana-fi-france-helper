@@ -1,0 +1,1 @@
+CREATE POLICY "no_anonymous_sessions" ON public.creation_progress AS RESTRICTIVE FOR ALL TO authenticated USING (((auth.jwt() ->> 'is_anonymous')::boolean) IS NOT TRUE) WITH CHECK (((auth.jwt() ->> 'is_anonymous')::boolean) IS NOT TRUE);

@@ -328,6 +328,13 @@ async function buildPdfViaBrowserless(
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+  const { supabase } = await import('@/integrations/supabase/client');
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  if (!accessToken) {
+    throw new Error('Vous devez être connecté pour générer un PDF.');
+  }
+
   console.log(`[PDF Engine v4] Sending ${(fullHTML.length / 1024).toFixed(0)}KB HTML to Browserless...`);
 
   const response = await fetch(`${supabaseUrl}/functions/v1/generate-pdf`, {
@@ -335,7 +342,7 @@ async function buildPdfViaBrowserless(
     headers: {
       'Content-Type': 'application/json',
       'apikey': apikey,
-      'Authorization': `Bearer ${apikey}`,
+      'Authorization': `Bearer ${accessToken}`,
     },
     body: JSON.stringify({ html: fullHTML, marginMm, footerLabel }),
   });

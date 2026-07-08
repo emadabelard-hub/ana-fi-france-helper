@@ -39,6 +39,8 @@ import { validateDocument } from '@/lib/documentValidator';
 import { calculateInvoiceTotals, validateInvoiceTotalsConsistency } from '@/lib/invoiceTotals';
 import { isOfficialDocumentNumber, reserveOfficialDocumentNumber } from '@/lib/documentNumbers';
 import { generateOfficialPdfBlob } from '@/lib/invoicePdf';
+import { embedFacturXInPdf, buildFacturXDataFromInvoice } from '@/lib/facturxPdf';
+import { archivePdf } from '@/lib/documentArchive';
 import { waitForLayout } from '@/lib/pdfEngine';
 import { useAuth } from '@/hooks/useAuth';
 import type { VoiceResult } from '@/hooks/useFieldVoice';

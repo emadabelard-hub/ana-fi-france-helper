@@ -528,17 +528,19 @@ const MyDocumentsPage = () => {
                     }
                   );
 
-                  console.log('DEBUG - data reçue:', data);
-                  console.log('DEBUG - error:', error);
+                  toast({
+                    title: `DEBUG: data = ${JSON.stringify(data).substring(0, 100)}`,
+                  });
 
                   if (error) throw error;
 
                   const xmlString = data?.xml;
-                  console.log('DEBUG - xmlString:', typeof xmlString, xmlString?.substring(0, 100));
 
                   if (!xmlString) {
-                    console.error('ERREUR : data.xml est undefined');
-                    console.log('data est:', data);
+                    toast({
+                      title: `ERREUR: data.xml undefined. data = ${JSON.stringify(data)}`,
+                      variant: 'destructive',
+                    });
                     throw new Error('No XML generated');
                   }
 
@@ -547,15 +549,18 @@ const MyDocumentsPage = () => {
                   const link = document.createElement('a');
                   link.href = url;
                   link.download = `facturx-Facture-${doc.document_number}.xml`;
-                  link.style.display = 'none';
                   document.body.appendChild(link);
                   link.click();
                   document.body.removeChild(link);
                   URL.revokeObjectURL(url);
-                } catch (err) {
-                  console.error('Erreur complète:', err);
+                } catch (err: any) {
+                  toast({
+                    title: `ERREUR: ${err?.message ?? String(err)}`,
+                    variant: 'destructive',
+                  });
                 }
               }}
+
 
             >
               <Download className="h-3.5 w-3.5 mr-1" />

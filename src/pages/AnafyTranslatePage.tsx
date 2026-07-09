@@ -8,6 +8,7 @@ type Card = {
   title: string;
   description: string;
   url: string;
+  badge?: string;
 };
 
 const SECTION_1: Card[] = [
@@ -33,13 +34,14 @@ const SECTION_1: Card[] = [
     emoji: '💰',
     title: 'الضرائب impots.gouv.fr',
     description: 'الموقع الرسمي للضرائب الفرنسية',
-    url: 'https://www-impots-gouv-fr.translate.goog/accueil?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+    url: 'https://www.impots.gouv.fr/accueil',
+    badge: '🔒 افتحه واستخدم ترجمة كروم (شوف الطريقة تحت)',
   },
   {
     emoji: '🔍',
     title: 'INSEE — التحقق من SIRET',
     description: 'اتأكد من رقم SIRET بتاع أي شركة',
-    url: 'https://avis-situation-sirene-insee-fr.translate.goog/?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+    url: 'https://avis--situation--sirene-insee-fr.translate.goog/?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
   },
 ];
 
@@ -54,7 +56,8 @@ const SECTION_2: Card[] = [
     emoji: '📚',
     title: 'Chorus Pro — مركز المساعدة',
     description: 'شروحات ومساعدة على استخدام Chorus Pro',
-    url: 'https://communaute-chorus--pro-gouv-fr.translate.goog/?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+    url: 'https://communaute.chorus-pro.gouv.fr/',
+    badge: '🔒 افتحه واستخدم ترجمة كروم (شوف الطريقة تحت)',
   },
 ];
 
@@ -69,6 +72,11 @@ const CardLink = ({ card }: { card: Card }) => (
       <div className="text-3xl leading-none shrink-0">{card.emoji}</div>
       <div className="flex-1 min-w-0">
         <h3 className="text-[15px] font-bold text-card-foreground font-cairo">{card.title}</h3>
+        {card.badge && (
+          <p className="text-[12px] text-amber-700 dark:text-amber-300 font-medium mt-1 font-cairo leading-relaxed">
+            {card.badge}
+          </p>
+        )}
         <p className="text-[13px] text-muted-foreground mt-1 font-cairo leading-relaxed">
           {card.description}
         </p>
@@ -130,6 +138,18 @@ const AnafyTranslatePage = () => {
             {SECTION_2.map((c) => <CardLink key={c.url} card={c} />)}
           </div>
         </section>
+
+        {/* Chrome translate method */}
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-right text-[14px] text-foreground leading-relaxed mb-5">
+          <h3 className="font-bold mb-2 text-[15px]">📱 لو الموقع مش بيفتح مترجم — استخدم ترجمة كروم</h3>
+          <ol className="space-y-1.5 list-decimal list-inside pr-1">
+            <li>1️⃣ افتح الموقع في متصفح كروم</li>
+            <li>2️⃣ اضغط على النقط التلاتة ⋮ فوق على اليمين</li>
+            <li>3️⃣ اختار (ترجمة / Traduire)</li>
+            <li>4️⃣ اختار اللغة العربية — الصفحة كلها هتتترجم</li>
+          </ol>
+          <p className="mt-2 font-medium">✅ الطريقة دي شغالة على كل المواقع حتى بعد تسجيل الدخول</p>
+        </div>
 
         {/* Warning */}
         <div className="rounded-2xl border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800/60 p-4 text-right text-[13px] text-amber-900 dark:text-amber-100 leading-relaxed mb-5">

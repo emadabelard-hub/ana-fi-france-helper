@@ -122,10 +122,10 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     );
   }
 
-  return doc.output("blob");
+  return doc;
 }
 
-export function buildPrevisionnelPdf(body: PrevisionnelInput): Blob {
+export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   const eur = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} €`;
   const ca = Number(body.chiffre_affaires_estime) || 0;
   const isAE = body.type_societe === "Auto-entrepreneur";

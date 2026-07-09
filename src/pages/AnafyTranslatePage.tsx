@@ -41,7 +41,7 @@ const SECTION_1: Card[] = [
     emoji: '🔍',
     title: 'INSEE — التحقق من SIRET',
     description: 'اتأكد من رقم SIRET بتاع أي شركة',
-    url: 'https://avis-situation-sirene-insee-fr.translate.goog/?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+    url: 'https://avis--situation--sirene-insee-fr.translate.goog/?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
   },
 ];
 

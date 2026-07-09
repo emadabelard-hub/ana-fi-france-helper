@@ -53,6 +53,8 @@ const QUESTIONS: Question[] = [
 ];
 
 const hasArabicOrLatinLetter = (s: string) => /[A-Za-z\u0600-\u06FF]/.test(s);
+const RESIDENCE_BLOCK_MESSAGE = '🚫 لازم أكون صريح معاك يا صديقي — عشان تفتح شركة في فرنسا وانت من خارج الاتحاد الأوروبي، محتاج إقامة فرنسية سارية أو وضع لاجئ/حماية في فرنسا. أول خطوة: ظبط وضع إقامتك، وبعدها أنا معاك خطوة بخطوة 💪';
+const VTC_BLOCK_MESSAGE = 'شغل Uber و VTC في فرنسا محتاج رخصة خاصة (carte professionnelle VTC) وامتحان صعب بالفرنساوي، وده غير فتح الشركة العادية. ده موضوع تخصصي خارج نطاق مساعدتي — نصيحتي تتواصل مع un organisme agréé VTC.';
 
 const CreerMaSocietePage = () => {
   const navigate = useNavigate();
@@ -64,13 +66,14 @@ const CreerMaSocietePage = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [recommendation, setRecommendation] = useState<string | null>(null);
   const [errorFallback, setErrorFallback] = useState(false);
+  const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
   const [showChecklist, setShowChecklist] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, recommendation, analyzing, errorFallback]);
+  }, [messages, recommendation, analyzing, errorFallback, blockedMessage]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -118,6 +121,16 @@ const CreerMaSocietePage = () => {
     setMessages((m) => [...m, { role: 'user', content: value }]);
     setInput('');
 
+    if (current.key === 'activite' && /(uber|vtc|taxi|توصيل|سواق)/i.test(value)) {
+      setTimeout(() => setBlockedMessage(VTC_BLOCK_MESSAGE), 400);
+      return;
+    }
+
+    if (current.key === 'residence' && /لا،?\s*ولا واحدة|ولا واحدة منهم|❌/.test(value)) {
+      setTimeout(() => setBlockedMessage(RESIDENCE_BLOCK_MESSAGE), 400);
+      return;
+    }
+
     const next = step + 1;
     if (next < QUESTIONS.length) {
       setTimeout(() => {
@@ -155,8 +168,8 @@ const CreerMaSocietePage = () => {
   };
 
   const currentQuestion = QUESTIONS[step];
-  const showOptions = !showChecklist && !recommendation && !analyzing && !errorFallback && currentQuestion?.options;
-  const showInput = !showChecklist && !recommendation && !analyzing && !errorFallback && !currentQuestion?.options;
+  const showOptions = !showChecklist && !recommendation && !analyzing && !errorFallback && !blockedMessage && currentQuestion?.options;
+  const showInput = !showChecklist && !recommendation && !analyzing && !errorFallback && !blockedMessage && !currentQuestion?.options;
 
   return (
     <div className="min-h-screen bg-background font-cairo" dir="rtl">
@@ -236,6 +249,23 @@ const CreerMaSocietePage = () => {
               <div className="max-w-[95%] bg-card border border-border rounded-2xl rounded-bl-none p-4 shadow-sm space-y-3">
                 <p className="text-sm text-card-foreground text-right leading-relaxed">
                   ⚠️ حصلت مشكلة تقنية مؤقتة. جرب تاني كمان شوية، أو اسأل شبيك لبيك مباشرة 👇
+                </p>
+                <Button
+                  className="w-full font-bold gap-2"
+                  onClick={() => navigate('/assistant')}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  اسأل شبيك لبيك
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {blockedMessage && (
+            <div className="flex justify-end">
+              <div className="max-w-[95%] bg-card border border-border rounded-2xl rounded-bl-none p-4 shadow-sm space-y-3">
+                <p className="text-sm text-card-foreground text-right leading-relaxed">
+                  {blockedMessage}
                 </p>
                 <Button
                   className="w-full font-bold gap-2"

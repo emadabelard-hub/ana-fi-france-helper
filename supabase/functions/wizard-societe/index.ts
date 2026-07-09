@@ -5,7 +5,7 @@ import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, x-supabase-client-platform, apikey, content-type",
 };
 
 const SYSTEM_PROMPT = `Tu es un conseiller expert en création d'entreprise en France, spécialisé pour les artisans arabophones. Tu réponds UNIQUEMENT en dialecte arabe égyptien chaleureux et direct.
@@ -56,7 +56,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { answers, conversationHistory } = await req.json();
+    const { answers } = await req.json();
     if (!answers || typeof answers !== "object") {
       return new Response(JSON.stringify({ error: "Invalid answers" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -119,7 +119,6 @@ serve(async (req) => {
         temperature: 0.2,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          ...(conversationHistory || []),
           { role: "user", content: userMessageForAI },
         ],
       }),

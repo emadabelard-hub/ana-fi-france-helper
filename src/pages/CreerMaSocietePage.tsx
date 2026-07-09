@@ -208,7 +208,7 @@ const CreerMaSocietePage = () => {
               ❓ مش متأكد من وضعك؟
             </div>
             <div className="flex flex-col gap-3">
-              <Button variant="outline" className="w-full font-bold" onClick={() => navigate('/assistant')}>
+              <Button variant="outline" className="w-full font-bold" onClick={() => navigate('/ai-assistant')}>
                 اسأل شبيك لبيك
               </Button>
               <Button className="w-full font-bold" onClick={() => setShowChecklist(false)}>
@@ -252,7 +252,7 @@ const CreerMaSocietePage = () => {
                 </p>
                 <Button
                   className="w-full font-bold gap-2"
-                  onClick={() => navigate('/assistant')}
+                  onClick={() => navigate('/ai-assistant')}
                 >
                   <MessageCircle className="h-4 w-4" />
                   اسأل شبيك لبيك
@@ -269,7 +269,7 @@ const CreerMaSocietePage = () => {
                 </p>
                 <Button
                   className="w-full font-bold gap-2"
-                  onClick={() => navigate('/assistant')}
+                  onClick={() => navigate('/ai-assistant')}
                 >
                   <MessageCircle className="h-4 w-4" />
                   اسأل شبيك لبيك

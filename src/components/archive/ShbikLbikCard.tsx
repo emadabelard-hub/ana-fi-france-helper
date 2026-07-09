@@ -89,7 +89,7 @@ const ShbikLbikCard = (props: ShbikLbikProps) => {
       {/* Assistant CTA */}
       <div className="px-5 pb-5 pt-2">
         <Button
-          onClick={() => navigate('/assistant?topic=comptabilite')}
+          onClick={() => navigate('/ai-assistant?topic=comptabilite')}
           className={cn(
             'w-full gap-2 bg-accent/15 hover:bg-accent/25 text-accent border border-accent/30',
             isRTL && 'font-cairo flex-row-reverse'

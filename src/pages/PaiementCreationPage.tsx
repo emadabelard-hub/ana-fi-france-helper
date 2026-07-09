@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Loader2, FileText, BarChart3, Package, Plus, Trash2 } from "lucide-react";
 import { buildStatutsPdf, buildPrevisionnelPdf } from "@/lib/creationPdf";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +14,21 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// Détecte si le texte contient de l'arabe (nécessite traduction avant PDF français)
+function containsArabic(text: string): boolean {
+  return /[\u0600-\u06FF]/.test(text);
+}
+
+async function translateArabicToFrench(text: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke("btp-translate", {
+    body: { text, sourceLang: "ar", targetLang: "fr" },
+  });
+  if (error) throw new Error(error.message || "Traduction impossible");
+  const translated = (data as { translated?: string })?.translated?.trim();
+  if (!translated) throw new Error("Traduction vide");
+  return translated;
+}
 
 type Associe = { name: string; percent: number };
 

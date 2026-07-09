@@ -947,6 +947,21 @@ const AIAssistantPage = () => {
         </button>
       </div>
 
+      {/* Entry point: anafypro ترجمة */}
+      <button
+        onClick={() => navigate('/anafy-translate')}
+        className="mx-4 mb-4 shrink-0 rounded-2xl border border-primary/30 bg-primary/5 hover:bg-primary/10 active:scale-[0.99] transition-all p-4 text-right font-cairo"
+        dir="rtl"
+      >
+        <div className="flex items-center gap-3 flex-row-reverse">
+          <div className="text-2xl leading-none shrink-0">🌍</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[15px] font-bold text-foreground">anafypro ترجمة — المواقع الإدارية بالعربي</div>
+            <div className="text-[12px] text-muted-foreground mt-0.5">مواقع فرنسا الرسمية مترجمة للعربية</div>
+          </div>
+        </div>
+      </button>
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
         {messages.length === 0 && (

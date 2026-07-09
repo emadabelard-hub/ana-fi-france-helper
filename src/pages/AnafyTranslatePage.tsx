@@ -117,8 +117,8 @@ const SECTION_3: Card[] = [
   {
     emoji: '🤝',
     title: 'OFII — عقد الاندماج والتكوين المدني',
-    description: 'للواصلين الجدد — عقد الاندماج الجمهوري وكورسات اللغة',
-    url: 'https://www-ofii-fr.translate.goog/?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+    description: 'للواصلين الجدد — عقد الاندماج وكورسات اللغة. الموقع فيه نسخة عربية رسمية: اختار اللغة العربية من فوق 🌐',
+    url: 'https://www.ofii.fr/',
   },
 ];
 

@@ -67,6 +67,7 @@ export default function PaiementCreationPage() {
   const [birthYear, setBirthYear] = useState<string>("");
   const [managerNationality, setManagerNationality] = useState("");
   const [managerAddress, setManagerAddress] = useState("");
+  const [signatureCity, setSignatureCity] = useState("");
   const [associes, setAssocies] = useState<Associe[]>([{ name: "", percent: 100 }]);
   const [product, setProduct] = useState("package");
   const [caEstime, setCaEstime] = useState<number>(50000);

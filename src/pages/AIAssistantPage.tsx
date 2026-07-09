@@ -1251,7 +1251,7 @@ const AIAssistantPage = () => {
               isRTL && "font-cairo text-right"
             )}
             style={{
-              minHeight: isInputFocused ? (typeof window !== 'undefined' && window.innerWidth < 768 ? '40vh' : '120px') : '44px',
+              minHeight: '44px',
               maxHeight: '200px',
               transition: 'height 0.2s ease, min-height 0.2s ease, background-color 0.2s ease',
             }}

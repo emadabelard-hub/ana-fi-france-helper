@@ -8,6 +8,7 @@ type Card = {
   title: string;
   description: string;
   url: string;
+  badge?: string;
 };
 
 const SECTION_1: Card[] = [

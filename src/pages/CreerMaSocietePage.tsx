@@ -2,16 +2,24 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Send, LogIn, Sparkles, FileText, BarChart3, Package } from 'lucide-react';
+import { Loader2, Send, LogIn, Sparkles, FileText, BarChart3, Package, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 import anafyProLogo from '@/assets/anafy-pro-logo.png';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 
 type Msg = { role: 'bot' | 'user'; content: string };
 
-const QUESTIONS = [
+type Question = {
+  key: string;
+  text: string;
+  placeholder?: string;
+  options?: string[];
+};
+
+const QUESTIONS: Question[] = [
   {
     key: 'activite',
     text: 'أهلاً! أنا هساعدك تفتح شركتك في فرنسا خطوة بخطوة 🇫🇷\n\nالأول قولي، هتشتغل في إيه بالظبط؟ (دهانات، بلاط، سباكة، كهرباء، بناء، أو غيره؟)',
@@ -20,24 +28,31 @@ const QUESTIONS = [
   {
     key: 'associes',
     text: 'تمام 👍\n\nهتشتغل لوحدك ولا معاك شركاء؟',
-    placeholder: 'لوحدي / مع شركاء',
+    options: ['لوحدي 👤', 'معايا شركاء 👥'],
   },
   {
     key: 'revenus',
-    text: 'متوقع دخلك السنوي كام تقريباً؟\n\n(أقل من 77,700€ / بين 77,700€ و 200,000€ / أكتر من 200,000€)',
-    placeholder: 'مثلاً: أقل من 77,700€',
+    text: 'متوقع دخلك السنوي كام تقريباً؟',
+    options: ['أقل من €77,700', 'بين €77,700 و €200,000', 'أكتر من €200,000'],
   },
   {
     key: 'residence',
-    text: 'عندك إقامة فرنسية سارية أو جنسية فرنسية؟',
-    placeholder: 'أيوة / لأ',
+    text: 'إيه وضعك القانوني في فرنسا؟',
+    options: [
+      'جنسية فرنسية 🇫🇷',
+      'إقامة فرنسية سارية 🪪',
+      'جنسية دولة من الاتحاد الأوروبي 🇪🇺',
+      'لا، ولا واحدة منهم ❌',
+    ],
   },
   {
     key: 'capital',
     text: 'تمام 🙏\n\nعندك رأس مال عايز تبدأ بيه؟ وكام تقريباً؟',
     placeholder: 'مثلاً: 5000€ أو لأ',
   },
-] as const;
+];
+
+const hasArabicOrLatinLetter = (s: string) => /[A-Za-z\u0600-\u06FF]/.test(s);
 
 const CreerMaSocietePage = () => {
   const navigate = useNavigate();
@@ -48,13 +63,14 @@ const CreerMaSocietePage = () => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [analyzing, setAnalyzing] = useState(false);
   const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [errorFallback, setErrorFallback] = useState(false);
   const [showChecklist, setShowChecklist] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, recommendation, analyzing]);
+  }, [messages, recommendation, analyzing, errorFallback]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -62,6 +78,7 @@ const CreerMaSocietePage = () => {
 
   const runAnalysis = async (finalAnswers: Record<string, string>) => {
     setAnalyzing(true);
+    setErrorFallback(false);
     try {
       const { data, error } = await supabase.functions.invoke('wizard-societe', {
         body: {
@@ -73,32 +90,19 @@ const CreerMaSocietePage = () => {
         },
       });
       if (error) throw error;
-      setRecommendation(data?.content || 'حصل خطأ في التحليل. حاول تاني.');
+      const content = data?.content || data?.message;
+      if (!content) throw new Error('empty response');
+      setRecommendation(content);
     } catch (e) {
       console.error('wizard analysis error', e);
-      // Fallback déterministe
-      const seul = /لوحد|وحدي|alone|seul/i.test(finalAnswers.associes || '');
-      const lowRev = /77|أقل|moins/i.test(finalAnswers.revenus || '');
-      let type = 'SARL';
-      let why = 'عشان فيه شركاء، الـ SARL هي الأنسب.';
-      if (seul) {
-        if (lowRev) {
-          type = 'Auto-entrepreneur';
-          why = 'عشان لوحدك ودخلك تحت 77,700€، الـ Auto-entrepreneur أبسط وأسرع حاجة.';
-        } else {
-          type = 'SASU';
-          why = 'عشان لوحدك بس الدخل أعلى أو محتاج assurance décennale، الـ SASU بتحميك أكتر.';
-        }
-      }
-      setRecommendation(`## التوصية\n**${type}** — ${why}\n\n## الخطوات المطلوبة\n1. تجهيز الوثائق (إقامة + إثبات عنوان)\n2. اختيار اسم الشركة\n3. التسجيل في URSSAF / Greffe\n4. فتح حساب بنكي مهني\n5. الاشتراك في التأمينات اللازمة`);
+      setErrorFallback(true);
     } finally {
       setAnalyzing(false);
     }
   };
 
-  const handleSend = () => {
-    const value = input.trim();
-    if (!value || analyzing || recommendation) return;
+  const submitAnswer = (value: string) => {
+    if (analyzing || recommendation) return;
     const current = QUESTIONS[step];
     const newAnswers = { ...answers, [current.key]: value };
     setAnswers(newAnswers);
@@ -119,6 +123,20 @@ const CreerMaSocietePage = () => {
     }
   };
 
+  const handleSend = () => {
+    const value = input.trim();
+    if (!value) return;
+    const current = QUESTIONS[step];
+    // Validation stricte pour l'activité (Q1)
+    if (current.key === 'activite') {
+      if (value.length < 3 || !hasArabicOrLatinLetter(value)) {
+        toast.info('ممكن توضحلي أكتر؟ اكتب نشاطك بكلمة أو اتنين 😊');
+        return;
+      }
+    }
+    submitAnswer(value);
+  };
+
   const handleCtaClick = () => {
     if (isAuthenticated) {
       navigate('/paiement-creation');
@@ -126,6 +144,10 @@ const CreerMaSocietePage = () => {
       navigate('/login');
     }
   };
+
+  const currentQuestion = QUESTIONS[step];
+  const showOptions = !showChecklist && !recommendation && !analyzing && !errorFallback && currentQuestion?.options;
+  const showInput = !showChecklist && !recommendation && !analyzing && !errorFallback && !currentQuestion?.options;
 
   return (
     <div className="min-h-screen bg-background font-cairo" dir="rtl">
@@ -149,7 +171,7 @@ const CreerMaSocietePage = () => {
       </header>
 
       {/* Chat area */}
-      <main className="pt-14 pb-24 px-3 max-w-2xl mx-auto">
+      <main className="pt-14 pb-40 px-3 max-w-2xl mx-auto">
         {showChecklist && (
           <div className="my-6 rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
             <h2 className="text-right text-lg font-bold text-card-foreground">✅ شروط فتح شركة في فرنسا</h2>
@@ -196,6 +218,23 @@ const CreerMaSocietePage = () => {
               <div className="bg-card border border-border rounded-2xl rounded-bl-none p-3 flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 <span className="text-xs text-muted-foreground">بحلل إجاباتك...</span>
+              </div>
+            </div>
+          )}
+
+          {errorFallback && (
+            <div className="flex justify-end">
+              <div className="max-w-[95%] bg-card border border-border rounded-2xl rounded-bl-none p-4 shadow-sm space-y-3">
+                <p className="text-sm text-card-foreground text-right leading-relaxed">
+                  ⚠️ حصلت مشكلة تقنية مؤقتة. جرب تاني كمان شوية، أو اسأل شبيك لبيك مباشرة 👇
+                </p>
+                <Button
+                  className="w-full font-bold gap-2"
+                  onClick={() => navigate('/assistant')}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  اسأل شبيك لبيك
+                </Button>
               </div>
             </div>
           )}
@@ -256,8 +295,27 @@ const CreerMaSocietePage = () => {
       )}
       </main>
 
+      {/* Options buttons */}
+      {showOptions && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-3">
+          <div className="max-w-2xl mx-auto flex flex-col gap-2">
+            {currentQuestion.options!.map((opt) => (
+              <Button
+                key={opt}
+                onClick={() => submitAnswer(opt)}
+                variant="outline"
+                className="w-full font-bold text-base py-6 justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                dir="rtl"
+              >
+                {opt}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Input bar */}
-      {!showChecklist && !recommendation && !analyzing && (
+      {showInput && (
         <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-3">
           <div className="max-w-2xl mx-auto flex gap-2 flex-row-reverse">
             <Input
@@ -265,7 +323,7 @@ const CreerMaSocietePage = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder={QUESTIONS[step]?.placeholder}
+              placeholder={currentQuestion?.placeholder}
               dir="rtl"
               className="flex-1 text-right font-cairo text-base"
               style={{ fontSize: '16px' }}

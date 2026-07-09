@@ -257,5 +257,5 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
     doc.text("Document généré par Anafy Pro — à titre indicatif", pageWidth / 2, 290, { align: "center" });
   }
 
-  return doc.output("blob");
+  return doc;
 }

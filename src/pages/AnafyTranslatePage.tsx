@@ -56,7 +56,8 @@ const SECTION_2: Card[] = [
     emoji: '📚',
     title: 'Chorus Pro — مركز المساعدة',
     description: 'شروحات ومساعدة على استخدام Chorus Pro',
-    url: 'https://communaute-chorus--pro-gouv-fr.translate.goog/?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+    url: 'https://communaute.chorus-pro.gouv.fr/',
+    badge: '🔒 افتحه واستخدم ترجمة كروم (شوف الطريقة تحت)',
   },
 ];
 

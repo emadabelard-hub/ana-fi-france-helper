@@ -30,7 +30,7 @@ function extractCity(address: string): string {
   return last.replace(/^\d{4,5}\s*/, "").trim() || last;
 }
 
-export function buildStatutsPdf(body: StatutsInput): Blob {
+export function buildStatutsPdf(body: StatutsInput): jsPDF {
   const isSASU = body.companyType === "SASU";
   const city = extractCity(body.address);
   const today = new Date().toLocaleDateString("fr-FR");

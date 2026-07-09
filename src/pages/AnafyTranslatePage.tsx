@@ -200,6 +200,15 @@ const AnafyTranslatePage = () => {
           </div>
         </section>
 
+        {/* Section 3 */}
+        <section className="mb-6">
+          <h2 className="text-right text-lg font-bold text-foreground mb-1">🇫🇷 الحياة اليومية في فرنسا</h2>
+          <p className="text-right text-sm text-muted-foreground mb-3">المواقع اللي هتحتاجها انت وعيلتك</p>
+          <div className="space-y-3">
+            {SECTION_3.map((c) => <CardLink key={c.url} card={c} />)}
+          </div>
+        </section>
+
         {/* Chrome translate method */}
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-right text-[14px] text-foreground leading-relaxed mb-5">
           <h3 className="font-bold mb-2 text-[15px]">📱 لو الموقع مش بيفتح مترجم — استخدم ترجمة كروم</h3>

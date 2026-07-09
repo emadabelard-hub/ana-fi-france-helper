@@ -12,6 +12,7 @@ export interface StatutsInput {
   managerBirthDate: string;
   managerNationality: string;
   managerAddress: string;
+  signatureCity?: string;
   associes?: Associe[];
 }
 
@@ -23,6 +24,65 @@ export interface PrevisionnelInput {
   is_btp?: boolean;
 }
 
+// Formatte un montant avec espace NORMAL comme séparateur de milliers
+// (jsPDF ne rend pas correctement l'espace insécable de toLocaleString).
+export function formatEuro(n: number): string {
+  const rounded = Math.round(n);
+  const s = Math.abs(rounded).toString();
+  const withSep = s.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return (rounded < 0 ? "-" : "") + withSep + " €";
+}
+
+// Conversion nombre entier -> lettres françaises (1 à 999 999)
+export function numberToFrenchWords(n: number): string {
+  if (!Number.isFinite(n)) return "";
+  n = Math.floor(Math.abs(n));
+  if (n === 0) return "zéro";
+
+  const units = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf",
+    "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf"];
+  const tens = ["", "", "vingt", "trente", "quarante", "cinquante", "soixante", "soixante", "quatre-vingt", "quatre-vingt"];
+
+  const under100 = (num: number): string => {
+    if (num < 20) return units[num];
+    const t = Math.floor(num / 10);
+    const u = num % 10;
+    if (t === 7 || t === 9) {
+      const base = tens[t];
+      const rest = 10 + u;
+      const join = (t === 7 && rest === 11) ? "-et-" : "-";
+      return base + join + units[rest];
+    }
+    if (t === 8) {
+      if (u === 0) return "quatre-vingts";
+      return "quatre-vingt-" + units[u];
+    }
+    if (u === 0) return tens[t];
+    if (u === 1 && t !== 8) return tens[t] + "-et-un";
+    return tens[t] + "-" + units[u];
+  };
+
+  const under1000 = (num: number): string => {
+    if (num < 100) return under100(num);
+    const h = Math.floor(num / 100);
+    const r = num % 100;
+    let s = "";
+    if (h === 1) s = "cent";
+    else s = units[h] + " cent" + (r === 0 ? "s" : "");
+    if (r > 0) s += " " + under100(r);
+    return s;
+  };
+
+  if (n < 1000) return under1000(n);
+  const thousands = Math.floor(n / 1000);
+  const rest = n % 1000;
+  let s = "";
+  if (thousands === 1) s = "mille";
+  else s = under1000(thousands) + " mille";
+  if (rest > 0) s += " " + under1000(rest);
+  return s;
+}
+
 function extractCity(address: string): string {
   const parts = address.split(",").map(p => p.trim()).filter(Boolean);
   if (!parts.length) return "";
@@ -32,10 +92,12 @@ function extractCity(address: string): string {
 
 export function buildStatutsPdf(body: StatutsInput): jsPDF {
   const isSASU = body.companyType === "SASU";
-  const city = extractCity(body.address);
+  const city = (body.signatureCity && body.signatureCity.trim()) || extractCity(body.address);
   const today = new Date().toLocaleDateString("fr-FR");
-  const capitalStr = `${body.capital.toLocaleString("fr-FR")}€`;
-  const capitalLettres = `${body.capital.toLocaleString("fr-FR")} (${body.capital})`;
+  const capitalStr = formatEuro(body.capital);
+  const capitalLettres = numberToFrenchWords(body.capital);
+  const dirigeantTitre = isSASU ? "Président" : "gérant";
+  const dirigeantTitreCap = isSASU ? "Président" : "Gérant";
 
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   doc.setFont("times", "normal");
@@ -80,17 +142,17 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
   addText("Article 6 — Capital social", { bold: true, size: 12 });
   addText(`Le capital social est fixé à ${capitalStr} (${capitalLettres} euros).`);
   if (isSASU) {
-    addText(`Il est divisé en ${body.capital} actions de 1€ chacune, entièrement souscrites et libérées par l'associé unique.`);
+    addText(`Il est divisé en ${body.capital} actions de 1 € chacune, entièrement souscrites et libérées par l'associé unique.`);
   } else {
     const lignes = (body.associes ?? []).map(a => `- ${a.name} : ${a.percent}%`).join("\n");
     addText(`Il est réparti comme suit :\n${lignes || "- " + body.managerName + " : 100%"}`);
   }
 
-  addText("Article 7 — Gérance", { bold: true, size: 12 });
+  addText(isSASU ? "Article 7 — Présidence" : "Article 7 — Gérance", { bold: true, size: 12 });
   if (isSASU) {
     addText(`La société est dirigée par un Président : M/Mme ${body.managerName}, né(e) le ${body.managerBirthDate}, de nationalité ${body.managerNationality}, demeurant ${body.managerAddress || body.address}.`);
   } else {
-    addText(`La société est gérée par M/Mme ${body.managerName}, né(e) le ${body.managerBirthDate}, demeurant ${body.managerAddress || body.address}.`);
+    addText(`La société est gérée par M/Mme ${body.managerName}, né(e) le ${body.managerBirthDate}, de nationalité ${body.managerNationality}, demeurant ${body.managerAddress || body.address}.`);
   }
 
   addText("Article 8 — Exercice social", { bold: true, size: 12 });
@@ -104,11 +166,11 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
   }
 
   addText("Article 10 — Dissolution — Liquidation", { bold: true, size: 12 });
-  addText(`En cas de dissolution, la liquidation est effectuée par le gérant ou tout mandataire désigné.`);
+  addText(`En cas de dissolution, la liquidation est effectuée par le ${dirigeantTitre} ou tout mandataire désigné.`);
 
   y += 8;
   addText(`Fait à ${city}, le ${today}`, { spacing: 12 });
-  addText(`Signature du gérant : _______________________`, { spacing: 4 });
+  addText(`Signature du ${dirigeantTitre} : _______________________`, { spacing: 4 });
   addText(body.managerName, { bold: true });
 
   const pageCount = doc.getNumberOfPages();
@@ -126,7 +188,7 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
 }
 
 export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
-  const eur = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} €`;
+  const eur = (n: number) => formatEuro(n);
   const ca = Number(body.chiffre_affaires_estime) || 0;
   const isAE = body.type_societe === "Auto-entrepreneur";
   const isSociete = body.type_societe === "SASU" || body.type_societe === "SARL";

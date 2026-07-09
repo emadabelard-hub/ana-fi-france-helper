@@ -70,6 +70,11 @@ const CardLink = ({ card }: { card: Card }) => (
       <div className="text-3xl leading-none shrink-0">{card.emoji}</div>
       <div className="flex-1 min-w-0">
         <h3 className="text-[15px] font-bold text-card-foreground font-cairo">{card.title}</h3>
+        {card.badge && (
+          <p className="text-[12px] text-amber-700 dark:text-amber-300 font-medium mt-1 font-cairo leading-relaxed">
+            {card.badge}
+          </p>
+        )}
         <p className="text-[13px] text-muted-foreground mt-1 font-cairo leading-relaxed">
           {card.description}
         </p>

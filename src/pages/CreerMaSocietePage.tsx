@@ -83,18 +83,27 @@ const CreerMaSocietePage = () => {
       const { data, error } = await supabase.functions.invoke('wizard-societe', {
         body: {
           answers: finalAnswers,
-          conversationHistory: messages.slice(0, -1).map(m => ({
-            role: m.role === 'bot' ? 'assistant' : 'user',
-            content: m.content,
-          })),
         },
       });
-      if (error) throw error;
+      if (error) {
+        let message = error.message;
+        const context = (error as { context?: Response }).context;
+        if (context) {
+          try {
+            const body = await context.json();
+            message = body?.error || body?.message || message;
+          } catch {
+            // keep Supabase error message
+          }
+        }
+        throw new Error(message);
+      }
       const content = data?.content || data?.message;
       if (!content) throw new Error('empty response');
       setRecommendation(content);
     } catch (e) {
       console.error('wizard analysis error', e);
+      toast.error(e instanceof Error ? e.message : 'Erreur inconnue');
       setErrorFallback(true);
     } finally {
       setAnalyzing(false);

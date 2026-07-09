@@ -115,6 +115,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
+        max_tokens: 900,
+        temperature: 0.2,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           ...(conversationHistory || []),
@@ -126,7 +128,7 @@ serve(async (req) => {
     if (!response.ok) {
       const t = await response.text();
       console.error("AI error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI error" }), {
+      return new Response(JSON.stringify({ error: `AI error ${response.status}: ${t}` }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

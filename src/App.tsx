@@ -58,6 +58,7 @@ const ChantierReportPage = lazy(() => import("./pages/ChantierReportPage"));
 const InvitePage = lazy(() => import("./pages/InvitePage"));
 const ComptablePage = lazy(() => import("./pages/ComptablePage"));
 const CreerMaSocietePage = lazy(() => import("./pages/CreerMaSocietePage"));
+const AnafyTranslatePage = lazy(() => import("./pages/AnafyTranslatePage"));
 const PaiementCreationPage = lazy(() => import("./pages/PaiementCreationPage"));
 const MaCreationPage = lazy(() => import("./pages/MaCreationPage"));
 const SupplierInvoicesPage = lazy(() => import("./pages/accounting/SupplierInvoicesPage"));

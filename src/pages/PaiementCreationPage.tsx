@@ -96,7 +96,7 @@ export default function PaiementCreationPage() {
     const needStatuts = product === "statuts" || product === "package";
     const needPrevi = product === "financial" || product === "package";
 
-    if (needStatuts && (!companyName || !activity || !address || !managerName)) {
+    if (needStatuts && (!companyName || !activity || !address || !managerName || !managerNationality.trim() || !signatureCity.trim())) {
       toast.error("املأ الحقول المطلوبة");
       return;
     }
@@ -106,10 +106,27 @@ export default function PaiementCreationPage() {
     }
     setGenerating(true);
     try {
+      // Traduction de l'activité (arabe -> français BTP) avant génération PDF
+      let activityFr = activity;
+      if (containsArabic(activity)) {
+        const tid = toast.loading("جاري الترجمة...");
+        try {
+          activityFr = await translateArabicToFrench(activity);
+          toast.dismiss(tid);
+        } catch (e) {
+          toast.dismiss(tid);
+          const msg = e instanceof Error ? e.message : "فشلت الترجمة";
+          toast.error(`تعذّرت الترجمة: ${msg}`);
+          setGenerating(false);
+          return;
+        }
+      }
+
       if (needStatuts) {
         const doc = buildStatutsPdf({
-          companyName, companyType, activity, capital, address,
+          companyName, companyType, activity: activityFr, capital, address,
           managerName, managerBirthDate, managerNationality, managerAddress,
+          signatureCity,
           associes: companyType === "SARL" ? associes : undefined,
         });
         savePdfSafely(doc, `statuts-${companyName || "societe"}.pdf`);
@@ -117,12 +134,12 @@ export default function PaiementCreationPage() {
       if (needPrevi) {
         const doc = buildPrevisionnelPdf({
           type_societe: companyType,
-          activite: activity,
+          activite: activityFr,
           capital,
           chiffre_affaires_estime: caEstime,
           is_btp: isBtp,
         });
-        savePdfSafely(doc, `previsionnel-${activity || "activite"}.pdf`);
+        savePdfSafely(doc, `previsionnel-${activityFr || "activite"}.pdf`);
       }
       toast.success("الوثيقة جاهزة ✅");
     } catch (e) {
@@ -132,6 +149,7 @@ export default function PaiementCreationPage() {
       setGenerating(false);
     }
   };
+
 
   const addAssocie = () => setAssocies([...associes, { name: "", percent: 0 }]);
   const removeAssocie = (i: number) => setAssocies(associes.filter((_, idx) => idx !== i));

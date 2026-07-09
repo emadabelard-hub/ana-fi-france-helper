@@ -139,6 +139,18 @@ const AnafyTranslatePage = () => {
           </div>
         </section>
 
+        {/* Chrome translate method */}
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-right text-[14px] text-foreground leading-relaxed mb-5">
+          <h3 className="font-bold mb-2 text-[15px]">📱 لو الموقع مش بيفتح مترجم — استخدم ترجمة كروم</h3>
+          <ol className="space-y-1.5 list-decimal list-inside pr-1">
+            <li>1️⃣ افتح الموقع في متصفح كروم</li>
+            <li>2️⃣ اضغط على النقط التلاتة ⋮ فوق على اليمين</li>
+            <li>3️⃣ اختار (ترجمة / Traduire)</li>
+            <li>4️⃣ اختار اللغة العربية — الصفحة كلها هتتترجم</li>
+          </ol>
+          <p className="mt-2 font-medium">✅ الطريقة دي شغالة على كل المواقع حتى بعد تسجيل الدخول</p>
+        </div>
+
         {/* Warning */}
         <div className="rounded-2xl border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800/60 p-4 text-right text-[13px] text-amber-900 dark:text-amber-100 leading-relaxed mb-5">
           ⚠️ الترجمة أوتوماتيكية من جوجل — ممكن تكون مش دقيقة 100%. صفحات تسجيل الدخول ممكن ماتشتغلش مترجمة، ساعتها ادخل الموقع الأصلي.

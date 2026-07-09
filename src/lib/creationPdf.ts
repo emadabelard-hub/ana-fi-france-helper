@@ -30,7 +30,7 @@ function extractCity(address: string): string {
   return last.replace(/^\d{4,5}\s*/, "").trim() || last;
 }
 
-export function buildStatutsPdf(body: StatutsInput): Blob {
+export function buildStatutsPdf(body: StatutsInput): jsPDF {
   const isSASU = body.companyType === "SASU";
   const city = extractCity(body.address);
   const today = new Date().toLocaleDateString("fr-FR");
@@ -122,10 +122,10 @@ export function buildStatutsPdf(body: StatutsInput): Blob {
     );
   }
 
-  return doc.output("blob");
+  return doc;
 }
 
-export function buildPrevisionnelPdf(body: PrevisionnelInput): Blob {
+export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   const eur = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} €`;
   const ca = Number(body.chiffre_affaires_estime) || 0;
   const isAE = body.type_societe === "Auto-entrepreneur";
@@ -257,5 +257,5 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): Blob {
     doc.text("Document généré par Anafy Pro — à titre indicatif", pageWidth / 2, 290, { align: "center" });
   }
 
-  return doc.output("blob");
+  return doc;
 }

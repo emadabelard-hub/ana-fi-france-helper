@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, FileText, BarChart3, Package, Download, Plus, Trash2 } from "lucide-react";
+import { Loader2, FileText, BarChart3, Package, Plus, Trash2 } from "lucide-react";
 import { buildStatutsPdf, buildPrevisionnelPdf } from "@/lib/creationPdf";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Associe = { name: string; percent: number };
 
@@ -20,6 +21,20 @@ const PRODUCTS = [
   { id: "financial", label: "📊 الدراسة المالية فقط", price: 29 },
   { id: "package", label: "📦 الباكدج الكامل", price: 89, recommended: true },
 ];
+
+const AR_MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+
+function savePdfSafely(doc: ReturnType<typeof buildStatutsPdf>, filename: string) {
+  try {
+    doc.save(filename);
+  } catch (e) {
+    try {
+      doc.output("dataurlnewwindow");
+    } catch {
+      throw e;
+    }
+  }
+}
 
 export default function PaiementCreationPage() {
   const { user, isLoading } = useAuth();
@@ -31,7 +46,9 @@ export default function PaiementCreationPage() {
   const [capital, setCapital] = useState<number>(1000);
   const [address, setAddress] = useState("");
   const [managerName, setManagerName] = useState("");
-  const [managerBirthDate, setManagerBirthDate] = useState("");
+  const [birthDay, setBirthDay] = useState<string>("");
+  const [birthMonth, setBirthMonth] = useState<string>("");
+  const [birthYear, setBirthYear] = useState<string>("");
   const [managerNationality, setManagerNationality] = useState("");
   const [managerAddress, setManagerAddress] = useState("");
   const [associes, setAssocies] = useState<Associe[]>([{ name: "", percent: 100 }]);
@@ -40,8 +57,19 @@ export default function PaiementCreationPage() {
   const [isBtp, setIsBtp] = useState(true);
 
   const [generating, setGenerating] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [previsionnelUrl, setPrevisionnelUrl] = useState<string | null>(null);
+
+  const managerBirthDate = useMemo(() => {
+    if (!birthDay || !birthMonth || !birthYear) return "";
+    const dd = birthDay.padStart(2, "0");
+    const mm = birthMonth.padStart(2, "0");
+    return `${dd}/${mm}/${birthYear}`;
+  }, [birthDay, birthMonth, birthYear]);
+
+  const years = useMemo(() => {
+    const arr: number[] = [];
+    for (let y = 2008; y >= 1940; y--) arr.push(y);
+    return arr;
+  }, []);
 
   useEffect(() => {
     if (!isLoading && !user) navigate("/login");
@@ -59,39 +87,30 @@ export default function PaiementCreationPage() {
       toast.error("اكتب الإيرادات السنوية المتوقعة");
       return;
     }
-    toast.info("قريباً — الدفع هيكون متاح قريباً! ✅");
     setGenerating(true);
-    setPdfUrl(null);
-    setPrevisionnelUrl(null);
     try {
       if (needStatuts) {
-        const blob = buildStatutsPdf({
+        const doc = buildStatutsPdf({
           companyName, companyType, activity, capital, address,
           managerName, managerBirthDate, managerNationality, managerAddress,
           associes: companyType === "SARL" ? associes : undefined,
         });
-        setPdfUrl(URL.createObjectURL(blob));
+        savePdfSafely(doc, `statuts-${companyName || "societe"}.pdf`);
       }
       if (needPrevi) {
-        const blob = buildPrevisionnelPdf({
+        const doc = buildPrevisionnelPdf({
           type_societe: companyType,
           activite: activity,
           capital,
           chiffre_affaires_estime: caEstime,
           is_btp: isBtp,
         });
-        setPrevisionnelUrl(URL.createObjectURL(blob));
+        savePdfSafely(doc, `previsionnel-${activity || "activite"}.pdf`);
       }
-      if (needPrevi && !needStatuts) {
-        toast.success("✅ الدراسة المالية جاهزة! ده الملف اللي هتاخده معاك للبنك عشان تفتح الحساب البنكي للشركة.");
-      } else if (needStatuts && needPrevi) {
-        toast.success("✅ تم توليد عقد التأسيس + الدراسة المالية!");
-      } else {
-        toast.success("✅ تم توليد عقد التأسيس!");
-      }
+      toast.success("الوثيقة جاهزة ✅");
     } catch (e) {
-      console.error(e);
-      toast.error(e instanceof Error ? e.message : "خطأ");
+      const msg = e instanceof Error ? e.message : "خطأ غير معروف";
+      toast.error(msg);
     } finally {
       setGenerating(false);
     }
@@ -113,6 +132,17 @@ export default function PaiementCreationPage() {
         <h1 className="text-3xl font-bold">افتح شركتك في فرنسا 🇫🇷</h1>
         <p className="text-muted-foreground">املأ البيانات ونولّد لك عقد التأسيس بالفرنسي</p>
       </header>
+
+      <Card className="p-5 space-y-3 bg-amber-50 dark:bg-amber-950/30 border-amber-500">
+        <h2 className="text-lg font-bold">📋 جهز الأوراق دي قبل ما تبدأ</h2>
+        <ul className="space-y-2 text-sm">
+          <li>🪪 بطاقة الإقامة أو الهوية بتاعتك</li>
+          <li>🏠 عنوان مقر الشركة (ممكن يكون عنوان سكنك)</li>
+          <li>💰 المبلغ اللي هتحطه رأس مال (حتى لو 1 يورو)</li>
+          <li>👥 لو معاك شركاء: أساميهم وعناوينهم ونسبة كل واحد</li>
+          <li>📅 تاريخ ومكان ميلاد الجيرون (Gérant)</li>
+        </ul>
+      </Card>
 
       <Card className="p-5 space-y-4">
         <h2 className="text-xl font-bold">📝 بيانات الشركة</h2>
@@ -149,19 +179,52 @@ export default function PaiementCreationPage() {
         <h2 className="text-xl font-bold">👤 المسير (Gérant)</h2>
 
         <div className="space-y-2">
-          <Label>الاسم الكامل</Label>
+          <Label>اسم الجيرون (Gérant)</Label>
           <Input value={managerName} onChange={e => setManagerName(e.target.value)} dir="ltr" />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label>تاريخ الميلاد</Label>
-            <Input type="date" value={managerBirthDate} onChange={e => setManagerBirthDate(e.target.value)} dir="ltr" lang="fr" />
+        <div className="space-y-2">
+          <Label>تاريخ الميلاد</Label>
+          <div className="grid grid-cols-3 gap-2" dir="rtl">
+            <div className="space-y-1">
+              <Label className="text-xs">اليوم</Label>
+              <Select value={birthDay} onValueChange={setBirthDay}>
+                <SelectTrigger><SelectValue placeholder="يوم" /></SelectTrigger>
+                <SelectContent className="max-h-64">
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                    <SelectItem key={d} value={String(d)}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">الشهر</Label>
+              <Select value={birthMonth} onValueChange={setBirthMonth}>
+                <SelectTrigger><SelectValue placeholder="شهر" /></SelectTrigger>
+                <SelectContent className="max-h-64">
+                  {AR_MONTHS.map((name, idx) => (
+                    <SelectItem key={idx + 1} value={String(idx + 1)}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">السنة</Label>
+              <Select value={birthYear} onValueChange={setBirthYear}>
+                <SelectTrigger><SelectValue placeholder="سنة" /></SelectTrigger>
+                <SelectContent className="max-h-64">
+                  {years.map(y => (
+                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>الجنسية</Label>
-            <Input value={managerNationality} onChange={e => setManagerNationality(e.target.value)} placeholder="française" dir="ltr" />
-          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>الجنسية</Label>
+          <Input value={managerNationality} onChange={e => setManagerNationality(e.target.value)} placeholder="française" dir="ltr" />
         </div>
 
         <div className="space-y-2">
@@ -228,32 +291,6 @@ export default function PaiementCreationPage() {
       <Button onClick={handleGenerate} disabled={generating} size="lg" className="w-full">
         {generating ? <><Loader2 className="ml-2 animate-spin h-5 w-5" /> جاري التوليد...</> : "توليد الوثيقة"}
       </Button>
-
-      {pdfUrl && (
-        <Card className="p-5 space-y-3 bg-green-50 dark:bg-green-950/30 border-green-500">
-          <p className="font-semibold">
-            ✅ تم توليد عقد التأسيس بتاعك! اطبعه وامضيه وخده مع ورقة الإيداع البنكي لتسجيل الشركة.
-          </p>
-          <Button asChild className="w-full">
-            <a href={pdfUrl} target="_blank" rel="noopener noreferrer" download>
-              <Download className="ml-2 h-4 w-4" /> تحميل عقد التأسيس
-            </a>
-          </Button>
-        </Card>
-      )}
-
-      {previsionnelUrl && (
-        <Card className="p-5 space-y-3 bg-blue-50 dark:bg-blue-950/30 border-blue-500">
-          <p className="font-semibold">
-            ✅ الدراسة المالية جاهزة! ده الملف اللي هتاخده معاك للبنك عشان تفتح الحساب البنكي للشركة.
-          </p>
-          <Button asChild className="w-full">
-            <a href={previsionnelUrl} target="_blank" rel="noopener noreferrer" download>
-              <Download className="ml-2 h-4 w-4" /> تحميل الدراسة المالية
-            </a>
-          </Button>
-        </Card>
-      )}
     </div>
   );
 }

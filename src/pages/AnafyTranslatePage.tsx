@@ -62,6 +62,66 @@ const SECTION_2: Card[] = [
   },
 ];
 
+const SECTION_3: Card[] = [
+  {
+    emoji: '🪪',
+    title: 'الإقامة — تجديد وطلب الإقامات ANEF',
+    description: 'تجديد الإقامة، طلب إقامة جديدة، متابعة الملف',
+    url: 'https://administration-etrangers-en-france.interieur.gouv.fr/',
+    badge: '🔒 افتحه واستخدم ترجمة كروم (شوف الطريقة تحت)',
+  },
+  {
+    emoji: '🏥',
+    title: 'Ameli — التأمين الصحي',
+    description: 'الكارت فيتال، استرجاع فلوس العلاج، الطبيب المعالج',
+    url: 'https://www.ameli.fr/',
+    badge: '🔒 افتحه واستخدم ترجمة كروم (شوف الطريقة تحت)',
+  },
+  {
+    emoji: '👨‍👩‍👧',
+    title: 'CAF — المساعدات العائلية والسكن',
+    description: 'مساعدات العيلة، مساعدة الإيجار APL — ممكن يكون ليك حق فيها ومتعرفش',
+    url: 'https://www-caf-fr.translate.goog/?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+  },
+  {
+    emoji: '🚗',
+    title: 'ANTS — رخصة السواقة والكارت جري',
+    description: 'تبديل رخصة أجنبية، رخصة جديدة، أوراق العربية',
+    url: 'https://ants-gouv-fr.translate.goog/?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+  },
+  {
+    emoji: '💼',
+    title: 'France Travail — البحث عن شغل',
+    description: 'التسجيل، إعانات البطالة، عروض الشغل',
+    url: 'https://www-francetravail-fr.translate.goog/accueil/?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+  },
+  {
+    emoji: '🏫',
+    title: 'تسجيل الأولاد في المدرسة',
+    description: 'الدليل الرسمي لتسجيل الأولاد — التسجيل نفسه بيتم في البلدية (mairie) بتاعة منطقتك',
+    url: 'https://www-service--public-fr.translate.goog/particuliers/vosdroits/F1865?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+  },
+  {
+    emoji: '🏛️',
+    title: 'بلديتك — Mairie',
+    description: 'للتسجيل في المدرسة والأوراق المحلية — دور في جوجل على: mairie + اسم مدينتك',
+    url: 'https://lannuaire.service-public.fr/navigation/mairie',
+    badge: '🔒 افتحه واستخدم ترجمة كروم',
+  },
+  {
+    emoji: '✉️',
+    title: 'La Poste — متابعة الجوابات المسجلة',
+    description: 'الجوابات الإدارية بتيجي recommandé — تابع وصولها هنا',
+    url: 'https://www-laposte-fr.translate.goog/?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+  },
+  {
+    emoji: '🤝',
+    title: 'OFII — عقد الاندماج والتكوين المدني',
+    description: 'للواصلين الجدد — عقد الاندماج الجمهوري وكورسات اللغة',
+    url: 'https://www-ofii-fr.translate.goog/?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+  },
+];
+
 const CardLink = ({ card }: { card: Card }) => (
   <a
     href={card.url}

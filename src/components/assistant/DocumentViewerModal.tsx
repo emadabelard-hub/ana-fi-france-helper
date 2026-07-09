@@ -291,7 +291,7 @@ const DocumentViewerModal = ({
             <div className="mx-auto w-full max-w-[900px] px-4 py-6">
               <ProtectedDocumentWrapper
                 documentType="letter"
-                returnPath="/assistant"
+                returnPath="/ai-assistant"
                 isPaid={isPaid}
                 onUnlocked={() => setIsPaid(true)}
                 renderDownloadButton={() => (

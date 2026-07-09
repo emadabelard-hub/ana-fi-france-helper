@@ -167,7 +167,7 @@ const CourrierPage = () => {
       {/* HEADER */}
       <header className="bg-card p-3 pt-10 shadow-sm border-b border-border flex items-center gap-3 sticky top-0 z-10">
         <button 
-          onClick={() => navigate('/assistant')} 
+          onClick={() => navigate('/ai-assistant')} 
           className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground"
         >
           <ArrowLeft size={22} />

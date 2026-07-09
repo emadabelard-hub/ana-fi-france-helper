@@ -226,7 +226,7 @@ const AnafyTranslatePage = () => {
 
         {/* Warning */}
         <div className="rounded-2xl border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800/60 p-4 text-right text-[13px] text-amber-900 dark:text-amber-100 leading-relaxed mb-5">
-          ⚠️ الترجمة أوتوماتيكية من جوجل — ممكن تكون مش دقيقة 100%. صفحات تسجيل الدخول ممكن ماتشتغلش مترجمة، ساعتها ادخل الموقع الأصلي.
+          ⚠️ الترجمة أوتوماتيكية من جوجل — ممكن تكون مش دقيقة 100%. صفحات تسجيل الدخول ممكن ماتشتغلش مترجمة، ساعتها ادخل الموقع الأصلي. الترجمة كلها بتتم عن طريق جوجل — مش Anafy Pro. احنا بس بنوصلك للمواقع الرسمية.
         </div>
 
         {/* Ask assistant */}

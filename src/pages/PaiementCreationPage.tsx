@@ -267,6 +267,12 @@ export default function PaiementCreationPage() {
           <Textarea value={managerAddress} onChange={e => setManagerAddress(e.target.value)} dir="ltr" lang="fr" />
         </div>
 
+        <div className="space-y-2">
+          <Label>المدينة (مكان التوقيع)</Label>
+          <Input value={signatureCity} onChange={e => setSignatureCity(e.target.value)} placeholder="Paris" dir="ltr" lang="fr" />
+        </div>
+
+
         {companyType === "SARL" && (
           <>
             <hr />

@@ -212,6 +212,9 @@ const AnafyTranslatePage = () => {
         {/* Chrome translate method */}
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-right text-[14px] text-foreground leading-relaxed mb-5">
           <h3 className="font-bold mb-2 text-[15px]">📱 لو الموقع مش بيفتح مترجم — استخدم ترجمة كروم</h3>
+          <p className="mb-2 font-medium">
+            ℹ️ الترجمة دي بتتم في متصفح كروم على تليفونك انت — Anafy Pro مالهاش أي علاقة بإعدادات تليفونك ولا بتقدر تغير فيها حاجة.
+          </p>
           <ol className="space-y-1.5 list-decimal list-inside pr-1">
             <li>1️⃣ افتح الموقع في متصفح كروم</li>
             <li>2️⃣ اضغط على النقط التلاتة ⋮ فوق على اليمين</li>

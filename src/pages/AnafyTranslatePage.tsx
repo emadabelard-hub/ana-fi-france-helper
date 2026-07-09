@@ -212,6 +212,9 @@ const AnafyTranslatePage = () => {
         {/* Chrome translate method */}
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-right text-[14px] text-foreground leading-relaxed mb-5">
           <h3 className="font-bold mb-2 text-[15px]">📱 لو الموقع مش بيفتح مترجم — استخدم ترجمة كروم</h3>
+          <p className="mb-2 font-medium">
+            ℹ️ الترجمة دي بتتم في متصفح كروم على تليفونك انت — Anafy Pro مالهاش أي علاقة بإعدادات تليفونك ولا بتقدر تغير فيها حاجة.
+          </p>
           <ol className="space-y-1.5 list-decimal list-inside pr-1">
             <li>1️⃣ افتح الموقع في متصفح كروم</li>
             <li>2️⃣ اضغط على النقط التلاتة ⋮ فوق على اليمين</li>
@@ -223,7 +226,7 @@ const AnafyTranslatePage = () => {
 
         {/* Warning */}
         <div className="rounded-2xl border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800/60 p-4 text-right text-[13px] text-amber-900 dark:text-amber-100 leading-relaxed mb-5">
-          ⚠️ الترجمة أوتوماتيكية من جوجل — ممكن تكون مش دقيقة 100%. صفحات تسجيل الدخول ممكن ماتشتغلش مترجمة، ساعتها ادخل الموقع الأصلي.
+          ⚠️ الترجمة أوتوماتيكية من جوجل — ممكن تكون مش دقيقة 100%. صفحات تسجيل الدخول ممكن ماتشتغلش مترجمة، ساعتها ادخل الموقع الأصلي. الترجمة كلها بتتم عن طريق جوجل — مش Anafy Pro. احنا بس بنوصلك للمواقع الرسمية.
         </div>
 
         {/* Ask assistant */}

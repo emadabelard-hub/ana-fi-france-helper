@@ -1,6 +1,17 @@
 import jsPDF from "jspdf";
 
-export interface Associe { name: string; percent: number }
+export interface Personne {
+  fullName: string;
+  birthDate: string;      // dd/mm/yyyy
+  birthPlace: string;     // "Ville, Pays"
+  nationality: string;
+  address: string;
+}
+
+export interface AssocieDetail extends Personne {
+  percent: number;
+  isManager: boolean;
+}
 
 export interface StatutsInput {
   companyName: string;
@@ -8,12 +19,9 @@ export interface StatutsInput {
   activity: string;
   capital: number;
   address: string;
-  managerName: string;
-  managerBirthDate: string;
-  managerNationality: string;
-  managerAddress: string;
   signatureCity?: string;
-  associes?: Associe[];
+  associes: AssocieDetail[];
+  extraManagers?: Personne[];
 }
 
 export interface PrevisionnelInput {
@@ -24,8 +32,7 @@ export interface PrevisionnelInput {
   is_btp?: boolean;
 }
 
-// Formatte un montant avec espace NORMAL comme séparateur de milliers
-// (jsPDF ne rend pas correctement l'espace insécable de toLocaleString).
+// Formatte un montant avec espace NORMAL (jsPDF gère mal l'espace insécable)
 export function formatEuro(n: number): string {
   const rounded = Math.round(n);
   const s = Math.abs(rounded).toString();
@@ -90,6 +97,10 @@ function extractCity(address: string): string {
   return last.replace(/^\d{4,5}\s*/, "").trim() || last;
 }
 
+function civilStateSentence(p: Personne): string {
+  return `M/Mme ${p.fullName}, né(e) le ${p.birthDate} à ${p.birthPlace}, de nationalité ${p.nationality}, demeurant ${p.address}`;
+}
+
 export function buildStatutsPdf(body: StatutsInput): jsPDF {
   const isSASU = body.companyType === "SASU";
   const city = (body.signatureCity && body.signatureCity.trim()) || extractCity(body.address);
@@ -105,7 +116,13 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     : "« société à responsabilité limitée »";
   const initiales = isSASU ? "SASU" : "SARL";
   const titreParts = isSASU ? "actions" : "parts sociales";
-  const titrePart = isSASU ? "action" : "part sociale";
+
+  const associes = body.associes ?? [];
+  const extraManagers = body.extraManagers ?? [];
+  const managers: Personne[] = [
+    ...associes.filter(a => a.isManager),
+    ...extraManagers,
+  ];
 
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   doc.setFont("times", "normal");
@@ -141,7 +158,6 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
   };
 
   const addArticle = (title: string, paragraphs: string[]) => {
-    // Groupement : réserver la place du titre + au moins la 1re ligne du corps
     const size = 12;
     doc.setFont("times", "bold");
     doc.setFontSize(size);
@@ -158,13 +174,12 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     y += 2;
   };
 
-  // ═══ PAGE 1 : EN-TÊTE ═══
+  // ═══ EN-TÊTE ═══
   addText("STATUTS CONSTITUTIFS", { bold: true, size: 18, align: "center", spacing: 4 });
   addText(body.companyName.toUpperCase(), { bold: true, size: 15, align: "center", spacing: 3 });
   addText(formeLongue, { italic: true, size: 12, align: "center", spacing: 10 });
 
   // Encadré synthèse
-  const boxTop = y;
   const boxLines = [
     `Dénomination :  ${body.companyName}`,
     `Forme juridique :  ${initiales}`,
@@ -174,7 +189,6 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
   ];
   const boxLineH = 6;
   const boxPad = 4;
-  // Calcul hauteur en tenant compte du wrap éventuel de l'adresse
   let boxHeight = boxPad * 2;
   const wrappedBoxLines: string[][] = [];
   doc.setFont("times", "normal");
@@ -196,6 +210,23 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     }
   }
   y += boxHeight + 10;
+
+  // ═══ LES SOUSSIGNÉS ═══
+  addText("LES SOUSSIGNÉS", { bold: true, size: 13, spacing: 4 });
+  if (associes.length === 1) {
+    addText(`${civilStateSentence(associes[0])}.`, { spacing: 4 });
+  } else {
+    associes.forEach((a, i) => {
+      addText(`${i + 1}. ${civilStateSentence(a)} ;`, { spacing: 2 });
+    });
+    y += 2;
+  }
+  addText(
+    isSASU
+      ? "Ont établi ainsi qu'il suit les statuts de la société par actions simplifiée unipersonnelle qu'ils ont convenu de constituer."
+      : "Ont établi ainsi qu'il suit les statuts de la société à responsabilité limitée qu'ils ont convenu de constituer.",
+    { spacing: 8 }
+  );
 
   // ═══ ARTICLES ═══
   addArticle("Article 1 — Forme", [
@@ -220,44 +251,55 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     "La durée de la société est fixée à 99 années à compter de son immatriculation au Registre du Commerce et des Sociétés, sauf dissolution anticipée ou prorogation.",
   ]);
 
-  // Article 6 — Apports et capital
+  // Article 6 — Apports et capital (répartition détaillée)
   const article6: string[] = [];
   if (isSASU) {
+    const unique = associes[0];
     article6.push(
-      `L'associé unique apporte en numéraire la somme de ${capitalStr} (${capitalLettres} euros). Le capital social est fixé à ${capitalStr} (${capitalLettres} euros), divisé en ${body.capital} ${titreParts} de 1 € chacune, entièrement souscrites et libérées.`
+      `L'associé unique, ${unique ? unique.fullName : ""}, apporte en numéraire la somme de ${capitalStr} (${capitalLettres} euros). Le capital social est fixé à ${capitalStr} (${capitalLettres} euros), divisé en ${body.capital} ${titreParts} de 1 € chacune, entièrement souscrites et libérées, attribuées en totalité à l'associé unique.`
     );
   } else {
     article6.push(
       `Les associés apportent en numéraire la somme totale de ${capitalStr} (${capitalLettres} euros). Le capital social est fixé à ${capitalStr} (${capitalLettres} euros), divisé en ${body.capital} ${titreParts} de 1 € chacune, entièrement souscrites et libérées.`
     );
-    const assoc = body.associes ?? [];
-    if (assoc.length > 0) {
-      const lignes = assoc
-        .map(a => `— ${a.name} : ${a.percent}% du capital, soit ${Math.round((a.percent / 100) * body.capital)} ${a.percent === 0 || Math.round((a.percent / 100) * body.capital) > 1 ? "parts sociales" : "part sociale"}`)
-        .join("\n");
-      article6.push(`Répartition entre les associés :\n${lignes}`);
-    } else {
-      article6.push(`Répartition : ${body.managerName} : 100% du capital.`);
-    }
+    const lignes = associes.map(a => {
+      const nb = Math.round((a.percent / 100) * body.capital);
+      const noun = nb > 1 ? "parts sociales" : "part sociale";
+      return `— ${a.fullName} : ${nb} ${noun} (${a.percent}%), soit un apport de ${formatEuro(nb)}`;
+    }).join("\n");
+    article6.push(`Répartition entre les associés :\n${lignes}`);
+    const totalPct = associes.reduce((s, a) => s + a.percent, 0);
+    article6.push(`Total : ${body.capital} ${titreParts} — ${totalPct}% du capital.`);
   }
   addArticle("Article 6 — Apports et capital social", article6);
 
-  // Article 7 — Présidence / Gérance
-  const adresseDirigeant = body.managerAddress || body.address;
+  // Article 7 — Présidence / Gérance (tous les dirigeants)
   if (isSASU) {
-    addArticle("Article 7 — Présidence", [
-      `La société est dirigée et administrée par un Président, personne physique ou morale, associé ou non.`,
-      `Le premier Président est : M/Mme ${body.managerName}, né(e) le ${body.managerBirthDate}, de nationalité ${body.managerNationality}, demeurant ${adresseDirigeant}.`,
-      `Le Président est investi des pouvoirs les plus étendus pour agir en toute circonstance au nom de la société, dans la limite de l'objet social. Il représente la société à l'égard des tiers.`,
-      `Le Président est nommé sans limitation de durée. Il peut démissionner à tout moment sous réserve d'un préavis raisonnable. Sa rémunération est fixée par décision de l'associé unique.`,
-    ]);
+    const paras: string[] = [
+      "La société est dirigée et administrée par un Président, personne physique ou morale, associé ou non.",
+    ];
+    if (managers.length === 1) {
+      paras.push(`Le premier Président est : ${civilStateSentence(managers[0])}.`);
+    } else if (managers.length > 1) {
+      paras.push("Les premiers Présidents sont :");
+      managers.forEach((m, i) => paras.push(`${i + 1}. ${civilStateSentence(m)}.`));
+    }
+    paras.push("Le Président est investi des pouvoirs les plus étendus pour agir en toute circonstance au nom de la société, dans la limite de l'objet social. Il représente la société à l'égard des tiers.");
+    paras.push("Le Président est nommé sans limitation de durée. Il peut démissionner à tout moment sous réserve d'un préavis raisonnable. Sa rémunération est fixée par décision de l'associé unique.");
+    addArticle("Article 7 — Présidence", paras);
   } else {
-    addArticle("Article 7 — Gérance", [
-      `La société est administrée par un ou plusieurs gérants, personnes physiques, associés ou non.`,
-      `Le premier gérant est : M/Mme ${body.managerName}, né(e) le ${body.managerBirthDate}, de nationalité ${body.managerNationality}, demeurant ${adresseDirigeant}.`,
-      `Le gérant est investi des pouvoirs les plus étendus pour agir au nom de la société dans la limite de l'objet social et sous réserve des pouvoirs expressément attribués aux associés par la loi ou les présents statuts.`,
-      `Le gérant est nommé sans limitation de durée. Sa rémunération est fixée par décision collective des associés.`,
-    ]);
+    const paras: string[] = [
+      "La société est administrée par un ou plusieurs gérants, personnes physiques, associés ou non.",
+    ];
+    if (managers.length === 1) {
+      paras.push(`Le premier gérant est : ${civilStateSentence(managers[0])}.`);
+    } else if (managers.length > 1) {
+      paras.push("Les premiers gérants (co-gérance) sont :");
+      managers.forEach((m, i) => paras.push(`${i + 1}. ${civilStateSentence(m)}.`));
+    }
+    paras.push("Chaque gérant est investi des pouvoirs les plus étendus pour agir au nom de la société dans la limite de l'objet social et sous réserve des pouvoirs expressément attribués aux associés par la loi ou les présents statuts.");
+    paras.push("Le(s) gérant(s) est(sont) nommé(s) sans limitation de durée. Leur rémunération est fixée par décision collective des associés.");
+    addArticle("Article 7 — Gérance", paras);
   }
 
   addArticle("Article 8 — Exercice social", [
@@ -308,21 +350,32 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     `La dissolution entraîne la liquidation, effectuée par le ${dirigeantTitre} ou tout liquidateur désigné par ${isSASU ? "l'associé unique" : "les associés"}, qui dispose des pouvoirs les plus étendus pour réaliser l'actif et apurer le passif.`,
   ]);
 
-  // ═══ FIN DU DOCUMENT ═══
-  ensureSpace(45);
+  // ═══ SIGNATURES ═══
+  ensureSpace(60);
   y += 6;
-  addText(`Fait à ${city}, le ${today}, en trois exemplaires originaux.`, { spacing: 14 });
+  addText(`Fait à ${city}, le ${today}, en trois exemplaires originaux.`, { spacing: 12 });
+
+  const signatureBlock = (label: string, name: string) => {
+    ensureSpace(24);
+    addText(label, { spacing: 10 });
+    addText("_______________________________________", { spacing: 3 });
+    addText(name, { bold: true, spacing: 6 });
+  };
+
   if (isSASU) {
-    addText("Signature de l'associé unique et Président :", { spacing: 12 });
-    addText("_______________________________________", { spacing: 4 });
-    addText(`M/Mme ${body.managerName} — associé unique et Président`, { bold: true });
+    const u = associes[0];
+    signatureBlock("Signature de l'associé unique et Président :", `M/Mme ${u?.fullName ?? ""} — associé unique et Président`);
   } else {
-    addText("Signature du gérant :", { spacing: 12 });
-    addText("_______________________________________", { spacing: 4 });
-    addText(`M/Mme ${body.managerName} — gérant`, { bold: true });
+    associes.forEach((a) => {
+      const roles = a.isManager ? "associé et gérant" : "associé";
+      signatureBlock(`Signature de ${a.fullName} :`, `M/Mme ${a.fullName} — ${roles}`);
+    });
+    extraManagers.forEach((m) => {
+      signatureBlock(`Signature de ${m.fullName} :`, `M/Mme ${m.fullName} — gérant non associé`);
+    });
   }
 
-  // Footer + pagination sur chaque page
+  // Footer + pagination
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -338,7 +391,6 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     doc.text(`Page ${i} / ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: "right" });
     doc.setTextColor(0);
   }
-
 
   return doc;
 }
@@ -373,107 +425,3 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   const usable = pageWidth - 2 * margin;
   let y = margin;
   const today = new Date().toLocaleDateString("fr-FR");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("PRÉVISIONNEL FINANCIER — ANNÉE 1", pageWidth / 2, y, { align: "center" });
-  y += 8;
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "normal");
-  doc.text(`${body.activite} — ${body.type_societe}`, pageWidth / 2, y, { align: "center" });
-  y += 6;
-  doc.setFontSize(10);
-  doc.text(`Date de génération : ${today}`, pageWidth / 2, y, { align: "center" });
-  y += 10;
-
-  const drawRow = (label: string, value: string, bold = false) => {
-    if (y > 270) { doc.addPage(); y = margin; }
-    doc.setFont("helvetica", bold ? "bold" : "normal");
-    doc.setFontSize(10);
-    doc.rect(margin, y - 4, usable, 7);
-    doc.text(label, margin + 2, y);
-    doc.text(value, margin + usable - 2, y, { align: "right" });
-    y += 7;
-  };
-
-  const sectionTitle = (t: string) => {
-    y += 4;
-    if (y > 265) { doc.addPage(); y = margin; }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text(t, margin, y);
-    y += 6;
-  };
-
-  sectionTitle("1. CHARGES ANNUELLES ESTIMÉES");
-  drawRow(`Cotisations URSSAF (${isAE ? "22%" : "45%"} du CA)`, eur(urssaf));
-  drawRow("CFE (Cotisation Foncière des Entreprises)", eur(cfe));
-  if (body.is_btp) drawRow("Assurance décennale (BTP)", eur(decennale));
-  drawRow("RC Pro", eur(rcpro));
-  drawRow("Comptable", eur(comptable));
-  drawRow("Frais bancaires", eur(banque));
-  drawRow("Matériel et fournitures (15% du CA)", eur(materiel));
-  drawRow("TOTAL CHARGES", eur(totalCharges), true);
-
-  sectionTitle("2. RÉSULTAT PRÉVISIONNEL");
-  drawRow("Chiffre d'affaires estimé", eur(ca));
-  drawRow("Total charges", eur(totalCharges));
-  drawRow("Résultat avant impôt", eur(resultatAvantImpot));
-  if (isSociete) drawRow("Impôt sur les Sociétés (15% / 25%)", eur(is));
-  drawRow("Résultat net estimé", eur(resultatNet), true);
-  drawRow("Équivalent mensuel net", eur(mensuel), true);
-
-  sectionTitle("3. SEUILS IMPORTANTS À CONNAÎTRE");
-  const seuils: [string, string, string][] = [
-    ["Franchise TVA", "37 500 €", "En dessous : pas de TVA à facturer"],
-    ["Plafond Auto-entrepreneur BTP", "77 700 €", "Au-delà : changer de statut obligatoire"],
-    ["Taux IS réduit", "42 500 €", "En dessous : IS à 15% seulement"],
-    ["ACRE", "Année 1", "Réduction 50% cotisations si éligible"],
-  ];
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  const colW = [55, 35, usable - 90];
-  if (y > 260) { doc.addPage(); y = margin; }
-  doc.rect(margin, y - 4, colW[0], 7);
-  doc.rect(margin + colW[0], y - 4, colW[1], 7);
-  doc.rect(margin + colW[0] + colW[1], y - 4, colW[2], 7);
-  doc.text("Seuil", margin + 2, y);
-  doc.text("Montant", margin + colW[0] + 2, y);
-  doc.text("Signification", margin + colW[0] + colW[1] + 2, y);
-  y += 7;
-  doc.setFont("helvetica", "normal");
-  for (const [s, m, sig] of seuils) {
-    if (y > 270) { doc.addPage(); y = margin; }
-    const sigLines = doc.splitTextToSize(sig, colW[2] - 4);
-    const h = Math.max(7, sigLines.length * 5 + 2);
-    doc.rect(margin, y - 4, colW[0], h);
-    doc.rect(margin + colW[0], y - 4, colW[1], h);
-    doc.rect(margin + colW[0] + colW[1], y - 4, colW[2], h);
-    doc.text(s, margin + 2, y);
-    doc.text(m, margin + colW[0] + 2, y);
-    doc.text(sigLines, margin + colW[0] + colW[1] + 2, y);
-    y += h;
-  }
-
-  y += 8;
-  if (y > 260) { doc.addPage(); y = margin; }
-  doc.setFillColor(255, 248, 220);
-  doc.rect(margin, y - 4, usable, 18, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text("Conseil Anafy Pro", margin + 3, y + 1);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  const conseil = "Ces chiffres sont des estimations. Consultez un expert-comptable pour valider votre prévisionnel avant dépôt au greffe.";
-  doc.text(doc.splitTextToSize(conseil, usable - 6), margin + 3, y + 6);
-
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(8);
-    doc.text("Document généré par Anafy Pro — à titre indicatif", pageWidth / 2, 290, { align: "center" });
-  }
-
-  return doc;
-}

@@ -34,7 +34,8 @@ const SECTION_1: Card[] = [
     emoji: '💰',
     title: 'الضرائب impots.gouv.fr',
     description: 'الموقع الرسمي للضرائب الفرنسية',
-    url: 'https://www-impots-gouv-fr.translate.goog/accueil?_x_tr_sl=fr&_x_tr_tl=ar&_x_tr_hl=ar',
+    url: 'https://www.impots.gouv.fr/accueil',
+    badge: '🔒 افتحه واستخدم ترجمة كروم (شوف الطريقة تحت)',
   },
   {
     emoji: '🔍',

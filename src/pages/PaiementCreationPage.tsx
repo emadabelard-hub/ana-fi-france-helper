@@ -563,14 +563,75 @@ export default function PaiementCreationPage() {
       </Card>
 
       <Card className="p-5 space-y-4">
-        <h2 className="text-xl font-bold">📊 الدراسة المالية</h2>
+        <h2 className="text-xl font-bold">📊 الأرقام المتوقعة للسنة الأولى</h2>
+
         <div className="space-y-2">
-          <Label>الإيرادات السنوية المتوقعة (CA annuel en €)</Label>
-          <Input type="number" value={caEstime} onChange={e => setCaEstime(Number(e.target.value))} dir="ltr" lang="fr" />
+          <Label>رقم الأعمال المتوقع (CA annuel en €) *</Label>
+          <Input type="number" inputMode="decimal" value={caEstime}
+            onChange={e => setCaEstime(Number(e.target.value))} dir="ltr" lang="fr" />
         </div>
-        <label className="flex items-center gap-2 cursor-pointer">
+
+        <div className="space-y-2">
+          <Label>أجرك الشهري كمدير (net mensuel en €) *</Label>
+          <Input type="number" inputMode="decimal" value={remuDirigeant}
+            onChange={e => setRemuDirigeant(Number(e.target.value))} dir="ltr" lang="fr" />
+          <p className="text-xs text-muted-foreground">لو مش هتاخد راتب: سيبها 0</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>عدد الموظفين (غير المدير)</Label>
+          <Input type="number" inputMode="decimal" value={nbSalaries}
+            onChange={e => setNbSalaries(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+
+        {nbSalaries > 0 && (
+          <div className="space-y-2">
+            <Label>متوسط الأجر الشهري الصافي للموظف الواحد (€)</Label>
+            <Input type="number" inputMode="decimal" value={salaireMoyen}
+              onChange={e => setSalaireMoyen(Number(e.target.value))} dir="ltr" lang="fr" />
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label>تكلفة العربية شهرياً (leasing + بنزين + تأمين)</Label>
+          <Input type="number" inputMode="decimal" value={vehiculeMensuel}
+            onChange={e => setVehiculeMensuel(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+
+        <div className="space-y-2">
+          <Label>الإيجار الشهري (محل/دبو)</Label>
+          <Input type="number" inputMode="decimal" value={loyerMensuel}
+            onChange={e => setLoyerMensuel(Number(e.target.value))} dir="ltr" lang="fr" />
+          <p className="text-xs text-muted-foreground">لو شغال من البيت: سيبها 0</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>التأمينات السنوية (décennale + RC Pro)</Label>
+          <Input type="number" inputMode="decimal" value={assurancesAnnuelles}
+            onChange={e => setAssurancesAnnuelles(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+
+        <div className="space-y-2">
+          <Label>المحاسب سنوياً (€)</Label>
+          <Input type="number" inputMode="decimal" value={comptableAnnuel}
+            onChange={e => setComptableAnnuel(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+
+        <div className="space-y-2">
+          <Label>مشتريات المواد سنوياً (€) {isBtp && "*"}</Label>
+          <Input type="number" inputMode="decimal" value={achatsMateriaux}
+            onChange={e => setAchatsMateriaux(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+
+        <div className="space-y-2">
+          <Label>مصاريف تانية سنوياً (تليفون، بنك، عدد...)</Label>
+          <Input type="number" inputMode="decimal" value={autresCharges}
+            onChange={e => setAutresCharges(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+
+        <label className="flex items-center gap-2 cursor-pointer pt-2 border-t">
           <Checkbox checked={isBtp} onCheckedChange={(v) => setIsBtp(Boolean(v))} />
-          <span>نوع النشاط BTP ؟ (يضيف التأمين العشري)</span>
+          <span>نوع النشاط BTP ؟</span>
         </label>
       </Card>
 

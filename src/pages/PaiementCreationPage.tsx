@@ -19,24 +19,48 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 function containsArabic(text: string): boolean {
   return /[\u0600-\u06FF]/.test(text || "");
 }
-async function translateArToFr(text: string): Promise<string> {
+async function translateArToFr(text: string, instruction?: string): Promise<string> {
   const { data, error } = await supabase.functions.invoke("btp-translate", {
-    body: { text, sourceLang: "ar", targetLang: "fr" },
+    body: { text, sourceLang: "ar", targetLang: "fr", ...(instruction ? { instruction } : {}) },
   });
   if (error) throw new Error(error.message || "Traduction impossible");
   const t = (data as { translated?: string })?.translated?.trim();
   if (!t) throw new Error("Traduction vide");
   return t;
 }
-async function trIfAr(text: string): Promise<string> {
+async function trIfAr(text: string, instruction?: string): Promise<string> {
   if (!text) return text;
   if (!containsArabic(text)) return text;
-  return await translateArToFr(text);
+  return await translateArToFr(text, instruction);
 }
 
+// Normalise une nationalité au féminin français, minuscule (ex: "italienne", "égyptienne")
+function normalizeNationalityFeminine(input: string): string {
+  if (!input) return input;
+  let s = input.trim().toLocaleLowerCase("fr-FR");
+  // Si masculin en -ien / -ain / -ais / -ois / -in → féminin
+  // Cas déjà féminins : se termine par "e" → on garde
+  const alreadyFeminine = /(ienne|aine|aise|oise|ine|ande|onne|ègre|èque|ane|iène)$/.test(s);
+  if (!alreadyFeminine) {
+    if (/ien$/.test(s)) s = s.replace(/ien$/, "ienne");
+    else if (/ain$/.test(s)) s = s.replace(/ain$/, "aine");
+    else if (/ais$/.test(s)) s = s.replace(/ais$/, "aise");
+    else if (/ois$/.test(s)) s = s.replace(/ois$/, "oise");
+    else if (/in$/.test(s)) s = s.replace(/in$/, "ine");
+    else if (/and$/.test(s)) s = s.replace(/and$/, "ande");
+    else if (/on$/.test(s)) s = s.replace(/on$/, "onne");
+    else if (!/e$/.test(s)) s = s + "e";
+  }
+  return s;
+}
+const NATIONALITY_INSTRUCTION =
+  "Traduis en français le gentilé (nationalité) uniquement. Réponds UNIQUEMENT par un seul mot au féminin singulier, en minuscule, sans article ni ponctuation (ex: italienne, égyptienne, française, marocaine, tunisienne, algérienne, syrienne, libanaise, sénégalaise).";
+
 // ─────────── TYPES FORMULAIRE ─────────── //
+type Gender = "M" | "F";
 type BirthParts = { d: string; m: string; y: string };
 type AssocieForm = {
+  gender: Gender;
   fullName: string;
   birth: BirthParts;
   birthPlace: string;
@@ -46,6 +70,7 @@ type AssocieForm = {
   isManager: boolean;
 };
 type ManagerForm = {
+  gender: Gender;
   fullName: string;
   birth: BirthParts;
   birthPlace: string;
@@ -54,10 +79,12 @@ type ManagerForm = {
 };
 
 const emptyAssocie = (percent = 0, isManager = false): AssocieForm => ({
+  gender: "M",
   fullName: "", birth: { d: "", m: "", y: "" }, birthPlace: "", nationality: "", address: "",
   percent, isManager,
 });
 const emptyManager = (): ManagerForm => ({
+  gender: "M",
   fullName: "", birth: { d: "", m: "", y: "" }, birthPlace: "", nationality: "", address: "",
 });
 
@@ -241,24 +268,32 @@ export default function PaiementCreationPage() {
       ]);
 
       const associesFr: AssocieDetail[] = await Promise.all(
-        associes.map(async (a) => ({
-          fullName: await trIfAr(a.fullName),
-          birthDate: birthToStr(a.birth),
-          birthPlace: await trIfAr(a.birthPlace),
-          nationality: await trIfAr(a.nationality),
-          address: await trIfAr(a.address),
-          percent: Number(a.percent) || 0,
-          isManager: !!a.isManager,
-        }))
+        associes.map(async (a) => {
+          const natRaw = await trIfAr(a.nationality, NATIONALITY_INSTRUCTION);
+          return {
+            gender: a.gender,
+            fullName: await trIfAr(a.fullName),
+            birthDate: birthToStr(a.birth),
+            birthPlace: await trIfAr(a.birthPlace),
+            nationality: normalizeNationalityFeminine(natRaw),
+            address: await trIfAr(a.address),
+            percent: Number(a.percent) || 0,
+            isManager: !!a.isManager,
+          };
+        })
       );
       const extraManagersFr: Personne[] = await Promise.all(
-        extraManagers.map(async (m) => ({
-          fullName: await trIfAr(m.fullName),
-          birthDate: birthToStr(m.birth),
-          birthPlace: await trIfAr(m.birthPlace),
-          nationality: await trIfAr(m.nationality),
-          address: await trIfAr(m.address),
-        }))
+        extraManagers.map(async (m) => {
+          const natRaw = await trIfAr(m.nationality, NATIONALITY_INSTRUCTION);
+          return {
+            gender: m.gender,
+            fullName: await trIfAr(m.fullName),
+            birthDate: birthToStr(m.birth),
+            birthPlace: await trIfAr(m.birthPlace),
+            nationality: normalizeNationalityFeminine(natRaw),
+            address: await trIfAr(m.address),
+          };
+        })
       );
 
       toast.dismiss(tid);
@@ -388,6 +423,14 @@ export default function PaiementCreationPage() {
             </div>
 
             <div className="space-y-2">
+              <Label>الجنس</Label>
+              <RadioGroup value={a.gender} onValueChange={(v) => updateAssocie(i, "gender", v as Gender)} className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="M" /> السيد (M.)</label>
+                <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="F" /> السيدة (Mme)</label>
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-2">
               <Label>الاسم الكامل</Label>
               <Input value={a.fullName} onChange={e => updateAssocie(i, "fullName", e.target.value)} />
             </div>
@@ -446,6 +489,13 @@ export default function PaiementCreationPage() {
                   <Button type="button" size="icon" variant="ghost" onClick={() => removeManager(i)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
+                </div>
+                <div className="space-y-2">
+                  <Label>الجنس</Label>
+                  <RadioGroup value={m.gender} onValueChange={(v) => updateManager(i, "gender", v as Gender)} className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="M" /> السيد (M.)</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="F" /> السيدة (Mme)</label>
+                  </RadioGroup>
                 </div>
                 <div className="space-y-2">
                   <Label>الاسم الكامل</Label>

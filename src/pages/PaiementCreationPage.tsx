@@ -278,6 +278,10 @@ export default function PaiementCreationPage() {
       toast.error("اكتب الإيرادات السنوية المتوقعة");
       return;
     }
+    if (needPrevi && isBtp && (!achatsMateriaux || achatsMateriaux <= 0)) {
+      toast.error("اكتب مشتريات المواد السنوية (إجباري للـ BTP)");
+      return;
+    }
 
     setGenerating(true);
     const tid = toast.loading("جاري الترجمة...");

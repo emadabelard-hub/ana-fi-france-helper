@@ -706,3 +706,317 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   return doc;
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// DOCUMENT — ATTESTATION DE NON-CONDAMNATION ET DE FILIATION
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface AttestationInput {
+  person: Personne;
+  denomination: string;
+  role: "gérant" | "Président";
+  signatureCity: string;
+}
+
+function fillOnesFooter(doc: jsPDF, pageWidth: number, usableWidth: number, margin: number, pageHeight: number) {
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFont("times", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(90);
+    doc.text(
+      "Document généré par Anafy Pro — anafypro.com — Ce document est fourni à titre indicatif et doit être validé par un professionnel juridique.",
+      pageWidth / 2, pageHeight - 10, { align: "center", maxWidth: usableWidth }
+    );
+    doc.setFont("times", "normal");
+    doc.setFontSize(9);
+    doc.text(`Page ${i} / ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: "right" });
+    doc.setTextColor(0);
+  }
+}
+
+export function buildAttestationPdf(body: AttestationInput): jsPDF {
+  const { person: p, denomination, role, signatureCity } = body;
+  const isF = p.gender === "F";
+  const soussigne = isF ? "Je soussignée" : "Je soussigné";
+  const filsFille = isF ? "Fille" : "Fils";
+  const neE = isF ? "née" : "né";
+  const declare = isF ? "Déclare" : "Déclare";
+  const informe = isF ? "Je suis informée" : "Je suis informé";
+  const city = titleCasePlace(signatureCity || extractCity(p.address));
+  const today = new Date().toLocaleDateString("fr-FR");
+  const addr = titleCasePlace(p.address);
+  const bp = titleCasePlace(p.birthPlace);
+  // Extract country from birthPlace ("Ville, Pays") if present
+  const bpParts = p.birthPlace.split(",").map(s => s.trim()).filter(Boolean);
+  const pays = bpParts.length > 1 ? bpParts[bpParts.length - 1] : "";
+  const bpCity = bpParts.length > 1 ? bpParts.slice(0, -1).join(", ") : p.birthPlace;
+  const bpCityPretty = titleCasePlace(bpCity);
+  const paysPretty = titleCasePlace(pays);
+  const naissanceLieu = pays ? `${bpCityPretty} (${paysPretty})` : bp;
+
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  doc.setFont("times", "normal");
+  const margin = 22;
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const usableWidth = pageWidth - 2 * margin;
+  let y = margin;
+
+  const addText = (text: string, opts: { bold?: boolean; size?: number; align?: "left" | "center"; spacing?: number } = {}) => {
+    doc.setFont("times", opts.bold ? "bold" : "normal");
+    const size = opts.size ?? 11;
+    doc.setFontSize(size);
+    const lines = doc.splitTextToSize(text, usableWidth);
+    const lh = 0.55 * size;
+    for (const line of lines) {
+      doc.text(line, opts.align === "center" ? pageWidth / 2 : margin, y, {
+        align: opts.align === "center" ? "center" : "left",
+      });
+      y += lh;
+    }
+    y += opts.spacing ?? 3;
+  };
+
+  addText("ATTESTATION SUR L'HONNEUR", { bold: true, size: 16, align: "center", spacing: 2 });
+  addText("DE NON-CONDAMNATION ET DE FILIATION", { bold: true, size: 16, align: "center", spacing: 12 });
+
+  addText(
+    `${soussigne} ${civilite(p.gender)} ${p.fullName}, ${neE} le ${p.birthDate} à ${naissanceLieu}, de nationalité ${p.nationality}, demeurant ${addr},`,
+    { spacing: 6 }
+  );
+
+  const pere = titleCasePlace(p.fatherName || "");
+  const mere = titleCasePlace(p.motherName || "");
+  addText(`${filsFille} de ${pere} et de ${mere},`, { spacing: 6 });
+
+  addText(
+    `${declare} sur l'honneur, conformément à l'article A. 123-51 du Code de commerce, n'avoir fait l'objet d'aucune condamnation pénale, ni de sanction civile ou administrative de nature à m'interdire de gérer, d'administrer ou de diriger une personne morale, ou d'exercer une activité commerciale ou artisanale.`,
+    { spacing: 5 }
+  );
+
+  addText(
+    `Cette attestation est établie pour être produite à l'appui de la demande d'immatriculation de la société ${denomination} au Registre du Commerce et des Sociétés, dans le cadre de mes fonctions de ${role} de ladite société.`,
+    { spacing: 5 }
+  );
+
+  addText(
+    `${informe} que toute fausse déclaration est passible des sanctions prévues par l'article 441-1 du Code pénal.`,
+    { spacing: 12 }
+  );
+
+  addText(`Fait à ${city}, le ${today}.`, { spacing: 18 });
+  addText("Signature :", { spacing: 8 });
+  addText("_______________________________________", { spacing: 4 });
+  addText(`${civilite(p.gender)} ${p.fullName}`, { bold: true });
+
+  fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);
+  return doc;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DOCUMENT — BÉNÉFICIAIRES EFFECTIFS (fiche préparatoire)
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface BeneficiairesInput {
+  companyName: string;
+  associes: AssocieDetail[];
+  extraManagers?: Personne[];
+  companyType: "SASU" | "SARL";
+}
+
+export function buildBeneficiairesPdf(body: BeneficiairesInput): jsPDF {
+  const associes = body.associes ?? [];
+  const extraManagers = body.extraManagers ?? [];
+  const isSAS = body.companyType === "SASU";
+  const roleTitle = isSAS ? "Président" : "gérant";
+
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  doc.setFont("times", "normal");
+  const margin = 22;
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const usableWidth = pageWidth - 2 * margin;
+  const bottomLimit = 275;
+  let y = margin;
+
+  const ensureSpace = (needed: number) => {
+    if (y + needed > bottomLimit) { doc.addPage(); y = margin; }
+  };
+  const addText = (text: string, opts: { bold?: boolean; italic?: boolean; size?: number; align?: "left" | "center"; spacing?: number } = {}) => {
+    const style = opts.bold && opts.italic ? "bolditalic" : opts.bold ? "bold" : opts.italic ? "italic" : "normal";
+    doc.setFont("times", style);
+    const size = opts.size ?? 11;
+    doc.setFontSize(size);
+    const lines = doc.splitTextToSize(text, usableWidth);
+    const lh = 0.55 * size;
+    for (const line of lines) {
+      if (y > bottomLimit) { doc.addPage(); y = margin; }
+      doc.text(line, opts.align === "center" ? pageWidth / 2 : margin, y, {
+        align: opts.align === "center" ? "center" : "left",
+      });
+      y += lh;
+    }
+    y += opts.spacing ?? 3;
+  };
+
+  addText("BÉNÉFICIAIRES EFFECTIFS", { bold: true, size: 16, align: "center", spacing: 2 });
+  addText("FICHE PRÉPARATOIRE", { bold: true, size: 14, align: "center", spacing: 3 });
+  addText(
+    "À recopier lors de la déclaration en ligne sur le Guichet Unique INPI (la déclaration officielle se fait sur procedures.inpi.fr).",
+    { italic: true, size: 10, align: "center", spacing: 8 }
+  );
+  addText(`Société : ${body.companyName}`, { bold: true, size: 12, spacing: 8 });
+
+  const managerIds = new Set(associes.filter(a => a.isManager).map(a => a.fullName));
+  const beneficiaires = associes.filter(a => a.percent > 25);
+
+  const printBeneficiaire = (p: AssocieDetail | Personne, n: number, opts: { percent?: number; isManager?: boolean; note?: string }) => {
+    ensureSpace(60);
+    addText(`Bénéficiaire effectif n°${n}`, { bold: true, size: 12, spacing: 3 });
+    const bp = titleCasePlace(p.birthPlace);
+    const addr = titleCasePlace(p.address);
+    addText(`• Nom complet : ${p.fullName}`, { spacing: 1 });
+    addText(`• Date et lieu de naissance : ${p.birthDate} à ${bp}`, { spacing: 1 });
+    addText(`• Nationalité : ${p.nationality}`, { spacing: 1 });
+    addText(`• Adresse personnelle : ${addr}`, { spacing: 1 });
+    if (typeof opts.percent === "number") {
+      addText(`• Nature du contrôle : Détention de ${opts.percent}% du capital et des droits de vote`, { spacing: 1 });
+    } else if (opts.note) {
+      addText(`• Nature du contrôle : ${opts.note}`, { spacing: 1 });
+    }
+    if (opts.isManager) {
+      addText(`• Exerce également la fonction de ${roleTitle}`, { spacing: 1 });
+    }
+    y += 4;
+  };
+
+  if (beneficiaires.length > 0) {
+    beneficiaires.forEach((a, i) => {
+      printBeneficiaire(a, i + 1, { percent: a.percent, isManager: a.isManager });
+    });
+  } else {
+    // Par défaut : dirigeants
+    addText(
+      "Aucun associé ne détient plus de 25% du capital. En application de l'article R. 561-1 du Code monétaire et financier, le(s) dirigeant(s) doi(ven)t être déclaré(s) comme bénéficiaire(s) effectif(s) par défaut.",
+      { italic: true, spacing: 6 }
+    );
+    const dirigeants: Array<AssocieDetail | Personne> = [
+      ...associes.filter(a => a.isManager),
+      ...extraManagers,
+    ];
+    if (dirigeants.length === 0 && associes.length > 0) dirigeants.push(associes[0]);
+    dirigeants.forEach((d, i) => {
+      const asAss = associes.find(a => a.fullName === d.fullName);
+      printBeneficiaire(d, i + 1, {
+        percent: asAss ? asAss.percent : undefined,
+        isManager: true,
+        note: asAss ? undefined : `Représentant légal (${roleTitle}) — bénéficiaire par défaut`,
+      });
+    });
+  }
+
+  ensureSpace(28);
+  y += 4;
+  doc.setDrawColor(200, 150, 0);
+  doc.setFillColor(255, 248, 220);
+  doc.setLineWidth(0.5);
+  doc.rect(margin, y, usableWidth, 20, "FD");
+  doc.setFont("times", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(120, 80, 0);
+  const warn = "الورقة دي للتحضير بس — التصريح الرسمي بيتم أونلاين على موقع INPI وقت تسجيل الشركة.";
+  doc.text("⚠️ " + warn, pageWidth / 2, y + 12, { align: "center", maxWidth: usableWidth - 6 });
+  doc.setTextColor(0);
+  y += 24;
+
+  fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);
+  return doc;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DOCUMENT — GUIDE DE DÉPÔT + LISTE DES PIÈCES (bilingue)
+// ═══════════════════════════════════════════════════════════════════════
+
+export function buildGuideDepotPdf(): jsPDF {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  doc.setFont("times", "normal");
+  const margin = 22;
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const usableWidth = pageWidth - 2 * margin;
+  const bottomLimit = 275;
+  let y = margin;
+
+  const addText = (text: string, opts: { bold?: boolean; italic?: boolean; size?: number; align?: "left" | "center"; spacing?: number } = {}) => {
+    const style = opts.bold && opts.italic ? "bolditalic" : opts.bold ? "bold" : opts.italic ? "italic" : "normal";
+    doc.setFont("times", style);
+    const size = opts.size ?? 11;
+    doc.setFontSize(size);
+    const lines = doc.splitTextToSize(text, usableWidth);
+    const lh = 0.55 * size;
+    for (const line of lines) {
+      if (y > bottomLimit) { doc.addPage(); y = margin; }
+      doc.text(line, opts.align === "center" ? pageWidth / 2 : margin, y, {
+        align: opts.align === "center" ? "center" : "left",
+      });
+      y += lh;
+    }
+    y += opts.spacing ?? 3;
+  };
+
+  // PAGE 1 — Liste des pièces
+  addText("📂 قائمة الأوراق المطلوبة لتسجيل شركتك", { bold: true, size: 15, align: "center", spacing: 3 });
+  addText("Liste des pièces à fournir pour l'immatriculation", { italic: true, size: 12, align: "center", spacing: 10 });
+
+  const pieces: Array<[string, string]> = [
+    ["1. عقد التأسيس موقّع من كل الشركاء (كل صفحة لازم تتوقع بالأحرف الأولى)",
+     "Statuts signés par tous les associés (parapher chaque page)"],
+    ["2. شهادة إيداع رأس المال من البنك",
+     "Attestation de dépôt des fonds"],
+    ["3. إثبات عنوان مقر الشركة (فاتورة كهرباء أو عقد إيجار)",
+     "Justificatif de siège social (facture ou bail)"],
+    ["4. صورة بطاقة الهوية أو الإقامة لكل مدير",
+     "Pièce d'identité de chaque dirigeant"],
+    ["5. شهادة عدم الإدانة والنسب لكل مدير (Anafy Pro بيولّدهالك ✅)",
+     "Attestation de non-condamnation et de filiation"],
+    ["6. بيانات المستفيدين الفعليين (التصريح أونلاين — استخدم الفيشة اللي ولّدناهالك ✅)",
+     "Bénéficiaires effectifs (déclaration en ligne)"],
+    ["7. لو نشاطك منظّم (كهرباء، غاز...): شهادة المؤهل أو الخبرة",
+     "Justificatif de qualification professionnelle si activité réglementée"],
+  ];
+  for (const [ar, fr] of pieces) {
+    addText(ar, { size: 11, spacing: 1 });
+    addText(fr, { italic: true, size: 10, spacing: 5 });
+  }
+
+  // PAGE 2 — Guide étapes
+  doc.addPage();
+  y = margin;
+  addText("📖 إزاي تسجّل شركتك على Guichet Unique خطوة بخطوة", { bold: true, size: 14, align: "center", spacing: 3 });
+  addText("Guide de dépôt étape par étape sur procedures.inpi.fr", { italic: true, size: 12, align: "center", spacing: 10 });
+
+  const etapes: Array<[string, string]> = [
+    ["1️⃣ افتح procedures.inpi.fr واعمل حساب",
+     "Créer un compte sur procedures.inpi.fr"],
+    ["2️⃣ اختار « Déposer une formalité de création d'entreprise »",
+     "Choisir « Déposer une formalité de création d'entreprise »"],
+    ["3️⃣ املا البيانات — كلها موجودة في عقد التأسيس اللي معاك",
+     "Remplir les informations (déjà présentes dans vos statuts)"],
+    ["4️⃣ ارفع الأوراق (PDF) واحدة واحدة",
+     "Téléverser les pièces justificatives (PDF) une par une"],
+    ["5️⃣ ادفع رسوم التسجيل أونلاين",
+     "Régler les frais d'immatriculation en ligne"],
+    ["6️⃣ هتستلم رقم SIREN + شهادة Kbis في خلال أيام على إيميلك",
+     "Réception du numéro SIREN et du Kbis par email sous quelques jours"],
+  ];
+  for (const [ar, fr] of etapes) {
+    addText(ar, { size: 11, spacing: 1 });
+    addText(fr, { italic: true, size: 10, spacing: 6 });
+  }
+
+  fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);
+  return doc;
+}
+
+

@@ -149,7 +149,8 @@ function civilStateSentence(p: Personne): string {
 
 export function buildStatutsPdf(body: StatutsInput): jsPDF {
   const isSASU = body.companyType === "SASU";
-  const city = (body.signatureCity && body.signatureCity.trim()) || extractCity(body.address);
+  const addressPretty = titleCasePlace(body.address);
+  const city = titleCasePlace((body.signatureCity && body.signatureCity.trim()) || extractCity(body.address));
   const today = new Date().toLocaleDateString("fr-FR");
   const capitalStr = formatEuro(body.capital);
   const capitalLettres = numberToFrenchWords(body.capital);

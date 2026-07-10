@@ -199,6 +199,17 @@ export default function PaiementCreationPage() {
     [associes]
   );
 
+  const effectiveForm = useMemo(
+    () => effectiveFormOf(companyType, associes.length),
+    [companyType, associes.length]
+  );
+  const effectiveHint: Record<string, string> = {
+    EURL: "شريك واحد = EURL (شركة ذات مسؤولية محدودة بشريك وحيد)",
+    SARL: "شريكين أو أكتر = SARL",
+    SASU: "شريك واحد = SASU",
+    SAS: "شريكين أو أكتر = SAS",
+  };
+
   const updateAssocie = <K extends keyof AssocieForm>(i: number, field: K, value: AssocieForm[K]) => {
     setAssocies(prev => prev.map((a, idx) => idx === i ? { ...a, [field]: value } : a));
   };

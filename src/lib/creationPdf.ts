@@ -1,6 +1,9 @@
 import jsPDF from "jspdf";
 
+export type Gender = "M" | "F";
+
 export interface Personne {
+  gender: Gender;
   fullName: string;
   birthDate: string;      // dd/mm/yyyy
   birthPlace: string;     // "Ville, Pays"

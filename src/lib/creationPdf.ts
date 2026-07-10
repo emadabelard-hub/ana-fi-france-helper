@@ -9,6 +9,8 @@ export interface Personne {
   birthPlace: string;     // "Ville, Pays"
   nationality: string;
   address: string;
+  fatherName?: string;
+  motherName?: string;
 }
 
 export interface AssocieDetail extends Personne {

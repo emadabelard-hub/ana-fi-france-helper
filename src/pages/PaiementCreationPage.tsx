@@ -66,6 +66,8 @@ type AssocieForm = {
   birthPlace: string;
   nationality: string;
   address: string;
+  fatherName: string;
+  motherName: string;
   percent: number;
   isManager: boolean;
 };
@@ -76,16 +78,20 @@ type ManagerForm = {
   birthPlace: string;
   nationality: string;
   address: string;
+  fatherName: string;
+  motherName: string;
 };
 
 const emptyAssocie = (percent = 0, isManager = false): AssocieForm => ({
   gender: "M",
   fullName: "", birth: { d: "", m: "", y: "" }, birthPlace: "", nationality: "", address: "",
+  fatherName: "", motherName: "",
   percent, isManager,
 });
 const emptyManager = (): ManagerForm => ({
   gender: "M",
   fullName: "", birth: { d: "", m: "", y: "" }, birthPlace: "", nationality: "", address: "",
+  fatherName: "", motherName: "",
 });
 
 const PRODUCTS = [

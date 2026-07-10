@@ -609,6 +609,14 @@ export default function PaiementCreationPage() {
                   <Label>العنوان الكامل</Label>
                   <Textarea value={m.address} onChange={e => updateManager(i, "address", e.target.value)} dir="ltr" style={{ textAlign: "left" }} />
                 </div>
+                <div className="space-y-2">
+                  <Label>اسم الأب الكامل</Label>
+                  <Input value={m.fatherName} onChange={e => updateManager(i, "fatherName", e.target.value)} placeholder="Ahmed Mohamed" />
+                </div>
+                <div className="space-y-2">
+                  <Label>اسم الأم الكامل بالبنت (قبل الجواز)</Label>
+                  <Input value={m.motherName} onChange={e => updateManager(i, "motherName", e.target.value)} placeholder="Fatma Ali" />
+                </div>
               </div>
             ))}
           </>

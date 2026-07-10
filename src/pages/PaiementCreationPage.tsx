@@ -253,6 +253,8 @@ export default function PaiementCreationPage() {
       if (!a.birthPlace.trim()) return `${label}: مكان الميلاد مطلوب`;
       if (!a.nationality.trim()) return `${label}: الجنسية مطلوبة`;
       if (!a.address.trim()) return `${label}: العنوان مطلوب`;
+      if (!a.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
+      if (!a.motherName.trim()) return `${label}: اسم الأم مطلوب`;
     }
     if (companyType === "SARL") {
       if (associes.length < 2) return "الشركة SARL تتطلب شريكين على الأقل";
@@ -267,6 +269,8 @@ export default function PaiementCreationPage() {
         if (!m.birthPlace.trim()) return `${label}: مكان الميلاد مطلوب`;
         if (!m.nationality.trim()) return `${label}: الجنسية مطلوبة`;
         if (!m.address.trim()) return `${label}: العنوان مطلوب`;
+        if (!m.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
+        if (!m.motherName.trim()) return `${label}: اسم الأم مطلوب`;
       }
     }
     return null;

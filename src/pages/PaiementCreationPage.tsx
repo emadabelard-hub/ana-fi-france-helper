@@ -19,24 +19,48 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 function containsArabic(text: string): boolean {
   return /[\u0600-\u06FF]/.test(text || "");
 }
-async function translateArToFr(text: string): Promise<string> {
+async function translateArToFr(text: string, instruction?: string): Promise<string> {
   const { data, error } = await supabase.functions.invoke("btp-translate", {
-    body: { text, sourceLang: "ar", targetLang: "fr" },
+    body: { text, sourceLang: "ar", targetLang: "fr", ...(instruction ? { instruction } : {}) },
   });
   if (error) throw new Error(error.message || "Traduction impossible");
   const t = (data as { translated?: string })?.translated?.trim();
   if (!t) throw new Error("Traduction vide");
   return t;
 }
-async function trIfAr(text: string): Promise<string> {
+async function trIfAr(text: string, instruction?: string): Promise<string> {
   if (!text) return text;
   if (!containsArabic(text)) return text;
-  return await translateArToFr(text);
+  return await translateArToFr(text, instruction);
 }
 
+// Normalise une nationalité au féminin français, minuscule (ex: "italienne", "égyptienne")
+function normalizeNationalityFeminine(input: string): string {
+  if (!input) return input;
+  let s = input.trim().toLocaleLowerCase("fr-FR");
+  // Si masculin en -ien / -ain / -ais / -ois / -in → féminin
+  // Cas déjà féminins : se termine par "e" → on garde
+  const alreadyFeminine = /(ienne|aine|aise|oise|ine|ande|onne|ègre|èque|ane|iène)$/.test(s);
+  if (!alreadyFeminine) {
+    if (/ien$/.test(s)) s = s.replace(/ien$/, "ienne");
+    else if (/ain$/.test(s)) s = s.replace(/ain$/, "aine");
+    else if (/ais$/.test(s)) s = s.replace(/ais$/, "aise");
+    else if (/ois$/.test(s)) s = s.replace(/ois$/, "oise");
+    else if (/in$/.test(s)) s = s.replace(/in$/, "ine");
+    else if (/and$/.test(s)) s = s.replace(/and$/, "ande");
+    else if (/on$/.test(s)) s = s.replace(/on$/, "onne");
+    else if (!/e$/.test(s)) s = s + "e";
+  }
+  return s;
+}
+const NATIONALITY_INSTRUCTION =
+  "Traduis en français le gentilé (nationalité) uniquement. Réponds UNIQUEMENT par un seul mot au féminin singulier, en minuscule, sans article ni ponctuation (ex: italienne, égyptienne, française, marocaine, tunisienne, algérienne, syrienne, libanaise, sénégalaise).";
+
 // ─────────── TYPES FORMULAIRE ─────────── //
+type Gender = "M" | "F";
 type BirthParts = { d: string; m: string; y: string };
 type AssocieForm = {
+  gender: Gender;
   fullName: string;
   birth: BirthParts;
   birthPlace: string;
@@ -46,6 +70,7 @@ type AssocieForm = {
   isManager: boolean;
 };
 type ManagerForm = {
+  gender: Gender;
   fullName: string;
   birth: BirthParts;
   birthPlace: string;
@@ -54,10 +79,12 @@ type ManagerForm = {
 };
 
 const emptyAssocie = (percent = 0, isManager = false): AssocieForm => ({
+  gender: "M",
   fullName: "", birth: { d: "", m: "", y: "" }, birthPlace: "", nationality: "", address: "",
   percent, isManager,
 });
 const emptyManager = (): ManagerForm => ({
+  gender: "M",
   fullName: "", birth: { d: "", m: "", y: "" }, birthPlace: "", nationality: "", address: "",
 });
 

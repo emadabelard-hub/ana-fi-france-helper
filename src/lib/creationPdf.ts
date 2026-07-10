@@ -44,6 +44,24 @@ export interface PrevisionnelInput {
   capital: number;
   chiffre_affaires_estime: number;
   is_btp?: boolean;
+  /** Rémunération NETTE mensuelle du dirigeant (€) */
+  remuneration_dirigeant_mensuelle?: number;
+  /** Nombre de salariés hors dirigeant */
+  nb_salaries?: number;
+  /** Salaire NET mensuel moyen par salarié (€) */
+  salaire_moyen_mensuel?: number;
+  /** Coût véhicule mensuel (€) */
+  vehicule_mensuel?: number;
+  /** Loyer mensuel (€) */
+  loyer_mensuel?: number;
+  /** Assurances annuelles (décennale + RC Pro) (€) */
+  assurances_annuelles?: number;
+  /** Comptable annuel (€) */
+  comptable_annuel?: number;
+  /** Achats matériaux annuels (€) */
+  achats_materiaux_annuels?: number;
+  /** Autres charges annuelles (€) */
+  autres_charges_annuelles?: number;
 }
 
 // Formatte un montant avec espace NORMAL (jsPDF gère mal l'espace insécable)
@@ -492,16 +510,40 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   const eur = (n: number) => formatEuro(n);
   const ca = Number(body.chiffre_affaires_estime) || 0;
   const isAE = body.type_societe === "Auto-entrepreneur";
-  const isSociete = body.type_societe === "SASU" || body.type_societe === "SARL";
+  const isSARLFamily = body.type_societe === "SARL" || body.type_societe === "EURL";
+  const isSASFamily = body.type_societe === "SAS" || body.type_societe === "SASU";
+  const isSociete = isSARLFamily || isSASFamily;
 
-  const urssaf = isAE ? ca * 0.22 : ca * 0.45;
+  // Saisies personnalisées
+  const remuMensuel = Math.max(0, Number(body.remuneration_dirigeant_mensuelle) || 0);
+  const remuAnnuel = remuMensuel * 12;
+  const nbSalaries = Math.max(0, Math.floor(Number(body.nb_salaries) || 0));
+  const salaireMoyen = Math.max(0, Number(body.salaire_moyen_mensuel) || 0);
+  const vehiculeMensuel = Math.max(0, Number(body.vehicule_mensuel) || 0);
+  const loyerMensuel = Math.max(0, Number(body.loyer_mensuel) || 0);
+  const assurances = Math.max(0, Number(body.assurances_annuelles) || 0);
+  const comptable = Math.max(0, Number(body.comptable_annuel) || 0);
+  const achatsMateriaux = Math.max(0, Number(body.achats_materiaux_annuels) || 0);
+  const autres = Math.max(0, Number(body.autres_charges_annuelles) || 0);
+
+  // Cotisations sociales dirigeant
+  let cotisDirigeant = 0;
+  if (isSARLFamily) cotisDirigeant = remuAnnuel * 0.45;          // TNS gérant majoritaire
+  else if (isSASFamily) cotisDirigeant = remuAnnuel * 0.80;      // Président assimilé salarié
+  else if (isAE) cotisDirigeant = ca * 0.22;                      // AE : cotisations sur CA
+
+  // Masse salariale (coût total employeur)
+  const masseSalariale = nbSalaries > 0 ? salaireMoyen * 12 * 1.80 * nbSalaries : 0;
+
+  const vehiculeAnnuel = vehiculeMensuel * 12;
+  const loyerAnnuel = loyerMensuel * 12;
   const cfe = 500;
-  const decennale = body.is_btp ? 1500 : 0;
-  const rcpro = 400;
-  const comptable = 1200;
-  const banque = 300;
-  const materiel = ca * 0.15;
-  const totalCharges = urssaf + cfe + decennale + rcpro + comptable + banque + materiel;
+
+  const totalCharges =
+    remuAnnuel + cotisDirigeant + masseSalariale +
+    vehiculeAnnuel + loyerAnnuel +
+    assurances + comptable + achatsMateriaux + autres + cfe;
+
   const resultatAvantImpot = ca - totalCharges;
   let is = 0;
   if (isSociete && resultatAvantImpot > 0) {
@@ -510,6 +552,7 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   }
   const resultatNet = resultatAvantImpot - is;
   const mensuel = resultatNet / 12;
+  const isNegatif = resultatAvantImpot < 0;
 
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   doc.setFont("helvetica", "normal");
@@ -531,13 +574,15 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   doc.text(`Date de génération : ${today}`, pageWidth / 2, y, { align: "center" });
   y += 10;
 
-  const drawRow = (label: string, value: string, bold = false) => {
+  const drawRow = (label: string, value: string, bold = false, colorRed = false) => {
     if (y > 270) { doc.addPage(); y = margin; }
     doc.setFont("helvetica", bold ? "bold" : "normal");
     doc.setFontSize(10);
     doc.rect(margin, y - 4, usable, 7);
+    if (colorRed) doc.setTextColor(200, 30, 30); else doc.setTextColor(0, 0, 0);
     doc.text(label, margin + 2, y);
     doc.text(value, margin + usable - 2, y, { align: "right" });
+    doc.setTextColor(0, 0, 0);
     y += 7;
   };
 
@@ -550,25 +595,59 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
     y += 6;
   };
 
-  sectionTitle("1. CHARGES ANNUELLES ESTIMÉES");
-  drawRow(`Cotisations URSSAF (${isAE ? "22%" : "45%"} du CA)`, eur(urssaf));
-  drawRow("CFE (Cotisation Foncière des Entreprises)", eur(cfe));
-  if (body.is_btp) drawRow("Assurance décennale (BTP)", eur(decennale));
-  drawRow("RC Pro", eur(rcpro));
-  drawRow("Comptable", eur(comptable));
-  drawRow("Frais bancaires", eur(banque));
-  drawRow("Matériel et fournitures (15% du CA)", eur(materiel));
+  sectionTitle("1. CHIFFRE D'AFFAIRES PRÉVISIONNEL");
+  drawRow("Chiffre d'affaires estimé (HT)", eur(ca), true);
+
+  sectionTitle("2. CHARGES DÉTAILLÉES");
+  if (isSociete) {
+    drawRow("Rémunération dirigeant (net annuel)", eur(remuAnnuel));
+    const tauxLabel = isSARLFamily
+      ? "Cotisations sociales dirigeant TNS (~45% du net)"
+      : "Cotisations sociales dirigeant assimilé salarié (~80% du net)";
+    drawRow(tauxLabel, eur(cotisDirigeant));
+  } else if (isAE) {
+    drawRow("Cotisations URSSAF (22% du CA)", eur(cotisDirigeant));
+  }
+  if (nbSalaries > 0) {
+    drawRow(
+      `Masse salariale ${nbSalaries} salarié(s) — coût employeur (net × 1,80)`,
+      eur(masseSalariale)
+    );
+  }
+  if (vehiculeAnnuel > 0) drawRow("Véhicule (mensuel × 12)", eur(vehiculeAnnuel));
+  if (loyerAnnuel > 0) drawRow("Loyer local (mensuel × 12)", eur(loyerAnnuel));
+  if (assurances > 0) drawRow("Assurances (décennale + RC Pro)", eur(assurances));
+  if (comptable > 0) drawRow("Comptable", eur(comptable));
+  if (achatsMateriaux > 0) drawRow("Achats matériaux", eur(achatsMateriaux));
+  if (autres > 0) drawRow("Autres charges (téléphone, banque, outils...)", eur(autres));
+  drawRow("CFE — estimation (variable selon commune)", eur(cfe));
   drawRow("TOTAL CHARGES", eur(totalCharges), true);
 
-  sectionTitle("2. RÉSULTAT PRÉVISIONNEL");
-  drawRow("Chiffre d'affaires estimé", eur(ca));
+  sectionTitle("3. RÉSULTAT PRÉVISIONNEL");
+  drawRow("Chiffre d'affaires", eur(ca));
   drawRow("Total charges", eur(totalCharges));
-  drawRow("Résultat avant impôt", eur(resultatAvantImpot));
-  if (isSociete) drawRow("Impôt sur les Sociétés (15% / 25%)", eur(is));
-  drawRow("Résultat net estimé", eur(resultatNet), true);
-  drawRow("Équivalent mensuel net", eur(mensuel), true);
+  drawRow("Résultat avant impôt", eur(resultatAvantImpot), true, isNegatif);
+  if (isSociete && !isNegatif) drawRow("Impôt sur les Sociétés (15% jusqu'à 42 500 €, puis 25%)", eur(is));
+  drawRow("Résultat net estimé", eur(resultatNet), true, resultatNet < 0);
+  drawRow("Équivalent mensuel net", eur(mensuel), true, mensuel < 0);
 
-  sectionTitle("3. SEUILS IMPORTANTS À CONNAÎTRE");
+  if (isNegatif) {
+    y += 2;
+    if (y > 265) { doc.addPage(); y = margin; }
+    doc.setFillColor(255, 235, 235);
+    doc.rect(margin, y - 4, usable, 10, "F");
+    doc.setTextColor(180, 20, 20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(
+      "Attention : le résultat est négatif. Revoir les hypothèses ou réduire les charges.",
+      margin + 3, y + 2
+    );
+    doc.setTextColor(0, 0, 0);
+    y += 12;
+  }
+
+  sectionTitle("4. SEUILS IMPORTANTS À CONNAÎTRE");
   const seuils: [string, string, string][] = [
     ["Franchise TVA", "37 500 €", "En dessous : pas de TVA à facturer"],
     ["Plafond Auto-entrepreneur BTP", "77 700 €", "Au-delà : changer de statut obligatoire"],
@@ -601,15 +680,17 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   }
 
   y += 8;
-  if (y > 260) { doc.addPage(); y = margin; }
+  if (y > 255) { doc.addPage(); y = margin; }
   doc.setFillColor(255, 248, 220);
-  doc.rect(margin, y - 4, usable, 18, "F");
+  doc.rect(margin, y - 4, usable, 24, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.text("Conseil Anafy Pro", margin + 3, y + 1);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  const conseil = "Ces chiffres sont des estimations. Consultez un expert-comptable pour valider votre prévisionnel avant dépôt au greffe.";
+  const conseil =
+    "Ces chiffres sont des estimations. Consultez un expert-comptable pour valider votre prévisionnel avant dépôt au greffe. " +
+    "Les taux de cotisations sont des estimations moyennes 2026 — consultez un expert-comptable.";
   doc.text(doc.splitTextToSize(conseil, usable - 6), margin + 3, y + 6);
 
   const pageCount = doc.getNumberOfPages();

@@ -173,6 +173,17 @@ export default function PaiementCreationPage() {
   const [caEstime, setCaEstime] = useState<number>(50000);
   const [isBtp, setIsBtp] = useState(true);
 
+  // Charges personnalisées
+  const [remuDirigeant, setRemuDirigeant] = useState<number>(0);
+  const [nbSalaries, setNbSalaries] = useState<number>(0);
+  const [salaireMoyen, setSalaireMoyen] = useState<number>(0);
+  const [vehiculeMensuel, setVehiculeMensuel] = useState<number>(0);
+  const [loyerMensuel, setLoyerMensuel] = useState<number>(0);
+  const [assurancesAnnuelles, setAssurancesAnnuelles] = useState<number>(1900);
+  const [comptableAnnuel, setComptableAnnuel] = useState<number>(1200);
+  const [achatsMateriaux, setAchatsMateriaux] = useState<number>(0);
+  const [autresCharges, setAutresCharges] = useState<number>(1000);
+
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
@@ -267,6 +278,10 @@ export default function PaiementCreationPage() {
       toast.error("اكتب الإيرادات السنوية المتوقعة");
       return;
     }
+    if (needPrevi && isBtp && (!achatsMateriaux || achatsMateriaux <= 0)) {
+      toast.error("اكتب مشتريات المواد السنوية (إجباري للـ BTP)");
+      return;
+    }
 
     setGenerating(true);
     const tid = toast.loading("جاري الترجمة...");
@@ -329,6 +344,15 @@ export default function PaiementCreationPage() {
           capital,
           chiffre_affaires_estime: caEstime,
           is_btp: isBtp,
+          remuneration_dirigeant_mensuelle: remuDirigeant,
+          nb_salaries: nbSalaries,
+          salaire_moyen_mensuel: salaireMoyen,
+          vehicule_mensuel: vehiculeMensuel,
+          loyer_mensuel: loyerMensuel,
+          assurances_annuelles: assurancesAnnuelles,
+          comptable_annuel: comptableAnnuel,
+          achats_materiaux_annuels: achatsMateriaux,
+          autres_charges_annuelles: autresCharges,
         });
         savePdfSafely(doc, `previsionnel-${activityFr || "activite"}.pdf`);
       }
@@ -539,14 +563,75 @@ export default function PaiementCreationPage() {
       </Card>
 
       <Card className="p-5 space-y-4">
-        <h2 className="text-xl font-bold">📊 الدراسة المالية</h2>
+        <h2 className="text-xl font-bold">📊 الأرقام المتوقعة للسنة الأولى</h2>
+
         <div className="space-y-2">
-          <Label>الإيرادات السنوية المتوقعة (CA annuel en €)</Label>
-          <Input type="number" value={caEstime} onChange={e => setCaEstime(Number(e.target.value))} dir="ltr" lang="fr" />
+          <Label>رقم الأعمال المتوقع (CA annuel en €) *</Label>
+          <Input type="number" inputMode="decimal" value={caEstime}
+            onChange={e => setCaEstime(Number(e.target.value))} dir="ltr" lang="fr" />
         </div>
-        <label className="flex items-center gap-2 cursor-pointer">
+
+        <div className="space-y-2">
+          <Label>أجرك الشهري كمدير (net mensuel en €) *</Label>
+          <Input type="number" inputMode="decimal" value={remuDirigeant}
+            onChange={e => setRemuDirigeant(Number(e.target.value))} dir="ltr" lang="fr" />
+          <p className="text-xs text-muted-foreground">لو مش هتاخد راتب: سيبها 0</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>عدد الموظفين (غير المدير)</Label>
+          <Input type="number" inputMode="decimal" value={nbSalaries}
+            onChange={e => setNbSalaries(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+
+        {nbSalaries > 0 && (
+          <div className="space-y-2">
+            <Label>متوسط الأجر الشهري الصافي للموظف الواحد (€)</Label>
+            <Input type="number" inputMode="decimal" value={salaireMoyen}
+              onChange={e => setSalaireMoyen(Number(e.target.value))} dir="ltr" lang="fr" />
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label>تكلفة العربية شهرياً (leasing + بنزين + تأمين)</Label>
+          <Input type="number" inputMode="decimal" value={vehiculeMensuel}
+            onChange={e => setVehiculeMensuel(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+
+        <div className="space-y-2">
+          <Label>الإيجار الشهري (محل/دبو)</Label>
+          <Input type="number" inputMode="decimal" value={loyerMensuel}
+            onChange={e => setLoyerMensuel(Number(e.target.value))} dir="ltr" lang="fr" />
+          <p className="text-xs text-muted-foreground">لو شغال من البيت: سيبها 0</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>التأمينات السنوية (décennale + RC Pro)</Label>
+          <Input type="number" inputMode="decimal" value={assurancesAnnuelles}
+            onChange={e => setAssurancesAnnuelles(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+
+        <div className="space-y-2">
+          <Label>المحاسب سنوياً (€)</Label>
+          <Input type="number" inputMode="decimal" value={comptableAnnuel}
+            onChange={e => setComptableAnnuel(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+
+        <div className="space-y-2">
+          <Label>مشتريات المواد سنوياً (€) {isBtp && "*"}</Label>
+          <Input type="number" inputMode="decimal" value={achatsMateriaux}
+            onChange={e => setAchatsMateriaux(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+
+        <div className="space-y-2">
+          <Label>مصاريف تانية سنوياً (تليفون، بنك، عدد...)</Label>
+          <Input type="number" inputMode="decimal" value={autresCharges}
+            onChange={e => setAutresCharges(Number(e.target.value))} dir="ltr" lang="fr" />
+        </div>
+
+        <label className="flex items-center gap-2 cursor-pointer pt-2 border-t">
           <Checkbox checked={isBtp} onCheckedChange={(v) => setIsBtp(Boolean(v))} />
-          <span>نوع النشاط BTP ؟ (يضيف التأمين العشري)</span>
+          <span>نوع النشاط BTP ؟</span>
         </label>
       </Card>
 

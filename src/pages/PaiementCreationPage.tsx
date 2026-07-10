@@ -727,8 +727,29 @@ export default function PaiementCreationPage() {
       </Card>
 
       <Button onClick={handleGenerate} disabled={generating} size="lg" className="w-full">
-        {generating ? <><Loader2 className="ml-2 animate-spin h-5 w-5" /> جاري التوليد...</> : "توليد الوثيقة"}
+        {generating ? <><Loader2 className="ml-2 animate-spin h-5 w-5" /> جاري التوليد...</> : "توليد الوثائق"}
       </Button>
+
+      {generatedDocs.length > 0 && (
+        <Card className="p-5 space-y-3 bg-green-50 dark:bg-green-950/30 border-green-500">
+          <h2 className="text-xl font-bold">📂 ملف تأسيس شركتك الكامل</h2>
+          <p className="text-sm text-muted-foreground">اضغط على كل وثيقة لتحميلها</p>
+          <div className="space-y-2">
+            {generatedDocs.map((d, i) => (
+              <Button
+                key={i}
+                type="button"
+                variant="outline"
+                className="w-full justify-between text-right"
+                onClick={() => savePdfSafely(d.doc, d.filename)}
+              >
+                <span className="text-xs opacity-60">تحميل ⬇</span>
+                <span className="font-semibold">{d.label}</span>
+              </Button>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, FileText, BarChart3, Package, Plus, Trash2, UserPlus } from "lucide-react";
-import { buildStatutsPdf, buildPrevisionnelPdf, effectiveFormOf, type AssocieDetail, type Personne } from "@/lib/creationPdf";
+import { buildStatutsPdf, buildPrevisionnelPdf, buildAttestationPdf, buildBeneficiairesPdf, buildGuideDepotPdf, effectiveFormOf, type AssocieDetail, type Personne } from "@/lib/creationPdf";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -66,6 +66,8 @@ type AssocieForm = {
   birthPlace: string;
   nationality: string;
   address: string;
+  fatherName: string;
+  motherName: string;
   percent: number;
   isManager: boolean;
 };
@@ -76,16 +78,20 @@ type ManagerForm = {
   birthPlace: string;
   nationality: string;
   address: string;
+  fatherName: string;
+  motherName: string;
 };
 
 const emptyAssocie = (percent = 0, isManager = false): AssocieForm => ({
   gender: "M",
   fullName: "", birth: { d: "", m: "", y: "" }, birthPlace: "", nationality: "", address: "",
+  fatherName: "", motherName: "",
   percent, isManager,
 });
 const emptyManager = (): ManagerForm => ({
   gender: "M",
   fullName: "", birth: { d: "", m: "", y: "" }, birthPlace: "", nationality: "", address: "",
+  fatherName: "", motherName: "",
 });
 
 const PRODUCTS = [
@@ -247,6 +253,8 @@ export default function PaiementCreationPage() {
       if (!a.birthPlace.trim()) return `${label}: مكان الميلاد مطلوب`;
       if (!a.nationality.trim()) return `${label}: الجنسية مطلوبة`;
       if (!a.address.trim()) return `${label}: العنوان مطلوب`;
+      if (!a.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
+      if (!a.motherName.trim()) return `${label}: اسم الأم مطلوب`;
     }
     if (companyType === "SARL") {
       if (associes.length < 2) return "الشركة SARL تتطلب شريكين على الأقل";
@@ -261,6 +269,8 @@ export default function PaiementCreationPage() {
         if (!m.birthPlace.trim()) return `${label}: مكان الميلاد مطلوب`;
         if (!m.nationality.trim()) return `${label}: الجنسية مطلوبة`;
         if (!m.address.trim()) return `${label}: العنوان مطلوب`;
+        if (!m.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
+        if (!m.motherName.trim()) return `${label}: اسم الأم مطلوب`;
       }
     }
     return null;
@@ -303,6 +313,8 @@ export default function PaiementCreationPage() {
             birthPlace: await trIfAr(a.birthPlace),
             nationality: normalizeNationalityFeminine(natRaw),
             address: await trIfAr(a.address),
+            fatherName: await trIfAr(a.fatherName),
+            motherName: await trIfAr(a.motherName),
             percent: Number(a.percent) || 0,
             isManager: !!a.isManager,
           };
@@ -318,6 +330,8 @@ export default function PaiementCreationPage() {
             birthPlace: await trIfAr(m.birthPlace),
             nationality: normalizeNationalityFeminine(natRaw),
             address: await trIfAr(m.address),
+            fatherName: await trIfAr(m.fatherName),
+            motherName: await trIfAr(m.motherName),
           };
         })
       );
@@ -336,6 +350,35 @@ export default function PaiementCreationPage() {
           extraManagers: extraManagersFr,
         });
         savePdfSafely(doc, `statuts-${companyNameFr || "societe"}.pdf`);
+
+        // 3 documents complémentaires du dossier de création
+        const isSAS = companyType === "SASU";
+        const role: "gérant" | "Président" = isSAS ? "Président" : "gérant";
+        const allDirigeants: Personne[] = [
+          ...associesFr.filter(a => a.isManager),
+          ...extraManagersFr,
+        ];
+        allDirigeants.forEach((p, idx) => {
+          const attDoc = buildAttestationPdf({
+            person: p,
+            denomination: companyNameFr,
+            role,
+            signatureCity: signatureCityFr,
+          });
+          const suffix = allDirigeants.length > 1 ? `-${idx + 1}` : "";
+          savePdfSafely(attDoc, `attestation-non-condamnation${suffix}-${p.fullName || "dirigeant"}.pdf`);
+        });
+
+        const beDoc = buildBeneficiairesPdf({
+          companyName: companyNameFr,
+          associes: associesFr,
+          extraManagers: extraManagersFr,
+          companyType,
+        });
+        savePdfSafely(beDoc, `beneficiaires-effectifs-${companyNameFr || "societe"}.pdf`);
+
+        const guideDoc = buildGuideDepotPdf();
+        savePdfSafely(guideDoc, `guide-depot-inpi.pdf`);
       }
       if (needPrevi) {
         const doc = buildPrevisionnelPdf({
@@ -356,7 +399,7 @@ export default function PaiementCreationPage() {
         });
         savePdfSafely(doc, `previsionnel-${activityFr || "activite"}.pdf`);
       }
-      toast.success("الوثيقة جاهزة ✅");
+      toast.success("الوثائق جاهزة ✅");
     } catch (e) {
       toast.dismiss(tid);
       const msg = e instanceof Error ? e.message : "خطأ غير معروف";
@@ -494,6 +537,16 @@ export default function PaiementCreationPage() {
               <Textarea value={a.address} onChange={e => updateAssocie(i, "address", e.target.value)} dir="ltr" style={{ textAlign: "left" }} />
             </div>
 
+            <div className="space-y-2">
+              <Label>اسم الأب الكامل</Label>
+              <Input value={a.fatherName} onChange={e => updateAssocie(i, "fatherName", e.target.value)} placeholder="Ahmed Mohamed" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>اسم الأم الكامل بالبنت (قبل الجواز)</Label>
+              <Input value={a.motherName} onChange={e => updateAssocie(i, "motherName", e.target.value)} placeholder="Fatma Ali" />
+            </div>
+
             {companyType === "SARL" && (
               <div className="space-y-2">
                 <Label>النسبة ٪</Label>
@@ -555,6 +608,14 @@ export default function PaiementCreationPage() {
                 <div className="space-y-2">
                   <Label>العنوان الكامل</Label>
                   <Textarea value={m.address} onChange={e => updateManager(i, "address", e.target.value)} dir="ltr" style={{ textAlign: "left" }} />
+                </div>
+                <div className="space-y-2">
+                  <Label>اسم الأب الكامل</Label>
+                  <Input value={m.fatherName} onChange={e => updateManager(i, "fatherName", e.target.value)} placeholder="Ahmed Mohamed" />
+                </div>
+                <div className="space-y-2">
+                  <Label>اسم الأم الكامل بالبنت (قبل الجواز)</Label>
+                  <Input value={m.motherName} onChange={e => updateManager(i, "motherName", e.target.value)} placeholder="Fatma Ali" />
                 </div>
               </div>
             ))}

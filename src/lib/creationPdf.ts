@@ -159,24 +159,36 @@ function civilStateSentence(p: Personne): string {
 }
 
 export function buildStatutsPdf(body: StatutsInput): jsPDF {
-  const isSASU = body.companyType === "SASU";
+  const associes = body.associes ?? [];
+  const extraManagers = body.extraManagers ?? [];
+  const isSAS = body.companyType === "SASU"; // famille SAS
+  const unipersonnel = associes.length <= 1;
+  const forme: EffectiveForm = effectiveFormOf(body.companyType, associes.length);
+
   const addressPretty = titleCasePlace(body.address);
   const city = titleCasePlace((body.signatureCity && body.signatureCity.trim()) || extractCity(body.address));
   const today = new Date().toLocaleDateString("fr-FR");
   const capitalStr = formatEuro(body.capital);
   const capitalLettres = numberToFrenchWords(body.capital);
-  const dirigeantTitre = isSASU ? "Président" : "gérant";
-  const formeLongue = isSASU
-    ? "Société par Actions Simplifiée Unipersonnelle (SASU)"
-    : "Société à Responsabilité Limitée (SARL)";
-  const titreSocieteInline = isSASU
-    ? "« société par actions simplifiée unipersonnelle »"
-    : "« société à responsabilité limitée »";
-  const initiales = isSASU ? "SASU" : "SARL";
-  const titreParts = isSASU ? "actions" : "parts sociales";
+  const dirigeantTitre = isSAS ? "Président" : "gérant";
+  const formeLongueMap: Record<EffectiveForm, string> = {
+    EURL: "Entreprise Unipersonnelle à Responsabilité Limitée (EURL)",
+    SARL: "Société à Responsabilité Limitée (SARL)",
+    SASU: "Société par Actions Simplifiée Unipersonnelle (SASU)",
+    SAS: "Société par Actions Simplifiée (SAS)",
+  };
+  const formeLongue = formeLongueMap[forme];
+  const titreSocieteInlineMap: Record<EffectiveForm, string> = {
+    EURL: "« entreprise unipersonnelle à responsabilité limitée »",
+    SARL: "« société à responsabilité limitée »",
+    SASU: "« société par actions simplifiée unipersonnelle »",
+    SAS: "« société par actions simplifiée »",
+  };
+  const titreSocieteInline = titreSocieteInlineMap[forme];
+  const initiales = forme;
+  const titreParts = isSAS ? "actions" : "parts sociales";
+  const titrePart = isSAS ? "action" : "part sociale";
 
-  const associes = body.associes ?? [];
-  const extraManagers = body.extraManagers ?? [];
   const managers: Personne[] = [
     ...associes.filter(a => a.isManager),
     ...extraManagers,

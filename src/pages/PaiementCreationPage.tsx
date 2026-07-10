@@ -537,6 +537,16 @@ export default function PaiementCreationPage() {
               <Textarea value={a.address} onChange={e => updateAssocie(i, "address", e.target.value)} dir="ltr" style={{ textAlign: "left" }} />
             </div>
 
+            <div className="space-y-2">
+              <Label>اسم الأب الكامل</Label>
+              <Input value={a.fatherName} onChange={e => updateAssocie(i, "fatherName", e.target.value)} placeholder="Ahmed Mohamed" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>اسم الأم الكامل بالبنت (قبل الجواز)</Label>
+              <Input value={a.motherName} onChange={e => updateAssocie(i, "motherName", e.target.value)} placeholder="Fatma Ali" />
+            </div>
+
             {companyType === "SARL" && (
               <div className="space-y-2">
                 <Label>النسبة ٪</Label>

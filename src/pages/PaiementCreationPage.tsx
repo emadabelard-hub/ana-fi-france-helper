@@ -344,6 +344,15 @@ export default function PaiementCreationPage() {
           capital,
           chiffre_affaires_estime: caEstime,
           is_btp: isBtp,
+          remuneration_dirigeant_mensuelle: remuDirigeant,
+          nb_salaries: nbSalaries,
+          salaire_moyen_mensuel: salaireMoyen,
+          vehicule_mensuel: vehiculeMensuel,
+          loyer_mensuel: loyerMensuel,
+          assurances_annuelles: assurancesAnnuelles,
+          comptable_annuel: comptableAnnuel,
+          achats_materiaux_annuels: achatsMateriaux,
+          autres_charges_annuelles: autresCharges,
         });
         savePdfSafely(doc, `previsionnel-${activityFr || "activite"}.pdf`);
       }

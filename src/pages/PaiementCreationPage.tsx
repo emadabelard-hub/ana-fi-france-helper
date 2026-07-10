@@ -324,7 +324,7 @@ export default function PaiementCreationPage() {
       }
       if (needPrevi) {
         const doc = buildPrevisionnelPdf({
-          type_societe: companyType,
+          type_societe: effectiveForm,
           activite: activityFr,
           capital,
           chiffre_affaires_estime: caEstime,

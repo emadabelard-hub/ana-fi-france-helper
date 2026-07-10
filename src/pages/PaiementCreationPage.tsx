@@ -423,6 +423,14 @@ export default function PaiementCreationPage() {
             </div>
 
             <div className="space-y-2">
+              <Label>الجنس</Label>
+              <RadioGroup value={a.gender} onValueChange={(v) => updateAssocie(i, "gender", v as Gender)} className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="M" /> السيد (M.)</label>
+                <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="F" /> السيدة (Mme)</label>
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-2">
               <Label>الاسم الكامل</Label>
               <Input value={a.fullName} onChange={e => updateAssocie(i, "fullName", e.target.value)} />
             </div>
@@ -481,6 +489,13 @@ export default function PaiementCreationPage() {
                   <Button type="button" size="icon" variant="ghost" onClick={() => removeManager(i)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
+                </div>
+                <div className="space-y-2">
+                  <Label>الجنس</Label>
+                  <RadioGroup value={m.gender} onValueChange={(v) => updateManager(i, "gender", v as Gender)} className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="M" /> السيد (M.)</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="F" /> السيدة (Mme)</label>
+                  </RadioGroup>
                 </div>
                 <div className="space-y-2">
                   <Label>الاسم الكامل</Label>

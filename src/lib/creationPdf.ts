@@ -231,7 +231,7 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     `Dénomination :  ${body.companyName}`,
     `Forme juridique :  ${initiales}`,
     `Capital social :  ${capitalStr}`,
-    `Siège social :  ${body.address}`,
+    `Siège social :  ${addressPretty}`,
     `Durée :  99 années`,
   ];
   const boxLineH = 6;
@@ -291,7 +291,7 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
   ]);
 
   addArticle("Article 4 — Siège social", [
-    `Le siège social est fixé au : ${body.address}. Il peut être transféré en tout autre lieu par décision ${isSASU ? "de l'associé unique" : "des associés"}.`,
+    `Le siège social est fixé au : ${addressPretty}. Il peut être transféré en tout autre lieu par décision ${isSASU ? "de l'associé unique" : "des associés"}.`,
   ]);
 
   addArticle("Article 5 — Durée", [
@@ -411,14 +411,15 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
 
   if (isSASU) {
     const u = associes[0];
-    signatureBlock("Signature de l'associé unique et Président :", `M/Mme ${u?.fullName ?? ""} — associé unique et Président`);
+    const civU = u ? civilite(u.gender) : "M.";
+    signatureBlock("Signature de l'associé unique et Président :", `${civU} ${u?.fullName ?? ""} — associé unique et Président`);
   } else {
     associes.forEach((a) => {
       const roles = a.isManager ? "associé et gérant" : "associé";
-      signatureBlock(`Signature de ${a.fullName} :`, `M/Mme ${a.fullName} — ${roles}`);
+      signatureBlock(`Signature de ${a.fullName} :`, `${civilite(a.gender)} ${a.fullName} — ${roles}`);
     });
     extraManagers.forEach((m) => {
-      signatureBlock(`Signature de ${m.fullName} :`, `M/Mme ${m.fullName} — gérant non associé`);
+      signatureBlock(`Signature de ${m.fullName} :`, `${civilite(m.gender)} ${m.fullName} — gérant non associé`);
     });
   }
 

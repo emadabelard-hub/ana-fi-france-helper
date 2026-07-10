@@ -18,6 +18,7 @@ export interface AssocieDetail extends Personne {
 
 export interface StatutsInput {
   companyName: string;
+  /** Famille juridique choisie par l'utilisateur. La forme effective (EURL/SARL/SASU/SAS) est calculée d'après le nombre d'associés. */
   companyType: "SASU" | "SARL";
   activity: string;
   capital: number;
@@ -27,8 +28,18 @@ export interface StatutsInput {
   extraManagers?: Personne[];
 }
 
+export type EffectiveForm = "EURL" | "SARL" | "SASU" | "SAS";
+
+export function effectiveFormOf(family: "SASU" | "SARL", associesCount: number): EffectiveForm {
+  const isSAS = family === "SASU";
+  const unipersonnel = associesCount <= 1;
+  if (isSAS) return unipersonnel ? "SASU" : "SAS";
+  return unipersonnel ? "EURL" : "SARL";
+}
+
 export interface PrevisionnelInput {
-  type_societe: "SASU" | "SARL" | "Auto-entrepreneur";
+  /** Forme effective à afficher : EURL/SARL/SASU/SAS ou Auto-entrepreneur */
+  type_societe: "SASU" | "SARL" | "SAS" | "EURL" | "Auto-entrepreneur";
   activite: string;
   capital: number;
   chiffre_affaires_estime: number;

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, FileText, BarChart3, Package, Plus, Trash2, UserPlus } from "lucide-react";
-import { buildStatutsPdf, buildPrevisionnelPdf, effectiveFormOf, type AssocieDetail, type Personne } from "@/lib/creationPdf";
+import { buildStatutsPdf, buildPrevisionnelPdf, buildAttestationPdf, buildBeneficiairesPdf, buildGuideDepotPdf, effectiveFormOf, type AssocieDetail, type Personne } from "@/lib/creationPdf";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";

@@ -1007,13 +1007,30 @@ export function buildGuideDepotPdf(): jsPDF {
      "Téléverser les pièces justificatives (PDF) une par une"],
     ["5️⃣ ادفع رسوم التسجيل أونلاين",
      "Régler les frais d'immatriculation en ligne"],
-    ["6️⃣ هتستلم رقم SIREN + شهادة Kbis في خلال أيام على إيميلك",
-     "Réception du numéro SIREN et du Kbis par email sous quelques jours"],
+    ["6️⃣ هتستلم رقم SIRET خلال أيام على إيميلك",
+     "Réception du numéro SIRET par email sous quelques jours"],
   ];
   for (const [ar, fr] of etapes) {
     addText(ar, { size: 11, spacing: 1 });
     addText(fr, { italic: true, size: 10, spacing: 6 });
   }
+
+  // Encadré final
+  y += 4;
+  if (y > 250) { doc.addPage(); y = margin; }
+  doc.setDrawColor(30, 100, 180);
+  doc.setFillColor(230, 240, 255);
+  doc.setLineWidth(0.5);
+  doc.rect(margin, y, usableWidth, 22, "FD");
+  doc.setFont("times", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(20, 60, 130);
+  doc.text("💬 محتاج مساعدة في أي خطوة؟ اسأل شبيك لبيك", pageWidth / 2, y + 9, { align: "center", maxWidth: usableWidth - 6 });
+  doc.setFont("times", "italic");
+  doc.setFontSize(9);
+  doc.text("Ouvre INPI traduit en arabe sur anafypro.com/anafy-translate", pageWidth / 2, y + 17, { align: "center", maxWidth: usableWidth - 6 });
+  doc.setTextColor(0);
+  y += 26;
 
   fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);
   return doc;

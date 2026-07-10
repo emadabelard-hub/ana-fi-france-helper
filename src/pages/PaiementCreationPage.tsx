@@ -313,6 +313,8 @@ export default function PaiementCreationPage() {
             birthPlace: await trIfAr(a.birthPlace),
             nationality: normalizeNationalityFeminine(natRaw),
             address: await trIfAr(a.address),
+            fatherName: await trIfAr(a.fatherName),
+            motherName: await trIfAr(a.motherName),
             percent: Number(a.percent) || 0,
             isManager: !!a.isManager,
           };
@@ -328,6 +330,8 @@ export default function PaiementCreationPage() {
             birthPlace: await trIfAr(m.birthPlace),
             nationality: normalizeNationalityFeminine(natRaw),
             address: await trIfAr(m.address),
+            fatherName: await trIfAr(m.fatherName),
+            motherName: await trIfAr(m.motherName),
           };
         })
       );
@@ -346,6 +350,35 @@ export default function PaiementCreationPage() {
           extraManagers: extraManagersFr,
         });
         savePdfSafely(doc, `statuts-${companyNameFr || "societe"}.pdf`);
+
+        // 3 documents complémentaires du dossier de création
+        const isSAS = companyType === "SASU";
+        const role: "gérant" | "Président" = isSAS ? "Président" : "gérant";
+        const allDirigeants: Personne[] = [
+          ...associesFr.filter(a => a.isManager),
+          ...extraManagersFr,
+        ];
+        allDirigeants.forEach((p, idx) => {
+          const attDoc = buildAttestationPdf({
+            person: p,
+            denomination: companyNameFr,
+            role,
+            signatureCity: signatureCityFr,
+          });
+          const suffix = allDirigeants.length > 1 ? `-${idx + 1}` : "";
+          savePdfSafely(attDoc, `attestation-non-condamnation${suffix}-${p.fullName || "dirigeant"}.pdf`);
+        });
+
+        const beDoc = buildBeneficiairesPdf({
+          companyName: companyNameFr,
+          associes: associesFr,
+          extraManagers: extraManagersFr,
+          companyType,
+        });
+        savePdfSafely(beDoc, `beneficiaires-effectifs-${companyNameFr || "societe"}.pdf`);
+
+        const guideDoc = buildGuideDepotPdf();
+        savePdfSafely(guideDoc, `guide-depot-inpi.pdf`);
       }
       if (needPrevi) {
         const doc = buildPrevisionnelPdf({
@@ -366,7 +399,7 @@ export default function PaiementCreationPage() {
         });
         savePdfSafely(doc, `previsionnel-${activityFr || "activite"}.pdf`);
       }
-      toast.success("الوثيقة جاهزة ✅");
+      toast.success("الوثائق جاهزة ✅");
     } catch (e) {
       toast.dismiss(tid);
       const msg = e instanceof Error ? e.message : "خطأ غير معروف";

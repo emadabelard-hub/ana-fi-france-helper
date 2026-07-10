@@ -420,12 +420,12 @@ export default function PaiementCreationPage() {
 
         <div className="space-y-2">
           <Label>عنوان الشركة (siège social)</Label>
-          <Textarea value={address} onChange={e => setAddress(e.target.value)} placeholder="12 rue de la Paix, 75002 Paris" />
+          <Textarea value={address} onChange={e => setAddress(e.target.value)} placeholder="12 rue de la Paix, 75002 Paris" dir="ltr" style={{ textAlign: "left" }} />
         </div>
 
         <div className="space-y-2">
           <Label>المدينة (مكان التوقيع)</Label>
-          <Input value={signatureCity} onChange={e => setSignatureCity(e.target.value)} placeholder="Paris" />
+          <Input value={signatureCity} onChange={e => setSignatureCity(e.target.value)} placeholder="Paris" dir="ltr" style={{ textAlign: "left" }} />
         </div>
       </Card>
 
@@ -491,7 +491,7 @@ export default function PaiementCreationPage() {
 
             <div className="space-y-2">
               <Label>العنوان الكامل</Label>
-              <Textarea value={a.address} onChange={e => updateAssocie(i, "address", e.target.value)} />
+              <Textarea value={a.address} onChange={e => updateAssocie(i, "address", e.target.value)} dir="ltr" style={{ textAlign: "left" }} />
             </div>
 
             {companyType === "SARL" && (
@@ -554,7 +554,7 @@ export default function PaiementCreationPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>العنوان الكامل</Label>
-                  <Textarea value={m.address} onChange={e => updateManager(i, "address", e.target.value)} />
+                  <Textarea value={m.address} onChange={e => updateManager(i, "address", e.target.value)} dir="ltr" style={{ textAlign: "left" }} />
                 </div>
               </div>
             ))}

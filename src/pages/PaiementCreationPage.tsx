@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, FileText, BarChart3, Package, Plus, Trash2, UserPlus } from "lucide-react";
-import { buildStatutsPdf, buildPrevisionnelPdf, type AssocieDetail, type Personne } from "@/lib/creationPdf";
+import { buildStatutsPdf, buildPrevisionnelPdf, effectiveFormOf, type AssocieDetail, type Personne } from "@/lib/creationPdf";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -199,6 +199,17 @@ export default function PaiementCreationPage() {
     [associes]
   );
 
+  const effectiveForm = useMemo(
+    () => effectiveFormOf(companyType, associes.length),
+    [companyType, associes.length]
+  );
+  const effectiveHint: Record<string, string> = {
+    EURL: "شريك واحد = EURL (شركة ذات مسؤولية محدودة بشريك وحيد)",
+    SARL: "شريكين أو أكتر = SARL",
+    SASU: "شريك واحد = SASU",
+    SAS: "شريكين أو أكتر = SAS",
+  };
+
   const updateAssocie = <K extends keyof AssocieForm>(i: number, field: K, value: AssocieForm[K]) => {
     setAssocies(prev => prev.map((a, idx) => idx === i ? { ...a, [field]: value } : a));
   };
@@ -313,7 +324,7 @@ export default function PaiementCreationPage() {
       }
       if (needPrevi) {
         const doc = buildPrevisionnelPdf({
-          type_societe: companyType,
+          type_societe: effectiveForm,
           activite: activityFr,
           capital,
           chiffre_affaires_estime: caEstime,
@@ -362,11 +373,15 @@ export default function PaiementCreationPage() {
         </div>
 
         <div className="space-y-2">
-          <Label>نوع الشركة</Label>
+          <Label>نوع الشركة (العائلة)</Label>
           <RadioGroup value={companyType} onValueChange={(v) => setCompanyType(v as "SASU" | "SARL")} className="flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="SASU" /> SASU</label>
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="SARL" /> SARL</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="SASU" /> SAS / SASU</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="SARL" /> SARL / EURL</label>
           </RadioGroup>
+          <div className="flex items-center gap-2 pt-1">
+            <Badge variant="secondary" className="text-sm">الشكل القانوني : {effectiveForm}</Badge>
+            <span className="text-xs text-muted-foreground">{effectiveHint[effectiveForm]}</span>
+          </div>
         </div>
 
         <div className="space-y-2">

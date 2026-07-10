@@ -18,6 +18,7 @@ export interface AssocieDetail extends Personne {
 
 export interface StatutsInput {
   companyName: string;
+  /** Famille juridique choisie par l'utilisateur. La forme effective (EURL/SARL/SASU/SAS) est calculée d'après le nombre d'associés. */
   companyType: "SASU" | "SARL";
   activity: string;
   capital: number;
@@ -27,8 +28,18 @@ export interface StatutsInput {
   extraManagers?: Personne[];
 }
 
+export type EffectiveForm = "EURL" | "SARL" | "SASU" | "SAS";
+
+export function effectiveFormOf(family: "SASU" | "SARL", associesCount: number): EffectiveForm {
+  const isSAS = family === "SASU";
+  const unipersonnel = associesCount <= 1;
+  if (isSAS) return unipersonnel ? "SASU" : "SAS";
+  return unipersonnel ? "EURL" : "SARL";
+}
+
 export interface PrevisionnelInput {
-  type_societe: "SASU" | "SARL" | "Auto-entrepreneur";
+  /** Forme effective à afficher : EURL/SARL/SASU/SAS ou Auto-entrepreneur */
+  type_societe: "SASU" | "SARL" | "SAS" | "EURL" | "Auto-entrepreneur";
   activite: string;
   capital: number;
   chiffre_affaires_estime: number;
@@ -148,24 +159,36 @@ function civilStateSentence(p: Personne): string {
 }
 
 export function buildStatutsPdf(body: StatutsInput): jsPDF {
-  const isSASU = body.companyType === "SASU";
+  const associes = body.associes ?? [];
+  const extraManagers = body.extraManagers ?? [];
+  const isSAS = body.companyType === "SASU"; // famille SAS
+  const unipersonnel = associes.length <= 1;
+  const forme: EffectiveForm = effectiveFormOf(body.companyType, associes.length);
+
   const addressPretty = titleCasePlace(body.address);
   const city = titleCasePlace((body.signatureCity && body.signatureCity.trim()) || extractCity(body.address));
   const today = new Date().toLocaleDateString("fr-FR");
   const capitalStr = formatEuro(body.capital);
   const capitalLettres = numberToFrenchWords(body.capital);
-  const dirigeantTitre = isSASU ? "Président" : "gérant";
-  const formeLongue = isSASU
-    ? "Société par Actions Simplifiée Unipersonnelle (SASU)"
-    : "Société à Responsabilité Limitée (SARL)";
-  const titreSocieteInline = isSASU
-    ? "« société par actions simplifiée unipersonnelle »"
-    : "« société à responsabilité limitée »";
-  const initiales = isSASU ? "SASU" : "SARL";
-  const titreParts = isSASU ? "actions" : "parts sociales";
+  const dirigeantTitre = isSAS ? "Président" : "gérant";
+  const formeLongueMap: Record<EffectiveForm, string> = {
+    EURL: "Entreprise Unipersonnelle à Responsabilité Limitée (EURL)",
+    SARL: "Société à Responsabilité Limitée (SARL)",
+    SASU: "Société par Actions Simplifiée Unipersonnelle (SASU)",
+    SAS: "Société par Actions Simplifiée (SAS)",
+  };
+  const formeLongue = formeLongueMap[forme];
+  const titreSocieteInlineMap: Record<EffectiveForm, string> = {
+    EURL: "« entreprise unipersonnelle à responsabilité limitée »",
+    SARL: "« société à responsabilité limitée »",
+    SASU: "« société par actions simplifiée unipersonnelle »",
+    SAS: "« société par actions simplifiée »",
+  };
+  const titreSocieteInline = titreSocieteInlineMap[forme];
+  const initiales = forme;
+  const titreParts = isSAS ? "actions" : "parts sociales";
+  const titrePart = isSAS ? "action" : "part sociale";
 
-  const associes = body.associes ?? [];
-  const extraManagers = body.extraManagers ?? [];
   const managers: Personne[] = [
     ...associes.filter(a => a.isManager),
     ...extraManagers,
@@ -258,29 +281,32 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
   }
   y += boxHeight + 10;
 
-  // ═══ LES SOUSSIGNÉS ═══
-  addText("LES SOUSSIGNÉS", { bold: true, size: 13, spacing: 4 });
-  if (associes.length === 1) {
-    addText(`${civilStateSentence(associes[0])}.`, { spacing: 4 });
+  // ═══ LES SOUSSIGNÉS / LE SOUSSIGNÉ ═══
+  if (unipersonnel) {
+    const u = associes[0];
+    const soussigneLabel = u && u.gender === "F" ? "LA SOUSSIGNÉE" : "LE SOUSSIGNÉ";
+    addText(soussigneLabel, { bold: true, size: 13, spacing: 4 });
+    if (u) addText(`${civilStateSentence(u)}.`, { spacing: 4 });
   } else {
+    addText("LES SOUSSIGNÉS", { bold: true, size: 13, spacing: 4 });
     associes.forEach((a, i) => {
       addText(`${i + 1}. ${civilStateSentence(a)} ;`, { spacing: 2 });
     });
     y += 2;
   }
-  addText(
-    isSASU
-      ? "Ont établi ainsi qu'il suit les statuts de la société par actions simplifiée unipersonnelle qu'ils ont convenu de constituer."
-      : "Ont établi ainsi qu'il suit les statuts de la société à responsabilité limitée qu'ils ont convenu de constituer.",
-    { spacing: 8 }
-  );
+  const introSoussignes = unipersonnel
+    ? `A établi ainsi qu'il suit les statuts de la ${formeLongue} avec un associé unique qu'il a convenu de constituer.`
+    : `Ont établi ainsi qu'il suit les statuts de la ${formeLongue} qu'ils ont convenu de constituer.`;
+  addText(introSoussignes, { spacing: 8 });
 
   // ═══ ARTICLES ═══
-  addArticle("Article 1 — Forme", [
-    isSASU
-      ? "Il est formé par le soussigné une société par actions simplifiée unipersonnelle régie par les dispositions des articles L. 227-1 à L. 227-20 du Code de commerce, ainsi que par les présents statuts."
-      : "Il est formé entre les soussignés une société à responsabilité limitée régie par les articles L. 223-1 et suivants du Code de commerce, ainsi que par les présents statuts.",
-  ]);
+  const article1Map: Record<EffectiveForm, string> = {
+    SASU: "Il est formé par le soussigné une société par actions simplifiée unipersonnelle régie par les dispositions des articles L. 227-1 à L. 227-20 du Code de commerce, ainsi que par les présents statuts, avec un associé unique.",
+    SAS: "Il est formé entre les soussignés une société par actions simplifiée régie par les dispositions des articles L. 227-1 à L. 227-20 du Code de commerce, ainsi que par les présents statuts.",
+    EURL: "Il est formé par le soussigné une société à responsabilité limitée à associé unique régie par les articles L. 223-1 et suivants du Code de commerce, ainsi que par les présents statuts.",
+    SARL: "Il est formé entre les soussignés une société à responsabilité limitée régie par les articles L. 223-1 et suivants du Code de commerce, ainsi que par les présents statuts.",
+  };
+  addArticle("Article 1 — Forme", [article1Map[forme]]);
 
   addArticle("Article 2 — Objet social", [
     `La société a pour objet : ${body.activity} ; et plus généralement, toutes opérations industrielles, commerciales, financières, mobilières ou immobilières, se rapportant directement ou indirectement à l'objet social ou susceptibles d'en faciliter l'extension ou le développement.`,
@@ -291,27 +317,30 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
   ]);
 
   addArticle("Article 4 — Siège social", [
-    `Le siège social est fixé au : ${addressPretty}. Il peut être transféré en tout autre lieu par décision ${isSASU ? "de l'associé unique" : "des associés"}.`,
+    `Le siège social est fixé au : ${addressPretty}. Il peut être transféré en tout autre lieu par décision ${unipersonnel ? "de l'associé unique" : "des associés"}.`,
   ]);
 
   addArticle("Article 5 — Durée", [
     "La durée de la société est fixée à 99 années à compter de son immatriculation au Registre du Commerce et des Sociétés, sauf dissolution anticipée ou prorogation.",
   ]);
 
-  // Article 6 — Apports et capital (répartition détaillée)
+  // Article 6 — Apports et capital
   const article6: string[] = [];
-  if (isSASU) {
+  if (unipersonnel) {
     const unique = associes[0];
     article6.push(
-      `L'associé unique, ${unique ? unique.fullName : ""}, apporte en numéraire la somme de ${capitalStr} (${capitalLettres} euros). Le capital social est fixé à ${capitalStr} (${capitalLettres} euros), divisé en ${body.capital} ${titreParts} de 1 € chacune, entièrement souscrites et libérées, attribuées en totalité à l'associé unique.`
+      `L'associé unique apporte en numéraire la somme de ${capitalStr} (${capitalLettres} euros). Le capital social est fixé à ${capitalStr} (${capitalLettres} euros), divisé en ${body.capital} ${titreParts} de 1 € chacune, entièrement souscrites et libérées, attribuées en totalité à l'associé unique.`
     );
+    if (unique) {
+      article6.push(`${unique.fullName} : ${body.capital} ${titreParts} (100%).`);
+    }
   } else {
     article6.push(
       `Les associés apportent en numéraire la somme totale de ${capitalStr} (${capitalLettres} euros). Le capital social est fixé à ${capitalStr} (${capitalLettres} euros), divisé en ${body.capital} ${titreParts} de 1 € chacune, entièrement souscrites et libérées.`
     );
     const lignes = associes.map(a => {
       const nb = Math.round((a.percent / 100) * body.capital);
-      const noun = nb > 1 ? "parts sociales" : "part sociale";
+      const noun = nb > 1 ? titreParts : titrePart;
       return `— ${a.fullName} : ${nb} ${noun} (${a.percent}%), soit un apport de ${formatEuro(nb)}`;
     }).join("\n");
     article6.push(`Répartition entre les associés :\n${lignes}`);
@@ -320,8 +349,8 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
   }
   addArticle("Article 6 — Apports et capital social", article6);
 
-  // Article 7 — Présidence / Gérance (tous les dirigeants)
-  if (isSASU) {
+  // Article 7 — Présidence / Gérance
+  if (isSAS) {
     const paras: string[] = [
       "La société est dirigée et administrée par un Président, personne physique ou morale, associé ou non.",
     ];
@@ -332,7 +361,7 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
       managers.forEach((m, i) => paras.push(`${i + 1}. ${civilStateSentence(m)}.`));
     }
     paras.push("Le Président est investi des pouvoirs les plus étendus pour agir en toute circonstance au nom de la société, dans la limite de l'objet social. Il représente la société à l'égard des tiers.");
-    paras.push("Le Président est nommé sans limitation de durée. Il peut démissionner à tout moment sous réserve d'un préavis raisonnable. Sa rémunération est fixée par décision de l'associé unique.");
+    paras.push(`Le Président est nommé sans limitation de durée. Il peut démissionner à tout moment sous réserve d'un préavis raisonnable. Sa rémunération est fixée par décision ${unipersonnel ? "de l'associé unique" : "collective des associés"}.`);
     addArticle("Article 7 — Présidence", paras);
   } else {
     const paras: string[] = [
@@ -345,7 +374,7 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
       managers.forEach((m, i) => paras.push(`${i + 1}. ${civilStateSentence(m)}.`));
     }
     paras.push("Chaque gérant est investi des pouvoirs les plus étendus pour agir au nom de la société dans la limite de l'objet social et sous réserve des pouvoirs expressément attribués aux associés par la loi ou les présents statuts.");
-    paras.push("Le(s) gérant(s) est(sont) nommé(s) sans limitation de durée. Leur rémunération est fixée par décision collective des associés.");
+    paras.push(`Le(s) gérant(s) est(sont) nommé(s) sans limitation de durée. Leur rémunération est fixée par décision ${unipersonnel ? "de l'associé unique" : "collective des associés"}.`);
     addArticle("Article 7 — Gérance", paras);
   }
 
@@ -354,10 +383,15 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     "Par exception, le premier exercice commencera à la date d'immatriculation de la société au RCS et se terminera le 31 décembre de la même année, ou de l'année suivante si l'immatriculation intervient après le 30 juin.",
   ]);
 
-  if (isSASU) {
+  if (unipersonnel) {
     addArticle("Article 9 — Décisions de l'associé unique", [
       "L'associé unique exerce les pouvoirs dévolus par la loi à la collectivité des associés. Ses décisions sont répertoriées dans un registre coté et paraphé.",
-      "Relèvent de sa compétence exclusive : l'approbation des comptes annuels et l'affectation du résultat, la nomination et la révocation du Président, la modification des statuts, ainsi que la transformation, la dissolution ou la prorogation de la société.",
+      `Relèvent de sa compétence exclusive : l'approbation des comptes annuels et l'affectation du résultat, la nomination et la révocation du ${dirigeantTitre === "Président" ? "Président" : "gérant"}, la modification des statuts, ainsi que la transformation, la dissolution ou la prorogation de la société.`,
+    ]);
+  } else if (isSAS) {
+    addArticle("Article 9 — Décisions collectives", [
+      "Les décisions collectives sont prises en assemblée générale ou, lorsque la loi le permet, par consultation écrite des associés.",
+      "Les décisions ordinaires sont adoptées à la majorité des actions présentes ou représentées. Les décisions extraordinaires emportant modification des statuts sont adoptées dans les conditions fixées par les présents statuts, dans le respect des dispositions impératives des articles L. 227-9 et suivants du Code de commerce.",
     ]);
   } else {
     addArticle("Article 9 — Décisions collectives", [
@@ -366,10 +400,15 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     ]);
   }
 
-  if (isSASU) {
+  if (unipersonnel) {
+    addArticle(`Article 10 — Cession des ${titreParts}`, [
+      `Tant que la société demeure unipersonnelle, l'associé unique cède librement ses ${titreParts}.`,
+      "En cas de pluralité d'associés, les règles d'agrément légales s'appliquent.",
+    ]);
+  } else if (isSAS) {
     addArticle("Article 10 — Cession des actions", [
-      "Tant que la société demeure unipersonnelle, l'associé unique cède librement ses actions.",
-      "En cas de pluralité d'associés, toute cession à un tiers est soumise à l'agrément préalable de la collectivité des associés dans les conditions prévues par la loi et, le cas échéant, par les présents statuts.",
+      "Les actions sont librement cessibles entre associés.",
+      "Toute cession à un tiers étranger à la société est soumise à l'agrément préalable de la collectivité des associés dans les conditions prévues par la loi et, le cas échéant, par les présents statuts.",
     ]);
   } else {
     addArticle("Article 10 — Cession des parts sociales", [
@@ -385,7 +424,7 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
 
   addArticle("Article 12 — Commissaire aux comptes", [
     `La nomination d'un commissaire aux comptes n'est pas obligatoire tant que la société ne dépasse pas les seuils légaux fixés par la réglementation en vigueur.`,
-    `${isSASU ? "L'associé unique" : "Les associés"} peu${isSASU ? "t" : "vent"} décider d'en nommer un volontairement.`,
+    `${unipersonnel ? "L'associé unique peut" : "Les associés peuvent"} décider d'en nommer un volontairement.`,
   ]);
 
   addArticle("Article 13 — Résultats sociaux", [
@@ -393,8 +432,8 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
   ]);
 
   addArticle("Article 14 — Dissolution — Liquidation", [
-    `La société est dissoute à l'expiration de sa durée, ${isSASU ? "par décision de l'associé unique" : "par décision collective des associés"}, ou pour toute autre cause prévue par la loi.`,
-    `La dissolution entraîne la liquidation, effectuée par le ${dirigeantTitre} ou tout liquidateur désigné par ${isSASU ? "l'associé unique" : "les associés"}, qui dispose des pouvoirs les plus étendus pour réaliser l'actif et apurer le passif.`,
+    `La société est dissoute à l'expiration de sa durée, ${unipersonnel ? "par décision de l'associé unique" : "par décision collective des associés"}, ou pour toute autre cause prévue par la loi.`,
+    `La dissolution entraîne la liquidation, effectuée par le ${dirigeantTitre} ou tout liquidateur désigné par ${unipersonnel ? "l'associé unique" : "les associés"}, qui dispose des pouvoirs les plus étendus pour réaliser l'actif et apurer le passif.`,
   ]);
 
   // ═══ SIGNATURES ═══
@@ -409,17 +448,23 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     addText(name, { bold: true, spacing: 6 });
   };
 
-  if (isSASU) {
+  if (unipersonnel) {
     const u = associes[0];
     const civU = u ? civilite(u.gender) : "M.";
-    signatureBlock("Signature de l'associé unique et Président :", `${civU} ${u?.fullName ?? ""} — associé unique et Président`);
+    const isMgr = u?.isManager;
+    const suffix = isMgr ? (isSAS ? " et Président" : " et gérant") : "";
+    signatureBlock(
+      `Signature de l'associé unique${suffix} :`,
+      `${civU} ${u?.fullName ?? ""} — associé unique${suffix}`
+    );
   } else {
     associes.forEach((a) => {
-      const roles = a.isManager ? "associé et gérant" : "associé";
+      const roles = a.isManager ? (isSAS ? "associé et Président" : "associé et gérant") : "associé";
       signatureBlock(`Signature de ${a.fullName} :`, `${civilite(a.gender)} ${a.fullName} — ${roles}`);
     });
     extraManagers.forEach((m) => {
-      signatureBlock(`Signature de ${m.fullName} :`, `${civilite(m.gender)} ${m.fullName} — gérant non associé`);
+      const role = isSAS ? "Président non associé" : "gérant non associé";
+      signatureBlock(`Signature de ${m.fullName} :`, `${civilite(m.gender)} ${m.fullName} — ${role}`);
     });
   }
 

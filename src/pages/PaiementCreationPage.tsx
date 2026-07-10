@@ -373,11 +373,15 @@ export default function PaiementCreationPage() {
         </div>
 
         <div className="space-y-2">
-          <Label>نوع الشركة</Label>
+          <Label>نوع الشركة (العائلة)</Label>
           <RadioGroup value={companyType} onValueChange={(v) => setCompanyType(v as "SASU" | "SARL")} className="flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="SASU" /> SASU</label>
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="SARL" /> SARL</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="SASU" /> SAS / SASU</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="SARL" /> SARL / EURL</label>
           </RadioGroup>
+          <div className="flex items-center gap-2 pt-1">
+            <Badge variant="secondary" className="text-sm">الشكل القانوني : {effectiveForm}</Badge>
+            <span className="text-xs text-muted-foreground">{effectiveHint[effectiveForm]}</span>
+          </div>
         </div>
 
         <div className="space-y-2">

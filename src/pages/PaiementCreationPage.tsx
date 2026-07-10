@@ -191,6 +191,8 @@ export default function PaiementCreationPage() {
   const [autresCharges, setAutresCharges] = useState<number>(1000);
 
   const [generating, setGenerating] = useState(false);
+  const [generatedDocs, setGeneratedDocs] = useState<Array<{ label: string; filename: string; doc: ReturnType<typeof buildStatutsPdf> }>>([]);
+
 
   useEffect(() => {
     if (!isLoading && !user) navigate("/login");
@@ -338,6 +340,8 @@ export default function PaiementCreationPage() {
 
       toast.dismiss(tid);
 
+      const built: Array<{ label: string; filename: string; doc: ReturnType<typeof buildStatutsPdf> }> = [];
+
       if (needStatuts) {
         const doc = buildStatutsPdf({
           companyName: companyNameFr,
@@ -349,7 +353,7 @@ export default function PaiementCreationPage() {
           associes: associesFr,
           extraManagers: extraManagersFr,
         });
-        savePdfSafely(doc, `statuts-${companyNameFr || "societe"}.pdf`);
+        built.push({ label: "📄 عقد التأسيس", filename: `statuts-${companyNameFr || "societe"}.pdf`, doc });
 
         // 3 documents complémentaires du dossier de création
         const isSAS = companyType === "SASU";
@@ -366,7 +370,11 @@ export default function PaiementCreationPage() {
             signatureCity: signatureCityFr,
           });
           const suffix = allDirigeants.length > 1 ? `-${idx + 1}` : "";
-          savePdfSafely(attDoc, `attestation-non-condamnation${suffix}-${p.fullName || "dirigeant"}.pdf`);
+          built.push({
+            label: `📝 شهادة عدم الإدانة — ${p.fullName || `مدير ${idx + 1}`}`,
+            filename: `attestation-non-condamnation${suffix}-${p.fullName || "dirigeant"}.pdf`,
+            doc: attDoc,
+          });
         });
 
         const beDoc = buildBeneficiairesPdf({
@@ -375,10 +383,7 @@ export default function PaiementCreationPage() {
           extraManagers: extraManagersFr,
           companyType,
         });
-        savePdfSafely(beDoc, `beneficiaires-effectifs-${companyNameFr || "societe"}.pdf`);
-
-        const guideDoc = buildGuideDepotPdf();
-        savePdfSafely(guideDoc, `guide-depot-inpi.pdf`);
+        built.push({ label: "👥 فيشة المستفيدين الفعليين", filename: `beneficiaires-effectifs-${companyNameFr || "societe"}.pdf`, doc: beDoc });
       }
       if (needPrevi) {
         const doc = buildPrevisionnelPdf({
@@ -397,8 +402,14 @@ export default function PaiementCreationPage() {
           achats_materiaux_annuels: achatsMateriaux,
           autres_charges_annuelles: autresCharges,
         });
-        savePdfSafely(doc, `previsionnel-${activityFr || "activite"}.pdf`);
+        built.push({ label: "📊 الدراسة المالية", filename: `previsionnel-${activityFr || "activite"}.pdf`, doc });
       }
+
+      // Le guide de dépôt (document 3) est TOUJOURS offert, y compris pour les achats individuels
+      const guideDoc = buildGuideDepotPdf();
+      built.push({ label: "📖 دليل التسجيل على INPI (مجاناً)", filename: "guide-depot-inpi.pdf", doc: guideDoc });
+
+      setGeneratedDocs(built);
       toast.success("الوثائق جاهزة ✅");
     } catch (e) {
       toast.dismiss(tid);
@@ -716,8 +727,29 @@ export default function PaiementCreationPage() {
       </Card>
 
       <Button onClick={handleGenerate} disabled={generating} size="lg" className="w-full">
-        {generating ? <><Loader2 className="ml-2 animate-spin h-5 w-5" /> جاري التوليد...</> : "توليد الوثيقة"}
+        {generating ? <><Loader2 className="ml-2 animate-spin h-5 w-5" /> جاري التوليد...</> : "توليد الوثائق"}
       </Button>
+
+      {generatedDocs.length > 0 && (
+        <Card className="p-5 space-y-3 bg-green-50 dark:bg-green-950/30 border-green-500">
+          <h2 className="text-xl font-bold">📂 ملف تأسيس شركتك الكامل</h2>
+          <p className="text-sm text-muted-foreground">اضغط على كل وثيقة لتحميلها</p>
+          <div className="space-y-2">
+            {generatedDocs.map((d, i) => (
+              <Button
+                key={i}
+                type="button"
+                variant="outline"
+                className="w-full justify-between text-right"
+                onClick={() => savePdfSafely(d.doc, d.filename)}
+              >
+                <span className="text-xs opacity-60">تحميل ⬇</span>
+                <span className="font-semibold">{d.label}</span>
+              </Button>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

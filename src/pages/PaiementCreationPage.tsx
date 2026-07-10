@@ -268,24 +268,32 @@ export default function PaiementCreationPage() {
       ]);
 
       const associesFr: AssocieDetail[] = await Promise.all(
-        associes.map(async (a) => ({
-          fullName: await trIfAr(a.fullName),
-          birthDate: birthToStr(a.birth),
-          birthPlace: await trIfAr(a.birthPlace),
-          nationality: await trIfAr(a.nationality),
-          address: await trIfAr(a.address),
-          percent: Number(a.percent) || 0,
-          isManager: !!a.isManager,
-        }))
+        associes.map(async (a) => {
+          const natRaw = await trIfAr(a.nationality, NATIONALITY_INSTRUCTION);
+          return {
+            gender: a.gender,
+            fullName: await trIfAr(a.fullName),
+            birthDate: birthToStr(a.birth),
+            birthPlace: await trIfAr(a.birthPlace),
+            nationality: normalizeNationalityFeminine(natRaw),
+            address: await trIfAr(a.address),
+            percent: Number(a.percent) || 0,
+            isManager: !!a.isManager,
+          };
+        })
       );
       const extraManagersFr: Personne[] = await Promise.all(
-        extraManagers.map(async (m) => ({
-          fullName: await trIfAr(m.fullName),
-          birthDate: birthToStr(m.birth),
-          birthPlace: await trIfAr(m.birthPlace),
-          nationality: await trIfAr(m.nationality),
-          address: await trIfAr(m.address),
-        }))
+        extraManagers.map(async (m) => {
+          const natRaw = await trIfAr(m.nationality, NATIONALITY_INSTRUCTION);
+          return {
+            gender: m.gender,
+            fullName: await trIfAr(m.fullName),
+            birthDate: birthToStr(m.birth),
+            birthPlace: await trIfAr(m.birthPlace),
+            nationality: normalizeNationalityFeminine(natRaw),
+            address: await trIfAr(m.address),
+          };
+        })
       );
 
       toast.dismiss(tid);

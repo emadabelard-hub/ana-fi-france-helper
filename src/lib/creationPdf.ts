@@ -100,8 +100,51 @@ function extractCity(address: string): string {
   return last.replace(/^\d{4,5}\s*/, "").trim() || last;
 }
 
+// Capitalisation propre pour villes/adresses ("le caire" -> "Le Caire", "épinay-sur-seine" -> "Épinay-sur-Seine")
+const SMALL_WORDS = new Set(["de", "du", "des", "la", "le", "les", "et", "en", "sur", "sous", "aux", "au", "d", "l"]);
+function titleCasePlace(input: string): string {
+  if (!input) return input;
+  const capWord = (w: string): string => {
+    if (!w) return w;
+    // Traite chaque segment séparé par un tiret indépendamment
+    return w.split("-").map(seg => {
+      if (!seg) return seg;
+      const lower = seg.toLocaleLowerCase("fr-FR");
+      return lower.charAt(0).toLocaleUpperCase("fr-FR") + lower.slice(1);
+    }).join("-");
+  };
+  // Découpe en tokens en conservant séparateurs (espaces, virgules, apostrophes)
+  return input.split(/(\s+|,|'|’)/).map((tok, idx, arr) => {
+    if (!tok) return tok;
+    if (/^\s+$/.test(tok) || tok === "," || tok === "'" || tok === "’") return tok;
+    // garder les chiffres tels quels
+    if (/^\d+$/.test(tok)) return tok;
+    const lower = tok.toLocaleLowerCase("fr-FR");
+    // Mots outils en minuscule sauf en tête ou après virgule
+    const prevNonSpace = (() => {
+      for (let i = idx - 1; i >= 0; i--) {
+        const t = arr[i];
+        if (t && !/^\s+$/.test(t)) return t;
+      }
+      return "";
+    })();
+    const isFirst = idx === 0 || prevNonSpace === "" || prevNonSpace === ",";
+    if (!isFirst && SMALL_WORDS.has(lower)) return lower;
+    return capWord(tok);
+  }).join("");
+}
+
+function nePart(gender: Gender): string {
+  return gender === "F" ? "née" : "né";
+}
+function civilite(gender: Gender): string {
+  return gender === "F" ? "Mme" : "M.";
+}
+
 function civilStateSentence(p: Personne): string {
-  return `M/Mme ${p.fullName}, né(e) le ${p.birthDate} à ${p.birthPlace}, de nationalité ${p.nationality}, demeurant ${p.address}`;
+  const bp = titleCasePlace(p.birthPlace);
+  const addr = titleCasePlace(p.address);
+  return `${civilite(p.gender)} ${p.fullName}, ${nePart(p.gender)} le ${p.birthDate} à ${bp}, de nationalité ${p.nationality}, demeurant ${addr}`;
 }
 
 export function buildStatutsPdf(body: StatutsInput): jsPDF {

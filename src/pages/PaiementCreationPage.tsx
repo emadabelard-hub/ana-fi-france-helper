@@ -173,6 +173,17 @@ export default function PaiementCreationPage() {
   const [caEstime, setCaEstime] = useState<number>(50000);
   const [isBtp, setIsBtp] = useState(true);
 
+  // Charges personnalisées
+  const [remuDirigeant, setRemuDirigeant] = useState<number>(0);
+  const [nbSalaries, setNbSalaries] = useState<number>(0);
+  const [salaireMoyen, setSalaireMoyen] = useState<number>(0);
+  const [vehiculeMensuel, setVehiculeMensuel] = useState<number>(0);
+  const [loyerMensuel, setLoyerMensuel] = useState<number>(0);
+  const [assurancesAnnuelles, setAssurancesAnnuelles] = useState<number>(1900);
+  const [comptableAnnuel, setComptableAnnuel] = useState<number>(1200);
+  const [achatsMateriaux, setAchatsMateriaux] = useState<number>(0);
+  const [autresCharges, setAutresCharges] = useState<number>(1000);
+
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {

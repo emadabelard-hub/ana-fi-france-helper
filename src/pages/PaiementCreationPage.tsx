@@ -191,6 +191,8 @@ export default function PaiementCreationPage() {
   const [autresCharges, setAutresCharges] = useState<number>(1000);
 
   const [generating, setGenerating] = useState(false);
+  const [generatedDocs, setGeneratedDocs] = useState<Array<{ label: string; filename: string; doc: ReturnType<typeof buildStatutsPdf> }>>([]);
+
 
   useEffect(() => {
     if (!isLoading && !user) navigate("/login");

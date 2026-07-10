@@ -44,6 +44,24 @@ export interface PrevisionnelInput {
   capital: number;
   chiffre_affaires_estime: number;
   is_btp?: boolean;
+  /** Rémunération NETTE mensuelle du dirigeant (€) */
+  remuneration_dirigeant_mensuelle?: number;
+  /** Nombre de salariés hors dirigeant */
+  nb_salaries?: number;
+  /** Salaire NET mensuel moyen par salarié (€) */
+  salaire_moyen_mensuel?: number;
+  /** Coût véhicule mensuel (€) */
+  vehicule_mensuel?: number;
+  /** Loyer mensuel (€) */
+  loyer_mensuel?: number;
+  /** Assurances annuelles (décennale + RC Pro) (€) */
+  assurances_annuelles?: number;
+  /** Comptable annuel (€) */
+  comptable_annuel?: number;
+  /** Achats matériaux annuels (€) */
+  achats_materiaux_annuels?: number;
+  /** Autres charges annuelles (€) */
+  autres_charges_annuelles?: number;
 }
 
 // Formatte un montant avec espace NORMAL (jsPDF gère mal l'espace insécable)

@@ -59,6 +59,12 @@ function stripDigits(input: string): string {
   return (input || "").replace(/[0-9]/g, "").trim();
 }
 
+// Trim + remplace toute suite d'espaces/tabs/retours par un espace simple
+function cleanSpaces(input: string): string {
+  if (!input) return input;
+  return input.replace(/\s+/g, " ").trim();
+}
+
 // Map minimale pour restaurer les accents français des pays fréquents
 const COUNTRY_ACCENTS: Record<string, string> = {
   "egypte": "Égypte", "égypte": "Égypte",
@@ -387,45 +393,55 @@ export default function PaiementCreationPage() {
     try {
       // Traduction en parallèle de tous les champs susceptibles d'être en arabe
       const [
-        companyNameFr, activityFr, addressFr, signatureCityFr,
+        companyNameFrRaw, activityFrRaw, addressFrRaw, signatureCityFrRaw,
       ] = await Promise.all([
         trIfAr(companyName), trIfAr(activity), trIfAr(address), trIfAr(signatureCity),
       ]);
+      const companyNameFr = cleanSpaces(companyNameFrRaw);
+      const activityFr = cleanSpaces(activityFrRaw);
+      const addressFr = cleanSpaces(addressFrRaw);
+      const signatureCityFr = cleanSpaces(signatureCityFrRaw);
 
-      const associesFr: AssocieDetail[] = await Promise.all(
-        associes.map(async (a) => {
-          const natRaw = stripDigits(await trIfAr(stripDigits(a.nationality), NATIONALITY_INSTRUCTION));
-          const bpTr = await trIfAr(a.birthPlace);
-          return {
-            gender: a.gender,
-            fullName: await trIfAr(a.fullName),
-            birthDate: birthToStr(a.birth),
-            birthPlace: formatBirthPlace(bpTr),
-            nationality: normalizeNationalityFeminine(natRaw),
-            address: await trIfAr(a.address),
-            fatherName: await trIfAr(a.fatherName),
-            motherName: await trIfAr(a.motherName),
-            percent: Number(a.percent) || 0,
-            isManager: !!a.isManager,
-          };
-        })
-      );
-      const extraManagersFr: Personne[] = await Promise.all(
-        extraManagers.map(async (m) => {
-          const natRaw = stripDigits(await trIfAr(stripDigits(m.nationality), NATIONALITY_INSTRUCTION));
-          const bpTr = await trIfAr(m.birthPlace);
-          return {
-            gender: m.gender,
-            fullName: await trIfAr(m.fullName),
-            birthDate: birthToStr(m.birth),
-            birthPlace: formatBirthPlace(bpTr),
-            nationality: normalizeNationalityFeminine(natRaw),
-            address: await trIfAr(m.address),
-            fatherName: await trIfAr(m.fatherName),
-            motherName: await trIfAr(m.motherName),
-          };
-        })
-      );
+      const associesFr: AssocieDetail[] = [];
+      for (const a of associes) {
+        const natRaw = stripDigits(await trIfAr(stripDigits(a.nationality), NATIONALITY_INSTRUCTION));
+        const bpTr = await trIfAr(a.birthPlace);
+        const fullName = await trIfAr(a.fullName);
+        const address = await trIfAr(a.address);
+        const fatherName = await trIfAr(a.fatherName);
+        const motherName = await trIfAr(a.motherName);
+        associesFr.push({
+          gender: a.gender,
+          fullName: cleanSpaces(fullName),
+          birthDate: birthToStr(a.birth),
+          birthPlace: cleanSpaces(formatBirthPlace(bpTr)),
+          nationality: cleanSpaces(normalizeNationalityFeminine(natRaw)),
+          address: cleanSpaces(address),
+          fatherName: cleanSpaces(fatherName),
+          motherName: cleanSpaces(motherName),
+          percent: Number(a.percent) || 0,
+          isManager: !!a.isManager,
+        });
+      }
+      const extraManagersFr: Personne[] = [];
+      for (const m of extraManagers) {
+        const natRaw = stripDigits(await trIfAr(stripDigits(m.nationality), NATIONALITY_INSTRUCTION));
+        const bpTr = await trIfAr(m.birthPlace);
+        const fullName = await trIfAr(m.fullName);
+        const address = await trIfAr(m.address);
+        const fatherName = await trIfAr(m.fatherName);
+        const motherName = await trIfAr(m.motherName);
+        extraManagersFr.push({
+          gender: m.gender,
+          fullName: cleanSpaces(fullName),
+          birthDate: birthToStr(m.birth),
+          birthPlace: cleanSpaces(formatBirthPlace(bpTr)),
+          nationality: cleanSpaces(normalizeNationalityFeminine(natRaw)),
+          address: cleanSpaces(address),
+          fatherName: cleanSpaces(fatherName),
+          motherName: cleanSpaces(motherName),
+        });
+      }
 
       toast.dismiss(tid);
 

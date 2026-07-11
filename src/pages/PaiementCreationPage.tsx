@@ -462,7 +462,7 @@ export default function PaiementCreationPage() {
         if (!m.nationality.trim()) return `${label}: الجنسية مطلوبة`;
         if (/[0-9]/.test(m.nationality)) return `${label}: الجنسية ما ينفعش تكون فيها أرقام ✍️`;
         if (!m.address.trim()) return `${label}: العنوان مطلوب`;
-        if (!addressHasCity(m.address)) return `${label}: لازم تكتب اسم المدينة في العنوان`;
+        if (!personalAddressValid(m.address)) return `${label}: العنوان لازم يكون كامل (شارع + رقم + مدينة)`;
         if (!m.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
         if (!m.motherName.trim()) return `${label}: اسم الأم مطلوب`;
       }

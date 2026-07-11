@@ -59,6 +59,12 @@ function stripDigits(input: string): string {
   return (input || "").replace(/[0-9]/g, "").trim();
 }
 
+// Trim + remplace toute suite d'espaces/tabs/retours par un espace simple
+function cleanSpaces(input: string): string {
+  if (!input) return input;
+  return input.replace(/\s+/g, " ").trim();
+}
+
 // Map minimale pour restaurer les accents français des pays fréquents
 const COUNTRY_ACCENTS: Record<string, string> = {
   "egypte": "Égypte", "égypte": "Égypte",

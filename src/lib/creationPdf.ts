@@ -1148,16 +1148,19 @@ export async function buildGuideDepotPdf(): Promise<jsPDF> {
     const size = opts.size ?? 11;
     doc.setFontSize(size);
     const lines = doc.splitTextToSize(text, usableWidth);
-    const lh = 0.55 * size;
     for (const line of lines) {
-      if (y > bottomLimit) { doc.addPage(); y = margin; }
+      const dim = doc.getTextDimensions(line);
+      const lh = dim.h;
+      if (y + lh > bottomLimit) { doc.addPage(); y = margin; }
       doc.text(line, opts.align === "center" ? pageWidth / 2 : margin, y, {
         align: opts.align === "center" ? "center" : "left",
+        baseline: "top",
       });
       y += lh;
     }
     y += opts.spacing ?? 3;
   };
+
 
   // Rend une ligne arabe en image, alignée à droite (RTL)
   const addArabic = async (text: string, opts: { bold?: boolean; size?: number; align?: "right" | "center"; spacing?: number } = {}) => {

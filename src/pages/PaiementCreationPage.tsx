@@ -411,6 +411,12 @@ export default function PaiementCreationPage() {
           comptable_annuel: comptableAnnuel,
           achats_materiaux_annuels: achatsMateriaux,
           autres_charges_annuelles: autresCharges,
+          investissement_materiel: hasInvestMateriel === "yes" ? investMateriel : 0,
+          vehicule_situation: vehSituation || undefined,
+          vehicule_mode: vehSituation === "toBuy" ? (vehMode || undefined) : undefined,
+          emprunt_montant: hasEmprunt === "yes" ? empMontant : 0,
+          emprunt_annees: hasEmprunt === "yes" ? empAnnees : 0,
+          carnet_commandes: carnet || undefined,
         });
         built.push({ label: "📊 الدراسة المالية", filename: `previsionnel-${activityFr || "activite"}.pdf`, doc });
       }

@@ -1016,7 +1016,7 @@ export interface BeneficiairesInput {
   companyType: "SASU" | "SARL";
 }
 
-export function buildBeneficiairesPdf(body: BeneficiairesInput): jsPDF {
+export async function buildBeneficiairesPdf(body: BeneficiairesInput): Promise<jsPDF> {
   const associes = body.associes ?? [];
   const extraManagers = body.extraManagers ?? [];
   const isSAS = body.companyType === "SASU";
@@ -1059,7 +1059,6 @@ export function buildBeneficiairesPdf(body: BeneficiairesInput): jsPDF {
   );
   addText(`Société : ${body.companyName}`, { bold: true, size: 12, spacing: 8 });
 
-  const managerIds = new Set(associes.filter(a => a.isManager).map(a => a.fullName));
   const beneficiaires = associes.filter(a => a.percent > 25);
 
   const printBeneficiaire = (p: AssocieDetail | Personne, n: number, opts: { percent?: number; isManager?: boolean; note?: string }) => {
@@ -1087,7 +1086,6 @@ export function buildBeneficiairesPdf(body: BeneficiairesInput): jsPDF {
       printBeneficiaire(a, i + 1, { percent: a.percent, isManager: a.isManager });
     });
   } else {
-    // Par défaut : dirigeants
     addText(
       "Aucun associé ne détient plus de 25% du capital. En application de l'article R. 561-1 du Code monétaire et financier, le(s) dirigeant(s) doi(ven)t être déclaré(s) comme bénéficiaire(s) effectif(s) par défaut.",
       { italic: true, spacing: 6 }
@@ -1107,19 +1105,24 @@ export function buildBeneficiairesPdf(body: BeneficiairesInput): jsPDF {
     });
   }
 
-  ensureSpace(28);
+  // ─── Encadré d'avertissement en arabe (rendu via image pour éviter les glyphes corrompus) ───
+  const warnText = "⚠️ الورقة دي للتحضير بس — التصريح الرسمي بيتم أونلاين على موقع INPI وقت تسجيل الشركة.";
+  const warnImg = await renderArabicToImage(warnText, usableWidth - 6, {
+    bold: true, size: 10, align: "center", color: "#785000", bg: "#FFF8DC",
+  });
+  const boxH = Math.max(20, (warnImg?.heightMm ?? 8) + 8);
+  ensureSpace(boxH + 4);
   y += 4;
   doc.setDrawColor(200, 150, 0);
   doc.setFillColor(255, 248, 220);
   doc.setLineWidth(0.5);
-  doc.rect(margin, y, usableWidth, 20, "FD");
-  doc.setFont("times", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(120, 80, 0);
-  const warn = "الورقة دي للتحضير بس — التصريح الرسمي بيتم أونلاين على موقع INPI وقت تسجيل الشركة.";
-  doc.text("⚠️ " + warn, pageWidth / 2, y + 12, { align: "center", maxWidth: usableWidth - 6 });
-  doc.setTextColor(0);
-  y += 24;
+  doc.rect(margin, y, usableWidth, boxH, "FD");
+  if (warnImg) {
+    const imgX = margin + 3;
+    const imgY = y + (boxH - warnImg.heightMm) / 2;
+    doc.addImage(warnImg.dataUrl, "PNG", imgX, imgY, usableWidth - 6, warnImg.heightMm);
+  }
+  y += boxH + 4;
 
   fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);
   return doc;
@@ -1129,7 +1132,7 @@ export function buildBeneficiairesPdf(body: BeneficiairesInput): jsPDF {
 // DOCUMENT — GUIDE DE DÉPÔT + LISTE DES PIÈCES (bilingue)
 // ═══════════════════════════════════════════════════════════════════════
 
-export function buildGuideDepotPdf(): jsPDF {
+export async function buildGuideDepotPdf(): Promise<jsPDF> {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   doc.setFont("times", "normal");
   const margin = 22;
@@ -1156,8 +1159,19 @@ export function buildGuideDepotPdf(): jsPDF {
     y += opts.spacing ?? 3;
   };
 
+  // Rend une ligne arabe en image, alignée à droite (RTL)
+  const addArabic = async (text: string, opts: { bold?: boolean; size?: number; align?: "right" | "center"; spacing?: number } = {}) => {
+    const rendered = await renderArabicToImage(text, usableWidth, {
+      bold: opts.bold, size: opts.size ?? 11, align: opts.align ?? "right",
+    });
+    if (!rendered) return;
+    if (y + rendered.heightMm > bottomLimit) { doc.addPage(); y = margin; }
+    doc.addImage(rendered.dataUrl, "PNG", margin, y, usableWidth, rendered.heightMm);
+    y += rendered.heightMm + (opts.spacing ?? 3);
+  };
+
   // PAGE 1 — Liste des pièces
-  addText("📂 قائمة الأوراق المطلوبة لتسجيل شركتك", { bold: true, size: 15, align: "center", spacing: 3 });
+  await addArabic("📂 قائمة الأوراق المطلوبة لتسجيل شركتك", { bold: true, size: 15, align: "center", spacing: 3 });
   addText("Liste des pièces à fournir pour l'immatriculation", { italic: true, size: 12, align: "center", spacing: 10 });
 
   const pieces: Array<[string, string]> = [
@@ -1177,14 +1191,14 @@ export function buildGuideDepotPdf(): jsPDF {
      "Justificatif de qualification professionnelle si activité réglementée"],
   ];
   for (const [ar, fr] of pieces) {
-    addText(ar, { size: 11, spacing: 1 });
+    await addArabic(ar, { size: 11, spacing: 1 });
     addText(fr, { italic: true, size: 10, spacing: 5 });
   }
 
   // PAGE 2 — Guide étapes
   doc.addPage();
   y = margin;
-  addText("📖 إزاي تسجّل شركتك على Guichet Unique خطوة بخطوة", { bold: true, size: 14, align: "center", spacing: 3 });
+  await addArabic("📖 إزاي تسجّل شركتك على Guichet Unique خطوة بخطوة", { bold: true, size: 14, align: "center", spacing: 3 });
   addText("Guide de dépôt étape par étape sur procedures.inpi.fr", { italic: true, size: 12, align: "center", spacing: 10 });
 
   const etapes: Array<[string, string]> = [
@@ -1202,29 +1216,35 @@ export function buildGuideDepotPdf(): jsPDF {
      "Réception du numéro SIRET par email sous quelques jours"],
   ];
   for (const [ar, fr] of etapes) {
-    addText(ar, { size: 11, spacing: 1 });
+    await addArabic(ar, { size: 11, spacing: 1 });
     addText(fr, { italic: true, size: 10, spacing: 6 });
   }
 
-  // Encadré final
+  // Encadré final — texte arabe rendu en image
+  const arTitle = "💬 محتاج مساعدة في أي خطوة؟ اسأل شبيك لبيك";
+  const arTitleImg = await renderArabicToImage(arTitle, usableWidth - 6, {
+    bold: true, size: 11, align: "center", color: "#143C82", bg: "#E6F0FF",
+  });
+  const encH = Math.max(22, (arTitleImg?.heightMm ?? 8) + 14);
+  if (y + encH > bottomLimit) { doc.addPage(); y = margin; }
   y += 4;
-  if (y > 250) { doc.addPage(); y = margin; }
   doc.setDrawColor(30, 100, 180);
   doc.setFillColor(230, 240, 255);
   doc.setLineWidth(0.5);
-  doc.rect(margin, y, usableWidth, 22, "FD");
-  doc.setFont("times", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(20, 60, 130);
-  doc.text("💬 محتاج مساعدة في أي خطوة؟ اسأل شبيك لبيك", pageWidth / 2, y + 9, { align: "center", maxWidth: usableWidth - 6 });
+  doc.rect(margin, y, usableWidth, encH, "FD");
+  if (arTitleImg) {
+    doc.addImage(arTitleImg.dataUrl, "PNG", margin + 3, y + 3, usableWidth - 6, arTitleImg.heightMm);
+  }
   doc.setFont("times", "italic");
   doc.setFontSize(9);
-  doc.text("Ouvre INPI traduit en arabe sur anafypro.com/anafy-translate", pageWidth / 2, y + 17, { align: "center", maxWidth: usableWidth - 6 });
+  doc.setTextColor(20, 60, 130);
+  doc.text("Ouvre INPI traduit en arabe sur anafypro.com/anafy-translate", pageWidth / 2, y + encH - 4, { align: "center", maxWidth: usableWidth - 6 });
   doc.setTextColor(0);
-  y += 26;
+  y += encH + 4;
 
   fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);
   return doc;
 }
+
 
 

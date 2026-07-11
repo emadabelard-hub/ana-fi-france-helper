@@ -50,7 +50,9 @@ SARL لو : فيه شركاء
 
 بعد التوصية دايماً :
 - اشرح بإيجاز ليه الخيارين التانيين أقل مناسبة
-- اختم بـ : "لو عايز أجهزلك عقد التأسيس والدراسة المالية رسمياً جاهزين للبنك والـ Guichet Unique، اضغط هنا 👇"`;
+- اختم بـ : "لو عايز أجهزلك عقد التأسيس والدراسة المالية رسمياً جاهزين للبنك والـ Guichet Unique، اضغط هنا 👇"
+
+⚠️ قاعدة الإيجاز الإلزامية : قسم "الخطوات العملية" لازم يكون فيه 5 خطوات كحد أقصى، كل خطوة سطرين بحد أقصى. التفاصيل الكاملة موجودة على صفحة /creer-ma-societe فمافيش داعي للإطالة هنا.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -115,7 +117,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        max_tokens: 900,
+        max_tokens: 3000,
         temperature: 0.2,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
@@ -134,8 +136,10 @@ serve(async (req) => {
 
     const data = await response.json();
     const content = data?.choices?.[0]?.message?.content || "";
+    const finishReason = data?.choices?.[0]?.finish_reason || null;
+    const truncated = finishReason === "length" || finishReason === "MAX_TOKENS";
 
-    return new Response(JSON.stringify({ content }), {
+    return new Response(JSON.stringify({ content, truncated, finish_reason: finishReason }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

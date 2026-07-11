@@ -1,4 +1,49 @@
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+
+// ─── Détection & rendu de l'arabe via image (même mécanisme que le rapport de chantier) ───
+export function containsArabicText(s: string): boolean {
+  return /[\u0600-\u06FF]/.test(s || "");
+}
+
+export async function renderArabicToImage(
+  text: string,
+  widthMm: number,
+  opts?: { bold?: boolean; size?: number; align?: "right" | "left" | "center"; color?: string; bg?: string }
+): Promise<{ dataUrl: string; heightMm: number } | null> {
+  if (!text || !text.trim()) return null;
+  if (typeof document === "undefined") return null;
+  const pxPerMm = 96 / 25.4;
+  const widthPx = Math.max(50, Math.round(widthMm * pxPerMm));
+  const fontPx = Math.round((opts?.size ?? 11) * (96 / 72));
+  const div = document.createElement("div");
+  div.style.cssText = [
+    "position:fixed", "left:-99999px", "top:0",
+    `width:${widthPx}px`,
+    "direction:rtl",
+    `text-align:${opts?.align || "right"}`,
+    "font-family:'IBM Plex Sans Arabic','Tajawal','Noto Naskh Arabic',Arial,sans-serif",
+    `font-size:${fontPx}px`,
+    "line-height:1.55",
+    `color:${opts?.color || "#212121"}`,
+    `font-weight:${opts?.bold ? "700" : "400"}`,
+    `background:${opts?.bg || "#ffffff"}`,
+    "white-space:pre-wrap", "word-wrap:break-word", "padding:2px 0",
+  ].join(";");
+  div.textContent = text;
+  document.body.appendChild(div);
+  try {
+    if (document.fonts && typeof (document.fonts as unknown as { ready?: Promise<void> }).ready?.then === "function") {
+      try { await (document.fonts as unknown as { ready: Promise<void> }).ready; } catch { /* ignore */ }
+    }
+    const canvas = await html2canvas(div, {
+      scale: 2, backgroundColor: opts?.bg || "#ffffff", logging: false, useCORS: true,
+    });
+    return { dataUrl: canvas.toDataURL("image/png"), heightMm: (canvas.height / canvas.width) * widthMm };
+  } finally {
+    document.body.removeChild(div);
+  }
+}
 
 export type Gender = "M" | "F";
 

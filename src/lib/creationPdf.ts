@@ -1568,7 +1568,9 @@ export function buildPvNominationPdf(body: PvNominationInput): jsPDF {
       { spacing: 6 }
     );
     associes.forEach((a, i) => {
-      addText(`${i + 1}. ${civilStateSentence(a)}, associé à hauteur de ${a.percent}%.`, { spacing: 1 });
+      const isF = a.gender === "F";
+      const associeWord = isF ? "associée" : "associé";
+      addText(`${i + 1}. ${civilStateSentence(a)}, ${associeWord} à hauteur de ${a.percent}%.`, { spacing: 1 });
     });
     y += 3;
   }

@@ -855,7 +855,7 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
     };
     const netAfterIS = (rai: number): number => rai - computeIS(rai);
 
-    sectionTitle("💡 Pistes pour équilibrer votre projet (à titre indicatif)");
+    sectionTitle("Pistes pour équilibrer votre projet (à titre indicatif)");
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
 
@@ -1568,7 +1568,9 @@ export function buildPvNominationPdf(body: PvNominationInput): jsPDF {
       { spacing: 6 }
     );
     associes.forEach((a, i) => {
-      addText(`${i + 1}. ${civilStateSentence(a)}, associé à hauteur de ${a.percent}%.`, { spacing: 1 });
+      const isF = a.gender === "F";
+      const associeWord = isF ? "associée" : "associé";
+      addText(`${i + 1}. ${civilStateSentence(a)}, ${associeWord} à hauteur de ${a.percent}%.`, { spacing: 1 });
     });
     y += 3;
   }
@@ -1594,7 +1596,7 @@ export function buildPvNominationPdf(body: PvNominationInput): jsPDF {
     y += 2;
     const exercerVerb = multi ? "Ils exerceront" : singleF ? "Elle exercera" : "Il exercera";
     addText(
-      `${exercerVerb} les fonctions de ${fnCap} conformément aux statuts et aux dispositions légales et réglementaires en vigueur.`,
+      `${exercerVerb} les fonctions de ${isSAS ? fnCap : roleLower} conformément aux statuts et aux dispositions légales et réglementaires en vigueur.`,
       { spacing: 6 }
     );
   }
@@ -1623,8 +1625,10 @@ export function buildPvNominationPdf(body: PvNominationInput): jsPDF {
     ? (associes.length > 0 ? [associes[0]] : [])
     : associes;
   signatories.forEach((s) => {
+    const isF = s.gender === "F";
+    const associeWord = isF ? "associée" : "associé";
     addText("_______________________________________", { spacing: 1 });
-    addText(`${civilite(s.gender)} ${s.fullName}${unipersonnel ? " — associé unique" : " — associé"}`, { spacing: 6 });
+    addText(`${civilite(s.gender)} ${s.fullName}${unipersonnel ? ` — ${associeWord} unique` : ` — ${associeWord}`}`, { spacing: 6 });
   });
 
   extraManagers.forEach((m) => {

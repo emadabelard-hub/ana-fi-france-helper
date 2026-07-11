@@ -64,6 +64,19 @@ export interface PrevisionnelInput {
   achats_materiaux_annuels?: number;
   /** Autres charges annuelles (€) */
   autres_charges_annuelles?: number;
+  // ─── Plan de démarrage ───
+  /** Investissement matériel initial (€) — amortissable, hors charges */
+  investissement_materiel?: number;
+  /** Situation véhicule */
+  vehicule_situation?: "owned" | "toBuy" | "notNeeded";
+  /** Mode d'acquisition véhicule si toBuy */
+  vehicule_mode?: "cash" | "credit" | "leasing";
+  /** Emprunt bancaire — montant (€) */
+  emprunt_montant?: number;
+  /** Emprunt bancaire — durée (années) */
+  emprunt_annees?: number;
+  /** Carnet de commandes au démarrage */
+  carnet_commandes?: "acquired" | "promises" | "prospecting";
 }
 
 // Formatte un montant avec espace NORMAL (jsPDF gère mal l'espace insécable)
@@ -528,6 +541,23 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   const achatsMateriaux = Math.max(0, Number(body.achats_materiaux_annuels) || 0);
   const autres = Math.max(0, Number(body.autres_charges_annuelles) || 0);
 
+  // ─── Plan de démarrage ───
+  const investMateriel = Math.max(0, Number(body.investissement_materiel) || 0);
+  const vehSituation = body.vehicule_situation;
+  const vehMode = body.vehicule_mode;
+  const empMontant = Math.max(0, Number(body.emprunt_montant) || 0);
+  const empAnnees = Math.max(0, Number(body.emprunt_annees) || 0);
+  const carnet = body.carnet_commandes;
+
+  // Mensualité emprunt — taux indicatif 5%/an
+  let mensualiteEmprunt = 0;
+  if (empMontant > 0 && empAnnees > 0) {
+    const r = 0.05 / 12;
+    const n = empAnnees * 12;
+    mensualiteEmprunt = (empMontant * r) / (1 - Math.pow(1 + r, -n));
+  }
+  const remboursementAnnuel = mensualiteEmprunt * 12;
+
   // Cotisations sociales dirigeant
   let cotisDirigeant = 0;
   if (isSARLFamily) cotisDirigeant = remuAnnuel * 0.45;          // TNS gérant majoritaire
@@ -544,7 +574,11 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   const totalCharges =
     remuAnnuel + cotisDirigeant + masseSalariale +
     vehiculeAnnuel + loyerAnnuel +
-    assurances + comptable + achatsMateriaux + autres + cfe;
+    assurances + comptable + achatsMateriaux + autres + cfe + remboursementAnnuel;
+
+  // Trésorerie de départ : investissement + 3 mois de charges fixes (hors matériaux)
+  const chargesFixesAnnuelles = totalCharges - achatsMateriaux;
+  const besoinTresorerie = investMateriel + (chargesFixesAnnuelles / 12) * 3;
 
   const resultatAvantImpot = ca - totalCharges;
   let is = 0;

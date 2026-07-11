@@ -529,19 +529,28 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
   if (unipersonnel) {
     const u = associes[0];
     const civU = u ? civilite(u.gender) : "M.";
+    const isF = u?.gender === "F";
     const isMgr = u?.isManager;
-    const suffix = isMgr ? (isSAS ? " et Président" : " et gérant") : "";
+    const associeWord = isF ? "associée" : "associé";
+    const managerWord = isSAS ? (isF ? "Présidente" : "Président") : (isF ? "gérante" : "gérant");
+    const suffix = isMgr ? ` et ${managerWord}` : "";
     signatureBlock(
-      `Signature de l'associé unique${suffix} :`,
-      `${civU} ${u?.fullName ?? ""} — associé unique${suffix}`
+      `Signature de l'${associeWord} unique${suffix} :`,
+      `${civU} ${u?.fullName ?? ""} — ${associeWord} unique${suffix}`
     );
   } else {
     associes.forEach((a) => {
-      const roles = a.isManager ? (isSAS ? "associé et Président" : "associé et gérant") : "associé";
+      const isF = a.gender === "F";
+      const associeWord = isF ? "associée" : "associé";
+      const managerWord = isSAS ? (isF ? "Présidente" : "Président") : (isF ? "gérante" : "gérant");
+      const roles = a.isManager ? `${associeWord} et ${managerWord}` : associeWord;
       signatureBlock(`Signature de ${a.fullName} :`, `${civilite(a.gender)} ${a.fullName} — ${roles}`);
     });
     extraManagers.forEach((m) => {
-      const role = isSAS ? "Président non associé" : "gérant non associé";
+      const isF = m.gender === "F";
+      const managerWord = isSAS ? (isF ? "Présidente" : "Président") : (isF ? "gérante" : "gérant");
+      const nonAssocieWord = isF ? "associée" : "associé";
+      const role = `${managerWord} non ${nonAssocieWord}`;
       signatureBlock(`Signature de ${m.fullName} :`, `${civilite(m.gender)} ${m.fullName} — ${role}`);
     });
   }

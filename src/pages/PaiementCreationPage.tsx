@@ -497,7 +497,7 @@ export default function PaiementCreationPage() {
       }
 
       // Le guide de dépôt (document 3) est TOUJOURS offert, y compris pour les achats individuels
-      const guideDoc = buildGuideDepotPdf();
+      const guideDoc = await buildGuideDepotPdf();
       built.push({ label: "📖 دليل التسجيل على INPI (مجاناً)", filename: "guide-depot-inpi.pdf", doc: guideDoc });
 
       setGeneratedDocs(built);

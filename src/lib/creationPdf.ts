@@ -846,7 +846,124 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
     );
     doc.setTextColor(0, 0, 0);
     y += 12;
+
+    // ─── SUGGESTIONS D'ÉQUILIBRE (uniquement si résultat négatif) ───
+    const computeIS = (rai: number): number => {
+      if (!isSociete || rai <= 0) return 0;
+      if (rai <= 42500) return rai * 0.15;
+      return 42500 * 0.15 + (rai - 42500) * 0.25;
+    };
+    const netAfterIS = (rai: number): number => rai - computeIS(rai);
+
+    sectionTitle("💡 Pistes pour équilibrer votre projet (à titre indicatif)");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    const suggLines: string[] = [];
+    // a) Seuil d'équilibre CA
+    suggLines.push(
+      `• Avec un chiffre d'affaires de ${eur(totalCharges)} (au lieu de ${eur(ca)}), votre résultat serait à l'équilibre.`
+    );
+    // b) Levier salariés
+    if (nbSalaries >= 1) {
+      const economie = salaireMoyen * 12 * 1.80;
+      const Yavant = resultatAvantImpot + economie;
+      const Y = netAfterIS(Yavant);
+      suggLines.push(
+        `• Avec ${nbSalaries - 1} salarié(s) au lieu de ${nbSalaries}, votre résultat passerait à ${eur(Y)}.`
+      );
+    }
+    // c) Levier rémunération dirigeant
+    if (remuAnnuel > 0) {
+      const coeff = isSARLFamily ? 0.45 : (isSASFamily ? 0.80 : 0);
+      const economie = (remuAnnuel / 2) * (1 + coeff);
+      const Zavant = resultatAvantImpot + economie;
+      const Z = netAfterIS(Zavant);
+      suggLines.push(
+        `• Avec une rémunération de ${eur(remuAnnuel / 2)} au lieu de ${eur(remuAnnuel)} (net annuel), votre résultat passerait à ${eur(Z)}.`
+      );
+    }
+
+    for (const line of suggLines) {
+      const wrapped = doc.splitTextToSize(line, usable - 4);
+      for (const l of wrapped) {
+        if (y > 275) { doc.addPage(); y = margin; }
+        doc.text(l, margin + 2, y);
+        y += 5;
+      }
+      y += 1;
+    }
+    y += 2;
+    if (y > 275) { doc.addPage(); y = margin; }
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    const noteSugg = "Ces pistes sont des simulations mathématiques — discutez-en avec un expert-comptable.";
+    const noteSuggLines = doc.splitTextToSize(noteSugg, usable - 4);
+    for (const l of noteSuggLines) {
+      if (y > 275) { doc.addPage(); y = margin; }
+      doc.text(l, margin + 2, y);
+      y += 4.5;
+    }
+    y += 2;
   }
+
+  // ─── SCÉNARIOS COMPARÉS (toujours affichée) ───
+  {
+    const computeIS = (rai: number): number => {
+      if (!isSociete || rai <= 0) return 0;
+      if (rai <= 42500) return rai * 0.15;
+      return 42500 * 0.15 + (rai - 42500) * 0.25;
+    };
+    const scenarios: Array<{ label: string; ca: number; highlight?: boolean }> = [
+      { label: "Prudent", ca: ca * 0.85 },
+      { label: "Réaliste (vos chiffres)", ca: ca, highlight: true },
+      { label: "Optimiste", ca: ca * 1.15 },
+    ];
+
+    sectionTitle("SCÉNARIOS COMPARÉS");
+    const colS = [45, 40, 50, usable - 135];
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    if (y > 260) { doc.addPage(); y = margin; }
+    let x0 = margin;
+    doc.rect(x0, y - 4, colS[0], 7); doc.text("Scénario", x0 + 2, y); x0 += colS[0];
+    doc.rect(x0, y - 4, colS[1], 7); doc.text("CA", x0 + 2, y); x0 += colS[1];
+    doc.rect(x0, y - 4, colS[2], 7); doc.text("Résultat avant impôt", x0 + 2, y); x0 += colS[2];
+    doc.rect(x0, y - 4, colS[3], 7); doc.text("Résultat net", x0 + 2, y);
+    y += 7;
+
+    for (const s of scenarios) {
+      if (y > 270) { doc.addPage(); y = margin; }
+      const rai = s.ca - totalCharges;
+      const net = rai > 0 ? rai - computeIS(rai) : rai;
+      if (s.highlight) {
+        doc.setFillColor(240, 245, 255);
+        doc.rect(margin, y - 4, usable, 7, "F");
+      }
+      doc.setFont("helvetica", s.highlight ? "bold" : "normal");
+      doc.setFontSize(9);
+      let x = margin;
+      doc.rect(x, y - 4, colS[0], 7); doc.text(s.label, x + 2, y); x += colS[0];
+      doc.rect(x, y - 4, colS[1], 7); doc.text(eur(s.ca), x + colS[1] - 2, y, { align: "right" }); x += colS[1];
+      doc.rect(x, y - 4, colS[2], 7);
+      if (rai < 0) doc.setTextColor(200, 30, 30);
+      doc.text(eur(rai), x + colS[2] - 2, y, { align: "right" });
+      doc.setTextColor(0, 0, 0);
+      x += colS[2];
+      doc.rect(x, y - 4, colS[3], 7);
+      if (net < 0) doc.setTextColor(200, 30, 30);
+      doc.text(eur(net), x + colS[3] - 2, y, { align: "right" });
+      doc.setTextColor(0, 0, 0);
+      y += 7;
+    }
+    y += 2;
+    if (y > 275) { doc.addPage(); y = margin; }
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.text("Hypothèse : charges constantes, variation du CA de ±15%.", margin + 2, y);
+    y += 5;
+  }
+
 
   sectionTitle("5. SEUILS IMPORTANTS À CONNAÎTRE");
   const seuils: [string, string, string][] = [

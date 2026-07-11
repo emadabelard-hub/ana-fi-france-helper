@@ -179,6 +179,16 @@ export default function PaiementCreationPage() {
   const [caEstime, setCaEstime] = useState<number>(50000);
   const [isBtp, setIsBtp] = useState(true);
 
+  // Plan de démarrage
+  const [hasInvestMateriel, setHasInvestMateriel] = useState<"yes" | "no" | "">("");
+  const [investMateriel, setInvestMateriel] = useState<number>(0);
+  const [vehSituation, setVehSituation] = useState<"owned" | "toBuy" | "notNeeded" | "">("");
+  const [vehMode, setVehMode] = useState<"cash" | "credit" | "leasing" | "">("");
+  const [hasEmprunt, setHasEmprunt] = useState<"yes" | "no" | "">("");
+  const [empMontant, setEmpMontant] = useState<number>(0);
+  const [empAnnees, setEmpAnnees] = useState<number>(0);
+  const [carnet, setCarnet] = useState<"acquired" | "promises" | "prospecting" | "">("");
+
   // Charges personnalisées
   const [remuDirigeant, setRemuDirigeant] = useState<number>(0);
   const [nbSalaries, setNbSalaries] = useState<number>(0);
@@ -401,6 +411,12 @@ export default function PaiementCreationPage() {
           comptable_annuel: comptableAnnuel,
           achats_materiaux_annuels: achatsMateriaux,
           autres_charges_annuelles: autresCharges,
+          investissement_materiel: hasInvestMateriel === "yes" ? investMateriel : 0,
+          vehicule_situation: vehSituation || undefined,
+          vehicule_mode: vehSituation === "toBuy" ? (vehMode || undefined) : undefined,
+          emprunt_montant: hasEmprunt === "yes" ? empMontant : 0,
+          emprunt_annees: hasEmprunt === "yes" ? empAnnees : 0,
+          carnet_commandes: carnet || undefined,
         });
         built.push({ label: "📊 الدراسة المالية", filename: `previsionnel-${activityFr || "activite"}.pdf`, doc });
       }
@@ -632,6 +648,93 @@ export default function PaiementCreationPage() {
             ))}
           </>
         )}
+      </Card>
+
+      <Card className="p-5 space-y-4">
+        <h2 className="text-xl font-bold">🚀 بداية المشروع</h2>
+
+        {/* Q1 — Investissement matériel */}
+        <div className="space-y-2">
+          <Label>هتشتري عدة ومعدات في البداية؟</Label>
+          <RadioGroup value={hasInvestMateriel} onValueChange={(v) => setHasInvestMateriel(v as "yes" | "no")} className="flex gap-4">
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="yes" /> نعم</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="no" /> لا</label>
+          </RadioGroup>
+          {hasInvestMateriel === "yes" && (
+            <div className="pt-2 space-y-2">
+              <Label>بكام تقريباً؟ (€)</Label>
+              <Input type="number" inputMode="decimal" value={investMateriel}
+                onChange={e => setInvestMateriel(Number(e.target.value))} dir="ltr" lang="fr" />
+            </div>
+          )}
+        </div>
+
+        {/* Q2 — Véhicule */}
+        <div className="space-y-2 pt-3 border-t">
+          <Label>عندك عربية للشغل؟</Label>
+          <RadioGroup value={vehSituation} onValueChange={(v) => setVehSituation(v as "owned" | "toBuy" | "notNeeded")} className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="owned" /> عندي بالفعل ✅</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="toBuy" /> هشتري أو هأجّر 🚗</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="notNeeded" /> مش محتاج ❌</label>
+          </RadioGroup>
+          {vehSituation === "owned" && (
+            <p className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-200 p-2 rounded">
+              تمام! متنساش تحسب البنزين والتأمين في خانة العربية تحت 👇
+            </p>
+          )}
+          {vehSituation === "toBuy" && (
+            <div className="pt-2 space-y-3">
+              <div className="space-y-2">
+                <Label>شراء ولا ليزينج؟</Label>
+                <RadioGroup value={vehMode} onValueChange={(v) => setVehMode(v as "cash" | "credit" | "leasing")} className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="cash" /> شراء كاش</label>
+                  <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="credit" /> قرض</label>
+                  <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="leasing" /> ليزينج LOA/LLD</label>
+                </RadioGroup>
+              </div>
+              <div className="space-y-2">
+                <Label>التكلفة الشهرية المتوقعة (€)</Label>
+                <Input type="number" inputMode="decimal" value={vehiculeMensuel}
+                  onChange={e => setVehiculeMensuel(Number(e.target.value))} dir="ltr" lang="fr" />
+                <p className="text-xs text-muted-foreground">هيتحسب تلقائياً في خانة العربية تحت</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Q3 — Emprunt bancaire */}
+        <div className="space-y-2 pt-3 border-t">
+          <Label>محتاج قرض من البنك عشان تبدأ؟</Label>
+          <RadioGroup value={hasEmprunt} onValueChange={(v) => setHasEmprunt(v as "yes" | "no")} className="flex gap-4">
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="yes" /> نعم</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="no" /> لا</label>
+          </RadioGroup>
+          {hasEmprunt === "yes" && (
+            <div className="pt-2 space-y-3">
+              <div className="space-y-2">
+                <Label>المبلغ (€)</Label>
+                <Input type="number" inputMode="decimal" value={empMontant}
+                  onChange={e => setEmpMontant(Number(e.target.value))} dir="ltr" lang="fr" />
+              </div>
+              <div className="space-y-2">
+                <Label>على كام سنة؟</Label>
+                <Input type="number" inputMode="decimal" value={empAnnees}
+                  onChange={e => setEmpAnnees(Number(e.target.value))} dir="ltr" lang="fr" />
+                <p className="text-xs text-muted-foreground">القسط الشهري هيتحسب تلقائياً بفائدة تقريبية 5%/سنة</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Q4 — Carnet de commandes */}
+        <div className="space-y-2 pt-3 border-t">
+          <Label>عندك عملاء جاهزين من دلوقتي؟</Label>
+          <RadioGroup value={carnet} onValueChange={(v) => setCarnet(v as "acquired" | "promises" | "prospecting")} className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="acquired" /> أيوه، عندي عملاء 💪</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="promises" /> شوية وعود</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="prospecting" /> لسه هدوّر</label>
+          </RadioGroup>
+        </div>
       </Card>
 
       <Card className="p-5 space-y-4">

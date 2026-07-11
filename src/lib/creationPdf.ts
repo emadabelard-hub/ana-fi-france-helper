@@ -64,6 +64,19 @@ export interface PrevisionnelInput {
   achats_materiaux_annuels?: number;
   /** Autres charges annuelles (€) */
   autres_charges_annuelles?: number;
+  // ─── Plan de démarrage ───
+  /** Investissement matériel initial (€) — amortissable, hors charges */
+  investissement_materiel?: number;
+  /** Situation véhicule */
+  vehicule_situation?: "owned" | "toBuy" | "notNeeded";
+  /** Mode d'acquisition véhicule si toBuy */
+  vehicule_mode?: "cash" | "credit" | "leasing";
+  /** Emprunt bancaire — montant (€) */
+  emprunt_montant?: number;
+  /** Emprunt bancaire — durée (années) */
+  emprunt_annees?: number;
+  /** Carnet de commandes au démarrage */
+  carnet_commandes?: "acquired" | "promises" | "prospecting";
 }
 
 // Formatte un montant avec espace NORMAL (jsPDF gère mal l'espace insécable)
@@ -528,6 +541,23 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   const achatsMateriaux = Math.max(0, Number(body.achats_materiaux_annuels) || 0);
   const autres = Math.max(0, Number(body.autres_charges_annuelles) || 0);
 
+  // ─── Plan de démarrage ───
+  const investMateriel = Math.max(0, Number(body.investissement_materiel) || 0);
+  const vehSituation = body.vehicule_situation;
+  const vehMode = body.vehicule_mode;
+  const empMontant = Math.max(0, Number(body.emprunt_montant) || 0);
+  const empAnnees = Math.max(0, Number(body.emprunt_annees) || 0);
+  const carnet = body.carnet_commandes;
+
+  // Mensualité emprunt — taux indicatif 5%/an
+  let mensualiteEmprunt = 0;
+  if (empMontant > 0 && empAnnees > 0) {
+    const r = 0.05 / 12;
+    const n = empAnnees * 12;
+    mensualiteEmprunt = (empMontant * r) / (1 - Math.pow(1 + r, -n));
+  }
+  const remboursementAnnuel = mensualiteEmprunt * 12;
+
   // Cotisations sociales dirigeant
   let cotisDirigeant = 0;
   if (isSARLFamily) cotisDirigeant = remuAnnuel * 0.45;          // TNS gérant majoritaire
@@ -544,7 +574,11 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   const totalCharges =
     remuAnnuel + cotisDirigeant + masseSalariale +
     vehiculeAnnuel + loyerAnnuel +
-    assurances + comptable + achatsMateriaux + autres + cfe;
+    assurances + comptable + achatsMateriaux + autres + cfe + remboursementAnnuel;
+
+  // Trésorerie de départ : investissement + 3 mois de charges fixes (hors matériaux)
+  const chargesFixesAnnuelles = totalCharges - achatsMateriaux;
+  const besoinTresorerie = investMateriel + (chargesFixesAnnuelles / 12) * 3;
 
   const resultatAvantImpot = ca - totalCharges;
   let is = 0;
@@ -597,10 +631,88 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
     y += 6;
   };
 
-  sectionTitle("1. CHIFFRE D'AFFAIRES PRÉVISIONNEL");
+  // ─── 1. PLAN DE DÉMARRAGE ───
+  const hasPlan =
+    investMateriel > 0 ||
+    !!vehSituation ||
+    empMontant > 0 ||
+    !!carnet;
+
+  if (hasPlan) {
+    sectionTitle("1. PLAN DE DÉMARRAGE");
+
+    if (investMateriel > 0) {
+      drawRow("Investissement matériel initial", eur(investMateriel), true);
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+      const noteAmort = "Investissement amortissable — consultez votre comptable pour le plan d'amortissement.";
+      const noteLines = doc.splitTextToSize(noteAmort, usable - 4);
+      for (const l of noteLines) {
+        if (y > 275) { doc.addPage(); y = margin; }
+        doc.text(l, margin + 2, y);
+        y += 4.5;
+      }
+      y += 2;
+    }
+
+    if (vehSituation) {
+      const modeLabel: Record<string, string> = {
+        cash: "achat comptant",
+        credit: "crédit bancaire",
+        leasing: "leasing LOA/LLD",
+      };
+      let vehStr = "";
+      if (vehSituation === "owned") vehStr = "Véhicule déjà détenu";
+      else if (vehSituation === "notNeeded") vehStr = "Non nécessaire";
+      else {
+        const modeStr = vehMode ? modeLabel[vehMode] : "à définir";
+        vehStr = `Acquisition prévue (${modeStr}) — ${eur(vehiculeMensuel)}/mois`;
+      }
+      drawRow("Véhicule", vehStr);
+    }
+
+    if (empMontant > 0 && empAnnees > 0) {
+      drawRow(
+        "Financement bancaire",
+        `Emprunt ${eur(empMontant)} sur ${empAnnees} an(s) — mensualité ≈ ${eur(mensualiteEmprunt)} (taux indicatif 5%)`
+      );
+    } else {
+      drawRow("Financement bancaire", "Aucun emprunt prévu");
+    }
+
+    if (carnet) {
+      const carnetLabel: Record<string, string> = {
+        acquired: "Clients acquis",
+        promises: "Prospects en discussion",
+        prospecting: "Prospection à démarrer",
+      };
+      drawRow("Carnet de commandes au démarrage", carnetLabel[carnet]);
+    }
+
+    drawRow(
+      "Besoin de trésorerie initial estimé",
+      `${eur(besoinTresorerie)}  (matériel ${eur(investMateriel)} + 3 mois charges fixes ${eur((chargesFixesAnnuelles / 12) * 3)})`,
+      true
+    );
+
+    if (empMontant > 0 && empMontant < besoinTresorerie) {
+      y += 1;
+      if (y > 270) { doc.addPage(); y = margin; }
+      doc.setFillColor(255, 245, 220);
+      doc.rect(margin, y - 4, usable, 8, "F");
+      doc.setTextColor(150, 90, 0);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("Attention : l'emprunt prévu est inférieur au besoin de trésorerie initial estimé — pensez à un apport ou un prêt qui couvre le démarrage.", margin + 3, y + 1, { maxWidth: usable - 6 });
+      doc.setTextColor(0, 0, 0);
+      y += 10;
+    }
+  }
+
+  sectionTitle("2. CHIFFRE D'AFFAIRES PRÉVISIONNEL");
   drawRow("Chiffre d'affaires estimé (HT)", eur(ca), true);
 
-  sectionTitle("2. CHARGES DÉTAILLÉES");
+  sectionTitle("3. CHARGES DÉTAILLÉES");
   if (isSociete) {
     drawRow("Rémunération dirigeant (net annuel)", eur(remuAnnuel));
     const tauxLabel = isSARLFamily
@@ -622,16 +734,33 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   if (comptable > 0) drawRow("Comptable", eur(comptable));
   if (achatsMateriaux > 0) drawRow("Achats matériaux", eur(achatsMateriaux));
   if (autres > 0) drawRow("Autres charges (téléphone, banque, outils...)", eur(autres));
+  if (remboursementAnnuel > 0) drawRow(`Remboursement d'emprunt (mensualité ≈ ${eur(mensualiteEmprunt)} × 12)`, eur(remboursementAnnuel));
   drawRow("CFE — estimation (variable selon commune)", eur(cfe));
   drawRow("TOTAL CHARGES", eur(totalCharges), true);
 
-  sectionTitle("3. RÉSULTAT PRÉVISIONNEL");
+  sectionTitle("4. RÉSULTAT PRÉVISIONNEL");
   drawRow("Chiffre d'affaires", eur(ca));
   drawRow("Total charges", eur(totalCharges));
   drawRow("Résultat avant impôt", eur(resultatAvantImpot), true, isNegatif);
   if (isSociete && !isNegatif) drawRow("Impôt sur les Sociétés (15% jusqu'à 42 500 €, puis 25%)", eur(is));
   drawRow("Résultat net estimé", eur(resultatNet), true, resultatNet < 0);
   drawRow("Équivalent mensuel net", eur(mensuel), true, mensuel < 0);
+
+  // Phrase de conclusion adaptée au carnet de commandes
+  if (carnet) {
+    y += 3;
+    if (y > 265) { doc.addPage(); y = margin; }
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    const phrase = carnet === "acquired"
+      ? "Démarrage d'activité sécurisé par un carnet de commandes existant."
+      : "Prévoir une montée en charge progressive du chiffre d'affaires sur la première année.";
+    const pl = doc.splitTextToSize(phrase, usable - 4);
+    for (const l of pl) {
+      doc.text(l, margin + 2, y);
+      y += 5;
+    }
+  }
 
   if (isNegatif) {
     y += 2;
@@ -649,7 +778,7 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
     y += 12;
   }
 
-  sectionTitle("4. SEUILS IMPORTANTS À CONNAÎTRE");
+  sectionTitle("5. SEUILS IMPORTANTS À CONNAÎTRE");
   const seuils: [string, string, string][] = [
     ["Franchise TVA", "37 500 €", "En dessous : pas de TVA à facturer"],
     ["Plafond Auto-entrepreneur BTP", "77 700 €", "Au-delà : changer de statut obligatoire"],

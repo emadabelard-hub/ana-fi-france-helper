@@ -744,7 +744,7 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
     if (empMontant > 0 && empAnnees > 0) {
       drawRow(
         "Financement bancaire",
-        `Emprunt ${eur(empMontant)} sur ${empAnnees} an(s) — mensualité ≈ ${eur(mensualiteEmprunt)} (taux indicatif 5%)`
+        `Emprunt ${eur(empMontant)} sur ${empAnnees} an(s) — mensualité environ ${eur(mensualiteEmprunt)} (taux indicatif 5%)`
       );
     } else {
       drawRow("Financement bancaire", "Aucun emprunt prévu");

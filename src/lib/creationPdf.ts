@@ -932,7 +932,7 @@ export function buildAttestationPdf(body: AttestationInput): jsPDF {
   const neE = isF ? "née" : "né";
   const declare = isF ? "Déclare" : "Déclare";
   const informe = isF ? "Je suis informée" : "Je suis informé";
-  const city = titleCasePlace(signatureCity || extractCity(p.address));
+  const city = titleCasePlace((signatureCity || extractCity(p.address)).trim());
   const today = new Date().toLocaleDateString("fr-FR");
   const addr = titleCasePlace(p.address);
   const bp = titleCasePlace(p.birthPlace);

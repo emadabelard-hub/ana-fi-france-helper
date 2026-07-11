@@ -393,10 +393,14 @@ export default function PaiementCreationPage() {
     try {
       // Traduction en parallèle de tous les champs susceptibles d'être en arabe
       const [
-        companyNameFr, activityFr, addressFr, signatureCityFr,
+        companyNameFrRaw, activityFrRaw, addressFrRaw, signatureCityFrRaw,
       ] = await Promise.all([
         trIfAr(companyName), trIfAr(activity), trIfAr(address), trIfAr(signatureCity),
       ]);
+      const companyNameFr = cleanSpaces(companyNameFrRaw);
+      const activityFr = cleanSpaces(activityFrRaw);
+      const addressFr = cleanSpaces(addressFrRaw);
+      const signatureCityFr = cleanSpaces(signatureCityFrRaw);
 
       const associesFr: AssocieDetail[] = [];
       for (const a of associes) {

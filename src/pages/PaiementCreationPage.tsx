@@ -291,16 +291,22 @@ export default function PaiementCreationPage() {
 
   // Ajuster automatiquement les associés lors du changement SASU <-> SARL
   useEffect(() => {
-    if (companyType === "SASU") {
-      setAssocies([{ ...emptyAssocie(100, true), ...(associes[0] ?? {}), percent: 100, isManager: true }]);
-      setExtraManagers([]);
-    } else {
-      setAssocies(prev => {
-        if (prev.length >= 2) return prev;
-        const first = { ...(prev[0] ?? emptyAssocie(50, true)), percent: 50, isManager: true };
-        return [first, emptyAssocie(50, false)];
-      });
-    }
+    setAssocies(prev => {
+      if (companyType === "SASU") {
+        // Famille SAS/SASU : par défaut 1 associé (SASU). L'utilisateur peut en ajouter → SAS.
+        if (prev.length === 0) {
+          return [{ ...emptyAssocie(100, true), percent: 100, isManager: true }];
+        }
+        return prev;
+      } else {
+        // Famille SARL/EURL : par défaut 2 associés (SARL). L'utilisateur peut réduire à 1 → EURL.
+        if (prev.length === 0) {
+          const first = { ...emptyAssocie(50, true), percent: 50, isManager: true };
+          return [first, emptyAssocie(50, false)];
+        }
+        return prev;
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyType]);
 

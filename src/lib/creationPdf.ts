@@ -230,10 +230,20 @@ function civilite(gender: Gender): string {
   return gender === "F" ? "Mme" : "M.";
 }
 
+// Contraction française "à + <lieu>" : "à Le Caire" → "au Caire", "à Les X" → "aux X", "à La X" → "à la X"
+function aPlace(place: string): string {
+  const p = (place || "").trim();
+  if (!p) return `à ${p}`;
+  if (/^Le\s+/.test(p)) return `au ${p.replace(/^Le\s+/, "")}`;
+  if (/^Les\s+/.test(p)) return `aux ${p.replace(/^Les\s+/, "")}`;
+  if (/^La\s+/.test(p)) return `à la ${p.replace(/^La\s+/, "")}`;
+  return `à ${p}`;
+}
+
 function civilStateSentence(p: Personne): string {
   const bp = titleCasePlace(p.birthPlace);
   const addr = titleCasePlace(p.address);
-  return `${civilite(p.gender)} ${p.fullName}, ${nePart(p.gender)} le ${p.birthDate} à ${bp}, de nationalité ${p.nationality}, demeurant ${addr}`;
+  return `${civilite(p.gender)} ${p.fullName}, ${nePart(p.gender)} le ${p.birthDate} ${aPlace(bp)}, de nationalité ${p.nationality}, demeurant ${addr}`;
 }
 
 export function buildStatutsPdf(body: StatutsInput): jsPDF {
@@ -734,7 +744,7 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
     if (empMontant > 0 && empAnnees > 0) {
       drawRow(
         "Financement bancaire",
-        `Emprunt ${eur(empMontant)} sur ${empAnnees} an(s) — mensualité ≈ ${eur(mensualiteEmprunt)} (taux indicatif 5%)`
+        `Emprunt ${eur(empMontant)} sur ${empAnnees} an(s) — mensualité environ ${eur(mensualiteEmprunt)} (taux indicatif 5%)`
       );
     } else {
       drawRow("Financement bancaire", "Aucun emprunt prévu");
@@ -794,7 +804,7 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   if (comptable > 0) drawRow("Comptable", eur(comptable));
   if (achatsMateriaux > 0) drawRow("Achats matériaux", eur(achatsMateriaux));
   if (autres > 0) drawRow("Autres charges (téléphone, banque, outils...)", eur(autres));
-  if (remboursementAnnuel > 0) drawRow(`Remboursement d'emprunt (mensualité ≈ ${eur(mensualiteEmprunt)} × 12)`, eur(remboursementAnnuel));
+  if (remboursementAnnuel > 0) drawRow(`Remboursement d'emprunt (mensualité environ ${eur(mensualiteEmprunt)} × 12)`, eur(remboursementAnnuel));
   drawRow("CFE — estimation (variable selon commune)", eur(cfe));
   drawRow("TOTAL CHARGES", eur(totalCharges), true);
 
@@ -971,7 +981,7 @@ export function buildAttestationPdf(body: AttestationInput): jsPDF {
   addText("DE NON-CONDAMNATION ET DE FILIATION", { bold: true, size: 16, align: "center", spacing: 12 });
 
   addText(
-    `${soussigne} ${civilite(p.gender)} ${p.fullName}, ${neE} le ${p.birthDate} à ${naissanceLieu}, de nationalité ${p.nationality}, demeurant ${addr},`,
+    `${soussigne} ${civilite(p.gender)} ${p.fullName}, ${neE} le ${p.birthDate} ${aPlace(naissanceLieu)}, de nationalité ${p.nationality}, demeurant ${addr},`,
     { spacing: 6 }
   );
 
@@ -1067,7 +1077,7 @@ export async function buildBeneficiairesPdf(body: BeneficiairesInput): Promise<j
     const bp = titleCasePlace(p.birthPlace);
     const addr = titleCasePlace(p.address);
     addText(`• Nom complet : ${p.fullName}`, { spacing: 1 });
-    addText(`• Date et lieu de naissance : ${p.birthDate} à ${bp}`, { spacing: 1 });
+    addText(`• Date et lieu de naissance : ${p.birthDate} ${aPlace(bp)}`, { spacing: 1 });
     addText(`• Nationalité : ${p.nationality}`, { spacing: 1 });
     addText(`• Adresse personnelle : ${addr}`, { spacing: 1 });
     if (typeof opts.percent === "number") {

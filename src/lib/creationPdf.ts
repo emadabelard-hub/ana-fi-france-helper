@@ -1194,9 +1194,10 @@ export async function buildGuideDepotPdf(): Promise<jsPDF> {
      "Justificatif de qualification professionnelle si activité réglementée"],
   ];
   for (const [ar, fr] of pieces) {
-    await addArabic(ar, { size: 11, spacing: 1 });
-    addText(fr, { italic: true, size: 10, spacing: 5 });
+    await addArabic(ar, { size: 11, spacing: 2 });
+    addText(fr, { italic: true, size: 10, spacing: 6 });
   }
+
 
   // PAGE 2 — Guide étapes
   doc.addPage();

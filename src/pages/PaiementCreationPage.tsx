@@ -291,16 +291,22 @@ export default function PaiementCreationPage() {
 
   // Ajuster automatiquement les associés lors du changement SASU <-> SARL
   useEffect(() => {
-    if (companyType === "SASU") {
-      setAssocies([{ ...emptyAssocie(100, true), ...(associes[0] ?? {}), percent: 100, isManager: true }]);
-      setExtraManagers([]);
-    } else {
-      setAssocies(prev => {
-        if (prev.length >= 2) return prev;
-        const first = { ...(prev[0] ?? emptyAssocie(50, true)), percent: 50, isManager: true };
-        return [first, emptyAssocie(50, false)];
-      });
-    }
+    setAssocies(prev => {
+      if (companyType === "SASU") {
+        // Famille SAS/SASU : par défaut 1 associé (SASU). L'utilisateur peut en ajouter → SAS.
+        if (prev.length === 0) {
+          return [{ ...emptyAssocie(100, true), percent: 100, isManager: true }];
+        }
+        return prev;
+      } else {
+        // Famille SARL/EURL : par défaut 2 associés (SARL). L'utilisateur peut réduire à 1 → EURL.
+        if (prev.length === 0) {
+          const first = { ...emptyAssocie(50, true), percent: 50, isManager: true };
+          return [first, emptyAssocie(50, false)];
+        }
+        return prev;
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyType]);
 
@@ -340,7 +346,8 @@ export default function PaiementCreationPage() {
     if (!signatureCity.trim()) return "مدينة التوقيع مطلوبة";
     for (let i = 0; i < associes.length; i++) {
       const a = associes[i];
-      const label = companyType === "SASU" ? "الشريك الوحيد" : `الشريك رقم ${i + 1}`;
+      const isSingle = associes.length === 1;
+      const label = isSingle ? "الشريك الوحيد" : `الشريك رقم ${i + 1}`;
       if (!a.fullName.trim()) return `${label}: الاسم الكامل مطلوب`;
       if (!birthToStr(a.birth)) return `${label}: تاريخ الميلاد مطلوب`;
       if (!a.birthPlace.trim()) return `${label}: مكان الميلاد مطلوب`;
@@ -350,8 +357,7 @@ export default function PaiementCreationPage() {
       if (!a.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
       if (!a.motherName.trim()) return `${label}: اسم الأم مطلوب`;
     }
-    if (companyType === "SARL") {
-      if (associes.length < 2) return "الشركة SARL تتطلب شريكين على الأقل";
+    if (associes.length > 1) {
       if (Math.round(totalPercent) !== 100) return `مجموع النسب يجب أن يساوي 100% (حاليا ${totalPercent}%)`;
       const hasManager = associes.some(a => a.isManager) || extraManagers.length > 0;
       if (!hasManager) return "يجب اختيار مدير واحد على الأقل";
@@ -598,16 +604,14 @@ export default function PaiementCreationPage() {
       <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">
-            {companyType === "SASU" ? "👤 الشريك الوحيد" : "👥 الشركاء"}
+            {associes.length === 1 ? "👤 الشريك الوحيد" : "👥 الشركاء"}
           </h2>
-          {companyType === "SARL" && (
-            <Button type="button" size="sm" variant="outline" onClick={addAssocie}>
-              <Plus className="h-4 w-4 ml-1" /> إضافة شريك
-            </Button>
-          )}
+          <Button type="button" size="sm" variant="outline" onClick={addAssocie}>
+            <Plus className="h-4 w-4 ml-1" /> إضافة شريك
+          </Button>
         </div>
 
-        {companyType === "SARL" && (
+        {associes.length > 1 && (
           <div className={`text-sm px-3 py-2 rounded ${Math.round(totalPercent) === 100 ? "bg-green-50 text-green-700 dark:bg-green-950/30" : "bg-amber-50 text-amber-700 dark:bg-amber-950/30"}`}>
             مجموع النسب : {totalPercent}% {Math.round(totalPercent) === 100 ? "✅" : "(المطلوب 100%)"}
           </div>
@@ -617,14 +621,15 @@ export default function PaiementCreationPage() {
           <div key={i} className="border rounded-lg p-4 space-y-3 bg-muted/30">
             <div className="flex items-center justify-between">
               <span className="font-semibold">
-                {companyType === "SASU" ? "الشريك الوحيد" : `الشريك ${i + 1}`}
+                {associes.length === 1 ? "الشريك الوحيد" : `الشريك ${i + 1}`}
               </span>
-              {companyType === "SARL" && associes.length > 2 && (
+              {associes.length > 1 && (
                 <Button type="button" size="icon" variant="ghost" onClick={() => removeAssocie(i)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
             </div>
+
 
             <div className="space-y-2">
               <Label>الجنس</Label>
@@ -669,7 +674,7 @@ export default function PaiementCreationPage() {
               <Input value={a.motherName} onChange={e => updateAssocie(i, "motherName", e.target.value)} placeholder="Fatma Ali" />
             </div>
 
-            {companyType === "SARL" && (
+            {associes.length > 1 && (
               <div className="space-y-2">
                 <Label>النسبة ٪</Label>
                 <Input type="number" min={0} max={100} value={a.percent}
@@ -680,7 +685,7 @@ export default function PaiementCreationPage() {
             <label className="flex items-center gap-2 cursor-pointer pt-2">
               <Checkbox
                 checked={a.isManager}
-                disabled={companyType === "SASU"}
+                disabled={associes.length === 1}
                 onCheckedChange={(v) => updateAssocie(i, "isManager", Boolean(v))}
               />
               <span>هو المدير؟ ({companyType === "SASU" ? "Président" : "Gérant"})</span>
@@ -688,7 +693,7 @@ export default function PaiementCreationPage() {
           </div>
         ))}
 
-        {companyType === "SARL" && (
+        {associes.length > 1 && (
           <>
             <div className="flex items-center justify-between pt-4 border-t">
               <h3 className="font-semibold">مدير غير شريك (اختياري)</h3>

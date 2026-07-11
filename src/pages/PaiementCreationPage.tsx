@@ -179,6 +179,16 @@ export default function PaiementCreationPage() {
   const [caEstime, setCaEstime] = useState<number>(50000);
   const [isBtp, setIsBtp] = useState(true);
 
+  // Plan de démarrage
+  const [hasInvestMateriel, setHasInvestMateriel] = useState<"yes" | "no" | "">("");
+  const [investMateriel, setInvestMateriel] = useState<number>(0);
+  const [vehSituation, setVehSituation] = useState<"owned" | "toBuy" | "notNeeded" | "">("");
+  const [vehMode, setVehMode] = useState<"cash" | "credit" | "leasing" | "">("");
+  const [hasEmprunt, setHasEmprunt] = useState<"yes" | "no" | "">("");
+  const [empMontant, setEmpMontant] = useState<number>(0);
+  const [empAnnees, setEmpAnnees] = useState<number>(0);
+  const [carnet, setCarnet] = useState<"acquired" | "promises" | "prospecting" | "">("");
+
   // Charges personnalisées
   const [remuDirigeant, setRemuDirigeant] = useState<number>(0);
   const [nbSalaries, setNbSalaries] = useState<number>(0);

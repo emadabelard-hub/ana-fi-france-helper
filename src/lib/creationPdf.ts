@@ -804,7 +804,7 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
   if (comptable > 0) drawRow("Comptable", eur(comptable));
   if (achatsMateriaux > 0) drawRow("Achats matériaux", eur(achatsMateriaux));
   if (autres > 0) drawRow("Autres charges (téléphone, banque, outils...)", eur(autres));
-  if (remboursementAnnuel > 0) drawRow(`Remboursement d'emprunt (mensualité ≈ ${eur(mensualiteEmprunt)} × 12)`, eur(remboursementAnnuel));
+  if (remboursementAnnuel > 0) drawRow(`Remboursement d'emprunt (mensualité environ ${eur(mensualiteEmprunt)} × 12)`, eur(remboursementAnnuel));
   drawRow("CFE — estimation (variable selon commune)", eur(cfe));
   drawRow("TOTAL CHARGES", eur(totalCharges), true);
 

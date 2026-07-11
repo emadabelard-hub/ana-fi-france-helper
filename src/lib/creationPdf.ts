@@ -1262,4 +1262,443 @@ export async function buildGuideDepotPdf(): Promise<jsPDF> {
 }
 
 
+// ═══════════════════════════════════════════════════════════════════════
+// DOCUMENT — LETTRE DE DEMANDE D'OUVERTURE DE COMPTE DE DÉPÔT DE CAPITAL
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface LettreBanqueInput {
+  companyName: string;
+  companyType: "SASU" | "SARL";
+  capital: number;
+  address: string;
+  signatureCity?: string;
+  associes: AssocieDetail[];
+  extraManagers?: Personne[];
+}
+
+export function buildLettreBanquePdf(body: LettreBanqueInput): jsPDF {
+  const associes = body.associes ?? [];
+  const extraManagers = body.extraManagers ?? [];
+  const forme: EffectiveForm = effectiveFormOf(body.companyType, associes.length);
+  const dirigeant: Personne | undefined =
+    associes.find(a => a.isManager) ?? extraManagers[0] ?? associes[0];
+  const city = titleCasePlace(
+    (body.signatureCity && body.signatureCity.trim()) || extractCity(body.address)
+  );
+  const today = new Date().toLocaleDateString("fr-FR");
+  const capitalStr = formatEuro(body.capital);
+  const capitalLettres = numberToFrenchWords(body.capital);
+
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  doc.setFont("times", "normal");
+  const margin = 22;
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const usableWidth = pageWidth - 2 * margin;
+  const bottomLimit = 275;
+  let y = margin;
+
+  const addText = (text: string, opts: { bold?: boolean; italic?: boolean; size?: number; align?: "left" | "center" | "right"; spacing?: number } = {}) => {
+    const style = opts.bold && opts.italic ? "bolditalic" : opts.bold ? "bold" : opts.italic ? "italic" : "normal";
+    doc.setFont("times", style);
+    const size = opts.size ?? 11;
+    doc.setFontSize(size);
+    const lines = doc.splitTextToSize(text, usableWidth);
+    const lh = 0.55 * size;
+    for (const line of lines) {
+      if (y > bottomLimit) { doc.addPage(); y = margin; }
+      const x = opts.align === "center" ? pageWidth / 2 : opts.align === "right" ? pageWidth - margin : margin;
+      doc.text(line, x, y, { align: opts.align ?? "left" });
+      y += lh;
+    }
+    y += opts.spacing ?? 3;
+  };
+
+  if (dirigeant) {
+    addText(`${civilite(dirigeant.gender)} ${dirigeant.fullName}`, { bold: true, spacing: 1 });
+    addText(titleCasePlace(dirigeant.address), { spacing: 8 });
+  }
+  addText("À l'attention de la banque", { align: "right", spacing: 8 });
+  addText(`Fait à ${city}, le ${today}.`, { align: "right", spacing: 12 });
+
+  addText("Objet : Demande d'ouverture d'un compte de dépôt de capital — société en formation", { bold: true, spacing: 8 });
+
+  addText("DEMANDE D'OUVERTURE DE COMPTE DE DÉPÔT DE CAPITAL — SOCIÉTÉ EN FORMATION", {
+    bold: true, size: 14, align: "center", spacing: 10,
+  });
+
+  addText("Madame, Monsieur,", { spacing: 5 });
+
+  addText(
+    `Par la présente, j'ai l'honneur de solliciter l'ouverture d'un compte de dépôt de capital destiné à recevoir les apports en numéraire constitutifs du capital social de la société en formation ci-après désignée :`,
+    { spacing: 5 }
+  );
+
+  addText(`• Dénomination : ${body.companyName}`, { spacing: 1 });
+  addText(`• Forme juridique : ${forme}`, { spacing: 1 });
+  addText(`• Siège social : ${titleCasePlace(body.address)}`, { spacing: 1 });
+  addText(`• Capital social : ${capitalStr} (${capitalLettres} euros)`, { spacing: 6 });
+
+  addText("Répartition des apports en numéraire :", { bold: true, spacing: 3 });
+  const totalPct = associes.reduce((s, a) => s + (Number(a.percent) || 0), 0) || 100;
+  associes.forEach((a, i) => {
+    const apport = Math.round((body.capital * (Number(a.percent) || 0)) / totalPct);
+    addText(
+      `${i + 1}. ${civilite(a.gender)} ${a.fullName} — ${a.percent}% — Apport : ${formatEuro(apport)}`,
+      { spacing: 1 }
+    );
+  });
+  y += 4;
+
+  addText(
+    `Les fonds correspondants seront versés sur ce compte conformément aux dispositions légales applicables. Je vous prie de bien vouloir me délivrer, à l'issue du dépôt, l'attestation de dépôt des fonds nécessaire à l'immatriculation de la société au Registre du Commerce et des Sociétés.`,
+    { spacing: 5 }
+  );
+
+  addText(
+    "Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.",
+    { spacing: 18 }
+  );
+
+  if (dirigeant) {
+    addText("Signature :", { spacing: 8 });
+    addText("_______________________________________", { spacing: 4 });
+    addText(`${civilite(dirigeant.gender)} ${dirigeant.fullName}`, { bold: true });
+  }
+
+  fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);
+  return doc;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DOCUMENT — PV DE DÉCISION DE NOMINATION DU DIRIGEANT
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface PvNominationInput {
+  companyName: string;
+  companyType: "SASU" | "SARL";
+  capital: number;
+  address: string;
+  signatureCity?: string;
+  associes: AssocieDetail[];
+  extraManagers?: Personne[];
+}
+
+export function buildPvNominationPdf(body: PvNominationInput): jsPDF {
+  const associes = body.associes ?? [];
+  const extraManagers = body.extraManagers ?? [];
+  const isSAS = body.companyType === "SASU";
+  const forme: EffectiveForm = effectiveFormOf(body.companyType, associes.length);
+  const unipersonnel = associes.length <= 1;
+  const roleTitle = isSAS ? "Président" : "Gérant";
+  const roleLower = isSAS ? "Président" : "gérant";
+  const decisionLabel = unipersonnel ? "DÉCISION DE L'ASSOCIÉ UNIQUE" : "PROCÈS-VERBAL DES DÉCISIONS COLLECTIVES";
+  const city = titleCasePlace(
+    (body.signatureCity && body.signatureCity.trim()) || extractCity(body.address)
+  );
+  const today = new Date().toLocaleDateString("fr-FR");
+  const dirigeants: Personne[] = [
+    ...associes.filter(a => a.isManager),
+    ...extraManagers,
+  ];
+
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  doc.setFont("times", "normal");
+  const margin = 22;
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const usableWidth = pageWidth - 2 * margin;
+  const bottomLimit = 275;
+  let y = margin;
+
+  const addText = (text: string, opts: { bold?: boolean; italic?: boolean; size?: number; align?: "left" | "center"; spacing?: number } = {}) => {
+    const style = opts.bold && opts.italic ? "bolditalic" : opts.bold ? "bold" : opts.italic ? "italic" : "normal";
+    doc.setFont("times", style);
+    const size = opts.size ?? 11;
+    doc.setFontSize(size);
+    const lines = doc.splitTextToSize(text, usableWidth);
+    const lh = 0.55 * size;
+    for (const line of lines) {
+      if (y > bottomLimit) { doc.addPage(); y = margin; }
+      doc.text(line, opts.align === "center" ? pageWidth / 2 : margin, y, {
+        align: opts.align === "center" ? "center" : "left",
+      });
+      y += lh;
+    }
+    y += opts.spacing ?? 3;
+  };
+
+  addText(body.companyName, { bold: true, size: 14, align: "center", spacing: 1 });
+  addText(`${forme} au capital de ${formatEuro(body.capital)}`, { align: "center", spacing: 1 });
+  addText(`Siège social : ${titleCasePlace(body.address)}`, { align: "center", spacing: 10 });
+
+  addText(decisionLabel, { bold: true, size: 14, align: "center", spacing: 2 });
+  addText(`PORTANT NOMINATION DU ${roleTitle.toUpperCase()}`, { bold: true, size: 14, align: "center", spacing: 12 });
+
+  if (unipersonnel && associes[0]) {
+    const a = associes[0];
+    addText(
+      `Le soussigné, ${civilStateSentence(a)}, associé unique de la société ${body.companyName}, société en formation sous forme de ${forme},`,
+      { spacing: 5 }
+    );
+    addText(
+      `A pris ce jour, ${today}, à ${city}, les décisions suivantes :`,
+      { spacing: 6 }
+    );
+  } else {
+    addText(
+      `Les soussignés, associés de la société ${body.companyName}, société en formation sous forme de ${forme}, réunis ce jour ${today} à ${city}, ont pris les décisions suivantes :`,
+      { spacing: 6 }
+    );
+    associes.forEach((a, i) => {
+      addText(`${i + 1}. ${civilStateSentence(a)}, associé à hauteur de ${a.percent}%.`, { spacing: 1 });
+    });
+    y += 3;
+  }
+
+  addText(`PREMIÈRE DÉCISION — Nomination du ${roleLower}`, { bold: true, spacing: 4 });
+  if (dirigeants.length === 0) {
+    addText(
+      `Aucun ${roleLower} n'a été désigné dans les présentes décisions. Il conviendra de compléter ce document avant signature.`,
+      { italic: true, spacing: 6 }
+    );
+  } else {
+    const fnCap = dirigeants.length > 1 ? `${roleTitle}s` : roleTitle;
+    addText(
+      `${dirigeants.length > 1 ? "Sont désignées" : "Est désigné"} en qualité de ${roleLower}${dirigeants.length > 1 ? "s" : ""} de la société, pour une durée illimitée :`,
+      { spacing: 4 }
+    );
+    dirigeants.forEach((d, i) => {
+      addText(`${i + 1}. ${civilStateSentence(d)}.`, { spacing: 2 });
+    });
+    y += 2;
+    addText(
+      `${dirigeants.length > 1 ? "Ils exerceront" : "Il ou elle exercera"} les fonctions de ${fnCap} conformément aux statuts et aux dispositions légales et réglementaires en vigueur.`,
+      { spacing: 6 }
+    );
+  }
+
+  addText(`DEUXIÈME DÉCISION — Rémunération`, { bold: true, spacing: 4 });
+  addText(
+    `La rémunération du ${roleLower} sera fixée ultérieurement par ${unipersonnel ? "décision de l'associé unique" : "décision collective des associés"}. À défaut de décision, les fonctions seront exercées à titre gratuit.`,
+    { spacing: 6 }
+  );
+
+  addText(`TROISIÈME DÉCISION — Acceptation des fonctions`, { bold: true, spacing: 4 });
+  addText(
+    `${dirigeants.length > 1 ? "Les personnes désignées ci-dessus déclarent" : "La personne désignée ci-dessus déclare"} accepter les fonctions qui ${dirigeants.length > 1 ? "leur sont" : "lui sont"} confiées et n'être frappé(e)(s) d'aucune incompatibilité, interdiction ou déchéance susceptible d'en empêcher l'exercice.`,
+    { spacing: 12 }
+  );
+
+  addText(`Fait à ${city}, le ${today}.`, { spacing: 12 });
+
+  addText(`Signature${unipersonnel ? "" : "s"} :`, { bold: true, spacing: 6 });
+  const signatories: Personne[] = unipersonnel
+    ? (associes.length > 0 ? [associes[0]] : [])
+    : associes;
+  signatories.forEach((s) => {
+    addText("_______________________________________", { spacing: 1 });
+    addText(`${civilite(s.gender)} ${s.fullName}${unipersonnel ? " — associé unique" : " — associé"}`, { spacing: 6 });
+  });
+
+  extraManagers.forEach((m) => {
+    addText("_______________________________________", { spacing: 1 });
+    addText(`${civilite(m.gender)} ${m.fullName} — ${roleLower} (acceptation des fonctions)`, { spacing: 6 });
+  });
+
+  fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);
+  return doc;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DOCUMENT — CHECK-LIST FINALE DU DOSSIER (bilingue AR/FR)
+// ═══════════════════════════════════════════════════════════════════════
+
+export async function buildChecklistFinalePdf(): Promise<jsPDF> {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  doc.setFont("times", "normal");
+  const margin = 22;
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const usableWidth = pageWidth - 2 * margin;
+  const bottomLimit = 275;
+  let y = margin;
+
+  const addText = (text: string, opts: { bold?: boolean; italic?: boolean; size?: number; align?: "left" | "center"; spacing?: number } = {}) => {
+    const style = opts.bold && opts.italic ? "bolditalic" : opts.bold ? "bold" : opts.italic ? "italic" : "normal";
+    doc.setFont("times", style);
+    const size = opts.size ?? 11;
+    doc.setFontSize(size);
+    const lines = doc.splitTextToSize(text, usableWidth);
+    for (const line of lines) {
+      const dim = doc.getTextDimensions(line);
+      const lh = dim.h;
+      if (y + lh > bottomLimit) { doc.addPage(); y = margin; }
+      doc.text(line, opts.align === "center" ? pageWidth / 2 : margin, y, {
+        align: opts.align === "center" ? "center" : "left",
+        baseline: "top",
+      });
+      y += lh;
+    }
+    y += opts.spacing ?? 3;
+  };
+
+  const addArabic = async (text: string, opts: { bold?: boolean; size?: number; align?: "right" | "center"; spacing?: number } = {}) => {
+    const rendered = await renderArabicToImage(text, usableWidth, {
+      bold: opts.bold, size: opts.size ?? 11, align: opts.align ?? "right",
+    });
+    if (!rendered) return;
+    if (y + rendered.heightMm > bottomLimit) { doc.addPage(); y = margin; }
+    doc.addImage(rendered.dataUrl, "PNG", margin, y, usableWidth, rendered.heightMm);
+    y += rendered.heightMm + (opts.spacing ?? 3);
+  };
+
+  await addArabic("✅ الشيك ليست النهائية لملف تأسيس شركتك", { bold: true, size: 15, align: "center", spacing: 3 });
+  addText("Check-list finale du dossier de création", { italic: true, size: 12, align: "center", spacing: 10 });
+
+  await addArabic("✅ الوثائق اللي جهزهالك Anafy Pro", { bold: true, size: 13, align: "right", spacing: 5 });
+  const done: Array<[string, string]> = [
+    ["• عقد التأسيس (Statuts)", "Statuts de la société"],
+    ["• شهادة/شهادات عدم الإدانة والنسب", "Attestation(s) de non-condamnation et de filiation"],
+    ["• فيشة المستفيدين الفعليين", "Fiche des bénéficiaires effectifs"],
+    ["• الدراسة المالية (Prévisionnel)", "Prévisionnel financier"],
+    ["• محضر تعيين المدير/الرئيس", "PV de nomination du dirigeant"],
+    ["• خطاب طلب فتح حساب الإيداع للبنك", "Lettre de demande d'ouverture de compte de dépôt"],
+  ];
+  for (const [ar, fr] of done) {
+    await addArabic(ar, { size: 11, spacing: 2 });
+    addText(fr, { italic: true, size: 10, spacing: 5 });
+  }
+
+  y += 4;
+
+  await addArabic("⬜ الوثائق اللي لازم تجيبها انت", { bold: true, size: 13, align: "right", spacing: 5 });
+  const todo: Array<[string, string]> = [
+    ["• شهادة إيداع رأس المال (البنك هيديهالك بعد ما تفتح الحساب)",
+     "Attestation de dépôt des fonds (délivrée par la banque après ouverture du compte)"],
+    ["• إثبات عنوان مقر الشركة (فاتورة كهرباء/غاز أو عقد إيجار)",
+     "Justificatif de siège social (facture d'énergie ou contrat de bail)"],
+    ["• صورة بطاقة الهوية أو الإقامة لكل مدير",
+     "Pièce d'identité en cours de validité de chaque dirigeant"],
+    ["• شهادة المؤهل المهني لو نشاطك منظّم (BTP، كهرباء، غاز، سباكة...)",
+     "Justificatif de qualification professionnelle si activité réglementée"],
+  ];
+  for (const [ar, fr] of todo) {
+    await addArabic(ar, { size: 11, spacing: 2 });
+    addText(fr, { italic: true, size: 10, spacing: 5 });
+  }
+
+  fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);
+  return doc;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DOCUMENT — FICHE DE SYNTHÈSE DE LA SOCIÉTÉ (1 page, français)
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface FicheSyntheseInput {
+  companyName: string;
+  companyType: "SASU" | "SARL";
+  activity: string;
+  capital: number;
+  address: string;
+  signatureCity?: string;
+  associes: AssocieDetail[];
+  extraManagers?: Personne[];
+}
+
+export function buildFicheSynthesePdf(body: FicheSyntheseInput): jsPDF {
+  const associes = body.associes ?? [];
+  const extraManagers = body.extraManagers ?? [];
+  const forme: EffectiveForm = effectiveFormOf(body.companyType, associes.length);
+  const isSAS = body.companyType === "SASU";
+  const roleTitle = isSAS ? "Président" : "Gérant";
+  const city = titleCasePlace(
+    (body.signatureCity && body.signatureCity.trim()) || extractCity(body.address)
+  );
+  const today = new Date().toLocaleDateString("fr-FR");
+  const capitalStr = formatEuro(body.capital);
+  const capitalLettres = numberToFrenchWords(body.capital);
+  const dirigeants: Personne[] = [
+    ...associes.filter(a => a.isManager),
+    ...extraManagers,
+  ];
+
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  doc.setFont("times", "normal");
+  const margin = 22;
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const usableWidth = pageWidth - 2 * margin;
+  const bottomLimit = 275;
+  let y = margin;
+
+  const labelW = 55;
+  const valueW = usableWidth - labelW - 4;
+
+  const addTitle = (text: string) => {
+    doc.setFont("times", "bold");
+    doc.setFontSize(15);
+    const lines = doc.splitTextToSize(text, usableWidth);
+    for (const ln of lines) {
+      doc.text(ln, pageWidth / 2, y, { align: "center" });
+      y += 7;
+    }
+    y += 4;
+  };
+
+  const addRow = (label: string, value: string) => {
+    doc.setFont("times", "bold");
+    doc.setFontSize(10);
+    const labelLines = doc.splitTextToSize(label, labelW - 4);
+    doc.setFont("times", "normal");
+    doc.setFontSize(10);
+    const valueLines = doc.splitTextToSize(value, valueW);
+    const rowLines = Math.max(labelLines.length, valueLines.length);
+    const lh = 5;
+    const rowH = rowLines * lh + 3;
+    if (y + rowH > bottomLimit) { doc.addPage(); y = margin; }
+    doc.setDrawColor(180);
+    doc.setLineWidth(0.2);
+    doc.rect(margin, y, usableWidth, rowH);
+    doc.line(margin + labelW, y, margin + labelW, y + rowH);
+    doc.setFont("times", "bold");
+    labelLines.forEach((ln: string, i: number) => {
+      doc.text(ln, margin + 2, y + 4 + i * lh);
+    });
+    doc.setFont("times", "normal");
+    valueLines.forEach((ln: string, i: number) => {
+      doc.text(ln, margin + labelW + 2, y + 4 + i * lh);
+    });
+    y += rowH;
+  };
+
+  addTitle(`FICHE DE SYNTHÈSE — ${body.companyName}`);
+
+  addRow("Dénomination", body.companyName);
+  addRow("Forme juridique", forme);
+  addRow("Capital social", `${capitalStr} (${capitalLettres} euros)`);
+  addRow("Siège social", titleCasePlace(body.address));
+  addRow("Objet social", body.activity);
+  addRow("Durée", "99 ans à compter de l'immatriculation au RCS");
+
+  const dirigeantsTxt = dirigeants.length === 0
+    ? "Aucun dirigeant désigné"
+    : dirigeants.map(d =>
+        `${roleTitle} : ${civilite(d.gender)} ${d.fullName} — ${nePart(d.gender)} le ${d.birthDate} à ${titleCasePlace(d.birthPlace)} — ${d.nationality} — ${titleCasePlace(d.address)}`
+      ).join("\n");
+  addRow(`${roleTitle}${dirigeants.length > 1 ? "s" : ""}`, dirigeantsTxt);
+
+  const associesTxt = associes.length === 0
+    ? "—"
+    : associes.map((a, i) =>
+        `${i + 1}. ${civilite(a.gender)} ${a.fullName} — ${a.percent}%${a.isManager ? ` (${roleTitle.toLowerCase()})` : ""}`
+      ).join("\n");
+  addRow(`Associé${associes.length > 1 ? "s" : ""} (répartition)`, associesTxt);
+
+  addRow("Date et ville de signature", `${city}, le ${today}`);
+
+  fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);
+  return doc;
+}
 

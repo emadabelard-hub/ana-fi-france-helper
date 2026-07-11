@@ -34,6 +34,34 @@ async function trIfAr(text: string, instruction?: string): Promise<string> {
   return await translateArToFr(text, instruction);
 }
 
+// Restaure les accents français des nationalités les plus fréquentes (le LLM peut renvoyer sans accents)
+const NATIONALITY_ACCENTS: Record<string, string> = {
+  "francaise": "française",
+  "egyptienne": "égyptienne",
+  "algerienne": "algérienne",
+  "senegalaise": "sénégalaise",
+  "camerounaise": "camerounaise",
+  "ivoirienne": "ivoirienne",
+  "libanaise": "libanaise",
+  "syrienne": "syrienne",
+  "tunisienne": "tunisienne",
+  "marocaine": "marocaine",
+  "italienne": "italienne",
+  "espagnole": "espagnole",
+  "portugaise": "portugaise",
+  "allemande": "allemande",
+  "belge": "belge",
+  "grecque": "grecque",
+  "roumaine": "roumaine",
+  "turque": "turque",
+  "mauritanienne": "mauritanienne",
+  "malienne": "malienne",
+  "libyenne": "libyenne",
+  "jordanienne": "jordanienne",
+  "irakienne": "irakienne",
+  "iranienne": "iranienne",
+};
+
 // Normalise une nationalité au féminin français, minuscule (ex: "italienne", "égyptienne")
 function normalizeNationalityFeminine(input: string): string {
   if (!input) return input;
@@ -51,6 +79,10 @@ function normalizeNationalityFeminine(input: string): string {
     else if (/on$/.test(s)) s = s.replace(/on$/, "onne");
     else if (!/e$/.test(s)) s = s + "e";
   }
+  // Restaure les accents français si version sans accents connue
+  const withoutAccents = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (NATIONALITY_ACCENTS[withoutAccents]) return NATIONALITY_ACCENTS[withoutAccents];
+  if (NATIONALITY_ACCENTS[s]) return NATIONALITY_ACCENTS[s];
   return s;
 }
 

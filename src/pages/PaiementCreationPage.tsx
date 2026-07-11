@@ -604,16 +604,14 @@ export default function PaiementCreationPage() {
       <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">
-            {companyType === "SASU" ? "👤 الشريك الوحيد" : "👥 الشركاء"}
+            {associes.length === 1 ? "👤 الشريك الوحيد" : "👥 الشركاء"}
           </h2>
-          {companyType === "SARL" && (
-            <Button type="button" size="sm" variant="outline" onClick={addAssocie}>
-              <Plus className="h-4 w-4 ml-1" /> إضافة شريك
-            </Button>
-          )}
+          <Button type="button" size="sm" variant="outline" onClick={addAssocie}>
+            <Plus className="h-4 w-4 ml-1" /> إضافة شريك
+          </Button>
         </div>
 
-        {companyType === "SARL" && (
+        {associes.length > 1 && (
           <div className={`text-sm px-3 py-2 rounded ${Math.round(totalPercent) === 100 ? "bg-green-50 text-green-700 dark:bg-green-950/30" : "bg-amber-50 text-amber-700 dark:bg-amber-950/30"}`}>
             مجموع النسب : {totalPercent}% {Math.round(totalPercent) === 100 ? "✅" : "(المطلوب 100%)"}
           </div>
@@ -623,14 +621,15 @@ export default function PaiementCreationPage() {
           <div key={i} className="border rounded-lg p-4 space-y-3 bg-muted/30">
             <div className="flex items-center justify-between">
               <span className="font-semibold">
-                {companyType === "SASU" ? "الشريك الوحيد" : `الشريك ${i + 1}`}
+                {associes.length === 1 ? "الشريك الوحيد" : `الشريك ${i + 1}`}
               </span>
-              {companyType === "SARL" && associes.length > 2 && (
+              {associes.length > 1 && (
                 <Button type="button" size="icon" variant="ghost" onClick={() => removeAssocie(i)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
             </div>
+
 
             <div className="space-y-2">
               <Label>الجنس</Label>

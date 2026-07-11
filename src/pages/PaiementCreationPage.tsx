@@ -413,9 +413,21 @@ export default function PaiementCreationPage() {
 
   // ─── Validation ─── //
   function addressHasCity(addr: string): boolean {
-    // Doit contenir un code postal 5 chiffres suivi d'au moins une ville (2+ lettres)
-    const m = addr.match(/\b\d{5}\b[\s,\-]*([A-Za-zÀ-ÿ\u0600-\u06FF][A-Za-zÀ-ÿ\u0600-\u06FF\s\-']{1,})/);
-    return !!(m && m[1] && m[1].trim().length >= 2);
+    // Siège social (France) : code postal 5 chiffres + ville (accents, tirets, apostrophes, espaces)
+    const m = addr.match(/\b\d{5}\b[\s,\-]*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-']+)/);
+    if (!m || !m[1]) return false;
+    const city = m[1].trim();
+    // Doit contenir au moins 2 lettres (hors tirets/apostrophes/espaces)
+    const letters = city.replace(/[\s\-']/g, "");
+    return letters.length >= 2;
+  }
+  function personalAddressValid(addr: string): boolean {
+    // Adresse personnelle (peut être à l'étranger) : ≥10 chars, ≥1 chiffre, ≥1 mot de 2+ lettres
+    const s = addr.trim();
+    if (s.length < 10) return false;
+    if (!/\d/.test(s)) return false;
+    if (!/[A-Za-zÀ-ÿ\u0600-\u06FF]{2,}/.test(s)) return false;
+    return true;
   }
   function validateStatuts(): string | null {
     if (!companyName.trim()) return "اسم الشركة مطلوب";
@@ -433,7 +445,7 @@ export default function PaiementCreationPage() {
       if (!a.nationality.trim()) return `${label}: الجنسية مطلوبة`;
       if (/[0-9]/.test(a.nationality)) return `${label}: الجنسية ما ينفعش تكون فيها أرقام ✍️`;
       if (!a.address.trim()) return `${label}: العنوان مطلوب`;
-      if (!addressHasCity(a.address)) return `${label}: لازم تكتب اسم المدينة في العنوان`;
+      if (!personalAddressValid(a.address)) return `${label}: العنوان لازم يكون كامل (شارع + رقم + مدينة)`;
       if (!a.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
       if (!a.motherName.trim()) return `${label}: اسم الأم مطلوب`;
     }
@@ -450,7 +462,7 @@ export default function PaiementCreationPage() {
         if (!m.nationality.trim()) return `${label}: الجنسية مطلوبة`;
         if (/[0-9]/.test(m.nationality)) return `${label}: الجنسية ما ينفعش تكون فيها أرقام ✍️`;
         if (!m.address.trim()) return `${label}: العنوان مطلوب`;
-        if (!addressHasCity(m.address)) return `${label}: لازم تكتب اسم المدينة في العنوان`;
+        if (!personalAddressValid(m.address)) return `${label}: العنوان لازم يكون كامل (شارع + رقم + مدينة)`;
         if (!m.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
         if (!m.motherName.trim()) return `${label}: اسم الأم مطلوب`;
       }

@@ -1596,7 +1596,7 @@ export function buildPvNominationPdf(body: PvNominationInput): jsPDF {
     y += 2;
     const exercerVerb = multi ? "Ils exerceront" : singleF ? "Elle exercera" : "Il exercera";
     addText(
-      `${exercerVerb} les fonctions de ${fnCap} conformément aux statuts et aux dispositions légales et réglementaires en vigueur.`,
+      `${exercerVerb} les fonctions de ${fnCap.toLowerCase()} conformément aux statuts et aux dispositions légales et réglementaires en vigueur.`,
       { spacing: 6 }
     );
   }

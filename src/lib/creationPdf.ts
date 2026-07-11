@@ -1625,8 +1625,10 @@ export function buildPvNominationPdf(body: PvNominationInput): jsPDF {
     ? (associes.length > 0 ? [associes[0]] : [])
     : associes;
   signatories.forEach((s) => {
+    const isF = s.gender === "F";
+    const associeWord = isF ? "associée" : "associé";
     addText("_______________________________________", { spacing: 1 });
-    addText(`${civilite(s.gender)} ${s.fullName}${unipersonnel ? " — associé unique" : " — associé"}`, { spacing: 6 });
+    addText(`${civilite(s.gender)} ${s.fullName}${unipersonnel ? ` — ${associeWord} unique` : ` — ${associeWord}`}`, { spacing: 6 });
   });
 
   extraManagers.forEach((m) => {

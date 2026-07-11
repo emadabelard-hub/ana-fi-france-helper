@@ -1077,7 +1077,7 @@ export async function buildBeneficiairesPdf(body: BeneficiairesInput): Promise<j
     const bp = titleCasePlace(p.birthPlace);
     const addr = titleCasePlace(p.address);
     addText(`• Nom complet : ${p.fullName}`, { spacing: 1 });
-    addText(`• Date et lieu de naissance : ${p.birthDate} à ${bp}`, { spacing: 1 });
+    addText(`• Date et lieu de naissance : ${p.birthDate} ${aPlace(bp)}`, { spacing: 1 });
     addText(`• Nationalité : ${p.nationality}`, { spacing: 1 });
     addText(`• Adresse personnelle : ${addr}`, { spacing: 1 });
     if (typeof opts.percent === "number") {

@@ -103,7 +103,8 @@ const CreerMaSocietePage = () => {
       }
       const content = data?.content || data?.message;
       if (!content) throw new Error('empty response');
-      setRecommendation(content);
+      const truncated = data?.truncated === true || data?.finish_reason === 'length' || data?.finish_reason === 'MAX_TOKENS';
+      setRecommendation(truncated ? `${content}\n\nلمعرفة باقي الخطوات، شوف الدليل تحت 👇` : content);
     } catch (e) {
       console.error('wizard analysis error', e);
       toast.error(e instanceof Error ? e.message : 'Erreur inconnue');

@@ -1685,7 +1685,7 @@ export function buildFicheSynthesePdf(body: FicheSyntheseInput): jsPDF {
   const dirigeantsTxt = dirigeants.length === 0
     ? "Aucun dirigeant désigné"
     : dirigeants.map(d =>
-        `${roleTitle} : ${civilite(d.gender)} ${d.fullName} — ${nePart(d.gender)} le ${d.birthDate} à ${titleCasePlace(d.birthPlace)} — ${d.nationality} — ${titleCasePlace(d.address)}`
+        `${civilite(d.gender)} ${d.fullName} — ${nePart(d.gender)} le ${d.birthDate} à ${titleCasePlace(d.birthPlace)} — de nationalité ${d.nationality} — ${titleCasePlace(d.address)}`
       ).join("\n");
   addRow(`${roleTitle}${dirigeants.length > 1 ? "s" : ""}`, dirigeantsTxt);
 

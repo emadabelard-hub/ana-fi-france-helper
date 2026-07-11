@@ -1148,16 +1148,19 @@ export async function buildGuideDepotPdf(): Promise<jsPDF> {
     const size = opts.size ?? 11;
     doc.setFontSize(size);
     const lines = doc.splitTextToSize(text, usableWidth);
-    const lh = 0.55 * size;
     for (const line of lines) {
-      if (y > bottomLimit) { doc.addPage(); y = margin; }
+      const dim = doc.getTextDimensions(line);
+      const lh = dim.h;
+      if (y + lh > bottomLimit) { doc.addPage(); y = margin; }
       doc.text(line, opts.align === "center" ? pageWidth / 2 : margin, y, {
         align: opts.align === "center" ? "center" : "left",
+        baseline: "top",
       });
       y += lh;
     }
     y += opts.spacing ?? 3;
   };
+
 
   // Rend une ligne arabe en image, alignée à droite (RTL)
   const addArabic = async (text: string, opts: { bold?: boolean; size?: number; align?: "right" | "center"; spacing?: number } = {}) => {
@@ -1191,9 +1194,10 @@ export async function buildGuideDepotPdf(): Promise<jsPDF> {
      "Justificatif de qualification professionnelle si activité réglementée"],
   ];
   for (const [ar, fr] of pieces) {
-    await addArabic(ar, { size: 11, spacing: 1 });
-    addText(fr, { italic: true, size: 10, spacing: 5 });
+    await addArabic(ar, { size: 11, spacing: 2 });
+    addText(fr, { italic: true, size: 10, spacing: 6 });
   }
+
 
   // PAGE 2 — Guide étapes
   doc.addPage();
@@ -1216,9 +1220,10 @@ export async function buildGuideDepotPdf(): Promise<jsPDF> {
      "Réception du numéro SIRET par email sous quelques jours"],
   ];
   for (const [ar, fr] of etapes) {
-    await addArabic(ar, { size: 11, spacing: 1 });
-    addText(fr, { italic: true, size: 10, spacing: 6 });
+    await addArabic(ar, { size: 11, spacing: 2 });
+    addText(fr, { italic: true, size: 10, spacing: 7 });
   }
+
 
   // Encadré final — texte arabe rendu en image
   const arTitle = "💬 محتاج مساعدة في أي خطوة؟ اسأل شبيك لبيك";

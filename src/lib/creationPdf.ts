@@ -230,10 +230,20 @@ function civilite(gender: Gender): string {
   return gender === "F" ? "Mme" : "M.";
 }
 
+// Contraction française "à + <lieu>" : "à Le Caire" → "au Caire", "à Les X" → "aux X", "à La X" → "à la X"
+function aPlace(place: string): string {
+  const p = (place || "").trim();
+  if (!p) return `à ${p}`;
+  if (/^Le\s+/.test(p)) return `au ${p.replace(/^Le\s+/, "")}`;
+  if (/^Les\s+/.test(p)) return `aux ${p.replace(/^Les\s+/, "")}`;
+  if (/^La\s+/.test(p)) return `à la ${p.replace(/^La\s+/, "")}`;
+  return `à ${p}`;
+}
+
 function civilStateSentence(p: Personne): string {
   const bp = titleCasePlace(p.birthPlace);
   const addr = titleCasePlace(p.address);
-  return `${civilite(p.gender)} ${p.fullName}, ${nePart(p.gender)} le ${p.birthDate} à ${bp}, de nationalité ${p.nationality}, demeurant ${addr}`;
+  return `${civilite(p.gender)} ${p.fullName}, ${nePart(p.gender)} le ${p.birthDate} ${aPlace(bp)}, de nationalité ${p.nationality}, demeurant ${addr}`;
 }
 
 export function buildStatutsPdf(body: StatutsInput): jsPDF {

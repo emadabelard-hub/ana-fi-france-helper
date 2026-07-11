@@ -1603,7 +1603,7 @@ export function buildPvNominationPdf(body: PvNominationInput): jsPDF {
 
   addText(`DEUXIÈME DÉCISION — Rémunération`, { bold: true, spacing: 4 });
   addText(
-    `La rémunération du ${roleLower} sera fixée ultérieurement par ${unipersonnel ? "décision de l'associé unique" : "décision collective des associés"}. À défaut de décision, les fonctions seront exercées à titre gratuit.`,
+    `La rémunération du ${roleLower} sera fixée ultérieurement par ${unipersonnel ? "décision de l'associé unique" : "décision collective des associés"}. À défaut de décision, les fonctions de gérant seront exercées à titre gratuit.`,
     { spacing: 6 }
   );
 

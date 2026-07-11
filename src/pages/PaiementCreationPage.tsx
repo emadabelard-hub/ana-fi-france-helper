@@ -339,6 +339,7 @@ export default function PaiementCreationPage() {
       if (!birthToStr(a.birth)) return `${label}: تاريخ الميلاد مطلوب`;
       if (!a.birthPlace.trim()) return `${label}: مكان الميلاد مطلوب`;
       if (!a.nationality.trim()) return `${label}: الجنسية مطلوبة`;
+      if (/[0-9]/.test(a.nationality)) return `${label}: الجنسية ما ينفعش تكون فيها أرقام ✍️`;
       if (!a.address.trim()) return `${label}: العنوان مطلوب`;
       if (!a.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
       if (!a.motherName.trim()) return `${label}: اسم الأم مطلوب`;

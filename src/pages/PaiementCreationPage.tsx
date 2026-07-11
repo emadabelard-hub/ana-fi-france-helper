@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, FileText, BarChart3, Package, Plus, Trash2, UserPlus } from "lucide-react";
-import { buildStatutsPdf, buildPrevisionnelPdf, buildAttestationPdf, buildBeneficiairesPdf, buildGuideDepotPdf, effectiveFormOf, type AssocieDetail, type Personne } from "@/lib/creationPdf";
+import { buildStatutsPdf, buildPrevisionnelPdf, buildAttestationPdf, buildBeneficiairesPdf, buildGuideDepotPdf, buildLettreBanquePdf, buildPvNominationPdf, buildChecklistFinalePdf, buildFicheSynthesePdf, effectiveFormOf, type AssocieDetail, type Personne } from "@/lib/creationPdf";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -568,6 +568,47 @@ export default function PaiementCreationPage() {
           companyType,
         });
         built.push({ label: "👥 فيشة المستفيدين الفعليين", filename: `beneficiaires-effectifs-${companyNameFr || "societe"}.pdf`, doc: beDoc });
+
+        // Lettre banque — demande d'ouverture de compte de dépôt de capital
+        const lettreDoc = buildLettreBanquePdf({
+          companyName: companyNameFr,
+          companyType,
+          capital,
+          address: addressFr,
+          signatureCity: signatureCityFr,
+          associes: associesFr,
+          extraManagers: extraManagersFr,
+        });
+        built.push({ label: "🏦 خطاب البنك — طلب فتح حساب الإيداع", filename: `lettre-banque-depot-capital-${companyNameFr || "societe"}.pdf`, doc: lettreDoc });
+
+        // PV de nomination du dirigeant
+        const pvDoc = buildPvNominationPdf({
+          companyName: companyNameFr,
+          companyType,
+          capital,
+          address: addressFr,
+          signatureCity: signatureCityFr,
+          associes: associesFr,
+          extraManagers: extraManagersFr,
+        });
+        built.push({ label: "📝 محضر تعيين المدير/الرئيس", filename: `pv-nomination-dirigeant-${companyNameFr || "societe"}.pdf`, doc: pvDoc });
+
+        // Fiche de synthèse
+        const ficheDoc = buildFicheSynthesePdf({
+          companyName: companyNameFr,
+          companyType,
+          activity: activityFr,
+          capital,
+          address: addressFr,
+          signatureCity: signatureCityFr,
+          associes: associesFr,
+          extraManagers: extraManagersFr,
+        });
+        built.push({ label: "📋 فيشة تعريفية بالشركة", filename: `fiche-synthese-${companyNameFr || "societe"}.pdf`, doc: ficheDoc });
+
+        // Check-list finale bilingue (toujours utile après les statuts)
+        const checklistDoc = await buildChecklistFinalePdf();
+        built.push({ label: "✅ الشيك ليست النهائية للملف", filename: "checklist-finale-dossier.pdf", doc: checklistDoc });
       }
       if (needPrevi) {
         const doc = buildPrevisionnelPdf({

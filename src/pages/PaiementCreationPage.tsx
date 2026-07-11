@@ -412,10 +412,16 @@ export default function PaiementCreationPage() {
   const removeManager = (i: number) => setExtraManagers(prev => prev.filter((_, idx) => idx !== i));
 
   // ─── Validation ─── //
+  function addressHasCity(addr: string): boolean {
+    // Doit contenir un code postal 5 chiffres suivi d'au moins une ville (2+ lettres)
+    const m = addr.match(/\b\d{5}\b[\s,\-]*([A-Za-zÀ-ÿ\u0600-\u06FF][A-Za-zÀ-ÿ\u0600-\u06FF\s\-']{1,})/);
+    return !!(m && m[1] && m[1].trim().length >= 2);
+  }
   function validateStatuts(): string | null {
     if (!companyName.trim()) return "اسم الشركة مطلوب";
     if (!activity.trim()) return "النشاط مطلوب";
     if (!address.trim()) return "عنوان الشركة مطلوب";
+    if (!addressHasCity(address)) return "لازم تكتب اسم المدينة في عنوان الشركة";
     if (!signatureCity.trim()) return "مدينة التوقيع مطلوبة";
     for (let i = 0; i < associes.length; i++) {
       const a = associes[i];
@@ -427,6 +433,7 @@ export default function PaiementCreationPage() {
       if (!a.nationality.trim()) return `${label}: الجنسية مطلوبة`;
       if (/[0-9]/.test(a.nationality)) return `${label}: الجنسية ما ينفعش تكون فيها أرقام ✍️`;
       if (!a.address.trim()) return `${label}: العنوان مطلوب`;
+      if (!addressHasCity(a.address)) return `${label}: لازم تكتب اسم المدينة في العنوان`;
       if (!a.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
       if (!a.motherName.trim()) return `${label}: اسم الأم مطلوب`;
     }
@@ -443,6 +450,7 @@ export default function PaiementCreationPage() {
         if (!m.nationality.trim()) return `${label}: الجنسية مطلوبة`;
         if (/[0-9]/.test(m.nationality)) return `${label}: الجنسية ما ينفعش تكون فيها أرقام ✍️`;
         if (!m.address.trim()) return `${label}: العنوان مطلوب`;
+        if (!addressHasCity(m.address)) return `${label}: لازم تكتب اسم المدينة في العنوان`;
         if (!m.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
         if (!m.motherName.trim()) return `${label}: اسم الأم مطلوب`;
       }

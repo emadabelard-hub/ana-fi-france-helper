@@ -53,6 +53,81 @@ function normalizeNationalityFeminine(input: string): string {
   }
   return s;
 }
+
+// Nettoie une nationalité et retire les chiffres, garde uniquement lettres françaises/tirets
+function stripDigits(input: string): string {
+  return (input || "").replace(/[0-9]/g, "").trim();
+}
+
+// Map minimale pour restaurer les accents français des pays fréquents
+const COUNTRY_ACCENTS: Record<string, string> = {
+  "egypte": "Égypte", "égypte": "Égypte",
+  "algerie": "Algérie", "algérie": "Algérie",
+  "tunisie": "Tunisie",
+  "maroc": "Maroc",
+  "senegal": "Sénégal", "sénégal": "Sénégal",
+  "liban": "Liban",
+  "syrie": "Syrie",
+  "france": "France",
+  "italie": "Italie",
+  "belgique": "Belgique",
+  "espagne": "Espagne",
+  "portugal": "Portugal",
+  "allemagne": "Allemagne",
+  "turquie": "Turquie",
+  "grece": "Grèce", "grèce": "Grèce",
+  "roumanie": "Roumanie",
+  "cote d'ivoire": "Côte d'Ivoire", "côte d'ivoire": "Côte d'Ivoire",
+  "cameroun": "Cameroun",
+  "mali": "Mali",
+  "mauritanie": "Mauritanie",
+  "libye": "Libye",
+  "jordanie": "Jordanie",
+  "irak": "Irak",
+  "iran": "Iran",
+};
+
+function formatCountry(input: string): string {
+  const key = (input || "").trim().toLocaleLowerCase("fr-FR");
+  if (!key) return input;
+  if (COUNTRY_ACCENTS[key]) return COUNTRY_ACCENTS[key];
+  // Capitalisation par défaut
+  return key.split(/(\s+|-)/).map(seg => seg && !/^\s+$/.test(seg) && seg !== "-"
+    ? seg.charAt(0).toLocaleUpperCase("fr-FR") + seg.slice(1)
+    : seg).join("");
+}
+
+function capitalizePlaceWord(s: string): string {
+  if (!s) return s;
+  const lower = s.toLocaleLowerCase("fr-FR");
+  return lower.charAt(0).toLocaleUpperCase("fr-FR") + lower.slice(1);
+}
+
+// Reformate "Ville, Pays" (avec virgule + accents pays), même si l'utilisateur a séparé par espace/tiret uniquement.
+function formatBirthPlace(input: string): string {
+  const raw = (input || "").trim();
+  if (!raw) return raw;
+  if (raw.includes(",")) {
+    const parts = raw.split(",").map(p => p.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      const country = formatCountry(parts[parts.length - 1]);
+      const city = parts.slice(0, -1).map(capitalizePlaceWord).join(", ");
+      return `${city}, ${country}`;
+    }
+    return capitalizePlaceWord(raw);
+  }
+  // Pas de virgule : tenter de détecter le dernier mot comme pays connu
+  const tokens = raw.split(/\s+/);
+  for (let i = tokens.length - 1; i >= 1; i--) {
+    const tail = tokens.slice(i).join(" ").toLocaleLowerCase("fr-FR");
+    if (COUNTRY_ACCENTS[tail]) {
+      const city = tokens.slice(0, i).map(capitalizePlaceWord).join(" ");
+      return `${city}, ${COUNTRY_ACCENTS[tail]}`;
+    }
+  }
+  return tokens.map(capitalizePlaceWord).join(" ");
+}
+
 const NATIONALITY_INSTRUCTION =
   "Traduis en français le gentilé (nationalité) uniquement. Réponds UNIQUEMENT par un seul mot au féminin singulier, en minuscule, sans article ni ponctuation (ex: italienne, égyptienne, française, marocaine, tunisienne, algérienne, syrienne, libanaise, sénégalaise).";
 
@@ -264,6 +339,7 @@ export default function PaiementCreationPage() {
       if (!birthToStr(a.birth)) return `${label}: تاريخ الميلاد مطلوب`;
       if (!a.birthPlace.trim()) return `${label}: مكان الميلاد مطلوب`;
       if (!a.nationality.trim()) return `${label}: الجنسية مطلوبة`;
+      if (/[0-9]/.test(a.nationality)) return `${label}: الجنسية ما ينفعش تكون فيها أرقام ✍️`;
       if (!a.address.trim()) return `${label}: العنوان مطلوب`;
       if (!a.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
       if (!a.motherName.trim()) return `${label}: اسم الأم مطلوب`;
@@ -280,6 +356,7 @@ export default function PaiementCreationPage() {
         if (!birthToStr(m.birth)) return `${label}: تاريخ الميلاد مطلوب`;
         if (!m.birthPlace.trim()) return `${label}: مكان الميلاد مطلوب`;
         if (!m.nationality.trim()) return `${label}: الجنسية مطلوبة`;
+        if (/[0-9]/.test(m.nationality)) return `${label}: الجنسية ما ينفعش تكون فيها أرقام ✍️`;
         if (!m.address.trim()) return `${label}: العنوان مطلوب`;
         if (!m.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
         if (!m.motherName.trim()) return `${label}: اسم الأم مطلوب`;
@@ -317,12 +394,13 @@ export default function PaiementCreationPage() {
 
       const associesFr: AssocieDetail[] = await Promise.all(
         associes.map(async (a) => {
-          const natRaw = await trIfAr(a.nationality, NATIONALITY_INSTRUCTION);
+          const natRaw = stripDigits(await trIfAr(stripDigits(a.nationality), NATIONALITY_INSTRUCTION));
+          const bpTr = await trIfAr(a.birthPlace);
           return {
             gender: a.gender,
             fullName: await trIfAr(a.fullName),
             birthDate: birthToStr(a.birth),
-            birthPlace: await trIfAr(a.birthPlace),
+            birthPlace: formatBirthPlace(bpTr),
             nationality: normalizeNationalityFeminine(natRaw),
             address: await trIfAr(a.address),
             fatherName: await trIfAr(a.fatherName),
@@ -334,12 +412,13 @@ export default function PaiementCreationPage() {
       );
       const extraManagersFr: Personne[] = await Promise.all(
         extraManagers.map(async (m) => {
-          const natRaw = await trIfAr(m.nationality, NATIONALITY_INSTRUCTION);
+          const natRaw = stripDigits(await trIfAr(stripDigits(m.nationality), NATIONALITY_INSTRUCTION));
+          const bpTr = await trIfAr(m.birthPlace);
           return {
             gender: m.gender,
             fullName: await trIfAr(m.fullName),
             birthDate: birthToStr(m.birth),
-            birthPlace: await trIfAr(m.birthPlace),
+            birthPlace: formatBirthPlace(bpTr),
             nationality: normalizeNationalityFeminine(natRaw),
             address: await trIfAr(m.address),
             fatherName: await trIfAr(m.fatherName),
@@ -387,7 +466,7 @@ export default function PaiementCreationPage() {
           });
         });
 
-        const beDoc = buildBeneficiairesPdf({
+        const beDoc = await buildBeneficiairesPdf({
           companyName: companyNameFr,
           associes: associesFr,
           extraManagers: extraManagersFr,
@@ -422,7 +501,7 @@ export default function PaiementCreationPage() {
       }
 
       // Le guide de dépôt (document 3) est TOUJOURS offert, y compris pour les achats individuels
-      const guideDoc = buildGuideDepotPdf();
+      const guideDoc = await buildGuideDepotPdf();
       built.push({ label: "📖 دليل التسجيل على INPI (مجاناً)", filename: "guide-depot-inpi.pdf", doc: guideDoc });
 
       setGeneratedDocs(built);

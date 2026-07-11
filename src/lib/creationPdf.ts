@@ -1,4 +1,49 @@
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+
+// ─── Détection & rendu de l'arabe via image (même mécanisme que le rapport de chantier) ───
+export function containsArabicText(s: string): boolean {
+  return /[\u0600-\u06FF]/.test(s || "");
+}
+
+export async function renderArabicToImage(
+  text: string,
+  widthMm: number,
+  opts?: { bold?: boolean; size?: number; align?: "right" | "left" | "center"; color?: string; bg?: string }
+): Promise<{ dataUrl: string; heightMm: number } | null> {
+  if (!text || !text.trim()) return null;
+  if (typeof document === "undefined") return null;
+  const pxPerMm = 96 / 25.4;
+  const widthPx = Math.max(50, Math.round(widthMm * pxPerMm));
+  const fontPx = Math.round((opts?.size ?? 11) * (96 / 72));
+  const div = document.createElement("div");
+  div.style.cssText = [
+    "position:fixed", "left:-99999px", "top:0",
+    `width:${widthPx}px`,
+    "direction:rtl",
+    `text-align:${opts?.align || "right"}`,
+    "font-family:'IBM Plex Sans Arabic','Tajawal','Noto Naskh Arabic',Arial,sans-serif",
+    `font-size:${fontPx}px`,
+    "line-height:1.55",
+    `color:${opts?.color || "#212121"}`,
+    `font-weight:${opts?.bold ? "700" : "400"}`,
+    `background:${opts?.bg || "#ffffff"}`,
+    "white-space:pre-wrap", "word-wrap:break-word", "padding:2px 0",
+  ].join(";");
+  div.textContent = text;
+  document.body.appendChild(div);
+  try {
+    if (document.fonts && typeof (document.fonts as unknown as { ready?: Promise<void> }).ready?.then === "function") {
+      try { await (document.fonts as unknown as { ready: Promise<void> }).ready; } catch { /* ignore */ }
+    }
+    const canvas = await html2canvas(div, {
+      scale: 2, backgroundColor: opts?.bg || "#ffffff", logging: false, useCORS: true,
+    });
+    return { dataUrl: canvas.toDataURL("image/png"), heightMm: (canvas.height / canvas.width) * widthMm };
+  } finally {
+    document.body.removeChild(div);
+  }
+}
 
 export type Gender = "M" | "F";
 
@@ -484,19 +529,28 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
   if (unipersonnel) {
     const u = associes[0];
     const civU = u ? civilite(u.gender) : "M.";
+    const isF = u?.gender === "F";
     const isMgr = u?.isManager;
-    const suffix = isMgr ? (isSAS ? " et Président" : " et gérant") : "";
+    const associeWord = isF ? "associée" : "associé";
+    const managerWord = isSAS ? (isF ? "Présidente" : "Président") : (isF ? "gérante" : "gérant");
+    const suffix = isMgr ? ` et ${managerWord}` : "";
     signatureBlock(
-      `Signature de l'associé unique${suffix} :`,
-      `${civU} ${u?.fullName ?? ""} — associé unique${suffix}`
+      `Signature de l'${associeWord} unique${suffix} :`,
+      `${civU} ${u?.fullName ?? ""} — ${associeWord} unique${suffix}`
     );
   } else {
     associes.forEach((a) => {
-      const roles = a.isManager ? (isSAS ? "associé et Président" : "associé et gérant") : "associé";
+      const isF = a.gender === "F";
+      const associeWord = isF ? "associée" : "associé";
+      const managerWord = isSAS ? (isF ? "Présidente" : "Président") : (isF ? "gérante" : "gérant");
+      const roles = a.isManager ? `${associeWord} et ${managerWord}` : associeWord;
       signatureBlock(`Signature de ${a.fullName} :`, `${civilite(a.gender)} ${a.fullName} — ${roles}`);
     });
     extraManagers.forEach((m) => {
-      const role = isSAS ? "Président non associé" : "gérant non associé";
+      const isF = m.gender === "F";
+      const managerWord = isSAS ? (isF ? "Présidente" : "Président") : (isF ? "gérante" : "gérant");
+      const nonAssocieWord = isF ? "associée" : "associé";
+      const role = `${managerWord} non ${nonAssocieWord}`;
       signatureBlock(`Signature de ${m.fullName} :`, `${civilite(m.gender)} ${m.fullName} — ${role}`);
     });
   }
@@ -657,16 +711,22 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
 
     if (vehSituation) {
       const modeLabel: Record<string, string> = {
-        cash: "achat comptant",
-        credit: "crédit bancaire",
-        leasing: "leasing LOA/LLD",
+        cash: "Achat comptant",
+        credit: "Crédit",
+        leasing: "Leasing",
       };
       let vehStr = "";
-      if (vehSituation === "owned") vehStr = "Véhicule déjà détenu";
-      else if (vehSituation === "notNeeded") vehStr = "Non nécessaire";
-      else {
-        const modeStr = vehMode ? modeLabel[vehMode] : "à définir";
-        vehStr = `Acquisition prévue (${modeStr}) — ${eur(vehiculeMensuel)}/mois`;
+      if (vehSituation === "owned") {
+        vehStr = vehiculeMensuel > 0
+          ? `Véhicule déjà détenu — ${eur(vehiculeMensuel)}/mois`
+          : "Véhicule déjà détenu";
+      } else if (vehSituation === "notNeeded") {
+        vehStr = "Pas de véhicule";
+      } else {
+        const modeStr = vehMode ? modeLabel[vehMode] : "Mode à définir";
+        vehStr = vehiculeMensuel > 0
+          ? `${modeStr} — ${eur(vehiculeMensuel)}/mois`
+          : modeStr;
       }
       drawRow("Véhicule", vehStr);
     }
@@ -872,7 +932,7 @@ export function buildAttestationPdf(body: AttestationInput): jsPDF {
   const neE = isF ? "née" : "né";
   const declare = isF ? "Déclare" : "Déclare";
   const informe = isF ? "Je suis informée" : "Je suis informé";
-  const city = titleCasePlace(signatureCity || extractCity(p.address));
+  const city = titleCasePlace((signatureCity || extractCity(p.address)).trim());
   const today = new Date().toLocaleDateString("fr-FR");
   const addr = titleCasePlace(p.address);
   const bp = titleCasePlace(p.birthPlace);
@@ -917,7 +977,9 @@ export function buildAttestationPdf(body: AttestationInput): jsPDF {
 
   const pere = titleCasePlace(p.fatherName || "");
   const mere = titleCasePlace(p.motherName || "");
-  addText(`${filsFille} de ${pere} et de ${mere},`, { spacing: 6 });
+  const startsWithVowel = (s: string) => /^[aeiouyàâäéèêëîïôöùûüh]/i.test((s || "").trim());
+  const dePart = (name: string) => startsWithVowel(name) ? `d'${name}` : `de ${name}`;
+  addText(`${filsFille} ${dePart(pere)} et ${dePart(mere)},`, { spacing: 6 });
 
   addText(
     `${declare} sur l'honneur, conformément à l'article A. 123-51 du Code de commerce, n'avoir fait l'objet d'aucune condamnation pénale, ni de sanction civile ou administrative de nature à m'interdire de gérer, d'administrer ou de diriger une personne morale, ou d'exercer une activité commerciale ou artisanale.`,
@@ -954,7 +1016,7 @@ export interface BeneficiairesInput {
   companyType: "SASU" | "SARL";
 }
 
-export function buildBeneficiairesPdf(body: BeneficiairesInput): jsPDF {
+export async function buildBeneficiairesPdf(body: BeneficiairesInput): Promise<jsPDF> {
   const associes = body.associes ?? [];
   const extraManagers = body.extraManagers ?? [];
   const isSAS = body.companyType === "SASU";
@@ -997,7 +1059,6 @@ export function buildBeneficiairesPdf(body: BeneficiairesInput): jsPDF {
   );
   addText(`Société : ${body.companyName}`, { bold: true, size: 12, spacing: 8 });
 
-  const managerIds = new Set(associes.filter(a => a.isManager).map(a => a.fullName));
   const beneficiaires = associes.filter(a => a.percent > 25);
 
   const printBeneficiaire = (p: AssocieDetail | Personne, n: number, opts: { percent?: number; isManager?: boolean; note?: string }) => {
@@ -1025,7 +1086,6 @@ export function buildBeneficiairesPdf(body: BeneficiairesInput): jsPDF {
       printBeneficiaire(a, i + 1, { percent: a.percent, isManager: a.isManager });
     });
   } else {
-    // Par défaut : dirigeants
     addText(
       "Aucun associé ne détient plus de 25% du capital. En application de l'article R. 561-1 du Code monétaire et financier, le(s) dirigeant(s) doi(ven)t être déclaré(s) comme bénéficiaire(s) effectif(s) par défaut.",
       { italic: true, spacing: 6 }
@@ -1045,19 +1105,24 @@ export function buildBeneficiairesPdf(body: BeneficiairesInput): jsPDF {
     });
   }
 
-  ensureSpace(28);
+  // ─── Encadré d'avertissement en arabe (rendu via image pour éviter les glyphes corrompus) ───
+  const warnText = "⚠️ الورقة دي للتحضير بس — التصريح الرسمي بيتم أونلاين على موقع INPI وقت تسجيل الشركة.";
+  const warnImg = await renderArabicToImage(warnText, usableWidth - 6, {
+    bold: true, size: 10, align: "center", color: "#785000", bg: "#FFF8DC",
+  });
+  const boxH = Math.max(20, (warnImg?.heightMm ?? 8) + 8);
+  ensureSpace(boxH + 4);
   y += 4;
   doc.setDrawColor(200, 150, 0);
   doc.setFillColor(255, 248, 220);
   doc.setLineWidth(0.5);
-  doc.rect(margin, y, usableWidth, 20, "FD");
-  doc.setFont("times", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(120, 80, 0);
-  const warn = "الورقة دي للتحضير بس — التصريح الرسمي بيتم أونلاين على موقع INPI وقت تسجيل الشركة.";
-  doc.text("⚠️ " + warn, pageWidth / 2, y + 12, { align: "center", maxWidth: usableWidth - 6 });
-  doc.setTextColor(0);
-  y += 24;
+  doc.rect(margin, y, usableWidth, boxH, "FD");
+  if (warnImg) {
+    const imgX = margin + 3;
+    const imgY = y + (boxH - warnImg.heightMm) / 2;
+    doc.addImage(warnImg.dataUrl, "PNG", imgX, imgY, usableWidth - 6, warnImg.heightMm);
+  }
+  y += boxH + 4;
 
   fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);
   return doc;
@@ -1067,7 +1132,7 @@ export function buildBeneficiairesPdf(body: BeneficiairesInput): jsPDF {
 // DOCUMENT — GUIDE DE DÉPÔT + LISTE DES PIÈCES (bilingue)
 // ═══════════════════════════════════════════════════════════════════════
 
-export function buildGuideDepotPdf(): jsPDF {
+export async function buildGuideDepotPdf(): Promise<jsPDF> {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   doc.setFont("times", "normal");
   const margin = 22;
@@ -1094,8 +1159,19 @@ export function buildGuideDepotPdf(): jsPDF {
     y += opts.spacing ?? 3;
   };
 
+  // Rend une ligne arabe en image, alignée à droite (RTL)
+  const addArabic = async (text: string, opts: { bold?: boolean; size?: number; align?: "right" | "center"; spacing?: number } = {}) => {
+    const rendered = await renderArabicToImage(text, usableWidth, {
+      bold: opts.bold, size: opts.size ?? 11, align: opts.align ?? "right",
+    });
+    if (!rendered) return;
+    if (y + rendered.heightMm > bottomLimit) { doc.addPage(); y = margin; }
+    doc.addImage(rendered.dataUrl, "PNG", margin, y, usableWidth, rendered.heightMm);
+    y += rendered.heightMm + (opts.spacing ?? 3);
+  };
+
   // PAGE 1 — Liste des pièces
-  addText("📂 قائمة الأوراق المطلوبة لتسجيل شركتك", { bold: true, size: 15, align: "center", spacing: 3 });
+  await addArabic("📂 قائمة الأوراق المطلوبة لتسجيل شركتك", { bold: true, size: 15, align: "center", spacing: 3 });
   addText("Liste des pièces à fournir pour l'immatriculation", { italic: true, size: 12, align: "center", spacing: 10 });
 
   const pieces: Array<[string, string]> = [
@@ -1115,14 +1191,14 @@ export function buildGuideDepotPdf(): jsPDF {
      "Justificatif de qualification professionnelle si activité réglementée"],
   ];
   for (const [ar, fr] of pieces) {
-    addText(ar, { size: 11, spacing: 1 });
+    await addArabic(ar, { size: 11, spacing: 1 });
     addText(fr, { italic: true, size: 10, spacing: 5 });
   }
 
   // PAGE 2 — Guide étapes
   doc.addPage();
   y = margin;
-  addText("📖 إزاي تسجّل شركتك على Guichet Unique خطوة بخطوة", { bold: true, size: 14, align: "center", spacing: 3 });
+  await addArabic("📖 إزاي تسجّل شركتك على Guichet Unique خطوة بخطوة", { bold: true, size: 14, align: "center", spacing: 3 });
   addText("Guide de dépôt étape par étape sur procedures.inpi.fr", { italic: true, size: 12, align: "center", spacing: 10 });
 
   const etapes: Array<[string, string]> = [
@@ -1140,29 +1216,35 @@ export function buildGuideDepotPdf(): jsPDF {
      "Réception du numéro SIRET par email sous quelques jours"],
   ];
   for (const [ar, fr] of etapes) {
-    addText(ar, { size: 11, spacing: 1 });
+    await addArabic(ar, { size: 11, spacing: 1 });
     addText(fr, { italic: true, size: 10, spacing: 6 });
   }
 
-  // Encadré final
+  // Encadré final — texte arabe rendu en image
+  const arTitle = "💬 محتاج مساعدة في أي خطوة؟ اسأل شبيك لبيك";
+  const arTitleImg = await renderArabicToImage(arTitle, usableWidth - 6, {
+    bold: true, size: 11, align: "center", color: "#143C82", bg: "#E6F0FF",
+  });
+  const encH = Math.max(22, (arTitleImg?.heightMm ?? 8) + 14);
+  if (y + encH > bottomLimit) { doc.addPage(); y = margin; }
   y += 4;
-  if (y > 250) { doc.addPage(); y = margin; }
   doc.setDrawColor(30, 100, 180);
   doc.setFillColor(230, 240, 255);
   doc.setLineWidth(0.5);
-  doc.rect(margin, y, usableWidth, 22, "FD");
-  doc.setFont("times", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(20, 60, 130);
-  doc.text("💬 محتاج مساعدة في أي خطوة؟ اسأل شبيك لبيك", pageWidth / 2, y + 9, { align: "center", maxWidth: usableWidth - 6 });
+  doc.rect(margin, y, usableWidth, encH, "FD");
+  if (arTitleImg) {
+    doc.addImage(arTitleImg.dataUrl, "PNG", margin + 3, y + 3, usableWidth - 6, arTitleImg.heightMm);
+  }
   doc.setFont("times", "italic");
   doc.setFontSize(9);
-  doc.text("Ouvre INPI traduit en arabe sur anafypro.com/anafy-translate", pageWidth / 2, y + 17, { align: "center", maxWidth: usableWidth - 6 });
+  doc.setTextColor(20, 60, 130);
+  doc.text("Ouvre INPI traduit en arabe sur anafypro.com/anafy-translate", pageWidth / 2, y + encH - 4, { align: "center", maxWidth: usableWidth - 6 });
   doc.setTextColor(0);
-  y += 26;
+  y += encH + 4;
 
   fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);
   return doc;
 }
+
 
 

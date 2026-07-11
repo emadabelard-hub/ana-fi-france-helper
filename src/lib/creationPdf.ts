@@ -1463,17 +1463,21 @@ export function buildPvNominationPdf(body: PvNominationInput): jsPDF {
       { italic: true, spacing: 6 }
     );
   } else {
-    const fnCap = dirigeants.length > 1 ? `${roleTitle}s` : roleTitle;
+    const multi = dirigeants.length > 1;
+    const singleF = !multi && dirigeants[0].gender === "F";
+    const fnCap = multi ? `${roleTitle}s` : roleTitle;
     addText(
-      `${dirigeants.length > 1 ? "Sont désignées" : "Est désigné"} en qualité de ${roleLower}${dirigeants.length > 1 ? "s" : ""} de la société, pour une durée illimitée :`,
+      `${multi ? "Sont désignées" : "Est désigné"} en qualité de ${roleLower}${multi ? "s" : ""} de la société, pour une durée illimitée :`,
       { spacing: 4 }
     );
     dirigeants.forEach((d, i) => {
-      addText(`${i + 1}. ${civilStateSentence(d)}.`, { spacing: 2 });
+      const prefix = multi ? `${i + 1}. ` : "";
+      addText(`${prefix}${civilStateSentence(d)}.`, { spacing: 2 });
     });
     y += 2;
+    const exercerVerb = multi ? "Ils exerceront" : singleF ? "Elle exercera" : "Il exercera";
     addText(
-      `${dirigeants.length > 1 ? "Ils exerceront" : "Il ou elle exercera"} les fonctions de ${fnCap} conformément aux statuts et aux dispositions légales et réglementaires en vigueur.`,
+      `${exercerVerb} les fonctions de ${fnCap} conformément aux statuts et aux dispositions légales et réglementaires en vigueur.`,
       { spacing: 6 }
     );
   }
@@ -1485,10 +1489,15 @@ export function buildPvNominationPdf(body: PvNominationInput): jsPDF {
   );
 
   addText(`TROISIÈME DÉCISION — Acceptation des fonctions`, { bold: true, spacing: 4 });
-  addText(
-    `${dirigeants.length > 1 ? "Les personnes désignées ci-dessus déclarent" : "La personne désignée ci-dessus déclare"} accepter les fonctions qui ${dirigeants.length > 1 ? "leur sont" : "lui sont"} confiées et n'être frappé(e)(s) d'aucune incompatibilité, interdiction ou déchéance susceptible d'en empêcher l'exercice.`,
-    { spacing: 12 }
-  );
+  {
+    const multi = dirigeants.length > 1;
+    const singleF = !multi && dirigeants.length === 1 && dirigeants[0].gender === "F";
+    const frappe = multi ? "frappés" : singleF ? "frappée" : "frappé";
+    addText(
+      `${multi ? "Les personnes désignées ci-dessus déclarent" : "La personne désignée ci-dessus déclare"} accepter les fonctions qui ${multi ? "leur sont" : "lui sont"} confiées et n'être ${frappe} d'aucune incompatibilité, interdiction ou déchéance susceptible d'en empêcher l'exercice.`,
+      { spacing: 12 }
+    );
+  }
 
   addText(`Fait à ${city}, le ${today}.`, { spacing: 12 });
 

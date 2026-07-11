@@ -977,7 +977,9 @@ export function buildAttestationPdf(body: AttestationInput): jsPDF {
 
   const pere = titleCasePlace(p.fatherName || "");
   const mere = titleCasePlace(p.motherName || "");
-  addText(`${filsFille} de ${pere} et de ${mere},`, { spacing: 6 });
+  const startsWithVowel = (s: string) => /^[aeiouyàâäéèêëîïôöùûüh]/i.test((s || "").trim());
+  const dePart = (name: string) => startsWithVowel(name) ? `d'${name}` : `de ${name}`;
+  addText(`${filsFille} ${dePart(pere)} et ${dePart(mere)},`, { spacing: 6 });
 
   addText(
     `${declare} sur l'honneur, conformément à l'article A. 123-51 du Code de commerce, n'avoir fait l'objet d'aucune condamnation pénale, ni de sanction civile ou administrative de nature à m'interdire de gérer, d'administrer ou de diriger une personne morale, ou d'exercer une activité commerciale ou artisanale.`,

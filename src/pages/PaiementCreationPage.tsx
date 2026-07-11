@@ -462,7 +462,7 @@ export default function PaiementCreationPage() {
           });
         });
 
-        const beDoc = buildBeneficiairesPdf({
+        const beDoc = await buildBeneficiairesPdf({
           companyName: companyNameFr,
           associes: associesFr,
           extraManagers: extraManagersFr,

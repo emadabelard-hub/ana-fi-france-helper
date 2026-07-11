@@ -125,10 +125,50 @@ const COUNTRY_ACCENTS: Record<string, string> = {
   "iran": "Iran",
 };
 
+// Alias tolérants (typos fréquents, formes anglaises, translittérations approximatives)
+const COUNTRY_ALIASES: Record<string, string> = {
+  "turqui": "Turquie", "turkie": "Turquie", "turkey": "Turquie", "turquia": "Turquie",
+  "egypt": "Égypte", "egipt": "Égypte", "egipte": "Égypte", "egyp": "Égypte",
+  "algeria": "Algérie", "algerien": "Algérie",
+  "morocco": "Maroc", "marocco": "Maroc",
+  "tunisia": "Tunisie",
+  "lebanon": "Liban",
+  "syria": "Syrie",
+  "greece": "Grèce",
+  "romania": "Roumanie", "roumani": "Roumanie",
+  "italy": "Italie", "itali": "Italie",
+  "spain": "Espagne", "espagn": "Espagne",
+  "germany": "Allemagne", "allemagn": "Allemagne",
+  "portugual": "Portugal",
+  "senegal": "Sénégal",
+  "ivory coast": "Côte d'Ivoire",
+  "libya": "Libye",
+  "jordan": "Jordanie",
+  "iraq": "Irak",
+};
+
+function lookupCountry(key: string): string | null {
+  if (!key) return null;
+  const k = key.trim().toLocaleLowerCase("fr-FR");
+  if (!k) return null;
+  const noAcc = k.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (COUNTRY_ACCENTS[k]) return COUNTRY_ACCENTS[k];
+  if (COUNTRY_ACCENTS[noAcc]) return COUNTRY_ACCENTS[noAcc];
+  if (COUNTRY_ALIASES[k]) return COUNTRY_ALIASES[k];
+  if (COUNTRY_ALIASES[noAcc]) return COUNTRY_ALIASES[noAcc];
+  // essai en complétant avec un 'e' final (ex: "turqui" -> "turquie")
+  if (COUNTRY_ACCENTS[noAcc + "e"]) return COUNTRY_ACCENTS[noAcc + "e"];
+  // essai en retirant un 'e' final
+  if (noAcc.endsWith("e") && COUNTRY_ACCENTS[noAcc.slice(0, -1)]) return COUNTRY_ACCENTS[noAcc.slice(0, -1)];
+  return null;
+}
+
 function formatCountry(input: string): string {
-  const key = (input || "").trim().toLocaleLowerCase("fr-FR");
-  if (!key) return input;
-  if (COUNTRY_ACCENTS[key]) return COUNTRY_ACCENTS[key];
+  const raw = (input || "").trim();
+  if (!raw) return input;
+  const hit = lookupCountry(raw);
+  if (hit) return hit;
+  const key = raw.toLocaleLowerCase("fr-FR");
   // Capitalisation par défaut
   return key.split(/(\s+|-)/).map(seg => seg && !/^\s+$/.test(seg) && seg !== "-"
     ? seg.charAt(0).toLocaleUpperCase("fr-FR") + seg.slice(1)
@@ -154,13 +194,14 @@ function formatBirthPlace(input: string): string {
     }
     return capitalizePlaceWord(raw);
   }
-  // Pas de virgule : tenter de détecter le dernier mot comme pays connu
+  // Pas de virgule : tenter de détecter le(s) dernier(s) mot(s) comme pays connu
   const tokens = raw.split(/\s+/);
-  for (let i = tokens.length - 1; i >= 1; i--) {
-    const tail = tokens.slice(i).join(" ").toLocaleLowerCase("fr-FR");
-    if (COUNTRY_ACCENTS[tail]) {
+  for (let i = 1; i < tokens.length; i++) {
+    const tail = tokens.slice(i).join(" ");
+    const hit = lookupCountry(tail);
+    if (hit) {
       const city = tokens.slice(0, i).map(capitalizePlaceWord).join(" ");
-      return `${city}, ${COUNTRY_ACCENTS[tail]}`;
+      return `${city}, ${hit}`;
     }
   }
   return tokens.map(capitalizePlaceWord).join(" ");

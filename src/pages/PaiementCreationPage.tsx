@@ -674,7 +674,7 @@ export default function PaiementCreationPage() {
               <Input value={a.motherName} onChange={e => updateAssocie(i, "motherName", e.target.value)} placeholder="Fatma Ali" />
             </div>
 
-            {companyType === "SARL" && (
+            {associes.length > 1 && (
               <div className="space-y-2">
                 <Label>النسبة ٪</Label>
                 <Input type="number" min={0} max={100} value={a.percent}
@@ -685,7 +685,7 @@ export default function PaiementCreationPage() {
             <label className="flex items-center gap-2 cursor-pointer pt-2">
               <Checkbox
                 checked={a.isManager}
-                disabled={companyType === "SASU"}
+                disabled={associes.length === 1}
                 onCheckedChange={(v) => updateAssocie(i, "isManager", Boolean(v))}
               />
               <span>هو المدير؟ ({companyType === "SASU" ? "Président" : "Gérant"})</span>
@@ -693,7 +693,7 @@ export default function PaiementCreationPage() {
           </div>
         ))}
 
-        {companyType === "SARL" && (
+        {associes.length > 1 && (
           <>
             <div className="flex items-center justify-between pt-4 border-t">
               <h3 className="font-semibold">مدير غير شريك (اختياري)</h3>

@@ -346,7 +346,8 @@ export default function PaiementCreationPage() {
     if (!signatureCity.trim()) return "مدينة التوقيع مطلوبة";
     for (let i = 0; i < associes.length; i++) {
       const a = associes[i];
-      const label = companyType === "SASU" ? "الشريك الوحيد" : `الشريك رقم ${i + 1}`;
+      const isSingle = associes.length === 1;
+      const label = isSingle ? "الشريك الوحيد" : `الشريك رقم ${i + 1}`;
       if (!a.fullName.trim()) return `${label}: الاسم الكامل مطلوب`;
       if (!birthToStr(a.birth)) return `${label}: تاريخ الميلاد مطلوب`;
       if (!a.birthPlace.trim()) return `${label}: مكان الميلاد مطلوب`;
@@ -356,8 +357,7 @@ export default function PaiementCreationPage() {
       if (!a.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
       if (!a.motherName.trim()) return `${label}: اسم الأم مطلوب`;
     }
-    if (companyType === "SARL") {
-      if (associes.length < 2) return "الشركة SARL تتطلب شريكين على الأقل";
+    if (associes.length > 1) {
       if (Math.round(totalPercent) !== 100) return `مجموع النسب يجب أن يساوي 100% (حاليا ${totalPercent}%)`;
       const hasManager = associes.some(a => a.isManager) || extraManagers.length > 0;
       if (!hasManager) return "يجب اختيار مدير واحد على الأقل";

@@ -981,7 +981,7 @@ export function buildAttestationPdf(body: AttestationInput): jsPDF {
   addText("DE NON-CONDAMNATION ET DE FILIATION", { bold: true, size: 16, align: "center", spacing: 12 });
 
   addText(
-    `${soussigne} ${civilite(p.gender)} ${p.fullName}, ${neE} le ${p.birthDate} à ${naissanceLieu}, de nationalité ${p.nationality}, demeurant ${addr},`,
+    `${soussigne} ${civilite(p.gender)} ${p.fullName}, ${neE} le ${p.birthDate} ${aPlace(naissanceLieu)}, de nationalité ${p.nationality}, demeurant ${addr},`,
     { spacing: 6 }
   );
 

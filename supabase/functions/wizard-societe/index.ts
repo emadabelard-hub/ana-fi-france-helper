@@ -136,8 +136,10 @@ serve(async (req) => {
 
     const data = await response.json();
     const content = data?.choices?.[0]?.message?.content || "";
+    const finishReason = data?.choices?.[0]?.finish_reason || null;
+    const truncated = finishReason === "length" || finishReason === "MAX_TOKENS";
 
-    return new Response(JSON.stringify({ content }), {
+    return new Response(JSON.stringify({ content, truncated, finish_reason: finishReason }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

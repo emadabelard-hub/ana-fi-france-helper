@@ -855,7 +855,7 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
     };
     const netAfterIS = (rai: number): number => rai - computeIS(rai);
 
-    sectionTitle("💡 Pistes pour équilibrer votre projet (à titre indicatif)");
+    sectionTitle("Pistes pour équilibrer votre projet (à titre indicatif)");
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
 

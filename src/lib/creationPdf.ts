@@ -711,16 +711,22 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
 
     if (vehSituation) {
       const modeLabel: Record<string, string> = {
-        cash: "achat comptant",
-        credit: "crédit bancaire",
-        leasing: "leasing LOA/LLD",
+        cash: "Achat comptant",
+        credit: "Crédit",
+        leasing: "Leasing",
       };
       let vehStr = "";
-      if (vehSituation === "owned") vehStr = "Véhicule déjà détenu";
-      else if (vehSituation === "notNeeded") vehStr = "Non nécessaire";
-      else {
-        const modeStr = vehMode ? modeLabel[vehMode] : "à définir";
-        vehStr = `Acquisition prévue (${modeStr}) — ${eur(vehiculeMensuel)}/mois`;
+      if (vehSituation === "owned") {
+        vehStr = vehiculeMensuel > 0
+          ? `Véhicule déjà détenu — ${eur(vehiculeMensuel)}/mois`
+          : "Véhicule déjà détenu";
+      } else if (vehSituation === "notNeeded") {
+        vehStr = "Pas de véhicule";
+      } else {
+        const modeStr = vehMode ? modeLabel[vehMode] : "Mode à définir";
+        vehStr = vehiculeMensuel > 0
+          ? `${modeStr} — ${eur(vehiculeMensuel)}/mois`
+          : modeStr;
       }
       drawRow("Véhicule", vehStr);
     }

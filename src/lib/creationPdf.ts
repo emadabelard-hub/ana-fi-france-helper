@@ -1220,9 +1220,10 @@ export async function buildGuideDepotPdf(): Promise<jsPDF> {
      "Réception du numéro SIRET par email sous quelques jours"],
   ];
   for (const [ar, fr] of etapes) {
-    await addArabic(ar, { size: 11, spacing: 1 });
-    addText(fr, { italic: true, size: 10, spacing: 6 });
+    await addArabic(ar, { size: 11, spacing: 2 });
+    addText(fr, { italic: true, size: 10, spacing: 7 });
   }
+
 
   // Encadré final — texte arabe rendu en image
   const arTitle = "💬 محتاج مساعدة في أي خطوة؟ اسأل شبيك لبيك";

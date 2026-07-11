@@ -392,12 +392,13 @@ export default function PaiementCreationPage() {
 
       const associesFr: AssocieDetail[] = await Promise.all(
         associes.map(async (a) => {
-          const natRaw = await trIfAr(a.nationality, NATIONALITY_INSTRUCTION);
+          const natRaw = stripDigits(await trIfAr(stripDigits(a.nationality), NATIONALITY_INSTRUCTION));
+          const bpTr = await trIfAr(a.birthPlace);
           return {
             gender: a.gender,
             fullName: await trIfAr(a.fullName),
             birthDate: birthToStr(a.birth),
-            birthPlace: await trIfAr(a.birthPlace),
+            birthPlace: formatBirthPlace(bpTr),
             nationality: normalizeNationalityFeminine(natRaw),
             address: await trIfAr(a.address),
             fatherName: await trIfAr(a.fatherName),
@@ -409,12 +410,13 @@ export default function PaiementCreationPage() {
       );
       const extraManagersFr: Personne[] = await Promise.all(
         extraManagers.map(async (m) => {
-          const natRaw = await trIfAr(m.nationality, NATIONALITY_INSTRUCTION);
+          const natRaw = stripDigits(await trIfAr(stripDigits(m.nationality), NATIONALITY_INSTRUCTION));
+          const bpTr = await trIfAr(m.birthPlace);
           return {
             gender: m.gender,
             fullName: await trIfAr(m.fullName),
             birthDate: birthToStr(m.birth),
-            birthPlace: await trIfAr(m.birthPlace),
+            birthPlace: formatBirthPlace(bpTr),
             nationality: normalizeNationalityFeminine(natRaw),
             address: await trIfAr(m.address),
             fatherName: await trIfAr(m.fatherName),

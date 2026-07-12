@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTeamRole } from '@/hooks/useTeamRole';
-import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2, Sparkles, FolderOpen, BarChart2, Users, ClipboardList } from 'lucide-react';
+import { Bot, Shield, Lock, FileText, FilePlus, Languages, UserSquare2, Sparkles, FolderOpen, BarChart2, Users, ClipboardList, Briefcase } from 'lucide-react';
 
 const COLORS = {
   navy: '#1B4F8A',
@@ -408,6 +408,40 @@ const Index = () => {
               </span>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* OPPORTUNITES CARD */}
+      <div className="px-4 mt-6">
+        <div
+          className="rounded-2xl p-4 shadow-sm bg-white border"
+          style={{ borderColor: '#E5E9F0' }}
+        >
+          <div className={cn('flex items-center gap-3', isRTL && 'flex-row-reverse')}>
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: `linear-gradient(135deg, ${COLORS.goldLight}, ${COLORS.goldDark})` }}
+            >
+              <Briefcase size={24} style={{ color: COLORS.navyDark }} />
+            </div>
+            <div className={cn('flex-1', isRTL ? 'text-right' : 'text-left')}>
+              <h3 className="text-[15px] font-extrabold" style={{ color: COLORS.navyDark }}>
+                {isRTL ? 'الفرص المهنية' : 'Opportunités professionnelles'}
+              </h3>
+              <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                {isRTL
+                  ? 'ابحث عن فرصة عمل أو عامل أو مقاول فرعي أو اعرض خدماتك مجاناً.'
+                  : 'Trouvez un emploi, un professionnel, un sous-traitant ou proposez gratuitement vos services.'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/opportunites')}
+            className="mt-3 w-full rounded-xl py-2.5 font-extrabold text-[13px] active:scale-[0.98] transition"
+            style={{ background: `linear-gradient(135deg, ${COLORS.goldLight}, ${COLORS.goldDark})`, color: COLORS.navyDark }}
+          >
+            {isRTL ? 'اكتشف الفرص' : 'Découvrir les opportunités'}
+          </button>
         </div>
       </div>
 

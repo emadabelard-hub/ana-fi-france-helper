@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, LogOut, User, Loader2, Shield, Key, Building2, FileText, MapPin, Mail, Phone, Upload, Image, Check, AlertCircle, Briefcase, CreditCard, Landmark, ShieldCheck, PenTool, Stamp, CheckCircle2, Circle, PartyPopper, Info, ScanLine } from 'lucide-react';
+import { Save, LogOut, User, Loader2, Shield, Key, Building2, FileText, MapPin, Mail, Phone, Upload, Image, Check, AlertCircle, Briefcase, CreditCard, Landmark, ShieldCheck, PenTool, Stamp, CheckCircle2, Circle, PartyPopper, Info, ScanLine, HeadphonesIcon } from 'lucide-react';
 import { extractTextFromPDF } from '@/lib/pdfExtractor';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import ApiKeySettingsModal from '@/components/layout/ApiKeySettingsModal';
@@ -463,6 +463,16 @@ const ProfilePage = () => {
                   </div>
                 </button>
               )}
+
+              <button onClick={() => navigate('/support')} className="w-full bg-white dark:bg-card rounded-2xl p-4 shadow-sm border border-border/20 flex items-center gap-3 flex-row-reverse text-right">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <HeadphonesIcon className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm text-foreground font-cairo">{tr('تواصل معنا', 'Nous contacter')}</p>
+                  <p className="text-xs text-muted-foreground font-cairo mt-0.5">{tr('المساعدة والدعم الفني', 'Aide et assistance')}</p>
+                </div>
+              </button>
 
               <button onClick={() => navigate('/pro/pricing-settings')} className="w-full bg-white dark:bg-card rounded-2xl p-4 shadow-sm border border-border/20 flex items-center gap-3 flex-row-reverse text-right">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">

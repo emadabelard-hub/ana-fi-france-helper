@@ -389,9 +389,8 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
   addText(introSoussignes, { spacing: 8 });
 
   // ═══ ARTICLES (templates intégraux : PARTIE 1/2/3) ═══
-  // Import synchrone (même bundle) : templates de statuts complets
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { buildSarlBlocks, buildEurlBlocks, buildSasBlocks } = require("./statutsTemplates") as typeof import("./statutsTemplates");
+  // Import ESM statique en tête de fichier (Vite bundle) : templates de statuts complets
+
 
   const ctxTpl = {
     denomination: body.companyName,

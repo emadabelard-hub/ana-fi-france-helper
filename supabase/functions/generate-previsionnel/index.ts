@@ -177,8 +177,11 @@ Deno.serve(async (req) => {
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFont('helvetica', 'italic');
-      doc.setFontSize(8);
-      doc.text('Document généré par Anafy Pro — à titre indicatif', pageWidth / 2, 290, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text(
+        "Document généré automatiquement par Anafy Pro à partir des informations fournies par l'utilisateur. Veuillez vérifier l'exactitude des informations avant signature et dépôt.",
+        pageWidth / 2, 290, { align: 'center', maxWidth: usable }
+      );
     }
 
     const pdfBytes = new Uint8Array(doc.output('arraybuffer'));

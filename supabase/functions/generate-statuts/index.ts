@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
       doc.setFont('times', 'italic');
       doc.setFontSize(8);
       doc.text(
-        'Document généré par Anafy Pro — anafypro.com — Ce document est fourni à titre indicatif et doit être validé par un professionnel juridique.',
+        "Document généré automatiquement par Anafy Pro à partir des informations fournies par l'utilisateur. Veuillez vérifier l'exactitude des informations avant signature et dépôt.",
         pageWidth / 2, 290, { align: 'center', maxWidth: usableWidth }
       );
     }

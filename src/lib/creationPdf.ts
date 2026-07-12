@@ -2,6 +2,12 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { buildSarlBlocks, buildEurlBlocks, buildSasBlocks } from "./statutsTemplates";
 
+// Mention unique de pied de page pour tous les PDF du module Création d'entreprise.
+// Toute modification de cette mention doit se faire ici uniquement.
+export const CREATION_PDF_FOOTER_MENTION =
+  "Document généré automatiquement par Anafy Pro à partir des informations fournies par l'utilisateur. Veuillez vérifier l'exactitude des informations avant signature et dépôt.";
+
+
 // ─── Détection & rendu de l'arabe via image (même mécanisme que le rapport de chantier) ───
 export function containsArabicText(s: string): boolean {
   return /[\u0600-\u06FF]/.test(s || "");
@@ -477,7 +483,7 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     doc.setFontSize(8);
     doc.setTextColor(90);
     doc.text(
-      "Document généré par Anafy Pro — anafypro.com — Ce document est fourni à titre indicatif et doit être validé par un professionnel juridique.",
+      CREATION_PDF_FOOTER_MENTION,
       pageWidth / 2, pageHeight - 10, { align: "center", maxWidth: usableWidth }
     );
     doc.setFont("times", "normal");
@@ -920,7 +926,8 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
     doc.setPage(i);
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
-    doc.text("Document généré par Anafy Pro — à titre indicatif", pageWidth / 2, 290, { align: "center" });
+    doc.setFontSize(7);
+    doc.text(CREATION_PDF_FOOTER_MENTION, pageWidth / 2, 290, { align: "center", maxWidth: usable });
   }
 
   return doc;
@@ -945,7 +952,7 @@ function fillOnesFooter(doc: jsPDF, pageWidth: number, usableWidth: number, marg
     doc.setFontSize(8);
     doc.setTextColor(90);
     doc.text(
-      "Document généré par Anafy Pro — anafypro.com — Ce document est fourni à titre indicatif et doit être validé par un professionnel juridique.",
+      CREATION_PDF_FOOTER_MENTION,
       pageWidth / 2, pageHeight - 10, { align: "center", maxWidth: usableWidth }
     );
     doc.setFont("times", "normal");

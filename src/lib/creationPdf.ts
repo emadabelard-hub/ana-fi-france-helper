@@ -2,6 +2,12 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { buildSarlBlocks, buildEurlBlocks, buildSasBlocks } from "./statutsTemplates";
 
+// Mention unique de pied de page pour tous les PDF du module Création d'entreprise.
+// Toute modification de cette mention doit se faire ici uniquement.
+export const CREATION_PDF_FOOTER_MENTION =
+  "Document généré automatiquement par Anafy Pro à partir des informations fournies par l'utilisateur. Veuillez vérifier l'exactitude des informations avant signature et dépôt.";
+
+
 // ─── Détection & rendu de l'arabe via image (même mécanisme que le rapport de chantier) ───
 export function containsArabicText(s: string): boolean {
   return /[\u0600-\u06FF]/.test(s || "");

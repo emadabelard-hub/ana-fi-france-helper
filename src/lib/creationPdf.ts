@@ -483,7 +483,7 @@ export function buildStatutsPdf(body: StatutsInput): jsPDF {
     doc.setFontSize(8);
     doc.setTextColor(90);
     doc.text(
-      "Document généré par Anafy Pro — anafypro.com — Ce document est fourni à titre indicatif et doit être validé par un professionnel juridique.",
+      CREATION_PDF_FOOTER_MENTION,
       pageWidth / 2, pageHeight - 10, { align: "center", maxWidth: usableWidth }
     );
     doc.setFont("times", "normal");

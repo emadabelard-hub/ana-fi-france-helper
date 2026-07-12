@@ -926,7 +926,8 @@ export function buildPrevisionnelPdf(body: PrevisionnelInput): jsPDF {
     doc.setPage(i);
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
-    doc.text("Document généré par Anafy Pro — à titre indicatif", pageWidth / 2, 290, { align: "center" });
+    doc.setFontSize(7);
+    doc.text(CREATION_PDF_FOOTER_MENTION, pageWidth / 2, 290, { align: "center", maxWidth: usable });
   }
 
   return doc;

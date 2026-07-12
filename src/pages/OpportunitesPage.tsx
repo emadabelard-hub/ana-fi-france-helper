@@ -18,6 +18,7 @@ const COLORS = {
 const OpportunitesPage = () => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fontFamily = isRTL
     ? "'Tajawal', system-ui, sans-serif"
@@ -63,18 +64,7 @@ const OpportunitesPage = () => {
     },
   ];
 
-  const categories = [
-    { icon: HardHat, fr: 'BTP et travaux', ar: 'البناء والأشغال' },
-    { icon: Truck, fr: 'Transport et livraison', ar: 'النقل والتوصيل' },
-    { icon: UtensilsCrossed, fr: 'Restauration', ar: 'المطاعم' },
-    { icon: Store, fr: 'Commerce et vente', ar: 'التجارة والبيع' },
-    { icon: SparklesIcon, fr: 'Ménage et nettoyage', ar: 'التنظيف والمنازل' },
-    { icon: Factory, fr: 'Industrie et logistique', ar: 'الصناعة واللوجستيك' },
-    { icon: HeartHandshake, fr: 'Services à la personne', ar: 'خدمات الأفراد' },
-    { icon: ClipboardList, fr: 'Administratif et services', ar: 'الإدارة والخدمات' },
-    { icon: Sprout, fr: 'Agriculture et espaces verts', ar: 'الزراعة والمساحات الخضراء' },
-    { icon: Briefcase, fr: 'Autres métiers', ar: 'مهن أخرى' },
-  ];
+  const categories = OPPORTUNITE_SECTORS;
 
   return (
     <div
@@ -147,8 +137,8 @@ const OpportunitesPage = () => {
             const Icon = c.icon;
             return (
               <button
-                key={c.fr}
-                onClick={notifySoon}
+                key={c.slug}
+                onClick={() => navigate(`/opportunites/${c.slug}`)}
                 className="rounded-2xl bg-white p-3 shadow-sm border active:scale-[0.97] transition flex flex-col items-center justify-center gap-1.5"
                 style={{ borderColor: '#E5E9F0', minHeight: 88 }}
               >

@@ -1002,6 +1002,69 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunite_annonces: {
+        Row: {
+          attachments: Json
+          created_at: string
+          data: Json
+          departement: string | null
+          description: string | null
+          disponibilite: string | null
+          favorites_count: number
+          id: string
+          photo_url: string | null
+          published_at: string
+          sector: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+          views_count: number
+          ville: string | null
+        }
+        Insert: {
+          attachments?: Json
+          created_at?: string
+          data?: Json
+          departement?: string | null
+          description?: string | null
+          disponibilite?: string | null
+          favorites_count?: number
+          id?: string
+          photo_url?: string | null
+          published_at?: string
+          sector?: string | null
+          status?: string
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+          views_count?: number
+          ville?: string | null
+        }
+        Update: {
+          attachments?: Json
+          created_at?: string
+          data?: Json
+          departement?: string | null
+          description?: string | null
+          disponibilite?: string | null
+          favorites_count?: number
+          id?: string
+          photo_url?: string | null
+          published_at?: string
+          sector?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+          views_count?: number
+          ville?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           accountant_email: string | null

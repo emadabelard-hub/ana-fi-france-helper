@@ -1,11 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Search, Users, Megaphone, Handshake,
-  HardHat, Truck, UtensilsCrossed, Store, Sparkles as SparklesIcon,
-  Factory, HeartHandshake, ClipboardList, Sprout, Briefcase,
-} from 'lucide-react';
+import { Search, Users, Megaphone, Handshake } from 'lucide-react';
+import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
 
 const COLORS = {
   navy: '#1B4F8A',

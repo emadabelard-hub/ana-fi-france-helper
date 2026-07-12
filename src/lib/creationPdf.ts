@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { buildSarlBlocks, buildEurlBlocks, buildSasBlocks } from "./statutsTemplates";
 
 // ─── Détection & rendu de l'arabe via image (même mécanisme que le rapport de chantier) ───
 export function containsArabicText(s: string): boolean {

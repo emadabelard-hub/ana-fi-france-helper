@@ -92,6 +92,20 @@ const OpportunitesPage = () => {
         </div>
       </section>
 
+      {/* PUBLIER CTA */}
+      <div className="px-4 mt-4">
+        <button
+          onClick={() => navigate('/opportunites/publier')}
+          className="w-full rounded-2xl py-3 font-extrabold text-[14px] shadow-md active:scale-[0.98] transition"
+          style={{
+            background: `linear-gradient(135deg, ${COLORS.goldLight}, ${COLORS.goldDark})`,
+            color: COLORS.navyDark,
+          }}
+        >
+          {isRTL ? '＋ نشر إعلان' : '＋ Publier une annonce'}
+        </button>
+      </div>
+
       {/* MAIN ACTIONS */}
       <div className="px-4 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
         {mainActions.map((a) => {

@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, ArrowRight, Search, SlidersHorizontal, X, MapPin, Briefcase, Calendar, Loader2 } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
+import { getMetiers, findMetier } from '@/data/opportuniteTaxonomy';
 import FavoriteButton from '@/components/opportunites/FavoriteButton';
 import ShareButton from '@/components/opportunites/ShareButton';
 import { fetchFavorisIds, onFavorisChanged } from '@/pages/opportunites/favoris';
@@ -72,7 +73,7 @@ const AnnoncesListPage = () => {
   const [q, setQ] = useState('');
   const [secteur, setSecteur] = useState<string>(searchParams.get('secteur') || '');
   const [type, setType] = useState<string>(searchParams.get('type') || '');
-  const [metier, setMetier] = useState('');
+  const [metier, setMetier] = useState(searchParams.get('metier') || '');
   const [ville, setVille] = useState('');
   const [departement, setDepartement] = useState('');
   const [dispo, setDispo] = useState('');
@@ -119,10 +120,16 @@ const AnnoncesListPage = () => {
       if (ville && !norm(a.ville).includes(norm(ville))) return false;
       if (departement && !norm(a.departement).includes(norm(departement))) return false;
       if (metier) {
-        const mn = norm(metier);
         const d = a.data || {};
-        const bag = [d.metier, d.metier_recherche, d.profession, d.specialite].map(norm).join(' | ');
-        if (!bag.includes(mn)) return false;
+        // Match on slug (exact) if present, otherwise fallback to text match on FR/AR labels
+        if (d.metier_slug) {
+          if (d.metier_slug !== metier) return false;
+        } else {
+          const mDef = findMetier(a.sector, metier);
+          const needle = norm(mDef?.fr || metier);
+          const bag = [d.metier, d.metier_recherche, d.profession, d.specialite].map(norm).join(' | ');
+          if (!bag.includes(needle)) return false;
+        }
       }
       if (qn) {
         // Exact reference match short-circuit
@@ -144,6 +151,7 @@ const AnnoncesListPage = () => {
   const applyFilters = () => {
     const params: Record<string, string> = {};
     if (secteur) params.secteur = secteur;
+    if (metier) params.metier = metier;
     if (type) params.type = type;
     setSearchParams(params, { replace: true });
     setShowFilters(false);
@@ -243,7 +251,7 @@ const AnnoncesListPage = () => {
               </label>
               <select
                 value={secteur}
-                onChange={(e) => setSecteur(e.target.value)}
+                onChange={(e) => { setSecteur(e.target.value); setMetier(''); }}
                 className={cn('w-full rounded-xl border bg-white p-2.5 text-[13px] outline-none', isRTL ? 'text-right' : 'text-left')}
                 style={{ borderColor: '#E5E9F0', color: COLORS.navyDark }}
               >
@@ -253,6 +261,26 @@ const AnnoncesListPage = () => {
                 ))}
               </select>
             </div>
+
+            {/* Métier (dépend du secteur) */}
+            {secteur && getMetiers(secteur).length > 0 && (
+              <div>
+                <label className={cn('block text-[11px] font-bold mb-1', isRTL ? 'text-right' : 'text-left')} style={{ color: COLORS.navyDark }}>
+                  {isRTL ? 'المهنة' : 'Métier'}
+                </label>
+                <select
+                  value={metier}
+                  onChange={(e) => setMetier(e.target.value)}
+                  className={cn('w-full rounded-xl border bg-white p-2.5 text-[13px] outline-none', isRTL ? 'text-right' : 'text-left')}
+                  style={{ borderColor: '#E5E9F0', color: COLORS.navyDark }}
+                >
+                  <option value="">{isRTL ? 'كل المهن' : 'Tous les métiers'}</option>
+                  {getMetiers(secteur).map((mt) => (
+                    <option key={mt.slug} value={mt.slug}>{isRTL ? mt.ar : mt.fr}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Type */}
             <div>
@@ -272,10 +300,9 @@ const AnnoncesListPage = () => {
               </select>
             </div>
 
-            {/* Métier + Ville + Département */}
+            {/* Ville + Département */}
             <div className="grid grid-cols-1 gap-3">
               {[
-                { label: isRTL ? 'المهنة' : 'Métier', value: metier, set: setMetier },
                 { label: isRTL ? 'المدينة' : 'Ville', value: ville, set: setVille },
                 { label: isRTL ? 'المنطقة' : 'Département', value: departement, set: setDepartement },
               ].map((f) => (
@@ -362,6 +389,8 @@ const AnnoncesListPage = () => {
               const tl = TYPE_LABELS[a.type];
               const sec = OPPORTUNITE_SECTORS.find((s) => s.slug === a.sector);
               const d = a.data || {};
+              const mDef = d.metier_slug ? findMetier(a.sector, d.metier_slug) : null;
+              const metierLabel = mDef ? (isRTL ? mDef.ar : mDef.fr) : (d.metier || d.metier_recherche || d.profession || '');
               const displayName = d.prenom || d.nom || d.entreprise || '';
               const experience = d.experience;
               const dispoLbl = a.disponibilite ? DISPO_LABELS[a.disponibilite] : null;
@@ -411,6 +440,11 @@ const AnnoncesListPage = () => {
                         {sec && (
                           <span className="text-[10px] text-gray-500">
                             • {isRTL ? sec.ar : sec.fr}
+                          </span>
+                        )}
+                        {metierLabel && (
+                          <span className="text-[10px] font-bold text-gray-600">
+                            › {metierLabel}
                           </span>
                         )}
                       </div>

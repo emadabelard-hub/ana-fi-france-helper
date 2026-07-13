@@ -86,7 +86,7 @@ const AnnonceDetailPage = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('opportunite_annonces')
-        .select('id,user_id,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at,views_count')
+        .select('id,reference,user_id,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at,views_count')
         .eq('id', id)
         .eq('status', 'active')
         .maybeSingle();

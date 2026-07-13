@@ -389,6 +389,8 @@ const AnnoncesListPage = () => {
               const tl = TYPE_LABELS[a.type];
               const sec = OPPORTUNITE_SECTORS.find((s) => s.slug === a.sector);
               const d = a.data || {};
+              const mDef = d.metier_slug ? findMetier(a.sector, d.metier_slug) : null;
+              const metierLabel = mDef ? (isRTL ? mDef.ar : mDef.fr) : (d.metier || d.metier_recherche || d.profession || '');
               const displayName = d.prenom || d.nom || d.entreprise || '';
               const experience = d.experience;
               const dispoLbl = a.disponibilite ? DISPO_LABELS[a.disponibilite] : null;

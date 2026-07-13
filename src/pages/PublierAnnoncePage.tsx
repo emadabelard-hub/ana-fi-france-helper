@@ -177,11 +177,13 @@ const PublierAnnoncePage = () => {
   };
 
   const handleSubmit = async () => {
-    if (!type || !user) {
+    if (!sector || !metier || !type || !user) {
       toast({
         variant: 'destructive',
-        title: isRTL ? 'يجب تسجيل الدخول' : 'Connexion requise',
-        description: isRTL ? 'سجّل الدخول قبل نشر الإعلان.' : 'Connectez-vous pour publier une annonce.',
+        title: isRTL ? 'أكمل التصنيف' : 'Classement incomplet',
+        description: isRTL
+          ? 'اختر القطاع والمهنة ونوع الإعلان.'
+          : "Choisissez le secteur, le métier et le type d'annonce.",
       });
       return;
     }
@@ -215,23 +217,37 @@ const PublierAnnoncePage = () => {
       return;
     }
     const clean = parsed.data;
+    const sectorDef = findSector(sector);
+    const metierDef = findMetier(sector, metier);
+
+    // Enrich data with taxonomy references
+    const enrichedData: Record<string, any> = {
+      ...clean,
+      sector_slug: sector,
+      sector_fr: sectorDef?.fr,
+      sector_ar: sectorDef?.ar,
+      metier_slug: metier,
+      metier: metierDef?.fr || clean['metier'] || clean['metier_recherche'] || clean['profession'] || '',
+      metier_ar: metierDef?.ar,
+    };
 
     setSaving(true);
     try {
       const titleKey = TITLE_FIELD[type];
-      const title = (clean[titleKey] || '').toString().slice(0, 200) || (isRTL ? 'إعلان' : 'Annonce');
+      const title = (clean[titleKey] || metierDef?.fr || '').toString().slice(0, 200) || (isRTL ? 'إعلان' : 'Annonce');
 
       if (isEdit && editId) {
         const { error } = await supabase.from('opportunite_annonces')
           .update({
             type,
+            sector,
             title,
             ville: clean['ville'] || null,
             departement: clean['departement'] || null,
             disponibilite: dispo,
             description: clean['description'] || null,
             photo_url: photoDataUrl,
-            data: clean as any,
+            data: enrichedData as any,
           })
           .eq('id', editId);
         if (error) throw error;
@@ -243,13 +259,14 @@ const PublierAnnoncePage = () => {
         const { error } = await supabase.from('opportunite_annonces').insert({
           user_id: user.id,
           type,
+          sector,
           title,
           ville: clean['ville'] || null,
           departement: clean['departement'] || null,
           disponibilite: dispo,
           description: clean['description'] || null,
           photo_url: photoDataUrl,
-          data: clean as any,
+          data: enrichedData as any,
           attachments: [] as any,
           status: 'active',
           views_count: 0,

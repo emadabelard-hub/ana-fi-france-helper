@@ -1068,6 +1068,7 @@ export type Database = {
       opportunite_conversations: {
         Row: {
           annonce_id: string
+          closed_by_moderation: boolean
           contact_user_id: string
           created_at: string
           id: string
@@ -1078,6 +1079,7 @@ export type Database = {
         }
         Insert: {
           annonce_id: string
+          closed_by_moderation?: boolean
           contact_user_id: string
           created_at?: string
           id?: string
@@ -1088,6 +1090,7 @@ export type Database = {
         }
         Update: {
           annonce_id?: string
+          closed_by_moderation?: boolean
           contact_user_id?: string
           created_at?: string
           id?: string
@@ -1111,6 +1114,7 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string
+          hidden_by_moderation: boolean
           id: string
           is_deleted: boolean
           read_at: string | null
@@ -1120,6 +1124,7 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string
+          hidden_by_moderation?: boolean
           id?: string
           is_deleted?: boolean
           read_at?: string | null
@@ -1129,6 +1134,7 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string
+          hidden_by_moderation?: boolean
           id?: string
           is_deleted?: boolean
           read_at?: string | null
@@ -1140,6 +1146,79 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "opportunite_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunite_reports: {
+        Row: {
+          admin_notes: string | null
+          annonce_id: string | null
+          conversation_id: string | null
+          created_at: string
+          details: string | null
+          id: string
+          message_id: string | null
+          reason: string
+          report_type: string
+          reported_user_id: string | null
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          annonce_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          message_id?: string | null
+          reason: string
+          report_type: string
+          reported_user_id?: string | null
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          annonce_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          message_id?: string | null
+          reason?: string
+          report_type?: string
+          reported_user_id?: string | null
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunite_reports_annonce_id_fkey"
+            columns: ["annonce_id"]
+            isOneToOne: false
+            referencedRelation: "opportunite_annonces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunite_reports_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "opportunite_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunite_reports_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "opportunite_messages"
             referencedColumns: ["id"]
           },
         ]

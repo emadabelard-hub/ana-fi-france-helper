@@ -69,6 +69,7 @@ const OpportuniteSectorPage = lazy(() => import("./pages/OpportuniteSectorPage")
 const PublierAnnoncePage = lazy(() => import("./pages/PublierAnnoncePage"));
 const AnnoncesListPage = lazy(() => import("./pages/AnnoncesListPage"));
 const AnnonceDetailPage = lazy(() => import("./pages/AnnonceDetailPage"));
+const MesAnnoncesPage = lazy(() => import("./pages/MesAnnoncesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -179,6 +180,8 @@ const AppRoutes = () => {
                     <Route path="/opportunites/publier" element={<PublierAnnoncePage />} />
                     <Route path="/opportunites/annonces" element={<AnnoncesListPage />} />
                     <Route path="/opportunites/annonces/:id" element={<AnnonceDetailPage />} />
+                    <Route path="/opportunites/mes-annonces" element={<MesAnnoncesPage />} />
+                    <Route path="/opportunites/mes-annonces/:id/modifier" element={<PublierAnnoncePage />} />
                     <Route path="/opportunites/:sector" element={<OpportuniteSectorPage />} />
                     <Route path="/accounting/supplier-invoices" element={<SupplierInvoicesPage />} />
                     <Route path="/accounting/supplier-invoices/:id" element={<SupplierInvoiceDetailPage />} />

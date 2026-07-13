@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -98,6 +98,8 @@ const TITLE_FIELD: Record<AnnonceType, string> = {
 
 const PublierAnnoncePage = () => {
   const navigate = useNavigate();
+  const { id: editId } = useParams<{ id: string }>();
+  const isEdit = Boolean(editId);
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -107,6 +109,34 @@ const PublierAnnoncePage = () => {
   const [dispo, setDispo] = useState<string>('immediate');
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(isEdit);
+
+  useEffect(() => {
+    let alive = true;
+    if (!isEdit || !editId) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('opportunite_annonces')
+        .select('type,disponibilite,photo_url,data')
+        .eq('id', editId)
+        .maybeSingle();
+      if (!alive) return;
+      if (error || !data) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'الإعلان غير متاح' : 'Annonce introuvable',
+        });
+        navigate('/opportunites/mes-annonces');
+        return;
+      }
+      setType((data.type as AnnonceType) || null);
+      setDispo(data.disponibilite || 'immediate');
+      setPhotoDataUrl(data.photo_url || null);
+      setValues((data.data as Record<string, string>) || {});
+      setLoadingEdit(false);
+    })();
+    return () => { alive = false; };
+  }, [isEdit, editId]);
 
   const fontFamily = isRTL
     ? "'Tajawal', system-ui, sans-serif"
@@ -165,30 +195,47 @@ const PublierAnnoncePage = () => {
       const titleKey = TITLE_FIELD[type];
       const title = (clean[titleKey] || '').toString().slice(0, 200) || (isRTL ? 'إعلان' : 'Annonce');
 
-      const { error } = await supabase.from('opportunite_annonces').insert({
-        user_id: user.id,
-        type,
-        title,
-        ville: clean['ville'] || null,
-        departement: clean['departement'] || null,
-        disponibilite: dispo,
-        description: clean['description'] || null,
-        photo_url: photoDataUrl,
-        data: clean as any,
-        attachments: [] as any,
-        status: 'active',
-        views_count: 0,
-        favorites_count: 0,
-      });
-      if (error) throw error;
-
-      toast({
-        title: isRTL ? '✅ تم نشر الإعلان' : '✅ Annonce publiée',
-        description: isRTL
-          ? 'إعلانك متاح الآن.'
-          : 'Votre annonce est maintenant active.',
-      });
-      navigate('/opportunites');
+      if (isEdit && editId) {
+        const { error } = await supabase.from('opportunite_annonces')
+          .update({
+            type,
+            title,
+            ville: clean['ville'] || null,
+            departement: clean['departement'] || null,
+            disponibilite: dispo,
+            description: clean['description'] || null,
+            photo_url: photoDataUrl,
+            data: clean as any,
+          })
+          .eq('id', editId);
+        if (error) throw error;
+        toast({
+          title: isRTL ? '✅ تم تحديث الإعلان' : '✅ Annonce mise à jour',
+        });
+        navigate('/opportunites/mes-annonces');
+      } else {
+        const { error } = await supabase.from('opportunite_annonces').insert({
+          user_id: user.id,
+          type,
+          title,
+          ville: clean['ville'] || null,
+          departement: clean['departement'] || null,
+          disponibilite: dispo,
+          description: clean['description'] || null,
+          photo_url: photoDataUrl,
+          data: clean as any,
+          attachments: [] as any,
+          status: 'active',
+          views_count: 0,
+          favorites_count: 0,
+        });
+        if (error) throw error;
+        toast({
+          title: isRTL ? '✅ تم نشر الإعلان' : '✅ Annonce publiée',
+          description: isRTL ? 'إعلانك متاح الآن.' : 'Votre annonce est maintenant active.',
+        });
+        navigate('/opportunites');
+      }
     } catch (err) {
       console.error('publier annonce error', err);
       toast({
@@ -202,6 +249,18 @@ const PublierAnnoncePage = () => {
   };
 
   const showPhoto = type === 'emploi' || type === 'services';
+
+  if (loadingEdit) {
+    return (
+      <div
+        dir={isRTL ? 'rtl' : 'ltr'}
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: COLORS.pageBg, fontFamily }}
+      >
+        <Loader2 size={22} className="animate-spin" style={{ color: COLORS.navyDark }} />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -218,7 +277,11 @@ const PublierAnnoncePage = () => {
         }}
       >
         <button
-          onClick={() => (type ? setType(null) : navigate('/opportunites'))}
+          onClick={() => {
+            if (isEdit) navigate('/opportunites/mes-annonces');
+            else if (type) setType(null);
+            else navigate('/opportunites');
+          }}
           className={cn(
             'inline-flex items-center gap-1.5 text-[12px] font-bold text-white/85 hover:text-white',
             isRTL && 'flex-row-reverse',
@@ -228,14 +291,16 @@ const PublierAnnoncePage = () => {
           {isRTL ? 'رجوع' : 'Retour'}
         </button>
         <h1 className={cn('mt-3 text-[20px] font-extrabold leading-tight', isRTL ? 'text-right' : 'text-left')}>
-          {type
-            ? (isRTL ? 'نشر إعلان' : 'Publier une annonce')
-            : (isRTL ? 'ماذا تريد أن تنشر ؟' : 'Que souhaitez-vous publier ?')}
+          {isEdit
+            ? (isRTL ? 'تعديل الإعلان' : "Modifier l'annonce")
+            : type
+              ? (isRTL ? 'نشر إعلان' : 'Publier une annonce')
+              : (isRTL ? 'ماذا تريد أن تنشر ؟' : 'Que souhaitez-vous publier ?')}
         </h1>
       </section>
 
-      {/* TYPE SELECTOR */}
-      {!type && (
+      {/* TYPE SELECTOR (only when creating) */}
+      {!type && !isEdit && (
         <div className="px-4 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {TYPES.map((t) => {
             const Icon = t.icon;
@@ -370,7 +435,9 @@ const PublierAnnoncePage = () => {
             }}
           >
             {saving && <Loader2 size={16} className="animate-spin" />}
-            {isRTL ? 'نشر الإعلان' : "Publier l'annonce"}
+            {isEdit
+              ? (isRTL ? 'حفظ التعديلات' : 'Enregistrer les modifications')
+              : (isRTL ? 'نشر الإعلان' : "Publier l'annonce")}
           </button>
         </div>
       )}

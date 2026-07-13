@@ -22,6 +22,35 @@ const OpportunitesPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const [sectorCounts, setSectorCounts] = useState<Record<string, number>>({});
+  const [totalActive, setTotalActive] = useState<number>(0);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from('opportunite_annonces')
+        .select('sector')
+        .eq('status', 'active')
+        .limit(5000);
+      if (!alive) return;
+      if (error) { console.error('sector counts', error); return; }
+      const counts: Record<string, number> = {};
+      (data || []).forEach((r: any) => {
+        const s = r.sector || '__unknown__';
+        counts[s] = (counts[s] || 0) + 1;
+      });
+      setSectorCounts(counts);
+      setTotalActive((data || []).length);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const formatCount = (n: number) =>
+    isRTL
+      ? (n === 0 ? 'لا يوجد إعلانات' : n === 1 ? 'إعلان واحد' : `${n} إعلان`)
+      : (n <= 1 ? `${n} annonce` : `${n} annonces`);
+
   const fontFamily = isRTL
     ? "'Tajawal', system-ui, sans-serif"
     : "'Poppins', system-ui, sans-serif";

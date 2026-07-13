@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, ArrowRight, MapPin, Calendar, Eye, Loader2, Briefcase } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MapPin, Calendar, Eye, Loader2, Briefcase, MessageCircle } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
+import { readPendingContact, clearPendingContact, setPendingContact } from './opportunites/messagerie';
 
 const COLORS = {
   navy: '#1B4F8A',
@@ -59,9 +61,11 @@ const AnnonceDetailPage = () => {
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
 
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [annonce, setAnnonce] = useState<any | null>(null);
   const viewedRef = useRef(false);
+  const pendingHandledRef = useRef(false);
 
   const fontFamily = isRTL
     ? "'Tajawal', system-ui, sans-serif"
@@ -75,7 +79,7 @@ const AnnonceDetailPage = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('opportunite_annonces')
-        .select('id,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at,views_count')
+        .select('id,user_id,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at,views_count')
         .eq('id', id)
         .eq('status', 'active')
         .maybeSingle();
@@ -100,6 +104,17 @@ const AnnonceDetailPage = () => {
     })();
     return () => { alive = false; };
   }, [id]);
+
+  // If the visitor was redirected to login before contacting, resume the contact flow.
+  useEffect(() => {
+    if (!user || !id || pendingHandledRef.current) return;
+    const pending = readPendingContact();
+    if (pending && pending === id) {
+      pendingHandledRef.current = true;
+      clearPendingContact();
+      navigate(`/opportunites/annonces/${id}/contact`, { replace: true });
+    }
+  }, [user, id, navigate]);
 
   if (loading) {
     return (
@@ -266,6 +281,43 @@ const AnnonceDetailPage = () => {
             </p>
           </div>
         )}
+
+        {/* CONTACTER */}
+        {annonce.status === 'active' && (
+          user && user.id === annonce.user_id ? (
+            <div
+              className="rounded-2xl p-4 border text-center"
+              style={{ borderColor: '#E5E9F0', background: '#EEF2F8' }}
+            >
+              <p className={cn('text-[13px] font-extrabold', isRTL ? 'text-right' : 'text-left')} style={{ color: COLORS.navyDark }}>
+                {isRTL ? 'ده إعلانك' : "C'est votre annonce"}
+              </p>
+              <p className={cn('text-[11px] text-gray-600 mt-1', isRTL ? 'text-right' : 'text-left')}>
+                {isRTL ? 'شوف الرسائل من صفحة « إعلاناتي ».' : 'Consultez les messages depuis « Mes annonces ».'}
+              </p>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                if (!user) {
+                  setPendingContact(annonce.id);
+                  navigate('/login');
+                  return;
+                }
+                navigate(`/opportunites/annonces/${annonce.id}/contact`);
+              }}
+              className="w-full rounded-2xl py-3 font-extrabold text-[14px] active:scale-[0.98] transition inline-flex items-center justify-center gap-2 shadow-md"
+              style={{
+                background: `linear-gradient(135deg, ${COLORS.goldLight}, ${COLORS.goldDark})`,
+                color: COLORS.navyDark,
+              }}
+            >
+              <MessageCircle size={16} />
+              {isRTL ? 'تواصل مع صاحب الإعلان' : 'Contacter'}
+            </button>
+          )
+        )}
+
 
         <div
           className="rounded-2xl p-4 border"

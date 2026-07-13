@@ -178,11 +178,11 @@ const OpportunitesPage = () => {
         </button>
       </div>
 
-      {/* MES ANNONCES + MESSAGES CTA */}
-      <div className="px-4 mt-3 grid grid-cols-2 gap-3">
+      {/* MES ANNONCES + MESSAGES + FAVORIS CTA */}
+      <div className="px-4 mt-3 grid grid-cols-3 gap-2">
         <button
           onClick={() => navigate('/opportunites/mes-annonces')}
-          className="w-full rounded-2xl py-2.5 font-extrabold text-[13px] border active:scale-[0.98] transition inline-flex items-center justify-center gap-2 bg-white"
+          className="w-full rounded-2xl py-2.5 font-extrabold text-[12px] border active:scale-[0.98] transition inline-flex items-center justify-center gap-1.5 bg-white"
           style={{ borderColor: '#E5E9F0', color: COLORS.navyDark }}
         >
           <UserRound size={14} />
@@ -190,11 +190,28 @@ const OpportunitesPage = () => {
         </button>
         <button
           onClick={() => navigate('/opportunites/messages')}
-          className="w-full rounded-2xl py-2.5 font-extrabold text-[13px] border active:scale-[0.98] transition inline-flex items-center justify-center gap-2 bg-white"
+          className="relative w-full rounded-2xl py-2.5 font-extrabold text-[12px] border active:scale-[0.98] transition inline-flex items-center justify-center gap-1.5 bg-white"
           style={{ borderColor: '#E5E9F0', color: COLORS.navyDark }}
         >
           <MessageCircle size={14} />
           {isRTL ? 'الرسائل' : 'Messages'}
+          {unread > 0 && (
+            <span
+              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-extrabold flex items-center justify-center"
+              style={{ background: '#DC2626', color: 'white' }}
+              aria-label={isRTL ? `${unread} رسالة جديدة` : `${unread} nouveaux messages`}
+            >
+              {unread > 99 ? '99+' : unread}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => navigate('/opportunites/mes-favoris')}
+          className="w-full rounded-2xl py-2.5 font-extrabold text-[12px] border active:scale-[0.98] transition inline-flex items-center justify-center gap-1.5 bg-white"
+          style={{ borderColor: '#E5E9F0', color: COLORS.navyDark }}
+        >
+          <Heart size={14} color="#DC2626" fill="#DC2626" />
+          {isRTL ? 'المفضلة' : 'Mes favoris'}
         </button>
       </div>
 

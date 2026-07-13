@@ -320,24 +320,26 @@ const AnnonceDetailPage = () => {
           )
         )}
 
-        {/* Report link (discreet, hidden for the owner) */}
+        {/* Report button (hidden for the owner) */}
         {(!user || user.id !== annonce.user_id) && (
-          <div className={cn('flex', isRTL ? 'justify-start' : 'justify-end')}>
-            <button
-              onClick={() => {
-                if (!user) {
-                  setPendingContact(annonce.id);
-                  navigate('/login');
-                  return;
-                }
-                setReportOpen(true);
-              }}
-              className={cn('inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-red-700 underline underline-offset-2', isRTL && 'flex-row-reverse')}
-            >
-              <Flag size={12} />
-              {isRTL ? 'الإبلاغ عن الإعلان' : 'Signaler cette annonce'}
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              if (!user) {
+                setPendingContact(annonce.id);
+                navigate('/login');
+                return;
+              }
+              setReportOpen(true);
+            }}
+            className={cn(
+              'w-full rounded-2xl py-2.5 text-[13px] font-bold border inline-flex items-center justify-center gap-2 active:scale-[0.98] transition',
+              isRTL && 'flex-row-reverse',
+            )}
+            style={{ borderColor: '#FCA5A5', color: '#B91C1C', background: '#FEF2F2' }}
+          >
+            <Flag size={14} />
+            {isRTL ? 'الإبلاغ عن الإعلان' : 'Signaler cette annonce'}
+          </button>
         )}
 
         <div

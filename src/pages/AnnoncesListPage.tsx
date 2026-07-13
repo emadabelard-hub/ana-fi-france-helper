@@ -73,7 +73,7 @@ const AnnoncesListPage = () => {
   const [q, setQ] = useState('');
   const [secteur, setSecteur] = useState<string>(searchParams.get('secteur') || '');
   const [type, setType] = useState<string>(searchParams.get('type') || '');
-  const [metier, setMetier] = useState('');
+  const [metier, setMetier] = useState(searchParams.get('metier') || '');
   const [ville, setVille] = useState('');
   const [departement, setDepartement] = useState('');
   const [dispo, setDispo] = useState('');

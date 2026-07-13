@@ -1068,7 +1068,10 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         } else {
           text += `Paiement ${delaiLabel} par ${moyenLabel}. `;
         }
-        text += `En cas de retard : pénalités de 3 fois le taux légal + indemnité forfaitaire de 40€.`;
+        // Mention complète de l'indemnité forfaitaire déjà présente dans le bloc de conditions de la facture.
+        if (documentType !== 'facture') {
+          text += `En cas de retard : pénalités de 3 fois le taux légal + indemnité forfaitaire de 40€.`;
+        }
         return text;
       })(),
       legalMentions: vatLegalMention,

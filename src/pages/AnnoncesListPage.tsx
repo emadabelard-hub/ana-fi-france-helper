@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, ArrowRight, Search, SlidersHorizontal, X, MapPin, Briefcase, Calendar, Loader2 } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
+import { getMetiers, findMetier } from '@/data/opportuniteTaxonomy';
 import FavoriteButton from '@/components/opportunites/FavoriteButton';
 import ShareButton from '@/components/opportunites/ShareButton';
 import { fetchFavorisIds, onFavorisChanged } from '@/pages/opportunites/favoris';

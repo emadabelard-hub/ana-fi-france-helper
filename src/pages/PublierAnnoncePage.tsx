@@ -68,7 +68,6 @@ const FIELDS: Record<AnnonceType, FieldDef[]> = {
     { key: 'metier_recherche', fr: 'Métier recherché', ar: 'المهنة المطلوبة', required: true },
     { key: 'ville', fr: 'Ville', ar: 'المدينة', required: true },
     { key: 'departement', fr: 'Département', ar: 'المنطقة' },
-    { key: 'contrat', fr: 'Type de contrat', ar: 'نوع العقد', placeholderFr: 'CDI, CDD, Intérim…', placeholderAr: 'CDI، CDD، Intérim…' },
     { key: 'salaire', fr: 'Salaire (facultatif)', ar: 'الراتب (اختياري)' },
     { key: 'description', fr: 'Description', ar: 'الوصف', kind: 'textarea', required: true },
   ],

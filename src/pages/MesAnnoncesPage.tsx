@@ -70,7 +70,7 @@ type PendingAction =
 const MesAnnoncesPage = () => {
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);

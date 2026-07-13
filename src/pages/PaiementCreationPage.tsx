@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, FileText, BarChart3, Package, Plus, Trash2, UserPlus } from "lucide-react";
 import { buildStatutsPdf, buildPrevisionnelPdf, buildAttestationPdf, buildBeneficiairesPdf, buildGuideDepotPdf, buildLettreBanquePdf, buildPvNominationPdf, buildChecklistFinalePdf, buildFicheSynthesePdf, effectiveFormOf, type AssocieDetail, type Personne } from "@/lib/creationPdf";
+import { computePrevisionnelQuick } from "@/lib/previsionnelCheck";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";

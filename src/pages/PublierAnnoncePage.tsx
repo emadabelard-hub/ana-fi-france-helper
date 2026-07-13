@@ -110,6 +110,8 @@ const PublierAnnoncePage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const [sector, setSector] = useState<string | null>(null);
+  const [metier, setMetier] = useState<string | null>(null);
   const [type, setType] = useState<AnnonceType | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [dispo, setDispo] = useState<string>('immediate');

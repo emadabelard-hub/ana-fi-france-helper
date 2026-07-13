@@ -98,6 +98,8 @@ const TITLE_FIELD: Record<AnnonceType, string> = {
 
 const PublierAnnoncePage = () => {
   const navigate = useNavigate();
+  const { id: editId } = useParams<{ id: string }>();
+  const isEdit = Boolean(editId);
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -107,6 +109,34 @@ const PublierAnnoncePage = () => {
   const [dispo, setDispo] = useState<string>('immediate');
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(isEdit);
+
+  useEffect(() => {
+    let alive = true;
+    if (!isEdit || !editId) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('opportunite_annonces')
+        .select('type,disponibilite,photo_url,data')
+        .eq('id', editId)
+        .maybeSingle();
+      if (!alive) return;
+      if (error || !data) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'الإعلان غير متاح' : 'Annonce introuvable',
+        });
+        navigate('/opportunites/mes-annonces');
+        return;
+      }
+      setType((data.type as AnnonceType) || null);
+      setDispo(data.disponibilite || 'immediate');
+      setPhotoDataUrl(data.photo_url || null);
+      setValues((data.data as Record<string, string>) || {});
+      setLoadingEdit(false);
+    })();
+    return () => { alive = false; };
+  }, [isEdit, editId]);
 
   const fontFamily = isRTL
     ? "'Tajawal', system-ui, sans-serif"

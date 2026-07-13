@@ -323,6 +323,8 @@ const PublierAnnoncePage = () => {
           onClick={() => {
             if (isEdit) navigate('/opportunites/mes-annonces');
             else if (type) setType(null);
+            else if (metier) setMetier(null);
+            else if (sector) setSector(null);
             else navigate('/opportunites');
           }}
           className={cn(
@@ -336,10 +338,22 @@ const PublierAnnoncePage = () => {
         <h1 className={cn('mt-3 text-[20px] font-extrabold leading-tight', isRTL ? 'text-right' : 'text-left')}>
           {isEdit
             ? (isRTL ? 'تعديل الإعلان' : "Modifier l'annonce")
-            : type
-              ? (isRTL ? 'نشر إعلان' : 'Publier une annonce')
-              : (isRTL ? 'ماذا تريد أن تنشر ؟' : 'Que souhaitez-vous publier ?')}
+            : !sector
+              ? (isRTL ? 'اختر القطاع' : "Choisissez le secteur d'activité")
+              : !metier
+                ? (isRTL ? 'اختر المهنة' : 'Choisissez le métier')
+                : !type
+                  ? (isRTL ? 'اختر نوع الإعلان' : "Choisissez le type d'annonce")
+                  : (isRTL ? 'نشر إعلان' : 'Publier une annonce')}
         </h1>
+        {(sector || metier) && !isEdit && (
+          <p className={cn('mt-1 text-[11px] text-white/80', isRTL ? 'text-right' : 'text-left')}>
+            {[
+              sector && (isRTL ? findSector(sector)?.ar : findSector(sector)?.fr),
+              metier && (isRTL ? findMetier(sector, metier)?.ar : findMetier(sector, metier)?.fr),
+            ].filter(Boolean).join(' › ')}
+          </p>
+        )}
         {isEdit && editReference && (
           <p className={cn('mt-1 text-[11px] font-mono text-white/80', isRTL ? 'text-right' : 'text-left')} dir="ltr">
             {isRTL ? `رقم الإعلان: ${editReference}` : `Réf. ${editReference}`}
@@ -348,8 +362,69 @@ const PublierAnnoncePage = () => {
       </section>
 
 
-      {/* TYPE SELECTOR (only when creating) */}
-      {!type && !isEdit && (
+      {/* SECTOR SELECTOR */}
+      {!isEdit && !sector && (
+        <div className="px-4 mt-4 grid grid-cols-2 gap-2.5 pb-10">
+          {OPPORTUNITE_SECTORS.map((s) => {
+            const Icon = s.icon;
+            return (
+              <button
+                key={s.slug}
+                onClick={() => setSector(s.slug)}
+                className="rounded-2xl bg-white p-3 shadow-sm border active:scale-[0.98] transition text-left"
+                style={{ borderColor: '#E5E9F0' }}
+              >
+                <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: `linear-gradient(135deg, ${COLORS.goldLight}, ${COLORS.goldDark})` }}
+                  >
+                    <Icon size={18} style={{ color: COLORS.navyDark }} />
+                  </div>
+                  <span
+                    className={cn('text-[12px] font-extrabold leading-tight line-clamp-2', isRTL ? 'text-right' : 'text-left')}
+                    style={{ color: COLORS.navyDark }}
+                  >
+                    {isRTL ? s.ar : s.fr}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* MÉTIER SELECTOR */}
+      {!isEdit && sector && !metier && (
+        <div className="px-4 mt-4 grid grid-cols-2 gap-2.5 pb-10">
+          {getMetiers(sector).map((mt) => (
+            <button
+              key={mt.slug}
+              onClick={() => setMetier(mt.slug)}
+              className="rounded-2xl bg-white p-3 shadow-sm border active:scale-[0.98] transition text-left"
+              style={{ borderColor: '#E5E9F0' }}
+            >
+              <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${COLORS.goldLight}, ${COLORS.goldDark})` }}
+                >
+                  <Briefcase size={16} style={{ color: COLORS.navyDark }} />
+                </div>
+                <span
+                  className={cn('text-[12px] font-extrabold leading-tight line-clamp-2', isRTL ? 'text-right' : 'text-left')}
+                  style={{ color: COLORS.navyDark }}
+                >
+                  {isRTL ? mt.ar : mt.fr}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* TYPE SELECTOR (only when creating, after sector + metier) */}
+      {!isEdit && sector && metier && !type && (
         <div className="px-4 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {TYPES.map((t) => {
             const Icon = t.icon;
@@ -380,7 +455,7 @@ const PublierAnnoncePage = () => {
       )}
 
       {/* FORM */}
-      {type && (
+      {type && (sector || isEdit) && (
         <div className="px-4 mt-4 space-y-4 pb-10">
           <div className="rounded-2xl bg-white p-4 shadow-sm border space-y-4" style={{ borderColor: '#E5E9F0' }}>
             {FIELDS[type].map((f) => (

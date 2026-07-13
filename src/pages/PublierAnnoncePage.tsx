@@ -31,7 +31,7 @@ const TYPES: {
   { key: 'emploi', icon: HardHat, fr: 'Je cherche un emploi', ar: 'أبحث عن عمل' },
   { key: 'recrute', icon: Building2, fr: 'Je recrute', ar: 'أبحث عن عامل' },
   { key: 'services', icon: Wrench, fr: 'Je propose mes services', ar: 'أعرض خدماتي' },
-  { key: 'partenaire', icon: Handshake, fr: 'Je recherche un partenaire professionnel', ar: 'أبحث عن شريك مهني' },
+  { key: 'partenaire', icon: Handshake, fr: 'Je recherche un partenaire professionnel ou un sous-traitant', ar: 'أبحث عن شريك مهني أو سو تريتان' },
 ];
 
 const DISPO: { key: string; fr: string; ar: string }[] = [
@@ -68,7 +68,6 @@ const FIELDS: Record<AnnonceType, FieldDef[]> = {
     { key: 'metier_recherche', fr: 'Métier recherché', ar: 'المهنة المطلوبة', required: true },
     { key: 'ville', fr: 'Ville', ar: 'المدينة', required: true },
     { key: 'departement', fr: 'Département', ar: 'المنطقة' },
-    { key: 'contrat', fr: 'Type de contrat', ar: 'نوع العقد', placeholderFr: 'CDI, CDD, Intérim…', placeholderAr: 'CDI، CDD، Intérim…' },
     { key: 'salaire', fr: 'Salaire (facultatif)', ar: 'الراتب (اختياري)' },
     { key: 'description', fr: 'Description', ar: 'الوصف', kind: 'textarea', required: true },
   ],

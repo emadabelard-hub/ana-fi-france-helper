@@ -109,7 +109,7 @@ const OpportuniteSectorPage = () => {
     { icon: WorkerIcon, titleFr: 'Je cherche un emploi', titleAr: 'أبحث عن عمل' },
     { icon: Building2, titleFr: 'Je recrute', titleAr: 'أبحث عن عامل' },
     { icon: Wrench, titleFr: 'Je propose mes services', titleAr: 'أعرض خدماتي' },
-    { icon: Handshake, titleFr: 'Je cherche un sous-traitant', titleAr: 'أبحث عن مقاول فرعي' },
+    { icon: Handshake, titleFr: 'Je cherche un sous-traitant', titleAr: 'أبحث عن مقاول فرعي (سو تريتان)' },
   ];
 
   return (

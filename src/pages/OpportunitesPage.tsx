@@ -58,7 +58,7 @@ const OpportunitesPage = () => {
     {
       icon: Handshake,
       titleFr: 'Je cherche un sous-traitant',
-      titleAr: 'أبحث عن مقاول فرعي',
+      titleAr: 'أبحث عن مقاول فرعي (سو تريتان)',
       descFr: 'Trouvez un professionnel ou une entreprise pour vos chantiers et missions.',
       descAr: 'دور على صنايعي أو شركة لتنفيذ الشغل.',
     },

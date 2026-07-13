@@ -8,6 +8,10 @@ import { ArrowLeft, ArrowRight, MapPin, Calendar, Eye, Loader2, Briefcase, Messa
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
 import { readPendingContact, clearPendingContact, setPendingContact } from './opportunites/messagerie';
 import ReportDialog from '@/components/opportunites/ReportDialog';
+import FavoriteButton from '@/components/opportunites/FavoriteButton';
+import ShareButton from '@/components/opportunites/ShareButton';
+import FirstContactModal from '@/components/opportunites/FirstContactModal';
+import { hasSeenFirstContact } from '@/pages/opportunites/firstContactNotice';
 import { useToast } from '@/hooks/use-toast';
 
 

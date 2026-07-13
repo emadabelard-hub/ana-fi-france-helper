@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Users, Megaphone, Handshake, ListFilter, UserRound, MessageCircle } from 'lucide-react';
+import { Search, Users, Megaphone, Handshake, ListFilter, UserRound, MessageCircle, HeadphonesIcon } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
 
 const COLORS = {
@@ -254,6 +254,18 @@ const OpportunitesPage = () => {
               : "ANAFYPRO met à disposition un espace gratuit de diffusion d'annonces professionnelles. ANAFYPRO n'est pas une agence de recrutement et n'intervient pas dans les relations entre les utilisateurs."}
           </p>
         </div>
+      </div>
+
+      {/* NOUS CONTACTER */}
+      <div className="px-4 pb-24">
+        <button
+          onClick={() => navigate('/support')}
+          className="w-full rounded-2xl py-3 font-extrabold text-[14px] shadow-md active:scale-[0.98] transition inline-flex items-center justify-center gap-2"
+          style={{ background: COLORS.navyDark, color: 'white' }}
+        >
+          <HeadphonesIcon size={16} />
+          {isRTL ? 'تواصل معنا' : 'Nous contacter'}
+        </button>
       </div>
     </div>
   );

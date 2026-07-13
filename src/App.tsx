@@ -69,6 +69,7 @@ const OpportuniteSectorPage = lazy(() => import("./pages/OpportuniteSectorPage")
 const PublierAnnoncePage = lazy(() => import("./pages/PublierAnnoncePage"));
 const AnnoncesListPage = lazy(() => import("./pages/AnnoncesListPage"));
 const AnnonceDetailPage = lazy(() => import("./pages/AnnonceDetailPage"));
+const MesAnnoncesPage = lazy(() => import("./pages/MesAnnoncesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (

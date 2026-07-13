@@ -74,6 +74,7 @@ const AnnonceDetailPage = () => {
   const [annonce, setAnnonce] = useState<any | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [refCopied, setRefCopied] = useState(false);
+  const [firstContactOpen, setFirstContactOpen] = useState(false);
   const viewedRef = useRef(false);
   const pendingHandledRef = useRef(false);
 

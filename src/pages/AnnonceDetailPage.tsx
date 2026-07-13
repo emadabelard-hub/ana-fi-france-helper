@@ -345,6 +345,7 @@ const AnnonceDetailPage = () => {
                   navigate('/login');
                   return;
                 }
+                if (!hasSeenFirstContact()) { setFirstContactOpen(true); return; }
                 navigate(`/opportunites/annonces/${annonce.id}/contact`);
               }}
               className="w-full rounded-2xl py-3 font-extrabold text-[14px] active:scale-[0.98] transition inline-flex items-center justify-center gap-2 shadow-md"

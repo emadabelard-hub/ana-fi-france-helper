@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Users, Megaphone, Handshake } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Search, Users, Megaphone, Handshake, ListFilter } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
 
 const COLORS = {

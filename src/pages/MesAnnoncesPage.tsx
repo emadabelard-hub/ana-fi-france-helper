@@ -7,8 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   ArrowLeft, ArrowRight, Eye, Pencil, Power, PowerOff, Trash2, Loader2,
-  Briefcase, MapPin, Calendar, EyeOff,
+  Briefcase, MapPin, Calendar, EyeOff, Copy, Check,
 } from 'lucide-react';
+
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,

@@ -65,11 +65,14 @@ const AnnonceDetailPage = () => {
   const { isRTL } = useLanguage();
 
   const { user } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [annonce, setAnnonce] = useState<any | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [refCopied, setRefCopied] = useState(false);
   const viewedRef = useRef(false);
   const pendingHandledRef = useRef(false);
+
 
   const fontFamily = isRTL
     ? "'Tajawal', system-ui, sans-serif"

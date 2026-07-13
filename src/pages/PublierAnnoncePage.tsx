@@ -8,8 +8,14 @@ import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import {
   ArrowLeft, ArrowRight, Loader2,
-  HardHat, Building2, Wrench, Handshake,
+  HardHat, Building2, Wrench, Handshake, Briefcase,
 } from 'lucide-react';
+import {
+  OPPORTUNITE_SECTORS,
+  getMetiers,
+  findSector,
+  findMetier,
+} from '@/data/opportuniteTaxonomy';
 
 const COLORS = {
   navy: '#1B4F8A',

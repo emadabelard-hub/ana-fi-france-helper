@@ -1014,6 +1014,7 @@ export type Database = {
           id: string
           photo_url: string | null
           published_at: string
+          reference: string
           sector: string | null
           status: string
           title: string
@@ -1034,6 +1035,7 @@ export type Database = {
           id?: string
           photo_url?: string | null
           published_at?: string
+          reference?: string
           sector?: string | null
           status?: string
           title: string
@@ -1054,6 +1056,7 @@ export type Database = {
           id?: string
           photo_url?: string | null
           published_at?: string
+          reference?: string
           sector?: string | null
           status?: string
           title?: string
@@ -1149,6 +1152,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      opportunite_reference_counters: {
+        Row: {
+          last_number: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          last_number?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          last_number?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
       }
       opportunite_reports: {
         Row: {
@@ -2021,6 +2042,10 @@ export type Database = {
     }
     Functions: {
       accept_chantier_invitation: { Args: { _token: string }; Returns: Json }
+      generate_opportunite_reference: {
+        Args: { _year: number }
+        Returns: string
+      }
       get_chantier_invitation: {
         Args: { _token: string }
         Returns: {

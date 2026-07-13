@@ -7,8 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   ArrowLeft, ArrowRight, Eye, Pencil, Power, PowerOff, Trash2, Loader2,
-  Briefcase, MapPin, Calendar, EyeOff,
+  Briefcase, MapPin, Calendar, EyeOff, Copy, Check,
 } from 'lucide-react';
+
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -26,6 +27,7 @@ const COLORS = {
 
 type Annonce = {
   id: string;
+  reference: string;
   type: string;
   sector: string | null;
   title: string;
@@ -38,6 +40,7 @@ type Annonce = {
   views_count: number;
   published_at: string;
 };
+
 
 const TYPE_LABELS: Record<string, { fr: string; ar: string }> = {
   emploi:     { fr: 'Je cherche du travail',                                     ar: 'أبحث عن عمل' },
@@ -78,6 +81,17 @@ const MesAnnoncesPage = () => {
   const [annonces, setAnnonces] = useState<Annonce[]>([]);
   const [pending, setPending] = useState<PendingAction>(null);
   const [working, setWorking] = useState(false);
+  const [copiedRefId, setCopiedRefId] = useState<string | null>(null);
+
+  const copyReference = async (ref: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(ref);
+      setCopiedRefId(id);
+      toast({ title: isRTL ? 'تم نسخ رقم الإعلان' : 'Référence copiée' });
+      setTimeout(() => setCopiedRefId((v) => (v === id ? null : v)), 1500);
+    } catch { /* ignore */ }
+  };
+
 
   const fontFamily = isRTL
     ? "'Tajawal', system-ui, sans-serif"
@@ -97,7 +111,7 @@ const MesAnnoncesPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('opportunite_annonces')
-      .select('id,type,sector,title,ville,departement,description,photo_url,data,status,views_count,published_at')
+      .select('id,reference,type,sector,title,ville,departement,description,photo_url,data,status,views_count,published_at')
       .eq('user_id', user.id)
       .order('published_at', { ascending: false })
       .limit(500);
@@ -303,8 +317,28 @@ const MesAnnoncesPage = () => {
                           {a.views_count ?? 0}
                         </span>
                       </div>
+                      {a.reference && (
+                        <div className={cn('mt-2 inline-flex items-center gap-1.5', isRTL && 'flex-row-reverse')}>
+                          <span
+                            className="text-[10px] font-mono font-bold tracking-tight px-1.5 py-0.5 rounded"
+                            style={{ background: '#F1F3F7', color: COLORS.navyDark }}
+                            dir="ltr"
+                          >
+                            {isRTL ? `رقم: ${a.reference}` : `Réf. ${a.reference}`}
+                          </span>
+                          <button
+                            onClick={() => copyReference(a.reference, a.id)}
+                            aria-label={isRTL ? 'نسخ رقم الإعلان' : 'Copier la référence'}
+                            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-gray-600 hover:text-gray-900 active:scale-[0.98] transition"
+                          >
+                            {copiedRefId === a.id ? <Check size={11} /> : <Copy size={11} />}
+                            {isRTL ? 'نسخ' : 'Copier'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
+
 
                   {/* Moderation notice */}
                   {isModerated && (

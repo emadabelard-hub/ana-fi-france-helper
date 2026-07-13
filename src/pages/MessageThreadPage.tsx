@@ -37,8 +37,9 @@ type Conversation = {
   owner_id: string;
   contact_user_id: string;
   status: string;
-  opportunite_annonces?: { title: string } | null;
+  opportunite_annonces?: { title: string; reference: string | null } | null;
 };
+
 
 const formatTime = (iso: string, isRTL: boolean) => {
   try {
@@ -77,7 +78,7 @@ const MessageThreadPage = () => {
     if (!id || !user) return;
     const [{ data: c, error: ec }, { data: m, error: em }] = await Promise.all([
       supabase.from('opportunite_conversations')
-        .select('id,annonce_id,owner_id,contact_user_id,status, opportunite_annonces(title)')
+        .select('id,annonce_id,owner_id,contact_user_id,status, opportunite_annonces(title,reference)')
         .eq('id', id)
         .maybeSingle(),
       supabase.from('opportunite_messages')
@@ -179,6 +180,7 @@ const MessageThreadPage = () => {
   }
 
   const annonceTitle = conv.opportunite_annonces?.title || (isRTL ? 'إعلان' : 'Annonce');
+  const annonceRef = conv.opportunite_annonces?.reference || null;
 
   return (
     <div
@@ -203,6 +205,12 @@ const MessageThreadPage = () => {
         <h1 className={cn('mt-2 text-[16px] font-extrabold leading-tight line-clamp-1', isRTL ? 'text-right' : 'text-left')}>
           {annonceTitle}
         </h1>
+        {annonceRef && (
+          <p className={cn('mt-1 text-[10px] text-white/70 font-mono', isRTL ? 'text-right' : 'text-left')} dir="ltr">
+            {isRTL ? `رقم الإعلان: ${annonceRef}` : `Réf. ${annonceRef}`}
+          </p>
+        )}
+
         <div className={cn('mt-1 flex items-center gap-3', isRTL && 'flex-row-reverse')}>
           <button
             onClick={() => navigate(`/opportunites/annonces/${conv.annonce_id}`)}

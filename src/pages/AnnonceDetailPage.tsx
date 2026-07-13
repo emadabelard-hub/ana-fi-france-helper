@@ -4,10 +4,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, ArrowRight, MapPin, Calendar, Eye, Loader2, Briefcase, MessageCircle, Flag } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MapPin, Calendar, Eye, Loader2, Briefcase, MessageCircle, Flag, Copy, Check } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
 import { readPendingContact, clearPendingContact, setPendingContact } from './opportunites/messagerie';
 import ReportDialog from '@/components/opportunites/ReportDialog';
+import { useToast } from '@/hooks/use-toast';
+
 
 const COLORS = {
   navy: '#1B4F8A',
@@ -63,11 +65,14 @@ const AnnonceDetailPage = () => {
   const { isRTL } = useLanguage();
 
   const { user } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [annonce, setAnnonce] = useState<any | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [refCopied, setRefCopied] = useState(false);
   const viewedRef = useRef(false);
   const pendingHandledRef = useRef(false);
+
 
   const fontFamily = isRTL
     ? "'Tajawal', system-ui, sans-serif"
@@ -81,7 +86,7 @@ const AnnonceDetailPage = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('opportunite_annonces')
-        .select('id,user_id,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at,views_count')
+        .select('id,reference,user_id,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at,views_count')
         .eq('id', id)
         .eq('status', 'active')
         .maybeSingle();
@@ -230,7 +235,36 @@ const AnnonceDetailPage = () => {
             {annonce.views_count ?? 0}
           </span>
         </div>
+
+        {annonce.reference && (
+          <div className={cn('mt-3 inline-flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+            <span
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-bold bg-white/10 border border-white/20"
+              dir="ltr"
+              style={{ color: 'white' }}
+            >
+              <span className="opacity-80">{isRTL ? 'رقم الإعلان:' : 'Réf.'}</span>
+              <span className="font-mono tracking-tight">{annonce.reference}</span>
+            </span>
+            <button
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(annonce.reference);
+                  setRefCopied(true);
+                  toast({ title: isRTL ? 'تم نسخ رقم الإعلان' : 'Référence copiée' });
+                  setTimeout(() => setRefCopied(false), 1500);
+                } catch { /* ignore */ }
+              }}
+              aria-label={isRTL ? 'نسخ رقم الإعلان' : 'Copier la référence'}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold bg-white/10 border border-white/20 text-white active:scale-[0.98] transition"
+            >
+              {refCopied ? <Check size={11} /> : <Copy size={11} />}
+              {isRTL ? 'نسخ' : 'Copier'}
+            </button>
+          </div>
+        )}
       </section>
+
 
       {/* PHOTO */}
       {annonce.photo_url && (

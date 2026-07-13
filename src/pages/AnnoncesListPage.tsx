@@ -17,6 +17,7 @@ const COLORS = {
 
 type Annonce = {
   id: string;
+  reference: string;
   type: string;
   sector: string | null;
   title: string;
@@ -29,6 +30,7 @@ type Annonce = {
   status: string;
   published_at: string;
 };
+
 
 const TYPE_LABELS: Record<string, { fr: string; ar: string }> = {
   emploi:     { fr: 'Je cherche du travail',                                     ar: 'أبحث عن عمل' },
@@ -79,7 +81,7 @@ const AnnoncesListPage = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('opportunite_annonces')
-        .select('id,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at')
+        .select('id,reference,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at')
         .eq('status', 'active')
         .order('published_at', { ascending: false })
         .limit(500);
@@ -94,6 +96,8 @@ const AnnoncesListPage = () => {
   const filtered = useMemo(() => {
     const norm = (s: string | null | undefined) => (s || '').toString().toLowerCase().trim();
     const qn = norm(q);
+    const qRef = qn.toUpperCase().replace(/\s+/g, '');
+    const looksLikeRef = /^OPP-\d{4}-\d{1,6}$/.test(qRef);
     return annonces.filter((a) => {
       if (secteur && a.sector !== secteur) return false;
       if (type && a.type !== type) return false;
@@ -107,9 +111,13 @@ const AnnoncesListPage = () => {
         if (!bag.includes(mn)) return false;
       }
       if (qn) {
+        // Exact reference match short-circuit
+        if (looksLikeRef) {
+          return (a.reference || '').toUpperCase() === qRef;
+        }
         const d = a.data || {};
         const bag = [
-          a.title, a.ville, a.departement, a.description,
+          a.reference, a.title, a.ville, a.departement, a.description,
           d.metier, d.metier_recherche, d.profession, d.specialite, d.zone,
         ].map(norm).join(' | ');
         if (!bag.includes(qn)) return false;
@@ -117,6 +125,7 @@ const AnnoncesListPage = () => {
       return true;
     });
   }, [annonces, q, secteur, type, metier, ville, departement, dispo]);
+
 
   const applyFilters = () => {
     const params: Record<string, string> = {};
@@ -172,7 +181,7 @@ const AnnoncesListPage = () => {
             type="text"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={isRTL ? 'ابحث عن مهنة أو مدينة أو خدمة' : 'Rechercher un métier, une ville ou un service'}
+            placeholder={isRTL ? 'ابحث عن مهنة أو مدينة أو رقم إعلان' : 'Rechercher un métier, une ville ou une réf. OPP-…'}
             className={cn(
               'w-full rounded-xl bg-white py-3 text-[13px] outline-none',
               isRTL ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left',
@@ -412,11 +421,22 @@ const AnnoncesListPage = () => {
                         <p className="text-[11px] text-gray-500 mt-1 line-clamp-2 leading-snug">{shortDesc}</p>
                       )}
 
-                      <div className={cn('mt-2 flex items-center justify-between', isRTL && 'flex-row-reverse')}>
-                        <span className="inline-flex items-center gap-1 text-[10px] text-gray-400">
-                          <Calendar size={10} />
-                          {formatDate(a.published_at, isRTL)}
-                        </span>
+                      <div className={cn('mt-2 flex items-center justify-between gap-2 flex-wrap', isRTL && 'flex-row-reverse')}>
+                        <div className={cn('flex items-center gap-2 flex-wrap', isRTL && 'flex-row-reverse')}>
+                          <span className="inline-flex items-center gap-1 text-[10px] text-gray-400">
+                            <Calendar size={10} />
+                            {formatDate(a.published_at, isRTL)}
+                          </span>
+                          {a.reference && (
+                            <span
+                              className="text-[9px] font-mono font-bold tracking-tight px-1.5 py-0.5 rounded"
+                              style={{ background: '#F1F3F7', color: COLORS.navyDark }}
+                              dir="ltr"
+                            >
+                              {isRTL ? `رقم: ${a.reference}` : `Réf. ${a.reference}`}
+                            </span>
+                          )}
+                        </div>
                         <span
                           className="rounded-lg px-2.5 py-1 text-[11px] font-extrabold"
                           style={{ background: COLORS.navyDark, color: 'white' }}
@@ -424,6 +444,7 @@ const AnnoncesListPage = () => {
                           {isRTL ? 'عرض الإعلان' : "Voir l'annonce"}
                         </span>
                       </div>
+
                     </div>
                   </div>
                 </button>

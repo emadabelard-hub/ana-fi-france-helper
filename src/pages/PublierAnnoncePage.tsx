@@ -111,6 +111,8 @@ const PublierAnnoncePage = () => {
   const [saving, setSaving] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(isEdit);
   const [certified, setCertified] = useState(false);
+  const [editReference, setEditReference] = useState<string | null>(null);
+
 
   useEffect(() => {
     let alive = true;
@@ -118,7 +120,7 @@ const PublierAnnoncePage = () => {
     (async () => {
       const { data, error } = await supabase
         .from('opportunite_annonces')
-        .select('type,disponibilite,photo_url,data')
+        .select('type,disponibilite,photo_url,data,reference')
         .eq('id', editId)
         .maybeSingle();
       if (!alive) return;
@@ -134,7 +136,9 @@ const PublierAnnoncePage = () => {
       setDispo(data.disponibilite || 'immediate');
       setPhotoDataUrl(data.photo_url || null);
       setValues((data.data as Record<string, string>) || {});
+      setEditReference((data as any).reference || null);
       setLoadingEdit(false);
+
     })();
     return () => { alive = false; };
   }, [isEdit, editId]);
@@ -308,7 +312,13 @@ const PublierAnnoncePage = () => {
               ? (isRTL ? 'نشر إعلان' : 'Publier une annonce')
               : (isRTL ? 'ماذا تريد أن تنشر ؟' : 'Que souhaitez-vous publier ?')}
         </h1>
+        {isEdit && editReference && (
+          <p className={cn('mt-1 text-[11px] font-mono text-white/80', isRTL ? 'text-right' : 'text-left')} dir="ltr">
+            {isRTL ? `رقم الإعلان: ${editReference}` : `Réf. ${editReference}`}
+          </p>
+        )}
       </section>
+
 
       {/* TYPE SELECTOR (only when creating) */}
       {!type && !isEdit && (

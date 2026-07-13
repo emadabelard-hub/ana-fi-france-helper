@@ -41,10 +41,12 @@ type ReportRow = {
 
 type AnnonceLite = {
   id: string;
+  reference: string | null;
   title: string;
   status: string;
   user_id: string;
 };
+
 
 type MessageLite = {
   id: string;
@@ -81,6 +83,8 @@ const AdminModerationOpportunitesPage = () => {
   const [messages, setMessages] = useState<Record<string, MessageLite>>({});
   const [statusFilter, setStatusFilter] = useState<'all' | ReportStatus>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | ReportType>('all');
+  const [refSearch, setRefSearch] = useState('');
+
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
   const [working, setWorking] = useState<string | null>(null);
 
@@ -126,7 +130,7 @@ const AdminModerationOpportunitesPage = () => {
 
     const [aRes, mRes] = await Promise.all([
       annonceIds.length
-        ? supabase.from('opportunite_annonces').select('id,title,status,user_id').in('id', annonceIds)
+        ? supabase.from('opportunite_annonces').select('id,reference,title,status,user_id').in('id', annonceIds)
         : Promise.resolve({ data: [], error: null } as any),
       messageIds.length
         ? supabase.from('opportunite_messages').select('id,content,conversation_id,hidden_by_moderation').in('id', messageIds)
@@ -147,12 +151,19 @@ const AdminModerationOpportunitesPage = () => {
   }, [checkingAdmin, isAdmin]);
 
   const filtered = useMemo(() => {
+    const q = refSearch.trim().toUpperCase().replace(/\s+/g, '');
     return reports.filter((r) => {
       if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       if (typeFilter !== 'all' && r.report_type !== typeFilter) return false;
+      if (q) {
+        const a = r.annonce_id ? annonces[r.annonce_id] : null;
+        const ref = (a?.reference || '').toUpperCase();
+        if (!ref.includes(q)) return false;
+      }
       return true;
     });
-  }, [reports, statusFilter, typeFilter]);
+  }, [reports, statusFilter, typeFilter, refSearch, annonces]);
+
 
   const updateReport = async (id: string, patch: Partial<ReportRow>) => {
     if (!user) return;
@@ -306,11 +317,21 @@ const AdminModerationOpportunitesPage = () => {
               <option value="conversation">{isRTL ? 'محادثة' : 'Conversation'}</option>
               <option value="message">{isRTL ? 'رسالة' : 'Message'}</option>
             </select>
+            <input
+              type="text"
+              value={refSearch}
+              onChange={(e) => setRefSearch(e.target.value)}
+              placeholder={isRTL ? 'رقم الإعلان OPP-…' : 'Réf. OPP-…'}
+              dir="ltr"
+              className="rounded-lg border px-2 py-1.5 text-[12px] font-mono"
+              style={{ borderColor: '#E5E9F0', color: COLORS.navyDark, minWidth: 140 }}
+            />
             <span className="ml-auto text-[11px] text-gray-500 self-center">
               {filtered.length} / {reports.length}
             </span>
           </div>
         </div>
+
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
@@ -355,11 +376,19 @@ const AdminModerationOpportunitesPage = () => {
                   </h3>
 
                   {a && (
-                    <p className={cn('mt-1 text-[11px] text-gray-600 line-clamp-1', isRTL ? 'text-right' : 'text-left')}>
-                      {isRTL ? 'الإعلان: ' : 'Annonce : '}<span className="font-bold">{a.title}</span>
-                      {' '}<span className="opacity-70">({a.status})</span>
-                    </p>
+                    <>
+                      <p className={cn('mt-1 text-[11px] text-gray-600 line-clamp-1', isRTL ? 'text-right' : 'text-left')}>
+                        {isRTL ? 'الإعلان: ' : 'Annonce : '}<span className="font-bold">{a.title}</span>
+                        {' '}<span className="opacity-70">({a.status})</span>
+                      </p>
+                      {a.reference && (
+                        <p className={cn('mt-0.5 text-[10px] font-mono text-gray-500', isRTL ? 'text-right' : 'text-left')} dir="ltr">
+                          {isRTL ? `الإعلان المعني: ${a.reference}` : `Annonce concernée : ${a.reference}`}
+                        </p>
+                      )}
+                    </>
                   )}
+
                   {m && (
                     <p className={cn('mt-1 text-[11px] text-gray-600 line-clamp-3', isRTL ? 'text-right' : 'text-left')}>
                       «&nbsp;{m.hidden_by_moderation ? (isRTL ? '[مخفي]' : '[Masqué]') : m.content}&nbsp;»

@@ -1035,7 +1035,7 @@ export type Database = {
           id?: string
           photo_url?: string | null
           published_at?: string
-          reference: string
+          reference?: string
           sector?: string | null
           status?: string
           title: string

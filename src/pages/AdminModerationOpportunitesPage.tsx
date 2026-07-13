@@ -317,11 +317,21 @@ const AdminModerationOpportunitesPage = () => {
               <option value="conversation">{isRTL ? 'محادثة' : 'Conversation'}</option>
               <option value="message">{isRTL ? 'رسالة' : 'Message'}</option>
             </select>
+            <input
+              type="text"
+              value={refSearch}
+              onChange={(e) => setRefSearch(e.target.value)}
+              placeholder={isRTL ? 'رقم الإعلان OPP-…' : 'Réf. OPP-…'}
+              dir="ltr"
+              className="rounded-lg border px-2 py-1.5 text-[12px] font-mono"
+              style={{ borderColor: '#E5E9F0', color: COLORS.navyDark, minWidth: 140 }}
+            />
             <span className="ml-auto text-[11px] text-gray-500 self-center">
               {filtered.length} / {reports.length}
             </span>
           </div>
         </div>
+
 
         {loading ? (
           <div className="flex items-center justify-center py-16">

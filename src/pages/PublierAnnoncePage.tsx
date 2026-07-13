@@ -31,7 +31,7 @@ const TYPES: {
   { key: 'emploi', icon: HardHat, fr: 'Je cherche un emploi', ar: 'أبحث عن عمل' },
   { key: 'recrute', icon: Building2, fr: 'Je recrute', ar: 'أبحث عن عامل' },
   { key: 'services', icon: Wrench, fr: 'Je propose mes services', ar: 'أعرض خدماتي' },
-  { key: 'partenaire', icon: Handshake, fr: 'Je recherche un partenaire professionnel', ar: 'أبحث عن شريك مهني' },
+  { key: 'partenaire', icon: Handshake, fr: 'Je recherche un partenaire professionnel ou un sous-traitant', ar: 'أبحث عن شريك مهني أو سو تريتان' },
 ];
 
 const DISPO: { key: string; fr: string; ar: string }[] = [

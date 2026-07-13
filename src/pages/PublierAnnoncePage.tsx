@@ -136,7 +136,9 @@ const PublierAnnoncePage = () => {
       setDispo(data.disponibilite || 'immediate');
       setPhotoDataUrl(data.photo_url || null);
       setValues((data.data as Record<string, string>) || {});
+      setEditReference((data as any).reference || null);
       setLoadingEdit(false);
+
     })();
     return () => { alive = false; };
   }, [isEdit, editId]);

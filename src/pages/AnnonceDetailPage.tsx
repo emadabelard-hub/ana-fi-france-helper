@@ -268,6 +268,11 @@ const AnnonceDetailPage = () => {
             </button>
           </div>
         )}
+
+        <div className={cn('mt-3 flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+          <FavoriteButton annonceId={annonce.id} ownerUserId={annonce.user_id} variant="hero" />
+          <ShareButton annonceId={annonce.id} reference={annonce.reference} title={annonce.title} variant="hero" />
+        </div>
       </section>
 
 

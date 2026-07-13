@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, ArrowRight, MapPin, Calendar, Eye, Loader2, Briefcase } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MapPin, Calendar, Eye, Loader2, Briefcase, MessageCircle } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
+import { readPendingContact, clearPendingContact, setPendingContact } from './opportunites/messagerie';
 
 const COLORS = {
   navy: '#1B4F8A',

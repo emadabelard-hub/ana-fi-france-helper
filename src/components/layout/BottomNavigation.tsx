@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, BarChart3, User, Shield, HeadphonesIcon, ClipboardList, Briefcase } from 'lucide-react';
+import { Home, BarChart3, User, Shield, HeadphonesIcon, ClipboardList } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,10 +27,10 @@ const navItems = [
     dotColor: 'bg-amber-400',
   },
   {
-    path: '/opportunites',
-    icon: Briefcase,
-    labelAr: 'الفرص',
-    labelFr: 'Opportunités',
+    path: '/support',
+    icon: HeadphonesIcon,
+    labelAr: 'تواصل معنا',
+    labelFr: 'Contactez-nous',
     color: 'text-emerald-400',
     activeBg: 'bg-emerald-400/15',
     dotColor: 'bg-emerald-400',

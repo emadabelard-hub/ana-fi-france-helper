@@ -300,10 +300,9 @@ const AnnoncesListPage = () => {
               </select>
             </div>
 
-            {/* Métier + Ville + Département */}
+            {/* Ville + Département */}
             <div className="grid grid-cols-1 gap-3">
               {[
-                { label: isRTL ? 'المهنة' : 'Métier', value: metier, set: setMetier },
                 { label: isRTL ? 'المدينة' : 'Ville', value: ville, set: setVille },
                 { label: isRTL ? 'المنطقة' : 'Département', value: departement, set: setDepartement },
               ].map((f) => (

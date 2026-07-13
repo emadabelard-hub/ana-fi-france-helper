@@ -41,10 +41,12 @@ type ReportRow = {
 
 type AnnonceLite = {
   id: string;
+  reference: string | null;
   title: string;
   status: string;
   user_id: string;
 };
+
 
 type MessageLite = {
   id: string;
@@ -126,7 +128,7 @@ const AdminModerationOpportunitesPage = () => {
 
     const [aRes, mRes] = await Promise.all([
       annonceIds.length
-        ? supabase.from('opportunite_annonces').select('id,title,status,user_id').in('id', annonceIds)
+        ? supabase.from('opportunite_annonces').select('id,reference,title,status,user_id').in('id', annonceIds)
         : Promise.resolve({ data: [], error: null } as any),
       messageIds.length
         ? supabase.from('opportunite_messages').select('id,content,conversation_id,hidden_by_moderation').in('id', messageIds)

@@ -120,10 +120,16 @@ const AnnoncesListPage = () => {
       if (ville && !norm(a.ville).includes(norm(ville))) return false;
       if (departement && !norm(a.departement).includes(norm(departement))) return false;
       if (metier) {
-        const mn = norm(metier);
         const d = a.data || {};
-        const bag = [d.metier, d.metier_recherche, d.profession, d.specialite].map(norm).join(' | ');
-        if (!bag.includes(mn)) return false;
+        // Match on slug (exact) if present, otherwise fallback to text match on FR/AR labels
+        if (d.metier_slug) {
+          if (d.metier_slug !== metier) return false;
+        } else {
+          const mDef = findMetier(a.sector, metier);
+          const needle = norm(mDef?.fr || metier);
+          const bag = [d.metier, d.metier_recherche, d.profession, d.specialite].map(norm).join(' | ');
+          if (!bag.includes(needle)) return false;
+        }
       }
       if (qn) {
         // Exact reference match short-circuit

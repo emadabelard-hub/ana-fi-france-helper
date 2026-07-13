@@ -67,6 +67,8 @@ const PublicInvoicePage = lazy(() => import("./pages/PublicInvoicePage"));
 const OpportunitesPage = lazy(() => import("./pages/OpportunitesPage"));
 const OpportuniteSectorPage = lazy(() => import("./pages/OpportuniteSectorPage"));
 const PublierAnnoncePage = lazy(() => import("./pages/PublierAnnoncePage"));
+const AnnoncesListPage = lazy(() => import("./pages/AnnoncesListPage"));
+const AnnonceDetailPage = lazy(() => import("./pages/AnnonceDetailPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (

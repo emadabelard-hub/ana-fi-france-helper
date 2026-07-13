@@ -50,6 +50,27 @@ const OpportunitesPage = () => {
     return () => { alive = false; };
   }, []);
 
+  const prevUnreadRef = useRef<number>(0);
+  useEffect(() => {
+    if (!user) { setUnread(0); return; }
+    let alive = true;
+    const load = async () => {
+      const n = await fetchUnreadMessagesCount(user.id);
+      if (!alive) return;
+      if (n > prevUnreadRef.current && prevUnreadRef.current > 0) {
+        toast({
+          title: isRTL ? 'وصلك رسالة جديدة.' : 'Vous avez reçu un nouveau message.',
+        });
+      }
+      prevUnreadRef.current = n;
+      setUnread(n);
+    };
+    load();
+    const timer = window.setInterval(load, 30000);
+    const off = onUnreadChanged(load);
+    return () => { alive = false; window.clearInterval(timer); off(); };
+  }, [user, isRTL, toast]);
+
   const formatCount = (n: number) =>
     isRTL
       ? (n === 0 ? 'لا يوجد إعلانات' : n === 1 ? 'إعلان واحد' : `${n} إعلان`)

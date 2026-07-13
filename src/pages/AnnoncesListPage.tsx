@@ -421,11 +421,22 @@ const AnnoncesListPage = () => {
                         <p className="text-[11px] text-gray-500 mt-1 line-clamp-2 leading-snug">{shortDesc}</p>
                       )}
 
-                      <div className={cn('mt-2 flex items-center justify-between', isRTL && 'flex-row-reverse')}>
-                        <span className="inline-flex items-center gap-1 text-[10px] text-gray-400">
-                          <Calendar size={10} />
-                          {formatDate(a.published_at, isRTL)}
-                        </span>
+                      <div className={cn('mt-2 flex items-center justify-between gap-2 flex-wrap', isRTL && 'flex-row-reverse')}>
+                        <div className={cn('flex items-center gap-2 flex-wrap', isRTL && 'flex-row-reverse')}>
+                          <span className="inline-flex items-center gap-1 text-[10px] text-gray-400">
+                            <Calendar size={10} />
+                            {formatDate(a.published_at, isRTL)}
+                          </span>
+                          {a.reference && (
+                            <span
+                              className="text-[9px] font-mono font-bold tracking-tight px-1.5 py-0.5 rounded"
+                              style={{ background: '#F1F3F7', color: COLORS.navyDark }}
+                              dir="ltr"
+                            >
+                              {isRTL ? `رقم: ${a.reference}` : `Réf. ${a.reference}`}
+                            </span>
+                          )}
+                        </div>
                         <span
                           className="rounded-lg px-2.5 py-1 text-[11px] font-extrabold"
                           style={{ background: COLORS.navyDark, color: 'white' }}
@@ -433,6 +444,7 @@ const AnnoncesListPage = () => {
                           {isRTL ? 'عرض الإعلان' : "Voir l'annonce"}
                         </span>
                       </div>
+
                     </div>
                   </div>
                 </button>

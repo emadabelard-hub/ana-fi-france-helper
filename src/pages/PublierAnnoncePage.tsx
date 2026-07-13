@@ -195,30 +195,47 @@ const PublierAnnoncePage = () => {
       const titleKey = TITLE_FIELD[type];
       const title = (clean[titleKey] || '').toString().slice(0, 200) || (isRTL ? 'إعلان' : 'Annonce');
 
-      const { error } = await supabase.from('opportunite_annonces').insert({
-        user_id: user.id,
-        type,
-        title,
-        ville: clean['ville'] || null,
-        departement: clean['departement'] || null,
-        disponibilite: dispo,
-        description: clean['description'] || null,
-        photo_url: photoDataUrl,
-        data: clean as any,
-        attachments: [] as any,
-        status: 'active',
-        views_count: 0,
-        favorites_count: 0,
-      });
-      if (error) throw error;
-
-      toast({
-        title: isRTL ? '✅ تم نشر الإعلان' : '✅ Annonce publiée',
-        description: isRTL
-          ? 'إعلانك متاح الآن.'
-          : 'Votre annonce est maintenant active.',
-      });
-      navigate('/opportunites');
+      if (isEdit && editId) {
+        const { error } = await supabase.from('opportunite_annonces')
+          .update({
+            type,
+            title,
+            ville: clean['ville'] || null,
+            departement: clean['departement'] || null,
+            disponibilite: dispo,
+            description: clean['description'] || null,
+            photo_url: photoDataUrl,
+            data: clean as any,
+          })
+          .eq('id', editId);
+        if (error) throw error;
+        toast({
+          title: isRTL ? '✅ تم تحديث الإعلان' : '✅ Annonce mise à jour',
+        });
+        navigate('/opportunites/mes-annonces');
+      } else {
+        const { error } = await supabase.from('opportunite_annonces').insert({
+          user_id: user.id,
+          type,
+          title,
+          ville: clean['ville'] || null,
+          departement: clean['departement'] || null,
+          disponibilite: dispo,
+          description: clean['description'] || null,
+          photo_url: photoDataUrl,
+          data: clean as any,
+          attachments: [] as any,
+          status: 'active',
+          views_count: 0,
+          favorites_count: 0,
+        });
+        if (error) throw error;
+        toast({
+          title: isRTL ? '✅ تم نشر الإعلان' : '✅ Annonce publiée',
+          description: isRTL ? 'إعلانك متاح الآن.' : 'Votre annonce est maintenant active.',
+        });
+        navigate('/opportunites');
+      }
     } catch (err) {
       console.error('publier annonce error', err);
       toast({

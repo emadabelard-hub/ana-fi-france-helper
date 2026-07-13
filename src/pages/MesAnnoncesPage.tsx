@@ -100,7 +100,7 @@ const MesAnnoncesPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('opportunite_annonces')
-      .select('id,type,sector,title,ville,departement,description,photo_url,data,status,views_count,published_at')
+      .select('id,reference,type,sector,title,ville,departement,description,photo_url,data,status,views_count,published_at')
       .eq('user_id', user.id)
       .order('published_at', { ascending: false })
       .limit(500);

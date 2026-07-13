@@ -474,7 +474,7 @@ export default function PaiementCreationPage() {
     return null;
   }
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (skipDeficitCheck = false) => {
     const needStatuts = product === "statuts" || product === "package";
     const needPrevi = product === "financial" || product === "package";
 
@@ -490,6 +490,39 @@ export default function PaiementCreationPage() {
       toast.error("اكتب مشتريات المواد السنوية (إجباري للـ BTP)");
       return;
     }
+
+    // ─── Contrôle prévisionnel AVANT paiement : avertissement si résultat négatif ───
+    // N'impacte ni les calculs ni le PDF. L'utilisateur peut toujours poursuivre.
+    if (needPrevi && !skipDeficitCheck) {
+      const check = computePrevisionnelQuick({
+        type_societe: effectiveForm,
+        activite: activity,
+        capital,
+        chiffre_affaires_estime: caEstime,
+        is_btp: isBtp,
+        remuneration_dirigeant_mensuelle: remuDirigeant,
+        nb_salaries: nbSalaries,
+        salaire_moyen_mensuel: salaireMoyen,
+        vehicule_mensuel: vehiculeMensuel,
+        loyer_mensuel: loyerMensuel,
+        assurances_annuelles: assurancesAnnuelles,
+        comptable_annuel: comptableAnnuel,
+        achats_materiaux_annuels: achatsMateriaux,
+        autres_charges_annuelles: autresCharges,
+        investissement_materiel: hasInvestMateriel === "yes" ? investMateriel : 0,
+        vehicule_situation: vehSituation || undefined,
+        vehicule_mode: vehSituation === "toBuy" ? (vehMode || undefined) : undefined,
+        emprunt_montant: hasEmprunt === "yes" ? empMontant : 0,
+        emprunt_annees: hasEmprunt === "yes" ? empAnnees : 0,
+        carnet_commandes: carnet || undefined,
+      });
+      if (check.isNegatif) {
+        setDeficitAmount(Math.abs(Math.round(check.resultatAvantImpot)));
+        setDeficitDialogOpen(true);
+        return;
+      }
+    }
+
 
     setGenerating(true);
     const tid = toast.loading("جاري الترجمة...");

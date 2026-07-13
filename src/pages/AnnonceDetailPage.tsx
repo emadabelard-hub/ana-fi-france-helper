@@ -235,7 +235,36 @@ const AnnonceDetailPage = () => {
             {annonce.views_count ?? 0}
           </span>
         </div>
+
+        {annonce.reference && (
+          <div className={cn('mt-3 inline-flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+            <span
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-bold bg-white/10 border border-white/20"
+              dir="ltr"
+              style={{ color: 'white' }}
+            >
+              <span className="opacity-80">{isRTL ? 'رقم الإعلان:' : 'Réf.'}</span>
+              <span className="font-mono tracking-tight">{annonce.reference}</span>
+            </span>
+            <button
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(annonce.reference);
+                  setRefCopied(true);
+                  toast({ title: isRTL ? 'تم نسخ رقم الإعلان' : 'Référence copiée' });
+                  setTimeout(() => setRefCopied(false), 1500);
+                } catch { /* ignore */ }
+              }}
+              aria-label={isRTL ? 'نسخ رقم الإعلان' : 'Copier la référence'}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold bg-white/10 border border-white/20 text-white active:scale-[0.98] transition"
+            >
+              {refCopied ? <Check size={11} /> : <Copy size={11} />}
+              {isRTL ? 'نسخ' : 'Copier'}
+            </button>
+          </div>
+        )}
       </section>
+
 
       {/* PHOTO */}
       {annonce.photo_url && (

@@ -733,7 +733,7 @@ const InvoiceDisplay = ({ data, showArabic, onConvertToFacture }: InvoiceDisplay
                   • Garantie sur l'ensemble des travaux : {detectedGarantieYears} an{detectedGarantieYears > 1 ? 's' : ''} à compter de la réception du chantier.
                 </li>
               )}
-              <li className="text-gray-400 text-[6pt]">• Indemnité forfaitaire de 40 € pour frais de recouvrement en cas de retard (Art. L.441-10 du Code de commerce).</li>
+              <li className="text-gray-400 text-[6pt]">• En cas de retard de paiement, des pénalités égales à trois fois le taux d'intérêt légal seront exigibles, ainsi qu'une indemnité forfaitaire de 40 € pour frais de recouvrement conformément à l'article L.441-10 du Code de commerce.</li>
             </ul>
           </div>
 

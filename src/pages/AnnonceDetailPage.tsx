@@ -61,9 +61,11 @@ const AnnonceDetailPage = () => {
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
 
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [annonce, setAnnonce] = useState<any | null>(null);
   const viewedRef = useRef(false);
+  const pendingHandledRef = useRef(false);
 
   const fontFamily = isRTL
     ? "'Tajawal', system-ui, sans-serif"
@@ -77,7 +79,7 @@ const AnnonceDetailPage = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('opportunite_annonces')
-        .select('id,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at,views_count')
+        .select('id,user_id,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at,views_count')
         .eq('id', id)
         .eq('status', 'active')
         .maybeSingle();

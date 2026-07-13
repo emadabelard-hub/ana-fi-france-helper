@@ -151,12 +151,19 @@ const AdminModerationOpportunitesPage = () => {
   }, [checkingAdmin, isAdmin]);
 
   const filtered = useMemo(() => {
+    const q = refSearch.trim().toUpperCase().replace(/\s+/g, '');
     return reports.filter((r) => {
       if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       if (typeFilter !== 'all' && r.report_type !== typeFilter) return false;
+      if (q) {
+        const a = r.annonce_id ? annonces[r.annonce_id] : null;
+        const ref = (a?.reference || '').toUpperCase();
+        if (!ref.includes(q)) return false;
+      }
       return true;
     });
-  }, [reports, statusFilter, typeFilter]);
+  }, [reports, statusFilter, typeFilter, refSearch, annonces]);
+
 
   const updateReport = async (id: string, patch: Partial<ReportRow>) => {
     if (!user) return;

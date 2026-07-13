@@ -312,7 +312,13 @@ const PublierAnnoncePage = () => {
               ? (isRTL ? 'نشر إعلان' : 'Publier une annonce')
               : (isRTL ? 'ماذا تريد أن تنشر ؟' : 'Que souhaitez-vous publier ?')}
         </h1>
+        {isEdit && editReference && (
+          <p className={cn('mt-1 text-[11px] font-mono text-white/80', isRTL ? 'text-right' : 'text-left')} dir="ltr">
+            {isRTL ? `رقم الإعلان: ${editReference}` : `Réf. ${editReference}`}
+          </p>
+        )}
       </section>
+
 
       {/* TYPE SELECTOR (only when creating) */}
       {!type && !isEdit && (

@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Users, Megaphone, Handshake } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Search, Users, Megaphone, Handshake, ListFilter } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
 
 const COLORS = {
@@ -19,6 +21,35 @@ const OpportunitesPage = () => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const [sectorCounts, setSectorCounts] = useState<Record<string, number>>({});
+  const [totalActive, setTotalActive] = useState<number>(0);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from('opportunite_annonces')
+        .select('sector')
+        .eq('status', 'active')
+        .limit(5000);
+      if (!alive) return;
+      if (error) { console.error('sector counts', error); return; }
+      const counts: Record<string, number> = {};
+      (data || []).forEach((r: any) => {
+        const s = r.sector || '__unknown__';
+        counts[s] = (counts[s] || 0) + 1;
+      });
+      setSectorCounts(counts);
+      setTotalActive((data || []).length);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const formatCount = (n: number) =>
+    isRTL
+      ? (n === 0 ? 'لا يوجد إعلانات' : n === 1 ? 'إعلان واحد' : `${n} إعلان`)
+      : (n <= 1 ? `${n} annonce` : `${n} annonces`);
 
   const fontFamily = isRTL
     ? "'Tajawal', system-ui, sans-serif"
@@ -92,8 +123,8 @@ const OpportunitesPage = () => {
         </div>
       </section>
 
-      {/* PUBLIER CTA */}
-      <div className="px-4 mt-4">
+      {/* PUBLIER + CONSULTER CTA */}
+      <div className="px-4 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           onClick={() => navigate('/opportunites/publier')}
           className="w-full rounded-2xl py-3 font-extrabold text-[14px] shadow-md active:scale-[0.98] transition"
@@ -103,6 +134,22 @@ const OpportunitesPage = () => {
           }}
         >
           {isRTL ? '＋ نشر إعلان' : '＋ Publier une annonce'}
+        </button>
+        <button
+          onClick={() => navigate('/opportunites/annonces')}
+          className="w-full rounded-2xl py-3 font-extrabold text-[14px] shadow-md active:scale-[0.98] transition inline-flex items-center justify-center gap-2"
+          style={{ background: COLORS.navyDark, color: 'white' }}
+        >
+          <ListFilter size={16} />
+          {isRTL ? 'تصفح الإعلانات' : 'Consulter les annonces'}
+          {totalActive > 0 && (
+            <span
+              className="ms-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold"
+              style={{ background: COLORS.goldDark, color: 'white' }}
+            >
+              {totalActive}
+            </span>
+          )}
         </button>
       </div>
 
@@ -149,12 +196,13 @@ const OpportunitesPage = () => {
         <div className="grid grid-cols-2 gap-3">
           {categories.map((c) => {
             const Icon = c.icon;
+            const count = sectorCounts[c.slug] || 0;
             return (
               <button
                 key={c.slug}
-                onClick={() => navigate(`/opportunites/${c.slug}`)}
-                className="rounded-2xl bg-white p-3 shadow-sm border active:scale-[0.97] transition flex flex-col items-center justify-center gap-1.5"
-                style={{ borderColor: '#E5E9F0', minHeight: 88 }}
+                onClick={() => navigate(`/opportunites/annonces?secteur=${c.slug}`)}
+                className="rounded-2xl bg-white p-3 shadow-sm border active:scale-[0.97] transition flex flex-col items-center justify-center gap-1"
+                style={{ borderColor: '#E5E9F0', minHeight: 96 }}
               >
                 <Icon size={22} style={{ color: COLORS.gold }} />
                 <span
@@ -162,6 +210,9 @@ const OpportunitesPage = () => {
                   style={{ color: COLORS.navyDark }}
                 >
                   {isRTL ? c.ar : c.fr}
+                </span>
+                <span className="text-[10px] font-semibold text-gray-500">
+                  {formatCount(count)}
                 </span>
               </button>
             );

@@ -67,6 +67,8 @@ const PublicInvoicePage = lazy(() => import("./pages/PublicInvoicePage"));
 const OpportunitesPage = lazy(() => import("./pages/OpportunitesPage"));
 const OpportuniteSectorPage = lazy(() => import("./pages/OpportuniteSectorPage"));
 const PublierAnnoncePage = lazy(() => import("./pages/PublierAnnoncePage"));
+const AnnoncesListPage = lazy(() => import("./pages/AnnoncesListPage"));
+const AnnonceDetailPage = lazy(() => import("./pages/AnnonceDetailPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -174,8 +176,10 @@ const AppRoutes = () => {
                     <Route path="/paiement-creation" element={<PaiementCreationPage />} />
                     <Route path="/ma-creation" element={<MaCreationPage />} />
                     <Route path="/opportunites" element={<OpportunitesPage />} />
-                    <Route path="/opportunites/:sector" element={<OpportuniteSectorPage />} />
                     <Route path="/opportunites/publier" element={<PublierAnnoncePage />} />
+                    <Route path="/opportunites/annonces" element={<AnnoncesListPage />} />
+                    <Route path="/opportunites/annonces/:id" element={<AnnonceDetailPage />} />
+                    <Route path="/opportunites/:sector" element={<OpportuniteSectorPage />} />
                     <Route path="/accounting/supplier-invoices" element={<SupplierInvoicesPage />} />
                     <Route path="/accounting/supplier-invoices/:id" element={<SupplierInvoiceDetailPage />} />
                     <Route path="*" element={<NotFound />} />

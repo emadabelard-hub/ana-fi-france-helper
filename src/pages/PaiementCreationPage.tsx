@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, FileText, BarChart3, Package, Plus, Trash2, UserPlus } from "lucide-react";
 import { buildStatutsPdf, buildPrevisionnelPdf, buildAttestationPdf, buildBeneficiairesPdf, buildGuideDepotPdf, buildLettreBanquePdf, buildPvNominationPdf, buildChecklistFinalePdf, buildFicheSynthesePdf, effectiveFormOf, type AssocieDetail, type Personne } from "@/lib/creationPdf";
+import { computePrevisionnelQuick } from "@/lib/previsionnelCheck";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -356,6 +358,8 @@ export default function PaiementCreationPage() {
 
   const [generating, setGenerating] = useState(false);
   const [generatedDocs, setGeneratedDocs] = useState<Array<{ label: string; filename: string; doc: ReturnType<typeof buildStatutsPdf> }>>([]);
+  const [deficitDialogOpen, setDeficitDialogOpen] = useState(false);
+  const [deficitAmount, setDeficitAmount] = useState<number>(0);
 
 
   useEffect(() => {
@@ -470,7 +474,7 @@ export default function PaiementCreationPage() {
     return null;
   }
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (skipDeficitCheck = false) => {
     const needStatuts = product === "statuts" || product === "package";
     const needPrevi = product === "financial" || product === "package";
 
@@ -486,6 +490,39 @@ export default function PaiementCreationPage() {
       toast.error("اكتب مشتريات المواد السنوية (إجباري للـ BTP)");
       return;
     }
+
+    // ─── Contrôle prévisionnel AVANT paiement : avertissement si résultat négatif ───
+    // N'impacte ni les calculs ni le PDF. L'utilisateur peut toujours poursuivre.
+    if (needPrevi && !skipDeficitCheck) {
+      const check = computePrevisionnelQuick({
+        type_societe: effectiveForm,
+        activite: activity,
+        capital,
+        chiffre_affaires_estime: caEstime,
+        is_btp: isBtp,
+        remuneration_dirigeant_mensuelle: remuDirigeant,
+        nb_salaries: nbSalaries,
+        salaire_moyen_mensuel: salaireMoyen,
+        vehicule_mensuel: vehiculeMensuel,
+        loyer_mensuel: loyerMensuel,
+        assurances_annuelles: assurancesAnnuelles,
+        comptable_annuel: comptableAnnuel,
+        achats_materiaux_annuels: achatsMateriaux,
+        autres_charges_annuelles: autresCharges,
+        investissement_materiel: hasInvestMateriel === "yes" ? investMateriel : 0,
+        vehicule_situation: vehSituation || undefined,
+        vehicule_mode: vehSituation === "toBuy" ? (vehMode || undefined) : undefined,
+        emprunt_montant: hasEmprunt === "yes" ? empMontant : 0,
+        emprunt_annees: hasEmprunt === "yes" ? empAnnees : 0,
+        carnet_commandes: carnet || undefined,
+      });
+      if (check.isNegatif) {
+        setDeficitAmount(Math.abs(Math.round(check.resultatAvantImpot)));
+        setDeficitDialogOpen(true);
+        return;
+      }
+    }
+
 
     setGenerating(true);
     const tid = toast.loading("جاري الترجمة...");
@@ -1063,9 +1100,37 @@ export default function PaiementCreationPage() {
         </div>
       </Card>
 
-      <Button onClick={handleGenerate} disabled={generating} size="lg" className="w-full">
+      <Button onClick={() => handleGenerate(false)} disabled={generating} size="lg" className="w-full">
         {generating ? <><Loader2 className="ml-2 animate-spin h-5 w-5" /> جاري التوليد...</> : "توليد الوثائق"}
       </Button>
+
+      <AlertDialog open={deficitDialogOpen} onOpenChange={setDeficitDialogOpen}>
+        <AlertDialogContent dir="ltr">
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Prévisionnel déficitaire</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-foreground/80">
+                <p>Votre prévisionnel fait apparaître un résultat estimé négatif de :</p>
+                <p className="text-xl font-bold text-destructive">- {deficitAmount.toLocaleString('fr-FR')} €</p>
+                <p>Ce résultat ne bloque pas la création de votre société.</p>
+                <p>Nous vous recommandons néanmoins de vérifier vos hypothèses (chiffre d'affaires, charges, rémunération, investissements…) avant de poursuivre.</p>
+                <p>Vous pouvez modifier vos informations ou continuer malgré cet avertissement.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Modifier mes données</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDeficitDialogOpen(false);
+                void handleGenerate(true);
+              }}
+            >
+              Continuer malgré tout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {generatedDocs.length > 0 && (
         <Card className="p-5 space-y-3 bg-green-50 dark:bg-green-950/30 border-green-500">

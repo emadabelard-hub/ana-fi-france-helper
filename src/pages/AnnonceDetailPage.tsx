@@ -4,10 +4,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, ArrowRight, MapPin, Calendar, Eye, Loader2, Briefcase, MessageCircle, Flag } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MapPin, Calendar, Eye, Loader2, Briefcase, MessageCircle, Flag, Copy, Check } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
 import { readPendingContact, clearPendingContact, setPendingContact } from './opportunites/messagerie';
 import ReportDialog from '@/components/opportunites/ReportDialog';
+import { useToast } from '@/hooks/use-toast';
+
 
 const COLORS = {
   navy: '#1B4F8A',

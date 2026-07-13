@@ -189,6 +189,7 @@ const AppRoutes = () => {
                     <Route path="/opportunites/annonces/:id/contact" element={<ContactAnnoncePage />} />
                     <Route path="/opportunites/mes-annonces" element={<MesAnnoncesPage />} />
                     <Route path="/opportunites/mes-annonces/:id/modifier" element={<PublierAnnoncePage />} />
+                    <Route path="/opportunites/mes-favoris" element={<MesFavorisPage />} />
                     <Route path="/opportunites/messages" element={<MessagesListPage />} />
                     <Route path="/opportunites/messages/:id" element={<MessageThreadPage />} />
                     <Route path="/opportunites/:sector" element={<OpportuniteSectorPage />} />

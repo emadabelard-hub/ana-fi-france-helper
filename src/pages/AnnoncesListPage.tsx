@@ -442,6 +442,11 @@ const AnnoncesListPage = () => {
                             • {isRTL ? sec.ar : sec.fr}
                           </span>
                         )}
+                        {metierLabel && (
+                          <span className="text-[10px] font-bold text-gray-600">
+                            › {metierLabel}
+                          </span>
+                        )}
                       </div>
 
                       <h3 className="text-[14px] font-extrabold mt-1 leading-tight line-clamp-1" style={{ color: COLORS.navyDark }}>

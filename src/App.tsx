@@ -70,6 +70,9 @@ const PublierAnnoncePage = lazy(() => import("./pages/PublierAnnoncePage"));
 const AnnoncesListPage = lazy(() => import("./pages/AnnoncesListPage"));
 const AnnonceDetailPage = lazy(() => import("./pages/AnnonceDetailPage"));
 const MesAnnoncesPage = lazy(() => import("./pages/MesAnnoncesPage"));
+const ContactAnnoncePage = lazy(() => import("./pages/ContactAnnoncePage"));
+const MessagesListPage = lazy(() => import("./pages/MessagesListPage"));
+const MessageThreadPage = lazy(() => import("./pages/MessageThreadPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (

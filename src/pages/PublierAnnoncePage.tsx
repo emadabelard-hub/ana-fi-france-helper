@@ -436,9 +436,31 @@ const PublierAnnoncePage = () => {
             )}
           </div>
 
+          {/* Certification obligatoire + mention légale */}
+          <div className="rounded-2xl border p-3 space-y-2" style={{ borderColor: '#E5E9F0', background: '#FBF5E7' }}>
+            <label className={cn('flex items-start gap-2 cursor-pointer', isRTL && 'flex-row-reverse')}>
+              <input
+                type="checkbox"
+                checked={certified}
+                onChange={(e) => setCertified(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-emerald-700"
+              />
+              <span className={cn('text-[12px] font-semibold', isRTL ? 'text-right' : 'text-left')} style={{ color: COLORS.navyDark }}>
+                {isRTL
+                  ? 'بأكد إن الإعلان صحيح وقانوني ومتوافق مع قواعد ANAFYPRO.'
+                  : "Je certifie que cette annonce est exacte, légale et conforme aux règles d’ANAFYPRO."}
+              </span>
+            </label>
+            <p className={cn('text-[10px] text-gray-600 leading-relaxed', isRTL ? 'text-right' : 'text-left')}>
+              {isRTL
+                ? 'الشغل غير القانوني والإعلانات المضللة أو التمييزية ممنوعة.'
+                : "Le travail dissimulé, les annonces discriminatoires, trompeuses ou illégales sont interdits."}
+            </p>
+          </div>
+
           <button
             onClick={handleSubmit}
-            disabled={saving}
+            disabled={saving || !certified}
             className="w-full rounded-2xl py-3 font-extrabold text-[14px] active:scale-[0.98] transition disabled:opacity-60 flex items-center justify-center gap-2"
             style={{
               background: `linear-gradient(135deg, ${COLORS.goldLight}, ${COLORS.goldDark})`,

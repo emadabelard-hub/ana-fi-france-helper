@@ -401,6 +401,14 @@ const AnnonceDetailPage = () => {
         annonceId={annonce.id}
         reportedUserId={annonce.user_id}
       />
+
+      <FirstContactModal
+        open={firstContactOpen}
+        onConfirm={() => {
+          setFirstContactOpen(false);
+          navigate(`/opportunites/annonces/${annonce.id}/contact`);
+        }}
+      />
     </div>
   );
 };

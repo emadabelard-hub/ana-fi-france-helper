@@ -181,7 +181,7 @@ const AnnoncesListPage = () => {
             type="text"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={isRTL ? 'ابحث عن مهنة أو مدينة أو خدمة' : 'Rechercher un métier, une ville ou un service'}
+            placeholder={isRTL ? 'ابحث عن مهنة أو مدينة أو رقم إعلان' : 'Rechercher un métier, une ville ou une réf. OPP-…'}
             className={cn(
               'w-full rounded-xl bg-white py-3 text-[13px] outline-none',
               isRTL ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left',

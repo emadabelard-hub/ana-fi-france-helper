@@ -1926,6 +1926,10 @@ export type Database = {
           site_address: string
         }[]
       }
+      increment_annonce_views: {
+        Args: { _annonce_id: string }
+        Returns: undefined
+      }
       increment_promo_clicks: {
         Args: { p_promo_id: string }
         Returns: undefined

@@ -1065,6 +1065,85 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunite_conversations: {
+        Row: {
+          annonce_id: string
+          contact_user_id: string
+          created_at: string
+          id: string
+          last_message_at: string
+          owner_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          annonce_id: string
+          contact_user_id: string
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          owner_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          annonce_id?: string
+          contact_user_id?: string
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          owner_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunite_conversations_annonce_id_fkey"
+            columns: ["annonce_id"]
+            isOneToOne: false
+            referencedRelation: "opportunite_annonces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunite_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          is_deleted: boolean
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          read_at?: string | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunite_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "opportunite_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           accountant_email: string | null

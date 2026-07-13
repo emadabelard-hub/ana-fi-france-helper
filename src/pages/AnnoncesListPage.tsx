@@ -88,7 +88,7 @@ const AnnoncesListPage = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('opportunite_annonces')
-        .select('id,reference,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at')
+        .select('id,reference,user_id,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at')
         .eq('status', 'active')
         .order('published_at', { ascending: false })
         .limit(500);
@@ -99,6 +99,13 @@ const AnnoncesListPage = () => {
     })();
     return () => { alive = false; };
   }, []);
+
+  useEffect(() => {
+    if (!user) { setFavIds(new Set()); return; }
+    const load = async () => setFavIds(await fetchFavorisIds(user.id));
+    load();
+    return onFavorisChanged(load);
+  }, [user]);
 
   const filtered = useMemo(() => {
     const norm = (s: string | null | undefined) => (s || '').toString().toLowerCase().trim();

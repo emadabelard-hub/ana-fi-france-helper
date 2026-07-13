@@ -37,8 +37,9 @@ type Conversation = {
   owner_id: string;
   contact_user_id: string;
   status: string;
-  opportunite_annonces?: { title: string } | null;
+  opportunite_annonces?: { title: string; reference: string | null } | null;
 };
+
 
 const formatTime = (iso: string, isRTL: boolean) => {
   try {

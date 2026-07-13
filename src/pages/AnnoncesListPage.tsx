@@ -63,8 +63,10 @@ const AnnoncesListPage = () => {
   const { isRTL } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [annonces, setAnnonces] = useState<Annonce[]>([]);
+  const [favIds, setFavIds] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
   const [q, setQ] = useState('');

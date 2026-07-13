@@ -317,8 +317,28 @@ const MesAnnoncesPage = () => {
                           {a.views_count ?? 0}
                         </span>
                       </div>
+                      {a.reference && (
+                        <div className={cn('mt-2 inline-flex items-center gap-1.5', isRTL && 'flex-row-reverse')}>
+                          <span
+                            className="text-[10px] font-mono font-bold tracking-tight px-1.5 py-0.5 rounded"
+                            style={{ background: '#F1F3F7', color: COLORS.navyDark }}
+                            dir="ltr"
+                          >
+                            {isRTL ? `رقم: ${a.reference}` : `Réf. ${a.reference}`}
+                          </span>
+                          <button
+                            onClick={() => copyReference(a.reference, a.id)}
+                            aria-label={isRTL ? 'نسخ رقم الإعلان' : 'Copier la référence'}
+                            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-gray-600 hover:text-gray-900 active:scale-[0.98] transition"
+                          >
+                            {copiedRefId === a.id ? <Check size={11} /> : <Copy size={11} />}
+                            {isRTL ? 'نسخ' : 'Copier'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
+
 
                   {/* Moderation notice */}
                   {isModerated && (

@@ -365,26 +365,30 @@ const AnnonceDetailPage = () => {
           )
         )}
 
-        {/* Report button (hidden for the owner) */}
+        {/* Discreet actions: Share + Report (hidden for the owner) */}
         {(!user || user.id !== annonce.user_id) && (
-          <button
-            onClick={() => {
-              if (!user) {
-                setPendingContact(annonce.id);
-                navigate('/login');
-                return;
-              }
-              setReportOpen(true);
-            }}
-            className={cn(
-              'w-full rounded-2xl py-2.5 text-[13px] font-bold border inline-flex items-center justify-center gap-2 active:scale-[0.98] transition',
-              isRTL && 'flex-row-reverse',
-            )}
-            style={{ borderColor: '#FCA5A5', color: '#B91C1C', background: '#FEF2F2' }}
-          >
-            <Flag size={14} />
-            {isRTL ? 'الإبلاغ عن الإعلان' : 'Signaler cette annonce'}
-          </button>
+          <div className={cn('flex items-center justify-center gap-3 pt-1', isRTL && 'flex-row-reverse')}>
+            <ShareButton annonceId={annonce.id} reference={annonce.reference} title={annonce.title} variant="hero" />
+            <button
+              onClick={() => {
+                if (!user) {
+                  setPendingContact(annonce.id);
+                  navigate('/login');
+                  return;
+                }
+                setReportOpen(true);
+              }}
+              className={cn(
+                'inline-flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-full border active:scale-[0.98] transition',
+                isRTL && 'flex-row-reverse',
+              )}
+              style={{ borderColor: '#FCA5A5', color: '#B91C1C', background: '#FEF2F2' }}
+              aria-label={isRTL ? 'الإبلاغ عن الإعلان' : 'Signaler cette annonce'}
+            >
+              <Flag size={12} />
+              {isRTL ? 'الإبلاغ' : 'Signaler'}
+            </button>
+          </div>
         )}
 
         <div

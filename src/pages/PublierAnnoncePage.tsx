@@ -128,7 +128,7 @@ const PublierAnnoncePage = () => {
     (async () => {
       const { data, error } = await supabase
         .from('opportunite_annonces')
-        .select('type,disponibilite,photo_url,data,reference')
+        .select('type,sector,disponibilite,photo_url,data,reference')
         .eq('id', editId)
         .maybeSingle();
       if (!alive) return;
@@ -140,10 +140,13 @@ const PublierAnnoncePage = () => {
         navigate('/opportunites/mes-annonces');
         return;
       }
+      const d = (data.data as Record<string, string>) || {};
+      setSector((data as any).sector || d.sector_slug || null);
+      setMetier(d.metier_slug || null);
       setType((data.type as AnnonceType) || null);
       setDispo(data.disponibilite || 'immediate');
       setPhotoDataUrl(data.photo_url || null);
-      setValues((data.data as Record<string, string>) || {});
+      setValues(d);
       setEditReference((data as any).reference || null);
       setLoadingEdit(false);
 

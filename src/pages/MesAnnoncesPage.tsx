@@ -81,6 +81,17 @@ const MesAnnoncesPage = () => {
   const [annonces, setAnnonces] = useState<Annonce[]>([]);
   const [pending, setPending] = useState<PendingAction>(null);
   const [working, setWorking] = useState(false);
+  const [copiedRefId, setCopiedRefId] = useState<string | null>(null);
+
+  const copyReference = async (ref: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(ref);
+      setCopiedRefId(id);
+      toast({ title: isRTL ? 'تم نسخ رقم الإعلان' : 'Référence copiée' });
+      setTimeout(() => setCopiedRefId((v) => (v === id ? null : v)), 1500);
+    } catch { /* ignore */ }
+  };
+
 
   const fontFamily = isRTL
     ? "'Tajawal', system-ui, sans-serif"

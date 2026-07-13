@@ -250,6 +250,18 @@ const PublierAnnoncePage = () => {
 
   const showPhoto = type === 'emploi' || type === 'services';
 
+  if (loadingEdit) {
+    return (
+      <div
+        dir={isRTL ? 'rtl' : 'ltr'}
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: COLORS.pageBg, fontFamily }}
+      >
+        <Loader2 size={22} className="animate-spin" style={{ color: COLORS.navyDark }} />
+      </div>
+    );
+  }
+
   return (
     <div
       dir={isRTL ? 'rtl' : 'ltr'}
@@ -265,7 +277,11 @@ const PublierAnnoncePage = () => {
         }}
       >
         <button
-          onClick={() => (type ? setType(null) : navigate('/opportunites'))}
+          onClick={() => {
+            if (isEdit) navigate('/opportunites/mes-annonces');
+            else if (type) setType(null);
+            else navigate('/opportunites');
+          }}
           className={cn(
             'inline-flex items-center gap-1.5 text-[12px] font-bold text-white/85 hover:text-white',
             isRTL && 'flex-row-reverse',
@@ -275,14 +291,16 @@ const PublierAnnoncePage = () => {
           {isRTL ? 'رجوع' : 'Retour'}
         </button>
         <h1 className={cn('mt-3 text-[20px] font-extrabold leading-tight', isRTL ? 'text-right' : 'text-left')}>
-          {type
-            ? (isRTL ? 'نشر إعلان' : 'Publier une annonce')
-            : (isRTL ? 'ماذا تريد أن تنشر ؟' : 'Que souhaitez-vous publier ?')}
+          {isEdit
+            ? (isRTL ? 'تعديل الإعلان' : "Modifier l'annonce")
+            : type
+              ? (isRTL ? 'نشر إعلان' : 'Publier une annonce')
+              : (isRTL ? 'ماذا تريد أن تنشر ؟' : 'Que souhaitez-vous publier ?')}
         </h1>
       </section>
 
-      {/* TYPE SELECTOR */}
-      {!type && (
+      {/* TYPE SELECTOR (only when creating) */}
+      {!type && !isEdit && (
         <div className="px-4 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {TYPES.map((t) => {
             const Icon = t.icon;

@@ -251,7 +251,7 @@ const AnnoncesListPage = () => {
               </label>
               <select
                 value={secteur}
-                onChange={(e) => setSecteur(e.target.value)}
+                onChange={(e) => { setSecteur(e.target.value); setMetier(''); }}
                 className={cn('w-full rounded-xl border bg-white p-2.5 text-[13px] outline-none', isRTL ? 'text-right' : 'text-left')}
                 style={{ borderColor: '#E5E9F0', color: COLORS.navyDark }}
               >
@@ -261,6 +261,26 @@ const AnnoncesListPage = () => {
                 ))}
               </select>
             </div>
+
+            {/* Métier (dépend du secteur) */}
+            {secteur && getMetiers(secteur).length > 0 && (
+              <div>
+                <label className={cn('block text-[11px] font-bold mb-1', isRTL ? 'text-right' : 'text-left')} style={{ color: COLORS.navyDark }}>
+                  {isRTL ? 'المهنة' : 'Métier'}
+                </label>
+                <select
+                  value={metier}
+                  onChange={(e) => setMetier(e.target.value)}
+                  className={cn('w-full rounded-xl border bg-white p-2.5 text-[13px] outline-none', isRTL ? 'text-right' : 'text-left')}
+                  style={{ borderColor: '#E5E9F0', color: COLORS.navyDark }}
+                >
+                  <option value="">{isRTL ? 'كل المهن' : 'Tous les métiers'}</option>
+                  {getMetiers(secteur).map((mt) => (
+                    <option key={mt.slug} value={mt.slug}>{isRTL ? mt.ar : mt.fr}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Type */}
             <div>

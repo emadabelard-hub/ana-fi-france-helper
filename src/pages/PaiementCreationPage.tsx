@@ -1100,9 +1100,37 @@ export default function PaiementCreationPage() {
         </div>
       </Card>
 
-      <Button onClick={handleGenerate} disabled={generating} size="lg" className="w-full">
+      <Button onClick={() => handleGenerate(false)} disabled={generating} size="lg" className="w-full">
         {generating ? <><Loader2 className="ml-2 animate-spin h-5 w-5" /> جاري التوليد...</> : "توليد الوثائق"}
       </Button>
+
+      <AlertDialog open={deficitDialogOpen} onOpenChange={setDeficitDialogOpen}>
+        <AlertDialogContent dir="ltr">
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Prévisionnel déficitaire</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-foreground/80">
+                <p>Votre prévisionnel fait apparaître un résultat estimé négatif de :</p>
+                <p className="text-xl font-bold text-destructive">- {deficitAmount.toLocaleString('fr-FR')} €</p>
+                <p>Ce résultat ne bloque pas la création de votre société.</p>
+                <p>Nous vous recommandons néanmoins de vérifier vos hypothèses (chiffre d'affaires, charges, rémunération, investissements…) avant de poursuivre.</p>
+                <p>Vous pouvez modifier vos informations ou continuer malgré cet avertissement.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Modifier mes données</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDeficitDialogOpen(false);
+                void handleGenerate(true);
+              }}
+            >
+              Continuer malgré tout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {generatedDocs.length > 0 && (
         <Card className="p-5 space-y-3 bg-green-50 dark:bg-green-950/30 border-green-500">

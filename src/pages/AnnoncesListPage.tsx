@@ -151,6 +151,7 @@ const AnnoncesListPage = () => {
   const applyFilters = () => {
     const params: Record<string, string> = {};
     if (secteur) params.secteur = secteur;
+    if (metier) params.metier = metier;
     if (type) params.type = type;
     setSearchParams(params, { replace: true });
     setShowFilters(false);

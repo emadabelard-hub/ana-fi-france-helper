@@ -114,12 +114,28 @@ const MesAnnoncesPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('opportunite_annonces')
-      .select('id,reference,type,sector,title,ville,departement,description,photo_url,data,status,views_count,published_at')
+      .select('id,reference,type,sector,title,ville,departement,description,photo_url,data,status,views_count,favorites_count,shares_count,published_at')
       .eq('user_id', user.id)
       .order('published_at', { ascending: false })
       .limit(500);
     if (error) console.error('mes annonces error', error);
-    setAnnonces((data as any) || []);
+    const rows = (data as any[]) || [];
+    // Fetch conversation counts per annonce (owner side)
+    const ids = rows.map((r) => r.id);
+    let convCounts: Record<string, number> = {};
+    if (ids.length > 0) {
+      const { data: convs, error: cErr } = await supabase
+        .from('opportunite_conversations')
+        .select('annonce_id')
+        .eq('owner_id', user.id)
+        .in('annonce_id', ids)
+        .limit(2000);
+      if (cErr) console.warn('conv count', cErr);
+      (convs || []).forEach((c: any) => {
+        convCounts[c.annonce_id] = (convCounts[c.annonce_id] || 0) + 1;
+      });
+    }
+    setAnnonces(rows.map((r) => ({ ...r, conversations_count: convCounts[r.id] || 0 })));
     setLoading(false);
   };
 

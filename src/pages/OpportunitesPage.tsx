@@ -196,12 +196,13 @@ const OpportunitesPage = () => {
         <div className="grid grid-cols-2 gap-3">
           {categories.map((c) => {
             const Icon = c.icon;
+            const count = sectorCounts[c.slug] || 0;
             return (
               <button
                 key={c.slug}
-                onClick={() => navigate(`/opportunites/${c.slug}`)}
-                className="rounded-2xl bg-white p-3 shadow-sm border active:scale-[0.97] transition flex flex-col items-center justify-center gap-1.5"
-                style={{ borderColor: '#E5E9F0', minHeight: 88 }}
+                onClick={() => navigate(`/opportunites/annonces?secteur=${c.slug}`)}
+                className="rounded-2xl bg-white p-3 shadow-sm border active:scale-[0.97] transition flex flex-col items-center justify-center gap-1"
+                style={{ borderColor: '#E5E9F0', minHeight: 96 }}
               >
                 <Icon size={22} style={{ color: COLORS.gold }} />
                 <span
@@ -209,6 +210,9 @@ const OpportunitesPage = () => {
                   style={{ color: COLORS.navyDark }}
                 >
                   {isRTL ? c.ar : c.fr}
+                </span>
+                <span className="text-[10px] font-semibold text-gray-500">
+                  {formatCount(count)}
                 </span>
               </button>
             );

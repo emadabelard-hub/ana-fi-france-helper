@@ -83,6 +83,8 @@ const AdminModerationOpportunitesPage = () => {
   const [messages, setMessages] = useState<Record<string, MessageLite>>({});
   const [statusFilter, setStatusFilter] = useState<'all' | ReportStatus>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | ReportType>('all');
+  const [refSearch, setRefSearch] = useState('');
+
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
   const [working, setWorking] = useState<string | null>(null);
 

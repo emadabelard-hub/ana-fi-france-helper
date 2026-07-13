@@ -4,8 +4,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Users, Megaphone, Handshake, ListFilter, UserRound, MessageCircle, HeadphonesIcon } from 'lucide-react';
+import { Search, Users, Megaphone, Handshake, ListFilter, UserRound, MessageCircle, HeadphonesIcon, Heart } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
+import { useAuth } from '@/hooks/useAuth';
+import { fetchUnreadMessagesCount, onUnreadChanged } from './opportunites/unread';
 
 const COLORS = {
   navy: '#1B4F8A',

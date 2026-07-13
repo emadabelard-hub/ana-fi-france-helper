@@ -435,7 +435,9 @@ const PublierAnnoncePage = () => {
             }}
           >
             {saving && <Loader2 size={16} className="animate-spin" />}
-            {isRTL ? 'نشر الإعلان' : "Publier l'annonce"}
+            {isEdit
+              ? (isRTL ? 'حفظ التعديلات' : 'Enregistrer les modifications')
+              : (isRTL ? 'نشر الإعلان' : "Publier l'annonce")}
           </button>
         </div>
       )}

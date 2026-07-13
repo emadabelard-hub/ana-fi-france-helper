@@ -123,8 +123,8 @@ const OpportunitesPage = () => {
         </div>
       </section>
 
-      {/* PUBLIER CTA */}
-      <div className="px-4 mt-4">
+      {/* PUBLIER + CONSULTER CTA */}
+      <div className="px-4 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           onClick={() => navigate('/opportunites/publier')}
           className="w-full rounded-2xl py-3 font-extrabold text-[14px] shadow-md active:scale-[0.98] transition"
@@ -134,6 +134,22 @@ const OpportunitesPage = () => {
           }}
         >
           {isRTL ? '＋ نشر إعلان' : '＋ Publier une annonce'}
+        </button>
+        <button
+          onClick={() => navigate('/opportunites/annonces')}
+          className="w-full rounded-2xl py-3 font-extrabold text-[14px] shadow-md active:scale-[0.98] transition inline-flex items-center justify-center gap-2"
+          style={{ background: COLORS.navyDark, color: 'white' }}
+        >
+          <ListFilter size={16} />
+          {isRTL ? 'تصفح الإعلانات' : 'Consulter les annonces'}
+          {totalActive > 0 && (
+            <span
+              className="ms-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold"
+              style={{ background: COLORS.goldDark, color: 'white' }}
+            >
+              {totalActive}
+            </span>
+          )}
         </button>
       </div>
 

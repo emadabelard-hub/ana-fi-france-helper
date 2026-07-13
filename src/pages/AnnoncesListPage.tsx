@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, ArrowRight, Search, SlidersHorizontal, X, MapPin, Briefcase, Calendar, Loader2 } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
+import FavoriteButton from '@/components/opportunites/FavoriteButton';
+import ShareButton from '@/components/opportunites/ShareButton';
+import { fetchFavorisIds, onFavorisChanged } from '@/pages/opportunites/favoris';
 
 const COLORS = {
   navy: '#1B4F8A',

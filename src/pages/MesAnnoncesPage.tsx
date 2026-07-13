@@ -87,7 +87,7 @@ const MesAnnoncesPage = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      navigate('/auth?redirect=/opportunites/mes-annonces', { replace: true });
+      navigate('/login', { replace: true });
     }
   }, [user, authLoading, navigate]);
 

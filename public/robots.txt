@@ -1,14 +1,20 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /compte
+Disallow: /paiement
+Disallow: /signature
+Disallow: /invoice
+Disallow: /devis
+Disallow: /factures
+Disallow: /documents
+Disallow: /my-documents
+Disallow: /messages
+Disallow: /clients
+Disallow: /chantiers
+Disallow: /comptable
+Disallow: /archive
+Disallow: /verify
+
+Sitemap: https://anafypro.com/sitemap.xml

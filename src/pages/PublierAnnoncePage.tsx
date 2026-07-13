@@ -111,6 +111,8 @@ const PublierAnnoncePage = () => {
   const [saving, setSaving] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(isEdit);
   const [certified, setCertified] = useState(false);
+  const [editReference, setEditReference] = useState<string | null>(null);
+
 
   useEffect(() => {
     let alive = true;

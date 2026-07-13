@@ -358,6 +358,8 @@ export default function PaiementCreationPage() {
 
   const [generating, setGenerating] = useState(false);
   const [generatedDocs, setGeneratedDocs] = useState<Array<{ label: string; filename: string; doc: ReturnType<typeof buildStatutsPdf> }>>([]);
+  const [deficitDialogOpen, setDeficitDialogOpen] = useState(false);
+  const [deficitAmount, setDeficitAmount] = useState<number>(0);
 
 
   useEffect(() => {

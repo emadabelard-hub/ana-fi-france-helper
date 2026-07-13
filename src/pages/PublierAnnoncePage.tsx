@@ -118,7 +118,7 @@ const PublierAnnoncePage = () => {
     (async () => {
       const { data, error } = await supabase
         .from('opportunite_annonces')
-        .select('type,disponibilite,photo_url,data')
+        .select('type,disponibilite,photo_url,data,reference')
         .eq('id', editId)
         .maybeSingle();
       if (!alive) return;

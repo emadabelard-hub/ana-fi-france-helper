@@ -255,6 +255,18 @@ const OpportunitesPage = () => {
           </p>
         </div>
       </div>
+
+      {/* NOUS CONTACTER */}
+      <div className="px-4 pb-24">
+        <button
+          onClick={() => navigate('/support')}
+          className="w-full rounded-2xl py-3 font-extrabold text-[14px] shadow-md active:scale-[0.98] transition inline-flex items-center justify-center gap-2"
+          style={{ background: COLORS.navyDark, color: 'white' }}
+        >
+          <HeadphonesIcon size={16} />
+          {isRTL ? 'تواصل معنا' : 'Nous contacter'}
+        </button>
+      </div>
     </div>
   );
 };

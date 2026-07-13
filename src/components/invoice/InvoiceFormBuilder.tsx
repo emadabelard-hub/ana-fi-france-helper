@@ -1092,7 +1092,9 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         const capitalRaw = (p.capital_social ?? '').toString().trim();
         const capitalNumeric = parseFloat(capitalRaw.replace(/[^\d.,]/g, '').replace(',', '.'));
         if (!isEI && capitalRaw && capitalNumeric > 0) {
-          parts.push(`au capital de ${capitalRaw}€`);
+          // Strip any trailing euro symbol(s) already saisi by the user pour éviter "10 000 €€"
+          const capitalClean = capitalRaw.replace(/\s*€+\s*$/u, '').trim();
+          parts.push(`au capital de ${capitalClean} €`);
         }
         if (p.siret) {
           parts.push(`SIRET : ${p.siret}`);

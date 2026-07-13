@@ -17,6 +17,7 @@ const COLORS = {
 
 type Annonce = {
   id: string;
+  reference: string;
   type: string;
   sector: string | null;
   title: string;
@@ -29,6 +30,7 @@ type Annonce = {
   status: string;
   published_at: string;
 };
+
 
 const TYPE_LABELS: Record<string, { fr: string; ar: string }> = {
   emploi:     { fr: 'Je cherche du travail',                                     ar: 'أبحث عن عمل' },

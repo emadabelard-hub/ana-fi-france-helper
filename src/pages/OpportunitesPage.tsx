@@ -153,6 +153,18 @@ const OpportunitesPage = () => {
         </button>
       </div>
 
+      {/* MES ANNONCES CTA */}
+      <div className="px-4 mt-3">
+        <button
+          onClick={() => navigate('/opportunites/mes-annonces')}
+          className="w-full rounded-2xl py-2.5 font-extrabold text-[13px] border active:scale-[0.98] transition inline-flex items-center justify-center gap-2 bg-white"
+          style={{ borderColor: '#E5E9F0', color: COLORS.navyDark }}
+        >
+          <UserRound size={14} />
+          {isRTL ? 'إعلاناتي' : 'Mes annonces'}
+        </button>
+      </div>
+
       {/* MAIN ACTIONS */}
       <div className="px-4 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
         {mainActions.map((a) => {

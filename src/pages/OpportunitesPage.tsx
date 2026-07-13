@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Users, Megaphone, Handshake, ListFilter, UserRound, MessageCircle, HeadphonesIcon } from 'lucide-react';
+import { Search, Users, Megaphone, Handshake, ListFilter, UserRound, MessageCircle, HeadphonesIcon, Heart } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
+import { useAuth } from '@/hooks/useAuth';
+import { fetchUnreadMessagesCount, onUnreadChanged } from './opportunites/unread';
 
 const COLORS = {
   navy: '#1B4F8A',
@@ -21,9 +23,11 @@ const OpportunitesPage = () => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [sectorCounts, setSectorCounts] = useState<Record<string, number>>({});
   const [totalActive, setTotalActive] = useState<number>(0);
+  const [unread, setUnread] = useState<number>(0);
 
   useEffect(() => {
     let alive = true;
@@ -45,6 +49,27 @@ const OpportunitesPage = () => {
     })();
     return () => { alive = false; };
   }, []);
+
+  const prevUnreadRef = useRef<number>(0);
+  useEffect(() => {
+    if (!user) { setUnread(0); return; }
+    let alive = true;
+    const load = async () => {
+      const n = await fetchUnreadMessagesCount(user.id);
+      if (!alive) return;
+      if (n > prevUnreadRef.current && prevUnreadRef.current > 0) {
+        toast({
+          title: isRTL ? 'وصلك رسالة جديدة.' : 'Vous avez reçu un nouveau message.',
+        });
+      }
+      prevUnreadRef.current = n;
+      setUnread(n);
+    };
+    load();
+    const timer = window.setInterval(load, 30000);
+    const off = onUnreadChanged(load);
+    return () => { alive = false; window.clearInterval(timer); off(); };
+  }, [user, isRTL, toast]);
 
   const formatCount = (n: number) =>
     isRTL
@@ -153,11 +178,11 @@ const OpportunitesPage = () => {
         </button>
       </div>
 
-      {/* MES ANNONCES + MESSAGES CTA */}
-      <div className="px-4 mt-3 grid grid-cols-2 gap-3">
+      {/* MES ANNONCES + MESSAGES + FAVORIS CTA */}
+      <div className="px-4 mt-3 grid grid-cols-3 gap-2">
         <button
           onClick={() => navigate('/opportunites/mes-annonces')}
-          className="w-full rounded-2xl py-2.5 font-extrabold text-[13px] border active:scale-[0.98] transition inline-flex items-center justify-center gap-2 bg-white"
+          className="w-full rounded-2xl py-2.5 font-extrabold text-[12px] border active:scale-[0.98] transition inline-flex items-center justify-center gap-1.5 bg-white"
           style={{ borderColor: '#E5E9F0', color: COLORS.navyDark }}
         >
           <UserRound size={14} />
@@ -165,11 +190,28 @@ const OpportunitesPage = () => {
         </button>
         <button
           onClick={() => navigate('/opportunites/messages')}
-          className="w-full rounded-2xl py-2.5 font-extrabold text-[13px] border active:scale-[0.98] transition inline-flex items-center justify-center gap-2 bg-white"
+          className="relative w-full rounded-2xl py-2.5 font-extrabold text-[12px] border active:scale-[0.98] transition inline-flex items-center justify-center gap-1.5 bg-white"
           style={{ borderColor: '#E5E9F0', color: COLORS.navyDark }}
         >
           <MessageCircle size={14} />
           {isRTL ? 'الرسائل' : 'Messages'}
+          {unread > 0 && (
+            <span
+              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-extrabold flex items-center justify-center"
+              style={{ background: '#DC2626', color: 'white' }}
+              aria-label={isRTL ? `${unread} رسالة جديدة` : `${unread} nouveaux messages`}
+            >
+              {unread > 99 ? '99+' : unread}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => navigate('/opportunites/mes-favoris')}
+          className="w-full rounded-2xl py-2.5 font-extrabold text-[12px] border active:scale-[0.98] transition inline-flex items-center justify-center gap-1.5 bg-white"
+          style={{ borderColor: '#E5E9F0', color: COLORS.navyDark }}
+        >
+          <Heart size={14} color="#DC2626" fill="#DC2626" />
+          {isRTL ? 'المفضلة' : 'Mes favoris'}
         </button>
       </div>
 

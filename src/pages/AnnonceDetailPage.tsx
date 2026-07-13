@@ -8,6 +8,10 @@ import { ArrowLeft, ArrowRight, MapPin, Calendar, Eye, Loader2, Briefcase, Messa
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
 import { readPendingContact, clearPendingContact, setPendingContact } from './opportunites/messagerie';
 import ReportDialog from '@/components/opportunites/ReportDialog';
+import FavoriteButton from '@/components/opportunites/FavoriteButton';
+import ShareButton from '@/components/opportunites/ShareButton';
+import FirstContactModal from '@/components/opportunites/FirstContactModal';
+import { hasSeenFirstContact } from '@/pages/opportunites/firstContactNotice';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -70,6 +74,7 @@ const AnnonceDetailPage = () => {
   const [annonce, setAnnonce] = useState<any | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [refCopied, setRefCopied] = useState(false);
+  const [firstContactOpen, setFirstContactOpen] = useState(false);
   const viewedRef = useRef(false);
   const pendingHandledRef = useRef(false);
 
@@ -263,6 +268,11 @@ const AnnonceDetailPage = () => {
             </button>
           </div>
         )}
+
+        <div className={cn('mt-3 flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+          <FavoriteButton annonceId={annonce.id} ownerUserId={annonce.user_id} variant="hero" />
+          <ShareButton annonceId={annonce.id} reference={annonce.reference} title={annonce.title} variant="hero" />
+        </div>
       </section>
 
 
@@ -340,6 +350,7 @@ const AnnonceDetailPage = () => {
                   navigate('/login');
                   return;
                 }
+                if (!hasSeenFirstContact()) { setFirstContactOpen(true); return; }
                 navigate(`/opportunites/annonces/${annonce.id}/contact`);
               }}
               className="w-full rounded-2xl py-3 font-extrabold text-[14px] active:scale-[0.98] transition inline-flex items-center justify-center gap-2 shadow-md"
@@ -394,6 +405,14 @@ const AnnonceDetailPage = () => {
         reportType="annonce"
         annonceId={annonce.id}
         reportedUserId={annonce.user_id}
+      />
+
+      <FirstContactModal
+        open={firstContactOpen}
+        onConfirm={() => {
+          setFirstContactOpen(false);
+          navigate(`/opportunites/annonces/${annonce.id}/contact`);
+        }}
       />
     </div>
   );

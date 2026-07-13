@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, ArrowRight, Search, SlidersHorizontal, X, MapPin, Briefcase, Calendar, Loader2 } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
+import FavoriteButton from '@/components/opportunites/FavoriteButton';
+import ShareButton from '@/components/opportunites/ShareButton';
+import { fetchFavorisIds, onFavorisChanged } from '@/pages/opportunites/favoris';
 
 const COLORS = {
   navy: '#1B4F8A',
@@ -18,6 +22,7 @@ const COLORS = {
 type Annonce = {
   id: string;
   reference: string;
+  user_id: string;
   type: string;
   sector: string | null;
   title: string;
@@ -58,8 +63,10 @@ const AnnoncesListPage = () => {
   const { isRTL } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [annonces, setAnnonces] = useState<Annonce[]>([]);
+  const [favIds, setFavIds] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
   const [q, setQ] = useState('');
@@ -81,7 +88,7 @@ const AnnoncesListPage = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('opportunite_annonces')
-        .select('id,reference,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at')
+        .select('id,reference,user_id,type,sector,title,ville,departement,disponibilite,description,photo_url,data,status,published_at')
         .eq('status', 'active')
         .order('published_at', { ascending: false })
         .limit(500);
@@ -92,6 +99,13 @@ const AnnoncesListPage = () => {
     })();
     return () => { alive = false; };
   }, []);
+
+  useEffect(() => {
+    if (!user) { setFavIds(new Set()); return; }
+    const load = async () => setFavIds(await fetchFavorisIds(user.id));
+    load();
+    return onFavorisChanged(load);
+  }, [user]);
 
   const filtered = useMemo(() => {
     const norm = (s: string | null | undefined) => (s || '').toString().toLowerCase().trim();
@@ -353,10 +367,13 @@ const AnnoncesListPage = () => {
               const dispoLbl = a.disponibilite ? DISPO_LABELS[a.disponibilite] : null;
               const shortDesc = (a.description || '').slice(0, 140);
               return (
-                <button
+                <div
                   key={a.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => navigate(`/opportunites/annonces/${a.id}`)}
-                  className="w-full rounded-2xl bg-white p-4 shadow-sm border active:scale-[0.99] transition text-left"
+                  onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/opportunites/annonces/${a.id}`); }}
+                  className="w-full rounded-2xl bg-white p-4 shadow-sm border active:scale-[0.99] transition text-left cursor-pointer"
                   style={{ borderColor: '#E5E9F0' }}
                 >
                   <div className={cn('flex items-start gap-3', isRTL && 'flex-row-reverse')}>
@@ -444,10 +461,13 @@ const AnnoncesListPage = () => {
                           {isRTL ? 'عرض الإعلان' : "Voir l'annonce"}
                         </span>
                       </div>
-
+                    </div>
+                    <div className="flex flex-col items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <FavoriteButton annonceId={a.id} ownerUserId={a.user_id} isFavInitial={favIds.has(a.id)} />
+                      <ShareButton annonceId={a.id} reference={a.reference} title={a.title} />
                     </div>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

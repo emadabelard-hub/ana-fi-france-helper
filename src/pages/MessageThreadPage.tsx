@@ -102,7 +102,10 @@ const MessageThreadPage = () => {
         supabase.from('opportunite_messages')
           .update({ read_at: new Date().toISOString() })
           .in('id', unreadIds)
-          .then(({ error }) => { if (error) console.warn('mark read failed', error); });
+          .then(({ error }) => {
+            if (error) console.warn('mark read failed', error);
+            try { window.dispatchEvent(new Event('anafypro:unread-changed')); } catch { /* ignore */ }
+          });
       }
     }
   };

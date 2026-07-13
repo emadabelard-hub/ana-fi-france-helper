@@ -1016,6 +1016,7 @@ export type Database = {
           published_at: string
           reference: string
           sector: string | null
+          shares_count: number
           status: string
           title: string
           type: string
@@ -1037,6 +1038,7 @@ export type Database = {
           published_at?: string
           reference?: string
           sector?: string | null
+          shares_count?: number
           status?: string
           title: string
           type: string
@@ -1058,6 +1060,7 @@ export type Database = {
           published_at?: string
           reference?: string
           sector?: string | null
+          shares_count?: number
           status?: string
           title?: string
           type?: string
@@ -1105,6 +1108,35 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "opportunite_conversations_annonce_id_fkey"
+            columns: ["annonce_id"]
+            isOneToOne: false
+            referencedRelation: "opportunite_annonces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunite_favoris: {
+        Row: {
+          annonce_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          annonce_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          annonce_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunite_favoris_annonce_id_fkey"
             columns: ["annonce_id"]
             isOneToOne: false
             referencedRelation: "opportunite_annonces"
@@ -2108,6 +2140,10 @@ export type Database = {
           patron_user_id: string
           site_address: string
         }[]
+      }
+      increment_annonce_shares: {
+        Args: { _annonce_id: string }
+        Returns: undefined
       }
       increment_annonce_views: {
         Args: { _annonce_id: string }

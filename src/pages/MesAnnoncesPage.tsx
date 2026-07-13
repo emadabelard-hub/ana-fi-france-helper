@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   ArrowLeft, ArrowRight, Eye, Pencil, Power, PowerOff, Trash2, Loader2,
-  Briefcase, MapPin, Calendar, EyeOff, Copy, Check,
+  Briefcase, MapPin, Calendar, EyeOff, Copy, Check, Heart, Share2, MessageCircle,
 } from 'lucide-react';
 
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
@@ -38,6 +38,9 @@ type Annonce = {
   data: Record<string, any> | null;
   status: string;
   views_count: number;
+  favorites_count?: number;
+  shares_count?: number;
+  conversations_count?: number;
   published_at: string;
 };
 
@@ -111,12 +114,28 @@ const MesAnnoncesPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('opportunite_annonces')
-      .select('id,reference,type,sector,title,ville,departement,description,photo_url,data,status,views_count,published_at')
+      .select('id,reference,type,sector,title,ville,departement,description,photo_url,data,status,views_count,favorites_count,shares_count,published_at')
       .eq('user_id', user.id)
       .order('published_at', { ascending: false })
       .limit(500);
     if (error) console.error('mes annonces error', error);
-    setAnnonces((data as any) || []);
+    const rows = (data as any[]) || [];
+    // Fetch conversation counts per annonce (owner side)
+    const ids = rows.map((r) => r.id);
+    let convCounts: Record<string, number> = {};
+    if (ids.length > 0) {
+      const { data: convs, error: cErr } = await supabase
+        .from('opportunite_conversations')
+        .select('annonce_id')
+        .eq('owner_id', user.id)
+        .in('annonce_id', ids)
+        .limit(2000);
+      if (cErr) console.warn('conv count', cErr);
+      (convs || []).forEach((c: any) => {
+        convCounts[c.annonce_id] = (convCounts[c.annonce_id] || 0) + 1;
+      });
+    }
+    setAnnonces(rows.map((r) => ({ ...r, conversations_count: convCounts[r.id] || 0 })));
     setLoading(false);
   };
 
@@ -312,9 +331,21 @@ const MesAnnoncesPage = () => {
                           <Calendar size={11} />
                           {formatDate(a.published_at, isRTL)}
                         </span>
-                        <span className="inline-flex items-center gap-1">
+                        <span className="inline-flex items-center gap-1" title={isRTL ? 'المشاهدات' : 'Vues'}>
                           <Eye size={11} />
                           {a.views_count ?? 0}
+                        </span>
+                        <span className="inline-flex items-center gap-1" title={isRTL ? 'المحادثات' : 'Conversations'}>
+                          <MessageCircle size={11} />
+                          {a.conversations_count ?? 0}
+                        </span>
+                        <span className="inline-flex items-center gap-1" title={isRTL ? 'المفضلة' : 'Favoris'}>
+                          <Heart size={11} color="#DC2626" />
+                          {a.favorites_count ?? 0}
+                        </span>
+                        <span className="inline-flex items-center gap-1" title={isRTL ? 'المشاركات' : 'Partages'}>
+                          <Share2 size={11} />
+                          {a.shares_count ?? 0}
                         </span>
                       </div>
                       {a.reference && (

@@ -105,6 +105,17 @@ const AnnonceDetailPage = () => {
     return () => { alive = false; };
   }, [id]);
 
+  // If the visitor was redirected to login before contacting, resume the contact flow.
+  useEffect(() => {
+    if (!user || !id || pendingHandledRef.current) return;
+    const pending = readPendingContact();
+    if (pending && pending === id) {
+      pendingHandledRef.current = true;
+      clearPendingContact();
+      navigate(`/opportunites/annonces/${id}/contact`, { replace: true });
+    }
+  }, [user, id, navigate]);
+
   if (loading) {
     return (
       <div

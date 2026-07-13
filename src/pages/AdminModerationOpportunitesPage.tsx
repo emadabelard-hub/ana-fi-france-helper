@@ -376,11 +376,19 @@ const AdminModerationOpportunitesPage = () => {
                   </h3>
 
                   {a && (
-                    <p className={cn('mt-1 text-[11px] text-gray-600 line-clamp-1', isRTL ? 'text-right' : 'text-left')}>
-                      {isRTL ? 'الإعلان: ' : 'Annonce : '}<span className="font-bold">{a.title}</span>
-                      {' '}<span className="opacity-70">({a.status})</span>
-                    </p>
+                    <>
+                      <p className={cn('mt-1 text-[11px] text-gray-600 line-clamp-1', isRTL ? 'text-right' : 'text-left')}>
+                        {isRTL ? 'الإعلان: ' : 'Annonce : '}<span className="font-bold">{a.title}</span>
+                        {' '}<span className="opacity-70">({a.status})</span>
+                      </p>
+                      {a.reference && (
+                        <p className={cn('mt-0.5 text-[10px] font-mono text-gray-500', isRTL ? 'text-right' : 'text-left')} dir="ltr">
+                          {isRTL ? `الإعلان المعني: ${a.reference}` : `Annonce concernée : ${a.reference}`}
+                        </p>
+                      )}
+                    </>
                   )}
+
                   {m && (
                     <p className={cn('mt-1 text-[11px] text-gray-600 line-clamp-3', isRTL ? 'text-right' : 'text-left')}>
                       «&nbsp;{m.hidden_by_moderation ? (isRTL ? '[مخفي]' : '[Masqué]') : m.content}&nbsp;»

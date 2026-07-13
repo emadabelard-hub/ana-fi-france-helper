@@ -96,6 +96,8 @@ const AnnoncesListPage = () => {
   const filtered = useMemo(() => {
     const norm = (s: string | null | undefined) => (s || '').toString().toLowerCase().trim();
     const qn = norm(q);
+    const qRef = qn.toUpperCase().replace(/\s+/g, '');
+    const looksLikeRef = /^OPP-\d{4}-\d{1,6}$/.test(qRef);
     return annonces.filter((a) => {
       if (secteur && a.sector !== secteur) return false;
       if (type && a.type !== type) return false;
@@ -109,9 +111,13 @@ const AnnoncesListPage = () => {
         if (!bag.includes(mn)) return false;
       }
       if (qn) {
+        // Exact reference match short-circuit
+        if (looksLikeRef) {
+          return (a.reference || '').toUpperCase() === qRef;
+        }
         const d = a.data || {};
         const bag = [
-          a.title, a.ville, a.departement, a.description,
+          a.reference, a.title, a.ville, a.departement, a.description,
           d.metier, d.metier_recherche, d.profession, d.specialite, d.zone,
         ].map(norm).join(' | ');
         if (!bag.includes(qn)) return false;
@@ -119,6 +125,7 @@ const AnnoncesListPage = () => {
       return true;
     });
   }, [annonces, q, secteur, type, metier, ville, departement, dispo]);
+
 
   const applyFilters = () => {
     const params: Record<string, string> = {};

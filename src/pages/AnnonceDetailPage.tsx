@@ -282,6 +282,43 @@ const AnnonceDetailPage = () => {
           </div>
         )}
 
+        {/* CONTACTER */}
+        {annonce.status === 'active' && (
+          user && user.id === annonce.user_id ? (
+            <div
+              className="rounded-2xl p-4 border text-center"
+              style={{ borderColor: '#E5E9F0', background: '#EEF2F8' }}
+            >
+              <p className={cn('text-[13px] font-extrabold', isRTL ? 'text-right' : 'text-left')} style={{ color: COLORS.navyDark }}>
+                {isRTL ? 'ده إعلانك' : "C'est votre annonce"}
+              </p>
+              <p className={cn('text-[11px] text-gray-600 mt-1', isRTL ? 'text-right' : 'text-left')}>
+                {isRTL ? 'شوف الرسائل من صفحة « إعلاناتي ».' : 'Consultez les messages depuis « Mes annonces ».'}
+              </p>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                if (!user) {
+                  setPendingContact(annonce.id);
+                  navigate('/login');
+                  return;
+                }
+                navigate(`/opportunites/annonces/${annonce.id}/contact`);
+              }}
+              className="w-full rounded-2xl py-3 font-extrabold text-[14px] active:scale-[0.98] transition inline-flex items-center justify-center gap-2 shadow-md"
+              style={{
+                background: `linear-gradient(135deg, ${COLORS.goldLight}, ${COLORS.goldDark})`,
+                color: COLORS.navyDark,
+              }}
+            >
+              <MessageCircle size={16} />
+              {isRTL ? 'تواصل مع صاحب الإعلان' : 'Contacter'}
+            </button>
+          )
+        )}
+
+
         <div
           className="rounded-2xl p-4 border"
           style={{ borderColor: '#E5E9F0', background: '#FBF5E7' }}

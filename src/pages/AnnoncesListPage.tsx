@@ -22,6 +22,7 @@ const COLORS = {
 type Annonce = {
   id: string;
   reference: string;
+  user_id: string;
   type: string;
   sector: string | null;
   title: string;

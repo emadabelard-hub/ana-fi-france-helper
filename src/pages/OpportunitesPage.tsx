@@ -23,9 +23,11 @@ const OpportunitesPage = () => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [sectorCounts, setSectorCounts] = useState<Record<string, number>>({});
   const [totalActive, setTotalActive] = useState<number>(0);
+  const [unread, setUnread] = useState<number>(0);
 
   useEffect(() => {
     let alive = true;

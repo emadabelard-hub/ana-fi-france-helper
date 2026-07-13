@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "Authenticated can view promo metrics" ON public.promo_metrics;
+CREATE POLICY "Admins can view promo metrics" ON public.promo_metrics FOR SELECT TO authenticated USING (public.is_admin(auth.uid()));

@@ -331,9 +331,21 @@ const MesAnnoncesPage = () => {
                           <Calendar size={11} />
                           {formatDate(a.published_at, isRTL)}
                         </span>
-                        <span className="inline-flex items-center gap-1">
+                        <span className="inline-flex items-center gap-1" title={isRTL ? 'المشاهدات' : 'Vues'}>
                           <Eye size={11} />
                           {a.views_count ?? 0}
+                        </span>
+                        <span className="inline-flex items-center gap-1" title={isRTL ? 'المحادثات' : 'Conversations'}>
+                          <MessageCircle size={11} />
+                          {a.conversations_count ?? 0}
+                        </span>
+                        <span className="inline-flex items-center gap-1" title={isRTL ? 'المفضلة' : 'Favoris'}>
+                          <Heart size={11} color="#DC2626" />
+                          {a.favorites_count ?? 0}
+                        </span>
+                        <span className="inline-flex items-center gap-1" title={isRTL ? 'المشاركات' : 'Partages'}>
+                          <Share2 size={11} />
+                          {a.shares_count ?? 0}
                         </span>
                       </div>
                       {a.reference && (

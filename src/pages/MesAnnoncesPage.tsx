@@ -38,6 +38,9 @@ type Annonce = {
   data: Record<string, any> | null;
   status: string;
   views_count: number;
+  favorites_count?: number;
+  shares_count?: number;
+  conversations_count?: number;
   published_at: string;
 };
 

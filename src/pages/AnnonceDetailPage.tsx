@@ -4,9 +4,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, ArrowRight, MapPin, Calendar, Eye, Loader2, Briefcase, MessageCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MapPin, Calendar, Eye, Loader2, Briefcase, MessageCircle, Flag } from 'lucide-react';
 import { OPPORTUNITE_SECTORS } from './OpportuniteSectorPage';
 import { readPendingContact, clearPendingContact, setPendingContact } from './opportunites/messagerie';
+import ReportDialog from '@/components/opportunites/ReportDialog';
 
 const COLORS = {
   navy: '#1B4F8A',
@@ -64,6 +65,7 @@ const AnnonceDetailPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [annonce, setAnnonce] = useState<any | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
   const viewedRef = useRef(false);
   const pendingHandledRef = useRef(false);
 
@@ -318,6 +320,25 @@ const AnnonceDetailPage = () => {
           )
         )}
 
+        {/* Report link (discreet, hidden for the owner) */}
+        {(!user || user.id !== annonce.user_id) && (
+          <div className={cn('flex', isRTL ? 'justify-start' : 'justify-end')}>
+            <button
+              onClick={() => {
+                if (!user) {
+                  setPendingContact(annonce.id);
+                  navigate('/login');
+                  return;
+                }
+                setReportOpen(true);
+              }}
+              className={cn('inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-red-700 underline underline-offset-2', isRTL && 'flex-row-reverse')}
+            >
+              <Flag size={12} />
+              {isRTL ? 'الإبلاغ عن الإعلان' : 'Signaler cette annonce'}
+            </button>
+          </div>
+        )}
 
         <div
           className="rounded-2xl p-4 border"
@@ -330,6 +351,14 @@ const AnnonceDetailPage = () => {
           </p>
         </div>
       </div>
+
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        reportType="annonce"
+        annonceId={annonce.id}
+        reportedUserId={annonce.user_id}
+      />
     </div>
   );
 };

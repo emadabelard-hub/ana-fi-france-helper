@@ -30,6 +30,7 @@ const ArchiveAccountingPage = lazy(() => import("@/pages/ArchiveAccountingPage")
 const ProAdminAssistantPage = lazy(() => import("@/pages/ProAdminAssistantPage"));
 const CVGeneratorPage = lazy(() => import("@/pages/CVGeneratorPage"));
 const AdminPage = lazy(() => import("@/pages/AdminPage"));
+const AdminModerationOpportunitesPage = lazy(() => import("@/pages/AdminModerationOpportunitesPage"));
 const NewsPage = lazy(() => import("@/pages/NewsPage"));
 const AIAssistantPage = lazy(() => import("./pages/AIAssistantPage"));
 const PremiumConsultationPage = lazy(() => import("./pages/PremiumConsultationPage"));
@@ -165,6 +166,7 @@ const AppRoutes = () => {
                     <Route path="/accounts" element={<ExpensesPage />} />
                     <Route path="/document-hub" element={<DocumentHubPage />} />
                     <Route path="/admin" element={<AdminPage />} />
+                    <Route path="/admin/opportunites/moderation" element={<AdminModerationOpportunitesPage />} />
                     <Route path="/legal" element={<LegalPage />} />
                     <Route path="/clients" element={<ClientsPage />} />
                     <Route path="/clients/:id" element={<ClientDetailPage />} />

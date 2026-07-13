@@ -47,10 +47,11 @@ const TYPE_LABELS: Record<string, { fr: string; ar: string }> = {
 };
 
 const STATUS_STYLES: Record<string, { fr: string; ar: string; bg: string; fg: string }> = {
-  active:   { fr: 'Active',    ar: 'نشط',   bg: '#E8F5EE', fg: '#0F7B3D' },
-  inactive: { fr: 'Inactive',  ar: 'متوقف', bg: '#FDF3E1', fg: '#8A5A00' },
-  expired:  { fr: 'Expirée',   ar: 'منتهي', bg: '#EEF0F5', fg: '#3F4A63' },
-  deleted:  { fr: 'Supprimée', ar: 'محذوف', bg: '#FDECEC', fg: '#B91C1C' },
+  active:    { fr: 'Active',                    ar: 'نشط',                    bg: '#E8F5EE', fg: '#0F7B3D' },
+  inactive:  { fr: 'Inactive',                  ar: 'متوقف',                  bg: '#FDF3E1', fg: '#8A5A00' },
+  expired:   { fr: 'Expirée',                   ar: 'منتهي',                  bg: '#EEF0F5', fg: '#3F4A63' },
+  deleted:   { fr: 'Supprimée',                 ar: 'محذوف',                  bg: '#FDECEC', fg: '#B91C1C' },
+  moderated: { fr: 'Masquée par la modération', ar: 'تم إخفاء الإعلان للمراجعة', bg: '#FDECEC', fg: '#B91C1C' },
 };
 
 const formatDate = (iso: string, isRTL: boolean) => {
@@ -235,6 +236,7 @@ const MesAnnoncesPage = () => {
               const st = STATUS_STYLES[a.status] || STATUS_STYLES.active;
               const isDeleted = a.status === 'deleted';
               const isActive = a.status === 'active';
+              const isModerated = a.status === 'moderated';
               return (
                 <div
                   key={a.id}
@@ -304,6 +306,18 @@ const MesAnnoncesPage = () => {
                     </div>
                   </div>
 
+                  {/* Moderation notice */}
+                  {isModerated && (
+                    <div
+                      className={cn('mt-3 rounded-xl p-3 text-[11px] leading-relaxed', isRTL ? 'text-right' : 'text-left')}
+                      style={{ background: '#FDECEC', color: '#7F1D1D', border: '1px solid #FCA5A5' }}
+                    >
+                      {isRTL
+                        ? 'الإعلان اتوقف مؤقتاً للمراجعة. لو عندك سؤال، تواصل مع دعم ANAFYPRO.'
+                        : "Cette annonce a été temporairement masquée à la suite d’un contrôle de modération. Pour toute question, contactez le support ANAFYPRO."}
+                    </div>
+                  )}
+
                   {/* ACTIONS */}
                   <div className={cn('mt-3 flex flex-wrap gap-2', isRTL && 'flex-row-reverse')}>
                     {isActive && (
@@ -316,7 +330,7 @@ const MesAnnoncesPage = () => {
                         {isRTL ? 'عرض' : 'Voir'}
                       </button>
                     )}
-                    {!isDeleted && (
+                    {!isDeleted && !isModerated && (
                       <button
                         onClick={() => navigate(`/opportunites/mes-annonces/${a.id}/modifier`)}
                         className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold border active:scale-[0.98] transition"
@@ -346,7 +360,7 @@ const MesAnnoncesPage = () => {
                         {isRTL ? 'إعادة تفعيل الإعلان' : 'Réactiver'}
                       </button>
                     )}
-                    {!isDeleted && (
+                    {!isDeleted && !isModerated && (
                       <button
                         onClick={() => setPending({ kind: 'delete', id: a.id })}
                         className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold active:scale-[0.98] transition"

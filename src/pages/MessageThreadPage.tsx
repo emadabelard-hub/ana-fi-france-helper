@@ -5,7 +5,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, ArrowRight, Loader2, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Send, Flag } from 'lucide-react';
+import ReportDialog from '@/components/opportunites/ReportDialog';
+import { ReportType } from './opportunites/reports';
 
 const COLORS = {
   navy: '#1B4F8A',
@@ -26,6 +28,7 @@ type Message = {
   created_at: string;
   read_at: string | null;
   is_deleted: boolean;
+  hidden_by_moderation?: boolean;
 };
 
 type Conversation = {
@@ -57,6 +60,7 @@ const MessageThreadPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [report, setReport] = useState<{ type: ReportType; messageId?: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const fontFamily = isRTL
@@ -77,7 +81,7 @@ const MessageThreadPage = () => {
         .eq('id', id)
         .maybeSingle(),
       supabase.from('opportunite_messages')
-        .select('id,conversation_id,sender_id,content,created_at,read_at,is_deleted')
+        .select('id,conversation_id,sender_id,content,created_at,read_at,is_deleted,hidden_by_moderation')
         .eq('conversation_id', id)
         .order('created_at', { ascending: true })
         .limit(500),
@@ -199,12 +203,21 @@ const MessageThreadPage = () => {
         <h1 className={cn('mt-2 text-[16px] font-extrabold leading-tight line-clamp-1', isRTL ? 'text-right' : 'text-left')}>
           {annonceTitle}
         </h1>
-        <button
-          onClick={() => navigate(`/opportunites/annonces/${conv.annonce_id}`)}
-          className={cn('mt-1 text-[11px] text-white/80 underline', isRTL ? 'text-right block' : 'text-left block')}
-        >
-          {isRTL ? 'عرض الإعلان' : "Voir l'annonce"}
-        </button>
+        <div className={cn('mt-1 flex items-center gap-3', isRTL && 'flex-row-reverse')}>
+          <button
+            onClick={() => navigate(`/opportunites/annonces/${conv.annonce_id}`)}
+            className="text-[11px] text-white/80 underline"
+          >
+            {isRTL ? 'عرض الإعلان' : "Voir l'annonce"}
+          </button>
+          <button
+            onClick={() => setReport({ type: 'conversation' })}
+            className="text-[11px] text-white/80 underline inline-flex items-center gap-1"
+          >
+            <Flag size={11} />
+            {isRTL ? 'الإبلاغ عن المحادثة' : 'Signaler la conversation'}
+          </button>
+        </div>
       </section>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
@@ -215,21 +228,37 @@ const MessageThreadPage = () => {
         ) : (
           messages.map((m) => {
             const mine = m.sender_id === user!.id;
+            const hidden = !!m.hidden_by_moderation;
             return (
-              <div key={m.id} className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
+              <div key={m.id} className={cn('flex flex-col', mine ? 'items-end' : 'items-start')}>
                 <div
                   className="max-w-[85%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed whitespace-pre-line shadow-sm"
                   style={
-                    mine
+                    hidden
+                      ? { background: '#F3F4F6', color: '#6B7280', fontStyle: 'italic', border: '1px dashed #D1D5DB' }
+                      : mine
                       ? { background: COLORS.navyDark, color: 'white' }
                       : { background: 'white', color: COLORS.navyDark, border: '1px solid #E5E9F0' }
                   }
                 >
-                  <div>{m.content}</div>
-                  <div className={cn('mt-1 text-[9px]', mine ? 'text-white/70' : 'text-gray-500')}>
+                  <div>
+                    {hidden
+                      ? (isRTL ? 'تم إخفاء الرسالة بواسطة الإدارة.' : 'Ce message a été masqué par la modération.')
+                      : m.content}
+                  </div>
+                  <div className={cn('mt-1 text-[9px]', hidden ? 'text-gray-400' : mine ? 'text-white/70' : 'text-gray-500')}>
                     {formatTime(m.created_at, isRTL)}
                   </div>
                 </div>
+                {!mine && !hidden && (
+                  <button
+                    onClick={() => setReport({ type: 'message', messageId: m.id })}
+                    className="mt-0.5 text-[9px] text-gray-400 hover:text-red-700 inline-flex items-center gap-1 underline"
+                  >
+                    <Flag size={9} />
+                    {isRTL ? 'الإبلاغ عن الرسالة' : 'Signaler ce message'}
+                  </button>
+                )}
               </div>
             );
           })
@@ -276,6 +305,16 @@ const MessageThreadPage = () => {
           </div>
         )}
       </div>
+
+      <ReportDialog
+        open={!!report}
+        onClose={() => setReport(null)}
+        reportType={report?.type || 'conversation'}
+        conversationId={conv.id}
+        annonceId={conv.annonce_id}
+        messageId={report?.messageId}
+        reportedUserId={user!.id === conv.owner_id ? conv.contact_user_id : conv.owner_id}
+      />
     </div>
   );
 };

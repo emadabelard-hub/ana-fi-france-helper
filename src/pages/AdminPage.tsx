@@ -165,6 +165,15 @@ const AdminPage = () => {
             <Settings className="h-4 w-4" />
             {isRTL ? 'إعدادات الأسعار' : 'Réglages Tarifs'}
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/admin/opportunites/moderation')}
+            className={cn('gap-2', isRTL && 'flex-row-reverse font-cairo')}
+          >
+            <ShieldAlert className="h-4 w-4" />
+            {isRTL ? 'مراجعة إعلانات الفرص' : 'Modération des opportunités'}
+          </Button>
         </div>
 
         <SystemHealthCard

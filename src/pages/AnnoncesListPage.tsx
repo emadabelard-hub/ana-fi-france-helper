@@ -367,10 +367,13 @@ const AnnoncesListPage = () => {
               const dispoLbl = a.disponibilite ? DISPO_LABELS[a.disponibilite] : null;
               const shortDesc = (a.description || '').slice(0, 140);
               return (
-                <button
+                <div
                   key={a.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => navigate(`/opportunites/annonces/${a.id}`)}
-                  className="w-full rounded-2xl bg-white p-4 shadow-sm border active:scale-[0.99] transition text-left"
+                  onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/opportunites/annonces/${a.id}`); }}
+                  className="w-full rounded-2xl bg-white p-4 shadow-sm border active:scale-[0.99] transition text-left cursor-pointer"
                   style={{ borderColor: '#E5E9F0' }}
                 >
                   <div className={cn('flex items-start gap-3', isRTL && 'flex-row-reverse')}>
@@ -458,10 +461,13 @@ const AnnoncesListPage = () => {
                           {isRTL ? 'عرض الإعلان' : "Voir l'annonce"}
                         </span>
                       </div>
-
+                    </div>
+                    <div className="flex flex-col items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <FavoriteButton annonceId={a.id} ownerUserId={a.user_id} isFavInitial={favIds.has(a.id)} />
+                      <ShareButton annonceId={a.id} reference={a.reference} title={a.title} />
                     </div>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

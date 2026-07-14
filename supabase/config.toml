@@ -72,6 +72,9 @@ verify_jwt = false
 [functions.signature-email-copy]
 verify_jwt = false
 
+[functions.signature-email-invite]
+verify_jwt = false
+
 [functions.scan-company-doc]
 verify_jwt = false
 

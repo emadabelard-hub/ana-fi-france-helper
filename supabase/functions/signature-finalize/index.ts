@@ -320,7 +320,7 @@ Cordialement,
 Anafy
 </div>`;
           const payload: any = {
-            from: "Anafy <noreply@resend.dev>",
+from: "ANAFYPRO <noreply@anafypro.com>",
             to: [artisanEmail],
             subject,
             html,
@@ -408,7 +408,7 @@ ${escapeHtml(companyName)}
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              from: "Anafy <noreply@resend.dev>",
+              from: "ANAFYPRO <noreply@anafypro.com>",
               to: [clientEmail],
               subject,
               html,

@@ -109,7 +109,7 @@ ${artisanSafe}
 
     const safeFileName = `devis-${String(docNumber).replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80)}-signe.pdf`;
     const payload: any = {
-      from: "Anafy <noreply@resend.dev>",
+      from: "ANAFYPRO <noreply@anafypro.com>",
       to: [recipient],
       subject,
       html,

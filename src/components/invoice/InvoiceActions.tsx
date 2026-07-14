@@ -945,9 +945,11 @@ const InvoiceActions = ({
               <MessageCircle className="h-5 w-5 mr-2" />
               {isRTL ? '📲 واتساب' : 'WhatsApp'}
             </Button>
-            <Button onClick={sendSignatureViaEmail} variant="outline" className="w-full py-5">
+            <Button onClick={sendSignatureViaEmail} disabled={isSendingSignatureEmail} variant="outline" className="w-full py-5">
               <Mail className="h-5 w-5 mr-2" />
-              {isRTL ? '✉️ إيميل' : 'Email'}
+              {isSendingSignatureEmail
+                ? (isRTL ? 'جارٍ الإرسال…' : 'Envoi en cours…')
+                : (isRTL ? '✉️ إيميل' : 'Email')}
             </Button>
           </div>
         </DialogContent>

@@ -98,6 +98,7 @@ const InvoiceActions = ({
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [signatureChoice, setSignatureChoice] = useState<{ url: string; token: string } | null>(null);
+  const [isSendingSignatureEmail, setIsSendingSignatureEmail] = useState(false);
   const SAFETY_BLOCK_MESSAGE = 'Erreur de calcul – document bloqué pour sécurité';
 
   // Pre-PDF integrity check: verify TVA and totals are consistent
@@ -709,17 +710,43 @@ const InvoiceActions = ({
     setSignatureChoice(null);
   };
 
-  const sendSignatureViaEmail = () => {
-    if (!signatureChoice) return;
-    const clientName = invoiceData.client?.name || '';
-    const artisanName = (invoiceData as any).company?.name || '';
-    const artisanPhone = (invoiceData as any).company?.phone || '';
+  const sendSignatureViaEmail = async () => {
+    if (!signatureChoice || isSendingSignatureEmail) return;
     const clientEmail = (invoiceData.client as any)?.email || '';
-    const objet = (invoiceData as any).objet || (invoiceData as any).object || 'les travaux';
-    const subject = `Signature requise — Devis n° ${invoiceData.number}`;
-    const body = `Bonjour ${clientName},\n\nVeuillez trouver ci-joint le devis n° ${invoiceData.number} pour ${objet}.\n\nPour signer électroniquement, cliquez sur le lien suivant :\n${signatureChoice.url}\n\nCordialement,\n${artisanName}${artisanPhone ? `\n${artisanPhone}` : ''}`;
-    window.location.href = `mailto:${clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    setSignatureChoice(null);
+    setIsSendingSignatureEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('signature-email-invite', {
+        body: {
+          token: signatureChoice.token,
+          signUrl: signatureChoice.url,
+          recipientEmail: clientEmail || undefined,
+        },
+      });
+      if (error || (data as any)?.error) {
+        const details = (data as any)?.error || error?.message || 'Envoi impossible.';
+        console.error('[signature-email-invite] failed:', details);
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'خطأ' : 'Échec de l’envoi',
+          description: typeof details === 'string' ? details : 'Impossible d’envoyer l’e-mail au client.',
+        });
+        return;
+      }
+      toast({
+        title: isRTL ? 'تم الإرسال' : 'E-mail envoyé',
+        description: isRTL ? 'تم إرسال رابط التوقيع للعميل.' : 'Le lien de signature a été envoyé au client.',
+      });
+      setSignatureChoice(null);
+    } catch (e: any) {
+      console.error('[signature-email-invite] unexpected:', e);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Erreur',
+        description: 'Impossible d’envoyer l’e-mail au client.',
+      });
+    } finally {
+      setIsSendingSignatureEmail(false);
+    }
   };
 
   return (

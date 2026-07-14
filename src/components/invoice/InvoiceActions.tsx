@@ -567,6 +567,85 @@ const InvoiceActions = ({
       let token: string | null = existing?.status === 'pending' ? (existing as any).token : null;
 
       if (!token) {
+        // ── PRE-REQUIS SIGNATURE : garantir que le PDF original existe ──
+        // Génère le PDF actuel, l'upload à un chemin stable {user_id}/{document_id}.pdf
+        // (upsert), puis met à jour documents_comptables.pdf_url. En cas d'échec,
+        // on N'INSÈRE PAS la demande de signature (fail-fast avec message clair).
+        try {
+          const originalPdfBlob = await buildPdfBlob({ embedFacturX: true });
+          if (!originalPdfBlob) {
+            toast({
+              variant: 'destructive',
+              title: isRTL ? 'خطأ في إنشاء PDF' : 'Erreur génération PDF',
+              description: isRTL
+                ? 'تعذر إنشاء PDF الأصلي للمستند'
+                : "Impossible de générer le PDF original du devis. Réessayez.",
+            });
+            return;
+          }
+
+          const stablePath = `${user.id}/${docId}.pdf`;
+          const { error: uploadError } = await supabase.storage
+            .from('signed-documents')
+            .upload(stablePath, originalPdfBlob, {
+              contentType: 'application/pdf',
+              upsert: true,
+            });
+          if (uploadError) {
+            console.error('[Signature] original PDF upload error:', uploadError);
+            toast({
+              variant: 'destructive',
+              title: isRTL ? 'خطأ في رفع PDF' : 'Erreur téléversement PDF',
+              description: isRTL
+                ? 'تعذر تحميل PDF الأصلي. لم يتم إنشاء طلب التوقيع.'
+                : "Le PDF original n'a pas pu être téléversé. La demande de signature n'a pas été créée.",
+            });
+            return;
+          }
+
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from('signed-documents')
+            .createSignedUrl(stablePath, 60 * 60 * 24 * 7);
+          if (signedError || !signedData?.signedUrl) {
+            console.error('[Signature] original PDF signed URL error:', signedError);
+            toast({
+              variant: 'destructive',
+              title: isRTL ? 'خطأ في رابط PDF' : 'Erreur lien PDF',
+              description: isRTL
+                ? 'تعذر إنشاء رابط PDF الأصلي. لم يتم إنشاء طلب التوقيع.'
+                : "URL du PDF original indisponible. La demande de signature n'a pas été créée.",
+            });
+            return;
+          }
+
+          const { error: updateError } = await supabase
+            .from('documents_comptables')
+            .update({ pdf_url: signedData.signedUrl })
+            .eq('id', docId)
+            .eq('user_id', user.id);
+          if (updateError) {
+            console.error('[Signature] pdf_url persist error:', updateError);
+            toast({
+              variant: 'destructive',
+              title: isRTL ? 'خطأ' : 'Erreur',
+              description: isRTL
+                ? 'تعذر تحديث رابط PDF. لم يتم إنشاء طلب التوقيع.'
+                : "Impossible d'enregistrer l'URL du PDF. La demande de signature n'a pas été créée.",
+            });
+            return;
+          }
+        } catch (prepErr: any) {
+          console.error('[Signature] PDF preparation failed:', prepErr);
+          toast({
+            variant: 'destructive',
+            title: isRTL ? 'خطأ في تحضير PDF' : 'Erreur préparation PDF',
+            description: prepErr?.message || (isRTL
+              ? 'تعذر تحضير PDF. لم يتم إنشاء طلب التوقيع.'
+              : "Préparation du PDF impossible. La demande de signature n'a pas été créée."),
+          });
+          return;
+        }
+
         const snapshot = {
           document_number: invoiceData.number,
           document_type: invoiceData.type,

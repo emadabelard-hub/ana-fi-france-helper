@@ -693,6 +693,7 @@ const InvoiceActions = ({
 
       try { await navigator.clipboard.writeText(signUrl); } catch { /* ignore */ }
 
+      setSignatureEmailRecipient(((invoiceData.client as any)?.email || '').trim());
       setSignatureChoice({ url: signUrl, token: token! });
     } catch (e: any) {
       console.error('[Signature] unexpected:', e);

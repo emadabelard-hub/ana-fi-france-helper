@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, CheckCircle2, Download } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Download, Eye } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   getSupplierInvoice,
   markSupplierInvoicePaid,
@@ -184,13 +185,55 @@ export default function SupplierInvoiceDetailPage() {
 
 
       <div className="flex gap-2 flex-wrap">
-        {invoice.pdf_url && (
-          <Button variant="outline" asChild>
-            <a href={invoice.pdf_url} target="_blank" rel="noreferrer">
+        {invoice.pdf_url ? (
+          <>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const { data, error } = await supabase.storage
+                  .from("documents")
+                  .createSignedUrl(invoice.pdf_url as string, 600);
+                if (error || !data?.signedUrl) {
+                  console.warn("[supplier-invoice] sign view failed:", error);
+                  toast.error(
+                    isRTL
+                      ? "الفاتورة الأصلية غير متاحة مؤقتاً"
+                      : "Facture originale temporairement indisponible",
+                  );
+                  return;
+                }
+                window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+              }}
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              {isRTL ? "عرض الفاتورة الأصلية" : "Voir la facture originale"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const { data, error } = await supabase.storage
+                  .from("documents")
+                  .createSignedUrl(invoice.pdf_url as string, 600, { download: true });
+                if (error || !data?.signedUrl) {
+                  console.warn("[supplier-invoice] sign download failed:", error);
+                  toast.error(
+                    isRTL
+                      ? "الفاتورة الأصلية غير متاحة مؤقتاً"
+                      : "Facture originale temporairement indisponible",
+                  );
+                  return;
+                }
+                window.location.href = data.signedUrl;
+              }}
+            >
               <Download className="h-4 w-4 mr-1" />
-              {isRTL ? "تحميل PDF" : "Télécharger PDF"}
-            </a>
-          </Button>
+              {isRTL ? "تحميل الفاتورة الأصلية" : "Télécharger la facture originale"}
+            </Button>
+          </>
+        ) : (
+          <div className="text-xs text-muted-foreground italic">
+            {isRTL ? "الفاتورة الأصلية غير متوفرة" : "Justificatif original non disponible"}
+          </div>
         )}
         {invoice.status !== "paid" && (
           <Button onClick={markPaid} disabled={busy} className="bg-emerald-600 hover:bg-emerald-700 text-white">

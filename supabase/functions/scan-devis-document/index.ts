@@ -25,7 +25,6 @@ Réponds UNIQUEMENT avec le JSON, sans texte autour, sans markdown.`;
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  try {
     // Auth guard
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {

@@ -70,10 +70,15 @@ Deno.serve(async (req) => {
       .eq("user_id", sigRow.user_id)
       .maybeSingle();
 
-    // Recipient: client email from documents_comptables (fallback to override sent from UI).
-    const recipient = (doc as any)?.client_email || recipientOverride || "";
-    if (!recipient || !emailRegex.test(recipient)) {
-      return new Response(JSON.stringify({ error: "Adresse e-mail du client introuvable ou invalide." }), {
+    // Recipient priority: 1) explicit recipientEmail from UI, 2) documents_comptables.client_email.
+    const overrideEmail = typeof recipientOverride === "string" ? recipientOverride.trim() : "";
+    const clientEmail = typeof (doc as any)?.client_email === "string" ? (doc as any).client_email.trim() : "";
+    const recipient =
+      overrideEmail && emailRegex.test(overrideEmail)
+        ? overrideEmail
+        : (clientEmail && emailRegex.test(clientEmail) ? clientEmail : "");
+    if (!recipient) {
+      return new Response(JSON.stringify({ error: "Adresse e-mail du client requise." }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

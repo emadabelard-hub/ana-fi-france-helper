@@ -3,6 +3,7 @@ import { FileText, Copy, Eye, EyeOff, Share2, ShieldCheck, ExternalLink, Downloa
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { MessageCircle, Mail } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -99,6 +100,8 @@ const InvoiceActions = ({
   const [isUploading, setIsUploading] = useState(false);
   const [signatureChoice, setSignatureChoice] = useState<{ url: string; token: string } | null>(null);
   const [isSendingSignatureEmail, setIsSendingSignatureEmail] = useState(false);
+  const [signatureEmailRecipient, setSignatureEmailRecipient] = useState('');
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const SAFETY_BLOCK_MESSAGE = 'Erreur de calcul – document bloqué pour sécurité';
 
   // Pre-PDF integrity check: verify TVA and totals are consistent
@@ -690,6 +693,7 @@ const InvoiceActions = ({
 
       try { await navigator.clipboard.writeText(signUrl); } catch { /* ignore */ }
 
+      setSignatureEmailRecipient(((invoiceData.client as any)?.email || '').trim());
       setSignatureChoice({ url: signUrl, token: token! });
     } catch (e: any) {
       console.error('[Signature] unexpected:', e);
@@ -712,18 +716,26 @@ const InvoiceActions = ({
 
   const sendSignatureViaEmail = async () => {
     if (!signatureChoice || isSendingSignatureEmail) return;
-    const clientEmail = (invoiceData.client as any)?.email || '';
+    const recipient = signatureEmailRecipient.trim();
+    if (!recipient || !EMAIL_REGEX.test(recipient)) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Adresse invalide',
+        description: 'Veuillez saisir une adresse e-mail valide.',
+      });
+      return;
+    }
     setIsSendingSignatureEmail(true);
     try {
       const { data, error } = await supabase.functions.invoke('signature-email-invite', {
         body: {
           token: signatureChoice.token,
           signUrl: signatureChoice.url,
-          recipientEmail: clientEmail || undefined,
+          recipientEmail: recipient,
         },
       });
       if (error || (data as any)?.error) {
-        const details = (data as any)?.error || error?.message || 'Envoi impossible.';
+        const details = (data as any)?.error || error?.message || 'L’envoi du lien de signature a échoué. Veuillez réessayer.';
         console.error('[signature-email-invite] failed:', details);
         toast({
           variant: 'destructive',
@@ -742,7 +754,7 @@ const InvoiceActions = ({
       toast({
         variant: 'destructive',
         title: isRTL ? 'خطأ' : 'Erreur',
-        description: 'Impossible d’envoyer l’e-mail au client.',
+        description: 'L’envoi du lien de signature a échoué. Veuillez réessayer.',
       });
     } finally {
       setIsSendingSignatureEmail(false);
@@ -945,13 +957,38 @@ const InvoiceActions = ({
               <MessageCircle className="h-5 w-5 mr-2" />
               {isRTL ? '📲 واتساب' : 'WhatsApp'}
             </Button>
-            <Button onClick={sendSignatureViaEmail} disabled={isSendingSignatureEmail} variant="outline" className="w-full py-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="signature-email-recipient" className={cn("text-sm", isRTL && "font-cairo text-right block")}>
+                {isRTL ? 'بريد العميل الإلكتروني' : 'Adresse e-mail du client'}
+              </Label>
+              <Input
+                id="signature-email-recipient"
+                type="email"
+                lang="fr"
+                dir="ltr"
+                placeholder="client@example.com"
+                value={signatureEmailRecipient}
+                onChange={(e) => setSignatureEmailRecipient(e.target.value)}
+                disabled={isSendingSignatureEmail}
+              />
+            </div>
+            <Button
+              onClick={sendSignatureViaEmail}
+              disabled={
+                isSendingSignatureEmail ||
+                !signatureEmailRecipient.trim() ||
+                !EMAIL_REGEX.test(signatureEmailRecipient.trim())
+              }
+              variant="outline"
+              className="w-full py-5"
+            >
               <Mail className="h-5 w-5 mr-2" />
               {isSendingSignatureEmail
                 ? (isRTL ? 'جارٍ الإرسال…' : 'Envoi en cours…')
-                : (isRTL ? '✉️ إيميل' : 'Email')}
+                : (isRTL ? '✉️ إيميل' : 'Envoyer par email')}
             </Button>
           </div>
+
         </DialogContent>
       </Dialog>
 

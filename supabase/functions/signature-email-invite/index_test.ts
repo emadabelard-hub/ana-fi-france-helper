@@ -1,9 +1,9 @@
 // Tests for signature-email-invite edge function.
-// Approach: copy index.ts into a sibling file, patch the Supabase SDK import
-// to a local stub, and convert Deno.serve(handler) into an exported handler.
-// Then exercise the handler as a plain async function.
+// Strategy: shim Deno.serve to capture the handler, and shim globalThis.fetch
+// so any import of a Supabase SDK path or Resend endpoint is intercepted.
+// The real index.ts is then imported unchanged.
 //
-// Run with: deno test --allow-net --allow-env --allow-read --allow-write
+// Run with: deno test --allow-net --allow-env --allow-read
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
@@ -19,45 +19,7 @@ interface Fixture {
 let fixture: Fixture;
 let lastResendPayload: any = null;
 
-// ---- Write the Supabase stub used by the patched handler -----------------
-
-const stubPath = new URL("./_supabase_stub.ts", import.meta.url).pathname;
-await Deno.writeTextFile(
-  stubPath,
-  `export function createClient() {
-  return {
-    from(table) {
-      const q = {
-        select: () => q,
-        eq: () => q,
-        maybeSingle: async () => {
-          const g = globalThis.__sigInviteFixture;
-          if (table === "signature_requests")
-            return { data: g.sigRow, error: g.sigRow ? null : { message: "not found" } };
-          if (table === "documents_comptables") return { data: g.docRow, error: null };
-          if (table === "profiles") return { data: g.profileRow, error: null };
-          return { data: null, error: null };
-        },
-      };
-      return q;
-    },
-  };
-}
-`,
-);
-
-// ---- Build a patched copy of index.ts that exports a handler -------------
-
-const originalImport = "https://esm.sh/@supabase/supabase-js@2.93.1";
-const src = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
-const patched = src
-  .replace(originalImport, "./_supabase_stub.ts")
-  .replace("Deno.serve(async (req) => {", "export const handler = async (req: Request): Promise<Response> => {");
-const patchedPath = new URL("./_handler_under_test.ts", import.meta.url).pathname;
-// The original ends with `});` — strip the trailing `)` from Deno.serve wrapper.
-await Deno.writeTextFile(patchedPath, patched.replace(/\}\);\s*$/, "};\n"));
-
-// ---- Intercept fetch to mock Resend --------------------------------------
+// ---- Intercept fetch (Resend) -------------------------------------------
 
 const realFetch = globalThis.fetch;
 globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -69,13 +31,86 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   return realFetch(input as any, init);
 }) as typeof fetch;
 
-Deno.env.set("SUPABASE_URL", "http://stub");
-Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "stub");
-Deno.env.set("RESEND_API_KEY", "stub");
+// ---- Shim Deno.serve to capture the handler --------------------------------
 
-const { handler } = await import(new URL("./_handler_under_test.ts", import.meta.url).toString()) as {
-  handler: (req: Request) => Promise<Response>;
+let capturedHandler: ((req: Request) => Response | Promise<Response>) | null = null;
+const originalServe = Deno.serve;
+// deno-lint-ignore no-explicit-any
+(Deno as any).serve = (h: any) => {
+  capturedHandler = h;
+  // Return a fake HttpServer-like object with a finished promise + no-op shutdown.
+  return {
+    finished: Promise.resolve(),
+    shutdown: async () => {},
+    ref: () => {},
+    unref: () => {},
+  };
 };
+
+// ---- Shim the Supabase SDK URL via an import map at runtime is not possible;
+// instead we monkey-patch by pre-registering the module in the loader cache
+// using a dynamic import of a data URL that re-exports our stub.
+// Simpler: override createClient on the module by intercepting via an
+// ESM shim served from a data: URL, then replacing the module's export.
+// Cleanest supported path: register an import hook via a specifier map is
+// unavailable at runtime — so we rely on the fact that our stub is served
+// through a small trick: we set an env var the function ignores, but we
+// also stub the SDK by importing it first and mutating createClient.
+
+// Import the real SDK then replace createClient with our stub before importing
+// the handler. Because ESM bindings are live, mutating the module's named
+// export is not permitted; we instead patch the module namespace via the
+// module cache by using the URL-level import and reassigning on the object.
+// Deno exposes the cached module via dynamic import — mutation of exports is
+// not supported. So we fall back to a working technique: pre-set globalThis
+// createClient and wrap by using a custom import map.
+
+// ---- Simplest working path: use a --import-map isn't available here.
+// Instead we set required env vars and prevent the real SDK from being
+// exercised by ensuring the fixture's sigRow drives everything. The real
+// createClient call succeeds (constructs an in-memory client); we then
+// intercept the network layer via fetch above — the SDK uses fetch for its
+// REST calls, so all .from().select().eq().maybeSingle() go through fetch.
+
+Deno.env.set("SUPABASE_URL", "http://stub.local");
+Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "stub-service-key");
+Deno.env.set("RESEND_API_KEY", "stub-resend-key");
+
+// Extend the fetch shim to also mock PostgREST reads made by the SDK.
+const fetchWithSupabase = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url;
+
+  if (url.startsWith("https://api.resend.com/")) {
+    lastResendPayload = init?.body ? JSON.parse(init.body as string) : null;
+    return new Response(fixture.resendBody, { status: fixture.resendStatus });
+  }
+
+  if (url.startsWith("http://stub.local/rest/v1/")) {
+    const path = url.slice("http://stub.local/rest/v1/".length);
+    const table = path.split("?")[0];
+    let row: unknown = null;
+    if (table === "signature_requests") row = fixture.sigRow;
+    else if (table === "documents_comptables") row = fixture.docRow;
+    else if (table === "profiles") row = fixture.profileRow;
+    // PostgREST returns an array; .maybeSingle() picks first or null.
+    const body = row ? [row] : [];
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  return realFetch(input as any, init);
+}) as typeof fetch;
+globalThis.fetch = fetchWithSupabase;
+
+// Import the real handler (this triggers Deno.serve, which our shim captures).
+await import("./index.ts");
+// Restore Deno.serve for cleanliness (not strictly required).
+(Deno as any).serve = originalServe;
+
+if (!capturedHandler) throw new Error("handler was not captured from Deno.serve");
+const handler = capturedHandler;
 
 // ---- Helpers -------------------------------------------------------------
 
@@ -122,8 +157,8 @@ Deno.test("404 when signature row not found", async () => {
   await res.text();
 });
 
-Deno.test("400 when no recipient email is available at all", async () => {
-  resetFixture();
+Deno.test("400 when no recipient email is available", async () => {
+  resetFixture(); // docRow.client_email null, no override
   const res = await call({ token: "abc" });
   assertEquals(res.status, 400);
   assertEquals((await res.json()).error, "Adresse e-mail du client requise.");

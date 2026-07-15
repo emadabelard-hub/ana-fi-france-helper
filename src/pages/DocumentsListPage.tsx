@@ -809,6 +809,19 @@ const DocumentsListPage = () => {
              doc.status === 'cancelled' ? (isRTL ? 'ملغاة' : 'Annulée') :
              (isRTL ? 'مسودة' : 'Brouillon')}
           </span>
+          {isDevis && signedMap[doc.id] && (
+            <span
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1"
+              title={signedMap[doc.id]?.signed_at
+                ? `${isRTL ? 'موقّع في' : 'Signé le'} ${new Date(signedMap[doc.id].signed_at as string).toLocaleDateString('fr-FR')}`
+                : undefined}
+            >
+              <CheckCircle className="h-2.5 w-2.5" />
+              {signedMap[doc.id]?.signed_at
+                ? `${isRTL ? 'موقّع' : 'Signé'} · ${new Date(signedMap[doc.id].signed_at as string).toLocaleDateString('fr-FR')}`
+                : (isRTL ? 'موقّع' : 'Signé')}
+            </span>
+          )}
           <div className={cn(
             "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
             isDevis ? "bg-amber-500/15 text-amber-400" : "bg-emerald-500/15 text-emerald-400"

@@ -957,13 +957,38 @@ const InvoiceActions = ({
               <MessageCircle className="h-5 w-5 mr-2" />
               {isRTL ? '📲 واتساب' : 'WhatsApp'}
             </Button>
-            <Button onClick={sendSignatureViaEmail} disabled={isSendingSignatureEmail} variant="outline" className="w-full py-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="signature-email-recipient" className={cn("text-sm", isRTL && "font-cairo text-right block")}>
+                {isRTL ? 'بريد العميل الإلكتروني' : 'Adresse e-mail du client'}
+              </Label>
+              <Input
+                id="signature-email-recipient"
+                type="email"
+                lang="fr"
+                dir="ltr"
+                placeholder="client@example.com"
+                value={signatureEmailRecipient}
+                onChange={(e) => setSignatureEmailRecipient(e.target.value)}
+                disabled={isSendingSignatureEmail}
+              />
+            </div>
+            <Button
+              onClick={sendSignatureViaEmail}
+              disabled={
+                isSendingSignatureEmail ||
+                !signatureEmailRecipient.trim() ||
+                !EMAIL_REGEX.test(signatureEmailRecipient.trim())
+              }
+              variant="outline"
+              className="w-full py-5"
+            >
               <Mail className="h-5 w-5 mr-2" />
               {isSendingSignatureEmail
                 ? (isRTL ? 'جارٍ الإرسال…' : 'Envoi en cours…')
-                : (isRTL ? '✉️ إيميل' : 'Email')}
+                : (isRTL ? '✉️ إيميل' : 'Envoyer par email')}
             </Button>
           </div>
+
         </DialogContent>
       </Dialog>
 

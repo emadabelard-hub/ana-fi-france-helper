@@ -500,7 +500,13 @@ const DocumentsListPage = () => {
     navigate('/pro/invoice-creator?type=devis&prefill=quote');
   };
 
-  const handleOpenDocument = (doc: DocumentRow) => {
+  const handleOpenDocument = async (doc: DocumentRow) => {
+    // Signed devis: open the signed PDF via a fresh short-lived signed URL.
+    if (doc.document_type === 'devis' && signedMap[doc.id]?.signed_pdf_path) {
+      const ok = await openSignedPdfForDoc(doc);
+      if (ok) return;
+      // Fallback: keep the existing in-app view as a last resort.
+    }
     openDocumentView(doc);
   };
 

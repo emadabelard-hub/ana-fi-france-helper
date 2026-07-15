@@ -110,7 +110,7 @@ await import("./index.ts");
 (Deno as any).serve = originalServe;
 
 if (!capturedHandler) throw new Error("handler was not captured from Deno.serve");
-const handler = capturedHandler;
+const handler: (req: Request) => Response | Promise<Response> = capturedHandler;
 
 // ---- Helpers -------------------------------------------------------------
 

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   ocrSupplierInvoice,
   createSupplierInvoice,
@@ -49,6 +50,7 @@ export default function SupplierInvoiceImportModal({ open, onOpenChange, onCreat
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("601000");
   const [notes, setNotes] = useState("");
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
 
   const reset = () => {
     setStep("upload"); setOcring(false); setSaving(false);
@@ -56,6 +58,7 @@ export default function SupplierInvoiceImportModal({ open, onOpenChange, onCreat
     setInvoiceDate(new Date().toISOString().slice(0, 10));
     setAmountHt(""); setTvaRate("20");
     setDescription(""); setCategory("601000"); setNotes("");
+    setOriginalFile(null);
   };
 
   const close = () => { onOpenChange(false); setTimeout(reset, 200); };
@@ -65,6 +68,7 @@ export default function SupplierInvoiceImportModal({ open, onOpenChange, onCreat
       toast.error(isRTL ? "الملف كبير جداً (10 ميغا كحد أقصى)" : "Fichier trop volumineux (10 Mo max)");
       return;
     }
+    setOriginalFile(file);
     setOcring(true);
     try {
       const b64 = await toBase64(file);
@@ -94,6 +98,38 @@ export default function SupplierInvoiceImportModal({ open, onOpenChange, onCreat
     }
     setSaving(true);
     try {
+      // 1) Upload original file (if provided) to bucket "documents" under
+      //    <user_id>/supplier-invoices/<timestamp>_<clean-name>.
+      let pdfPath: string | null = null;
+      if (originalFile) {
+        const { data: userData, error: userErr } = await supabase.auth.getUser();
+        if (userErr || !userData?.user || userData.user.is_anonymous) {
+          throw new Error(isRTL ? "الجلسة منتهية" : "Session expirée");
+        }
+        const uid = userData.user.id;
+        const cleanName = (originalFile.name || "facture")
+          .replace(/[^\w.\-]+/g, "_")
+          .slice(0, 120);
+        pdfPath = `${uid}/supplier-invoices/${Date.now()}_${cleanName}`;
+        const { error: upErr } = await supabase.storage
+          .from("documents")
+          .upload(pdfPath, originalFile, {
+            contentType: originalFile.type || "application/octet-stream",
+            upsert: false,
+          });
+        if (upErr) {
+          console.error("[supplier-invoice] upload failed:", upErr);
+          toast.error(
+            isRTL
+              ? "تعذّر رفع الفاتورة الأصلية — لم يتم إنشاء البطاقة"
+              : "Impossible d'enregistrer la facture originale — fiche non créée",
+          );
+          setSaving(false);
+          return;
+        }
+      }
+
+      // 2) Create the ACH record with the stable Storage path.
       await createSupplierInvoice({
         supplier_name: supplierName.trim() || null,
         supplier_reference: supplierRef.trim() || null,
@@ -103,6 +139,7 @@ export default function SupplierInvoiceImportModal({ open, onOpenChange, onCreat
         description: description.trim() || null,
         category_code: category,
         notes: notes.trim() || null,
+        pdf_url: pdfPath,
       });
       toast.success(isRTL ? "تم إنشاء الفاتورة" : "Facture créée");
       onCreated();

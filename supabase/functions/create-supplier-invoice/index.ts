@@ -48,6 +48,24 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Validate pdf_url ownership: must be a stable Storage path scoped to this user's supplier-invoices folder.
+    let safePdfUrl: string | null = null;
+    if (pdf_url !== undefined && pdf_url !== null && pdf_url !== "") {
+      if (typeof pdf_url !== "string") {
+        return new Response(JSON.stringify({ error: "invalid pdf_url" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const expectedPrefix = `${user.id}/supplier-invoices/`;
+      if (!pdf_url.startsWith(expectedPrefix) || pdf_url.includes("..")) {
+        return new Response(JSON.stringify({ error: "pdf_url path not allowed for this user" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      safePdfUrl = pdf_url;
+    }
+
     const ht = Number(amount_ht);
     const rate = Number(tva_rate ?? 20);
     if (!isFinite(ht) || ht < 0) {
@@ -103,7 +121,7 @@ serve(async (req) => {
         amount_ttc: ttc,
         status: "received",
         source: source || "manual",
-        pdf_url: pdf_url ?? null,
+        pdf_url: safePdfUrl,
         notes: notes ?? null,
       })
       .select("*")

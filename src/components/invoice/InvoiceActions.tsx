@@ -754,7 +754,7 @@ const InvoiceActions = ({
       toast({
         variant: 'destructive',
         title: isRTL ? 'خطأ' : 'Erreur',
-        description: 'Impossible d’envoyer l’e-mail au client.',
+        description: 'L’envoi du lien de signature a échoué. Veuillez réessayer.',
       });
     } finally {
       setIsSendingSignatureEmail(false);

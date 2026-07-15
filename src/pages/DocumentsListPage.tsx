@@ -228,8 +228,34 @@ const DocumentsListPage = () => {
       .select('devis_id, milestone_index, facture_id, facture_number, statut')
       .eq('user_id', user.id);
 
-    const [docsRes, expensesRes, chantiersRes, milestonesRes] = await Promise.all([documentsQuery, expensesQuery, chantiersQuery, milestoneQuery]);
+    // Fetch signed signature_requests for the current user only.
+    // RLS restricts this to the connected user's own rows.
+    const signaturesQuery = (supabase
+      .from('signature_requests') as any)
+      .select('document_id, status, signed_pdf_path, signed_at, signer_name')
+      .eq('user_id', user.id)
+      .eq('status', 'signed')
+      .order('signed_at', { ascending: false });
+
+    const [docsRes, expensesRes, chantiersRes, milestonesRes, signaturesRes] = await Promise.all([documentsQuery, expensesQuery, chantiersQuery, milestoneQuery, signaturesQuery]);
     if (!milestonesRes.error && milestonesRes.data) setMilestoneInvoices(milestonesRes.data);
+
+    // Build map: keep only the most recent signed request per document_id
+    if (!signaturesRes.error && Array.isArray(signaturesRes.data)) {
+      const map: Record<string, { signed_pdf_path: string | null; signed_at: string | null; signer_name: string | null }> = {};
+      for (const row of signaturesRes.data as any[]) {
+        if (!row?.document_id) continue;
+        if (map[row.document_id]) continue; // list is already DESC by signed_at
+        map[row.document_id] = {
+          signed_pdf_path: row.signed_pdf_path || null,
+          signed_at: row.signed_at || null,
+          signer_name: row.signer_name || null,
+        };
+      }
+      setSignedMap(map);
+    } else {
+      setSignedMap({});
+    }
 
     if (!docsRes.error && docsRes.data) {
       // Dédupliquer par (document_type, document_number) — garde le plus récent

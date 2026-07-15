@@ -117,6 +117,38 @@ const DocumentsListPage = () => {
   const [savingExpense, setSavingExpense] = useState(false);
   const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
 
+  // Map: document_id -> { signed_pdf_path, signed_at, signer_name } for latest signed request
+  const [signedMap, setSignedMap] = useState<Record<string, { signed_pdf_path: string | null; signed_at: string | null; signer_name: string | null }>>({});
+
+  // Open the signed PDF of a devis by generating a fresh short-lived signed URL.
+  // Falls back to the original pdf_url only if the signed version is unavailable.
+  const openSignedPdfForDoc = async (doc: DocumentRow): Promise<boolean> => {
+    const sig = signedMap[doc.id];
+    if (!sig?.signed_pdf_path) return false;
+    try {
+      const { data, error } = await supabase.storage
+        .from('signed-documents')
+        .createSignedUrl(sig.signed_pdf_path, 600);
+      if (error || !data?.signedUrl) {
+        console.warn('[DocsList] signed PDF URL failed');
+        toast({
+          title: isRTL ? 'النسخة الموقّعة غير متاحة مؤقتاً' : 'Version signée temporairement indisponible',
+          variant: 'destructive',
+        });
+        return false;
+      }
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+      return true;
+    } catch (err) {
+      console.warn('[DocsList] signed PDF error');
+      toast({
+        title: isRTL ? 'تعذّر فتح النسخة الموقّعة' : 'Impossible d’ouvrir la version signée',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
   const convertedSourceNumbers = useMemo(() => {
     const values = documents
       .filter((d) => d.document_type === 'facture')
@@ -196,8 +228,34 @@ const DocumentsListPage = () => {
       .select('devis_id, milestone_index, facture_id, facture_number, statut')
       .eq('user_id', user.id);
 
-    const [docsRes, expensesRes, chantiersRes, milestonesRes] = await Promise.all([documentsQuery, expensesQuery, chantiersQuery, milestoneQuery]);
+    // Fetch signed signature_requests for the current user only.
+    // RLS restricts this to the connected user's own rows.
+    const signaturesQuery = (supabase
+      .from('signature_requests') as any)
+      .select('document_id, status, signed_pdf_path, signed_at, signer_name')
+      .eq('user_id', user.id)
+      .eq('status', 'signed')
+      .order('signed_at', { ascending: false });
+
+    const [docsRes, expensesRes, chantiersRes, milestonesRes, signaturesRes] = await Promise.all([documentsQuery, expensesQuery, chantiersQuery, milestoneQuery, signaturesQuery]);
     if (!milestonesRes.error && milestonesRes.data) setMilestoneInvoices(milestonesRes.data);
+
+    // Build map: keep only the most recent signed request per document_id
+    if (!signaturesRes.error && Array.isArray(signaturesRes.data)) {
+      const map: Record<string, { signed_pdf_path: string | null; signed_at: string | null; signer_name: string | null }> = {};
+      for (const row of signaturesRes.data as any[]) {
+        if (!row?.document_id) continue;
+        if (map[row.document_id]) continue; // list is already DESC by signed_at
+        map[row.document_id] = {
+          signed_pdf_path: row.signed_pdf_path || null,
+          signed_at: row.signed_at || null,
+          signer_name: row.signer_name || null,
+        };
+      }
+      setSignedMap(map);
+    } else {
+      setSignedMap({});
+    }
 
     if (!docsRes.error && docsRes.data) {
       // Dédupliquer par (document_type, document_number) — garde le plus récent
@@ -442,7 +500,13 @@ const DocumentsListPage = () => {
     navigate('/pro/invoice-creator?type=devis&prefill=quote');
   };
 
-  const handleOpenDocument = (doc: DocumentRow) => {
+  const handleOpenDocument = async (doc: DocumentRow) => {
+    // Signed devis: open the signed PDF via a fresh short-lived signed URL.
+    if (doc.document_type === 'devis' && signedMap[doc.id]?.signed_pdf_path) {
+      const ok = await openSignedPdfForDoc(doc);
+      if (ok) return;
+      // Fallback: keep the existing in-app view as a last resort.
+    }
     openDocumentView(doc);
   };
 
@@ -745,6 +809,19 @@ const DocumentsListPage = () => {
              doc.status === 'cancelled' ? (isRTL ? 'ملغاة' : 'Annulée') :
              (isRTL ? 'مسودة' : 'Brouillon')}
           </span>
+          {isDevis && signedMap[doc.id] && (
+            <span
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1"
+              title={signedMap[doc.id]?.signed_at
+                ? `${isRTL ? 'موقّع في' : 'Signé le'} ${new Date(signedMap[doc.id].signed_at as string).toLocaleDateString('fr-FR')}`
+                : undefined}
+            >
+              <CheckCircle className="h-2.5 w-2.5" />
+              {signedMap[doc.id]?.signed_at
+                ? `${isRTL ? 'موقّع' : 'Signé'} · ${new Date(signedMap[doc.id].signed_at as string).toLocaleDateString('fr-FR')}`
+                : (isRTL ? 'موقّع' : 'Signé')}
+            </span>
+          )}
           <div className={cn(
             "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
             isDevis ? "bg-amber-500/15 text-amber-400" : "bg-emerald-500/15 text-emerald-400"
@@ -993,7 +1070,15 @@ const DocumentsListPage = () => {
             size="sm"
             variant="ghost"
             className="h-7 text-xs text-[hsl(45,80%,70%)] hover:text-[hsl(45,80%,80%)] hover:bg-[hsl(45,80%,55%)/0.1] gap-1"
-            onClick={(e) => { e.stopPropagation(); setFormatChoiceDoc(doc); }}
+            onClick={async (e) => {
+              e.stopPropagation();
+              // Signed devis: open the signed PDF directly, skip the format dialog.
+              if (doc.document_type === 'devis' && signedMap[doc.id]?.signed_pdf_path) {
+                const ok = await openSignedPdfForDoc(doc);
+                if (ok) return;
+              }
+              setFormatChoiceDoc(doc);
+            }}
           >
             <Eye className="h-3 w-3" />
             {isRTL ? 'عرض' : 'Voir'}

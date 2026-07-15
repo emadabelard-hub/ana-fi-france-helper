@@ -117,6 +117,38 @@ const DocumentsListPage = () => {
   const [savingExpense, setSavingExpense] = useState(false);
   const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
 
+  // Map: document_id -> { signed_pdf_path, signed_at, signer_name } for latest signed request
+  const [signedMap, setSignedMap] = useState<Record<string, { signed_pdf_path: string | null; signed_at: string | null; signer_name: string | null }>>({});
+
+  // Open the signed PDF of a devis by generating a fresh short-lived signed URL.
+  // Falls back to the original pdf_url only if the signed version is unavailable.
+  const openSignedPdfForDoc = async (doc: DocumentRow): Promise<boolean> => {
+    const sig = signedMap[doc.id];
+    if (!sig?.signed_pdf_path) return false;
+    try {
+      const { data, error } = await supabase.storage
+        .from('signed-documents')
+        .createSignedUrl(sig.signed_pdf_path, 600);
+      if (error || !data?.signedUrl) {
+        console.warn('[DocsList] signed PDF URL failed');
+        toast({
+          title: isRTL ? 'النسخة الموقّعة غير متاحة مؤقتاً' : 'Version signée temporairement indisponible',
+          variant: 'destructive',
+        });
+        return false;
+      }
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+      return true;
+    } catch (err) {
+      console.warn('[DocsList] signed PDF error');
+      toast({
+        title: isRTL ? 'تعذّر فتح النسخة الموقّعة' : 'Impossible d’ouvrir la version signée',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
   const convertedSourceNumbers = useMemo(() => {
     const values = documents
       .filter((d) => d.document_type === 'facture')

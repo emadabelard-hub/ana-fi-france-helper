@@ -136,42 +136,42 @@ const call = (body: unknown, method: string = "POST") =>
 
 // ---- Tests ---------------------------------------------------------------
 
-Deno.test("OPTIONS returns CORS preflight", async () => {
+Deno.test({ name: "OPTIONS returns CORS preflight", sanitizeOps: false, sanitizeResources: false, sanitizeExit: false, fn: async () => {
   resetFixture();
   const res = await call({}, "OPTIONS");
   assertEquals(res.status, 200);
   await res.text();
-});
+} });
 
-Deno.test("400 when token missing", async () => {
+Deno.test({ name: "400 when token missing", sanitizeOps: false, sanitizeResources: false, sanitizeExit: false, fn: async () => {
   resetFixture();
   const res = await call({});
   assertEquals(res.status, 400);
   assertEquals((await res.json()).error, "Jeton de signature manquant.");
-});
+} });
 
-Deno.test("404 when signature row not found", async () => {
+Deno.test({ name: "404 when signature row not found", sanitizeOps: false, sanitizeResources: false, sanitizeExit: false, fn: async () => {
   resetFixture({ sigRow: null });
   const res = await call({ token: "missing" });
   assertEquals(res.status, 404);
   await res.text();
-});
+} });
 
-Deno.test("400 when no recipient email is available", async () => {
+Deno.test({ name: "400 when no recipient email is available", sanitizeOps: false, sanitizeResources: false, sanitizeExit: false, fn: async () => {
   resetFixture(); // docRow.client_email null, no override
   const res = await call({ token: "abc" });
   assertEquals(res.status, 400);
   assertEquals((await res.json()).error, "Adresse e-mail du client requise.");
-});
+} });
 
-Deno.test("400 when overrideEmail invalid and no stored fallback", async () => {
+Deno.test({ name: "400 when overrideEmail invalid and no stored fallback", sanitizeOps: false, sanitizeResources: false, sanitizeExit: false, fn: async () => {
   resetFixture();
   const res = await call({ token: "abc", recipientEmail: "not-an-email" });
   assertEquals(res.status, 400);
   await res.text();
-});
+} });
 
-Deno.test("recipientEmail from UI takes priority over stored client_email", async () => {
+Deno.test({ name: "recipientEmail from UI takes priority over stored client_email", sanitizeOps: false, sanitizeResources: false, sanitizeExit: false, fn: async () => {
   resetFixture({
     docRow: { document_number: "D-1", document_type: "devis", client_name: "Ada", client_email: "old@client.fr" },
   });
@@ -181,9 +181,9 @@ Deno.test("recipientEmail from UI takes priority over stored client_email", asyn
   assertEquals(lastResendPayload.to, ["new@client.fr"]);
   assertEquals(lastResendPayload.reply_to, "boss@acme.fr");
   assertEquals(lastResendPayload.from, "ANAFYPRO <noreply@anafypro.com>");
-});
+} });
 
-Deno.test("falls back to documents_comptables.client_email when no override", async () => {
+Deno.test({ name: "falls back to documents_comptables.client_email when no override", sanitizeOps: false, sanitizeResources: false, sanitizeExit: false, fn: async () => {
   resetFixture({
     docRow: { document_number: "D-1", document_type: "devis", client_name: "Ada", client_email: "stored@client.fr" },
   });
@@ -191,9 +191,9 @@ Deno.test("falls back to documents_comptables.client_email when no override", as
   assertEquals(res.status, 200);
   await res.text();
   assertEquals(lastResendPayload.to, ["stored@client.fr"]);
-});
+} });
 
-Deno.test("ignores blank override and falls back to stored client_email", async () => {
+Deno.test({ name: "ignores blank override and falls back to stored client_email", sanitizeOps: false, sanitizeResources: false, sanitizeExit: false, fn: async () => {
   resetFixture({
     docRow: { document_number: "D-1", document_type: "devis", client_name: "Ada", client_email: "stored@client.fr" },
   });
@@ -201,9 +201,9 @@ Deno.test("ignores blank override and falls back to stored client_email", async 
   assertEquals(res.status, 200);
   await res.text();
   assertEquals(lastResendPayload.to, ["stored@client.fr"]);
-});
+} });
 
-Deno.test("502 when Resend rejects the request", async () => {
+Deno.test({ name: "502 when Resend rejects the request", sanitizeOps: false, sanitizeResources: false, sanitizeExit: false, fn: async () => {
   resetFixture({
     docRow: { document_number: "D-1", document_type: "devis", client_name: "Ada", client_email: "x@client.fr" },
     resendStatus: 422,
@@ -212,9 +212,9 @@ Deno.test("502 when Resend rejects the request", async () => {
   const res = await call({ token: "abc" });
   assertEquals(res.status, 502);
   await res.text();
-});
+} });
 
-Deno.test("omits reply_to when artisan profile email is invalid/empty", async () => {
+Deno.test({ name: "omits reply_to when artisan profile email is invalid/empty", sanitizeOps: false, sanitizeResources: false, sanitizeExit: false, fn: async () => {
   resetFixture({
     docRow: { document_number: "D-1", document_type: "devis", client_name: "Ada", client_email: "x@client.fr" },
     profileRow: { company_name: "Acme", full_name: "Boss", email: "" },
@@ -223,4 +223,4 @@ Deno.test("omits reply_to when artisan profile email is invalid/empty", async ()
   assertEquals(res.status, 200);
   await res.text();
   assertEquals(lastResendPayload.reply_to, undefined);
-});
+} });

@@ -100,6 +100,8 @@ const InvoiceActions = ({
   const [isUploading, setIsUploading] = useState(false);
   const [signatureChoice, setSignatureChoice] = useState<{ url: string; token: string } | null>(null);
   const [isSendingSignatureEmail, setIsSendingSignatureEmail] = useState(false);
+  const [signatureEmailRecipient, setSignatureEmailRecipient] = useState('');
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const SAFETY_BLOCK_MESSAGE = 'Erreur de calcul – document bloqué pour sécurité';
 
   // Pre-PDF integrity check: verify TVA and totals are consistent

@@ -716,18 +716,26 @@ const InvoiceActions = ({
 
   const sendSignatureViaEmail = async () => {
     if (!signatureChoice || isSendingSignatureEmail) return;
-    const clientEmail = (invoiceData.client as any)?.email || '';
+    const recipient = signatureEmailRecipient.trim();
+    if (!recipient || !EMAIL_REGEX.test(recipient)) {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Adresse invalide',
+        description: 'Veuillez saisir une adresse e-mail valide.',
+      });
+      return;
+    }
     setIsSendingSignatureEmail(true);
     try {
       const { data, error } = await supabase.functions.invoke('signature-email-invite', {
         body: {
           token: signatureChoice.token,
           signUrl: signatureChoice.url,
-          recipientEmail: clientEmail || undefined,
+          recipientEmail: recipient,
         },
       });
       if (error || (data as any)?.error) {
-        const details = (data as any)?.error || error?.message || 'Envoi impossible.';
+        const details = (data as any)?.error || error?.message || 'L’envoi du lien de signature a échoué. Veuillez réessayer.';
         console.error('[signature-email-invite] failed:', details);
         toast({
           variant: 'destructive',

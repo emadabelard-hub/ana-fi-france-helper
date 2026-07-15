@@ -149,10 +149,35 @@ const SmartDevisPage = () => {
         base64 = dataUrl.replace(/^data:[^;]+;base64,/, '');
       }
 
-      const { data, error } = await supabase.functions.invoke('scan-devis-document', {
-        body: { fileData: base64, mimeType },
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        throw new Error(isRTL ? 'الجلسة منتهية، سجّل الدخول من جديد' : 'Session expirée, reconnecte-toi');
+      }
+
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/scan-devis-document`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ fileData: base64, mimeType }),
       });
-      if (error) throw error;
+
+      let data: any = null;
+      const rawText = await resp.text();
+      try { data = rawText ? JSON.parse(rawText) : null; } catch { /* keep rawText */ }
+
+      if (!resp.ok) {
+        const msg = (data && (data.error || data.message)) || rawText || `HTTP ${resp.status}`;
+        console.error('[SmartDevis] scan-devis-document HTTP', resp.status, msg);
+        throw new Error(String(msg));
+      }
+
 
       const items = Array.isArray(data?.items) ? data.items : [];
       const mapped: LineItem[] = items.map((it: any, idx: number) => ({

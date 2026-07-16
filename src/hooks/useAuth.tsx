@@ -229,6 +229,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Log BEFORE clearing so we still have identity + a valid JWT for the edge fn.
+    const currentUser = user;
+    if (currentUser && !currentUser.is_anonymous) {
+      try {
+        await logAuthEvent({ event: 'logout', email: currentUser.email ?? null, userId: currentUser.id });
+      } catch { /* ignore */ }
+    }
+
     // 1. Block auth listener from recreating sessions
     sessionStorage.setItem('explicit_signout', 'true');
     (window as any).__setSigningOut?.(true);

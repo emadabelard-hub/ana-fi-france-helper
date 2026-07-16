@@ -148,6 +148,7 @@ Deno.serve(async (req) => {
       },
       documents: docs,
       expenses,
+      supplier_invoices,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (err) {
     console.error('accountant-data error:', err);

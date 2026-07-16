@@ -32,12 +32,29 @@ interface Expense {
   notes: string | null;
   created_at: string;
 }
+interface SupplierInvoice {
+  id: string;
+  invoice_number: string | null;
+  supplier_reference: string | null;
+  supplier_id: string | null;
+  supplier_name: string | null;
+  invoice_date: string | null;
+  amount_ht: number | null;
+  tva_rate: number | null;
+  amount_tva: number | null;
+  amount_ttc: number | null;
+  status: string | null;
+  source: string | null;
+  pdf_url: string | null;
+  created_at: string;
+}
 interface AccountantPayload {
   accountant: { name: string; email: string };
   company: { company_name: string | null; siret: string | null; company_address: string | null; legal_status: string | null; tva_exempt: boolean | null; numero_tva: string | null } | null;
   summary: { caTotal: number; tvaCollected: number; tvaDeductible: number; netVat: number };
   documents: Doc[];
   expenses: Expense[];
+  supplier_invoices?: SupplierInvoice[];
 }
 
 const fmtEUR = (n: number) =>

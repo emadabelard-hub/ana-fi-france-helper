@@ -223,7 +223,7 @@ const AdminPage = () => {
               {isRTL ? 'دروس' : 'Leçons'}
             </TabsTrigger>
           </TabsList>
-          <TabsList className={cn('grid w-full grid-cols-3', isRTL && 'direction-rtl')}>
+          <TabsList className={cn('grid w-full grid-cols-4', isRTL && 'direction-rtl')}>
             <TabsTrigger value="questions" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
               <HelpCircle className="h-4 w-4" />
               {isRTL ? 'أسئلة' : 'Questions'}
@@ -235,6 +235,10 @@ const AdminPage = () => {
             <TabsTrigger value="diagnostic" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
               <Stethoscope className="h-4 w-4" />
               Diagnostic
+            </TabsTrigger>
+            <TabsTrigger value="connections" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
+              <KeyRound className="h-4 w-4" />
+              {isRTL ? 'اتصالات' : 'Connexions'}
             </TabsTrigger>
           </TabsList>
 

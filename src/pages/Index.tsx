@@ -320,7 +320,7 @@ const Index = () => {
             {isRTL ? 'صافي الربح المقدَّر' : 'Bénéfice net estimé'}
           </p>
           <p className={cn('text-[18px] font-extrabold mt-1.5 leading-none', isRTL && 'text-right')} style={{ color: COLORS.navyDark }}>
-            {fmtEUR(beneficeNet)}
+            {statsLoading ? '…' : statsError ? '—' : fmtEUR(beneficeNet)}
           </p>
           <p className={cn('text-[10px] mt-2 opacity-70', isRTL && 'text-right')} style={{ color: COLORS.navyDark }}>
             {isRTL ? 'بعد خصم المساهمات' : 'Après cotisations sociales'}

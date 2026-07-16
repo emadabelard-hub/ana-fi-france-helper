@@ -187,60 +187,64 @@ const AdminPage = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={cn('grid w-full grid-cols-4 mb-2', isRTL && 'direction-rtl')}>
-            <TabsTrigger value="dashboard" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
-              <BarChart3 className="h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="users" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
-              <Users className="h-4 w-4" />
-              {isRTL ? 'مستخدمون' : 'Utilisateurs'}
-            </TabsTrigger>
-            <TabsTrigger value="visits" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
-              <MapPin className="h-4 w-4" />
-              {isRTL ? 'زيارات' : 'Visites'}
-            </TabsTrigger>
-            <TabsTrigger value="stats" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
-              <TrendingUp className="h-4 w-4" />
-              Stats
-            </TabsTrigger>
-          </TabsList>
-          <TabsList className={cn('grid w-full grid-cols-4', isRTL && 'direction-rtl')}>
-            <TabsTrigger value="analytics" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
-              <Activity className="h-4 w-4" />
-              {isRTL ? 'تحليلات' : 'Analytics'}
-            </TabsTrigger>
-            <TabsTrigger value="transactions" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
-              <Receipt className="h-4 w-4" />
-              {isRTL ? 'معاملات' : 'Trans.'}
-            </TabsTrigger>
-            <TabsTrigger value="service-requests" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
-              <ClipboardList className="h-4 w-4" />
-              {isRTL ? 'طلبات' : 'Demandes'}
-            </TabsTrigger>
-            <TabsTrigger value="lessons" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
-              <BookOpen className="h-4 w-4" />
-              {isRTL ? 'دروس' : 'Leçons'}
-            </TabsTrigger>
-          </TabsList>
-          <TabsList className={cn('grid w-full grid-cols-4', isRTL && 'direction-rtl')}>
-            <TabsTrigger value="questions" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
-              <HelpCircle className="h-4 w-4" />
-              {isRTL ? 'أسئلة' : 'Questions'}
-            </TabsTrigger>
-            <TabsTrigger value="support" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
-              <HeadphonesIcon className="h-4 w-4" />
-              {isRTL ? 'تذاكر' : 'Tickets'}
-            </TabsTrigger>
-            <TabsTrigger value="diagnostic" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
-              <Stethoscope className="h-4 w-4" />
-              Diagnostic
-            </TabsTrigger>
-            <TabsTrigger value="connections" className={cn('gap-1 text-xs', isRTL && 'flex-row-reverse font-cairo')}>
-              <KeyRound className="h-4 w-4" />
-              {isRTL ? 'اتصالات' : 'Connexions'}
-            </TabsTrigger>
-          </TabsList>
+          <div className="w-full overflow-x-auto scrollbar-thin -mx-1 px-1 pb-1">
+            <TabsList
+              className={cn(
+                'inline-flex w-max min-w-full gap-1',
+                isRTL && 'direction-rtl flex-row-reverse',
+              )}
+            >
+              <TabsTrigger value="dashboard" className={cn('gap-1 text-xs whitespace-nowrap', isRTL && 'flex-row-reverse font-cairo')}>
+                <BarChart3 className="h-4 w-4" />
+                Dashboard
+              </TabsTrigger>
+              <TabsTrigger value="users" className={cn('gap-1 text-xs whitespace-nowrap', isRTL && 'flex-row-reverse font-cairo')}>
+                <Users className="h-4 w-4" />
+                {isRTL ? 'مستخدمون' : 'Utilisateurs'}
+              </TabsTrigger>
+              <TabsTrigger value="visits" className={cn('gap-1 text-xs whitespace-nowrap', isRTL && 'flex-row-reverse font-cairo')}>
+                <MapPin className="h-4 w-4" />
+                {isRTL ? 'زيارات' : 'Visites'}
+              </TabsTrigger>
+              <TabsTrigger value="stats" className={cn('gap-1 text-xs whitespace-nowrap', isRTL && 'flex-row-reverse font-cairo')}>
+                <TrendingUp className="h-4 w-4" />
+                Stats
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className={cn('gap-1 text-xs whitespace-nowrap', isRTL && 'flex-row-reverse font-cairo')}>
+                <Activity className="h-4 w-4" />
+                {isRTL ? 'تحليلات' : 'Analytics'}
+              </TabsTrigger>
+              <TabsTrigger value="transactions" className={cn('gap-1 text-xs whitespace-nowrap', isRTL && 'flex-row-reverse font-cairo')}>
+                <Receipt className="h-4 w-4" />
+                {isRTL ? 'معاملات' : 'Trans.'}
+              </TabsTrigger>
+              <TabsTrigger value="service-requests" className={cn('gap-1 text-xs whitespace-nowrap', isRTL && 'flex-row-reverse font-cairo')}>
+                <ClipboardList className="h-4 w-4" />
+                {isRTL ? 'طلبات' : 'Demandes'}
+              </TabsTrigger>
+              <TabsTrigger value="lessons" className={cn('gap-1 text-xs whitespace-nowrap', isRTL && 'flex-row-reverse font-cairo')}>
+                <BookOpen className="h-4 w-4" />
+                {isRTL ? 'دروس' : 'Leçons'}
+              </TabsTrigger>
+              <TabsTrigger value="questions" className={cn('gap-1 text-xs whitespace-nowrap', isRTL && 'flex-row-reverse font-cairo')}>
+                <HelpCircle className="h-4 w-4" />
+                {isRTL ? 'أسئلة' : 'Questions'}
+              </TabsTrigger>
+              <TabsTrigger value="support" className={cn('gap-1 text-xs whitespace-nowrap', isRTL && 'flex-row-reverse font-cairo')}>
+                <HeadphonesIcon className="h-4 w-4" />
+                {isRTL ? 'تذاكر' : 'Tickets'}
+              </TabsTrigger>
+              <TabsTrigger value="diagnostic" className={cn('gap-1 text-xs whitespace-nowrap', isRTL && 'flex-row-reverse font-cairo')}>
+                <Stethoscope className="h-4 w-4" />
+                Diagnostic
+              </TabsTrigger>
+              <TabsTrigger value="connections" className={cn('gap-1 text-xs whitespace-nowrap', isRTL && 'flex-row-reverse font-cairo')}>
+                <KeyRound className="h-4 w-4" />
+                {isRTL ? 'اتصالات' : 'Connexions'}
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
 
           <TabsContent value="dashboard" className="mt-6">
             <AdminDashboard isRTL={isRTL} />

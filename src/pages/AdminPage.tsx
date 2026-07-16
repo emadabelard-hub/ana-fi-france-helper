@@ -40,6 +40,7 @@ import SystemHealthCard from '@/components/admin/SystemHealthCard';
 import AdminAlertBanner from '@/components/admin/AdminAlertBanner';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import SystemDiagnosticManager from '@/components/admin/SystemDiagnosticManager';
+import AdminConnectionLogs from '@/components/admin/AdminConnectionLogs';
 
 const AdminPage = () => {
   const { isRTL } = useLanguage();

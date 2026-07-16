@@ -8,12 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { Loader2, Eye, EyeOff, ArrowRight, UserRound } from 'lucide-react';
+import { Loader2, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { getResetPasswordRedirectUrl, normalizeEmail, PRIMARY_ADMIN_EMAIL, withAuthTimeout } from '@/lib/auth';
 
 const LoginPage = () => {
-  const { signIn, signUp, signInAnonymously, isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const { signIn, signUp, isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   const { toast } = useToast();
   const navigate = useNavigate();

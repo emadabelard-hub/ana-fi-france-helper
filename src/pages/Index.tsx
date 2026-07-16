@@ -89,18 +89,30 @@ const Index = () => {
   }, []);
 
   const fetchData = useCallback(async () => {
-    if (!user) return;
-    const { data: docs } = await supabase
+    if (!user?.id) return;
+    setStatsLoading(true);
+    setStatsError(null);
+
+    const { data: docs, error: docsError } = await supabase
       .from('documents_comptables')
       .select('id, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, payment_status, document_type, created_at')
       .eq('user_id', user.id)
       .eq('document_type', 'facture')
       .order('created_at', { ascending: false });
 
-    const { data: expensesData } = await supabase
+    const { data: expensesData, error: expensesError } = await supabase
       .from('expenses')
       .select('tva_amount, expense_date, created_at')
       .eq('user_id', user.id);
+
+    if (docsError || expensesError) {
+      // Do NOT overwrite previous stats with zeros on transient errors.
+      console.error('Dashboard stats load failed', { docsError, expensesError });
+      setStatsError(docsError?.message || expensesError?.message || 'load_error');
+      setStatsLoading(false);
+      return;
+    }
+
     setAllExpenses((expensesData || []) as any[]);
 
     const list = (docs || []) as any[];
@@ -128,10 +140,22 @@ const Index = () => {
       status: d.status,
       created_at: d.created_at,
     })));
-  }, [user, profile?.urssaf_rate]);
+    setStatsLoading(false);
+  }, [user?.id, profile?.urssaf_rate]);
 
   useEffect(() => {
+    if (!user?.id) return;
     fetchData();
+  }, [fetchData, user?.id]);
+
+  // Refresh stats when Supabase re-emits SIGNED_IN / INITIAL_SESSION (session rehydration).
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+        fetchData();
+      }
+    });
+    return () => { sub.subscription.unsubscribe(); };
   }, [fetchData]);
 
   useEffect(() => {

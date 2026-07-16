@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
 
     const { data: doc } = await admin
       .from("documents_comptables")
-      .select("document_number, document_type, client_name, client_email")
+      .select("document_number, document_type, client_name, document_data, chantier_id")
       .eq("id", sigRow.document_id)
       .maybeSingle();
 
@@ -70,13 +70,46 @@ Deno.serve(async (req) => {
       .eq("user_id", sigRow.user_id)
       .maybeSingle();
 
-    // Recipient priority: 1) explicit recipientEmail from UI, 2) documents_comptables.client_email.
+    // Try to extract an email from the JSON snapshot without inventing a column.
+    const snap: any = (doc as any)?.document_data && typeof (doc as any).document_data === "object"
+      ? (doc as any).document_data
+      : {};
+    const snapEmailCandidates = [
+      snap?.client_email,
+      snap?.client?.email,
+      snap?.client?.contact_email,
+      snap?.contact_email,
+    ];
+    const snapEmail = snapEmailCandidates
+      .map((v) => (typeof v === "string" ? v.trim() : ""))
+      .find((v) => v && emailRegex.test(v)) || "";
+
+    // Fallback: contact_email from clients table, linked via chantier when available.
+    let clientEmailFromDb = "";
+    const chantierId = (doc as any)?.chantier_id;
+    if (chantierId) {
+      const { data: ch } = await admin
+        .from("chantiers")
+        .select("client_id")
+        .eq("id", chantierId)
+        .maybeSingle();
+      const clientId = (ch as any)?.client_id;
+      if (clientId) {
+        const { data: cli } = await admin
+          .from("clients")
+          .select("contact_email")
+          .eq("id", clientId)
+          .maybeSingle();
+        const ce = typeof (cli as any)?.contact_email === "string" ? (cli as any).contact_email.trim() : "";
+        if (ce && emailRegex.test(ce)) clientEmailFromDb = ce;
+      }
+    }
+
+    // Recipient priority: 1) explicit override from UI, 2) snapshot email, 3) clients.contact_email.
     const overrideEmail = typeof recipientOverride === "string" ? recipientOverride.trim() : "";
-    const clientEmail = typeof (doc as any)?.client_email === "string" ? (doc as any).client_email.trim() : "";
-    const recipient =
-      overrideEmail && emailRegex.test(overrideEmail)
-        ? overrideEmail
-        : (clientEmail && emailRegex.test(clientEmail) ? clientEmail : "");
+    const recipient = (overrideEmail && emailRegex.test(overrideEmail))
+      ? overrideEmail
+      : (snapEmail || clientEmailFromDb || "");
     if (!recipient) {
       return new Response(JSON.stringify({ error: "Adresse e-mail du client requise." }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -88,7 +121,10 @@ Deno.serve(async (req) => {
       ? signUrlOverride
       : `https://anafypro.com/sign/${encodeURIComponent(token)}`;
 
-    const clientName = (doc as any)?.client_name || "";
+    const clientName = (doc as any)?.client_name
+      || (typeof snap?.client_name === "string" ? snap.client_name : "")
+      || (typeof snap?.client?.name === "string" ? snap.client.name : "")
+      || "";
     const companyName = profile?.company_name || profile?.full_name || "Votre artisan";
     const docNumber = (doc as any)?.document_number || "";
     const replyTo = profile?.email && emailRegex.test(profile.email) ? profile.email : undefined;

@@ -65,12 +65,26 @@ Deno.serve(async (req) => {
         });
       }
       // Security: ensure the object path starts with ownerId/ to prevent cross-user access
-      if (!objectPath.startsWith(`${ownerId}/`)) {
+      if (!objectPath.startsWith(`${ownerId}/`) || objectPath.includes('..')) {
         return new Response(JSON.stringify({ error: 'forbidden' }), {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      const { data: signed, error: signErr } = await svc.storage.from(bucket).createSignedUrl(objectPath, 300);
+      // Additional check for supplier-invoices: path must be registered in supplier_invoices for this owner
+      if (bucket === 'documents' && objectPath.startsWith(`${ownerId}/supplier-invoices/`)) {
+        const { data: si } = await svc
+          .from('supplier_invoices')
+          .select('id')
+          .eq('user_id', ownerId)
+          .eq('pdf_url', objectPath)
+          .maybeSingle();
+        if (!si) {
+          return new Response(JSON.stringify({ error: 'forbidden' }), {
+            status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+      const { data: signed, error: signErr } = await svc.storage.from(bucket).createSignedUrl(objectPath, 600);
       if (signErr || !signed) {
         return new Response(JSON.stringify({ error: 'sign_failed' }), {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -118,6 +118,13 @@ const ComptablePage = () => {
     } catch { return null; }
   };
 
+  const handleView = async (path: string | null) => {
+    if (!path) return;
+    const url = await fetchSignedUrl(path);
+    if (!url) { alert('Justificatif temporairement indisponible.'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   const buildFecBlob = (): Blob | null => {
     if (!data) return null;
     const round2 = (x: number) => Math.round((Number(x) || 0) * 100) / 100;

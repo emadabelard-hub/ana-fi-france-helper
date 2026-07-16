@@ -49,36 +49,77 @@ Deno.serve(async (req) => {
 
     // ─── Signed-URL action ───
     if (action === 'sign-url' && typeof path === 'string' && path.length > 0) {
-      // Determine bucket. Allow only known accounting buckets.
-      let bucket: string | null = null;
-      let objectPath = path;
-      if (path.startsWith('documents/')) { bucket = 'documents'; objectPath = path.slice('documents/'.length); }
-      else if (path.startsWith('expense-receipts/')) { bucket = 'expense-receipts'; objectPath = path.slice('expense-receipts/'.length); }
-      else if (path.includes('/')) {
-        // assume "<bucket>/<path>" pattern
-        const [b, ...rest] = path.split('/');
-        if (b === 'documents' || b === 'expense-receipts') { bucket = b; objectPath = rest.join('/'); }
-      }
-      if (!bucket) {
-        return new Response(JSON.stringify({ error: 'invalid_path' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      // Security: ensure the object path starts with ownerId/ to prevent cross-user access
-      if (!objectPath.startsWith(`${ownerId}/`) || objectPath.includes('..')) {
+      if (path.includes('..')) {
         return new Response(JSON.stringify({ error: 'forbidden' }), {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      // Additional check for supplier-invoices: path must be registered in supplier_invoices for this owner
-      if (bucket === 'documents' && objectPath.startsWith(`${ownerId}/supplier-invoices/`)) {
+
+      let bucket: string | null = null;
+      let objectPath = path;
+
+      // Case 1: explicit bucket prefix (legacy).
+      if (path.startsWith('documents/')) {
+        bucket = 'documents';
+        objectPath = path.slice('documents/'.length);
+      } else if (path.startsWith('expense-receipts/')) {
+        bucket = 'expense-receipts';
+        objectPath = path.slice('expense-receipts/'.length);
+      } else if (path.startsWith(`${ownerId}/`)) {
+        // Case 2: bare storage path scoped to owner. Resolve the real bucket
+        // by looking up the path in the tables actually populated for this owner.
+        // We NEVER trust a client-provided bucket.
+        objectPath = path;
+
         const { data: si } = await svc
           .from('supplier_invoices')
           .select('id')
           .eq('user_id', ownerId)
           .eq('pdf_url', objectPath)
           .maybeSingle();
-        if (!si) {
+        if (si) {
+          bucket = 'documents';
+        } else {
+          const { data: dc } = await svc
+            .from('documents_comptables')
+            .select('id')
+            .eq('user_id', ownerId)
+            .eq('pdf_url', objectPath)
+            .maybeSingle();
+          if (dc) {
+            bucket = 'documents';
+          } else {
+            const { data: ex } = await svc
+              .from('expenses')
+              .select('id')
+              .eq('user_id', ownerId)
+              .eq('receipt_url', objectPath)
+              .maybeSingle();
+            if (ex) bucket = 'expense-receipts';
+          }
+        }
+      }
+
+      if (!bucket) {
+        return new Response(JSON.stringify({ error: 'invalid_path' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      // Ownership guard: object path must live under ownerId/.
+      if (!objectPath.startsWith(`${ownerId}/`)) {
+        return new Response(JSON.stringify({ error: 'forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      // Reinforced check for supplier-invoices under legacy documents/ prefix.
+      if (bucket === 'documents' && objectPath.startsWith(`${ownerId}/supplier-invoices/`)) {
+        const { data: si2 } = await svc
+          .from('supplier_invoices')
+          .select('id')
+          .eq('user_id', ownerId)
+          .eq('pdf_url', objectPath)
+          .maybeSingle();
+        if (!si2) {
           return new Response(JSON.stringify({ error: 'forbidden' }), {
             status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });

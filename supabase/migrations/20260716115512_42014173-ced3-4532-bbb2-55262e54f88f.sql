@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "Authenticated users can log visits" ON public.visit_logs;
+CREATE POLICY "Authenticated users can log visits" ON public.visit_logs FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);

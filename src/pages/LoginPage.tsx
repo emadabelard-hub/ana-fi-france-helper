@@ -8,12 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { Loader2, Eye, EyeOff, ArrowRight, UserRound } from 'lucide-react';
+import { Loader2, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { getResetPasswordRedirectUrl, normalizeEmail, PRIMARY_ADMIN_EMAIL, withAuthTimeout } from '@/lib/auth';
 
 const LoginPage = () => {
-  const { signIn, signUp, signInAnonymously, isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const { signIn, signUp, isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGuestLoading, setIsGuestLoading] = useState(false);
+  // Guest login removed: access is now reserved to registered users.
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [showResendConfirm, setShowResendConfirm] = useState(false);
   const [resendingConfirm, setResendingConfirm] = useState(false);
@@ -96,17 +96,7 @@ const LoginPage = () => {
     }
   };
 
-  const handleGuestLogin = async () => {
-    setIsGuestLoading(true);
-    try {
-      const { error } = await signInAnonymously();
-      if (!error) {
-        navigate('/', { replace: true });
-      }
-    } finally {
-      setIsGuestLoading(false);
-    }
-  };
+  // handleGuestLogin removed — anonymous sessions are no longer allowed from the login page.
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -359,21 +349,7 @@ const LoginPage = () => {
                 </Button>
               )}
 
-              <Button
-                variant="outline"
-                className="w-full font-bold gap-2 h-11 text-[16px]"
-                onClick={handleGuestLogin}
-                disabled={isGuestLoading}
-              >
-                {isGuestLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <UserRound className="h-4 w-4" />
-                    Essai rapide (sans compte)
-                  </>
-                )}
-              </Button>
+              {/* « Essai rapide (sans compte) » retiré — plus d'accès invité depuis la page de connexion. */}
 
               <p className="text-center text-sm text-muted-foreground">
                 {isLogin ? 'Pas de compte ? ' : 'Déjà un compte ? '}

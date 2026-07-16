@@ -72,6 +72,9 @@ const Index = () => {
   const [vatPeriod, setVatPeriod] = useState<VatPeriod>('month');
   const [paidInvoices, setPaidInvoices] = useState<Array<{ tva_amount: number; created_at: string }>>([]);
   const [allExpenses, setAllExpenses] = useState<Array<{ tva_amount: number; expense_date: string | null; created_at: string }>>([]);
+  // Loading/error state to avoid rendering "0 €" as a definitive value while fetching.
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   // Load Google Fonts (Tajawal + Poppins)
   useEffect(() => {
@@ -86,18 +89,30 @@ const Index = () => {
   }, []);
 
   const fetchData = useCallback(async () => {
-    if (!user) return;
-    const { data: docs } = await supabase
+    if (!user?.id) return;
+    setStatsLoading(true);
+    setStatsError(null);
+
+    const { data: docs, error: docsError } = await supabase
       .from('documents_comptables')
       .select('id, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, payment_status, document_type, created_at')
       .eq('user_id', user.id)
       .eq('document_type', 'facture')
       .order('created_at', { ascending: false });
 
-    const { data: expensesData } = await supabase
+    const { data: expensesData, error: expensesError } = await supabase
       .from('expenses')
       .select('tva_amount, expense_date, created_at')
       .eq('user_id', user.id);
+
+    if (docsError || expensesError) {
+      // Do NOT overwrite previous stats with zeros on transient errors.
+      console.error('Dashboard stats load failed', { docsError, expensesError });
+      setStatsError(docsError?.message || expensesError?.message || 'load_error');
+      setStatsLoading(false);
+      return;
+    }
+
     setAllExpenses((expensesData || []) as any[]);
 
     const list = (docs || []) as any[];
@@ -125,10 +140,22 @@ const Index = () => {
       status: d.status,
       created_at: d.created_at,
     })));
-  }, [user, profile?.urssaf_rate]);
+    setStatsLoading(false);
+  }, [user?.id, profile?.urssaf_rate]);
 
   useEffect(() => {
+    if (!user?.id) return;
     fetchData();
+  }, [fetchData, user?.id]);
+
+  // Refresh stats when Supabase re-emits SIGNED_IN / INITIAL_SESSION (session rehydration).
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+        fetchData();
+      }
+    });
+    return () => { sub.subscription.unsubscribe(); };
   }, [fetchData]);
 
   useEffect(() => {
@@ -264,7 +291,7 @@ const Index = () => {
             {isRTL ? 'حجم الأعمال' : "Volume d'affaires"}
           </p>
           <p className={cn('text-[20px] font-extrabold mt-1.5 leading-none', isRTL && 'text-right')}>
-            {fmtEUR(volumeAffaires)}
+            {statsLoading ? '…' : statsError ? '—' : fmtEUR(volumeAffaires)}
           </p>
           <p className={cn('text-[10px] mt-2 opacity-75', isRTL && 'text-right')}>
             {isRTL ? 'إجمالي الفواتير الصادرة' : 'Total factures émises'}
@@ -278,7 +305,7 @@ const Index = () => {
             {isRTL ? 'الإيرادات المحصَّلة' : 'Revenus encaissés'}
           </p>
           <p className={cn('text-[20px] font-extrabold mt-1.5 leading-none', isRTL && 'text-right')}>
-            {fmtEUR(revenusEncaisses)}
+            {statsLoading ? '…' : statsError ? '—' : fmtEUR(revenusEncaisses)}
           </p>
           <p className={cn('text-[10px] mt-2 opacity-75', isRTL && 'text-right')}>
             {isRTL ? 'الفواتير المدفوعة فعلياً' : 'Factures effectivement payées'}
@@ -293,7 +320,7 @@ const Index = () => {
             {isRTL ? 'صافي الربح المقدَّر' : 'Bénéfice net estimé'}
           </p>
           <p className={cn('text-[18px] font-extrabold mt-1.5 leading-none', isRTL && 'text-right')} style={{ color: COLORS.navyDark }}>
-            {fmtEUR(beneficeNet)}
+            {statsLoading ? '…' : statsError ? '—' : fmtEUR(beneficeNet)}
           </p>
           <p className={cn('text-[10px] mt-2 opacity-70', isRTL && 'text-right')} style={{ color: COLORS.navyDark }}>
             {isRTL ? 'بعد خصم المساهمات' : 'Après cotisations sociales'}
@@ -304,10 +331,10 @@ const Index = () => {
             {isRTL ? 'مستحقات غير محصَّلة' : 'Créances non encaissées'}
           </p>
           <p className={cn('text-[18px] font-extrabold mt-1.5 leading-none', isRTL && 'text-right')} style={{ color: '#7F1D1D' }}>
-            {fmtEUR(creancesTotal)}
+            {statsLoading ? '…' : statsError ? '—' : fmtEUR(creancesTotal)}
           </p>
           <p className={cn('text-[10px] mt-2', isRTL && 'text-right')} style={{ color: '#7F1D1D' }}>
-            {creancesCount} {isRTL ? 'فاتورة' : creancesCount > 1 ? 'factures' : 'facture'}
+            {statsLoading || statsError ? (isRTL ? 'جاري التحميل…' : 'Chargement…') : `${creancesCount} ${isRTL ? 'فاتورة' : creancesCount > 1 ? 'factures' : 'facture'}`}
           </p>
         </div>
       </div>

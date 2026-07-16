@@ -58,28 +58,29 @@ const AdminPage = () => {
   useEffect(() => {
     let isMounted = true;
 
-    const checkAdminAccess = async () => {
-      if (authLoading) return;
+    // While auth is hydrating, keep checking state — do NOT deny access prematurely.
+    if (authLoading) {
+      setIsCheckingAdmin(true);
+      return;
+    }
 
-      if (!user || user.is_anonymous) {
-        if (!isMounted) return;
-        setIsAdmin(false);
-        setIsCheckingAdmin(false);
-        return;
-      }
+    if (!user || user.is_anonymous) {
+      setIsAdmin(false);
+      setIsCheckingAdmin(false);
+      return;
+    }
 
-      if (user.email && normalizeEmail(user.email) === PRIMARY_ADMIN_EMAIL) {
-        if (!isMounted) return;
-        setIsAdmin(true);
-        setIsCheckingAdmin(false);
-        return;
-      }
-
+    setIsCheckingAdmin(true);
+    (async () => {
       try {
         const { data, error } = await supabase.rpc('is_admin', { _user_id: user.id });
-
         if (!isMounted) return;
-        setIsAdmin(!error && data === true);
+        if (error) {
+          console.error('is_admin RPC error:', error);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(data === true);
+        }
       } catch (error) {
         console.error('Error checking admin status:', error);
         if (!isMounted) return;
@@ -89,14 +90,12 @@ const AdminPage = () => {
           setIsCheckingAdmin(false);
         }
       }
-    };
-
-    checkAdminAccess();
+    })();
 
     return () => {
       isMounted = false;
     };
-  }, [user, authLoading]);
+  }, [user?.id, user?.is_anonymous, authLoading]);
 
   if (authLoading || isCheckingAdmin) {
     return (

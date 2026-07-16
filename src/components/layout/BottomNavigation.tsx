@@ -60,39 +60,50 @@ const BottomNavigation = () => {
   const { language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isLoading: authLoading, isPrimaryAdmin } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminCheckLoading, setAdminCheckLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
-    const checkAdmin = async () => {
-      if (authLoading) return;
+    // While auth is still hydrating, do NOT conclude the user is not admin.
+    if (authLoading) {
+      setAdminCheckLoading(true);
+      return;
+    }
 
-      if (!user || user.is_anonymous) {
-        if (isMounted) setIsAdmin(false);
-        return;
-      }
+    // Real signed-out / anonymous state: reset cleanly.
+    if (!user || user.is_anonymous) {
+      setIsAdmin(false);
+      setAdminCheckLoading(false);
+      return;
+    }
 
-      if (isPrimaryAdmin) {
-        if (isMounted) setIsAdmin(true);
-        return;
-      }
-
+    // Single source of authority: server-side RPC.
+    setAdminCheckLoading(true);
+    (async () => {
       try {
-        const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
-        if (isMounted) setIsAdmin(data === true);
-      } catch {
-        if (isMounted) setIsAdmin(false);
+        const { data, error } = await supabase.rpc('is_admin', { _user_id: user.id });
+        if (!isMounted) return;
+        if (error) {
+          // Transient failure: keep previous truthy value, do NOT lock to false.
+          console.warn('is_admin check failed (transient), keeping previous state', error);
+        } else {
+          setIsAdmin(data === true);
+        }
+      } catch (e) {
+        // Do not memorize false on network errors.
+        console.warn('is_admin check threw, keeping previous state', e);
+      } finally {
+        if (isMounted) setAdminCheckLoading(false);
       }
-    };
-
-    checkAdmin();
+    })();
 
     return () => {
       isMounted = false;
     };
-  }, [authLoading, isPrimaryAdmin, user]);
+  }, [authLoading, user?.id, user?.is_anonymous]);
 
   const { isTeamMemberOnly } = useTeamRole();
 

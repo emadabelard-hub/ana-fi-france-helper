@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 import { AUTH_OPERATION_TIMEOUT_MS, getRecoveryContext, isAnonymousSession, normalizeEmail, PRIMARY_ADMIN_EMAIL, withAuthTimeout } from '@/lib/auth';
 import { clearInvoiceDraftBrowserState, setInvoiceDraftStorageUser } from '@/lib/invoiceDraftStorage';
+import { logAuthEvent } from '@/lib/authLog';
 
 interface AuthResult {
   error: Error | null;

@@ -291,7 +291,7 @@ const Index = () => {
             {isRTL ? 'حجم الأعمال' : "Volume d'affaires"}
           </p>
           <p className={cn('text-[20px] font-extrabold mt-1.5 leading-none', isRTL && 'text-right')}>
-            {fmtEUR(volumeAffaires)}
+            {statsLoading ? '…' : statsError ? '—' : fmtEUR(volumeAffaires)}
           </p>
           <p className={cn('text-[10px] mt-2 opacity-75', isRTL && 'text-right')}>
             {isRTL ? 'إجمالي الفواتير الصادرة' : 'Total factures émises'}

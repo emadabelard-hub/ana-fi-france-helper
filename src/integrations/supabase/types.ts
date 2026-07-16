@@ -47,6 +47,45 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_connection_logs: {
+        Row: {
+          country: string | null
+          created_at: string
+          device_type: string | null
+          email: string | null
+          event: string
+          id: string
+          ip_address: string | null
+          last_activity_at: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          device_type?: string | null
+          email?: string | null
+          event: string
+          id?: string
+          ip_address?: string | null
+          last_activity_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          device_type?: string | null
+          email?: string | null
+          event?: string
+          id?: string
+          ip_address?: string | null
+          last_activity_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       admin_diagnostic_alerts: {
         Row: {
           alert_type: string

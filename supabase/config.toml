@@ -124,5 +124,10 @@ verify_jwt = false
 [functions.generate-factur-x]
 verify_jwt = true
 
+[functions.log-auth-event]
+verify_jwt = false
+
+
+
 
 

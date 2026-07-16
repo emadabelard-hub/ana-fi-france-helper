@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 import { AUTH_OPERATION_TIMEOUT_MS, getRecoveryContext, isAnonymousSession, normalizeEmail, PRIMARY_ADMIN_EMAIL, withAuthTimeout } from '@/lib/auth';
 import { clearInvoiceDraftBrowserState, setInvoiceDraftStorageUser } from '@/lib/invoiceDraftStorage';
+import { logAuthEvent } from '@/lib/authLog';
 
 interface AuthResult {
   error: Error | null;
@@ -203,6 +204,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(data.session);
       setUser(data.user);
       setIsLoading(false);
+      void logAuthEvent({ event: 'login_success', email: normalizedEmail, userId: data.user?.id ?? null });
+    } else if (error) {
+      void logAuthEvent({ event: 'login_failure', email: normalizedEmail });
     }
 
     return {
@@ -225,6 +229,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Log BEFORE clearing so we still have identity + a valid JWT for the edge fn.
+    const currentUser = user;
+    if (currentUser && !currentUser.is_anonymous) {
+      try {
+        await logAuthEvent({ event: 'logout', email: currentUser.email ?? null, userId: currentUser.id });
+      } catch { /* ignore */ }
+    }
+
     // 1. Block auth listener from recreating sessions
     sessionStorage.setItem('explicit_signout', 'true');
     (window as any).__setSigningOut?.(true);

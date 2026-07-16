@@ -331,10 +331,10 @@ const Index = () => {
             {isRTL ? 'مستحقات غير محصَّلة' : 'Créances non encaissées'}
           </p>
           <p className={cn('text-[18px] font-extrabold mt-1.5 leading-none', isRTL && 'text-right')} style={{ color: '#7F1D1D' }}>
-            {fmtEUR(creancesTotal)}
+            {statsLoading ? '…' : statsError ? '—' : fmtEUR(creancesTotal)}
           </p>
           <p className={cn('text-[10px] mt-2', isRTL && 'text-right')} style={{ color: '#7F1D1D' }}>
-            {creancesCount} {isRTL ? 'فاتورة' : creancesCount > 1 ? 'factures' : 'facture'}
+            {statsLoading || statsError ? (isRTL ? 'جاري التحميل…' : 'Chargement…') : `${creancesCount} ${isRTL ? 'فاتورة' : creancesCount > 1 ? 'factures' : 'facture'}`}
           </p>
         </div>
       </div>

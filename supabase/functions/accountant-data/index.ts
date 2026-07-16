@@ -65,12 +65,26 @@ Deno.serve(async (req) => {
         });
       }
       // Security: ensure the object path starts with ownerId/ to prevent cross-user access
-      if (!objectPath.startsWith(`${ownerId}/`)) {
+      if (!objectPath.startsWith(`${ownerId}/`) || objectPath.includes('..')) {
         return new Response(JSON.stringify({ error: 'forbidden' }), {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      const { data: signed, error: signErr } = await svc.storage.from(bucket).createSignedUrl(objectPath, 300);
+      // Additional check for supplier-invoices: path must be registered in supplier_invoices for this owner
+      if (bucket === 'documents' && objectPath.startsWith(`${ownerId}/supplier-invoices/`)) {
+        const { data: si } = await svc
+          .from('supplier_invoices')
+          .select('id')
+          .eq('user_id', ownerId)
+          .eq('pdf_url', objectPath)
+          .maybeSingle();
+        if (!si) {
+          return new Response(JSON.stringify({ error: 'forbidden' }), {
+            status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+      const { data: signed, error: signErr } = await svc.storage.from(bucket).createSignedUrl(objectPath, 600);
       if (signErr || !signed) {
         return new Response(JSON.stringify({ error: 'sign_failed' }), {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -82,7 +96,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── Default: fetch all data ───
-    const [profileRes, docsRes, expensesRes] = await Promise.all([
+    const [profileRes, docsRes, expensesRes, supplierInvRes, suppliersRes] = await Promise.all([
       svc.from('profiles').select('company_name, siret, company_address, legal_status, tva_exempt, numero_tva').eq('user_id', ownerId).maybeSingle(),
       svc.from('documents_comptables')
         .select('id, document_type, document_number, client_name, subtotal_ht, tva_rate, tva_amount, total_ttc, status, payment_status, pdf_url, created_at')
@@ -93,11 +107,23 @@ Deno.serve(async (req) => {
         .select('id, title, amount, category, tva_amount, receipt_url, expense_date, notes, created_at')
         .eq('user_id', ownerId)
         .order('expense_date', { ascending: false }),
+      svc.from('supplier_invoices')
+        .select('id, invoice_number, supplier_reference, supplier_id, invoice_date, amount_ht, tva_rate, amount_tva, amount_ttc, status, source, pdf_url, created_at')
+        .eq('user_id', ownerId)
+        .order('invoice_date', { ascending: false }),
+      svc.from('suppliers').select('id, name').eq('user_id', ownerId),
     ]);
 
     const profile = profileRes.data || null;
     const docs = docsRes.data || [];
     const expenses = expensesRes.data || [];
+    const supplierInvoicesRaw = supplierInvRes.data || [];
+    const suppliersMap = new Map<string, string>();
+    for (const s of (suppliersRes.data || [])) suppliersMap.set(s.id as string, (s.name as string) || '');
+    const supplier_invoices = supplierInvoicesRaw.map((si: any) => ({
+      ...si,
+      supplier_name: si.supplier_id ? (suppliersMap.get(si.supplier_id) || null) : null,
+    }));
 
     // Compute totals (paid invoices only — encaissement)
     let caTotal = 0;
@@ -122,6 +148,7 @@ Deno.serve(async (req) => {
       },
       documents: docs,
       expenses,
+      supplier_invoices,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (err) {
     console.error('accountant-data error:', err);

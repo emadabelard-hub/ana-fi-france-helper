@@ -32,12 +32,29 @@ interface Expense {
   notes: string | null;
   created_at: string;
 }
+interface SupplierInvoice {
+  id: string;
+  invoice_number: string | null;
+  supplier_reference: string | null;
+  supplier_id: string | null;
+  supplier_name: string | null;
+  invoice_date: string | null;
+  amount_ht: number | null;
+  tva_rate: number | null;
+  amount_tva: number | null;
+  amount_ttc: number | null;
+  status: string | null;
+  source: string | null;
+  pdf_url: string | null;
+  created_at: string;
+}
 interface AccountantPayload {
   accountant: { name: string; email: string };
   company: { company_name: string | null; siret: string | null; company_address: string | null; legal_status: string | null; tva_exempt: boolean | null; numero_tva: string | null } | null;
   summary: { caTotal: number; tvaCollected: number; tvaDeductible: number; netVat: number };
   documents: Doc[];
   expenses: Expense[];
+  supplier_invoices?: SupplierInvoice[];
 }
 
 const fmtEUR = (n: number) =>
@@ -99,6 +116,13 @@ const ComptablePage = () => {
       if (err || (resp as any)?.error || !(resp as any)?.url) return null;
       return (resp as any).url as string;
     } catch { return null; }
+  };
+
+  const handleView = async (path: string | null) => {
+    if (!path) return;
+    const url = await fetchSignedUrl(path);
+    if (!url) { alert('Justificatif temporairement indisponible.'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const buildFecBlob = (): Blob | null => {
@@ -533,6 +557,65 @@ const ComptablePage = () => {
                   <Button variant="outline" size="sm" disabled={!d.pdf_url} onClick={() => handleDownload(d.pdf_url, `${d.document_number}.pdf`)} className="border-gray-300 text-gray-900 bg-white hover:bg-gray-50">
                     <Download className="h-3.5 w-3.5" />
                   </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* Factures fournisseurs et sous-traitants */}
+        <Card className="p-5 bg-white border border-gray-200">
+          <div className="flex items-center gap-2 mb-1">
+            <Building2 className="h-5 w-5" style={{ color: '#BFA071' }} />
+            <h2 className="font-semibold text-gray-900">
+              Factures fournisseurs et sous-traitants ({(data.supplier_invoices || []).length})
+            </h2>
+          </div>
+          <p className="text-xs text-gray-500 mb-4" dir="rtl" lang="ar">فواتير الموردين والمقاولين من الباطن</p>
+          {(!data.supplier_invoices || data.supplier_invoices.length === 0) ? (
+            <p className="text-sm text-gray-500">Aucune facture fournisseur disponible.</p>
+          ) : (
+            <div className="space-y-2">
+              {data.supplier_invoices.map(si => (
+                <div key={si.id} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm text-gray-900">
+                      {si.invoice_number || '—'} · <span className="text-gray-700">{si.supplier_name || 'Fournisseur inconnu'}</span>
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {si.invoice_date ? fmtDate(si.invoice_date) : '—'}
+                      {si.supplier_reference ? ` · Réf. ${si.supplier_reference}` : ''}
+                      {si.status ? ` · ${si.status}` : ''}
+                      {si.source ? ` · ${si.source}` : ''}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      HT : <strong>{fmtEUR(Number(si.amount_ht || 0))}</strong> · TVA {si.tva_rate != null ? `${si.tva_rate}% ` : ''}: <strong>{fmtEUR(Number(si.amount_tva || 0))}</strong> · TTC : <strong>{fmtEUR(Number(si.amount_ttc || 0))}</strong>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {si.pdf_url ? (
+                      <>
+                        <Button
+                          variant="outline" size="sm"
+                          onClick={() => handleView(si.pdf_url)}
+                          className="border-gray-300 text-gray-900 bg-white hover:bg-gray-50 gap-1.5"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Voir la facture originale</span>
+                        </Button>
+                        <Button
+                          variant="outline" size="sm"
+                          onClick={() => handleDownload(si.pdf_url, `${si.invoice_number || si.id.slice(0, 8)}.pdf`)}
+                          className="border-gray-300 text-gray-900 bg-white hover:bg-gray-50 gap-1.5"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Télécharger la facture originale</span>
+                        </Button>
+                      </>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">Justificatif original non disponible</span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

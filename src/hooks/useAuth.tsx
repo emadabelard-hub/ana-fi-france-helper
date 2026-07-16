@@ -204,6 +204,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(data.session);
       setUser(data.user);
       setIsLoading(false);
+      void logAuthEvent({ event: 'login_success', email: normalizedEmail, userId: data.user?.id ?? null });
+    } else if (error) {
+      void logAuthEvent({ event: 'login_failure', email: normalizedEmail });
     }
 
     return {

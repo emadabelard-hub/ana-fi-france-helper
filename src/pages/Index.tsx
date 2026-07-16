@@ -72,6 +72,9 @@ const Index = () => {
   const [vatPeriod, setVatPeriod] = useState<VatPeriod>('month');
   const [paidInvoices, setPaidInvoices] = useState<Array<{ tva_amount: number; created_at: string }>>([]);
   const [allExpenses, setAllExpenses] = useState<Array<{ tva_amount: number; expense_date: string | null; created_at: string }>>([]);
+  // Loading/error state to avoid rendering "0 €" as a definitive value while fetching.
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   // Load Google Fonts (Tajawal + Poppins)
   useEffect(() => {

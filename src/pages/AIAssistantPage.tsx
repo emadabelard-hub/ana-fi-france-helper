@@ -542,7 +542,7 @@ const AIAssistantPage = () => {
         continue;
       }
       if (file.size > 10 * 1024 * 1024) {
-        toast({ variant: 'destructive', title: isRTL ? 'الملف كبير أوي' : 'Fichier trop volumineux', description: file.name });
+        toast({ variant: 'destructive', title: t('aiAssistant.file.tooLarge'), description: file.name });
         continue;
       }
       try {

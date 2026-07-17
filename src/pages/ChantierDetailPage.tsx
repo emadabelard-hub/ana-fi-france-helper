@@ -273,6 +273,66 @@ const ChantierDetailPage = () => {
         Marge disponible après consolidation des dépenses. Estimation fondée sur les documents actuellement rattachés à ce chantier.
       </p>
 
+      {/* Rentabilité simple — HT, anti-doublon strict via supplier_invoice_id */}
+      <Card className="border-border/50 mb-3" dir="ltr">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <span className="text-xs font-bold uppercase tracking-wide">Rentabilité du chantier</span>
+            </div>
+            <Badge
+              className={cn(
+                'text-[10px] font-semibold',
+                profitability.status === 'rentable' && 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
+                profitability.status === 'surveiller' && 'bg-amber-500/15 text-amber-600 border-amber-500/30',
+                profitability.status === 'deficitaire' && 'bg-destructive/15 text-destructive border-destructive/30',
+                profitability.status === 'incomplet' && 'bg-slate-500/15 text-slate-600 border-slate-500/30',
+              )}
+              variant="outline"
+            >
+              {statusLabelFR[profitability.status]}
+            </Badge>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p className="text-[10px] text-muted-foreground">CA HT</p>
+              <p className="text-sm font-bold text-primary">{fmt(profitability.revenueHT)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">Coûts HT</p>
+              <p className="text-sm font-bold text-red-500">{fmt(profitability.costsHT)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">Marge HT</p>
+              <p className={cn('text-sm font-bold', profitability.marginHT >= 0 ? 'text-emerald-600' : 'text-destructive')}>
+                {fmt(profitability.marginHT)}
+                {profitability.marginRate !== null && (
+                  <span className="text-[10px] font-normal text-muted-foreground ml-1">
+                    ({Math.round(profitability.marginRate * 100)}%)
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-muted-foreground">
+            <span>Dépenses libres HT : <span className="font-medium text-foreground">{fmt(profitability.expensesHT)}</span></span>
+            <span>Fact. fournisseurs HT : <span className="font-medium text-foreground">{fmt(profitability.supplierHT)}</span></span>
+          </div>
+          {profitability.incompleteReasons.length > 0 && (
+            <div className="mt-2 flex items-start gap-1.5 text-[10px] text-amber-600">
+              <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+              <span>{profitability.incompleteReasons.join(' · ')}</span>
+            </div>
+          )}
+          <p className="text-[9px] text-muted-foreground/70 italic mt-2">
+            Estimation HT. Anti-doublon : les dépenses liées à une facture fournisseur ne sont comptées qu'une fois (via la facture).
+          </p>
+        </CardContent>
+      </Card>
+
+
+
       {/* Tabs */}
       <Tabs defaultValue="documents" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="w-full shrink-0 overflow-x-auto">

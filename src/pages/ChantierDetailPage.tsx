@@ -274,7 +274,7 @@ const ChantierDetailPage = () => {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" />
-              <span className="text-xs font-bold uppercase tracking-wide">Rentabilité du chantier</span>
+              <span className="text-xs font-bold uppercase tracking-wide">{t('chantierProfitability.title')}</span>
             </div>
             <Badge
               className={cn(
@@ -286,20 +286,20 @@ const ChantierDetailPage = () => {
               )}
               variant="outline"
             >
-              {statusLabelFR[profitability.status]}
+              {t(`chantierProfitability.status.${profitability.status}`)}
             </Badge>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <p className="text-[10px] text-muted-foreground">CA HT</p>
+              <p className="text-[10px] text-muted-foreground">{t('chantierProfitability.revenueHT')}</p>
               <p className="text-sm font-bold text-primary">{fmt(profitability.revenueHT)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">Coûts HT</p>
+              <p className="text-[10px] text-muted-foreground">{t('chantierProfitability.costsHT')}</p>
               <p className="text-sm font-bold text-red-500">{fmt(profitability.costsHT)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">Marge HT</p>
+              <p className="text-[10px] text-muted-foreground">{t('chantierProfitability.marginHT')}</p>
               <p className={cn('text-sm font-bold', profitability.marginHT >= 0 ? 'text-emerald-600' : 'text-destructive')}>
                 {fmt(profitability.marginHT)}
                 {profitability.marginRate !== null && (
@@ -311,8 +311,8 @@ const ChantierDetailPage = () => {
             </div>
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-muted-foreground">
-            <span>Dépenses libres HT : <span className="font-medium text-foreground">{fmt(profitability.expensesHT)}</span></span>
-            <span>Fact. fournisseurs HT : <span className="font-medium text-foreground">{fmt(profitability.supplierHT)}</span></span>
+            <span>{t('chantierProfitability.freeExpensesHT')} : <span className="font-medium text-foreground">{fmt(profitability.expensesHT)}</span></span>
+            <span>{t('chantierProfitability.supplierHT')} : <span className="font-medium text-foreground">{fmt(profitability.supplierHT)}</span></span>
           </div>
           {profitability.incompleteReasons.length > 0 && (
             <div className="mt-2 flex items-start gap-1.5 text-[10px] text-amber-600">
@@ -321,7 +321,7 @@ const ChantierDetailPage = () => {
             </div>
           )}
           <p className="text-[9px] text-muted-foreground/70 italic mt-2">
-            Estimation HT. Anti-doublon : les dépenses liées à une facture fournisseur ne sont comptées qu'une fois (via la facture).
+            {t('chantierProfitability.antiDoublonNote')}
           </p>
         </CardContent>
       </Card>

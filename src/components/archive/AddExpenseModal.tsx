@@ -113,12 +113,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
       if (data.date) setExpenseDate(data.date);
       if (data.notes) setNotes(data.notes);
 
-      toast({ title: isRTL ? '✅ تم التحليل بنجاح' : '✅ Analyse réussie' });
+      toast({ title: t('addExpense.toast.analyzeOk') });
     } catch (err: any) {
       console.error('AI analysis error:', err);
       toast({
-        title: isRTL ? '⚠️ خطأ في التحليل' : '⚠️ Erreur d\'analyse',
-        description: isRTL ? 'حاول مرة أخرى أو أدخل البيانات يدوياً' : 'Réessayez ou saisissez manuellement',
+        title: t('addExpense.toast.analyzeErr'),
+        description: t('addExpense.toast.analyzeErrDesc'),
         variant: 'destructive',
       });
     } finally {

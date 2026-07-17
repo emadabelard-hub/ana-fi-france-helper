@@ -137,7 +137,7 @@ const detectMissingInfoForm = (content: string): { fields: MissingField[] } | nu
 
 
 const AIAssistantPage = () => {
-  const { language, isRTL } = useLanguage();
+  const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile } = useProfile();

@@ -472,7 +472,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             disabled={saving}
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
-            {isRTL ? 'حفظ المصروف' : 'Enregistrer la dépense'}
+            {t('addExpense.save')}
           </Button>
         </div>
       </DialogContent>

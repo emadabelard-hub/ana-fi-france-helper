@@ -28,6 +28,9 @@ const ChantierDetailPage = () => {
   const [documents, setDocuments] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
+  const [supplierInvoices, setSupplierInvoices] = useState<any[]>([]);
+  const [milestones, setMilestones] = useState<any[]>([]);
+  const [errSection, setErrSection] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
@@ -42,27 +45,42 @@ const ChantierDetailPage = () => {
       const { data: ch } = await supabase.from('chantiers').select('*').eq('id', id).eq('user_id', user.id).maybeSingle();
       if (ch) {
         setChantier(ch);
-        const [{ data: cl }, { data: docs }, { data: exp }, { data: reps }] = await Promise.all([
+        const results = await Promise.allSettled([
           supabase.from('clients').select('*').eq('id', ch.client_id).eq('user_id', user.id).maybeSingle(),
           supabase.from('documents_comptables').select('*').eq('chantier_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
           supabase.from('expenses').select('*').eq('chantier_id', id).eq('user_id', user.id).order('expense_date', { ascending: false }),
           (supabase.from('chantier_reports' as any) as any).select('*').eq('chantier_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
+          (supabase.from('supplier_invoices' as any) as any).select('*, supplier:suppliers(name)').eq('chantier_id', id).eq('user_id', user.id).order('invoice_date', { ascending: false }),
+          (supabase.from('milestone_invoices' as any) as any).select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
         ]);
-        setClient(cl);
-        setDocuments(docs || []);
-        setExpenses(exp || []);
-        setReports(reps || []);
+        const val = (i: number) => results[i].status === 'fulfilled' ? (results[i] as any).value?.data : null;
+        const err = (i: number) => results[i].status === 'rejected' ? String((results[i] as any).reason?.message || 'Erreur') : ((results[i] as any).value?.error?.message || null);
+        setClient(val(0));
+        setDocuments(val(1) || []);
+        setExpenses(val(2) || []);
+        setReports(val(3) || []);
+        setSupplierInvoices(val(4) || []);
+        // Filter milestones to those whose facture is in this chantier's documents
+        const docIds = new Set((val(1) || []).map((d: any) => d.id));
+        setMilestones((val(5) || []).filter((m: any) => m.facture_id && docIds.has(m.facture_id)));
+        setErrSection({
+          documents: err(1), expenses: err(2), reports: err(3), suppliers: err(4), milestones: err(5),
+        });
       }
 
       setLoading(false);
     })();
   }, [user, id]);
 
-  const totalFactured = useMemo(() =>
-    documents.filter(d => d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted')).reduce((s, d) => s + Number(d.total_ttc || 0), 0),
-    [documents]
-  );
+  const factures = useMemo(() => documents.filter(d => d.document_type === 'facture' && d.status !== 'cancelled'), [documents]);
+  const devisList = useMemo(() => documents.filter(d => d.document_type === 'devis'), [documents]);
+
+  const totalDevis = useMemo(() => devisList.reduce((s, d) => s + Number(d.total_ttc || 0), 0), [devisList]);
+  const totalFactured = useMemo(() => factures.reduce((s, d) => s + Number(d.total_ttc || 0), 0), [factures]);
+  const totalEncaisse = useMemo(() => factures.filter(f => f.payment_status === 'paid').reduce((s, d) => s + Number(d.total_ttc || 0), 0), [factures]);
+  const resteAEncaisser = Math.max(0, totalFactured - totalEncaisse);
   const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]);
+  const totalSupplier = useMemo(() => supplierInvoices.reduce((s, i) => s + Number(i.amount_ttc || 0), 0), [supplierInvoices]);
   const margin = totalFactured - totalExpenses;
 
   const budget = chantier?.budget ? Number(chantier.budget) : null;

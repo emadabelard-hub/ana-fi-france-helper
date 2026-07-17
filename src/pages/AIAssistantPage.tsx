@@ -800,7 +800,7 @@ const AIAssistantPage = () => {
                     : "bg-muted text-muted-foreground"
                 )}
               >
-                {isRTL ? 'يلا نبدأ! 🚀' : 'C\'est parti ! 🚀'}
+                {t('aiAssistant.onboarding.start')}
               </button>
             </div>
           </div>

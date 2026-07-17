@@ -435,14 +435,14 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* Project Link */}
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'ربط بمستند (اختياري)' : 'Lier à un document (optionnel)'}
+              {t('addExpense.field.docLink')}
             </Label>
             <Select value={selectedDocId} onValueChange={(value) => setSelectedDocId(value === 'none' ? '' : value)}>
               <SelectTrigger className="bg-background border-border text-sm">
-                <SelectValue placeholder={isRTL ? 'اختر دوفي أو فاتورة' : 'Choisir un devis ou facture'} />
+                <SelectValue placeholder={t('addExpense.field.docLinkPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">{isRTL ? 'بدون ربط' : 'Aucun'}</SelectItem>
+                <SelectItem value="none">{t('addExpense.field.docLinkNone')}</SelectItem>
                 {documents.map(d => (
                   <SelectItem key={d.id} value={d.id}>
                     {d.label}

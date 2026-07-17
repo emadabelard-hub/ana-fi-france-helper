@@ -229,10 +229,7 @@ const translations: Record<Language, Record<string, string>> = {
     'legal.dashboardTitle': 'Guide Juridique',
     'legal.dashboardSub': 'Analyse Documents & Droits',
 
-    // ===== COMMON =====
-    'common.error': 'Erreur',
-    'common.cancel': 'Annuler',
-    'common.confirm': 'Confirmer',
+
 
     // ===== EXPENSES / GESTION COMPTABLE =====
     'expenses.notLoggedIn': 'Veuillez vous connecter',
@@ -498,10 +495,7 @@ const translations: Record<Language, Record<string, string>> = {
     'legal.dashboardTitle': 'دليلك الإداري والقانوني',
     'legal.dashboardSub': 'تحليل مستندات وحقوق',
 
-    // ===== COMMON =====
-    'common.error': 'خطأ',
-    'common.cancel': 'إلغاء',
-    'common.confirm': 'تأكيد',
+
 
     // ===== EXPENSES / GESTION COMPTABLE =====
     'expenses.notLoggedIn': 'يرجى تسجيل الدخول',

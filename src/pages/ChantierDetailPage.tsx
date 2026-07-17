@@ -227,31 +227,39 @@ const ChantierDetailPage = () => {
         </Button>
       </div>
 
-      {/* Profitability Summary */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      {/* Synthèse financière — grille responsive */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
         {[
-          { label: isRTL ? 'فوترة' : 'Facturé', value: totalFactured, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-          { label: isRTL ? 'حسابات' : 'Dépenses', value: totalExpenses, icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-500/10' },
-          { label: isRTL ? 'الهامش' : 'Marge', value: margin, icon: Wallet, color: margin >= 0 ? 'text-primary' : 'text-red-500', bg: margin >= 0 ? 'bg-primary/10' : 'bg-red-500/10' },
+          { label: 'Devis', value: totalDevis, icon: FileText, color: 'text-amber-600', bg: 'bg-amber-500/10', hint: 'Indicatif' },
+          { label: 'Facturé', value: totalFactured, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
+          { label: 'Encaissé', value: totalEncaisse, icon: CircleDollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+          { label: 'Reste à encaisser', value: resteAEncaisser, icon: Coins, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+          { label: 'Dépenses', value: totalExpenses, icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-500/10' },
+          { label: 'Fact. fournisseurs', value: totalSupplier, icon: Truck, color: 'text-slate-600', bg: 'bg-slate-500/10' },
         ].map(c => (
           <Card key={c.label} className="border-border/50">
-            <CardContent className="p-3 text-center">
-              <div className={cn("w-8 h-8 rounded-lg mx-auto mb-1 flex items-center justify-center", c.bg)}>
-                <c.icon className={cn("h-4 w-4", c.color)} />
+            <CardContent className="p-2.5 text-center">
+              <div className={cn("w-7 h-7 rounded-lg mx-auto mb-1 flex items-center justify-center", c.bg)}>
+                <c.icon className={cn("h-3.5 w-3.5", c.color)} />
               </div>
-              <p className="text-[10px] text-muted-foreground font-medium">{c.label}</p>
-              <p className={cn("text-sm font-bold", c.color)}>{fmt(c.value)}</p>
+              <p className="text-[10px] text-muted-foreground font-medium leading-tight">{c.label}</p>
+              <p className={cn("text-xs font-bold truncate", c.color)}>{fmt(c.value)}</p>
+              {(c as any).hint && <p className="text-[9px] text-muted-foreground/70">{(c as any).hint}</p>}
             </CardContent>
           </Card>
         ))}
       </div>
+      <p className="text-[10px] text-muted-foreground italic mb-3 px-1">
+        Marge disponible après consolidation des dépenses. Estimation fondée sur les documents actuellement rattachés à ce chantier.
+      </p>
 
       {/* Tabs */}
       <Tabs defaultValue="documents" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="w-full shrink-0">
-          <TabsTrigger value="documents" className="flex-1 gap-1"><FileText className="h-3.5 w-3.5" />{isRTL ? 'مستندات' : 'Documents'}</TabsTrigger>
-          <TabsTrigger value="expenses" className="flex-1 gap-1"><Receipt className="h-3.5 w-3.5" />{isRTL ? 'حسابات' : 'Dépenses'}</TabsTrigger>
-          <TabsTrigger value="reports" className="flex-1 gap-1"><ClipboardList className="h-3.5 w-3.5" />{isRTL ? 'التقارير' : 'Rapports'}</TabsTrigger>
+        <TabsList className="w-full shrink-0 overflow-x-auto">
+          <TabsTrigger value="documents" className="flex-1 gap-1 text-xs"><FileText className="h-3.5 w-3.5" />Documents</TabsTrigger>
+          <TabsTrigger value="expenses" className="flex-1 gap-1 text-xs"><Receipt className="h-3.5 w-3.5" />Dépenses</TabsTrigger>
+          <TabsTrigger value="suppliers" className="flex-1 gap-1 text-xs"><Truck className="h-3.5 w-3.5" />Fournisseurs</TabsTrigger>
+          <TabsTrigger value="reports" className="flex-1 gap-1 text-xs"><ClipboardList className="h-3.5 w-3.5" />Rapports</TabsTrigger>
         </TabsList>
         <TabsContent value="documents" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
 

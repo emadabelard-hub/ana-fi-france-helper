@@ -245,15 +245,15 @@ const ChantierDetailPage = () => {
       {/* Synthèse financière — grille responsive */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3" dir="ltr">
         {[
-          { label: 'Devis', value: totalDevis, icon: FileText, color: 'text-amber-600', bg: 'bg-amber-500/10', hint: 'Indicatif' },
-          { label: 'Facturé', value: totalFactured, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
-          { label: 'Encaissé', value: totalEncaisse, icon: CircleDollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-          { label: 'Reste à encaisser', value: resteAEncaisser, icon: Coins, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-          { label: 'Dépenses', value: totalExpenses, icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-500/10' },
-          { label: 'Fact. fournisseurs', value: totalSupplier, icon: Truck, color: 'text-slate-600', bg: 'bg-slate-500/10' },
+          { label: t('chantierDetail.synthese.devis'), value: totalDevis, icon: FileText, color: 'text-amber-600', bg: 'bg-amber-500/10', hint: t('chantierDetail.synthese.devisHint') },
+          { label: t('chantierDetail.synthese.factured'), value: totalFactured, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
+          { label: t('chantierDetail.synthese.encaisse'), value: totalEncaisse, icon: CircleDollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+          { label: t('chantierDetail.synthese.reste'), value: resteAEncaisser, icon: Coins, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+          { label: t('chantierDetail.synthese.expenses'), value: totalExpenses, icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-500/10' },
+          { label: t('chantierDetail.synthese.suppliers'), value: totalSupplier, icon: Truck, color: 'text-slate-600', bg: 'bg-slate-500/10' },
         ].map(c => (
           <Card key={c.label} className="border-border/50">
-            <CardContent className="p-2.5 text-center" dir={isRTL ? 'rtl' : 'ltr'}>
+            <CardContent className="p-2.5 text-center" dir="ltr">
               <div className={cn("w-7 h-7 rounded-lg mx-auto mb-1 flex items-center justify-center", c.bg)}>
                 <c.icon className={cn("h-3.5 w-3.5", c.color)} />
               </div>
@@ -265,7 +265,7 @@ const ChantierDetailPage = () => {
         ))}
       </div>
       <p className="text-[10px] text-muted-foreground italic mb-3 px-1 text-left" dir="ltr">
-        Marge disponible après consolidation des dépenses. Estimation fondée sur les documents actuellement rattachés à ce chantier.
+        {t('chantierDetail.marginNote')}
       </p>
 
       {/* Rentabilité simple — HT, anti-doublon strict via supplier_invoice_id */}

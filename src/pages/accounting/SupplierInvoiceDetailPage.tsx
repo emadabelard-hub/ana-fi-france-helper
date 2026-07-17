@@ -144,6 +144,40 @@ export default function SupplierInvoiceDetailPage() {
         </div>
       </Card>
 
+      <Card className="p-4 mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <HardHat className="h-4 w-4 text-amber-600" />
+          <h3 className="font-semibold text-sm">Chantier associé</h3>
+        </div>
+        <div className="flex gap-2 items-center">
+          <Select
+            value={invoice.chantier_id || 'none'}
+            onValueChange={(v) => updateChantier(v === 'none' ? null : v)}
+            disabled={savingChantier}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="Sélectionner un chantier" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— Aucun chantier —</SelectItem>
+              {chantiers.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}{c.reference_number ? ` · ${c.reference_number}` : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {invoice.chantier_id && (
+            <Button variant="ghost" size="icon" onClick={() => updateChantier(null)} disabled={savingChantier} title="Retirer">
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-2">Ne modifie ni le montant, ni la TVA, ni le PDF, ni la comptabilité.</p>
+      </Card>
+
+
+
       {lines.length > 0 && (
         <Card className="p-4 mb-4">
           <h3 className="font-semibold mb-2">{isRTL ? "بنود الفاتورة" : "Lignes"}</h3>

@@ -699,8 +699,9 @@ const AIAssistantPage = () => {
           }
         }
       }
-    } catch {
-      upsert(language === 'ar' ? 'حصل مشكلة، جرب تاني 🔄' : 'Erreur réseau, réessayez.');
+    } catch (err) {
+      console.error('AI Assistant network error:', err);
+      upsert(t('aiAssistant.error.network'));
       setIsLoading(false);
     }
     setIsLoading(false);

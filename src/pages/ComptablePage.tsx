@@ -591,7 +591,7 @@ const ComptablePage = () => {
               Factures fournisseurs et sous-traitants ({(data.supplier_invoices || []).length})
             </h2>
           </div>
-          <p className="text-xs text-gray-500 mb-4" dir="rtl" lang="ar">فواتير الموردين والمقاولين من الباطن</p>
+          <p className="text-xs text-gray-500 mb-4">Factures fournisseurs et justificatifs transmis par l'entreprise.</p>
           {(!data.supplier_invoices || data.supplier_invoices.length === 0) ? (
             <p className="text-sm text-gray-500">Aucune facture fournisseur disponible.</p>
           ) : (

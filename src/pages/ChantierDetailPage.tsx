@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, HardHat, FileText, Receipt, TrendingUp, TrendingDown, Wallet, MapPin, AlertTriangle, Plus, ClipboardList, Download } from 'lucide-react';
+import { ArrowLeft, ArrowRight, HardHat, FileText, Receipt, TrendingUp, TrendingDown, Wallet, MapPin, AlertTriangle, Plus, ClipboardList, Download, Truck, Coins, CircleDollarSign } from 'lucide-react';
 import AddExpenseModal from '@/components/archive/AddExpenseModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,6 +28,9 @@ const ChantierDetailPage = () => {
   const [documents, setDocuments] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
+  const [supplierInvoices, setSupplierInvoices] = useState<any[]>([]);
+  const [milestones, setMilestones] = useState<any[]>([]);
+  const [errSection, setErrSection] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
@@ -42,27 +45,42 @@ const ChantierDetailPage = () => {
       const { data: ch } = await supabase.from('chantiers').select('*').eq('id', id).eq('user_id', user.id).maybeSingle();
       if (ch) {
         setChantier(ch);
-        const [{ data: cl }, { data: docs }, { data: exp }, { data: reps }] = await Promise.all([
+        const results = await Promise.allSettled([
           supabase.from('clients').select('*').eq('id', ch.client_id).eq('user_id', user.id).maybeSingle(),
           supabase.from('documents_comptables').select('*').eq('chantier_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
           supabase.from('expenses').select('*').eq('chantier_id', id).eq('user_id', user.id).order('expense_date', { ascending: false }),
           (supabase.from('chantier_reports' as any) as any).select('*').eq('chantier_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
+          (supabase.from('supplier_invoices' as any) as any).select('*, supplier:suppliers(name)').eq('chantier_id', id).eq('user_id', user.id).order('invoice_date', { ascending: false }),
+          (supabase.from('milestone_invoices' as any) as any).select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
         ]);
-        setClient(cl);
-        setDocuments(docs || []);
-        setExpenses(exp || []);
-        setReports(reps || []);
+        const val = (i: number) => results[i].status === 'fulfilled' ? (results[i] as any).value?.data : null;
+        const err = (i: number) => results[i].status === 'rejected' ? String((results[i] as any).reason?.message || 'Erreur') : ((results[i] as any).value?.error?.message || null);
+        setClient(val(0));
+        setDocuments(val(1) || []);
+        setExpenses(val(2) || []);
+        setReports(val(3) || []);
+        setSupplierInvoices(val(4) || []);
+        // Filter milestones to those whose facture is in this chantier's documents
+        const docIds = new Set((val(1) || []).map((d: any) => d.id));
+        setMilestones((val(5) || []).filter((m: any) => m.facture_id && docIds.has(m.facture_id)));
+        setErrSection({
+          documents: err(1), expenses: err(2), reports: err(3), suppliers: err(4), milestones: err(5),
+        });
       }
 
       setLoading(false);
     })();
   }, [user, id]);
 
-  const totalFactured = useMemo(() =>
-    documents.filter(d => d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted')).reduce((s, d) => s + Number(d.total_ttc || 0), 0),
-    [documents]
-  );
+  const factures = useMemo(() => documents.filter(d => d.document_type === 'facture' && d.status !== 'cancelled'), [documents]);
+  const devisList = useMemo(() => documents.filter(d => d.document_type === 'devis'), [documents]);
+
+  const totalDevis = useMemo(() => devisList.reduce((s, d) => s + Number(d.total_ttc || 0), 0), [devisList]);
+  const totalFactured = useMemo(() => factures.reduce((s, d) => s + Number(d.total_ttc || 0), 0), [factures]);
+  const totalEncaisse = useMemo(() => factures.filter(f => f.payment_status === 'paid').reduce((s, d) => s + Number(d.total_ttc || 0), 0), [factures]);
+  const resteAEncaisser = Math.max(0, totalFactured - totalEncaisse);
   const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]);
+  const totalSupplier = useMemo(() => supplierInvoices.reduce((s, i) => s + Number(i.amount_ttc || 0), 0), [supplierInvoices]);
   const margin = totalFactured - totalExpenses;
 
   const budget = chantier?.budget ? Number(chantier.budget) : null;
@@ -209,70 +227,149 @@ const ChantierDetailPage = () => {
         </Button>
       </div>
 
-      {/* Profitability Summary */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      {/* Synthèse financière — grille responsive */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
         {[
-          { label: isRTL ? 'فوترة' : 'Facturé', value: totalFactured, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-          { label: isRTL ? 'حسابات' : 'Dépenses', value: totalExpenses, icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-500/10' },
-          { label: isRTL ? 'الهامش' : 'Marge', value: margin, icon: Wallet, color: margin >= 0 ? 'text-primary' : 'text-red-500', bg: margin >= 0 ? 'bg-primary/10' : 'bg-red-500/10' },
+          { label: 'Devis', value: totalDevis, icon: FileText, color: 'text-amber-600', bg: 'bg-amber-500/10', hint: 'Indicatif' },
+          { label: 'Facturé', value: totalFactured, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
+          { label: 'Encaissé', value: totalEncaisse, icon: CircleDollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+          { label: 'Reste à encaisser', value: resteAEncaisser, icon: Coins, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+          { label: 'Dépenses', value: totalExpenses, icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-500/10' },
+          { label: 'Fact. fournisseurs', value: totalSupplier, icon: Truck, color: 'text-slate-600', bg: 'bg-slate-500/10' },
         ].map(c => (
           <Card key={c.label} className="border-border/50">
-            <CardContent className="p-3 text-center">
-              <div className={cn("w-8 h-8 rounded-lg mx-auto mb-1 flex items-center justify-center", c.bg)}>
-                <c.icon className={cn("h-4 w-4", c.color)} />
+            <CardContent className="p-2.5 text-center">
+              <div className={cn("w-7 h-7 rounded-lg mx-auto mb-1 flex items-center justify-center", c.bg)}>
+                <c.icon className={cn("h-3.5 w-3.5", c.color)} />
               </div>
-              <p className="text-[10px] text-muted-foreground font-medium">{c.label}</p>
-              <p className={cn("text-sm font-bold", c.color)}>{fmt(c.value)}</p>
+              <p className="text-[10px] text-muted-foreground font-medium leading-tight">{c.label}</p>
+              <p className={cn("text-xs font-bold truncate", c.color)}>{fmt(c.value)}</p>
+              {(c as any).hint && <p className="text-[9px] text-muted-foreground/70">{(c as any).hint}</p>}
             </CardContent>
           </Card>
         ))}
       </div>
+      <p className="text-[10px] text-muted-foreground italic mb-3 px-1">
+        Marge disponible après consolidation des dépenses. Estimation fondée sur les documents actuellement rattachés à ce chantier.
+      </p>
 
       {/* Tabs */}
       <Tabs defaultValue="documents" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="w-full shrink-0">
-          <TabsTrigger value="documents" className="flex-1 gap-1"><FileText className="h-3.5 w-3.5" />{isRTL ? 'مستندات' : 'Documents'}</TabsTrigger>
-          <TabsTrigger value="expenses" className="flex-1 gap-1"><Receipt className="h-3.5 w-3.5" />{isRTL ? 'حسابات' : 'Dépenses'}</TabsTrigger>
-          <TabsTrigger value="reports" className="flex-1 gap-1"><ClipboardList className="h-3.5 w-3.5" />{isRTL ? 'التقارير' : 'Rapports'}</TabsTrigger>
+        <TabsList className="w-full shrink-0 overflow-x-auto">
+          <TabsTrigger value="documents" className="flex-1 gap-1 text-xs"><FileText className="h-3.5 w-3.5" />Documents</TabsTrigger>
+          <TabsTrigger value="expenses" className="flex-1 gap-1 text-xs"><Receipt className="h-3.5 w-3.5" />Dépenses</TabsTrigger>
+          <TabsTrigger value="suppliers" className="flex-1 gap-1 text-xs"><Truck className="h-3.5 w-3.5" />Fournisseurs</TabsTrigger>
+          <TabsTrigger value="reports" className="flex-1 gap-1 text-xs"><ClipboardList className="h-3.5 w-3.5" />Rapports</TabsTrigger>
         </TabsList>
-        <TabsContent value="documents" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
+        <TabsContent value="documents" className="flex-1 overflow-y-auto space-y-3 pb-4 mt-3">
+          {errSection.documents && <p className="text-xs text-destructive px-2">Documents indisponibles : {errSection.documents}</p>}
 
-          {documents.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">{isRTL ? 'لا توجد مستندات مرتبطة' : 'Aucun document lié'}</p>
-          ) : documents.map(doc => (
-            <Card key={doc.id} className="border-border/50">
-              <CardContent className="p-3">
-                <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
-                  <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-                    <FileText className={cn("h-4 w-4", doc.document_type === 'facture' ? 'text-primary' : 'text-amber-500')} />
-                    <div>
-                      <p className="text-sm font-medium">{doc.document_number}</p>
-                      <p className="text-[10px] text-muted-foreground">{doc.client_name}</p>
+          {/* Devis */}
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 px-1">Devis</p>
+            {devisList.length === 0 ? (
+              <p className="text-center text-xs text-muted-foreground py-4">Aucun devis associé à ce chantier.</p>
+            ) : devisList.map(doc => (
+              <Card key={doc.id} className="border-border/50 mb-2 cursor-pointer" onClick={() => navigate(`/document/${doc.id}`)}>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{doc.document_number}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{doc.client_name} · {new Date(doc.created_at).toLocaleDateString('fr-FR')}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold">{fmt(doc.total_ttc)}</p>
+                      <div className="flex gap-1 justify-end flex-wrap">
+                        <Badge variant="outline" className="text-[9px]">{doc.status}</Badge>
+                        {doc.converted_to_invoice && <Badge variant="outline" className="text-[9px] text-primary">Convertie</Badge>}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold">{fmt(doc.total_ttc)}</p>
-                    <Badge variant="outline" className={cn("text-[10px]", doc.document_type === 'facture' ? 'text-primary' : 'text-amber-500')}>
-                      {doc.document_type === 'facture' ? 'Facture' : 'Devis'}
-                    </Badge>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Factures et acomptes */}
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 px-1">Factures et acomptes</p>
+            {factures.length === 0 ? (
+              <p className="text-center text-xs text-muted-foreground py-4">Aucune facture associée à ce chantier.</p>
+            ) : factures.map(doc => {
+              const ms = milestones.find((m: any) => m.facture_id === doc.id);
+              return (
+                <Card key={doc.id} className="border-border/50 mb-2 cursor-pointer" onClick={() => navigate(`/document/${doc.id}`)}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">
+                          {doc.document_number}
+                          {ms && <Badge variant="outline" className="ml-1 text-[9px] text-amber-600">Acompte {ms.milestone_label || `#${ms.milestone_index}`}</Badge>}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          {new Date(doc.created_at).toLocaleDateString('fr-FR')}
+                          {ms && ` · Devis ${ms.devis_number}`}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold">{fmt(doc.total_ttc)}</p>
+                        <div className="flex gap-1 justify-end flex-wrap">
+                          <Badge variant="outline" className="text-[9px]">{doc.status}</Badge>
+                          <Badge variant="outline" className={cn("text-[9px]", doc.payment_status === 'paid' ? 'text-emerald-600' : 'text-orange-600')}>
+                            {doc.payment_status === 'paid' ? 'Payée' : 'Impayée'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </TabsContent>
+        <TabsContent value="expenses" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
+          {errSection.expenses && <p className="text-xs text-destructive px-2">Dépenses indisponibles : {errSection.expenses}</p>}
+          {expenses.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-8">Aucune dépense associée à ce chantier.</p>
+          ) : expenses.map(exp => (
+            <Card key={exp.id} className="border-border/50">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{exp.title}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {exp.category} · {new Date(exp.expense_date).toLocaleDateString('fr-FR')}
+                      {exp.receipt_url ? ' · Justificatif' : ' · Sans justificatif'}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-red-500">-{fmt(exp.amount)}</p>
+                    {Number(exp.tva_amount) > 0 && <p className="text-[9px] text-muted-foreground">dont TVA {fmt(exp.tva_amount)}</p>}
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </TabsContent>
-        <TabsContent value="expenses" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
-          {expenses.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">{isRTL ? 'لا توجد حسابات مرتبطة' : 'Aucune dépense liée'}</p>
-          ) : expenses.map(exp => (
-            <Card key={exp.id} className="border-border/50">
+        <TabsContent value="suppliers" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
+          {errSection.suppliers && <p className="text-xs text-destructive px-2">Factures fournisseurs indisponibles : {errSection.suppliers}</p>}
+          {supplierInvoices.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-8">Aucune facture fournisseur associée à ce chantier.</p>
+          ) : supplierInvoices.map((inv: any) => (
+            <Card key={inv.id} className="border-border/50 cursor-pointer" onClick={() => navigate(`/accounting/supplier-invoices/${inv.id}`)}>
               <CardContent className="p-3">
-                <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
-                  <div>
-                    <p className="text-sm font-medium">{exp.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{exp.category} · {new Date(exp.expense_date).toLocaleDateString('fr-FR')}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{inv.supplier?.name || 'Fournisseur'}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {inv.invoice_number} · {new Date(inv.invoice_date).toLocaleDateString('fr-FR')}
+                    </p>
                   </div>
-                  <p className="text-sm font-bold text-red-500">-{fmt(exp.amount)}</p>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold">{fmt(inv.amount_ttc)}</p>
+                    <p className="text-[9px] text-muted-foreground">HT {fmt(inv.amount_ht)} · TVA {fmt(inv.amount_tva)}</p>
+                    <Badge variant="outline" className="text-[9px] mt-0.5">{inv.status}</Badge>
+                  </div>
                 </div>
               </CardContent>
             </Card>

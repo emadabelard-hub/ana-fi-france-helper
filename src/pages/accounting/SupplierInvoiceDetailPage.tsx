@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, CheckCircle2, Download, Eye } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Download, Eye, HardHat, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -21,11 +23,37 @@ const formatEUR = (n: number) =>
 export default function SupplierInvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState<SupplierInvoice | null>(null);
   const [lines, setLines] = useState<SupplierInvoiceLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [chantiers, setChantiers] = useState<Array<{ id: string; name: string; reference_number: string | null }>>([]);
+  const [savingChantier, setSavingChantier] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('chantiers').select('id, name, reference_number').eq('user_id', user.id).order('created_at', { ascending: false })
+      .then(({ data }) => setChantiers((data as any) || []));
+  }, [user]);
+
+  const updateChantier = async (newId: string | null) => {
+    if (!invoice || !user) return;
+    setSavingChantier(true);
+    const { error } = await supabase
+      .from('supplier_invoices' as any)
+      .update({ chantier_id: newId } as any)
+      .eq('id', invoice.id)
+      .eq('user_id', user.id);
+    setSavingChantier(false);
+    if (error) {
+      toast.error(error.message || 'Erreur');
+      return;
+    }
+    setInvoice({ ...invoice, chantier_id: newId });
+    toast.success(newId ? 'Facture fournisseur rattachée au chantier.' : 'Facture fournisseur retirée du chantier.');
+  };
 
   const reload = async () => {
     if (!id) return;
@@ -115,6 +143,40 @@ export default function SupplierInvoiceDetailPage() {
           <div className="flex justify-between text-base pt-1 border-t"><span className="font-semibold">TTC</span><span className="font-bold">{formatEUR(Number(invoice.amount_ttc))}</span></div>
         </div>
       </Card>
+
+      <Card className="p-4 mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <HardHat className="h-4 w-4 text-amber-600" />
+          <h3 className="font-semibold text-sm">Chantier associé</h3>
+        </div>
+        <div className="flex gap-2 items-center">
+          <Select
+            value={invoice.chantier_id || 'none'}
+            onValueChange={(v) => updateChantier(v === 'none' ? null : v)}
+            disabled={savingChantier}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="Sélectionner un chantier" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— Aucun chantier —</SelectItem>
+              {chantiers.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}{c.reference_number ? ` · ${c.reference_number}` : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {invoice.chantier_id && (
+            <Button variant="ghost" size="icon" onClick={() => updateChantier(null)} disabled={savingChantier} title="Retirer">
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-2">Ne modifie ni le montant, ni la TVA, ni le PDF, ni la comptabilité.</p>
+      </Card>
+
+
 
       {lines.length > 0 && (
         <Card className="p-4 mb-4">

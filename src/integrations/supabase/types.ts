@@ -1727,6 +1727,7 @@ export type Database = {
           amount_ht: number
           amount_ttc: number
           amount_tva: number
+          chantier_id: string | null
           chorus_reference: string
           created_at: string
           factur_x_url: string | null
@@ -1747,6 +1748,7 @@ export type Database = {
           amount_ht?: number
           amount_ttc?: number
           amount_tva?: number
+          chantier_id?: string | null
           chorus_reference?: string
           created_at?: string
           factur_x_url?: string | null
@@ -1767,6 +1769,7 @@ export type Database = {
           amount_ht?: number
           amount_ttc?: number
           amount_tva?: number
+          chantier_id?: string | null
           chorus_reference?: string
           created_at?: string
           factur_x_url?: string | null
@@ -1784,6 +1787,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_invoices_chantier_id_fkey"
+            columns: ["chantier_id"]
+            isOneToOne: false
+            referencedRelation: "chantiers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "supplier_invoices_supplier_id_fkey"
             columns: ["supplier_id"]

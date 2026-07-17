@@ -28,6 +28,7 @@ export interface SupplierInvoice {
   pdf_url: string | null;
   factur_x_url: string | null;
   notes: string | null;
+  chantier_id: string | null;
   created_at: string;
   updated_at: string;
   supplier?: Supplier | null;

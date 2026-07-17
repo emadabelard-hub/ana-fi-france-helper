@@ -1575,39 +1575,32 @@ export async function buildChecklistFinalePdf(): Promise<jsPDF> {
     y += rendered.heightMm + (opts.spacing ?? 3);
   };
 
-  await addArabic("✅ الشيك ليست النهائية لملف تأسيس شركتك", { bold: true, size: 15, align: "center", spacing: 3 });
-  addText("Check-list finale du dossier de création", { italic: true, size: 12, align: "center", spacing: 10 });
+  addText("Check-list finale du dossier de création", { bold: true, size: 15, align: "center", spacing: 10 });
 
-  await addArabic("✅ الوثائق اللي جهزهالك Anafy Pro", { bold: true, size: 13, align: "right", spacing: 5 });
-  const done: Array<[string, string]> = [
-    ["• عقد التأسيس (Statuts)", "Statuts de la société"],
-    ["• شهادة/شهادات عدم الإدانة والنسب", "Attestation(s) de non-condamnation et de filiation"],
-    ["• فيشة المستفيدين الفعليين", "Fiche des bénéficiaires effectifs"],
-    ["• الدراسة المالية (Prévisionnel)", "Prévisionnel financier"],
-    ["• محضر تعيين المدير/الرئيس", "PV de nomination du dirigeant"],
-    ["• خطاب طلب فتح حساب الإيداع للبنك", "Lettre de demande d'ouverture de compte de dépôt"],
+  addText("Documents préparés par Anafy Pro", { bold: true, size: 13, spacing: 5 });
+  const done: string[] = [
+    "• Statuts de la société",
+    "• Attestation(s) de non-condamnation et de filiation",
+    "• Fiche des bénéficiaires effectifs",
+    "• Prévisionnel financier",
+    "• PV de nomination du dirigeant",
+    "• Lettre de demande d'ouverture de compte de dépôt",
   ];
-  for (const [ar, fr] of done) {
-    await addArabic(ar, { size: 11, spacing: 2 });
-    addText(fr, { italic: true, size: 10, spacing: 5 });
+  for (const fr of done) {
+    addText(fr, { size: 11, spacing: 4 });
   }
 
   y += 4;
 
-  await addArabic("⬜ الوثائق اللي لازم تجيبها انت", { bold: true, size: 13, align: "right", spacing: 5 });
-  const todo: Array<[string, string]> = [
-    ["• شهادة إيداع رأس المال (البنك هيديهالك بعد ما تفتح الحساب)",
-     "Attestation de dépôt des fonds (délivrée par la banque après ouverture du compte)"],
-    ["• إثبات عنوان مقر الشركة (فاتورة كهرباء/غاز أو عقد إيجار)",
-     "Justificatif de siège social (facture d'énergie ou contrat de bail)"],
-    ["• صورة بطاقة الهوية أو الإقامة لكل مدير",
-     "Pièce d'identité en cours de validité de chaque dirigeant"],
-    ["• شهادة المؤهل المهني لو نشاطك منظّم (BTP، كهرباء، غاز، سباكة...)",
-     "Justificatif de qualification professionnelle si activité réglementée"],
+  addText("Documents à fournir par vos soins", { bold: true, size: 13, spacing: 5 });
+  const todo: string[] = [
+    "• Attestation de dépôt des fonds (délivrée par la banque après ouverture du compte)",
+    "• Justificatif de siège social (facture d'énergie ou contrat de bail)",
+    "• Pièce d'identité en cours de validité de chaque dirigeant",
+    "• Justificatif de qualification professionnelle si l'activité est réglementée (BTP, électricité, gaz, plomberie…)",
   ];
-  for (const [ar, fr] of todo) {
-    await addArabic(ar, { size: 11, spacing: 2 });
-    addText(fr, { italic: true, size: 10, spacing: 5 });
+  for (const fr of todo) {
+    addText(fr, { size: 11, spacing: 4 });
   }
 
   fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);

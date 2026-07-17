@@ -48,10 +48,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
 
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
+  const [amountType, setAmountType] = useState<'HT' | 'TTC'>('TTC');
   const [tvaAmount, setTvaAmount] = useState('0');
   const [category, setCategory] = useState('other');
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState('');
+
 
   // Load user devis/factures for linking
   useEffect(() => {
@@ -81,11 +83,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
   }, [selectedClientId, userId]);
 
   const resetForm = () => {
-    setTitle(''); setAmount(''); setTvaAmount('0'); setCategory('other');
+    setTitle(''); setAmount(''); setAmountType('TTC'); setTvaAmount('0'); setCategory('other');
     setExpenseDate(new Date().toISOString().slice(0, 10)); setNotes('');
     setReceiptPreview(null); setReceiptFile(null); setSelectedDocId(preselectedDocumentId || '');
     setSelectedClientId(''); setSelectedChantierId('');
   };
+
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -168,6 +171,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         user_id: userId,
         title: title.trim(),
         amount: parseFloat(amount),
+        amount_type: amountType,
         tva_amount: parseFloat(tvaAmount) || 0,
         category,
         expense_date: expenseDate,
@@ -177,6 +181,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         client_id: selectedClientId || null,
         chantier_id: selectedChantierId || null,
       };
+
       console.log('[AddExpenseModal] Insert payload:', expensePayload);
 
       const { error } = await (supabase.from('expenses') as any).insert(expensePayload);
@@ -333,6 +338,43 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
               />
             </div>
           </div>
+
+          {/* HT/TTC selector (obligatoire pour la rentabilité chantier) */}
+          <div className="space-y-1.5">
+            <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
+              {isRTL ? 'نوع المبلغ *' : 'Le montant saisi est en *'}
+            </Label>
+            <div className="grid grid-cols-2 gap-2" dir="ltr">
+              <button
+                type="button"
+                onClick={() => setAmountType('HT')}
+                className={cn(
+                  'py-2 rounded-md border text-sm font-semibold transition',
+                  amountType === 'HT'
+                    ? 'bg-accent text-accent-foreground border-accent'
+                    : 'bg-background border-border text-muted-foreground hover:border-accent/40',
+                )}
+              >
+                HT (hors taxes)
+              </button>
+              <button
+                type="button"
+                onClick={() => setAmountType('TTC')}
+                className={cn(
+                  'py-2 rounded-md border text-sm font-semibold transition',
+                  amountType === 'TTC'
+                    ? 'bg-accent text-accent-foreground border-accent'
+                    : 'bg-background border-border text-muted-foreground hover:border-accent/40',
+                )}
+              >
+                TTC (toutes taxes)
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Indispensable pour calculer la rentabilité du chantier sans double comptage.
+            </p>
+          </div>
+
 
           {/* Category + Date row */}
           <div className="grid grid-cols-2 gap-3">

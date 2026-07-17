@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, CheckCircle2, Download, Eye, HardHat, X } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Download, Eye, HardHat, X, Receipt } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -31,12 +31,77 @@ export default function SupplierInvoiceDetailPage() {
   const [busy, setBusy] = useState(false);
   const [chantiers, setChantiers] = useState<Array<{ id: string; name: string; reference_number: string | null }>>([]);
   const [savingChantier, setSavingChantier] = useState(false);
+  const [linkableExpenses, setLinkableExpenses] = useState<Array<{ id: string; title: string; amount: number; expense_date: string }>>([]);
+  const [linkedExpense, setLinkedExpense] = useState<{ id: string; title: string } | null>(null);
+  const [savingExpense, setSavingExpense] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     supabase.from('chantiers').select('id, name, reference_number').eq('user_id', user.id).order('created_at', { ascending: false })
       .then(({ data }) => setChantiers((data as any) || []));
   }, [user]);
+
+  // Charge dépenses liables (aucune facture fournisseur associée) + la dépense déjà liée le cas échéant
+  useEffect(() => {
+    if (!user || !invoice) return;
+    (async () => {
+      const [{ data: free }, { data: current }] = await Promise.all([
+        (supabase.from('expenses') as any)
+          .select('id, title, amount, expense_date')
+          .eq('user_id', user.id)
+          .is('supplier_invoice_id', null)
+          .order('expense_date', { ascending: false })
+          .limit(100),
+        (supabase.from('expenses') as any)
+          .select('id, title')
+          .eq('user_id', user.id)
+          .eq('supplier_invoice_id', invoice.id)
+          .maybeSingle(),
+      ]);
+      setLinkableExpenses((free as any) || []);
+      setLinkedExpense((current as any) || null);
+    })();
+  }, [user, invoice]);
+
+  const updateLinkedExpense = async (newExpenseId: string | null) => {
+    if (!invoice || !user) return;
+    setSavingExpense(true);
+    try {
+      // Détacher l'existante
+      if (linkedExpense) {
+        await (supabase.from('expenses') as any)
+          .update({ supplier_invoice_id: null })
+          .eq('id', linkedExpense.id)
+          .eq('user_id', user.id);
+      }
+      if (newExpenseId) {
+        const { error } = await (supabase.from('expenses') as any)
+          .update({ supplier_invoice_id: invoice.id })
+          .eq('id', newExpenseId)
+          .eq('user_id', user.id);
+        if (error) throw error;
+        const chosen = linkableExpenses.find((e) => e.id === newExpenseId);
+        setLinkedExpense(chosen ? { id: chosen.id, title: chosen.title } : null);
+        toast.success('Dépense rattachée à la facture fournisseur.');
+      } else {
+        setLinkedExpense(null);
+        toast.success('Dépense détachée.');
+      }
+      // Rafraîchir la liste des dépenses liables
+      const { data: free } = await (supabase.from('expenses') as any)
+        .select('id, title, amount, expense_date')
+        .eq('user_id', user.id)
+        .is('supplier_invoice_id', null)
+        .order('expense_date', { ascending: false })
+        .limit(100);
+      setLinkableExpenses((free as any) || []);
+    } catch (e: any) {
+      toast.error(e?.message || 'Erreur');
+    } finally {
+      setSavingExpense(false);
+    }
+  };
+
 
   const updateChantier = async (newId: string | null) => {
     if (!invoice || !user) return;
@@ -175,6 +240,40 @@ export default function SupplierInvoiceDetailPage() {
         </div>
         <p className="text-[11px] text-muted-foreground mt-2">Ne modifie ni le montant, ni la TVA, ni le PDF, ni la comptabilité.</p>
       </Card>
+
+      {/* Dépense associée — évite le double comptage dans la rentabilité chantier */}
+      <Card className="p-4 mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Receipt className="h-4 w-4 text-red-500" />
+          <h3 className="font-semibold text-sm">Dépense associée</h3>
+        </div>
+        <div className="flex gap-2 items-center">
+          <Select
+            value={linkedExpense?.id || 'none'}
+            onValueChange={(v) => updateLinkedExpense(v === 'none' ? null : v)}
+            disabled={savingExpense}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="Sélectionner une dépense" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— Aucune dépense —</SelectItem>
+              {linkedExpense && (
+                <SelectItem value={linkedExpense.id}>{linkedExpense.title} (déjà liée)</SelectItem>
+              )}
+              {linkableExpenses.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.title} · {new Date(e.expense_date).toLocaleDateString('fr-FR')} · {formatEUR(Number(e.amount))}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-2">
+          Associer cette facture fournisseur à la dépense OCR correspondante évite tout double comptage dans la rentabilité du chantier.
+        </p>
+      </Card>
+
 
 
 

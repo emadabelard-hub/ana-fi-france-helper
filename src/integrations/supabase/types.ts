@@ -778,6 +778,7 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
+          amount_type: string | null
           category: string
           chantier_id: string | null
           client_id: string | null
@@ -788,6 +789,7 @@ export type Database = {
           notes: string | null
           receipt_url: string | null
           sent_to_accountant_at: string | null
+          supplier_invoice_id: string | null
           title: string
           tva_amount: number
           updated_at: string
@@ -795,6 +797,7 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          amount_type?: string | null
           category?: string
           chantier_id?: string | null
           client_id?: string | null
@@ -805,6 +808,7 @@ export type Database = {
           notes?: string | null
           receipt_url?: string | null
           sent_to_accountant_at?: string | null
+          supplier_invoice_id?: string | null
           title: string
           tva_amount?: number
           updated_at?: string
@@ -812,6 +816,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          amount_type?: string | null
           category?: string
           chantier_id?: string | null
           client_id?: string | null
@@ -822,6 +827,7 @@ export type Database = {
           notes?: string | null
           receipt_url?: string | null
           sent_to_accountant_at?: string | null
+          supplier_invoice_id?: string | null
           title?: string
           tva_amount?: number
           updated_at?: string
@@ -847,6 +853,13 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents_comptables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_supplier_invoice_id_fkey"
+            columns: ["supplier_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_invoices"
             referencedColumns: ["id"]
           },
         ]

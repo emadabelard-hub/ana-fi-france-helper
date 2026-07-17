@@ -455,12 +455,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* Notes */}
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'ملاحظات' : 'Notes'}
+              {t('addExpense.field.notes')}
             </Label>
             <Textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder={isRTL ? 'ملاحظات إضافية...' : 'Notes supplémentaires...'}
+              placeholder={t('addExpense.field.notesPlaceholder')}
               className={cn('bg-background border-border min-h-[60px]', isRTL && 'text-right font-cairo')}
             />
           </div>

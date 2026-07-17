@@ -902,7 +902,7 @@ const AIAssistantPage = () => {
                               )}
                               dir={titleAr ? 'rtl' : 'ltr'}
                             >
-                              {c.title || (isRTL ? 'محادثة جديدة' : 'Nouvelle conversation')}
+                              {c.title || t('aiAssistant.header.newConversation')}
                             </p>
                             <p className="text-[11px] text-muted-foreground mt-0.5">{dateStr}</p>
                           </div>

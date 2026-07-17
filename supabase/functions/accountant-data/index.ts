@@ -55,75 +55,72 @@ Deno.serve(async (req) => {
         });
       }
 
-      let bucket: string | null = null;
-      let objectPath = path;
+      // Locate the stored value in ONE of the three owner-scoped tables.
+      // The client passes exactly what the app stored (bare path OR full https URL);
+      // we never trust a client-provided bucket.
+      type Kind = 'supplier' | 'document' | 'expense';
+      let kind: Kind | null = null;
+      let stored: string | null = null;
 
-      // Case 1: explicit bucket prefix (legacy).
-      if (path.startsWith('documents/')) {
-        bucket = 'documents';
-        objectPath = path.slice('documents/'.length);
-      } else if (path.startsWith('expense-receipts/')) {
-        bucket = 'expense-receipts';
-        objectPath = path.slice('expense-receipts/'.length);
-      } else if (path.startsWith(`${ownerId}/`)) {
-        // Case 2: bare storage path scoped to owner. Resolve the real bucket
-        // by looking up the path in the tables actually populated for this owner.
-        // We NEVER trust a client-provided bucket.
-        objectPath = path;
+      const { data: si } = await svc
+        .from('supplier_invoices')
+        .select('id')
+        .eq('user_id', ownerId)
+        .eq('pdf_url', path)
+        .maybeSingle();
+      if (si) { kind = 'supplier'; stored = path; }
 
-        const { data: si } = await svc
-          .from('supplier_invoices')
+      if (!kind) {
+        const { data: dc } = await svc
+          .from('documents_comptables')
           .select('id')
           .eq('user_id', ownerId)
-          .eq('pdf_url', objectPath)
+          .eq('pdf_url', path)
           .maybeSingle();
-        if (si) {
-          bucket = 'documents';
-        } else {
-          const { data: dc } = await svc
-            .from('documents_comptables')
-            .select('id')
-            .eq('user_id', ownerId)
-            .eq('pdf_url', objectPath)
-            .maybeSingle();
-          if (dc) {
-            bucket = 'documents';
-          } else {
-            const { data: ex } = await svc
-              .from('expenses')
-              .select('id')
-              .eq('user_id', ownerId)
-              .eq('receipt_url', objectPath)
-              .maybeSingle();
-            if (ex) bucket = 'expense-receipts';
-          }
-        }
+        if (dc) { kind = 'document'; stored = path; }
+      }
+      if (!kind) {
+        const { data: ex } = await svc
+          .from('expenses')
+          .select('id')
+          .eq('user_id', ownerId)
+          .eq('receipt_url', path)
+          .maybeSingle();
+        if (ex) { kind = 'expense'; stored = path; }
       }
 
-      if (!bucket) {
+      if (!kind || !stored) {
+        console.warn('[accountant-data] sign-url path not owned', { ownerId, sample: stored?.slice(0, 80) });
+        return new Response(JSON.stringify({ error: 'invalid_path' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Resolve bucket + objectPath from the STORED value (source of truth).
+      let bucket: string | null = null;
+      let objectPath = stored;
+      const httpsMatch = stored.match(/\/storage\/v1\/object\/(?:sign|public)\/([^/]+)\/([^?#]+)/);
+      if (httpsMatch) {
+        bucket = decodeURIComponent(httpsMatch[1]);
+        try { objectPath = decodeURIComponent(httpsMatch[2]); } catch { objectPath = httpsMatch[2]; }
+      } else {
+        // Bare path — resolve bucket by kind + heuristics.
+        if (kind === 'supplier') bucket = 'documents';
+        else if (kind === 'document') bucket = 'signed-documents';
+        else bucket = objectPath.includes('/notes-frais/') ? 'documents' : 'expense-receipts';
+      }
+
+      if (!bucket || !objectPath) {
         return new Response(JSON.stringify({ error: 'invalid_path' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
       // Ownership guard: object path must live under ownerId/.
       if (!objectPath.startsWith(`${ownerId}/`)) {
+        console.warn('[accountant-data] sign-url ownership mismatch', { ownerId, bucket });
         return new Response(JSON.stringify({ error: 'forbidden' }), {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
-      }
-      // Reinforced check for supplier-invoices under legacy documents/ prefix.
-      if (bucket === 'documents' && objectPath.startsWith(`${ownerId}/supplier-invoices/`)) {
-        const { data: si2 } = await svc
-          .from('supplier_invoices')
-          .select('id')
-          .eq('user_id', ownerId)
-          .eq('pdf_url', objectPath)
-          .maybeSingle();
-        if (!si2) {
-          return new Response(JSON.stringify({ error: 'forbidden' }), {
-            status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
       }
       const { data: signed, error: signErr } = await svc.storage.from(bucket).createSignedUrl(objectPath, 600);
       if (signErr || !signed) {

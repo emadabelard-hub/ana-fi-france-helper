@@ -972,10 +972,10 @@ const AIAssistantPage = () => {
           <div className="flex flex-col items-center justify-center h-full text-center opacity-60">
             <Sparkles size={40} className="text-primary mb-4" />
             <p className={cn("text-muted-foreground text-lg font-bold", isRTL && "font-cairo")}>
-              {isRTL ? `أهلاً يا ${userInfo?.name || 'فندم'}، اسأل وأنا أجاوب! 🧞` : `Bonjour ${userInfo?.name || ''}, posez votre question ! 🧞`}
+              {t('aiAssistant.welcome.greeting').replace('{name}', userInfo?.name || (isRTL ? 'فندم' : ''))}
             </p>
             <p className={cn("text-muted-foreground text-sm mt-2 mb-4", isRTL && "font-cairo")}>
-              {isRTL ? 'اسألني أي حاجة' : 'Posez vos questions'}
+              {t('aiAssistant.welcome.subtitle')}
             </p>
             {/* Category Tags */}
             <div className="flex flex-wrap gap-2 justify-center mb-4">

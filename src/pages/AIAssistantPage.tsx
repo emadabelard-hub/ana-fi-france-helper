@@ -1006,7 +1006,7 @@ const AIAssistantPage = () => {
               className="px-5 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-bold text-sm flex items-center gap-2 hover:bg-primary/20 active:scale-95 transition-all"
             >
               <ScanLine size={18} />
-              {isRTL ? '📐 سكانير الغرفة' : '📐 Scanner la pièce'}
+              {t('aiAssistant.roomScanner')}
             </button>
           </div>
         )}

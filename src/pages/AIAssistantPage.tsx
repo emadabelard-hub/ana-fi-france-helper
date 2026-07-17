@@ -538,7 +538,7 @@ const AIAssistantPage = () => {
       const isImage = /^image\/(jpe?g|png)$/i.test(file.type);
       const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
       if (!isImage && !isPdf) {
-        toast({ variant: 'destructive', title: isRTL ? 'نوع الملف غير مدعوم' : 'Format non supporté', description: file.name });
+        toast({ variant: 'destructive', title: t('aiAssistant.file.unsupported'), description: file.name });
         continue;
       }
       if (file.size > 10 * 1024 * 1024) {

@@ -171,6 +171,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         user_id: userId,
         title: title.trim(),
         amount: parseFloat(amount),
+        amount_type: amountType,
         tva_amount: parseFloat(tvaAmount) || 0,
         category,
         expense_date: expenseDate,
@@ -180,6 +181,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         client_id: selectedClientId || null,
         chantier_id: selectedChantierId || null,
       };
+
       console.log('[AddExpenseModal] Insert payload:', expensePayload);
 
       const { error } = await (supabase.from('expenses') as any).insert(expensePayload);

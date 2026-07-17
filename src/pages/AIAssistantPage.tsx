@@ -1181,7 +1181,7 @@ const AIAssistantPage = () => {
               <div className="flex items-center gap-2 bg-muted/60 border border-border rounded-xl p-2">
                 <Loader2 size={16} className="animate-spin text-muted-foreground shrink-0" />
                 <span className={cn("text-xs text-muted-foreground flex-1 truncate", isRTL && "font-cairo text-right")}>
-                  {isRTL ? 'جاري قراءة الملفات...' : 'Lecture des fichiers...'}
+                  {t('aiAssistant.file.reading')}
                 </span>
               </div>
             )}

@@ -331,32 +331,32 @@ const ChantierDetailPage = () => {
       {/* Tabs */}
       <Tabs defaultValue="documents" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="w-full shrink-0 overflow-x-auto">
-          <TabsTrigger value="documents" className="flex-1 gap-1 text-xs"><FileText className="h-3.5 w-3.5" />Documents</TabsTrigger>
-          <TabsTrigger value="expenses" className="flex-1 gap-1 text-xs"><Receipt className="h-3.5 w-3.5" />Dépenses</TabsTrigger>
-          <TabsTrigger value="suppliers" className="flex-1 gap-1 text-xs"><Truck className="h-3.5 w-3.5" />Fournisseurs</TabsTrigger>
-          <TabsTrigger value="reports" className="flex-1 gap-1 text-xs"><ClipboardList className="h-3.5 w-3.5" />Rapports</TabsTrigger>
+          <TabsTrigger value="documents" className="flex-1 gap-1 text-xs"><FileText className="h-3.5 w-3.5" />{t('chantierDetail.tabs.documents')}</TabsTrigger>
+          <TabsTrigger value="expenses" className="flex-1 gap-1 text-xs"><Receipt className="h-3.5 w-3.5" />{t('chantierDetail.tabs.expenses')}</TabsTrigger>
+          <TabsTrigger value="suppliers" className="flex-1 gap-1 text-xs"><Truck className="h-3.5 w-3.5" />{t('chantierDetail.tabs.suppliers')}</TabsTrigger>
+          <TabsTrigger value="reports" className="flex-1 gap-1 text-xs"><ClipboardList className="h-3.5 w-3.5" />{t('chantierDetail.tabs.reports')}</TabsTrigger>
         </TabsList>
         <TabsContent value="documents" className="flex-1 overflow-y-auto space-y-3 pb-4 mt-3">
-          {errSection.documents && <p className="text-xs text-destructive px-2">Documents indisponibles : {errSection.documents}</p>}
+          {errSection.documents && <p className="text-xs text-destructive px-2">{t('chantierDetail.docs.errorPrefix')}</p>}
 
           {/* Devis */}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 px-1">Devis</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 px-1">{t('chantierDetail.docs.devisSection')}</p>
             {devisList.length === 0 ? (
-              <p className="text-center text-xs text-muted-foreground py-4">Aucun devis associé à ce chantier.</p>
+              <p className="text-center text-xs text-muted-foreground py-4">{t('chantierDetail.docs.noDevis')}</p>
             ) : devisList.map(doc => (
               <Card key={doc.id} className="border-border/50 mb-2 cursor-pointer" onClick={() => navigate(`/document/${doc.id}`)}>
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{doc.document_number}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{doc.client_name} · {new Date(doc.created_at).toLocaleDateString('fr-FR')}</p>
+                      <p className="text-sm font-medium truncate" dir="ltr">{doc.document_number}</p>
+                      <p className="text-[10px] text-muted-foreground truncate"><span>{doc.client_name}</span> · <span dir="ltr">{new Date(doc.created_at).toLocaleDateString('fr-FR')}</span></p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-bold">{fmt(doc.total_ttc)}</p>
+                      <p className="text-sm font-bold" dir="ltr">{fmt(doc.total_ttc)}</p>
                       <div className="flex gap-1 justify-end flex-wrap">
                         <Badge variant="outline" className="text-[9px]">{doc.status}</Badge>
-                        {doc.converted_to_invoice && <Badge variant="outline" className="text-[9px] text-primary">Convertie</Badge>}
+                        {doc.converted_to_invoice && <Badge variant="outline" className="text-[9px] text-primary">{t('chantierDetail.docs.converted')}</Badge>}
                       </div>
                     </div>
                   </div>
@@ -367,9 +367,9 @@ const ChantierDetailPage = () => {
 
           {/* Factures et acomptes */}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 px-1">Factures et acomptes</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 px-1">{t('chantierDetail.docs.facturesSection')}</p>
             {factures.length === 0 ? (
-              <p className="text-center text-xs text-muted-foreground py-4">Aucune facture associée à ce chantier.</p>
+              <p className="text-center text-xs text-muted-foreground py-4">{t('chantierDetail.docs.noFactures')}</p>
             ) : factures.map(doc => {
               const ms = milestones.find((m: any) => m.facture_id === doc.id);
               return (
@@ -378,20 +378,20 @@ const ChantierDetailPage = () => {
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate">
-                          {doc.document_number}
-                          {ms && <Badge variant="outline" className="ml-1 text-[9px] text-amber-600">Acompte {ms.milestone_label || `#${ms.milestone_index}`}</Badge>}
+                          <span dir="ltr">{doc.document_number}</span>
+                          {ms && <Badge variant="outline" className="ml-1 text-[9px] text-amber-600">{t('chantierDetail.docs.acompte')} {ms.milestone_label || `#${ms.milestone_index}`}</Badge>}
                         </p>
                         <p className="text-[10px] text-muted-foreground truncate">
-                          {new Date(doc.created_at).toLocaleDateString('fr-FR')}
-                          {ms && ` · Devis ${ms.devis_number}`}
+                          <span dir="ltr">{new Date(doc.created_at).toLocaleDateString('fr-FR')}</span>
+                          {ms && <> · <span>{t('chantierDetail.docs.devisRef')} </span><span dir="ltr">{ms.devis_number}</span></>}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-bold">{fmt(doc.total_ttc)}</p>
+                        <p className="text-sm font-bold" dir="ltr">{fmt(doc.total_ttc)}</p>
                         <div className="flex gap-1 justify-end flex-wrap">
                           <Badge variant="outline" className="text-[9px]">{doc.status}</Badge>
                           <Badge variant="outline" className={cn("text-[9px]", doc.payment_status === 'paid' ? 'text-emerald-600' : 'text-orange-600')}>
-                            {doc.payment_status === 'paid' ? 'Payée' : 'Impayée'}
+                            {doc.payment_status === 'paid' ? t('chantierDetail.docs.paid') : t('chantierDetail.docs.unpaid')}
                           </Badge>
                         </div>
                       </div>
@@ -403,9 +403,9 @@ const ChantierDetailPage = () => {
           </div>
         </TabsContent>
         <TabsContent value="expenses" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
-          {errSection.expenses && <p className="text-xs text-destructive px-2">Dépenses indisponibles : {errSection.expenses}</p>}
+          {errSection.expenses && <p className="text-xs text-destructive px-2">{t('chantierDetail.expenses.errorPrefix')}</p>}
           {expenses.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">Aucune dépense associée à ce chantier.</p>
+            <p className="text-center text-sm text-muted-foreground py-8">{t('chantierDetail.expenses.empty')}</p>
           ) : expenses.map(exp => (
             <Card key={exp.id} className="border-border/50">
               <CardContent className="p-3">
@@ -413,13 +413,13 @@ const ChantierDetailPage = () => {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{exp.title}</p>
                     <p className="text-[10px] text-muted-foreground truncate">
-                      {exp.category} · {new Date(exp.expense_date).toLocaleDateString('fr-FR')}
-                      {exp.receipt_url ? ' · Justificatif' : ' · Sans justificatif'}
+                      {exp.category} · <span dir="ltr">{new Date(exp.expense_date).toLocaleDateString('fr-FR')}</span>
+                      {exp.receipt_url ? ` · ${t('chantierDetail.expenses.withReceipt')}` : ` · ${t('chantierDetail.expenses.withoutReceipt')}`}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-red-500">-{fmt(exp.amount)}</p>
-                    {Number(exp.tva_amount) > 0 && <p className="text-[9px] text-muted-foreground">dont TVA {fmt(exp.tva_amount)}</p>}
+                    <p className="text-sm font-bold text-red-500" dir="ltr">-{fmt(exp.amount)}</p>
+                    {Number(exp.tva_amount) > 0 && <p className="text-[9px] text-muted-foreground" dir="ltr">{t('chantierDetail.expenses.vatOf')} {fmt(exp.tva_amount)}</p>}
                   </div>
                 </div>
               </CardContent>
@@ -427,22 +427,22 @@ const ChantierDetailPage = () => {
           ))}
         </TabsContent>
         <TabsContent value="suppliers" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
-          {errSection.suppliers && <p className="text-xs text-destructive px-2">Factures fournisseurs indisponibles : {errSection.suppliers}</p>}
+          {errSection.suppliers && <p className="text-xs text-destructive px-2">{t('chantierDetail.suppliers.errorPrefix')}</p>}
           {supplierInvoices.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">Aucune facture fournisseur associée à ce chantier.</p>
+            <p className="text-center text-sm text-muted-foreground py-8">{t('chantierDetail.suppliers.empty')}</p>
           ) : supplierInvoices.map((inv: any) => (
             <Card key={inv.id} className="border-border/50 cursor-pointer" onClick={() => navigate(`/accounting/supplier-invoices/${inv.id}`)}>
               <CardContent className="p-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{inv.supplier?.name || 'Fournisseur'}</p>
+                    <p className="text-sm font-medium truncate">{inv.supplier?.name || t('chantierDetail.suppliers.defaultName')}</p>
                     <p className="text-[10px] text-muted-foreground truncate">
-                      {inv.invoice_number} · {new Date(inv.invoice_date).toLocaleDateString('fr-FR')}
+                      <span dir="ltr">{inv.invoice_number}</span> · <span dir="ltr">{new Date(inv.invoice_date).toLocaleDateString('fr-FR')}</span>
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-bold">{fmt(inv.amount_ttc)}</p>
-                    <p className="text-[9px] text-muted-foreground">HT {fmt(inv.amount_ht)} · TVA {fmt(inv.amount_tva)}</p>
+                    <p className="text-sm font-bold" dir="ltr">{fmt(inv.amount_ttc)}</p>
+                    <p className="text-[9px] text-muted-foreground" dir="ltr">{t('chantierDetail.suppliers.htPrefix')} {fmt(inv.amount_ht)} · {t('chantierDetail.suppliers.vatPrefix')} {fmt(inv.amount_tva)}</p>
                     <Badge variant="outline" className="text-[9px] mt-0.5">{inv.status}</Badge>
                   </div>
                 </div>
@@ -452,7 +452,7 @@ const ChantierDetailPage = () => {
         </TabsContent>
         <TabsContent value="reports" className="flex-1 overflow-y-auto space-y-2 pb-4 mt-3">
           {reports.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">{isRTL ? 'لا توجد تقارير' : 'Aucun rapport'}</p>
+            <p className="text-center text-sm text-muted-foreground py-8">{t('chantierDetail.reports.empty')}</p>
           ) : reports.map((r: any) => (
             <Card key={r.id} className="border-border/50">
               <CardContent className="p-3">
@@ -460,9 +460,9 @@ const ChantierDetailPage = () => {
                   <div className={cn("flex items-center gap-2 min-w-0", isRTL && "flex-row-reverse")}>
                     <ClipboardList className="h-4 w-4 text-amber-600 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{r.report_number || '—'}</p>
+                      <p className="text-sm font-medium truncate" dir="ltr">{r.report_number || '—'}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {r.report_date ? new Date(r.report_date).toLocaleDateString('fr-FR') : ''}
+                        <span dir="ltr">{r.report_date ? new Date(r.report_date).toLocaleDateString('fr-FR') : ''}</span>
                         {r.submitted_by_name ? ` · ${r.submitted_by_name}` : ''}
                       </p>
                     </div>

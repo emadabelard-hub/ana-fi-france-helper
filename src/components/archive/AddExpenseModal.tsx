@@ -290,12 +290,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* Title */}
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'العنوان *' : 'Titre *'}
+              {t('addExpense.field.title')}
             </Label>
             <Input
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder={isRTL ? 'مثال: شراء دهان' : 'Ex: Achat peinture'}
+              placeholder={t('addExpense.field.titlePlaceholder')}
               className={cn('bg-background border-border', isRTL && 'text-right font-cairo')}
             />
           </div>

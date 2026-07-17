@@ -1209,73 +1209,56 @@ export async function buildGuideDepotPdf(): Promise<jsPDF> {
     y += rendered.heightMm + (opts.spacing ?? 3);
   };
 
-  // PAGE 1 — Liste des pièces
-  await addArabic("📂 قائمة الأوراق المطلوبة لتسجيل شركتك", { bold: true, size: 15, align: "center", spacing: 3 });
-  addText("Liste des pièces à fournir pour l'immatriculation", { italic: true, size: 12, align: "center", spacing: 10 });
+  // PAGE 1 — Liste des pièces (français uniquement — document remis à un tiers)
+  addText("Liste des pièces à fournir pour l'immatriculation", { bold: true, size: 15, align: "center", spacing: 3 });
+  addText("Dossier de création d'entreprise — dépôt sur procedures.inpi.fr", { italic: true, size: 11, align: "center", spacing: 10 });
 
-  const pieces: Array<[string, string]> = [
-    ["1. عقد التأسيس موقّع من كل الشركاء (كل صفحة لازم تتوقع بالأحرف الأولى)",
-     "Statuts signés par tous les associés (parapher chaque page)"],
-    ["2. شهادة إيداع رأس المال من البنك",
-     "Attestation de dépôt des fonds"],
-    ["3. إثبات عنوان مقر الشركة (فاتورة كهرباء أو عقد إيجار)",
-     "Justificatif de siège social (facture ou bail)"],
-    ["4. صورة بطاقة الهوية أو الإقامة لكل مدير",
-     "Pièce d'identité de chaque dirigeant"],
-    ["5. شهادة عدم الإدانة والنسب لكل مدير (Anafy Pro بيولّدهالك ✅)",
-     "Attestation de non-condamnation et de filiation"],
-    ["6. بيانات المستفيدين الفعليين (التصريح أونلاين — استخدم الفيشة اللي ولّدناهالك ✅)",
-     "Bénéficiaires effectifs (déclaration en ligne)"],
-    ["7. لو نشاطك منظّم (كهرباء، غاز...): شهادة المؤهل أو الخبرة",
-     "Justificatif de qualification professionnelle si activité réglementée"],
+  const pieces: string[] = [
+    "1. Statuts de la société signés par tous les associés (parapher chaque page)",
+    "2. Attestation de dépôt des fonds délivrée par la banque",
+    "3. Justificatif de siège social (facture d'énergie ou contrat de bail)",
+    "4. Pièce d'identité (ou titre de séjour) en cours de validité de chaque dirigeant",
+    "5. Attestation de non-condamnation et de filiation de chaque dirigeant (générée par Anafy Pro)",
+    "6. Déclaration des bénéficiaires effectifs (à effectuer en ligne — utiliser la fiche générée par Anafy Pro)",
+    "7. Justificatif de qualification professionnelle si l'activité est réglementée (BTP, électricité, gaz, plomberie…)",
   ];
-  for (const [ar, fr] of pieces) {
-    await addArabic(ar, { size: 11, spacing: 2 });
-    addText(fr, { italic: true, size: 10, spacing: 6 });
+  for (const p of pieces) {
+    addText(p, { size: 11, spacing: 6 });
   }
 
 
   // PAGE 2 — Guide étapes
   doc.addPage();
   y = margin;
-  await addArabic("📖 إزاي تسجّل شركتك على Guichet Unique خطوة بخطوة", { bold: true, size: 14, align: "center", spacing: 3 });
-  addText("Guide de dépôt étape par étape sur procedures.inpi.fr", { italic: true, size: 12, align: "center", spacing: 10 });
+  addText("Guide de dépôt étape par étape sur procedures.inpi.fr", { bold: true, size: 14, align: "center", spacing: 3 });
+  addText("Immatriculation de votre société via le Guichet Unique", { italic: true, size: 11, align: "center", spacing: 10 });
 
-  const etapes: Array<[string, string]> = [
-    ["1️⃣ افتح procedures.inpi.fr واعمل حساب",
-     "Créer un compte sur procedures.inpi.fr"],
-    ["2️⃣ اختار « Déposer une formalité de création d'entreprise »",
-     "Choisir « Déposer une formalité de création d'entreprise »"],
-    ["3️⃣ املا البيانات — كلها موجودة في عقد التأسيس اللي معاك",
-     "Remplir les informations (déjà présentes dans vos statuts)"],
-    ["4️⃣ ارفع الأوراق (PDF) واحدة واحدة",
-     "Téléverser les pièces justificatives (PDF) une par une"],
-    ["5️⃣ ادفع رسوم التسجيل أونلاين",
-     "Régler les frais d'immatriculation en ligne"],
-    ["6️⃣ هتستلم رقم SIRET خلال أيام على إيميلك",
-     "Réception du numéro SIRET par email sous quelques jours"],
+  const etapes: string[] = [
+    "1. Créer un compte sur procedures.inpi.fr",
+    "2. Choisir « Déposer une formalité de création d'entreprise »",
+    "3. Remplir les informations demandées (elles figurent déjà dans vos statuts)",
+    "4. Téléverser les pièces justificatives (au format PDF) une par une",
+    "5. Régler les frais d'immatriculation en ligne",
+    "6. Réception du numéro SIRET par e-mail sous quelques jours",
   ];
-  for (const [ar, fr] of etapes) {
-    await addArabic(ar, { size: 11, spacing: 2 });
-    addText(fr, { italic: true, size: 10, spacing: 7 });
+  for (const e of etapes) {
+    addText(e, { size: 11, spacing: 7 });
   }
 
 
-  // Encadré final — texte arabe rendu en image
-  const arTitle = "💬 محتاج مساعدة في أي خطوة؟ اسأل شبيك لبيك";
-  const arTitleImg = await renderArabicToImage(arTitle, usableWidth - 6, {
-    bold: true, size: 11, align: "center", color: "#143C82", bg: "#E6F0FF",
-  });
-  const encH = Math.max(22, (arTitleImg?.heightMm ?? 8) + 14);
+  // Encadré final — français uniquement
+  const encTitle = "Besoin d'aide pour une étape ? Contactez votre conseiller Anafy Pro.";
+  const encH = 22;
   if (y + encH > bottomLimit) { doc.addPage(); y = margin; }
   y += 4;
   doc.setDrawColor(30, 100, 180);
   doc.setFillColor(230, 240, 255);
   doc.setLineWidth(0.5);
   doc.rect(margin, y, usableWidth, encH, "FD");
-  if (arTitleImg) {
-    doc.addImage(arTitleImg.dataUrl, "PNG", margin + 3, y + 3, usableWidth - 6, arTitleImg.heightMm);
-  }
+  doc.setFont("times", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(20, 60, 130);
+  doc.text(encTitle, pageWidth / 2, y + 8, { align: "center", maxWidth: usableWidth - 6 });
   doc.setFont("times", "italic");
   doc.setFontSize(9);
   doc.setTextColor(20, 60, 130);

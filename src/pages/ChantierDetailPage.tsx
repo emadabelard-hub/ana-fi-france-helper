@@ -100,36 +100,31 @@ const ChantierDetailPage = () => {
     const val = budgetInput.trim() ? parseFloat(budgetInput) : null;
     const { error } = await supabase.from('chantiers').update({ budget: val } as any).eq('id', id).eq('user_id', user.id);
     if (error) {
-      toast({ title: isRTL ? 'خطأ' : 'Erreur', description: error.message, variant: 'destructive' });
+      console.error('[ChantierDetail] save budget failed', error);
+      toast({ title: t('chantierDetail.toast.errorTitle'), description: t('chantierDetail.toast.saveError'), variant: 'destructive' });
       return;
     }
     setChantier((prev: any) => ({ ...prev, budget: val }));
     setEditingBudget(false);
-    toast({ title: isRTL ? 'تم حفظ الميزانية' : 'Budget enregistré ✓' });
+    toast({ title: t('chantierDetail.budget.savedToast') });
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground animate-pulse">{isRTL ? 'جاري التحميل...' : 'Chargement...'}</div>;
+    return <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground animate-pulse">{t('chantierDetail.loading')}</div>;
   }
 
   if (!chantier) {
-    return <div className="text-center py-12 text-muted-foreground">{isRTL ? 'المشروع غير موجود' : 'Chantier introuvable'}</div>;
+    return <div className="text-center py-12 text-muted-foreground">{t('chantierDetail.notFound')}</div>;
   }
 
-  const statusLabelMap: Record<string, { fr: string; ar: string }> = {
-    etude: { fr: 'Étude', ar: 'قيد الدراسة' },
-    devis_envoye: { fr: 'Devis envoyé', ar: 'تم ارسال الدوفي' },
-    en_cours_travaux: { fr: 'En cours de travaux', ar: 'قيد التنفيذ' },
-    facture_envoyee: { fr: 'Facture envoyée', ar: 'تم ارسال الفاتورة' },
-    paiement_attente: { fr: 'Paiement en attente', ar: 'فاتورة قيد التحصيل' },
-    facture_payee: { fr: 'Facture payée', ar: 'تم تحصيل الفاتورة' },
-  };
   const statusColorMap: Record<string, string> = {
     facture_envoyee: 'bg-blue-500/10 text-blue-600',
     paiement_attente: 'bg-orange-500/10 text-orange-600',
     facture_payee: 'bg-green-500/10 text-green-600',
   };
-  const statusLabel = isRTL ? (statusLabelMap[chantier.status]?.ar || chantier.status) : (statusLabelMap[chantier.status]?.fr || chantier.status);
+  const statusKey = `chantierDetail.status.${chantier.status}`;
+  const statusTranslated = t(statusKey);
+  const statusLabel = statusTranslated === statusKey ? chantier.status : statusTranslated;
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden">

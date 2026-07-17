@@ -23,11 +23,37 @@ const formatEUR = (n: number) =>
 export default function SupplierInvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState<SupplierInvoice | null>(null);
   const [lines, setLines] = useState<SupplierInvoiceLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [chantiers, setChantiers] = useState<Array<{ id: string; name: string; reference_number: string | null }>>([]);
+  const [savingChantier, setSavingChantier] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('chantiers').select('id, name, reference_number').eq('user_id', user.id).order('created_at', { ascending: false })
+      .then(({ data }) => setChantiers((data as any) || []));
+  }, [user]);
+
+  const updateChantier = async (newId: string | null) => {
+    if (!invoice || !user) return;
+    setSavingChantier(true);
+    const { error } = await supabase
+      .from('supplier_invoices' as any)
+      .update({ chantier_id: newId } as any)
+      .eq('id', invoice.id)
+      .eq('user_id', user.id);
+    setSavingChantier(false);
+    if (error) {
+      toast.error(error.message || 'Erreur');
+      return;
+    }
+    setInvoice({ ...invoice, chantier_id: newId });
+    toast.success(newId ? 'Facture fournisseur rattachée au chantier.' : 'Facture fournisseur retirée du chantier.');
+  };
 
   const reload = async () => {
     if (!id) return;

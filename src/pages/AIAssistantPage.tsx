@@ -821,7 +821,7 @@ const AIAssistantPage = () => {
             <Sparkles size={18} className="text-primary" />
           </div>
           <h1 className={cn("font-bold text-foreground text-lg truncate", isRTL && "font-cairo")}>
-            {isRTL ? 'المساعد الذكي' : 'Assistant IA'}
+            {t('aiAssistant.header.title')}
           </h1>
         </div>
         <button
@@ -830,16 +830,16 @@ const AIAssistantPage = () => {
             "p-2 rounded-full hover:bg-muted transition-colors",
             showConversationList && "bg-muted"
           )}
-          aria-label={isRTL ? 'المحادثات' : 'Conversations'}
-          title={isRTL ? 'المحادثات' : 'Conversations'}
+          aria-label={t('aiAssistant.header.conversations')}
+          title={t('aiAssistant.header.conversations')}
         >
           <History size={18} className="text-foreground" />
         </button>
         <button
           onClick={handleNewConversation}
           className="p-2 rounded-full hover:bg-muted transition-colors"
-          aria-label={isRTL ? 'محادثة جديدة' : 'Nouvelle conversation'}
-          title={isRTL ? 'محادثة جديدة' : 'Nouvelle conversation'}
+          aria-label={t('aiAssistant.header.newConversation')}
+          title={t('aiAssistant.header.newConversation')}
         >
           <MessageSquarePlus size={18} className="text-primary" />
         </button>

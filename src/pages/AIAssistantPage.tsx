@@ -991,7 +991,12 @@ const AIAssistantPage = () => {
                     isRTL && "font-cairo"
                   )}
                 >
-                  {cat.emoji} {isRTL ? cat.labelAr : cat.labelFr}
+                  {cat.emoji} {t(
+                    cat.key === 'مهني' ? 'aiAssistant.categories.pro'
+                    : cat.key === 'اداري' ? 'aiAssistant.categories.admin'
+                    : cat.key === 'قانوني' ? 'aiAssistant.categories.legal'
+                    : 'aiAssistant.categories.personal'
+                  )}
                 </button>
               ))}
             </div>

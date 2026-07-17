@@ -322,6 +322,21 @@ const translations: Record<Language, Record<string, string>> = {
     'addExpense.cat.insurance': 'Assurance',
     'addExpense.cat.telecom': 'Télécom',
     'addExpense.cat.other': 'Autre',
+
+    // ===== SUPPLIER INVOICES (LIST) =====
+    'supplierInvoices.title': 'Factures Fournisseurs',
+    'supplierInvoices.count.suffix': 'facture(s)',
+    'supplierInvoices.ttcSuffix': 'TTC',
+    'supplierInvoices.import': 'Importer une facture',
+    'supplierInvoices.source.label': 'Source',
+    'supplierInvoices.source.all': 'Tous',
+    'supplierInvoices.empty': "Aucune facture fournisseur pour l'instant",
+    'supplierInvoices.noSupplier': 'Sans fournisseur',
+    'supplierInvoices.htPrefix': 'HT',
+    'supplierInvoices.status.received': 'Reçue',
+    'supplierInvoices.status.processed': 'Traitée',
+    'supplierInvoices.status.paid': 'Payée',
+    'supplierInvoices.toast.loadError': 'Erreur de chargement',
   },
 
   ar: {

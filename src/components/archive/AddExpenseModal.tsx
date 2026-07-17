@@ -48,10 +48,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
 
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
+  const [amountType, setAmountType] = useState<'HT' | 'TTC'>('TTC');
   const [tvaAmount, setTvaAmount] = useState('0');
   const [category, setCategory] = useState('other');
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState('');
+
 
   // Load user devis/factures for linking
   useEffect(() => {

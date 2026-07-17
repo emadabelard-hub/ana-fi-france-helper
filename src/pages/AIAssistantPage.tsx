@@ -1143,7 +1143,7 @@ const AIAssistantPage = () => {
                     isRTL={isRTL}
                     onCancel={() => {
                       setMessages(prev => prev.map((m, idx) =>
-                        idx === i ? { ...m, content: visibleContent || (isRTL ? '(تم الإلغاء)' : '(annulé)') } : m
+                        idx === i ? { ...m, content: visibleContent || t('aiAssistant.cancelled') } : m
                       ));
                     }}
                     onSubmit={(data) => {

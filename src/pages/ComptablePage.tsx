@@ -93,21 +93,40 @@ const ComptablePage = () => {
     return () => { mounted = false; };
   }, [token]);
 
-  const handleDownload = async (path: string | null, filename: string) => {
+  const extFromUrl = (u: string | null | undefined): string => {
+    if (!u) return '';
+    const clean = u.split('?')[0].split('#')[0];
+    const m = clean.match(/\.([a-z0-9]{2,5})$/i);
+    return m ? m[1].toLowerCase() : '';
+  };
+
+  const ensureExtension = (name: string, fallbackExt: string, blob?: Blob): string => {
+    if (/\.[a-z0-9]{2,5}$/i.test(name)) return name;
+    let ext = fallbackExt;
+    if (blob) {
+      const t = blob.type || '';
+      if (t.includes('pdf')) ext = 'pdf';
+      else if (t.includes('jpeg')) ext = 'jpg';
+      else if (t.includes('png')) ext = 'png';
+      else if (t.includes('webp')) ext = 'webp';
+    }
+    return ext ? `${name}.${ext}` : name;
+  };
+
+  const handleDownload = async (path: string | null, filename: string, fallbackExt = 'pdf') => {
     if (!path) return;
     try {
-      const { data: resp, error: err } = await supabase.functions.invoke('accountant-data', { body: { token, action: 'sign-url', path } });
-      if (err || (resp as any)?.error || !(resp as any)?.url) { console.error('Signed URL failed', err); return; }
-      const url = (resp as any).url as string;
-      const a = document.createElement('a');
-      a.href = url;
-      a.target = '_blank';
-      a.rel = 'noopener';
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } catch (e) { console.error(e); }
+      const url = await fetchSignedUrl(path);
+      if (!url) { alert('Le fichier demandé est introuvable.'); return; }
+      const res = await fetch(url);
+      if (!res.ok) { alert('Téléchargement impossible.'); return; }
+      const blob = await res.blob();
+      if (!blob || blob.size === 0) { alert('Téléchargement impossible.'); return; }
+      triggerBlobDownload(blob, ensureExtension(filename, fallbackExt, blob));
+    } catch (e) {
+      console.error('[comptable] download failed', e);
+      alert('Téléchargement impossible.');
+    }
   };
 
   const fetchSignedUrl = async (path: string): Promise<string | null> => {
@@ -121,9 +140,10 @@ const ComptablePage = () => {
   const handleView = async (path: string | null) => {
     if (!path) return;
     const url = await fetchSignedUrl(path);
-    if (!url) { alert('Justificatif temporairement indisponible.'); return; }
+    if (!url) { alert('Le fichier demandé est introuvable.'); return; }
     window.open(url, '_blank', 'noopener,noreferrer');
   };
+
 
   const buildFecBlob = (): Blob | null => {
     if (!data) return null;

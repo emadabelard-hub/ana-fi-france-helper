@@ -9,6 +9,7 @@ import { Camera, Upload, Sparkles, Loader2, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AddExpenseModalProps {
   open: boolean;
@@ -19,19 +20,11 @@ interface AddExpenseModalProps {
   preselectedDocumentId?: string | null;
 }
 
-const categories = [
-  { value: 'materials', labelFr: 'Matériaux', labelAr: 'مواد' },
-  { value: 'tools', labelFr: 'Outils', labelAr: 'أدوات' },
-  { value: 'transport', labelFr: 'Transport', labelAr: 'نقل' },
-  { value: 'food', labelFr: 'Repas', labelAr: 'وجبات' },
-  { value: 'office', labelFr: 'Fournitures', labelAr: 'لوازم مكتبية' },
-  { value: 'insurance', labelFr: 'Assurance', labelAr: 'تأمين' },
-  { value: 'telecom', labelFr: 'Télécom', labelAr: 'اتصالات' },
-  { value: 'other', labelFr: 'Autre', labelAr: 'أخرى' },
-];
+const categoryValues = ['materials', 'tools', 'transport', 'food', 'office', 'insurance', 'telecom', 'other'] as const;
 
 const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, preselectedDocumentId }: AddExpenseModalProps) => {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
@@ -120,12 +113,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
       if (data.date) setExpenseDate(data.date);
       if (data.notes) setNotes(data.notes);
 
-      toast({ title: isRTL ? '✅ تم التحليل بنجاح' : '✅ Analyse réussie' });
+      toast({ title: t('addExpense.toast.analyzeOk') });
     } catch (err: any) {
       console.error('AI analysis error:', err);
       toast({
-        title: isRTL ? '⚠️ خطأ في التحليل' : '⚠️ Erreur d\'analyse',
-        description: isRTL ? 'حاول مرة أخرى أو أدخل البيانات يدوياً' : 'Réessayez ou saisissez manuellement',
+        title: t('addExpense.toast.analyzeErr'),
+        description: t('addExpense.toast.analyzeErrDesc'),
         variant: 'destructive',
       });
     } finally {
@@ -136,10 +129,8 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
   const handleSave = async () => {
     if (!title.trim() || !amount) {
       toast({
-        title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
-        description: isRTL
-          ? 'العنوان والمبلغ مطلوبين'
-          : 'Titre et montant sont obligatoires',
+        title: t('addExpense.toast.missingTitle'),
+        description: t('addExpense.toast.missingDesc'),
         variant: 'destructive',
       });
       return;
@@ -189,14 +180,14 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
       console.log('[AddExpenseModal] Insert result error:', error);
       if (error) throw error;
 
-      toast({ title: isRTL ? '✅ تمت إضافة المصروف' : '✅ Dépense ajoutée' });
+      toast({ title: t('addExpense.toast.added') });
       resetForm();
       onOpenChange(false);
       onExpenseAdded();
     } catch (err: any) {
       console.error('Save expense error:', err);
       toast({
-        title: isRTL ? '❌ خطأ' : '❌ Erreur',
+        title: t('addExpense.toast.err'),
         description: err.message,
         variant: 'destructive',
       });
@@ -211,7 +202,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         <DialogHeader>
           <DialogTitle className={cn('flex items-center gap-2 text-accent', isRTL && 'flex-row-reverse font-cairo')}>
             <Receipt className="h-5 w-5" />
-            {isRTL ? 'إضافة مصروف جديد' : 'Ajouter une dépense'}
+            {t('addExpense.title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -219,7 +210,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* Receipt Upload */}
           <div className="space-y-2">
             <Label className={cn('text-sm font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'صورة الإيصال' : 'Photo du reçu'}
+              {t('addExpense.receipt.label')}
             </Label>
             <input
               ref={fileInputRef}
@@ -255,7 +246,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <Camera className="h-3.5 w-3.5" />
-                    {isRTL ? 'تغيير' : 'Changer'}
+                    {t('addExpense.receipt.change')}
                   </Button>
                   <Button
                     size="sm"
@@ -264,7 +255,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
                     disabled={analyzing}
                   >
                     {analyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                    {isRTL ? 'تحليل ذكي' : 'Analyser'}
+                    {t('addExpense.receipt.analyze')}
                   </Button>
                 </div>
               </div>
@@ -278,7 +269,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
                 >
                   <Camera className="h-6 w-6 text-accent/60" />
                   <span className={cn('text-xs text-muted-foreground', isRTL && 'font-cairo')}>
-                    {isRTL ? '📷 التقاط صورة' : '📷 Prendre une photo'}
+                    {t('addExpense.receipt.camera')}
                   </span>
                 </Button>
                 <Button
@@ -289,7 +280,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
                 >
                   <Upload className="h-6 w-6 text-accent/60" />
                   <span className={cn('text-xs text-muted-foreground', isRTL && 'font-cairo')}>
-                    {isRTL ? '🖼️ اختر من المكتبة' : '🖼️ Choisir un fichier'}
+                    {t('addExpense.receipt.gallery')}
                   </span>
                 </Button>
               </div>
@@ -299,12 +290,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* Title */}
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'العنوان *' : 'Titre *'}
+              {t('addExpense.field.title')}
             </Label>
             <Input
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder={isRTL ? 'مثال: شراء دهان' : 'Ex: Achat peinture'}
+              placeholder={t('addExpense.field.titlePlaceholder')}
               className={cn('bg-background border-border', isRTL && 'text-right font-cairo')}
             />
           </div>
@@ -313,7 +304,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-                {isRTL ? 'المبلغ (€) *' : 'Montant (€) *'}
+                {t('addExpense.field.amount')}
               </Label>
               <Input
                 type="number"
@@ -326,7 +317,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             </div>
             <div className="space-y-1.5">
               <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-                {isRTL ? 'TVA (€)' : 'TVA (€)'}
+                {t('addExpense.field.tva')}
               </Label>
               <Input
                 type="number"
@@ -342,7 +333,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* HT/TTC selector (obligatoire pour la rentabilité chantier) */}
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'نوع المبلغ *' : 'Le montant saisi est en *'}
+              {t('addExpense.field.amountType')}
             </Label>
             <div className="grid grid-cols-2 gap-2" dir="ltr">
               <button
@@ -380,16 +371,16 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-                {isRTL ? 'الفئة' : 'Catégorie'}
+                {t('addExpense.field.category')}
               </Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger className="bg-background border-border text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map(c => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {isRTL ? c.labelAr : c.labelFr}
+                  {categoryValues.map(v => (
+                    <SelectItem key={v} value={v}>
+                      {t(`addExpense.cat.${v}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -397,7 +388,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             </div>
             <div className="space-y-1.5">
               <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-                {isRTL ? 'التاريخ' : 'Date'}
+                {t('addExpense.field.date')}
               </Label>
               <Input
                 type="date"
@@ -411,11 +402,11 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* Client & Chantier Link */}
           <div className="space-y-1.5">
               <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-                {isRTL ? 'اختر العميل' : 'Sélectionner un client'}
+                {t('addExpense.field.client')}
               </Label>
               <Select value={selectedClientId} onValueChange={(v) => { setSelectedClientId(v); setSelectedChantierId(''); }}>
                 <SelectTrigger className="bg-background border-border text-sm">
-                  <SelectValue placeholder={isRTL ? 'اختر عميل...' : 'Choisir un client...'} />
+                  <SelectValue placeholder={t('addExpense.field.clientPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {clientsList.map(c => (
@@ -427,11 +418,11 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
 
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'اختر المشروع' : 'Sélectionner un chantier'}
+              {t('addExpense.field.chantier')}
             </Label>
             <Select value={selectedChantierId} onValueChange={setSelectedChantierId} disabled={!selectedClientId || chantiersList.length === 0}>
               <SelectTrigger className="bg-background border-border text-sm">
-                <SelectValue placeholder={isRTL ? 'اختر مشروع...' : 'Choisir un chantier...'} />
+                <SelectValue placeholder={t('addExpense.field.chantierPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 {chantiersList.map(c => (
@@ -444,14 +435,14 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* Project Link */}
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'ربط بمستند (اختياري)' : 'Lier à un document (optionnel)'}
+              {t('addExpense.field.docLink')}
             </Label>
             <Select value={selectedDocId} onValueChange={(value) => setSelectedDocId(value === 'none' ? '' : value)}>
               <SelectTrigger className="bg-background border-border text-sm">
-                <SelectValue placeholder={isRTL ? 'اختر دوفي أو فاتورة' : 'Choisir un devis ou facture'} />
+                <SelectValue placeholder={t('addExpense.field.docLinkPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">{isRTL ? 'بدون ربط' : 'Aucun'}</SelectItem>
+                <SelectItem value="none">{t('addExpense.field.docLinkNone')}</SelectItem>
                 {documents.map(d => (
                   <SelectItem key={d.id} value={d.id}>
                     {d.label}
@@ -464,12 +455,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* Notes */}
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'ملاحظات' : 'Notes'}
+              {t('addExpense.field.notes')}
             </Label>
             <Textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder={isRTL ? 'ملاحظات إضافية...' : 'Notes supplémentaires...'}
+              placeholder={t('addExpense.field.notesPlaceholder')}
               className={cn('bg-background border-border min-h-[60px]', isRTL && 'text-right font-cairo')}
             />
           </div>
@@ -481,7 +472,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             disabled={saving}
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
-            {isRTL ? 'حفظ المصروف' : 'Enregistrer la dépense'}
+            {t('addExpense.save')}
           </Button>
         </div>
       </DialogContent>

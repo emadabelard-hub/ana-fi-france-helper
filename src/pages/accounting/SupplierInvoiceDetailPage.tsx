@@ -22,7 +22,7 @@ const formatEUR = (n: number) =>
 
 export default function SupplierInvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { isRTL } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState<SupplierInvoice | null>(null);
@@ -41,7 +41,6 @@ export default function SupplierInvoiceDetailPage() {
       .then(({ data }) => setChantiers((data as any) || []));
   }, [user]);
 
-  // Charge dépenses liables (aucune facture fournisseur associée) + la dépense déjà liée le cas échéant
   useEffect(() => {
     if (!user || !invoice) return;
     (async () => {
@@ -67,7 +66,6 @@ export default function SupplierInvoiceDetailPage() {
     if (!invoice || !user) return;
     setSavingExpense(true);
     try {
-      // Détacher l'existante
       if (linkedExpense) {
         await (supabase.from('expenses') as any)
           .update({ supplier_invoice_id: null })
@@ -82,12 +80,11 @@ export default function SupplierInvoiceDetailPage() {
         if (error) throw error;
         const chosen = linkableExpenses.find((e) => e.id === newExpenseId);
         setLinkedExpense(chosen ? { id: chosen.id, title: chosen.title } : null);
-        toast.success('Dépense rattachée à la facture fournisseur.');
+        toast.success(t('supplierInvoiceDetail.expense.toastAttached'));
       } else {
         setLinkedExpense(null);
-        toast.success('Dépense détachée.');
+        toast.success(t('supplierInvoiceDetail.expense.toastDetached'));
       }
-      // Rafraîchir la liste des dépenses liables
       const { data: free } = await (supabase.from('expenses') as any)
         .select('id, title, amount, expense_date')
         .eq('user_id', user.id)
@@ -96,7 +93,8 @@ export default function SupplierInvoiceDetailPage() {
         .limit(100);
       setLinkableExpenses((free as any) || []);
     } catch (e: any) {
-      toast.error(e?.message || 'Erreur');
+      console.error('[supplier-invoice] link expense failed:', e);
+      toast.error(t('supplierInvoiceDetail.genericError'));
     } finally {
       setSavingExpense(false);
     }
@@ -113,11 +111,14 @@ export default function SupplierInvoiceDetailPage() {
       .eq('user_id', user.id);
     setSavingChantier(false);
     if (error) {
-      toast.error(error.message || 'Erreur');
+      console.error('[supplier-invoice] update chantier failed:', error);
+      toast.error(t('supplierInvoiceDetail.genericError'));
       return;
     }
     setInvoice({ ...invoice, chantier_id: newId });
-    toast.success(newId ? 'Facture fournisseur rattachée au chantier.' : 'Facture fournisseur retirée du chantier.');
+    toast.success(newId
+      ? t('supplierInvoiceDetail.chantier.toastAttached')
+      : t('supplierInvoiceDetail.chantier.toastDetached'));
   };
 
   const reload = async () => {
@@ -129,7 +130,7 @@ export default function SupplierInvoiceDetailPage() {
       setLines(r.lines);
     } catch (e) {
       console.error(e);
-      toast.error(isRTL ? "خطأ في التحميل" : "Erreur de chargement");
+      toast.error(t('supplierInvoices.toast.loadError'));
     } finally {
       setLoading(false);
     }
@@ -142,10 +143,11 @@ export default function SupplierInvoiceDetailPage() {
     setBusy(true);
     try {
       await markSupplierInvoicePaid(invoice.id);
-      toast.success(isRTL ? "تم التحديث" : "Marquée comme payée");
+      toast.success(t('supplierInvoiceDetail.markPaidToast'));
       await reload();
     } catch (e: any) {
-      toast.error(e?.message || "Erreur");
+      console.error('[supplier-invoice] markPaid failed:', e);
+      toast.error(t('supplierInvoiceDetail.genericError'));
     } finally {
       setBusy(false);
     }
@@ -163,19 +165,19 @@ export default function SupplierInvoiceDetailPage() {
     <div className={`container mx-auto max-w-3xl px-3 py-4 ${isRTL ? "font-cairo text-right" : ""}`} dir={isRTL ? "rtl" : "ltr"}>
       <Button variant="ghost" size="sm" onClick={() => navigate("/accounting/supplier-invoices")} className="mb-3">
         <ArrowLeft className="h-4 w-4 mr-1" />
-        {isRTL ? "رجوع" : "Retour"}
+        {t('supplierInvoiceDetail.back')}
       </Button>
 
       <Card className="p-4 mb-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="font-mono text-xs text-primary font-semibold">{invoice.invoice_number}</div>
-            <h1 className="text-xl font-bold mt-1">{invoice.supplier?.name || (isRTL ? "بدون مورّد" : "Sans fournisseur")}</h1>
+            <div className="font-mono text-xs text-primary font-semibold" dir="ltr">{invoice.invoice_number}</div>
+            <h1 className="text-xl font-bold mt-1">{invoice.supplier?.name || t('supplierInvoiceDetail.noSupplier')}</h1>
             {invoice.supplier?.siret && (
-              <div className="text-xs text-muted-foreground mt-0.5">SIRET {invoice.supplier.siret}</div>
+              <div className="text-xs text-muted-foreground mt-0.5" dir="ltr">{t('supplierInvoiceDetail.siret')} {invoice.supplier.siret}</div>
             )}
             {invoice.supplier?.email && (
-              <div className="text-xs text-muted-foreground">{invoice.supplier.email}</div>
+              <div className="text-xs text-muted-foreground" dir="ltr">{invoice.supplier.email}</div>
             )}
           </div>
           <Badge>{invoice.status}</Badge>
@@ -185,17 +187,17 @@ export default function SupplierInvoiceDetailPage() {
 
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <div className="text-muted-foreground">{isRTL ? "التاريخ" : "Date"}</div>
-            <div className="font-medium">{new Date(invoice.invoice_date).toLocaleDateString("fr-FR")}</div>
+            <div className="text-muted-foreground">{t('supplierInvoiceDetail.date')}</div>
+            <div className="font-medium" dir="ltr">{new Date(invoice.invoice_date).toLocaleDateString("fr-FR")}</div>
           </div>
           <div>
-            <div className="text-muted-foreground">{isRTL ? "المصدر" : "Source"}</div>
+            <div className="text-muted-foreground">{t('supplierInvoiceDetail.source')}</div>
             <div className="font-medium capitalize">{invoice.source}</div>
           </div>
           {invoice.supplier_reference && (
             <div className="col-span-2">
-              <div className="text-muted-foreground">{isRTL ? "مرجع المورّد" : "Réf. fournisseur"}</div>
-              <div className="font-medium">{invoice.supplier_reference}</div>
+              <div className="text-muted-foreground">{t('supplierInvoiceDetail.supplierReference')}</div>
+              <div className="font-medium" dir="ltr">{invoice.supplier_reference}</div>
             </div>
           )}
         </div>
@@ -203,16 +205,16 @@ export default function SupplierInvoiceDetailPage() {
         <Separator className="my-3" />
 
         <div className="space-y-1 text-sm">
-          <div className="flex justify-between"><span>{isRTL ? "المبلغ بدون ضريبة" : "Montant HT"}</span><span className="font-medium">{formatEUR(Number(invoice.amount_ht))}</span></div>
-          <div className="flex justify-between"><span>TVA {Number(invoice.tva_rate)}%</span><span className="font-medium">{formatEUR(Number(invoice.amount_tva))}</span></div>
-          <div className="flex justify-between text-base pt-1 border-t"><span className="font-semibold">TTC</span><span className="font-bold">{formatEUR(Number(invoice.amount_ttc))}</span></div>
+          <div className="flex justify-between"><span>{t('supplierInvoiceDetail.amountHT')}</span><span className="font-medium" dir="ltr">{formatEUR(Number(invoice.amount_ht))}</span></div>
+          <div className="flex justify-between"><span dir="ltr">{t('supplierInvoiceDetail.tva')} {Number(invoice.tva_rate)}%</span><span className="font-medium" dir="ltr">{formatEUR(Number(invoice.amount_tva))}</span></div>
+          <div className="flex justify-between text-base pt-1 border-t"><span className="font-semibold">{t('supplierInvoiceDetail.ttc')}</span><span className="font-bold" dir="ltr">{formatEUR(Number(invoice.amount_ttc))}</span></div>
         </div>
       </Card>
 
       <Card className="p-4 mb-4">
         <div className="flex items-center gap-2 mb-2">
           <HardHat className="h-4 w-4 text-amber-600" />
-          <h3 className="font-semibold text-sm">Chantier associé</h3>
+          <h3 className="font-semibold text-sm">{t('supplierInvoiceDetail.chantier.title')}</h3>
         </div>
         <div className="flex gap-2 items-center">
           <Select
@@ -221,10 +223,10 @@ export default function SupplierInvoiceDetailPage() {
             disabled={savingChantier}
           >
             <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Sélectionner un chantier" />
+              <SelectValue placeholder={t('supplierInvoiceDetail.chantier.placeholder')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">— Aucun chantier —</SelectItem>
+              <SelectItem value="none">{t('supplierInvoiceDetail.chantier.none')}</SelectItem>
               {chantiers.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}{c.reference_number ? ` · ${c.reference_number}` : ''}
@@ -233,19 +235,19 @@ export default function SupplierInvoiceDetailPage() {
             </SelectContent>
           </Select>
           {invoice.chantier_id && (
-            <Button variant="ghost" size="icon" onClick={() => updateChantier(null)} disabled={savingChantier} title="Retirer">
+            <Button variant="ghost" size="icon" onClick={() => updateChantier(null)} disabled={savingChantier} title={t('supplierInvoiceDetail.chantier.remove')}>
               <X className="h-4 w-4" />
             </Button>
           )}
         </div>
-        <p className="text-[11px] text-muted-foreground mt-2">Ne modifie ni le montant, ni la TVA, ni le PDF, ni la comptabilité.</p>
+        <p className="text-[11px] text-muted-foreground mt-2">{t('supplierInvoiceDetail.chantier.note')}</p>
       </Card>
 
       {/* Dépense associée — évite le double comptage dans la rentabilité chantier */}
       <Card className="p-4 mb-4">
         <div className="flex items-center gap-2 mb-2">
           <Receipt className="h-4 w-4 text-red-500" />
-          <h3 className="font-semibold text-sm">Dépense associée</h3>
+          <h3 className="font-semibold text-sm">{t('supplierInvoiceDetail.expense.title')}</h3>
         </div>
         <div className="flex gap-2 items-center">
           <Select
@@ -254,12 +256,12 @@ export default function SupplierInvoiceDetailPage() {
             disabled={savingExpense}
           >
             <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Sélectionner une dépense" />
+              <SelectValue placeholder={t('supplierInvoiceDetail.expense.placeholder')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">— Aucune dépense —</SelectItem>
+              <SelectItem value="none">{t('supplierInvoiceDetail.expense.none')}</SelectItem>
               {linkedExpense && (
-                <SelectItem value={linkedExpense.id}>{linkedExpense.title} (déjà liée)</SelectItem>
+                <SelectItem value={linkedExpense.id}>{linkedExpense.title} ({t('supplierInvoiceDetail.expense.alreadyLinked')})</SelectItem>
               )}
               {linkableExpenses.map((e) => (
                 <SelectItem key={e.id} value={e.id}>
@@ -270,7 +272,7 @@ export default function SupplierInvoiceDetailPage() {
           </Select>
         </div>
         <p className="text-[11px] text-muted-foreground mt-2">
-          Associer cette facture fournisseur à la dépense OCR correspondante évite tout double comptage dans la rentabilité du chantier.
+          {t('supplierInvoiceDetail.expense.note')}
         </p>
       </Card>
 
@@ -279,15 +281,15 @@ export default function SupplierInvoiceDetailPage() {
 
       {lines.length > 0 && (
         <Card className="p-4 mb-4">
-          <h3 className="font-semibold mb-2">{isRTL ? "بنود الفاتورة" : "Lignes"}</h3>
+          <h3 className="font-semibold mb-2">{t('supplierInvoiceDetail.lines.title')}</h3>
           <div className="space-y-2 text-sm">
             {lines.map((l) => (
               <div key={l.id} className="flex justify-between gap-2 border-b pb-2 last:border-b-0 last:pb-0">
                 <div className="min-w-0">
                   <div>{l.description || "—"}</div>
-                  {l.category_code && <div className="text-xs text-muted-foreground font-mono">{l.category_code}</div>}
+                  {l.category_code && <div className="text-xs text-muted-foreground font-mono" dir="ltr">{l.category_code}</div>}
                 </div>
-                <div className="font-medium shrink-0">{formatEUR(Number(l.amount_ht))}</div>
+                <div className="font-medium shrink-0" dir="ltr">{formatEUR(Number(l.amount_ht))}</div>
               </div>
             ))}
           </div>
@@ -300,27 +302,27 @@ export default function SupplierInvoiceDetailPage() {
         const tva = Number(invoice.amount_tva) || 0;
         const ttc = Number(invoice.amount_ttc) || 0;
         const rows = [
-          { compte: "601000", libelle: isRTL ? "مشتريات مواد أولية" : "Achats matières premières", debit: ht, credit: 0 },
-          ...(tva > 0 ? [{ compte: "445660", libelle: isRTL ? "ضريبة قابلة للخصم" : "TVA déductible", debit: tva, credit: 0 }] : []),
-          { compte: "401000", libelle: isRTL ? "المورّدون" : "Fournisseurs", debit: 0, credit: ttc },
+          { compte: "601000", libelle: t('supplierInvoiceDetail.accounting.purchases'), debit: ht, credit: 0 },
+          ...(tva > 0 ? [{ compte: "445660", libelle: t('supplierInvoiceDetail.accounting.tvaDeductible'), debit: tva, credit: 0 }] : []),
+          { compte: "401000", libelle: t('supplierInvoiceDetail.accounting.suppliers'), debit: 0, credit: ttc },
         ];
         return (
           <Card className="p-4 mb-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">{isRTL ? "المحاسبة — يومية ACH" : "Comptabilité — Journal ACH"}</h3>
+              <h3 className="font-semibold">{t('supplierInvoiceDetail.accounting.title')}</h3>
               <Badge variant="outline" className="font-mono text-xs">ACH</Badge>
             </div>
             <div className="text-xs text-muted-foreground mb-3">
-              {isRTL ? "القيود المُولَّدة تلقائياً وتُدرَج في تصدير FEC" : "Écritures générées automatiquement et incluses dans l'export FEC"}
+              {t('supplierInvoiceDetail.accounting.subtitle')}
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm" dir="ltr">
                 <thead>
                   <tr className="text-xs text-muted-foreground border-b">
-                    <th className="text-left py-1.5 pr-2">Compte</th>
-                    <th className="text-left py-1.5 pr-2">Libellé</th>
-                    <th className="text-right py-1.5 pr-2">Débit</th>
-                    <th className="text-right py-1.5">Crédit</th>
+                    <th className="text-left py-1.5 pr-2">{t('supplierInvoiceDetail.accounting.account')}</th>
+                    <th className="text-left py-1.5 pr-2">{t('supplierInvoiceDetail.accounting.label')}</th>
+                    <th className="text-right py-1.5 pr-2">{t('supplierInvoiceDetail.accounting.debit')}</th>
+                    <th className="text-right py-1.5">{t('supplierInvoiceDetail.accounting.credit')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -333,7 +335,7 @@ export default function SupplierInvoiceDetailPage() {
                     </tr>
                   ))}
                   <tr className="font-semibold">
-                    <td colSpan={2} className="py-1.5 pr-2 text-right">Total</td>
+                    <td colSpan={2} className="py-1.5 pr-2 text-right">{t('supplierInvoiceDetail.accounting.total')}</td>
                     <td className="py-1.5 pr-2 text-right">{formatEUR(ht + tva)}</td>
                     <td className="py-1.5 text-right">{formatEUR(ttc)}</td>
                   </tr>
@@ -356,18 +358,14 @@ export default function SupplierInvoiceDetailPage() {
                   .createSignedUrl(invoice.pdf_url as string, 600);
                 if (error || !data?.signedUrl) {
                   console.warn("[supplier-invoice] sign view failed:", error);
-                  toast.error(
-                    isRTL
-                      ? "الفاتورة الأصلية غير متاحة مؤقتاً"
-                      : "Facture originale temporairement indisponible",
-                  );
+                  toast.error(t('supplierInvoiceDetail.originalUnavailable'));
                   return;
                 }
                 window.open(data.signedUrl, "_blank", "noopener,noreferrer");
               }}
             >
               <Eye className="h-4 w-4 mr-1" />
-              {isRTL ? "عرض الفاتورة الأصلية" : "Voir la facture originale"}
+              {t('supplierInvoiceDetail.viewOriginal')}
             </Button>
             <Button
               variant="outline"
@@ -377,29 +375,25 @@ export default function SupplierInvoiceDetailPage() {
                   .createSignedUrl(invoice.pdf_url as string, 600, { download: true });
                 if (error || !data?.signedUrl) {
                   console.warn("[supplier-invoice] sign download failed:", error);
-                  toast.error(
-                    isRTL
-                      ? "الفاتورة الأصلية غير متاحة مؤقتاً"
-                      : "Facture originale temporairement indisponible",
-                  );
+                  toast.error(t('supplierInvoiceDetail.originalUnavailable'));
                   return;
                 }
                 window.location.href = data.signedUrl;
               }}
             >
               <Download className="h-4 w-4 mr-1" />
-              {isRTL ? "تحميل الفاتورة الأصلية" : "Télécharger la facture originale"}
+              {t('supplierInvoiceDetail.downloadOriginal')}
             </Button>
           </>
         ) : (
           <div className="text-xs text-muted-foreground italic">
-            {isRTL ? "الفاتورة الأصلية غير متوفرة" : "Justificatif original non disponible"}
+            {t('supplierInvoiceDetail.originalMissing')}
           </div>
         )}
         {invoice.status !== "paid" && (
           <Button onClick={markPaid} disabled={busy} className="bg-emerald-600 hover:bg-emerald-700 text-white">
             <CheckCircle2 className="h-4 w-4 mr-1" />
-            {isRTL ? "تحديد كمدفوعة" : "Marquer comme payée"}
+            {t('supplierInvoiceDetail.markPaid')}
           </Button>
         )}
       </div>

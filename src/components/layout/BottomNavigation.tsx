@@ -52,7 +52,7 @@ const adminItem = {
 };
 
 const BottomNavigation = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();

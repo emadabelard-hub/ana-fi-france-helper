@@ -9,6 +9,7 @@ import { Camera, Upload, Sparkles, Loader2, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AddExpenseModalProps {
   open: boolean;
@@ -19,16 +20,7 @@ interface AddExpenseModalProps {
   preselectedDocumentId?: string | null;
 }
 
-const categories = [
-  { value: 'materials', labelFr: 'Matériaux', labelAr: 'مواد' },
-  { value: 'tools', labelFr: 'Outils', labelAr: 'أدوات' },
-  { value: 'transport', labelFr: 'Transport', labelAr: 'نقل' },
-  { value: 'food', labelFr: 'Repas', labelAr: 'وجبات' },
-  { value: 'office', labelFr: 'Fournitures', labelAr: 'لوازم مكتبية' },
-  { value: 'insurance', labelFr: 'Assurance', labelAr: 'تأمين' },
-  { value: 'telecom', labelFr: 'Télécom', labelAr: 'اتصالات' },
-  { value: 'other', labelFr: 'Autre', labelAr: 'أخرى' },
-];
+const categoryValues = ['materials', 'tools', 'transport', 'food', 'office', 'insurance', 'telecom', 'other'] as const;
 
 const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, preselectedDocumentId }: AddExpenseModalProps) => {
   const { toast } = useToast();

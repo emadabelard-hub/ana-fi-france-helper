@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, CheckCircle2, Download, Eye } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Download, Eye, HardHat, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {

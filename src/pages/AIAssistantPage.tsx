@@ -375,7 +375,7 @@ const AIAssistantPage = () => {
 
   const handleVoiceMicPress = useCallback(() => {
     if (!dictation.isSupported) {
-      toast({ variant: 'destructive', title: isRTL ? 'غير مدعوم' : 'Non supporté' });
+      toast({ variant: 'destructive', title: t('aiAssistant.voice.notSupported') });
       return;
     }
     setVoiceModalOpen(true);

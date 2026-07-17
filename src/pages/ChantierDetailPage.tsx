@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import ChantierTeamSection from '@/components/chantier/ChantierTeamSection';
-import { computeChantierProfitability, statusLabelFR } from '@/services/chantierProfitability';
+import { computeChantierProfitability } from '@/services/chantierProfitability';
 
 
 const fmt = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);

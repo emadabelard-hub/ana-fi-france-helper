@@ -317,7 +317,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             </div>
             <div className="space-y-1.5">
               <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-                {isRTL ? 'TVA (€)' : 'TVA (€)'}
+                {t('addExpense.field.tva')}
               </Label>
               <Input
                 type="number"

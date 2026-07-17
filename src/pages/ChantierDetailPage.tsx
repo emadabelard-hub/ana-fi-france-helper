@@ -169,15 +169,27 @@ const ChantierDetailPage = () => {
       {budget !== null && !editingBudget && (
         <Card className="border-border/50 mb-2">
           <CardContent className="p-3">
-            <div className={cn("flex items-center justify-between mb-1.5", isRTL && "flex-row-reverse")}>
+            <div className={cn("flex items-center justify-between mb-2", isRTL && "flex-row-reverse")}>
               <span className={cn("text-xs font-medium text-muted-foreground", isRTL && "font-cairo")}>{isRTL ? 'ميزانية المشروع' : 'Budget du projet'}</span>
               <button onClick={() => { setBudgetInput(String(budget)); setEditingBudget(true); }} className="text-[10px] text-accent hover:underline">
                 {isRTL ? 'تعديل' : 'Modifier'}
               </button>
             </div>
-            <div className={cn("flex items-center justify-between text-sm mb-1", isRTL && "flex-row-reverse")}>
-              <span className="font-bold text-foreground">{fmt(totalExpenses)} / {fmt(budget)}</span>
-              <span className={cn("text-xs font-bold", budgetPct! >= 100 ? 'text-destructive' : budgetPct! >= 80 ? 'text-amber-500' : 'text-emerald-500')}>{Math.round(budgetPct!)}%</span>
+            <div className="space-y-1 text-sm mb-2">
+              <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                <span className="text-muted-foreground">{isRTL ? 'الميزانية المتوقعة' : 'Budget prévu'}</span>
+                <span className="font-bold text-foreground">{fmt(budget)}</span>
+              </div>
+              <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                <span className="text-muted-foreground">{isRTL ? 'المبلغ المفوتر' : 'Montant facturé'}</span>
+                <span className="font-bold text-foreground">{fmt(totalExpenses)}</span>
+              </div>
+              <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                <span className="text-muted-foreground">{isRTL ? 'تقدم الميزانية' : 'Avancement budgétaire'}</span>
+                <span className={cn("font-bold", budgetPct! >= 100 ? 'text-destructive' : budgetPct! >= 80 ? 'text-amber-500' : 'text-emerald-500')}>
+                  {Math.min(100, Math.round(budgetPct!))}%
+                </span>
+              </div>
             </div>
             <Progress value={Math.min(budgetPct!, 100)} className={cn("h-2", budgetPct! >= 100 ? '[&>div]:bg-destructive' : budgetPct! >= 80 ? '[&>div]:bg-amber-500' : '[&>div]:bg-emerald-500')} />
           </CardContent>

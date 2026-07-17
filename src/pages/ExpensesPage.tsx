@@ -52,7 +52,10 @@ const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
 const ExpensesPage = () => {
-  const { isRTL } = useLanguage();
+  const { isRTL, t } = useLanguage();
+  const fmt = (s: string, v: Record<string, string | number>) =>
+    Object.entries(v).reduce((a, [k, x]) => a.split(`{${k}}`).join(String(x)), s);
+
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
@@ -282,16 +285,14 @@ const ExpensesPage = () => {
         .eq('client_name', clientName);
       if (error) throw error;
       toast({
-        title: isRTL ? '✅ تم' : '✅ Réinitialisé',
-        description: isRTL
-          ? `تم وضع علامة "غير مدفوع" على فواتير ${clientName}`
-          : `Factures de ${clientName} marquées comme impayées`,
+        title: t('expenses.toast.resetOk'),
+        description: fmt(t('expenses.toast.resetClientDesc'), { name: clientName }),
       });
       await fetchAll();
     } catch (e: any) {
       console.error('Reset paid status error:', e);
       toast({
-        title: isRTL ? 'خطأ' : 'Erreur',
+        title: t('common.error'),
         description: e?.message || '',
         variant: 'destructive',
       });
@@ -313,16 +314,14 @@ const ExpensesPage = () => {
         .eq('payment_status', 'paid');
       if (error) throw error;
       toast({
-        title: isRTL ? '✅ تم' : '✅ Réinitialisé',
-        description: isRTL
-          ? `تم وضع علامة "غير مدفوع" على ${totalPaidCount} فاتورة`
-          : `${totalPaidCount} facture(s) marquée(s) comme impayées`,
+        title: t('expenses.toast.resetOk'),
+        description: fmt(t('expenses.toast.resetAllDesc'), { n: totalPaidCount }),
       });
       await fetchAll();
     } catch (e: any) {
       console.error('Reset all paid status error:', e);
       toast({
-        title: isRTL ? 'خطأ' : 'Erreur',
+        title: t('common.error'),
         description: e?.message || '',
         variant: 'destructive',
       });
@@ -351,16 +350,14 @@ const ExpensesPage = () => {
       if (e2) throw e2;
 
       toast({
-        title: isRTL ? '✅ تم إعادة تعيين بيانات الاختبار' : '✅ Données de test réinitialisées',
-        description: isRTL
-          ? 'كل الفواتير "غير مدفوعة" وكل المصروفات اتمسحت.'
-          : 'Toutes les factures sont impayées et toutes les dépenses ont été supprimées.',
+        title: t('expenses.toast.resetTestDataTitle'),
+        description: t('expenses.toast.resetTestDataDesc'),
       });
       await fetchAll();
     } catch (e: any) {
       console.error('Reset test data error:', e);
       toast({
-        title: isRTL ? 'خطأ' : 'Erreur',
+        title: t('common.error'),
         description: e?.message || '',
         variant: 'destructive',
       });
@@ -429,8 +426,8 @@ const ExpensesPage = () => {
     const accountantEmail = (profile?.accountant_email || '').trim();
     if (!accountantEmail) {
       toast({
-        title: isRTL ? 'إيميل المحاسب مفقود' : 'Email comptable manquant',
-        description: isRTL ? 'أضف إيميل المحاسب في الإعدادات أولاً' : "Ajoutez l'email du comptable dans les paramètres",
+        title: t('expenses.toast.accountantEmailMissingTitle'),
+        description: t('expenses.toast.accountantEmailMissingDesc'),
         variant: 'destructive',
       });
       navigate('/pro/settings');
@@ -509,14 +506,14 @@ const ExpensesPage = () => {
       if (error) throw error;
 
       toast({
-        title: isRTL ? '✅ تم إرسال الملفات للمحاسب بنجاح' : '✅ Documents envoyés au comptable',
-        description: isRTL ? `إلى : ${accountantEmail}` : `Envoyé à : ${accountantEmail}`,
+        title: t('expenses.toast.accountantSentTitle'),
+        description: fmt(t('expenses.toast.accountantSentDesc'), { email: accountantEmail }),
       });
     } catch (err: any) {
       console.error('handleAccountantExport error:', err);
       toast({
-        title: isRTL ? 'تعذر الإرسال' : "Échec de l'envoi",
-        description: err?.message || (isRTL ? 'حاول مرة أخرى لاحقًا' : 'Veuillez réessayer'),
+        title: t('expenses.toast.sendFailedTitle'),
+        description: err?.message || t('expenses.toast.sendFailedDesc'),
         variant: 'destructive',
       });
     } finally {
@@ -769,8 +766,8 @@ const ExpensesPage = () => {
       if (filesAdded === 0) {
         toast({
           variant: 'destructive',
-          title: isRTL ? 'الأرشيف فارغ' : 'Archive vide',
-          description: isRTL ? 'لم يتم العثور على ملفات مرفقة للتحميل' : 'Aucun fichier attaché trouvé',
+          title: t('expenses.toast.archiveEmptyTitle'),
+          description: t('expenses.toast.archiveEmptyDesc'),
         });
         return;
       }
@@ -787,15 +784,15 @@ const ExpensesPage = () => {
       URL.revokeObjectURL(url);
 
       toast({
-        title: isRTL ? 'تم تحميل الأرشيف' : 'Archive téléchargée',
-        description: isRTL ? `تم تحميل ${filesAdded} ملف(ات) في ملف مضغوط` : `${filesAdded} fichier(s) archivé(s)`,
+        title: t('expenses.toast.archiveOkTitle'),
+        description: fmt(t('expenses.toast.archiveOkDesc'), { n: filesAdded }),
       });
     } catch {
       // archive error handled via toast
       toast({
         variant: 'destructive',
-        title: isRTL ? 'خطأ' : 'Erreur',
-        description: isRTL ? 'فشل تحميل الأرشيف' : "Échec du téléchargement de l'archive",
+        title: t('common.error'),
+        description: t('expenses.toast.archiveErrorDesc'),
       });
     } finally {
       setArchiving(false);
@@ -812,7 +809,7 @@ const ExpensesPage = () => {
     return (
       <div className="py-8 text-center">
         <Receipt className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">{isRTL ? 'يرجى تسجيل الدخول' : 'Veuillez vous connecter'}</p>
+        <p className="text-muted-foreground">{t('expenses.notLoggedIn')}</p>
       </div>
     );
   }
@@ -829,9 +826,7 @@ const ExpensesPage = () => {
           className={cn('text-[12px] leading-snug font-medium', isRTL && 'text-right font-cairo')}
           style={{ color: '#7C5A00' }}
         >
-          {isRTL
-            ? 'هذه الأرقام مبنية على فواتيرك فقط — تواصل مع محاسبك للحسابات الدقيقة'
-            : 'Ces chiffres sont basés uniquement sur vos factures — consultez votre comptable pour les calculs exacts'}
+          {t('expenses.warningTip')}
         </p>
       </div>
 
@@ -839,7 +834,7 @@ const ExpensesPage = () => {
       {/* Header */}
       <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <h1 className={cn('text-xl font-bold text-foreground', isRTL && 'font-cairo')}>
-          {isRTL ? '💰 إدارة الحسابات' : '💰 Gestion Comptable'}
+          {t('expenses.title')}
         </h1>
         <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
           <Button
@@ -849,7 +844,7 @@ const ExpensesPage = () => {
             onClick={() => setShowOcrModal(true)}
           >
             <Receipt className="h-4 w-4" />
-            {isRTL ? '📷 مسح فاتورة' : 'Scanner'}
+            {t('expenses.btn.scan')}
           </Button>
           <Button
             size="sm"
@@ -857,7 +852,7 @@ const ExpensesPage = () => {
             onClick={() => setShowAddModal(true)}
           >
             <Plus className="h-4 w-4" />
-            {isRTL ? 'إضافة' : 'Ajouter'}
+            {t('expenses.btn.add')}
           </Button>
         </div>
       </div>
@@ -871,7 +866,7 @@ const ExpensesPage = () => {
             onClick={() => setShowAccountingMenu(prev => !prev)}
           >
             <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
-              {isRTL ? 'المحاسبة' : 'Comptabilité'}
+              {t('expenses.section.accounting')}
             </span>
             {showAccountingMenu ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
@@ -880,19 +875,19 @@ const ExpensesPage = () => {
               <Button variant="outline" className="h-12 gap-2" onClick={() => navigate('/pro/documents')}>
                 <FileText className="h-4 w-4 text-primary" />
                 <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
-                  {isRTL ? 'المستندات' : 'Documents'}
+                  {t('expenses.section.documents')}
                 </span>
               </Button>
               <Button variant="outline" className="h-12 gap-2" onClick={() => navigate('/clients')}>
                 <Users className="h-4 w-4 text-primary" />
                 <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
-                  {isRTL ? 'العملاء' : 'Clients'}
+                  {t('expenses.section.clients')}
                 </span>
               </Button>
               <Button variant="outline" className="h-12 gap-2" onClick={() => navigate('/chantiers')}>
                 <HardHat className="h-4 w-4 text-primary" />
                 <span className={cn("text-sm font-bold", isRTL && "font-cairo")}>
-                  {isRTL ? 'مشاريعي (الشانتيات)' : 'Chantiers'}
+                  {t('expenses.section.chantiers')}
                 </span>
               </Button>
             </div>
@@ -908,7 +903,7 @@ const ExpensesPage = () => {
               <Banknote className="h-5 w-5 text-cyan-400" />
             </div>
             <p className={cn("text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1", isRTL && "font-cairo")}>
-              {isRTL ? '💰 الأموال المحصلة' : '💰 Trésorerie encaissée'}
+              {t('expenses.summary.collected')}
             </p>
             <p className="text-lg font-black text-cyan-400">{formatCurrency(totalCollected)}</p>
           </CardContent>
@@ -920,7 +915,7 @@ const ExpensesPage = () => {
               <TrendingDown className="h-5 w-5 text-red-400" />
             </div>
             <p className={cn("text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1", isRTL && "font-cairo")}>
-              {isRTL ? 'إجمالي المصروفات' : 'Total Dépenses'}
+              {t('expenses.summary.totalExpenses')}
             </p>
             <p className="text-lg font-black text-red-400">{formatCurrency(totalExpenses)}</p>
           </CardContent>
@@ -936,7 +931,7 @@ const ExpensesPage = () => {
         >
           {sendingToAccountant ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
           <span className="font-bold" style={{ fontSize: '16px' }}>
-            {isRTL ? 'تصدير بيانات المحاسب' : 'Export comptable'}
+            {t('expenses.btn.accountantExport')}
           </span>
         </Button>
         <Button
@@ -947,7 +942,7 @@ const ExpensesPage = () => {
         >
           {archiving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Archive className="h-5 w-5" />}
           <span className="font-bold" style={{ fontSize: '16px' }}>
-            {isRTL ? 'تحميل أرشيف المستندات' : 'Archive documents'}
+            {t('expenses.btn.archiveDocs')}
           </span>
         </Button>
       </div>
@@ -967,9 +962,7 @@ const ExpensesPage = () => {
               <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
                 <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 <span className={cn('text-sm font-bold text-amber-800 dark:text-amber-300', isRTL && 'font-cairo')}>
-                  {isRTL
-                    ? `🧪 تشخيص: ${totalPaidCount} فاتورة مدفوعة`
-                    : `🧪 Diagnostic : ${totalPaidCount} facture${totalPaidCount > 1 ? 's' : ''} marquée${totalPaidCount > 1 ? 's' : ''} payée${totalPaidCount > 1 ? 's' : ''}`}
+                  {fmt(t('expenses.diagnostic.label'), { n: totalPaidCount })}
                 </span>
               </div>
               {showDiagnostic ? <ChevronUp className="h-4 w-4 text-amber-700" /> : <ChevronDown className="h-4 w-4 text-amber-700" />}
@@ -978,9 +971,7 @@ const ExpensesPage = () => {
             {showDiagnostic && (
               <div className="space-y-1.5 pt-1">
                 <p className={cn('text-[11px] text-muted-foreground', isRTL && 'text-right font-cairo')}>
-                  {isRTL
-                    ? 'إذا كانت هذه بيانات اختبار، اضغط لإعادة التعيين إلى "غير مدفوع".'
-                    : 'Si ce sont des données de test, réinitialisez-les à « impayé » par client.'}
+                  {t('expenses.diagnostic.desc')}
                 </p>
 
                 {/* Reset ALL button */}
@@ -995,26 +986,22 @@ const ExpensesPage = () => {
                       {resettingAll
                         ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         : <RotateCcw className="h-3.5 w-3.5" />}
-                      {isRTL
-                        ? `إعادة تعيين الكل (${totalPaidCount})`
-                        : `Tout réinitialiser (${totalPaidCount})`}
+                      {fmt(t('expenses.diagnostic.resetAllBtn'), { n: totalPaidCount })}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle className={cn(isRTL && 'text-right font-cairo')}>
-                        {isRTL ? 'تأكيد إعادة تعيين الكل' : 'Réinitialiser toutes les factures payées'}
+                        {t('expenses.diagnostic.resetAllTitle')}
                       </AlertDialogTitle>
                       <AlertDialogDescription className={cn(isRTL && 'text-right font-cairo')}>
-                        {isRTL
-                          ? `سيتم وضع علامة "غير مدفوع" على ${totalPaidCount} فاتورة. لن يتم حذف أي مستند.`
-                          : `${totalPaidCount} facture(s) seront marquées comme impayées. Aucun document ne sera supprimé.`}
+                        {fmt(t('expenses.diagnostic.resetAllDialogDesc'), { n: totalPaidCount })}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Annuler'}</AlertDialogCancel>
+                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                       <AlertDialogAction onClick={handleResetAllPaid}>
-                        {isRTL ? 'تأكيد' : 'Confirmer'}
+                        {t('common.confirm')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -1045,24 +1032,22 @@ const ExpensesPage = () => {
                           {resettingClient === c.clientName
                             ? <Loader2 className="h-3 w-3 animate-spin" />
                             : <RotateCcw className="h-3 w-3" />}
-                          {isRTL ? 'غير مدفوع' : 'Impayé'}
+                          {t('expenses.diagnostic.unpaidBtn')}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle className={cn(isRTL && 'text-right font-cairo')}>
-                            {isRTL ? 'تأكيد إعادة التعيين' : 'Confirmer la réinitialisation'}
+                            {t('expenses.diagnostic.resetClientTitle')}
                           </AlertDialogTitle>
                           <AlertDialogDescription className={cn(isRTL && 'text-right font-cairo')}>
-                            {isRTL
-                              ? `سيتم وضع علامة "غير مدفوع" على ${c.count} فاتورة لـ ${c.clientName}. لن يتم حذف أي مستند.`
-                              : `${c.count} facture(s) de "${c.clientName}" (${formatCurrency(c.total)}) seront marquées comme impayées. Aucun document ne sera supprimé.`}
+                            {fmt(t('expenses.diagnostic.resetClientDialogDesc'), { n: c.count, name: c.clientName, total: formatCurrency(c.total) })}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Annuler'}</AlertDialogCancel>
+                          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                           <AlertDialogAction onClick={() => handleResetClientPaid(c.clientName)}>
-                            {isRTL ? 'تأكيد' : 'Confirmer'}
+                            {t('common.confirm')}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -1079,7 +1064,7 @@ const ExpensesPage = () => {
 
       <div className={cn('flex items-center justify-between gap-2 flex-wrap', isRTL && 'flex-row-reverse')}>
         <h2 className={cn('text-base font-bold text-foreground', isRTL && 'font-cairo')}>
-          {isRTL ? '📋 آخر العمليات' : '📋 Dernières Opérations'}
+          {t('expenses.timeline.title')}
         </h2>
         <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
           <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as 'all' | 'paid' | 'unpaid')}>
@@ -1087,9 +1072,9 @@ const ExpensesPage = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{isRTL ? 'كل الفواتير' : 'Toutes factures'}</SelectItem>
-              <SelectItem value="paid">{isRTL ? 'مدفوعة فقط' : 'Payées'}</SelectItem>
-              <SelectItem value="unpaid">{isRTL ? 'غير مدفوعة فقط' : 'Impayées'}</SelectItem>
+              <SelectItem value="all">{t('expenses.filter.paidAll')}</SelectItem>
+              <SelectItem value="paid">{t('expenses.filter.paidOnly')}</SelectItem>
+              <SelectItem value="unpaid">{t('expenses.filter.unpaidOnly')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={periodFilter} onValueChange={setPeriodFilter}>
@@ -1097,10 +1082,10 @@ const ExpensesPage = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{isRTL ? 'الكل' : 'Tout'}</SelectItem>
-              <SelectItem value="month">{isRTL ? 'هذا الشهر' : 'Ce mois'}</SelectItem>
-              <SelectItem value="quarter">{isRTL ? 'هذا الربع' : 'Ce trimestre'}</SelectItem>
-              <SelectItem value="year">{isRTL ? 'هذه السنة' : 'Cette année'}</SelectItem>
+              <SelectItem value="all">{t('expenses.filter.all')}</SelectItem>
+              <SelectItem value="month">{t('expenses.filter.month')}</SelectItem>
+              <SelectItem value="quarter">{t('expenses.filter.quarter')}</SelectItem>
+              <SelectItem value="year">{t('expenses.filter.year')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1128,7 +1113,7 @@ const ExpensesPage = () => {
               <CardContent className="py-12 text-center">
                 <Receipt className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
                 <p className={cn('text-sm text-muted-foreground', isRTL && 'font-cairo')}>
-                  {isRTL ? 'لا توجد عمليات بعد' : 'Aucune opération enregistrée'}
+                  {t('expenses.timeline.empty')}
                 </p>
               </CardContent>
             </Card>
@@ -1158,7 +1143,7 @@ const ExpensesPage = () => {
                       </Badge>
                       {isOverdue && (
                         <Badge variant="destructive" className="text-[10px] shrink-0 animate-pulse">
-                          {isRTL ? 'متأخرة' : 'En retard'}
+                          {t('expenses.badge.overdue')}
                         </Badge>
                       )}
 
@@ -1234,12 +1219,10 @@ const ExpensesPage = () => {
         <Card className="border-red-500/30 bg-red-50/30 dark:bg-red-900/10">
           <CardContent className="p-3 space-y-2">
             <p className={cn('text-[11px] font-semibold text-red-700 dark:text-red-300 uppercase tracking-wider', isRTL && 'text-right font-cairo')}>
-              {isRTL ? '🛠️ أدوات المسؤول' : '🛠️ Outils administrateur'}
+              {t('expenses.admin.title')}
             </p>
             <p className={cn('text-[11px] text-muted-foreground', isRTL && 'text-right font-cairo')}>
-              {isRTL
-                ? 'يضع كل الفواتير "غير مدفوعة" ويحذف كل المصروفات. لا يتم حذف أي فاتورة أو دوفي.'
-                : 'Marque toutes les factures comme impayées et supprime toutes les dépenses. Aucune facture ni devis n\'est supprimé.'}
+              {t('expenses.admin.desc')}
             </p>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -1252,24 +1235,22 @@ const ExpensesPage = () => {
                   {resettingTestData
                     ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     : <RotateCcw className="h-3.5 w-3.5" />}
-                  {isRTL ? 'إعادة تعيين بيانات الاختبار' : 'Réinitialiser les données de test'}
+                  {t('expenses.admin.resetBtn')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle className={cn(isRTL && 'text-right font-cairo')}>
-                    {isRTL ? 'تأكيد إعادة التعيين' : 'Confirmer la réinitialisation'}
+                    {t('expenses.diagnostic.resetClientTitle')}
                   </AlertDialogTitle>
                   <AlertDialogDescription className={cn(isRTL && 'text-right font-cairo')}>
-                    {isRTL
-                      ? 'كل الفواتير ستصبح "غير مدفوعة" وكل المصروفات هتتحذف. الفواتير والدوفيهات لن تُحذف.'
-                      : 'Toutes les factures passeront en « impayé » et toutes les dépenses seront supprimées. Aucune facture ni devis ne sera supprimé.'}
+                    {t('expenses.admin.resetDialogDesc')}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Annuler'}</AlertDialogCancel>
+                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleResetTestData}>
-                    {isRTL ? 'تأكيد' : 'Confirmer'}
+                    {t('common.confirm')}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

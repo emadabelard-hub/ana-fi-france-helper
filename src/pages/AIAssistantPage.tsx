@@ -744,13 +744,13 @@ const AIAssistantPage = () => {
             <div className="space-y-4" style={{ animation: 'fade-in 0.5s ease-out 0.2s both' }}>
               <div>
                 <label className={cn("block text-sm font-bold text-foreground mb-1.5", isRTL && "font-cairo text-right")}>
-                  {isRTL ? 'اسمك الأول' : 'Votre prénom'}
+                  {t('aiAssistant.onboarding.firstName')}
                 </label>
                 <input
                   type="text"
                   value={onboardingName}
                   onChange={e => setOnboardingName(e.target.value)}
-                  placeholder={isRTL ? 'مثلاً: أحمد' : 'Ex: Ahmed'}
+                  placeholder={t('aiAssistant.onboarding.firstNamePlaceholder')}
                   className={cn(
                     "w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground text-sm font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/10",
                     isRTL && "font-cairo text-right"

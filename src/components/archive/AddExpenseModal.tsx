@@ -202,7 +202,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
         <DialogHeader>
           <DialogTitle className={cn('flex items-center gap-2 text-accent', isRTL && 'flex-row-reverse font-cairo')}>
             <Receipt className="h-5 w-5" />
-            {isRTL ? 'إضافة مصروف جديد' : 'Ajouter une dépense'}
+            {t('addExpense.title')}
           </DialogTitle>
         </DialogHeader>
 

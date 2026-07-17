@@ -877,7 +877,7 @@ const AIAssistantPage = () => {
             <div className="flex-1 overflow-y-auto px-2 pb-4">
               {conversations.length === 0 ? (
                 <p className={cn("text-center text-sm text-muted-foreground py-6", isRTL && "font-cairo")}>
-                  {isRTL ? 'مفيش محادثات لسه' : 'Aucune conversation'}
+                  {t('aiAssistant.conversations.empty')}
                 </p>
               ) : (
                 <ul className="space-y-1">

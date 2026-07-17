@@ -106,8 +106,7 @@ const BottomNavigation = () => {
     {
       path: '/chantier-report',
       icon: ClipboardList,
-      labelAr: 'تقرير الشانتي',
-      labelFr: 'Rapport',
+      labelKey: 'bottomNav.report',
       color: 'text-amber-400',
       activeBg: 'bg-amber-400/15',
       dotColor: 'bg-amber-400',
@@ -115,8 +114,7 @@ const BottomNavigation = () => {
     {
       path: '/support',
       icon: HeadphonesIcon,
-      labelAr: 'تواصل معنا',
-      labelFr: 'Contact',
+      labelKey: 'bottomNav.contactShort',
       color: 'text-emerald-400',
       activeBg: 'bg-emerald-400/15',
       dotColor: 'bg-emerald-400',

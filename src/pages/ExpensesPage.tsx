@@ -52,7 +52,10 @@ const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
 const ExpensesPage = () => {
-  const { isRTL } = useLanguage();
+  const { isRTL, t } = useLanguage();
+  const fmt = (s: string, v: Record<string, string | number>) =>
+    Object.entries(v).reduce((a, [k, x]) => a.split(`{${k}}`).join(String(x)), s);
+
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {

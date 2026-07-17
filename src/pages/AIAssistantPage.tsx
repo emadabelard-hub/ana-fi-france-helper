@@ -660,12 +660,10 @@ const AIAssistantPage = () => {
 
 
       if (!resp.ok || !resp.body) {
-        let errorMsg = language === 'ar' 
-          ? 'عذراً، نظام الذكاء الاصطناعي يواجه ضغطاً، حاول مجدداً 🔄' 
-          : 'Service IA temporairement indisponible, réessayez 🔄';
+        const errorMsg = t('aiAssistant.error.generic');
         try {
           const errData = await resp.json();
-          if (errData?.error) errorMsg = errData.error;
+          if (errData?.error) console.error('AI Assistant server error detail:', errData.error);
         } catch {}
         console.error('AI Assistant error:', resp.status);
         upsert(errorMsg);

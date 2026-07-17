@@ -180,14 +180,14 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
       console.log('[AddExpenseModal] Insert result error:', error);
       if (error) throw error;
 
-      toast({ title: isRTL ? '✅ تمت إضافة المصروف' : '✅ Dépense ajoutée' });
+      toast({ title: t('addExpense.toast.added') });
       resetForm();
       onOpenChange(false);
       onExpenseAdded();
     } catch (err: any) {
       console.error('Save expense error:', err);
       toast({
-        title: isRTL ? '❌ خطأ' : '❌ Erreur',
+        title: t('addExpense.toast.err'),
         description: err.message,
         variant: 'destructive',
       });

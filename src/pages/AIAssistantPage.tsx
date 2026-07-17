@@ -137,7 +137,7 @@ const detectMissingInfoForm = (content: string): { fields: MissingField[] } | nu
 
 
 const AIAssistantPage = () => {
-  const { language, isRTL } = useLanguage();
+  const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -375,7 +375,7 @@ const AIAssistantPage = () => {
 
   const handleVoiceMicPress = useCallback(() => {
     if (!dictation.isSupported) {
-      toast({ variant: 'destructive', title: isRTL ? 'غير مدعوم' : 'Non supporté' });
+      toast({ variant: 'destructive', title: t('aiAssistant.voice.notSupported') });
       return;
     }
     setVoiceModalOpen(true);
@@ -538,11 +538,11 @@ const AIAssistantPage = () => {
       const isImage = /^image\/(jpe?g|png)$/i.test(file.type);
       const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
       if (!isImage && !isPdf) {
-        toast({ variant: 'destructive', title: isRTL ? 'نوع الملف غير مدعوم' : 'Format non supporté', description: file.name });
+        toast({ variant: 'destructive', title: t('aiAssistant.file.unsupported'), description: file.name });
         continue;
       }
       if (file.size > 10 * 1024 * 1024) {
-        toast({ variant: 'destructive', title: isRTL ? 'الملف كبير أوي' : 'Fichier trop volumineux', description: file.name });
+        toast({ variant: 'destructive', title: t('aiAssistant.file.tooLarge'), description: file.name });
         continue;
       }
       try {
@@ -555,7 +555,7 @@ const AIAssistantPage = () => {
         }
       } catch (err) {
         console.error('File processing error:', err);
-        toast({ variant: 'destructive', title: isRTL ? 'حصل مشكلة في الملف' : 'Erreur de lecture', description: file.name });
+        toast({ variant: 'destructive', title: t('aiAssistant.file.readError'), description: file.name });
       }
     }
     if (added.length > 0) setAttachments(prev => [...prev, ...added]);
@@ -660,12 +660,10 @@ const AIAssistantPage = () => {
 
 
       if (!resp.ok || !resp.body) {
-        let errorMsg = language === 'ar' 
-          ? 'عذراً، نظام الذكاء الاصطناعي يواجه ضغطاً، حاول مجدداً 🔄' 
-          : 'Service IA temporairement indisponible, réessayez 🔄';
+        const errorMsg = t('aiAssistant.error.generic');
         try {
           const errData = await resp.json();
-          if (errData?.error) errorMsg = errData.error;
+          if (errData?.error) console.error('AI Assistant server error detail:', errData.error);
         } catch {}
         console.error('AI Assistant error:', resp.status);
         upsert(errorMsg);
@@ -701,8 +699,9 @@ const AIAssistantPage = () => {
           }
         }
       }
-    } catch {
-      upsert(language === 'ar' ? 'حصل مشكلة، جرب تاني 🔄' : 'Erreur réseau, réessayez.');
+    } catch (err) {
+      console.error('AI Assistant network error:', err);
+      upsert(t('aiAssistant.error.network'));
       setIsLoading(false);
     }
     setIsLoading(false);
@@ -723,7 +722,7 @@ const AIAssistantPage = () => {
               <Sparkles size={18} className="text-primary" />
             </div>
             <h1 className={cn("font-bold text-foreground text-lg", isRTL && "font-cairo")}>
-              {isRTL ? 'المساعد الذكي' : 'Assistant IA'}
+              {t('aiAssistant.header.title')}
             </h1>
           </div>
         </header>
@@ -735,23 +734,23 @@ const AIAssistantPage = () => {
                 <Sparkles size={32} className="text-primary" />
               </div>
               <h2 className={cn("text-xl font-bold text-foreground", isRTL && "font-cairo")}>
-                {isRTL ? 'قبل ما نبدأ يا فندم 🧞' : 'Avant de commencer 🧞'}
+                {t('aiAssistant.onboarding.title')}
               </h2>
               <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
-                {isRTL ? 'عشان أقدر أساعدك بشكل أفضل' : 'Pour mieux vous aider'}
+                {t('aiAssistant.onboarding.subtitle')}
               </p>
             </div>
 
             <div className="space-y-4" style={{ animation: 'fade-in 0.5s ease-out 0.2s both' }}>
               <div>
                 <label className={cn("block text-sm font-bold text-foreground mb-1.5", isRTL && "font-cairo text-right")}>
-                  {isRTL ? 'اسمك الأول' : 'Votre prénom'}
+                  {t('aiAssistant.onboarding.firstName')}
                 </label>
                 <input
                   type="text"
                   value={onboardingName}
                   onChange={e => setOnboardingName(e.target.value)}
-                  placeholder={isRTL ? 'مثلاً: أحمد' : 'Ex: Ahmed'}
+                  placeholder={t('aiAssistant.onboarding.firstNamePlaceholder')}
                   className={cn(
                     "w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground text-sm font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/10",
                     isRTL && "font-cairo text-right"
@@ -763,7 +762,7 @@ const AIAssistantPage = () => {
 
               <div>
                 <label className={cn("block text-sm font-bold text-foreground mb-1.5", isRTL && "font-cairo text-right")}>
-                  {isRTL ? 'النوع' : 'Genre'}
+                  {t('aiAssistant.onboarding.gender')}
                 </label>
                 <div className="flex gap-3">
                   <button
@@ -801,7 +800,7 @@ const AIAssistantPage = () => {
                     : "bg-muted text-muted-foreground"
                 )}
               >
-                {isRTL ? 'يلا نبدأ! 🚀' : 'C\'est parti ! 🚀'}
+                {t('aiAssistant.onboarding.start')}
               </button>
             </div>
           </div>
@@ -822,7 +821,7 @@ const AIAssistantPage = () => {
             <Sparkles size={18} className="text-primary" />
           </div>
           <h1 className={cn("font-bold text-foreground text-lg truncate", isRTL && "font-cairo")}>
-            {isRTL ? 'المساعد الذكي' : 'Assistant IA'}
+            {t('aiAssistant.header.title')}
           </h1>
         </div>
         <button
@@ -831,16 +830,16 @@ const AIAssistantPage = () => {
             "p-2 rounded-full hover:bg-muted transition-colors",
             showConversationList && "bg-muted"
           )}
-          aria-label={isRTL ? 'المحادثات' : 'Conversations'}
-          title={isRTL ? 'المحادثات' : 'Conversations'}
+          aria-label={t('aiAssistant.header.conversations')}
+          title={t('aiAssistant.header.conversations')}
         >
           <History size={18} className="text-foreground" />
         </button>
         <button
           onClick={handleNewConversation}
           className="p-2 rounded-full hover:bg-muted transition-colors"
-          aria-label={isRTL ? 'محادثة جديدة' : 'Nouvelle conversation'}
-          title={isRTL ? 'محادثة جديدة' : 'Nouvelle conversation'}
+          aria-label={t('aiAssistant.header.newConversation')}
+          title={t('aiAssistant.header.newConversation')}
         >
           <MessageSquarePlus size={18} className="text-primary" />
         </button>
@@ -859,7 +858,7 @@ const AIAssistantPage = () => {
           >
             <div className="flex items-center justify-between p-4 border-b border-border">
               <h2 className={cn("font-bold text-foreground", isRTL && "font-cairo")}>
-                {isRTL ? 'المحادثات' : 'Conversations'}
+                {t('aiAssistant.header.conversations')}
               </h2>
               <button onClick={() => setShowConversationList(false)} className="p-1 rounded-full hover:bg-muted">
                 <X size={18} className="text-foreground" />
@@ -873,12 +872,12 @@ const AIAssistantPage = () => {
               )}
             >
               <MessageSquarePlus size={16} />
-              {isRTL ? 'محادثة جديدة' : 'Nouvelle conversation'}
+              {t('aiAssistant.header.newConversation')}
             </button>
             <div className="flex-1 overflow-y-auto px-2 pb-4">
               {conversations.length === 0 ? (
                 <p className={cn("text-center text-sm text-muted-foreground py-6", isRTL && "font-cairo")}>
-                  {isRTL ? 'مفيش محادثات لسه' : 'Aucune conversation'}
+                  {t('aiAssistant.conversations.empty')}
                 </p>
               ) : (
                 <ul className="space-y-1">
@@ -903,7 +902,7 @@ const AIAssistantPage = () => {
                               )}
                               dir={titleAr ? 'rtl' : 'ltr'}
                             >
-                              {c.title || (isRTL ? 'محادثة جديدة' : 'Nouvelle conversation')}
+                              {c.title || t('aiAssistant.header.newConversation')}
                             </p>
                             <p className="text-[11px] text-muted-foreground mt-0.5">{dateStr}</p>
                           </div>
@@ -913,7 +912,7 @@ const AIAssistantPage = () => {
                             onClick={(e) => handleDeleteConversation(c.id, e)}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDeleteConversation(c.id, e as any); }}
                             className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer"
-                            aria-label={isRTL ? 'حذف' : 'Supprimer'}
+                            aria-label={t('aiAssistant.conversations.delete')}
                           >
                             <Trash2 size={14} />
                           </span>
@@ -925,7 +924,7 @@ const AIAssistantPage = () => {
               )}
             </div>
             <p className={cn("px-4 py-2 text-[10px] text-muted-foreground text-center border-t border-border", isRTL && "font-cairo")}>
-              {isRTL ? 'المحادثات بتتمسح أوتوماتيكي بعد 30 يوم' : 'Suppression auto après 30 jours'}
+              {t('aiAssistant.conversations.autoDelete')}
             </p>
           </div>
         </div>
@@ -973,10 +972,10 @@ const AIAssistantPage = () => {
           <div className="flex flex-col items-center justify-center h-full text-center opacity-60">
             <Sparkles size={40} className="text-primary mb-4" />
             <p className={cn("text-muted-foreground text-lg font-bold", isRTL && "font-cairo")}>
-              {isRTL ? `أهلاً يا ${userInfo?.name || 'فندم'}، اسأل وأنا أجاوب! 🧞` : `Bonjour ${userInfo?.name || ''}, posez votre question ! 🧞`}
+              {t('aiAssistant.welcome.greeting').replace('{name}', userInfo?.name || (isRTL ? 'فندم' : ''))}
             </p>
             <p className={cn("text-muted-foreground text-sm mt-2 mb-4", isRTL && "font-cairo")}>
-              {isRTL ? 'اسألني أي حاجة' : 'Posez vos questions'}
+              {t('aiAssistant.welcome.subtitle')}
             </p>
             {/* Category Tags */}
             <div className="flex flex-wrap gap-2 justify-center mb-4">
@@ -992,7 +991,12 @@ const AIAssistantPage = () => {
                     isRTL && "font-cairo"
                   )}
                 >
-                  {cat.emoji} {isRTL ? cat.labelAr : cat.labelFr}
+                  {cat.emoji} {t(
+                    cat.key === 'مهني' ? 'aiAssistant.categories.pro'
+                    : cat.key === 'اداري' ? 'aiAssistant.categories.admin'
+                    : cat.key === 'قانوني' ? 'aiAssistant.categories.legal'
+                    : 'aiAssistant.categories.personal'
+                  )}
                 </button>
               ))}
             </div>
@@ -1002,7 +1006,7 @@ const AIAssistantPage = () => {
               className="px-5 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-bold text-sm flex items-center gap-2 hover:bg-primary/20 active:scale-95 transition-all"
             >
               <ScanLine size={18} />
-              {isRTL ? '📐 سكانير الغرفة' : '📐 Scanner la pièce'}
+              {t('aiAssistant.roomScanner')}
             </button>
           </div>
         )}
@@ -1139,16 +1143,14 @@ const AIAssistantPage = () => {
                     isRTL={isRTL}
                     onCancel={() => {
                       setMessages(prev => prev.map((m, idx) =>
-                        idx === i ? { ...m, content: visibleContent || (isRTL ? '(تم الإلغاء)' : '(annulé)') } : m
+                        idx === i ? { ...m, content: visibleContent || t('aiAssistant.cancelled') } : m
                       ));
                     }}
                     onSubmit={(data) => {
                       const summary = Object.entries(data)
                         .map(([k, v]) => `- ${k}: ${v}`)
                         .join('\n');
-                      const reply = (isRTL
-                        ? 'هاكي البيانات الناقصة:\n'
-                        : 'Voici les informations manquantes :\n') + summary;
+                      const reply = t('aiAssistant.missingInfo.reply') + '\n' + summary;
                       void send(reply);
                     }}
                   />
@@ -1160,7 +1162,7 @@ const AIAssistantPage = () => {
 
         {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
           <div className="flex items-center gap-1.5">
-            <span className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>{isRTL ? 'يكتب' : 'écrit'}</span>
+            <span className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>{t('aiAssistant.typing')}</span>
             <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
             <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
             <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -1179,7 +1181,7 @@ const AIAssistantPage = () => {
               <div className="flex items-center gap-2 bg-muted/60 border border-border rounded-xl p-2">
                 <Loader2 size={16} className="animate-spin text-muted-foreground shrink-0" />
                 <span className={cn("text-xs text-muted-foreground flex-1 truncate", isRTL && "font-cairo text-right")}>
-                  {isRTL ? 'جاري قراءة الملفات...' : 'Lecture des fichiers...'}
+                  {t('aiAssistant.file.reading')}
                 </span>
               </div>
             )}
@@ -1192,14 +1194,14 @@ const AIAssistantPage = () => {
                     <FileText size={18} className="text-primary" />
                   </div>
                 )}
-                <span className={cn("text-xs font-medium text-foreground flex-1 truncate", isRTL && "font-cairo text-right")}>
+                <span className={cn("text-xs font-medium text-foreground flex-1 truncate", isRTL && "font-cairo text-right")} dir="ltr">
                   {att.name}
                 </span>
                 <button
                   type="button"
                   onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
                   className="p-1 rounded-full hover:bg-muted text-muted-foreground shrink-0"
-                  aria-label={isRTL ? 'حذف' : 'Retirer'}
+                  aria-label={t('aiAssistant.input.remove')}
                 >
                   <X size={14} />
                 </button>
@@ -1236,8 +1238,8 @@ const AIAssistantPage = () => {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading || isProcessingFile}
-            aria-label={isRTL ? 'إرفاق ملف' : 'Joindre un fichier'}
-            title={isRTL ? 'إرفاق صورة أو PDF' : 'Joindre une image ou un PDF'}
+            aria-label={t('aiAssistant.input.attach')}
+            title={t('aiAssistant.input.attachTitle')}
             className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 text-muted-foreground hover:bg-muted transition-all disabled:opacity-50"
           >
             <Paperclip size={20} />
@@ -1248,7 +1250,7 @@ const AIAssistantPage = () => {
             onChange={e => { setInput(e.target.value); setUserHasEdited(true); }}
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => { if (!input.trim()) { setIsInputFocused(false); resetTextareaHeight(); } }}
-            placeholder={isRTL ? 'اكتب سؤالك هنا...' : 'Écrivez votre question...'}
+            placeholder={t('aiAssistant.input.placeholder')}
             disabled={isLoading}
             className={cn(
               "flex-1 text-[15px] font-medium px-2 py-2.5 outline-none text-foreground placeholder:text-muted-foreground resize-none leading-[1.5] rounded-lg transition-[height,background-color] duration-200 overflow-y-auto",

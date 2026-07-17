@@ -11,8 +11,7 @@ const navItems = [
   {
     path: '/accounting/supplier-invoices',
     icon: BarChart3,
-    labelAr: 'المحاسبة',
-    labelFr: 'Comptabilité',
+    labelKey: 'bottomNav.accounting',
     color: 'text-indigo-400',
     activeBg: 'bg-indigo-400/15',
     dotColor: 'bg-indigo-400',
@@ -20,8 +19,7 @@ const navItems = [
   {
     path: '/',
     icon: Home,
-    labelAr: 'الرئيسية',
-    labelFr: 'Accueil',
+    labelKey: 'bottomNav.home',
     color: 'text-amber-400',
     activeBg: 'bg-amber-400/15',
     dotColor: 'bg-amber-400',
@@ -29,8 +27,7 @@ const navItems = [
   {
     path: '/support',
     icon: HeadphonesIcon,
-    labelAr: 'تواصل معنا',
-    labelFr: 'Contactez-nous',
+    labelKey: 'bottomNav.contact',
     color: 'text-emerald-400',
     activeBg: 'bg-emerald-400/15',
     dotColor: 'bg-emerald-400',
@@ -38,8 +35,7 @@ const navItems = [
   {
     path: '/profile',
     icon: User,
-    labelAr: 'حسابي',
-    labelFr: 'Mon Compte',
+    labelKey: 'bottomNav.account',
     color: 'text-blue-400',
     activeBg: 'bg-blue-400/15',
     dotColor: 'bg-blue-400',
@@ -49,15 +45,14 @@ const navItems = [
 const adminItem = {
   path: '/admin',
   icon: Shield,
-  labelAr: 'لوحة التحكم',
-  labelFr: 'Admin',
+  labelKey: 'bottomNav.admin',
   color: 'text-emerald-400',
   activeBg: 'bg-emerald-400/15',
   dotColor: 'bg-emerald-400',
 };
 
 const BottomNavigation = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
@@ -111,8 +106,7 @@ const BottomNavigation = () => {
     {
       path: '/chantier-report',
       icon: ClipboardList,
-      labelAr: 'تقرير الشانتي',
-      labelFr: 'Rapport',
+      labelKey: 'bottomNav.report',
       color: 'text-amber-400',
       activeBg: 'bg-amber-400/15',
       dotColor: 'bg-amber-400',
@@ -120,8 +114,7 @@ const BottomNavigation = () => {
     {
       path: '/support',
       icon: HeadphonesIcon,
-      labelAr: 'تواصل معنا',
-      labelFr: 'Contact',
+      labelKey: 'bottomNav.contactShort',
       color: 'text-emerald-400',
       activeBg: 'bg-emerald-400/15',
       dotColor: 'bg-emerald-400',
@@ -168,7 +161,7 @@ const BottomNavigation = () => {
                   isActive ? item.color : "text-muted-foreground"
                 )}
               >
-                {language === 'ar' ? item.labelAr : item.labelFr}
+                {t(item.labelKey)}
               </span>
               {isActive && (
                 <span

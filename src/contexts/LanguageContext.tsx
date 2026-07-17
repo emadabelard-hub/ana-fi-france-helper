@@ -642,6 +642,21 @@ const translations: Record<Language, Record<string, string>> = {
     'addExpense.cat.insurance': 'تأمين',
     'addExpense.cat.telecom': 'اتصالات',
     'addExpense.cat.other': 'أخرى',
+
+    // ===== SUPPLIER INVOICES (LIST) =====
+    'supplierInvoices.title': 'فواتير المورّدين',
+    'supplierInvoices.count.suffix': 'فاتورة',
+    'supplierInvoices.ttcSuffix': 'شامل الضريبة',
+    'supplierInvoices.import': 'استيراد فاتورة',
+    'supplierInvoices.source.label': 'المصدر',
+    'supplierInvoices.source.all': 'الكل',
+    'supplierInvoices.empty': 'لا توجد فواتير بعد',
+    'supplierInvoices.noSupplier': 'بدون مورّد',
+    'supplierInvoices.htPrefix': 'بدون ضريبة',
+    'supplierInvoices.status.received': 'مستلمة',
+    'supplierInvoices.status.processed': 'معالجة',
+    'supplierInvoices.status.paid': 'مدفوعة',
+    'supplierInvoices.toast.loadError': 'خطأ في تحميل الفواتير',
   },
 
 };

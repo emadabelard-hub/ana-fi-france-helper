@@ -322,6 +322,21 @@ const translations: Record<Language, Record<string, string>> = {
     'addExpense.cat.insurance': 'Assurance',
     'addExpense.cat.telecom': 'Télécom',
     'addExpense.cat.other': 'Autre',
+
+    // ===== SUPPLIER INVOICES (LIST) =====
+    'supplierInvoices.title': 'Factures Fournisseurs',
+    'supplierInvoices.count.suffix': 'facture(s)',
+    'supplierInvoices.ttcSuffix': 'TTC',
+    'supplierInvoices.import': 'Importer une facture',
+    'supplierInvoices.source.label': 'Source',
+    'supplierInvoices.source.all': 'Tous',
+    'supplierInvoices.empty': "Aucune facture fournisseur pour l'instant",
+    'supplierInvoices.noSupplier': 'Sans fournisseur',
+    'supplierInvoices.htPrefix': 'HT',
+    'supplierInvoices.status.received': 'Reçue',
+    'supplierInvoices.status.processed': 'Traitée',
+    'supplierInvoices.status.paid': 'Payée',
+    'supplierInvoices.toast.loadError': 'Erreur de chargement',
   },
 
   ar: {
@@ -627,6 +642,21 @@ const translations: Record<Language, Record<string, string>> = {
     'addExpense.cat.insurance': 'تأمين',
     'addExpense.cat.telecom': 'اتصالات',
     'addExpense.cat.other': 'أخرى',
+
+    // ===== SUPPLIER INVOICES (LIST) =====
+    'supplierInvoices.title': 'فواتير المورّدين',
+    'supplierInvoices.count.suffix': 'فاتورة',
+    'supplierInvoices.ttcSuffix': 'شامل الضريبة',
+    'supplierInvoices.import': 'استيراد فاتورة',
+    'supplierInvoices.source.label': 'المصدر',
+    'supplierInvoices.source.all': 'الكل',
+    'supplierInvoices.empty': 'لا توجد فواتير بعد',
+    'supplierInvoices.noSupplier': 'بدون مورّد',
+    'supplierInvoices.htPrefix': 'بدون ضريبة',
+    'supplierInvoices.status.received': 'مستلمة',
+    'supplierInvoices.status.processed': 'معالجة',
+    'supplierInvoices.status.paid': 'مدفوعة',
+    'supplierInvoices.toast.loadError': 'خطأ في تحميل الفواتير',
   },
 
 };

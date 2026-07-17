@@ -246,7 +246,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <Camera className="h-3.5 w-3.5" />
-                    {isRTL ? 'تغيير' : 'Changer'}
+                    {t('addExpense.receipt.change')}
                   </Button>
                   <Button
                     size="sm"

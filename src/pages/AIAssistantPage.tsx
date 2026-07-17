@@ -762,7 +762,7 @@ const AIAssistantPage = () => {
 
               <div>
                 <label className={cn("block text-sm font-bold text-foreground mb-1.5", isRTL && "font-cairo text-right")}>
-                  {isRTL ? 'النوع' : 'Genre'}
+                  {t('aiAssistant.onboarding.gender')}
                 </label>
                 <div className="flex gap-3">
                   <button

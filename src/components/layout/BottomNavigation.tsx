@@ -161,7 +161,7 @@ const BottomNavigation = () => {
                   isActive ? item.color : "text-muted-foreground"
                 )}
               >
-                {language === 'ar' ? item.labelAr : item.labelFr}
+                {t(item.labelKey)}
               </span>
               {isActive && (
                 <span

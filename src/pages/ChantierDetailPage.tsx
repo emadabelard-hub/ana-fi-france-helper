@@ -229,7 +229,7 @@ const ChantierDetailPage = () => {
           onClick={() => navigate('/pro/invoice', { state: { prefill: { clientName: client?.name, chantierId: id, chantierName: chantier.name } } })}
         >
           <FileText className="h-3.5 w-3.5 text-primary" />
-          <span className={cn("text-xs font-bold", isRTL && "font-cairo")}>{isRTL ? 'إنشاء فاتورة' : 'Créer Facture'}</span>
+          <span className={cn("text-xs font-bold", isRTL && "font-cairo")}>{t('chantierDetail.actions.createInvoice')}</span>
         </Button>
         <Button
           size="sm"
@@ -238,7 +238,7 @@ const ChantierDetailPage = () => {
           onClick={() => setShowAddExpense(true)}
         >
           <Receipt className="h-3.5 w-3.5 text-red-500" />
-          <span className={cn("text-xs font-bold", isRTL && "font-cairo")}>{isRTL ? 'إضافة مصروف' : 'Ajouter Dépense'}</span>
+          <span className={cn("text-xs font-bold", isRTL && "font-cairo")}>{t('chantierDetail.actions.addExpense')}</span>
         </Button>
       </div>
 

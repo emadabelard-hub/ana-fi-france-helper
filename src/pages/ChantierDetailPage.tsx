@@ -240,7 +240,7 @@ const ChantierDetailPage = () => {
       </div>
 
       {/* Synthèse financière — grille responsive */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3" dir="ltr">
         {[
           { label: 'Devis', value: totalDevis, icon: FileText, color: 'text-amber-600', bg: 'bg-amber-500/10', hint: 'Indicatif' },
           { label: 'Facturé', value: totalFactured, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
@@ -250,7 +250,7 @@ const ChantierDetailPage = () => {
           { label: 'Fact. fournisseurs', value: totalSupplier, icon: Truck, color: 'text-slate-600', bg: 'bg-slate-500/10' },
         ].map(c => (
           <Card key={c.label} className="border-border/50">
-            <CardContent className="p-2.5 text-center">
+            <CardContent className="p-2.5 text-center" dir={isRTL ? 'rtl' : 'ltr'}>
               <div className={cn("w-7 h-7 rounded-lg mx-auto mb-1 flex items-center justify-center", c.bg)}>
                 <c.icon className={cn("h-3.5 w-3.5", c.color)} />
               </div>
@@ -261,7 +261,7 @@ const ChantierDetailPage = () => {
           </Card>
         ))}
       </div>
-      <p className="text-[10px] text-muted-foreground italic mb-3 px-1">
+      <p className="text-[10px] text-muted-foreground italic mb-3 px-1 text-left" dir="ltr">
         Marge disponible après consolidation des dépenses. Estimation fondée sur les documents actuellement rattachés à ce chantier.
       </p>
 

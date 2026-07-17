@@ -210,7 +210,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* Receipt Upload */}
           <div className="space-y-2">
             <Label className={cn('text-sm font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'صورة الإيصال' : 'Photo du reçu'}
+              {t('addExpense.receipt.label')}
             </Label>
             <input
               ref={fileInputRef}

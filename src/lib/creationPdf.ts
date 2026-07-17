@@ -1262,7 +1262,7 @@ export async function buildGuideDepotPdf(): Promise<jsPDF> {
   doc.setFont("times", "italic");
   doc.setFontSize(9);
   doc.setTextColor(20, 60, 130);
-  doc.text("Ouvre INPI traduit en arabe sur anafypro.com/anafy-translate", pageWidth / 2, y + encH - 4, { align: "center", maxWidth: usableWidth - 6 });
+  doc.text("Site officiel : procedures.inpi.fr", pageWidth / 2, y + encH - 4, { align: "center", maxWidth: usableWidth - 6 });
   doc.setTextColor(0);
   y += encH + 4;
 

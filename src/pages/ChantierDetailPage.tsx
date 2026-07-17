@@ -84,7 +84,7 @@ const ChantierDetailPage = () => {
   const margin = totalFactured - totalExpenses;
 
   const budget = chantier?.budget ? Number(chantier.budget) : null;
-  const budgetPct = budget && budget > 0 ? (totalExpenses / budget) * 100 : null;
+  const budgetPct = budget && budget > 0 ? (totalFactured / budget) * 100 : null;
   const budgetAlert: 'red' | 'yellow' | null = budgetPct !== null ? (budgetPct >= 100 ? 'red' : budgetPct >= 80 ? 'yellow' : null) : null;
 
   const handleSaveBudget = async () => {

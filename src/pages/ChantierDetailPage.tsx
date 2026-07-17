@@ -169,15 +169,27 @@ const ChantierDetailPage = () => {
       {budget !== null && !editingBudget && (
         <Card className="border-border/50 mb-2">
           <CardContent className="p-3">
-            <div className={cn("flex items-center justify-between mb-1.5", isRTL && "flex-row-reverse")}>
+            <div className={cn("flex items-center justify-between mb-2", isRTL && "flex-row-reverse")}>
               <span className={cn("text-xs font-medium text-muted-foreground", isRTL && "font-cairo")}>{isRTL ? 'ميزانية المشروع' : 'Budget du projet'}</span>
               <button onClick={() => { setBudgetInput(String(budget)); setEditingBudget(true); }} className="text-[10px] text-accent hover:underline">
                 {isRTL ? 'تعديل' : 'Modifier'}
               </button>
             </div>
-            <div className={cn("flex items-center justify-between text-sm mb-1", isRTL && "flex-row-reverse")}>
-              <span className="font-bold text-foreground">{fmt(totalExpenses)} / {fmt(budget)}</span>
-              <span className={cn("text-xs font-bold", budgetPct! >= 100 ? 'text-destructive' : budgetPct! >= 80 ? 'text-amber-500' : 'text-emerald-500')}>{Math.round(budgetPct!)}%</span>
+            <div className="space-y-1 text-sm mb-2">
+              <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                <span className="text-muted-foreground">{isRTL ? 'الميزانية المتوقعة' : 'Budget prévu'}</span>
+                <span className="font-bold text-foreground">{fmt(budget)}</span>
+              </div>
+              <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                <span className="text-muted-foreground">{isRTL ? 'المبلغ المفوتر' : 'Montant facturé'}</span>
+                <span className="font-bold text-foreground">{fmt(totalExpenses)}</span>
+              </div>
+              <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
+                <span className="text-muted-foreground">{isRTL ? 'تقدم الميزانية' : 'Avancement budgétaire'}</span>
+                <span className={cn("font-bold", budgetPct! >= 100 ? 'text-destructive' : budgetPct! >= 80 ? 'text-amber-500' : 'text-emerald-500')}>
+                  {Math.min(100, Math.round(budgetPct!))}%
+                </span>
+              </div>
             </div>
             <Progress value={Math.min(budgetPct!, 100)} className={cn("h-2", budgetPct! >= 100 ? '[&>div]:bg-destructive' : budgetPct! >= 80 ? '[&>div]:bg-amber-500' : '[&>div]:bg-emerald-500')} />
           </CardContent>
@@ -228,7 +240,7 @@ const ChantierDetailPage = () => {
       </div>
 
       {/* Synthèse financière — grille responsive */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3" dir="ltr">
         {[
           { label: 'Devis', value: totalDevis, icon: FileText, color: 'text-amber-600', bg: 'bg-amber-500/10', hint: 'Indicatif' },
           { label: 'Facturé', value: totalFactured, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
@@ -238,7 +250,7 @@ const ChantierDetailPage = () => {
           { label: 'Fact. fournisseurs', value: totalSupplier, icon: Truck, color: 'text-slate-600', bg: 'bg-slate-500/10' },
         ].map(c => (
           <Card key={c.label} className="border-border/50">
-            <CardContent className="p-2.5 text-center">
+            <CardContent className="p-2.5 text-center" dir={isRTL ? 'rtl' : 'ltr'}>
               <div className={cn("w-7 h-7 rounded-lg mx-auto mb-1 flex items-center justify-center", c.bg)}>
                 <c.icon className={cn("h-3.5 w-3.5", c.color)} />
               </div>
@@ -249,7 +261,7 @@ const ChantierDetailPage = () => {
           </Card>
         ))}
       </div>
-      <p className="text-[10px] text-muted-foreground italic mb-3 px-1">
+      <p className="text-[10px] text-muted-foreground italic mb-3 px-1 text-left" dir="ltr">
         Marge disponible après consolidation des dépenses. Estimation fondée sur les documents actuellement rattachés à ce chantier.
       </p>
 

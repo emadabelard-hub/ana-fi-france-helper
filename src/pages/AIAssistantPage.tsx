@@ -555,7 +555,7 @@ const AIAssistantPage = () => {
         }
       } catch (err) {
         console.error('File processing error:', err);
-        toast({ variant: 'destructive', title: isRTL ? 'حصل مشكلة في الملف' : 'Erreur de lecture', description: file.name });
+        toast({ variant: 'destructive', title: t('aiAssistant.file.readError'), description: file.name });
       }
     }
     if (added.length > 0) setAttachments(prev => [...prev, ...added]);

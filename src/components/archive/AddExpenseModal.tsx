@@ -304,7 +304,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-                {isRTL ? 'المبلغ (€) *' : 'Montant (€) *'}
+                {t('addExpense.field.amount')}
               </Label>
               <Input
                 type="number"

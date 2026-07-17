@@ -670,7 +670,7 @@ const ComptablePage = () => {
                     <Button
                       variant="outline" size="sm"
                       disabled={!e.receipt_url}
-                      onClick={() => handleDownload(e.receipt_url, `justificatif-${e.id.slice(0, 8)}`)}
+                      onClick={() => handleDownload(e.receipt_url, `justificatif-${e.id.slice(0, 8)}`, extFromUrl(e.receipt_url) || 'pdf')}
                       className="border-gray-300 text-gray-900 bg-white hover:bg-gray-50 gap-1.5"
                     >
                       <Download className="h-3.5 w-3.5" />

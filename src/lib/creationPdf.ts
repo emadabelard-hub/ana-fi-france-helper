@@ -1143,23 +1143,21 @@ export async function buildBeneficiairesPdf(body: BeneficiairesInput): Promise<j
     });
   }
 
-  // ─── Encadré d'avertissement en arabe (rendu via image pour éviter les glyphes corrompus) ───
-  const warnText = "⚠️ الورقة دي للتحضير بس — التصريح الرسمي بيتم أونلاين على موقع INPI وقت تسجيل الشركة.";
-  const warnImg = await renderArabicToImage(warnText, usableWidth - 6, {
-    bold: true, size: 10, align: "center", color: "#785000", bg: "#FFF8DC",
-  });
-  const boxH = Math.max(20, (warnImg?.heightMm ?? 8) + 8);
+  // ─── Encadré d'avertissement (français uniquement — document remis à un tiers) ───
+  const warnText = "Attention : ce document est destiné à la préparation du dossier. La déclaration officielle doit être effectuée en ligne sur le site de l'INPI (procedures.inpi.fr) lors de l'immatriculation de la société.";
+  const boxH = 22;
   ensureSpace(boxH + 4);
   y += 4;
   doc.setDrawColor(200, 150, 0);
   doc.setFillColor(255, 248, 220);
   doc.setLineWidth(0.5);
   doc.rect(margin, y, usableWidth, boxH, "FD");
-  if (warnImg) {
-    const imgX = margin + 3;
-    const imgY = y + (boxH - warnImg.heightMm) / 2;
-    doc.addImage(warnImg.dataUrl, "PNG", imgX, imgY, usableWidth - 6, warnImg.heightMm);
-  }
+  doc.setFont("times", "italic");
+  doc.setFontSize(10);
+  doc.setTextColor(120, 80, 0);
+  const warnLines = doc.splitTextToSize(warnText, usableWidth - 6);
+  doc.text(warnLines, pageWidth / 2, y + 6, { align: "center", baseline: "top" });
+  doc.setTextColor(0);
   y += boxH + 4;
 
   fillOnesFooter(doc, pageWidth, usableWidth, margin, pageHeight);

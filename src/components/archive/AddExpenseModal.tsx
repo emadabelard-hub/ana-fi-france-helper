@@ -333,7 +333,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           {/* HT/TTC selector (obligatoire pour la rentabilité chantier) */}
           <div className="space-y-1.5">
             <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-              {isRTL ? 'نوع المبلغ *' : 'Le montant saisi est en *'}
+              {t('addExpense.field.amountType')}
             </Label>
             <div className="grid grid-cols-2 gap-2" dir="ltr">
               <button

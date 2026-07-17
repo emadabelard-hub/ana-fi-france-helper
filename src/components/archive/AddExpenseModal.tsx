@@ -129,10 +129,8 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
   const handleSave = async () => {
     if (!title.trim() || !amount) {
       toast({
-        title: isRTL ? '⚠️ بيانات ناقصة' : '⚠️ Données manquantes',
-        description: isRTL
-          ? 'العنوان والمبلغ مطلوبين'
-          : 'Titre et montant sont obligatoires',
+        title: t('addExpense.toast.missingTitle'),
+        description: t('addExpense.toast.missingDesc'),
         variant: 'destructive',
       });
       return;

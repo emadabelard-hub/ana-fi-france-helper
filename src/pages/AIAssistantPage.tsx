@@ -1150,9 +1150,7 @@ const AIAssistantPage = () => {
                       const summary = Object.entries(data)
                         .map(([k, v]) => `- ${k}: ${v}`)
                         .join('\n');
-                      const reply = (isRTL
-                        ? 'هاكي البيانات الناقصة:\n'
-                        : 'Voici les informations manquantes :\n') + summary;
+                      const reply = t('aiAssistant.missingInfo.reply') + '\n' + summary;
                       void send(reply);
                     }}
                   />

@@ -83,11 +83,12 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
   }, [selectedClientId, userId]);
 
   const resetForm = () => {
-    setTitle(''); setAmount(''); setTvaAmount('0'); setCategory('other');
+    setTitle(''); setAmount(''); setAmountType('TTC'); setTvaAmount('0'); setCategory('other');
     setExpenseDate(new Date().toISOString().slice(0, 10)); setNotes('');
     setReceiptPreview(null); setReceiptFile(null); setSelectedDocId(preselectedDocumentId || '');
     setSelectedClientId(''); setSelectedChantierId('');
   };
+
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

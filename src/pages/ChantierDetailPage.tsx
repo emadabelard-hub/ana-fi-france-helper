@@ -140,7 +140,7 @@ const ChantierDetailPage = () => {
           <h1 className={cn("text-lg font-bold text-foreground truncate", isRTL && "font-cairo")}>{chantier.name}</h1>
           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
             {client && <span>{client.name}</span>}
-            {chantier.reference_number && <Badge variant="secondary" className="text-[10px] font-mono">{chantier.reference_number}</Badge>}
+            {chantier.reference_number && <Badge variant="secondary" className="text-[10px] font-mono" dir="ltr">{chantier.reference_number}</Badge>}
             <Badge variant="outline" className={cn("text-[10px]", statusColorMap[chantier.status] || '')}>{statusLabel}</Badge>
           </div>
         </div>
@@ -156,15 +156,15 @@ const ChantierDetailPage = () => {
       {budgetAlert === 'red' && (
         <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm font-medium mb-2", isRTL && "flex-row-reverse font-cairo")}>
           <AlertTriangle className="h-4 w-4 shrink-0 animate-pulse" />
-          <span>{isRTL ? 'خطر: المصاريف تجاوزت الميزانية! الربح في خطر' : 'Danger : Les dépenses dépassent le budget ! Profit en danger'}</span>
-          <Badge variant="destructive" className="text-[10px] shrink-0">{Math.round(budgetPct!)}%</Badge>
+          <span>{t('chantierDetail.alert.red')}</span>
+          <Badge variant="destructive" className="text-[10px] shrink-0" dir="ltr">{Math.round(budgetPct!)}%</Badge>
         </div>
       )}
       {budgetAlert === 'yellow' && (
         <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 text-sm font-medium mb-2", isRTL && "flex-row-reverse font-cairo")}>
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>{isRTL ? 'تنبيه: المصاريف اقتربت من الميزانية المحددة' : 'Attention : Les dépenses approchent du budget défini'}</span>
-          <Badge className="text-[10px] shrink-0 bg-amber-500/20 text-amber-600 border-amber-500/30">{Math.round(budgetPct!)}%</Badge>
+          <span>{t('chantierDetail.alert.yellow')}</span>
+          <Badge className="text-[10px] shrink-0 bg-amber-500/20 text-amber-600 border-amber-500/30" dir="ltr">{Math.round(budgetPct!)}%</Badge>
         </div>
       )}
 
@@ -173,23 +173,23 @@ const ChantierDetailPage = () => {
         <Card className="border-border/50 mb-2">
           <CardContent className="p-3">
             <div className={cn("flex items-center justify-between mb-2", isRTL && "flex-row-reverse")}>
-              <span className={cn("text-xs font-medium text-muted-foreground", isRTL && "font-cairo")}>{isRTL ? 'ميزانية المشروع' : 'Budget du projet'}</span>
+              <span className={cn("text-xs font-medium text-muted-foreground", isRTL && "font-cairo")}>{t('chantierDetail.budget.title')}</span>
               <button onClick={() => { setBudgetInput(String(budget)); setEditingBudget(true); }} className="text-[10px] text-accent hover:underline">
-                {isRTL ? 'تعديل' : 'Modifier'}
+                {t('chantierDetail.budget.edit')}
               </button>
             </div>
             <div className="space-y-1 text-sm mb-2">
               <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
-                <span className="text-muted-foreground">{isRTL ? 'الميزانية المتوقعة' : 'Budget prévu'}</span>
-                <span className="font-bold text-foreground">{fmt(budget)}</span>
+                <span className="text-muted-foreground">{t('chantierDetail.budget.expected')}</span>
+                <span className="font-bold text-foreground" dir="ltr">{fmt(budget)}</span>
               </div>
               <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
-                <span className="text-muted-foreground">{isRTL ? 'المبلغ المفوتر' : 'Montant facturé'}</span>
-                <span className="font-bold text-foreground">{fmt(totalFactured)}</span>
+                <span className="text-muted-foreground">{t('chantierDetail.budget.invoiced')}</span>
+                <span className="font-bold text-foreground" dir="ltr">{fmt(totalFactured)}</span>
               </div>
               <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
-                <span className="text-muted-foreground">{isRTL ? 'تقدم الميزانية' : 'Avancement budgétaire'}</span>
-                <span className={cn("font-bold", budgetPct! >= 100 ? 'text-destructive' : budgetPct! >= 80 ? 'text-amber-500' : 'text-emerald-500')}>
+                <span className="text-muted-foreground">{t('chantierDetail.budget.progress')}</span>
+                <span dir="ltr" className={cn("font-bold", budgetPct! >= 100 ? 'text-destructive' : budgetPct! >= 80 ? 'text-amber-500' : 'text-emerald-500')}>
                   {Math.min(100, Math.round(budgetPct!))}%
                 </span>
               </div>
@@ -201,11 +201,11 @@ const ChantierDetailPage = () => {
       {editingBudget && (
         <Card className="border-accent/30 mb-2">
           <CardContent className="p-3 space-y-2">
-            <label className={cn("text-xs font-medium text-muted-foreground", isRTL && "font-cairo")}>{isRTL ? 'ميزانية المشروع (€)' : 'Budget du projet (€)'}</label>
+            <label className={cn("text-xs font-medium text-muted-foreground", isRTL && "font-cairo")}>{t('chantierDetail.budget.label')}</label>
             <div className="flex gap-2">
-              <Input type="number" min="0" step="0.01" value={budgetInput} onChange={e => setBudgetInput(e.target.value)} className="flex-1" />
-              <Button size="sm" onClick={handleSaveBudget}>{isRTL ? 'حفظ' : 'OK'}</Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditingBudget(false)}>{isRTL ? 'إلغاء' : '✕'}</Button>
+              <Input type="number" min="0" step="0.01" value={budgetInput} onChange={e => setBudgetInput(e.target.value)} className="flex-1" dir="ltr" />
+              <Button size="sm" onClick={handleSaveBudget}>{t('chantierDetail.budget.save')}</Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditingBudget(false)}>{t('chantierDetail.budget.cancel')}</Button>
             </div>
           </CardContent>
         </Card>
@@ -215,7 +215,7 @@ const ChantierDetailPage = () => {
           onClick={() => { setBudgetInput(''); setEditingBudget(true); }}
           className={cn("text-xs text-accent hover:underline mb-2 block", isRTL && "text-right w-full font-cairo")}
         >
-          {isRTL ? '+ إضافة ميزانية المشروع' : '+ Ajouter un budget'}
+          {t('chantierDetail.budget.add')}
         </button>
       )}
 

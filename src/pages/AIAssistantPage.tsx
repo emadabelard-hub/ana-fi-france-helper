@@ -912,7 +912,7 @@ const AIAssistantPage = () => {
                             onClick={(e) => handleDeleteConversation(c.id, e)}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDeleteConversation(c.id, e as any); }}
                             className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer"
-                            aria-label={isRTL ? 'حذف' : 'Supprimer'}
+                            aria-label={t('aiAssistant.conversations.delete')}
                           >
                             <Trash2 size={14} />
                           </span>

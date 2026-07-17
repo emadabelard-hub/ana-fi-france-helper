@@ -31,12 +31,77 @@ export default function SupplierInvoiceDetailPage() {
   const [busy, setBusy] = useState(false);
   const [chantiers, setChantiers] = useState<Array<{ id: string; name: string; reference_number: string | null }>>([]);
   const [savingChantier, setSavingChantier] = useState(false);
+  const [linkableExpenses, setLinkableExpenses] = useState<Array<{ id: string; title: string; amount: number; expense_date: string }>>([]);
+  const [linkedExpense, setLinkedExpense] = useState<{ id: string; title: string } | null>(null);
+  const [savingExpense, setSavingExpense] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     supabase.from('chantiers').select('id, name, reference_number').eq('user_id', user.id).order('created_at', { ascending: false })
       .then(({ data }) => setChantiers((data as any) || []));
   }, [user]);
+
+  // Charge dépenses liables (aucune facture fournisseur associée) + la dépense déjà liée le cas échéant
+  useEffect(() => {
+    if (!user || !invoice) return;
+    (async () => {
+      const [{ data: free }, { data: current }] = await Promise.all([
+        (supabase.from('expenses') as any)
+          .select('id, title, amount, expense_date')
+          .eq('user_id', user.id)
+          .is('supplier_invoice_id', null)
+          .order('expense_date', { ascending: false })
+          .limit(100),
+        (supabase.from('expenses') as any)
+          .select('id, title')
+          .eq('user_id', user.id)
+          .eq('supplier_invoice_id', invoice.id)
+          .maybeSingle(),
+      ]);
+      setLinkableExpenses((free as any) || []);
+      setLinkedExpense((current as any) || null);
+    })();
+  }, [user, invoice]);
+
+  const updateLinkedExpense = async (newExpenseId: string | null) => {
+    if (!invoice || !user) return;
+    setSavingExpense(true);
+    try {
+      // Détacher l'existante
+      if (linkedExpense) {
+        await (supabase.from('expenses') as any)
+          .update({ supplier_invoice_id: null })
+          .eq('id', linkedExpense.id)
+          .eq('user_id', user.id);
+      }
+      if (newExpenseId) {
+        const { error } = await (supabase.from('expenses') as any)
+          .update({ supplier_invoice_id: invoice.id })
+          .eq('id', newExpenseId)
+          .eq('user_id', user.id);
+        if (error) throw error;
+        const chosen = linkableExpenses.find((e) => e.id === newExpenseId);
+        setLinkedExpense(chosen ? { id: chosen.id, title: chosen.title } : null);
+        toast.success('Dépense rattachée à la facture fournisseur.');
+      } else {
+        setLinkedExpense(null);
+        toast.success('Dépense détachée.');
+      }
+      // Rafraîchir la liste des dépenses liables
+      const { data: free } = await (supabase.from('expenses') as any)
+        .select('id, title, amount, expense_date')
+        .eq('user_id', user.id)
+        .is('supplier_invoice_id', null)
+        .order('expense_date', { ascending: false })
+        .limit(100);
+      setLinkableExpenses((free as any) || []);
+    } catch (e: any) {
+      toast.error(e?.message || 'Erreur');
+    } finally {
+      setSavingExpense(false);
+    }
+  };
+
 
   const updateChantier = async (newId: string | null) => {
     if (!invoice || !user) return;

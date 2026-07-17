@@ -85,6 +85,12 @@ const ChantierDetailPage = () => {
   const totalSupplier = useMemo(() => supplierInvoices.reduce((s, i) => s + Number(i.amount_ttc || 0), 0), [supplierInvoices]);
   const margin = totalFactured - totalExpenses;
 
+  const profitability = useMemo(
+    () => computeChantierProfitability({ documents, expenses, supplierInvoices }),
+    [documents, expenses, supplierInvoices],
+  );
+
+
   const budget = chantier?.budget ? Number(chantier.budget) : null;
   const budgetPct = budget && budget > 0 ? (totalFactured / budget) * 100 : null;
   const budgetAlert: 'red' | 'yellow' | null = budgetPct !== null ? (budgetPct >= 100 ? 'red' : budgetPct >= 80 ? 'yellow' : null) : null;

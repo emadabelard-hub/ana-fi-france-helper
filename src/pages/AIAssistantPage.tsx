@@ -1194,14 +1194,14 @@ const AIAssistantPage = () => {
                     <FileText size={18} className="text-primary" />
                   </div>
                 )}
-                <span className={cn("text-xs font-medium text-foreground flex-1 truncate", isRTL && "font-cairo text-right")}>
+                <span className={cn("text-xs font-medium text-foreground flex-1 truncate", isRTL && "font-cairo text-right")} dir="ltr">
                   {att.name}
                 </span>
                 <button
                   type="button"
                   onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
                   className="p-1 rounded-full hover:bg-muted text-muted-foreground shrink-0"
-                  aria-label={isRTL ? 'حذف' : 'Retirer'}
+                  aria-label={t('aiAssistant.input.remove')}
                 >
                   <X size={14} />
                 </button>

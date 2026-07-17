@@ -734,10 +734,10 @@ const AIAssistantPage = () => {
                 <Sparkles size={32} className="text-primary" />
               </div>
               <h2 className={cn("text-xl font-bold text-foreground", isRTL && "font-cairo")}>
-                {isRTL ? 'قبل ما نبدأ يا فندم 🧞' : 'Avant de commencer 🧞'}
+                {t('aiAssistant.onboarding.title')}
               </h2>
               <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo")}>
-                {isRTL ? 'عشان أقدر أساعدك بشكل أفضل' : 'Pour mieux vous aider'}
+                {t('aiAssistant.onboarding.subtitle')}
               </p>
             </div>
 

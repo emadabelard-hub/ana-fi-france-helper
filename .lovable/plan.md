@@ -1,108 +1,58 @@
-## Refonte complète du système de facturation par échéance
 
-### Objectif
-Remplacer le tracking actuel (basé sur `document_data.milestoneId` dans `documents_comptables`) par une table dédiée `milestone_invoices` qui devient la **seule source de vérité**.
+## Phase 5B — Plan d'exécution
 
----
+### Ampleur constatée
+- 5 fichiers UI à modifier (~3 000 lignes cumulées).
+- **133 ternaires bilingues** `isRTL ? 'ar' : 'fr'` à remplacer par `t('clé')`.
+- **158 lignes** contenant de l'arabe (chaînes en dur dans les ternaires).
+- `chantierProfitability.ts` : aucun texte visible utilisateur → **non modifié**.
 
-### ÉTAPE 1 — Suppression
+### Approche
 
-**Fichiers à supprimer :**
-- `src/components/invoice/MilestoneInvoiceActions.tsx`
-- `src/lib/milestoneInvoicePrefill.ts`
+**Sans i18next.** J'ajoute uniquement des clés au dictionnaire existant `LanguageContext.tsx` (bloc `fr` et bloc `ar`), puis je remplace les ternaires bilingues fichier par fichier par `t('clé')`. Aucune logique métier, aucun calcul, aucune requête, aucun classement des cartes financières, aucun `dir="ltr"` déjà en place ne sera altéré.
 
-**Fichiers à nettoyer (retirer toutes les références) :**
-- `src/pages/DocumentsListPage.tsx`
-  - Imports de `MilestoneInvoiceActions`
-  - Bouton "أقساط" sur les cartes devis (version actuelle)
-  - Toute logique de comptage `milestoneInfoMap`
-  - `allDocuments` passé à ce composant
-- `src/components/invoice/InvoiceFormBuilder.tsx`
-  - Bloc qui injecte `milestoneId` / `milestoneLabel` dans `linkedDocumentData`
-  - Lecture sessionStorage `milestoneInvoiceData` (sera réécrit)
-  - Logs `console.log('milestoneId à sauvegarder:'…)`
+### Nouveaux namespaces de clés (dictionnaire central)
 
----
+- `expenses.*` — page dépenses + modal d'ajout (~60 clés : titres, boutons, statistiques, filtres, catégories, états vides, OCR, HT/TTC, chantier, justificatif, envoi comptable, erreurs).
+- `supplierInvoices.*` — liste + détail (~45 clés : titres, recherche, statuts, rattachement chantier, association dépense, PDF/Factur-X, erreurs).
+- `chantier.*` — fiche chantier + rentabilité (~50 clés : synthèse financière, budget, onglets, blocs vides, rentabilité avec 4 statuts et détail estimation).
+- `common.*` — quelques ajouts si nécessaires (`common.retry`, `common.download`, etc.) — vérification préalable qu'ils n'existent pas déjà.
 
-### ÉTAPE 2 — Nouvelle base de données
+Total estimé : **~155 nouvelles clés**, chacune avec valeur `fr` (professionnelle) et valeur `ar` (Ammiya égyptien). Zéro arabe dans le bloc `fr`.
 
-**Migration Supabase :**
+### Directions RTL/LTR
 
-```sql
-CREATE TABLE public.milestone_invoices (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  devis_id uuid NOT NULL,
-  devis_number text NOT NULL,
-  milestone_index integer NOT NULL,
-  milestone_label text,
-  milestone_percent numeric,
-  montant_ttc numeric,
-  facture_id uuid,
-  facture_number text,
-  statut text NOT NULL DEFAULT 'facturee',
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+- Conserver tous les `dir="ltr"` déjà présents (montants, dates, ordre des cartes financières).
+- Ajouter localement `dir="ltr"` sur les champs SIRET, IBAN, e-mails, URL, numéros de facture, pourcentages, formules affichées uniquement si un ternaire les inversait aujourd'hui.
+- Le texte arabe descriptif reste RTL via l'attribut `dir` de la racine RTL globale (aucune modification).
 
-ALTER TABLE public.milestone_invoices ENABLE ROW LEVEL SECURITY;
+### Normalisation des erreurs (local uniquement)
 
-CREATE POLICY "owner_all" ON public.milestone_invoices
-  FOR ALL TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+Dans les 5 fichiers autorisés, je remplace les `toast({description: err.message})` visibles par des messages traduits via `t('...error...')`. L'erreur technique reste en `console.error` (déjà présent). Aucun système `mapError` global créé.
 
-CREATE INDEX idx_milestone_invoices_devis ON public.milestone_invoices(devis_id, milestone_index);
-CREATE INDEX idx_milestone_invoices_user ON public.milestone_invoices(user_id);
-```
+### Ordre d'exécution
 
-Statuts possibles : `'facturee'`, `'payee'`, `'cancelled'`.
+1. Étendre `LanguageContext.tsx` avec les ~155 clés (bloc `fr` + bloc `ar`).
+2. Remplacer les ternaires dans `SupplierInvoicesPage.tsx` (le plus petit, 148 lignes).
+3. Remplacer dans `SupplierInvoiceDetailPage.tsx` (408 lignes).
+4. Remplacer dans `AddExpenseModal.tsx` (491 lignes).
+5. Remplacer dans `ChantierDetailPage.tsx` (525 lignes).
+6. Remplacer dans `ExpensesPage.tsx` (1 303 lignes — le plus lourd, potentiellement en plusieurs passes).
+7. Vérification finale : `rg '[\u0600-\u06FF]'` doit ressortir vide sur ces 5 fichiers (hors chaînes provenant de `t()`).
 
----
+### Zones intouchables (rappel)
 
-### ÉTAPE 3 — Nouveau code
+Calculs HT/TVA/TTC, `amount_type`, `supplier_invoice_id`, anti-double comptage, rattachements en base, requêtes Supabase, OCR, PDF, Factur-X, FEC, exports, téléchargements, ordre des cartes financières, migrations, RLS, Edge Functions, buckets.
 
-**Nouveau fichier `src/lib/milestonePrefill.ts`** (remplace `milestoneInvoicePrefill.ts`)
-- Construit le prefill du formulaire (désignation, montant HT, notes…) — logique copiée mais simplifiée
-- N'injecte plus rien dans `document_data` — juste les champs du formulaire
+### Livraison finale
 
-**Nouveau composant `src/components/invoice/MilestoneInvoiceActions.tsx`** (recréé from scratch)
-- Props : `devisDoc` uniquement (plus de `allDocuments`)
-- Charge directement `milestone_invoices` via Supabase (filtré par `devis_id`)
-- Construit la map `index → { facture_id, facture_number, statut }`
-- Affiche la liste des échéances avec badges (`en_attente` / `facturée` / `payée` / `annulée`)
-- Au clic "Créer la facture" :
-  1. Stocke prefill en sessionStorage (`milestoneInvoicePrefill`)
-  2. Navigate vers `/pro/invoice-creator?prefill=milestone`
-- Expose un mécanisme de refetch via React Query (clé `['milestone-invoices', devisId]`)
+Rapport indiquant : fichiers modifiés, liste des namespaces et clés ajoutées, ternaires remplacés, corrections RTL/LTR appliquées, messages techniques remplacés, résultat `tsc --noEmit` et build, confirmation zéro régression fonctionnelle.
 
-**Modification `InvoiceFormBuilder.tsx`**
-- Après INSERT réussi de la facture, si `prefillData.source === 'milestone_invoice'` :
-  ```ts
-  await supabase.from('milestone_invoices').insert({
-    user_id, devis_id, devis_number,
-    milestone_index, milestone_label, milestone_percent,
-    montant_ttc, facture_id: insertedDoc.id,
-    facture_number: insertedDoc.document_number,
-    statut: 'facturee',
-  });
-  ```
-- Plus aucune injection dans `document_data`.
+### Note importante
 
-**Modification `DocumentsListPage.tsx`**
-- Réintégrer `MilestoneInvoiceActions` (nouvelle version) avec uniquement `devisDoc` + callback `onViewInvoice`
-- Bouton "أقساط X/Y" sur les cartes devis : compteur calculé depuis un hook `useMilestoneCounts(devisId)` qui lit `milestone_invoices`
+Cette phase représente un volume conséquent d'édition (5 fichiers, ~150 remplacements). Je peux :
 
----
+- **Option A** : exécuter d'un bloc en confiant la fiabilité aux replacements ciblés + build final.
+- **Option B** : livrer par fichier avec ta validation intermédiaire (plus lent, plus sûr).
 
-### Vérification post-implémentation
-1. Créer un devis avec 3 échéances
-2. Facturer l'échéance 1 → vérifier badge "Facturée" + 1/3 dans le compteur
-3. Recharger la page → état persiste
-4. Sélectionner échéance 1 → bouton désactivé (déjà facturée)
-5. Vérifier en base : 1 ligne dans `milestone_invoices` avec `facture_id` rempli
-
----
-
-### Note technique
-La migration ne touche pas `documents_comptables` — les anciennes factures milestone restent valides mais ne seront plus trackées via `document_data.milestoneId`. Si besoin, un script de backfill peut être ajouté ensuite (non inclus ici).
+Confirme l'option souhaitée avant que je lance l'exécution.

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, CheckCircle2, Download, Eye, HardHat, X } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Download, Eye, HardHat, X, Receipt } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";

@@ -280,7 +280,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
                 >
                   <Upload className="h-6 w-6 text-accent/60" />
                   <span className={cn('text-xs text-muted-foreground', isRTL && 'font-cairo')}>
-                    {isRTL ? '🖼️ اختر من المكتبة' : '🖼️ Choisir un fichier'}
+                    {t('addExpense.receipt.gallery')}
                   </span>
                 </Button>
               </div>

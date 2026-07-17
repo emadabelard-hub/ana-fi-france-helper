@@ -21,7 +21,7 @@ const fmt = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', c
 
 const ChantierDetailPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { isRTL } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();

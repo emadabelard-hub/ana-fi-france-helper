@@ -241,6 +241,40 @@ export default function SupplierInvoiceDetailPage() {
         <p className="text-[11px] text-muted-foreground mt-2">Ne modifie ni le montant, ni la TVA, ni le PDF, ni la comptabilité.</p>
       </Card>
 
+      {/* Dépense associée — évite le double comptage dans la rentabilité chantier */}
+      <Card className="p-4 mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Receipt className="h-4 w-4 text-red-500" />
+          <h3 className="font-semibold text-sm">Dépense associée</h3>
+        </div>
+        <div className="flex gap-2 items-center">
+          <Select
+            value={linkedExpense?.id || 'none'}
+            onValueChange={(v) => updateLinkedExpense(v === 'none' ? null : v)}
+            disabled={savingExpense}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="Sélectionner une dépense" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— Aucune dépense —</SelectItem>
+              {linkedExpense && (
+                <SelectItem value={linkedExpense.id}>{linkedExpense.title} (déjà liée)</SelectItem>
+              )}
+              {linkableExpenses.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.title} · {new Date(e.expense_date).toLocaleDateString('fr-FR')} · {formatEUR(Number(e.amount))}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-2">
+          Associer cette facture fournisseur à la dépense OCR correspondante évite tout double comptage dans la rentabilité du chantier.
+        </p>
+      </Card>
+
+
 
 
       {lines.length > 0 && (

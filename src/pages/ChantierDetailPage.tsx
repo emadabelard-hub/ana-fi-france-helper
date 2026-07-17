@@ -182,7 +182,7 @@ const ChantierDetailPage = () => {
               </div>
               <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
                 <span className="text-muted-foreground">{isRTL ? 'المبلغ المفوتر' : 'Montant facturé'}</span>
-                <span className="font-bold text-foreground">{fmt(totalExpenses)}</span>
+                <span className="font-bold text-foreground">{fmt(totalFactured)}</span>
               </div>
               <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
                 <span className="text-muted-foreground">{isRTL ? 'تقدم الميزانية' : 'Avancement budgétaire'}</span>

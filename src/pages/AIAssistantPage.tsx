@@ -858,7 +858,7 @@ const AIAssistantPage = () => {
           >
             <div className="flex items-center justify-between p-4 border-b border-border">
               <h2 className={cn("font-bold text-foreground", isRTL && "font-cairo")}>
-                {isRTL ? 'المحادثات' : 'Conversations'}
+                {t('aiAssistant.header.conversations')}
               </h2>
               <button onClick={() => setShowConversationList(false)} className="p-1 rounded-full hover:bg-muted">
                 <X size={18} className="text-foreground" />

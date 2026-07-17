@@ -872,7 +872,7 @@ const AIAssistantPage = () => {
               )}
             >
               <MessageSquarePlus size={16} />
-              {isRTL ? 'محادثة جديدة' : 'Nouvelle conversation'}
+              {t('aiAssistant.header.newConversation')}
             </button>
             <div className="flex-1 overflow-y-auto px-2 pb-4">
               {conversations.length === 0 ? (

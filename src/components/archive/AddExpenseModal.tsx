@@ -371,16 +371,16 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-                {isRTL ? 'الفئة' : 'Catégorie'}
+                {t('addExpense.field.category')}
               </Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger className="bg-background border-border text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map(c => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {isRTL ? c.labelAr : c.labelFr}
+                  {categoryValues.map(v => (
+                    <SelectItem key={v} value={v}>
+                      {t(`addExpense.cat.${v}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -388,7 +388,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             </div>
             <div className="space-y-1.5">
               <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
-                {isRTL ? 'التاريخ' : 'Date'}
+                {t('addExpense.field.date')}
               </Label>
               <Input
                 type="date"

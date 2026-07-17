@@ -924,7 +924,7 @@ const AIAssistantPage = () => {
               )}
             </div>
             <p className={cn("px-4 py-2 text-[10px] text-muted-foreground text-center border-t border-border", isRTL && "font-cairo")}>
-              {isRTL ? 'المحادثات بتتمسح أوتوماتيكي بعد 30 يوم' : 'Suppression auto après 30 jours'}
+              {t('aiAssistant.conversations.autoDelete')}
             </p>
           </div>
         </div>

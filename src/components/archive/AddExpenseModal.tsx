@@ -255,7 +255,7 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
                     disabled={analyzing}
                   >
                     {analyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                    {isRTL ? 'تحليل ذكي' : 'Analyser'}
+                    {t('addExpense.receipt.analyze')}
                   </Button>
                 </div>
               </div>

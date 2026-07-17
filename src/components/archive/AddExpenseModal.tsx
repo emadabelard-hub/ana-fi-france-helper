@@ -339,6 +339,43 @@ const AddExpenseModal = ({ open, onOpenChange, isRTL, userId, onExpenseAdded, pr
             </div>
           </div>
 
+          {/* HT/TTC selector (obligatoire pour la rentabilité chantier) */}
+          <div className="space-y-1.5">
+            <Label className={cn('text-xs font-bold text-muted-foreground', isRTL && 'text-right block font-cairo')}>
+              {isRTL ? 'نوع المبلغ *' : 'Le montant saisi est en *'}
+            </Label>
+            <div className="grid grid-cols-2 gap-2" dir="ltr">
+              <button
+                type="button"
+                onClick={() => setAmountType('HT')}
+                className={cn(
+                  'py-2 rounded-md border text-sm font-semibold transition',
+                  amountType === 'HT'
+                    ? 'bg-accent text-accent-foreground border-accent'
+                    : 'bg-background border-border text-muted-foreground hover:border-accent/40',
+                )}
+              >
+                HT (hors taxes)
+              </button>
+              <button
+                type="button"
+                onClick={() => setAmountType('TTC')}
+                className={cn(
+                  'py-2 rounded-md border text-sm font-semibold transition',
+                  amountType === 'TTC'
+                    ? 'bg-accent text-accent-foreground border-accent'
+                    : 'bg-background border-border text-muted-foreground hover:border-accent/40',
+                )}
+              >
+                TTC (toutes taxes)
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Indispensable pour calculer la rentabilité du chantier sans double comptage.
+            </p>
+          </div>
+
+
           {/* Category + Date row */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">

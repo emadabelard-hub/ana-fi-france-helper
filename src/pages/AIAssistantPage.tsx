@@ -1238,8 +1238,8 @@ const AIAssistantPage = () => {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading || isProcessingFile}
-            aria-label={isRTL ? 'إرفاق ملف' : 'Joindre un fichier'}
-            title={isRTL ? 'إرفاق صورة أو PDF' : 'Joindre une image ou un PDF'}
+            aria-label={t('aiAssistant.input.attach')}
+            title={t('aiAssistant.input.attachTitle')}
             className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 text-muted-foreground hover:bg-muted transition-all disabled:opacity-50"
           >
             <Paperclip size={20} />
@@ -1250,7 +1250,7 @@ const AIAssistantPage = () => {
             onChange={e => { setInput(e.target.value); setUserHasEdited(true); }}
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => { if (!input.trim()) { setIsInputFocused(false); resetTextareaHeight(); } }}
-            placeholder={isRTL ? 'اكتب سؤالك هنا...' : 'Écrivez votre question...'}
+            placeholder={t('aiAssistant.input.placeholder')}
             disabled={isLoading}
             className={cn(
               "flex-1 text-[15px] font-medium px-2 py-2.5 outline-none text-foreground placeholder:text-muted-foreground resize-none leading-[1.5] rounded-lg transition-[height,background-color] duration-200 overflow-y-auto",

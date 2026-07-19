@@ -976,15 +976,25 @@ const translations: Record<Language, Record<string, string>> = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>(() => {
-    const saved = localStorage.getItem('ana-fi-france-lang');
-    return (saved as Language) || 'fr';
+  const [language, setLanguageState] = useState<Language>(() => {
+    try {
+      const saved = localStorage.getItem('ana-fi-france-lang');
+      // Fallback global = français si valeur absente ou invalide
+      return saved === 'ar' || saved === 'fr' ? (saved as Language) : 'fr';
+    } catch {
+      return 'fr';
+    }
   });
 
   const isRTL = language === 'ar';
 
+  const setLanguage = (lang: Language) => {
+    const safe: Language = lang === 'ar' ? 'ar' : 'fr';
+    setLanguageState(safe);
+  };
+
   useEffect(() => {
-    localStorage.setItem('ana-fi-france-lang', language);
+    try { localStorage.setItem('ana-fi-france-lang', language); } catch {}
     document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
   }, [language, isRTL]);

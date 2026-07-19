@@ -410,7 +410,11 @@ ${override}
 - استثناء واحد فقط: المستندات المُولَّدة (devis, factures, courriers, contrats, lettres administratives) تبقى دائماً بالفرنسية المهنية الرسمية مهما كانت لهجة المحادثة.`;
     }
 
-    finalSystemPrompt = `IMPORTANT : Détecte le dialecte arabe de l'utilisateur et réponds TOUJOURS dans ce même dialecte. Ne réponds JAMAIS en égyptien si l'utilisateur écrit en algérien, marocain, tunisien, syrien ou soudanais. L'égyptien est uniquement le fallback si le dialecte est indétectable. Les documents restent toujours en français professionnel.\n\n${finalSystemPrompt}`;
+    if (language === 'fr') {
+      finalSystemPrompt = `IMPORTANT : Réponds EXCLUSIVEMENT en français professionnel, clair et naturel. Ne réponds JAMAIS en arabe ni dans aucun dialecte arabe, quelle que soit la langue utilisée par l'utilisateur dans ses messages. L'interface est configurée en français : toutes tes réponses doivent être en français.\n\n${finalSystemPrompt}`;
+    } else {
+      finalSystemPrompt = `IMPORTANT : Détecte le dialecte arabe de l'utilisateur et réponds TOUJOURS dans ce même dialecte. Ne réponds JAMAIS en égyptien si l'utilisateur écrit en algérien, marocain, tunisien, syrien ou soudanais. L'égyptien est uniquement le fallback si le dialecte est indétectable. Les documents restent toujours en français professionnel.\n\n${finalSystemPrompt}`;
+    }
 
     const commercialBTPBlock = `
 

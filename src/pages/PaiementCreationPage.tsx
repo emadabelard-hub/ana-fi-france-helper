@@ -622,7 +622,7 @@ export default function PaiementCreationPage() {
           });
           const suffix = allDirigeants.length > 1 ? `-${idx + 1}` : "";
           built.push({
-            label: `📝 شهادة عدم الإدانة — ${p.fullName || `مدير ${idx + 1}`}`,
+            label: `${t('paiementCreation.doc.attestation')} — ${p.fullName || `#${idx + 1}`}`,
             filename: `attestation-non-condamnation${suffix}-${p.fullName || "dirigeant"}.pdf`,
             doc: attDoc,
           });
@@ -634,7 +634,7 @@ export default function PaiementCreationPage() {
           extraManagers: extraManagersFr,
           companyType,
         });
-        built.push({ label: "👥 فيشة المستفيدين الفعليين", filename: `beneficiaires-effectifs-${companyNameFr || "societe"}.pdf`, doc: beDoc });
+        built.push({ label: t('paiementCreation.doc.beneficiaires'), filename: `beneficiaires-effectifs-${companyNameFr || "societe"}.pdf`, doc: beDoc });
 
         // Lettre banque — demande d'ouverture de compte de dépôt de capital
         const lettreDoc = buildLettreBanquePdf({
@@ -646,7 +646,7 @@ export default function PaiementCreationPage() {
           associes: associesFr,
           extraManagers: extraManagersFr,
         });
-        built.push({ label: "🏦 خطاب البنك — طلب فتح حساب الإيداع", filename: `lettre-banque-depot-capital-${companyNameFr || "societe"}.pdf`, doc: lettreDoc });
+        built.push({ label: t('paiementCreation.doc.lettreBanque'), filename: `lettre-banque-depot-capital-${companyNameFr || "societe"}.pdf`, doc: lettreDoc });
 
         // PV de nomination du dirigeant
         const pvDoc = buildPvNominationPdf({
@@ -658,7 +658,7 @@ export default function PaiementCreationPage() {
           associes: associesFr,
           extraManagers: extraManagersFr,
         });
-        built.push({ label: "📝 محضر تعيين المدير/الرئيس", filename: `pv-nomination-dirigeant-${companyNameFr || "societe"}.pdf`, doc: pvDoc });
+        built.push({ label: t('paiementCreation.doc.pvNomination'), filename: `pv-nomination-dirigeant-${companyNameFr || "societe"}.pdf`, doc: pvDoc });
 
         // Fiche de synthèse
         const ficheDoc = buildFicheSynthesePdf({
@@ -671,11 +671,11 @@ export default function PaiementCreationPage() {
           associes: associesFr,
           extraManagers: extraManagersFr,
         });
-        built.push({ label: "📋 فيشة تعريفية بالشركة", filename: `fiche-synthese-${companyNameFr || "societe"}.pdf`, doc: ficheDoc });
+        built.push({ label: t('paiementCreation.doc.ficheSynthese'), filename: `fiche-synthese-${companyNameFr || "societe"}.pdf`, doc: ficheDoc });
 
         // Check-list finale bilingue (toujours utile après les statuts)
         const checklistDoc = await buildChecklistFinalePdf();
-        built.push({ label: "✅ الشيك ليست النهائية للملف", filename: "checklist-finale-dossier.pdf", doc: checklistDoc });
+        built.push({ label: t('paiementCreation.doc.checklist'), filename: "checklist-finale-dossier.pdf", doc: checklistDoc });
       }
       if (needPrevi) {
         const doc = buildPrevisionnelPdf({
@@ -700,19 +700,19 @@ export default function PaiementCreationPage() {
           emprunt_annees: hasEmprunt === "yes" ? empAnnees : 0,
           carnet_commandes: carnet || undefined,
         });
-        built.push({ label: "📊 الدراسة المالية", filename: `previsionnel-${activityFr || "activite"}.pdf`, doc });
+        built.push({ label: t('paiementCreation.doc.previsionnel'), filename: `previsionnel-${activityFr || "activite"}.pdf`, doc });
       }
 
       // Le guide de dépôt (document 3) est TOUJOURS offert, y compris pour les achats individuels
       const guideDoc = await buildGuideDepotPdf();
-      built.push({ label: "📖 دليل التسجيل على INPI (مجاناً)", filename: "guide-depot-inpi.pdf", doc: guideDoc });
+      built.push({ label: t('paiementCreation.doc.guide'), filename: "guide-depot-inpi.pdf", doc: guideDoc });
 
       setGeneratedDocs(built);
-      toast.success("الوثائق جاهزة ✅");
+      toast.success(t('paiementCreation.toast.ready'));
     } catch (e) {
       toast.dismiss(tid);
-      const msg = e instanceof Error ? e.message : "خطأ غير معروف";
-      toast.error(`تعذّرت الترجمة أو التوليد: ${msg}`);
+      console.error("[PaiementCreation] generation error:", e);
+      toast.error(t('paiementCreation.toast.error'));
     } finally {
       setGenerating(false);
     }

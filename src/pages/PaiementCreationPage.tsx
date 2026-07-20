@@ -604,7 +604,7 @@ export default function PaiementCreationPage() {
           associes: associesFr,
           extraManagers: extraManagersFr,
         });
-        built.push({ label: "📄 عقد التأسيس", filename: `statuts-${companyNameFr || "societe"}.pdf`, doc });
+        built.push({ label: t('paiementCreation.doc.statuts'), filename: `statuts-${companyNameFr || "societe"}.pdf`, doc });
 
         // 3 documents complémentaires du dossier de création
         const isSAS = companyType === "SASU";

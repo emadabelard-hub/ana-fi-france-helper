@@ -320,6 +320,13 @@ function BirthDatePicker({ value, onChange }: { value: BirthParts; onChange: (b:
 export default function PaiementCreationPage() {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
+  const fmt = (key: string, vars: Record<string, string | number> = {}): string => {
+    let out = t(key);
+    for (const [k, v] of Object.entries(vars)) out = out.replace(`{${k}}`, String(v));
+    return out;
+  };
+  const PRODUCTS = PRODUCT_DEFS.map(p => ({ ...p, label: t(p.labelKey) }));
 
   const [companyName, setCompanyName] = useState("");
   const [companyType, setCompanyType] = useState<"SASU" | "SARL">("SASU");

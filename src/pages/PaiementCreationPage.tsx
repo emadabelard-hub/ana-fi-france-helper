@@ -405,10 +405,10 @@ export default function PaiementCreationPage() {
     [companyType, associes.length]
   );
   const effectiveHint: Record<string, string> = {
-    EURL: "شريك واحد = EURL (شركة ذات مسؤولية محدودة بشريك وحيد)",
-    SARL: "شريكين أو أكتر = SARL",
-    SASU: "شريك واحد = SASU",
-    SAS: "شريكين أو أكتر = SAS",
+    EURL: t('paiementCreation.hint.EURL'),
+    SARL: t('paiementCreation.hint.SARL'),
+    SASU: t('paiementCreation.hint.SASU'),
+    SAS: t('paiementCreation.hint.SAS'),
   };
 
   const updateAssocie = <K extends keyof AssocieForm>(i: number, field: K, value: AssocieForm[K]) => {

@@ -326,7 +326,8 @@ export default function PaiementCreationPage() {
     for (const [k, v] of Object.entries(vars)) out = out.replace(`{${k}}`, String(v));
     return out;
   };
-  const PRODUCTS = PRODUCT_DEFS.map(p => ({ ...p, label: t(p.labelKey) }));
+  const PRODUCTS: Array<{ id: string; label: string; price: number; recommended?: boolean }> =
+    PRODUCT_DEFS.map(p => ({ id: p.id, label: t(p.labelKey), price: p.price, recommended: 'recommended' in p ? p.recommended : undefined }));
 
   const [companyName, setCompanyName] = useState("");
   const [companyType, setCompanyType] = useState<"SASU" | "SARL">("SASU");

@@ -24,10 +24,9 @@ type Question = {
 };
 
 const hasArabicOrLatinLetter = (s: string) => /[A-Za-z\u0600-\u06FF]/.test(s);
-// Détection robuste (FR + AR + emoji) — les valeurs canoniques restent arabes,
-// donc le regex arabe suffit pour les options ; on garde une garde de sécurité.
-const RESIDENCE_BLOCK_VALUES = ['لا، ولا واحدة منهم ❌'];
-const VTC_REGEX = /(uber|vtc|taxi|chauffeur|livraison|توصيل|سواق)/i;
+const VTC_REGEX = /(uber|vtc|taxi|توصيل|سواق)/i;
+const RESIDENCE_BLOCK_REGEX = /لا،?\s*ولا واحدة|ولا واحدة منهم|❌/;
+
 
 const CreerMaSocietePage = () => {
   const navigate = useNavigate();
@@ -138,10 +137,11 @@ const CreerMaSocietePage = () => {
       return;
     }
 
-    if (current.key === 'residence' && RESIDENCE_BLOCK_VALUES.includes(canonicalValue)) {
+    if (current.key === 'residence' && RESIDENCE_BLOCK_REGEX.test(canonicalValue)) {
       setTimeout(() => setBlockedMessage(t('createCompany.blocked.residence')), 400);
       return;
     }
+
 
     const next = step + 1;
     if (next < QUESTIONS.length) {

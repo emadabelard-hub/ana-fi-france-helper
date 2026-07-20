@@ -442,41 +442,43 @@ export default function PaiementCreationPage() {
     return true;
   }
   function validateStatuts(): string | null {
-    if (!companyName.trim()) return "اسم الشركة مطلوب";
-    if (!activity.trim()) return "النشاط مطلوب";
-    if (!address.trim()) return "عنوان الشركة مطلوب";
-    if (!addressHasCity(address)) return "لازم تكتب اسم المدينة في عنوان الشركة";
-    if (!signatureCity.trim()) return "مدينة التوقيع مطلوبة";
+    if (!companyName.trim()) return t('paiementCreation.validation.companyNameRequired');
+    if (!activity.trim()) return t('paiementCreation.validation.activityRequired');
+    if (!address.trim()) return t('paiementCreation.validation.addressRequired');
+    if (!addressHasCity(address)) return t('paiementCreation.validation.addressCityRequired');
+    if (!signatureCity.trim()) return t('paiementCreation.validation.signatureCityRequired');
     for (let i = 0; i < associes.length; i++) {
       const a = associes[i];
       const isSingle = associes.length === 1;
-      const label = isSingle ? "الشريك الوحيد" : `الشريك رقم ${i + 1}`;
-      if (!a.fullName.trim()) return `${label}: الاسم الكامل مطلوب`;
-      if (!birthToStr(a.birth)) return `${label}: تاريخ الميلاد مطلوب`;
-      if (!a.birthPlace.trim()) return `${label}: مكان الميلاد مطلوب`;
-      if (!a.nationality.trim()) return `${label}: الجنسية مطلوبة`;
-      if (/[0-9]/.test(a.nationality)) return `${label}: الجنسية ما ينفعش تكون فيها أرقام ✍️`;
-      if (!a.address.trim()) return `${label}: العنوان مطلوب`;
-      if (!personalAddressValid(a.address)) return `${label}: العنوان لازم يكون كامل (شارع + رقم + مدينة)`;
-      if (!a.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
-      if (!a.motherName.trim()) return `${label}: اسم الأم مطلوب`;
+      const label = isSingle
+        ? t('paiementCreation.validation.associateSingleLabel')
+        : fmt('paiementCreation.validation.associateNumbered', { n: i + 1 });
+      if (!a.fullName.trim()) return `${label}: ${t('paiementCreation.validation.fullNameRequired')}`;
+      if (!birthToStr(a.birth)) return `${label}: ${t('paiementCreation.validation.birthDateRequired')}`;
+      if (!a.birthPlace.trim()) return `${label}: ${t('paiementCreation.validation.birthPlaceRequired')}`;
+      if (!a.nationality.trim()) return `${label}: ${t('paiementCreation.validation.nationalityRequired')}`;
+      if (/[0-9]/.test(a.nationality)) return `${label}: ${t('paiementCreation.validation.nationalityNoDigits')}`;
+      if (!a.address.trim()) return `${label}: ${t('paiementCreation.validation.addressPersonalRequired')}`;
+      if (!personalAddressValid(a.address)) return `${label}: ${t('paiementCreation.validation.addressPersonalIncomplete')}`;
+      if (!a.fatherName.trim()) return `${label}: ${t('paiementCreation.validation.fatherNameRequired')}`;
+      if (!a.motherName.trim()) return `${label}: ${t('paiementCreation.validation.motherNameRequired')}`;
     }
     if (associes.length > 1) {
-      if (Math.round(totalPercent) !== 100) return `مجموع النسب يجب أن يساوي 100% (حاليا ${totalPercent}%)`;
+      if (Math.round(totalPercent) !== 100) return fmt('paiementCreation.validation.percentSum', { p: totalPercent });
       const hasManager = associes.some(a => a.isManager) || extraManagers.length > 0;
-      if (!hasManager) return "يجب اختيار مدير واحد على الأقل";
+      if (!hasManager) return t('paiementCreation.validation.needManager');
       for (let i = 0; i < extraManagers.length; i++) {
         const m = extraManagers[i];
-        const label = `المدير غير الشريك رقم ${i + 1}`;
-        if (!m.fullName.trim()) return `${label}: الاسم الكامل مطلوب`;
-        if (!birthToStr(m.birth)) return `${label}: تاريخ الميلاد مطلوب`;
-        if (!m.birthPlace.trim()) return `${label}: مكان الميلاد مطلوب`;
-        if (!m.nationality.trim()) return `${label}: الجنسية مطلوبة`;
-        if (/[0-9]/.test(m.nationality)) return `${label}: الجنسية ما ينفعش تكون فيها أرقام ✍️`;
-        if (!m.address.trim()) return `${label}: العنوان مطلوب`;
-        if (!personalAddressValid(m.address)) return `${label}: العنوان لازم يكون كامل (شارع + رقم + مدينة)`;
-        if (!m.fatherName.trim()) return `${label}: اسم الأب مطلوب`;
-        if (!m.motherName.trim()) return `${label}: اسم الأم مطلوب`;
+        const label = fmt('paiementCreation.validation.managerNumbered', { n: i + 1 });
+        if (!m.fullName.trim()) return `${label}: ${t('paiementCreation.validation.fullNameRequired')}`;
+        if (!birthToStr(m.birth)) return `${label}: ${t('paiementCreation.validation.birthDateRequired')}`;
+        if (!m.birthPlace.trim()) return `${label}: ${t('paiementCreation.validation.birthPlaceRequired')}`;
+        if (!m.nationality.trim()) return `${label}: ${t('paiementCreation.validation.nationalityRequired')}`;
+        if (/[0-9]/.test(m.nationality)) return `${label}: ${t('paiementCreation.validation.nationalityNoDigits')}`;
+        if (!m.address.trim()) return `${label}: ${t('paiementCreation.validation.addressPersonalRequired')}`;
+        if (!personalAddressValid(m.address)) return `${label}: ${t('paiementCreation.validation.addressPersonalIncomplete')}`;
+        if (!m.fatherName.trim()) return `${label}: ${t('paiementCreation.validation.fatherNameRequired')}`;
+        if (!m.motherName.trim()) return `${label}: ${t('paiementCreation.validation.motherNameRequired')}`;
       }
     }
     return null;

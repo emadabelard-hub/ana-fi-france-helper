@@ -271,17 +271,18 @@ function savePdfSafely(doc: ReturnType<typeof buildStatutsPdf>, filename: string
 
 // ─────────── DATE PICKER RÉUTILISABLE ─────────── //
 function BirthDatePicker({ value, onChange }: { value: BirthParts; onChange: (b: BirthParts) => void }) {
+  const { t, isRTL } = useLanguage();
   const years = useMemo(() => {
     const arr: number[] = [];
     for (let y = 2008; y >= 1940; y--) arr.push(y);
     return arr;
   }, []);
   return (
-    <div className="grid grid-cols-3 gap-2" dir="rtl">
+    <div className="grid grid-cols-3 gap-2" dir={isRTL ? "rtl" : "ltr"}>
       <div className="space-y-1">
-        <Label className="text-xs">اليوم</Label>
+        <Label className="text-xs">{t('paiementCreation.birth.day')}</Label>
         <Select value={value.d} onValueChange={(v) => onChange({ ...value, d: v })}>
-          <SelectTrigger><SelectValue placeholder="يوم" /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder={t('paiementCreation.birth.dayPh')} /></SelectTrigger>
           <SelectContent className="max-h-64">
             {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
               <SelectItem key={d} value={String(d)}>{d}</SelectItem>
@@ -290,20 +291,20 @@ function BirthDatePicker({ value, onChange }: { value: BirthParts; onChange: (b:
         </Select>
       </div>
       <div className="space-y-1">
-        <Label className="text-xs">الشهر</Label>
+        <Label className="text-xs">{t('paiementCreation.birth.month')}</Label>
         <Select value={value.m} onValueChange={(v) => onChange({ ...value, m: v })}>
-          <SelectTrigger><SelectValue placeholder="شهر" /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder={t('paiementCreation.birth.monthPh')} /></SelectTrigger>
           <SelectContent className="max-h-64">
-            {AR_MONTHS.map((name, idx) => (
-              <SelectItem key={idx + 1} value={String(idx + 1)}>{name}</SelectItem>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+              <SelectItem key={m} value={String(m)}>{t(`paiementCreation.birth.month${m}`)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div className="space-y-1">
-        <Label className="text-xs">السنة</Label>
+        <Label className="text-xs">{t('paiementCreation.birth.year')}</Label>
         <Select value={value.y} onValueChange={(v) => onChange({ ...value, y: v })}>
-          <SelectTrigger><SelectValue placeholder="سنة" /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder={t('paiementCreation.birth.yearPh')} /></SelectTrigger>
           <SelectContent className="max-h-64">
             {years.map(y => (
               <SelectItem key={y} value={String(y)}>{y}</SelectItem>

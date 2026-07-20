@@ -535,7 +535,7 @@ export default function PaiementCreationPage() {
 
 
     setGenerating(true);
-    const tid = toast.loading("جاري الترجمة...");
+    const tid = toast.loading(t('paiementCreation.toast.translating'));
     try {
       // Traduction en parallèle de tous les champs susceptibles d'être en arabe
       const [

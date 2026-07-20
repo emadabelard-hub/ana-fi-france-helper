@@ -137,10 +137,11 @@ const CreerMaSocietePage = () => {
       return;
     }
 
-    if (current.key === 'residence' && RESIDENCE_BLOCK_VALUES.includes(canonicalValue)) {
+    if (current.key === 'residence' && RESIDENCE_BLOCK_REGEX.test(canonicalValue)) {
       setTimeout(() => setBlockedMessage(t('createCompany.blocked.residence')), 400);
       return;
     }
+
 
     const next = step + 1;
     if (next < QUESTIONS.length) {

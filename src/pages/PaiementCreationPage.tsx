@@ -251,13 +251,11 @@ const emptyManager = (): ManagerForm => ({
   fatherName: "", motherName: "",
 });
 
-const PRODUCTS = [
-  { id: "statuts", label: "📄 عقد التأسيس فقط", price: 49 },
-  { id: "financial", label: "📊 الدراسة المالية فقط", price: 29 },
-  { id: "package", label: "📦 الباكدج الكامل", price: 89, recommended: true },
-];
-
-const AR_MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const PRODUCT_DEFS = [
+  { id: "statuts", labelKey: "paiementCreation.pack.statuts", price: 49 },
+  { id: "financial", labelKey: "paiementCreation.pack.financial", price: 29 },
+  { id: "package", labelKey: "paiementCreation.pack.package", price: 89, recommended: true },
+] as const;
 
 function birthToStr(b: BirthParts): string {
   if (!b.d || !b.m || !b.y) return "";

@@ -493,11 +493,11 @@ export default function PaiementCreationPage() {
       if (err) { toast.error(err); return; }
     }
     if (needPrevi && (!activity || !caEstime || caEstime <= 0)) {
-      toast.error("اكتب الإيرادات السنوية المتوقعة");
+      toast.error(t('paiementCreation.validation.needCA'));
       return;
     }
     if (needPrevi && isBtp && (!achatsMateriaux || achatsMateriaux <= 0)) {
-      toast.error("اكتب مشتريات المواد السنوية (إجباري للـ BTP)");
+      toast.error(t('paiementCreation.validation.needMaterials'));
       return;
     }
 

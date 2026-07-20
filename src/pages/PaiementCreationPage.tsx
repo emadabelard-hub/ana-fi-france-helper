@@ -723,60 +723,60 @@ export default function PaiementCreationPage() {
   }
 
   return (
-    <div dir="rtl" className="container max-w-3xl mx-auto px-4 py-6 space-y-6">
+    <div dir={isRTL ? "rtl" : "ltr"} className="container max-w-3xl mx-auto px-4 py-6 space-y-6">
       <header className="text-center space-y-2">
-        <h1 className="text-3xl font-bold">افتح شركتك في فرنسا 🇫🇷</h1>
-        <p className="text-muted-foreground">املأ البيانات ونولّد لك عقد التأسيس بالفرنسي</p>
+        <h1 className="text-3xl font-bold">{t('paiementCreation.header.title')}</h1>
+        <p className="text-muted-foreground">{t('paiementCreation.header.subtitle')}</p>
       </header>
 
       <Card className="p-5 space-y-3 bg-amber-50 dark:bg-amber-950/30 border-amber-500">
-        <h2 className="text-lg font-bold">📋 جهز الأوراق دي قبل ما تبدأ</h2>
+        <h2 className="text-lg font-bold">{t('paiementCreation.checklist.title')}</h2>
         <ul className="space-y-2 text-sm">
-          <li>🪪 بطاقة الإقامة أو الهوية بتاعتك</li>
-          <li>🏠 عنوان مقر الشركة (ممكن يكون عنوان سكنك)</li>
-          <li>💰 المبلغ اللي هتحطه رأس مال (حتى لو 1 يورو)</li>
-          <li>👥 لو معاك شركاء: أساميهم، تاريخ ومكان ميلادهم، جنسياتهم، عناوينهم ونسبة كل واحد</li>
-          <li>📅 تاريخ ومكان ميلاد كل مدير (Gérant / Président)</li>
+          <li>{t('paiementCreation.checklist.item1')}</li>
+          <li>{t('paiementCreation.checklist.item2')}</li>
+          <li>{t('paiementCreation.checklist.item3')}</li>
+          <li>{t('paiementCreation.checklist.item4')}</li>
+          <li>{t('paiementCreation.checklist.item5')}</li>
         </ul>
       </Card>
 
       <Card className="p-5 space-y-4">
-        <h2 className="text-xl font-bold">📝 بيانات الشركة</h2>
+        <h2 className="text-xl font-bold">{t('paiementCreation.company.title')}</h2>
 
         <div className="space-y-2">
-          <Label>اسم الشركة (Dénomination)</Label>
+          <Label>{t('paiementCreation.company.name')}</Label>
           <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="ex: ANAFY BTP" />
         </div>
 
         <div className="space-y-2">
-          <Label>نوع الشركة (العائلة)</Label>
+          <Label>{t('paiementCreation.company.type')}</Label>
           <RadioGroup value={companyType} onValueChange={(v) => setCompanyType(v as "SASU" | "SARL")} className="flex gap-4">
             <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="SASU" /> SAS / SASU</label>
             <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="SARL" /> SARL / EURL</label>
           </RadioGroup>
           <div className="flex items-center gap-2 pt-1">
-            <Badge variant="secondary" className="text-sm">الشكل القانوني : {effectiveForm}</Badge>
+            <Badge variant="secondary" className="text-sm">{fmt('paiementCreation.company.legalForm', { form: effectiveForm })}</Badge>
             <span className="text-xs text-muted-foreground">{effectiveHint[effectiveForm]}</span>
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label>النشاط الرئيسي</Label>
-          <Input value={activity} onChange={e => setActivity(e.target.value)} placeholder="travaux de peinture / أعمال الدهانات" />
+          <Label>{t('paiementCreation.company.activity')}</Label>
+          <Input value={activity} onChange={e => setActivity(e.target.value)} placeholder={t('paiementCreation.company.activityPlaceholder')} />
         </div>
 
         <div className="space-y-2">
-          <Label>رأس المال (€)</Label>
+          <Label>{t('paiementCreation.company.capital')}</Label>
           <Input type="number" value={capital} onChange={e => setCapital(Number(e.target.value))} dir="ltr" lang="fr" />
         </div>
 
         <div className="space-y-2">
-          <Label>عنوان الشركة (siège social)</Label>
+          <Label>{t('paiementCreation.company.address')}</Label>
           <Textarea value={address} onChange={e => setAddress(e.target.value)} placeholder="12 rue de la Paix, 75002 Paris" dir="ltr" style={{ textAlign: "left" }} />
         </div>
 
         <div className="space-y-2">
-          <Label>المدينة (مكان التوقيع)</Label>
+          <Label>{t('paiementCreation.company.signatureCity')}</Label>
           <Input value={signatureCity} onChange={e => setSignatureCity(e.target.value)} placeholder="Paris" dir="ltr" style={{ textAlign: "left" }} />
         </div>
       </Card>
@@ -785,16 +785,16 @@ export default function PaiementCreationPage() {
       <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">
-            {associes.length === 1 ? "👤 الشريك الوحيد" : "👥 الشركاء"}
+            {associes.length === 1 ? t('paiementCreation.associates.singleTitle') : t('paiementCreation.associates.multipleTitle')}
           </h2>
           <Button type="button" size="sm" variant="outline" onClick={addAssocie}>
-            <Plus className="h-4 w-4 ml-1" /> إضافة شريك
+            <Plus className="h-4 w-4 ml-1" /> {t('paiementCreation.associates.add')}
           </Button>
         </div>
 
         {associes.length > 1 && (
           <div className={`text-sm px-3 py-2 rounded ${Math.round(totalPercent) === 100 ? "bg-green-50 text-green-700 dark:bg-green-950/30" : "bg-amber-50 text-amber-700 dark:bg-amber-950/30"}`}>
-            مجموع النسب : {totalPercent}% {Math.round(totalPercent) === 100 ? "✅" : "(المطلوب 100%)"}
+            {fmt('paiementCreation.associates.totalPercent', { p: totalPercent })} {Math.round(totalPercent) === 100 ? "✅" : t('paiementCreation.associates.required100')}
           </div>
         )}
 
@@ -802,7 +802,7 @@ export default function PaiementCreationPage() {
           <div key={i} className="border rounded-lg p-4 space-y-3 bg-muted/30">
             <div className="flex items-center justify-between">
               <span className="font-semibold">
-                {associes.length === 1 ? "الشريك الوحيد" : `الشريك ${i + 1}`}
+                {associes.length === 1 ? t('paiementCreation.associates.singleLabel') : fmt('paiementCreation.associates.numbered', { n: i + 1 })}
               </span>
               {associes.length > 1 && (
                 <Button type="button" size="icon" variant="ghost" onClick={() => removeAssocie(i)}>
@@ -813,51 +813,51 @@ export default function PaiementCreationPage() {
 
 
             <div className="space-y-2">
-              <Label>الجنس</Label>
+              <Label>{t('paiementCreation.associates.gender')}</Label>
               <RadioGroup value={a.gender} onValueChange={(v) => updateAssocie(i, "gender", v as Gender)} className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="M" /> السيد (M.)</label>
-                <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="F" /> السيدة (Mme)</label>
+                <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="M" /> {t('paiementCreation.associates.genderM')}</label>
+                <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="F" /> {t('paiementCreation.associates.genderF')}</label>
               </RadioGroup>
             </div>
 
             <div className="space-y-2">
-              <Label>الاسم الكامل</Label>
+              <Label>{t('paiementCreation.associates.fullName')}</Label>
               <Input value={a.fullName} onChange={e => updateAssocie(i, "fullName", e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <Label>تاريخ الميلاد</Label>
+              <Label>{t('paiementCreation.associates.birthDate')}</Label>
               <BirthDatePicker value={a.birth} onChange={(b) => updateAssocie(i, "birth", b)} />
             </div>
 
             <div className="space-y-2">
-              <Label>مكان الميلاد (مدينة + دولة)</Label>
+              <Label>{t('paiementCreation.associates.birthPlace')}</Label>
               <Input value={a.birthPlace} onChange={e => updateAssocie(i, "birthPlace", e.target.value)} placeholder="Le Caire, Égypte" />
             </div>
 
             <div className="space-y-2">
-              <Label>الجنسية</Label>
-              <Input value={a.nationality} onChange={e => updateAssocie(i, "nationality", e.target.value)} placeholder="française / égyptienne" />
+              <Label>{t('paiementCreation.associates.nationality')}</Label>
+              <Input value={a.nationality} onChange={e => updateAssocie(i, "nationality", e.target.value)} placeholder={t('paiementCreation.associates.nationalityPh')} />
             </div>
 
             <div className="space-y-2">
-              <Label>العنوان الكامل</Label>
+              <Label>{t('paiementCreation.associates.address')}</Label>
               <Textarea value={a.address} onChange={e => updateAssocie(i, "address", e.target.value)} dir="ltr" style={{ textAlign: "left" }} />
             </div>
 
             <div className="space-y-2">
-              <Label>اسم الأب الكامل</Label>
+              <Label>{t('paiementCreation.associates.fatherName')}</Label>
               <Input value={a.fatherName} onChange={e => updateAssocie(i, "fatherName", e.target.value)} placeholder="Ahmed Mohamed" />
             </div>
 
             <div className="space-y-2">
-              <Label>اسم الأم الكامل بالبنت (قبل الجواز)</Label>
+              <Label>{t('paiementCreation.associates.motherName')}</Label>
               <Input value={a.motherName} onChange={e => updateAssocie(i, "motherName", e.target.value)} placeholder="Fatma Ali" />
             </div>
 
             {associes.length > 1 && (
               <div className="space-y-2">
-                <Label>النسبة ٪</Label>
+                <Label>{t('paiementCreation.associates.percent')}</Label>
                 <Input type="number" min={0} max={100} value={a.percent}
                   onChange={e => updateAssocie(i, "percent", Number(e.target.value))} dir="ltr" lang="fr" />
               </div>
@@ -869,7 +869,7 @@ export default function PaiementCreationPage() {
                 disabled={associes.length === 1}
                 onCheckedChange={(v) => updateAssocie(i, "isManager", Boolean(v))}
               />
-              <span>هو المدير؟ ({companyType === "SASU" ? "Président" : "Gérant"})</span>
+              <span>{fmt('paiementCreation.associates.isManager', { role: companyType === "SASU" ? "Président" : "Gérant" })}</span>
             </label>
           </div>
         ))}
@@ -877,52 +877,52 @@ export default function PaiementCreationPage() {
         {associes.length > 1 && (
           <>
             <div className="flex items-center justify-between pt-4 border-t">
-              <h3 className="font-semibold">مدير غير شريك (اختياري)</h3>
+              <h3 className="font-semibold">{t('paiementCreation.managers.sectionTitle')}</h3>
               <Button type="button" size="sm" variant="outline" onClick={addManager}>
-                <UserPlus className="h-4 w-4 ml-1" /> إضافة مدير
+                <UserPlus className="h-4 w-4 ml-1" /> {t('paiementCreation.managers.add')}
               </Button>
             </div>
             {extraManagers.map((m, i) => (
               <div key={i} className="border rounded-lg p-4 space-y-3 bg-muted/30">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold">مدير غير شريك {i + 1}</span>
+                  <span className="font-semibold">{fmt('paiementCreation.managers.numbered', { n: i + 1 })}</span>
                   <Button type="button" size="icon" variant="ghost" onClick={() => removeManager(i)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="space-y-2">
-                  <Label>الجنس</Label>
+                  <Label>{t('paiementCreation.associates.gender')}</Label>
                   <RadioGroup value={m.gender} onValueChange={(v) => updateManager(i, "gender", v as Gender)} className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="M" /> السيد (M.)</label>
-                    <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="F" /> السيدة (Mme)</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="M" /> {t('paiementCreation.associates.genderM')}</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="F" /> {t('paiementCreation.associates.genderF')}</label>
                   </RadioGroup>
                 </div>
                 <div className="space-y-2">
-                  <Label>الاسم الكامل</Label>
+                  <Label>{t('paiementCreation.associates.fullName')}</Label>
                   <Input value={m.fullName} onChange={e => updateManager(i, "fullName", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>تاريخ الميلاد</Label>
+                  <Label>{t('paiementCreation.associates.birthDate')}</Label>
                   <BirthDatePicker value={m.birth} onChange={(b) => updateManager(i, "birth", b)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>مكان الميلاد</Label>
+                  <Label>{t('paiementCreation.associates.birthPlace')}</Label>
                   <Input value={m.birthPlace} onChange={e => updateManager(i, "birthPlace", e.target.value)} placeholder="Le Caire, Égypte" />
                 </div>
                 <div className="space-y-2">
-                  <Label>الجنسية</Label>
+                  <Label>{t('paiementCreation.associates.nationality')}</Label>
                   <Input value={m.nationality} onChange={e => updateManager(i, "nationality", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>العنوان الكامل</Label>
+                  <Label>{t('paiementCreation.associates.address')}</Label>
                   <Textarea value={m.address} onChange={e => updateManager(i, "address", e.target.value)} dir="ltr" style={{ textAlign: "left" }} />
                 </div>
                 <div className="space-y-2">
-                  <Label>اسم الأب الكامل</Label>
+                  <Label>{t('paiementCreation.associates.fatherName')}</Label>
                   <Input value={m.fatherName} onChange={e => updateManager(i, "fatherName", e.target.value)} placeholder="Ahmed Mohamed" />
                 </div>
                 <div className="space-y-2">
-                  <Label>اسم الأم الكامل بالبنت (قبل الجواز)</Label>
+                  <Label>{t('paiementCreation.associates.motherName')}</Label>
                   <Input value={m.motherName} onChange={e => updateManager(i, "motherName", e.target.value)} placeholder="Fatma Ali" />
                 </div>
               </div>
@@ -932,18 +932,18 @@ export default function PaiementCreationPage() {
       </Card>
 
       <Card className="p-5 space-y-4">
-        <h2 className="text-xl font-bold">🚀 بداية المشروع</h2>
+        <h2 className="text-xl font-bold">{t('paiementCreation.startup.title')}</h2>
 
         {/* Q1 — Investissement matériel */}
         <div className="space-y-2">
-          <Label>هتشتري عدة ومعدات في البداية؟</Label>
+          <Label>{t('paiementCreation.startup.equipmentQ')}</Label>
           <RadioGroup value={hasInvestMateriel} onValueChange={(v) => setHasInvestMateriel(v as "yes" | "no")} className="flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="yes" /> نعم</label>
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="no" /> لا</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="yes" /> {t('paiementCreation.startup.yes')}</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="no" /> {t('paiementCreation.startup.no')}</label>
           </RadioGroup>
           {hasInvestMateriel === "yes" && (
             <div className="pt-2 space-y-2">
-              <Label>بكام تقريباً؟ (€)</Label>
+              <Label>{t('paiementCreation.startup.equipmentAmount')}</Label>
               <Input type="number" inputMode="decimal" value={investMateriel}
                 onChange={e => setInvestMateriel(Number(e.target.value))} dir="ltr" lang="fr" />
             </div>
@@ -952,32 +952,32 @@ export default function PaiementCreationPage() {
 
         {/* Q2 — Véhicule */}
         <div className="space-y-2 pt-3 border-t">
-          <Label>عندك عربية للشغل؟</Label>
+          <Label>{t('paiementCreation.startup.vehicleQ')}</Label>
           <RadioGroup value={vehSituation} onValueChange={(v) => setVehSituation(v as "owned" | "toBuy" | "notNeeded")} className="flex flex-col gap-2">
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="owned" /> عندي بالفعل ✅</label>
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="toBuy" /> هشتري أو هأجّر 🚗</label>
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="notNeeded" /> مش محتاج ❌</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="owned" /> {t('paiementCreation.startup.vehOwned')}</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="toBuy" /> {t('paiementCreation.startup.vehToBuy')}</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="notNeeded" /> {t('paiementCreation.startup.vehNotNeeded')}</label>
           </RadioGroup>
           {vehSituation === "owned" && (
             <p className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-200 p-2 rounded">
-              تمام! متنساش تحسب البنزين والتأمين في خانة العربية تحت 👇
+              {t('paiementCreation.startup.vehOwnedHint')}
             </p>
           )}
           {vehSituation === "toBuy" && (
             <div className="pt-2 space-y-3">
               <div className="space-y-2">
-                <Label>شراء ولا ليزينج؟</Label>
+                <Label>{t('paiementCreation.startup.vehModeQ')}</Label>
                 <RadioGroup value={vehMode} onValueChange={(v) => setVehMode(v as "cash" | "credit" | "leasing")} className="flex flex-col gap-2">
-                  <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="cash" /> شراء كاش</label>
-                  <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="credit" /> قرض</label>
-                  <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="leasing" /> ليزينج LOA/LLD</label>
+                  <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="cash" /> {t('paiementCreation.startup.vehCash')}</label>
+                  <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="credit" /> {t('paiementCreation.startup.vehCredit')}</label>
+                  <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="leasing" /> {t('paiementCreation.startup.vehLeasing')}</label>
                 </RadioGroup>
               </div>
               <div className="space-y-2">
-                <Label>التكلفة الشهرية المتوقعة (€)</Label>
+                <Label>{t('paiementCreation.startup.vehMonthlyCost')}</Label>
                 <Input type="number" inputMode="decimal" value={vehiculeMensuel}
                   onChange={e => setVehiculeMensuel(Number(e.target.value))} dir="ltr" lang="fr" />
-                <p className="text-xs text-muted-foreground">هيتحسب تلقائياً في خانة العربية تحت</p>
+                <p className="text-xs text-muted-foreground">{t('paiementCreation.startup.vehMonthlyHint')}</p>
               </div>
             </div>
           )}
@@ -985,23 +985,23 @@ export default function PaiementCreationPage() {
 
         {/* Q3 — Emprunt bancaire */}
         <div className="space-y-2 pt-3 border-t">
-          <Label>محتاج قرض من البنك عشان تبدأ؟</Label>
+          <Label>{t('paiementCreation.startup.loanQ')}</Label>
           <RadioGroup value={hasEmprunt} onValueChange={(v) => setHasEmprunt(v as "yes" | "no")} className="flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="yes" /> نعم</label>
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="no" /> لا</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="yes" /> {t('paiementCreation.startup.yes')}</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="no" /> {t('paiementCreation.startup.no')}</label>
           </RadioGroup>
           {hasEmprunt === "yes" && (
             <div className="pt-2 space-y-3">
               <div className="space-y-2">
-                <Label>المبلغ (€)</Label>
+                <Label>{t('paiementCreation.startup.loanAmount')}</Label>
                 <Input type="number" inputMode="decimal" value={empMontant}
                   onChange={e => setEmpMontant(Number(e.target.value))} dir="ltr" lang="fr" />
               </div>
               <div className="space-y-2">
-                <Label>على كام سنة؟</Label>
+                <Label>{t('paiementCreation.startup.loanYears')}</Label>
                 <Input type="number" inputMode="decimal" value={empAnnees}
                   onChange={e => setEmpAnnees(Number(e.target.value))} dir="ltr" lang="fr" />
-                <p className="text-xs text-muted-foreground">القسط الشهري هيتحسب تلقائياً بفائدة تقريبية 5%/سنة</p>
+                <p className="text-xs text-muted-foreground">{t('paiementCreation.startup.loanHint')}</p>
               </div>
             </div>
           )}
@@ -1009,90 +1009,90 @@ export default function PaiementCreationPage() {
 
         {/* Q4 — Carnet de commandes */}
         <div className="space-y-2 pt-3 border-t">
-          <Label>عندك عملاء جاهزين من دلوقتي؟</Label>
+          <Label>{t('paiementCreation.startup.carnetQ')}</Label>
           <RadioGroup value={carnet} onValueChange={(v) => setCarnet(v as "acquired" | "promises" | "prospecting")} className="flex flex-col gap-2">
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="acquired" /> أيوه، عندي عملاء 💪</label>
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="promises" /> شوية وعود</label>
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="prospecting" /> لسه هدوّر</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="acquired" /> {t('paiementCreation.startup.carnetAcquired')}</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="promises" /> {t('paiementCreation.startup.carnetPromises')}</label>
+            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="prospecting" /> {t('paiementCreation.startup.carnetProspecting')}</label>
           </RadioGroup>
         </div>
       </Card>
 
       <Card className="p-5 space-y-4">
-        <h2 className="text-xl font-bold">📊 الأرقام المتوقعة للسنة الأولى</h2>
+        <h2 className="text-xl font-bold">{t('paiementCreation.finance.title')}</h2>
 
         <div className="space-y-2">
-          <Label>رقم الأعمال المتوقع (CA annuel en €) *</Label>
+          <Label>{t('paiementCreation.finance.ca')}</Label>
           <Input type="number" inputMode="decimal" value={caEstime}
             onChange={e => setCaEstime(Number(e.target.value))} dir="ltr" lang="fr" />
         </div>
 
         <div className="space-y-2">
-          <Label>أجرك الشهري كمدير (net mensuel en €) *</Label>
+          <Label>{t('paiementCreation.finance.remuneration')}</Label>
           <Input type="number" inputMode="decimal" value={remuDirigeant}
             onChange={e => setRemuDirigeant(Number(e.target.value))} dir="ltr" lang="fr" />
-          <p className="text-xs text-muted-foreground">لو مش هتاخد راتب: سيبها 0</p>
+          <p className="text-xs text-muted-foreground">{t('paiementCreation.finance.remunerationHint')}</p>
         </div>
 
         <div className="space-y-2">
-          <Label>عدد الموظفين (غير المدير)</Label>
+          <Label>{t('paiementCreation.finance.employees')}</Label>
           <Input type="number" inputMode="decimal" value={nbSalaries}
             onChange={e => setNbSalaries(Number(e.target.value))} dir="ltr" lang="fr" />
         </div>
 
         {nbSalaries > 0 && (
           <div className="space-y-2">
-            <Label>متوسط الأجر الشهري الصافي للموظف الواحد (€)</Label>
+            <Label>{t('paiementCreation.finance.avgSalary')}</Label>
             <Input type="number" inputMode="decimal" value={salaireMoyen}
               onChange={e => setSalaireMoyen(Number(e.target.value))} dir="ltr" lang="fr" />
           </div>
         )}
 
         <div className="space-y-2">
-          <Label>تكلفة العربية شهرياً (leasing + بنزين + تأمين)</Label>
+          <Label>{t('paiementCreation.finance.vehicleMonthly')}</Label>
           <Input type="number" inputMode="decimal" value={vehiculeMensuel}
             onChange={e => setVehiculeMensuel(Number(e.target.value))} dir="ltr" lang="fr" />
         </div>
 
         <div className="space-y-2">
-          <Label>الإيجار الشهري (محل/دبو)</Label>
+          <Label>{t('paiementCreation.finance.rent')}</Label>
           <Input type="number" inputMode="decimal" value={loyerMensuel}
             onChange={e => setLoyerMensuel(Number(e.target.value))} dir="ltr" lang="fr" />
-          <p className="text-xs text-muted-foreground">لو شغال من البيت: سيبها 0</p>
+          <p className="text-xs text-muted-foreground">{t('paiementCreation.finance.rentHint')}</p>
         </div>
 
         <div className="space-y-2">
-          <Label>التأمينات السنوية (décennale + RC Pro)</Label>
+          <Label>{t('paiementCreation.finance.insurance')}</Label>
           <Input type="number" inputMode="decimal" value={assurancesAnnuelles}
             onChange={e => setAssurancesAnnuelles(Number(e.target.value))} dir="ltr" lang="fr" />
         </div>
 
         <div className="space-y-2">
-          <Label>المحاسب سنوياً (€)</Label>
+          <Label>{t('paiementCreation.finance.accountant')}</Label>
           <Input type="number" inputMode="decimal" value={comptableAnnuel}
             onChange={e => setComptableAnnuel(Number(e.target.value))} dir="ltr" lang="fr" />
         </div>
 
         <div className="space-y-2">
-          <Label>مشتريات المواد سنوياً (€) {isBtp && "*"}</Label>
+          <Label>{fmt('paiementCreation.finance.materials', { req: isBtp ? '*' : '' })}</Label>
           <Input type="number" inputMode="decimal" value={achatsMateriaux}
             onChange={e => setAchatsMateriaux(Number(e.target.value))} dir="ltr" lang="fr" />
         </div>
 
         <div className="space-y-2">
-          <Label>مصاريف تانية سنوياً (تليفون، بنك، عدد...)</Label>
+          <Label>{t('paiementCreation.finance.other')}</Label>
           <Input type="number" inputMode="decimal" value={autresCharges}
             onChange={e => setAutresCharges(Number(e.target.value))} dir="ltr" lang="fr" />
         </div>
 
         <label className="flex items-center gap-2 cursor-pointer pt-2 border-t">
           <Checkbox checked={isBtp} onCheckedChange={(v) => setIsBtp(Boolean(v))} />
-          <span>نوع النشاط BTP ؟</span>
+          <span>{t('paiementCreation.finance.isBtp')}</span>
         </label>
       </Card>
 
       <Card className="p-5 space-y-4">
-        <h2 className="text-xl font-bold">💳 اختر الباكدج</h2>
+        <h2 className="text-xl font-bold">{t('paiementCreation.pack.title')}</h2>
         <div className="grid gap-3 sm:grid-cols-3">
           {PRODUCTS.map(p => (
             <button
@@ -1101,7 +1101,7 @@ export default function PaiementCreationPage() {
               onClick={() => setProduct(p.id)}
               className={`relative text-right border-2 rounded-xl p-4 transition ${product === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
             >
-              {p.recommended && <Badge className="absolute -top-2 right-2">الأوفر</Badge>}
+              {p.recommended && <Badge className="absolute -top-2 right-2">{t('paiementCreation.pack.bestValue')}</Badge>}
               <div className="text-2xl mb-2">{p.id === "statuts" ? <FileText /> : p.id === "financial" ? <BarChart3 /> : <Package />}</div>
               <div className="font-semibold text-sm mb-1">{p.label}</div>
               <div className="text-lg font-bold">{p.price}€</div>
@@ -1111,7 +1111,7 @@ export default function PaiementCreationPage() {
       </Card>
 
       <Button onClick={() => handleGenerate(false)} disabled={generating} size="lg" className="w-full">
-        {generating ? <><Loader2 className="ml-2 animate-spin h-5 w-5" /> جاري التوليد...</> : "توليد الوثائق"}
+        {generating ? <><Loader2 className="ml-2 animate-spin h-5 w-5" /> {t('paiementCreation.cta.generating')}</> : t('paiementCreation.cta.generate')}
       </Button>
 
       <AlertDialog open={deficitDialogOpen} onOpenChange={setDeficitDialogOpen}>
@@ -1144,8 +1144,8 @@ export default function PaiementCreationPage() {
 
       {generatedDocs.length > 0 && (
         <Card className="p-5 space-y-3 bg-green-50 dark:bg-green-950/30 border-green-500">
-          <h2 className="text-xl font-bold">📂 ملف تأسيس شركتك الكامل</h2>
-          <p className="text-sm text-muted-foreground">اضغط على كل وثيقة لتحميلها</p>
+          <h2 className="text-xl font-bold">{t('paiementCreation.result.title')}</h2>
+          <p className="text-sm text-muted-foreground">{t('paiementCreation.result.hint')}</p>
           <div className="space-y-2">
             {generatedDocs.map((d, i) => (
               <Button
@@ -1155,7 +1155,7 @@ export default function PaiementCreationPage() {
                 className="w-full justify-between text-right"
                 onClick={() => savePdfSafely(d.doc, d.filename)}
               >
-                <span className="text-xs opacity-60">تحميل ⬇</span>
+                <span className="text-xs opacity-60">{t('paiementCreation.result.download')}</span>
                 <span className="font-semibold">{d.label}</span>
               </Button>
             ))}

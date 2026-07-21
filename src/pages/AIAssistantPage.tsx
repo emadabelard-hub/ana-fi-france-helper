@@ -938,30 +938,36 @@ const AIAssistantPage = () => {
             style={{ background: 'linear-gradient(90deg, #1E3A8A, #2563EB)' }}
           >
             <div className="text-[32px] leading-none">🏗️</div>
-            <h2 className="text-[20px] font-bold leading-tight font-cairo">عايز تفتح شركتك في فرنسا؟</h2>
-            <p className="text-[14px] font-medium text-white/80 leading-tight font-cairo">خليني أساعدك من الأوراق لحد الـ Kbis 🇫🇷</p>
+            <h2 className={cn("text-[20px] font-bold leading-tight", isRTL && "font-cairo")}>
+              {isRTL ? t('aiAssistant.welcome.companyBanner.titleAr') : t('aiAssistant.welcome.companyBanner.title')}
+            </h2>
+            <p className={cn("text-[14px] font-medium text-white/80 leading-tight", isRTL && "font-cairo")}>
+              {isRTL ? t('aiAssistant.welcome.companyBanner.subtitleAr') : t('aiAssistant.welcome.companyBanner.subtitle')}
+            </p>
             <button
               onClick={() => navigate('/creer-ma-societe')}
-              className="mt-2 bg-white font-bold text-[#1E3A8A] rounded-[25px] px-8 py-3 text-[16px] shadow-lg hover:bg-white/90 transition-colors font-cairo"
+              className={cn("mt-2 bg-white font-bold text-[#1E3A8A] rounded-[25px] px-8 py-3 text-[16px] shadow-lg hover:bg-white/90 transition-colors", isRTL && "font-cairo")}
             >
-              ابدأ مجاناً دلوقتي ←
+              {isRTL ? t('aiAssistant.welcome.companyBanner.buttonAr') : t('aiAssistant.welcome.companyBanner.button')}
             </button>
           </div>
 
-          {/* Entry point: anafypro ترجمة */}
-          <button
-            onClick={() => navigate('/anafy-translate')}
-            className="mx-4 mb-4 shrink-0 rounded-2xl border border-primary/30 bg-primary/5 hover:bg-primary/10 active:scale-[0.99] transition-all p-4 text-right font-cairo"
-            dir="rtl"
-          >
-            <div className="flex items-center gap-3 flex-row-reverse">
-              <div className="text-2xl leading-none shrink-0">🌍</div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[15px] font-bold text-foreground">anafypro ترجمة — المواقع الإدارية بالعربي</div>
-                <div className="text-[12px] text-muted-foreground mt-0.5">مواقع فرنسا الرسمية مترجمة للعربية</div>
+          {isRTL && (
+            /* Entry point: anafypro ترجمة */
+            <button
+              onClick={() => navigate('/anafy-translate')}
+              className="mx-4 mb-4 shrink-0 rounded-2xl border border-primary/30 bg-primary/5 hover:bg-primary/10 active:scale-[0.99] transition-all p-4 text-right font-cairo"
+              dir="rtl"
+            >
+              <div className="flex items-center gap-3 flex-row-reverse">
+                <div className="text-2xl leading-none shrink-0">🌍</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[15px] font-bold text-foreground">{t('aiAssistant.welcome.translationCard.title')}</div>
+                  <div className="text-[12px] text-muted-foreground mt-0.5">{t('aiAssistant.welcome.translationCard.subtitle')}</div>
+                </div>
               </div>
-            </div>
-          </button>
+            </button>
+          )}
         </>
       )}
 

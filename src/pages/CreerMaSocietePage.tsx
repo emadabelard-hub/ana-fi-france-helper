@@ -106,7 +106,7 @@ const CreerMaSocietePage = () => {
     setErrorFallback(false);
     try {
       const { data, error } = await supabase.functions.invoke('wizard-societe', {
-        body: { answers: finalAnswers },
+        body: { answers: finalAnswers, language },
       });
       if (error) throw error;
       const content = data?.content || data?.message;

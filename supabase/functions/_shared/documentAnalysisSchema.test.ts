@@ -153,3 +153,117 @@ Deno.test("normalizeAnalysisPayload — items partiels acceptés, stubs ignorés
   assertEquals(res.subject, "Rénovation");
   assertEquals(res.warnings[0], "Zone 3 illisible");
 });
+
+// ─── P3 — Routeur documentaire ────────────────────────────────────────────
+Deno.test("P3-1 — devis reconnu", () => {
+  const r = normalizeAnalysisPayload({
+    documentType: "devis",
+    documentCategory: "commercial",
+    confidenceDocumentType: "high",
+    documentTypeReason: "Présence d'un tableau de prix et d'un total HT.",
+    items: [{ designation_fr: "Peinture", quantity: 10, unit: "m²", unitPrice: 25 }],
+  }, {});
+  assertEquals(r.documentType, "devis");
+  assertEquals(r.documentCategory, "commercial");
+  assertEquals(r.confidenceDocumentType, "high");
+  assert(r.documentTypeReason!.toLowerCase().includes("prix"));
+});
+
+Deno.test("P3-2 — facture fournisseur", () => {
+  const r = normalizeAnalysisPayload({
+    documentType: "facture_fournisseur",
+    confidenceDocumentType: "high",
+    documentTypeReason: "En-tête fournisseur + numéro de facture.",
+    items: [],
+  }, {});
+  assertEquals(r.documentType, "facture_fournisseur");
+  assertEquals(r.documentCategory, "commercial");
+});
+
+Deno.test("P3-3 — CCTP", () => {
+  const r = normalizeAnalysisPayload({
+    documentType: "cctp",
+    confidenceDocumentType: "high",
+    documentTypeReason: "Mentions CCTP explicites.",
+    items: [],
+  }, {});
+  assertEquals(r.documentType, "cctp");
+  assertEquals(r.documentCategory, "technique");
+});
+
+Deno.test("P3-4 — DPGF", () => {
+  const r = normalizeAnalysisPayload({
+    documentType: "dpgf",
+    confidenceDocumentType: "medium",
+    documentTypeReason: "Décomposition du prix global et forfaitaire.",
+    items: [],
+  }, {});
+  assertEquals(r.documentType, "dpgf");
+  assertEquals(r.documentCategory, "technique");
+});
+
+Deno.test("P3-5 — plan (alias 'plan')", () => {
+  const r = normalizeAnalysisPayload({
+    documentType: "plan_architecte",
+    confidenceDocumentType: "high",
+    documentTypeReason: "Vue en plan cotée d'un logement.",
+    items: [],
+  }, {});
+  assertEquals(r.documentType, "plan_architecte");
+  assertEquals(r.documentCategory, "plan");
+});
+
+Deno.test("P3-6 — photo chantier", () => {
+  const r = normalizeAnalysisPayload({
+    documentType: "photo_chantier",
+    confidenceDocumentType: "high",
+    documentTypeReason: "Document essentiellement composé d'une photographie.",
+    items: [],
+  }, {});
+  assertEquals(r.documentType, "photo_chantier");
+  assertEquals(r.documentCategory, "photo");
+});
+
+Deno.test("P3-7 — note manuscrite", () => {
+  const r = normalizeAnalysisPayload({
+    documentType: "note_manuscrite",
+    confidenceDocumentType: "medium",
+    documentTypeReason: "Texte manuscrit non structuré.",
+    items: [],
+  }, {});
+  assertEquals(r.documentType, "note_manuscrite");
+  assertEquals(r.documentCategory, "manuscrit");
+});
+
+Deno.test("P3-8 — document administratif", () => {
+  const r = normalizeAnalysisPayload({
+    documentType: "document_administratif",
+    confidenceDocumentType: "medium",
+    documentTypeReason: "Attestation officielle.",
+    items: [],
+  }, {});
+  assertEquals(r.documentType, "document_administratif");
+  assertEquals(r.documentCategory, "administratif");
+});
+
+Deno.test("P3-9 — inconnu → low + catégorie unknown, jamais inventé", () => {
+  const r = normalizeAnalysisPayload({
+    documentType: "grimoire_magique",
+    confidenceDocumentType: "high", // ignoré car type inconnu
+    documentTypeReason: "Type non reconnu.",
+    items: [],
+  }, {});
+  assertEquals(r.documentType, "unknown");
+  assertEquals(r.documentCategory, "unknown");
+  assertEquals(r.confidenceDocumentType, "low");
+});
+
+Deno.test("P3-10 — alias legacy 'facture' → facture_client", () => {
+  const r = normalizeAnalysisPayload({
+    documentType: "facture",
+    confidenceDocumentType: "medium",
+    items: [],
+  }, {});
+  assertEquals(r.documentType, "facture_client");
+  assertEquals(r.documentCategory, "commercial");
+});

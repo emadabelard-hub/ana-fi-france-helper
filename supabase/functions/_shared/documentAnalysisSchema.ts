@@ -39,13 +39,116 @@ export interface DocumentAnalysisItem {
   reviewReasons: string[];
 }
 
+export type DocumentTypeId =
+  | "devis"
+  | "facture_client"
+  | "facture_fournisseur"
+  | "dpgf"
+  | "cctp"
+  | "bordereau_prix"
+  | "plan_architecte"
+  | "plan_technique"
+  | "plan_electrique"
+  | "plan_plomberie"
+  | "plan_facade"
+  | "bon_commande"
+  | "bon_livraison"
+  | "situation_travaux"
+  | "metre"
+  | "note_calcul"
+  | "compte_rendu_chantier"
+  | "rapport_expertise"
+  | "photo_chantier"
+  | "croquis_manuscrit"
+  | "note_manuscrite"
+  | "document_administratif"
+  | "unknown";
+
+export type DocumentCategory =
+  | "commercial"
+  | "technique"
+  | "plan"
+  | "chantier"
+  | "administratif"
+  | "manuscrit"
+  | "photo"
+  | "unknown";
+
+export const DOCUMENT_TYPE_IDS: DocumentTypeId[] = [
+  "devis", "facture_client", "facture_fournisseur", "dpgf", "cctp",
+  "bordereau_prix", "plan_architecte", "plan_technique", "plan_electrique",
+  "plan_plomberie", "plan_facade", "bon_commande", "bon_livraison",
+  "situation_travaux", "metre", "note_calcul", "compte_rendu_chantier",
+  "rapport_expertise", "photo_chantier", "croquis_manuscrit",
+  "note_manuscrite", "document_administratif", "unknown",
+];
+
+export const DOCUMENT_CATEGORIES: DocumentCategory[] = [
+  "commercial", "technique", "plan", "chantier",
+  "administratif", "manuscrit", "photo", "unknown",
+];
+
+// Mapping documentType → catégorie par défaut. Utilisé comme filet de sécurité
+// si le modèle omet la catégorie.
+export const DEFAULT_CATEGORY_FOR_TYPE: Record<DocumentTypeId, DocumentCategory> = {
+  devis: "commercial",
+  facture_client: "commercial",
+  facture_fournisseur: "commercial",
+  bon_commande: "commercial",
+  bon_livraison: "commercial",
+  situation_travaux: "commercial",
+  dpgf: "technique",
+  cctp: "technique",
+  bordereau_prix: "technique",
+  metre: "technique",
+  note_calcul: "technique",
+  plan_architecte: "plan",
+  plan_technique: "plan",
+  plan_electrique: "plan",
+  plan_plomberie: "plan",
+  plan_facade: "plan",
+  compte_rendu_chantier: "chantier",
+  rapport_expertise: "chantier",
+  photo_chantier: "photo",
+  croquis_manuscrit: "manuscrit",
+  note_manuscrite: "manuscrit",
+  document_administratif: "administratif",
+  unknown: "unknown",
+};
+
 export interface DocumentAnalysisResult {
-  documentType: string | null;
+  documentType: DocumentTypeId;
+  documentCategory: DocumentCategory;
+  confidenceDocumentType: FieldConfidence;
+  documentTypeReason: string | null;
   subject: string | null;
   items: DocumentAnalysisItem[];
   warnings: string[];
   unreadableElements: string[];
   analysisComplete: boolean;
+}
+
+function toDocumentType(v: unknown): DocumentTypeId {
+  if (typeof v !== "string") return "unknown";
+  const s = v.trim().toLowerCase().replace(/[-\s]+/g, "_");
+  // legacy aliases
+  const alias: Record<string, DocumentTypeId> = {
+    facture: "facture_client",
+    demande: "document_administratif",
+    autre: "unknown",
+    plan: "plan_technique",
+    photo: "photo_chantier",
+  };
+  if (alias[s]) return alias[s];
+  return (DOCUMENT_TYPE_IDS as string[]).includes(s) ? (s as DocumentTypeId) : "unknown";
+}
+
+function toDocumentCategory(v: unknown, type: DocumentTypeId): DocumentCategory {
+  if (typeof v === "string") {
+    const s = v.trim().toLowerCase();
+    if ((DOCUMENT_CATEGORIES as string[]).includes(s)) return s as DocumentCategory;
+  }
+  return DEFAULT_CATEGORY_FOR_TYPE[type];
 }
 
 export const DOCUMENT_ANALYSIS_ERROR_CODE = "DOCUMENT_ANALYSIS_SCHEMA_ERROR";
@@ -300,8 +403,18 @@ export function normalizeAnalysisPayload(
     throw new Error(DOCUMENT_ANALYSIS_ERROR_CODE);
   }
 
+  const documentType = toDocumentType(raw.documentType);
+  const documentCategory = toDocumentCategory(raw.documentCategory, documentType);
+  const confidenceDocumentType: FieldConfidence = documentType === "unknown"
+    ? "low"
+    : toConfidence(raw.confidenceDocumentType);
+  const documentTypeReason = toStringOrNull(raw.documentTypeReason, 500);
+
   return {
-    documentType: toStringOrNull(raw.documentType, 100),
+    documentType,
+    documentCategory,
+    confidenceDocumentType,
+    documentTypeReason,
     subject: toStringOrNull(raw.subject, 500),
     items,
     warnings: Array.isArray(raw.warnings)
@@ -320,7 +433,10 @@ export const DOCUMENT_ANALYSIS_PROMPT_SPEC = `
 FORMAT DE SORTIE — JSON STRICT UNIQUEMENT, sans markdown, sans texte autour :
 
 {
-  "documentType": "devis" | "cctp" | "facture" | "demande" | "autre" | null,
+  "documentType": "devis" | "facture_client" | "facture_fournisseur" | "dpgf" | "cctp" | "bordereau_prix" | "plan_architecte" | "plan_technique" | "plan_electrique" | "plan_plomberie" | "plan_facade" | "bon_commande" | "bon_livraison" | "situation_travaux" | "metre" | "note_calcul" | "compte_rendu_chantier" | "rapport_expertise" | "photo_chantier" | "croquis_manuscrit" | "note_manuscrite" | "document_administratif" | "unknown",
+  "documentCategory": "commercial" | "technique" | "plan" | "chantier" | "administratif" | "manuscrit" | "photo" | "unknown",
+  "confidenceDocumentType": "high" | "medium" | "low" | "unknown",
+  "documentTypeReason": "phrase courte en français justifiant le type retenu",
   "subject": "objet court du document ou null",
   "analysisComplete": true | false,
   "warnings": ["texte court en français"],
@@ -355,6 +471,14 @@ FORMAT DE SORTIE — JSON STRICT UNIQUEMENT, sans markdown, sans texte autour :
     }
   ]
 }
+
+IDENTIFICATION DU TYPE DE DOCUMENT — étape préalable obligatoire :
+- Détermine d'abord "documentType" avant d'analyser le contenu métier.
+- Renseigne "documentCategory" cohérente : commercial (devis, facture, bon de commande/livraison, situation), technique (CCTP, DPGF, bordereau de prix, métré, note de calcul), plan (plans architecte / technique / électrique / plomberie / façade), chantier (compte rendu, rapport d'expertise), photo (photographie de chantier), manuscrit (croquis ou note manuscrite), administratif (courrier, attestation, KBIS, etc.).
+- Renseigne "confidenceDocumentType" (high / medium / low / unknown) selon la clarté du document.
+- Justifie brièvement dans "documentTypeReason" (ex : "Présence d'un tableau de prix et d'un total HT.", "Mentions CCTP explicites.", "Document composé principalement d'un plan côté.", "Photographie de chantier sans texte structuré.").
+- Si le document ne correspond à aucun type reconnu : documentType = "unknown", documentCategory = "unknown", confidenceDocumentType = "low", et explique pourquoi dans "documentTypeReason". N'invente JAMAIS un type.
+- Un plan, une photo, un croquis ou une note manuscrite peuvent parfaitement donner "items": [] ; ne fabrique pas de lignes facturables dans ce cas.
 
 RÈGLES ABSOLUES :
 - N'invente jamais une prestation, une quantité, une unité, un prix ou un lot.

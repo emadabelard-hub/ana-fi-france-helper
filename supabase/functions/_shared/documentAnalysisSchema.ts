@@ -500,16 +500,25 @@ IDENTIFICATION DU TYPE DE DOCUMENT — étape préalable obligatoire :
 - Si le document ne correspond à aucun type reconnu : documentType = "unknown", documentCategory = "unknown", confidenceDocumentType = "low", et explique pourquoi dans "documentTypeReason". N'invente JAMAIS un type.
 - Un plan, une photo, un croquis ou une note manuscrite peuvent parfaitement donner "items": [] ; ne fabrique pas de lignes facturables dans ce cas.
 
-COMPRÉHENSION MÉTIER DES DOCUMENTS TECHNIQUES BTP (CCTP, DPGF, BPU, métré, bordereau quantitatif, notice descriptive, compte rendu de chantier, rapport d'expertise, cahier des charges, plan, photo) — obligatoire :
-- Sépare STRICTEMENT quatre familles d'informations en plus des lignes extraites :
-  1. "prestationsFacturables" : libellés courts des prestations réellement facturables identifiées (ex : "Peinture murs", "Pose carrelage 60×60", "Isolation combles"). Ces libellés doivent correspondre aux items[] extraits (une entrée par prestation retenue). Si aucune prestation facturable n'est identifiable, retourne un tableau vide.
-  2. "contraintesTechniques" : éléments d'exécution ou d'organisation qui NE sont PAS des prestations facturables (ex : "Protection des sols obligatoire", "Nettoyage quotidien du chantier", "Respect du DTU 59.1", "Échafaudage obligatoire au-delà de 3 m", "Port des EPI"). Ne les transforme JAMAIS en items.
+PRIORITÉ N°1 — PRODUCTION D'UN DEVIS DÉTAILLÉ (obligatoire pour tout document contenant des travaux : CCTP, DPGF, BPU, métré, bordereau quantitatif, notice descriptive, cahier des charges, devis existant, compte rendu, rapport d'expertise) :
+- Ton objectif principal est de produire "items[]" — un devis professionnel DÉTAILLÉ ligne par ligne, exploitable directement par un artisan.
+- Décompose chaque ouvrage en autant de lignes distinctes que le document le permet (ex : "Préparation support", "Impression fixante", "Enduit de rebouchage", "Ponçage", "Peinture couche 1", "Peinture couche 2" plutôt qu'une seule ligne "Peinture").
+- Une ligne = une prestation facturable identifiable. Sépare les supports (murs / plafonds / boiseries / façades), les localisations (par pièce ou par lot) et les couches successives lorsqu'ils apparaissent dans le document.
+- Extrais les quantités, unités et prix uniquement lorsqu'ils sont écrits ; sinon null + requiresReview: true avec la raison précise.
+- Reporte le lot d'origine du document lorsqu'il est mentionné (ex : "LOT 04 — PEINTURE").
+- Un document technique long (CCTP/DPGF) doit produire de nombreuses lignes ; un résumé de quelques items est INSUFFISANT et considéré comme une régression.
+
+CLASSIFICATION EN PARALLÈLE — jamais en remplacement de items[] :
+- En plus de "items[]", renseigne cinq listes INFORMATIVES :
+  1. "prestationsFacturables" : libellés courts miroir des items[] retenus (une entrée par ligne extraite). Doit avoir la même granularité que items[].
+  2. "contraintesTechniques" : éléments d'exécution ou d'organisation qui NE sont PAS facturables séparément (ex : "Protection des sols", "Nettoyage quotidien", "Respect du DTU 59.1", "Échafaudage obligatoire", "Port des EPI"). Ne les transforme JAMAIS en items.
   3. "informationsAdministratives" : maître d'ouvrage, adresse du chantier, numéro de lot, phase, références du marché, délais, pénalités, contacts.
   4. "referencesReglementaires" : normes et textes cités (DTU, NF, RE2020, ERP, PMR/accessibilité, sécurité incendie, arrêtés).
-  5. "elementsNonExploitables" : éléments présents dans le document mais impossibles à transformer en devis (photo sans texte, plan sans cotes, note vague, croquis illisible).
-- N'ajoute jamais une contrainte technique, une information administrative ou une référence réglementaire dans "items[]".
-- Ne recopie jamais une prestation dans plusieurs listes : une prestation facturable va dans items[] ET dans "prestationsFacturables", pas ailleurs.
-- Pour un plan / une photo / un croquis : items = [], prestationsFacturables = [], mais tu peux remplir "contraintesTechniques", "informationsAdministratives" ou "elementsNonExploitables" si le document le permet.
+  5. "elementsNonExploitables" : éléments présents mais impossibles à transformer en ligne (photo sans texte, plan sans cotes, note vague, croquis illisible).
+- Ces listes ne remplacent JAMAIS la production détaillée de "items[]". Elles la complètent.
+- N'ajoute jamais une contrainte technique, une info administrative ou une référence réglementaire dans "items[]".
+- Ne recopie jamais une prestation dans plusieurs listes : elle va dans items[] ET dans "prestationsFacturables", pas ailleurs.
+- Seule exception "items = []" : un plan sans cotes, une photo, un croquis illisible ou une note manuscrite vague. Dans ce cas seulement, remplis les listes informatives.
 
 
 

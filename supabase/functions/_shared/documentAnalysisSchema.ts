@@ -403,8 +403,18 @@ export function normalizeAnalysisPayload(
     throw new Error(DOCUMENT_ANALYSIS_ERROR_CODE);
   }
 
+  const documentType = toDocumentType(raw.documentType);
+  const documentCategory = toDocumentCategory(raw.documentCategory, documentType);
+  const confidenceDocumentType: FieldConfidence = documentType === "unknown"
+    ? "low"
+    : toConfidence(raw.confidenceDocumentType);
+  const documentTypeReason = toStringOrNull(raw.documentTypeReason, 500);
+
   return {
-    documentType: toStringOrNull(raw.documentType, 100),
+    documentType,
+    documentCategory,
+    confidenceDocumentType,
+    documentTypeReason,
     subject: toStringOrNull(raw.subject, 500),
     items,
     warnings: Array.isArray(raw.warnings)

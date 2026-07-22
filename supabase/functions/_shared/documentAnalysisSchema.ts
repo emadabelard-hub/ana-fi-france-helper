@@ -433,7 +433,10 @@ export const DOCUMENT_ANALYSIS_PROMPT_SPEC = `
 FORMAT DE SORTIE — JSON STRICT UNIQUEMENT, sans markdown, sans texte autour :
 
 {
-  "documentType": "devis" | "cctp" | "facture" | "demande" | "autre" | null,
+  "documentType": "devis" | "facture_client" | "facture_fournisseur" | "dpgf" | "cctp" | "bordereau_prix" | "plan_architecte" | "plan_technique" | "plan_electrique" | "plan_plomberie" | "plan_facade" | "bon_commande" | "bon_livraison" | "situation_travaux" | "metre" | "note_calcul" | "compte_rendu_chantier" | "rapport_expertise" | "photo_chantier" | "croquis_manuscrit" | "note_manuscrite" | "document_administratif" | "unknown",
+  "documentCategory": "commercial" | "technique" | "plan" | "chantier" | "administratif" | "manuscrit" | "photo" | "unknown",
+  "confidenceDocumentType": "high" | "medium" | "low" | "unknown",
+  "documentTypeReason": "phrase courte en français justifiant le type retenu",
   "subject": "objet court du document ou null",
   "analysisComplete": true | false,
   "warnings": ["texte court en français"],
@@ -468,6 +471,14 @@ FORMAT DE SORTIE — JSON STRICT UNIQUEMENT, sans markdown, sans texte autour :
     }
   ]
 }
+
+IDENTIFICATION DU TYPE DE DOCUMENT — étape préalable obligatoire :
+- Détermine d'abord "documentType" avant d'analyser le contenu métier.
+- Renseigne "documentCategory" cohérente : commercial (devis, facture, bon de commande/livraison, situation), technique (CCTP, DPGF, bordereau de prix, métré, note de calcul), plan (plans architecte / technique / électrique / plomberie / façade), chantier (compte rendu, rapport d'expertise), photo (photographie de chantier), manuscrit (croquis ou note manuscrite), administratif (courrier, attestation, KBIS, etc.).
+- Renseigne "confidenceDocumentType" (high / medium / low / unknown) selon la clarté du document.
+- Justifie brièvement dans "documentTypeReason" (ex : "Présence d'un tableau de prix et d'un total HT.", "Mentions CCTP explicites.", "Document composé principalement d'un plan côté.", "Photographie de chantier sans texte structuré.").
+- Si le document ne correspond à aucun type reconnu : documentType = "unknown", documentCategory = "unknown", confidenceDocumentType = "low", et explique pourquoi dans "documentTypeReason". N'invente JAMAIS un type.
+- Un plan, une photo, un croquis ou une note manuscrite peuvent parfaitement donner "items": [] ; ne fabrique pas de lignes facturables dans ce cas.
 
 RÈGLES ABSOLUES :
 - N'invente jamais une prestation, une quantité, une unité, un prix ou un lot.

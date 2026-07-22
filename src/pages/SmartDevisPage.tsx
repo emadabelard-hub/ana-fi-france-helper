@@ -81,6 +81,33 @@ const SmartDevisPage = () => {
     try { localStorage.setItem(INTRO_TIP_KEY, 'true'); } catch {}
   };
 
+  // Hydrate depuis l'analyseur documentaire universel (P4)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('smart_devis_prefill_v1');
+      if (!raw) return;
+      sessionStorage.removeItem('smart_devis_prefill_v1');
+      const parsed = JSON.parse(raw);
+      const items = Array.isArray(parsed?.items) ? parsed.items : [];
+      if (items.length === 0) return;
+      const mapped: LineItem[] = items.map((it: any, idx: number) => ({
+        id: `prefill-${Date.now()}-${idx}`,
+        designation_fr: String(it.designation_fr || '').trim(),
+        designation_ar: String(it.designation_ar || '').trim(),
+        quantity: Number(it.quantity) > 0 ? Number(it.quantity) : 1,
+        unit: String(it.unit || 'u'),
+        unitPrice: Number(it.unitPrice) > 0 ? Number(it.unitPrice) : 0,
+        lot: typeof it.lot === 'string' && it.lot.trim() ? it.lot.trim() : undefined,
+      }));
+      setLineItems(mapped);
+      if (parsed?.subject) setSubjectFr(String(parsed.subject));
+      toast({ title: '✅ Lignes importées depuis l\'analyseur documentaire' });
+    } catch (e) {
+      console.error('[SmartDevis] prefill hydration failed:', e);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (rawArabic.trim()) handleAnalyze();

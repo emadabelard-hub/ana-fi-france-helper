@@ -76,6 +76,7 @@ const MesFavorisPage = lazy(() => import("./pages/MesFavorisPage"));
 const ContactAnnoncePage = lazy(() => import("./pages/ContactAnnoncePage"));
 const MessagesListPage = lazy(() => import("./pages/MessagesListPage"));
 const MessageThreadPage = lazy(() => import("./pages/MessageThreadPage"));
+const DocumentAnalyzerPage = lazy(() => import("./pages/DocumentAnalyzerPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (

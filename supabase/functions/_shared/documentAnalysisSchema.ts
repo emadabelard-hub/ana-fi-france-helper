@@ -126,6 +126,14 @@ export interface DocumentAnalysisResult {
   warnings: string[];
   unreadableElements: string[];
   analysisComplete: boolean;
+  // P5.1 — Compréhension métier des documents techniques BTP.
+  // Listes INFORMATIVES : n'alimentent jamais automatiquement le devis.
+  // Seul items[] est transférable vers le Smart Devis.
+  prestationsFacturables: string[];
+  contraintesTechniques: string[];
+  informationsAdministratives: string[];
+  referencesReglementaires: string[];
+  elementsNonExploitables: string[];
 }
 
 function toDocumentType(v: unknown): DocumentTypeId {
@@ -410,6 +418,11 @@ export function normalizeAnalysisPayload(
     : toConfidence(raw.confidenceDocumentType);
   const documentTypeReason = toStringOrNull(raw.documentTypeReason, 500);
 
+  const toStringList = (v: unknown, maxLen = 500): string[] =>
+    Array.isArray(v)
+      ? v.map((x) => toStringOrNull(x, maxLen)).filter((x: string | null): x is string => !!x)
+      : [];
+
   return {
     documentType,
     documentCategory,
@@ -417,13 +430,14 @@ export function normalizeAnalysisPayload(
     documentTypeReason,
     subject: toStringOrNull(raw.subject, 500),
     items,
-    warnings: Array.isArray(raw.warnings)
-      ? raw.warnings.map((w: any) => toStringOrNull(w, 500)).filter((w: string | null): w is string => !!w)
-      : [],
-    unreadableElements: Array.isArray(raw.unreadableElements)
-      ? raw.unreadableElements.map((w: any) => toStringOrNull(w, 500)).filter((w: string | null): w is string => !!w)
-      : [],
+    warnings: toStringList(raw.warnings),
+    unreadableElements: toStringList(raw.unreadableElements),
     analysisComplete: raw.analysisComplete !== false,
+    prestationsFacturables: toStringList(raw.prestationsFacturables, 300),
+    contraintesTechniques: toStringList(raw.contraintesTechniques, 300),
+    informationsAdministratives: toStringList(raw.informationsAdministratives, 300),
+    referencesReglementaires: toStringList(raw.referencesReglementaires, 300),
+    elementsNonExploitables: toStringList(raw.elementsNonExploitables, 300),
   };
 }
 
@@ -440,6 +454,12 @@ FORMAT DE SORTIE — JSON STRICT UNIQUEMENT, sans markdown, sans texte autour :
   "subject": "objet court du document ou null",
   "analysisComplete": true | false,
   "warnings": ["texte court en français"],
+  "unreadableElements": ["zones illisibles décrites brièvement"],
+  "prestationsFacturables": ["libellés courts des prestations réellement facturables identifiées"],
+  "contraintesTechniques": ["contraintes chantier (protection sols, nettoyage quotidien, échafaudage, sécurité, DTU applicables, horaires, accès…)"],
+  "informationsAdministratives": ["maître d'ouvrage, adresse, lot, phase, références, délai, pénalités, coordonnées…"],
+  "referencesReglementaires": ["normes, DTU, RE2020, ERP, accessibilité, sécurité incendie, arrêtés cités…"],
+  "elementsNonExploitables": ["éléments présents mais non transformables en ligne de devis (photos, plans non côtés, notes vagues…)"],
   "unreadableElements": ["zones illisibles décrites brièvement"],
   "items": [
     {
@@ -479,6 +499,19 @@ IDENTIFICATION DU TYPE DE DOCUMENT — étape préalable obligatoire :
 - Justifie brièvement dans "documentTypeReason" (ex : "Présence d'un tableau de prix et d'un total HT.", "Mentions CCTP explicites.", "Document composé principalement d'un plan côté.", "Photographie de chantier sans texte structuré.").
 - Si le document ne correspond à aucun type reconnu : documentType = "unknown", documentCategory = "unknown", confidenceDocumentType = "low", et explique pourquoi dans "documentTypeReason". N'invente JAMAIS un type.
 - Un plan, une photo, un croquis ou une note manuscrite peuvent parfaitement donner "items": [] ; ne fabrique pas de lignes facturables dans ce cas.
+
+COMPRÉHENSION MÉTIER DES DOCUMENTS TECHNIQUES BTP (CCTP, DPGF, BPU, métré, bordereau quantitatif, notice descriptive, compte rendu de chantier, rapport d'expertise, cahier des charges, plan, photo) — obligatoire :
+- Sépare STRICTEMENT quatre familles d'informations en plus des lignes extraites :
+  1. "prestationsFacturables" : libellés courts des prestations réellement facturables identifiées (ex : "Peinture murs", "Pose carrelage 60×60", "Isolation combles"). Ces libellés doivent correspondre aux items[] extraits (une entrée par prestation retenue). Si aucune prestation facturable n'est identifiable, retourne un tableau vide.
+  2. "contraintesTechniques" : éléments d'exécution ou d'organisation qui NE sont PAS des prestations facturables (ex : "Protection des sols obligatoire", "Nettoyage quotidien du chantier", "Respect du DTU 59.1", "Échafaudage obligatoire au-delà de 3 m", "Port des EPI"). Ne les transforme JAMAIS en items.
+  3. "informationsAdministratives" : maître d'ouvrage, adresse du chantier, numéro de lot, phase, références du marché, délais, pénalités, contacts.
+  4. "referencesReglementaires" : normes et textes cités (DTU, NF, RE2020, ERP, PMR/accessibilité, sécurité incendie, arrêtés).
+  5. "elementsNonExploitables" : éléments présents dans le document mais impossibles à transformer en devis (photo sans texte, plan sans cotes, note vague, croquis illisible).
+- N'ajoute jamais une contrainte technique, une information administrative ou une référence réglementaire dans "items[]".
+- Ne recopie jamais une prestation dans plusieurs listes : une prestation facturable va dans items[] ET dans "prestationsFacturables", pas ailleurs.
+- Pour un plan / une photo / un croquis : items = [], prestationsFacturables = [], mais tu peux remplir "contraintesTechniques", "informationsAdministratives" ou "elementsNonExploitables" si le document le permet.
+
+
 
 RÈGLES ABSOLUES :
 - N'invente jamais une prestation, une quantité, une unité, un prix ou un lot.

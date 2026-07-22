@@ -72,6 +72,11 @@ interface AnalysisResult {
   items: AnalyzedItem[];
   warnings?: string[];
   unreadableElements?: string[];
+  prestationsFacturables?: string[];
+  contraintesTechniques?: string[];
+  informationsAdministratives?: string[];
+  referencesReglementaires?: string[];
+  elementsNonExploitables?: string[];
 }
 
 const readFileAsDataUrl = (f: File) =>
@@ -208,6 +213,11 @@ const DocumentAnalyzerPage = () => {
         items,
         warnings: Array.isArray(data?.warnings) ? data.warnings : [],
         unreadableElements: Array.isArray(data?.unreadableElements) ? data.unreadableElements : [],
+        prestationsFacturables: Array.isArray(data?.prestationsFacturables) ? data.prestationsFacturables : [],
+        contraintesTechniques: Array.isArray(data?.contraintesTechniques) ? data.contraintesTechniques : [],
+        informationsAdministratives: Array.isArray(data?.informationsAdministratives) ? data.informationsAdministratives : [],
+        referencesReglementaires: Array.isArray(data?.referencesReglementaires) ? data.referencesReglementaires : [],
+        elementsNonExploitables: Array.isArray(data?.elementsNonExploitables) ? data.elementsNonExploitables : [],
       };
 
       setResult(normalized);
@@ -493,6 +503,64 @@ const DocumentAnalyzerPage = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* P5.1 — Cartes informatives (jamais transférées automatiquement) */}
+          {(() => {
+            const infoBlocks: { title: string; tone: string; items: string[]; hint?: string }[] = [
+              {
+                title: 'Prestations détectées',
+                tone: 'border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/20',
+                items: result.prestationsFacturables ?? [],
+                hint: 'Prestations réellement facturables identifiées dans le document.',
+              },
+              {
+                title: 'Contraintes techniques',
+                tone: 'border-sky-200 bg-sky-50/40 dark:bg-sky-950/20',
+                items: result.contraintesTechniques ?? [],
+                hint: 'Ces contraintes ne créent JAMAIS automatiquement une ligne de devis.',
+              },
+              {
+                title: 'Informations administratives',
+                tone: 'border-slate-200 bg-slate-50/40 dark:bg-slate-950/20',
+                items: result.informationsAdministratives ?? [],
+              },
+              {
+                title: 'Normes et références',
+                tone: 'border-violet-200 bg-violet-50/40 dark:bg-violet-950/20',
+                items: result.referencesReglementaires ?? [],
+              },
+              {
+                title: 'Éléments non exploitables',
+                tone: 'border-amber-200 bg-amber-50/40 dark:bg-amber-950/20',
+                items: result.elementsNonExploitables ?? [],
+                hint: 'Présents dans le document mais non transformables en ligne de devis.',
+              },
+            ].filter((b) => b.items.length > 0);
+
+            if (infoBlocks.length === 0) return null;
+            return (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {infoBlocks.map((b) => (
+                  <Card key={b.title} className={cn('border', b.tone)}>
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold text-sm mb-2">{b.title}</h3>
+                      <ul className="space-y-1 text-sm">
+                        {b.items.map((it, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span className="flex-1">{it}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {b.hint && (
+                        <p className="text-xs text-muted-foreground italic mt-2">{b.hint}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

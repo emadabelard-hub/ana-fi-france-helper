@@ -126,6 +126,14 @@ export interface DocumentAnalysisResult {
   warnings: string[];
   unreadableElements: string[];
   analysisComplete: boolean;
+  // P5.1 — Compréhension métier des documents techniques BTP.
+  // Listes INFORMATIVES : n'alimentent jamais automatiquement le devis.
+  // Seul items[] est transférable vers le Smart Devis.
+  prestationsFacturables: string[];
+  contraintesTechniques: string[];
+  informationsAdministratives: string[];
+  referencesReglementaires: string[];
+  elementsNonExploitables: string[];
 }
 
 function toDocumentType(v: unknown): DocumentTypeId {

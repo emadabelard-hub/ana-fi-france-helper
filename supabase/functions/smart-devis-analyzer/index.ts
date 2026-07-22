@@ -25,71 +25,38 @@ const corsHeaders = {
 const CLAUDE_SYSTEM_PROMPT = `Tu es un expert BTP français qui comprend parfaitement l'arabe dialectal égyptien.
 Tu génères des devis professionnels français.`;
 
-function buildClaudeUserPrompt(userMessage: string): string {
+function buildClaudeUserPrompt(userMessage: string, hasImage: boolean): string {
   return `L'artisan demande : ${userMessage}
 
-Génère les lignes de devis en JSON STRICT, en NUMÉROTANT chaque ligne dans designation_fr et designation_ar :
-{
-  "items": [
-    {
-      "designation_fr": "1 - texte français exact",
-      "designation_ar": "١ - نص عربي",
-      "quantity": nombre,
-      "unit": "m²" ou "forfait" ou "u" ou "ml" ou "h",
-      "unitPrice": nombre,
-      "lot": "LOT — NOM_DU_LOT"
-    }
-  ],
-  "subject": "objet du devis en français"
-}
+${hasImage ? "Analyse la ou les images fournies puis extrais les lignes de devis." : "Génère les lignes de devis correspondant à la demande."}
 
-Règles ABSOLUES :
-1. NUMÉROTATION OBLIGATOIRE : chaque designation_fr commence par "N - " (ex: "1 - Pose de carrelage", "2 - Peinture murs"). Idem en arabe avec chiffres arabes (١ - ، ٢ - ، ٣ -).
-2. RESPECTER L'UNITÉ mentionnée par l'artisan : m², forfait, u, ml, h, etc. Ne jamais convertir.
-3. RESPECTER LE PRIX mentionné par l'artisan (ex: "بـ ٢٢ يورو المتر" → unitPrice: 22). Sinon mettre 0.
-4. RESPECTER LA QUANTITÉ mentionnée (ex: "٢٠٠ متر" → quantity: 200).
-5. Si مصنعية فقط / الماتريال على الزبون → designation_fr commence par "N - Pose" uniquement
-6. Si couleur mentionnée (أزرق=bleu, أبيض=blanc, رمادي=gris, أسود=noir, أحمر=rouge, أصفر=jaune, أخضر=vert, بيج=beige) → inclure dans designation_fr
-7. Si finition mentionnée (ساتيني=satinée, مط=mate, برّاق=brillante) → inclure dans designation_fr
-8. Si سقف ET حيطان mentionnés → générer 2 lignes séparées et numérotées (1 - murs, 2 - plafond)
-9. Matériau spécifique (فلوتون=parquet flottant, كارلاج إيطالي=carrelage italien, بانتيرة=peinture, بلاكو=placo) → mentionner dans designation_fr
+RÈGLES MÉTIER BTP (à appliquer EN PLUS du schéma de sortie) :
+1. NUMÉROTATION : chaque designation_fr commence par "N - " (ex: "1 - Pose de carrelage"). Idem en arabe avec chiffres arabes (١ - ، ٢ -).
+2. RESPECTER L'UNITÉ mentionnée par l'artisan (m², forfait, u, ml, h, m³, j...). Ne jamais convertir.
+3. RESPECTER LE PRIX mentionné par l'artisan. Si aucun prix n'est mentionné : unitPrice = null (ne mets JAMAIS 0 par défaut).
+4. RESPECTER LA QUANTITÉ mentionnée. Si aucune quantité n'est mentionnée : quantity = null (ne mets JAMAIS 1 par défaut).
+5. Si "مصنعية فقط" / "الماتريال على الزبون" → designation_fr commence par "N - Pose" uniquement, includesMaterials = false, includesLabor = true.
+6. Si couleur mentionnée (أزرق=bleu, أبيض=blanc, رمادي=gris, أسود=noir, أحمر=rouge, أصفر=jaune, أخضر=vert, بيج=beige) → inclure dans designation_fr.
+7. Si finition mentionnée (ساتيني=satinée, مط=mate, برّاق=brillante) → inclure dans designation_fr.
+8. Si سقف ET حيطان mentionnés → générer 2 lignes séparées et numérotées.
+9. Matériau spécifique (فلوتون=parquet flottant, كارلاج إيطالي=carrelage italien, بانتيرة=peinture, بلاكو=placo) → mentionner dans designation_fr.
 10. Ne jamais ajouter de travaux non demandés.
-11. RÈGLE FORFAIT (PRIORITAIRE) : Si l'artisan mentionne "forfait" ou "فورفيه" avec un montant → générer UNE SEULE ligne. designation_fr = description complète de la prestation, unit = "forfait", quantity = 1, unitPrice = le montant mentionné. NE JAMAIS décortiquer en plusieurs lignes dans ce cas.
+11. RÈGLE FORFAIT PRIORITAIRE : Si "forfait" ou "فورفيه" avec un montant → UNE SEULE ligne, unit = "forfait", quantity = 1, unitPrice = le montant, includesMaterials/includesLabor selon indication.
 
-LOT ASSIGNMENT — chaque item DOIT avoir un champ "lot". Aucun item sans lot.
+LOT ASSIGNMENT — assigne un lot lorsque c'est raisonnable ; sinon lot = null (ne force PAS "NETTOYAGE ET DIVERS" par défaut).
+- LOT — DÉMOLITION ET DÉPOSE : démolition, dépose, décapage, arrachage, évacuation gravats, déchets
+- LOT — MAÇONNERIE ET ÉTANCHÉITÉ : maçonnerie, parpaing, béton, chape, fondation, étanchéité, enduit façade, ravalement, crépi
+- LOT — CARRELAGE ET FAÏENCE : carrelage, faïence, grès cérame, mosaïque, joint
+- LOT — REVÊTEMENTS SOL : parquet, stratifié, vinyle, moquette, linoléum
+- LOT — PLOMBERIE SANITAIRE : plomberie, sanitaire, douche, baignoire, WC, lavabo, évier, robinetterie, chauffe-eau, chaudière, radiateur, plancher chauffant hydraulique, VMC
+- LOT — ÉLECTRICITÉ : électrique, tableau, câblage, prise, interrupteur, domotique, éclairage, plancher chauffant électrique, climatisation
+- LOT — PEINTURE ET ENDUITS : peinture, enduit, crépi intérieur, impression, lasure, placo, cloison, faux plafond, BA13
+- LOT — MENUISERIE : fenêtre, porte, vitrage, volet, portail, store, menuiserie
+- LOT — NETTOYAGE ET DIVERS : nettoyage, allée, terrasse extérieure, divers
 
-LOT — DÉMOLITION ET DÉPOSE
-mots-clés : démolition, dépose, décapage, arrachage, évacuation gravats, déchets, déconstruction
+Ajoute également le champ "subject" au JSON racine : objet court du devis en français.
 
-LOT — MAÇONNERIE ET ÉTANCHÉITÉ
-mots-clés : maçonnerie, parpaing, béton, chape, fondation, terrassement, nivellement, étanchéité, isolation, enduit façade, ravalement, crépi
-
-LOT — CARRELAGE ET FAÏENCE
-mots-clés : carrelage, faïence, grès cérame, mosaïque, joint, pose sol, pose murale
-
-LOT — REVÊTEMENTS SOL
-mots-clés : parquet, stratifié, vinyle, moquette, linoléum, revêtement sol souple
-
-LOT — PLOMBERIE SANITAIRE
-mots-clés : plomberie, sanitaire, douche, baignoire, WC, lavabo, évier, robinetterie, alimentation eau, évacuation, chauffe-eau, chaudière, radiateur, chauffage au sol hydraulique, plancher chauffant hydraulique, VMC, ventilation
-
-LOT — ÉLECTRICITÉ
-mots-clés : électrique, électricité, tableau, câblage, prise, interrupteur, domotique, éclairage, luminaire, chauffage au sol électrique, plancher chauffant électrique, VMC électrique, climatisation
-
-LOT — PEINTURE ET ENDUITS
-mots-clés : peinture, enduit, crépi intérieur, impression, lasure, vernis, ravalement intérieur, placo, cloison, faux plafond, BA13
-
-LOT — MENUISERIE
-mots-clés : fenêtre, porte, vitrage, volet, portail, store, menuiserie, huisserie, parclose
-
-LOT — NETTOYAGE ET DIVERS
-mots-clés : nettoyage, clôture, allée, terrasse extérieure, divers, aménagement extérieur
-
-Règles de lot :
-- Chaque item DOIT avoir un lot — zéro orphan autorisé
-- Si un item correspond à plusieurs lots → choisir le plus spécifique
-- Si aucun mot-clé ne correspond → LOT — NETTOYAGE ET DIVERS (fallback)
-- Le champ "lot" doit contenir EXACTEMENT la chaîne "LOT — NOM" avec le tiret long (—)
+${DOCUMENT_ANALYSIS_PROMPT_SPEC}
 
 Réponds UNIQUEMENT avec le JSON, sans texte avant ni après, sans markdown.`;
 }
@@ -99,7 +66,8 @@ async function callClaude(opts: {
   userMessage: string;
   imageBase64?: string;
   mimeType?: string;
-}): Promise<{ items: any[]; subject: string }> {
+  fileName?: string | null;
+}): Promise<DocumentAnalysisResult> {
   const userContent: any[] = [];
   if (opts.imageBase64) {
     userContent.push({
@@ -110,6 +78,14 @@ async function callClaude(opts: {
         data: opts.imageBase64,
       },
     });
+  }
+  userContent.push({
+    type: "text",
+    text: buildClaudeUserPrompt(
+      opts.userMessage || "Analyse la photo et propose un devis BTP standard.",
+      !!opts.imageBase64,
+    ),
+  });
   }
   userContent.push({
     type: "text",

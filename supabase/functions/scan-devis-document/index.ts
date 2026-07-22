@@ -1,49 +1,46 @@
 // Edge function: scan-devis-document
-// Accepts: { fileData: base64 (no prefix), mimeType: 'image/jpeg'|'image/png'|'application/pdf' }
-// Returns: { items: [{ designation_fr, designation_ar?, quantity, unit, unitPrice }] }
+// Accepts: { fileData: base64 (no prefix), mimeType, fileName? }
+// Returns: DocumentAnalysisResult-compatible payload
+//   { items: DocumentAnalysisItem[], documentType, subject, warnings, unreadableElements, analysisComplete }
+// Legacy fields on each item (designation_fr, designation_ar, quantity, unit, unitPrice, lot)
+// are preserved for frontend compatibility.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  normalizeAnalysisPayload,
+  DOCUMENT_ANALYSIS_ERROR_CODE,
+  DOCUMENT_ANALYSIS_ERROR_MESSAGE,
+  DOCUMENT_ANALYSIS_PROMPT_SPEC,
+} from '../_shared/documentAnalysisSchema.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 
-const SYSTEM_PROMPT = `Tu es un expert BTP. Analyse ce document (devis, demande de travaux, ou tout document BTP en français ou arabe).
-Extrais TOUS les postes de travail sous forme de liste JSON STRICTEMENT au format suivant :
-{
-  "items": [
-    {
-      "designation_fr": "string (français professionnel BTP, traduis si en arabe)",
-      "designation_ar": "string (arabe si présent dans le document, sinon vide)",
-      "quantity": number (1 par défaut),
-      "unit": "string (m², ml, u, forfait, h...)",
-      "unitPrice": number (0 si non mentionné)
-    }
-  ]
-}
-Si aucun prix n'est mentionné dans le document, mets unitPrice à 0. NE PAS inventer de prix. NE PAS inventer de quantités si non explicites (mets 1).
+const SYSTEM_PROMPT = `Tu es un expert BTP. Analyse ce document (devis, demande de travaux, CCTP, ou tout document BTP en français ou en arabe).
+Extrais TOUTES les prestations facturables identifiables et renvoie un JSON respectant STRICTEMENT le schéma décrit ci-dessous.
+${DOCUMENT_ANALYSIS_PROMPT_SPEC}
 Réponds UNIQUEMENT avec le JSON, sans texte autour, sans markdown.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-    // Auth guard
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const authClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: { user }, error: authErr } = await authClient.auth.getUser();
-    if (authErr || !user || user.is_anonymous) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
+  // Auth guard
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  const authClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: { user }, error: authErr } = await authClient.auth.getUser();
+  if (authErr || !user || user.is_anonymous) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   try {
     if (!ANTHROPIC_API_KEY) {
@@ -55,6 +52,9 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const fileData: string | undefined = body?.fileData;
     const mimeType: string = body?.mimeType || 'image/jpeg';
+    const fileName: string | null = typeof body?.fileName === 'string' && body.fileName.trim()
+      ? String(body.fileName).slice(0, 300)
+      : null;
 
     if (!fileData || typeof fileData !== 'string') {
       return new Response(JSON.stringify({ error: 'fileData (base64) requis' }), {
@@ -74,6 +74,10 @@ Deno.serve(async (req) => {
       ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: fileData } }
       : { type: 'image', source: { type: 'base64', media_type: mimeType, data: fileData } };
 
+    const userText = fileName
+      ? `Extrais les prestations facturables au format JSON demandé. Nom du fichier source : ${fileName}.`
+      : `Extrais les prestations facturables au format JSON demandé.`;
+
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -89,7 +93,7 @@ Deno.serve(async (req) => {
           role: 'user',
           content: [
             contentBlock,
-            { type: 'text', text: 'Extrais les postes de travail au format JSON demandé.' },
+            { type: 'text', text: userText },
           ],
         }],
       }),
@@ -119,7 +123,6 @@ Deno.serve(async (req) => {
     const text: string = data?.content?.[0]?.text ?? '';
     console.log('[scan-devis-document] raw text length:', text.length);
 
-    // Extract JSON object from response
     let parsed: any = null;
     try {
       parsed = JSON.parse(text);
@@ -140,21 +143,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    const items = parsed.items;
-    const normalized = items.map((it: any) => ({
-      designation_fr: String(it?.designation_fr || '').trim(),
-      designation_ar: String(it?.designation_ar || '').trim(),
-      quantity: Number(it?.quantity) > 0 ? Number(it.quantity) : 1,
-      unit: String(it?.unit || 'u').trim() || 'u',
-      unitPrice: Number(it?.unitPrice) > 0 ? Number(it.unitPrice) : 0,
-    })).filter((it: any) => it.designation_fr || it.designation_ar);
+    let normalized;
+    try {
+      normalized = normalizeAnalysisPayload(parsed, { fileName });
+    } catch (e) {
+      const code = e instanceof Error ? e.message : '';
+      if (code === DOCUMENT_ANALYSIS_ERROR_CODE) {
+        return new Response(JSON.stringify({
+          error: DOCUMENT_ANALYSIS_ERROR_MESSAGE,
+          code: DOCUMENT_ANALYSIS_ERROR_CODE,
+        }), {
+          status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      throw e;
+    }
 
-    return new Response(JSON.stringify({ items: normalized }), {
+    return new Response(JSON.stringify(normalized), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
     console.error('[scan-devis-document] error:', e);
-    return new Response(JSON.stringify({ error: String(e?.message || e) }), {
+    return new Response(JSON.stringify({ error: String((e as any)?.message || e) }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

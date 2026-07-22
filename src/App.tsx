@@ -150,6 +150,7 @@ const AppRoutes = () => {
                       <Route path="/pro" element={<ProPage />} />
                       <Route path="/pro/invoice-creator" element={<InvoiceCreatorPage />} />
                       <Route path="/pro/smart-devis" element={<SmartDevisPage />} />
+                      <Route path="/pro/document-analyzer" element={<DocumentAnalyzerPage />} />
                       <Route path="/pro/quote-to-invoice" element={<QuoteToInvoicePage />} />
                       <Route path="/pro/image-quote-to-invoice" element={<ImageQuoteToInvoicePage />} />
                       <Route path="/pro/documents" element={<DocumentsListPage />} />

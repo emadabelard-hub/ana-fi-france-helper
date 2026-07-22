@@ -500,6 +500,19 @@ IDENTIFICATION DU TYPE DE DOCUMENT — étape préalable obligatoire :
 - Si le document ne correspond à aucun type reconnu : documentType = "unknown", documentCategory = "unknown", confidenceDocumentType = "low", et explique pourquoi dans "documentTypeReason". N'invente JAMAIS un type.
 - Un plan, une photo, un croquis ou une note manuscrite peuvent parfaitement donner "items": [] ; ne fabrique pas de lignes facturables dans ce cas.
 
+COMPRÉHENSION MÉTIER DES DOCUMENTS TECHNIQUES BTP (CCTP, DPGF, BPU, métré, bordereau quantitatif, notice descriptive, compte rendu de chantier, rapport d'expertise, cahier des charges, plan, photo) — obligatoire :
+- Sépare STRICTEMENT quatre familles d'informations en plus des lignes extraites :
+  1. "prestationsFacturables" : libellés courts des prestations réellement facturables identifiées (ex : "Peinture murs", "Pose carrelage 60×60", "Isolation combles"). Ces libellés doivent correspondre aux items[] extraits (une entrée par prestation retenue). Si aucune prestation facturable n'est identifiable, retourne un tableau vide.
+  2. "contraintesTechniques" : éléments d'exécution ou d'organisation qui NE sont PAS des prestations facturables (ex : "Protection des sols obligatoire", "Nettoyage quotidien du chantier", "Respect du DTU 59.1", "Échafaudage obligatoire au-delà de 3 m", "Port des EPI"). Ne les transforme JAMAIS en items.
+  3. "informationsAdministratives" : maître d'ouvrage, adresse du chantier, numéro de lot, phase, références du marché, délais, pénalités, contacts.
+  4. "referencesReglementaires" : normes et textes cités (DTU, NF, RE2020, ERP, PMR/accessibilité, sécurité incendie, arrêtés).
+  5. "elementsNonExploitables" : éléments présents dans le document mais impossibles à transformer en devis (photo sans texte, plan sans cotes, note vague, croquis illisible).
+- N'ajoute jamais une contrainte technique, une information administrative ou une référence réglementaire dans "items[]".
+- Ne recopie jamais une prestation dans plusieurs listes : une prestation facturable va dans items[] ET dans "prestationsFacturables", pas ailleurs.
+- Pour un plan / une photo / un croquis : items = [], prestationsFacturables = [], mais tu peux remplir "contraintesTechniques", "informationsAdministratives" ou "elementsNonExploitables" si le document le permet.
+
+
+
 RÈGLES ABSOLUES :
 - N'invente jamais une prestation, une quantité, une unité, un prix ou un lot.
 - Utilise null pour toute information absente du document. N'utilise pas 1 pour une quantité absente. N'utilise pas 0 pour un prix absent. N'utilise pas "u" pour une unité absente. N'utilise pas "NETTOYAGE ET DIVERS" comme lot par défaut.

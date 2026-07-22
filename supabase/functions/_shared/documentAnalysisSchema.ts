@@ -426,13 +426,9 @@ export function normalizeAnalysisPayload(
     warnings: toStringList(raw.warnings),
     unreadableElements: toStringList(raw.unreadableElements),
     analysisComplete: raw.analysisComplete !== false,
-    prestationsFacturables: toStringList(raw.prestationsFacturables, 300),
-    contraintesTechniques: toStringList(raw.contraintesTechniques, 300),
-    informationsAdministratives: toStringList(raw.informationsAdministratives, 300),
-    referencesReglementaires: toStringList(raw.referencesReglementaires, 300),
-    elementsNonExploitables: toStringList(raw.elementsNonExploitables, 300),
   };
 }
+
 
 // Prompt fragment shared by both edge functions describing the expected JSON
 // output. Callers prepend their domain-specific instructions.

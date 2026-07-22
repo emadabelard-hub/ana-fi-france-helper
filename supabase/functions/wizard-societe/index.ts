@@ -77,12 +77,13 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { answers } = await req.json();
+    const { answers, language: langRaw } = await req.json();
     if (!answers || typeof answers !== "object") {
       return new Response(JSON.stringify({ error: "Invalid answers" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const language: 'fr' | 'ar' = langRaw === 'fr' ? 'fr' : 'ar';
 
     const LOVABLE_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
@@ -92,34 +93,41 @@ serve(async (req) => {
     const residence = String(answers.residence || "");
     const activite = String(answers.activite || "").toLowerCase();
 
-    // Detect explicit "none" option from the frontend buttons
     const noneOfThem = /لا،?\s*ولا واحدة|ولا واحدة منهم|❌/.test(residence);
     const hasFrenchTie = /(france|française|francais|جنسية فرنسي|إقامة فرنسية|فرنسي|لاجئ|حماية|🇫🇷|🪪)/i.test(residence);
     const isEuCitizen = /(اتحاد الأوروبي|أوروبي|européen|europeen|🇪🇺)/i.test(residence);
 
     const nonEuForeignBlock = noneOfThem && !hasFrenchTie && !isEuCitizen;
-
     const vtcActivity = /(uber|vtc|taxi|chauffeur|توصيل|أوبر|اوبر|تاكسي|سواق)/i.test(activite + " " + all);
 
     const messages: string[] = [];
     if (nonEuForeignBlock) {
-      messages.push(`🚫 لازم أكون صريح معاك يا صديقي — عشان تفتح شركة في فرنسا وانت من خارج الاتحاد الأوروبي، محتاج إقامة فرنسية سارية أو وضع لاجئ/حماية في فرنسا. أول خطوة: ظبط وضع إقامتك، وبعدها أنا معاك خطوة بخطوة 💪`);
+      messages.push(language === 'fr' ? BLOCK_NON_EU_FR : BLOCK_NON_EU_AR);
     }
     if (vtcActivity) {
-      messages.push(`شغل Uber و VTC في فرنسا محتاج رخصة خاصة (carte professionnelle VTC) وامتحان صعب بالفرنساوي، وده غير فتح الشركة العادية. ده موضوع تخصصي خارج نطاق مساعدتي — نصيحتي تتواصل مع un organisme agréé VTC.`);
+      messages.push(language === 'fr' ? BLOCK_VTC_FR : BLOCK_VTC_AR);
     }
 
     if (messages.length > 0) {
-      const intro = messages.length > 1
-        ? `يا صديقي، في عندك عقبتين مش واحدة، خليني أوضحهم:\n\n`
-        : "";
+      const introFR = messages.length > 1 ? `Deux points à clarifier avant d'avancer :\n\n` : "";
+      const introAR = messages.length > 1 ? `يا صديقي، في عندك عقبتين مش واحدة، خليني أوضحهم:\n\n` : "";
+      const intro = language === 'fr' ? introFR : introAR;
       const blocked = intro + messages.map((m, i) => messages.length > 1 ? `${i + 1}. ${m}` : m).join("\n\n");
       return new Response(JSON.stringify({ content: blocked, blocked: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userMessageForAI = `إجابات المستخدم:
+    const userMessageForAI = language === 'fr'
+      ? `Réponses de l'utilisateur :
+- Activité : ${answers.activite || "non précisé"}
+- Seul ou avec associés : ${answers.associes || "non précisé"}
+- Revenu annuel prévu : ${answers.revenus || "non précisé"}
+- Statut juridique / résidence : ${answers.residence || "non précisé"}
+- Capital : ${answers.capital || "non précisé"}
+
+Analyse et fournis la recommandation et les étapes, EXCLUSIVEMENT en français.${isEuCitizen ? "\n\nNote : l'utilisateur est citoyen européen — ajoute cette phrase dans ta réponse : \"En tant que citoyen européen, vous avez le droit de créer une société en France, même sans résidence française ✅\"" : ""}`
+      : `إجابات المستخدم:
 - النشاط: ${answers.activite || "غير محدد"}
 - لوحده ولا مع شركاء: ${answers.associes || "غير محدد"}
 - الدخل السنوي المتوقع: ${answers.revenus || "غير محدد"}
@@ -139,7 +147,7 @@ serve(async (req) => {
         max_tokens: 3000,
         temperature: 0.2,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: language === 'fr' ? SYSTEM_PROMPT_FR : SYSTEM_PROMPT_AR },
           { role: "user", content: userMessageForAI },
         ],
       }),

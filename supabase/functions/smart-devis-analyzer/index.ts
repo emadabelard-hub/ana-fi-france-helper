@@ -218,12 +218,39 @@ serve(async (req) => {
         );
       }
 
-      const { items, subject } = await callClaude({
-        apiKey: anthropicKey,
-        userMessage: text,
-        imageBase64: img,
-        mimeType: imgMime,
-      });
+      let items: any[];
+      let subject: string;
+      try {
+        const res = await callClaude({
+          apiKey: anthropicKey,
+          userMessage: text,
+          imageBase64: img,
+          mimeType: imgMime,
+        });
+        items = res.items;
+        subject = res.subject;
+      } catch (e) {
+        const code = e instanceof Error ? e.message : "";
+        if (code === "DEVIS_TOO_LONG") {
+          return new Response(
+            JSON.stringify({
+              error: "Le document contient trop de prestations pour être analysé intégralement en une seule fois. Aucune ligne de devis n’a été créée afin d’éviter un devis incomplet.",
+              code: "DEVIS_TOO_LONG",
+            }),
+            { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        if (code === "DEVIS_PARSE_ERROR") {
+          return new Response(
+            JSON.stringify({
+              error: "L’analyse n’a pas pu être finalisée. Aucune ligne n’a été créée afin d’éviter un devis incomplet.",
+              code: "DEVIS_PARSE_ERROR",
+            }),
+            { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        throw e;
+      }
 
       console.log("[analyze_image] items:", items.length, "subject:", subject);
 

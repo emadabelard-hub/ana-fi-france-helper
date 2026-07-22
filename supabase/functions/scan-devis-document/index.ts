@@ -17,10 +17,10 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 
 const SYSTEM_PROMPT = `Tu es un expert BTP français. Analyse ce document (devis, CCTP, DPGF, BPU, métré, notice descriptive, cahier des charges, ou tout document BTP en français ou en arabe).
 Ta mission principale est de produire un DEVIS DÉTAILLÉ ligne par ligne dans "items[]" à partir de TOUTES les prestations facturables présentes dans le document, en décomposant chaque ouvrage avec la même granularité que le document source (préparation, sous-couches, couches, finitions, supports, pièces, lots). Un simple résumé de quelques lignes est INSUFFISANT.
-En parallèle, classe les contraintes techniques, informations administratives, références réglementaires et éléments non exploitables dans leurs listes dédiées — sans jamais remplacer la production détaillée de "items[]".
 Renvoie un JSON respectant STRICTEMENT le schéma décrit ci-dessous.
 ${DOCUMENT_ANALYSIS_PROMPT_SPEC}
 Réponds UNIQUEMENT avec le JSON, sans texte autour, sans markdown.`;
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });

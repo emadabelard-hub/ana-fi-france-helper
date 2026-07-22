@@ -86,11 +86,6 @@ async function callClaude(opts: {
       !!opts.imageBase64,
     ),
   });
-  }
-  userContent.push({
-    type: "text",
-    text: buildClaudeUserPrompt(opts.userMessage || "Analyse la photo et propose un devis BTP standard."),
-  });
 
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -128,13 +123,20 @@ async function callClaude(opts: {
     throw new Error("DEVIS_PARSE_ERROR");
   }
 
+  let parsed: any;
   try {
-    const parsed = JSON.parse(jsonMatch[0]);
-    const items = Array.isArray(parsed.items) ? parsed.items : [];
-    const subject = typeof parsed.subject === "string" ? parsed.subject : "";
-    return { items, subject };
+    parsed = JSON.parse(jsonMatch[0]);
   } catch (e) {
     console.error("[claude] parse error:", e);
+    throw new Error("DEVIS_PARSE_ERROR");
+  }
+
+  try {
+    return normalizeAnalysisPayload(parsed, { fileName: opts.fileName ?? null });
+  } catch (e) {
+    const code = e instanceof Error ? e.message : "";
+    if (code === DOCUMENT_ANALYSIS_ERROR_CODE) throw new Error(DOCUMENT_ANALYSIS_ERROR_CODE);
+    console.error("[claude] normalize error:", e);
     throw new Error("DEVIS_PARSE_ERROR");
   }
 }

@@ -493,17 +493,8 @@ PRIORITÉ N°1 — PRODUCTION D'UN DEVIS DÉTAILLÉ (obligatoire pour tout docum
 - Reporte le lot d'origine du document lorsqu'il est mentionné (ex : "LOT 04 — PEINTURE").
 - Un document technique long (CCTP/DPGF) doit produire de nombreuses lignes ; un résumé de quelques items est INSUFFISANT et considéré comme une régression.
 
-CLASSIFICATION EN PARALLÈLE — jamais en remplacement de items[] :
-- En plus de "items[]", renseigne cinq listes INFORMATIVES :
-  1. "prestationsFacturables" : libellés courts miroir des items[] retenus (une entrée par ligne extraite). Doit avoir la même granularité que items[].
-  2. "contraintesTechniques" : éléments d'exécution ou d'organisation qui NE sont PAS facturables séparément (ex : "Protection des sols", "Nettoyage quotidien", "Respect du DTU 59.1", "Échafaudage obligatoire", "Port des EPI"). Ne les transforme JAMAIS en items.
-  3. "informationsAdministratives" : maître d'ouvrage, adresse du chantier, numéro de lot, phase, références du marché, délais, pénalités, contacts.
-  4. "referencesReglementaires" : normes et textes cités (DTU, NF, RE2020, ERP, PMR/accessibilité, sécurité incendie, arrêtés).
-  5. "elementsNonExploitables" : éléments présents mais impossibles à transformer en ligne (photo sans texte, plan sans cotes, note vague, croquis illisible).
-- Ces listes ne remplacent JAMAIS la production détaillée de "items[]". Elles la complètent.
-- N'ajoute jamais une contrainte technique, une info administrative ou une référence réglementaire dans "items[]".
-- Ne recopie jamais une prestation dans plusieurs listes : elle va dans items[] ET dans "prestationsFacturables", pas ailleurs.
-- Seule exception "items = []" : un plan sans cotes, une photo, un croquis illisible ou une note manuscrite vague. Dans ce cas seulement, remplis les listes informatives.
+
+
 
 
 

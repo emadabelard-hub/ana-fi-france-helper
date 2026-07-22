@@ -203,17 +203,19 @@ serve(async (req) => {
         );
       }
 
-      let items: any[];
-      let subject: string;
+      const fileName = typeof body?.fileName === "string" && body.fileName.trim()
+        ? String(body.fileName).slice(0, 300)
+        : null;
+
+      let result: DocumentAnalysisResult;
       try {
-        const res = await callClaude({
+        result = await callClaude({
           apiKey: anthropicKey,
           userMessage: text,
           imageBase64: img,
           mimeType: imgMime,
+          fileName,
         });
-        items = res.items;
-        subject = res.subject;
       } catch (e) {
         const code = e instanceof Error ? e.message : "";
         if (code === "DEVIS_TOO_LONG") {
@@ -223,6 +225,15 @@ serve(async (req) => {
               code: "DEVIS_TOO_LONG",
             }),
             { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        if (code === DOCUMENT_ANALYSIS_ERROR_CODE) {
+          return new Response(
+            JSON.stringify({
+              error: DOCUMENT_ANALYSIS_ERROR_MESSAGE,
+              code: DOCUMENT_ANALYSIS_ERROR_CODE,
+            }),
+            { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },
           );
         }
         if (code === "DEVIS_PARSE_ERROR") {
@@ -237,14 +248,15 @@ serve(async (req) => {
         throw e;
       }
 
+      const items = result.items;
+      const subject = result.subject ?? "";
       console.log("[analyze_image] items:", items.length, "subject:", subject);
 
       return new Response(
         JSON.stringify({
-          items,
+          ...result,
           suggestedItems: items, // alias pour compat frontend
           devis_subject_fr: subject,
-          subject,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );

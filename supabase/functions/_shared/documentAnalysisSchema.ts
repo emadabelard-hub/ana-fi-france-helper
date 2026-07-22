@@ -455,6 +455,12 @@ FORMAT DE SORTIE — JSON STRICT UNIQUEMENT, sans markdown, sans texte autour :
   "analysisComplete": true | false,
   "warnings": ["texte court en français"],
   "unreadableElements": ["zones illisibles décrites brièvement"],
+  "prestationsFacturables": ["libellés courts des prestations réellement facturables identifiées"],
+  "contraintesTechniques": ["contraintes chantier (protection sols, nettoyage quotidien, échafaudage, sécurité, DTU applicables, horaires, accès…)"],
+  "informationsAdministratives": ["maître d'ouvrage, adresse, lot, phase, références, délai, pénalités, coordonnées…"],
+  "referencesReglementaires": ["normes, DTU, RE2020, ERP, accessibilité, sécurité incendie, arrêtés cités…"],
+  "elementsNonExploitables": ["éléments présents mais non transformables en ligne de devis (photos, plans non côtés, notes vagues…)"],
+  "unreadableElements": ["zones illisibles décrites brièvement"],
   "items": [
     {
       "designation_fr": "libellé français exact (obligatoire si ligne facturable)",

@@ -118,7 +118,7 @@ async function callClaude(opts: {
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-5",
-      max_tokens: 4000,
+      max_tokens: 16000,
       system: CLAUDE_SYSTEM_PROMPT,
       messages: [{ role: "user", content: userContent }],
     }),
@@ -131,13 +131,18 @@ async function callClaude(opts: {
   }
 
   const data = await resp.json();
+
+  if (data?.stop_reason === "max_tokens") {
+    console.error("[claude] stop_reason=max_tokens — réponse tronquée, devis partiel refusé");
+    throw new Error("DEVIS_TOO_LONG");
+  }
+
   const rawText: string = data?.content?.[0]?.text || "";
-  console.log("[claude] rawText:", rawText);
 
   const jsonMatch = rawText.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     console.error("[claude] no JSON found in response");
-    return { items: [], subject: "" };
+    throw new Error("DEVIS_PARSE_ERROR");
   }
 
   try {
@@ -147,7 +152,7 @@ async function callClaude(opts: {
     return { items, subject };
   } catch (e) {
     console.error("[claude] parse error:", e);
-    return { items: [], subject: "" };
+    throw new Error("DEVIS_PARSE_ERROR");
   }
 }
 

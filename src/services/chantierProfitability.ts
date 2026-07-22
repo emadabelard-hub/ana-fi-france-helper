@@ -33,8 +33,9 @@ export interface SupplierInvoiceRow {
 export interface FactureRow {
   document_type: string;
   status?: string | null;
-  total_ht?: number | string | null;
+  subtotal_ht?: number | string | null;
   total_ttc?: number | string | null;
+  tva_amount?: number | string | null;
 }
 
 export interface ProfitabilityResult {
@@ -67,15 +68,18 @@ export function computeChantierProfitability(params: {
   expenses: ExpenseRow[];
   supplierInvoices: SupplierInvoiceRow[];
 }): ProfitabilityResult {
+  // Seules les factures VALIDÉES (finalized/converted) comptent — exclut les brouillons
   const factures = params.documents.filter(
-    (d) => d.document_type === 'facture' && d.status !== 'cancelled',
+    (d) => d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted'),
   );
 
   const revenueHT = factures.reduce((s, f) => {
-    const ht = num(f.total_ht);
+    const ht = num(f.subtotal_ht);
     if (ht > 0) return s + ht;
-    // fallback : total_ttc si HT absent
-    return s + num(f.total_ttc);
+    // fallback : total_ttc − tva_amount si HT absent
+    const ttc = num(f.total_ttc);
+    const tva = num(f.tva_amount);
+    return s + Math.max(0, ttc - tva);
   }, 0);
 
   // Dépenses non déjà comptées via une facture fournisseur

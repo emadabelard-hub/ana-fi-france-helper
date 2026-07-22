@@ -74,7 +74,7 @@ const ChantierDetailPage = () => {
     })();
   }, [user, id]);
 
-  const factures = useMemo(() => documents.filter(d => d.document_type === 'facture' && d.status !== 'cancelled'), [documents]);
+  const factures = useMemo(() => documents.filter(d => d.document_type === 'facture' && (d.status === 'finalized' || d.status === 'converted')), [documents]);
   const devisList = useMemo(() => documents.filter(d => d.document_type === 'devis'), [documents]);
 
   const totalDevis = useMemo(() => devisList.reduce((s, d) => s + Number(d.total_ttc || 0), 0), [devisList]);

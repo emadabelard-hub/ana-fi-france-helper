@@ -72,11 +72,6 @@ interface AnalysisResult {
   items: AnalyzedItem[];
   warnings?: string[];
   unreadableElements?: string[];
-  prestationsFacturables?: string[];
-  contraintesTechniques?: string[];
-  informationsAdministratives?: string[];
-  referencesReglementaires?: string[];
-  elementsNonExploitables?: string[];
 }
 
 const readFileAsDataUrl = (f: File) =>

@@ -213,6 +213,11 @@ const DocumentAnalyzerPage = () => {
         items,
         warnings: Array.isArray(data?.warnings) ? data.warnings : [],
         unreadableElements: Array.isArray(data?.unreadableElements) ? data.unreadableElements : [],
+        prestationsFacturables: Array.isArray(data?.prestationsFacturables) ? data.prestationsFacturables : [],
+        contraintesTechniques: Array.isArray(data?.contraintesTechniques) ? data.contraintesTechniques : [],
+        informationsAdministratives: Array.isArray(data?.informationsAdministratives) ? data.informationsAdministratives : [],
+        referencesReglementaires: Array.isArray(data?.referencesReglementaires) ? data.referencesReglementaires : [],
+        elementsNonExploitables: Array.isArray(data?.elementsNonExploitables) ? data.elementsNonExploitables : [],
       };
 
       setResult(normalized);

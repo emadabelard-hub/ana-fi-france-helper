@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 4096,
+        max_tokens: 16000,
         system: SYSTEM_PROMPT,
         messages: [{
           role: 'user',
@@ -104,6 +104,18 @@ Deno.serve(async (req) => {
     }
 
     const data = await anthropicRes.json();
+    console.log('[scan-devis-document] stop_reason:', data?.stop_reason);
+
+    if (data?.stop_reason === 'max_tokens') {
+      console.error('[scan-devis-document] stop_reason=max_tokens — réponse tronquée, devis partiel refusé');
+      return new Response(JSON.stringify({
+        error: 'Le document contient trop de prestations pour être analysé intégralement en une seule fois. Aucune ligne de devis n’a été créée afin d’éviter un devis incomplet.',
+        code: 'DEVIS_DOCUMENT_TOO_LONG',
+      }), {
+        status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const text: string = data?.content?.[0]?.text ?? '';
     console.log('[scan-devis-document] raw text length:', text.length);
 
@@ -114,11 +126,21 @@ Deno.serve(async (req) => {
     } catch {
       const match = text.match(/\{[\s\S]*\}/);
       if (match) {
-        try { parsed = JSON.parse(match[0]); } catch (e) { console.error('JSON parse fail:', e); }
+        try { parsed = JSON.parse(match[0]); } catch (e) { console.error('[scan-devis-document] JSON parse fail:', e); }
       }
     }
 
-    const items = Array.isArray(parsed?.items) ? parsed.items : [];
+    if (!parsed || !Array.isArray(parsed.items)) {
+      console.error('[scan-devis-document] JSON invalide ou incomplet — aucune ligne retournée');
+      return new Response(JSON.stringify({
+        error: 'Le document n’a pas pu être analysé complètement. Aucune ligne de devis n’a été créée. Merci de réessayer avec un document plus lisible.',
+        code: 'DEVIS_DOCUMENT_PARSE_ERROR',
+      }), {
+        status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const items = parsed.items;
     const normalized = items.map((it: any) => ({
       designation_fr: String(it?.designation_fr || '').trim(),
       designation_ar: String(it?.designation_ar || '').trim(),

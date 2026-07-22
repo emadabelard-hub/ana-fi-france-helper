@@ -418,6 +418,11 @@ export function normalizeAnalysisPayload(
     : toConfidence(raw.confidenceDocumentType);
   const documentTypeReason = toStringOrNull(raw.documentTypeReason, 500);
 
+  const toStringList = (v: unknown, maxLen = 500): string[] =>
+    Array.isArray(v)
+      ? v.map((x) => toStringOrNull(x, maxLen)).filter((x: string | null): x is string => !!x)
+      : [];
+
   return {
     documentType,
     documentCategory,
@@ -425,13 +430,14 @@ export function normalizeAnalysisPayload(
     documentTypeReason,
     subject: toStringOrNull(raw.subject, 500),
     items,
-    warnings: Array.isArray(raw.warnings)
-      ? raw.warnings.map((w: any) => toStringOrNull(w, 500)).filter((w: string | null): w is string => !!w)
-      : [],
-    unreadableElements: Array.isArray(raw.unreadableElements)
-      ? raw.unreadableElements.map((w: any) => toStringOrNull(w, 500)).filter((w: string | null): w is string => !!w)
-      : [],
+    warnings: toStringList(raw.warnings),
+    unreadableElements: toStringList(raw.unreadableElements),
     analysisComplete: raw.analysisComplete !== false,
+    prestationsFacturables: toStringList(raw.prestationsFacturables, 300),
+    contraintesTechniques: toStringList(raw.contraintesTechniques, 300),
+    informationsAdministratives: toStringList(raw.informationsAdministratives, 300),
+    referencesReglementaires: toStringList(raw.referencesReglementaires, 300),
+    elementsNonExploitables: toStringList(raw.elementsNonExploitables, 300),
   };
 }
 

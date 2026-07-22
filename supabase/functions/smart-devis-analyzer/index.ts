@@ -2,6 +2,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
+import {
+  normalizeAnalysisPayload,
+  DOCUMENT_ANALYSIS_ERROR_CODE,
+  DOCUMENT_ANALYSIS_ERROR_MESSAGE,
+  DOCUMENT_ANALYSIS_PROMPT_SPEC,
+  type DocumentAnalysisResult,
+} from "../_shared/documentAnalysisSchema.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":

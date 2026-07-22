@@ -271,7 +271,7 @@ const CourrierPage = () => {
           onChange={(e) => setContent(e.target.value)}
           placeholder={isRTL ? 'الصق نص الإيميل أو الخطاب هنا...' : 'Collez le texte du courrier ou email ici...'}
           className={cn(
-            "w-full min-h-[250px] resize-none bg-card border border-border rounded-2xl p-4",
+            "w-full min-h-[250px] max-h-[45vh] overflow-y-auto resize-none bg-card border border-border rounded-2xl p-4",
             "text-[15px] leading-relaxed outline-none text-foreground placeholder:text-muted-foreground",
             "focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500",
             isRTL && "font-cairo text-right"

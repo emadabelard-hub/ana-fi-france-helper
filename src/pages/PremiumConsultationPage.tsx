@@ -284,7 +284,7 @@ const PremiumConsultationPage = () => {
                 value={textInput}
                 onChange={e => setTextInput(e.target.value)}
                 placeholder={isRTL ? 'الصق هنا محتوى الإيميل أو الرسالة الفرنسية...' : 'Collez ici le contenu du mail ou courrier...'}
-                className={cn("min-h-[120px] text-[14px] leading-relaxed rounded-xl border-2 border-border focus:border-amber-400 resize-none", isRTL && "font-cairo text-right")}
+                className={cn("min-h-[120px] max-h-[40vh] overflow-y-auto text-[14px] leading-relaxed rounded-xl border-2 border-border focus:border-amber-400 resize-none", isRTL && "font-cairo text-right")}
                 dir="auto"
               />
             </div>

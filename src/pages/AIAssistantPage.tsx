@@ -1226,37 +1226,12 @@ const AIAssistantPage = () => {
                     onClick={() => {
                       try {
                         const rawItems = Array.isArray(btpDocData.items) ? btpDocData.items : [];
-                        // Tolerate alternative field names emitted by the model
-                        const normalized = rawItems
-                          .map((it: any) => {
-                            const designation = String(
-                              it?.description ??
-                                it?.designation_fr ??
-                                it?.designation ??
-                                it?.libelle ??
-                                it?.label ??
-                                ''
-                            ).trim();
-                            const qtyRaw = it?.quantity ?? it?.quantite ?? it?.qty;
-                            const quantity =
-                              typeof qtyRaw === 'number' && qtyRaw > 0
-                                ? qtyRaw
-                                : (typeof qtyRaw === 'string' && Number(qtyRaw.replace(',', '.')) > 0
-                                    ? Number(qtyRaw.replace(',', '.'))
-                                    : 1);
-                            const unit = String(it?.unit ?? it?.unite ?? 'u').trim() || 'u';
-                            const puRaw = it?.unitPrice ?? it?.prix_unitaire ?? it?.pu;
-                            const unitPrice =
-                              typeof puRaw === 'number' && puRaw > 0
-                                ? puRaw
-                                : (typeof puRaw === 'string' && Number(puRaw.replace(',', '.')) > 0
-                                    ? Number(puRaw.replace(',', '.'))
-                                    : 0);
-                            return { designation, quantity, unit, unitPrice };
-                          })
-                          .filter((it) => it.designation.length > 0);
+                        // Validation stricte : prix/quantités incertains → non transférés.
+                        // Voir src/lib/btpTransferValidator.ts (contrôles source, confiance,
+                        // arithmétique quantity × unitPrice ≈ total, tolérance 0,02 €).
+                        const { lines: items, meta } = validateBtpItemsForTransfer(rawItems);
 
-                        if (normalized.length === 0) {
+                        if (items.length === 0) {
                           console.warn('[AIAssistant] BTP transfer: no exploitable items in <ANAFYPRO_DOCUMENT_DATA>', btpDocData);
                           toast({
                             variant: 'destructive',
@@ -1267,16 +1242,8 @@ const AIAssistantPage = () => {
                           return;
                         }
 
-                        const items = normalized.map((it) => ({
-                          designation_fr: it.designation,
-                          designation_ar: '',
-                          quantity: it.quantity,
-                          unit: it.unit,
-                          // Prix inconnu → 0 (contrainte de type côté Devis intelligent).
-                          // Le prix doit être complété manuellement par l'artisan.
-                          unitPrice: it.unitPrice,
-                          lot: null,
-                        }));
+                        const priceBlocked = meta.filter((m) => !m.priceAccepted).length;
+                        const qtyBlocked = meta.filter((m) => !m.quantityAccepted).length;
 
                         const subject =
                           (btpDocData.project?.title && String(btpDocData.project.title).trim()) ||
@@ -1295,13 +1262,30 @@ const AIAssistantPage = () => {
                           constraints: btpDocData.constraints || [],
                           missingInformation: btpDocData.missingInformation || [],
                           copyText: btpDocData.copyText || '',
+                          // Traçabilité interne (non affichée dans le formulaire)
+                          _validation: {
+                            totalItems: items.length,
+                            priceBlocked,
+                            quantityBlocked: qtyBlocked,
+                            meta,
+                          },
                         };
 
                         console.log('[AIAssistant] BTP transfer → SmartDevis', {
                           itemsCount: items.length,
+                          priceBlocked,
+                          quantityBlocked: qtyBlocked,
                           subject,
                           hasVat: !!payload.vat,
                         });
+
+                        if (priceBlocked > 0 || qtyBlocked > 0) {
+                          toast({
+                            title: 'Transfert sécurisé',
+                            description: `${priceBlocked} prix et ${qtyBlocked} quantité(s) laissés à compléter — données non fiables non transférées.`,
+                          });
+                        }
+
                         sessionStorage.setItem('smart_devis_prefill_v1', JSON.stringify(payload));
                         navigate('/pro/smart-devis');
                       } catch (err) {

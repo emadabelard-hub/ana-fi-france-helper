@@ -165,7 +165,11 @@ type BtpDocData = {
   constraints?: string[];
   missingInformation?: string[];
   copyText?: string;
+  projectSeparationRequired?: boolean;
+  projectSeparationReason?: string | null;
 };
+
+type ProjectSeparationChoice = 'same' | 'multiple' | 'unknown';
 
 type BtpDocExtractStatus = 'none' | 'truncated' | 'invalid' | 'ok';
 

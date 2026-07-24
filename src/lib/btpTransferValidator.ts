@@ -65,6 +65,8 @@ export type ValidationMeta = {
   reasons: string[];
   priceSource: string | null;
   confidence: number | null;
+  quantityConfidence: number | null;
+  priceConfidence: number | null;
   requiresReview: boolean | null;
   arithmeticOk: boolean | null;
 };

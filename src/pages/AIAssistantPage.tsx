@@ -145,6 +145,7 @@ type BtpDocData = {
   documentTypes?: string[];
   client?: { name?: string | null; address?: string | null } | null;
   project?: { title?: string | null; address?: string | null; deadline?: string | null } | null;
+  documentTotalHT?: number | null;
   items?: Array<{
     description?: string;
     quantity?: number | null;

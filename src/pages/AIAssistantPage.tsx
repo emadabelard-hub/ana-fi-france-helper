@@ -1352,6 +1352,11 @@ const AIAssistantPage = () => {
 
                 return (
                   <div className="mt-4 border-t border-border pt-3 flex flex-col gap-2" dir="ltr">
+                    {separationRequired && userChoice === 'same' && (
+                      <p className="text-sm text-foreground bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                        Vous avez confirmé qu'il s'agit d'un même chantier. Vérifiez soigneusement les écarts entre documents avant d'utiliser le devis.
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       Analyse documentaire BTP prête. Les prix absents ne sont pas inventés — complétez-les dans le Devis intelligent.
                     </p>

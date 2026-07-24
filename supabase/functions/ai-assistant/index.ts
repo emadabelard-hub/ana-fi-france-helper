@@ -743,7 +743,9 @@ Produis EXACTEMENT ce bloc, sans texte avant, en respectant scrupuleusement la b
   "missingInformation": [],
   "copyText": "",
   "documentTotalHT": null,
-  "documentTotalEvidenceText": ""
+  "documentTotalEvidenceText": "",
+  "projectSeparationRequired": false,
+  "projectSeparationReason": null
 }
 </ANAFYPRO_DOCUMENT_DATA>
 
@@ -802,6 +804,42 @@ Pour chaque pièce jointe listée dans le message utilisateur, une ligne :
 - nom du fichier — type reconnu (CCTP, DPGF, notice, rapport, photo, montage documentaire, autre) — qualité de lecture (bonne | partielle | insuffisante) — informations principales trouvées.
 Ne JAMAIS omettre une pièce jointe. Ne jamais fusionner deux fichiers en une seule ligne.
 Un montage (plusieurs documents/tableaux réduits dans une même image) est OBLIGATOIREMENT classé \`qualité de lecture : partielle\` — JAMAIS \`bonne\`.
+
+### Plusieurs projets possibles (AVANT la checklist de contradictions)
+Avant toute déclaration de contradiction, comparer entre les documents fournis :
+- l'adresse du chantier ;
+- le nom du client ou maître d'ouvrage ;
+- la référence du dossier ;
+- la surface du projet ;
+- la date du projet, si elle permet réellement de distinguer les dossiers.
+
+Si AU MOINS DEUX de ces identifiants importants sont clairement différents entre des documents, considérer qu'il peut s'agir de PLUSIEURS PROJETS DISTINCTS — et NON d'une contradiction interne à un même projet.
+
+Dans ce cas :
+- Ne PAS écrire « contradictions détectées ».
+- Insérer à la place une section intitulée exactement \`### Plusieurs projets possibles\`, listant les groupes détectés sous la forme :
+  Projet possible 1 :
+  - client
+  - adresse
+  - surface
+  - fichiers concernés
+  Projet possible 2 :
+  - client
+  - adresse
+  - surface
+  - fichiers concernés
+- Poser ensuite explicitement à l'utilisateur la question :
+  « Ces documents concernent-ils le même chantier ou plusieurs chantiers différents ? »
+  Réponses attendues : « même chantier », « plusieurs chantiers », « je ne sais pas ».
+- Mettre dans le bloc structuré : \`projectSeparationRequired: true\` et \`projectSeparationReason\` = courte phrase citant les identifiants divergents.
+
+Tant que l'utilisateur n'a PAS confirmé qu'il s'agit d'un seul chantier :
+- NE PAS fusionner les prestations entre documents ;
+- NE PAS fusionner les prix ;
+- NE PAS déclarer les écarts comme contradictions certaines ;
+- NE PAS préparer un transfert global vers le Devis intelligent (le bloc reste produit avec \`requiresReview: true\` et des items par fichier, sans agrégation).
+
+Si les identifiants concordent (un seul projet plausible), mettre \`projectSeparationRequired: false\` et \`projectSeparationReason: null\`, puis poursuivre normalement avec la checklist de contradictions ci-dessous.
 
 ### Checklist de contradictions (OBLIGATOIRE avant la conclusion)
 Vérifier explicitement : identité du client ; adresse du chantier ; surface totale ; dates ; périmètre des lots ; quantités ; prix unitaires ; totaux globaux.

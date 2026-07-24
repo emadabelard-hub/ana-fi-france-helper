@@ -1246,17 +1246,45 @@ const AIAssistantPage = () => {
               {/* BTP Document Mode: transfer to Smart Devis */}
               {(() => {
                 // Documentary BTP mode is active when the mandatory inventory section
-                // "Documents effectivement analysés" is present in the visible response.
-                const isBtpDocMode = /Documents\s+effectivement\s+analys/i.test(visibleContent || '');
-                const hasValidBlock = !!btpDocData;
+                // "Documents effectivement analysés" is present in the visible response,
+                // OR when the strict parser detected an opening tag (even if truncated).
+                const isBtpDocMode =
+                  /Documents\s+effectivement\s+analys/i.test(visibleContent || '') ||
+                  btpDocStatus === 'truncated' ||
+                  btpDocStatus === 'invalid';
+                const hasValidBlock = btpDocStatus === 'ok' && !!btpDocData;
 
                 if (!isLastAssistant || isLoading) return null;
 
+                // CAS B — opening tag present but closing tag missing (truncation).
+                // The strict parser never returns partial data; transfer stays disabled.
+                if (btpDocStatus === 'truncated') {
+                  return (
+                    <div className="mt-4 border-t border-border pt-3" dir="ltr">
+                      <p className="text-sm text-foreground bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                        La réponse de l'assistant a été interrompue avant la fin de l'analyse. Merci de relancer l'analyse avec moins de documents ou des fichiers séparés.
+                      </p>
+                    </div>
+                  );
+                }
+
+                // CAS C — block complete but JSON invalid.
+                if (btpDocStatus === 'invalid') {
+                  return (
+                    <div className="mt-4 border-t border-border pt-3" dir="ltr">
+                      <p className="text-sm text-foreground bg-muted/60 border border-border rounded-lg p-3">
+                        Les données structurées produites sont invalides. Aucun transfert n'a été effectué.
+                      </p>
+                    </div>
+                  );
+                }
+
+                // CAS A — no opening tag at all, but doc mode was expected.
                 if (isBtpDocMode && !hasValidBlock) {
                   return (
                     <div className="mt-4 border-t border-border pt-3" dir="ltr">
                       <p className="text-sm text-foreground bg-muted/60 border border-border rounded-lg p-3">
-                        L'analyse est terminée, mais aucune donnée structurée fiable n'a été produite pour préparer le devis. Merci de relancer l'analyse ou d'envoyer un document plus lisible.
+                        Aucune donnée structurée n'a été produite pour préparer le devis.
                       </p>
                     </div>
                   );

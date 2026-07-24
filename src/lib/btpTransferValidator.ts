@@ -24,7 +24,7 @@
 
 const PRICE_EPS = 0.02;
 const PRICE_CONF_MIN = 0.9;
-const QTY_CONF_MIN = 0.85;
+const QTY_CONF_MIN = 0.75;
 
 type RawItem = {
   description?: string | null;

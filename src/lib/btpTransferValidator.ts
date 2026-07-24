@@ -157,14 +157,14 @@ export const validateBtpItemsForTransfer = (
       priceSource === 'document' &&
       requiresReview === false &&
       quantityAccepted && // prix ⇒ quantité fiable
-      (confidence === null ? false : confidence >= PRICE_CONF_MIN) &&
+      (priceConfidence === null ? false : priceConfidence >= PRICE_CONF_MIN) &&
       arithmeticOk !== false; // null (pas de total fourni) toléré, false interdit
 
     if (!priceAccepted) {
       if (puRaw === null || puRaw <= 0) reasons.push('price_missing');
       if (priceSource !== 'document') reasons.push('price_source_not_document');
       if (requiresReview !== false) reasons.push('price_requires_review');
-      if (confidence === null || confidence < PRICE_CONF_MIN) reasons.push('price_low_confidence');
+      if (priceConfidence === null || priceConfidence < PRICE_CONF_MIN) reasons.push('price_low_confidence');
       if (arithmeticOk === false) reasons.push('price_arithmetic_failed');
       if (!quantityAccepted) reasons.push('price_blocked_by_quantity');
     }
@@ -189,6 +189,8 @@ export const validateBtpItemsForTransfer = (
       reasons,
       priceSource,
       confidence,
+      quantityConfidence,
+      priceConfidence,
       requiresReview,
       arithmeticOk,
     });

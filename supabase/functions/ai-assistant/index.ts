@@ -799,24 +799,44 @@ Règles JSON strictes :
           : (language === 'fr'
               ? "Analyse ces documents et explique-moi leur contenu, les points importants et ce que je dois faire."
               : "حلل المستندات دي واشرحلي محتواها والنقاط المهمة وإيه اللي لازم أعمله.");
-        const parts: any[] = [{ type: 'text', text: question }];
-        const pdfTexts: string[] = [];
-        for (const att of attList) {
-          if (att?.kind === 'image' && typeof att.dataUrl === 'string') {
-            parts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
-          } else if (att?.kind === 'pdf' && typeof att.text === 'string') {
-            const t = att.text.slice(0, 50000);
-            pdfTexts.push(`[PDF: "${att.name || 'document.pdf'}"]\n"""\n${t}\n"""`);
-          }
-        }
-        if (pdfTexts.length > 0) {
-          parts[0] = { type: 'text', text: pdfTexts.join('\n\n') + '\n\n' + question };
-        }
-        outgoingMessages[lastIdx] = parts.length > 1
-          ? { role: 'user', content: parts }
-          : { role: 'user', content: parts[0].text };
+
+        // Split attachments per kind (preserve original order within kind)
+        const imageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
+        const pdfAtts = attList.filter((a: any) => a?.kind === 'pdf' && typeof a.text === 'string');
+
+        // 1) Multi-document instruction + file inventory
+        const fileList = attList
+          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
+          .join('\n');
+        const header = `CONSIGNE MULTI-DOCUMENT : ${attList.length} pièce(s) jointe(s) accompagne(nt) ce message. Analyse chaque pièce SÉPARÉMENT avant toute conclusion. Ne conclus jamais qu'une information est absente avant d'avoir examiné TOUTES les pièces.\n\nFICHIERS JOINTS :\n${fileList}`;
+
+        const parts: any[] = [{ type: 'text', text: header }];
+
+        // 2) Images d'abord, chacune précédée d'un libellé descriptif
+        imageAtts.forEach((att: any, i: number) => {
+          parts.push({
+            type: 'text',
+            text: `IMAGE ${i + 1} — Fichier : ${att.name || `image_${i + 1}.jpg`}\nAnalyse cette image comme un document indépendant. Elle peut contenir un CCTP, un DPGF, une notice, un rapport ou une photo — identifie son type, sa lisibilité, puis extrais uniquement les informations réellement lisibles.`,
+          });
+          parts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
+        });
+
+        // 3) Textes PDF ensuite, chacun précédé de son nom de fichier
+        pdfAtts.forEach((att: any, i: number) => {
+          const t = String(att.text).slice(0, 50000);
+          parts.push({
+            type: 'text',
+            text: `DOCUMENT TEXTE PDF ${i + 1} — Fichier : ${att.name || 'document.pdf'}\n\n"""\n${t}\n"""`,
+          });
+        });
+
+        // 4) Question utilisateur à la fin
+        parts.push({ type: 'text', text: `QUESTION DE L'UTILISATEUR : ${question}` });
+
+        outgoingMessages[lastIdx] = { role: 'user', content: parts };
       }
     }
+
 
 
     const response = await anthropicCompatFetch({

@@ -739,7 +739,9 @@ Produis EXACTEMENT ce bloc, sans texte avant, en respectant scrupuleusement la b
   },
   "constraints": [],
   "missingInformation": [],
-  "copyText": ""
+  "copyText": "",
+  "documentTotalHT": null,
+  "documentTotalEvidenceText": ""
 }
 </ANAFYPRO_DOCUMENT_DATA>
 
@@ -765,6 +767,8 @@ Règles JSON strictes :
 - Si \`quantity\`, \`unitPrice\` et \`total\` sont tous fournis, \`quantity × unitPrice\` doit ≈ \`total\` (tolérance 0,02 €) — sinon \`unitPrice = null\`, \`total = null\`, \`priceSource = "missing"\`, \`requiresReview = true\`.
 - Si le total global du document est incohérent : AUCUN prix transféré.
 - Si aucune prestation fiable : \`items: []\`, \`confidence: 0\`, \`requiresReview: true\`, \`reason\` court.
+- \`documentTotalHT\` = total HT explicitement visible dans le document source. Si aucun total HT clair : \`null\`. Ne JAMAIS calculer, corriger ou remplacer ce total par un total TTC, une TVA ou un sous-total.
+- \`documentTotalEvidenceText\` = court extrait du document justifiant le total HT (exemple : \`TOTAL HT : 8 730,00 €\`). Si \`documentTotalHT\` est \`null\`, ce champ doit être \`null\` ou vide.
 
 ### Après le bloc — narratif court
 
@@ -777,6 +781,11 @@ Les chiffres fiables provenant d'un autre fichier lisible (ex. PDF CCTP propre) 
 Un montant ne peut être affiché comme certain QUE si TOUTES ces conditions sont réunies : fichier source identifié, désignation lisible, quantité lisible, unité lisible, prix unitaire OU total lisible, calcul vérifié (tolérance 0,02 €), source non miniature, aucune contradiction entre documents. Si UNE SEULE condition manque → phrase exacte ci-dessus.
 
 N'invente JAMAIS : prix de marché, coût des fournitures, forfait, jours de main-d'œuvre, coût d'évacuation, marge, remise. Un délai contractuel, une surface globale ou une durée de chantier ne deviennent JAMAIS automatiquement une quantité facturable.
+
+🚨 Interdictions formelles dans le narratif tant qu'aucun contrôle par code n'a été effectué :
+- Ne pas écrire « cohérence arithmétique vérifiée » ;
+- Ne pas écrire « calculs vérifiés » ;
+- Ne pas écrire « total exact » ou toute formulation équivalente affirmant une vérification mathématique effectuée par le modèle.
 
 ### Documents effectivement analysés (dans le narratif, juste après le bloc)
 Pour chaque pièce jointe listée dans le message utilisateur, une ligne :

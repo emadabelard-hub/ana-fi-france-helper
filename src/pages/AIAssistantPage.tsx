@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAssistantDictation } from '@/hooks/useAssistantDictation';
 import FullscreenVoiceModal from '@/components/assistant/FullscreenVoiceModal';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
+import { validateBtpItemsForTransfer } from '@/lib/btpTransferValidator';
 
 type ConversationSummary = { id: string; title: string | null; updated_at: string };
 

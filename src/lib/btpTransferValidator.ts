@@ -14,8 +14,7 @@
  *  - Quantité acceptée SEULEMENT si:
  *      quantity > 0
  *      unit lisible (non vide, ≠ "?")
- *      confidence >= 0.85
- *      requiresReview === false
+ *      confidence >= 0.75
  *  - Sinon: la désignation est conservée, mais unitPrice = 0 (= "à compléter"
  *    côté Devis intelligent) et/ou quantity = 1 (valeur neutre non-facturante
  *    imposée par le type LineItem existant, sans invention de prix).
@@ -25,7 +24,7 @@
 
 const PRICE_EPS = 0.02;
 const PRICE_CONF_MIN = 0.9;
-const QTY_CONF_MIN = 0.85;
+const QTY_CONF_MIN = 0.75;
 
 type RawItem = {
   description?: string | null;
@@ -128,13 +127,11 @@ export const validateBtpItemsForTransfer = (rawItems: unknown): ValidationReport
       qtyRaw !== null &&
       qtyRaw > 0 &&
       isReadableUnit(unitRaw) &&
-      requiresReview === false &&
       (confidence === null ? false : confidence >= QTY_CONF_MIN);
 
     if (!quantityAccepted) {
       if (qtyRaw === null || qtyRaw <= 0) reasons.push('quantity_missing_or_invalid');
       if (!isReadableUnit(unitRaw)) reasons.push('unit_unreadable');
-      if (requiresReview !== false) reasons.push('quantity_requires_review');
       if (confidence === null || confidence < QTY_CONF_MIN) reasons.push('quantity_low_confidence');
     }
 

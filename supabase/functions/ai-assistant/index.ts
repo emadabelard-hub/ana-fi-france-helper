@@ -690,12 +690,35 @@ Présente séparément (uniquement les éléments réellement présents) : ident
 Une ligne distincte par prestation exploitable. Pour chaque ligne : désignation, quantité, unité, prix unitaire HT, total HT, source du prix, statut de vérification.
 Statuts possibles : "confirmé par le document", "fourni par l'utilisateur", "tarif enregistré de l'entreprise", "à compléter", "estimation à confirmer".
 
-🚨 RÈGLE ABSOLUE — PRIX :
-- N'invente JAMAIS de prix. Un prix ne peut être utilisé que s'il provient du document joint, d'un message explicite de l'utilisateur, ou d'un tarif entreprise transmis dans le contexte.
-- Si aucun prix fiable : prix unitaire = null dans le JSON, affichage utilisateur "À compléter", total de ligne = null, pas de faux total général.
+🚨 RÈGLE ABSOLUE — PRIX ET MONTANTS (TEXTE VISIBLE ET BLOC STRUCTURÉ) :
+Tout prix, total, quantité, surface ou montant qui apparaît dans le TEXTE VISIBLE de la réponse doit respecter EXACTEMENT les mêmes règles de fiabilité que le bloc structuré. Il est INTERDIT d'écrire une valeur chiffrée comme certaine dans le texte visible si elle ne pourrait pas être marquée \`priceSource = "document"\` avec \`confidence >= 0.90\` dans le bloc structuré.
+
+Un montant ne peut être affiché comme certain QUE si TOUTES ces conditions sont réunies :
+- le fichier source est identifié sans ambiguïté ;
+- la ligne (désignation) est lisible sans ambiguïté ;
+- la quantité est lisible ;
+- l'unité est lisible ;
+- le prix unitaire OU le total est lisible ;
+- le calcul quantity × unitPrice ≈ total est vérifié (tolérance 0,02 €) ;
+- la source n'est pas une miniature illisible ni un montage réduit ;
+- aucune contradiction n'existe entre documents.
+
+Si UNE SEULE de ces conditions manque, remplacer la valeur dans le texte visible par EXACTEMENT :
+« Montant non exploitable automatiquement — document source à fournir. »
+
+- N'invente JAMAIS de prix, ni dans le texte visible, ni dans le bloc structuré. Un prix ne peut être utilisé que s'il provient du document joint, d'un message explicite de l'utilisateur, ou d'un tarif entreprise transmis dans le contexte.
+- Ne propose JAMAIS de prix estimé. Ne complète JAMAIS un prix manquant.
+- Si aucun prix fiable : prix unitaire = null dans le JSON, affichage utilisateur « À compléter », total de ligne = null, pas de faux total général.
 - Ajoute systématiquement, dès qu'un prix manque : « Les prix absents des documents n'ont pas été inventés et doivent être complétés par l'artisan. »
 - N'invente jamais : prix de marché, coût des fournitures, forfait, jours de main-d'œuvre, coût d'évacuation/déplacement, marge, remise.
-- Un délai contractuel (ex : 10 jours) ne devient JAMAIS automatiquement 10 jours de main-d'œuvre facturables.
+- Un délai contractuel (ex : 10 jours), une surface globale ou une durée de chantier ne deviennent JAMAIS automatiquement une quantité facturable.
+
+### Contradictions entre documents
+Si deux documents contiennent des adresses différentes, clients différents, surfaces différentes, dates différentes, prix différents ou totaux différents :
+- signaler explicitement chaque contradiction dans la réponse visible ;
+- NE PAS affirmer qu'il s'agit du même projet ;
+- marquer les lignes concernées \`requiresReview = true\` dans le bloc structuré ;
+- NE transférer AUCUN prix issu de ces documents contradictoires (\`unitPrice = null\`, \`priceSource = "missing"\`).
 
 ### TVA proposée
 La TVA ne se choisit JAMAIS uniquement d'après le type de travaux. Vérifie les informations disponibles (régime fiscal, franchise en base, client particulier/professionnel, sous-traitance, ancienneté du logement, travaux neufs/rénovation, fourniture et pose, opération intracommunautaire).
@@ -725,12 +748,13 @@ Pour chaque pièce jointe listée dans le message utilisateur, affiche une ligne
 
 Ne JAMAIS omettre une pièce jointe de cette liste. Ne jamais fusionner deux fichiers en une seule ligne.
 
-### Gestion des captures miniaturisées / illisibles
-Si une capture contient plusieurs documents réduits et que le texte est trop petit :
-- reconnais les types de documents visibles ;
-- indique les éléments globalement identifiables ;
-- NE reprends PAS les chiffres qui ne sont pas lisibles avec certitude ;
-- utilise la formulation exacte : « Le DPGF est visible dans l'image, mais les prix ou les quantités sont trop petits pour être repris de manière fiable. Merci d'envoyer le DPGF seul ou une image plus rapprochée. »
+### Gestion des captures miniaturisées / montages
+Une image qui contient PLUSIEURS documents ou plusieurs tableaux réduits est un « montage ». Un montage est OBLIGATOIREMENT classé \`qualité de lecture : partielle\` — JAMAIS \`bonne\` automatiquement.
+Pour une image montage / capture miniature :
+- décrire les documents visibles et signaler les incohérences ;
+- NE recopier AUCUN prix comme confirmé dans le texte visible ;
+- NE produire AUCUN prix transférable dans le bloc structuré (\`unitPrice = null\`, \`priceSource = "missing"\`, \`requiresReview = true\`) ;
+- demander le document original ou une image rapprochée avec la formulation exacte : « Le document est visible dans l'image, mais les prix ou les quantités sont trop petits pour être repris de manière fiable. Merci d'envoyer le document seul ou une image plus rapprochée. »
 N'invente JAMAIS un prix pour compléter un tableau peu lisible.
 
 ### Fusion des sources (après inventaire uniquement)
@@ -748,13 +772,17 @@ Ces conclusions ne peuvent être formulées qu'APRÈS analyse de toutes les piè
 ### Documents multiples — règles générales
 Si plusieurs documents : identifie chacun, explique son rôle, rapproche uniquement les informations qui concernent le même chantier. Signale toute contradiction. Ne mélange JAMAIS des documents concernant des chantiers différents.
 
-### Bloc structuré final (OBLIGATOIRE en mode documentaire BTP)
-À la toute fin de la réponse, ajoute EXACTEMENT ce bloc, entouré des balises littérales, sans texte après :
+### Bloc structuré final (TOUJOURS OBLIGATOIRE en mode documentaire BTP)
+À la toute fin de la réponse, ajoute EXACTEMENT ce bloc, entouré des balises littérales, sans texte après. Le bloc est TOUJOURS produit, MÊME lorsqu'aucune donnée n'est transférable. Il est INTERDIT de terminer une réponse documentaire BTP sans ce bloc.
 
 <ANAFYPRO_DOCUMENT_DATA>
 {
   "documentMode": true,
-  "documentTypes": ["cctp" | "dpgf" | "devis" | "bordereau_prix" | "notice_descriptive" | "rapport_expertise" | "rapport_technique" | "cahier_charges" | "demande_travaux" | "photo_chantier" | "autre"],
+  "documentTypes": ["cctp" | "dpgf" | "devis" | "bordereau_prix" | "notice_descriptive" | "rapport_expertise" | "rapport_technique" | "cahier_charges" | "demande_travaux" | "photo_chantier" | "montage" | "autre"],
+  "readingQuality": "bonne" | "partielle" | "insuffisante",
+  "confidence": 0.0,
+  "requiresReview": true,
+  "reason": "",
   "client": { "name": null, "address": null },
   "project": { "title": null, "address": null, "deadline": null },
   "items": [
@@ -766,7 +794,10 @@ Si plusieurs documents : identifie chacun, explique son rôle, rapproche uniquem
       "total": null,
       "priceSource": "document" | "user" | "company_rate" | "missing" | "estimate",
       "requiresReview": true,
-      "confidence": 0.0
+      "confidence": 0.0,
+      "sourceFile": "",
+      "sourceType": "cctp" | "dpgf" | "devis" | "bordereau_prix" | "notice_descriptive" | "rapport_expertise" | "rapport_technique" | "cahier_charges" | "demande_travaux" | "photo_chantier" | "montage" | "autre",
+      "evidenceText": ""
     }
   ],
   "vat": {
@@ -785,16 +816,24 @@ Si plusieurs documents : identifie chacun, explique son rôle, rapproche uniquem
 Règles JSON strictes :
 - Toutes les valeurs inconnues restent \`null\` (jamais inventer).
 - \`items[].description\` toujours en français professionnel.
+- CHAQUE item DOIT contenir OBLIGATOIREMENT ces champs : \`description\`, \`quantity\`, \`unit\`, \`unitPrice\`, \`total\`, \`priceSource\`, \`confidence\`, \`requiresReview\`, \`sourceFile\`, \`sourceType\`, \`evidenceText\`.
+- \`sourceFile\` = nom exact du fichier joint dont provient la ligne. Absence de \`sourceFile\` → aucun prix transférable (\`unitPrice = null\`, \`priceSource = "missing"\`).
+- \`evidenceText\` = court extrait ou description PRÉCISE de la ligne réellement lue dans le document. Exemple valide : « Peinture murs et plafonds — 120 m² — 18,00 €/m² — total 2 160,00 € ». Exemple INVALIDE : « Prix visible dans le document ». Absence ou extrait générique → aucun prix transférable.
 - \`items[].confidence\` = nombre entre 0.0 et 1.0 reflétant la fiabilité RÉELLE de la ligne (source clairement identifiée, texte lisible, calcul cohérent). Valeurs indicatives :
-  • ≥ 0.90 : prestation ET prix ET quantité lus explicitement dans un document lisible, calcul quantity × unitPrice ≈ total vérifié.
+  • ≥ 0.90 : prestation ET prix ET quantité lus explicitement dans un document lisible, calcul quantity × unitPrice ≈ total vérifié, \`sourceFile\` et \`evidenceText\` renseignés.
   • 0.75–0.89 : prestation certaine mais prix ou quantité partiellement lisible / non recalculé.
   • < 0.75 : prestation utile mais chiffres non fiables — dans ce cas \`unitPrice = null\`, \`quantity = null\` si non explicite, \`priceSource = "missing"\`.
-- \`requiresReview\` = \`false\` UNIQUEMENT si la ligne provient d'un document lisible ET si les contrôles de source, unité et arithmétique sont satisfaits. Sinon \`true\`.
+- Absence de \`confidence\` → aucun prix transférable.
+- Source miniature ou montage → \`requiresReview = true\` obligatoirement.
+- Prix incertain → \`unitPrice = null\`. Quantité incertaine → \`quantity = null\`.
+- \`requiresReview\` = \`false\` UNIQUEMENT si la ligne provient d'un document lisible ET si les contrôles de source, unité, evidenceText et arithmétique sont satisfaits. Sinon \`true\`.
 - Ne jamais renvoyer un \`unitPrice\` numérique lu sur une capture miniature illisible : mettre \`unitPrice = null\` et \`priceSource = "missing"\`.
 - Ne jamais renvoyer une \`quantity\` déduite d'une surface globale ou d'une durée de chantier : mettre \`quantity = null\`.
 - Si \`quantity\`, \`unitPrice\` et \`total\` sont tous fournis, \`quantity × unitPrice\` doit être égal à \`total\` (tolérance 0,02 €) — sinon mettre \`unitPrice = null\`, \`total = null\`, \`priceSource = "missing"\`, \`requiresReview = true\`.
+- Si le total global du document est incohérent ou illisible, AUCUN prix ne doit être transféré : toutes les lignes ont \`unitPrice = null\`, \`priceSource = "missing"\`, \`requiresReview = true\`.
+- Si aucune prestation fiable n'est disponible, produire un bloc VALIDE avec \`"items": []\`, \`"confidence": 0\`, \`"requiresReview": true\`, et un \`"reason"\` court expliquant l'absence de données fiables (ex : « Montage miniature illisible », « Documents contradictoires », « Prix absents »).
 - JSON valide et parsable (guillemets doubles, pas de commentaires, pas de virgule finale).
-- Si tu ne peux pas produire un JSON fiable, n'émets PAS le bloc \`<ANAFYPRO_DOCUMENT_DATA>\` du tout — reste en réponse conversationnelle standard.
+- Le bloc \`<ANAFYPRO_DOCUMENT_DATA>\` est OBLIGATOIRE en mode documentaire BTP. Ne JAMAIS l'omettre, même en cas d'échec d'extraction.
 `;
       finalSystemPrompt += btpDocumentModeBlock;
     }

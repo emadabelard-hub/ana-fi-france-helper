@@ -92,8 +92,17 @@ const isReadableUnit = (u: unknown): u is string => {
 /**
  * Valide et normalise les items produits par l'Assistant IA (bloc
  * <ANAFYPRO_DOCUMENT_DATA>) avant écriture dans sessionStorage.
+ *
+ * @param rawItems        - Items extraits du document (tableau).
+ * @param documentTotalHT - Total HT lu sur le document (optionnel). S'il est
+ *                          strictement positif et que la somme recalculée des
+ *                          lignes acceptées s'en écarte de plus de 0,02 €,
+ *                          tous les prix transférés sont refusés.
  */
-export const validateBtpItemsForTransfer = (rawItems: unknown): ValidationReport => {
+export const validateBtpItemsForTransfer = (
+  rawItems: unknown,
+  documentTotalHT?: number | string | null
+): ValidationReport => {
   const arr: RawItem[] = Array.isArray(rawItems) ? (rawItems as RawItem[]) : [];
   const lines: ValidatedLine[] = [];
   const meta: ValidationMeta[] = [];
@@ -178,6 +187,30 @@ export const validateBtpItemsForTransfer = (rawItems: unknown): ValidationReport
       arithmeticOk,
     });
   });
+
+  // ── Contrôle global du total HT ──
+  const totalHT = toNum(documentTotalHT);
+  const acceptedPriceIndexes = meta
+    .map((m, i) => (m.priceAccepted ? i : -1))
+    .filter((i) => i !== -1);
+
+  if (totalHT !== null && totalHT > 0 && acceptedPriceIndexes.length > 0) {
+    const sumRecomputed = acceptedPriceIndexes.reduce((sum, i) => {
+      const line = lines[i];
+      return sum + line.quantity * line.unitPrice;
+    }, 0);
+
+    if (Math.abs(sumRecomputed - totalHT) > PRICE_EPS) {
+      // Refus global des prix transférés ; quantités et unités restent inchangées.
+      lines.forEach((line) => {
+        line.unitPrice = 0;
+      });
+      meta.forEach((m) => {
+        m.priceAccepted = false;
+        m.reasons.push('global_total_mismatch');
+      });
+    }
+  }
 
   return { lines, meta };
 };

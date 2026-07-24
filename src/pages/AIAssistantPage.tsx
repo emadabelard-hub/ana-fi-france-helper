@@ -1224,20 +1224,83 @@ const AIAssistantPage = () => {
                     type="button"
                     onClick={() => {
                       try {
-                        const items = Array.isArray(btpDocData.items) ? btpDocData.items : [];
+                        const rawItems = Array.isArray(btpDocData.items) ? btpDocData.items : [];
+                        // Tolerate alternative field names emitted by the model
+                        const normalized = rawItems
+                          .map((it: any) => {
+                            const designation = String(
+                              it?.description ??
+                                it?.designation_fr ??
+                                it?.designation ??
+                                it?.libelle ??
+                                it?.label ??
+                                ''
+                            ).trim();
+                            const qtyRaw = it?.quantity ?? it?.quantite ?? it?.qty;
+                            const quantity =
+                              typeof qtyRaw === 'number' && qtyRaw > 0
+                                ? qtyRaw
+                                : (typeof qtyRaw === 'string' && Number(qtyRaw.replace(',', '.')) > 0
+                                    ? Number(qtyRaw.replace(',', '.'))
+                                    : 1);
+                            const unit = String(it?.unit ?? it?.unite ?? 'u').trim() || 'u';
+                            const puRaw = it?.unitPrice ?? it?.prix_unitaire ?? it?.pu;
+                            const unitPrice =
+                              typeof puRaw === 'number' && puRaw > 0
+                                ? puRaw
+                                : (typeof puRaw === 'string' && Number(puRaw.replace(',', '.')) > 0
+                                    ? Number(puRaw.replace(',', '.'))
+                                    : 0);
+                            return { designation, quantity, unit, unitPrice };
+                          })
+                          .filter((it) => it.designation.length > 0);
+
+                        if (normalized.length === 0) {
+                          console.warn('[AIAssistant] BTP transfer: no exploitable items in <ANAFYPRO_DOCUMENT_DATA>', btpDocData);
+                          toast({
+                            variant: 'destructive',
+                            title: 'Aucune prestation exploitable',
+                            description:
+                              "L'analyse n'a pas produit de lignes valides. Relancez l'analyse en demandant explicitement le détail par prestation.",
+                          });
+                          return;
+                        }
+
+                        const items = normalized.map((it) => ({
+                          designation_fr: it.designation,
+                          designation_ar: '',
+                          quantity: it.quantity,
+                          unit: it.unit,
+                          // Prix inconnu → 0 (contrainte de type côté Devis intelligent).
+                          // Le prix doit être complété manuellement par l'artisan.
+                          unitPrice: it.unitPrice,
+                          lot: null,
+                        }));
+
+                        const subject =
+                          (btpDocData.project?.title && String(btpDocData.project.title).trim()) ||
+                          (btpDocData.client?.name
+                            ? `Devis — ${String(btpDocData.client.name).trim()}`
+                            : '');
+
                         const payload = {
-                          subject:
-                            (btpDocData.project?.title && String(btpDocData.project.title)) ||
-                            (btpDocData.client?.name ? `Devis — ${btpDocData.client.name}` : ''),
-                          items: items.map((it) => ({
-                            designation_fr: String(it.description || '').trim(),
-                            designation_ar: '',
-                            quantity: typeof it.quantity === 'number' && it.quantity > 0 ? it.quantity : 1,
-                            unit: (it.unit && String(it.unit)) || 'u',
-                            unitPrice: typeof it.unitPrice === 'number' && it.unitPrice > 0 ? it.unitPrice : 0,
-                            lot: null,
-                          })),
+                          subject,
+                          items,
+                          // Champs additionnels (ignorés par l'hydratation actuelle mais utiles
+                          // pour évolutions futures et pour trace en session)
+                          client: btpDocData.client || null,
+                          project: btpDocData.project || null,
+                          vat: btpDocData.vat || null,
+                          constraints: btpDocData.constraints || [],
+                          missingInformation: btpDocData.missingInformation || [],
+                          copyText: btpDocData.copyText || '',
                         };
+
+                        console.log('[AIAssistant] BTP transfer → SmartDevis', {
+                          itemsCount: items.length,
+                          subject,
+                          hasVat: !!payload.vat,
+                        });
                         sessionStorage.setItem('smart_devis_prefill_v1', JSON.stringify(payload));
                         navigate('/pro/smart-devis');
                       } catch (err) {

@@ -709,8 +709,44 @@ Exemples :
 🚨 CETTE SECTION EST INTÉGRALEMENT EN FRANÇAIS PROFESSIONNEL, MÊME SI L'INTERFACE UTILISATEUR EST EN ARABE.
 Contient uniquement : client connu, adresse connue, objet du chantier, prestations séparées, quantités, unités, prix réellement connus, mention « prix à compléter » pour les prix absents, contraintes utiles, délai, TVA proposée avec réserve, points nécessitant confirmation. Aucune donnée inventée.
 
-### Documents multiples
-Si plusieurs documents : identifie chacun, explique son rôle, rapproche uniquement les informations qui concernent le même chantier. CCTP → prestations/contraintes. DPGF → quantités/prix. Notice → description. Rapport d'expertise → recommandations à confirmer. Photo → indice visuel seulement (jamais transformée automatiquement en prestation certaine). Signale toute contradiction. Ne mélange JAMAIS des documents concernant des chantiers différents.
+### ANALYSE MULTI-SOURCE OBLIGATOIRE (règle stricte)
+Avant de répondre, tu DOIS analyser chaque pièce jointe séparément. Ne commence JAMAIS l'analyse globale après le premier document. Dresse d'abord l'inventaire de TOUS les fichiers, identifie le type et la lisibilité de chacun, puis fusionne les informations UNIQUEMENT après avoir examiné toutes les sources.
+
+Le PDF, les images, les captures, les tableaux et les photographies sont des sources DISTINCTES. Une information absente du CCTP peut être présente dans le DPGF ou la notice. Ne conclus JAMAIS qu'un prix est absent avant d'avoir examiné toutes les images.
+
+Ne considère JAMAIS automatiquement une image comme une simple photo : une capture peut contenir plusieurs sous-documents (CCTP, DPGF, notice, rapport, photo). Recherche explicitement dans CHAQUE image : titre du document, CCTP, DPGF, notice descriptive, rapport d'expertise, photographie de chantier, désignations, quantités, unités, prix unitaires HT, totaux HT, taux de TVA, délais, contraintes, coordonnées, observations techniques.
+
+### Inventaire obligatoire (à placer EN TÊTE de la réponse)
+La réponse DOIT commencer par la section suivante, avant toute autre analyse :
+
+### Documents effectivement analysés
+Pour chaque pièce jointe listée dans le message utilisateur, affiche une ligne :
+- nom du fichier — type reconnu (CCTP, DPGF, notice, rapport, photo, montage documentaire, autre) — qualité de lecture (bonne | partielle | insuffisante) — informations principales trouvées.
+
+Ne JAMAIS omettre une pièce jointe de cette liste. Ne jamais fusionner deux fichiers en une seule ligne.
+
+### Gestion des captures miniaturisées / illisibles
+Si une capture contient plusieurs documents réduits et que le texte est trop petit :
+- reconnais les types de documents visibles ;
+- indique les éléments globalement identifiables ;
+- NE reprends PAS les chiffres qui ne sont pas lisibles avec certitude ;
+- utilise la formulation exacte : « Le DPGF est visible dans l'image, mais les prix ou les quantités sont trop petits pour être repris de manière fiable. Merci d'envoyer le DPGF seul ou une image plus rapprochée. »
+N'invente JAMAIS un prix pour compléter un tableau peu lisible.
+
+### Fusion des sources (après inventaire uniquement)
+CCTP → prestations, contraintes, normes, surfaces, délais. DPGF → quantités, unités, prix unitaires, totaux. Notice descriptive → précisions et prestations complémentaires. Rapport d'expertise → constats et recommandations à confirmer. Photographie → indices visuels uniquement.
+Si un DPGF lisible contient un prix correspondant à une prestation du CCTP : associe le prix à la bonne prestation, indique `priceSource = "document"`, `requiresReview = false`. Si le prix est seulement partiellement lisible : ne le transfère PAS, laisse `unitPrice = null`, indique `priceSource = "missing"`.
+
+### Interdictions de conclusion prématurée
+Les formulations suivantes sont INTERDITES tant que toutes les pièces n'ont pas été examinées :
+- « Aucun prix n'est fourni »
+- « Le dossier ne contient pas de DPGF »
+- « La TVA n'est pas indiquée »
+- « Les images n'apportent aucune information »
+Ces conclusions ne peuvent être formulées qu'APRÈS analyse de toutes les pièces jointes, et doivent être justifiées par l'inventaire précédent.
+
+### Documents multiples — règles générales
+Si plusieurs documents : identifie chacun, explique son rôle, rapproche uniquement les informations qui concernent le même chantier. Signale toute contradiction. Ne mélange JAMAIS des documents concernant des chantiers différents.
 
 ### Bloc structuré final (OBLIGATOIRE en mode documentaire BTP)
 À la toute fin de la réponse, ajoute EXACTEMENT ce bloc, entouré des balises littérales, sans texte après :
@@ -763,24 +799,44 @@ Règles JSON strictes :
           : (language === 'fr'
               ? "Analyse ces documents et explique-moi leur contenu, les points importants et ce que je dois faire."
               : "حلل المستندات دي واشرحلي محتواها والنقاط المهمة وإيه اللي لازم أعمله.");
-        const parts: any[] = [{ type: 'text', text: question }];
-        const pdfTexts: string[] = [];
-        for (const att of attList) {
-          if (att?.kind === 'image' && typeof att.dataUrl === 'string') {
-            parts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
-          } else if (att?.kind === 'pdf' && typeof att.text === 'string') {
-            const t = att.text.slice(0, 50000);
-            pdfTexts.push(`[PDF: "${att.name || 'document.pdf'}"]\n"""\n${t}\n"""`);
-          }
-        }
-        if (pdfTexts.length > 0) {
-          parts[0] = { type: 'text', text: pdfTexts.join('\n\n') + '\n\n' + question };
-        }
-        outgoingMessages[lastIdx] = parts.length > 1
-          ? { role: 'user', content: parts }
-          : { role: 'user', content: parts[0].text };
+
+        // Split attachments per kind (preserve original order within kind)
+        const imageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
+        const pdfAtts = attList.filter((a: any) => a?.kind === 'pdf' && typeof a.text === 'string');
+
+        // 1) Multi-document instruction + file inventory
+        const fileList = attList
+          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
+          .join('\n');
+        const header = `CONSIGNE MULTI-DOCUMENT : ${attList.length} pièce(s) jointe(s) accompagne(nt) ce message. Analyse chaque pièce SÉPARÉMENT avant toute conclusion. Ne conclus jamais qu'une information est absente avant d'avoir examiné TOUTES les pièces.\n\nFICHIERS JOINTS :\n${fileList}`;
+
+        const parts: any[] = [{ type: 'text', text: header }];
+
+        // 2) Images d'abord, chacune précédée d'un libellé descriptif
+        imageAtts.forEach((att: any, i: number) => {
+          parts.push({
+            type: 'text',
+            text: `IMAGE ${i + 1} — Fichier : ${att.name || `image_${i + 1}.jpg`}\nAnalyse cette image comme un document indépendant. Elle peut contenir un CCTP, un DPGF, une notice, un rapport ou une photo — identifie son type, sa lisibilité, puis extrais uniquement les informations réellement lisibles.`,
+          });
+          parts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
+        });
+
+        // 3) Textes PDF ensuite, chacun précédé de son nom de fichier
+        pdfAtts.forEach((att: any, i: number) => {
+          const t = String(att.text).slice(0, 50000);
+          parts.push({
+            type: 'text',
+            text: `DOCUMENT TEXTE PDF ${i + 1} — Fichier : ${att.name || 'document.pdf'}\n\n"""\n${t}\n"""`,
+          });
+        });
+
+        // 4) Question utilisateur à la fin
+        parts.push({ type: 'text', text: `QUESTION DE L'UTILISATEUR : ${question}` });
+
+        outgoingMessages[lastIdx] = { role: 'user', content: parts };
       }
     }
+
 
 
     const response = await anthropicCompatFetch({

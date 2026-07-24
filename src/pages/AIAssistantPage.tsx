@@ -1216,90 +1216,105 @@ const AIAssistantPage = () => {
                 </div>
               )}
               {/* BTP Document Mode: transfer to Smart Devis */}
-              {btpDocData && isLastAssistant && !isLoading && (
-                <div className="mt-4 border-t border-border pt-3 flex flex-col gap-2" dir="ltr">
-                  <p className="text-xs text-muted-foreground">
-                    Analyse documentaire BTP prête. Les prix absents ne sont pas inventés — complétez-les dans le Devis intelligent.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      try {
-                        const rawItems = Array.isArray(btpDocData.items) ? btpDocData.items : [];
-                        // Validation stricte : prix/quantités incertains → non transférés.
-                        // Voir src/lib/btpTransferValidator.ts (contrôles source, confiance,
-                        // arithmétique quantity × unitPrice ≈ total, tolérance 0,02 €).
-                        const { lines: items, meta } = validateBtpItemsForTransfer(rawItems);
+              {(() => {
+                // Documentary BTP mode is active when the mandatory inventory section
+                // "Documents effectivement analysés" is present in the visible response.
+                const isBtpDocMode = /Documents\s+effectivement\s+analys/i.test(visibleContent || '');
+                const hasValidBlock = !!btpDocData;
 
-                        if (items.length === 0) {
-                          console.warn('[AIAssistant] BTP transfer: no exploitable items in <ANAFYPRO_DOCUMENT_DATA>', btpDocData);
-                          toast({
-                            variant: 'destructive',
-                            title: 'Aucune prestation exploitable',
-                            description:
-                              "L'analyse n'a pas produit de lignes valides. Relancez l'analyse en demandant explicitement le détail par prestation.",
-                          });
-                          return;
-                        }
+                if (!isLastAssistant || isLoading) return null;
 
-                        const priceBlocked = meta.filter((m) => !m.priceAccepted).length;
-                        const qtyBlocked = meta.filter((m) => !m.quantityAccepted).length;
+                if (isBtpDocMode && !hasValidBlock) {
+                  return (
+                    <div className="mt-4 border-t border-border pt-3" dir="ltr">
+                      <p className="text-sm text-foreground bg-muted/60 border border-border rounded-lg p-3">
+                        L'analyse est terminée, mais aucune donnée structurée fiable n'a été produite pour préparer le devis. Merci de relancer l'analyse ou d'envoyer un document plus lisible.
+                      </p>
+                    </div>
+                  );
+                }
 
-                        const subject =
-                          (btpDocData.project?.title && String(btpDocData.project.title).trim()) ||
-                          (btpDocData.client?.name
-                            ? `Devis — ${String(btpDocData.client.name).trim()}`
-                            : '');
+                if (!hasValidBlock) return null;
 
-                        const payload = {
-                          subject,
-                          items,
-                          // Champs additionnels (ignorés par l'hydratation actuelle mais utiles
-                          // pour évolutions futures et pour trace en session)
-                          client: btpDocData.client || null,
-                          project: btpDocData.project || null,
-                          vat: btpDocData.vat || null,
-                          constraints: btpDocData.constraints || [],
-                          missingInformation: btpDocData.missingInformation || [],
-                          copyText: btpDocData.copyText || '',
-                          // Traçabilité interne (non affichée dans le formulaire)
-                          _validation: {
-                            totalItems: items.length,
+                return (
+                  <div className="mt-4 border-t border-border pt-3 flex flex-col gap-2" dir="ltr">
+                    <p className="text-xs text-muted-foreground">
+                      Analyse documentaire BTP prête. Les prix absents ne sont pas inventés — complétez-les dans le Devis intelligent.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          const rawItems = Array.isArray(btpDocData!.items) ? btpDocData!.items : [];
+                          const { lines: items, meta } = validateBtpItemsForTransfer(rawItems);
+
+                          if (items.length === 0) {
+                            console.warn('[AIAssistant] BTP transfer: no exploitable items in <ANAFYPRO_DOCUMENT_DATA>', btpDocData);
+                            toast({
+                              variant: 'destructive',
+                              title: 'Aucune prestation exploitable',
+                              description:
+                                "L'analyse n'a pas produit de lignes valides. Relancez l'analyse en demandant explicitement le détail par prestation.",
+                            });
+                            return;
+                          }
+
+                          const priceBlocked = meta.filter((m) => !m.priceAccepted).length;
+                          const qtyBlocked = meta.filter((m) => !m.quantityAccepted).length;
+
+                          const subject =
+                            (btpDocData!.project?.title && String(btpDocData!.project.title).trim()) ||
+                            (btpDocData!.client?.name
+                              ? `Devis — ${String(btpDocData!.client.name).trim()}`
+                              : '');
+
+                          const payload = {
+                            subject,
+                            items,
+                            client: btpDocData!.client || null,
+                            project: btpDocData!.project || null,
+                            vat: btpDocData!.vat || null,
+                            constraints: btpDocData!.constraints || [],
+                            missingInformation: btpDocData!.missingInformation || [],
+                            copyText: btpDocData!.copyText || '',
+                            _validation: {
+                              totalItems: items.length,
+                              priceBlocked,
+                              quantityBlocked: qtyBlocked,
+                              meta,
+                            },
+                          };
+
+                          console.log('[AIAssistant] BTP transfer → SmartDevis', {
+                            itemsCount: items.length,
                             priceBlocked,
                             quantityBlocked: qtyBlocked,
-                            meta,
-                          },
-                        };
-
-                        console.log('[AIAssistant] BTP transfer → SmartDevis', {
-                          itemsCount: items.length,
-                          priceBlocked,
-                          quantityBlocked: qtyBlocked,
-                          subject,
-                          hasVat: !!payload.vat,
-                        });
-
-                        if (priceBlocked > 0 || qtyBlocked > 0) {
-                          toast({
-                            title: 'Transfert sécurisé',
-                            description: `${priceBlocked} prix et ${qtyBlocked} quantité(s) laissés à compléter — données non fiables non transférées.`,
+                            subject,
+                            hasVat: !!payload.vat,
                           });
-                        }
 
-                        sessionStorage.setItem('smart_devis_prefill_v1', JSON.stringify(payload));
-                        navigate('/pro/smart-devis');
-                      } catch (err) {
-                        console.error('[AIAssistant] BTP transfer failed', err);
-                        toast({ variant: 'destructive', title: 'Erreur', description: 'Transfert impossible' });
-                      }
-                    }}
-                    className="self-start inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md active:scale-95 transition-transform"
-                  >
-                    <Sparkles size={16} />
-                    Préparer dans le Devis intelligent
-                  </button>
-                </div>
-              )}
+                          if (priceBlocked > 0 || qtyBlocked > 0) {
+                            toast({
+                              title: 'Transfert sécurisé',
+                              description: `${priceBlocked} prix et ${qtyBlocked} quantité(s) laissés à compléter — données non fiables non transférées.`,
+                            });
+                          }
+
+                          sessionStorage.setItem('smart_devis_prefill_v1', JSON.stringify(payload));
+                          navigate('/pro/smart-devis');
+                        } catch (err) {
+                          console.error('[AIAssistant] BTP transfer failed', err);
+                          toast({ variant: 'destructive', title: 'Erreur', description: 'Transfert impossible' });
+                        }
+                      }}
+                      className="self-start inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md active:scale-95 transition-transform"
+                    >
+                      <Sparkles size={16} />
+                      Préparer dans le Devis intelligent
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           );
         })}

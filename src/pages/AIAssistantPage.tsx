@@ -1214,6 +1214,44 @@ const AIAssistantPage = () => {
                   />
                 </div>
               )}
+              {/* BTP Document Mode: transfer to Smart Devis */}
+              {btpDocData && isLastAssistant && !isLoading && (
+                <div className="mt-4 border-t border-border pt-3 flex flex-col gap-2" dir="ltr">
+                  <p className="text-xs text-muted-foreground">
+                    Analyse documentaire BTP prête. Les prix absents ne sont pas inventés — complétez-les dans le Devis intelligent.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        const items = Array.isArray(btpDocData.items) ? btpDocData.items : [];
+                        const payload = {
+                          subject:
+                            (btpDocData.project?.title && String(btpDocData.project.title)) ||
+                            (btpDocData.client?.name ? `Devis — ${btpDocData.client.name}` : ''),
+                          items: items.map((it) => ({
+                            designation_fr: String(it.description || '').trim(),
+                            designation_ar: '',
+                            quantity: typeof it.quantity === 'number' && it.quantity > 0 ? it.quantity : 1,
+                            unit: (it.unit && String(it.unit)) || 'u',
+                            unitPrice: typeof it.unitPrice === 'number' && it.unitPrice > 0 ? it.unitPrice : 0,
+                            lot: null,
+                          })),
+                        };
+                        sessionStorage.setItem('smart_devis_prefill_v1', JSON.stringify(payload));
+                        navigate('/pro/smart-devis');
+                      } catch (err) {
+                        console.error('[AIAssistant] BTP transfer failed', err);
+                        toast({ variant: 'destructive', title: 'Erreur', description: 'Transfert impossible' });
+                      }
+                    }}
+                    className="self-start inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md active:scale-95 transition-transform"
+                  >
+                    <Sparkles size={16} />
+                    Préparer dans le Devis intelligent
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}

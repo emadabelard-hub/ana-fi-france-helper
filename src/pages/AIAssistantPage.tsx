@@ -145,6 +145,7 @@ type BtpDocData = {
   documentTypes?: string[];
   client?: { name?: string | null; address?: string | null } | null;
   project?: { title?: string | null; address?: string | null; deadline?: string | null } | null;
+  documentTotalHT?: number | null;
   items?: Array<{
     description?: string;
     quantity?: number | null;
@@ -1302,7 +1303,8 @@ const AIAssistantPage = () => {
                       onClick={() => {
                         try {
                           const rawItems = Array.isArray(btpDocData!.items) ? btpDocData!.items : [];
-                          const { lines: items, meta } = validateBtpItemsForTransfer(rawItems);
+                          const documentTotalHT = btpDocData!.documentTotalHT;
+                          const { lines: items, meta } = validateBtpItemsForTransfer(rawItems, documentTotalHT);
 
                           if (items.length === 0) {
                             console.warn('[AIAssistant] BTP transfer: no exploitable items in <ANAFYPRO_DOCUMENT_DATA>', btpDocData);

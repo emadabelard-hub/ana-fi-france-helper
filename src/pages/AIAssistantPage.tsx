@@ -135,6 +135,56 @@ const detectMissingInfoForm = (content: string): { fields: MissingField[] } | nu
   return null;
 };
 
+// ---- BTP Document Mode: parse structured block emitted by ai-assistant ----
+const DOC_DATA_OPEN = '<ANAFYPRO_DOCUMENT_DATA>';
+const DOC_DATA_CLOSE = '</ANAFYPRO_DOCUMENT_DATA>';
+
+type BtpDocData = {
+  documentMode: boolean;
+  documentTypes?: string[];
+  client?: { name?: string | null; address?: string | null } | null;
+  project?: { title?: string | null; address?: string | null; deadline?: string | null } | null;
+  items?: Array<{
+    description?: string;
+    quantity?: number | null;
+    unit?: string | null;
+    unitPrice?: number | null;
+    total?: number | null;
+    priceSource?: string;
+    requiresReview?: boolean;
+  }>;
+  vat?: {
+    rate?: number | null;
+    regime?: string | null;
+    reason?: string;
+    confidence?: string;
+    requiresConfirmation?: boolean;
+  } | null;
+  constraints?: string[];
+  missingInformation?: string[];
+  copyText?: string;
+};
+
+const extractBtpDocData = (content: string): { visible: string; data: BtpDocData | null } => {
+  const open = content.indexOf(DOC_DATA_OPEN);
+  if (open === -1) return { visible: content, data: null };
+  const close = content.indexOf(DOC_DATA_CLOSE, open);
+  const endTag = close !== -1 ? close + DOC_DATA_CLOSE.length : content.length;
+  const jsonRaw = (close !== -1 ? content.slice(open + DOC_DATA_OPEN.length, close) : '').trim();
+  const visible = (content.slice(0, open) + content.slice(endTag)).trim();
+  if (!jsonRaw) return { visible, data: null };
+  try {
+    // Tolerate ```json fences around the JSON
+    const cleaned = jsonRaw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const parsed = JSON.parse(cleaned);
+    if (!parsed || parsed.documentMode !== true) return { visible, data: null };
+    return { visible, data: parsed as BtpDocData };
+  } catch (e) {
+    console.warn('[AIAssistant] BTP doc block invalid JSON, ignoring transfer button', e);
+    return { visible, data: null };
+  }
+};
+
 
 const AIAssistantPage = () => {
   const { language, isRTL, t } = useLanguage();

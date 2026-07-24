@@ -765,7 +765,8 @@ Si plusieurs documents : identifie chacun, explique son rôle, rapproche uniquem
       "unitPrice": null,
       "total": null,
       "priceSource": "document" | "user" | "company_rate" | "missing" | "estimate",
-      "requiresReview": true
+      "requiresReview": true,
+      "confidence": 0.0
     }
   ],
   "vat": {
@@ -784,7 +785,14 @@ Si plusieurs documents : identifie chacun, explique son rôle, rapproche uniquem
 Règles JSON strictes :
 - Toutes les valeurs inconnues restent \`null\` (jamais inventer).
 - \`items[].description\` toujours en français professionnel.
-- \`copyText\` = version texte complète (français) prête à coller dans le Devis intelligent, sans données inventées.
+- \`items[].confidence\` = nombre entre 0.0 et 1.0 reflétant la fiabilité RÉELLE de la ligne (source clairement identifiée, texte lisible, calcul cohérent). Valeurs indicatives :
+  • ≥ 0.90 : prestation ET prix ET quantité lus explicitement dans un document lisible, calcul quantity × unitPrice ≈ total vérifié.
+  • 0.75–0.89 : prestation certaine mais prix ou quantité partiellement lisible / non recalculé.
+  • < 0.75 : prestation utile mais chiffres non fiables — dans ce cas \`unitPrice = null\`, \`quantity = null\` si non explicite, \`priceSource = "missing"\`.
+- \`requiresReview\` = \`false\` UNIQUEMENT si la ligne provient d'un document lisible ET si les contrôles de source, unité et arithmétique sont satisfaits. Sinon \`true\`.
+- Ne jamais renvoyer un \`unitPrice\` numérique lu sur une capture miniature illisible : mettre \`unitPrice = null\` et \`priceSource = "missing"\`.
+- Ne jamais renvoyer une \`quantity\` déduite d'une surface globale ou d'une durée de chantier : mettre \`quantity = null\`.
+- Si \`quantity\`, \`unitPrice\` et \`total\` sont tous fournis, \`quantity × unitPrice\` doit être égal à \`total\` (tolérance 0,02 €) — sinon mettre \`unitPrice = null\`, \`total = null\`, \`priceSource = "missing"\`, \`requiresReview = true\`.
 - JSON valide et parsable (guillemets doubles, pas de commentaires, pas de virgule finale).
 - Si tu ne peux pas produire un JSON fiable, n'émets PAS le bloc \`<ANAFYPRO_DOCUMENT_DATA>\` du tout — reste en réponse conversationnelle standard.
 `;

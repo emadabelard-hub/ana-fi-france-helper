@@ -14,8 +14,7 @@
  *  - Quantité acceptée SEULEMENT si:
  *      quantity > 0
  *      unit lisible (non vide, ≠ "?")
- *      confidence >= 0.85
- *      requiresReview === false
+ *      confidence >= 0.75
  *  - Sinon: la désignation est conservée, mais unitPrice = 0 (= "à compléter"
  *    côté Devis intelligent) et/ou quantity = 1 (valeur neutre non-facturante
  *    imposée par le type LineItem existant, sans invention de prix).

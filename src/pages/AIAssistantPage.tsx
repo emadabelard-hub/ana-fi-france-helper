@@ -1087,13 +1087,15 @@ const AIAssistantPage = () => {
             );
           }
           const missingForm = detectMissingInfoForm(msg.content);
+          // First, extract the optional BTP document-mode structured block
+          const { visible: contentWithoutBtp, data: btpDocData } = extractBtpDocData(msg.content);
           // Strip the JSON block from the visible content if it was a form payload
           const visibleContent = missingForm
-            ? msg.content
+            ? contentWithoutBtp
                 .replace(/```(?:json)?\s*\{[\s\S]*?"missing_info_form"[\s\S]*?\}\s*```/gi, '')
                 .replace(/\{[\s\S]*?"type"\s*:\s*"missing_info_form"[\s\S]*?\}/g, '')
                 .trim()
-            : msg.content;
+            : contentWithoutBtp;
           const { preface, letter: rawLetter } = splitLetter(visibleContent);
           const letter = rawLetter ? fillPlaceholders(rawLetter, profile) : null;
           const isFormalFrench = !!letter;

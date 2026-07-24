@@ -1358,8 +1358,6 @@ const AIAssistantPage = () => {
                             });
                           }
 
-                          console.log('[ANAFYPRO_TRANSFER_PAYLOAD]', payload);
-
                           sessionStorage.setItem('smart_devis_prefill_v1', JSON.stringify(payload));
                           navigate('/pro/smart-devis');
                         } catch (err) {

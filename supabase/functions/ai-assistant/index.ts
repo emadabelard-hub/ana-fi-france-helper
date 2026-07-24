@@ -739,7 +739,9 @@ Produis EXACTEMENT ce bloc, sans texte avant, en respectant scrupuleusement la b
   },
   "constraints": [],
   "missingInformation": [],
-  "copyText": ""
+  "copyText": "",
+  "documentTotalHT": null,
+  "documentTotalEvidenceText": ""
 }
 </ANAFYPRO_DOCUMENT_DATA>
 

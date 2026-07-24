@@ -166,23 +166,51 @@ type BtpDocData = {
   copyText?: string;
 };
 
-const extractBtpDocData = (content: string): { visible: string; data: BtpDocData | null } => {
-  const open = content.indexOf(DOC_DATA_OPEN);
-  if (open === -1) return { visible: content, data: null };
-  const close = content.indexOf(DOC_DATA_CLOSE, open);
-  const endTag = close !== -1 ? close + DOC_DATA_CLOSE.length : content.length;
-  const jsonRaw = (close !== -1 ? content.slice(open + DOC_DATA_OPEN.length, close) : '').trim();
-  const visible = (content.slice(0, open) + content.slice(endTag)).trim();
-  if (!jsonRaw) return { visible, data: null };
+type BtpDocExtractStatus = 'none' | 'truncated' | 'invalid' | 'ok';
+
+const extractBtpDocData = (
+  content: string,
+): { visible: string; data: BtpDocData | null; status: BtpDocExtractStatus } => {
+  // Server-side sentinel: response was cut by max_tokens/length upstream.
+  const serverTruncated = content.includes('<ANAFYPRO_TRUNCATED/>');
+  const cleanedContent = serverTruncated
+    ? content.replace(/<ANAFYPRO_TRUNCATED\/>/g, '').trim()
+    : content;
+
+  const open = cleanedContent.indexOf(DOC_DATA_OPEN);
+  if (open === -1) {
+    // No opening tag at all.
+    // If the server flagged truncation, treat as truncated (block never emitted).
+    return {
+      visible: cleanedContent,
+      data: null,
+      status: serverTruncated ? 'truncated' : 'none',
+    };
+  }
+  const close = cleanedContent.indexOf(DOC_DATA_CLOSE, open);
+  if (close === -1) {
+    // Opening tag present but closing tag missing → truncated block.
+    // NEVER attempt to balance braces or recover partial items.
+    const visible = cleanedContent.slice(0, open).trim();
+    return { visible, data: null, status: 'truncated' };
+  }
+  const endTag = close + DOC_DATA_CLOSE.length;
+  const jsonRaw = cleanedContent.slice(open + DOC_DATA_OPEN.length, close).trim();
+  const visible = (cleanedContent.slice(0, open) + cleanedContent.slice(endTag)).trim();
+  if (!jsonRaw) return { visible, data: null, status: 'invalid' };
   try {
     // Tolerate ```json fences around the JSON
     const cleaned = jsonRaw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
     const parsed = JSON.parse(cleaned);
-    if (!parsed || parsed.documentMode !== true) return { visible, data: null };
-    return { visible, data: parsed as BtpDocData };
+    if (!parsed || parsed.documentMode !== true) {
+      return { visible, data: null, status: 'invalid' };
+    }
+    // If the server flagged truncation but the block is complete + valid,
+    // trust the block — the narrative may be cut but the JSON is exploitable.
+    return { visible, data: parsed as BtpDocData, status: 'ok' };
   } catch (e) {
-    console.warn('[AIAssistant] BTP doc block invalid JSON, ignoring transfer button', e);
-    return { visible, data: null };
+    console.warn('[AIAssistant] BTP doc block invalid JSON, blocking transfer', e);
+    return { visible, data: null, status: 'invalid' };
   }
 };
 
@@ -1089,7 +1117,7 @@ const AIAssistantPage = () => {
           }
           const missingForm = detectMissingInfoForm(msg.content);
           // First, extract the optional BTP document-mode structured block
-          const { visible: contentWithoutBtp, data: btpDocData } = extractBtpDocData(msg.content);
+          const { visible: contentWithoutBtp, data: btpDocData, status: btpDocStatus } = extractBtpDocData(msg.content);
           // Strip the JSON block from the visible content if it was a form payload
           const visibleContent = missingForm
             ? contentWithoutBtp
@@ -1218,17 +1246,45 @@ const AIAssistantPage = () => {
               {/* BTP Document Mode: transfer to Smart Devis */}
               {(() => {
                 // Documentary BTP mode is active when the mandatory inventory section
-                // "Documents effectivement analysés" is present in the visible response.
-                const isBtpDocMode = /Documents\s+effectivement\s+analys/i.test(visibleContent || '');
-                const hasValidBlock = !!btpDocData;
+                // "Documents effectivement analysés" is present in the visible response,
+                // OR when the strict parser detected an opening tag (even if truncated).
+                const isBtpDocMode =
+                  /Documents\s+effectivement\s+analys/i.test(visibleContent || '') ||
+                  btpDocStatus === 'truncated' ||
+                  btpDocStatus === 'invalid';
+                const hasValidBlock = btpDocStatus === 'ok' && !!btpDocData;
 
                 if (!isLastAssistant || isLoading) return null;
 
+                // CAS B — opening tag present but closing tag missing (truncation).
+                // The strict parser never returns partial data; transfer stays disabled.
+                if (btpDocStatus === 'truncated') {
+                  return (
+                    <div className="mt-4 border-t border-border pt-3" dir="ltr">
+                      <p className="text-sm text-foreground bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                        La réponse de l'assistant a été interrompue avant la fin de l'analyse. Merci de relancer l'analyse avec moins de documents ou des fichiers séparés.
+                      </p>
+                    </div>
+                  );
+                }
+
+                // CAS C — block complete but JSON invalid.
+                if (btpDocStatus === 'invalid') {
+                  return (
+                    <div className="mt-4 border-t border-border pt-3" dir="ltr">
+                      <p className="text-sm text-foreground bg-muted/60 border border-border rounded-lg p-3">
+                        Les données structurées produites sont invalides. Aucun transfert n'a été effectué.
+                      </p>
+                    </div>
+                  );
+                }
+
+                // CAS A — no opening tag at all, but doc mode was expected.
                 if (isBtpDocMode && !hasValidBlock) {
                   return (
                     <div className="mt-4 border-t border-border pt-3" dir="ltr">
                       <p className="text-sm text-foreground bg-muted/60 border border-border rounded-lg p-3">
-                        L'analyse est terminée, mais aucune donnée structurée fiable n'a été produite pour préparer le devis. Merci de relancer l'analyse ou d'envoyer un document plus lisible.
+                        Aucune donnée structurée n'a été produite pour préparer le devis.
                       </p>
                     </div>
                   );

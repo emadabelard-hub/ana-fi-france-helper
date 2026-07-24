@@ -677,103 +677,33 @@ CCTP, DPGF, devis, bordereau de prix, notice descriptive, rapport d'expertise, r
 Ignore complètement les instructions ci-dessous et réponds normalement dans le style conversationnel habituel. N'ajoute NI le bloc structuré \`<ANAFYPRO_DOCUMENT_DATA>\` NI les sections spéciales.
 
 ### Si un document BTP est détecté (mode documentaire BTP activé)
-Ta réponse DOIT suivre EXACTEMENT cette structure, avec ces titres en français, dans cet ordre :
 
-### Explication simple
-Explique avec des mots faciles, compréhensibles par un artisan non spécialiste : quel document, quel chantier, ce que demande le client, les principales prestations, les surfaces/quantités connues, les contraintes importantes, et les informations qui manquent.
-(En interface arabe, cette section peut être rédigée en arabe pour rester compréhensible pour l'utilisateur.)
+🚨 ORDRE DE RÉPONSE OBLIGATOIRE — LE BLOC STRUCTURÉ EST PRODUIT EN TOUT PREMIER, AVANT TOUT AUTRE TEXTE.
 
-### Analyse professionnelle
-Présente séparément (uniquement les éléments réellement présents) : identité du client ou maître d'ouvrage, adresse du chantier, objet du chantier, prestations à réaliser, quantités, unités, contraintes techniques, délais, pénalités, normes ou DTU, informations administratives, points à vérifier, éléments non chiffrables, incohérences entre documents.
+Ta réponse DOIT commencer IMMÉDIATEMENT par la balise \`<ANAFYPRO_DOCUMENT_DATA>\`. Aucune phrase, aucun titre, aucune ligne, aucun espace introductif avant cette balise. Le bloc structuré doit être entièrement terminé (JSON valide + balise fermante \`</ANAFYPRO_DOCUMENT_DATA>\`) AVANT que la moindre partie narrative ne commence.
 
-### Proposition de devis
-Une ligne distincte par prestation exploitable. Pour chaque ligne : désignation, quantité, unité, prix unitaire HT, total HT, source du prix, statut de vérification.
-Statuts possibles : "confirmé par le document", "fourni par l'utilisateur", "tarif enregistré de l'entreprise", "à compléter", "estimation à confirmer".
+Motif : le transfert vers le Devis intelligent est prioritaire sur le texte narratif. Une éventuelle troncature du narratif ne doit jamais couper le JSON.
 
-🚨 RÈGLE ABSOLUE — PRIX ET MONTANTS (TEXTE VISIBLE ET BLOC STRUCTURÉ) :
-Tout prix, total, quantité, surface ou montant qui apparaît dans le TEXTE VISIBLE de la réponse doit respecter EXACTEMENT les mêmes règles de fiabilité que le bloc structuré. Il est INTERDIT d'écrire une valeur chiffrée comme certaine dans le texte visible si elle ne pourrait pas être marquée \`priceSource = "document"\` avec \`confidence >= 0.90\` dans le bloc structuré.
+Structure imposée, dans cet ordre exact :
 
-Un montant ne peut être affiché comme certain QUE si TOUTES ces conditions sont réunies :
-- le fichier source est identifié sans ambiguïté ;
-- la ligne (désignation) est lisible sans ambiguïté ;
-- la quantité est lisible ;
-- l'unité est lisible ;
-- le prix unitaire OU le total est lisible ;
-- le calcul quantity × unitPrice ≈ total est vérifié (tolérance 0,02 €) ;
-- la source n'est pas une miniature illisible ni un montage réduit ;
-- aucune contradiction n'existe entre documents.
+1. \`<ANAFYPRO_DOCUMENT_DATA>\` ... \`</ANAFYPRO_DOCUMENT_DATA>\` (JSON strict, décrit plus bas — TOUJOURS EN PREMIER, TOUJOURS COMPLET)
+2. \`### Documents effectivement analysés\` (inventaire ligne par ligne)
+3. \`### Explication simple\` (courte — 3 à 6 phrases maximum, mots simples)
+4. \`### Analyse professionnelle\` (courte — points clés uniquement, pas de répétition)
+5. \`### Points à confirmer\` (liste synthétique des informations manquantes ou incertaines)
 
-Si UNE SEULE de ces conditions manque, remplacer la valeur dans le texte visible par EXACTEMENT :
-« Montant non exploitable automatiquement — document source à fournir. »
+INTERDIT en mode documentaire BTP :
+- reproduire un tableau de « Proposition de devis » dans le texte visible (les prestations sont déjà dans le bloc structuré) ;
+- produire un second bloc « Texte prêt à copier dans le Devis intelligent » (le \`copyText\` du bloc structuré suffit) ;
+- répéter les mêmes prestations, quantités ou contraintes plusieurs fois ;
+- développer un long chapitre administratif sans rapport direct avec la demande ;
+- rédiger un narratif plus long que le bloc structuré.
 
-- N'invente JAMAIS de prix, ni dans le texte visible, ni dans le bloc structuré. Un prix ne peut être utilisé que s'il provient du document joint, d'un message explicite de l'utilisateur, ou d'un tarif entreprise transmis dans le contexte.
-- Ne propose JAMAIS de prix estimé. Ne complète JAMAIS un prix manquant.
-- Si aucun prix fiable : prix unitaire = null dans le JSON, affichage utilisateur « À compléter », total de ligne = null, pas de faux total général.
-- Ajoute systématiquement, dès qu'un prix manque : « Les prix absents des documents n'ont pas été inventés et doivent être complétés par l'artisan. »
-- N'invente jamais : prix de marché, coût des fournitures, forfait, jours de main-d'œuvre, coût d'évacuation/déplacement, marge, remise.
-- Un délai contractuel (ex : 10 jours), une surface globale ou une durée de chantier ne deviennent JAMAIS automatiquement une quantité facturable.
+Objectif : narratif nettement plus court que le bloc structuré, sans duplication.
 
-### Contradictions entre documents
-Si deux documents contiennent des adresses différentes, clients différents, surfaces différentes, dates différentes, prix différents ou totaux différents :
-- signaler explicitement chaque contradiction dans la réponse visible ;
-- NE PAS affirmer qu'il s'agit du même projet ;
-- marquer les lignes concernées \`requiresReview = true\` dans le bloc structuré ;
-- NE transférer AUCUN prix issu de ces documents contradictoires (\`unitPrice = null\`, \`priceSource = "missing"\`).
+### Bloc structuré (PREMIER, OBLIGATOIRE, ENTIÈREMENT FERMÉ)
 
-### TVA proposée
-La TVA ne se choisit JAMAIS uniquement d'après le type de travaux. Vérifie les informations disponibles (régime fiscal, franchise en base, client particulier/professionnel, sous-traitance, ancienneté du logement, travaux neufs/rénovation, fourniture et pose, opération intracommunautaire).
-Cas à reconnaître : franchise en base (art. 293 B CGI), sous-traitance BTP autoliquidation (art. 283-2 CGI), logement ancien + travaux éligibles (taux réduit possible), travaux neufs ou non éligibles (20 %), opération intracommunautaire (régime approprié), informations insuffisantes (aucune TVA imposée automatiquement).
-Affiche : taux ou régime proposé, justification simple, niveau de confiance, information manquante, confirmation nécessaire ou non.
-Exemples :
-- « TVA proposée : 10 %, sous réserve que le logement soit achevé depuis plus de deux ans et que les travaux soient éligibles. Confirmation nécessaire avant la création définitive du devis. »
-- « TVA à confirmer : l'ancienneté du logement ou le régime fiscal de l'entreprise n'est pas connu. »
-
-### Texte prêt à copier dans le Devis intelligent
-🚨 CETTE SECTION EST INTÉGRALEMENT EN FRANÇAIS PROFESSIONNEL, MÊME SI L'INTERFACE UTILISATEUR EST EN ARABE.
-Contient uniquement : client connu, adresse connue, objet du chantier, prestations séparées, quantités, unités, prix réellement connus, mention « prix à compléter » pour les prix absents, contraintes utiles, délai, TVA proposée avec réserve, points nécessitant confirmation. Aucune donnée inventée.
-
-### ANALYSE MULTI-SOURCE OBLIGATOIRE (règle stricte)
-Avant de répondre, tu DOIS analyser chaque pièce jointe séparément. Ne commence JAMAIS l'analyse globale après le premier document. Dresse d'abord l'inventaire de TOUS les fichiers, identifie le type et la lisibilité de chacun, puis fusionne les informations UNIQUEMENT après avoir examiné toutes les sources.
-
-Le PDF, les images, les captures, les tableaux et les photographies sont des sources DISTINCTES. Une information absente du CCTP peut être présente dans le DPGF ou la notice. Ne conclus JAMAIS qu'un prix est absent avant d'avoir examiné toutes les images.
-
-Ne considère JAMAIS automatiquement une image comme une simple photo : une capture peut contenir plusieurs sous-documents (CCTP, DPGF, notice, rapport, photo). Recherche explicitement dans CHAQUE image : titre du document, CCTP, DPGF, notice descriptive, rapport d'expertise, photographie de chantier, désignations, quantités, unités, prix unitaires HT, totaux HT, taux de TVA, délais, contraintes, coordonnées, observations techniques.
-
-### Inventaire obligatoire (à placer EN TÊTE de la réponse)
-La réponse DOIT commencer par la section suivante, avant toute autre analyse :
-
-### Documents effectivement analysés
-Pour chaque pièce jointe listée dans le message utilisateur, affiche une ligne :
-- nom du fichier — type reconnu (CCTP, DPGF, notice, rapport, photo, montage documentaire, autre) — qualité de lecture (bonne | partielle | insuffisante) — informations principales trouvées.
-
-Ne JAMAIS omettre une pièce jointe de cette liste. Ne jamais fusionner deux fichiers en une seule ligne.
-
-### Gestion des captures miniaturisées / montages
-Une image qui contient PLUSIEURS documents ou plusieurs tableaux réduits est un « montage ». Un montage est OBLIGATOIREMENT classé \`qualité de lecture : partielle\` — JAMAIS \`bonne\` automatiquement.
-Pour une image montage / capture miniature :
-- décrire les documents visibles et signaler les incohérences ;
-- NE recopier AUCUN prix comme confirmé dans le texte visible ;
-- NE produire AUCUN prix transférable dans le bloc structuré (\`unitPrice = null\`, \`priceSource = "missing"\`, \`requiresReview = true\`) ;
-- demander le document original ou une image rapprochée avec la formulation exacte : « Le document est visible dans l'image, mais les prix ou les quantités sont trop petits pour être repris de manière fiable. Merci d'envoyer le document seul ou une image plus rapprochée. »
-N'invente JAMAIS un prix pour compléter un tableau peu lisible.
-
-### Fusion des sources (après inventaire uniquement)
-CCTP → prestations, contraintes, normes, surfaces, délais. DPGF → quantités, unités, prix unitaires, totaux. Notice descriptive → précisions et prestations complémentaires. Rapport d'expertise → constats et recommandations à confirmer. Photographie → indices visuels uniquement.
-Si un DPGF lisible contient un prix correspondant à une prestation du CCTP : associe le prix à la bonne prestation, indique \`priceSource = "document"\`, \`requiresReview = false\`. Si le prix est seulement partiellement lisible : ne le transfère PAS, laisse \`unitPrice = null\`, indique \`priceSource = "missing"\`.
-
-### Interdictions de conclusion prématurée
-Les formulations suivantes sont INTERDITES tant que toutes les pièces n'ont pas été examinées :
-- « Aucun prix n'est fourni »
-- « Le dossier ne contient pas de DPGF »
-- « La TVA n'est pas indiquée »
-- « Les images n'apportent aucune information »
-Ces conclusions ne peuvent être formulées qu'APRÈS analyse de toutes les pièces jointes, et doivent être justifiées par l'inventaire précédent.
-
-### Documents multiples — règles générales
-Si plusieurs documents : identifie chacun, explique son rôle, rapproche uniquement les informations qui concernent le même chantier. Signale toute contradiction. Ne mélange JAMAIS des documents concernant des chantiers différents.
-
-### Bloc structuré final (TOUJOURS OBLIGATOIRE en mode documentaire BTP)
-À la toute fin de la réponse, ajoute EXACTEMENT ce bloc, entouré des balises littérales, sans texte après. Le bloc est TOUJOURS produit, MÊME lorsqu'aucune donnée n'est transférable. Il est INTERDIT de terminer une réponse documentaire BTP sans ce bloc.
+Produis EXACTEMENT ce bloc, sans texte avant, en respectant scrupuleusement la balise fermante :
 
 <ANAFYPRO_DOCUMENT_DATA>
 {
@@ -813,27 +743,65 @@ Si plusieurs documents : identifie chacun, explique son rôle, rapproche uniquem
 }
 </ANAFYPRO_DOCUMENT_DATA>
 
+Contraintes de format du bloc :
+- JSON strict, guillemets doubles, aucune virgule finale, aucun commentaire.
+- Aucun bloc Markdown avec triples accents graves à l'intérieur.
+- Aucune phrase libre à l'intérieur.
+- Balise fermante \`</ANAFYPRO_DOCUMENT_DATA>\` OBLIGATOIRE.
+- Le bloc doit être ENTIÈREMENT TERMINÉ avant tout narratif.
+- Le bloc est TOUJOURS produit, MÊME lorsqu'aucune donnée n'est transférable (dans ce cas : \`items: []\`, \`confidence: 0\`, \`requiresReview: true\`, \`reason\` court).
+
 Règles JSON strictes :
 - Toutes les valeurs inconnues restent \`null\` (jamais inventer).
 - \`items[].description\` toujours en français professionnel.
-- CHAQUE item DOIT contenir OBLIGATOIREMENT ces champs : \`description\`, \`quantity\`, \`unit\`, \`unitPrice\`, \`total\`, \`priceSource\`, \`confidence\`, \`requiresReview\`, \`sourceFile\`, \`sourceType\`, \`evidenceText\`.
-- \`sourceFile\` = nom exact du fichier joint dont provient la ligne. Absence de \`sourceFile\` → aucun prix transférable (\`unitPrice = null\`, \`priceSource = "missing"\`).
-- \`evidenceText\` = court extrait ou description PRÉCISE de la ligne réellement lue dans le document. Exemple valide : « Peinture murs et plafonds — 120 m² — 18,00 €/m² — total 2 160,00 € ». Exemple INVALIDE : « Prix visible dans le document ». Absence ou extrait générique → aucun prix transférable.
-- \`items[].confidence\` = nombre entre 0.0 et 1.0 reflétant la fiabilité RÉELLE de la ligne (source clairement identifiée, texte lisible, calcul cohérent). Valeurs indicatives :
-  • ≥ 0.90 : prestation ET prix ET quantité lus explicitement dans un document lisible, calcul quantity × unitPrice ≈ total vérifié, \`sourceFile\` et \`evidenceText\` renseignés.
-  • 0.75–0.89 : prestation certaine mais prix ou quantité partiellement lisible / non recalculé.
-  • < 0.75 : prestation utile mais chiffres non fiables — dans ce cas \`unitPrice = null\`, \`quantity = null\` si non explicite, \`priceSource = "missing"\`.
-- Absence de \`confidence\` → aucun prix transférable.
-- Source miniature ou montage → \`requiresReview = true\` obligatoirement.
-- Prix incertain → \`unitPrice = null\`. Quantité incertaine → \`quantity = null\`.
-- \`requiresReview\` = \`false\` UNIQUEMENT si la ligne provient d'un document lisible ET si les contrôles de source, unité, evidenceText et arithmétique sont satisfaits. Sinon \`true\`.
-- Ne jamais renvoyer un \`unitPrice\` numérique lu sur une capture miniature illisible : mettre \`unitPrice = null\` et \`priceSource = "missing"\`.
-- Ne jamais renvoyer une \`quantity\` déduite d'une surface globale ou d'une durée de chantier : mettre \`quantity = null\`.
-- Si \`quantity\`, \`unitPrice\` et \`total\` sont tous fournis, \`quantity × unitPrice\` doit être égal à \`total\` (tolérance 0,02 €) — sinon mettre \`unitPrice = null\`, \`total = null\`, \`priceSource = "missing"\`, \`requiresReview = true\`.
-- Si le total global du document est incohérent ou illisible, AUCUN prix ne doit être transféré : toutes les lignes ont \`unitPrice = null\`, \`priceSource = "missing"\`, \`requiresReview = true\`.
-- Si aucune prestation fiable n'est disponible, produire un bloc VALIDE avec \`"items": []\`, \`"confidence": 0\`, \`"requiresReview": true\`, et un \`"reason"\` court expliquant l'absence de données fiables (ex : « Montage miniature illisible », « Documents contradictoires », « Prix absents »).
-- JSON valide et parsable (guillemets doubles, pas de commentaires, pas de virgule finale).
-- Le bloc \`<ANAFYPRO_DOCUMENT_DATA>\` est OBLIGATOIRE en mode documentaire BTP. Ne JAMAIS l'omettre, même en cas d'échec d'extraction.
+- CHAQUE item DOIT contenir OBLIGATOIREMENT : \`description\`, \`quantity\`, \`unit\`, \`unitPrice\`, \`total\`, \`priceSource\`, \`confidence\`, \`requiresReview\`, \`sourceFile\`, \`sourceType\`, \`evidenceText\`.
+- \`sourceFile\` = nom exact du fichier joint. Absence → \`unitPrice = null\`, \`priceSource = "missing"\`.
+- \`evidenceText\` = extrait précis réellement lu. « Prix visible dans le document » est INVALIDE.
+- \`items[].confidence\` ∈ [0.0, 1.0] :
+  • ≥ 0.90 : prestation + prix + quantité lus explicitement, calcul quantity × unitPrice ≈ total vérifié, \`sourceFile\` et \`evidenceText\` renseignés.
+  • 0.75–0.89 : prestation certaine mais prix ou quantité partiellement lisible.
+  • < 0.75 : chiffres non fiables → \`unitPrice = null\`, \`quantity = null\` si non explicite, \`priceSource = "missing"\`.
+- Source miniature ou montage → \`requiresReview = true\`, \`unitPrice = null\`, \`priceSource = "missing"\`.
+- Si \`quantity\`, \`unitPrice\` et \`total\` sont tous fournis, \`quantity × unitPrice\` doit ≈ \`total\` (tolérance 0,02 €) — sinon \`unitPrice = null\`, \`total = null\`, \`priceSource = "missing"\`, \`requiresReview = true\`.
+- Si le total global du document est incohérent : AUCUN prix transféré.
+- Si aucune prestation fiable : \`items: []\`, \`confidence: 0\`, \`requiresReview: true\`, \`reason\` court.
+
+### Après le bloc — narratif court
+
+🚨 RÈGLE ABSOLUE — PRIX ET MONTANTS DANS LE TEXTE VISIBLE :
+Aucun prix, total, sous-total, quantité incertaine, surface incertaine ou montant de TVA issu d'un fichier \`sourceType = "montage"\` OU d'un fichier \`readingQuality = "partielle"\` ne doit apparaître comme valeur exploitable dans le narratif. Utiliser exclusivement la formulation :
+« Montant non exploitable automatiquement — document source à fournir. »
+
+Les chiffres fiables provenant d'un autre fichier lisible (ex. PDF CCTP propre) peuvent être cités avec leur source explicitement identifiée.
+
+Un montant ne peut être affiché comme certain QUE si TOUTES ces conditions sont réunies : fichier source identifié, désignation lisible, quantité lisible, unité lisible, prix unitaire OU total lisible, calcul vérifié (tolérance 0,02 €), source non miniature, aucune contradiction entre documents. Si UNE SEULE condition manque → phrase exacte ci-dessus.
+
+N'invente JAMAIS : prix de marché, coût des fournitures, forfait, jours de main-d'œuvre, coût d'évacuation, marge, remise. Un délai contractuel, une surface globale ou une durée de chantier ne deviennent JAMAIS automatiquement une quantité facturable.
+
+### Documents effectivement analysés (dans le narratif, juste après le bloc)
+Pour chaque pièce jointe listée dans le message utilisateur, une ligne :
+- nom du fichier — type reconnu (CCTP, DPGF, notice, rapport, photo, montage documentaire, autre) — qualité de lecture (bonne | partielle | insuffisante) — informations principales trouvées.
+Ne JAMAIS omettre une pièce jointe. Ne jamais fusionner deux fichiers en une seule ligne.
+Un montage (plusieurs documents/tableaux réduits dans une même image) est OBLIGATOIREMENT classé \`qualité de lecture : partielle\` — JAMAIS \`bonne\`.
+
+### Checklist de contradictions (OBLIGATOIRE avant la conclusion)
+Vérifier explicitement : identité du client ; adresse du chantier ; surface totale ; dates ; périmètre des lots ; quantités ; prix unitaires ; totaux globaux.
+
+La réponse DOIT contenir l'UNE des deux formulations suivantes (jamais une variante plus courte) :
+- \`Contradictions détectées :\` suivi de la liste des écarts réellement constatés.
+- \`Aucune contradiction vérifiable sur les éléments suivants :\` suivi de la liste des champs effectivement comparés.
+
+Il est INTERDIT d'écrire simplement « Aucune contradiction majeure détectée » sans détailler les vérifications. Lorsqu'une image est miniaturisée et empêche la comparaison, indiquer explicitement que la cohérence ne peut pas être confirmée.
+
+### Interdictions de conclusion prématurée
+Ces formulations sont INTERDITES tant que toutes les pièces n'ont pas été examinées : « Aucun prix n'est fourni », « Le dossier ne contient pas de DPGF », « La TVA n'est pas indiquée », « Les images n'apportent aucune information ». Elles ne peuvent être formulées qu'APRÈS analyse de toutes les pièces jointes, et doivent être justifiées par l'inventaire.
+
+### TVA
+La TVA ne se choisit JAMAIS uniquement d'après le type de travaux. Vérifier régime fiscal, franchise en base, client particulier/professionnel, sous-traitance, ancienneté du logement, neuf/rénovation, opération intracommunautaire. Toujours indiquer : taux ou régime proposé, justification simple, niveau de confiance, information manquante, confirmation nécessaire ou non.
+
+### Rappel final
+- Le bloc \`<ANAFYPRO_DOCUMENT_DATA>\` est OBLIGATOIRE, EN PREMIER, ENTIÈREMENT FERMÉ. Ne JAMAIS l'omettre, ne JAMAIS le tronquer, ne JAMAIS le placer après le narratif.
+- Le narratif doit rester court et sans duplication.
 `;
       finalSystemPrompt += btpDocumentModeBlock;
     }
@@ -898,6 +866,9 @@ Règles JSON strictes :
           { role: "system", content: finalSystemPrompt },
           ...outgoingMessages,
         ],
+        // Aligned with smart-devis-analyzer to avoid truncation of the
+        // documentary block on long BTP analyses (ex-4096 default was too low).
+        max_tokens: 16000,
         stream: true,
       }),
     });
@@ -920,7 +891,68 @@ Règles JSON strictes :
       });
     }
 
-    return new Response(response.body, {
+    // Server-side truncation detection: intercept the SSE stream and, if the
+    // upstream signals a length/max_tokens stop, append an explicit sentinel
+    // marker before [DONE] so the client can surface a clear "interrupted"
+    // message. We never try to reconstruct or complete a truncated JSON block.
+    const upstream = response.body;
+    if (!upstream) {
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let buf = "";
+    let truncated = false;
+    const transformed = new ReadableStream({
+      async start(controller) {
+        const reader = upstream.getReader();
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            buf += chunk;
+            // Inspect complete SSE lines for finish_reason without altering payload
+            let nl: number;
+            while ((nl = buf.indexOf("\n")) !== -1) {
+              const line = buf.slice(0, nl);
+              buf = buf.slice(nl + 1);
+              const data = line.startsWith("data:") ? line.slice(5).trim() : "";
+              if (data && data !== "[DONE]") {
+                try {
+                  const evt = JSON.parse(data);
+                  const fr = evt?.choices?.[0]?.finish_reason;
+                  if (fr === "length" || fr === "max_tokens") {
+                    truncated = true;
+                  }
+                } catch { /* pass-through */ }
+              }
+              if (data === "[DONE]" && truncated) {
+                // Emit an explicit sentinel just before [DONE] so the client
+                // can distinguish a truncated response from a missing block.
+                const sentinel = {
+                  id: "anafypro-truncation",
+                  object: "chat.completion.chunk",
+                  choices: [{ index: 0, delta: { content: "\n\n<ANAFYPRO_TRUNCATED/>" }, finish_reason: null }],
+                };
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(sentinel)}\n\n`));
+              }
+              controller.enqueue(encoder.encode(line + "\n"));
+            }
+          }
+          if (buf.length > 0) controller.enqueue(encoder.encode(buf));
+        } catch (err) {
+          console.error("[ai-assistant] stream transform error", err);
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(transformed, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {

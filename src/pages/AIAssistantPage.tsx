@@ -1117,7 +1117,7 @@ const AIAssistantPage = () => {
           }
           const missingForm = detectMissingInfoForm(msg.content);
           // First, extract the optional BTP document-mode structured block
-          const { visible: contentWithoutBtp, data: btpDocData } = extractBtpDocData(msg.content);
+          const { visible: contentWithoutBtp, data: btpDocData, status: btpDocStatus } = extractBtpDocData(msg.content);
           // Strip the JSON block from the visible content if it was a form payload
           const visibleContent = missingForm
             ? contentWithoutBtp

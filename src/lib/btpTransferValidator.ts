@@ -125,6 +125,8 @@ export const validateBtpItemsForTransfer = (
     const requiresReview =
       typeof it?.requiresReview === 'boolean' ? it.requiresReview : null;
     const confidence = toNum(it?.confidence);
+    const quantityConfidence = toNum(it?.quantityConfidence) ?? confidence;
+    const priceConfidence = toNum(it?.priceConfidence) ?? confidence;
 
     const reasons: string[] = [];
 
@@ -140,12 +142,12 @@ export const validateBtpItemsForTransfer = (
       qtyRaw !== null &&
       qtyRaw > 0 &&
       isReadableUnit(unitRaw) &&
-      (confidence === null ? false : confidence >= QTY_CONF_MIN);
+      (quantityConfidence === null ? false : quantityConfidence >= QTY_CONF_MIN);
 
     if (!quantityAccepted) {
       if (qtyRaw === null || qtyRaw <= 0) reasons.push('quantity_missing_or_invalid');
       if (!isReadableUnit(unitRaw)) reasons.push('unit_unreadable');
-      if (confidence === null || confidence < QTY_CONF_MIN) reasons.push('quantity_low_confidence');
+      if (quantityConfidence === null || quantityConfidence < QTY_CONF_MIN) reasons.push('quantity_low_confidence');
     }
 
     // ── Décision prix ──

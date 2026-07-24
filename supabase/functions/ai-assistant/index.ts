@@ -767,6 +767,8 @@ Règles JSON strictes :
 - Si \`quantity\`, \`unitPrice\` et \`total\` sont tous fournis, \`quantity × unitPrice\` doit ≈ \`total\` (tolérance 0,02 €) — sinon \`unitPrice = null\`, \`total = null\`, \`priceSource = "missing"\`, \`requiresReview = true\`.
 - Si le total global du document est incohérent : AUCUN prix transféré.
 - Si aucune prestation fiable : \`items: []\`, \`confidence: 0\`, \`requiresReview: true\`, \`reason\` court.
+- \`documentTotalHT\` = total HT explicitement visible dans le document source. Si aucun total HT clair : \`null\`. Ne JAMAIS calculer, corriger ou remplacer ce total par un total TTC, une TVA ou un sous-total.
+- \`documentTotalEvidenceText\` = court extrait du document justifiant le total HT (exemple : \`TOTAL HT : 8 730,00 €\`). Si \`documentTotalHT\` est \`null\`, ce champ doit être \`null\` ou vide.
 
 ### Après le bloc — narratif court
 

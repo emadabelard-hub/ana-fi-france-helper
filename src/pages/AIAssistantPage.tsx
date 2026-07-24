@@ -166,23 +166,51 @@ type BtpDocData = {
   copyText?: string;
 };
 
-const extractBtpDocData = (content: string): { visible: string; data: BtpDocData | null } => {
-  const open = content.indexOf(DOC_DATA_OPEN);
-  if (open === -1) return { visible: content, data: null };
-  const close = content.indexOf(DOC_DATA_CLOSE, open);
-  const endTag = close !== -1 ? close + DOC_DATA_CLOSE.length : content.length;
-  const jsonRaw = (close !== -1 ? content.slice(open + DOC_DATA_OPEN.length, close) : '').trim();
-  const visible = (content.slice(0, open) + content.slice(endTag)).trim();
-  if (!jsonRaw) return { visible, data: null };
+type BtpDocExtractStatus = 'none' | 'truncated' | 'invalid' | 'ok';
+
+const extractBtpDocData = (
+  content: string,
+): { visible: string; data: BtpDocData | null; status: BtpDocExtractStatus } => {
+  // Server-side sentinel: response was cut by max_tokens/length upstream.
+  const serverTruncated = content.includes('<ANAFYPRO_TRUNCATED/>');
+  const cleanedContent = serverTruncated
+    ? content.replace(/<ANAFYPRO_TRUNCATED\/>/g, '').trim()
+    : content;
+
+  const open = cleanedContent.indexOf(DOC_DATA_OPEN);
+  if (open === -1) {
+    // No opening tag at all.
+    // If the server flagged truncation, treat as truncated (block never emitted).
+    return {
+      visible: cleanedContent,
+      data: null,
+      status: serverTruncated ? 'truncated' : 'none',
+    };
+  }
+  const close = cleanedContent.indexOf(DOC_DATA_CLOSE, open);
+  if (close === -1) {
+    // Opening tag present but closing tag missing → truncated block.
+    // NEVER attempt to balance braces or recover partial items.
+    const visible = cleanedContent.slice(0, open).trim();
+    return { visible, data: null, status: 'truncated' };
+  }
+  const endTag = close + DOC_DATA_CLOSE.length;
+  const jsonRaw = cleanedContent.slice(open + DOC_DATA_OPEN.length, close).trim();
+  const visible = (cleanedContent.slice(0, open) + cleanedContent.slice(endTag)).trim();
+  if (!jsonRaw) return { visible, data: null, status: 'invalid' };
   try {
     // Tolerate ```json fences around the JSON
     const cleaned = jsonRaw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
     const parsed = JSON.parse(cleaned);
-    if (!parsed || parsed.documentMode !== true) return { visible, data: null };
-    return { visible, data: parsed as BtpDocData };
+    if (!parsed || parsed.documentMode !== true) {
+      return { visible, data: null, status: 'invalid' };
+    }
+    // If the server flagged truncation but the block is complete + valid,
+    // trust the block — the narrative may be cut but the JSON is exploitable.
+    return { visible, data: parsed as BtpDocData, status: 'ok' };
   } catch (e) {
-    console.warn('[AIAssistant] BTP doc block invalid JSON, ignoring transfer button', e);
-    return { visible, data: null };
+    console.warn('[AIAssistant] BTP doc block invalid JSON, blocking transfer', e);
+    return { visible, data: null, status: 'invalid' };
   }
 };
 

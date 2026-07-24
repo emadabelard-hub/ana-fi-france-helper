@@ -866,6 +866,9 @@ La TVA ne se choisit JAMAIS uniquement d'après le type de travaux. Vérifier r�
           { role: "system", content: finalSystemPrompt },
           ...outgoingMessages,
         ],
+        // Aligned with smart-devis-analyzer to avoid truncation of the
+        // documentary block on long BTP analyses (ex-4096 default was too low).
+        max_tokens: 16000,
         stream: true,
       }),
     });
@@ -888,7 +891,68 @@ La TVA ne se choisit JAMAIS uniquement d'après le type de travaux. Vérifier r�
       });
     }
 
-    return new Response(response.body, {
+    // Server-side truncation detection: intercept the SSE stream and, if the
+    // upstream signals a length/max_tokens stop, append an explicit sentinel
+    // marker before [DONE] so the client can surface a clear "interrupted"
+    // message. We never try to reconstruct or complete a truncated JSON block.
+    const upstream = response.body;
+    if (!upstream) {
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let buf = "";
+    let truncated = false;
+    const transformed = new ReadableStream({
+      async start(controller) {
+        const reader = upstream.getReader();
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            buf += chunk;
+            // Inspect complete SSE lines for finish_reason without altering payload
+            let nl: number;
+            while ((nl = buf.indexOf("\n")) !== -1) {
+              const line = buf.slice(0, nl);
+              buf = buf.slice(nl + 1);
+              const data = line.startsWith("data:") ? line.slice(5).trim() : "";
+              if (data && data !== "[DONE]") {
+                try {
+                  const evt = JSON.parse(data);
+                  const fr = evt?.choices?.[0]?.finish_reason;
+                  if (fr === "length" || fr === "max_tokens") {
+                    truncated = true;
+                  }
+                } catch { /* pass-through */ }
+              }
+              if (data === "[DONE]" && truncated) {
+                // Emit an explicit sentinel just before [DONE] so the client
+                // can distinguish a truncated response from a missing block.
+                const sentinel = {
+                  id: "anafypro-truncation",
+                  object: "chat.completion.chunk",
+                  choices: [{ index: 0, delta: { content: "\n\n<ANAFYPRO_TRUNCATED/>" }, finish_reason: null }],
+                };
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(sentinel)}\n\n`));
+              }
+              controller.enqueue(encoder.encode(line + "\n"));
+            }
+          }
+          if (buf.length > 0) controller.enqueue(encoder.encode(buf));
+        } catch (err) {
+          console.error("[ai-assistant] stream transform error", err);
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(transformed, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {

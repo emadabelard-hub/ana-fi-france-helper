@@ -44,6 +44,8 @@ type RawItem = {
   priceSource?: string | null;
   requiresReview?: boolean | null;
   confidence?: number | string | null;
+  quantityConfidence?: number | string | null;
+  priceConfidence?: number | string | null;
 };
 
 export type ValidatedLine = {
@@ -63,6 +65,8 @@ export type ValidationMeta = {
   reasons: string[];
   priceSource: string | null;
   confidence: number | null;
+  quantityConfidence: number | null;
+  priceConfidence: number | null;
   requiresReview: boolean | null;
   arithmeticOk: boolean | null;
 };
@@ -121,6 +125,8 @@ export const validateBtpItemsForTransfer = (
     const requiresReview =
       typeof it?.requiresReview === 'boolean' ? it.requiresReview : null;
     const confidence = toNum(it?.confidence);
+    const quantityConfidence = toNum(it?.quantityConfidence) ?? confidence;
+    const priceConfidence = toNum(it?.priceConfidence) ?? confidence;
 
     const reasons: string[] = [];
 
@@ -136,12 +142,12 @@ export const validateBtpItemsForTransfer = (
       qtyRaw !== null &&
       qtyRaw > 0 &&
       isReadableUnit(unitRaw) &&
-      (confidence === null ? false : confidence >= QTY_CONF_MIN);
+      (quantityConfidence === null ? false : quantityConfidence >= QTY_CONF_MIN);
 
     if (!quantityAccepted) {
       if (qtyRaw === null || qtyRaw <= 0) reasons.push('quantity_missing_or_invalid');
       if (!isReadableUnit(unitRaw)) reasons.push('unit_unreadable');
-      if (confidence === null || confidence < QTY_CONF_MIN) reasons.push('quantity_low_confidence');
+      if (quantityConfidence === null || quantityConfidence < QTY_CONF_MIN) reasons.push('quantity_low_confidence');
     }
 
     // ── Décision prix ──
@@ -151,14 +157,14 @@ export const validateBtpItemsForTransfer = (
       priceSource === 'document' &&
       requiresReview === false &&
       quantityAccepted && // prix ⇒ quantité fiable
-      (confidence === null ? false : confidence >= PRICE_CONF_MIN) &&
+      (priceConfidence === null ? false : priceConfidence >= PRICE_CONF_MIN) &&
       arithmeticOk !== false; // null (pas de total fourni) toléré, false interdit
 
     if (!priceAccepted) {
       if (puRaw === null || puRaw <= 0) reasons.push('price_missing');
       if (priceSource !== 'document') reasons.push('price_source_not_document');
       if (requiresReview !== false) reasons.push('price_requires_review');
-      if (confidence === null || confidence < PRICE_CONF_MIN) reasons.push('price_low_confidence');
+      if (priceConfidence === null || priceConfidence < PRICE_CONF_MIN) reasons.push('price_low_confidence');
       if (arithmeticOk === false) reasons.push('price_arithmetic_failed');
       if (!quantityAccepted) reasons.push('price_blocked_by_quantity');
     }
@@ -183,6 +189,8 @@ export const validateBtpItemsForTransfer = (
       reasons,
       priceSource,
       confidence,
+      quantityConfidence,
+      priceConfidence,
       requiresReview,
       arithmeticOk,
     });

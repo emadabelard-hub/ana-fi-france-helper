@@ -743,7 +743,9 @@ Produis EXACTEMENT ce bloc, sans texte avant, en respectant scrupuleusement la b
   "missingInformation": [],
   "copyText": "",
   "documentTotalHT": null,
-  "documentTotalEvidenceText": ""
+  "documentTotalEvidenceText": "",
+  "projectSeparationRequired": false,
+  "projectSeparationReason": null
 }
 </ANAFYPRO_DOCUMENT_DATA>
 

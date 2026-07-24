@@ -1303,7 +1303,8 @@ const AIAssistantPage = () => {
                       onClick={() => {
                         try {
                           const rawItems = Array.isArray(btpDocData!.items) ? btpDocData!.items : [];
-                          const { lines: items, meta } = validateBtpItemsForTransfer(rawItems);
+                          const documentTotalHT = btpDocData!.documentTotalHT;
+                          const { lines: items, meta } = validateBtpItemsForTransfer(rawItems, documentTotalHT);
 
                           if (items.length === 0) {
                             console.warn('[AIAssistant] BTP transfer: no exploitable items in <ANAFYPRO_DOCUMENT_DATA>', btpDocData);

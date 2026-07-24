@@ -135,6 +135,56 @@ const detectMissingInfoForm = (content: string): { fields: MissingField[] } | nu
   return null;
 };
 
+// ---- BTP Document Mode: parse structured block emitted by ai-assistant ----
+const DOC_DATA_OPEN = '<ANAFYPRO_DOCUMENT_DATA>';
+const DOC_DATA_CLOSE = '</ANAFYPRO_DOCUMENT_DATA>';
+
+type BtpDocData = {
+  documentMode: boolean;
+  documentTypes?: string[];
+  client?: { name?: string | null; address?: string | null } | null;
+  project?: { title?: string | null; address?: string | null; deadline?: string | null } | null;
+  items?: Array<{
+    description?: string;
+    quantity?: number | null;
+    unit?: string | null;
+    unitPrice?: number | null;
+    total?: number | null;
+    priceSource?: string;
+    requiresReview?: boolean;
+  }>;
+  vat?: {
+    rate?: number | null;
+    regime?: string | null;
+    reason?: string;
+    confidence?: string;
+    requiresConfirmation?: boolean;
+  } | null;
+  constraints?: string[];
+  missingInformation?: string[];
+  copyText?: string;
+};
+
+const extractBtpDocData = (content: string): { visible: string; data: BtpDocData | null } => {
+  const open = content.indexOf(DOC_DATA_OPEN);
+  if (open === -1) return { visible: content, data: null };
+  const close = content.indexOf(DOC_DATA_CLOSE, open);
+  const endTag = close !== -1 ? close + DOC_DATA_CLOSE.length : content.length;
+  const jsonRaw = (close !== -1 ? content.slice(open + DOC_DATA_OPEN.length, close) : '').trim();
+  const visible = (content.slice(0, open) + content.slice(endTag)).trim();
+  if (!jsonRaw) return { visible, data: null };
+  try {
+    // Tolerate ```json fences around the JSON
+    const cleaned = jsonRaw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const parsed = JSON.parse(cleaned);
+    if (!parsed || parsed.documentMode !== true) return { visible, data: null };
+    return { visible, data: parsed as BtpDocData };
+  } catch (e) {
+    console.warn('[AIAssistant] BTP doc block invalid JSON, ignoring transfer button', e);
+    return { visible, data: null };
+  }
+};
+
 
 const AIAssistantPage = () => {
   const { language, isRTL, t } = useLanguage();
@@ -1037,13 +1087,15 @@ const AIAssistantPage = () => {
             );
           }
           const missingForm = detectMissingInfoForm(msg.content);
+          // First, extract the optional BTP document-mode structured block
+          const { visible: contentWithoutBtp, data: btpDocData } = extractBtpDocData(msg.content);
           // Strip the JSON block from the visible content if it was a form payload
           const visibleContent = missingForm
-            ? msg.content
+            ? contentWithoutBtp
                 .replace(/```(?:json)?\s*\{[\s\S]*?"missing_info_form"[\s\S]*?\}\s*```/gi, '')
                 .replace(/\{[\s\S]*?"type"\s*:\s*"missing_info_form"[\s\S]*?\}/g, '')
                 .trim()
-            : msg.content;
+            : contentWithoutBtp;
           const { preface, letter: rawLetter } = splitLetter(visibleContent);
           const letter = rawLetter ? fillPlaceholders(rawLetter, profile) : null;
           const isFormalFrench = !!letter;
@@ -1160,6 +1212,44 @@ const AIAssistantPage = () => {
                       void send(reply);
                     }}
                   />
+                </div>
+              )}
+              {/* BTP Document Mode: transfer to Smart Devis */}
+              {btpDocData && isLastAssistant && !isLoading && (
+                <div className="mt-4 border-t border-border pt-3 flex flex-col gap-2" dir="ltr">
+                  <p className="text-xs text-muted-foreground">
+                    Analyse documentaire BTP prête. Les prix absents ne sont pas inventés — complétez-les dans le Devis intelligent.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        const items = Array.isArray(btpDocData.items) ? btpDocData.items : [];
+                        const payload = {
+                          subject:
+                            (btpDocData.project?.title && String(btpDocData.project.title)) ||
+                            (btpDocData.client?.name ? `Devis — ${btpDocData.client.name}` : ''),
+                          items: items.map((it) => ({
+                            designation_fr: String(it.description || '').trim(),
+                            designation_ar: '',
+                            quantity: typeof it.quantity === 'number' && it.quantity > 0 ? it.quantity : 1,
+                            unit: (it.unit && String(it.unit)) || 'u',
+                            unitPrice: typeof it.unitPrice === 'number' && it.unitPrice > 0 ? it.unitPrice : 0,
+                            lot: null,
+                          })),
+                        };
+                        sessionStorage.setItem('smart_devis_prefill_v1', JSON.stringify(payload));
+                        navigate('/pro/smart-devis');
+                      } catch (err) {
+                        console.error('[AIAssistant] BTP transfer failed', err);
+                        toast({ variant: 'destructive', title: 'Erreur', description: 'Transfert impossible' });
+                      }
+                    }}
+                    className="self-start inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md active:scale-95 transition-transform"
+                  >
+                    <Sparkles size={16} />
+                    Préparer dans le Devis intelligent
+                  </button>
                 </div>
               )}
             </div>

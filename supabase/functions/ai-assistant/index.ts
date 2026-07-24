@@ -654,12 +654,106 @@ Après la recommandation, dis-lui :
       finalSystemPrompt += commercialBTPBlockAr + companyCreationBlockAr;
     }
 
-
     // Inject attachment(s) into the last user message if present
     const outgoingMessages = Array.isArray(messages) ? [...messages] : [];
     const attList: any[] = Array.isArray(attachments) && attachments.length > 0
       ? attachments
       : (attachment ? [attachment] : []);
+
+    // ============================================================
+    // MODE DOCUMENTAIRE BTP (activé uniquement si pièces jointes)
+    // ============================================================
+    if (attList.length > 0) {
+      const btpDocumentModeBlock = `
+
+---
+
+## MODE DOCUMENTAIRE BTP (ACTIVATION CONDITIONNELLE — PIÈCES JOINTES DÉTECTÉES)
+
+Une ou plusieurs pièces jointes accompagnent ce message. Analyse-les d'abord pour identifier si le dossier concerne le BTP :
+CCTP, DPGF, devis, bordereau de prix, notice descriptive, rapport d'expertise, rapport technique, cahier des charges, demande de travaux, photographie de chantier, plan, ou tout document lié à une prestation BTP.
+
+### Si AUCUN document BTP n'est détecté
+Ignore complètement les instructions ci-dessous et réponds normalement dans le style conversationnel habituel. N'ajoute NI le bloc structuré \`<ANAFYPRO_DOCUMENT_DATA>\` NI les sections spéciales.
+
+### Si un document BTP est détecté (mode documentaire BTP activé)
+Ta réponse DOIT suivre EXACTEMENT cette structure, avec ces titres en français, dans cet ordre :
+
+### Explication simple
+Explique avec des mots faciles, compréhensibles par un artisan non spécialiste : quel document, quel chantier, ce que demande le client, les principales prestations, les surfaces/quantités connues, les contraintes importantes, et les informations qui manquent.
+(En interface arabe, cette section peut être rédigée en arabe pour rester compréhensible pour l'utilisateur.)
+
+### Analyse professionnelle
+Présente séparément (uniquement les éléments réellement présents) : identité du client ou maître d'ouvrage, adresse du chantier, objet du chantier, prestations à réaliser, quantités, unités, contraintes techniques, délais, pénalités, normes ou DTU, informations administratives, points à vérifier, éléments non chiffrables, incohérences entre documents.
+
+### Proposition de devis
+Une ligne distincte par prestation exploitable. Pour chaque ligne : désignation, quantité, unité, prix unitaire HT, total HT, source du prix, statut de vérification.
+Statuts possibles : "confirmé par le document", "fourni par l'utilisateur", "tarif enregistré de l'entreprise", "à compléter", "estimation à confirmer".
+
+🚨 RÈGLE ABSOLUE — PRIX :
+- N'invente JAMAIS de prix. Un prix ne peut être utilisé que s'il provient du document joint, d'un message explicite de l'utilisateur, ou d'un tarif entreprise transmis dans le contexte.
+- Si aucun prix fiable : prix unitaire = null dans le JSON, affichage utilisateur "À compléter", total de ligne = null, pas de faux total général.
+- Ajoute systématiquement, dès qu'un prix manque : « Les prix absents des documents n'ont pas été inventés et doivent être complétés par l'artisan. »
+- N'invente jamais : prix de marché, coût des fournitures, forfait, jours de main-d'œuvre, coût d'évacuation/déplacement, marge, remise.
+- Un délai contractuel (ex : 10 jours) ne devient JAMAIS automatiquement 10 jours de main-d'œuvre facturables.
+
+### TVA proposée
+La TVA ne se choisit JAMAIS uniquement d'après le type de travaux. Vérifie les informations disponibles (régime fiscal, franchise en base, client particulier/professionnel, sous-traitance, ancienneté du logement, travaux neufs/rénovation, fourniture et pose, opération intracommunautaire).
+Cas à reconnaître : franchise en base (art. 293 B CGI), sous-traitance BTP autoliquidation (art. 283-2 CGI), logement ancien + travaux éligibles (taux réduit possible), travaux neufs ou non éligibles (20 %), opération intracommunautaire (régime approprié), informations insuffisantes (aucune TVA imposée automatiquement).
+Affiche : taux ou régime proposé, justification simple, niveau de confiance, information manquante, confirmation nécessaire ou non.
+Exemples :
+- « TVA proposée : 10 %, sous réserve que le logement soit achevé depuis plus de deux ans et que les travaux soient éligibles. Confirmation nécessaire avant la création définitive du devis. »
+- « TVA à confirmer : l'ancienneté du logement ou le régime fiscal de l'entreprise n'est pas connu. »
+
+### Texte prêt à copier dans le Devis intelligent
+🚨 CETTE SECTION EST INTÉGRALEMENT EN FRANÇAIS PROFESSIONNEL, MÊME SI L'INTERFACE UTILISATEUR EST EN ARABE.
+Contient uniquement : client connu, adresse connue, objet du chantier, prestations séparées, quantités, unités, prix réellement connus, mention « prix à compléter » pour les prix absents, contraintes utiles, délai, TVA proposée avec réserve, points nécessitant confirmation. Aucune donnée inventée.
+
+### Documents multiples
+Si plusieurs documents : identifie chacun, explique son rôle, rapproche uniquement les informations qui concernent le même chantier. CCTP → prestations/contraintes. DPGF → quantités/prix. Notice → description. Rapport d'expertise → recommandations à confirmer. Photo → indice visuel seulement (jamais transformée automatiquement en prestation certaine). Signale toute contradiction. Ne mélange JAMAIS des documents concernant des chantiers différents.
+
+### Bloc structuré final (OBLIGATOIRE en mode documentaire BTP)
+À la toute fin de la réponse, ajoute EXACTEMENT ce bloc, entouré des balises littérales, sans texte après :
+
+<ANAFYPRO_DOCUMENT_DATA>
+{
+  "documentMode": true,
+  "documentTypes": ["cctp" | "dpgf" | "devis" | "bordereau_prix" | "notice_descriptive" | "rapport_expertise" | "rapport_technique" | "cahier_charges" | "demande_travaux" | "photo_chantier" | "autre"],
+  "client": { "name": null, "address": null },
+  "project": { "title": null, "address": null, "deadline": null },
+  "items": [
+    {
+      "description": "",
+      "quantity": null,
+      "unit": null,
+      "unitPrice": null,
+      "total": null,
+      "priceSource": "document" | "user" | "company_rate" | "missing" | "estimate",
+      "requiresReview": true
+    }
+  ],
+  "vat": {
+    "rate": null,
+    "regime": null,
+    "reason": "",
+    "confidence": "low" | "medium" | "high",
+    "requiresConfirmation": true
+  },
+  "constraints": [],
+  "missingInformation": [],
+  "copyText": ""
+}
+</ANAFYPRO_DOCUMENT_DATA>
+
+Règles JSON strictes :
+- Toutes les valeurs inconnues restent \`null\` (jamais inventer).
+- \`items[].description\` toujours en français professionnel.
+- \`copyText\` = version texte complète (français) prête à coller dans le Devis intelligent, sans données inventées.
+- JSON valide et parsable (guillemets doubles, pas de commentaires, pas de virgule finale).
+- Si tu ne peux pas produire un JSON fiable, n'émets PAS le bloc \`<ANAFYPRO_DOCUMENT_DATA>\` du tout — reste en réponse conversationnelle standard.
+`;
+      finalSystemPrompt += btpDocumentModeBlock;
+    }
     if (attList.length > 0 && outgoingMessages.length > 0) {
       const lastIdx = outgoingMessages.length - 1;
       const last = outgoingMessages[lastIdx];

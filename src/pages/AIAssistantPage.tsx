@@ -265,6 +265,7 @@ const AIAssistantPage = () => {
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [copiedBlock, setCopiedBlock] = useState<number | null>(null);
+  const [projectSeparationChoice, setProjectSeparationChoice] = useState<Record<number, ProjectSeparationChoice>>({});
   const { toast } = useToast();
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
 

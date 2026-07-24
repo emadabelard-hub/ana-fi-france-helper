@@ -725,6 +725,8 @@ Produis EXACTEMENT ce bloc, sans texte avant, en respectant scrupuleusement la b
       "priceSource": "document" | "user" | "company_rate" | "missing" | "estimate",
       "requiresReview": true,
       "confidence": 0.0,
+      "quantityConfidence": null,
+      "priceConfidence": null,
       "sourceFile": "",
       "sourceType": "cctp" | "dpgf" | "devis" | "bordereau_prix" | "notice_descriptive" | "rapport_expertise" | "rapport_technique" | "cahier_charges" | "demande_travaux" | "photo_chantier" | "montage" | "autre",
       "evidenceText": ""
@@ -756,15 +758,23 @@ Contraintes de format du bloc :
 Règles JSON strictes :
 - Toutes les valeurs inconnues restent \`null\` (jamais inventer).
 - \`items[].description\` toujours en français professionnel.
-- CHAQUE item DOIT contenir OBLIGATOIREMENT : \`description\`, \`quantity\`, \`unit\`, \`unitPrice\`, \`total\`, \`priceSource\`, \`confidence\`, \`requiresReview\`, \`sourceFile\`, \`sourceType\`, \`evidenceText\`.
+- CHAQUE item DOIT contenir OBLIGATOIREMENT : \`description\`, \`quantity\`, \`unit\`, \`unitPrice\`, \`total\`, \`priceSource\`, \`confidence\`, \`quantityConfidence\`, \`priceConfidence\`, \`requiresReview\`, \`sourceFile\`, \`sourceType\`, \`evidenceText\`.
 - \`sourceFile\` = nom exact du fichier joint. Absence → \`unitPrice = null\`, \`priceSource = "missing"\`.
 - \`evidenceText\` = extrait précis réellement lu. « Prix visible dans le document » est INVALIDE.
-- \`items[].confidence\` ∈ [0.0, 1.0] :
-  • ≥ 0.90 : prestation + prix + quantité lus explicitement, calcul quantity × unitPrice ≈ total vérifié, \`sourceFile\` et \`evidenceText\` renseignés.
-  • 0.75–0.89 : prestation certaine mais prix ou quantité partiellement lisible.
-  • < 0.75 : chiffres non fiables → \`unitPrice = null\`, \`quantity = null\` si non explicite, \`priceSource = "missing"\`.
-- Source miniature ou montage → \`requiresReview = true\`, \`unitPrice = null\`, \`priceSource = "missing"\`.
-- Si \`quantity\`, \`unitPrice\` et \`total\` sont tous fournis, \`quantity × unitPrice\` doit ≈ \`total\` (tolérance 0,02 €) — sinon \`unitPrice = null\`, \`total = null\`, \`priceSource = "missing"\`, \`requiresReview = true\`.
+- \`items[].quantityConfidence\` ∈ [0.0, 1.0] ou \`null\` — mesure UNIQUEMENT la fiabilité de la quantité et de l'unité :
+  • ≥ 0.90 : quantité et unité lues explicitement dans le document (ex. « 120 m² » clairement écrit dans un CCTP).
+  • 0.75–0.89 : quantité certaine mais unité partiellement lisible, ou inversement.
+  • < 0.75 ou \`null\` : quantité déduite, illisible ou absente → \`quantity = null\`, \`unit = null\`.
+  • L'absence de prix ne doit JAMAIS faire baisser \`quantityConfidence\`. Une quantité clairement écrite dans un CCTP sans prix garde une \`quantityConfidence\` élevée.
+- \`items[].priceConfidence\` ∈ [0.0, 1.0] ou \`null\` — mesure UNIQUEMENT la fiabilité du prix unitaire et du total :
+  • ≥ 0.90 : prix unitaire et total lus explicitement, calcul \`quantity × unitPrice ≈ total\` vérifié.
+  • 0.75–0.89 : prix partiellement lisible.
+  • < 0.75 ou \`null\` : prix non fiable ou absent → \`unitPrice = null\`, \`total = null\`, \`priceSource = "missing"\`.
+  • Si aucun prix n'est présent dans le document : \`unitPrice = null\` et \`priceConfidence = null\` (ou faible).
+- \`items[].confidence\` ∈ [0.0, 1.0] — conservé temporairement pour compatibilité (agrégat global de l'item). Ne pilote plus les règles ci-dessus.
+- \`quantity = null\` UNIQUEMENT lorsque la quantité elle-même n'est pas explicitement lisible ou fiable. Ne JAMAIS mettre \`quantity = null\` au motif que le prix est absent ou peu fiable.
+- Source miniature ou montage → \`requiresReview = true\`, \`unitPrice = null\`, \`priceSource = "missing"\` (la quantité reste évaluée indépendamment).
+- Si \`quantity\`, \`unitPrice\` et \`total\` sont tous fournis, \`quantity × unitPrice\` doit ≈ \`total\` (tolérance 0,02 €) — sinon \`unitPrice = null\`, \`total = null\`, \`priceSource = "missing"\`, \`requiresReview = true\` (la quantité reste inchangée si elle est explicite).
 - Si le total global du document est incohérent : AUCUN prix transféré.
 - Si aucune prestation fiable : \`items: []\`, \`confidence: 0\`, \`requiresReview: true\`, \`reason\` court.
 - \`documentTotalHT\` = total HT explicitement visible dans le document source. Si aucun total HT clair : \`null\`. Ne JAMAIS calculer, corriger ou remplacer ce total par un total TTC, une TVA ou un sous-total.

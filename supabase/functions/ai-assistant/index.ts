@@ -725,6 +725,8 @@ Produis EXACTEMENT ce bloc, sans texte avant, en respectant scrupuleusement la b
       "priceSource": "document" | "user" | "company_rate" | "missing" | "estimate",
       "requiresReview": true,
       "confidence": 0.0,
+      "quantityConfidence": null,
+      "priceConfidence": null,
       "sourceFile": "",
       "sourceType": "cctp" | "dpgf" | "devis" | "bordereau_prix" | "notice_descriptive" | "rapport_expertise" | "rapport_technique" | "cahier_charges" | "demande_travaux" | "photo_chantier" | "montage" | "autre",
       "evidenceText": ""

@@ -44,6 +44,8 @@ type RawItem = {
   priceSource?: string | null;
   requiresReview?: boolean | null;
   confidence?: number | string | null;
+  quantityConfidence?: number | string | null;
+  priceConfidence?: number | string | null;
 };
 
 export type ValidatedLine = {

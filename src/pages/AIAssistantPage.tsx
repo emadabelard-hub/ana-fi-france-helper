@@ -1324,6 +1324,8 @@ const AIAssistantPage = () => {
                               ? `Devis — ${String(btpDocData!.client.name).trim()}`
                               : '');
 
+                          sessionStorage.removeItem('smart_devis_prefill_v1');
+
                           const payload = {
                             subject,
                             items,
@@ -1355,6 +1357,8 @@ const AIAssistantPage = () => {
                               description: `${priceBlocked} prix et ${qtyBlocked} quantité(s) laissés à compléter — données non fiables non transférées.`,
                             });
                           }
+
+                          console.log('[ANAFYPRO_TRANSFER_PAYLOAD]', payload);
 
                           sessionStorage.setItem('smart_devis_prefill_v1', JSON.stringify(payload));
                           navigate('/pro/smart-devis');

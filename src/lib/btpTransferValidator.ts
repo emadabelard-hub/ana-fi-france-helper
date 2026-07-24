@@ -127,13 +127,11 @@ export const validateBtpItemsForTransfer = (rawItems: unknown): ValidationReport
       qtyRaw !== null &&
       qtyRaw > 0 &&
       isReadableUnit(unitRaw) &&
-      requiresReview === false &&
       (confidence === null ? false : confidence >= QTY_CONF_MIN);
 
     if (!quantityAccepted) {
       if (qtyRaw === null || qtyRaw <= 0) reasons.push('quantity_missing_or_invalid');
       if (!isReadableUnit(unitRaw)) reasons.push('unit_unreadable');
-      if (requiresReview !== false) reasons.push('quantity_requires_review');
       if (confidence === null || confidence < QTY_CONF_MIN) reasons.push('quantity_low_confidence');
     }
 

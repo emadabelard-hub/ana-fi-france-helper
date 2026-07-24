@@ -735,7 +735,7 @@ N'invente JAMAIS un prix pour compléter un tableau peu lisible.
 
 ### Fusion des sources (après inventaire uniquement)
 CCTP → prestations, contraintes, normes, surfaces, délais. DPGF → quantités, unités, prix unitaires, totaux. Notice descriptive → précisions et prestations complémentaires. Rapport d'expertise → constats et recommandations à confirmer. Photographie → indices visuels uniquement.
-Si un DPGF lisible contient un prix correspondant à une prestation du CCTP : associe le prix à la bonne prestation, indique `priceSource = "document"`, `requiresReview = false`. Si le prix est seulement partiellement lisible : ne le transfère PAS, laisse `unitPrice = null`, indique `priceSource = "missing"`.
+Si un DPGF lisible contient un prix correspondant à une prestation du CCTP : associe le prix à la bonne prestation, indique \`priceSource = "document"\`, \`requiresReview = false\`. Si le prix est seulement partiellement lisible : ne le transfère PAS, laisse \`unitPrice = null\`, indique \`priceSource = "missing"\`.
 
 ### Interdictions de conclusion prématurée
 Les formulations suivantes sont INTERDITES tant que toutes les pièces n'ont pas été examinées :

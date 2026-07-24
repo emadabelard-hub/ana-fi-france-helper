@@ -165,7 +165,11 @@ type BtpDocData = {
   constraints?: string[];
   missingInformation?: string[];
   copyText?: string;
+  projectSeparationRequired?: boolean;
+  projectSeparationReason?: string | null;
 };
+
+type ProjectSeparationChoice = 'same' | 'multiple' | 'unknown';
 
 type BtpDocExtractStatus = 'none' | 'truncated' | 'invalid' | 'ok';
 
@@ -261,6 +265,7 @@ const AIAssistantPage = () => {
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [copiedBlock, setCopiedBlock] = useState<number | null>(null);
+  const [projectSeparationChoice, setProjectSeparationChoice] = useState<Record<number, ProjectSeparationChoice>>({});
   const { toast } = useToast();
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
 
@@ -1293,8 +1298,65 @@ const AIAssistantPage = () => {
 
                 if (!hasValidBlock) return null;
 
+                // Multi-project detection — block transfer until user confirms.
+                const separationRequired = btpDocData?.projectSeparationRequired === true;
+                const userChoice = projectSeparationChoice[i];
+                if (separationRequired && userChoice !== 'same') {
+                  return (
+                    <div className="mt-4 border-t border-border pt-3 flex flex-col gap-3" dir="ltr">
+                      <p className="text-sm text-foreground bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                        Plusieurs projets semblent être présents dans les documents. Confirmez d'abord s'il s'agit du même chantier ou de plusieurs chantiers.
+                      </p>
+                      {btpDocData?.projectSeparationReason && (
+                        <p className="text-xs text-muted-foreground">
+                          {btpDocData.projectSeparationReason}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setProjectSeparationChoice(prev => ({ ...prev, [i]: 'same' }))}
+                          className="px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium hover:bg-muted"
+                        >
+                          Même chantier
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProjectSeparationChoice(prev => ({ ...prev, [i]: 'multiple' }))}
+                          className="px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium hover:bg-muted"
+                        >
+                          Plusieurs chantiers
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProjectSeparationChoice(prev => ({ ...prev, [i]: 'unknown' }))}
+                          className="px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium hover:bg-muted"
+                        >
+                          Je ne sais pas
+                        </button>
+                      </div>
+                      {userChoice === 'multiple' && (
+                        <p className="text-sm text-foreground bg-muted/60 border border-border rounded-lg p-3">
+                          Analyse séparée nécessaire pour chaque chantier.
+                        </p>
+                      )}
+                      {userChoice === 'unknown' && (
+                        <p className="text-xs text-muted-foreground">
+                          Transfert bloqué tant que le regroupement des documents n'est pas confirmé.
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+
+
                 return (
                   <div className="mt-4 border-t border-border pt-3 flex flex-col gap-2" dir="ltr">
+                    {separationRequired && userChoice === 'same' && (
+                      <p className="text-sm text-foreground bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                        Vous avez confirmé qu'il s'agit d'un même chantier. Vérifiez soigneusement les écarts entre documents avant d'utiliser le devis.
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       Analyse documentaire BTP prête. Les prix absents ne sont pas inventés — complétez-les dans le Devis intelligent.
                     </p>

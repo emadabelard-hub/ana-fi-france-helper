@@ -12,6 +12,16 @@ import { Loader2, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { getResetPasswordRedirectUrl, normalizeEmail, PRIMARY_ADMIN_EMAIL, withAuthTimeout } from '@/lib/auth';
 
+const ADMIN_RETRY_DELAYS = [1000, 2000, 4000];
+
+const isAbortLikeAdminError = (err: unknown) => {
+  const value = err instanceof Error ? err.message : String((err as any)?.message || (err as any)?.error_description || err || '');
+  const msg = value.toLowerCase();
+  return msg.includes('abort') || msg.includes('signal is aborted') || msg.includes('signal');
+};
+
+const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+
 const LoginPage = () => {
   const { signIn, signUp, isAuthenticated, isLoading: authLoading, user } = useAuth();
 
@@ -159,7 +169,22 @@ const LoginPage = () => {
       try {
         const { data: { user: signedInUser } } = await supabase.auth.getUser();
         if (signedInUser?.id) {
-          const { data: isAdmin } = await supabase.rpc('is_admin', { _user_id: signedInUser.id });
+          let isAdmin = false;
+
+          for (let i = 0; i <= ADMIN_RETRY_DELAYS.length; i++) {
+            const { data, error } = await supabase.rpc('is_admin', { _user_id: signedInUser.id });
+            if (!error) {
+              isAdmin = data === true;
+              break;
+            }
+            if (!isAbortLikeAdminError(error) || i === ADMIN_RETRY_DELAYS.length) {
+              console.error('is_admin check failed:', error);
+              break;
+            }
+            console.warn(`[login:is_admin] AbortError, retry ${i + 1}/${ADMIN_RETRY_DELAYS.length}`);
+            await wait(ADMIN_RETRY_DELAYS[i]);
+          }
+
           navigate(isAdmin === true ? '/admin' : '/', { replace: true });
           return;
         }

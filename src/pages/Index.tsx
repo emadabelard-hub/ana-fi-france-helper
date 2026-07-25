@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -75,6 +75,7 @@ const Index = () => {
   // Loading/error state to avoid rendering "0 €" as a definitive value while fetching.
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const hasLoadedStatsRef = useRef(false);
 
   // Load Google Fonts (Tajawal + Poppins)
   useEffect(() => {
@@ -90,7 +91,10 @@ const Index = () => {
 
   const fetchData = useCallback(async () => {
     if (!user?.id) return;
-    setStatsLoading(true);
+    const shouldShowLoading = !hasLoadedStatsRef.current;
+    if (shouldShowLoading) {
+      setStatsLoading(true);
+    }
     setStatsError(null);
 
     const isAbortLike = (err: any) => {
@@ -149,7 +153,9 @@ const Index = () => {
     if (docsError || expensesError) {
       // Do NOT overwrite previous stats with zeros on transient errors.
       console.error('Dashboard stats load failed', { docsError, expensesError });
-      setStatsError(docsError?.message || expensesError?.message || 'load_error');
+      if (!hasLoadedStatsRef.current) {
+        setStatsError(docsError?.message || expensesError?.message || 'load_error');
+      }
       setStatsLoading(false);
       return;
     }
@@ -181,6 +187,8 @@ const Index = () => {
       status: d.status,
       created_at: d.created_at,
     })));
+    hasLoadedStatsRef.current = true;
+    setStatsError(null);
     setStatsLoading(false);
   }, [user?.id, profile?.urssaf_rate]);
 
@@ -189,10 +197,10 @@ const Index = () => {
     fetchData();
   }, [fetchData, user?.id]);
 
-  // Refresh stats when Supabase re-emits SIGNED_IN / INITIAL_SESSION (session rehydration).
+  // Refresh stats only on a real sign-in; initial load is handled by the user-id effect above.
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+      if (event === 'SIGNED_IN') {
         fetchData();
       }
     });

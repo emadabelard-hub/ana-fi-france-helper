@@ -99,7 +99,7 @@ const Index = () => {
     };
     const RETRY_DELAYS = [1000, 2000, 4000];
 
-    const runWithRetry = async <T,>(op: () => Promise<T>): Promise<T> => {
+    const runWithRetry = async <T,>(op: () => PromiseLike<T>): Promise<T> => {
       let last: any;
       for (let i = 0; i <= RETRY_DELAYS.length; i++) {
         try { return await op(); }

@@ -9,7 +9,7 @@ type ProfileInsert = TablesInsert<'profiles'>;
 type ProfileUpdate = TablesUpdate<'profiles'>;
 type CompanyAssetKind = 'logo' | 'header' | 'stamp' | 'artisan-signature';
 
-const ABORT_RETRY_DELAY_MS = 700;
+const ABORT_RETRY_DELAYS_MS = [1000, 2000, 4000];
 const DEFAULT_LEGAL_FOOTER = "Dispensé d'immatriculation au registre du commerce et des sociétés (RCS) et au répertoire des métiers (RM). TVA non applicable, art. 293 B du CGI.";
 const DEFAULT_ASSURANCE_COVERAGE = 'France métropolitaine';
 

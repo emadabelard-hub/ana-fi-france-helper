@@ -51,17 +51,21 @@ export const isAbortLikeError = (error: unknown) => {
 };
 
 const withSingleAbortRetry = async <T>(label: string, operation: () => Promise<T>): Promise<T> => {
-  try {
-    return await operation();
-  } catch (error) {
-    if (isAbortLikeError(error)) {
-      console.warn(`[${label}] Request aborted, retrying once...`);
-      await wait(ABORT_RETRY_DELAY_MS);
-      return operation();
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= ABORT_RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (!isAbortLikeError(error) || attempt === ABORT_RETRY_DELAYS_MS.length) {
+        throw error;
+      }
+      const delay = ABORT_RETRY_DELAYS_MS[attempt];
+      console.warn(`[${label}] AbortError, retry ${attempt + 1}/${ABORT_RETRY_DELAYS_MS.length} in ${delay}ms`);
+      await wait(delay);
     }
-
-    throw error;
   }
+  throw lastError;
 };
 
 const isDuplicateProfileError = (error: unknown) => {

@@ -14,7 +14,18 @@ interface Message {
 interface RequestBody {
   message?: string;
   conversationHistory?: Message[];
-  action?: 'suggest_price' | 'generate_quote' | 'generate_invoice' | 'translate_to_french' | 'reformulate_btp' | 'generate_from_description';
+  action?: 'suggest_price' | 'generate_quote' | 'generate_invoice' | 'translate_to_french' | 'reformulate_btp' | 'reformulate_btp_batch' | 'generate_from_description';
+  items?: Array<{
+    id: string;
+    text: string;
+    context?: {
+      lot?: string | null;
+      unit?: string | null;
+      quantity?: number | null;
+      workType?: 'renovation' | 'neuf' | 'extension' | 'energetique' | null;
+      sourceFile?: string | null;
+    } | null;
+  }>;
   description?: string;
   unit?: string;
   category?: string;
@@ -619,7 +630,195 @@ Si la saisie contient une COULEUR ou une FINITION (ex: "ازرق", "ازرق س�
         status: 422,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+}
+
+// Batch reformulation — reformule jusqu'à 25 désignations BTP courtes en un seul appel IA.
+// Applique les mêmes principes que reformulate_btp (règle des 3 éléments : action + prestation + périmètre),
+// strictement fidèle au texte fourni : aucune quantité, dimension, épaisseur, marque, référence, couleur,
+// matériau, prestation, prix ou TVA n'est inventé. Le contexte optionnel n'est jamais injecté artificiellement.
+// En cas d'échec (IA, parse, item non fiable), retourne le texte original comme reformulation.
+async function handleReformulateBtpBatch(
+  items: Array<{
+    id: string;
+    text: string;
+    context?: {
+      lot?: string | null;
+      unit?: string | null;
+      quantity?: number | null;
+      workType?: 'renovation' | 'neuf' | 'extension' | 'energetique' | null;
+      sourceFile?: string | null;
+    } | null;
+  }>,
+  apiKey: string,
+): Promise<Response> {
+  // Normalisation + garde-fous
+  const MAX_ITEMS = 25;
+  const safeItems = (Array.isArray(items) ? items : [])
+    .filter((it) => it && typeof it.id === 'string' && typeof it.text === 'string' && it.text.trim().length > 0)
+    .slice(0, MAX_ITEMS)
+    .map((it) => ({
+      id: it.id,
+      text: it.text.trim().slice(0, 2000),
+      context: it.context && typeof it.context === 'object' ? it.context : null,
+    }));
+
+  // Fallback identity: renvoie les textes originaux
+  const identityResponse = () =>
+    new Response(
+      JSON.stringify({
+        reformulations: safeItems.map((it) => ({ id: it.id, reformulation: it.text })),
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+
+  if (safeItems.length === 0) {
+    return new Response(
+      JSON.stringify({ reformulations: [] }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+
+  const systemPrompt = `Tu es un métreur-vérificateur BTP expérimenté en France.
+Ta mission : reformuler PLUSIEURS saisies courtes d'artisan en désignations professionnelles françaises prêtes à figurer sur un devis BTP.
+
+═══════════════════════════════════════════════════════════════════════
+🔴 RÈGLE OBLIGATOIRE DES 3 ÉLÉMENTS (TOUJOURS DANS CET ORDRE) :
+═══════════════════════════════════════════════════════════════════════
+Chaque désignation française DOIT impérativement contenir ces 3 éléments dans cet ordre :
+
+1. ACTION COMMERCIALE — commence TOUJOURS par l'une de ces formules :
+   "Fourniture et pose de" / "Fourniture et application de" / "Application de"
+   / "Installation de" / "Mise en place de" / "Remplacement de" / "Travaux de"
+   / "Dépose de" / "Évacuation et mise en décharge de"
+
+2. MATÉRIAU OU PRESTATION PRÉCISE — l'objet exact des travaux, tel que fourni dans le texte source.
+
+3. CE QUI EST INCLUS — terminer par une énumération sobre du périmètre inclus
+   (ex : "préparation du support, impression et finition incluses",
+         "ragréage, pose de joints et nettoyage final inclus",
+         "mise aux normes et test d'étanchéité inclus",
+         "raccordement et mise en conformité norme NF C 15-100 inclus").
+
+Format final = [Action] + [Matériau/Prestation précise] + [Périmètre inclus].
+Une seule phrase, sans saut de ligne, sans guillemets.
+
+═══════════════════════════════════════════════════════════════════════
+INTERDICTIONS STRICTES — NE JAMAIS INVENTER :
+═══════════════════════════════════════════════════════════════════════
+- une quantité, une surface, un métrage, un nombre d'unités ;
+- une dimension, une épaisseur, une hauteur, une largeur, un diamètre ;
+- une marque, une référence, un code fournisseur ;
+- une couleur, une teinte, un RAL, une finition ;
+- un matériau non mentionné dans le texte source ;
+- une prestation supplémentaire non mentionnée ;
+- un prix, une TVA, un taux, une remise.
+
+Reste STRICTEMENT fidèle au texte source. Le périmètre inclus reste générique et neutre,
+sans ajouter de matière, de dimension ou de marque absente du texte.
+
+═══════════════════════════════════════════════════════════════════════
+CONSERVATION DES PRÉCISIONS TECHNIQUES :
+═══════════════════════════════════════════════════════════════════════
+Tu DOIS conserver dans la reformulation toute précision technique déjà présente dans le texte source :
+dimensions, épaisseurs, références, couleurs, RAL, lieux d'intervention (cuisine, salle de bain, plafond, façade...),
+matériaux nommés, finitions (satiné, mat, brillant), travaux inclus explicitement cités.
+
+═══════════════════════════════════════════════════════════════════════
+CONTEXTE OPTIONNEL (lot, unit, quantity, workType, sourceFile) :
+═══════════════════════════════════════════════════════════════════════
+Le contexte fourni est une AIDE au choix de formulation UNIQUEMENT.
+- Il ne doit JAMAIS être copié artificiellement dans la désignation s'il n'apporte rien.
+- Ne réinjecte JAMAIS quantity, unit, sourceFile dans le texte final.
+- workType (renovation/neuf/extension/energetique) peut orienter le vocabulaire (ex : "dépose" pour rénovation)
+  mais n'ajoute pas de mention supplémentaire s'il n'est pas utile.
+- lot peut orienter la spécialité mais ne s'écrit pas dans la désignation.
+
+═══════════════════════════════════════════════════════════════════════
+RÈGLES DE SORTIE :
+═══════════════════════════════════════════════════════════════════════
+- Sortie en FRANÇAIS UNIQUEMENT (zéro caractère arabe, zéro guillemets à l'intérieur du texte).
+- Vocabulaire métier conforme aux DTU (ragréage, sous-couche, enduit de rebouchage, joints époxy, NF C 15-100, NF DTU...).
+- Reste neutre : pas d'adjectifs commerciaux ("haut de gamme", "premium", "exceptionnel").
+- Si tu ne peux PAS reformuler fidèlement un item (texte incompréhensible, trop ambigu), retourne EXACTEMENT le texte source dans le champ reformulation de cet item.
+
+Tu réponds UNIQUEMENT avec un JSON valide, sans markdown, sans commentaire, au format exact :
+{"reformulations":[{"id":"<id>","reformulation":"<phrase française>"}, ...]}
+Conserve exactement l'ordre et les identifiants reçus.`;
+
+  const userPrompt = `Reformule chaque item ci-dessous en respectant strictement les règles.
+Items (JSON):
+${JSON.stringify(safeItems)}`;
+
+  try {
+    const response = await anthropicCompatFetch({
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        temperature: 0.2,
+        stream: false,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('[reformulate_btp_batch] AI gateway error:', response.status);
+      return identityResponse();
     }
+
+    const data = await response.json();
+    let raw: string = (data?.choices?.[0]?.message?.content || '').trim();
+    raw = raw.replace(/^```[a-zA-Z]*\n?/, '').replace(/```$/, '').trim();
+
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('[reformulate_btp_batch] no JSON in response');
+      return identityResponse();
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      console.error('[reformulate_btp_batch] parse error:', e);
+      return identityResponse();
+    }
+
+    const arr = Array.isArray(parsed?.reformulations) ? parsed.reformulations : [];
+    const byId = new Map<string, string>();
+    for (const r of arr) {
+      if (r && typeof r.id === 'string' && typeof r.reformulation === 'string') {
+        const cleaned = r.reformulation
+          .replace(/^"|"$/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (cleaned && !/[\u0600-\u06FF\u0400-\u052F]/.test(cleaned)) {
+          byId.set(r.id, cleaned);
+        }
+      }
+    }
+
+    // Conserver ordre + identifiants d'origine ; fallback = texte source
+    const reformulations = safeItems.map((it) => ({
+      id: it.id,
+      reformulation: byId.get(it.id) || it.text,
+    }));
+
+    return new Response(
+      JSON.stringify({ reformulations }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  } catch (error) {
+    console.error('[reformulate_btp_batch] unexpected error:', error);
+    return identityResponse();
+  }
+}
 
     return new Response(JSON.stringify({ translation: cleaned, reformulation: cleaned }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -977,6 +1176,11 @@ serve(async (req) => {
       }
       return handleReformulateBtp(body.text.trim(), LOVABLE_API_KEY);
     }
+
+    // Handle BTP reformulation BATCH (jusqu'à 25 items en un seul appel IA)
+    if (body.action === 'reformulate_btp_batch') {
+      const items = Array.isArray(body.items) ? body.items : [];
+      return handleReformulateBtpBatch(items, LOVABLE_API_KEY);
 
     // Handle auto-generation of Objet + designations from a free-text client description
     if (body.action === 'generate_from_description') {

@@ -14,7 +14,18 @@ interface Message {
 interface RequestBody {
   message?: string;
   conversationHistory?: Message[];
-  action?: 'suggest_price' | 'generate_quote' | 'generate_invoice' | 'translate_to_french' | 'reformulate_btp' | 'generate_from_description';
+  action?: 'suggest_price' | 'generate_quote' | 'generate_invoice' | 'translate_to_french' | 'reformulate_btp' | 'reformulate_btp_batch' | 'generate_from_description';
+  items?: Array<{
+    id: string;
+    text: string;
+    context?: {
+      lot?: string | null;
+      unit?: string | null;
+      quantity?: number | null;
+      workType?: 'renovation' | 'neuf' | 'extension' | 'energetique' | null;
+      sourceFile?: string | null;
+    } | null;
+  }>;
   description?: string;
   unit?: string;
   category?: string;

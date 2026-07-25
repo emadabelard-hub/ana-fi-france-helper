@@ -93,17 +93,58 @@ const Index = () => {
     setStatsLoading(true);
     setStatsError(null);
 
-    const { data: docs, error: docsError } = await supabase
-      .from('documents_comptables')
-      .select('id, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, payment_status, document_type, created_at')
-      .eq('user_id', user.id)
-      .eq('document_type', 'facture')
-      .order('created_at', { ascending: false });
+    const isAbortLike = (err: any) => {
+      const msg = (err?.message || err?.error_description || '' + err).toString().toLowerCase();
+      return msg.includes('abort') || msg.includes('signal is aborted') || msg.includes('signal');
+    };
+    const RETRY_DELAYS = [1000, 2000, 4000];
 
-    const { data: expensesData, error: expensesError } = await supabase
-      .from('expenses')
-      .select('tva_amount, expense_date, created_at')
-      .eq('user_id', user.id);
+    const runWithRetry = async <T,>(op: () => PromiseLike<T>): Promise<T> => {
+      let last: any;
+      for (let i = 0; i <= RETRY_DELAYS.length; i++) {
+        try { return await op(); }
+        catch (e) {
+          last = e;
+          if (!isAbortLike(e) || i === RETRY_DELAYS.length) throw e;
+          console.warn(`[dashboard] AbortError, retry ${i + 1}/${RETRY_DELAYS.length}`);
+          await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
+        }
+      }
+      throw last;
+    };
+
+    let docs: any[] | null = null;
+    let expensesData: any[] | null = null;
+    let docsError: any = null;
+    let expensesError: any = null;
+
+    try {
+      const docsRes = await runWithRetry(() =>
+        supabase
+          .from('documents_comptables')
+          .select('id, document_number, client_name, subtotal_ht, total_ttc, tva_amount, status, payment_status, document_type, created_at')
+          .eq('user_id', user.id)
+          .eq('document_type', 'facture')
+          .order('created_at', { ascending: false })
+      );
+      docs = docsRes.data as any[];
+      docsError = docsRes.error;
+    } catch (e) {
+      docsError = e;
+    }
+
+    try {
+      const expRes = await runWithRetry(() =>
+        supabase
+          .from('expenses')
+          .select('tva_amount, expense_date, created_at')
+          .eq('user_id', user.id)
+      );
+      expensesData = expRes.data as any[];
+      expensesError = expRes.error;
+    } catch (e) {
+      expensesError = e;
+    }
 
     if (docsError || expensesError) {
       // Do NOT overwrite previous stats with zeros on transient errors.

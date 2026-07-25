@@ -1363,7 +1363,10 @@ const AIAssistantPage = () => {
                     </p>
                     <button
                       type="button"
-                      onClick={() => {
+                      disabled={isPreparingTransfer}
+                      onClick={async () => {
+                        if (isPreparingTransfer) return;
+                        setIsPreparingTransfer(true);
                         try {
                           const rawItems = Array.isArray(btpDocData!.items) ? btpDocData!.items : [];
                           const documentTotalHT = btpDocData!.documentTotalHT;
@@ -1378,6 +1381,74 @@ const AIAssistantPage = () => {
                                 "L'analyse n'a pas produit de lignes valides. Relancez l'analyse en demandant explicitement le détail par prestation.",
                             });
                             return;
+                          }
+
+                          // ── Reformulation professionnelle des désignations trop courtes ──
+                          const ACTION_PREFIXES = [
+                            'fourniture et pose', 'fourniture et application', 'fourniture seule',
+                            'pose de', 'dépose de', 'démolition de', 'installation de',
+                            'réalisation de', 'création de', 'travaux de', 'préparation de',
+                            'protection de', 'mise en œuvre de', 'évacuation et mise en décharge',
+                            'nettoyage de', 'réfection de', 'remplacement de', 'rénovation de',
+                            'application de',
+                          ];
+                          const startsWithAction = (s: string) => {
+                            const low = s.trim().toLowerCase();
+                            return ACTION_PREFIXES.some((p) => low.startsWith(p));
+                          };
+                          const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+                          const isLatinNonEmpty = (s: unknown): s is string =>
+                            typeof s === 'string' && s.trim().length > 0 && !/[\u0600-\u06FF\u0400-\u04FF]/.test(s) && /[A-Za-zÀ-ÿ]/.test(s);
+
+                          type Candidate = { itemIdx: number; id: string; text: string; context: Record<string, unknown> };
+                          const candidates: Candidate[] = [];
+                          for (let idx = 0; idx < items.length; idx++) {
+                            const ln = items[idx];
+                            const mt = meta[idx];
+                            const raw = typeof mt?.index === 'number' ? (rawItems[mt.index] as Record<string, unknown> | undefined) : undefined;
+                            const des = (ln.designation_fr || '').trim();
+                            if (!des) continue;
+                            if (mt?.requiresReview === true) continue;
+                            if (startsWithAction(des) && wordCount(des) >= 8) continue;
+                            candidates.push({
+                              itemIdx: idx,
+                              id: `L${idx}`,
+                              text: des,
+                              context: {
+                                lot: ln.lot ?? null,
+                                unit: ln.unit ?? null,
+                                quantity: ln.quantity ?? null,
+                                sourceFile: (raw && (raw.sourceFile as string)) || null,
+                              },
+                            });
+                            if (candidates.length >= 25) break;
+                          }
+
+                          if (candidates.length > 0) {
+                            try {
+                              const { data, error } = await supabase.functions.invoke('invoice-mentor', {
+                                body: {
+                                  action: 'reformulate_btp_batch',
+                                  items: candidates.map((c) => ({ id: c.id, text: c.text, context: c.context })),
+                                },
+                              });
+                              if (!error && data && Array.isArray((data as any).reformulations)) {
+                                const map = new Map<string, string>();
+                                for (const r of (data as any).reformulations as Array<{ id?: unknown; reformulation?: unknown }>) {
+                                  if (typeof r?.id === 'string' && isLatinNonEmpty(r?.reformulation)) {
+                                    map.set(r.id, (r.reformulation as string).trim());
+                                  }
+                                }
+                                for (const c of candidates) {
+                                  const reworded = map.get(c.id);
+                                  if (reworded) items[c.itemIdx].designation_fr = reworded;
+                                }
+                              } else if (error) {
+                                console.warn('[AIAssistant] reformulate_btp_batch error, keeping originals', error);
+                              }
+                            } catch (reformErr) {
+                              console.warn('[AIAssistant] reformulate_btp_batch failed, keeping originals', reformErr);
+                            }
                           }
 
                           const priceBlocked = meta.filter((m) => !m.priceAccepted).length;
@@ -1428,12 +1499,14 @@ const AIAssistantPage = () => {
                         } catch (err) {
                           console.error('[AIAssistant] BTP transfer failed', err);
                           toast({ variant: 'destructive', title: 'Erreur', description: 'Transfert impossible' });
+                        } finally {
+                          setIsPreparingTransfer(false);
                         }
                       }}
-                      className="self-start inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md active:scale-95 transition-transform"
+                      className="self-start inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md active:scale-95 transition-transform disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      <Sparkles size={16} />
-                      Préparer dans le Devis intelligent
+                      {isPreparingTransfer ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                      {isPreparingTransfer ? 'Préparation des désignations professionnelles…' : 'Préparer dans le Devis intelligent'}
                     </button>
                   </div>
                 );

@@ -42,6 +42,16 @@ import AdminDashboard from '@/components/admin/AdminDashboard';
 import SystemDiagnosticManager from '@/components/admin/SystemDiagnosticManager';
 import AdminConnectionLogs from '@/components/admin/AdminConnectionLogs';
 
+const ADMIN_RETRY_DELAYS = [1000, 2000, 4000];
+
+const isAbortLikeAdminError = (err: unknown) => {
+  const value = err instanceof Error ? err.message : String((err as any)?.message || (err as any)?.error_description || err || '');
+  const msg = value.toLowerCase();
+  return msg.includes('abort') || msg.includes('signal is aborted') || msg.includes('signal');
+};
+
+const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+
 const AdminPage = () => {
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
@@ -73,7 +83,22 @@ const AdminPage = () => {
     setIsCheckingAdmin(true);
     (async () => {
       try {
-        const { data, error } = await supabase.rpc('is_admin', { _user_id: user.id });
+        let data: boolean | null = null;
+        let error: unknown = null;
+
+        for (let i = 0; i <= ADMIN_RETRY_DELAYS.length; i++) {
+          const result = await supabase.rpc('is_admin', { _user_id: user.id });
+          data = result.data as boolean | null;
+          error = result.error;
+
+          if (!error || !isAbortLikeAdminError(error) || i === ADMIN_RETRY_DELAYS.length) {
+            break;
+          }
+
+          console.warn(`[admin-page:is_admin] AbortError, retry ${i + 1}/${ADMIN_RETRY_DELAYS.length}`);
+          await wait(ADMIN_RETRY_DELAYS[i]);
+        }
+
         if (!isMounted) return;
         if (error) {
           console.error('is_admin RPC error:', error);

@@ -78,21 +78,39 @@ const BottomNavigation = () => {
     // Single source of authority: server-side RPC.
     setAdminCheckLoading(true);
     (async () => {
-      try {
-        const { data, error } = await supabase.rpc('is_admin', { _user_id: user.id });
-        if (!isMounted) return;
-        if (error) {
-          // Transient failure: keep previous truthy value, do NOT lock to false.
-          console.warn('is_admin check failed (transient), keeping previous state', error);
-        } else {
-          setIsAdmin(data === true);
+      const isAbortLike = (err: any) => {
+        const msg = (err?.message || err?.error_description || '' + err).toString().toLowerCase();
+        return msg.includes('abort') || msg.includes('signal is aborted') || msg.includes('signal');
+      };
+      const RETRY_DELAYS = [1000, 2000, 4000];
+
+      for (let i = 0; i <= RETRY_DELAYS.length; i++) {
+        try {
+          const { data, error } = await supabase.rpc('is_admin', { _user_id: user.id });
+          if (!isMounted) return;
+          if (error) {
+            if (isAbortLike(error) && i < RETRY_DELAYS.length) {
+              console.warn(`[is_admin] AbortError, retry ${i + 1}/${RETRY_DELAYS.length}`);
+              await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
+              continue;
+            }
+            console.warn('is_admin check failed (transient), keeping previous state', error);
+          } else {
+            setIsAdmin(data === true);
+          }
+          break;
+        } catch (e) {
+          if (!isMounted) return;
+          if (isAbortLike(e) && i < RETRY_DELAYS.length) {
+            console.warn(`[is_admin] AbortError thrown, retry ${i + 1}/${RETRY_DELAYS.length}`);
+            await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
+            continue;
+          }
+          console.warn('is_admin check threw, keeping previous state', e);
+          break;
         }
-      } catch (e) {
-        // Do not memorize false on network errors.
-        console.warn('is_admin check threw, keeping previous state', e);
-      } finally {
-        if (isMounted) setAdminCheckLoading(false);
       }
+      if (isMounted) setAdminCheckLoading(false);
     })();
 
     return () => {

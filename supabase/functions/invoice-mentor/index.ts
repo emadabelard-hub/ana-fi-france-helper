@@ -496,140 +496,18 @@ ${strict ? "- Interdiction stricte d'utiliser un alphabet autre que latin (fran�
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  }
-}
+    }
 
-// Reformulate handler - Arabic/Darija to a COMPLETE professional French BTP description
-// Unlike handleTranslation (which returns short labels), this expands the input into
-// a full devis-ready line: technique, support preparation, fournitures, pose, finitions.
-async function handleReformulateBtp(text: string, apiKey: string): Promise<Response> {
-  const FORBIDDEN_SCRIPTS =
-    /[\u0400-\u052F\u0370-\u03FF\u4E00-\u9FFF\u3400-\u4DBF\u3040-\u30FF\uAC00-\uD7AF\u0590-\u05FF]/;
-
-  const systemPrompt = `Tu es un métreur-vérificateur BTP expérimenté en France.
-Ton rôle: transformer une saisie courte d'artisan (souvent en arabe égyptien, darija, ou franco-arabe) en UNE SEULE désignation professionnelle française, prête à figurer sur une ligne de devis ou facture BTP.
-
-═══════════════════════════════════════════════════════════════════════
-🔴 RÈGLE OBLIGATOIRE DES 3 ÉLÉMENTS (TOUJOURS DANS CET ORDRE) :
-═══════════════════════════════════════════════════════════════════════
-Chaque désignation française DOIT impérativement contenir ces 3 éléments dans cet ordre :
-
-1. ACTION COMMERCIALE — commence TOUJOURS par l'une de ces formules :
-   "Fourniture et pose de" / "Fourniture et application de" / "Application de"
-   / "Installation de" / "Mise en place de" / "Remplacement de" / "Travaux de" / "Évacuation et mise en décharge de"
-
-2. MATÉRIAU OU PRESTATION PRÉCISE — l'objet exact des travaux
-   (ex: peinture acrylique deux couches, carrelage grès cérame, équipements sanitaires, appareillage électrique...)
-
-3. CE QUI EST INCLUS — terminer par une énumération du périmètre inclus
-   (ex: "préparation du support, impression et finition incluses",
-        "ragréage, pose de joints et nettoyage final inclus",
-        "mise aux normes et test d'étanchéité inclus",
-        "raccordement et mise en conformité norme NF C 15-100 inclus")
-
-Format final = [Action] + [Matériau/Prestation précise] + [Périmètre inclus].
-Une seule phrase, sans saut de ligne, sans guillemets, sans JSON, sans explication.
-
-═══════════════════════════════════════════════════════════════════════
-TABLE DE CORRESPONDANCE OBLIGATOIRE :
-═══════════════════════════════════════════════════════════════════════
-- "دهان" / "أعمال الدهان" → "Fourniture et application de peinture acrylique deux couches, préparation du support, impression et finition incluses"
-- "إخلاء المخلفات" / "شيل الهدم" → "Évacuation et mise en décharge des gravats et déchets de chantier, tri sélectif inclus"
-- "تجهيز وحماية الورشة" → "Mise en place des protections de chantier : bâches de sol, protection des menuiseries et du mobilier, signalisation incluse"
-- "تحضير السطح" / "معجون" → "Préparation des supports : rebouchage, ponçage, application d'enduit de lissage, finition prête à peindre"
-- "بلاط" / "تبليط" → "Fourniture et pose de carrelage, ragréage du support, pose de joints et nettoyage final inclus"
-- "سباكة" → "Travaux de plomberie : fourniture et remplacement des équipements sanitaires, mise aux normes et test d'étanchéité inclus"
-- "كهربا" / "مقابس" / "مفاتيح" → "Fourniture et pose d'appareillage électrique, câblage, raccordement et mise en conformité norme NF C 15-100"
-- "نجارة" / "أبواب" → "Fourniture et pose de menuiserie, réglage, quincaillerie et finitions inclus"
-- "تنظيف نهائي" → "Nettoyage complet de fin de chantier, évacuation des protections et remise en état des lieux"
-- "صباغة خارجية" → "Fourniture et application de peinture façade, traitement des fissures et impression hydrofuge inclus"
-
-═══════════════════════════════════════════════════════════════════════
-RÈGLES STRICTES :
-═══════════════════════════════════════════════════════════════════════
-- Sortie en FRANÇAIS UNIQUEMENT (zéro caractère arabe, zéro guillemets, zéro JSON, zéro explication).
-- Si la saisie correspond à une entrée de la table → utilise EXACTEMENT la traduction fournie.
-- Si la saisie ne correspond à aucune entrée → applique malgré tout la RÈGLE DES 3 ÉLÉMENTS pour produire une désignation professionnelle adaptée.
-- Vocabulaire métier conforme aux DTU (ragréage, sous-couche, enduit de rebouchage, joints époxy, NF C 15-100, NF DTU...).
-- N'invente JAMAIS de quantité, surface, prix ou marque non fournis.
-- Reste neutre : pas d'adjectifs commerciaux ("haut de gamme", "premium", "exceptionnel").
-
-═══════════════════════════════════════════════════════════════════════
-🎨 RÈGLE COULEUR / FINITION (PRIORITAIRE) :
-═══════════════════════════════════════════════════════════════════════
-Si la saisie contient une COULEUR ou une FINITION (ex: "ازرق", "ازرق سماوي", "ابيض", "بيج", "ساتينيه", "مات", "لمعة", "satiné", "mat", "brillant", "bleu", "blanc", "ciel", "RAL ..."):
-- Tu DOIS l'inclure dans la désignation française finale au format : "— coloris [couleur traduite] [finition traduite]".
-- Tu DOIS dans ce cas IGNORER la traduction figée de la table de correspondance et produire une désignation enrichie qui contient la couleur/finition.
-- Traductions obligatoires des couleurs/finitions courantes :
-  • "ازرق" → "bleu" ; "ازرق سماوي" / "ازرق سما" → "bleu ciel" ; "ازرق غامق" → "bleu foncé"
-  • "ابيض" → "blanc" ; "اسود" → "noir" ; "احمر" → "rouge" ; "اصفر" → "jaune" ; "اخضر" → "vert" ; "بيج" → "beige" ; "رمادي" → "gris"
-  • "ساتينيه" / "ساتان" → "satiné" ; "مات" → "mat" ; "لمعة" / "لامع" → "brillant" ; "نصف لامع" → "semi-brillant"
-- Exemple obligatoire : saisie "أعمال الدهان سقف وحيطان باننيرة ازرق ساتينيه"
-  → "Fourniture et application de peinture acrylique satinée — coloris bleu — sur murs, plafond et plinthes, préparation du support, impression et finition incluses".`;
-
-  const callOnce = async (strict: boolean) => {
-    const userPrompt = strict
-      ? `Texte: "${text}"\n\nRappel: AUCUN caractère non latin. Réponds uniquement par la désignation française.`
-      : `Texte: "${text}"`;
-
-    const response = await anthropicCompatFetch({
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        temperature: 0.3,
-        stream: false,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      }),
+    return new Response(JSON.stringify({ translation: cleaned, reformulation: cleaned }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Crédits IA épuisés" }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error("AI gateway error");
-    }
-
-    const data = await response.json();
-    const raw = (data.choices?.[0]?.message?.content || "").trim();
-    return raw
-      .replace(/^```[a-zA-Z]*\n?/, "")
-      .replace(/```$/, "")
-      .replace(/^"|"$/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  };
-
-  try {
-    let cleaned = await callOnce(false);
-    if (cleaned instanceof Response) return cleaned;
-
-    if (FORBIDDEN_SCRIPTS.test(cleaned) || /[\u0600-\u06FF]/.test(cleaned)) {
-      const retry = await callOnce(true);
-      if (retry instanceof Response) return retry;
-      cleaned = retry;
-    }
-
-    if (!cleaned || /[\u0600-\u06FF]/.test(cleaned)) {
-      return new Response(JSON.stringify({ error: "Reformulation impossible" }), {
-        status: 422,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+  } catch (error) {
+    console.error("Reformulation error:", error);
+    return new Response(JSON.stringify({ error: "Reformulation failed" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 }
 
 // Batch reformulation — reformule jusqu'à 25 désignations BTP courtes en un seul appel IA.
@@ -695,9 +573,9 @@ Chaque désignation française DOIT impérativement contenir ces 3 éléments da
 
 3. CE QUI EST INCLUS — terminer par une énumération sobre du périmètre inclus
    (ex : "préparation du support, impression et finition incluses",
-         "ragréage, pose de joints et nettoyage final inclus",
-         "mise aux normes et test d'étanchéité inclus",
-         "raccordement et mise en conformité norme NF C 15-100 inclus").
+        "ragréage, pose de joints et nettoyage final inclus",
+        "mise aux normes et test d'étanchéité inclus",
+        "raccordement et mise en conformité norme NF C 15-100 inclus").
 
 Format final = [Action] + [Matériau/Prestation précise] + [Périmètre inclus].
 Une seule phrase, sans saut de ligne, sans guillemets.
@@ -820,17 +698,6 @@ ${JSON.stringify(safeItems)}`;
   }
 }
 
-    return new Response(JSON.stringify({ translation: cleaned, reformulation: cleaned }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error("Reformulation error:", error);
-    return new Response(JSON.stringify({ error: "Reformulation failed" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-}
 
 // Invoice generation handler (FACTURE - distinct from DEVIS)
 async function handleInvoiceGeneration(category: string, categoryAnswers: string, logistics: string, apiKey: string): Promise<Response> {

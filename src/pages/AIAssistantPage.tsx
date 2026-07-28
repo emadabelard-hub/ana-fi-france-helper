@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X, Trash2, Paperclip, FileText, Loader2, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X, Trash2, Paperclip, FileText, Loader2, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { extractTextFromPDF } from '@/lib/pdfExtractor';
 import RoomScannerModal from '@/components/scanner/RoomScannerModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
@@ -263,6 +263,7 @@ const AIAssistantPage = () => {
     | { kind: 'pdf'; name: string; text: string };
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [showAttachmentsList, setShowAttachmentsList] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [copiedBlock, setCopiedBlock] = useState<number | null>(null);
   const [projectSeparationChoice, setProjectSeparationChoice] = useState<Record<number, ProjectSeparationChoice>>({});
@@ -1540,28 +1541,56 @@ const AIAssistantPage = () => {
                 </span>
               </div>
             )}
-            {attachments.map((att, idx) => (
-              <div key={idx} className="flex items-center gap-2 bg-muted/60 border border-border rounded-xl p-2">
-                {att.kind === 'image' ? (
-                  <img src={att.dataUrl} alt="" className="w-10 h-10 rounded-md object-cover shrink-0" />
-                ) : (
-                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                    <FileText size={18} className="text-primary" />
-                  </div>
+            <div className="flex items-center justify-between bg-muted/60 border border-border rounded-xl p-2">
+              <span className={cn("text-xs font-medium text-foreground", isRTL && "font-cairo text-right")}>
+                {t('aiAssistant.files.selected').replace('{count}', String(attachments.length))}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowAttachmentsList(v => !v)}
+                className={cn(
+                  "text-xs font-medium text-primary flex items-center gap-1 shrink-0",
+                  isRTL && "font-cairo flex-row-reverse"
                 )}
-                <span className={cn("text-xs font-medium text-foreground flex-1 truncate", isRTL && "font-cairo text-right")} dir="ltr">
-                  {att.name}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
-                  className="p-1 rounded-full hover:bg-muted text-muted-foreground shrink-0"
-                  aria-label={t('aiAssistant.input.remove')}
-                >
-                  <X size={14} />
-                </button>
+                aria-label={showAttachmentsList ? t('aiAssistant.files.hide') : t('aiAssistant.files.show')}
+              >
+                {showAttachmentsList ? (
+                  <>
+                    {t('aiAssistant.files.hide')} <ChevronUp size={14} />
+                  </>
+                ) : (
+                  <>
+                    {t('aiAssistant.files.show')} <ChevronDown size={14} />
+                  </>
+                )}
+              </button>
+            </div>
+            {showAttachmentsList && (
+              <div className="max-h-[25vh] overflow-y-auto space-y-1.5 pr-1">
+                {attachments.map((att, idx) => (
+                  <div key={idx} className="flex items-center gap-2 bg-muted/60 border border-border rounded-xl p-2">
+                    {att.kind === 'image' ? (
+                      <img src={att.dataUrl} alt="" className="w-10 h-10 rounded-md object-cover shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                        <FileText size={18} className="text-primary" />
+                      </div>
+                    )}
+                    <span className={cn("text-xs font-medium text-foreground flex-1 truncate", isRTL && "font-cairo text-right")} dir="ltr">
+                      {att.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
+                      className="p-1 rounded-full hover:bg-muted text-muted-foreground shrink-0"
+                      aria-label={t('aiAssistant.input.remove')}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
         <input

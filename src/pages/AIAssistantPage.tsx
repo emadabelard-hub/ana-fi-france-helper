@@ -1214,6 +1214,23 @@ const AIAssistantPage = () => {
           </div>
         )}
 
+        {(() => {
+          // Précalcule le dernier btpDocData valide connu à chaque position,
+          // afin que le panneau d'options reste affiché sous le message
+          // d'analyse technique approfondie (qui ne contient plus le bloc).
+          const arr: (any | null)[] = [];
+          let last: any = null;
+          for (const m of messages) {
+            if (m.role === 'assistant') {
+              const { data, status } = extractBtpDocData(m.content);
+              if (status === 'ok' && data) last = data;
+            }
+            arr.push(last);
+          }
+          (globalThis as any).__anafypro_panel_data = arr;
+          return null;
+        })()}
+
         {messages.map((msg, i) => {
           const isUser = msg.role === 'user';
           const textAr = isArabic(msg.content);

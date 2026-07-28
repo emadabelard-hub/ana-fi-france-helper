@@ -263,6 +263,7 @@ const AIAssistantPage = () => {
     | { kind: 'pdf'; name: string; text: string };
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [showAttachmentsList, setShowAttachmentsList] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [copiedBlock, setCopiedBlock] = useState<number | null>(null);
   const [projectSeparationChoice, setProjectSeparationChoice] = useState<Record<number, ProjectSeparationChoice>>({});

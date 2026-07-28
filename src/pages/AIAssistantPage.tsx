@@ -667,6 +667,7 @@ const AIAssistantPage = () => {
     setIsInputFocused(false);
     resetTextareaHeight();
     if (textareaRef.current) textareaRef.current.blur();
+    setSelectedAnalysisOption(null);
     setIsLoading(true);
 
     // Intercept: agent comptable

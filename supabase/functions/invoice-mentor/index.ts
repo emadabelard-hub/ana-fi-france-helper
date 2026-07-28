@@ -630,6 +630,18 @@ Si la saisie contient une COULEUR ou une FINITION (ex: "ازرق", "ازرق س�
         status: 422,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    return new Response(JSON.stringify({ translation: cleaned, reformulation: cleaned }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Reformulation error:", error);
+    return new Response(JSON.stringify({ error: "Reformulation failed" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 }
 
 // Batch reformulation — reformule jusqu'à 25 désignations BTP courtes en un seul appel IA.
@@ -817,18 +829,6 @@ ${JSON.stringify(safeItems)}`;
   } catch (error) {
     console.error('[reformulate_btp_batch] unexpected error:', error);
     return identityResponse();
-  }
-}
-
-    return new Response(JSON.stringify({ translation: cleaned, reformulation: cleaned }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error("Reformulation error:", error);
-    return new Response(JSON.stringify({ error: "Reformulation failed" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
   }
 }
 

@@ -1048,6 +1048,7 @@ serve(async (req) => {
     if (body.action === 'reformulate_btp_batch') {
       const items = Array.isArray(body.items) ? body.items : [];
       return handleReformulateBtpBatch(items, LOVABLE_API_KEY);
+    }
 
     // Handle auto-generation of Objet + designations from a free-text client description
     if (body.action === 'generate_from_description') {

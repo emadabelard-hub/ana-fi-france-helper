@@ -797,7 +797,114 @@ const AIAssistantPage = () => {
     setIsLoading(false);
   };
 
+  // Analyse technique approfondie : relance une analyse dédiée à partir des
+  // données documentaires déjà extraites dans le dernier message assistant réussi.
+  const runDeepAnalysis = async (sourceMsgIndex: number, btpDocData: any) => {
+    if (deepAnalysisLoadingIndex !== null) return;
+    setDeepAnalysisLoadingIndex(sourceMsgIndex);
+    setSelectedAnalysisOption(null);
+
+    // Nouveau message assistant, préfixé du titre demandé.
+    const titlePrefix = '## Analyse technique approfondie\n\n';
+    let assistantSoFar = titlePrefix;
+    setMessages(prev => [...prev, { role: 'assistant', content: assistantSoFar }]);
+    const upsert = (chunk: string) => {
+      assistantSoFar += chunk;
+      setMessages(prev => prev.map((m, i) =>
+        i === prev.length - 1 && m.role === 'assistant' ? { ...m, content: assistantSoFar } : m
+      ));
+    };
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const resp = await fetch(STREAM_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          action: 'btp_deep_technical_analysis',
+          btpDocData,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          language: 'fr',
+          category: activeCategory,
+        }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        // Retire le message vide et notifie
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.role === 'assistant' && last.content === titlePrefix) return prev.slice(0, -1);
+          return prev;
+        });
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: "L'analyse technique approfondie n'a pas pu être générée. Veuillez réessayer.",
+        });
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buf.indexOf('\n')) !== -1) {
+          let line = buf.slice(0, idx);
+          buf = buf.slice(idx + 1);
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+          const json = line.slice(6).trim();
+          if (json === '[DONE]') break;
+          try {
+            const parsed = JSON.parse(json);
+            const c = parsed.choices?.[0]?.delta?.content;
+            if (c) upsert(c);
+          } catch {
+            buf = line + '\n' + buf;
+            break;
+          }
+        }
+      }
+
+      // Si rien n'a été streamé au-delà du titre, considérer comme échec.
+      if (assistantSoFar === titlePrefix) {
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.role === 'assistant' && last.content === titlePrefix) return prev.slice(0, -1);
+          return prev;
+        });
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: "L'analyse technique approfondie n'a pas pu être générée. Veuillez réessayer.",
+        });
+      }
+    } catch (err) {
+      console.error('[AIAssistant] deep analysis failed', err);
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.role === 'assistant' && last.content === titlePrefix) return prev.slice(0, -1);
+        return prev;
+      });
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: "L'analyse technique approfondie n'a pas pu être générée. Veuillez réessayer.",
+      });
+    } finally {
+      setDeepAnalysisLoadingIndex(null);
+    }
+  };
+
   const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
+
 
   // Onboarding screen to collect name & gender
   if (showOnboarding) {

@@ -1684,7 +1684,8 @@ const AIAssistantPage = () => {
               )}
             </div>
           );
-        })}
+          });
+        })()}
 
         {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
           <div className="flex items-center gap-1.5">

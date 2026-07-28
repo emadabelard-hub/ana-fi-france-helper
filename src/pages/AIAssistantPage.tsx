@@ -1514,6 +1514,52 @@ const AIAssistantPage = () => {
                   </div>
                 );
               })()}
+
+              {/* Post-analysis options panel */}
+              {isLastAssistant && !isLoading && btpDocStatus === 'ok' && btpDocData && (
+                <div className="mt-4 border-t border-border pt-3" dir="ltr">
+                  <h3 className="text-sm font-semibold text-foreground mb-3">
+                    Que souhaitez-vous faire maintenant ?
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { key: 'deep-analysis', icon: Search, label: 'Analyse technique approfondie', help: 'Vérifier la compréhension du projet, les lots, les quantités et les points techniques.' },
+                      { key: 'internal-report', icon: ClipboardList, label: 'Rapport interne artisan', help: 'Préparer les points de vigilance, les contrôles et les questions avant le devis.' },
+                      { key: 'client-report', icon: Building, label: 'Rapport client / architecte', help: 'Générer une note professionnelle, neutre et prête à être transmise.' },
+                      { key: 'lots', icon: Layers, label: 'Préparer les lots du devis', help: "Organiser automatiquement les prestations par corps d'état." },
+                      { key: 'quantities', icon: Ruler, label: 'Vérifier les quantités', help: 'Contrôler les quantités extraites et identifier celles qui restent à confirmer.' },
+                      { key: 'supplies', icon: Package, label: 'Fournitures client / entreprise', help: "Séparer les éléments fournis par le client de ceux à fournir par l'entreprise." },
+                      { key: 'omissions', icon: AlertTriangle, label: 'Vérifier les oublis et incohérences', help: 'Rechercher les prestations manquantes, les doublons et les contradictions.' },
+                      { key: 'questions', icon: HelpCircle, label: 'Préparer les questions à poser', help: "Créer la liste des informations à demander au client ou à l'architecte." },
+                      { key: 'vat', icon: Percent, label: 'Vérifier les taux de TVA', help: 'Examiner les taux possibles selon les différentes prestations.' },
+                      { key: 'quote', icon: Calculator, label: 'Préparer le devis', help: "Transformer l'analyse validée en projet de devis structuré, sans prix inventé." },
+                    ].map((option) => {
+                      const Icon = option.icon;
+                      return (
+                        <button
+                          key={option.key}
+                          type="button"
+                          onClick={() => setSelectedAnalysisOption(option.key)}
+                          className="flex items-start gap-3 text-left p-3 rounded-xl border border-border bg-card hover:bg-muted/60 hover:border-primary/30 transition-colors"
+                        >
+                          <div className="shrink-0 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                            <Icon size={18} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-foreground">{option.label}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{option.help}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedAnalysisOption && (
+                    <p className="mt-3 text-sm text-muted-foreground bg-muted/60 border border-border rounded-lg p-3">
+                      Cette fonction sera disponible prochainement.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

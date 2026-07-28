@@ -1638,7 +1638,11 @@ const AIAssistantPage = () => {
               })()}
 
               {/* Post-analysis options panel */}
-              {isLastAssistant && !isLoading && btpDocStatus === 'ok' && btpDocData && (
+              {(() => {
+                const effectiveBtpDocData = (btpDocStatus === 'ok' && btpDocData) ? btpDocData : panelDataAt[i];
+                if (!(isLastAssistant && !isLoading && effectiveBtpDocData)) return null;
+                const isDeepLoading = deepAnalysisLoadingIndex !== null;
+                return (
                 <div className="mt-4 border-t border-border pt-3" dir="ltr">
                   <h3 className="text-sm font-semibold text-foreground mb-3">
                     Que souhaitez-vous faire maintenant ?
@@ -1657,31 +1661,44 @@ const AIAssistantPage = () => {
                       { key: 'quote', icon: Calculator, label: 'Préparer le devis', help: "Transformer l'analyse validée en projet de devis structuré, sans prix inventé." },
                     ].map((option) => {
                       const Icon = option.icon;
+                      const isDeep = option.key === 'deep-analysis';
+                      const isThisLoading = isDeep && isDeepLoading;
+                      const disabled = isDeep && isDeepLoading;
                       return (
                         <button
                           key={option.key}
                           type="button"
-                          onClick={() => setSelectedAnalysisOption(option.key)}
-                          className="flex items-start gap-3 text-left p-3 rounded-xl border border-border bg-card hover:bg-muted/60 hover:border-primary/30 transition-colors"
+                          disabled={disabled}
+                          onClick={() => {
+                            if (isDeep) {
+                              runDeepAnalysis(i, effectiveBtpDocData);
+                            } else {
+                              setSelectedAnalysisOption(option.key);
+                            }
+                          }}
+                          className="flex items-start gap-3 text-left p-3 rounded-xl border border-border bg-card hover:bg-muted/60 hover:border-primary/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           <div className="shrink-0 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                            <Icon size={18} />
+                            {isThisLoading ? <Loader2 size={18} className="animate-spin" /> : <Icon size={18} />}
                           </div>
                           <div className="min-w-0">
-                            <div className="text-sm font-semibold text-foreground">{option.label}</div>
+                            <div className="text-sm font-semibold text-foreground">
+                              {isThisLoading ? 'Analyse technique approfondie en cours…' : option.label}
+                            </div>
                             <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{option.help}</div>
                           </div>
                         </button>
                       );
                     })}
                   </div>
-                  {selectedAnalysisOption && (
+                  {selectedAnalysisOption && selectedAnalysisOption !== 'deep-analysis' && (
                     <p className="mt-3 text-sm text-muted-foreground bg-muted/60 border border-border rounded-lg p-3">
                       Cette fonction sera disponible prochainement.
                     </p>
                   )}
                 </div>
-              )}
+                );
+              })()}
             </div>
           );
           });

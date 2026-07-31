@@ -1077,6 +1077,26 @@ ${btpJson}
     const transformed = new ReadableStream({
       async start(controller) {
         const reader = upstream.getReader();
+        let clientGone = false;
+        let closed = false;
+        // Enqueue protégé : si le client s'est déconnecté, le contrôleur n'est
+        // plus utilisable → on arrête proprement sans relancer d'exception.
+        const safeEnqueue = (bytes: Uint8Array): boolean => {
+          if (clientGone || closed) return false;
+          if (controller.desiredSize === null) {
+            clientGone = true;
+            console.log("[ai-assistant] client disconnected (controller closed) — stopping stream transform");
+            return false;
+          }
+          try {
+            controller.enqueue(bytes);
+            return true;
+          } catch (e) {
+            clientGone = true;
+            console.log("[ai-assistant] enqueue failed, client disconnected — stopping stream transform", String(e));
+            return false;
+          }
+        };
         try {
           while (true) {
             const { done, value } = await reader.read();
@@ -1106,19 +1126,27 @@ ${btpJson}
                   object: "chat.completion.chunk",
                   choices: [{ index: 0, delta: { content: "\n\n<ANAFYPRO_TRUNCATED/>" }, finish_reason: null }],
                 };
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify(sentinel)}\n\n`));
+                if (!safeEnqueue(encoder.encode(`data: ${JSON.stringify(sentinel)}\n\n`))) break;
               }
-              controller.enqueue(encoder.encode(line + "\n"));
+              if (!safeEnqueue(encoder.encode(line + "\n"))) break;
             }
+            if (clientGone) break;
           }
-          if (buf.length > 0) controller.enqueue(encoder.encode(buf));
+          if (!clientGone && buf.length > 0) safeEnqueue(encoder.encode(buf));
         } catch (err) {
           console.error("[ai-assistant] stream transform error", err);
         } finally {
-          controller.close();
+          try { await reader.cancel(); } catch { /* déjà terminé */ }
+          try {
+            if (!closed) {
+              closed = true;
+              controller.close();
+            }
+          } catch { /* contrôleur déjà fermé (client déconnecté) */ }
         }
       },
     });
+
 
     return new Response(transformed, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },

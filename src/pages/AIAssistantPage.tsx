@@ -1399,6 +1399,8 @@ const AIAssistantPage = () => {
                         )}
                       </button>
                     </>
+                  ) : /^##\s+Analyse technique approfondie/i.test((letter ?? visibleContent).trim()) ? (
+                    <DeepAnalysisReport content={letter ?? visibleContent} />
                   ) : (
                     <MarkdownRenderer
                       content={letter ?? visibleContent}

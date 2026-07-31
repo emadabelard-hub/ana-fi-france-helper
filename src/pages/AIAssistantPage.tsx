@@ -878,7 +878,8 @@ const AIAssistantPage = () => {
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
-      while (true) {
+      let streamDone = false;
+      readStream: while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         armIdle(); // chunk reçu → réarmement du délai d'inactivité
@@ -892,7 +893,12 @@ const AIAssistantPage = () => {
           if (line.startsWith(':') || line.trim() === '') continue;
           if (!line.startsWith('data: ')) continue;
           const json = line.slice(6).trim();
-          if (json === '[DONE]') { clearIdle(); break; }
+          if (json === '[DONE]') {
+            streamDone = true;
+            clearIdle();
+            try { await reader.cancel(); } catch { /* flux déjà terminé */ }
+            break readStream;
+          }
           try {
             const parsed = JSON.parse(json);
             const c = parsed.choices?.[0]?.delta?.content;
@@ -904,6 +910,10 @@ const AIAssistantPage = () => {
         }
       }
       clearIdle();
+
+      if (!streamDone && assistantSoFar === titlePrefix) {
+        throw new Error('Flux SSE terminé sans contenu ni marqueur [DONE]');
+      }
 
       // Si rien n'a été streamé au-delà du titre, considérer comme échec.
       if (assistantSoFar === titlePrefix) {

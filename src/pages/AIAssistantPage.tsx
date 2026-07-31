@@ -270,6 +270,14 @@ const AIAssistantPage = () => {
   const [isPreparingTransfer, setIsPreparingTransfer] = useState(false);
   const [selectedAnalysisOption, setSelectedAnalysisOption] = useState<string | null>(null);
   const [deepAnalysisLoadingIndex, setDeepAnalysisLoadingIndex] = useState<number | null>(null);
+  const [deepAnalysisStreaming, setDeepAnalysisStreaming] = useState(false);
+  const deepAnalysisAbortRef = useRef<AbortController | null>(null);
+  const deepAnalysisClearIdleRef = useRef<(() => void) | null>(null);
+  // Nettoyage du watchdog et de la requête si le composant est démonté
+  useEffect(() => () => {
+    deepAnalysisClearIdleRef.current?.();
+    try { deepAnalysisAbortRef.current?.abort(); } catch { /* noop */ }
+  }, []);
   const { toast } = useToast();
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
 

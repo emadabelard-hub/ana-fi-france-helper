@@ -815,12 +815,32 @@ const AIAssistantPage = () => {
       ));
     };
 
+    // Watchdog d'inactivité : 90 s SANS aucun chunk reçu (réarmé à chaque chunk).
+    // Ne limite pas la durée totale de l'analyse.
+    const abortController = new AbortController();
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+    let idleTimedOut = false;
+    const clearIdle = () => {
+      if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+    };
+    const armIdle = () => {
+      clearIdle();
+      idleTimer = setTimeout(() => {
+        idleTimedOut = true;
+        try { abortController.abort(); } catch { /* noop */ }
+      }, 90000);
+    };
+    deepAnalysisAbortRef.current = abortController;
+    deepAnalysisClearIdleRef.current = clearIdle;
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+      armIdle();
       const resp = await fetch(STREAM_URL, {
         method: 'POST',
+        signal: abortController.signal,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           action: 'btp_deep_technical_analysis',
@@ -832,6 +852,7 @@ const AIAssistantPage = () => {
       });
 
       if (!resp.ok || !resp.body) {
+        clearIdle();
         // Retire le message vide et notifie
         setMessages(prev => {
           const last = prev[prev.length - 1];
@@ -852,6 +873,8 @@ const AIAssistantPage = () => {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        armIdle(); // chunk reçu → réarmement du délai d'inactivité
+        setDeepAnalysisStreaming(true);
         buf += decoder.decode(value, { stream: true });
         let idx: number;
         while ((idx = buf.indexOf('\n')) !== -1) {
@@ -861,7 +884,7 @@ const AIAssistantPage = () => {
           if (line.startsWith(':') || line.trim() === '') continue;
           if (!line.startsWith('data: ')) continue;
           const json = line.slice(6).trim();
-          if (json === '[DONE]') break;
+          if (json === '[DONE]') { clearIdle(); break; }
           try {
             const parsed = JSON.parse(json);
             const c = parsed.choices?.[0]?.delta?.content;
@@ -872,6 +895,7 @@ const AIAssistantPage = () => {
           }
         }
       }
+      clearIdle();
 
       // Si rien n'a été streamé au-delà du titre, considérer comme échec.
       if (assistantSoFar === titlePrefix) {
@@ -887,21 +911,41 @@ const AIAssistantPage = () => {
         });
       }
     } catch (err) {
-      console.error('[AIAssistant] deep analysis failed', err);
-      setMessages(prev => {
-        const last = prev[prev.length - 1];
-        if (last?.role === 'assistant' && last.content === titlePrefix) return prev.slice(0, -1);
-        return prev;
-      });
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: "L'analyse technique approfondie n'a pas pu être générée. Veuillez réessayer.",
-      });
+      clearIdle();
+      if (idleTimedOut || (err as any)?.name === 'AbortError') {
+        console.warn('[AIAssistant] deep analysis aborted (inactivité / déconnexion)');
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.role === 'assistant' && last.content === titlePrefix) return prev.slice(0, -1);
+          return prev;
+        });
+        toast({
+          variant: 'destructive',
+          title: 'Analyse interrompue',
+          description: "L’analyse a été interrompue en raison d’une perte de connexion ou d’un délai d’inactivité. Vous pouvez relancer l’analyse.",
+        });
+      } else {
+        console.error('[AIAssistant] deep analysis failed', err);
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.role === 'assistant' && last.content === titlePrefix) return prev.slice(0, -1);
+          return prev;
+        });
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: "L'analyse technique approfondie n'a pas pu être générée. Veuillez réessayer.",
+        });
+      }
     } finally {
+      clearIdle();
+      deepAnalysisAbortRef.current = null;
+      deepAnalysisClearIdleRef.current = null;
+      setDeepAnalysisStreaming(false);
       setDeepAnalysisLoadingIndex(null);
     }
   };
+
 
   const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
 

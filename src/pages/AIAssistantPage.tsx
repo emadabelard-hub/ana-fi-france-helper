@@ -5,6 +5,7 @@ import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X
 import { extractTextFromPDF } from '@/lib/pdfExtractor';
 import RoomScannerModal from '@/components/scanner/RoomScannerModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
+import DeepAnalysisReport from '@/components/assistant/DeepAnalysisReport';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -828,11 +829,18 @@ const AIAssistantPage = () => {
     const abortController = new AbortController();
     let idleTimer: ReturnType<typeof setTimeout> | null = null;
     let idleTimedOut = false;
+    // Garde-fou absolu : quoi qu'il arrive, la requête est avortée au bout de
+    // 5 minutes → le spinner ne peut jamais rester bloqué indéfiniment.
+    let hardTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+      idleTimedOut = true;
+      try { abortController.abort(); } catch { /* noop */ }
+    }, 300000);
     const clearIdle = () => {
       if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+      if (hardTimer) { clearTimeout(hardTimer); hardTimer = null; }
     };
     const armIdle = () => {
-      clearIdle();
+      if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
       idleTimer = setTimeout(() => {
         idleTimedOut = true;
         try { abortController.abort(); } catch { /* noop */ }
@@ -1399,6 +1407,8 @@ const AIAssistantPage = () => {
                         )}
                       </button>
                     </>
+                  ) : /^##\s+Analyse technique approfondie/i.test((letter ?? visibleContent).trim()) ? (
+                    <DeepAnalysisReport content={letter ?? visibleContent} />
                   ) : (
                     <MarkdownRenderer
                       content={letter ?? visibleContent}

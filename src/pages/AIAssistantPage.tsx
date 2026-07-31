@@ -1737,7 +1737,22 @@ const AIAssistantPage = () => {
                             <div className="text-sm font-semibold text-foreground">
                               {isThisLoading ? 'Analyse technique approfondie en cours…' : option.label}
                             </div>
-                            <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{option.help}</div>
+                            {isThisLoading ? (
+                              <>
+                                <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                                  Analyse approfondie en cours. Cette opération peut durer plusieurs minutes.
+                                </div>
+                                {deepAnalysisStreaming && (
+                                  <div className="text-xs text-primary mt-1 leading-relaxed">
+                                    Réponse en cours de génération…
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{option.help}</div>
+                            )}
+                          </div>
+
                           </div>
                         </button>
                       );

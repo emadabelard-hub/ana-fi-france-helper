@@ -829,11 +829,18 @@ const AIAssistantPage = () => {
     const abortController = new AbortController();
     let idleTimer: ReturnType<typeof setTimeout> | null = null;
     let idleTimedOut = false;
+    // Garde-fou absolu : quoi qu'il arrive, la requête est avortée au bout de
+    // 5 minutes → le spinner ne peut jamais rester bloqué indéfiniment.
+    let hardTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+      idleTimedOut = true;
+      try { abortController.abort(); } catch { /* noop */ }
+    }, 300000);
     const clearIdle = () => {
       if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+      if (hardTimer) { clearTimeout(hardTimer); hardTimer = null; }
     };
     const armIdle = () => {
-      clearIdle();
+      if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
       idleTimer = setTimeout(() => {
         idleTimedOut = true;
         try { abortController.abort(); } catch { /* noop */ }

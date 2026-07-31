@@ -896,7 +896,6 @@ const AIAssistantPage = () => {
           if (json === '[DONE]') {
             streamDone = true;
             clearIdle();
-            try { await reader.cancel(); } catch { /* flux déjà terminé */ }
             break readStream;
           }
           try {

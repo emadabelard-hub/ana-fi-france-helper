@@ -1752,8 +1752,6 @@ const AIAssistantPage = () => {
                               <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{option.help}</div>
                             )}
                           </div>
-
-                          </div>
                         </button>
                       );
                     })}

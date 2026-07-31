@@ -1079,6 +1079,7 @@ ${btpJson}
         const reader = upstream.getReader();
         let clientGone = false;
         let closed = false;
+        let upstreamDone = false;
         // Enqueue protégé : si le client s'est déconnecté, le contrôleur n'est
         // plus utilisable → on arrête proprement sans relancer d'exception.
         const safeEnqueue = (bytes: Uint8Array): boolean => {
@@ -1100,7 +1101,10 @@ ${btpJson}
         try {
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              upstreamDone = true;
+              break;
+            }
             const chunk = decoder.decode(value, { stream: true });
             buf += chunk;
             // Inspect complete SSE lines for finish_reason without altering payload
@@ -1136,7 +1140,9 @@ ${btpJson}
         } catch (err) {
           console.error("[ai-assistant] stream transform error", err);
         } finally {
-          try { await reader.cancel(); } catch { /* déjà terminé */ }
+          if (!upstreamDone) {
+            try { await reader.cancel(); } catch { /* déjà terminé */ }
+          }
           try {
             if (!closed) {
               closed = true;

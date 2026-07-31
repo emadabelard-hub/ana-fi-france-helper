@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -981,24 +982,63 @@ ${btpJson}
       });
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Lovable-API-Key": LOVABLE_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: finalSystemPrompt },
-          ...outgoingMessages,
-        ],
-        // Aligned with smart-devis-analyzer to avoid truncation of the
-        // documentary block on long BTP analyses (ex-4096 default was too low).
-        max_tokens: 16000,
-        stream: true,
-      }),
+    // ---- Stratégie de sélection du modèle ----
+    // Principal : Anthropic (ANTHROPIC_API_KEY). Secours : Lovable AI Gateway.
+    // Le corps de requête et le format de réponse (SSE OpenAI) sont identiques
+    // dans les deux cas : le frontend ne voit aucune différence.
+    const aiRequestBody = JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: finalSystemPrompt },
+        ...outgoingMessages,
+      ],
+      // Aligned with smart-devis-analyzer to avoid truncation of the
+      // documentary block on long BTP analyses (ex-4096 default was too low).
+      max_tokens: 16000,
+      stream: true,
     });
+
+    const callGateway = () =>
+      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Lovable-API-Key": LOVABLE_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: aiRequestBody,
+      });
+
+    let response: Response;
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+
+    if (!ANTHROPIC_API_KEY) {
+      console.warn("[ai-assistant] Bascule Gateway : ANTHROPIC_API_KEY absente");
+      response = await callGateway();
+    } else {
+      let anthropicResponse: Response | null = null;
+      try {
+        // Un seul essai Anthropic avant bascule.
+        anthropicResponse = await anthropicCompatFetch({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: aiRequestBody,
+        });
+      } catch (e) {
+        console.warn("[ai-assistant] Bascule Gateway : appel Anthropic en échec —", e instanceof Error ? e.message : String(e));
+        anthropicResponse = null;
+      }
+
+      if (anthropicResponse && anthropicResponse.ok) {
+        response = anthropicResponse;
+      } else {
+        if (anthropicResponse) {
+          const reason = await anthropicResponse.text().catch(() => "");
+          console.warn(`[ai-assistant] Bascule Gateway : Anthropic ${anthropicResponse.status} — ${reason.slice(0, 300)}`);
+        }
+        response = await callGateway();
+      }
+    }
+
 
 
     if (!response.ok) {

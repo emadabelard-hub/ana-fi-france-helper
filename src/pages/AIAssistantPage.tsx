@@ -5,6 +5,7 @@ import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X
 import { extractTextFromPDF } from '@/lib/pdfExtractor';
 import RoomScannerModal from '@/components/scanner/RoomScannerModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
+import DeepAnalysisReport from '@/components/assistant/DeepAnalysisReport';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';

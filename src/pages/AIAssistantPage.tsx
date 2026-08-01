@@ -30,6 +30,8 @@ type Msg = {
   deepId?: string;
   // Message de test temporaire : affiché brut, sans aucune transformation.
   rawFacts?: boolean;
+  // Message de test temporaire : contrôle documentaire, affiché brut.
+  rawControl?: boolean;
   // Pièces jointes réellement utilisées pour CE message (mémoire de session
   // uniquement) + texte utilisateur d'origine, afin de rattacher chaque analyse
   // approfondie à son propre dossier.
@@ -295,7 +297,10 @@ const AIAssistantPage = () => {
   const [factualLoading, setFactualLoading] = useState(false);
   const factualRunningRef = useRef(false);
   const factualAbortRef = useRef<AbortController | null>(null);
-  // Nettoyage du watchdog et de la requête si le composant est démonté
+  // TEMPORAIRE : test du contrôle documentaire BTP
+  const [controlLoading, setControlLoading] = useState(false);
+  const controlRunningRef = useRef(false);
+  const controlAbortRef = useRef<AbortController | null>(null);
   useEffect(() => () => {
     deepAnalysisClearIdleRef.current?.();
     try { deepAnalysisAbortRef.current?.abort(); } catch { /* noop */ }
@@ -1152,6 +1157,91 @@ const AIAssistantPage = () => {
     }
   };
 
+  // ── TEMPORAIRE : test du contrôle documentaire BTP (action serveur dédiée) ──
+  // Compare uniquement le bloc factuel <ANAFYPRO_BTP_FACTS> du même dossier.
+  const runDocumentControl = async (factsBlock: string) => {
+    if (controlRunningRef.current) return;
+    controlRunningRef.current = true;
+    if (controlLoading) { controlRunningRef.current = false; return; }
+    setControlLoading(true);
+
+    const controlId = `control-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    let soFar = '';
+    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: controlId, rawControl: true }]);
+    const upsert = (chunk: string) => {
+      soFar += chunk;
+      setMessages(prev => prev.map(m => m.deepId === controlId ? { ...m, content: soFar } : m));
+    };
+    const dropOwnMessage = () => setMessages(prev => prev.filter(m => m.deepId !== controlId));
+
+    const abortController = new AbortController();
+    controlAbortRef.current = abortController;
+    const hardTimer = setTimeout(() => { try { abortController.abort(); } catch { /* noop */ } }, 300000);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const resp = await fetch(STREAM_URL, {
+        method: 'POST',
+        signal: abortController.signal,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          action: 'btp_document_control',
+          btpFacts: factsBlock,
+          language: 'fr',
+        }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        dropOwnMessage();
+        toast({ variant: 'destructive', title: 'Erreur', description: "Le contrôle documentaire n'a pas pu être généré. Veuillez réessayer." });
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let streamDone = false;
+      readStream: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buf.indexOf('\n')) !== -1) {
+          let line = buf.slice(0, idx);
+          buf = buf.slice(idx + 1);
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+          const json = line.slice(6).trim();
+          if (json === '[DONE]') { streamDone = true; break readStream; }
+          try {
+            const parsed = JSON.parse(json);
+            const c = parsed.choices?.[0]?.delta?.content;
+            if (c) upsert(c);
+          } catch {
+            buf = line + '\n' + buf;
+            break;
+          }
+        }
+      }
+
+      if (!streamDone || !soFar.trim()) {
+        dropOwnMessage();
+        toast({ variant: 'destructive', title: 'Contrôle interrompu', description: "Le contrôle documentaire a été interrompu. Aucun résultat complet n’a été produit." });
+      }
+    } catch (err) {
+      console.error('[AIAssistant] document control failed', err);
+      dropOwnMessage();
+      toast({ variant: 'destructive', title: 'Erreur', description: "Le contrôle documentaire a échoué. Aucun résultat complet n’a été produit." });
+    } finally {
+      clearTimeout(hardTimer);
+      controlAbortRef.current = null;
+      setControlLoading(false);
+      controlRunningRef.current = false;
+    }
+  };
 
 
   const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
@@ -1534,15 +1624,28 @@ const AIAssistantPage = () => {
                 {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
               </button>
 
-              {/* TEMPORAIRE : réponse brute de l'extraction factuelle, sans transformation */}
-              {msg.rawFacts && (
+              {/* TEMPORAIRE : réponse brute de l'extraction factuelle / du contrôle documentaire, sans transformation */}
+              {(msg.rawFacts || msg.rawControl) && (
                 <pre dir="ltr" className="whitespace-pre-wrap break-words text-[13px] leading-[1.5] text-foreground font-mono bg-muted/40 border border-border rounded-lg p-3 overflow-x-auto">
                   {msg.content}
                 </pre>
               )}
 
+              {/* TEMPORAIRE : contrôle documentaire, uniquement après une extraction factuelle réussie */}
+              {msg.rawFacts && msg.content.includes('ANAFYPRO_BTP_FACTS') && (
+                <button
+                  type="button"
+                  onClick={() => runDocumentControl(msg.content)}
+                  disabled={controlLoading}
+                  className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted text-[13px] font-semibold text-foreground disabled:opacity-60"
+                >
+                  {controlLoading ? <Loader2 size={14} className="animate-spin" /> : null}
+                  Tester le contrôle documentaire
+                </button>
+              )}
+
               {/* Optional Arabic preface (only when letter present) */}
-              {!msg.rawFacts && letter && preface && (
+              {!msg.rawFacts && !msg.rawControl && letter && preface && (
                 <MarkdownRenderer
                   content={preface}
                   isRTL={isArabic(preface)}
@@ -1551,7 +1654,7 @@ const AIAssistantPage = () => {
               )}
 
               {/* Either the formal French letter, the commercial client block, or the regular response */}
-              {!msg.rawFacts && visibleContent && (
+              {!msg.rawFacts && !msg.rawControl && visibleContent && (
                 <div {...(isFormalFrench || clientBlock.hasBlock ? { dir: 'ltr' as const } : {})}>
                   {clientBlock.hasBlock ? (
                     <>

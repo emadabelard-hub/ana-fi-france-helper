@@ -1040,6 +1040,119 @@ const AIAssistantPage = () => {
     }
   };
 
+  // ── TEMPORAIRE : test de l'extraction factuelle BTP (action serveur dédiée) ──
+  // Affiche la réponse brute, sans aucune transformation ni interprétation.
+  const runFactualExtraction = async (sourceMsgIndex: number, btpDocData: any) => {
+    // Garde synchrone anti-double-clic (même mécanisme que l'analyse approfondie)
+    if (factualRunningRef.current) return;
+    factualRunningRef.current = true;
+    if (factualLoading) { factualRunningRef.current = false; return; }
+    setFactualLoading(true);
+    setSelectedAnalysisOption(null);
+
+    // Mêmes pièces originales que celles rattachées à CE dossier analysé.
+    let sourceAttachments: MsgAttachment[] = [];
+    let sourceUserText: string | null = null;
+    for (let i = Math.min(sourceMsgIndex, messages.length - 1); i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== 'user') continue;
+      if (m.attachments && m.attachments.length > 0) {
+        sourceAttachments = m.attachments;
+        sourceUserText = m.userText || null;
+      }
+      break;
+    }
+    const originalsAvailable = sourceAttachments.length > 0;
+
+    const factsId = `facts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    let soFar = '';
+    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: factsId, rawFacts: true }]);
+    const upsert = (chunk: string) => {
+      soFar += chunk;
+      setMessages(prev => prev.map(m => m.deepId === factsId ? { ...m, content: soFar } : m));
+    };
+    const dropOwnMessage = () => setMessages(prev => prev.filter(m => m.deepId !== factsId));
+
+    const abortController = new AbortController();
+    factualAbortRef.current = abortController;
+    const hardTimer = setTimeout(() => { try { abortController.abort(); } catch { /* noop */ } }, 300000);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const resp = await fetch(STREAM_URL, {
+        method: 'POST',
+        signal: abortController.signal,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          action: 'btp_factual_extraction',
+          btpDocData,
+          attachments: sourceAttachments.map(a =>
+            a.kind === 'image'
+              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
+              : { kind: a.kind, name: a.name, text: a.text }
+          ),
+          originalsAvailable,
+          userQuestion: sourceUserText,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          language: 'fr',
+          category: activeCategory,
+        }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        dropOwnMessage();
+        toast({ variant: 'destructive', title: 'Erreur', description: "L'extraction factuelle n'a pas pu être générée. Veuillez réessayer." });
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let streamDone = false;
+      readStream: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buf.indexOf('\n')) !== -1) {
+          let line = buf.slice(0, idx);
+          buf = buf.slice(idx + 1);
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+          const json = line.slice(6).trim();
+          if (json === '[DONE]') { streamDone = true; break readStream; }
+          try {
+            const parsed = JSON.parse(json);
+            const c = parsed.choices?.[0]?.delta?.content;
+            if (c) upsert(c);
+          } catch {
+            buf = line + '\n' + buf;
+            break;
+          }
+        }
+      }
+
+      // Jamais de JSON partiel conservé comme résultat complet.
+      if (!streamDone || !soFar.trim()) {
+        dropOwnMessage();
+        toast({ variant: 'destructive', title: 'Extraction interrompue', description: "L’extraction factuelle a été interrompue. Aucun résultat complet n’a été produit." });
+      }
+    } catch (err) {
+      console.error('[AIAssistant] factual extraction failed', err);
+      dropOwnMessage();
+      toast({ variant: 'destructive', title: 'Erreur', description: "L’extraction factuelle a échoué. Aucun résultat complet n’a été produit." });
+    } finally {
+      clearTimeout(hardTimer);
+      factualAbortRef.current = null;
+      setFactualLoading(false);
+      factualRunningRef.current = false;
+    }
+  };
+
+
 
   const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
 

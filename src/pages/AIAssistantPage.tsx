@@ -1772,6 +1772,137 @@ const AIAssistantPage = () => {
     }
   };
 
+  // ── Analyse persistante : lecture de l'état serveur ─────────────────────
+  const fetchJobStatus = useCallback(async (jobId?: string | null): Promise<AnalysisJob | null> => {
+    if (!user) return null;
+    try {
+      const { data, error } = await supabase.functions.invoke('btp-analysis-worker', {
+        body: { action: 'status', jobId: jobId || undefined },
+      });
+      if (error) { console.warn('[AIAssistant] job status error', error); return null; }
+      const row = (data as any)?.job ?? null;
+      if (row) setJob(row as AnalysisJob);
+      return row as AnalysisJob | null;
+    } catch (e) {
+      console.warn('[AIAssistant] job status failed', e);
+      return null;
+    }
+  }, [user]);
+
+  // Reprise automatique de l'affichage : au montage / retour sur la page,
+  // l'analyse est retrouvée par son identifiant enregistré (jamais par l'état
+  // local du composant).
+  useEffect(() => {
+    if (!user) return;
+    let stored: string | null = null;
+    try { stored = localStorage.getItem(ANALYSIS_JOB_KEY); } catch { /* noop */ }
+    void fetchJobStatus(stored);
+  }, [user, fetchJobStatus]);
+
+  // Interrogation périodique tant que l'analyse n'est pas terminée
+  // (+ rafraîchissement immédiat au retour d'arrière-plan / de veille).
+  useEffect(() => {
+    if (!user || !jobActive) return;
+    const jobId = job?.id ?? null;
+    const timer = setInterval(() => { void fetchJobStatus(jobId); }, 5000);
+    const onVisible = () => { if (document.visibilityState === 'visible') void fetchJobStatus(jobId); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onVisible);
+    };
+  }, [user, jobActive, job?.id, fetchJobStatus]);
+
+  // Affichage du rapport dès qu'il est disponible (aucun doublon possible).
+  useEffect(() => {
+    if (!job || job.status !== 'completed' || !job.final_report) return;
+    const deepId = `job-${job.id}`;
+    if (renderedJobRef.current === deepId) return;
+    renderedJobRef.current = deepId;
+    const names = (job.documents || []).map(d => d?.name).filter(Boolean) as string[];
+    const display = job.user_text || (names.length ? `📎 ${names.join(', ')}` : '');
+    setMessages(prev => {
+      if (prev.some(m => m.deepId === deepId)) return prev;
+      const next: Msg[] = [];
+      if (display) next.push({ role: 'user', content: display });
+      if (job.docData) {
+        // Synthèse structurée conservée hors affichage : elle alimente les
+        // actions finales (transfert vers le Devis intelligent).
+        next.push({
+          role: 'assistant',
+          content: `<ANAFYPRO_DOCUMENT_DATA>${JSON.stringify(job.docData)}</ANAFYPRO_DOCUMENT_DATA>`,
+          resultType: 'document_analysis',
+          internal: true,
+        });
+      }
+      next.push({ role: 'assistant', content: job.final_report as string, resultType: 'btp_deep_analysis', deepId });
+      return [...prev, ...next];
+    });
+    toast({ title: L.progDone });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.id, job?.status, job?.final_report]);
+
+  // ── Lancement : crée l'analyse persistante puis rend la main ────────────
+  const startPersistentAnalysis = async () => {
+    if (startingJob || jobActive) return;
+    const text = input.trim();
+    if (!text && attachments.length === 0) return;
+    setStartingJob(true);
+    try {
+      const payloadAttachments = attachments.map(a =>
+        a.kind === 'image'
+          ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
+          : { kind: a.kind, name: a.name, text: a.text }
+      );
+      const { data, error } = await supabase.functions.invoke('btp-analysis-worker', {
+        body: {
+          action: 'start',
+          attachments: payloadAttachments,
+          userText: text,
+          language: language === 'ar' ? 'ar' : 'fr',
+          userName: profile?.full_name?.trim().split(/\s+/)[0] || userInfo?.name || null,
+          userProfile: profile
+            ? {
+                full_name: profile.full_name || null,
+                company_name: (profile as any).company_name || null,
+                siret: (profile as any).siret || null,
+                dialect: (profile as any).dialect || null,
+              }
+            : null,
+        },
+      });
+      const row = (data as any)?.job ?? null;
+      if (error || !row) throw error || new Error('start_failed');
+      try { localStorage.setItem(ANALYSIS_JOB_KEY, row.id); } catch { /* noop */ }
+      renderedJobRef.current = null;
+      setJob(row as AnalysisJob);
+      setInput('');
+      setAttachments([]);
+      setUserHasEdited(false);
+      resetTextareaHeight();
+      void fetchJobStatus(row.id);
+    } catch (e) {
+      console.error('[AIAssistant] start analysis failed', e);
+      toast({ variant: 'destructive', title: 'Erreur', description: "L'analyse du projet n'a pas pu être lancée." });
+    } finally {
+      setStartingJob(false);
+    }
+  };
+
+  const retryPersistentAnalysis = async () => {
+    if (!job) return;
+    try {
+      await supabase.functions.invoke('btp-analysis-worker', { body: { action: 'retry', jobId: job.id } });
+      renderedJobRef.current = null;
+      void fetchJobStatus(job.id);
+    } catch (e) {
+      console.error('[AIAssistant] retry failed', e);
+    }
+  };
+
+
   // ── Point d'entrée unique : « Analyser mon projet » ──────────────────────
   // Enchaîne automatiquement les étapes internes puis n'affiche qu'un rapport.
   const runFullProjectAnalysis = async () => {

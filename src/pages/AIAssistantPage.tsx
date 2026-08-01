@@ -24,10 +24,14 @@ type MsgAttachment =
   | { kind: 'pdf'; name: string; text: string }
   | { kind: 'docx'; name: string; text: string };
 
+type ResultType = 'document_analysis' | 'btp_facts' | 'btp_control' | 'btp_deep_analysis';
+
 type Msg = {
   role: 'user' | 'assistant';
   content: string;
   deepId?: string;
+  // Type explicite du résultat (jamais déduit du texte affiché).
+  resultType?: ResultType;
   // Message de test temporaire : affiché brut, sans aucune transformation.
   rawFacts?: boolean;
   // Message de test temporaire : contrôle documentaire, affiché brut.
@@ -38,6 +42,7 @@ type Msg = {
   attachments?: MsgAttachment[];
   userText?: string;
 };
+
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
 
 const CATEGORIES: { key: CategoryKey; emoji: string; labelAr: string; labelFr: string }[] = [
@@ -240,7 +245,243 @@ const extractBtpDocData = (
 };
 
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PRÉSENTATION DES RÉSULTATS (affichage uniquement — aucune logique métier)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Extrait le JSON contenu dans un bloc <TAG> … </TAG> (ou une fence ```json). */
+const extractTaggedJson = (content: string, tag: string): any | null => {
+  if (!content) return null;
+  const re = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`);
+  const m = content.match(re);
+  let raw = m ? m[1] : null;
+  if (!raw) {
+    const first = content.indexOf('{');
+    const last = content.lastIndexOf('}');
+    if (first === -1 || last <= first) return null;
+    raw = content.slice(first, last + 1);
+  }
+  raw = raw.replace(/```(?:json)?/gi, '').trim();
+  const start = raw.indexOf('{');
+  const end = raw.lastIndexOf('}');
+  if (start === -1 || end <= start) return null;
+  try {
+    return JSON.parse(raw.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+};
+
+const asArray = (v: unknown): any[] => (Array.isArray(v) ? v : []);
+
+const asLabel = (v: unknown): string => {
+  if (typeof v === 'string') return v;
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    const cand = o.label ?? o.designation ?? o.description ?? o.item ?? o.name ?? o.info ?? o.text ?? o.value ?? o.fact;
+    if (typeof cand === 'string') return cand;
+  }
+  return '';
+};
+
+/** Zone technique repliée : JSON complet, masqué par défaut. */
+const TechnicalJsonPanel = ({ raw }: { raw: string }) => {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="mt-3" dir="ltr">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+      >
+        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        Voir les données techniques
+      </button>
+      {open && (
+        <div className="mt-2 rounded-lg border border-border bg-muted/40">
+          <div className="flex justify-end p-1.5">
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(raw);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                } catch { /* silent */ }
+              }}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
+            >
+              {copied ? <Check size={12} className="text-primary" /> : <Copy size={12} />}
+              Copier
+            </button>
+          </div>
+          <pre className="max-h-[45vh] overflow-auto px-3 pb-3 text-[11px] leading-[1.5] font-mono text-foreground whitespace-pre">
+            {raw}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Carte de résultat : titre, icône, bordure dédiée, copier, réduire/développer. */
+const ResultCard = ({
+  title,
+  icon: Icon,
+  tone = 'neutral',
+  copyText,
+  children,
+}: {
+  title: string;
+  icon: React.ComponentType<{ size?: number | string; className?: string }>;
+  tone?: 'neutral' | 'facts' | 'control' | 'deep';
+  copyText: string;
+  children: React.ReactNode;
+}) => {
+  const [collapsed, setCollapsed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const toneCls =
+    tone === 'facts'
+      ? 'border-primary/30 bg-primary/[0.04]'
+      : tone === 'control'
+      ? 'border-accent/40 bg-accent/[0.06]'
+      : tone === 'deep'
+      ? 'border-secondary/50 bg-secondary/20'
+      : 'border-border bg-card';
+  return (
+    <div className={cn('w-full rounded-xl border overflow-hidden', toneCls)} dir="ltr">
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/70">
+        <span className="shrink-0 w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+          <Icon size={15} />
+        </span>
+        <h3 className="flex-1 min-w-0 text-sm font-bold text-foreground truncate">{title}</h3>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(copyText);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } catch { /* silent */ }
+          }}
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Copier"
+          title="Copier"
+        >
+          {copied ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
+        </button>
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label={collapsed ? 'Développer' : 'Réduire'}
+          title={collapsed ? 'Développer' : 'Réduire'}
+        >
+          {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+        </button>
+      </div>
+      {!collapsed && <div className="px-3 py-3 min-w-0 break-words">{children}</div>}
+    </div>
+  );
+};
+
+const ReportSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="py-2 border-t border-border/60 first:border-t-0 first:pt-0">
+    <div className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase mb-1.5">{title}</div>
+    {children}
+  </div>
+);
+
+const StatLine = ({ label, value }: { label: string; value: React.ReactNode }) => (
+  <div className="flex items-baseline justify-between gap-3 text-[14px] py-0.5">
+    <span className="text-muted-foreground min-w-0">{label}</span>
+    <span className="font-semibold text-foreground shrink-0">{value}</span>
+  </div>
+);
+
+const BulletList = ({ items }: { items: string[] }) => (
+  <ul className="list-disc ps-5 space-y-1 text-[14px] text-foreground">
+    {items.map((it, idx) => (
+      <li key={idx} className="break-words">{it}</li>
+    ))}
+  </ul>
+);
+
+/** Rapport lisible de l'extraction factuelle (lecture seule du JSON). */
+const FactsReportView = ({ data }: { data: any }) => {
+  const documents = asArray(data?.documents);
+  const facts = asArray(data?.facts);
+  const constraints = asArray(data?.constraints);
+  const missing = asArray(data?.missingInformation);
+  const qualityOf = (d: any): string => String(d?.quality ?? d?.readability ?? d?.status ?? '').toLowerCase();
+  const full = documents.filter((d) => /certain|exploitable_total|complete|bonne|good/.test(qualityOf(d)) && !/partiel|partial/.test(qualityOf(d))).length;
+  const partial = documents.filter((d) => /partiel|partial/.test(qualityOf(d))).length;
+  const unusable = documents.filter((d) => /illisible|non_exploitable|unreadable|absent/.test(qualityOf(d))).length;
+  const missingLabels = missing.map(asLabel).filter(Boolean);
+
+  return (
+    <div className="space-y-1">
+      {documents.length > 0 && (
+        <ReportSection title="Documents">
+          <StatLine label="Documents analysés" value={documents.length} />
+          <StatLine label="Parfaitement exploitables" value={full} />
+          <StatLine label="Partiellement exploitables" value={partial} />
+          <StatLine label="Non exploitables" value={unusable} />
+        </ReportSection>
+      )}
+      <ReportSection title="Extraction">
+        <StatLine label="Faits extraits" value={facts.length} />
+        <StatLine label="Contraintes" value={constraints.length} />
+        <StatLine label="Informations manquantes" value={missing.length} />
+      </ReportSection>
+      {missingLabels.length > 0 && (
+        <ReportSection title="Points à compléter">
+          <BulletList items={missingLabels.slice(0, 30)} />
+        </ReportSection>
+      )}
+    </div>
+  );
+};
+
+/** Rapport lisible du contrôle documentaire (lecture seule du JSON). */
+const ControlReportView = ({ data }: { data: any }) => {
+  const rows = asArray(data?.controls ?? data?.results ?? data?.facts ?? data?.comparisons);
+  const statusOf = (r: any) => String(r?.status ?? r?.controlStatus ?? '').toLowerCase();
+  const count = (re: RegExp) => rows.filter((r) => re.test(statusOf(r))).length;
+  const confirmed = count(/confirmed/);
+  const single = count(/single_source/);
+  const conflicts = count(/conflict/);
+  const unreadable = count(/unreadable/);
+  const missing = count(/missing/);
+  const notComparable = count(/not_comparable/);
+  const possibleRaw = data?.deepAnalysisPossible ?? data?.technicalAnalysisPossible ?? data?.analysisPossible;
+  const blocking = asArray(data?.blockingPoints ?? data?.missingInformation).map(asLabel).filter(Boolean);
+
+  return (
+    <div className="space-y-1">
+      <ReportSection title="Contrôle">
+        <StatLine label="Faits confirmés" value={confirmed} />
+        <StatLine label="Faits d'une seule source" value={single} />
+        <StatLine label="Conflits" value={conflicts} />
+        {unreadable > 0 && <StatLine label="Illisibles" value={unreadable} />}
+        {missing > 0 && <StatLine label="Manquants" value={missing} />}
+        {notComparable > 0 && <StatLine label="Non comparables" value={notComparable} />}
+        {typeof possibleRaw === 'boolean' && (
+          <StatLine label="Analyse technique possible" value={possibleRaw ? 'Oui' : 'Non'} />
+        )}
+      </ReportSection>
+      {blocking.length > 0 && (
+        <ReportSection title="Points à compléter">
+          <BulletList items={blocking.slice(0, 30)} />
+        </ReportSection>
+      )}
+    </div>
+  );
+};
+
 const AIAssistantPage = () => {
+
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -877,7 +1118,7 @@ const AIAssistantPage = () => {
     const titlePrefix = '## Analyse technique approfondie\n\n';
     const deepId = `deep-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let assistantSoFar = titlePrefix;
-    setMessages(prev => [...prev, { role: 'assistant', content: assistantSoFar, deepId }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: assistantSoFar, deepId, resultType: 'btp_deep_analysis' }]);
     const upsert = (chunk: string) => {
       assistantSoFar += chunk;
       setMessages(prev => prev.map(m => m.deepId === deepId ? { ...m, content: assistantSoFar } : m));
@@ -1071,7 +1312,7 @@ const AIAssistantPage = () => {
 
     const factsId = `facts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let soFar = '';
-    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: factsId, rawFacts: true }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: factsId, rawFacts: true, resultType: 'btp_facts' }]);
     const upsert = (chunk: string) => {
       soFar += chunk;
       setMessages(prev => prev.map(m => m.deepId === factsId ? { ...m, content: soFar } : m));
@@ -1167,7 +1408,7 @@ const AIAssistantPage = () => {
 
     const controlId = `control-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let soFar = '';
-    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: controlId, rawControl: true }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: controlId, rawControl: true, resultType: 'btp_control' }]);
     const upsert = (chunk: string) => {
       soFar += chunk;
       setMessages(prev => prev.map(m => m.deepId === controlId ? { ...m, content: soFar } : m));
@@ -1604,48 +1845,88 @@ const AIAssistantPage = () => {
           const copyText = letter ? stripMarkdownForCopy(letter) : visibleContent;
           const clientBlock = !letter ? extractClientBlock(visibleContent) : { hasBlock: false, arabicText: visibleContent, frenchText: '' };
           const isLastAssistant = i === messages.length - 1;
-          return (
-            <div key={i} className="w-full relative">
-              <button
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(copyText);
-                    setCopiedIndex(i);
-                    toast({ title: '✅ Copié !', description: 'Texte prêt à coller' });
-                    setTimeout(() => setCopiedIndex(null), 2000);
-                  } catch {
-                    toast({ title: 'Erreur', description: 'Impossible de copier', variant: 'destructive' });
-                  }
-                }}
-                className="absolute top-2 end-2 z-10 p-1.5 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Copier"
-                title="Copier"
-              >
-                {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
-              </button>
+          // Type de résultat explicite (jamais déduit du texte).
+          const resultType: ResultType | undefined =
+            msg.resultType ?? (msg.rawFacts ? 'btp_facts' : msg.rawControl ? 'btp_control' : undefined);
+          const isFactsResult = resultType === 'btp_facts';
+          const isControlResult = resultType === 'btp_control';
+          const isDeepResult =
+            resultType === 'btp_deep_analysis' ||
+            /^##\s+Analyse technique approfondie/i.test((letter ?? visibleContent).trim());
+          const isDocAnalysisCard = !isFactsResult && !isControlResult && !isDeepResult && btpDocStatus === 'ok';
 
-              {/* TEMPORAIRE : réponse brute de l'extraction factuelle / du contrôle documentaire, sans transformation */}
-              {(msg.rawFacts || msg.rawControl) && (
-                <pre dir="ltr" className="whitespace-pre-wrap break-words text-[13px] leading-[1.5] text-foreground font-mono bg-muted/40 border border-border rounded-lg p-3 overflow-x-auto">
-                  {msg.content}
-                </pre>
-              )}
-
-              {/* TEMPORAIRE : contrôle documentaire, uniquement après une extraction factuelle réussie */}
-              {msg.rawFacts && msg.content.includes('ANAFYPRO_BTP_FACTS') && (
-                <button
-                  type="button"
-                  onClick={() => runDocumentControl(msg.content)}
-                  disabled={controlLoading}
-                  className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted text-[13px] font-semibold text-foreground disabled:opacity-60"
+          // ── Cartes dédiées : extraction factuelle / contrôle documentaire ──
+          if (isFactsResult || isControlResult) {
+            const parsed = extractTaggedJson(
+              msg.content,
+              isFactsResult ? 'ANAFYPRO_BTP_FACTS' : 'ANAFYPRO_BTP_CONTROL',
+            );
+            const pretty = parsed ? JSON.stringify(parsed, null, 2) : msg.content;
+            return (
+              <div key={i} className="w-full min-w-0">
+                <ResultCard
+                  title={isFactsResult ? 'Extraction factuelle' : 'Contrôle documentaire'}
+                  icon={isFactsResult ? ClipboardList : AlertTriangle}
+                  tone={isFactsResult ? 'facts' : 'control'}
+                  copyText={pretty}
                 >
-                  {controlLoading ? <Loader2 size={14} className="animate-spin" /> : null}
-                  Tester le contrôle documentaire
+                  {!msg.content.trim() ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 size={14} className="animate-spin" />
+                      Traitement en cours…
+                    </div>
+                  ) : parsed ? (
+                    <>
+                      {isFactsResult ? <FactsReportView data={parsed} /> : <ControlReportView data={parsed} />}
+                      <TechnicalJsonPanel raw={pretty} />
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Aucun résultat exploitable n'a pu être présenté.
+                    </p>
+                  )}
+                </ResultCard>
+                {isLastAssistant && isFactsResult && msg.content.includes('ANAFYPRO_BTP_FACTS') && (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => runDocumentControl(msg.content)}
+                      disabled={controlLoading}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted text-[13px] font-semibold text-foreground disabled:opacity-60"
+                    >
+                      {controlLoading ? <Loader2 size={14} className="animate-spin" /> : null}
+                      Tester le contrôle documentaire
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <div key={i} className="w-full min-w-0 relative">
+              {!isDeepResult && !isDocAnalysisCard && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(copyText);
+                      setCopiedIndex(i);
+                      toast({ title: '✅ Copié !', description: 'Texte prêt à coller' });
+                      setTimeout(() => setCopiedIndex(null), 2000);
+                    } catch {
+                      toast({ title: 'Erreur', description: 'Impossible de copier', variant: 'destructive' });
+                    }
+                  }}
+                  className="absolute top-2 end-2 z-10 p-1.5 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Copier"
+                  title="Copier"
+                >
+                  {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
                 </button>
               )}
 
               {/* Optional Arabic preface (only when letter present) */}
-              {!msg.rawFacts && !msg.rawControl && letter && preface && (
+              {letter && preface && (
                 <MarkdownRenderer
                   content={preface}
                   isRTL={isArabic(preface)}
@@ -1654,7 +1935,7 @@ const AIAssistantPage = () => {
               )}
 
               {/* Either the formal French letter, the commercial client block, or the regular response */}
-              {!msg.rawFacts && !msg.rawControl && visibleContent && (
+              {visibleContent && (
                 <div {...(isFormalFrench || clientBlock.hasBlock ? { dir: 'ltr' as const } : {})}>
                   {clientBlock.hasBlock ? (
                     <>
@@ -1699,8 +1980,30 @@ const AIAssistantPage = () => {
                         )}
                       </button>
                     </>
-                  ) : /^##\s+Analyse technique approfondie/i.test((letter ?? visibleContent).trim()) ? (
-                    <DeepAnalysisReport content={letter ?? visibleContent} />
+                  ) : isDeepResult ? (
+                    <ResultCard
+                      title="Analyse technique approfondie"
+                      icon={Search}
+                      tone="deep"
+                      copyText={stripMarkdownForCopy(letter ?? visibleContent)}
+                    >
+                      <DeepAnalysisReport content={letter ?? visibleContent} />
+                    </ResultCard>
+                  ) : isDocAnalysisCard ? (
+                    <ResultCard
+                      title="Analyse documentaire"
+                      icon={FileText}
+                      tone="neutral"
+                      copyText={stripMarkdownForCopy(letter ?? visibleContent)}
+                    >
+                      <MarkdownRenderer
+                        content={letter ?? visibleContent}
+                        isRTL={isFormalFrench ? false : textAr}
+                        forceLTR={isFormalFrench}
+                        className="!text-[15px] !leading-[1.6] text-foreground"
+                      />
+                      {btpDocData && <TechnicalJsonPanel raw={JSON.stringify(btpDocData, null, 2)} />}
+                    </ResultCard>
                   ) : (
                     <MarkdownRenderer
                       content={letter ?? visibleContent}
@@ -1716,6 +2019,7 @@ const AIAssistantPage = () => {
                   )}
                 </div>
               )}
+
 
               {/* Bug 4: Inline missing info form */}
               {missingForm && isLastAssistant && !isLoading && (

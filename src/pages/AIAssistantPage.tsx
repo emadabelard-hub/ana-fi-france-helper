@@ -2116,7 +2116,9 @@ const AIAssistantPage = () => {
                 language === lg ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
               )}
             >
-              {lg === 'fr' ? 'FR' : 'AR'}
+              <span className={cn(lg === 'ar' && 'font-cairo')}>
+                {lg === 'fr' ? (isRTL ? 'فرنسي' : 'Français') : 'العربية'}
+              </span>
             </button>
           ))}
         </div>

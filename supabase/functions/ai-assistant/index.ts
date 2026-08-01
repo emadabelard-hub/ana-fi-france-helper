@@ -1083,7 +1083,9 @@ DOCUMENTS ORIGINAUX FOURNIS : oui. Relis-les et confronte-les au JSON selon l'or
         : `
 
 DOCUMENTS ORIGINAUX FOURNIS : non. Commence obligatoirement le rapport (juste après le titre) par la phrase exacte :
-« Analyse approfondie réalisée à partir de la synthèse structurée ; les documents originaux n'étaient plus disponibles pour relecture. »
+${language === 'ar'
+  ? '« تم إعداد هذا التحليل من الملخص المنظم فقط؛ المستندات الأصلية لم تكن متاحة لإعادة القراءة. »'
+  : '« Analyse approfondie réalisée à partir de la synthèse structurée ; les documents originaux n\'étaient plus disponibles pour relecture. »'}
 Ne prétends alors avoir relu aucun fichier.`;
 
       // Langue du rapport destiné à l'artisan connecté (jamais à un tiers).

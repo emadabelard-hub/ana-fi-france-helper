@@ -1876,25 +1876,23 @@ const AIAssistantPage = () => {
           ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
           : { kind: a.kind, name: a.name, text: a.text }
       );
-      const { data, error } = await supabase.functions.invoke('btp-analysis-worker', {
-        body: {
-          action: 'start',
-          attachments: payloadAttachments,
-          userText: text,
-          language: language === 'ar' ? 'ar' : 'fr',
-          userName: profile?.full_name?.trim().split(/\s+/)[0] || userInfo?.name || null,
-          userProfile: profile
-            ? {
-                full_name: profile.full_name || null,
-                company_name: (profile as any).company_name || null,
-                siret: (profile as any).siret || null,
-                dialect: (profile as any).dialect || null,
-              }
-            : null,
-        },
+      const data = await callWorker({
+        action: 'start',
+        attachments: payloadAttachments,
+        userText: text,
+        language: language === 'ar' ? 'ar' : 'fr',
+        userName: profile?.full_name?.trim().split(/\s+/)[0] || userInfo?.name || null,
+        userProfile: profile
+          ? {
+              full_name: profile.full_name || null,
+              company_name: (profile as any).company_name || null,
+              siret: (profile as any).siret || null,
+              dialect: (profile as any).dialect || null,
+            }
+          : null,
       });
       const row = (data as any)?.job ?? null;
-      if (error || !row) throw error || new Error('start_failed');
+      if (!row) throw new Error('start_failed');
       try { localStorage.setItem(ANALYSIS_JOB_KEY, row.id); } catch { /* noop */ }
       renderedJobRef.current = null;
       setJob(row as AnalysisJob);
@@ -1914,13 +1912,14 @@ const AIAssistantPage = () => {
   const retryPersistentAnalysis = async () => {
     if (!job) return;
     try {
-      await supabase.functions.invoke('btp-analysis-worker', { body: { action: 'retry', jobId: job.id } });
+      await callWorker({ action: 'retry', jobId: job.id });
       renderedJobRef.current = null;
       void fetchJobStatus(job.id);
     } catch (e) {
       console.error('[AIAssistant] retry failed', e);
     }
   };
+
 
 
   // ── Point d'entrée unique : « Analyser mon projet » ──────────────────────

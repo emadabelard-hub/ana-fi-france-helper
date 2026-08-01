@@ -24,10 +24,14 @@ type MsgAttachment =
   | { kind: 'pdf'; name: string; text: string }
   | { kind: 'docx'; name: string; text: string };
 
+type ResultType = 'document_analysis' | 'btp_facts' | 'btp_control' | 'btp_deep_analysis';
+
 type Msg = {
   role: 'user' | 'assistant';
   content: string;
   deepId?: string;
+  // Type explicite du résultat (jamais déduit du texte affiché).
+  resultType?: ResultType;
   // Message de test temporaire : affiché brut, sans aucune transformation.
   rawFacts?: boolean;
   // Message de test temporaire : contrôle documentaire, affiché brut.
@@ -38,6 +42,7 @@ type Msg = {
   attachments?: MsgAttachment[];
   userText?: string;
 };
+
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
 
 const CATEGORIES: { key: CategoryKey; emoji: string; labelAr: string; labelFr: string }[] = [

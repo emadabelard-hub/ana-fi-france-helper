@@ -211,7 +211,9 @@ const AppRoutes = () => {
         </Routes>
       </Suspense>
       <CookieConsentBanner />
+      <AppUpdateBanner />
     </BrowserRouter>
+
   );
 };
 

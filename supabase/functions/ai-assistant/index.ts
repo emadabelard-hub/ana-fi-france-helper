@@ -1152,6 +1152,20 @@ Exemple autorisé : document « Dépose de 17 ml de cloisons. » → description
 
 QUANTITÉS : une quantité est "certain" uniquement si elle est directement rattachée à la prestation dans le document. Chaque quantité écrite donne un fait distinct. Aucun total, aucun cumul, aucune ligne de synthèse.
 
+STABILITÉ DES FAITS (impératif) : une même entrée documentaire doit toujours produire la même granularité et le même nombre de faits, quelle que soit l'exécution.
+- Ne jamais fusionner deux prestations qui possèdent des quantités ou des dimensions différentes.
+- Conserver un fait séparé par prestation explicitement quantifiée.
+- Exemple obligatoire : « 4 portes battantes de 73 cm + 1 porte de 63 cm » → DEUX faits distincts : (4 unités, 73 cm) et (1 unité, 63 cm). Jamais « 5 unités » avec deux dimensions.
+- Conserver aussi comme faits distincts toutes les prestations explicitement écrites même sans quantité (quantity et unit à null), notamment : déplacement éventuel de l'aspirateur central ; création des réseaux par le sous-sol ; mobilier sanitaire fourni par la cliente.
+
+IDENTIFIANTS STABLES : construis "id" de manière déterministe à partir de sourceFile, lot, category, descriptionExact, quantity et unit (ex. "fichier.docx|lot|categorie|description|quantite|unite" normalisé en minuscules, espaces remplacés par "-"). L'identifiant ne doit jamais dépendre de l'ordre de génération. Conserve l'ordre exact d'apparition dans le document et une numérotation continue, sans omission ni réordonnancement.
+
+CARACTÉRISTIQUES MULTIPLES D'UN MÊME OUVRAGE : lorsque le document donne deux valeurs de nature différente pour le même ouvrage (ex. coffrage placo : 12 ml de coffrage et 7 m² d'enduit et peinture), ce n'est ni une incohérence ni une information manquante. Crée deux faits distincts : longueur du coffrage 12 ml, surface de finition 7 m². N'écris jamais « cohérence à vérifier » ni « surface exacte non précisée » lorsque les deux valeurs sont déjà explicitement présentes.
+
+PDF NON LISIBLE : si le texte d'un PDF n'est pas extractible et que son contenu visuel n'a pas été analysé, alors documentType = null et role = null. N'invente jamais « plan de masse », « plan architectural », « permis de construire » ou « dossier structure ». Utilise uniquement la formulation : « Contenu textuel non extractible automatiquement ; type et rôle non déterminés. »
+
+INFORMATIONS MANQUANTES : n'ajoute jamais automatiquement budget, dates de début et de fin, prix, planning ou délais, sauf si le document annonce explicitement qu'ils doivent être présents ou si l'utilisateur les demande. Relève uniquement les absences directement liées aux prestations décrites (ex. quantité de fenêtres, surface du ragréage, dimensions de l'agrandissement).
+
 IMAGES, CAPTURES WHATSAPP, MONTAGES, PLANS MINIATURISÉS :
 - readingQuality "partielle" dès que tout n'est pas parfaitement lisible ;
 - aucune cote relevée si un seul caractère est incertain ;

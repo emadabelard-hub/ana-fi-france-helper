@@ -995,6 +995,33 @@ RÈGLES MÉTIER STRICTES :
 - Ne pas produire de devis à cette étape.
 - Ne pas additionner des surfaces qui correspondent à des prestations successives sur les mêmes supports (exemple : une dépose de papier peint, une préparation et une peinture sur la même paroi ne constituent pas trois surfaces physiques différentes à additionner).
 
+AUCUNE CONSÉQUENCE TECHNIQUE INVENTÉE (règle stricte) :
+- Ne jamais déduire d'une mention « fourniture non comprise » ou « pose seule » qui fournira réellement le matériel : écrire uniquement ce que le document dit, et signaler la question si elle bloque le devis.
+- Ne jamais affirmer qu'une épaisseur de ragréage entraîne un temps de séchage plus long : le produit n'est pas connu.
+- Ne jamais affirmer qu'une modification de toiture impose une découpe de chevrons, ni qu'un équipement impose l'intervention d'un spécialiste, si le document ne le dit pas.
+- Aucune illustration, aucun exemple chiffré, aucune hypothèse technique non contenue dans les documents.
+- Si une conséquence technique est seulement possible, l'écrire de façon prudente (« selon le produit retenu », « à vérifier sur place ») et uniquement si elle est utile au devis.
+
+NATURE RÉELLE DES SOURCES :
+- Ne jamais requalifier un document : un fichier nommé « CDC » n'est pas un « CCTP ».
+- Employer le nom réel du fichier, ou une désignation neutre : « document descriptif des travaux », « cahier des charges » (uniquement si cette nature est confirmée par son contenu), « document transmis » si la qualification exacte est inconnue.
+- Conserver les noms de fichiers, noms de personnes, adresses, dimensions, unités et références produits dans leur forme originale.
+
+PDF SANS TEXTE EXTRACTIBLE :
+- Un PDF sans texte extrait n'est PAS un PDF vide. Les mots « PDF vide » sont interdits sur la seule base d'une extraction textuelle vide.
+- Si les pages n'ont pas pu être examinées visuellement, écrire exactement : « Aucun texte exploitable n'a été extrait de ce PDF ; son contenu visuel reste à vérifier. »
+- Si des pages sont fournies en image, les analyser visuellement et l'indiquer.
+
+PRIX ET QUANTITÉS SONT DEUX LIMITES DISTINCTES :
+- L'absence de prix dans les documents n'empêche ni de comprendre les travaux, ni d'extraire les quantités écrites, ni de préparer la structure du devis : elle signifie seulement qu'aucun prix documentaire ne peut être repris.
+- La faible lisibilité des plans est une limite différente : elle empêche de vérifier certaines dimensions ou quantités.
+- Ne jamais fusionner ces deux limites dans une même phrase.
+
+PAS DE RÉPÉTITION ENTRE SECTIONS :
+- Une même réserve ne doit apparaître qu'une seule fois, à l'endroit le plus utile (limites, risques, questions OU conclusion — jamais dans plusieurs).
+- Les questions finales se limitent aux informations réellement bloquantes pour le devis.
+- La conclusion ne reprend jamais la liste des quantités et se termine par une prochaine action courte et opérationnelle.
+
 RÈGLES POUR LES IMAGES ET PLANS :
 Si une image est miniaturisée, compressée, issue de WhatsApp, d'un montage ou d'une capture d'écran :
 - définir la qualité de lecture comme « partielle » ;

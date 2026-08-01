@@ -605,7 +605,7 @@ const AIAssistantPage = () => {
         nextStep: 'الخطوة التالية',
         actionQuote: 'إعداد عرض السعر',
         actionEstimate: 'الحصول على تقدير للأسعار',
-        actionClientReport: 'تحضير تقرير للعميل / المهندس',
+        actionClientReport: 'إعداد تقرير للعميل أو المهندس',
         soon: 'هذه الخدمة متاحة قريبًا.',
         runningTitle: 'جاري تحليل مشروعك',
         runningText: 'يمكنك الخروج من الصفحة. التحليل هيكمل لوحده والتقرير هيكون متاح هنا أول ما يجهز.',

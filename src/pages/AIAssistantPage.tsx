@@ -18,7 +18,20 @@ import { validateBtpItemsForTransfer } from '@/lib/btpTransferValidator';
 
 type ConversationSummary = { id: string; title: string | null; updated_at: string };
 
-type Msg = { role: 'user' | 'assistant'; content: string; deepId?: string };
+type MsgAttachment =
+  | { kind: 'image'; name: string; dataUrl: string }
+  | { kind: 'pdf'; name: string; text: string };
+
+type Msg = {
+  role: 'user' | 'assistant';
+  content: string;
+  deepId?: string;
+  // Pièces jointes réellement utilisées pour CE message (mémoire de session
+  // uniquement) + texte utilisateur d'origine, afin de rattacher chaque analyse
+  // approfondie à son propre dossier.
+  attachments?: MsgAttachment[];
+  userText?: string;
+};
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
 
 const CATEGORIES: { key: CategoryKey; emoji: string; labelAr: string; labelFr: string }[] = [
@@ -259,9 +272,7 @@ const AIAssistantPage = () => {
   const [showConversationList, setShowConversationList] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  type Attachment =
-    | { kind: 'image'; name: string; dataUrl: string }
-    | { kind: 'pdf'; name: string; text: string };
+  type Attachment = MsgAttachment;
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [showAttachmentsList, setShowAttachmentsList] = useState(false);
@@ -671,7 +682,12 @@ const AIAssistantPage = () => {
       ? `📎 ${currentAttachments.map(a => a.name).join(', ')}`
       : '');
 
-    const userMsg: Msg = { role: 'user', content: displayText };
+    const userMsg: Msg = {
+      role: 'user',
+      content: displayText,
+      attachments: currentAttachments.length > 0 ? currentAttachments : undefined,
+      userText: text || undefined,
+    };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setAttachments([]);
@@ -819,6 +835,23 @@ const AIAssistantPage = () => {
     setDeepAnalysisLoadingIndex(sourceMsgIndex);
     setSelectedAnalysisOption(null);
 
+    // Rattachement STRICT des pièces originales à l'analyse d'origine :
+    // on remonte depuis le message assistant analysé jusqu'au premier message
+    // utilisateur portant ses propres pièces jointes (jamais l'état global
+    // courant, jamais un dossier plus récent ou plus ancien).
+    let sourceAttachments: MsgAttachment[] = [];
+    let sourceUserText: string | null = null;
+    for (let i = Math.min(sourceMsgIndex, messages.length - 1); i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== 'user') continue;
+      if (m.attachments && m.attachments.length > 0) {
+        sourceAttachments = m.attachments;
+        sourceUserText = m.userText || null;
+      }
+      break;
+    }
+    const originalsAvailable = sourceAttachments.length > 0;
+
     // Nouveau message assistant, préfixé du titre demandé et identifié de façon
     // unique : chaque flux ne met à jour QUE son propre message.
     const titlePrefix = '## Analyse technique approfondie\n\n';
@@ -876,6 +909,16 @@ const AIAssistantPage = () => {
         body: JSON.stringify({
           action: 'btp_deep_technical_analysis',
           btpDocData,
+          // Pièces originales du dossier ayant produit CETTE analyse basique
+          // (mêmes limites de taille/nombre que l'analyse basique : elles sont
+          // réutilisées telles quelles, sans nouvel upload).
+          attachments: sourceAttachments.map(a =>
+            a.kind === 'image'
+              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
+              : { kind: 'pdf', name: a.name, text: a.text }
+          ),
+          originalsAvailable,
+          userQuestion: sourceUserText,
           messages: messages.map(m => ({ role: m.role, content: m.content })),
           language: 'fr',
           category: activeCategory,

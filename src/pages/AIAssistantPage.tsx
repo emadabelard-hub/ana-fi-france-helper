@@ -909,6 +909,16 @@ const AIAssistantPage = () => {
         body: JSON.stringify({
           action: 'btp_deep_technical_analysis',
           btpDocData,
+          // Pièces originales du dossier ayant produit CETTE analyse basique
+          // (mêmes limites de taille/nombre que l'analyse basique : elles sont
+          // réutilisées telles quelles, sans nouvel upload).
+          attachments: sourceAttachments.map(a =>
+            a.kind === 'image'
+              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
+              : { kind: 'pdf', name: a.name, text: a.text }
+          ),
+          originalsAvailable,
+          userQuestion: sourceUserText,
           messages: messages.map(m => ({ role: m.role, content: m.content })),
           language: 'fr',
           category: activeCategory,

@@ -381,21 +381,28 @@ serve(async (req) => {
       const query = admin
         .from("btp_analysis_jobs")
         .select(
-          "id, status, language, progress, current_step, final_report, error_message, documents, user_text, created_at, updated_at",
+          "id, status, language, progress, current_step, final_report, error_message, documents, user_text, step_results, created_at, updated_at",
         )
         .eq("user_id", user.id);
       const { data } = body?.jobId
         ? await query.eq("id", body.jobId).maybeSingle()
         : await query.order("created_at", { ascending: false }).limit(1).maybeSingle();
 
-      const job = data as any | null;
+      const row = data as any | null;
       // Travail « processing » orphelin (fonction tuée) → reprise automatique.
       if (
-        job &&
-        job.status === "processing" &&
-        Date.now() - new Date(job.updated_at).getTime() > STALE_MS
+        row &&
+        row.status === "processing" &&
+        Date.now() - new Date(row.updated_at).getTime() > STALE_MS
       ) {
-        chain(job.id, token);
+        chain(row.id, token);
+      }
+      // Les résultats intermédiaires ne sont jamais exposés : seule la synthèse
+      // structurée nécessaire au transfert vers le Devis intelligent est rendue.
+      let job: any = row;
+      if (row) {
+        const { step_results, ...rest } = row;
+        job = { ...rest, docData: step_results?.docData ?? null };
       }
       return json({ job });
     }

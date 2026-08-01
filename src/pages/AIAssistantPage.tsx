@@ -334,7 +334,7 @@ const ResultCard = ({
   children,
 }: {
   title: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<{ size?: number | string; className?: string }>;
   tone?: 'neutral' | 'facts' | 'control' | 'deep';
   copyText: string;
   children: React.ReactNode;

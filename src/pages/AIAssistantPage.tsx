@@ -1248,7 +1248,7 @@ const AIAssistantPage = () => {
 
     // Nouveau message assistant, préfixé du titre demandé et identifié de façon
     // unique : chaque flux ne met à jour QUE son propre message.
-    const titlePrefix = (isRTL ? '## التحليل الفني المتقدم' : '## Analyse technique approfondie') + '\n\n';
+    const titlePrefix = (isRTL ? '## التحليل الفني المعمق' : '## Analyse technique approfondie') + '\n\n';
     const deepId = `deep-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let assistantSoFar = titlePrefix;
     setMessages(prev => [...prev, { role: 'assistant', content: assistantSoFar, deepId, resultType: 'btp_deep_analysis' }]);

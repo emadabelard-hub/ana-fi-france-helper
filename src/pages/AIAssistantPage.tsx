@@ -46,6 +46,22 @@ type Msg = {
   internal?: boolean;
 };
 
+// État persistant d'une analyse « Analyser mon projet » (source : base de données).
+type AnalysisJob = {
+  id: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  language: string;
+  progress: number;
+  current_step: string;
+  final_report: string | null;
+  error_message: string | null;
+  user_text: string | null;
+  documents: { name?: string; kind?: string }[] | null;
+  docData?: any;
+};
+
+const ANALYSIS_JOB_KEY = 'anafypro_btp_analysis_job_id';
+
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
 
 const CATEGORIES: { key: CategoryKey; emoji: string; labelAr: string; labelFr: string }[] = [

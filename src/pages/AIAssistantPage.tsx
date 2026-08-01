@@ -649,7 +649,10 @@ const AIAssistantPage = () => {
     for (const file of files) {
       const isImage = /^image\/(jpe?g|png)$/i.test(file.type);
       const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
-      if (!isImage && !isPdf) {
+      const isDocx =
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        /\.docx$/i.test(file.name);
+      if (!isImage && !isPdf && !isDocx) {
         toast({ variant: 'destructive', title: t('aiAssistant.file.unsupported'), description: file.name });
         continue;
       }
@@ -658,10 +661,14 @@ const AIAssistantPage = () => {
         continue;
       }
       try {
-        const dataUrl = await readFileAsDataUrl(file);
         if (isImage) {
+          const dataUrl = await readFileAsDataUrl(file);
           added.push({ kind: 'image', name: file.name, dataUrl });
+        } else if (isDocx) {
+          const text = await extractTextFromDocx(file);
+          added.push({ kind: 'docx', name: file.name, text: text.slice(0, 50000) });
         } else {
+          const dataUrl = await readFileAsDataUrl(file);
           const text = await extractTextFromPDF(dataUrl);
           added.push({ kind: 'pdf', name: file.name, text: text.slice(0, 50000) });
         }

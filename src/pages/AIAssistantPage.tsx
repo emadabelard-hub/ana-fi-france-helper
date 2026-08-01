@@ -1157,6 +1157,91 @@ const AIAssistantPage = () => {
     }
   };
 
+  // ── TEMPORAIRE : test du contrôle documentaire BTP (action serveur dédiée) ──
+  // Compare uniquement le bloc factuel <ANAFYPRO_BTP_FACTS> du même dossier.
+  const runDocumentControl = async (factsBlock: string) => {
+    if (controlRunningRef.current) return;
+    controlRunningRef.current = true;
+    if (controlLoading) { controlRunningRef.current = false; return; }
+    setControlLoading(true);
+
+    const controlId = `control-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    let soFar = '';
+    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: controlId, rawControl: true }]);
+    const upsert = (chunk: string) => {
+      soFar += chunk;
+      setMessages(prev => prev.map(m => m.deepId === controlId ? { ...m, content: soFar } : m));
+    };
+    const dropOwnMessage = () => setMessages(prev => prev.filter(m => m.deepId !== controlId));
+
+    const abortController = new AbortController();
+    controlAbortRef.current = abortController;
+    const hardTimer = setTimeout(() => { try { abortController.abort(); } catch { /* noop */ } }, 300000);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const resp = await fetch(STREAM_URL, {
+        method: 'POST',
+        signal: abortController.signal,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          action: 'btp_document_control',
+          btpFacts: factsBlock,
+          language: 'fr',
+        }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        dropOwnMessage();
+        toast({ variant: 'destructive', title: 'Erreur', description: "Le contrôle documentaire n'a pas pu être généré. Veuillez réessayer." });
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let streamDone = false;
+      readStream: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buf.indexOf('\n')) !== -1) {
+          let line = buf.slice(0, idx);
+          buf = buf.slice(idx + 1);
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+          const json = line.slice(6).trim();
+          if (json === '[DONE]') { streamDone = true; break readStream; }
+          try {
+            const parsed = JSON.parse(json);
+            const c = parsed.choices?.[0]?.delta?.content;
+            if (c) upsert(c);
+          } catch {
+            buf = line + '\n' + buf;
+            break;
+          }
+        }
+      }
+
+      if (!streamDone || !soFar.trim()) {
+        dropOwnMessage();
+        toast({ variant: 'destructive', title: 'Contrôle interrompu', description: "Le contrôle documentaire a été interrompu. Aucun résultat complet n’a été produit." });
+      }
+    } catch (err) {
+      console.error('[AIAssistant] document control failed', err);
+      dropOwnMessage();
+      toast({ variant: 'destructive', title: 'Erreur', description: "Le contrôle documentaire a échoué. Aucun résultat complet n’a été produit." });
+    } finally {
+      clearTimeout(hardTimer);
+      controlAbortRef.current = null;
+      setControlLoading(false);
+      controlRunningRef.current = false;
+    }
+  };
 
 
   const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t);

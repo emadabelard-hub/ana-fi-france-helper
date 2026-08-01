@@ -1051,8 +1051,8 @@ Pour chaque lot : décrire brièvement les prestations, regrouper les prestation
 
 ### 4. Quantités exploitables pour le devis
 Créer un seul tableau clair avec les colonnes suivantes :
-| Lot | Prestation | Quantité | Unité | Niveau de certitude | Source |
-Le niveau de certitude doit être l'une des valeurs suivantes : Certaine, Estimative, À confirmer, Non quantifiée.
+| Lot | Prestation | Quantité | Unité | Fiabilité | Source |
+La colonne Fiabilité doit contenir exactement l'une des valeurs : Mentionnée explicitement dans le document / Calculée à partir du document / Partiellement lisible / À vérifier / Non précisée.
 Ne pas additionner des surfaces qui correspondent à des prestations successives sur les mêmes supports.
 
 ### 5. Risques, incohérences et points à confirmer

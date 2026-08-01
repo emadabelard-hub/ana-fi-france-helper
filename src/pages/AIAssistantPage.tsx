@@ -2387,24 +2387,25 @@ const AIAssistantPage = () => {
             return (
               <div key={i} className="w-full min-w-0">
                 <ResultCard
-                  title={isFactsResult ? 'Extraction factuelle' : 'Contrôle documentaire'}
+                  title={isFactsResult ? L.factsTitle : L.controlTitle}
                   icon={isFactsResult ? ClipboardList : AlertTriangle}
                   tone={isFactsResult ? 'facts' : 'control'}
+                  isRTL={isRTL}
                   copyText={pretty}
                 >
                   {!msg.content.trim() ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className={cn("flex items-center gap-2 text-sm text-muted-foreground", isRTL && "font-cairo flex-row-reverse")}>
                       <Loader2 size={14} className="animate-spin" />
-                      Traitement en cours…
+                      {L.processing}
                     </div>
                   ) : parsed ? (
                     <>
                       {isFactsResult ? <FactsReportView data={parsed} /> : <ControlReportView data={parsed} />}
-                      <TechnicalJsonPanel raw={pretty} />
+                      <TechnicalJsonPanel raw={pretty} isRTL={isRTL} />
                     </>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Aucun résultat exploitable n'a pu être présenté.
+                    <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo text-right")}>
+                      {L.noResult}
                     </p>
                   )}
                 </ResultCard>

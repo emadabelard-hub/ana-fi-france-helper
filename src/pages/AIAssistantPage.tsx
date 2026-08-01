@@ -773,7 +773,7 @@ const AIAssistantPage = () => {
           attachments: currentAttachments.map(a =>
             a.kind === 'image'
               ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-              : { kind: 'pdf', name: a.name, text: a.text }
+              : { kind: a.kind, name: a.name, text: a.text }
           ),
           userQuestion: text || null,
           language: language === 'ar' ? 'ar' : 'fr',

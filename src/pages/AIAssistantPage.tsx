@@ -291,6 +291,10 @@ const AIAssistantPage = () => {
   const deepAnalysisClearIdleRef = useRef<(() => void) | null>(null);
   // Verrou synchrone anti-double-lancement de l'analyse approfondie
   const deepRunningRef = useRef(false);
+  // TEMPORAIRE : test de l'extraction factuelle BTP
+  const [factualLoading, setFactualLoading] = useState(false);
+  const factualRunningRef = useRef(false);
+  const factualAbortRef = useRef<AbortController | null>(null);
   // Nettoyage du watchdog et de la requête si le composant est démonté
   useEffect(() => () => {
     deepAnalysisClearIdleRef.current?.();

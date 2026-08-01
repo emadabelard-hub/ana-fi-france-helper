@@ -2765,6 +2765,22 @@ const AIAssistantPage = () => {
           </button>
 
         </div>
+
+        {/* Point d'entrée unique : lance tout le parcours d'analyse */}
+        <div className="px-3 pb-3" dir={isRTL ? 'rtl' : 'ltr'}>
+          <button
+            type="button"
+            onClick={() => { void runFullProjectAnalysis(); }}
+            disabled={(!input.trim() && attachments.length === 0) || isLoading || pipelineStep !== null}
+            className={cn(
+              "w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm shadow-md transition-all active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed bg-primary text-primary-foreground",
+              isRTL && "font-cairo"
+            )}
+          >
+            {pipelineStep ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            {pipelineStep ? (pipelineLabel || L.analyzing) : L.analyzeProject}
+          </button>
+        </div>
       </div>
 
       {/* Room Scanner Modal */}

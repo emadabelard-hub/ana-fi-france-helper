@@ -1045,15 +1045,70 @@ Il vaut mieux produire un rapport court et incomplet qu'un rapport détaillé co
 
 Ne produis aucun autre bloc, aucun JSON, aucun bloc <ANAFYPRO_DOCUMENT_DATA>. Uniquement le rapport Markdown ci-dessus.`;
 
-      outgoingMessages.length = 0;
-      outgoingMessages.push({
-        role: 'user',
-        content: `Voici le dossier documentaire déjà analysé (issu du bloc <ANAFYPRO_DOCUMENT_DATA> produit lors de l'analyse initiale). Produis l'ANALYSE TECHNIQUE APPROFONDIE en respectant strictement la structure et les règles données.
+      // Pièces originales du dossier analysé (mêmes limites que l'analyse
+      // basique : aucune nouvelle validation, aucun upload, aucun stockage).
+      const deepImageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
+      const deepPdfAtts = attList.filter((a: any) => a?.kind === 'pdf' && typeof a.text === 'string');
+      const deepHasOriginals = deepImageAtts.length + deepPdfAtts.length > 0;
+
+      finalSystemPrompt += deepHasOriginals
+        ? `
+
+DOCUMENTS ORIGINAUX FOURNIS : oui. Relis-les et confronte-les au JSON selon l'ordre de priorité ci-dessus.`
+        : `
+
+DOCUMENTS ORIGINAUX FOURNIS : non. Commence obligatoirement le rapport (juste après le titre) par la phrase exacte :
+« Analyse approfondie réalisée à partir de la synthèse structurée ; les documents originaux n'étaient plus disponibles pour relecture. »
+Ne prétends alors avoir relu aucun fichier.`;
+
+      const deepParts: any[] = [];
+      deepParts.push({
+        type: 'text',
+        text: `Voici le dossier documentaire déjà analysé (issu du bloc <ANAFYPRO_DOCUMENT_DATA> produit lors de l'analyse initiale). Produis l'ANALYSE TECHNIQUE APPROFONDIE en respectant strictement la structure et les règles données.
 
 <ANAFYPRO_DOCUMENT_DATA>
 ${btpJson}
 </ANAFYPRO_DOCUMENT_DATA>`,
       });
+
+      if (typeof userQuestion === 'string' && userQuestion.trim()) {
+        deepParts.push({
+          type: 'text',
+          text: `TEXTE D'ORIGINE DE L'UTILISATEUR (accompagnant ces pièces) : ${userQuestion.trim()}`,
+        });
+      }
+
+      if (deepHasOriginals) {
+        const deepFileList = [...deepImageAtts, ...deepPdfAtts]
+          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
+          .join('\n');
+        deepParts.push({
+          type: 'text',
+          text: `PIÈCES ORIGINALES DU DOSSIER (à relire et confronter au JSON) :\n${deepFileList}`,
+        });
+        deepImageAtts.forEach((att: any, i: number) => {
+          deepParts.push({
+            type: 'text',
+            text: `IMAGE ${i + 1} — Fichier : ${att.name || `image_${i + 1}.jpg`}\nDocument indépendant. N'attribue son contenu à aucun autre fichier.`,
+          });
+          deepParts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
+        });
+        deepPdfAtts.forEach((att: any, i: number) => {
+          const dt = String(att.text).slice(0, 50000);
+          deepParts.push({
+            type: 'text',
+            text: `DOCUMENT TEXTE PDF ${i + 1} — Fichier : ${att.name || 'document.pdf'}\n\n"""\n${dt}\n"""`,
+          });
+        });
+      } else {
+        deepParts.push({
+          type: 'text',
+          text: `Aucune pièce originale n'est disponible pour relecture : appuie-toi uniquement sur la synthèse structurée et signale-le explicitement.`,
+        });
+      }
+
+      outgoingMessages.length = 0;
+      outgoingMessages.push({ role: 'user', content: deepParts });
     }
 
     // ---- Stratégie de sélection du modèle ----

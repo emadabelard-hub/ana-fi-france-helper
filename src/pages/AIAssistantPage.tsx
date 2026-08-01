@@ -357,12 +357,14 @@ const ResultCard = ({
   icon: Icon,
   tone = 'neutral',
   copyText,
+  isRTL = false,
   children,
 }: {
   title: string;
   icon: React.ComponentType<{ size?: number | string; className?: string }>;
   tone?: 'neutral' | 'facts' | 'control' | 'deep';
   copyText: string;
+  isRTL?: boolean;
   children: React.ReactNode;
 }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -375,13 +377,14 @@ const ResultCard = ({
       : tone === 'deep'
       ? 'border-secondary/50 bg-secondary/20'
       : 'border-border bg-card';
+  const copyLabel = isRTL ? 'نسخ' : 'Copier';
   return (
-    <div className={cn('w-full rounded-xl border overflow-hidden', toneCls)} dir="ltr">
+    <div className={cn('w-full rounded-xl border overflow-hidden', toneCls)} dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/70">
         <span className="shrink-0 w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
           <Icon size={15} />
         </span>
-        <h3 className="flex-1 min-w-0 text-sm font-bold text-foreground truncate">{title}</h3>
+        <h3 className={cn('flex-1 min-w-0 text-sm font-bold text-foreground truncate', isRTL && 'font-cairo text-right')}>{title}</h3>
         <button
           type="button"
           onClick={async () => {
@@ -392,8 +395,8 @@ const ResultCard = ({
             } catch { /* silent */ }
           }}
           className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          aria-label="Copier"
-          title="Copier"
+          aria-label={copyLabel}
+          title={copyLabel}
         >
           {copied ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
         </button>
@@ -401,12 +404,13 @@ const ResultCard = ({
           type="button"
           onClick={() => setCollapsed((c) => !c)}
           className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          aria-label={collapsed ? 'Développer' : 'Réduire'}
-          title={collapsed ? 'Développer' : 'Réduire'}
+          aria-label={collapsed ? (isRTL ? 'عرض' : 'Développer') : (isRTL ? 'إخفاء' : 'Réduire')}
+          title={collapsed ? (isRTL ? 'عرض' : 'Développer') : (isRTL ? 'إخفاء' : 'Réduire')}
         >
           {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
         </button>
       </div>
+
       {!collapsed && <div className="px-3 py-3 min-w-0 break-words">{children}</div>}
     </div>
   );

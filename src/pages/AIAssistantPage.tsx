@@ -544,6 +544,51 @@ const AIAssistantPage = () => {
   const [controlLoading, setControlLoading] = useState(false);
   const controlRunningRef = useRef(false);
   const controlAbortRef = useRef<AbortController | null>(null);
+
+  // ── Parcours unifié « Analyser mon projet » ──────────────────────────────
+  // Le pipeline complet (analyse → faits → contrôle → rapport) est exécuté
+  // automatiquement ; ses étapes intermédiaires restent invisibles.
+  const [pipelineStep, setPipelineStep] = useState<null | 'analyze' | 'facts' | 'control' | 'report'>(null);
+  const pipelineRunningRef = useRef(false);
+  // Mode test / administration : réactive les outils techniques et le JSON brut.
+  const [techMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem('anafypro_btp_tech_mode') === 'true'; } catch { return false; }
+  });
+
+  // Libellés du parcours (FR / AR) — le rapport final suit la même langue.
+  const L = isRTL
+    ? {
+        analyzeProject: 'حلّل مشروعي',
+        analyzing: 'جاري تحليل المشروع…',
+        stepAnalyze: 'قراءة المستندات…',
+        stepFacts: 'استخراج المعطيات…',
+        stepControl: 'التحقق من التوافق…',
+        stepReport: 'تحضير التقرير…',
+        nextStep: 'الخطوة التالية',
+        actionQuote: 'تحضير الدوفي',
+        actionEstimate: 'الحصول على تقدير للأسعار',
+        actionClientReport: 'تحضير تقرير للعميل / المهندس',
+        soon: 'هذه الخدمة متاحة قريبًا.',
+      }
+    : {
+        analyzeProject: 'Analyser mon projet',
+        analyzing: 'Analyse du projet en cours…',
+        stepAnalyze: 'Lecture des documents…',
+        stepFacts: 'Extraction des données…',
+        stepControl: 'Vérification de cohérence…',
+        stepReport: 'Préparation du rapport…',
+        nextStep: 'Prochaine étape',
+        actionQuote: 'Préparer le devis',
+        actionEstimate: 'Obtenir une estimation de prix',
+        actionClientReport: 'Préparer un rapport client / architecte',
+        soon: 'Cette fonctionnalité sera disponible prochainement.',
+      };
+  const pipelineLabel = pipelineStep === 'analyze' ? L.stepAnalyze
+    : pipelineStep === 'facts' ? L.stepFacts
+    : pipelineStep === 'control' ? L.stepControl
+    : pipelineStep === 'report' ? L.stepReport
+    : '';
   useEffect(() => () => {
     deepAnalysisClearIdleRef.current?.();
     try { deepAnalysisAbortRef.current?.abort(); } catch { /* noop */ }

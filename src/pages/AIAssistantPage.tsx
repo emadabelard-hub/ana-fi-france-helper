@@ -28,6 +28,8 @@ type Msg = {
   role: 'user' | 'assistant';
   content: string;
   deepId?: string;
+  // Message de test temporaire : affiché brut, sans aucune transformation.
+  rawFacts?: boolean;
   // Pièces jointes réellement utilisées pour CE message (mémoire de session
   // uniquement) + texte utilisateur d'origine, afin de rattacher chaque analyse
   // approfondie à son propre dossier.

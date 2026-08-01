@@ -297,7 +297,10 @@ const AIAssistantPage = () => {
   const [factualLoading, setFactualLoading] = useState(false);
   const factualRunningRef = useRef(false);
   const factualAbortRef = useRef<AbortController | null>(null);
-  // Nettoyage du watchdog et de la requête si le composant est démonté
+  // TEMPORAIRE : test du contrôle documentaire BTP
+  const [controlLoading, setControlLoading] = useState(false);
+  const controlRunningRef = useRef(false);
+  const controlAbortRef = useRef<AbortController | null>(null);
   useEffect(() => () => {
     deepAnalysisClearIdleRef.current?.();
     try { deepAnalysisAbortRef.current?.abort(); } catch { /* noop */ }

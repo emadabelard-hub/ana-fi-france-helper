@@ -272,9 +272,7 @@ const AIAssistantPage = () => {
   const [showConversationList, setShowConversationList] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  type Attachment =
-    | { kind: 'image'; name: string; dataUrl: string }
-    | { kind: 'pdf'; name: string; text: string };
+  type Attachment = MsgAttachment;
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [showAttachmentsList, setShowAttachmentsList] = useState(false);

@@ -1964,6 +1964,16 @@ const AIAssistantPage = () => {
                       );
                     })}
                   </div>
+                  {/* TEMPORAIRE : test de l'extraction factuelle BTP */}
+                  <button
+                    type="button"
+                    disabled={factualLoading}
+                    onClick={() => runFactualExtraction(i, effectiveBtpDocData)}
+                    className="mt-3 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-primary/50 bg-card text-foreground font-semibold text-sm active:scale-95 transition-transform disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {factualLoading ? <Loader2 size={16} className="animate-spin" /> : <ClipboardList size={16} />}
+                    {factualLoading ? 'Extraction factuelle en cours…' : 'Tester l’extraction factuelle'}
+                  </button>
                   {selectedAnalysisOption && selectedAnalysisOption !== 'deep-analysis' && (
                     <p className="mt-3 text-sm text-muted-foreground bg-muted/60 border border-border rounded-lg p-3">
                       Cette fonction sera disponible prochainement.

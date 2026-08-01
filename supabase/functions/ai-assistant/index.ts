@@ -31,7 +31,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, language, userName: rawUserName, userGender, category, attachment, attachments, userQuestion, userProfile, action, btpDocData: deepBtpDocData, btpFacts: rawBtpFacts } = await req.json();
+    const { messages, language, userName: rawUserName, userGender, category, attachment, attachments, userQuestion, userProfile, action, btpDocData: deepBtpDocData, btpFacts: rawBtpFacts, originalsAvailable } = await req.json();
 
     // Bug 2 fix: ALWAYS prefer the real first name from the Supabase profile.
     const profileFirstName = (typeof userProfile?.full_name === 'string' && userProfile.full_name.trim())
@@ -1385,6 +1385,34 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
         controlParts.push({
           type: 'text',
           text: `Aucun bloc factuel n'a été fourni. Retourne le bloc <ANAFYPRO_BTP_CONTROL> avec "documents": [], "controls": [], et une entrée dans "missingInformation" indiquant que l'extraction factuelle n'est pas disponible, avec summary.readyForTechnicalAnalysis = false.`,
+        });
+      }
+
+      // Liste des documents source du dossier, transmis pour information.
+      // Le modèle ne relit pas leur contenu (celui-ci est déjà dans le bloc factuel),
+      // mais il peut utiliser les noms de fichiers pour remplir documents[].
+      const sourceFiles = Array.isArray(attachments) && attachments.length > 0
+        ? attachments
+        : (Array.isArray(deepBtpDocData?.documents) ? deepBtpDocData.documents : []);
+      if (sourceFiles.length > 0) {
+        const fileList = sourceFiles.map((a: any) => {
+          const name = a.name || a.fileName || 'document';
+          const ext = name.split('.').pop()?.toLowerCase() || '';
+          let docType: string | null = null;
+          if (['pdf'].includes(ext)) docType = 'pdf';
+          else if (['jpg', 'jpeg', 'png', 'webp', 'heic'].includes(ext)) docType = 'image';
+          else if (['docx', 'doc'].includes(ext)) docType = 'docx';
+          else if (['txt', 'md'].includes(ext)) docType = 'text';
+          return { fileName: name, inferredType: docType };
+        });
+        controlParts.push({
+          type: 'text',
+          text: `DOCUMENTS SOURCE DU DOSSIER (informations transmises uniquement pour l'identification, pas pour une nouvelle lecture) :\n${JSON.stringify(fileList, null, 2)}\n\nRemplis le tableau "documents[]" du bloc <ANAFYPRO_BTP_CONTROL> avec ces fichiers. Pour chacun, documentType doit correspondre au type inféré ci-dessus (ou null si non déterminable), readingQuality doit être "certain" si le document a été exploité dans le bloc factuel, "lecture_partielle" si des extraits seulement ont été utilisés, ou "non_extractible" si le document est mentionné mais n'a pas pu être lu.`,
+        });
+      } else if (originalsAvailable === false) {
+        controlParts.push({
+          type: 'text',
+          text: `AUCUN DOCUMENT ORIGINAL N'EST PLUS DISPONIBLE POUR CE DOSSIER. Remplis "documents": [] et ajoute une entrée dans "missingInformation" indiquant que les documents source n'étaient plus disponibles pour relecture.`,
         });
       }
 

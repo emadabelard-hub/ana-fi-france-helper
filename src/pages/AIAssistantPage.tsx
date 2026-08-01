@@ -1399,12 +1399,28 @@ const AIAssistantPage = () => {
   };
 
   // ── TEMPORAIRE : test du contrôle documentaire BTP (action serveur dédiée) ──
-  // Compare uniquement le bloc factuel <ANAFYPRO_BTP_FACTS> du même dossier.
-  const runDocumentControl = async (factsBlock: string) => {
+  // Compare les faits du bloc <ANAFYPRO_BTP_FACTS> du même dossier.
+  // Les pièces originales sont transmises afin que le modèle puisse lister
+  // les documents analysés dans le JSON de contrôle.
+  const runDocumentControl = async (sourceMsgIndex: number, factsBlock: string) => {
     if (controlRunningRef.current) return;
     controlRunningRef.current = true;
     if (controlLoading) { controlRunningRef.current = false; return; }
     setControlLoading(true);
+
+    // Rattachement strict des pièces originales au dossier analysé.
+    let sourceAttachments: MsgAttachment[] = [];
+    let sourceUserText: string | null = null;
+    for (let i = Math.min(sourceMsgIndex, messages.length - 1); i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== 'user') continue;
+      if (m.attachments && m.attachments.length > 0) {
+        sourceAttachments = m.attachments;
+        sourceUserText = m.userText || null;
+      }
+      break;
+    }
+    const originalsAvailable = sourceAttachments.length > 0;
 
     const controlId = `control-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let soFar = '';
@@ -1430,6 +1446,14 @@ const AIAssistantPage = () => {
         body: JSON.stringify({
           action: 'btp_document_control',
           btpFacts: factsBlock,
+          attachments: sourceAttachments.map(a =>
+            a.kind === 'image'
+              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
+              : { kind: a.kind, name: a.name, text: a.text }
+          ),
+          originalsAvailable,
+          userQuestion: sourceUserText,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
           language: 'fr',
         }),
       });
@@ -1890,7 +1914,7 @@ const AIAssistantPage = () => {
                   <div className="mt-3">
                     <button
                       type="button"
-                      onClick={() => runDocumentControl(msg.content)}
+                      onClick={() => runDocumentControl(i, msg.content)}
                       disabled={controlLoading}
                       className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted text-[13px] font-semibold text-foreground disabled:opacity-60"
                     >

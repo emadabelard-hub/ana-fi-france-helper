@@ -274,6 +274,8 @@ const AIAssistantPage = () => {
   const [deepAnalysisStreaming, setDeepAnalysisStreaming] = useState(false);
   const deepAnalysisAbortRef = useRef<AbortController | null>(null);
   const deepAnalysisClearIdleRef = useRef<(() => void) | null>(null);
+  // Verrou synchrone anti-double-lancement de l'analyse approfondie
+  const deepRunningRef = useRef(false);
   // Nettoyage du watchdog et de la requête si le composant est démonté
   useEffect(() => () => {
     deepAnalysisClearIdleRef.current?.();
@@ -883,11 +885,7 @@ const AIAssistantPage = () => {
       if (!resp.ok || !resp.body) {
         clearIdle();
         // Retire le message vide et notifie
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          if (last?.role === 'assistant' && last.content === titlePrefix) return prev.slice(0, -1);
-          return prev;
-        });
+        dropOwnMessage();
         toast({
           variant: 'destructive',
           title: 'Erreur',
@@ -931,17 +929,24 @@ const AIAssistantPage = () => {
       }
       clearIdle();
 
-      if (!streamDone && assistantSoFar === titlePrefix) {
-        throw new Error('Flux SSE terminé sans contenu ni marqueur [DONE]');
+      // Flux sans marqueur [DONE] : rapport considéré comme incomplet.
+      if (!streamDone) {
+        if (assistantSoFar === titlePrefix) {
+          dropOwnMessage();
+        } else {
+          markInterrupted();
+        }
+        toast({
+          variant: 'destructive',
+          title: 'Analyse interrompue',
+          description: "L’analyse technique approfondie a été interrompue. Aucun rapport complet n’a été produit.",
+        });
+        return;
       }
 
       // Si rien n'a été streamé au-delà du titre, considérer comme échec.
       if (assistantSoFar === titlePrefix) {
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          if (last?.role === 'assistant' && last.content === titlePrefix) return prev.slice(0, -1);
-          return prev;
-        });
+        dropOwnMessage();
         toast({
           variant: 'destructive',
           title: 'Erreur',
@@ -950,37 +955,30 @@ const AIAssistantPage = () => {
       }
     } catch (err) {
       clearIdle();
-      if (idleTimedOut || (err as any)?.name === 'AbortError') {
+      const aborted = idleTimedOut || (err as any)?.name === 'AbortError';
+      if (aborted) {
         console.warn('[AIAssistant] deep analysis aborted (inactivité / déconnexion)');
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          if (last?.role === 'assistant' && last.content === titlePrefix) return prev.slice(0, -1);
-          return prev;
-        });
-        toast({
-          variant: 'destructive',
-          title: 'Analyse interrompue',
-          description: "L’analyse a été interrompue en raison d’une perte de connexion ou d’un délai d’inactivité. Vous pouvez relancer l’analyse.",
-        });
       } else {
         console.error('[AIAssistant] deep analysis failed', err);
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          if (last?.role === 'assistant' && last.content === titlePrefix) return prev.slice(0, -1);
-          return prev;
-        });
-        toast({
-          variant: 'destructive',
-          title: 'Erreur',
-          description: "L'analyse technique approfondie n'a pas pu être générée. Veuillez réessayer.",
-        });
       }
+      // Jamais de rapport partiel conservé comme s'il était terminé.
+      if (assistantSoFar === titlePrefix) {
+        dropOwnMessage();
+      } else {
+        markInterrupted();
+      }
+      toast({
+        variant: 'destructive',
+        title: aborted ? 'Analyse interrompue' : 'Erreur',
+        description: "L’analyse technique approfondie a été interrompue. Aucun rapport complet n’a été produit.",
+      });
     } finally {
       clearIdle();
       deepAnalysisAbortRef.current = null;
       deepAnalysisClearIdleRef.current = null;
       setDeepAnalysisStreaming(false);
       setDeepAnalysisLoadingIndex(null);
+      deepRunningRef.current = false;
     }
   };
 

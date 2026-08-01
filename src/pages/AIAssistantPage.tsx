@@ -41,6 +41,8 @@ type Msg = {
   // approfondie à son propre dossier.
   attachments?: MsgAttachment[];
   userText?: string;
+  // Étape interne du pipeline automatique : masquée pour l'utilisateur final.
+  internal?: boolean;
 };
 
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
@@ -482,7 +484,7 @@ const ControlReportView = ({ data }: { data: any }) => {
 
 const AIAssistantPage = () => {
 
-  const { language, isRTL, t } = useLanguage();
+  const { language, setLanguage, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -934,9 +936,10 @@ const AIAssistantPage = () => {
     setIsProcessingFile(false);
   };
 
-  const send = async (overrideText?: string) => {
+  const send = async (overrideText?: string, opts?: { internal?: boolean }): Promise<string> => {
+    const internal = opts?.internal === true;
     const text = (typeof overrideText === 'string' ? overrideText : input).trim();
-    if ((!text && attachments.length === 0) || isLoading) return;
+    if ((!text && attachments.length === 0) || isLoading) return '';
 
     const currentAttachments = attachments;
     const displayText = text || (currentAttachments.length > 0
@@ -964,7 +967,7 @@ const AIAssistantPage = () => {
       const report = await generateAccountingReport();
       setMessages(prev => [...prev, { role: 'assistant', content: report }]);
       setIsLoading(false);
-      return;
+      return report;
     }
 
     let assistantSoFar = '';
@@ -976,7 +979,7 @@ const AIAssistantPage = () => {
         if (last?.role === 'assistant') {
           return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
         }
-        return [...prev, { role: 'assistant', content: assistantSoFar }];
+        return [...prev, { role: 'assistant', content: assistantSoFar, resultType: 'document_analysis' as ResultType, internal }];
       });
     };
 
@@ -1046,7 +1049,7 @@ const AIAssistantPage = () => {
         console.error('AI Assistant error:', resp.status);
         upsert(errorMsg);
         setIsLoading(false);
-        return;
+        return '';
       }
 
       const reader = resp.body.getReader();
@@ -1083,11 +1086,16 @@ const AIAssistantPage = () => {
       setIsLoading(false);
     }
     setIsLoading(false);
+    return assistantSoFar;
   };
 
   // Analyse technique approfondie : relance une analyse dédiée à partir des
   // données documentaires déjà extraites dans le dernier message assistant réussi.
-  const runDeepAnalysis = async (sourceMsgIndex: number, btpDocData: any) => {
+  const runDeepAnalysis = async (
+    sourceMsgIndex: number,
+    btpDocData: any,
+    preset?: { attachments: MsgAttachment[]; userText: string | null },
+  ) => {
     // Garde synchrone : bloque tout double appel (double clic très rapide)
     // avant la moindre opération asynchrone.
     if (deepRunningRef.current) return;
@@ -1100,22 +1108,24 @@ const AIAssistantPage = () => {
     // on remonte depuis le message assistant analysé jusqu'au premier message
     // utilisateur portant ses propres pièces jointes (jamais l'état global
     // courant, jamais un dossier plus récent ou plus ancien).
-    let sourceAttachments: MsgAttachment[] = [];
-    let sourceUserText: string | null = null;
-    for (let i = Math.min(sourceMsgIndex, messages.length - 1); i >= 0; i--) {
-      const m = messages[i];
-      if (m.role !== 'user') continue;
-      if (m.attachments && m.attachments.length > 0) {
-        sourceAttachments = m.attachments;
-        sourceUserText = m.userText || null;
+    let sourceAttachments: MsgAttachment[] = preset?.attachments ?? [];
+    let sourceUserText: string | null = preset?.userText ?? null;
+    if (!preset) {
+      for (let i = Math.min(sourceMsgIndex, messages.length - 1); i >= 0; i--) {
+        const m = messages[i];
+        if (m.role !== 'user') continue;
+        if (m.attachments && m.attachments.length > 0) {
+          sourceAttachments = m.attachments;
+          sourceUserText = m.userText || null;
+        }
+        break;
       }
-      break;
     }
     const originalsAvailable = sourceAttachments.length > 0;
 
     // Nouveau message assistant, préfixé du titre demandé et identifié de façon
     // unique : chaque flux ne met à jour QUE son propre message.
-    const titlePrefix = '## Analyse technique approfondie\n\n';
+    const titlePrefix = (isRTL ? '## التحليل الفني المتقدم' : '## Analyse technique approfondie') + '\n\n';
     const deepId = `deep-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let assistantSoFar = titlePrefix;
     setMessages(prev => [...prev, { role: 'assistant', content: assistantSoFar, deepId, resultType: 'btp_deep_analysis' }]);
@@ -1181,7 +1191,7 @@ const AIAssistantPage = () => {
           originalsAvailable,
           userQuestion: sourceUserText,
           messages: messages.map(m => ({ role: m.role, content: m.content })),
-          language: 'fr',
+          language: language === 'ar' ? 'ar' : 'fr',
           category: activeCategory,
         }),
       });
@@ -1288,31 +1298,37 @@ const AIAssistantPage = () => {
 
   // ── TEMPORAIRE : test de l'extraction factuelle BTP (action serveur dédiée) ──
   // Affiche la réponse brute, sans aucune transformation ni interprétation.
-  const runFactualExtraction = async (sourceMsgIndex: number, btpDocData: any) => {
+  const runFactualExtraction = async (
+    sourceMsgIndex: number,
+    btpDocData: any,
+    preset?: { attachments: MsgAttachment[]; userText: string | null; internal?: boolean },
+  ): Promise<string> => {
     // Garde synchrone anti-double-clic (même mécanisme que l'analyse approfondie)
-    if (factualRunningRef.current) return;
+    if (factualRunningRef.current) return '';
     factualRunningRef.current = true;
-    if (factualLoading) { factualRunningRef.current = false; return; }
+    if (factualLoading) { factualRunningRef.current = false; return ''; }
     setFactualLoading(true);
     setSelectedAnalysisOption(null);
 
     // Mêmes pièces originales que celles rattachées à CE dossier analysé.
-    let sourceAttachments: MsgAttachment[] = [];
-    let sourceUserText: string | null = null;
-    for (let i = Math.min(sourceMsgIndex, messages.length - 1); i >= 0; i--) {
-      const m = messages[i];
-      if (m.role !== 'user') continue;
-      if (m.attachments && m.attachments.length > 0) {
-        sourceAttachments = m.attachments;
-        sourceUserText = m.userText || null;
+    let sourceAttachments: MsgAttachment[] = preset?.attachments ?? [];
+    let sourceUserText: string | null = preset?.userText ?? null;
+    if (!preset) {
+      for (let i = Math.min(sourceMsgIndex, messages.length - 1); i >= 0; i--) {
+        const m = messages[i];
+        if (m.role !== 'user') continue;
+        if (m.attachments && m.attachments.length > 0) {
+          sourceAttachments = m.attachments;
+          sourceUserText = m.userText || null;
+        }
+        break;
       }
-      break;
     }
     const originalsAvailable = sourceAttachments.length > 0;
 
     const factsId = `facts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let soFar = '';
-    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: factsId, rawFacts: true, resultType: 'btp_facts' }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: factsId, rawFacts: true, resultType: 'btp_facts', internal: preset?.internal === true }]);
     const upsert = (chunk: string) => {
       soFar += chunk;
       setMessages(prev => prev.map(m => m.deepId === factsId ? { ...m, content: soFar } : m));
@@ -1350,7 +1366,7 @@ const AIAssistantPage = () => {
       if (!resp.ok || !resp.body) {
         dropOwnMessage();
         toast({ variant: 'destructive', title: 'Erreur', description: "L'extraction factuelle n'a pas pu être générée. Veuillez réessayer." });
-        return;
+        return '';
       }
 
       const reader = resp.body.getReader();
@@ -1385,11 +1401,14 @@ const AIAssistantPage = () => {
       if (!streamDone || !soFar.trim()) {
         dropOwnMessage();
         toast({ variant: 'destructive', title: 'Extraction interrompue', description: "L’extraction factuelle a été interrompue. Aucun résultat complet n’a été produit." });
+        return '';
       }
+      return soFar;
     } catch (err) {
       console.error('[AIAssistant] factual extraction failed', err);
       dropOwnMessage();
       toast({ variant: 'destructive', title: 'Erreur', description: "L’extraction factuelle a échoué. Aucun résultat complet n’a été produit." });
+      return '';
     } finally {
       clearTimeout(hardTimer);
       factualAbortRef.current = null;
@@ -1402,29 +1421,35 @@ const AIAssistantPage = () => {
   // Compare les faits du bloc <ANAFYPRO_BTP_FACTS> du même dossier.
   // Les pièces originales sont transmises afin que le modèle puisse lister
   // les documents analysés dans le JSON de contrôle.
-  const runDocumentControl = async (sourceMsgIndex: number, factsBlock: string) => {
+  const runDocumentControl = async (
+    sourceMsgIndex: number,
+    factsBlock: string,
+    preset?: { attachments: MsgAttachment[]; userText: string | null; internal?: boolean },
+  ) => {
     if (controlRunningRef.current) return;
     controlRunningRef.current = true;
     if (controlLoading) { controlRunningRef.current = false; return; }
     setControlLoading(true);
 
     // Rattachement strict des pièces originales au dossier analysé.
-    let sourceAttachments: MsgAttachment[] = [];
-    let sourceUserText: string | null = null;
-    for (let i = Math.min(sourceMsgIndex, messages.length - 1); i >= 0; i--) {
-      const m = messages[i];
-      if (m.role !== 'user') continue;
-      if (m.attachments && m.attachments.length > 0) {
-        sourceAttachments = m.attachments;
-        sourceUserText = m.userText || null;
+    let sourceAttachments: MsgAttachment[] = preset?.attachments ?? [];
+    let sourceUserText: string | null = preset?.userText ?? null;
+    if (!preset) {
+      for (let i = Math.min(sourceMsgIndex, messages.length - 1); i >= 0; i--) {
+        const m = messages[i];
+        if (m.role !== 'user') continue;
+        if (m.attachments && m.attachments.length > 0) {
+          sourceAttachments = m.attachments;
+          sourceUserText = m.userText || null;
+        }
+        break;
       }
-      break;
     }
     const originalsAvailable = sourceAttachments.length > 0;
 
     const controlId = `control-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let soFar = '';
-    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: controlId, rawControl: true, resultType: 'btp_control' }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: controlId, rawControl: true, resultType: 'btp_control', internal: preset?.internal === true }]);
     const upsert = (chunk: string) => {
       soFar += chunk;
       setMessages(prev => prev.map(m => m.deepId === controlId ? { ...m, content: soFar } : m));
@@ -1835,6 +1860,8 @@ const AIAssistantPage = () => {
           }
 
           return messages.map((msg, i) => {
+          // Étapes techniques intermédiaires : jamais visibles hors mode test.
+          if (msg.internal && !techMode) return null;
           const isUser = msg.role === 'user';
           const textAr = isArabic(msg.content);
           if (isUser) {
@@ -1910,7 +1937,7 @@ const AIAssistantPage = () => {
                     </p>
                   )}
                 </ResultCard>
-                {isLastAssistant && isFactsResult && msg.content.includes('ANAFYPRO_BTP_FACTS') && (
+                {techMode && isLastAssistant && isFactsResult && msg.content.includes('ANAFYPRO_BTP_FACTS') && (
                   <div className="mt-3">
                     <button
                       type="button"
@@ -2180,145 +2207,7 @@ const AIAssistantPage = () => {
                     <button
                       type="button"
                       disabled={isPreparingTransfer}
-                      onClick={async () => {
-                        if (isPreparingTransfer) return;
-                        setIsPreparingTransfer(true);
-                        try {
-                          const rawItems = Array.isArray(btpDocData!.items) ? btpDocData!.items : [];
-                          const documentTotalHT = btpDocData!.documentTotalHT;
-                          const { lines: items, meta } = validateBtpItemsForTransfer(rawItems, documentTotalHT);
-
-                          if (items.length === 0) {
-                            console.warn('[AIAssistant] BTP transfer: no exploitable items in <ANAFYPRO_DOCUMENT_DATA>', btpDocData);
-                            toast({
-                              variant: 'destructive',
-                              title: 'Aucune prestation exploitable',
-                              description:
-                                "L'analyse n'a pas produit de lignes valides. Relancez l'analyse en demandant explicitement le détail par prestation.",
-                            });
-                            return;
-                          }
-
-                          // ── Reformulation professionnelle des désignations trop courtes ──
-                          const ACTION_PREFIXES = [
-                            'fourniture et pose', 'fourniture et application', 'fourniture seule',
-                            'pose de', 'dépose de', 'démolition de', 'installation de',
-                            'réalisation de', 'création de', 'travaux de', 'préparation de',
-                            'protection de', 'mise en œuvre de', 'évacuation et mise en décharge',
-                            'nettoyage de', 'réfection de', 'remplacement de', 'rénovation de',
-                            'application de',
-                          ];
-                          const startsWithAction = (s: string) => {
-                            const low = s.trim().toLowerCase();
-                            return ACTION_PREFIXES.some((p) => low.startsWith(p));
-                          };
-                          const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
-                          const isLatinNonEmpty = (s: unknown): s is string =>
-                            typeof s === 'string' && s.trim().length > 0 && !/[\u0600-\u06FF\u0400-\u04FF]/.test(s) && /[A-Za-zÀ-ÿ]/.test(s);
-
-                          type Candidate = { itemIdx: number; id: string; text: string; context: Record<string, unknown> };
-                          const candidates: Candidate[] = [];
-                          for (let idx = 0; idx < items.length; idx++) {
-                            const ln = items[idx];
-                            const mt = meta[idx];
-                            const raw = typeof mt?.index === 'number' ? (rawItems[mt.index] as Record<string, unknown> | undefined) : undefined;
-                            const des = (ln.designation_fr || '').trim();
-                            if (!des) continue;
-                            if (mt?.requiresReview === true) continue;
-                            if (startsWithAction(des) && wordCount(des) >= 8) continue;
-                            candidates.push({
-                              itemIdx: idx,
-                              id: `L${idx}`,
-                              text: des,
-                              context: {
-                                lot: ln.lot ?? null,
-                                unit: ln.unit ?? null,
-                                quantity: ln.quantity ?? null,
-                                sourceFile: (raw && (raw.sourceFile as string)) || null,
-                              },
-                            });
-                            if (candidates.length >= 25) break;
-                          }
-
-                          if (candidates.length > 0) {
-                            try {
-                              const { data, error } = await supabase.functions.invoke('invoice-mentor', {
-                                body: {
-                                  action: 'reformulate_btp_batch',
-                                  items: candidates.map((c) => ({ id: c.id, text: c.text, context: c.context })),
-                                },
-                              });
-                              if (!error && data && Array.isArray((data as any).reformulations)) {
-                                const map = new Map<string, string>();
-                                for (const r of (data as any).reformulations as Array<{ id?: unknown; reformulation?: unknown }>) {
-                                  if (typeof r?.id === 'string' && isLatinNonEmpty(r?.reformulation)) {
-                                    map.set(r.id, (r.reformulation as string).trim());
-                                  }
-                                }
-                                for (const c of candidates) {
-                                  const reworded = map.get(c.id);
-                                  if (reworded) items[c.itemIdx].designation_fr = reworded;
-                                }
-                              } else if (error) {
-                                console.warn('[AIAssistant] reformulate_btp_batch error, keeping originals', error);
-                              }
-                            } catch (reformErr) {
-                              console.warn('[AIAssistant] reformulate_btp_batch failed, keeping originals', reformErr);
-                            }
-                          }
-
-                          const priceBlocked = meta.filter((m) => !m.priceAccepted).length;
-                          const qtyBlocked = meta.filter((m) => !m.quantityAccepted).length;
-
-                          const subject =
-                            (btpDocData!.project?.title && String(btpDocData!.project.title).trim()) ||
-                            (btpDocData!.client?.name
-                              ? `Devis — ${String(btpDocData!.client.name).trim()}`
-                              : '');
-
-                          sessionStorage.removeItem('smart_devis_prefill_v1');
-
-                          const payload = {
-                            subject,
-                            items,
-                            client: btpDocData!.client || null,
-                            project: btpDocData!.project || null,
-                            vat: btpDocData!.vat || null,
-                            constraints: btpDocData!.constraints || [],
-                            missingInformation: btpDocData!.missingInformation || [],
-                            copyText: btpDocData!.copyText || '',
-                            _validation: {
-                              totalItems: items.length,
-                              priceBlocked,
-                              quantityBlocked: qtyBlocked,
-                              meta,
-                            },
-                          };
-
-                          console.log('[AIAssistant] BTP transfer → SmartDevis', {
-                            itemsCount: items.length,
-                            priceBlocked,
-                            quantityBlocked: qtyBlocked,
-                            subject,
-                            hasVat: !!payload.vat,
-                          });
-
-                          if (priceBlocked > 0 || qtyBlocked > 0) {
-                            toast({
-                              title: 'Transfert sécurisé',
-                              description: `${priceBlocked} prix et ${qtyBlocked} quantité(s) laissés à compléter — données non fiables non transférées.`,
-                            });
-                          }
-
-                          sessionStorage.setItem('smart_devis_prefill_v1', JSON.stringify(payload));
-                          navigate('/pro/smart-devis');
-                        } catch (err) {
-                          console.error('[AIAssistant] BTP transfer failed', err);
-                          toast({ variant: 'destructive', title: 'Erreur', description: 'Transfert impossible' });
-                        } finally {
-                          setIsPreparingTransfer(false);
-                        }
-                      }}
+                      onClick={() => { void transferToSmartDevis(btpDocData); }}
                       className="self-start inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md active:scale-95 transition-transform disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {isPreparingTransfer ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
@@ -2332,7 +2221,62 @@ const AIAssistantPage = () => {
               {(() => {
                 const effectiveBtpDocData = (btpDocStatus === 'ok' && btpDocData) ? btpDocData : panelDataAt[i];
                 if (!(isLastAssistant && !isLoading && effectiveBtpDocData)) return null;
+                if (pipelineStep) return null;
                 const isDeepLoading = deepAnalysisLoadingIndex !== null;
+
+                // ── Utilisateur final : uniquement les trois actions demandées,
+                // affichées sous le rapport unique de compréhension du projet.
+                if (!techMode) {
+                  if (!isDeepResult) return null;
+                  const finalActions = [
+                    { key: 'quote', icon: Calculator, label: L.actionQuote },
+                    { key: 'estimate', icon: Percent, label: L.actionEstimate },
+                    { key: 'client-report', icon: Building, label: L.actionClientReport },
+                  ];
+                  return (
+                    <div className="mt-4 border-t border-border pt-3" dir={isRTL ? 'rtl' : 'ltr'}>
+                      <h3 className={cn("text-sm font-semibold text-foreground mb-3", isRTL && "font-cairo text-right")}>
+                        {L.nextStep}
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {finalActions.map((a) => {
+                          const Icon = a.icon;
+                          const busy = a.key === 'quote' && isPreparingTransfer;
+                          return (
+                            <button
+                              key={a.key}
+                              type="button"
+                              disabled={busy}
+                              onClick={() => {
+                                if (a.key === 'quote') void transferToSmartDevis(effectiveBtpDocData);
+                                else setSelectedAnalysisOption(a.key);
+                              }}
+                              className={cn(
+                                "flex items-center gap-2 p-3 rounded-xl border border-border bg-card hover:bg-muted/60 hover:border-primary/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed",
+                                isRTL ? "flex-row-reverse text-right font-cairo" : "text-left"
+                              )}
+                            >
+                              {busy
+                                ? <Loader2 size={16} className="animate-spin text-primary shrink-0" />
+                                : <Icon size={16} className="text-primary shrink-0" />}
+                              <span className="text-sm font-semibold text-foreground min-w-0 break-words">{a.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {selectedAnalysisOption && selectedAnalysisOption !== 'quote' && (
+                        <p className={cn(
+                          "mt-3 text-sm text-muted-foreground bg-muted/60 border border-border rounded-lg p-3",
+                          isRTL && "font-cairo text-right"
+                        )}>
+                          {L.soon}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+
+                // ── Mode test / administration : outils techniques conservés ──
                 return (
                 <div className="mt-4 border-t border-border pt-3" dir="ltr">
                   <h3 className="text-sm font-semibold text-foreground mb-3">

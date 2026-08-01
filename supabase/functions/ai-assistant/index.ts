@@ -963,12 +963,15 @@ TRAÇABILITÉ :
 RÈGLES DE RÉDACTION ABSOLUES :
 1. UN SEUL TITRE : afficher une seule fois \`## Analyse technique approfondie\`. Ne jamais le répéter.
 2. AUCUNE RÉPÉTITION : une information ne doit apparaître qu'une seule fois. Ne pas répéter dans la conclusion les quantités, l'adresse, le maître d'ouvrage, les délais, les contraintes ou la liste complète des prestations.
-3. DISTINGUER LES NIVEAUX DE CERTITUDE :
-   - Donnée certaine : information explicitement présente dans un document.
-   - Estimation documentaire : quantité ou information indiquée comme estimative dans le document.
-   - Déduction raisonnable : interprétation technique fondée sur plusieurs éléments, présentée comme une hypothèse.
-   - Information non vérifiable : élément absent ou impossible à confirmer à partir des documents.
-   Ne jamais présenter une déduction comme un fait certain. Utiliser des formulations telles que : « le document indique », « la quantité est présentée comme estimative », « cela peut suggérer », « cette hypothèse reste à confirmer », « les documents fournis ne permettent pas de l'établir ».
+3. NIVEAUX DE FIABILITÉ IMPOSÉS (vocabulaire fermé, aucune autre formulation) :
+   - « Mentionnée explicitement dans le document » : la valeur est écrite telle quelle dans un document.
+   - « Calculée à partir du document » : la valeur résulte d'un calcul simple à partir d'une donnée écrite (indiquer le calcul).
+   - « Partiellement lisible » : la valeur figure sur un plan ou une image mais n'est pas entièrement lisible.
+   - « À vérifier » : la valeur doit être confirmée sur place ou auprès du client.
+   - « Non précisée » : la valeur est absente des documents.
+   Les mots « certaine », « certain », « confirmé », « estimative » sont INTERDITS comme niveau de fiabilité.
+   Une donnée mentionnée explicitement peut rester à vérifier sur place : ne jamais la présenter comme une vérité matérielle définitivement établie.
+   Ne jamais présenter une déduction comme un fait. Utiliser : « le document indique », « cela reste à confirmer », « les documents fournis ne permettent pas de l'établir ».
 4. NE PAS INVENTER D'OBLIGATION : ne pas utiliser les mots « obligatoire », « impératif », « nécessaire juridiquement », « réglementairement exigé », sauf si cette obligation figure explicitement dans un document analysé ou résulte directement d'une règle technique clairement applicable et pertinente. Dans les autres cas, écrire : « recommandé », « à vérifier », « à confirmer avant chiffrage », « utile pour sécuriser le devis ».
 5. NE PAS AJOUTER DE QUESTIONS GÉNÉRIQUES INUTILES : ne pas ajouter automatiquement des questions sur l'assurance dommages-ouvrage, la déclaration préalable de travaux, le permis de construire, le statut fiscal détaillé du client, la TVA, le diagnostic plomb, l'amiante, les assurances générales ou les autorisations de copropriété, sauf si ces sujets sont réellement pertinents au regard de la nature des travaux, de l'âge du bâtiment indiqué, des documents fournis ou d'une difficulté concrète détectée.
 6. PRIVILÉGIER L'UTILITÉ POUR LE DEVIS : l'analyse doit aider l'artisan à répondre rapidement aux questions : Que faut-il réaliser ? Quelles quantités sont certaines ? Quelles quantités sont estimatives ? Quels travaux préparatoires peuvent faire varier le prix ? Quelles incohérences doivent être clarifiées ? Quelles informations indispensables manquent avant le devis ? Quelles questions faut-il réellement poser au client ?

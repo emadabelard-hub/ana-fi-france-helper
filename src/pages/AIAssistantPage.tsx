@@ -835,6 +835,23 @@ const AIAssistantPage = () => {
     setDeepAnalysisLoadingIndex(sourceMsgIndex);
     setSelectedAnalysisOption(null);
 
+    // Rattachement STRICT des pièces originales à l'analyse d'origine :
+    // on remonte depuis le message assistant analysé jusqu'au premier message
+    // utilisateur portant ses propres pièces jointes (jamais l'état global
+    // courant, jamais un dossier plus récent ou plus ancien).
+    let sourceAttachments: MsgAttachment[] = [];
+    let sourceUserText: string | null = null;
+    for (let i = Math.min(sourceMsgIndex, messages.length - 1); i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== 'user') continue;
+      if (m.attachments && m.attachments.length > 0) {
+        sourceAttachments = m.attachments;
+        sourceUserText = m.userText || null;
+      }
+      break;
+    }
+    const originalsAvailable = sourceAttachments.length > 0;
+
     // Nouveau message assistant, préfixé du titre demandé et identifié de façon
     // unique : chaque flux ne met à jour QUE son propre message.
     const titlePrefix = '## Analyse technique approfondie\n\n';

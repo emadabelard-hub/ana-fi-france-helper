@@ -1090,11 +1090,18 @@ Ne prétends alors avoir relu aucun fichier.`;
       if (language === 'ar') {
         finalSystemPrompt += `
 
-LANGUE DU RAPPORT : rédige le rapport en arabe (عامية مصرية) destiné à l'artisan.
-- Conserve TOUS les termes techniques BTP en français (peinture, enduit, placo, carrelage, DTU, m², ml, lot...).
-- Traduis les titres des 7 sections en arabe en conservant strictement le même ordre et le même contenu.
-- Conserve le tableau des quantités avec les mêmes colonnes (en-têtes traduits en arabe, valeurs et unités inchangées).
-- Aucune donnée nouvelle, aucune interprétation supplémentaire : traduction fidèle de l'analyse.
+LANGUE DU RAPPORT : rédige TOUT le rapport en arabe naturel, clair et professionnel (arabe standard simple compréhensible par un artisan égyptien). Le rapport est destiné à l'artisan connecté.
+RÈGLES DE LANGUE ARABE (impératives) :
+- Titres, phrases, explications, risques, questions et conclusions : en arabe. Aucune phrase moitié arabe / moitié française.
+- Le titre unique du rapport doit être exactement : « ## التحليل الفني المعمق ». N'écris jamais le titre français.
+- Traduis les titres des 7 sections en arabe, dans le même ordre et avec le même contenu.
+- Emploie d'abord le terme arabe. Tu peux ajouter le terme professionnel français entre parenthèses UNIQUEMENT à sa première apparition, et seulement s'il aide l'artisan à reconnaître le mot utilisé en France. Ensuite, n'utilise plus que le terme arabe.
+  Exemples corrects : الجدران الفاصلة (cloisons) ، الهيكل الخشبي (ossature bois) ، ألواح الجبس (placo) ، تسوية الأرضية (ragréage) ، عرض السعر (devis).
+- Translittérations maladroites INTERDITES (« الدوفي »، « البانتيرة »...) quand une expression arabe claire existe : écris « عرض السعر »، « الدهان ».
+- Restent dans leur forme originale : noms de personnes, adresses, noms de fichiers, dimensions, unités (m², ml, u), références produits et sigles officiels (DTU, RE2020...).
+- Niveaux de fiabilité du tableau, à écrire exactement ainsi : « مذكورة صراحة في المستند » / « محسوبة من المستند » / « مقروءة جزئياً » / « تحتاج إلى التحقق » / « غير محددة ».
+- Conserve le tableau des quantités avec les mêmes colonnes (en-têtes en arabe, valeurs et unités inchangées).
+- Aucune donnée nouvelle, aucune interprétation supplémentaire.
 - N'écris jamais de prix.`;
       }
 

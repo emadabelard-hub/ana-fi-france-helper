@@ -278,6 +278,60 @@ export type Database = {
         }
         Relationships: []
       }
+      btp_analysis_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          current_step: string
+          documents: Json
+          error_message: string | null
+          final_report: string | null
+          id: string
+          language: string
+          payload: Json
+          progress: number
+          status: string
+          step_results: Json
+          updated_at: string
+          user_id: string
+          user_text: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          current_step?: string
+          documents?: Json
+          error_message?: string | null
+          final_report?: string | null
+          id?: string
+          language?: string
+          payload?: Json
+          progress?: number
+          status?: string
+          step_results?: Json
+          updated_at?: string
+          user_id: string
+          user_text?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          current_step?: string
+          documents?: Json
+          error_message?: string | null
+          final_report?: string | null
+          id?: string
+          language?: string
+          payload?: Json
+          progress?: number
+          status?: string
+          step_results?: Json
+          updated_at?: string
+          user_id?: string
+          user_text?: string | null
+        }
+        Relationships: []
+      }
       btp_price_reference: {
         Row: {
           categorie: string

@@ -1876,6 +1876,23 @@ const AIAssistantPage = () => {
             {t('aiAssistant.header.title')}
           </h1>
         </div>
+        {/* Choix de langue du parcours et du rapport (sans drapeau) */}
+        <div className="flex items-center rounded-full border border-border overflow-hidden shrink-0" dir="ltr">
+          {(['fr', 'ar'] as const).map((lg) => (
+            <button
+              key={lg}
+              type="button"
+              onClick={() => setLanguage(lg)}
+              aria-pressed={language === lg}
+              className={cn(
+                "px-2.5 py-1 text-xs font-bold transition-colors",
+                language === lg ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {lg === 'fr' ? 'FR' : 'AR'}
+            </button>
+          ))}
+        </div>
         <button
           onClick={() => setShowConversationList(v => !v)}
           className={cn(

@@ -2112,7 +2112,8 @@ const AIAssistantPage = () => {
               onClick={() => setLanguage(lg)}
               aria-pressed={language === lg}
               className={cn(
-                "px-2.5 py-1 text-xs font-bold transition-colors",
+                "px-2.5 py-1 text-xs font-bold transition-colors border-border",
+                lg === 'ar' && "border-l",
                 language === lg ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
               )}
             >

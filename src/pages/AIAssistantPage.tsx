@@ -18,7 +18,20 @@ import { validateBtpItemsForTransfer } from '@/lib/btpTransferValidator';
 
 type ConversationSummary = { id: string; title: string | null; updated_at: string };
 
-type Msg = { role: 'user' | 'assistant'; content: string; deepId?: string };
+type MsgAttachment =
+  | { kind: 'image'; name: string; dataUrl: string }
+  | { kind: 'pdf'; name: string; text: string };
+
+type Msg = {
+  role: 'user' | 'assistant';
+  content: string;
+  deepId?: string;
+  // Pièces jointes réellement utilisées pour CE message (mémoire de session
+  // uniquement) + texte utilisateur d'origine, afin de rattacher chaque analyse
+  // approfondie à son propre dossier.
+  attachments?: MsgAttachment[];
+  userText?: string;
+};
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
 
 const CATEGORIES: { key: CategoryKey; emoji: string; labelAr: string; labelFr: string }[] = [

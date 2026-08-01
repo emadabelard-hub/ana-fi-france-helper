@@ -711,6 +711,14 @@ Produis EXACTEMENT ce bloc, sans texte avant, en respectant scrupuleusement la b
   "documentMode": true,
   "documentTypes": ["cctp" | "dpgf" | "devis" | "bordereau_prix" | "notice_descriptive" | "rapport_expertise" | "rapport_technique" | "cahier_charges" | "demande_travaux" | "photo_chantier" | "montage" | "autre"],
   "readingQuality": "bonne" | "partielle" | "insuffisante",
+  "documents": [
+    {
+      "fileName": "",
+      "type": "cctp" | "dpgf" | "devis" | "bordereau_prix" | "notice_descriptive" | "rapport_expertise" | "rapport_technique" | "cahier_charges" | "demande_travaux" | "plan" | "photo_chantier" | "montage" | "autre" | null,
+      "readingQuality": "bonne" | "partielle" | "mauvaise" | null,
+      "role": null
+    }
+  ],
   "confidence": 0.0,
   "requiresReview": true,
   "reason": "",

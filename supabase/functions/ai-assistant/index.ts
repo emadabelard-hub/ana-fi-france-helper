@@ -1267,6 +1267,118 @@ Tous les fichiers réellement reçus doivent apparaître dans "documents[]". Tou
       outgoingMessages.push({ role: 'user', content: factParts });
     }
 
+    // === BTP DOCUMENT CONTROL (action indépendante : comparaison des faits déjà
+    // extraits par btp_factual_extraction). Aucune relecture des pièces, aucun
+    // calcul, aucune conversion, aucune valeur nouvelle.
+    if (action === 'btp_document_control') {
+      const factsPayload = typeof rawBtpFacts === 'string'
+        ? rawBtpFacts
+        : rawBtpFacts ? JSON.stringify(rawBtpFacts) : '';
+
+      finalSystemPrompt = `Tu es un moteur de CONTRÔLE DOCUMENTAIRE BTP. Tu ne relis aucun document, tu ne réinterprètes aucun chantier. Tu compares UNIQUEMENT les faits déjà extraits qui te sont fournis (bloc <ANAFYPRO_BTP_FACTS>).
+
+INTERDICTIONS ABSOLUES — tu ne dois jamais :
+- inventer un fait manquant ni compléter une information absente ;
+- corriger une valeur ou choisir arbitrairement la « bonne » valeur ;
+- additionner plusieurs quantités ni produire un total ;
+- convertir une unité (jamais ml → m², jamais cm → m) ;
+- calculer une surface, un volume ou un linéaire ;
+- déduire une quantité depuis un plan ;
+- reformuler un fait en prestation commerciale ;
+- proposer un prix, un coût, une TVA, une norme, une recommandation métier ou une conclusion.
+
+NORMALISATION AUTORISÉE (uniquement pour rapprocher les libellés) : casse, accents, espaces, ponctuation, et synonymes strictement équivalents ("u"/"unité", "ml"/"m linéaire", "m²"/"m2"). Aucune autre transformation.
+
+STATUTS DE CONTRÔLE — exactement un par comparaison :
+- "confirmed" : même prestation, même quantité, même unité, même dimension significative, confirmée par au moins DEUX FICHIERS DISTINCTS ;
+- "conflict" : même prestation réelle, mais valeurs/unités/dimensions différentes ET lisibles selon les sources ;
+- "single_source" : fait présent dans un seul document ;
+- "unreadable" : information visible mais non exploitable ;
+- "missing" : information explicitement annoncée comme absente ou non précisée ;
+- "not_comparable" : valeurs proches dans le texte mais ne décrivant pas la même chose.
+
+RÈGLE ANTI-FAUSSE CONTRADICTION (impérative) : ne jamais opposer deux valeurs qui décrivent deux choses différentes. Ne sont JAMAIS des conflits :
+- une longueur et une surface (ex. coffrage placo 12 ml et surface à enduire/peindre 7 m² sont compatibles → "not_comparable" ou deux faits distincts) ;
+- une quantité et une dimension ;
+- une dépose et une pose ;
+- une fourniture et une pose ;
+- une surface de sol et une surface murale ;
+- un poste principal et sa finition associée.
+
+RÈGLES "confirmed" : deux faits provenant du même fichier (ex. le même DOCX) ne constituent PAS une confirmation croisée. Si une capture (WhatsApp, photo, plan miniature) est en lecture partielle et ne permet pas de lire la quantité avec certitude, ne confirme pas la quantité : le fait du document texte reste "single_source".
+
+RÈGLES "conflict" : uniquement si la prestation est réellement identique et que les deux valeurs sont lisibles. Exemple : « Dépose parquet : 20 m² » (doc A) et « Dépose parquet : 30 m² » (doc B) → "conflict", sans choisir 20 ni 30, requiresUserConfirmation = true.
+
+DOCUMENTS ILLISIBLES : ne jamais déclarer un PDF ou une image « vide » au seul motif qu'aucun texte n'a été extrait. Utiliser "contenu textuel non extractible automatiquement" ou "contenu visuel non exploitable à cette résolution", et faire apparaître le document dans "unreadableDocuments[]" avec usableForComparison = false.
+
+Chaque fait cité doit conserver son factId, son descriptionExact, son sourceFile et son evidenceText tels que fournis, sans modification.
+
+SORTIE — uniquement un bloc <ANAFYPRO_BTP_CONTROL> contenant du JSON strict, sans markdown, sans phrase avant ou après :
+
+<ANAFYPRO_BTP_CONTROL>
+{
+  "project": { "title": null, "clientName": null, "projectAddress": null },
+  "documents": [
+    { "fileName": "", "documentType": null, "readingQuality": null, "usableForComparison": false }
+  ],
+  "controls": [
+    {
+      "id": "",
+      "normalizedSubject": "",
+      "status": "confirmed | conflict | single_source | unreadable | missing | not_comparable",
+      "facts": [
+        { "factId": "", "descriptionExact": "", "quantity": null, "unit": null, "dimensions": [], "sourceFile": "", "sourcePage": null, "evidenceText": "" }
+      ],
+      "reason": "",
+      "requiresUserConfirmation": false
+    }
+  ],
+  "conflicts": [
+    {
+      "subject": "",
+      "values": [ { "value": null, "unit": null, "sourceFile": "", "evidenceText": "" } ],
+      "reason": "",
+      "requiresUserConfirmation": true
+    }
+  ],
+  "singleSourceFacts": [ { "factId": "", "descriptionExact": "", "sourceFile": "" } ],
+  "unreadableDocuments": [ { "fileName": "", "reason": "" } ],
+  "missingInformation": [ { "field": "", "reason": "", "sourceFile": null } ],
+  "summary": {
+    "confirmedCount": 0,
+    "conflictCount": 0,
+    "singleSourceCount": 0,
+    "unreadableCount": 0,
+    "missingCount": 0,
+    "readyForTechnicalAnalysis": false,
+    "blockingReasons": []
+  }
+}
+</ANAFYPRO_BTP_CONTROL>
+
+Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`;
+
+      const controlParts: any[] = [];
+      controlParts.push({
+        type: 'text',
+        text: `CONTRÔLE DOCUMENTAIRE DEMANDÉ. Compare uniquement les faits du bloc factuel ci-dessous. N'ajoute aucune quantité, aucune valeur, aucun prix, aucune TVA, aucune norme, aucune recommandation. Réponds uniquement par le bloc <ANAFYPRO_BTP_CONTROL>.`,
+      });
+      if (factsPayload.trim()) {
+        controlParts.push({
+          type: 'text',
+          text: `BLOC FACTUEL SOURCE (unique source autorisée) :\n\n"""\n${factsPayload.slice(0, 120000)}\n"""`,
+        });
+      } else {
+        controlParts.push({
+          type: 'text',
+          text: `Aucun bloc factuel n'a été fourni. Retourne le bloc <ANAFYPRO_BTP_CONTROL> avec "documents": [], "controls": [], et une entrée dans "missingInformation" indiquant que l'extraction factuelle n'est pas disponible, avec summary.readyForTechnicalAnalysis = false.`,
+        });
+      }
+
+      outgoingMessages.length = 0;
+      outgoingMessages.push({ role: 'user', content: controlParts });
+    }
+
     // ---- Stratégie de sélection du modèle ----
     // Principal : Anthropic (ANTHROPIC_API_KEY). Secours : Lovable AI Gateway.
     // Le corps de requête et le format de réponse (SSE OpenAI) sont identiques

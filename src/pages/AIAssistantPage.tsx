@@ -1931,7 +1931,7 @@ const AIAssistantPage = () => {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf"
+          accept="image/jpeg,image/png,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.jpg,.jpeg,.png,.pdf,.docx"
           multiple
           className="hidden"
           onChange={handleFileSelected}

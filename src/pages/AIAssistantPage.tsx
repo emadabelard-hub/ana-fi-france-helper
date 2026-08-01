@@ -1914,7 +1914,7 @@ const AIAssistantPage = () => {
                   <div className="mt-3">
                     <button
                       type="button"
-                      onClick={() => runDocumentControl(msg.content)}
+                      onClick={() => runDocumentControl(i, msg.content)}
                       disabled={controlLoading}
                       className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted text-[13px] font-semibold text-foreground disabled:opacity-60"
                     >

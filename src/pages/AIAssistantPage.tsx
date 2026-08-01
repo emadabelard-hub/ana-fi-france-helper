@@ -2504,18 +2504,24 @@ const AIAssistantPage = () => {
                     </>
                   ) : isDeepResult ? (
                     <ResultCard
-                      title="Analyse technique approfondie"
+                      title={L.deepTitle}
                       icon={Search}
                       tone="deep"
+                      isRTL={isRTL}
                       copyText={stripMarkdownForCopy(letter ?? visibleContent)}
                     >
-                      <DeepAnalysisReport content={letter ?? visibleContent} />
+                      <DeepAnalysisReport
+                        content={letter ?? visibleContent}
+                        isRTL={isRTL}
+                        hideTitle
+                      />
                     </ResultCard>
                   ) : isDocAnalysisCard ? (
                     <ResultCard
-                      title="Analyse documentaire"
+                      title={L.docTitle}
                       icon={FileText}
                       tone="neutral"
+                      isRTL={isRTL}
                       copyText={stripMarkdownForCopy(letter ?? visibleContent)}
                     >
                       <MarkdownRenderer
@@ -2524,8 +2530,9 @@ const AIAssistantPage = () => {
                         forceLTR={isFormalFrench}
                         className="!text-[15px] !leading-[1.6] text-foreground"
                       />
-                      {btpDocData && <TechnicalJsonPanel raw={JSON.stringify(btpDocData, null, 2)} />}
+                      {btpDocData && <TechnicalJsonPanel raw={JSON.stringify(btpDocData, null, 2)} isRTL={isRTL} />}
                     </ResultCard>
+
                   ) : (
                     <MarkdownRenderer
                       content={letter ?? visibleContent}

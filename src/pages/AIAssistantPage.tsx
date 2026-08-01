@@ -1534,15 +1534,28 @@ const AIAssistantPage = () => {
                 {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
               </button>
 
-              {/* TEMPORAIRE : réponse brute de l'extraction factuelle, sans transformation */}
-              {msg.rawFacts && (
+              {/* TEMPORAIRE : réponse brute de l'extraction factuelle / du contrôle documentaire, sans transformation */}
+              {(msg.rawFacts || msg.rawControl) && (
                 <pre dir="ltr" className="whitespace-pre-wrap break-words text-[13px] leading-[1.5] text-foreground font-mono bg-muted/40 border border-border rounded-lg p-3 overflow-x-auto">
                   {msg.content}
                 </pre>
               )}
 
+              {/* TEMPORAIRE : contrôle documentaire, uniquement après une extraction factuelle réussie */}
+              {msg.rawFacts && msg.content.includes('ANAFYPRO_BTP_FACTS') && (
+                <button
+                  type="button"
+                  onClick={() => runDocumentControl(msg.content)}
+                  disabled={controlLoading}
+                  className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted text-[13px] font-semibold text-foreground disabled:opacity-60"
+                >
+                  {controlLoading ? <Loader2 size={14} className="animate-spin" /> : null}
+                  Tester le contrôle documentaire
+                </button>
+              )}
+
               {/* Optional Arabic preface (only when letter present) */}
-              {!msg.rawFacts && letter && preface && (
+              {!msg.rawFacts && !msg.rawControl && letter && preface && (
                 <MarkdownRenderer
                   content={preface}
                   isRTL={isArabic(preface)}
@@ -1551,7 +1564,7 @@ const AIAssistantPage = () => {
               )}
 
               {/* Either the formal French letter, the commercial client block, or the regular response */}
-              {!msg.rawFacts && visibleContent && (
+              {!msg.rawFacts && !msg.rawControl && visibleContent && (
                 <div {...(isFormalFrench || clientBlock.hasBlock ? { dir: 'ltr' as const } : {})}>
                   {clientBlock.hasBlock ? (
                     <>

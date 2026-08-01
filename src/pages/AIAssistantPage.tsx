@@ -28,6 +28,8 @@ type Msg = {
   role: 'user' | 'assistant';
   content: string;
   deepId?: string;
+  // Message de test temporaire : affiché brut, sans aucune transformation.
+  rawFacts?: boolean;
   // Pièces jointes réellement utilisées pour CE message (mémoire de session
   // uniquement) + texte utilisateur d'origine, afin de rattacher chaque analyse
   // approfondie à son propre dossier.
@@ -289,6 +291,10 @@ const AIAssistantPage = () => {
   const deepAnalysisClearIdleRef = useRef<(() => void) | null>(null);
   // Verrou synchrone anti-double-lancement de l'analyse approfondie
   const deepRunningRef = useRef(false);
+  // TEMPORAIRE : test de l'extraction factuelle BTP
+  const [factualLoading, setFactualLoading] = useState(false);
+  const factualRunningRef = useRef(false);
+  const factualAbortRef = useRef<AbortController | null>(null);
   // Nettoyage du watchdog et de la requête si le composant est démonté
   useEffect(() => () => {
     deepAnalysisClearIdleRef.current?.();
@@ -1034,6 +1040,119 @@ const AIAssistantPage = () => {
     }
   };
 
+  // ── TEMPORAIRE : test de l'extraction factuelle BTP (action serveur dédiée) ──
+  // Affiche la réponse brute, sans aucune transformation ni interprétation.
+  const runFactualExtraction = async (sourceMsgIndex: number, btpDocData: any) => {
+    // Garde synchrone anti-double-clic (même mécanisme que l'analyse approfondie)
+    if (factualRunningRef.current) return;
+    factualRunningRef.current = true;
+    if (factualLoading) { factualRunningRef.current = false; return; }
+    setFactualLoading(true);
+    setSelectedAnalysisOption(null);
+
+    // Mêmes pièces originales que celles rattachées à CE dossier analysé.
+    let sourceAttachments: MsgAttachment[] = [];
+    let sourceUserText: string | null = null;
+    for (let i = Math.min(sourceMsgIndex, messages.length - 1); i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== 'user') continue;
+      if (m.attachments && m.attachments.length > 0) {
+        sourceAttachments = m.attachments;
+        sourceUserText = m.userText || null;
+      }
+      break;
+    }
+    const originalsAvailable = sourceAttachments.length > 0;
+
+    const factsId = `facts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    let soFar = '';
+    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: factsId, rawFacts: true }]);
+    const upsert = (chunk: string) => {
+      soFar += chunk;
+      setMessages(prev => prev.map(m => m.deepId === factsId ? { ...m, content: soFar } : m));
+    };
+    const dropOwnMessage = () => setMessages(prev => prev.filter(m => m.deepId !== factsId));
+
+    const abortController = new AbortController();
+    factualAbortRef.current = abortController;
+    const hardTimer = setTimeout(() => { try { abortController.abort(); } catch { /* noop */ } }, 300000);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const resp = await fetch(STREAM_URL, {
+        method: 'POST',
+        signal: abortController.signal,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          action: 'btp_factual_extraction',
+          btpDocData,
+          attachments: sourceAttachments.map(a =>
+            a.kind === 'image'
+              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
+              : { kind: a.kind, name: a.name, text: a.text }
+          ),
+          originalsAvailable,
+          userQuestion: sourceUserText,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          language: 'fr',
+          category: activeCategory,
+        }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        dropOwnMessage();
+        toast({ variant: 'destructive', title: 'Erreur', description: "L'extraction factuelle n'a pas pu être générée. Veuillez réessayer." });
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let streamDone = false;
+      readStream: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buf.indexOf('\n')) !== -1) {
+          let line = buf.slice(0, idx);
+          buf = buf.slice(idx + 1);
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+          const json = line.slice(6).trim();
+          if (json === '[DONE]') { streamDone = true; break readStream; }
+          try {
+            const parsed = JSON.parse(json);
+            const c = parsed.choices?.[0]?.delta?.content;
+            if (c) upsert(c);
+          } catch {
+            buf = line + '\n' + buf;
+            break;
+          }
+        }
+      }
+
+      // Jamais de JSON partiel conservé comme résultat complet.
+      if (!streamDone || !soFar.trim()) {
+        dropOwnMessage();
+        toast({ variant: 'destructive', title: 'Extraction interrompue', description: "L’extraction factuelle a été interrompue. Aucun résultat complet n’a été produit." });
+      }
+    } catch (err) {
+      console.error('[AIAssistant] factual extraction failed', err);
+      dropOwnMessage();
+      toast({ variant: 'destructive', title: 'Erreur', description: "L’extraction factuelle a échoué. Aucun résultat complet n’a été produit." });
+    } finally {
+      clearTimeout(hardTimer);
+      factualAbortRef.current = null;
+      setFactualLoading(false);
+      factualRunningRef.current = false;
+    }
+  };
+
+
 
   const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
 
@@ -1415,8 +1534,15 @@ const AIAssistantPage = () => {
                 {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
               </button>
 
+              {/* TEMPORAIRE : réponse brute de l'extraction factuelle, sans transformation */}
+              {msg.rawFacts && (
+                <pre dir="ltr" className="whitespace-pre-wrap break-words text-[13px] leading-[1.5] text-foreground font-mono bg-muted/40 border border-border rounded-lg p-3 overflow-x-auto">
+                  {msg.content}
+                </pre>
+              )}
+
               {/* Optional Arabic preface (only when letter present) */}
-              {letter && preface && (
+              {!msg.rawFacts && letter && preface && (
                 <MarkdownRenderer
                   content={preface}
                   isRTL={isArabic(preface)}
@@ -1425,7 +1551,7 @@ const AIAssistantPage = () => {
               )}
 
               {/* Either the formal French letter, the commercial client block, or the regular response */}
-              {visibleContent && (
+              {!msg.rawFacts && visibleContent && (
                 <div {...(isFormalFrench || clientBlock.hasBlock ? { dir: 'ltr' as const } : {})}>
                   {clientBlock.hasBlock ? (
                     <>
@@ -1838,6 +1964,16 @@ const AIAssistantPage = () => {
                       );
                     })}
                   </div>
+                  {/* TEMPORAIRE : test de l'extraction factuelle BTP */}
+                  <button
+                    type="button"
+                    disabled={factualLoading}
+                    onClick={() => runFactualExtraction(i, effectiveBtpDocData)}
+                    className="mt-3 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-primary/50 bg-card text-foreground font-semibold text-sm active:scale-95 transition-transform disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {factualLoading ? <Loader2 size={16} className="animate-spin" /> : <ClipboardList size={16} />}
+                    {factualLoading ? 'Extraction factuelle en cours…' : 'Tester l’extraction factuelle'}
+                  </button>
                   {selectedAnalysisOption && selectedAnalysisOption !== 'deep-analysis' && (
                     <p className="mt-3 text-sm text-muted-foreground bg-muted/60 border border-border rounded-lg p-3">
                       Cette fonction sera disponible prochainement.

@@ -924,7 +924,7 @@ const AIAssistantPage = () => {
           attachments: sourceAttachments.map(a =>
             a.kind === 'image'
               ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-              : { kind: 'pdf', name: a.name, text: a.text }
+              : { kind: a.kind, name: a.name, text: a.text }
           ),
           originalsAvailable,
           userQuestion: sourceUserText,

@@ -2374,7 +2374,7 @@ const AIAssistantPage = () => {
           const isControlResult = resultType === 'btp_control';
           const isDeepResult =
             resultType === 'btp_deep_analysis' ||
-            /^##\s+Analyse technique approfondie/i.test((letter ?? visibleContent).trim());
+            /^##\s+(Analyse technique approfondie|التحليل الفني المعمق|التحليل الفني المتقدم)/i.test((letter ?? visibleContent).trim());
           const isDocAnalysisCard = !isFactsResult && !isControlResult && !isDeepResult && btpDocStatus === 'ok';
 
           // ── Cartes dédiées : extraction factuelle / contrôle documentaire ──

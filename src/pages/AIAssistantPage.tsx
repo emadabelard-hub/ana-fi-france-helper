@@ -682,7 +682,12 @@ const AIAssistantPage = () => {
       ? `📎 ${currentAttachments.map(a => a.name).join(', ')}`
       : '');
 
-    const userMsg: Msg = { role: 'user', content: displayText };
+    const userMsg: Msg = {
+      role: 'user',
+      content: displayText,
+      attachments: currentAttachments.length > 0 ? currentAttachments : undefined,
+      userText: text || undefined,
+    };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setAttachments([]);

@@ -1118,7 +1118,7 @@ const AIAssistantPage = () => {
     const titlePrefix = '## Analyse technique approfondie\n\n';
     const deepId = `deep-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let assistantSoFar = titlePrefix;
-    setMessages(prev => [...prev, { role: 'assistant', content: assistantSoFar, deepId }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: assistantSoFar, deepId, resultType: 'btp_deep_analysis' }]);
     const upsert = (chunk: string) => {
       assistantSoFar += chunk;
       setMessages(prev => prev.map(m => m.deepId === deepId ? { ...m, content: assistantSoFar } : m));

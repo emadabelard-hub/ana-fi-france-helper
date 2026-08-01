@@ -1408,7 +1408,7 @@ const AIAssistantPage = () => {
 
     const controlId = `control-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let soFar = '';
-    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: controlId, rawControl: true }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: '', deepId: controlId, rawControl: true, resultType: 'btp_control' }]);
     const upsert = (chunk: string) => {
       soFar += chunk;
       setMessages(prev => prev.map(m => m.deepId === controlId ? { ...m, content: soFar } : m));

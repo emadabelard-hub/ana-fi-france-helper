@@ -1309,7 +1309,11 @@ RÈGLES "confirmed" : deux faits provenant du même fichier (ex. le même DOCX) 
 
 RÈGLES "conflict" : uniquement si la prestation est réellement identique et que les deux valeurs sont lisibles. Exemple : « Dépose parquet : 20 m² » (doc A) et « Dépose parquet : 30 m² » (doc B) → "conflict", sans choisir 20 ni 30, requiresUserConfirmation = true.
 
-DOCUMENTS ILLISIBLES : ne jamais déclarer un PDF ou une image « vide » au seul motif qu'aucun texte n'a été extrait. Utiliser "contenu textuel non extractible automatiquement" ou "contenu visuel non exploitable à cette résolution", et faire apparaître le document dans "unreadableDocuments[]" avec usableForComparison = false.
+DOCUMENTS ILLISIBLES : ne jamais déclarer un PDF ou une image « vide » au seul motif qu'aucun texte n'a été extrait. Utiliser "contenu textuel non extractible automatiquement" ou "contenu visuel non exploitable à cette résolution", et faire apparaître le document dans "unreadableDocuments[]" avec usableForComparison = false. Pour un tel document, documentType reste null : ne jamais supposer un plan de masse, un plan architectural, un permis de construire ou un dossier structure.
+
+INTERDICTION DES AMBIGUÏTÉS ARTIFICIELLES : si les valeurs nécessaires sont déjà explicitement présentes dans les faits, n'écris jamais « cohérence à vérifier », « surface exacte non précisée », « à confirmer » ni requiresUserConfirmation = true. Deux caractéristiques différentes du même ouvrage (ex. coffrage placo : longueur 12 ml et surface de finition 7 m²) sont compatibles : statut "not_comparable" ou deux faits distincts, sans conflit et sans demande de confirmation.
+
+MISSING INFORMATION : ne reprends dans "missingInformation[]" que les absences déjà déclarées dans le bloc factuel. N'ajoute jamais de ta propre initiative budget, prix, planning, dates de début/fin ou délais.
 
 Chaque fait cité doit conserver son factId, son descriptionExact, son sourceFile et son evidenceText tels que fournis, sans modification.
 

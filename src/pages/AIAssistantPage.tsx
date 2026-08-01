@@ -304,22 +304,25 @@ const asLabel = (v: unknown): string => {
 };
 
 /** Zone technique repliée : JSON complet, masqué par défaut. */
-const TechnicalJsonPanel = ({ raw }: { raw: string }) => {
+const TechnicalJsonPanel = ({ raw, isRTL = false }: { raw: string; isRTL?: boolean }) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   return (
-    <div className="mt-3" dir="ltr">
+    <div className="mt-3" dir={isRTL ? 'rtl' : 'ltr'}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        className={cn(
+          'inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors',
+          isRTL && 'font-cairo flex-row-reverse',
+        )}
       >
         {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        Voir les données techniques
+        {isRTL ? 'عرض البيانات التقنية' : 'Voir les données techniques'}
       </button>
       {open && (
         <div className="mt-2 rounded-lg border border-border bg-muted/40">
-          <div className="flex justify-end p-1.5">
+          <div className={cn('flex p-1.5', isRTL ? 'justify-start' : 'justify-end')}>
             <button
               type="button"
               onClick={async () => {
@@ -329,13 +332,16 @@ const TechnicalJsonPanel = ({ raw }: { raw: string }) => {
                   setTimeout(() => setCopied(false), 2000);
                 } catch { /* silent */ }
               }}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
+              className={cn(
+                'inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted',
+                isRTL && 'font-cairo flex-row-reverse',
+              )}
             >
               {copied ? <Check size={12} className="text-primary" /> : <Copy size={12} />}
-              Copier
+              {isRTL ? 'نسخ' : 'Copier'}
             </button>
           </div>
-          <pre className="max-h-[45vh] overflow-auto px-3 pb-3 text-[11px] leading-[1.5] font-mono text-foreground whitespace-pre">
+          <pre className="max-h-[45vh] overflow-auto px-3 pb-3 text-[11px] leading-[1.5] font-mono text-foreground whitespace-pre" dir="ltr">
             {raw}
           </pre>
         </div>
@@ -343,6 +349,7 @@ const TechnicalJsonPanel = ({ raw }: { raw: string }) => {
     </div>
   );
 };
+
 
 /** Carte de résultat : titre, icône, bordure dédiée, copier, réduire/développer. */
 const ResultCard = ({

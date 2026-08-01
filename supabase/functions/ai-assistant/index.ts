@@ -790,6 +790,15 @@ Règles JSON strictes :
 - Si aucune prestation fiable : \`items: []\`, \`confidence: 0\`, \`requiresReview: true\`, \`reason\` court.
 - \`documentTotalHT\` = total HT explicitement visible dans le document source. Si aucun total HT clair : \`null\`. Ne JAMAIS calculer, corriger ou remplacer ce total par un total TTC, une TVA ou un sous-total.
 - \`documentTotalEvidenceText\` = court extrait du document justifiant le total HT (exemple : \`TOTAL HT : 8 730,00 €\`). Si \`documentTotalHT\` est \`null\`, ce champ doit être \`null\` ou vide.
+- \`documents\` = INVENTAIRE OBLIGATOIRE de TOUS les fichiers réellement reçus et examinés (une entrée par fichier, aucun oubli, aucun ajout inventé) :
+  • \`fileName\` = nom exact du fichier tel que transmis. Jamais inventé, jamais reformulé.
+  • \`type\` = nature réelle du document lue dans son contenu, sinon \`null\`. Ne JAMAIS déduire le type uniquement du nom du fichier.
+  • \`readingQuality\` = \`"bonne"\` (contenu entièrement lisible), \`"partielle"\` (contenu partiellement lisible, miniature, image basse résolution, montage), \`"mauvaise"\` (contenu non exploitable), ou \`null\` si impossible à évaluer.
+  • \`role\` = rôle du document dans le projet, en français court et factuel (ex. « descriptif technique des travaux », « détail des prix », « photo de l'existant », « plan côté »). Si le rôle n'est pas déductible du contenu : \`null\`.
+  • Les valeurs de \`items[].sourceFile\` doivent correspondre à un \`fileName\` présent dans \`documents\`.
+  • Un fichier dont \`readingQuality\` vaut \`"partielle"\` ou \`"mauvaise"\` ne peut fournir aucun prix exploitable.
+  • Si aucun fichier n'a été transmis : \`documents: []\`.
+
 
 ### Après le bloc — narratif court
 

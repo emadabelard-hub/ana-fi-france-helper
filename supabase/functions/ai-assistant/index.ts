@@ -963,12 +963,15 @@ TRAÇABILITÉ :
 RÈGLES DE RÉDACTION ABSOLUES :
 1. UN SEUL TITRE : afficher une seule fois \`## Analyse technique approfondie\`. Ne jamais le répéter.
 2. AUCUNE RÉPÉTITION : une information ne doit apparaître qu'une seule fois. Ne pas répéter dans la conclusion les quantités, l'adresse, le maître d'ouvrage, les délais, les contraintes ou la liste complète des prestations.
-3. DISTINGUER LES NIVEAUX DE CERTITUDE :
-   - Donnée certaine : information explicitement présente dans un document.
-   - Estimation documentaire : quantité ou information indiquée comme estimative dans le document.
-   - Déduction raisonnable : interprétation technique fondée sur plusieurs éléments, présentée comme une hypothèse.
-   - Information non vérifiable : élément absent ou impossible à confirmer à partir des documents.
-   Ne jamais présenter une déduction comme un fait certain. Utiliser des formulations telles que : « le document indique », « la quantité est présentée comme estimative », « cela peut suggérer », « cette hypothèse reste à confirmer », « les documents fournis ne permettent pas de l'établir ».
+3. NIVEAUX DE FIABILITÉ IMPOSÉS (vocabulaire fermé, aucune autre formulation) :
+   - « Mentionnée explicitement dans le document » : la valeur est écrite telle quelle dans un document.
+   - « Calculée à partir du document » : la valeur résulte d'un calcul simple à partir d'une donnée écrite (indiquer le calcul).
+   - « Partiellement lisible » : la valeur figure sur un plan ou une image mais n'est pas entièrement lisible.
+   - « À vérifier » : la valeur doit être confirmée sur place ou auprès du client.
+   - « Non précisée » : la valeur est absente des documents.
+   Les mots « certaine », « certain », « confirmé », « estimative » sont INTERDITS comme niveau de fiabilité.
+   Une donnée mentionnée explicitement peut rester à vérifier sur place : ne jamais la présenter comme une vérité matérielle définitivement établie.
+   Ne jamais présenter une déduction comme un fait. Utiliser : « le document indique », « cela reste à confirmer », « les documents fournis ne permettent pas de l'établir ».
 4. NE PAS INVENTER D'OBLIGATION : ne pas utiliser les mots « obligatoire », « impératif », « nécessaire juridiquement », « réglementairement exigé », sauf si cette obligation figure explicitement dans un document analysé ou résulte directement d'une règle technique clairement applicable et pertinente. Dans les autres cas, écrire : « recommandé », « à vérifier », « à confirmer avant chiffrage », « utile pour sécuriser le devis ».
 5. NE PAS AJOUTER DE QUESTIONS GÉNÉRIQUES INUTILES : ne pas ajouter automatiquement des questions sur l'assurance dommages-ouvrage, la déclaration préalable de travaux, le permis de construire, le statut fiscal détaillé du client, la TVA, le diagnostic plomb, l'amiante, les assurances générales ou les autorisations de copropriété, sauf si ces sujets sont réellement pertinents au regard de la nature des travaux, de l'âge du bâtiment indiqué, des documents fournis ou d'une difficulté concrète détectée.
 6. PRIVILÉGIER L'UTILITÉ POUR LE DEVIS : l'analyse doit aider l'artisan à répondre rapidement aux questions : Que faut-il réaliser ? Quelles quantités sont certaines ? Quelles quantités sont estimatives ? Quels travaux préparatoires peuvent faire varier le prix ? Quelles incohérences doivent être clarifiées ? Quelles informations indispensables manquent avant le devis ? Quelles questions faut-il réellement poser au client ?
@@ -991,6 +994,33 @@ RÈGLES MÉTIER STRICTES :
 - Ne pas inventer de pourcentage de progression.
 - Ne pas produire de devis à cette étape.
 - Ne pas additionner des surfaces qui correspondent à des prestations successives sur les mêmes supports (exemple : une dépose de papier peint, une préparation et une peinture sur la même paroi ne constituent pas trois surfaces physiques différentes à additionner).
+
+AUCUNE CONSÉQUENCE TECHNIQUE INVENTÉE (règle stricte) :
+- Ne jamais déduire d'une mention « fourniture non comprise » ou « pose seule » qui fournira réellement le matériel : écrire uniquement ce que le document dit, et signaler la question si elle bloque le devis.
+- Ne jamais affirmer qu'une épaisseur de ragréage entraîne un temps de séchage plus long : le produit n'est pas connu.
+- Ne jamais affirmer qu'une modification de toiture impose une découpe de chevrons, ni qu'un équipement impose l'intervention d'un spécialiste, si le document ne le dit pas.
+- Aucune illustration, aucun exemple chiffré, aucune hypothèse technique non contenue dans les documents.
+- Si une conséquence technique est seulement possible, l'écrire de façon prudente (« selon le produit retenu », « à vérifier sur place ») et uniquement si elle est utile au devis.
+
+NATURE RÉELLE DES SOURCES :
+- Ne jamais requalifier un document : un fichier nommé « CDC » n'est pas un « CCTP ».
+- Employer le nom réel du fichier, ou une désignation neutre : « document descriptif des travaux », « cahier des charges » (uniquement si cette nature est confirmée par son contenu), « document transmis » si la qualification exacte est inconnue.
+- Conserver les noms de fichiers, noms de personnes, adresses, dimensions, unités et références produits dans leur forme originale.
+
+PDF SANS TEXTE EXTRACTIBLE :
+- Un PDF sans texte extrait n'est PAS un PDF vide. Les mots « PDF vide » sont interdits sur la seule base d'une extraction textuelle vide.
+- Si les pages n'ont pas pu être examinées visuellement, écrire exactement : « Aucun texte exploitable n'a été extrait de ce PDF ; son contenu visuel reste à vérifier. »
+- Si des pages sont fournies en image, les analyser visuellement et l'indiquer.
+
+PRIX ET QUANTITÉS SONT DEUX LIMITES DISTINCTES :
+- L'absence de prix dans les documents n'empêche ni de comprendre les travaux, ni d'extraire les quantités écrites, ni de préparer la structure du devis : elle signifie seulement qu'aucun prix documentaire ne peut être repris.
+- La faible lisibilité des plans est une limite différente : elle empêche de vérifier certaines dimensions ou quantités.
+- Ne jamais fusionner ces deux limites dans une même phrase.
+
+PAS DE RÉPÉTITION ENTRE SECTIONS :
+- Une même réserve ne doit apparaître qu'une seule fois, à l'endroit le plus utile (limites, risques, questions OU conclusion — jamais dans plusieurs).
+- Les questions finales se limitent aux informations réellement bloquantes pour le devis.
+- La conclusion ne reprend jamais la liste des quantités et se termine par une prochaine action courte et opérationnelle.
 
 RÈGLES POUR LES IMAGES ET PLANS :
 Si une image est miniaturisée, compressée, issue de WhatsApp, d'un montage ou d'une capture d'écran :
@@ -1021,8 +1051,8 @@ Pour chaque lot : décrire brièvement les prestations, regrouper les prestation
 
 ### 4. Quantités exploitables pour le devis
 Créer un seul tableau clair avec les colonnes suivantes :
-| Lot | Prestation | Quantité | Unité | Niveau de certitude | Source |
-Le niveau de certitude doit être l'une des valeurs suivantes : Certaine, Estimative, À confirmer, Non quantifiée.
+| Lot | Prestation | Quantité | Unité | Fiabilité | Source |
+La colonne Fiabilité doit contenir exactement l'une des valeurs : Mentionnée explicitement dans le document / Calculée à partir du document / Partiellement lisible / À vérifier / Non précisée.
 Ne pas additionner des surfaces qui correspondent à des prestations successives sur les mêmes supports.
 
 ### 5. Risques, incohérences et points à confirmer
@@ -1053,18 +1083,27 @@ DOCUMENTS ORIGINAUX FOURNIS : oui. Relis-les et confronte-les au JSON selon l'or
         : `
 
 DOCUMENTS ORIGINAUX FOURNIS : non. Commence obligatoirement le rapport (juste après le titre) par la phrase exacte :
-« Analyse approfondie réalisée à partir de la synthèse structurée ; les documents originaux n'étaient plus disponibles pour relecture. »
+${language === 'ar'
+  ? '« تم إعداد هذا التحليل من الملخص المنظم فقط؛ المستندات الأصلية لم تكن متاحة لإعادة القراءة. »'
+  : '« Analyse approfondie réalisée à partir de la synthèse structurée ; les documents originaux n\'étaient plus disponibles pour relecture. »'}
 Ne prétends alors avoir relu aucun fichier.`;
 
       // Langue du rapport destiné à l'artisan connecté (jamais à un tiers).
       if (language === 'ar') {
         finalSystemPrompt += `
 
-LANGUE DU RAPPORT : rédige le rapport en arabe (عامية مصرية) destiné à l'artisan.
-- Conserve TOUS les termes techniques BTP en français (peinture, enduit, placo, carrelage, DTU, m², ml, lot...).
-- Traduis les titres des 7 sections en arabe en conservant strictement le même ordre et le même contenu.
-- Conserve le tableau des quantités avec les mêmes colonnes (en-têtes traduits en arabe, valeurs et unités inchangées).
-- Aucune donnée nouvelle, aucune interprétation supplémentaire : traduction fidèle de l'analyse.
+LANGUE DU RAPPORT : rédige TOUT le rapport en arabe naturel, clair et professionnel (arabe standard simple compréhensible par un artisan égyptien). Le rapport est destiné à l'artisan connecté.
+RÈGLES DE LANGUE ARABE (impératives) :
+- Titres, phrases, explications, risques, questions et conclusions : en arabe. Aucune phrase moitié arabe / moitié française.
+- Le titre unique du rapport doit être exactement : « ## التحليل الفني المعمق ». N'écris jamais le titre français.
+- Traduis les titres des 7 sections en arabe, dans le même ordre et avec le même contenu.
+- Emploie d'abord le terme arabe. Tu peux ajouter le terme professionnel français entre parenthèses UNIQUEMENT à sa première apparition, et seulement s'il aide l'artisan à reconnaître le mot utilisé en France. Ensuite, n'utilise plus que le terme arabe.
+  Exemples corrects : الجدران الفاصلة (cloisons) ، الهيكل الخشبي (ossature bois) ، ألواح الجبس (placo) ، تسوية الأرضية (ragréage) ، عرض السعر (devis).
+- Translittérations maladroites INTERDITES (« الدوفي »، « البانتيرة »...) quand une expression arabe claire existe : écris « عرض السعر »، « الدهان ».
+- Restent dans leur forme originale : noms de personnes, adresses, noms de fichiers, dimensions, unités (m², ml, u), références produits et sigles officiels (DTU, RE2020...).
+- Niveaux de fiabilité du tableau, à écrire exactement ainsi : « مذكورة صراحة في المستند » / « محسوبة من المستند » / « مقروءة جزئياً » / « تحتاج إلى التحقق » / « غير محددة ».
+- Conserve le tableau des quantités avec les mêmes colonnes (en-têtes en arabe, valeurs et unités inchangées).
+- Aucune donnée nouvelle, aucune interprétation supplémentaire.
 - N'écris jamais de prix.`;
       }
 

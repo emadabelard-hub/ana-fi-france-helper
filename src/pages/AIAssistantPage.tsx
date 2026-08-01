@@ -304,22 +304,25 @@ const asLabel = (v: unknown): string => {
 };
 
 /** Zone technique repliée : JSON complet, masqué par défaut. */
-const TechnicalJsonPanel = ({ raw }: { raw: string }) => {
+const TechnicalJsonPanel = ({ raw, isRTL = false }: { raw: string; isRTL?: boolean }) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   return (
-    <div className="mt-3" dir="ltr">
+    <div className="mt-3" dir={isRTL ? 'rtl' : 'ltr'}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        className={cn(
+          'inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors',
+          isRTL && 'font-cairo flex-row-reverse',
+        )}
       >
         {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        Voir les données techniques
+        {isRTL ? 'عرض البيانات التقنية' : 'Voir les données techniques'}
       </button>
       {open && (
         <div className="mt-2 rounded-lg border border-border bg-muted/40">
-          <div className="flex justify-end p-1.5">
+          <div className={cn('flex p-1.5', isRTL ? 'justify-start' : 'justify-end')}>
             <button
               type="button"
               onClick={async () => {
@@ -329,13 +332,16 @@ const TechnicalJsonPanel = ({ raw }: { raw: string }) => {
                   setTimeout(() => setCopied(false), 2000);
                 } catch { /* silent */ }
               }}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
+              className={cn(
+                'inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted',
+                isRTL && 'font-cairo flex-row-reverse',
+              )}
             >
               {copied ? <Check size={12} className="text-primary" /> : <Copy size={12} />}
-              Copier
+              {isRTL ? 'نسخ' : 'Copier'}
             </button>
           </div>
-          <pre className="max-h-[45vh] overflow-auto px-3 pb-3 text-[11px] leading-[1.5] font-mono text-foreground whitespace-pre">
+          <pre className="max-h-[45vh] overflow-auto px-3 pb-3 text-[11px] leading-[1.5] font-mono text-foreground whitespace-pre" dir="ltr">
             {raw}
           </pre>
         </div>
@@ -344,18 +350,21 @@ const TechnicalJsonPanel = ({ raw }: { raw: string }) => {
   );
 };
 
+
 /** Carte de résultat : titre, icône, bordure dédiée, copier, réduire/développer. */
 const ResultCard = ({
   title,
   icon: Icon,
   tone = 'neutral',
   copyText,
+  isRTL = false,
   children,
 }: {
   title: string;
   icon: React.ComponentType<{ size?: number | string; className?: string }>;
   tone?: 'neutral' | 'facts' | 'control' | 'deep';
   copyText: string;
+  isRTL?: boolean;
   children: React.ReactNode;
 }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -368,13 +377,14 @@ const ResultCard = ({
       : tone === 'deep'
       ? 'border-secondary/50 bg-secondary/20'
       : 'border-border bg-card';
+  const copyLabel = isRTL ? 'نسخ' : 'Copier';
   return (
-    <div className={cn('w-full rounded-xl border overflow-hidden', toneCls)} dir="ltr">
+    <div className={cn('w-full rounded-xl border overflow-hidden', toneCls)} dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/70">
         <span className="shrink-0 w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
           <Icon size={15} />
         </span>
-        <h3 className="flex-1 min-w-0 text-sm font-bold text-foreground truncate">{title}</h3>
+        <h3 className={cn('flex-1 min-w-0 text-sm font-bold text-foreground truncate', isRTL && 'font-cairo text-right')}>{title}</h3>
         <button
           type="button"
           onClick={async () => {
@@ -385,8 +395,8 @@ const ResultCard = ({
             } catch { /* silent */ }
           }}
           className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          aria-label="Copier"
-          title="Copier"
+          aria-label={copyLabel}
+          title={copyLabel}
         >
           {copied ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
         </button>
@@ -394,12 +404,13 @@ const ResultCard = ({
           type="button"
           onClick={() => setCollapsed((c) => !c)}
           className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          aria-label={collapsed ? 'Développer' : 'Réduire'}
-          title={collapsed ? 'Développer' : 'Réduire'}
+          aria-label={collapsed ? (isRTL ? 'عرض' : 'Développer') : (isRTL ? 'إخفاء' : 'Réduire')}
+          title={collapsed ? (isRTL ? 'عرض' : 'Développer') : (isRTL ? 'إخفاء' : 'Réduire')}
         >
           {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
         </button>
       </div>
+
       {!collapsed && <div className="px-3 py-3 min-w-0 break-words">{children}</div>}
     </div>
   );
@@ -592,9 +603,16 @@ const AIAssistantPage = () => {
         stepControl: 'التحقق من التوافق…',
         stepReport: 'تحضير التقرير…',
         nextStep: 'الخطوة التالية',
-        actionQuote: 'تحضير الدوفي',
+        actionQuote: 'إعداد عرض السعر',
         actionEstimate: 'الحصول على تقدير للأسعار',
-        actionClientReport: 'تحضير تقرير للعميل / المهندس',
+        actionClientReport: 'إعداد تقرير للعميل أو المهندس',
+        deepTitle: 'التحليل الفني المعمق',
+        docTitle: 'تحليل المستندات',
+        factsTitle: 'استخراج المعطيات',
+        controlTitle: 'التحقق من المستندات',
+        processing: 'جاري المعالجة…',
+        noResult: 'مفيش نتيجة تنفع تتعرض.',
+        copy: 'نسخ',
         soon: 'هذه الخدمة متاحة قريبًا.',
         runningTitle: 'جاري تحليل مشروعك',
         runningText: 'يمكنك الخروج من الصفحة. التحليل هيكمل لوحده والتقرير هيكون متاح هنا أول ما يجهز.',
@@ -616,6 +634,13 @@ const AIAssistantPage = () => {
         actionQuote: 'Préparer le devis',
         actionEstimate: 'Obtenir une estimation de prix',
         actionClientReport: 'Préparer un rapport client / architecte',
+        deepTitle: 'Analyse technique approfondie',
+        docTitle: 'Analyse documentaire',
+        factsTitle: 'Extraction factuelle',
+        controlTitle: 'Contrôle documentaire',
+        processing: 'Traitement en cours…',
+        noResult: "Aucun résultat exploitable n'a pu être présenté.",
+        copy: 'Copier',
         soon: 'Cette fonctionnalité sera disponible prochainement.',
         runningTitle: 'Analyse de votre projet en cours',
         runningText: 'Vous pouvez quitter cette page. L’analyse continuera automatiquement et votre rapport sera disponible ici dès qu’il sera prêt.',
@@ -1223,7 +1248,7 @@ const AIAssistantPage = () => {
 
     // Nouveau message assistant, préfixé du titre demandé et identifié de façon
     // unique : chaque flux ne met à jour QUE son propre message.
-    const titlePrefix = (isRTL ? '## التحليل الفني المتقدم' : '## Analyse technique approfondie') + '\n\n';
+    const titlePrefix = (isRTL ? '## التحليل الفني المعمق' : '## Analyse technique approfondie') + '\n\n';
     const deepId = `deep-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let assistantSoFar = titlePrefix;
     setMessages(prev => [...prev, { role: 'assistant', content: assistantSoFar, deepId, resultType: 'btp_deep_analysis' }]);
@@ -2087,11 +2112,14 @@ const AIAssistantPage = () => {
               onClick={() => setLanguage(lg)}
               aria-pressed={language === lg}
               className={cn(
-                "px-2.5 py-1 text-xs font-bold transition-colors",
+                "px-2.5 py-1 text-xs font-bold transition-colors border-border",
+                lg === 'ar' && "border-l",
                 language === lg ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
               )}
             >
-              {lg === 'fr' ? 'FR' : 'AR'}
+              <span className={cn(lg === 'ar' && 'font-cairo')}>
+                {lg === 'fr' ? (isRTL ? 'فرنسي' : 'Français') : 'العربية'}
+              </span>
             </button>
           ))}
         </div>
@@ -2346,7 +2374,7 @@ const AIAssistantPage = () => {
           const isControlResult = resultType === 'btp_control';
           const isDeepResult =
             resultType === 'btp_deep_analysis' ||
-            /^##\s+Analyse technique approfondie/i.test((letter ?? visibleContent).trim());
+            /^##\s+(Analyse technique approfondie|التحليل الفني المعمق|التحليل الفني المتقدم)/i.test((letter ?? visibleContent).trim());
           const isDocAnalysisCard = !isFactsResult && !isControlResult && !isDeepResult && btpDocStatus === 'ok';
 
           // ── Cartes dédiées : extraction factuelle / contrôle documentaire ──
@@ -2359,24 +2387,25 @@ const AIAssistantPage = () => {
             return (
               <div key={i} className="w-full min-w-0">
                 <ResultCard
-                  title={isFactsResult ? 'Extraction factuelle' : 'Contrôle documentaire'}
+                  title={isFactsResult ? L.factsTitle : L.controlTitle}
                   icon={isFactsResult ? ClipboardList : AlertTriangle}
                   tone={isFactsResult ? 'facts' : 'control'}
+                  isRTL={isRTL}
                   copyText={pretty}
                 >
                   {!msg.content.trim() ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className={cn("flex items-center gap-2 text-sm text-muted-foreground", isRTL && "font-cairo flex-row-reverse")}>
                       <Loader2 size={14} className="animate-spin" />
-                      Traitement en cours…
+                      {L.processing}
                     </div>
                   ) : parsed ? (
                     <>
                       {isFactsResult ? <FactsReportView data={parsed} /> : <ControlReportView data={parsed} />}
-                      <TechnicalJsonPanel raw={pretty} />
+                      <TechnicalJsonPanel raw={pretty} isRTL={isRTL} />
                     </>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Aucun résultat exploitable n'a pu être présenté.
+                    <p className={cn("text-sm text-muted-foreground", isRTL && "font-cairo text-right")}>
+                      {L.noResult}
                     </p>
                   )}
                 </ResultCard>
@@ -2405,15 +2434,22 @@ const AIAssistantPage = () => {
                     try {
                       await navigator.clipboard.writeText(copyText);
                       setCopiedIndex(i);
-                      toast({ title: '✅ Copié !', description: 'Texte prêt à coller' });
+                      toast({
+                        title: isRTL ? '✅ اتنسخ!' : '✅ Copié !',
+                        description: isRTL ? 'النص جاهز للصق' : 'Texte prêt à coller',
+                      });
                       setTimeout(() => setCopiedIndex(null), 2000);
                     } catch {
-                      toast({ title: 'Erreur', description: 'Impossible de copier', variant: 'destructive' });
+                      toast({
+                        title: isRTL ? 'خطأ' : 'Erreur',
+                        description: isRTL ? 'مقدرش انسخ' : 'Impossible de copier',
+                        variant: 'destructive',
+                      });
                     }
                   }}
                   className="absolute top-2 end-2 z-10 p-1.5 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Copier"
-                  title="Copier"
+                  aria-label={L.copy}
+                  title={L.copy}
                 >
                   {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
                 </button>
@@ -2476,18 +2512,24 @@ const AIAssistantPage = () => {
                     </>
                   ) : isDeepResult ? (
                     <ResultCard
-                      title="Analyse technique approfondie"
+                      title={L.deepTitle}
                       icon={Search}
                       tone="deep"
+                      isRTL={isRTL}
                       copyText={stripMarkdownForCopy(letter ?? visibleContent)}
                     >
-                      <DeepAnalysisReport content={letter ?? visibleContent} />
+                      <DeepAnalysisReport
+                        content={letter ?? visibleContent}
+                        isRTL={isRTL}
+                        hideTitle
+                      />
                     </ResultCard>
                   ) : isDocAnalysisCard ? (
                     <ResultCard
-                      title="Analyse documentaire"
+                      title={L.docTitle}
                       icon={FileText}
                       tone="neutral"
+                      isRTL={isRTL}
                       copyText={stripMarkdownForCopy(letter ?? visibleContent)}
                     >
                       <MarkdownRenderer
@@ -2496,8 +2538,9 @@ const AIAssistantPage = () => {
                         forceLTR={isFormalFrench}
                         className="!text-[15px] !leading-[1.6] text-foreground"
                       />
-                      {btpDocData && <TechnicalJsonPanel raw={JSON.stringify(btpDocData, null, 2)} />}
+                      {btpDocData && <TechnicalJsonPanel raw={JSON.stringify(btpDocData, null, 2)} isRTL={isRTL} />}
                     </ResultCard>
+
                   ) : (
                     <MarkdownRenderer
                       content={letter ?? visibleContent}

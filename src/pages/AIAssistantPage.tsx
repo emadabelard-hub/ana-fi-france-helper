@@ -603,7 +603,7 @@ const AIAssistantPage = () => {
         stepControl: 'التحقق من التوافق…',
         stepReport: 'تحضير التقرير…',
         nextStep: 'الخطوة التالية',
-        actionQuote: 'تحضير الدوفي',
+        actionQuote: 'إعداد عرض السعر',
         actionEstimate: 'الحصول على تقدير للأسعار',
         actionClientReport: 'تحضير تقرير للعميل / المهندس',
         soon: 'هذه الخدمة متاحة قريبًا.',

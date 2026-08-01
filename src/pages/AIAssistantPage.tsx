@@ -30,6 +30,8 @@ type Msg = {
   deepId?: string;
   // Message de test temporaire : affiché brut, sans aucune transformation.
   rawFacts?: boolean;
+  // Message de test temporaire : contrôle documentaire, affiché brut.
+  rawControl?: boolean;
   // Pièces jointes réellement utilisées pour CE message (mémoire de session
   // uniquement) + texte utilisateur d'origine, afin de rattacher chaque analyse
   // approfondie à son propre dossier.

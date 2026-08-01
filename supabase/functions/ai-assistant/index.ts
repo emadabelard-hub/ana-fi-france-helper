@@ -1056,6 +1056,18 @@ DOCUMENTS ORIGINAUX FOURNIS : non. Commence obligatoirement le rapport (juste ap
 « Analyse approfondie réalisée à partir de la synthèse structurée ; les documents originaux n'étaient plus disponibles pour relecture. »
 Ne prétends alors avoir relu aucun fichier.`;
 
+      // Langue du rapport destiné à l'artisan connecté (jamais à un tiers).
+      if (language === 'ar') {
+        finalSystemPrompt += `
+
+LANGUE DU RAPPORT : rédige le rapport en arabe (عامية مصرية) destiné à l'artisan.
+- Conserve TOUS les termes techniques BTP en français (peinture, enduit, placo, carrelage, DTU, m², ml, lot...).
+- Traduis les titres des 7 sections en arabe en conservant strictement le même ordre et le même contenu.
+- Conserve le tableau des quantités avec les mêmes colonnes (en-têtes traduits en arabe, valeurs et unités inchangées).
+- Aucune donnée nouvelle, aucune interprétation supplémentaire : traduction fidèle de l'analyse.
+- N'écris jamais de prix.`;
+      }
+
       const deepParts: any[] = [];
       deepParts.push({
         type: 'text',

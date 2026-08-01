@@ -1534,8 +1534,15 @@ const AIAssistantPage = () => {
                 {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
               </button>
 
+              {/* TEMPORAIRE : réponse brute de l'extraction factuelle, sans transformation */}
+              {msg.rawFacts && (
+                <pre dir="ltr" className="whitespace-pre-wrap break-words text-[13px] leading-[1.5] text-foreground font-mono bg-muted/40 border border-border rounded-lg p-3 overflow-x-auto">
+                  {msg.content}
+                </pre>
+              )}
+
               {/* Optional Arabic preface (only when letter present) */}
-              {letter && preface && (
+              {!msg.rawFacts && letter && preface && (
                 <MarkdownRenderer
                   content={preface}
                   isRTL={isArabic(preface)}
@@ -1544,7 +1551,7 @@ const AIAssistantPage = () => {
               )}
 
               {/* Either the formal French letter, the commercial client block, or the regular response */}
-              {visibleContent && (
+              {!msg.rawFacts && visibleContent && (
                 <div {...(isFormalFrench || clientBlock.hasBlock ? { dir: 'ltr' as const } : {})}>
                   {clientBlock.hasBlock ? (
                     <>

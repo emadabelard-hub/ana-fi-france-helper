@@ -14,6 +14,7 @@ import GlobalErrorHandler from "@/components/app/GlobalErrorHandler";
 import AuthSplashScreen from "@/components/auth/AuthSplashScreen";
 import RequireAuth from "@/components/auth/RequireAuth";
 import CookieConsentBanner from "@/components/shared/CookieConsentBanner";
+import AppUpdateBanner from "@/components/shared/AppUpdateBanner";
 import { Loader2 } from "lucide-react";
 import { loadCurrentDocument } from "@/lib/invoiceDraftStorage";
 

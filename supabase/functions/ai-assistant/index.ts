@@ -1111,6 +1111,162 @@ ${btpJson}
       outgoingMessages.push({ role: 'user', content: deepParts });
     }
 
+    // === BTP FACTUAL EXTRACTION (action indépendante : extraction strictement
+    // factuelle). Aucune analyse métier, aucune estimation, aucun calcul.
+    // Réutilise le pipeline de streaming et les pièces déjà transmises.
+    if (action === 'btp_factual_extraction') {
+      const factImageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
+      const factTextAtts = attList.filter((a: any) => (a?.kind === 'pdf' || a?.kind === 'docx') && typeof a.text === 'string');
+      const factHasOriginals = factImageAtts.length + factTextAtts.length > 0;
+
+      finalSystemPrompt = `Tu es un moteur d'EXTRACTION DOCUMENTAIRE BTP strictement factuelle. Tu n'es pas un conseiller, ni un métreur, ni un commercial.
+
+MISSION UNIQUE : relever uniquement les informations explicitement écrites et parfaitement lisibles dans les documents fournis.
+
+INTERDICTIONS ABSOLUES — tu ne dois jamais :
+- produire une analyse métier, une recommandation, une conclusion ou une estimation ;
+- indiquer un prix, un coût, un taux de TVA, une rentabilité, un effectif ou une durée ;
+- compléter une valeur, corriger une valeur supposée erronée ;
+- additionner plusieurs valeurs ni produire un total calculé ;
+- calculer une surface, un volume ou un linéaire ;
+- convertir une unité ;
+- déduire une quantité depuis un plan ;
+- interpréter une mesure, deviner un matériau, proposer un profil métallique ;
+- inventer une norme, une obligation, une assurance ou une responsabilité ;
+- compter ou extrapoler automatiquement des équipements, fenêtres, portes ou appareils.
+
+STATUTS :
+- "certain" : information explicitement écrite et parfaitement lisible ;
+- "lecture_partielle" : information visible mais un seul caractère incertain suffit à interdire la reproduction de la valeur (quantity/unit/dimensions restent null ou vides) ;
+- "absent" : information inexistante dans les documents.
+
+TRAÇABILITÉ OBLIGATOIRE pour tout fait "certain" :
+- sourceFile : nom EXACT du fichier reçu (jamais renommé, jamais attribué à un autre fichier) ;
+- sourcePage si déterminable, sinon null ;
+- evidenceText : extrait exact du document ;
+- confidence : nombre entre 0 et 1.
+Sans extrait justificatif précis, le fait ne peut pas être classé "certain".
+
+descriptionExact : fidèle au document. Nettoyage autorisé uniquement pour les espaces inutiles, la casse et la ponctuation. Aucune reformulation commerciale.
+Exemple autorisé : document « Dépose de 17 ml de cloisons. » → descriptionExact "Dépose de 17 ml de cloisons", quantity 17, unit "ml".
+
+QUANTITÉS : une quantité est "certain" uniquement si elle est directement rattachée à la prestation dans le document. Chaque quantité écrite donne un fait distinct. Aucun total, aucun cumul, aucune ligne de synthèse.
+
+IMAGES, CAPTURES WHATSAPP, MONTAGES, PLANS MINIATURISÉS :
+- readingQuality "partielle" dès que tout n'est pas parfaitement lisible ;
+- aucune cote relevée si un seul caractère est incertain ;
+- aucune surface calculée depuis des cotes ;
+- aucun comptage automatique d'équipements ou d'ouvertures.
+Tu peux reconnaître qu'il s'agit d'un plan, sa nature générale et le projet concerné, sans inventer les détails illisibles.
+
+PDF ET DOCX : conserver le nom exact du fichier, utiliser le texte extrait comme source, ne modifier aucune quantité, aucune unité, ne corriger aucune incohérence.
+Si deux documents donnent deux valeurs différentes : créer DEUX faits distincts, conserver chaque source, et ne choisir aucune valeur (la comparaison relève d'une phase ultérieure).
+
+SORTIE — uniquement un bloc <ANAFYPRO_BTP_FACTS> contenant du JSON strict, sans markdown, sans phrase avant ou après, sans aucun paragraphe narratif (pas de « Analyse professionnelle », « Explication simple », « Points de vigilance », « Recommandations », « Conclusion », « Projet rentable », « TVA probable », « Prix moyen », « Sous-traitance recommandée », « Assurance obligatoire »).
+
+<ANAFYPRO_BTP_FACTS>
+{
+  "project": {
+    "title": null,
+    "clientName": null,
+    "projectAddress": null,
+    "documentReferences": [],
+    "dates": []
+  },
+  "documents": [
+    {
+      "fileName": "",
+      "documentType": null,
+      "readingQuality": "bonne | partielle | mauvaise",
+      "pageCount": null,
+      "role": null
+    }
+  ],
+  "facts": [
+    {
+      "id": "",
+      "lot": null,
+      "category": null,
+      "descriptionExact": "",
+      "quantity": null,
+      "unit": null,
+      "dimensions": [],
+      "material": null,
+      "location": null,
+      "sourceFile": "",
+      "sourcePage": null,
+      "evidenceText": "",
+      "status": "certain | lecture_partielle | absent",
+      "confidence": null
+    }
+  ],
+  "constraints": [
+    {
+      "descriptionExact": "",
+      "sourceFile": "",
+      "sourcePage": null,
+      "evidenceText": "",
+      "status": "certain | lecture_partielle"
+    }
+  ],
+  "missingInformation": [
+    {
+      "field": "",
+      "reason": "absent | illisible | non précisé",
+      "sourceFile": null
+    }
+  ]
+}
+</ANAFYPRO_BTP_FACTS>
+
+Tous les fichiers réellement reçus doivent apparaître dans "documents[]". Toute information absente ou illisible doit apparaître dans "missingInformation[]". Ne produis aucun autre bloc, aucun bloc <ANAFYPRO_DOCUMENT_DATA>, aucun texte hors du bloc <ANAFYPRO_BTP_FACTS>.`;
+
+      const factParts: any[] = [];
+      factParts.push({
+        type: 'text',
+        text: `EXTRACTION FACTUELLE DEMANDÉE. Relève uniquement les informations explicitement écrites et parfaitement lisibles dans les pièces ci-dessous. Réponds uniquement par le bloc <ANAFYPRO_BTP_FACTS>.`,
+      });
+
+      if (typeof userQuestion === 'string' && userQuestion.trim()) {
+        factParts.push({
+          type: 'text',
+          text: `TEXTE D'ORIGINE DE L'UTILISATEUR (contexte, non contractuel — ne rien en déduire) : ${userQuestion.trim()}`,
+        });
+      }
+
+      if (factHasOriginals) {
+        const factFileList = [...factImageAtts, ...factTextAtts]
+          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'docx' ? 'document.docx' : a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'docx' ? 'DOCX texte' : a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
+          .join('\n');
+        factParts.push({
+          type: 'text',
+          text: `PIÈCES ORIGINALES DU DOSSIER (chaque pièce est indépendante) :\n${factFileList}`,
+        });
+        factImageAtts.forEach((att: any, i: number) => {
+          factParts.push({
+            type: 'text',
+            text: `IMAGE ${i + 1} — Fichier : ${att.name || `image_${i + 1}.jpg`}\nDocument indépendant. N'attribue son contenu à aucun autre fichier. Si un seul caractère est incertain, ne reproduis pas la valeur.`,
+          });
+          factParts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
+        });
+        factTextAtts.forEach((att: any, i: number) => {
+          const ft = String(att.text).slice(0, 50000);
+          factParts.push({
+            type: 'text',
+            text: `DOCUMENT TEXTE ${att?.kind === 'docx' ? 'DOCX' : 'PDF'} ${i + 1} — Fichier : ${att.name || (att?.kind === 'docx' ? 'document.docx' : 'document.pdf')}\n\n"""\n${ft}\n"""`,
+          });
+        });
+      } else {
+        factParts.push({
+          type: 'text',
+          text: `Aucune pièce originale n'est disponible. Retourne le bloc <ANAFYPRO_BTP_FACTS> avec "documents": [], "facts": [] et une entrée dans "missingInformation" indiquant que les documents ne sont pas disponibles.`,
+        });
+      }
+
+      outgoingMessages.length = 0;
+      outgoingMessages.push({ role: 'user', content: factParts });
+    }
+
     // ---- Stratégie de sélection du modèle ----
     // Principal : Anthropic (ANTHROPIC_API_KEY). Secours : Lovable AI Gateway.
     // Le corps de requête et le format de réponse (SSE OpenAI) sont identiques

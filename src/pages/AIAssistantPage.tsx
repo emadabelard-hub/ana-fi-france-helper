@@ -18,7 +18,7 @@ import { validateBtpItemsForTransfer } from '@/lib/btpTransferValidator';
 
 type ConversationSummary = { id: string; title: string | null; updated_at: string };
 
-type Msg = { role: 'user' | 'assistant'; content: string };
+type Msg = { role: 'user' | 'assistant'; content: string; deepId?: string };
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
 
 const CATEGORIES: { key: CategoryKey; emoji: string; labelAr: string; labelFr: string }[] = [
@@ -809,19 +809,32 @@ const AIAssistantPage = () => {
   // Analyse technique approfondie : relance une analyse dédiée à partir des
   // données documentaires déjà extraites dans le dernier message assistant réussi.
   const runDeepAnalysis = async (sourceMsgIndex: number, btpDocData: any) => {
-    if (deepAnalysisLoadingIndex !== null) return;
+    // Garde synchrone : bloque tout double appel (double clic très rapide)
+    // avant la moindre opération asynchrone.
+    if (deepRunningRef.current) return;
+    deepRunningRef.current = true;
+    if (deepAnalysisLoadingIndex !== null) { deepRunningRef.current = false; return; }
     setDeepAnalysisLoadingIndex(sourceMsgIndex);
     setSelectedAnalysisOption(null);
 
-    // Nouveau message assistant, préfixé du titre demandé.
+    // Nouveau message assistant, préfixé du titre demandé et identifié de façon
+    // unique : chaque flux ne met à jour QUE son propre message.
     const titlePrefix = '## Analyse technique approfondie\n\n';
+    const deepId = `deep-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let assistantSoFar = titlePrefix;
-    setMessages(prev => [...prev, { role: 'assistant', content: assistantSoFar }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: assistantSoFar, deepId }]);
     const upsert = (chunk: string) => {
       assistantSoFar += chunk;
-      setMessages(prev => prev.map((m, i) =>
-        i === prev.length - 1 && m.role === 'assistant' ? { ...m, content: assistantSoFar } : m
-      ));
+      setMessages(prev => prev.map(m => m.deepId === deepId ? { ...m, content: assistantSoFar } : m));
+    };
+    // Retire le message si aucun rapport exploitable n'a été produit.
+    const dropOwnMessage = () => {
+      setMessages(prev => prev.filter(m => m.deepId !== deepId));
+    };
+    // Remplace un rapport partiel par un message d'interruption explicite.
+    const markInterrupted = () => {
+      const INTERRUPTED = 'L’analyse technique approfondie a été interrompue. Aucun rapport complet n’a été produit.';
+      setMessages(prev => prev.map(m => m.deepId === deepId ? { ...m, content: INTERRUPTED } : m));
     };
 
     // Watchdog d'inactivité : 90 s SANS aucun chunk reçu (réarmé à chaque chunk).

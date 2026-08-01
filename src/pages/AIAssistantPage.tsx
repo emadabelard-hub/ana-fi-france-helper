@@ -2433,15 +2433,22 @@ const AIAssistantPage = () => {
                     try {
                       await navigator.clipboard.writeText(copyText);
                       setCopiedIndex(i);
-                      toast({ title: '✅ Copié !', description: 'Texte prêt à coller' });
+                      toast({
+                        title: isRTL ? '✅ اتنسخ!' : '✅ Copié !',
+                        description: isRTL ? 'النص جاهز للصق' : 'Texte prêt à coller',
+                      });
                       setTimeout(() => setCopiedIndex(null), 2000);
                     } catch {
-                      toast({ title: 'Erreur', description: 'Impossible de copier', variant: 'destructive' });
+                      toast({
+                        title: isRTL ? 'خطأ' : 'Erreur',
+                        description: isRTL ? 'مقدرش انسخ' : 'Impossible de copier',
+                        variant: 'destructive',
+                      });
                     }
                   }}
                   className="absolute top-2 end-2 z-10 p-1.5 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Copier"
-                  title="Copier"
+                  aria-label={L.copy}
+                  title={L.copy}
                 >
                   {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
                 </button>

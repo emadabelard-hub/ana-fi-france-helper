@@ -1578,6 +1578,184 @@ const AIAssistantPage = () => {
     }
   };
 
+  // ── Transfert vers le Devis intelligent ─────────────────────────────────
+  // Les désignations sont toujours reformulées/traduites en français technique
+  // avant transfert : le document final reste strictement français.
+  const transferToSmartDevis = async (btpDocData: any) => {
+    if (isPreparingTransfer) return;
+    setIsPreparingTransfer(true);
+    try {
+      const rawItems = Array.isArray(btpDocData?.items) ? btpDocData.items : [];
+      const documentTotalHT = btpDocData?.documentTotalHT;
+      const { lines: items, meta } = validateBtpItemsForTransfer(rawItems, documentTotalHT);
+
+      if (items.length === 0) {
+        console.warn('[AIAssistant] BTP transfer: no exploitable items', btpDocData);
+        toast({
+          variant: 'destructive',
+          title: 'Aucune prestation exploitable',
+          description:
+            "L'analyse n'a pas produit de lignes valides. Relancez l'analyse en demandant explicitement le détail par prestation.",
+        });
+        return;
+      }
+
+      const ACTION_PREFIXES = [
+        'fourniture et pose', 'fourniture et application', 'fourniture seule',
+        'pose de', 'dépose de', 'démolition de', 'installation de',
+        'réalisation de', 'création de', 'travaux de', 'préparation de',
+        'protection de', 'mise en œuvre de', 'évacuation et mise en décharge',
+        'nettoyage de', 'réfection de', 'remplacement de', 'rénovation de',
+        'application de',
+      ];
+      const startsWithAction = (s: string) => {
+        const low = s.trim().toLowerCase();
+        return ACTION_PREFIXES.some((p) => low.startsWith(p));
+      };
+      const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+      const hasArabic = (s: string) => /[\u0600-\u06FF]/.test(s);
+      const isLatinNonEmpty = (s: unknown): s is string =>
+        typeof s === 'string' && s.trim().length > 0 && !/[\u0600-\u06FF\u0400-\u04FF]/.test(s) && /[A-Za-zÀ-ÿ]/.test(s);
+
+      type Candidate = { itemIdx: number; id: string; text: string; context: Record<string, unknown> };
+      const candidates: Candidate[] = [];
+      for (let idx = 0; idx < items.length; idx++) {
+        const ln = items[idx];
+        const mt = meta[idx];
+        const raw = typeof mt?.index === 'number' ? (rawItems[mt.index] as Record<string, unknown> | undefined) : undefined;
+        const des = (ln.designation_fr || '').trim();
+        if (!des) continue;
+        const needsTranslation = hasArabic(des);
+        if (!needsTranslation) {
+          if (mt?.requiresReview === true) continue;
+          if (startsWithAction(des) && wordCount(des) >= 8) continue;
+        }
+        candidates.push({
+          itemIdx: idx,
+          id: `L${idx}`,
+          text: des,
+          context: {
+            lot: ln.lot ?? null,
+            unit: ln.unit ?? null,
+            quantity: ln.quantity ?? null,
+            sourceFile: (raw && (raw.sourceFile as string)) || null,
+            translateToFrench: needsTranslation,
+          },
+        });
+        if (candidates.length >= 25) break;
+      }
+
+      if (candidates.length > 0) {
+        try {
+          const { data, error } = await supabase.functions.invoke('invoice-mentor', {
+            body: {
+              action: 'reformulate_btp_batch',
+              items: candidates.map((c) => ({ id: c.id, text: c.text, context: c.context })),
+            },
+          });
+          if (!error && data && Array.isArray((data as any).reformulations)) {
+            const map = new Map<string, string>();
+            for (const r of (data as any).reformulations as Array<{ id?: unknown; reformulation?: unknown }>) {
+              if (typeof r?.id === 'string' && isLatinNonEmpty(r?.reformulation)) {
+                map.set(r.id, (r.reformulation as string).trim());
+              }
+            }
+            for (const c of candidates) {
+              const reworded = map.get(c.id);
+              if (reworded) items[c.itemIdx].designation_fr = reworded;
+            }
+          } else if (error) {
+            console.warn('[AIAssistant] reformulate_btp_batch error, keeping originals', error);
+          }
+        } catch (reformErr) {
+          console.warn('[AIAssistant] reformulate_btp_batch failed, keeping originals', reformErr);
+        }
+      }
+
+      // Sécurité linguistique : aucune désignation arabe ne part vers le devis.
+      const stillArabic = items.filter((ln) => hasArabic(ln.designation_fr || ''));
+      if (stillArabic.length > 0) {
+        for (const ln of stillArabic) {
+          ln.designation_ar = ln.designation_ar || ln.designation_fr;
+          ln.designation_fr = correctArtisanVocabulary(ln.designation_fr || '');
+        }
+      }
+
+      const priceBlocked = meta.filter((m) => !m.priceAccepted).length;
+      const qtyBlocked = meta.filter((m) => !m.quantityAccepted).length;
+
+      const subject =
+        (btpDocData?.project?.title && String(btpDocData.project.title).trim()) ||
+        (btpDocData?.client?.name ? `Devis — ${String(btpDocData.client.name).trim()}` : '');
+
+      sessionStorage.removeItem('smart_devis_prefill_v1');
+
+      const payload = {
+        subject,
+        items,
+        client: btpDocData?.client || null,
+        project: btpDocData?.project || null,
+        vat: btpDocData?.vat || null,
+        constraints: btpDocData?.constraints || [],
+        missingInformation: btpDocData?.missingInformation || [],
+        copyText: btpDocData?.copyText || '',
+        _validation: { totalItems: items.length, priceBlocked, quantityBlocked: qtyBlocked, meta },
+      };
+
+      if (priceBlocked > 0 || qtyBlocked > 0) {
+        toast({
+          title: 'Transfert sécurisé',
+          description: `${priceBlocked} prix et ${qtyBlocked} quantité(s) laissés à compléter — données non fiables non transférées.`,
+        });
+      }
+
+      sessionStorage.setItem('smart_devis_prefill_v1', JSON.stringify(payload));
+      navigate('/pro/smart-devis');
+    } catch (err) {
+      console.error('[AIAssistant] BTP transfer failed', err);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Transfert impossible' });
+    } finally {
+      setIsPreparingTransfer(false);
+    }
+  };
+
+  // ── Point d'entrée unique : « Analyser mon projet » ──────────────────────
+  // Enchaîne automatiquement les étapes internes puis n'affiche qu'un rapport.
+  const runFullProjectAnalysis = async () => {
+    if (pipelineRunningRef.current) return;
+    const text = input.trim();
+    if (!text && attachments.length === 0) return;
+    pipelineRunningRef.current = true;
+
+    // Les pièces originales sont mémorisées avant l'envoi (l'état est vidé).
+    const originals = attachments;
+    const userText = text || null;
+
+    try {
+      setPipelineStep('analyze');
+      const analysis = await send(text, { internal: true });
+      if (!analysis || !analysis.trim()) return;
+
+      const { data: docData, status } = extractBtpDocData(analysis);
+      if (status !== 'ok' || !docData) {
+        // Analyse non structurée : on rend la réponse visible telle quelle.
+        setMessages(prev => prev.map(m => (m.internal ? { ...m, internal: false } : m)));
+        return;
+      }
+
+      setPipelineStep('facts');
+      await runFactualExtraction(0, docData, { attachments: originals, userText, internal: true });
+
+      setPipelineStep('report');
+      await runDeepAnalysis(0, docData, { attachments: originals, userText });
+    } catch (err) {
+      console.error('[AIAssistant] full project analysis failed', err);
+      toast({ variant: 'destructive', title: 'Erreur', description: "L'analyse du projet n'a pas pu être finalisée." });
+    } finally {
+      setPipelineStep(null);
+      pipelineRunningRef.current = false;
+    }
+  };
 
   const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
 

@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X, Trash2, Paperclip, FileText, Loader2, Copy, Check, ChevronDown, ChevronUp, Search, ClipboardList, Building, Layers, Ruler, Package, AlertTriangle, HelpCircle, Percent, Calculator } from 'lucide-react';
 import { extractTextFromPDF } from '@/lib/pdfExtractor';
+import { extractTextFromDocx } from '@/lib/docxExtractor';
 import RoomScannerModal from '@/components/scanner/RoomScannerModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import DeepAnalysisReport from '@/components/assistant/DeepAnalysisReport';
@@ -20,7 +21,8 @@ type ConversationSummary = { id: string; title: string | null; updated_at: strin
 
 type MsgAttachment =
   | { kind: 'image'; name: string; dataUrl: string }
-  | { kind: 'pdf'; name: string; text: string };
+  | { kind: 'pdf'; name: string; text: string }
+  | { kind: 'docx'; name: string; text: string };
 
 type Msg = {
   role: 'user' | 'assistant';
@@ -648,7 +650,10 @@ const AIAssistantPage = () => {
     for (const file of files) {
       const isImage = /^image\/(jpe?g|png)$/i.test(file.type);
       const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
-      if (!isImage && !isPdf) {
+      const isDocx =
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        /\.docx$/i.test(file.name);
+      if (!isImage && !isPdf && !isDocx) {
         toast({ variant: 'destructive', title: t('aiAssistant.file.unsupported'), description: file.name });
         continue;
       }
@@ -657,10 +662,14 @@ const AIAssistantPage = () => {
         continue;
       }
       try {
-        const dataUrl = await readFileAsDataUrl(file);
         if (isImage) {
+          const dataUrl = await readFileAsDataUrl(file);
           added.push({ kind: 'image', name: file.name, dataUrl });
+        } else if (isDocx) {
+          const text = await extractTextFromDocx(file);
+          added.push({ kind: 'docx', name: file.name, text: text.slice(0, 50000) });
         } else {
+          const dataUrl = await readFileAsDataUrl(file);
           const text = await extractTextFromPDF(dataUrl);
           added.push({ kind: 'pdf', name: file.name, text: text.slice(0, 50000) });
         }
@@ -759,12 +768,12 @@ const AIAssistantPage = () => {
           attachment: currentAttachments[0]
             ? currentAttachments[0].kind === 'image'
               ? { kind: 'image', name: currentAttachments[0].name, dataUrl: currentAttachments[0].dataUrl }
-              : { kind: 'pdf', name: currentAttachments[0].name, text: currentAttachments[0].text }
+              : { kind: currentAttachments[0].kind, name: currentAttachments[0].name, text: currentAttachments[0].text }
             : null,
           attachments: currentAttachments.map(a =>
             a.kind === 'image'
               ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-              : { kind: 'pdf', name: a.name, text: a.text }
+              : { kind: a.kind, name: a.name, text: a.text }
           ),
           userQuestion: text || null,
           language: language === 'ar' ? 'ar' : 'fr',
@@ -915,7 +924,7 @@ const AIAssistantPage = () => {
           attachments: sourceAttachments.map(a =>
             a.kind === 'image'
               ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-              : { kind: 'pdf', name: a.name, text: a.text }
+              : { kind: a.kind, name: a.name, text: a.text }
           ),
           originalsAvailable,
           userQuestion: sourceUserText,
@@ -1922,7 +1931,7 @@ const AIAssistantPage = () => {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf"
+          accept="image/jpeg,image/png,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.jpg,.jpeg,.png,.pdf,.docx"
           multiple
           className="hidden"
           onChange={handleFileSelected}

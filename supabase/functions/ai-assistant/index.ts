@@ -892,11 +892,11 @@ La TVA ne se choisit JAMAIS uniquement d'après le type de travaux. Vérifier r�
 
         // Split attachments per kind (preserve original order within kind)
         const imageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
-        const pdfAtts = attList.filter((a: any) => a?.kind === 'pdf' && typeof a.text === 'string');
+        const pdfAtts = attList.filter((a: any) => (a?.kind === 'pdf' || a?.kind === 'docx') && typeof a.text === 'string');
 
         // 1) Multi-document instruction + file inventory
         const fileList = attList
-          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
+          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'docx' ? 'document.docx' : a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'docx' ? 'DOCX texte' : a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
           .join('\n');
         const header = `CONSIGNE MULTI-DOCUMENT : ${attList.length} pièce(s) jointe(s) accompagne(nt) ce message. Analyse chaque pièce SÉPARÉMENT avant toute conclusion. Ne conclus jamais qu'une information est absente avant d'avoir examiné TOUTES les pièces.\n\nFICHIERS JOINTS :\n${fileList}`;
 
@@ -916,7 +916,7 @@ La TVA ne se choisit JAMAIS uniquement d'après le type de travaux. Vérifier r�
           const t = String(att.text).slice(0, 50000);
           parts.push({
             type: 'text',
-            text: `DOCUMENT TEXTE PDF ${i + 1} — Fichier : ${att.name || 'document.pdf'}\n\n"""\n${t}\n"""`,
+            text: `DOCUMENT TEXTE ${att?.kind === 'docx' ? 'DOCX' : 'PDF'} ${i + 1} — Fichier : ${att.name || (att?.kind === 'docx' ? 'document.docx' : 'document.pdf')}\n\n"""\n${t}\n"""`,
           });
         });
 
@@ -1048,7 +1048,7 @@ Ne produis aucun autre bloc, aucun JSON, aucun bloc <ANAFYPRO_DOCUMENT_DATA>. Un
       // Pièces originales du dossier analysé (mêmes limites que l'analyse
       // basique : aucune nouvelle validation, aucun upload, aucun stockage).
       const deepImageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
-      const deepPdfAtts = attList.filter((a: any) => a?.kind === 'pdf' && typeof a.text === 'string');
+      const deepPdfAtts = attList.filter((a: any) => (a?.kind === 'pdf' || a?.kind === 'docx') && typeof a.text === 'string');
       const deepHasOriginals = deepImageAtts.length + deepPdfAtts.length > 0;
 
       finalSystemPrompt += deepHasOriginals
@@ -1080,7 +1080,7 @@ ${btpJson}
 
       if (deepHasOriginals) {
         const deepFileList = [...deepImageAtts, ...deepPdfAtts]
-          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
+          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'docx' ? 'document.docx' : a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'docx' ? 'DOCX texte' : a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
           .join('\n');
         deepParts.push({
           type: 'text',
@@ -1097,7 +1097,7 @@ ${btpJson}
           const dt = String(att.text).slice(0, 50000);
           deepParts.push({
             type: 'text',
-            text: `DOCUMENT TEXTE PDF ${i + 1} — Fichier : ${att.name || 'document.pdf'}\n\n"""\n${dt}\n"""`,
+            text: `DOCUMENT TEXTE ${att?.kind === 'docx' ? 'DOCX' : 'PDF'} ${i + 1} — Fichier : ${att.name || (att?.kind === 'docx' ? 'document.docx' : 'document.pdf')}\n\n"""\n${dt}\n"""`,
           });
         });
       } else {

@@ -768,7 +768,7 @@ const AIAssistantPage = () => {
           attachment: currentAttachments[0]
             ? currentAttachments[0].kind === 'image'
               ? { kind: 'image', name: currentAttachments[0].name, dataUrl: currentAttachments[0].dataUrl }
-              : { kind: 'pdf', name: currentAttachments[0].name, text: currentAttachments[0].text }
+              : { kind: currentAttachments[0].kind, name: currentAttachments[0].name, text: currentAttachments[0].text }
             : null,
           attachments: currentAttachments.map(a =>
             a.kind === 'image'

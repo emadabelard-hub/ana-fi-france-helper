@@ -557,6 +557,15 @@ const AIAssistantPage = () => {
     try { return localStorage.getItem('anafypro_btp_tech_mode') === 'true'; } catch { return false; }
   });
 
+  // ── Analyse persistante côté serveur ────────────────────────────────────
+  // L'état de référence est enregistré en base (public.btp_analysis_jobs) :
+  // l'écran ne fait que le lire. Le traitement continue donc si l'utilisateur
+  // change de page, met le téléphone en veille, actualise ou ferme l'app.
+  const [job, setJob] = useState<AnalysisJob | null>(null);
+  const [startingJob, setStartingJob] = useState(false);
+  const renderedJobRef = useRef<string | null>(null);
+  const jobActive = !!job && (job.status === 'queued' || job.status === 'processing');
+
   // Libellés du parcours (FR / AR) — le rapport final suit la même langue.
   const L = isRTL
     ? {
@@ -571,6 +580,14 @@ const AIAssistantPage = () => {
         actionEstimate: 'الحصول على تقدير للأسعار',
         actionClientReport: 'تحضير تقرير للعميل / المهندس',
         soon: 'هذه الخدمة متاحة قريبًا.',
+        runningTitle: 'جاري تحليل مشروعك',
+        runningText: 'يمكنك الخروج من الصفحة. التحليل هيكمل لوحده والتقرير هيكون متاح هنا أول ما يجهز.',
+        progPrep: 'تحضير التحليل',
+        progDocs: 'تحليل مستنداتك',
+        progReport: 'تحضير تقريرك',
+        progDone: 'التقرير جاهز',
+        failedTitle: 'التحليل ما اكتملش',
+        retry: 'إعادة المحاولة',
       }
     : {
         analyzeProject: 'Analyser mon projet',
@@ -584,12 +601,31 @@ const AIAssistantPage = () => {
         actionEstimate: 'Obtenir une estimation de prix',
         actionClientReport: 'Préparer un rapport client / architecte',
         soon: 'Cette fonctionnalité sera disponible prochainement.',
+        runningTitle: 'Analyse de votre projet en cours',
+        runningText: 'Vous pouvez quitter cette page. L’analyse continuera automatiquement et votre rapport sera disponible ici dès qu’il sera prêt.',
+        progPrep: 'Préparation de l’analyse',
+        progDocs: 'Analyse de vos documents',
+        progReport: 'Préparation de votre rapport',
+        progDone: 'Rapport terminé',
+        failedTitle: 'L’analyse n’a pas pu être finalisée',
+        retry: 'Relancer l’analyse',
       };
   const pipelineLabel = pipelineStep === 'analyze' ? L.stepAnalyze
     : pipelineStep === 'facts' ? L.stepFacts
     : pipelineStep === 'control' ? L.stepControl
     : pipelineStep === 'report' ? L.stepReport
     : '';
+  // Progression consolidée : une seule valeur, issue de l'état serveur.
+  const jobProgressLabel = !job
+    ? ''
+    : job.status === 'completed'
+      ? L.progDone
+      : job.current_step === 'report'
+        ? L.progReport
+        : job.current_step === 'analyze' || job.current_step === 'facts'
+          ? L.progDocs
+          : L.progPrep;
+  const jobProgressValue = Math.max(5, Math.min(100, job?.progress ?? 0));
   useEffect(() => () => {
     deepAnalysisClearIdleRef.current?.();
     try { deepAnalysisAbortRef.current?.abort(); } catch { /* noop */ }

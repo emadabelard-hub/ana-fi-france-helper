@@ -1845,48 +1845,88 @@ const AIAssistantPage = () => {
           const copyText = letter ? stripMarkdownForCopy(letter) : visibleContent;
           const clientBlock = !letter ? extractClientBlock(visibleContent) : { hasBlock: false, arabicText: visibleContent, frenchText: '' };
           const isLastAssistant = i === messages.length - 1;
-          return (
-            <div key={i} className="w-full relative">
-              <button
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(copyText);
-                    setCopiedIndex(i);
-                    toast({ title: '✅ Copié !', description: 'Texte prêt à coller' });
-                    setTimeout(() => setCopiedIndex(null), 2000);
-                  } catch {
-                    toast({ title: 'Erreur', description: 'Impossible de copier', variant: 'destructive' });
-                  }
-                }}
-                className="absolute top-2 end-2 z-10 p-1.5 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Copier"
-                title="Copier"
-              >
-                {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
-              </button>
+          // Type de résultat explicite (jamais déduit du texte).
+          const resultType: ResultType | undefined =
+            msg.resultType ?? (msg.rawFacts ? 'btp_facts' : msg.rawControl ? 'btp_control' : undefined);
+          const isFactsResult = resultType === 'btp_facts';
+          const isControlResult = resultType === 'btp_control';
+          const isDeepResult =
+            resultType === 'btp_deep_analysis' ||
+            /^##\s+Analyse technique approfondie/i.test((letter ?? visibleContent).trim());
+          const isDocAnalysisCard = !isFactsResult && !isControlResult && !isDeepResult && btpDocStatus === 'ok';
 
-              {/* TEMPORAIRE : réponse brute de l'extraction factuelle / du contrôle documentaire, sans transformation */}
-              {(msg.rawFacts || msg.rawControl) && (
-                <pre dir="ltr" className="whitespace-pre-wrap break-words text-[13px] leading-[1.5] text-foreground font-mono bg-muted/40 border border-border rounded-lg p-3 overflow-x-auto">
-                  {msg.content}
-                </pre>
-              )}
-
-              {/* TEMPORAIRE : contrôle documentaire, uniquement après une extraction factuelle réussie */}
-              {msg.rawFacts && msg.content.includes('ANAFYPRO_BTP_FACTS') && (
-                <button
-                  type="button"
-                  onClick={() => runDocumentControl(msg.content)}
-                  disabled={controlLoading}
-                  className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted text-[13px] font-semibold text-foreground disabled:opacity-60"
+          // ── Cartes dédiées : extraction factuelle / contrôle documentaire ──
+          if (isFactsResult || isControlResult) {
+            const parsed = extractTaggedJson(
+              msg.content,
+              isFactsResult ? 'ANAFYPRO_BTP_FACTS' : 'ANAFYPRO_BTP_CONTROL',
+            );
+            const pretty = parsed ? JSON.stringify(parsed, null, 2) : msg.content;
+            return (
+              <div key={i} className="w-full min-w-0">
+                <ResultCard
+                  title={isFactsResult ? 'Extraction factuelle' : 'Contrôle documentaire'}
+                  icon={isFactsResult ? ClipboardList : AlertTriangle}
+                  tone={isFactsResult ? 'facts' : 'control'}
+                  copyText={pretty}
                 >
-                  {controlLoading ? <Loader2 size={14} className="animate-spin" /> : null}
-                  Tester le contrôle documentaire
+                  {!msg.content.trim() ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 size={14} className="animate-spin" />
+                      Traitement en cours…
+                    </div>
+                  ) : parsed ? (
+                    <>
+                      {isFactsResult ? <FactsReportView data={parsed} /> : <ControlReportView data={parsed} />}
+                      <TechnicalJsonPanel raw={pretty} />
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Aucun résultat exploitable n'a pu être présenté.
+                    </p>
+                  )}
+                </ResultCard>
+                {isLastAssistant && isFactsResult && msg.content.includes('ANAFYPRO_BTP_FACTS') && (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => runDocumentControl(msg.content)}
+                      disabled={controlLoading}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted text-[13px] font-semibold text-foreground disabled:opacity-60"
+                    >
+                      {controlLoading ? <Loader2 size={14} className="animate-spin" /> : null}
+                      Tester le contrôle documentaire
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <div key={i} className="w-full min-w-0 relative">
+              {!isDeepResult && !isDocAnalysisCard && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(copyText);
+                      setCopiedIndex(i);
+                      toast({ title: '✅ Copié !', description: 'Texte prêt à coller' });
+                      setTimeout(() => setCopiedIndex(null), 2000);
+                    } catch {
+                      toast({ title: 'Erreur', description: 'Impossible de copier', variant: 'destructive' });
+                    }
+                  }}
+                  className="absolute top-2 end-2 z-10 p-1.5 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Copier"
+                  title="Copier"
+                >
+                  {copiedIndex === i ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
                 </button>
               )}
 
               {/* Optional Arabic preface (only when letter present) */}
-              {!msg.rawFacts && !msg.rawControl && letter && preface && (
+              {letter && preface && (
                 <MarkdownRenderer
                   content={preface}
                   isRTL={isArabic(preface)}
@@ -1895,7 +1935,7 @@ const AIAssistantPage = () => {
               )}
 
               {/* Either the formal French letter, the commercial client block, or the regular response */}
-              {!msg.rawFacts && !msg.rawControl && visibleContent && (
+              {visibleContent && (
                 <div {...(isFormalFrench || clientBlock.hasBlock ? { dir: 'ltr' as const } : {})}>
                   {clientBlock.hasBlock ? (
                     <>
@@ -1940,8 +1980,30 @@ const AIAssistantPage = () => {
                         )}
                       </button>
                     </>
-                  ) : /^##\s+Analyse technique approfondie/i.test((letter ?? visibleContent).trim()) ? (
-                    <DeepAnalysisReport content={letter ?? visibleContent} />
+                  ) : isDeepResult ? (
+                    <ResultCard
+                      title="Analyse technique approfondie"
+                      icon={Search}
+                      tone="deep"
+                      copyText={stripMarkdownForCopy(letter ?? visibleContent)}
+                    >
+                      <DeepAnalysisReport content={letter ?? visibleContent} />
+                    </ResultCard>
+                  ) : isDocAnalysisCard ? (
+                    <ResultCard
+                      title="Analyse documentaire"
+                      icon={FileText}
+                      tone="neutral"
+                      copyText={stripMarkdownForCopy(letter ?? visibleContent)}
+                    >
+                      <MarkdownRenderer
+                        content={letter ?? visibleContent}
+                        isRTL={isFormalFrench ? false : textAr}
+                        forceLTR={isFormalFrench}
+                        className="!text-[15px] !leading-[1.6] text-foreground"
+                      />
+                      {btpDocData && <TechnicalJsonPanel raw={JSON.stringify(btpDocData, null, 2)} />}
+                    </ResultCard>
                   ) : (
                     <MarkdownRenderer
                       content={letter ?? visibleContent}
@@ -1957,6 +2019,7 @@ const AIAssistantPage = () => {
                   )}
                 </div>
               )}
+
 
               {/* Bug 4: Inline missing info form */}
               {missingForm && isLastAssistant && !isLoading && (

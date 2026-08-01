@@ -20,7 +20,8 @@ type ConversationSummary = { id: string; title: string | null; updated_at: strin
 
 type MsgAttachment =
   | { kind: 'image'; name: string; dataUrl: string }
-  | { kind: 'pdf'; name: string; text: string };
+  | { kind: 'pdf'; name: string; text: string }
+  | { kind: 'docx'; name: string; text: string };
 
 type Msg = {
   role: 'user' | 'assistant';

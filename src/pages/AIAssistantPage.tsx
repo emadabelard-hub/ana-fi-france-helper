@@ -1772,14 +1772,33 @@ const AIAssistantPage = () => {
     }
   };
 
-  // ── Analyse persistante : lecture de l'état serveur ─────────────────────
+  // ── Analyse persistante : appel direct (fetch) du worker ────────────────
+  // Note mobile : supabase.functions.invoke échoue sur les envois volumineux
+  // (images en base64) — un fetch direct est utilisé, comme pour Smart Devis.
+  const callWorker = useCallback(async (body: Record<string, unknown>) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/btp-analysis-worker`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    const text = await resp.text();
+    let parsed: any = null;
+    try { parsed = text ? JSON.parse(text) : null; } catch { /* réponse non JSON */ }
+    if (!resp.ok) {
+      throw new Error(parsed?.error || `worker_http_${resp.status}`);
+    }
+    return parsed;
+  }, []);
+
   const fetchJobStatus = useCallback(async (jobId?: string | null): Promise<AnalysisJob | null> => {
     if (!user) return null;
     try {
-      const { data, error } = await supabase.functions.invoke('btp-analysis-worker', {
-        body: { action: 'status', jobId: jobId || undefined },
-      });
-      if (error) { console.warn('[AIAssistant] job status error', error); return null; }
+      const data = await callWorker({ action: 'status', jobId: jobId || undefined });
       const row = (data as any)?.job ?? null;
       if (row) setJob(row as AnalysisJob);
       return row as AnalysisJob | null;
@@ -1787,7 +1806,8 @@ const AIAssistantPage = () => {
       console.warn('[AIAssistant] job status failed', e);
       return null;
     }
-  }, [user]);
+  }, [user, callWorker]);
+
 
   // Reprise automatique de l'affichage : au montage / retour sur la page,
   // l'analyse est retrouvée par son identifiant enregistré (jamais par l'état
@@ -1856,25 +1876,23 @@ const AIAssistantPage = () => {
           ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
           : { kind: a.kind, name: a.name, text: a.text }
       );
-      const { data, error } = await supabase.functions.invoke('btp-analysis-worker', {
-        body: {
-          action: 'start',
-          attachments: payloadAttachments,
-          userText: text,
-          language: language === 'ar' ? 'ar' : 'fr',
-          userName: profile?.full_name?.trim().split(/\s+/)[0] || userInfo?.name || null,
-          userProfile: profile
-            ? {
-                full_name: profile.full_name || null,
-                company_name: (profile as any).company_name || null,
-                siret: (profile as any).siret || null,
-                dialect: (profile as any).dialect || null,
-              }
-            : null,
-        },
+      const data = await callWorker({
+        action: 'start',
+        attachments: payloadAttachments,
+        userText: text,
+        language: language === 'ar' ? 'ar' : 'fr',
+        userName: profile?.full_name?.trim().split(/\s+/)[0] || userInfo?.name || null,
+        userProfile: profile
+          ? {
+              full_name: profile.full_name || null,
+              company_name: (profile as any).company_name || null,
+              siret: (profile as any).siret || null,
+              dialect: (profile as any).dialect || null,
+            }
+          : null,
       });
       const row = (data as any)?.job ?? null;
-      if (error || !row) throw error || new Error('start_failed');
+      if (!row) throw new Error('start_failed');
       try { localStorage.setItem(ANALYSIS_JOB_KEY, row.id); } catch { /* noop */ }
       renderedJobRef.current = null;
       setJob(row as AnalysisJob);
@@ -1894,13 +1912,14 @@ const AIAssistantPage = () => {
   const retryPersistentAnalysis = async () => {
     if (!job) return;
     try {
-      await supabase.functions.invoke('btp-analysis-worker', { body: { action: 'retry', jobId: job.id } });
+      await callWorker({ action: 'retry', jobId: job.id });
       renderedJobRef.current = null;
       void fetchJobStatus(job.id);
     } catch (e) {
       console.error('[AIAssistant] retry failed', e);
     }
   };
+
 
 
   // ── Point d'entrée unique : « Analyser mon projet » ──────────────────────

@@ -2949,21 +2949,83 @@ const AIAssistantPage = () => {
 
         </div>
 
+        {/* Analyse en cours : un seul écran, une seule barre de progression */}
+        {jobActive && (
+          <div className="px-3 pb-3" dir={isRTL ? 'rtl' : 'ltr'}>
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+                <Loader2 size={16} className="animate-spin text-primary shrink-0" />
+                <h3 className={cn("text-sm font-bold text-foreground", isRTL && "font-cairo text-right")}>
+                  {L.runningTitle}
+                </h3>
+              </div>
+              <p className={cn("text-xs text-muted-foreground leading-relaxed", isRTL && "font-cairo text-right")}>
+                {L.runningText}
+              </p>
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-500"
+                  style={{ width: `${jobProgressValue}%` }}
+                />
+              </div>
+              <p className={cn("text-xs font-semibold text-foreground", isRTL && "font-cairo text-right")}>
+                {jobProgressLabel}
+              </p>
+              {techMode && (
+                <p className="text-[11px] text-muted-foreground font-mono break-all">
+                  {job?.id} · {job?.status} · {job?.current_step} · {job?.progress}%
+                  {job?.error_message ? ` · ${job.error_message}` : ''}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Échec confirmé : relance explicite */}
+        {job?.status === 'failed' && (
+          <div className="px-3 pb-3" dir={isRTL ? 'rtl' : 'ltr'}>
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <p className={cn("text-sm font-semibold text-foreground", isRTL && "font-cairo text-right")}>
+                {L.failedTitle}
+              </p>
+              <button
+                type="button"
+                onClick={() => { void retryPersistentAnalysis(); }}
+                className={cn(
+                  "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-sm active:scale-95 transition-transform",
+                  isRTL && "font-cairo"
+                )}
+              >
+                <Sparkles size={16} />
+                {L.retry}
+              </button>
+              {techMode && job.error_message && (
+                <p className="text-[11px] text-muted-foreground font-mono break-all">{job.error_message}</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Point d'entrée unique : lance tout le parcours d'analyse */}
         <div className="px-3 pb-3" dir={isRTL ? 'rtl' : 'ltr'}>
           <button
             type="button"
-            onClick={() => { void runFullProjectAnalysis(); }}
-            disabled={(!input.trim() && attachments.length === 0) || isLoading || pipelineStep !== null}
+            onClick={() => {
+              // Mode test : pipeline visible dans le navigateur (étapes détaillées).
+              if (techMode) { void runFullProjectAnalysis(); return; }
+              void startPersistentAnalysis();
+            }}
+            disabled={(!input.trim() && attachments.length === 0) || isLoading || pipelineStep !== null || startingJob || jobActive}
             className={cn(
               "w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm shadow-md transition-all active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed bg-primary text-primary-foreground",
               isRTL && "font-cairo"
             )}
           >
-            {pipelineStep ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {pipelineStep ? (pipelineLabel || L.analyzing) : L.analyzeProject}
+            {(pipelineStep || startingJob || jobActive) ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            {pipelineStep ? (pipelineLabel || L.analyzing) : (startingJob || jobActive) ? L.analyzing : L.analyzeProject}
           </button>
         </div>
+
       </div>
 
       {/* Room Scanner Modal */}

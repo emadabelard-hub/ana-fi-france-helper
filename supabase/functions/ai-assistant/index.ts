@@ -31,7 +31,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, language, userName: rawUserName, userGender, category, attachment, attachments, userQuestion, userProfile, action, btpDocData: deepBtpDocData, btpFacts: rawBtpFacts } = await req.json();
+    const { messages, language, userName: rawUserName, userGender, category, attachment, attachments, userQuestion, userProfile, action, btpDocData: deepBtpDocData, btpFacts: rawBtpFacts, originalsAvailable } = await req.json();
 
     // Bug 2 fix: ALWAYS prefer the real first name from the Supabase profile.
     const profileFirstName = (typeof userProfile?.full_name === 'string' && userProfile.full_name.trim())

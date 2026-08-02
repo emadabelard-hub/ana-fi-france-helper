@@ -306,6 +306,10 @@ const process = async (jobId: string, token: string) => {
       const r = await callAi(token, {
         action: "btp_deep_technical_analysis",
         btpDocData: results.docData,
+        // Faits structurés de l'étape 2 : source prioritaire du rapport final.
+        // Leur statut (certain / lecture_partielle / absent) ne peut plus être
+        // relevé par l'étape 3.
+        btpFacts: results.facts || null,
         attachments,
         originalsAvailable,
         userQuestion: userText,

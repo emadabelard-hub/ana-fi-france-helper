@@ -1204,23 +1204,37 @@ ${language === 'ar'
 Ne prétends alors avoir relu aucun fichier.`;
 
       // Langue du rapport destiné à l'artisan connecté (jamais à un tiers).
+      // La variante linguistique provient EXCLUSIVEMENT du profil existant
+      // (userProfile.dialect) : aucun nouveau sélecteur, aucun nouveau système.
       if (language === 'ar') {
+        const deepDialect = typeof userProfile?.dialect === 'string' && userProfile.dialect.trim()
+          ? userProfile.dialect.trim().toLowerCase()
+          : 'egyptien';
+        const deepVariantRules: Record<string, string> = {
+          egyptien: 'DIALECTE ÉGYPTIEN naturel (عامية مصرية) tel que parlé sur les chantiers. Exemples de tournures : « لازم »، « محتاج »، « دلوقتي »، « الشغل ده ».',
+          marocain: 'DARIJA MAROCAINE naturelle tel que parlée sur les chantiers. Exemples de tournures : « خاص »، « كاين »، « دابا »، « هاد الخدمة ». N\'écris jamais en égyptien.',
+          algerien: 'DIALECTE ALGÉRIEN naturel tel que parlé sur les chantiers. Exemples de tournures : « لازم »، « كاين »، « درك »، « هاد الخدمة ». N\'écris jamais en égyptien ni en marocain.',
+          algérien: 'DIALECTE ALGÉRIEN naturel tel que parlé sur les chantiers. Exemples de tournures : « لازم »، « كاين »، « درك »، « هاد الخدمة ». N\'écris jamais en égyptien ni en marocain.',
+          tunisien: 'DIALECTE TUNISIEN naturel tel que parlé sur les chantiers. Exemples de tournures : « لازم »، « فمّا »، « توّا »، « هاذي الخدمة ». N\'écris jamais en égyptien ni en marocain.',
+        };
+        const variantRule = deepVariantRules[deepDialect] || deepVariantRules.egyptien;
+
         finalSystemPrompt += `
 
-LANGUE DU RAPPORT : rédige TOUT le rapport en arabe naturel, clair et professionnel (arabe standard simple compréhensible par un artisan égyptien). Le rapport est destiné à l'artisan connecté.
-RÈGLES DE LANGUE ARABE (impératives) :
-- Titres, phrases, explications, risques, questions et conclusions : en arabe. Aucune phrase moitié arabe / moitié française.
+LANGUE DU RAPPORT (variante enregistrée dans le profil de l'artisan) : rédige TOUT le rapport dans la variante suivante — ${variantRule}
+RÈGLES DE LANGUE (impératives) :
+- N'IMPOSE JAMAIS d'arabe littéraire (فصحى) à la place de la variante ci-dessus. Ne mélange jamais deux dialectes différents dans le même rapport.
+- Utilise naturellement le vocabulaire BTP compris par les artisans : les mots dialectaux réellement employés sur les chantiers et les termes techniques français couramment utilisés en France.
+- Titres, phrases, explications, réserves, questions et conclusion : dans cette variante. Aucune phrase moitié arabe / moitié française.
 - Le titre unique du rapport doit être exactement : « ## التحليل الفني المعمق ». N'écris jamais le titre français.
-- Traduis les titres des 9 sections en arabe, dans le même ordre et avec le même contenu.
-- Emploie d'abord le terme arabe. Tu peux ajouter le terme professionnel français entre parenthèses UNIQUEMENT à sa première apparition, et seulement s'il aide l'artisan à reconnaître le mot utilisé en France. Ensuite, n'utilise plus que le terme arabe.
-  Exemples corrects : الجدران الفاصلة (cloisons) ، الهيكل الخشبي (ossature bois) ، ألواح الجبس (placo) ، تسوية الأرضية (ragréage) ، عرض السعر (devis).
-- Translittérations maladroites INTERDITES (« الدوفي »، « البانتيرة »...) quand une expression arabe claire existe : écris « عرض السعر »، « الدهان ».
-- Restent dans leur forme originale : noms de personnes, adresses, noms de fichiers, dimensions, unités (m², ml, u), références produits et sigles officiels (DTU, RE2020...).
+- Traduis les titres des 9 sections dans cette variante, dans le même ordre et avec le même contenu.
+- Restent en français / dans leur forme originale : noms de fichiers, normes et sigles (DTU, RE2020, BA13, IPN, IPE...), dimensions, unités (m², ml, m³, u), références produits, ainsi que les termes techniques de chantier couramment employés en français (placo, ragréage, sous-couche, cloison, étaiement...).
+- N'utilise JAMAIS le prénom ni le nom de l'utilisateur : le rapport n'est jamais personnalisé.
 - Nature de la preuve, à écrire exactement ainsi : « مذكورة صراحة في المستند » / « مؤكدة بصرياً » / « مقروءة جزئياً » / « محسوبة من المستند » / « افتراض » / « غير قابلة للتحقق ».
-- Conserve les tableaux avec les mêmes colonnes (en-têtes en arabe, valeurs, quantités et unités inchangées).
-- Le contenu technique, les quantités, les statuts et les niveaux de fiabilité sont IDENTIQUES à la version française : seule la langue change.
-- Aucune donnée nouvelle, aucune interprétation supplémentaire.
-- N'écris jamais de prix.`;
+- Réserve technique, à écrire exactement ainsi : « ماكانش » / « الأرضية لازم تتأكد » / « لازم نتأكد إذا الحيطة حاملة » / « مرجع المنتج لازم يتأكد » / « التنفيذ حسب المخطط التقني ».
+- Conserve les tableaux avec les mêmes colonnes (en-têtes traduits, valeurs, quantités et unités inchangées).
+- Le contenu technique, les quantités, les statuts, les réserves et les niveaux de fiabilité sont IDENTIQUES à la version française : seule la langue change.
+- Aucune donnée nouvelle, aucune interprétation supplémentaire. N'écris jamais de prix.`;
       }
 
       const deepParts: any[] = [];

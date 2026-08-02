@@ -506,6 +506,37 @@ async function handleReformulateBtp(text: string, apiKey: string): Promise<Respo
   const FORBIDDEN_SCRIPTS =
     /[\u0400-\u052F\u0370-\u03FF\u4E00-\u9FFF\u3400-\u4DBF\u3040-\u30FF\uAC00-\uD7AF\u0590-\u05FF]/;
 
+  const strictSystemPrompt = `Tu es un métreur-vérificateur BTP français.
+Ta mission : rendre chaque désignation reçue COURTE, PROFESSIONNELLE et EN FRANÇAIS,
+en restant STRICTEMENT fidèle à la source.
+
+TU PEUX UNIQUEMENT :
+- corriger la grammaire et l'orthographe ;
+- raccourcir et rendre la formulation professionnelle ;
+- traduire en français si le texte source est dans une autre langue ;
+- conserver les dimensions, localisations et réserves techniques déjà présentes.
+
+IL EST FORMELLEMENT INTERDIT D'AJOUTER (même implicitement) :
+fourniture, évacuation, nettoyage, huisseries, quincaillerie, robinetterie,
+bâti-support, raccordements, tests d'étanchéité, mise aux normes,
+préparation des supports, protection, finition, ou tout matériau / opération
+non explicitement présent dans le texte source.
+
+AUCUN préfixe commercial obligatoire. AUCUN « périmètre inclus » générique.
+AUCUNE règle des trois éléments. Si la source dit « Pose de X », tu écris « Pose de X ».
+Si la source indique que la fourniture est à la charge du client, tu conserves cette mention
+et tu n'écris JAMAIS « Fourniture et pose ».
+
+INTERDIT également : inventer une quantité, une surface, une unité, une marque,
+une couleur, un prix, un taux de TVA.
+
+Sortie en FRANÇAIS UNIQUEMENT (zéro caractère arabe). Une seule phrase courte, sans guillemets.
+Si tu ne peux pas reformuler fidèlement, retourne EXACTEMENT le texte source.
+
+Tu réponds UNIQUEMENT avec un JSON valide, sans markdown, au format exact :
+{"reformulations":[{"id":"<id>","reformulation":"<phrase française>"}, ...]}
+Conserve exactement l'ordre et les identifiants reçus.`;
+
   const systemPrompt = `Tu es un métreur-vérificateur BTP expérimenté en France.
 Ton rôle: transformer une saisie courte d'artisan (souvent en arabe égyptien, darija, ou franco-arabe) en UNE SEULE désignation professionnelle française, prête à figurer sur une ligne de devis ou facture BTP.
 
@@ -662,6 +693,11 @@ async function handleReformulateBtpBatch(
     } | null;
   }>,
   apiKey: string,
+  /**
+   * Mode strict fidèle à la source — utilisé par les lignes issues des faits BTP
+   * (analyse chantier). Aucune prestation, fourniture ou périmètre ajouté.
+   */
+  strictSourcePreserving = false,
 ): Promise<Response> {
   // Normalisation + garde-fous
   const MAX_ITEMS = 25;
@@ -773,7 +809,7 @@ ${JSON.stringify(safeItems)}`;
         temperature: 0.2,
         stream: false,
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: strictSourcePreserving ? strictSystemPrompt : systemPrompt },
           { role: 'user', content: userPrompt },
         ],
       }),
@@ -1180,7 +1216,8 @@ serve(async (req) => {
     // Handle BTP reformulation BATCH (jusqu'à 25 items en un seul appel IA)
     if (body.action === 'reformulate_btp_batch') {
       const items = Array.isArray(body.items) ? body.items : [];
-      return handleReformulateBtpBatch(items, LOVABLE_API_KEY);
+      const strict = (body as any).strict_source_preserving === true;
+      return handleReformulateBtpBatch(items, LOVABLE_API_KEY, strict);
     }
 
     // Handle auto-generation of Objet + designations from a free-text client description

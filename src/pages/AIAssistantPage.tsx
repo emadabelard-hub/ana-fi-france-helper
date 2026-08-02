@@ -88,6 +88,8 @@ type AnalysisJob = {
   user_text: string | null;
   documents: { name?: string; kind?: string }[] | null;
   docData?: any;
+  /** Faits structurés (<ANAFYPRO_BTP_FACTS>) — source du brouillon de devis. */
+  btpFacts?: string | null;
 };
 
 const ANALYSIS_JOB_KEY = 'anafypro_btp_analysis_job_id';

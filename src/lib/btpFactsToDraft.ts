@@ -286,8 +286,20 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
 
     if (!designation) return;
 
+    const unitReadable = isReadableUnit(unit);
+    const unitStr = unitReadable ? String(unit).trim() : '';
+    const billableQuantity =
+      TRANSFERABLE.has(status) && quantity !== null && quantity > 0 && unitReadable;
+
     // 5. Exclusion des annotations / caractéristiques techniques.
-    if (isAnnotationOnly(designation, category)) {
+    if (
+      isAnnotationOnly(
+        designation,
+        category,
+        `${evidenceText}\n${material}\n${location}\n${category ?? ''}`,
+        billableQuantity,
+      )
+    ) {
       excludedAnnotations += 1;
       const parts = [designation];
       if (dimensions) parts.push(dimensions);
@@ -297,8 +309,6 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
       return;
     }
 
-    const unitReadable = isReadableUnit(unit);
-    const unitStr = unitReadable ? String(unit).trim() : '';
 
     // 6. Une cote d'ouvrage n'est jamais une quantité de travaux.
     if (

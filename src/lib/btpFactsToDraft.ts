@@ -170,8 +170,7 @@ const quantityLooksLikeDimension = (text: string, unit: string): boolean => {
 
 // ── Fourniture à la charge du client (mentions explicites uniquement) ──────
 const CLIENT_SUPPLIED_PATTERNS = [
-  /fourni(?:e|es|s)?\s+par\s+(?:le|la|les)?\s*client/i,
-  /fourni(?:e|es|s)?\s+par\s+(?:la\s+)?cliente/i,
+  /fourni(?:e|es|s)?\s+par\s+(?:le|la|les)?\s*client(?:e|es|s)?\b/i,
   /fourni(?:e|es|s)?\s+par\s+(?:le\s+)?ma[îi]tre\s+d[’']?ouvrage/i,
   /fourniture\s+(?:du\s+|de\s+la\s+|par\s+le\s+)?client/i,
   /fourniture\s+client/i,

@@ -24,6 +24,12 @@ function normalizeContent(content: any): any {
       return { type: "image", source: { type: "url", url } };
     }
     if (part.type === "image") return part; // already anthropic
+    if (part.type === "document") {
+      // Bloc document PDF natif (même schéma que scan-devis-document).
+      // Les métadonnées internes (ex. `_fallback`, utilisé pour la bascule
+      // Gateway) ne doivent jamais être transmises à Anthropic.
+      return { type: "document", source: part.source };
+    }
     return { type: "text", text: JSON.stringify(part) };
   });
 }

@@ -410,7 +410,12 @@ serve(async (req) => {
       let job: any = row;
       if (row) {
         const { step_results, ...rest } = row;
-        job = { ...rest, docData: step_results?.docData ?? null };
+        job = {
+          ...rest,
+          docData: step_results?.docData ?? null,
+          // Faits structurés : seule source utilisée pour le brouillon de devis.
+          btpFacts: step_results?.facts ?? null,
+        };
       }
       return json({ job });
     }

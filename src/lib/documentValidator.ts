@@ -87,6 +87,12 @@ const DESCRIPTION_UPGRADES: Array<[RegExp, string]> = [
 
 export interface DocumentItem {
   id: string;
+  /**
+   * Provenance de la ligne. 'btp_facts' = ligne issue de l'analyse chantier :
+   * l'unité validée au transfert est la source de vérité et ne peut jamais
+   * être réécrite par une heuristique sémantique.
+   */
+  sourceOrigin?: string;
   designation_fr: string;
   designation_ar?: string;
   quantity: number;
@@ -107,6 +113,27 @@ export interface ValidatedDocumentResult {
   items: DocumentItem[];
   tvaRate: number;
   corrections: ValidationCorrection[];
+}
+
+/** Normalisations purement typographiques (jamais sémantiques). */
+const SAFE_UNIT_NORMALIZATION: Record<string, string> = {
+  'm2': 'm²',
+  'M2': 'm²',
+  'M²': 'm²',
+  'ML': 'ml',
+  'Ml': 'ml',
+  'mL': 'ml',
+};
+
+const isBtpFactsLine = (item: DocumentItem): boolean => item.sourceOrigin === 'btp_facts';
+
+/**
+ * Normalisation sûre uniquement (casse / m2 / ML) — utilisée pour les lignes
+ * issues des faits BTP.
+ */
+function normalizeUnitSafely(unit: string): string {
+  const trimmed = unit.trim();
+  return SAFE_UNIT_NORMALIZATION[trimmed] ?? trimmed;
 }
 
 /**
@@ -239,8 +266,13 @@ export function validateDocument(
 
     // 2a. Désignation : source de vérité utilisateur — ne jamais modifier automatiquement
 
+    const btpLine = isBtpFactsLine(corrected);
+
     // 2b. Unit normalization
-    const normalizedUnit = normalizeUnit(corrected.unit);
+    // Lignes BTP : normalisation typographique sûre uniquement.
+    const normalizedUnit = btpLine
+      ? normalizeUnitSafely(corrected.unit)
+      : normalizeUnit(corrected.unit);
     if (normalizedUnit !== corrected.unit) {
       corrections.push({
         field: 'Unité',
@@ -254,13 +286,22 @@ export function validateDocument(
     // 2c. Unit consistency check
     const suggestedUnit = checkUnitConsistency(corrected.designation_fr, corrected.unit);
     if (suggestedUnit) {
-      corrections.push({
-        field: 'Unité',
-        original: corrected.unit,
-        corrected: suggestedUnit,
-        reason: `Unité "${corrected.unit}" incohérente pour "${corrected.designation_fr}", corrigée en "${suggestedUnit}"`,
-      });
-      corrected.unit = suggestedUnit;
+      if (btpLine) {
+        // Ligne issue des faits BTP : l'unité confirmée est la source de vérité.
+        // Simple avertissement, aucune réécriture silencieuse.
+        console.warn(
+          '[documentValidator] unité BTP conservée (avertissement seulement) :',
+          corrected.designation_fr, corrected.unit, '≠ suggestion', suggestedUnit,
+        );
+      } else {
+        corrections.push({
+          field: 'Unité',
+          original: corrected.unit,
+          corrected: suggestedUnit,
+          reason: `Unité "${corrected.unit}" incohérente pour "${corrected.designation_fr}", corrigée en "${suggestedUnit}"`,
+        });
+        corrected.unit = suggestedUnit;
+      }
     }
 
     // 2d. Price sanity check
@@ -288,7 +329,8 @@ export function validateDocument(
     }
 
     // 2e. Quantity sanity (must be > 0)
-    if (corrected.quantity <= 0) {
+    // Jamais de quantité artificielle « 1 » sur une ligne issue des faits BTP.
+    if (!btpLine && corrected.quantity <= 0) {
       corrections.push({
         field: 'Quantité',
         original: `${corrected.quantity}`,

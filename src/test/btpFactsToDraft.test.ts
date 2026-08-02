@@ -14,6 +14,7 @@ describe('buildDraftLinesFromFacts', () => {
     expect(r.lines.map(l => l.unit)).toEqual(['ml', 'm²']);
     expect(r.lines.every(l => l.unitPrice === 0)).toBe(true);
     expect(r.lines[0].lot).toBe('Démolition');
+    expect(r.lines.every(l => l.sourceOrigin === 'btp_facts')).toBe(true);
   });
 
   it('TEST 2 — réserve technique conservée sans déclasser la quantité', () => {
@@ -21,14 +22,13 @@ describe('buildDraftLinesFromFacts', () => {
       {
         descriptionExact: 'Ragréage sol', quantity: 24, unit: 'm²',
         status: 'ready_for_draft_with_technical_reservation',
-        technicalReservation: 'support à sonder', clientSupplied: true,
+        technicalReservation: 'support à sonder',
       },
     ]));
     expect(r.lines).toHaveLength(1);
     expect(r.lines[0].quantity).toBe(24);
     expect(r.lines[0].unit).toBe('m²');
     expect(r.lines[0].designation_fr).toContain('réserve technique : support à sonder');
-    expect(r.lines[0].designation_fr).toContain('fourniture à la charge du client');
     expect(r.lines[0].unitPrice).toBe(0);
   });
 
@@ -40,7 +40,8 @@ describe('buildDraftLinesFromFacts', () => {
       { descriptionExact: 'Dépose portes', quantity: 4, unit: 'u', status: 'ready_for_draft' },
     ]));
     expect(r.lines).toHaveLength(1);
-    expect(r.pendingCount).toBe(2); // le doublon est dédupliqué, non « à confirmer »
+    expect(r.pendingCount).toBe(1); // fenêtres à confirmer ; « Divers » = annotation exclue
+    expect(r.excludedAnnotations).toBe(1);
     expect(r.lines.every(l => l.quantity !== 1)).toBe(true);
   });
 
@@ -50,5 +51,58 @@ describe('buildDraftLinesFromFacts', () => {
     ]));
     expect(r.lines).toHaveLength(0);
     expect(r.hasStructuredFacts).toBe(true);
+  });
+
+  it('TEST UNITÉS — les unités sources sont conservées telles quelles', () => {
+    const r = buildDraftLinesFromFacts(wrap([
+      { descriptionExact: 'Création de mur de séparation', quantity: 2, unit: 'ml', status: 'ready_for_draft' },
+      { descriptionExact: 'Dépose de parquet et plinthes', quantity: 20, unit: 'm²', status: 'ready_for_draft' },
+      { descriptionExact: 'Peinture des murs existants', quantity: 65, unit: 'm²', status: 'ready_for_draft' },
+      { descriptionExact: 'Peinture des plafonds', quantity: 100, unit: 'm²', status: 'ready_for_draft' },
+    ]));
+    expect(r.lines.map(l => `${l.quantity} ${l.unit}`)).toEqual([
+      '2 ml', '20 m²', '65 m²', '100 m²',
+    ]);
+  });
+
+  it('TEST FOURNITURES CLIENT — jamais « Fourniture et pose »', () => {
+    const r = buildDraftLinesFromFacts(wrap([
+      {
+        descriptionExact: 'Fourniture et pose de WC suspendu',
+        evidenceText: 'WC suspendu fourni par la cliente',
+        quantity: 1, unit: 'u', status: 'ready_for_draft',
+      },
+    ]));
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0].clientSupplied).toBe(true);
+    expect(r.lines[0].designation_fr.toLowerCase()).not.toContain('fourniture et pose');
+    expect(r.lines[0].designation_fr.toLowerCase()).toContain('pose de wc suspendu');
+    expect(r.lines[0].designation_fr.toLowerCase()).toContain('fourni par la cliente');
+  });
+
+  it('TEST ANNOTATIONS — charge de poutre et cotes ne créent aucune ligne', () => {
+    const r = buildDraftLinesFromFacts(wrap([
+      {
+        descriptionExact: 'Charge à la poutre bois posée sur linteau L = 3,42 m',
+        quantity: 350, unit: 'cm', status: 'certain', category: 'annotation de plan',
+      },
+      { descriptionExact: 'Solivage longueur', dimensions: '3,50 m', quantity: 3.5, unit: 'm', status: 'certain' },
+      { descriptionExact: 'Solivage largeur', dimensions: '3,05 m', quantity: 3.05, unit: 'm', status: 'certain' },
+    ]));
+    expect(r.lines).toHaveLength(0);
+    expect(r.technicalNotes.length).toBeGreaterThan(0);
+  });
+
+  it('TEST LOTS — regroupement par lot, un seul bloc par lot', () => {
+    const r = buildDraftLinesFromFacts(wrap([
+      { descriptionExact: 'Pose de cloison A', quantity: 10, unit: 'm²', lot: 'Cloisons', status: 'ready_for_draft' },
+      { descriptionExact: 'Peinture murs A', quantity: 30, unit: 'm²', lot: 'Peinture', status: 'ready_for_draft' },
+      { descriptionExact: 'Pose de cloison B', quantity: 12, unit: 'm²', lot: 'Cloisons', status: 'ready_for_draft' },
+      { descriptionExact: 'Peinture plafonds A', quantity: 40, unit: 'm²', lot: 'Peinture', status: 'ready_for_draft' },
+    ]));
+    expect(r.lines.map(l => l.lot)).toEqual(['Cloisons', 'Cloisons', 'Peinture', 'Peinture']);
+    expect(r.lines.map(l => l.designation_fr)).toEqual([
+      'Pose de cloison A', 'Pose de cloison B', 'Peinture murs A', 'Peinture plafonds A',
+    ]);
   });
 });

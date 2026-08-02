@@ -54,6 +54,10 @@ interface LineItem {
   unit: string;
   unitPrice: number;
   lot?: string;
+  /** Provenance (ex. 'btp_facts') : verrouille l'unité en aval. */
+  sourceOrigin?: string;
+  /** Fourniture explicitement à la charge du client. */
+  clientSupplied?: boolean;
 }
 
 const generateId = () => `id-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -90,14 +94,17 @@ const SmartDevisPage = () => {
       const parsed = JSON.parse(raw);
       const items = Array.isArray(parsed?.items) ? parsed.items : [];
       if (items.length === 0) return;
+      // Aucune valeur artificielle : ni quantité « 1 », ni unité « u » par défaut.
       const mapped: LineItem[] = items.map((it: any, idx: number) => ({
         id: `prefill-${Date.now()}-${idx}`,
         designation_fr: String(it.designation_fr || '').trim(),
         designation_ar: String(it.designation_ar || '').trim(),
-        quantity: Number(it.quantity) > 0 ? Number(it.quantity) : 1,
-        unit: String(it.unit || 'u'),
+        quantity: Number(it.quantity) > 0 ? Number(it.quantity) : ('' as unknown as number),
+        unit: typeof it.unit === 'string' ? it.unit.trim() : '',
         unitPrice: Number(it.unitPrice) > 0 ? Number(it.unitPrice) : 0,
         lot: typeof it.lot === 'string' && it.lot.trim() ? it.lot.trim() : undefined,
+        sourceOrigin: typeof it.sourceOrigin === 'string' ? it.sourceOrigin : undefined,
+        clientSupplied: it.clientSupplied === true ? true : undefined,
       }));
       setLineItems(mapped);
       if (parsed?.subject) setSubjectFr(String(parsed.subject));

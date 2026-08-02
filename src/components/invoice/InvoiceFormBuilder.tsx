@@ -66,6 +66,8 @@ interface PrefillData {
     unit: string;
     unitPrice: number;
     lot?: string;
+    sourceOrigin?: string;
+    clientSupplied?: boolean;
   }>;
   notes?: string;
   source?: string;
@@ -221,11 +223,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         id: generateId(),
         designation_fr: item.designation_fr || '',
         designation_ar: item.designation_ar || '',
-        quantity: item.quantity || 1,
-        unit: item.unit || 'U',
+        quantity: Number(item.quantity) > 0 ? Number(item.quantity) : (item.sourceOrigin === 'btp_facts' ? ('' as unknown as number) : 1),
+        unit: item.unit?.trim() ? item.unit.trim() : (item.sourceOrigin === 'btp_facts' ? '' : 'U'),
         unitPrice: item.unitPrice || 0,
-        total: (item.quantity || 1) * (item.unitPrice || 0),
+        total: (Number(item.quantity) > 0 ? Number(item.quantity) : 0) * (item.unitPrice || 0),
         lot: typeof (item as any).lot === 'string' && (item as any).lot.trim() ? (item as any).lot.trim() : undefined,
+        sourceOrigin: item.sourceOrigin,
+        clientSupplied: item.clientSupplied,
       }));
     }
     return [{
@@ -755,11 +759,13 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
           id: generateId(),
           designation_fr: item.designation_fr || '',
           designation_ar: item.designation_ar || '',
-          quantity: item.quantity || 1,
-          unit: item.unit || 'U',
+          quantity: Number(item.quantity) > 0 ? Number(item.quantity) : (item.sourceOrigin === 'btp_facts' ? ('' as unknown as number) : 1),
+          unit: item.unit?.trim() ? item.unit.trim() : (item.sourceOrigin === 'btp_facts' ? '' : 'U'),
           unitPrice: item.unitPrice || 0,
-          total: (item.quantity || 1) * (item.unitPrice || 0),
+          total: (Number(item.quantity) > 0 ? Number(item.quantity) : 0) * (item.unitPrice || 0),
           lot: typeof (item as any).lot === 'string' && (item as any).lot.trim() ? (item as any).lot.trim() : undefined,
+          sourceOrigin: item.sourceOrigin,
+          clientSupplied: item.clientSupplied,
         }));
         setItems(newItems);
         const attemptedIds = new Set(newItems.map(item => item.id));
@@ -1124,7 +1130,12 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   
   // Auto-validate and fix document (expert-comptable level)
   const validationResult = validateDocument(
-    rawInvoiceData.items.map((item, i) => ({ ...item, id: items[i]?.id || `v-${i}` })),
+    rawInvoiceData.items.map((item, i) => ({
+      ...item,
+      id: items[i]?.id || `v-${i}`,
+      // Provenance BTP : unité verrouillée, aucune réécriture heuristique.
+      sourceOrigin: (items[i] as any)?.sourceOrigin,
+    })),
     rawInvoiceData.tvaRate,
     rawInvoiceData.tvaExempt
   );

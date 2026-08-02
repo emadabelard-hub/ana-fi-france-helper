@@ -21,6 +21,10 @@ export interface LineItem {
   unitPrice: number;
   total: number;
   lot?: string;
+  /** Provenance (ex. 'btp_facts') : verrouille l'unité en aval. */
+  sourceOrigin?: string;
+  /** Fourniture explicitement à la charge du client. */
+  clientSupplied?: boolean;
 }
 
 interface LineItemEditorProps {

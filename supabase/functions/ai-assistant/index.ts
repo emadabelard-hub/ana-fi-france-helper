@@ -661,6 +661,114 @@ Après la recommandation, dis-lui :
       ? attachments
       : (attachment ? [attachment] : []);
 
+    // ─── INGESTION DOCUMENTAIRE ────────────────────────────────────────────
+    // PDF : document natif Anthropic si le binaire est présent, sinon images de
+    // pages, sinon couche texte. Aucune logique métier (prix/TVA) n'est touchée.
+    const TEXT_LIMIT = 50000;
+    const pdfHasBinary = (a: any) => a?.kind === 'pdf' && typeof a?.base64 === 'string' && a.base64.length > 100;
+    const pdfHasPages = (a: any) => Array.isArray(a?.pageImages) && a.pageImages.length > 0;
+    const attHasText = (a: any) => typeof a?.text === 'string' && a.text.trim().length > 0;
+
+    const ingestionMethod = (a: any): 'native_document' | 'page_images' | 'text' | 'none' => {
+      if (a?.kind === 'image') return 'native_document';
+      if (a?.kind === 'docx') return attHasText(a) ? 'text' : 'none';
+      if (pdfHasBinary(a)) return 'native_document';
+      if (pdfHasPages(a)) return 'page_images';
+      if (attHasText(a)) return 'text';
+      return 'none';
+    };
+
+    const ingestionLabel = (a: any): string => {
+      if (a?.kind === 'image') return 'image';
+      if (a?.kind === 'docx') return attHasText(a) ? 'DOCX exploité par son texte brut' : 'DOCX non exploitable';
+      switch (ingestionMethod(a)) {
+        case 'native_document': return 'PDF transmis au modèle sous forme de document natif';
+        case 'page_images': return 'PDF transmis sous forme d’images de pages';
+        case 'text': return 'PDF exploité uniquement par sa couche texte';
+        default: return 'PDF non exploitable (binaire absent, aucune page rendue, aucun texte)';
+      }
+    };
+
+    const truncationNote = (a: any): string =>
+      a?.textTruncated
+        ? `\n[AVERTISSEMENT : texte tronqué — ${a?.textOriginalLength ?? '?'} caractères d'origine, ${TEXT_LIMIT} transmis. Ne conclus pas à une absence d'information sur la partie non transmise.]`
+        : '';
+
+    const fileInventoryLine = (a: any, i: number) => {
+      const extras: string[] = [];
+      if (a?.kind === 'pdf' && a?.pageCount) {
+        extras.push(`${a.pageCount} page(s)${a?.pagesSkipped ? `, ${a.pagesSkipped} non rendue(s) en image` : ''}`);
+      }
+      if (a?.kind === 'image' && a?.lowResolution) extras.push('résolution faible à la source : lecture partielle');
+      if (a?.textTruncated) extras.push('texte tronqué');
+      return `${i + 1}. ${a?.name || 'document'} — ${ingestionLabel(a)}${extras.length ? ` (${extras.join(' ; ')})` : ''}`;
+    };
+
+    const buildImageParts = (a: any, i: number, note: string): any[] => ([
+      {
+        type: 'text',
+        text: `IMAGE ${i + 1} — Fichier : ${a?.name || `image_${i + 1}.jpg`}\n${note}${a?.lowResolution ? "\nATTENTION : cette image est de faible résolution à la source — classe-la en lecture partielle et n'invente aucune cote." : ''}`,
+      },
+      { type: 'image_url', image_url: { url: a.dataUrl } },
+    ]);
+
+    const buildDocParts = (a: any, i: number): any[] => {
+      const name = a?.name || (a?.kind === 'docx' ? 'document.docx' : 'document.pdf');
+      if (a?.kind === 'docx') {
+        return [{
+          type: 'text',
+          text: `DOCUMENT DOCX ${i + 1} — Fichier : ${name}\nMode d'extraction : texte brut (docxExtractionMode: raw_text) — les tableaux et images intégrées peuvent avoir été perdus.${truncationNote(a)}\n\n"""\n${String(a?.text ?? '').slice(0, TEXT_LIMIT)}\n"""`,
+        }];
+      }
+      const method = ingestionMethod(a);
+      const textBlock = attHasText(a)
+        ? { type: 'text', text: `COUCHE TEXTE DU PDF ${i + 1} — Fichier : ${name}${truncationNote(a)}\n\n"""\n${String(a.text).slice(0, TEXT_LIMIT)}\n"""` }
+        : null;
+      const pageParts = pdfHasPages(a)
+        ? a.pageImages.flatMap((img: string, p: number) => ([
+            { type: 'text', text: `PDF ${i + 1} — Fichier : ${name} — PAGE ${p + 1} (page rendue en image)` },
+            { type: 'image_url', image_url: { url: img } },
+          ]))
+        : [];
+
+      if (method === 'native_document') {
+        const fallback = pageParts.length > 0
+          ? pageParts
+          : (textBlock ? [textBlock] : [{ type: 'text', text: `PDF ${i + 1} — Fichier : ${name} : document non exploitable par ce fournisseur.` }]);
+        const parts: any[] = [
+          { type: 'text', text: `DOCUMENT PDF ${i + 1} — Fichier : ${name}\n${ingestionLabel(a)}. Lis-le réellement, y compris les plans, les pages scannées et les schémas.` },
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: a.base64 }, _fallback: fallback },
+        ];
+        if (textBlock) parts.push(textBlock);
+        return parts;
+      }
+      if (method === 'page_images') {
+        const parts: any[] = [{ type: 'text', text: `DOCUMENT PDF ${i + 1} — Fichier : ${name}\n${ingestionLabel(a)}.` }, ...pageParts];
+        if (textBlock) parts.push(textBlock);
+        return parts;
+      }
+      if (method === 'text' && textBlock) {
+        return [{ type: 'text', text: `DOCUMENT PDF ${i + 1} — Fichier : ${name}\n${ingestionLabel(a)}.` }, textBlock];
+      }
+      return [{ type: 'text', text: `DOCUMENT PDF ${i + 1} — Fichier : ${name}\n${ingestionLabel(a)}. Ne déduis rien de ce fichier et signale-le comme non exploitable.` }];
+    };
+
+    if (attList.length > 0) {
+      // Journal technique : aucun contenu documentaire, aucun base64, aucune donnée personnelle.
+      console.log('[ai-assistant][ingestion]', JSON.stringify(attList.map((a: any) => ({
+        type: a?.kind ?? 'unknown',
+        method: ingestionMethod(a),
+        approxBytes: typeof a?.base64 === 'string'
+          ? Math.floor(a.base64.length * 0.75)
+          : (typeof a?.dataUrl === 'string' ? Math.floor(a.dataUrl.length * 0.75) : null),
+        pageCount: a?.pageCount ?? null,
+        pagesRendered: a?.pagesRendered ?? null,
+        pagesSkipped: a?.pagesSkipped ?? null,
+        textExtracted: attHasText(a),
+        truncated: !!a?.textTruncated,
+      }))));
+    }
+
     // ============================================================
     // MODE DOCUMENTAIRE BTP (activé uniquement si pièces jointes)
     // ============================================================

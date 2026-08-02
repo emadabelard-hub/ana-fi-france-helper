@@ -1229,16 +1229,9 @@ const AIAssistantPage = () => {
         },
         body: JSON.stringify({
           messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
-          attachment: currentAttachments[0]
-            ? currentAttachments[0].kind === 'image'
-              ? { kind: 'image', name: currentAttachments[0].name, dataUrl: currentAttachments[0].dataUrl }
-              : { kind: currentAttachments[0].kind, name: currentAttachments[0].name, text: currentAttachments[0].text }
-            : null,
-          attachments: currentAttachments.map(a =>
-            a.kind === 'image'
-              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-              : { kind: a.kind, name: a.name, text: a.text }
-          ),
+          attachment: currentAttachments[0] ?? null,
+          // Les pièces sont transmises intégralement (PDF original inclus).
+          attachments: currentAttachments,
           userQuestion: text || null,
           language: language === 'ar' ? 'ar' : 'fr',
           userName: (liveProfile?.full_name?.trim().split(/\s+/)[0]) || userInfo?.name || null,
@@ -1392,11 +1385,7 @@ const AIAssistantPage = () => {
           // Pièces originales du dossier ayant produit CETTE analyse basique
           // (mêmes limites de taille/nombre que l'analyse basique : elles sont
           // réutilisées telles quelles, sans nouvel upload).
-          attachments: sourceAttachments.map(a =>
-            a.kind === 'image'
-              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-              : { kind: a.kind, name: a.name, text: a.text }
-          ),
+          attachments: sourceAttachments,
           originalsAvailable,
           userQuestion: sourceUserText,
           messages: messages.map(m => ({ role: m.role, content: m.content })),
@@ -1559,11 +1548,7 @@ const AIAssistantPage = () => {
         body: JSON.stringify({
           action: 'btp_factual_extraction',
           btpDocData,
-          attachments: sourceAttachments.map(a =>
-            a.kind === 'image'
-              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-              : { kind: a.kind, name: a.name, text: a.text }
-          ),
+          attachments: sourceAttachments,
           originalsAvailable,
           userQuestion: sourceUserText,
           messages: messages.map(m => ({ role: m.role, content: m.content })),
@@ -1680,11 +1665,7 @@ const AIAssistantPage = () => {
         body: JSON.stringify({
           action: 'btp_document_control',
           btpFacts: factsBlock,
-          attachments: sourceAttachments.map(a =>
-            a.kind === 'image'
-              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-              : { kind: a.kind, name: a.name, text: a.text }
-          ),
+          attachments: sourceAttachments,
           originalsAvailable,
           userQuestion: sourceUserText,
           messages: messages.map(m => ({ role: m.role, content: m.content })),
@@ -1982,11 +1963,7 @@ const AIAssistantPage = () => {
     if (!text && attachments.length === 0) return;
     setStartingJob(true);
     try {
-      const payloadAttachments = attachments.map(a =>
-        a.kind === 'image'
-          ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-          : { kind: a.kind, name: a.name, text: a.text }
-      );
+      const payloadAttachments = attachments;
       const data = await callWorker({
         action: 'start',
         attachments: payloadAttachments,

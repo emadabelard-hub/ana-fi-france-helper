@@ -315,6 +315,10 @@ const process = async (jobId: string, token: string) => {
         userQuestion: userText,
         messages: [],
         language,
+        // Variante linguistique enregistrée dans le profil (dialecte) : le
+        // rapport final doit être rédigé dans cette variante, jamais en arabe
+        // littéraire par défaut.
+        userProfile,
       });
       if (!r.complete || !r.text.trim()) {
         await fail(

@@ -1069,9 +1069,13 @@ ANALYSE PAR LOTS : regrouper les prestations par lots cohérents (installation e
 Aucun lot vide. Aucune prestation répétée dans plusieurs lots. Aucune ligne orpheline. Aucune désignation constituée uniquement d'un nombre (jamais « 1 »).
 
 PRESTATION IDENTIFIÉE ≠ PRESTATION TRANSFÉRABLE. Attribuer à chaque prestation UN SEUL statut :
-- « Prêt pour le brouillon de devis » : prestation clairement identifiée, quantité mentionnée explicitement ou calculée depuis des données explicitement confirmées, unité adaptée, aucune hypothèse, aucune lecture partielle, aucune incohérence non résolue.
+- « Prêt pour le brouillon de devis » (ready_for_draft) : prestation clairement identifiée, quantité mentionnée explicitement ou calculée depuis des données explicitement confirmées, unité adaptée, aucune hypothèse, aucune lecture partielle, aucune incohérence non résolue, aucune réserve technique.
+- « Prêt pour le brouillon — réserve technique » (ready_for_draft_with_technical_reservation) : prestation clairement identifiée, quantité ET unité explicitement confirmées, ligne préparable dans le brouillon, MAIS méthode, composition, support, référence produit ou condition d'exécution restant à confirmer ; le prix définitif est à valider après cette confirmation. Ce statut ne déclasse JAMAIS la quantité confirmée : la quantité et l'unité sont conservées telles quelles. Ne classe pas ces prestations comme totalement prêtes sans réserve, et ne les classe jamais en « quantité à confirmer » alors que la quantité est explicitement indiquée.
+  Exemples : mur à déposer de longueur connue mais caractère porteur à vérifier ; ouverture de dimension connue mais étaiement défini par un plan technique ; pose d'un équipement fourni par le client dont la référence exacte reste à confirmer ; intervention de toiture dont l'étendue est connue mais les détails d'exécution restent nécessaires.
 - « Ligne à créer — quantité à confirmer » : prestation clairement identifiée mais quantité absente, unité/dimension insuffisante ou caractéristique technique inconnue. La ligne peut être préparée ; la quantité reste « à confirmer » (ou vide) ; le prix reste vide ; aucune valeur par défaut.
 - « Non transférable sans vérification » : hypothèse, lecture partielle, information non vérifiable, donnée technique incertaine, contradiction non résolue, ou quantité estimée librement.
+
+VALEURS AUTORISÉES DE LA COLONNE « Réserve technique » (vocabulaire fermé) : « aucune », « support à confirmer », « caractère porteur à vérifier », « référence produit à confirmer », « exécution selon plan technique », ou une autre réserve réellement issue du dossier formulée en quatre mots maximum. N'invente jamais une réserve absente du dossier.
 
 BROUILLON DE DEVIS SANS PRIX : l'absence de prix n'empêche JAMAIS de préparer un brouillon. Les lots peuvent être préparés, les prestations créées, les quantités fiables reprises, les quantités manquantes laissées à confirmer, les prix laissés vides. Aucun prix n'est inventé. Formulation attendue : « Les prestations et les quantités fiables peuvent être préparées dans un brouillon de devis. Les prix restent à compléter ou à valider par l'artisan. » Ne demande jamais à l'utilisateur de fournir tous ses prix unitaires avant de préparer le brouillon.
 
@@ -1090,7 +1094,13 @@ Lorsqu'un calcul fiable est impossible, écrire « Quantité à confirmer » (ou
 DÉSIGNATIONS : courtes, précises, compréhensibles, adaptées à un devis professionnel, non tronquées, non répétitives. Pas de longue phrase narrative dans une ligne de devis. Séparer désignation courte / détails techniques / réserve / éléments à confirmer.
 Exemple : Désignation « Création de cloisons isolées » — Détails « Ossature métallique, isolation phonique et plaques adaptées aux locaux concernés. » — Réserve « Hauteur à confirmer avant calcul de la surface définitive. »
 
-UNITÉS : m² pour les surfaces, ml pour les longueurs, m³ pour les volumes, u pour les équipements ou éléments comptables, forfait uniquement si aucune unité physique n'est adaptée et que le forfait est réellement justifié. Ne jamais utiliser u pour une surface de mur, de plafond, de peinture, de carrelage ou d'isolation. Aucune conversion automatique sans données suffisantes.
+UNITÉS : m² pour les surfaces, ml pour les longueurs, m³ pour les volumes, u pour les équipements ou éléments comptables. Ne jamais utiliser u pour une surface de mur, de plafond, de peinture, de carrelage ou d'isolation. Aucune conversion automatique sans données suffisantes.
+INTERDICTION DU FORFAIT AUTOMATIQUE : une quantité inconnue ne doit JAMAIS être remplacée par l'unité « forfait ».
+- quantité inconnue → quantité vide / « à confirmer » (jamais 1, jamais une valeur par défaut) ;
+- unité réellement inconnue → « à définir » ;
+- « forfait » uniquement si le document indique explicitement une prestation forfaitaire, ou si la nature indivisible de la prestation le justifie clairement ;
+- ne jamais choisir « forfait » pour contourner l'absence de métrage.
+Exemples : modification de toiture sans étendue connue → unité « à définir » ; réseaux de plomberie sans longueur connue → « à définir » ; ouverture structurelle sans dimensions confirmées → « à définir » ; évacuation de gravats sans volume connu → « à définir » sauf forfait explicitement prévu ; appareillage électrique sans nombre connu → u, quantité à confirmer ; ragréage sans surface connue → m², quantité à confirmer. Conserver une unité probable uniquement lorsqu'elle découle clairement de la nature de la prestation.
 
 FOURNITURES DU CLIENT : identifier séparément les fournitures explicitement à la charge du client, avec type, quantité, dimensions/références, source, informations manquantes et impact possible sur la pose. Ne jamais conclure que la pose est impossible parce que la référence exacte manque : la ligne de pose peut être préparée avec la réserve « Le prix définitif de pose pourra dépendre du format, du poids, du support, des découpes et du système de fixation. »
 
@@ -1102,7 +1112,16 @@ TVA : ne jamais appliquer ni décider un taux de TVA dans ce rapport. Tu peux un
 
 AUTRES INTERDITS : aucun prix, aucun coût, aucun avis juridique, aucune marque ou gamme inventée, aucun pourcentage de progression inventé, aucun devis produit ici, aucun cours théorique sur les DTU (une norme n'est citée que si elle figure dans les documents ou est directement indispensable). Ne pas utiliser « obligatoire », « impératif », « réglementairement exigé » sauf si l'obligation figure explicitement dans un document ; sinon écrire « recommandé », « à vérifier », « à confirmer avant chiffrage ». Ne pas ajouter de questions génériques (assurance dommages-ouvrage, permis, amiante, plomb, copropriété, fiscalité) sauf pertinence réelle. Ne pas affirmer qu'un support est fissuré, humide ou dégradé sans document le démontrant. Ne jamais requalifier un document : un fichier nommé « CDC » n'est pas un « CCTP ».
 
-IMAGES ET PLANS : pour une image miniaturisée, compressée, issue de WhatsApp, d'un montage ou d'une capture d'écran, la qualité de lecture est « partielle » ; l'image sert uniquement à comprendre l'organisation générale ; aucune quantité, cote, référence ou caractéristique n'est extraite si un seul caractère n'est pas parfaitement lisible ; demander le fichier original. La présence visuelle d'une cote ne signifie pas qu'elle est lisible.
+IMAGES ET PLANS : pour une image miniaturisée, compressée, issue de WhatsApp, d'un montage ou d'une capture d'écran, la qualité de lecture est « partielle » ; l'image sert uniquement à comprendre l'organisation générale ; aucune quantité, cote, référence ou caractéristique n'est extraite si un seul caractère n'est pas parfaitement lisible. La présence visuelle d'une cote ne signifie pas qu'elle est lisible.
+
+LIMITES ATTACHÉES À CHAQUE FICHIER (impératif) : chaque limite appartient au SEUL fichier concerné.
+- Ne jamais attribuer à un PDF natif de bonne qualité les limites d'une capture d'écran ou d'une photo.
+- La lecture partielle d'une capture ne dégrade JAMAIS les informations extraites d'un autre document lisible.
+- Ne jamais généraliser la mauvaise qualité d'un document à l'ensemble du dossier.
+- Ne jamais écrire qu'un fichier original est nécessaire lorsque ce fichier a déjà été transmis et correctement exploité. Ne demande le fichier original que pour les pièces réellement dégradées et non couvertes par un autre document.
+Avant de déclarer une donnée illisible ou absente : vérifier TOUS les documents transmis, vérifier si la même information figure dans un document de meilleure qualité, puis citer nommément le seul fichier réellement concerné par la limite.
+Pour toute information issue d'un plan technique ou structurel : citer le nom du fichier, la page si disponible, la coupe / zone / détail si identifiable, et distinguer clairement ce qui est lisible de ce qui ne l'est pas.
+Si une dimension n'est pas retrouvée dans un PDF natif, écrire exactement : « Dimension non retrouvée avec suffisamment de certitude dans le document analysé. »
 
 NIVEAUX DE PRIORITÉ des informations manquantes (vocabulaire fermé) :
 - « Niveau 1 — Bloquant avant devis définitif » : indispensable à un chiffrage sérieux.
@@ -1110,7 +1129,17 @@ NIVEAUX DE PRIORITÉ des informations manquantes (vocabulaire fermé) :
 - « Niveau 3 — À confirmer avant travaux » : choix esthétique ou détail confirmable après le brouillon.
 Ne jamais présenter le budget du client comme une donnée technique bloquante.
 
-LONGUEUR : rapport COURT et opérationnel. Environ 500 à 1 200 mots pour un dossier simple, 1 800 mots maximum pour un dossier complexe. Ne jamais allonger artificiellement, ne pas reproduire l'analyse initiale, ne pas répéter la même réserve dans plusieurs sections, une seule conclusion.
+LONGUEUR : rapport COURT et opérationnel, environ 600 à 800 mots lorsque le dossier le permet. Un dossier complexe peut dépasser légèrement cette limite uniquement si c'est nécessaire pour ne pas perdre une information importante. Ne supprime jamais une information fiable seulement pour respecter une limite de longueur. Ne jamais allonger artificiellement, ne pas reproduire l'analyse initiale.
+
+ZÉRO RÉPÉTITION (règle d'appartenance unique) : chaque information appartient à UNE SEULE section, celle où elle est la plus pertinente.
+- Section 3 « Travaux identifiés par lot » : vue SYNTHÉTIQUE uniquement (désignations courtes regroupées par lot). Elle ne reprend ni les quantités, ni les unités, ni les sources, ni les réserves détaillées des sections 4, 5 et 6.
+- Section 4 : le détail des prestations transférables (avec ou sans réserve technique).
+- Section 5 : uniquement les prestations incomplètes (quantité à confirmer).
+- Section 6 : uniquement l'objet fourni par le client et ce qui manque à son sujet ; elle ne répète pas la prestation de pose déjà listée en 4 ou 5.
+- Une même réserve, un même point manquant ou un même constat n'apparaît qu'UNE seule fois.
+- Une prestation n'apparaît jamais dans deux lots, ni dans deux tableaux.
+- La conclusion n'est jamais répétée dans les points bloquants, et il n'y a qu'une seule conclusion.
+- Aucune explication commerciale, aucune demande de transmettre les prix unitaires avant la préparation du brouillon.
 
 CAS DE DOSSIER INSUFFISANT : si la qualité des documents ne permet pas une analyse fiable, conclure simplement par : « Les documents permettent de comprendre l'organisation générale du projet, mais leur résolution ne permet pas d'extraire de manière fiable les cotes et quantités. Les fichiers originaux sont nécessaires avant préparation du devis. » Un rapport court et incomplet vaut mieux qu'un rapport détaillé comportant des informations inventées.
 
@@ -1132,18 +1161,18 @@ Une ligne par pièce réellement transmise, avec le nom exact du fichier et une 
 8 lignes maximum.
 
 ### 3. Travaux identifiés par lot
-Un sous-titre par lot réellement détecté, prestations regroupées, désignations courtes, dépendances utiles signalées. Aucun lot vide.
+Vue synthétique : un sous-titre par lot réellement détecté, puis une liste de désignations courtes (une ligne par prestation, sans quantité, sans unité, sans source, sans réserve). Aucun lot vide, aucune prestation répétée dans deux lots, aucun détail déjà présent dans les sections 4, 5 et 6.
 
 ### 4. Éléments prêts pour le brouillon de devis
-Un tableau : | Lot | Désignation | Quantité | Unité | Nature de la preuve | Source |
-Uniquement les prestations de statut « Prêt pour le brouillon de devis ». Si aucune, écrire une seule ligne de texte l'indiquant.
+Un tableau : | Lot | Désignation | Quantité | Unité | Réserve technique | Nature de la preuve | Source |
+Les prestations de statut « Prêt pour le brouillon de devis » (colonne Réserve technique = « aucune ») ET celles de statut « Prêt pour le brouillon — réserve technique » (quantité et unité confirmées conservées, colonne Réserve technique renseignée avec une valeur du vocabulaire fermé). Si aucune, écrire une seule ligne de texte l'indiquant.
 
 ### 5. Lignes à créer avec quantité à confirmer
 Un tableau : | Lot | Désignation | Unité envisagée | Information manquante | Source |
-Quantité laissée « à confirmer ». Aucun prix, aucune valeur par défaut.
+Uniquement les prestations incomplètes. Quantité laissée « à confirmer ». Unité « à définir » si elle n'est pas déductible de la nature de la prestation ; jamais « forfait » par défaut. Aucun prix, aucune valeur par défaut.
 
 ### 6. Fournitures prévues par le client
-Uniquement si les documents en mentionnent. Sinon omettre entièrement cette section.
+Uniquement si les documents en mentionnent. Lister l'élément fourni, ses caractéristiques connues, la source et l'information manquante — sans répéter la prestation de pose déjà listée en section 4 ou 5. Sinon omettre entièrement cette section.
 
 ### 7. Points bloquants avant devis définitif
 5 points maximum, tous de niveau 1. Pour chacun : le constat, la source, ce qui doit être obtenu.
@@ -1175,23 +1204,37 @@ ${language === 'ar'
 Ne prétends alors avoir relu aucun fichier.`;
 
       // Langue du rapport destiné à l'artisan connecté (jamais à un tiers).
+      // La variante linguistique provient EXCLUSIVEMENT du profil existant
+      // (userProfile.dialect) : aucun nouveau sélecteur, aucun nouveau système.
       if (language === 'ar') {
+        const deepDialect = typeof userProfile?.dialect === 'string' && userProfile.dialect.trim()
+          ? userProfile.dialect.trim().toLowerCase()
+          : 'egyptien';
+        const deepVariantRules: Record<string, string> = {
+          egyptien: 'DIALECTE ÉGYPTIEN naturel (عامية مصرية) tel que parlé sur les chantiers. Exemples de tournures : « لازم »، « محتاج »، « دلوقتي »، « الشغل ده ».',
+          marocain: 'DARIJA MAROCAINE naturelle tel que parlée sur les chantiers. Exemples de tournures : « خاص »، « كاين »، « دابا »، « هاد الخدمة ». N\'écris jamais en égyptien.',
+          algerien: 'DIALECTE ALGÉRIEN naturel tel que parlé sur les chantiers. Exemples de tournures : « لازم »، « كاين »، « درك »، « هاد الخدمة ». N\'écris jamais en égyptien ni en marocain.',
+          algérien: 'DIALECTE ALGÉRIEN naturel tel que parlé sur les chantiers. Exemples de tournures : « لازم »، « كاين »، « درك »، « هاد الخدمة ». N\'écris jamais en égyptien ni en marocain.',
+          tunisien: 'DIALECTE TUNISIEN naturel tel que parlé sur les chantiers. Exemples de tournures : « لازم »، « فمّا »، « توّا »، « هاذي الخدمة ». N\'écris jamais en égyptien ni en marocain.',
+        };
+        const variantRule = deepVariantRules[deepDialect] || deepVariantRules.egyptien;
+
         finalSystemPrompt += `
 
-LANGUE DU RAPPORT : rédige TOUT le rapport en arabe naturel, clair et professionnel (arabe standard simple compréhensible par un artisan égyptien). Le rapport est destiné à l'artisan connecté.
-RÈGLES DE LANGUE ARABE (impératives) :
-- Titres, phrases, explications, risques, questions et conclusions : en arabe. Aucune phrase moitié arabe / moitié française.
+LANGUE DU RAPPORT (variante enregistrée dans le profil de l'artisan) : rédige TOUT le rapport dans la variante suivante — ${variantRule}
+RÈGLES DE LANGUE (impératives) :
+- N'IMPOSE JAMAIS d'arabe littéraire (فصحى) à la place de la variante ci-dessus. Ne mélange jamais deux dialectes différents dans le même rapport.
+- Utilise naturellement le vocabulaire BTP compris par les artisans : les mots dialectaux réellement employés sur les chantiers et les termes techniques français couramment utilisés en France.
+- Titres, phrases, explications, réserves, questions et conclusion : dans cette variante. Aucune phrase moitié arabe / moitié française.
 - Le titre unique du rapport doit être exactement : « ## التحليل الفني المعمق ». N'écris jamais le titre français.
-- Traduis les titres des 9 sections en arabe, dans le même ordre et avec le même contenu.
-- Emploie d'abord le terme arabe. Tu peux ajouter le terme professionnel français entre parenthèses UNIQUEMENT à sa première apparition, et seulement s'il aide l'artisan à reconnaître le mot utilisé en France. Ensuite, n'utilise plus que le terme arabe.
-  Exemples corrects : الجدران الفاصلة (cloisons) ، الهيكل الخشبي (ossature bois) ، ألواح الجبس (placo) ، تسوية الأرضية (ragréage) ، عرض السعر (devis).
-- Translittérations maladroites INTERDITES (« الدوفي »، « البانتيرة »...) quand une expression arabe claire existe : écris « عرض السعر »، « الدهان ».
-- Restent dans leur forme originale : noms de personnes, adresses, noms de fichiers, dimensions, unités (m², ml, u), références produits et sigles officiels (DTU, RE2020...).
+- Traduis les titres des 9 sections dans cette variante, dans le même ordre et avec le même contenu.
+- Restent en français / dans leur forme originale : noms de fichiers, normes et sigles (DTU, RE2020, BA13, IPN, IPE...), dimensions, unités (m², ml, m³, u), références produits, ainsi que les termes techniques de chantier couramment employés en français (placo, ragréage, sous-couche, cloison, étaiement...).
+- N'utilise JAMAIS le prénom ni le nom de l'utilisateur : le rapport n'est jamais personnalisé.
 - Nature de la preuve, à écrire exactement ainsi : « مذكورة صراحة في المستند » / « مؤكدة بصرياً » / « مقروءة جزئياً » / « محسوبة من المستند » / « افتراض » / « غير قابلة للتحقق ».
-- Conserve les tableaux avec les mêmes colonnes (en-têtes en arabe, valeurs, quantités et unités inchangées).
-- Le contenu technique, les quantités, les statuts et les niveaux de fiabilité sont IDENTIQUES à la version française : seule la langue change.
-- Aucune donnée nouvelle, aucune interprétation supplémentaire.
-- N'écris jamais de prix.`;
+- Réserve technique, à écrire exactement ainsi : « ماكانش » / « الأرضية لازم تتأكد » / « لازم نتأكد إذا الحيطة حاملة » / « مرجع المنتج لازم يتأكد » / « التنفيذ حسب المخطط التقني ».
+- Conserve les tableaux avec les mêmes colonnes (en-têtes traduits, valeurs, quantités et unités inchangées).
+- Le contenu technique, les quantités, les statuts, les réserves et les niveaux de fiabilité sont IDENTIQUES à la version française : seule la langue change.
+- Aucune donnée nouvelle, aucune interprétation supplémentaire. N'écris jamais de prix.`;
       }
 
       const deepParts: any[] = [];

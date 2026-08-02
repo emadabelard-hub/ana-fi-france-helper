@@ -1565,6 +1565,35 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
       stream: true,
     });
 
+    // La Lovable AI Gateway (Gemini) n'accepte pas les blocs `document` PDF :
+    // avant la bascule, chaque bloc PDF natif est remplacé par son repli
+    // (images de pages, sinon couche texte). Aucun bloc PDF vide n'est envoyé.
+    const buildGatewayBody = (): string => {
+      try {
+        const parsed = JSON.parse(aiRequestBody);
+        let replaced = 0;
+        for (const m of parsed.messages ?? []) {
+          if (!Array.isArray(m?.content)) continue;
+          const next: any[] = [];
+          for (const part of m.content) {
+            if (part?.type === 'document') {
+              replaced += 1;
+              const fb = Array.isArray(part._fallback) ? part._fallback : [];
+              next.push(...(fb.length ? fb : [{ type: 'text', text: 'PDF non exploitable par ce fournisseur.' }]));
+            } else {
+              next.push(part);
+            }
+          }
+          m.content = next;
+        }
+        if (replaced > 0) console.log(`[ai-assistant][ingestion] bascule Gateway : ${replaced} bloc(s) PDF natif(s) remplacé(s) par leur repli`);
+        return JSON.stringify(parsed);
+      } catch (e) {
+        console.warn('[ai-assistant] sanitisation Gateway impossible', e instanceof Error ? e.message : String(e));
+        return aiRequestBody;
+      }
+    };
+
     const callGateway = () =>
       fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -1572,7 +1601,7 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
           "Lovable-API-Key": LOVABLE_API_KEY,
           "Content-Type": "application/json",
         },
-        body: aiRequestBody,
+        body: buildGatewayBody(),
       });
 
     let response: Response;

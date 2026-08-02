@@ -171,10 +171,12 @@ const isAnnotationOnly = (
   const cat = (category || '').toLowerCase();
   const full = `${t}\n${context}`;
 
-  // Annotation explicite en tête de désignation → exige une action prouvée.
+  // Annotation explicite en tête de désignation → exige une action en tête
+  // (un participe passé descriptif « posée sur linteau » n'est pas une action).
   if (ANNOTATION_PATTERNS.some((r) => r.test(t))) {
-    return !hasAction(t);
+    return !hasAction(t.slice(0, 30));
   }
+
   if (/annotation|cote|cotation|dimension|caract[ée]ristique|information|note technique|structure existante/.test(cat)) {
     return !hasAction(full);
   }

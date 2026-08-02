@@ -1094,7 +1094,13 @@ Lorsqu'un calcul fiable est impossible, écrire « Quantité à confirmer » (ou
 DÉSIGNATIONS : courtes, précises, compréhensibles, adaptées à un devis professionnel, non tronquées, non répétitives. Pas de longue phrase narrative dans une ligne de devis. Séparer désignation courte / détails techniques / réserve / éléments à confirmer.
 Exemple : Désignation « Création de cloisons isolées » — Détails « Ossature métallique, isolation phonique et plaques adaptées aux locaux concernés. » — Réserve « Hauteur à confirmer avant calcul de la surface définitive. »
 
-UNITÉS : m² pour les surfaces, ml pour les longueurs, m³ pour les volumes, u pour les équipements ou éléments comptables, forfait uniquement si aucune unité physique n'est adaptée et que le forfait est réellement justifié. Ne jamais utiliser u pour une surface de mur, de plafond, de peinture, de carrelage ou d'isolation. Aucune conversion automatique sans données suffisantes.
+UNITÉS : m² pour les surfaces, ml pour les longueurs, m³ pour les volumes, u pour les équipements ou éléments comptables. Ne jamais utiliser u pour une surface de mur, de plafond, de peinture, de carrelage ou d'isolation. Aucune conversion automatique sans données suffisantes.
+INTERDICTION DU FORFAIT AUTOMATIQUE : une quantité inconnue ne doit JAMAIS être remplacée par l'unité « forfait ».
+- quantité inconnue → quantité vide / « à confirmer » (jamais 1, jamais une valeur par défaut) ;
+- unité réellement inconnue → « à définir » ;
+- « forfait » uniquement si le document indique explicitement une prestation forfaitaire, ou si la nature indivisible de la prestation le justifie clairement ;
+- ne jamais choisir « forfait » pour contourner l'absence de métrage.
+Exemples : modification de toiture sans étendue connue → unité « à définir » ; réseaux de plomberie sans longueur connue → « à définir » ; ouverture structurelle sans dimensions confirmées → « à définir » ; évacuation de gravats sans volume connu → « à définir » sauf forfait explicitement prévu ; appareillage électrique sans nombre connu → u, quantité à confirmer ; ragréage sans surface connue → m², quantité à confirmer. Conserver une unité probable uniquement lorsqu'elle découle clairement de la nature de la prestation.
 
 FOURNITURES DU CLIENT : identifier séparément les fournitures explicitement à la charge du client, avec type, quantité, dimensions/références, source, informations manquantes et impact possible sur la pose. Ne jamais conclure que la pose est impossible parce que la référence exacte manque : la ligne de pose peut être préparée avec la réserve « Le prix définitif de pose pourra dépendre du format, du poids, du support, des découpes et du système de fixation. »
 

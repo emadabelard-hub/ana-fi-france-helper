@@ -1745,7 +1745,9 @@ const AIAssistantPage = () => {
       let meta: typeof factsDraft.meta;
 
 
-      if (factsDraft.lines.length > 0) {
+      const fromFacts = factsDraft.lines.length > 0;
+
+      if (fromFacts) {
         rawItems = factsDraft.rawItems;
         items = factsDraft.lines;
         meta = factsDraft.meta;
@@ -1829,6 +1831,9 @@ const AIAssistantPage = () => {
           const { data, error } = await supabase.functions.invoke('invoice-mentor', {
             body: {
               action: 'reformulate_btp_batch',
+              // Lignes issues des faits BTP : reformulation strictement fidèle
+              // à la source (aucun ajout de fourniture / nettoyage / raccordement…).
+              strict_source_preserving: fromFacts,
               items: candidates.map((c) => ({ id: c.id, text: c.text, context: c.context })),
             },
           });
@@ -1841,7 +1846,15 @@ const AIAssistantPage = () => {
             }
             for (const c of candidates) {
               const reworded = map.get(c.id);
-              if (reworded) items[c.itemIdx].designation_fr = reworded;
+              if (!reworded) continue;
+              const target = items[c.itemIdx];
+              // Fourniture client : « Fourniture et pose » reste interdit.
+              target.designation_fr = (target as any).clientSupplied === true
+                ? reworded
+                    .replace(/^fourniture\s+et\s+pose\s+(de\s+|d[’']|du\s+|des\s+|de\s+la\s+)?/i, 'Pose de ')
+                    .replace(/^fourniture\s+et\s+installation\s+(de\s+|d[’']|du\s+|des\s+)?/i, 'Pose de ')
+                    .replace(/^fourniture\s+(et\s+)?pose\b/i, 'Pose')
+                : reworded;
             }
           } else if (error) {
             console.warn('[AIAssistant] reformulate_btp_batch error, keeping originals', error);

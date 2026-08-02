@@ -40,7 +40,7 @@ describe('buildDraftLinesFromFacts', () => {
       { descriptionExact: 'Dépose portes', quantity: 4, unit: 'u', status: 'ready_for_draft' },
     ]));
     expect(r.lines).toHaveLength(1);
-    expect(r.pendingCount).toBe(3);
+    expect(r.pendingCount).toBe(2); // le doublon est dédupliqué, non « à confirmer »
     expect(r.lines.every(l => l.quantity !== 1)).toBe(true);
   });
 

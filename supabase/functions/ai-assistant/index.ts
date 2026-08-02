@@ -1206,6 +1206,21 @@ RÈGLES DE LANGUE ARABE (impératives) :
       }
 
       const deepParts: any[] = [];
+
+      // Faits structurés issus de l'étape d'extraction factuelle : source
+      // PRIORITAIRE du rapport. Aucun statut ne peut être relevé ici.
+      const deepFactsPayload = typeof rawBtpFacts === 'string'
+        ? rawBtpFacts.trim()
+        : rawBtpFacts ? JSON.stringify(rawBtpFacts) : '';
+      if (deepFactsPayload) {
+        deepParts.push({
+          type: 'text',
+          text: `FAITS STRUCTURÉS DÉJÀ EXTRAITS (source prioritaire du rapport). Chaque fait conserve son statut (certain / lecture_partielle / absent), sa source et son niveau de confiance. Tu ne peux ni élever un statut, ni ajouter une quantité absente, ni supprimer une réserve.
+
+${deepFactsPayload}`,
+        });
+      }
+
       deepParts.push({
         type: 'text',
         text: `Voici le dossier documentaire déjà analysé (issu du bloc <ANAFYPRO_DOCUMENT_DATA> produit lors de l'analyse initiale). Produis l'ANALYSE TECHNIQUE APPROFONDIE en respectant strictement la structure et les règles données.
@@ -1214,6 +1229,7 @@ RÈGLES DE LANGUE ARABE (impératives) :
 ${btpJson}
 </ANAFYPRO_DOCUMENT_DATA>`,
       });
+
 
       if (typeof userQuestion === 'string' && userQuestion.trim()) {
         deepParts.push({

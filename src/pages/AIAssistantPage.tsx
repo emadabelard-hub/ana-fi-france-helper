@@ -1070,20 +1070,76 @@ const AIAssistantPage = () => {
       }
       try {
         if (isImage) {
-          const dataUrl = await readFileAsDataUrl(file);
-          added.push({ kind: 'image', name: file.name, dataUrl });
+          const raw = await readFileAsDataUrl(file);
+          const ing = await ingestImage(raw);
+          added.push({
+            kind: 'image',
+            name: file.name,
+            dataUrl: ing.dataUrl,
+            width: ing.width,
+            height: ing.height,
+            compressed: ing.compressed,
+            lowResolution: ing.lowResolution,
+          });
+          console.log('[AIAssistant][ingestion]', {
+            file: file.name, type: 'image', bytes: file.size,
+            method: 'image', width: ing.width, height: ing.height,
+            compressed: ing.compressed, lowResolution: ing.lowResolution,
+          });
         } else if (isDocx) {
           const text = await extractTextFromDocx(file);
-          added.push({ kind: 'docx', name: file.name, text: text.slice(0, 50000) });
+          const truncated = text.length > 50000;
+          added.push({
+            kind: 'docx',
+            name: file.name,
+            text: text.slice(0, 50000),
+            docxExtractionMode: 'raw_text',
+            textOriginalLength: text.length,
+            textTruncated: truncated,
+          });
+          console.log('[AIAssistant][ingestion]', {
+            file: file.name, type: 'docx', bytes: file.size,
+            method: 'raw_text', textExtracted: text.trim().length > 0, truncated,
+          });
         } else {
           const dataUrl = await readFileAsDataUrl(file);
-          const text = await extractTextFromPDF(dataUrl);
-          added.push({ kind: 'pdf', name: file.name, text: text.slice(0, 50000) });
+          const ing = await ingestPdf(dataUrl);
+          const truncated = ing.text.length > 50000;
+          added.push({
+            kind: 'pdf',
+            name: file.name,
+            mimeType: 'application/pdf',
+            base64: dataUrlToBase64(dataUrl),
+            text: ing.text.slice(0, 50000),
+            textExtractionStatus: ing.textStatus,
+            textOriginalLength: ing.text.length,
+            textTruncated: truncated,
+            pageCount: ing.pageCount,
+            pageImages: ing.pageImages.length > 0 ? ing.pageImages : undefined,
+            pagesRendered: ing.pagesRendered,
+            pagesSkipped: ing.pagesSkipped,
+          });
+          console.log('[AIAssistant][ingestion]', {
+            file: file.name, type: 'pdf', bytes: file.size,
+            method: 'native_document',
+            pageCount: ing.pageCount,
+            textExtracted: ing.textStatus === 'text_layer',
+            pagesRendered: ing.pagesRendered,
+            pagesSkipped: ing.pagesSkipped,
+            truncated,
+          });
+          if (ing.pagesSkipped > 0) {
+            toast({
+              title: file.name,
+              description: `${ing.pagesSkipped} page(s) non rendue(s) en image (limite de taille) — le PDF original reste transmis.`,
+            });
+          }
         }
       } catch (err) {
         console.error('File processing error:', err);
         toast({ variant: 'destructive', title: t('aiAssistant.file.readError'), description: file.name });
       }
+
     }
     if (added.length > 0) setAttachments(prev => [...prev, ...added]);
     setIsProcessingFile(false);

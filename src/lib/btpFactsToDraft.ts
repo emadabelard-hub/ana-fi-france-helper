@@ -126,6 +126,20 @@ const ACTION_PATTERNS = [
   /renforcement/i, /coffrage/i, /ferraillage/i, /ma[çc]onnerie/i, /plomberie/i,
   /[ée]lectricit[ée]/i, /menuiserie/i, /solivage\s+(à|a)\s+cr[ée]er/i,
   /application/i, /traitement/i, /mise en (œuvre|oeuvre|place)/i, /d[ée]capage/i,
+  // Actions complémentaires (fabrication, montage, habillage…)
+  /fabrication/i, /fabriquer/i, /confection/i, /montage/i, /monter\b/i,
+  /assemblage/i, /habillage/i, /r[ée]paration/i, /r[ée]parer/i, /d[ée]placement/i,
+  /d[ée]placer/i, /mise\s+en\s+service/i, /branchement/i, /alimentation\s+en\s+eau/i,
+  /tablette/i, /coffre\b/i, /niche\b/i,
+];
+
+// ── Catégorie A bis : équipements dont la pose est une prestation réelle ───
+// (utilisés uniquement quand une quantité et une unité facturables existent)
+const EQUIPMENT_PATTERNS = [
+  /\bwc\b/i, /cuvette/i, /lave[- ]mains/i, /lavabo/i, /vasque/i, /meuble\s+vasque/i,
+  /douche/i, /baignoire/i, /baln[ée]o/i, /receveur/i, /miroir/i, /paroi\b/i,
+  /robinetterie/i, /mitigeur/i, /radiateur/i, /s[èe]che[- ]serviettes/i,
+  /tablette/i, /porte\b/i, /fen[êe]tre/i, /plinthe/i, /parquet/i, /faïence/i,
 ];
 
 // ── Catégorie B : caractéristique / annotation technique (non facturable) ──
@@ -138,20 +152,41 @@ const ANNOTATION_PATTERNS = [
   /^dalle\s+(existante|b[ée]ton)\b/i,
 ];
 
-const isAnnotationOnly = (text: string, category: string | null): boolean => {
+const hasAction = (text: string): boolean => ACTION_PATTERNS.some((r) => r.test(text));
+
+/**
+ * Décision conjointe : la ligne décrit-elle uniquement une annotation technique ?
+ * L'action de travaux est cherchée dans la désignation, la preuve, la catégorie
+ * et le matériau. Un équipement quantifié (WC, vasque, tablette…) accompagné
+ * d'une quantité et d'une unité facturables reste une prestation de pose.
+ */
+const isAnnotationOnly = (
+  text: string,
+  category: string | null,
+  context = '',
+  billableQuantity = false,
+): boolean => {
   const t = text.trim();
   if (!t) return true;
   const cat = (category || '').toLowerCase();
-  if (/annotation|cote|cotation|dimension|caract[ée]ristique|information|note technique|structure existante/.test(cat)) {
-    // La catégorie annonce une information : action explicite exigée.
-    return !ACTION_PATTERNS.some((r) => r.test(t));
-  }
+  const full = `${t}\n${context}`;
+
+  // Annotation explicite en tête de désignation → exige une action en tête
+  // (un participe passé descriptif « posée sur linteau » n'est pas une action).
   if (ANNOTATION_PATTERNS.some((r) => r.test(t))) {
-    return !ACTION_PATTERNS.some((r) => r.test(t));
+    return !hasAction(t.slice(0, 30));
   }
-  // Aucun verbe / substantif d'action identifiable → prudence : non facturable.
-  return !ACTION_PATTERNS.some((r) => r.test(t));
+
+  if (/annotation|cote|cotation|dimension|caract[ée]ristique|information|note technique|structure existante/.test(cat)) {
+    return !hasAction(full);
+  }
+  if (hasAction(full)) return false;
+  // Équipement identifié avec quantité et unité facturables → prestation.
+  if (billableQuantity && EQUIPMENT_PATTERNS.some((r) => r.test(full))) return false;
+  // Aucune action identifiable → prudence : non facturable.
+  return true;
 };
+
 
 // ── Dimension utilisée comme quantité ─────────────────────────────────────
 const DIMENSION_ONLY = /\b(longueur|largeur|hauteur|port[ée]e|entraxe|[ée]paisseur)\b/i;
@@ -253,8 +288,20 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
 
     if (!designation) return;
 
+    const unitReadable = isReadableUnit(unit);
+    const unitStr = unitReadable ? String(unit).trim() : '';
+    const billableQuantity =
+      TRANSFERABLE.has(status) && quantity !== null && quantity > 0 && unitReadable;
+
     // 5. Exclusion des annotations / caractéristiques techniques.
-    if (isAnnotationOnly(designation, category)) {
+    if (
+      isAnnotationOnly(
+        designation,
+        category,
+        `${evidenceText}\n${material}\n${location}\n${category ?? ''}`,
+        billableQuantity,
+      )
+    ) {
       excludedAnnotations += 1;
       const parts = [designation];
       if (dimensions) parts.push(dimensions);
@@ -264,8 +311,6 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
       return;
     }
 
-    const unitReadable = isReadableUnit(unit);
-    const unitStr = unitReadable ? String(unit).trim() : '';
 
     // 6. Une cote d'ouvrage n'est jamais une quantité de travaux.
     if (

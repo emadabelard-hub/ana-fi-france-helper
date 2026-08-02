@@ -1739,8 +1739,11 @@ const AIAssistantPage = () => {
       const factsDraft = buildDraftLinesFromFacts(factsSource);
 
       let rawItems: any[];
-      let items: typeof factsDraft.lines;
+      // Les lignes issues de btpFacts portent une provenance (sourceOrigin)
+      // qui verrouille leur unité en aval ; les autres n'en ont pas.
+      let items: Array<typeof factsDraft.lines[number] | (Omit<typeof factsDraft.lines[number], 'sourceOrigin'> & { sourceOrigin?: undefined })>;
       let meta: typeof factsDraft.meta;
+
 
       if (factsDraft.lines.length > 0) {
         rawItems = factsDraft.rawItems;

@@ -1129,7 +1129,17 @@ NIVEAUX DE PRIORITÉ des informations manquantes (vocabulaire fermé) :
 - « Niveau 3 — À confirmer avant travaux » : choix esthétique ou détail confirmable après le brouillon.
 Ne jamais présenter le budget du client comme une donnée technique bloquante.
 
-LONGUEUR : rapport COURT et opérationnel. Environ 500 à 1 200 mots pour un dossier simple, 1 800 mots maximum pour un dossier complexe. Ne jamais allonger artificiellement, ne pas reproduire l'analyse initiale, ne pas répéter la même réserve dans plusieurs sections, une seule conclusion.
+LONGUEUR : rapport COURT et opérationnel, environ 600 à 800 mots lorsque le dossier le permet. Un dossier complexe peut dépasser légèrement cette limite uniquement si c'est nécessaire pour ne pas perdre une information importante. Ne supprime jamais une information fiable seulement pour respecter une limite de longueur. Ne jamais allonger artificiellement, ne pas reproduire l'analyse initiale.
+
+ZÉRO RÉPÉTITION (règle d'appartenance unique) : chaque information appartient à UNE SEULE section, celle où elle est la plus pertinente.
+- Section 3 « Travaux identifiés par lot » : vue SYNTHÉTIQUE uniquement (désignations courtes regroupées par lot). Elle ne reprend ni les quantités, ni les unités, ni les sources, ni les réserves détaillées des sections 4, 5 et 6.
+- Section 4 : le détail des prestations transférables (avec ou sans réserve technique).
+- Section 5 : uniquement les prestations incomplètes (quantité à confirmer).
+- Section 6 : uniquement l'objet fourni par le client et ce qui manque à son sujet ; elle ne répète pas la prestation de pose déjà listée en 4 ou 5.
+- Une même réserve, un même point manquant ou un même constat n'apparaît qu'UNE seule fois.
+- Une prestation n'apparaît jamais dans deux lots, ni dans deux tableaux.
+- La conclusion n'est jamais répétée dans les points bloquants, et il n'y a qu'une seule conclusion.
+- Aucune explication commerciale, aucune demande de transmettre les prix unitaires avant la préparation du brouillon.
 
 CAS DE DOSSIER INSUFFISANT : si la qualité des documents ne permet pas une analyse fiable, conclure simplement par : « Les documents permettent de comprendre l'organisation générale du projet, mais leur résolution ne permet pas d'extraire de manière fiable les cotes et quantités. Les fichiers originaux sont nécessaires avant préparation du devis. » Un rapport court et incomplet vaut mieux qu'un rapport détaillé comportant des informations inventées.
 

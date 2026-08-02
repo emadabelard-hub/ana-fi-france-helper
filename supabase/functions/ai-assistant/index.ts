@@ -1114,6 +1114,12 @@ LONGUEUR : rapport COURT et opérationnel. Environ 500 à 1 200 mots pour un dos
 
 CAS DE DOSSIER INSUFFISANT : si la qualité des documents ne permet pas une analyse fiable, conclure simplement par : « Les documents permettent de comprendre l'organisation générale du projet, mais leur résolution ne permet pas d'extraire de manière fiable les cotes et quantités. Les fichiers originaux sont nécessaires avant préparation du devis. » Un rapport court et incomplet vaut mieux qu'un rapport détaillé comportant des informations inventées.
 
+FORMAT MARKDOWN IMPOSÉ (aucune variante) :
+- Le rapport commence EXACTEMENT par la ligne \`## Analyse technique approfondie\` (deux dièses, jamais un seul, jamais trois). Ce titre apparaît une seule fois.
+- Chaque section utilise EXACTEMENT trois dièses : \`### 1. …\` à \`### 9. …\`.
+- La numérotation des sections est FIXE : une section omise (par exemple « 6. Fournitures prévues par le client » absente) ne décale JAMAIS les numéros suivants.
+- Les sous-titres de lot utilisent quatre dièses : \`#### Nom du lot\`.
+
 STRUCTURE FINALE OBLIGATOIRE (Markdown, cet ordre exact, ces titres exacts, un seul titre principal) :
 
 ## Analyse technique approfondie

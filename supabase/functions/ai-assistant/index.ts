@@ -1161,18 +1161,18 @@ Une ligne par pièce réellement transmise, avec le nom exact du fichier et une 
 8 lignes maximum.
 
 ### 3. Travaux identifiés par lot
-Un sous-titre par lot réellement détecté, prestations regroupées, désignations courtes, dépendances utiles signalées. Aucun lot vide.
+Vue synthétique : un sous-titre par lot réellement détecté, puis une liste de désignations courtes (une ligne par prestation, sans quantité, sans unité, sans source, sans réserve). Aucun lot vide, aucune prestation répétée dans deux lots, aucun détail déjà présent dans les sections 4, 5 et 6.
 
 ### 4. Éléments prêts pour le brouillon de devis
-Un tableau : | Lot | Désignation | Quantité | Unité | Nature de la preuve | Source |
-Uniquement les prestations de statut « Prêt pour le brouillon de devis ». Si aucune, écrire une seule ligne de texte l'indiquant.
+Un tableau : | Lot | Désignation | Quantité | Unité | Réserve technique | Nature de la preuve | Source |
+Les prestations de statut « Prêt pour le brouillon de devis » (colonne Réserve technique = « aucune ») ET celles de statut « Prêt pour le brouillon — réserve technique » (quantité et unité confirmées conservées, colonne Réserve technique renseignée avec une valeur du vocabulaire fermé). Si aucune, écrire une seule ligne de texte l'indiquant.
 
 ### 5. Lignes à créer avec quantité à confirmer
 Un tableau : | Lot | Désignation | Unité envisagée | Information manquante | Source |
-Quantité laissée « à confirmer ». Aucun prix, aucune valeur par défaut.
+Uniquement les prestations incomplètes. Quantité laissée « à confirmer ». Unité « à définir » si elle n'est pas déductible de la nature de la prestation ; jamais « forfait » par défaut. Aucun prix, aucune valeur par défaut.
 
 ### 6. Fournitures prévues par le client
-Uniquement si les documents en mentionnent. Sinon omettre entièrement cette section.
+Uniquement si les documents en mentionnent. Lister l'élément fourni, ses caractéristiques connues, la source et l'information manquante — sans répéter la prestation de pose déjà listée en section 4 ou 5. Sinon omettre entièrement cette section.
 
 ### 7. Points bloquants avant devis définitif
 5 points maximum, tous de niveau 1. Pour chacun : le constat, la source, ce qui doit être obtenu.

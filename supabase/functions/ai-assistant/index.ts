@@ -1194,13 +1194,14 @@ LANGUE DU RAPPORT : rédige TOUT le rapport en arabe naturel, clair et professio
 RÈGLES DE LANGUE ARABE (impératives) :
 - Titres, phrases, explications, risques, questions et conclusions : en arabe. Aucune phrase moitié arabe / moitié française.
 - Le titre unique du rapport doit être exactement : « ## التحليل الفني المعمق ». N'écris jamais le titre français.
-- Traduis les titres des 7 sections en arabe, dans le même ordre et avec le même contenu.
+- Traduis les titres des 9 sections en arabe, dans le même ordre et avec le même contenu.
 - Emploie d'abord le terme arabe. Tu peux ajouter le terme professionnel français entre parenthèses UNIQUEMENT à sa première apparition, et seulement s'il aide l'artisan à reconnaître le mot utilisé en France. Ensuite, n'utilise plus que le terme arabe.
   Exemples corrects : الجدران الفاصلة (cloisons) ، الهيكل الخشبي (ossature bois) ، ألواح الجبس (placo) ، تسوية الأرضية (ragréage) ، عرض السعر (devis).
 - Translittérations maladroites INTERDITES (« الدوفي »، « البانتيرة »...) quand une expression arabe claire existe : écris « عرض السعر »، « الدهان ».
 - Restent dans leur forme originale : noms de personnes, adresses, noms de fichiers, dimensions, unités (m², ml, u), références produits et sigles officiels (DTU, RE2020...).
-- Niveaux de fiabilité du tableau, à écrire exactement ainsi : « مذكورة صراحة في المستند » / « محسوبة من المستند » / « مقروءة جزئياً » / « تحتاج إلى التحقق » / « غير محددة ».
-- Conserve le tableau des quantités avec les mêmes colonnes (en-têtes en arabe, valeurs et unités inchangées).
+- Nature de la preuve, à écrire exactement ainsi : « مذكورة صراحة في المستند » / « مؤكدة بصرياً » / « مقروءة جزئياً » / « محسوبة من المستند » / « افتراض » / « غير قابلة للتحقق ».
+- Conserve les tableaux avec les mêmes colonnes (en-têtes en arabe, valeurs, quantités et unités inchangées).
+- Le contenu technique, les quantités, les statuts et les niveaux de fiabilité sont IDENTIQUES à la version française : seule la langue change.
 - Aucune donnée nouvelle, aucune interprétation supplémentaire.
 - N'écris jamais de prix.`;
       }

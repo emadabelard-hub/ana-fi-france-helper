@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X, Trash2, Paperclip, FileText, Loader2, Copy, Check, ChevronDown, ChevronUp, Search, ClipboardList, Building, Layers, Ruler, Package, AlertTriangle, HelpCircle, Percent, Calculator } from 'lucide-react';
-import { extractTextFromPDF } from '@/lib/pdfExtractor';
+import { ingestPdf, ingestImage, dataUrlToBase64 } from '@/lib/pdfIngest';
 import { extractTextFromDocx } from '@/lib/docxExtractor';
 import RoomScannerModal from '@/components/scanner/RoomScannerModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
@@ -21,9 +21,39 @@ import { correctArtisanVocabulary } from '@/lib/artisanVocabulary';
 type ConversationSummary = { id: string; title: string | null; updated_at: string };
 
 type MsgAttachment =
-  | { kind: 'image'; name: string; dataUrl: string }
-  | { kind: 'pdf'; name: string; text: string }
-  | { kind: 'docx'; name: string; text: string };
+  | {
+      kind: 'image';
+      name: string;
+      dataUrl: string;
+      width?: number;
+      height?: number;
+      compressed?: boolean;
+      lowResolution?: boolean;
+    }
+  | {
+      kind: 'pdf';
+      name: string;
+      text: string;
+      // Le PDF original est conservé et transmis au modèle (document natif).
+      mimeType?: 'application/pdf';
+      base64?: string;
+      textExtractionStatus?: 'text_layer' | 'empty' | 'failed';
+      textOriginalLength?: number;
+      textTruncated?: boolean;
+      pageCount?: number;
+      pageImages?: string[];
+      pagesRendered?: number;
+      pagesSkipped?: number;
+    }
+  | {
+      kind: 'docx';
+      name: string;
+      text: string;
+      docxExtractionMode?: 'raw_text';
+      textOriginalLength?: number;
+      textTruncated?: boolean;
+    };
+
 
 type ResultType = 'document_analysis' | 'btp_facts' | 'btp_control' | 'btp_deep_analysis';
 
@@ -1040,20 +1070,76 @@ const AIAssistantPage = () => {
       }
       try {
         if (isImage) {
-          const dataUrl = await readFileAsDataUrl(file);
-          added.push({ kind: 'image', name: file.name, dataUrl });
+          const raw = await readFileAsDataUrl(file);
+          const ing = await ingestImage(raw);
+          added.push({
+            kind: 'image',
+            name: file.name,
+            dataUrl: ing.dataUrl,
+            width: ing.width,
+            height: ing.height,
+            compressed: ing.compressed,
+            lowResolution: ing.lowResolution,
+          });
+          console.log('[AIAssistant][ingestion]', {
+            file: file.name, type: 'image', bytes: file.size,
+            method: 'image', width: ing.width, height: ing.height,
+            compressed: ing.compressed, lowResolution: ing.lowResolution,
+          });
         } else if (isDocx) {
           const text = await extractTextFromDocx(file);
-          added.push({ kind: 'docx', name: file.name, text: text.slice(0, 50000) });
+          const truncated = text.length > 50000;
+          added.push({
+            kind: 'docx',
+            name: file.name,
+            text: text.slice(0, 50000),
+            docxExtractionMode: 'raw_text',
+            textOriginalLength: text.length,
+            textTruncated: truncated,
+          });
+          console.log('[AIAssistant][ingestion]', {
+            file: file.name, type: 'docx', bytes: file.size,
+            method: 'raw_text', textExtracted: text.trim().length > 0, truncated,
+          });
         } else {
           const dataUrl = await readFileAsDataUrl(file);
-          const text = await extractTextFromPDF(dataUrl);
-          added.push({ kind: 'pdf', name: file.name, text: text.slice(0, 50000) });
+          const ing = await ingestPdf(dataUrl);
+          const truncated = ing.text.length > 50000;
+          added.push({
+            kind: 'pdf',
+            name: file.name,
+            mimeType: 'application/pdf',
+            base64: dataUrlToBase64(dataUrl),
+            text: ing.text.slice(0, 50000),
+            textExtractionStatus: ing.textStatus,
+            textOriginalLength: ing.text.length,
+            textTruncated: truncated,
+            pageCount: ing.pageCount,
+            pageImages: ing.pageImages.length > 0 ? ing.pageImages : undefined,
+            pagesRendered: ing.pagesRendered,
+            pagesSkipped: ing.pagesSkipped,
+          });
+          console.log('[AIAssistant][ingestion]', {
+            file: file.name, type: 'pdf', bytes: file.size,
+            method: 'native_document',
+            pageCount: ing.pageCount,
+            textExtracted: ing.textStatus === 'text_layer',
+            pagesRendered: ing.pagesRendered,
+            pagesSkipped: ing.pagesSkipped,
+            truncated,
+          });
+          if (ing.pagesSkipped > 0) {
+            toast({
+              title: file.name,
+              description: `${ing.pagesSkipped} page(s) non rendue(s) en image (limite de taille) — le PDF original reste transmis.`,
+            });
+          }
         }
       } catch (err) {
         console.error('File processing error:', err);
         toast({ variant: 'destructive', title: t('aiAssistant.file.readError'), description: file.name });
       }
+
     }
     if (added.length > 0) setAttachments(prev => [...prev, ...added]);
     setIsProcessingFile(false);
@@ -1143,16 +1229,9 @@ const AIAssistantPage = () => {
         },
         body: JSON.stringify({
           messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
-          attachment: currentAttachments[0]
-            ? currentAttachments[0].kind === 'image'
-              ? { kind: 'image', name: currentAttachments[0].name, dataUrl: currentAttachments[0].dataUrl }
-              : { kind: currentAttachments[0].kind, name: currentAttachments[0].name, text: currentAttachments[0].text }
-            : null,
-          attachments: currentAttachments.map(a =>
-            a.kind === 'image'
-              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-              : { kind: a.kind, name: a.name, text: a.text }
-          ),
+          attachment: currentAttachments[0] ?? null,
+          // Les pièces sont transmises intégralement (PDF original inclus).
+          attachments: currentAttachments,
           userQuestion: text || null,
           language: language === 'ar' ? 'ar' : 'fr',
           userName: (liveProfile?.full_name?.trim().split(/\s+/)[0]) || userInfo?.name || null,
@@ -1306,11 +1385,7 @@ const AIAssistantPage = () => {
           // Pièces originales du dossier ayant produit CETTE analyse basique
           // (mêmes limites de taille/nombre que l'analyse basique : elles sont
           // réutilisées telles quelles, sans nouvel upload).
-          attachments: sourceAttachments.map(a =>
-            a.kind === 'image'
-              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-              : { kind: a.kind, name: a.name, text: a.text }
-          ),
+          attachments: sourceAttachments,
           originalsAvailable,
           userQuestion: sourceUserText,
           messages: messages.map(m => ({ role: m.role, content: m.content })),
@@ -1473,11 +1548,7 @@ const AIAssistantPage = () => {
         body: JSON.stringify({
           action: 'btp_factual_extraction',
           btpDocData,
-          attachments: sourceAttachments.map(a =>
-            a.kind === 'image'
-              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-              : { kind: a.kind, name: a.name, text: a.text }
-          ),
+          attachments: sourceAttachments,
           originalsAvailable,
           userQuestion: sourceUserText,
           messages: messages.map(m => ({ role: m.role, content: m.content })),
@@ -1594,11 +1665,7 @@ const AIAssistantPage = () => {
         body: JSON.stringify({
           action: 'btp_document_control',
           btpFacts: factsBlock,
-          attachments: sourceAttachments.map(a =>
-            a.kind === 'image'
-              ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-              : { kind: a.kind, name: a.name, text: a.text }
-          ),
+          attachments: sourceAttachments,
           originalsAvailable,
           userQuestion: sourceUserText,
           messages: messages.map(m => ({ role: m.role, content: m.content })),
@@ -1896,11 +1963,7 @@ const AIAssistantPage = () => {
     if (!text && attachments.length === 0) return;
     setStartingJob(true);
     try {
-      const payloadAttachments = attachments.map(a =>
-        a.kind === 'image'
-          ? { kind: 'image', name: a.name, dataUrl: a.dataUrl }
-          : { kind: a.kind, name: a.name, text: a.text }
-      );
+      const payloadAttachments = attachments;
       const data = await callWorker({
         action: 'start',
         attachments: payloadAttachments,

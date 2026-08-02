@@ -661,6 +661,114 @@ Après la recommandation, dis-lui :
       ? attachments
       : (attachment ? [attachment] : []);
 
+    // ─── INGESTION DOCUMENTAIRE ────────────────────────────────────────────
+    // PDF : document natif Anthropic si le binaire est présent, sinon images de
+    // pages, sinon couche texte. Aucune logique métier (prix/TVA) n'est touchée.
+    const TEXT_LIMIT = 50000;
+    const pdfHasBinary = (a: any) => a?.kind === 'pdf' && typeof a?.base64 === 'string' && a.base64.length > 100;
+    const pdfHasPages = (a: any) => Array.isArray(a?.pageImages) && a.pageImages.length > 0;
+    const attHasText = (a: any) => typeof a?.text === 'string' && a.text.trim().length > 0;
+
+    const ingestionMethod = (a: any): 'native_document' | 'page_images' | 'text' | 'none' => {
+      if (a?.kind === 'image') return 'native_document';
+      if (a?.kind === 'docx') return attHasText(a) ? 'text' : 'none';
+      if (pdfHasBinary(a)) return 'native_document';
+      if (pdfHasPages(a)) return 'page_images';
+      if (attHasText(a)) return 'text';
+      return 'none';
+    };
+
+    const ingestionLabel = (a: any): string => {
+      if (a?.kind === 'image') return 'image';
+      if (a?.kind === 'docx') return attHasText(a) ? 'DOCX exploité par son texte brut' : 'DOCX non exploitable';
+      switch (ingestionMethod(a)) {
+        case 'native_document': return 'PDF transmis au modèle sous forme de document natif';
+        case 'page_images': return 'PDF transmis sous forme d’images de pages';
+        case 'text': return 'PDF exploité uniquement par sa couche texte';
+        default: return 'PDF non exploitable (binaire absent, aucune page rendue, aucun texte)';
+      }
+    };
+
+    const truncationNote = (a: any): string =>
+      a?.textTruncated
+        ? `\n[AVERTISSEMENT : texte tronqué — ${a?.textOriginalLength ?? '?'} caractères d'origine, ${TEXT_LIMIT} transmis. Ne conclus pas à une absence d'information sur la partie non transmise.]`
+        : '';
+
+    const fileInventoryLine = (a: any, i: number) => {
+      const extras: string[] = [];
+      if (a?.kind === 'pdf' && a?.pageCount) {
+        extras.push(`${a.pageCount} page(s)${a?.pagesSkipped ? `, ${a.pagesSkipped} non rendue(s) en image` : ''}`);
+      }
+      if (a?.kind === 'image' && a?.lowResolution) extras.push('résolution faible à la source : lecture partielle');
+      if (a?.textTruncated) extras.push('texte tronqué');
+      return `${i + 1}. ${a?.name || 'document'} — ${ingestionLabel(a)}${extras.length ? ` (${extras.join(' ; ')})` : ''}`;
+    };
+
+    const buildImageParts = (a: any, i: number, note: string): any[] => ([
+      {
+        type: 'text',
+        text: `IMAGE ${i + 1} — Fichier : ${a?.name || `image_${i + 1}.jpg`}\n${note}${a?.lowResolution ? "\nATTENTION : cette image est de faible résolution à la source — classe-la en lecture partielle et n'invente aucune cote." : ''}`,
+      },
+      { type: 'image_url', image_url: { url: a.dataUrl } },
+    ]);
+
+    const buildDocParts = (a: any, i: number): any[] => {
+      const name = a?.name || (a?.kind === 'docx' ? 'document.docx' : 'document.pdf');
+      if (a?.kind === 'docx') {
+        return [{
+          type: 'text',
+          text: `DOCUMENT DOCX ${i + 1} — Fichier : ${name}\nMode d'extraction : texte brut (docxExtractionMode: raw_text) — les tableaux et images intégrées peuvent avoir été perdus.${truncationNote(a)}\n\n"""\n${String(a?.text ?? '').slice(0, TEXT_LIMIT)}\n"""`,
+        }];
+      }
+      const method = ingestionMethod(a);
+      const textBlock = attHasText(a)
+        ? { type: 'text', text: `COUCHE TEXTE DU PDF ${i + 1} — Fichier : ${name}${truncationNote(a)}\n\n"""\n${String(a.text).slice(0, TEXT_LIMIT)}\n"""` }
+        : null;
+      const pageParts = pdfHasPages(a)
+        ? a.pageImages.flatMap((img: string, p: number) => ([
+            { type: 'text', text: `PDF ${i + 1} — Fichier : ${name} — PAGE ${p + 1} (page rendue en image)` },
+            { type: 'image_url', image_url: { url: img } },
+          ]))
+        : [];
+
+      if (method === 'native_document') {
+        const fallback = pageParts.length > 0
+          ? pageParts
+          : (textBlock ? [textBlock] : [{ type: 'text', text: `PDF ${i + 1} — Fichier : ${name} : document non exploitable par ce fournisseur.` }]);
+        const parts: any[] = [
+          { type: 'text', text: `DOCUMENT PDF ${i + 1} — Fichier : ${name}\n${ingestionLabel(a)}. Lis-le réellement, y compris les plans, les pages scannées et les schémas.` },
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: a.base64 }, _fallback: fallback },
+        ];
+        if (textBlock) parts.push(textBlock);
+        return parts;
+      }
+      if (method === 'page_images') {
+        const parts: any[] = [{ type: 'text', text: `DOCUMENT PDF ${i + 1} — Fichier : ${name}\n${ingestionLabel(a)}.` }, ...pageParts];
+        if (textBlock) parts.push(textBlock);
+        return parts;
+      }
+      if (method === 'text' && textBlock) {
+        return [{ type: 'text', text: `DOCUMENT PDF ${i + 1} — Fichier : ${name}\n${ingestionLabel(a)}.` }, textBlock];
+      }
+      return [{ type: 'text', text: `DOCUMENT PDF ${i + 1} — Fichier : ${name}\n${ingestionLabel(a)}. Ne déduis rien de ce fichier et signale-le comme non exploitable.` }];
+    };
+
+    if (attList.length > 0) {
+      // Journal technique : aucun contenu documentaire, aucun base64, aucune donnée personnelle.
+      console.log('[ai-assistant][ingestion]', JSON.stringify(attList.map((a: any) => ({
+        type: a?.kind ?? 'unknown',
+        method: ingestionMethod(a),
+        approxBytes: typeof a?.base64 === 'string'
+          ? Math.floor(a.base64.length * 0.75)
+          : (typeof a?.dataUrl === 'string' ? Math.floor(a.dataUrl.length * 0.75) : null),
+        pageCount: a?.pageCount ?? null,
+        pagesRendered: a?.pagesRendered ?? null,
+        pagesSkipped: a?.pagesSkipped ?? null,
+        textExtracted: attHasText(a),
+        truncated: !!a?.textTruncated,
+      }))));
+    }
+
     // ============================================================
     // MODE DOCUMENTAIRE BTP (activé uniquement si pièces jointes)
     // ============================================================
@@ -892,32 +1000,22 @@ La TVA ne se choisit JAMAIS uniquement d'après le type de travaux. Vérifier r�
 
         // Split attachments per kind (preserve original order within kind)
         const imageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
-        const pdfAtts = attList.filter((a: any) => (a?.kind === 'pdf' || a?.kind === 'docx') && typeof a.text === 'string');
+        const pdfAtts = attList.filter((a: any) => a?.kind === 'pdf' || a?.kind === 'docx');
 
-        // 1) Multi-document instruction + file inventory
-        const fileList = attList
-          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'docx' ? 'document.docx' : a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'docx' ? 'DOCX texte' : a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
-          .join('\n');
+        // 1) Multi-document instruction + file inventory (méthode d'exploitation incluse)
+        const fileList = attList.map(fileInventoryLine).join('\n');
         const header = `CONSIGNE MULTI-DOCUMENT : ${attList.length} pièce(s) jointe(s) accompagne(nt) ce message. Analyse chaque pièce SÉPARÉMENT avant toute conclusion. Ne conclus jamais qu'une information est absente avant d'avoir examiné TOUTES les pièces.\n\nFICHIERS JOINTS :\n${fileList}`;
 
         const parts: any[] = [{ type: 'text', text: header }];
 
         // 2) Images d'abord, chacune précédée d'un libellé descriptif
         imageAtts.forEach((att: any, i: number) => {
-          parts.push({
-            type: 'text',
-            text: `IMAGE ${i + 1} — Fichier : ${att.name || `image_${i + 1}.jpg`}\nAnalyse cette image comme un document indépendant. Elle peut contenir un CCTP, un DPGF, une notice, un rapport ou une photo — identifie son type, sa lisibilité, puis extrais uniquement les informations réellement lisibles.`,
-          });
-          parts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
+          parts.push(...buildImageParts(att, i, "Analyse cette image comme un document indépendant. Elle peut contenir un CCTP, un DPGF, une notice, un rapport ou une photo — identifie son type, sa lisibilité, puis extrais uniquement les informations réellement lisibles."));
         });
 
-        // 3) Textes PDF ensuite, chacun précédé de son nom de fichier
+        // 3) Documents ensuite : PDF natif / pages rendues / couche texte
         pdfAtts.forEach((att: any, i: number) => {
-          const t = String(att.text).slice(0, 50000);
-          parts.push({
-            type: 'text',
-            text: `DOCUMENT TEXTE ${att?.kind === 'docx' ? 'DOCX' : 'PDF'} ${i + 1} — Fichier : ${att.name || (att?.kind === 'docx' ? 'document.docx' : 'document.pdf')}\n\n"""\n${t}\n"""`,
-          });
+          parts.push(...buildDocParts(att, i));
         });
 
         // 4) Question utilisateur à la fin
@@ -1073,7 +1171,7 @@ Ne produis aucun autre bloc, aucun JSON, aucun bloc <ANAFYPRO_DOCUMENT_DATA>. Un
       // Pièces originales du dossier analysé (mêmes limites que l'analyse
       // basique : aucune nouvelle validation, aucun upload, aucun stockage).
       const deepImageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
-      const deepPdfAtts = attList.filter((a: any) => (a?.kind === 'pdf' || a?.kind === 'docx') && typeof a.text === 'string');
+      const deepPdfAtts = attList.filter((a: any) => a?.kind === 'pdf' || a?.kind === 'docx');
       const deepHasOriginals = deepImageAtts.length + deepPdfAtts.length > 0;
 
       finalSystemPrompt += deepHasOriginals
@@ -1125,26 +1223,16 @@ ${btpJson}
       }
 
       if (deepHasOriginals) {
-        const deepFileList = [...deepImageAtts, ...deepPdfAtts]
-          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'docx' ? 'document.docx' : a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'docx' ? 'DOCX texte' : a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
-          .join('\n');
+        const deepFileList = [...deepImageAtts, ...deepPdfAtts].map(fileInventoryLine).join('\n');
         deepParts.push({
           type: 'text',
           text: `PIÈCES ORIGINALES DU DOSSIER (à relire et confronter au JSON) :\n${deepFileList}`,
         });
         deepImageAtts.forEach((att: any, i: number) => {
-          deepParts.push({
-            type: 'text',
-            text: `IMAGE ${i + 1} — Fichier : ${att.name || `image_${i + 1}.jpg`}\nDocument indépendant. N'attribue son contenu à aucun autre fichier.`,
-          });
-          deepParts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
+          deepParts.push(...buildImageParts(att, i, "Document indépendant. N'attribue son contenu à aucun autre fichier."));
         });
         deepPdfAtts.forEach((att: any, i: number) => {
-          const dt = String(att.text).slice(0, 50000);
-          deepParts.push({
-            type: 'text',
-            text: `DOCUMENT TEXTE ${att?.kind === 'docx' ? 'DOCX' : 'PDF'} ${i + 1} — Fichier : ${att.name || (att?.kind === 'docx' ? 'document.docx' : 'document.pdf')}\n\n"""\n${dt}\n"""`,
-          });
+          deepParts.push(...buildDocParts(att, i));
         });
       } else {
         deepParts.push({
@@ -1162,7 +1250,7 @@ ${btpJson}
     // Réutilise le pipeline de streaming et les pièces déjà transmises.
     if (action === 'btp_factual_extraction') {
       const factImageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
-      const factTextAtts = attList.filter((a: any) => (a?.kind === 'pdf' || a?.kind === 'docx') && typeof a.text === 'string');
+      const factTextAtts = attList.filter((a: any) => a?.kind === 'pdf' || a?.kind === 'docx');
       const factHasOriginals = factImageAtts.length + factTextAtts.length > 0;
 
       finalSystemPrompt = `Tu es un moteur d'EXTRACTION DOCUMENTAIRE BTP strictement factuelle. Tu n'es pas un conseiller, ni un métreur, ni un commercial.
@@ -1295,26 +1383,16 @@ Tous les fichiers réellement reçus doivent apparaître dans "documents[]". Tou
       }
 
       if (factHasOriginals) {
-        const factFileList = [...factImageAtts, ...factTextAtts]
-          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'docx' ? 'document.docx' : a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'docx' ? 'DOCX texte' : a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
-          .join('\n');
+        const factFileList = [...factImageAtts, ...factTextAtts].map(fileInventoryLine).join('\n');
         factParts.push({
           type: 'text',
           text: `PIÈCES ORIGINALES DU DOSSIER (chaque pièce est indépendante) :\n${factFileList}`,
         });
         factImageAtts.forEach((att: any, i: number) => {
-          factParts.push({
-            type: 'text',
-            text: `IMAGE ${i + 1} — Fichier : ${att.name || `image_${i + 1}.jpg`}\nDocument indépendant. N'attribue son contenu à aucun autre fichier. Si un seul caractère est incertain, ne reproduis pas la valeur.`,
-          });
-          factParts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
+          factParts.push(...buildImageParts(att, i, "Document indépendant. N'attribue son contenu à aucun autre fichier. Si un seul caractère est incertain, ne reproduis pas la valeur."));
         });
         factTextAtts.forEach((att: any, i: number) => {
-          const ft = String(att.text).slice(0, 50000);
-          factParts.push({
-            type: 'text',
-            text: `DOCUMENT TEXTE ${att?.kind === 'docx' ? 'DOCX' : 'PDF'} ${i + 1} — Fichier : ${att.name || (att?.kind === 'docx' ? 'document.docx' : 'document.pdf')}\n\n"""\n${ft}\n"""`,
-          });
+          factParts.push(...buildDocParts(att, i));
         });
       } else {
         factParts.push({
@@ -1487,6 +1565,35 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
       stream: true,
     });
 
+    // La Lovable AI Gateway (Gemini) n'accepte pas les blocs `document` PDF :
+    // avant la bascule, chaque bloc PDF natif est remplacé par son repli
+    // (images de pages, sinon couche texte). Aucun bloc PDF vide n'est envoyé.
+    const buildGatewayBody = (): string => {
+      try {
+        const parsed = JSON.parse(aiRequestBody);
+        let replaced = 0;
+        for (const m of parsed.messages ?? []) {
+          if (!Array.isArray(m?.content)) continue;
+          const next: any[] = [];
+          for (const part of m.content) {
+            if (part?.type === 'document') {
+              replaced += 1;
+              const fb = Array.isArray(part._fallback) ? part._fallback : [];
+              next.push(...(fb.length ? fb : [{ type: 'text', text: 'PDF non exploitable par ce fournisseur.' }]));
+            } else {
+              next.push(part);
+            }
+          }
+          m.content = next;
+        }
+        if (replaced > 0) console.log(`[ai-assistant][ingestion] bascule Gateway : ${replaced} bloc(s) PDF natif(s) remplacé(s) par leur repli`);
+        return JSON.stringify(parsed);
+      } catch (e) {
+        console.warn('[ai-assistant] sanitisation Gateway impossible', e instanceof Error ? e.message : String(e));
+        return aiRequestBody;
+      }
+    };
+
     const callGateway = () =>
       fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -1494,7 +1601,7 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
           "Lovable-API-Key": LOVABLE_API_KEY,
           "Content-Type": "application/json",
         },
-        body: aiRequestBody,
+        body: buildGatewayBody(),
       });
 
     let response: Response;

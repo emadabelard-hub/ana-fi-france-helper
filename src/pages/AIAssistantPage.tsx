@@ -16,6 +16,7 @@ import { useAssistantDictation } from '@/hooks/useAssistantDictation';
 import FullscreenVoiceModal from '@/components/assistant/FullscreenVoiceModal';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 import { validateBtpItemsForTransfer } from '@/lib/btpTransferValidator';
+import { buildDraftLinesFromFacts } from '@/lib/btpFactsToDraft';
 import { correctArtisanVocabulary } from '@/lib/artisanVocabulary';
 
 type ConversationSummary = { id: string; title: string | null; updated_at: string };

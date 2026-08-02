@@ -1760,7 +1760,7 @@ const AIAssistantPage = () => {
         // ne sont pas transférées automatiquement.
         const keep = validated.meta.map((m) => m.quantityAccepted);
         items = validated.lines.filter((_, i) => keep[i]);
-        meta = validated.meta.filter((_, i) => keep[i]).map((m, i) => ({ ...m, index: m.index, ...(i >= 0 ? {} : {}) }));
+        meta = validated.meta.filter((_, i) => keep[i]);
       }
 
       if (items.length === 0) {

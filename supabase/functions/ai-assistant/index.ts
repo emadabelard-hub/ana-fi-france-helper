@@ -1112,7 +1112,16 @@ TVA : ne jamais appliquer ni décider un taux de TVA dans ce rapport. Tu peux un
 
 AUTRES INTERDITS : aucun prix, aucun coût, aucun avis juridique, aucune marque ou gamme inventée, aucun pourcentage de progression inventé, aucun devis produit ici, aucun cours théorique sur les DTU (une norme n'est citée que si elle figure dans les documents ou est directement indispensable). Ne pas utiliser « obligatoire », « impératif », « réglementairement exigé » sauf si l'obligation figure explicitement dans un document ; sinon écrire « recommandé », « à vérifier », « à confirmer avant chiffrage ». Ne pas ajouter de questions génériques (assurance dommages-ouvrage, permis, amiante, plomb, copropriété, fiscalité) sauf pertinence réelle. Ne pas affirmer qu'un support est fissuré, humide ou dégradé sans document le démontrant. Ne jamais requalifier un document : un fichier nommé « CDC » n'est pas un « CCTP ».
 
-IMAGES ET PLANS : pour une image miniaturisée, compressée, issue de WhatsApp, d'un montage ou d'une capture d'écran, la qualité de lecture est « partielle » ; l'image sert uniquement à comprendre l'organisation générale ; aucune quantité, cote, référence ou caractéristique n'est extraite si un seul caractère n'est pas parfaitement lisible ; demander le fichier original. La présence visuelle d'une cote ne signifie pas qu'elle est lisible.
+IMAGES ET PLANS : pour une image miniaturisée, compressée, issue de WhatsApp, d'un montage ou d'une capture d'écran, la qualité de lecture est « partielle » ; l'image sert uniquement à comprendre l'organisation générale ; aucune quantité, cote, référence ou caractéristique n'est extraite si un seul caractère n'est pas parfaitement lisible. La présence visuelle d'une cote ne signifie pas qu'elle est lisible.
+
+LIMITES ATTACHÉES À CHAQUE FICHIER (impératif) : chaque limite appartient au SEUL fichier concerné.
+- Ne jamais attribuer à un PDF natif de bonne qualité les limites d'une capture d'écran ou d'une photo.
+- La lecture partielle d'une capture ne dégrade JAMAIS les informations extraites d'un autre document lisible.
+- Ne jamais généraliser la mauvaise qualité d'un document à l'ensemble du dossier.
+- Ne jamais écrire qu'un fichier original est nécessaire lorsque ce fichier a déjà été transmis et correctement exploité. Ne demande le fichier original que pour les pièces réellement dégradées et non couvertes par un autre document.
+Avant de déclarer une donnée illisible ou absente : vérifier TOUS les documents transmis, vérifier si la même information figure dans un document de meilleure qualité, puis citer nommément le seul fichier réellement concerné par la limite.
+Pour toute information issue d'un plan technique ou structurel : citer le nom du fichier, la page si disponible, la coupe / zone / détail si identifiable, et distinguer clairement ce qui est lisible de ce qui ne l'est pas.
+Si une dimension n'est pas retrouvée dans un PDF natif, écrire exactement : « Dimension non retrouvée avec suffisamment de certitude dans le document analysé. »
 
 NIVEAUX DE PRIORITÉ des informations manquantes (vocabulaire fermé) :
 - « Niveau 1 — Bloquant avant devis définitif » : indispensable à un chiffrage sérieux.

@@ -16,6 +16,7 @@ import { useAssistantDictation } from '@/hooks/useAssistantDictation';
 import FullscreenVoiceModal from '@/components/assistant/FullscreenVoiceModal';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 import { validateBtpItemsForTransfer } from '@/lib/btpTransferValidator';
+import { buildDraftLinesFromFacts } from '@/lib/btpFactsToDraft';
 import { correctArtisanVocabulary } from '@/lib/artisanVocabulary';
 
 type ConversationSummary = { id: string; title: string | null; updated_at: string };
@@ -88,6 +89,8 @@ type AnalysisJob = {
   user_text: string | null;
   documents: { name?: string; kind?: string }[] | null;
   docData?: any;
+  /** Faits structurés (<ANAFYPRO_BTP_FACTS>) — source du brouillon de devis. */
+  btpFacts?: string | null;
 };
 
 const ANALYSIS_JOB_KEY = 'anafypro_btp_analysis_job_id';
@@ -1730,20 +1733,48 @@ const AIAssistantPage = () => {
     if (isPreparingTransfer) return;
     setIsPreparingTransfer(true);
     try {
-      const rawItems = Array.isArray(btpDocData?.items) ? btpDocData.items : [];
-      const documentTotalHT = btpDocData?.documentTotalHT;
-      const { lines: items, meta } = validateBtpItemsForTransfer(rawItems, documentTotalHT);
+      // Source prioritaire : faits structurés de l'analyse chantier
+      // (<ANAFYPRO_BTP_FACTS>). Le Markdown du rapport n'est jamais analysé.
+      const factsSource = job?.btpFacts ?? null;
+      const factsDraft = buildDraftLinesFromFacts(factsSource);
+
+      let rawItems: any[];
+      let items: typeof factsDraft.lines;
+      let meta: typeof factsDraft.meta;
+
+      if (factsDraft.lines.length > 0) {
+        rawItems = factsDraft.rawItems;
+        items = factsDraft.lines;
+        meta = factsDraft.meta;
+        if (factsDraft.pendingCount > 0) {
+          toast({
+            title: 'Brouillon préparé',
+            description: `${factsDraft.pendingCount} prestation(s) restent à confirmer et ne sont pas transférées automatiquement.`,
+          });
+        }
+      } else {
+        rawItems = Array.isArray(btpDocData?.items) ? btpDocData.items : [];
+        const documentTotalHT = btpDocData?.documentTotalHT;
+        const validated = validateBtpItemsForTransfer(rawItems, documentTotalHT);
+        // Aucune valeur artificielle : les lignes sans quantité/unité réelles
+        // ne sont pas transférées automatiquement.
+        const keep = validated.meta.map((m) => m.quantityAccepted);
+        items = validated.lines.filter((_, i) => keep[i]);
+        meta = validated.meta.filter((_, i) => keep[i]);
+      }
 
       if (items.length === 0) {
-        console.warn('[AIAssistant] BTP transfer: no exploitable items', btpDocData);
+        console.warn('[AIAssistant] BTP transfer: no exploitable items', { factsDraft, btpDocData });
         toast({
           variant: 'destructive',
           title: 'Aucune prestation exploitable',
-          description:
-            "L'analyse n'a pas produit de lignes valides. Relancez l'analyse en demandant explicitement le détail par prestation.",
+          description: factsDraft.hasStructuredFacts
+            ? "Aucune prestation ne dispose d'une quantité et d'une unité confirmées : ces lignes restent à confirmer dans l'analyse."
+            : "L'analyse n'a pas produit de lignes valides. Relancez l'analyse en demandant explicitement le détail par prestation.",
         });
         return;
       }
+
 
       const ACTION_PREFIXES = [
         'fourniture et pose', 'fourniture et application', 'fourniture seule',

@@ -1000,32 +1000,22 @@ La TVA ne se choisit JAMAIS uniquement d'après le type de travaux. Vérifier r�
 
         // Split attachments per kind (preserve original order within kind)
         const imageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
-        const pdfAtts = attList.filter((a: any) => (a?.kind === 'pdf' || a?.kind === 'docx') && typeof a.text === 'string');
+        const pdfAtts = attList.filter((a: any) => a?.kind === 'pdf' || a?.kind === 'docx');
 
-        // 1) Multi-document instruction + file inventory
-        const fileList = attList
-          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'docx' ? 'document.docx' : a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'docx' ? 'DOCX texte' : a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
-          .join('\n');
+        // 1) Multi-document instruction + file inventory (méthode d'exploitation incluse)
+        const fileList = attList.map(fileInventoryLine).join('\n');
         const header = `CONSIGNE MULTI-DOCUMENT : ${attList.length} pièce(s) jointe(s) accompagne(nt) ce message. Analyse chaque pièce SÉPARÉMENT avant toute conclusion. Ne conclus jamais qu'une information est absente avant d'avoir examiné TOUTES les pièces.\n\nFICHIERS JOINTS :\n${fileList}`;
 
         const parts: any[] = [{ type: 'text', text: header }];
 
         // 2) Images d'abord, chacune précédée d'un libellé descriptif
         imageAtts.forEach((att: any, i: number) => {
-          parts.push({
-            type: 'text',
-            text: `IMAGE ${i + 1} — Fichier : ${att.name || `image_${i + 1}.jpg`}\nAnalyse cette image comme un document indépendant. Elle peut contenir un CCTP, un DPGF, une notice, un rapport ou une photo — identifie son type, sa lisibilité, puis extrais uniquement les informations réellement lisibles.`,
-          });
-          parts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
+          parts.push(...buildImageParts(att, i, "Analyse cette image comme un document indépendant. Elle peut contenir un CCTP, un DPGF, une notice, un rapport ou une photo — identifie son type, sa lisibilité, puis extrais uniquement les informations réellement lisibles."));
         });
 
-        // 3) Textes PDF ensuite, chacun précédé de son nom de fichier
+        // 3) Documents ensuite : PDF natif / pages rendues / couche texte
         pdfAtts.forEach((att: any, i: number) => {
-          const t = String(att.text).slice(0, 50000);
-          parts.push({
-            type: 'text',
-            text: `DOCUMENT TEXTE ${att?.kind === 'docx' ? 'DOCX' : 'PDF'} ${i + 1} — Fichier : ${att.name || (att?.kind === 'docx' ? 'document.docx' : 'document.pdf')}\n\n"""\n${t}\n"""`,
-          });
+          parts.push(...buildDocParts(att, i));
         });
 
         // 4) Question utilisateur à la fin
@@ -1181,7 +1171,7 @@ Ne produis aucun autre bloc, aucun JSON, aucun bloc <ANAFYPRO_DOCUMENT_DATA>. Un
       // Pièces originales du dossier analysé (mêmes limites que l'analyse
       // basique : aucune nouvelle validation, aucun upload, aucun stockage).
       const deepImageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
-      const deepPdfAtts = attList.filter((a: any) => (a?.kind === 'pdf' || a?.kind === 'docx') && typeof a.text === 'string');
+      const deepPdfAtts = attList.filter((a: any) => a?.kind === 'pdf' || a?.kind === 'docx');
       const deepHasOriginals = deepImageAtts.length + deepPdfAtts.length > 0;
 
       finalSystemPrompt += deepHasOriginals
@@ -1233,26 +1223,16 @@ ${btpJson}
       }
 
       if (deepHasOriginals) {
-        const deepFileList = [...deepImageAtts, ...deepPdfAtts]
-          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'docx' ? 'document.docx' : a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'docx' ? 'DOCX texte' : a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
-          .join('\n');
+        const deepFileList = [...deepImageAtts, ...deepPdfAtts].map(fileInventoryLine).join('\n');
         deepParts.push({
           type: 'text',
           text: `PIÈCES ORIGINALES DU DOSSIER (à relire et confronter au JSON) :\n${deepFileList}`,
         });
         deepImageAtts.forEach((att: any, i: number) => {
-          deepParts.push({
-            type: 'text',
-            text: `IMAGE ${i + 1} — Fichier : ${att.name || `image_${i + 1}.jpg`}\nDocument indépendant. N'attribue son contenu à aucun autre fichier.`,
-          });
-          deepParts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
+          deepParts.push(...buildImageParts(att, i, "Document indépendant. N'attribue son contenu à aucun autre fichier."));
         });
         deepPdfAtts.forEach((att: any, i: number) => {
-          const dt = String(att.text).slice(0, 50000);
-          deepParts.push({
-            type: 'text',
-            text: `DOCUMENT TEXTE ${att?.kind === 'docx' ? 'DOCX' : 'PDF'} ${i + 1} — Fichier : ${att.name || (att?.kind === 'docx' ? 'document.docx' : 'document.pdf')}\n\n"""\n${dt}\n"""`,
-          });
+          deepParts.push(...buildDocParts(att, i));
         });
       } else {
         deepParts.push({
@@ -1270,7 +1250,7 @@ ${btpJson}
     // Réutilise le pipeline de streaming et les pièces déjà transmises.
     if (action === 'btp_factual_extraction') {
       const factImageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
-      const factTextAtts = attList.filter((a: any) => (a?.kind === 'pdf' || a?.kind === 'docx') && typeof a.text === 'string');
+      const factTextAtts = attList.filter((a: any) => a?.kind === 'pdf' || a?.kind === 'docx');
       const factHasOriginals = factImageAtts.length + factTextAtts.length > 0;
 
       finalSystemPrompt = `Tu es un moteur d'EXTRACTION DOCUMENTAIRE BTP strictement factuelle. Tu n'es pas un conseiller, ni un métreur, ni un commercial.
@@ -1403,26 +1383,16 @@ Tous les fichiers réellement reçus doivent apparaître dans "documents[]". Tou
       }
 
       if (factHasOriginals) {
-        const factFileList = [...factImageAtts, ...factTextAtts]
-          .map((a: any, i: number) => `${i + 1}. ${a?.name || (a?.kind === 'docx' ? 'document.docx' : a?.kind === 'pdf' ? 'document.pdf' : 'image.jpg')} (${a?.kind === 'docx' ? 'DOCX texte' : a?.kind === 'pdf' ? 'PDF texte' : 'image'})`)
-          .join('\n');
+        const factFileList = [...factImageAtts, ...factTextAtts].map(fileInventoryLine).join('\n');
         factParts.push({
           type: 'text',
           text: `PIÈCES ORIGINALES DU DOSSIER (chaque pièce est indépendante) :\n${factFileList}`,
         });
         factImageAtts.forEach((att: any, i: number) => {
-          factParts.push({
-            type: 'text',
-            text: `IMAGE ${i + 1} — Fichier : ${att.name || `image_${i + 1}.jpg`}\nDocument indépendant. N'attribue son contenu à aucun autre fichier. Si un seul caractère est incertain, ne reproduis pas la valeur.`,
-          });
-          factParts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
+          factParts.push(...buildImageParts(att, i, "Document indépendant. N'attribue son contenu à aucun autre fichier. Si un seul caractère est incertain, ne reproduis pas la valeur."));
         });
         factTextAtts.forEach((att: any, i: number) => {
-          const ft = String(att.text).slice(0, 50000);
-          factParts.push({
-            type: 'text',
-            text: `DOCUMENT TEXTE ${att?.kind === 'docx' ? 'DOCX' : 'PDF'} ${i + 1} — Fichier : ${att.name || (att?.kind === 'docx' ? 'document.docx' : 'document.pdf')}\n\n"""\n${ft}\n"""`,
-          });
+          factParts.push(...buildDocParts(att, i));
         });
       } else {
         factParts.push({

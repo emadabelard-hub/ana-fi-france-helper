@@ -21,9 +21,39 @@ import { correctArtisanVocabulary } from '@/lib/artisanVocabulary';
 type ConversationSummary = { id: string; title: string | null; updated_at: string };
 
 type MsgAttachment =
-  | { kind: 'image'; name: string; dataUrl: string }
-  | { kind: 'pdf'; name: string; text: string }
-  | { kind: 'docx'; name: string; text: string };
+  | {
+      kind: 'image';
+      name: string;
+      dataUrl: string;
+      width?: number;
+      height?: number;
+      compressed?: boolean;
+      lowResolution?: boolean;
+    }
+  | {
+      kind: 'pdf';
+      name: string;
+      text: string;
+      // Le PDF original est conservé et transmis au modèle (document natif).
+      mimeType?: 'application/pdf';
+      base64?: string;
+      textExtractionStatus?: 'text_layer' | 'empty' | 'failed';
+      textOriginalLength?: number;
+      textTruncated?: boolean;
+      pageCount?: number;
+      pageImages?: string[];
+      pagesRendered?: number;
+      pagesSkipped?: number;
+    }
+  | {
+      kind: 'docx';
+      name: string;
+      text: string;
+      docxExtractionMode?: 'raw_text';
+      textOriginalLength?: number;
+      textTruncated?: boolean;
+    };
+
 
 type ResultType = 'document_analysis' | 'btp_facts' | 'btp_control' | 'btp_deep_analysis';
 

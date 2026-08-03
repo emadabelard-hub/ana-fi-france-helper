@@ -1000,7 +1000,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         policyNumber,
         geographicCoverage,
       } : undefined,
+      // Les métadonnées BTP (provenance, fourniture client, lot) restent attachées
+      // à la ligne elle-même : aucun rapprochement par index en aval.
       items: allItems.map(item => ({
+        ...item,
+        id: item.id,
         designation_fr: item.designation_fr,
         designation_ar: item.designation_ar || item.designation_fr,
         quantity: item.quantity,
@@ -1008,6 +1012,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         unitPrice: item.unitPrice,
         total: item.total,
         lot: typeof (item as any).lot === 'string' && (item as any).lot.trim() ? (item as any).lot.trim() : undefined,
+        sourceOrigin: (item as any).sourceOrigin,
+        clientSupplied: (item as any).clientSupplied,
       })),
       subtotal,
       discountType: discountEnabled && discountAmt > 0 ? discountType : undefined,
@@ -1129,12 +1135,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const rawInvoiceData = buildInvoiceData();
   
   // Auto-validate and fix document (expert-comptable level)
+  // La provenance BTP voyage avec la ligne : plus aucun recollage par index.
   const validationResult = validateDocument(
     rawInvoiceData.items.map((item, i) => ({
       ...item,
-      id: items[i]?.id || `v-${i}`,
-      // Provenance BTP : unité verrouillée, aucune réécriture heuristique.
-      sourceOrigin: (items[i] as any)?.sourceOrigin,
+      id: item.id || `v-${i}`,
     })),
     rawInvoiceData.tvaRate,
     rawInvoiceData.tvaExempt
@@ -1160,6 +1165,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     ...rawInvoiceData,
     documentId: savedOfficialDocumentId || undefined,
     items: validationResult.items.map(vi => ({
+      ...vi,
       designation_fr: vi.designation_fr,
       designation_ar: vi.designation_ar || vi.designation_fr,
       quantity: vi.quantity,
@@ -1167,6 +1173,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       unitPrice: vi.unitPrice,
       total: vi.total,
       lot: typeof (vi as any).lot === 'string' && (vi as any).lot.trim() ? (vi as any).lot.trim() : undefined,
+      sourceOrigin: vi.sourceOrigin,
+      clientSupplied: (vi as any).clientSupplied,
     })),
     subtotal: Math.round(validatedSubtotal * 100) / 100,
     discountAmount: validatedDiscountAmt > 0 ? validatedDiscountAmt : undefined,
@@ -1191,6 +1199,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       }
     }
   }, [showPreview, validationResult.corrections.length]);
+
+  // Avertissements : ne modifient aucune donnée et ne sont jamais comptés
+  // comme corrections automatiques (UX silencieuse — console uniquement).
+  useEffect(() => {
+    if (validationResult.warnings.length > 0) {
+      console.warn('[InvoiceFormBuilder] avertissements de contrôle (aucune donnée modifiée) :', validationResult.warnings);
+    }
+  }, [validationResult.warnings.length]);
   
   // Check if form is valid
   const isFormValid = items.some(item => item.designation_fr.trim() && item.unitPrice > 0) || (includeTravelCosts && travelPrice > 0);
@@ -1583,13 +1599,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Update invoice data from SmartReviewModal
   const handleUpdateInvoice = (updatedData: InvoiceData) => {
     const newItems: LineItem[] = updatedData.items.map(item => ({
-      id: generateId(),
+      id: item.id || generateId(),
       designation_fr: item.designation_fr,
       designation_ar: item.designation_ar,
       quantity: item.quantity,
       unit: item.unit,
       unitPrice: item.unitPrice,
       total: item.total,
+      lot: item.lot,
+      sourceOrigin: item.sourceOrigin,
+      clientSupplied: item.clientSupplied,
     }));
     setItems(newItems);
   };

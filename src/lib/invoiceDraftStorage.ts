@@ -138,6 +138,10 @@ export interface InvoiceDraft {
     unitPrice: number;
     total: number;
     lot?: string;
+    /** Provenance de la ligne (ex. 'btp_facts') — conservée à la sauvegarde/restauration. */
+    sourceOrigin?: 'btp_facts' | string;
+    /** Fourniture explicitement à la charge du client. */
+    clientSupplied?: boolean;
   }>;
   natureOperation?: 'service' | 'goods' | 'mixed';
   assureurName?: string;

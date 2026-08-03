@@ -272,10 +272,13 @@ const SmartDevisPage = () => {
         id: `ai-${Date.now()}-${idx}`,
         designation_fr: String(it.designation_fr || '').trim(),
         designation_ar: String(it.designation_ar || it.designation_fr || '').trim(),
-        quantity: Number(it.quantity) || 1,
-        unit: String(it.unit || 'm²'),
-        unitPrice: Number(it.unitPrice) || 0,
+        // Aucune invention : ni quantité « 1 », ni unité « m² » par défaut.
+        quantity: Number(it.quantity) > 0 ? Number(it.quantity) : ('' as unknown as number),
+        unit: typeof it.unit === 'string' ? it.unit.trim() : '',
+        unitPrice: Number(it.unitPrice) > 0 ? Number(it.unitPrice) : 0,
         lot: typeof it.lot === 'string' && it.lot.trim() ? it.lot.trim() : undefined,
+        sourceOrigin: typeof it.sourceOrigin === 'string' ? it.sourceOrigin : undefined,
+        clientSupplied: it.clientSupplied === true ? true : undefined,
       }));
 
       setLineItems(mapped);

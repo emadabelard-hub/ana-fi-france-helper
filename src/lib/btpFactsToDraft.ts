@@ -275,6 +275,14 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
         : null;
   if (!Array.isArray(rawFacts) || rawFacts.length === 0) return EMPTY;
 
+  // ── Contrat unique de fait BTP (validé côté serveur) ─────────────────────
+  // Quand le contrat est présent, la nature du fait, sa quantité, son unité et
+  // son statut de transfert sont déjà figés : ils ne sont jamais réinterprétés.
+  if (isFactsContract(parsed)) {
+    return buildFromContract(rawFacts as ContractFact[], rawFacts.length);
+  }
+
+
   type Entry = { line: FactsLine; meta: ValidationMeta; raw: Record<string, unknown> };
   const entries: Entry[] = [];
   const seen = new Set<string>();

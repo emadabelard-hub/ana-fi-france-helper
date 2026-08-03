@@ -41,10 +41,10 @@ describe('collisions de factId', () => {
 
   it('aucune quantité, unité ou lot modifié', () => {
     const r = buildDraftLinesFromFacts(serializeFactsContract(contract));
-    expect(r.lines.map((l) => l.quantity)).toEqual(READY.map((f) => f.quantity));
-    expect(r.lines.map((l) => l.unit)).toEqual(
-      contract.facts.map((f) => f.unit),
-    );
+    // Les lignes sont regroupées par lot : on compare les couples quantité/unité.
+    const got = r.lines.map((l) => `${l.quantity} ${l.unit}`).sort();
+    const expected = contract.facts.map((f) => `${f.quantity} ${f.unit}`).sort();
+    expect(got).toEqual(expected);
     expect(r.lines.every((l) => !!l.lot)).toBe(true);
   });
 

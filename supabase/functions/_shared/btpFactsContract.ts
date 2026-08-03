@@ -234,6 +234,7 @@ const buildFactId = (parts: {
   quantity: number | null;
   unit: BtpUnit;
   index: number;
+  used?: Set<string>;
 }): string => {
   const identity = [
     parts.rawId ?? "",
@@ -244,11 +245,18 @@ const buildFactId = (parts: {
     parts.descriptionExact,
     parts.quantity ?? "",
     parts.unit ?? "",
-    parts.index,
   ].join("\u0001");
   const a = fnv1a(identity, 0x811c9dc5).toString(36);
   const b = fnv1a(identity, 0x9e3779b1).toString(36);
-  return `btp_${a}${b}`;
+  // Deux faits d'identité STRICTEMENT identique gardent le même identifiant
+  // (vrai doublon) ; l'indice n'est ajouté que si le hash est déjà pris par un
+  // fait d'identité différente.
+  const base = `btp_${a}${b}`;
+  if (!parts.used) return base;
+  const known = parts.used.has(`${base}\u0002${identity}`);
+  parts.used.add(`${base}\u0002${identity}`);
+  if (known) return base;
+  return parts.used.has(base) ? `${base}_${parts.index}` : (parts.used.add(base), base);
 };
 
 /**
@@ -259,6 +267,7 @@ const buildFactId = (parts: {
 export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
   const arr = Array.isArray(rawFacts) ? rawFacts : [];
   const facts: ValidatedBtpFact[] = [];
+  const usedIds = new Set<string>();
 
   arr.forEach((entry, i) => {
     if (!entry || typeof entry !== "object") return;
@@ -372,6 +381,7 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
         quantity,
         unit: resolvedUnit,
         index: i,
+        used: usedIds,
       }),
       lot,
       category,

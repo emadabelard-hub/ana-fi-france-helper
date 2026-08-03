@@ -1120,6 +1120,7 @@ const AIAssistantPage = () => {
             file: file.name, type: 'docx', bytes: file.size,
             method: 'raw_text', textExtracted: text.trim().length > 0, truncated,
           });
+          if (text.trim().length === 0) notifyUnreadableFile(file.name);
         } else {
           const dataUrl = await readFileAsDataUrl(file);
           const ing = await ingestPdf(dataUrl);
@@ -1147,6 +1148,11 @@ const AIAssistantPage = () => {
             pagesSkipped: ing.pagesSkipped,
             truncated,
           });
+          // Ouverture impossible (aucune page lue) ou couche texte inexploitable
+          // sans aucune page rendue : le fichier ne sera pas exploité.
+          if (ing.pageCount === 0 || (ing.textStatus !== 'text_layer' && ing.pagesRendered === 0)) {
+            notifyUnreadableFile(file.name);
+          }
           if (ing.pagesSkipped > 0) {
             toast({
               title: file.name,
@@ -1157,6 +1163,7 @@ const AIAssistantPage = () => {
       } catch (err) {
         console.error('File processing error:', err);
         toast({ variant: 'destructive', title: t('aiAssistant.file.readError'), description: file.name });
+        if (isDocx || isPdf) notifyUnreadableFile(file.name);
       }
 
     }

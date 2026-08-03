@@ -211,6 +211,47 @@ const classifyFactType = (
 };
 
 /**
+ * Identifiant déterministe et réellement unique d'un fait.
+ * Hash compact (FNV-1a 32 bits × 2 graines) calculé sur l'identité complète du
+ * fait : aucun tronquage, donc aucune collision entre prestations distinctes.
+ */
+const fnv1a = (input: string, seed: number): number => {
+  let h = seed >>> 0;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+};
+
+const buildFactId = (parts: {
+  rawId: string | null;
+  sourceFile: string;
+  sourcePage: number | null;
+  lot: string;
+  category: string;
+  descriptionExact: string;
+  quantity: number | null;
+  unit: BtpUnit;
+  index: number;
+}): string => {
+  const identity = [
+    parts.rawId ?? "",
+    parts.sourceFile,
+    parts.sourcePage ?? "",
+    parts.lot,
+    parts.category,
+    parts.descriptionExact,
+    parts.quantity ?? "",
+    parts.unit ?? "",
+    parts.index,
+  ].join("\u0001");
+  const a = fnv1a(identity, 0x811c9dc5).toString(36);
+  const b = fnv1a(identity, 0x9e3779b1).toString(36);
+  return `btp_${a}${b}`;
+};
+
+/**
  * Valide et fige un tableau de faits bruts issus de l'extraction IA.
  * Aucune donnée n'est inventée : une quantité ou une unité absente reste nulle
  * et le fait devient « pending » (à confirmer par l'artisan), jamais « ready ».

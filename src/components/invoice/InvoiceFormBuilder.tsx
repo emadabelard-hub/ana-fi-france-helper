@@ -1165,6 +1165,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     ...rawInvoiceData,
     documentId: savedOfficialDocumentId || undefined,
     items: validationResult.items.map(vi => ({
+      ...vi,
       designation_fr: vi.designation_fr,
       designation_ar: vi.designation_ar || vi.designation_fr,
       quantity: vi.quantity,
@@ -1172,6 +1173,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       unitPrice: vi.unitPrice,
       total: vi.total,
       lot: typeof (vi as any).lot === 'string' && (vi as any).lot.trim() ? (vi as any).lot.trim() : undefined,
+      sourceOrigin: vi.sourceOrigin,
+      clientSupplied: (vi as any).clientSupplied,
     })),
     subtotal: Math.round(validatedSubtotal * 100) / 100,
     discountAmount: validatedDiscountAmt > 0 ? validatedDiscountAmt : undefined,

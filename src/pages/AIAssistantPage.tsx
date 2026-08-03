@@ -1810,10 +1810,7 @@ const AIAssistantPage = () => {
         const des = (ln.designation_fr || '').trim();
         if (!des) continue;
         const needsTranslation = hasArabic(des);
-        if (!needsTranslation) {
-          if (mt?.requiresReview === true) continue;
-          if (startsWithAction(des) && wordCount(des) >= 8) continue;
-        }
+        if (!needsTranslation && startsWithAction(des) && wordCount(des) >= 8) continue;
         candidates.push({
           itemIdx: idx,
           id: `L${idx}`,
@@ -1826,8 +1823,8 @@ const AIAssistantPage = () => {
             translateToFrench: needsTranslation,
           },
         });
-        if (candidates.length >= 25) break;
       }
+
 
       if (candidates.length > 0) {
         // Métadonnées déterministes figées AVANT l'appel IA : l'IA ne peut

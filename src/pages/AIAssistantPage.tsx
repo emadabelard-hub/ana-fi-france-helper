@@ -2113,7 +2113,7 @@ const AIAssistantPage = () => {
       await runDeepAnalysis(0, docData, { attachments: originals, userText });
     } catch (err) {
       console.error('[AIAssistant] full project analysis failed', err);
-      toast({ variant: 'destructive', title: 'Erreur', description: "L'analyse du projet n'a pas pu être finalisée." });
+      toast({ variant: 'destructive', title: 'Erreur', description: `L'analyse du projet n'a pas pu être finalisée. (${errShort(err, 150)})` });
     } finally {
       setPipelineStep(null);
       pipelineRunningRef.current = false;

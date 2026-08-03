@@ -321,7 +321,17 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
     }
 
     facts.push({
-      factId: (str(f, ["factId", "id"]) || `f${i + 1}`).slice(0, 64),
+      factId: buildFactId({
+        rawId: str(f, ["factId", "id"]),
+        sourceFile,
+        sourcePage,
+        lot,
+        category,
+        descriptionExact,
+        quantity,
+        unit: resolvedUnit,
+        index: i,
+      }),
       lot,
       category,
       factType,

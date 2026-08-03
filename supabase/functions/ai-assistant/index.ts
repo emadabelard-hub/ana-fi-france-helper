@@ -1247,7 +1247,12 @@ RÈGLES DE LANGUE (impératives) :
       if (deepFactsPayload) {
         deepParts.push({
           type: 'text',
-          text: `FAITS STRUCTURÉS DÉJÀ EXTRAITS (source prioritaire du rapport). Chaque fait conserve son statut (certain / lecture_partielle / absent), sa source et son niveau de confiance. Tu ne peux ni élever un statut, ni ajouter une quantité absente, ni supprimer une réserve.
+          text: `CONTRAT DE FAITS BTP VALIDÉ CÔTÉ SERVEUR — SOURCE UNIQUE ET AUTORITÉ FINALE.
+Chaque fait est déjà figé. Tu ne dois JAMAIS modifier : quantity, unit, lot, clientSupplied, factType, transferStatus, factId. Tu ne peux ni reclasser un fait, ni élever un statut, ni ajouter une quantité absente, ni supprimer une réserve, ni fusionner ou scinder deux faits.
+RÉPARTITION IMPOSÉE DANS LE RAPPORT (aucune autre règle) :
+- section 4 « Éléments prêts pour le brouillon de devis » = EXACTEMENT les faits transferStatus === "ready" (tous, une ligne par factId, quantité et unité recopiées telles quelles) ;
+- section 5 « Lignes à créer avec quantité à confirmer » = EXACTEMENT les faits transferStatus === "pending", avec leur motif ;
+- annotations techniques (transferStatus === "excluded") = jamais une prestation, jamais dans les sections 4 et 5.
 
 ${deepFactsPayload}`,
         });
@@ -1601,12 +1606,21 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
     // Principal : Anthropic (ANTHROPIC_API_KEY). Secours : Lovable AI Gateway.
     // Le corps de requête et le format de réponse (SSE OpenAI) sont identiques
     // dans les deux cas : le frontend ne voit aucune différence.
+    // Déterminisme imposé sur les étapes structurées du pipeline BTP :
+    // l'extraction factuelle et le rapport approfondi doivent produire la même
+    // classification à chaque exécution.
+    const deterministicBtpAction =
+      action === 'btp_factual_extraction' ||
+      action === 'btp_deep_technical_analysis' ||
+      action === 'btp_document_control';
+
     const aiRequestBody = JSON.stringify({
       model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: finalSystemPrompt },
         ...outgoingMessages,
       ],
+      ...(deterministicBtpAction ? { temperature: 0 } : {}),
       // Aligned with smart-devis-analyzer to avoid truncation of the
       // documentary block on long BTP analyses (ex-4096 default was too low).
       max_tokens: 16000,

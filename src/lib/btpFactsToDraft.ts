@@ -43,12 +43,25 @@ export type FactsLine = ValidatedLine & {
   clientSupplied?: boolean;
 };
 
+export type PendingFact = {
+  factId: string | null;
+  designation: string;
+  /** Motifs exacts produits par le contrat serveur (jamais réécrits). */
+  reasons: string[];
+  quantity: number | null;
+  unit: string | null;
+  lot: string | null;
+  technicalReservation: string | null;
+};
+
 export type FactsDraftResult = {
   lines: FactsLine[];
   meta: ValidationMeta[];
   rawItems: Record<string, unknown>[];
   /** Prestations structurées présentes mais non transférables (à confirmer). */
   pendingCount: number;
+  /** Détail des prestations « pending » conservées avec leur motif exact. */
+  pending: PendingFact[];
   /** Faits écartés car annotation / caractéristique technique (non facturable). */
   excludedAnnotations: number;
   /** Notes techniques conservées (dimensions, réserves) sans ligne facturable. */
@@ -57,6 +70,8 @@ export type FactsDraftResult = {
   totalFacts: number;
   /** true dès que des faits structurés exploitables existent dans la source. */
   hasStructuredFacts: boolean;
+  /** true uniquement si la source est le contrat serveur validé (version 1). */
+  fromContract: boolean;
 };
 
 const EMPTY: FactsDraftResult = {
@@ -64,11 +79,14 @@ const EMPTY: FactsDraftResult = {
   meta: [],
   rawItems: [],
   pendingCount: 0,
+  pending: [],
   excludedAnnotations: 0,
   technicalNotes: [],
   totalFacts: 0,
   hasStructuredFacts: false,
+  fromContract: false,
 };
+
 
 const toNum = (v: unknown): number | null => {
   if (typeof v === 'number' && Number.isFinite(v)) return v;
@@ -273,6 +291,8 @@ type ContractFact = {
   sourcePage?: number | null;
   location?: string | null;
   material?: string | null;
+  reasons?: unknown;
+
 };
 
 const CONTRACT_STATUSES = new Set(['ready', 'pending', 'excluded']);
@@ -297,7 +317,7 @@ const buildFromContract = (facts: ContractFact[], totalFacts: number): FactsDraf
   const entries: Entry[] = [];
   const seen = new Set<string>();
   const technicalNotes: string[] = [];
-  let pendingCount = 0;
+  const pending: PendingFact[] = [];
   let excludedAnnotations = 0;
 
   facts.forEach((f) => {
@@ -317,12 +337,22 @@ const buildFromContract = (facts: ContractFact[], totalFacts: number): FactsDraf
     const quantity = toNum(f.quantity);
     const unitReadable = isReadableUnit(f.unit);
     if (status !== 'ready' || quantity === null || quantity <= 0 || !unitReadable) {
-      pendingCount += 1;
+      // Ligne conservée et exposée avec son motif exact : jamais supprimée.
+      pending.push({
+        factId: f.factId ?? null,
+        designation,
+        reasons: Array.isArray(f.reasons) ? f.reasons.map(String) : [],
+        quantity,
+        unit: unitReadable ? String(f.unit).trim() : null,
+        lot: f.lot ?? null,
+        technicalReservation: f.technicalReservation ?? null,
+      });
       if (f.technicalReservation) {
         technicalNotes.push(`${designation} — ${f.technicalReservation} (quantité à confirmer)`);
       }
       return;
     }
+
 
     const clientSupplied = f.clientSupplied === true;
     let baseDesignation = designation;
@@ -341,9 +371,14 @@ const buildFromContract = (facts: ContractFact[], totalFacts: number): FactsDraf
     const unitStr = String(f.unit).trim();
     const lot = resolveLot(f.lot ?? f.category ?? null, `${designation}\n${f.evidenceText ?? ''}`);
 
-    const dedupKey = `${finalDesignation.toLowerCase()}|${quantity}|${unitStr.toLowerCase()}|${lot ?? ''}`;
-    if (seen.has(dedupKey)) return;
-    seen.add(dedupKey);
+    // Dédoublonnage strictement limité au MÊME factId : deux faits distincts
+    // du contrat produisent toujours deux lignes, même libellé identique.
+    const dedupKey = f.factId ? `id:${f.factId}` : null;
+    if (dedupKey) {
+      if (seen.has(dedupKey)) return;
+      seen.add(dedupKey);
+    }
+
 
     entries.push({
       raw: f as Record<string, unknown>,
@@ -401,12 +436,15 @@ const buildFromContract = (facts: ContractFact[], totalFacts: number): FactsDraf
     lines,
     meta,
     rawItems,
-    pendingCount,
+    pendingCount: pending.length,
+    pending,
     excludedAnnotations,
     technicalNotes,
     totalFacts,
     hasStructuredFacts: true,
+    fromContract: true,
   };
+
 };
 
 
@@ -619,11 +657,14 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
     meta,
     rawItems,
     pendingCount,
+    pending: [],
     excludedAnnotations,
     technicalNotes,
     totalFacts: rawFacts.length,
     hasStructuredFacts: true,
+    fromContract: false,
   };
+
 };
 
 // ── Validation déterministe après reformulation IA ─────────────────────────

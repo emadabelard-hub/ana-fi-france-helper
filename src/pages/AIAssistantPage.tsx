@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAssistantDictation } from '@/hooks/useAssistantDictation';
 import FullscreenVoiceModal from '@/components/assistant/FullscreenVoiceModal';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
-import { validateBtpItemsForTransfer } from '@/lib/btpTransferValidator';
+
 import { buildDraftLinesFromFacts, sanitizeReformulatedDesignation } from '@/lib/btpFactsToDraft';
 import { correctArtisanVocabulary } from '@/lib/artisanVocabulary';
 
@@ -1733,52 +1733,55 @@ const AIAssistantPage = () => {
     if (isPreparingTransfer) return;
     setIsPreparingTransfer(true);
     try {
-      // Source prioritaire : faits structurés de l'analyse chantier
-      // (<ANAFYPRO_BTP_FACTS>). Le Markdown du rapport n'est jamais analysé.
+      // Source UNIQUE : le contrat de faits BTP validé côté serveur.
+      // Aucun repli silencieux : ni le Markdown du rapport, ni docData.items.
       const factsSource = job?.btpFacts ?? null;
       const factsDraft = buildDraftLinesFromFacts(factsSource);
 
-      let rawItems: any[];
-      // Les lignes issues de btpFacts portent une provenance (sourceOrigin)
-      // qui verrouille leur unité en aval ; les autres n'en ont pas.
-      let items: Array<typeof factsDraft.lines[number] | (Omit<typeof factsDraft.lines[number], 'sourceOrigin'> & { sourceOrigin?: undefined })>;
-      let meta: typeof factsDraft.meta;
-
-
-      const fromFacts = factsDraft.lines.length > 0;
-
-      if (fromFacts) {
-        rawItems = factsDraft.rawItems;
-        items = factsDraft.lines;
-        meta = factsDraft.meta;
-        if (factsDraft.pendingCount > 0) {
-          toast({
-            title: 'Brouillon préparé',
-            description: `${factsDraft.pendingCount} prestation(s) restent à confirmer et ne sont pas transférées automatiquement.`,
-          });
-        }
-      } else {
-        rawItems = Array.isArray(btpDocData?.items) ? btpDocData.items : [];
-        const documentTotalHT = btpDocData?.documentTotalHT;
-        const validated = validateBtpItemsForTransfer(rawItems, documentTotalHT);
-        // Aucune valeur artificielle : les lignes sans quantité/unité réelles
-        // ne sont pas transférées automatiquement.
-        const keep = validated.meta.map((m) => m.quantityAccepted);
-        items = validated.lines.filter((_, i) => keep[i]);
-        meta = validated.meta.filter((_, i) => keep[i]);
-      }
-
-      if (items.length === 0) {
-        console.warn('[AIAssistant] BTP transfer: no exploitable items', { factsDraft, btpDocData });
+      if (!factsDraft.fromContract) {
+        console.warn('[AIAssistant] BTP transfer refusé : contrat de faits absent ou invalide', {
+          hasSource: Boolean(factsSource),
+          factsDraft,
+        });
         toast({
           variant: 'destructive',
-          title: 'Aucune prestation exploitable',
-          description: factsDraft.hasStructuredFacts
-            ? "Aucune prestation ne dispose d'une quantité et d'une unité confirmées : ces lignes restent à confirmer dans l'analyse."
-            : "L'analyse n'a pas produit de lignes valides. Relancez l'analyse en demandant explicitement le détail par prestation.",
+          title: 'Faits techniques non validés',
+          description: "Les faits techniques n’ont pas pu être validés. Le devis automatique n’a pas été créé.",
         });
         return;
       }
+
+      // Les lignes issues du contrat portent une provenance (sourceOrigin) qui
+      // verrouille leur unité, leur lot et leur prix en aval.
+      const rawItems: any[] = factsDraft.rawItems;
+      const items: Array<typeof factsDraft.lines[number]> = factsDraft.lines;
+      const meta: typeof factsDraft.meta = factsDraft.meta;
+
+      // Les lignes « pending » ne sont jamais transférées mais ne disparaissent
+      // jamais : elles restent visibles avec leur motif exact.
+      if (factsDraft.pendingCount > 0) {
+        console.info('[AIAssistant] BTP pending (non transférées)', factsDraft.pending);
+        toast({
+          title: 'Prestations à confirmer',
+          description: `${factsDraft.pendingCount} prestation(s) restent à confirmer : ${factsDraft.pending
+            .slice(0, 3)
+            .map((p) => `${p.designation}${p.reasons.length ? ` (${p.reasons.join(', ')})` : ''}`)
+            .join(' ; ')}`,
+        });
+      }
+
+      if (items.length === 0) {
+        console.warn('[AIAssistant] BTP transfer: no ready fact', { factsDraft });
+        toast({
+          variant: 'destructive',
+          title: 'Aucune prestation exploitable',
+          description:
+            "Aucune prestation ne dispose d'une quantité et d'une unité confirmées : ces lignes restent à confirmer dans l'analyse.",
+        });
+        return;
+      }
+
+
 
 
       const ACTION_PREFIXES = [
@@ -1841,7 +1844,7 @@ const AIAssistantPage = () => {
               action: 'reformulate_btp_batch',
               // Lignes issues des faits BTP : reformulation strictement fidèle
               // à la source (aucun ajout de fourniture / nettoyage / raccordement…).
-              strict_source_preserving: fromFacts,
+              strict_source_preserving: true,
               items: candidates.map((c) => ({ id: c.id, text: c.text, context: c.context })),
             },
           });

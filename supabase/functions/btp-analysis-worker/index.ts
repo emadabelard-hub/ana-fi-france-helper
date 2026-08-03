@@ -279,7 +279,7 @@ const process = async (jobId: string, token: string) => {
     }
 
     // ── Étape 2 : extraction factuelle (idempotente) ──────────────────────
-    if (!results.facts) {
+    if (!results.facts && !results.factsFailed) {
       await saveStep("facts", {});
       const r = await callAi(token, {
         action: "btp_factual_extraction",
@@ -293,23 +293,35 @@ const process = async (jobId: string, token: string) => {
       if (r.complete && r.text.trim()) {
         results.facts = r.text;
         // ── Validation serveur : contrat unique de fait BTP ────────────────
-        // Les faits bruts de l'IA sont figés ici (nature, quantité, unité,
-        // statut de transfert). Aucune étape suivante ne les réinterprète.
+        // Le JSON produit par l'IA est réellement validé ici. Un contrat vide
+        // ou illisible n'est JAMAIS remplacé par un repli silencieux.
         try {
-          const contract = validateBtpFacts(parseFactsBlock(r.text));
+          const parsedFacts = parseFactsBlock(r.text);
+          if (!Array.isArray(parsedFacts) || parsedFacts.length === 0) {
+            throw new Error("bloc de faits illisible ou vide");
+          }
+          const contract = validateBtpFacts(parsedFacts);
+          if (contract.counts.total === 0) {
+            throw new Error("aucun fait validé");
+          }
           results.factsContract = contract;
           results.factsContractText = serializeFactsContract(contract);
-        } catch (_e) {
+          results.factsError = null;
+        } catch (e) {
           results.factsContract = null;
           results.factsContractText = null;
+          results.factsError = String((e as Error)?.message || e);
         }
       } else {
         // L'extraction factuelle est un contrôle interne : son échec ne doit
-        // pas empêcher la production du rapport final.
-        results.facts = "";
+        // pas empêcher la production du rapport final, mais il ne produit
+        // AUCUN contrat : le devis automatique sera refusé côté client.
         results.factsFailed = true;
         results.factsContract = null;
         results.factsContractText = null;
+        results.factsError = r.httpError
+          ? `Extraction factuelle: HTTP ${r.httpError}`
+          : "Extraction factuelle interrompue (flux incomplet)";
       }
       await saveStep("report", {});
       if (budgetExceeded()) {
@@ -324,11 +336,11 @@ const process = async (jobId: string, token: string) => {
       const r = await callAi(token, {
         action: "btp_deep_technical_analysis",
         btpDocData: results.docData,
-        // Faits validés de l'étape 2 (contrat unique) : source prioritaire du
-        // rapport final. Leur nature, quantité, unité et statut de transfert
-        // sont figés et ne peuvent plus être relevés par l'étape 3.
-        btpFacts: results.factsContractText || results.facts || null,
+        // Faits validés de l'étape 2 : le CONTRAT est la seule source de faits
+        // du rapport. Aucun repli sur les faits bruts non validés.
+        btpFacts: results.factsContractText || null,
         attachments,
+
         originalsAvailable,
         userQuestion: userText,
         messages: [],
@@ -432,7 +444,8 @@ serve(async (req) => {
           ...rest,
           docData: step_results?.docData ?? null,
           // Faits validés (contrat unique) : seule source du brouillon de devis.
-          btpFacts: step_results?.factsContractText ?? step_results?.facts ?? null,
+          btpFacts: step_results?.factsContractText ?? null,
+          btpFactsError: step_results?.factsError ?? null,
           btpFactsContract: step_results?.factsContract ?? null,
         };
       }

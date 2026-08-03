@@ -1810,10 +1810,7 @@ const AIAssistantPage = () => {
         const des = (ln.designation_fr || '').trim();
         if (!des) continue;
         const needsTranslation = hasArabic(des);
-        if (!needsTranslation) {
-          if (mt?.requiresReview === true) continue;
-          if (startsWithAction(des) && wordCount(des) >= 8) continue;
-        }
+        if (!needsTranslation && startsWithAction(des) && wordCount(des) >= 8) continue;
         candidates.push({
           itemIdx: idx,
           id: `L${idx}`,
@@ -1826,8 +1823,8 @@ const AIAssistantPage = () => {
             translateToFrench: needsTranslation,
           },
         });
-        if (candidates.length >= 25) break;
       }
+
 
       if (candidates.length > 0) {
         // Métadonnées déterministes figées AVANT l'appel IA : l'IA ne peut
@@ -1838,43 +1835,50 @@ const AIAssistantPage = () => {
           clientSupplied: (ln as any).clientSupplied,
           designation_fr: ln.designation_fr || '',
         }));
-        try {
-          const { data, error } = await supabase.functions.invoke('invoice-mentor', {
-            body: {
-              action: 'reformulate_btp_batch',
-              // Lignes issues des faits BTP : reformulation strictement fidèle
-              // à la source (aucun ajout de fourniture / nettoyage / raccordement…).
-              strict_source_preserving: true,
-              items: candidates.map((c) => ({ id: c.id, text: c.text, context: c.context })),
-            },
-          });
-          if (!error && data && Array.isArray((data as any).reformulations)) {
-            const map = new Map<string, string>();
-            for (const r of (data as any).reformulations as Array<{ id?: unknown; reformulation?: unknown }>) {
-              if (typeof r?.id === 'string' && isLatinNonEmpty(r?.reformulation)) {
-                map.set(r.id, (r.reformulation as string).trim());
+        // Lots de 25 max : toutes les lignes sont reformulées, aucune n'est ignorée.
+        const CHUNK = 25;
+        for (let start = 0; start < candidates.length; start += CHUNK) {
+          const chunk = candidates.slice(start, start + CHUNK);
+          try {
+            const { data, error } = await supabase.functions.invoke('invoice-mentor', {
+              body: {
+                action: 'reformulate_btp_batch',
+                // Lignes issues des faits BTP : reformulation strictement fidèle
+                // à la source (aucun ajout de fourniture / nettoyage / raccordement…).
+                strict_source_preserving: true,
+                items: chunk.map((c) => ({ id: c.id, text: c.text, context: c.context })),
+              },
+            });
+            if (!error && data && Array.isArray((data as any).reformulations)) {
+              const map = new Map<string, string>();
+              for (const r of (data as any).reformulations as Array<{ id?: unknown; reformulation?: unknown }>) {
+                if (typeof r?.id === 'string' && isLatinNonEmpty(r?.reformulation)) {
+                  map.set(r.id, (r.reformulation as string).trim());
+                }
               }
+              for (const c of chunk) {
+                const reworded = map.get(c.id);
+                if (!reworded) continue;
+                const target = items[c.itemIdx];
+                const snap = frozen[c.itemIdx];
+                // Validation déterministe : fourniture client conservée,
+                // « Fourniture et pose » interdit, action réelle exigée,
+                // réserve technique restaurée.
+                target.designation_fr = sanitizeReformulatedDesignation({
+                  original: snap.designation_fr,
+                  reformulated: reworded,
+                  clientSupplied: snap.clientSupplied === true,
+                  requireAction: c.context.translateToFrench !== true,
+                });
+              }
+            } else if (error) {
+              console.warn('[AIAssistant] reformulate_btp_batch error, keeping originals', error);
             }
-            for (const c of candidates) {
-              const reworded = map.get(c.id);
-              if (!reworded) continue;
-              const target = items[c.itemIdx];
-              const snap = frozen[c.itemIdx];
-              // Validation déterministe : fourniture client conservée,
-              // « Fourniture et pose » interdit, action réelle exigée.
-              target.designation_fr = sanitizeReformulatedDesignation({
-                original: snap.designation_fr,
-                reformulated: reworded,
-                clientSupplied: snap.clientSupplied === true,
-                requireAction: c.context.translateToFrench !== true,
-              });
-            }
-          } else if (error) {
-            console.warn('[AIAssistant] reformulate_btp_batch error, keeping originals', error);
+          } catch (reformErr) {
+            console.warn('[AIAssistant] reformulate_btp_batch failed, keeping originals', reformErr);
           }
-        } catch (reformErr) {
-          console.warn('[AIAssistant] reformulate_btp_batch failed, keeping originals', reformErr);
         }
+
         // Restauration des métadonnées : l'IA ne décide ni du lot ni de la
         // provenance de la fourniture.
         items.forEach((ln, i) => {

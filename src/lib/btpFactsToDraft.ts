@@ -700,6 +700,11 @@ export const sanitizeReformulatedDesignation = (opts: {
   if (opts.clientSupplied) s = stripFournitureEtPose(s);
   if (opts.requireAction !== false && !REAL_ACTION_RE.test(s)) return original;
 
+  // Réserve technique : mention déterministe, jamais supprimable par l'IA.
+  const reservation = original.match(/\((?:[^()]*r[ée]serve technique[^()]*)\)/i);
+  if (reservation && !/r[ée]serve technique/i.test(s)) {
+    s = `${s} ${reservation[0]}`;
+  }
 
   if (opts.clientSupplied && !CLIENT_SUPPLIED_PATTERNS.some((r) => r.test(s))) {
     const mention = findFirstMatch(original, CLIENT_SUPPLIED_PATTERNS);
@@ -707,4 +712,5 @@ export const sanitizeReformulatedDesignation = (opts: {
   }
   return s;
 };
+
 

@@ -3196,7 +3196,7 @@ const AIAssistantPage = () => {
                 <Sparkles size={16} />
                 {L.retry}
               </button>
-              {techMode && job.error_message && (
+              {job.error_message && (
                 <p className="text-[11px] text-muted-foreground font-mono break-all">{job.error_message}</p>
               )}
             </div>

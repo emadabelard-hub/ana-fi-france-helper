@@ -291,7 +291,7 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
     const status = (readString(f, ['draftStatus', 'transferStatus', 'status']) || '').trim();
     const quantity = toNum(f.quantity ?? f.quantite ?? f.qty);
     const unit = f.unit ?? f.unite;
-    const lot = readString(f, ['lot', 'category', 'categorie']);
+    const lotSource = readString(f, ['lot', 'lotName', 'lot_fr']);
     const category = readString(f, ['category', 'categorie', 'nature', 'type']);
     const evidenceText = readString(f, ['evidenceText', 'evidence', 'preuve', 'citation']) || '';
     const material = readString(f, ['material', 'materiau', 'materiel']) || '';
@@ -299,6 +299,14 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
     const location = readString(f, ['location', 'localisation', 'zone', 'piece']) || '';
     const sourceFile = readString(f, ['sourceFile', 'fichier', 'file']) || '';
     const sourcePage = readString(f, ['sourcePage', 'page']) || '';
+
+    // 1-6. Lot : source prioritaire (normalisée), puis inférence sur la nature
+    // réelle des travaux. Aucun héritage de la ligne précédente, jamais
+    // de repli automatique sur « Création ».
+    const lot = resolveLot(
+      lotSource ?? category,
+      `${designation ?? ''}\n${category ?? ''}\n${evidenceText}\n${material}`,
+    );
 
     if (!designation) return;
 

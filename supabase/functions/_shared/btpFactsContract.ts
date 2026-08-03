@@ -136,8 +136,19 @@ const ANNOTATION_RE =
   /(^charge\b|\bcharge\s+(?:à|a|de|sur)\b|^cote\b|^section\b|^port[ée]e\b|^longueur\b|^largeur\b|^hauteur\b|^[ée]paisseur\b|^dimension|^calcul|^annotation|^cotation|^rep[èe]re\b|^niveau\b|^descente\s+de\s+charge|^entraxe\b|^\s*[LlHhØø]\s*=)/i;
 
 const DIMENSION_WORD_RE = /\b(longueur|largeur|hauteur|port[ée]e|entraxe|[ée]paisseur)\b/i;
+
+/**
+ * Une cote structurelle énoncée EN TÊTE de libellé (« Largeur de reprise de
+ * charge », « Portée de poutre », « Section du profilé », « Charge admissible »)
+ * décrit une caractéristique technique, jamais une prestation : le fait est une
+ * dimension, même si un mot d'action apparaît plus loin dans le libellé.
+ */
+const LEADING_STRUCTURAL_RE =
+  /^\s*(?:la|le|les|l['’])?\s*(largeur|longueur|hauteur|profondeur|[ée]paisseur|port[ée]e|section|charge|surcharge|cote|cotation|entraxe|diam[èe]tre|[øØ]|niveau|dimensions?|reprise\s+de\s+charge|descente\s+de\s+charge|report\s+de\s+charge)\b/i;
+
 const BILLABLE_METRIC_RE =
   /\b(surface|m[èe]tr[ée]|quantit[ée]|lin[ée]aire|à\s+traiter|a\s+traiter|à\s+peindre|a\s+peindre|total)\b/i;
+
 
 const EQUIPMENT_RE =
   /(\bwc\b|cuvette|lave[- ]mains|lavabo|vasque|douche|baignoire|baln[ée]o|receveur|miroir|paroi\b|robinetterie|mitigeur|radiateur|s[èe]che[- ]serviettes|tablette|portes?\b|fen[êe]tres?|placard|tablette|plinthe|parquet|fa[ïi]ence|niche\b|coffre\b)/i;
@@ -169,6 +180,11 @@ const classifyFactType = (
 
   if (ANNOTATION_RE.test(description) && !ACTION_RE.test(description.slice(0, 30))) {
     return { factType: "technical_annotation", reasons: ["annotation_pattern"] };
+  }
+  // Cote structurelle en tête de libellé : aucune action de travaux n'est
+  // décrite, seul un caractéristique dimensionnelle l'est → non facturable.
+  if (LEADING_STRUCTURAL_RE.test(description) && !BILLABLE_METRIC_RE.test(description)) {
+    return { factType: "dimension", reasons: ["leading_structural_dimension"] };
   }
   if (/annotation|cote|cotation|caract[ée]ristique|note technique|structure existante/.test(cat) && !ACTION_RE.test(full)) {
     return { factType: "technical_annotation", reasons: ["annotation_category"] };

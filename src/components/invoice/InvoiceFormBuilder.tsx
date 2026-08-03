@@ -1199,6 +1199,14 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
       }
     }
   }, [showPreview, validationResult.corrections.length]);
+
+  // Avertissements : ne modifient aucune donnée et ne sont jamais comptés
+  // comme corrections automatiques (UX silencieuse — console uniquement).
+  useEffect(() => {
+    if (validationResult.warnings.length > 0) {
+      console.warn('[InvoiceFormBuilder] avertissements de contrôle (aucune donnée modifiée) :', validationResult.warnings);
+    }
+  }, [validationResult.warnings.length]);
   
   // Check if form is valid
   const isFormValid = items.some(item => item.designation_fr.trim() && item.unitPrice > 0) || (includeTravelCosts && travelPrice > 0);

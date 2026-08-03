@@ -1873,9 +1873,17 @@ const AIAssistantPage = () => {
               }
             } else if (error) {
               console.warn('[AIAssistant] reformulate_btp_batch error, keeping originals', error);
+              toast({
+                title: isRTL ? 'تم التحويل بدون إعادة صياغة' : 'Transféré sans reformulation',
+                description: errShort(error, 120),
+              });
             }
           } catch (reformErr) {
             console.warn('[AIAssistant] reformulate_btp_batch failed, keeping originals', reformErr);
+            toast({
+              title: isRTL ? 'تم التحويل بدون إعادة صياغة' : 'Transféré sans reformulation',
+              description: errShort(reformErr, 120),
+            });
           }
         }
 

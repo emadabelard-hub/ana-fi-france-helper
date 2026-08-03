@@ -13,7 +13,7 @@ describe('buildDraftLinesFromFacts', () => {
     expect(r.lines).toHaveLength(2);
     expect(r.lines.map(l => l.unit)).toEqual(['ml', 'm²']);
     expect(r.lines.every(l => l.unitPrice === 0)).toBe(true);
-    expect(r.lines[0].lot).toBe('Démolition');
+    expect(r.lines[0].lot).toBe('DÉPOSE / DÉMOLITION'); // lot normalisé
     expect(r.lines.every(l => l.sourceOrigin === 'btp_facts')).toBe(true);
   });
 
@@ -100,7 +100,7 @@ describe('buildDraftLinesFromFacts', () => {
       { descriptionExact: 'Pose de cloison B', quantity: 12, unit: 'm²', lot: 'Cloisons', status: 'ready_for_draft' },
       { descriptionExact: 'Peinture plafonds A', quantity: 40, unit: 'm²', lot: 'Peinture', status: 'ready_for_draft' },
     ]));
-    expect(r.lines.map(l => l.lot)).toEqual(['Cloisons', 'Cloisons', 'Peinture', 'Peinture']);
+    expect(r.lines.map(l => l.lot)).toEqual(['CLOISONS / DOUBLAGE / ISOLATION', 'CLOISONS / DOUBLAGE / ISOLATION', 'FINITIONS / PEINTURE', 'FINITIONS / PEINTURE']);
     expect(r.lines.map(l => l.designation_fr)).toEqual([
       'Pose de cloison A', 'Pose de cloison B', 'Peinture murs A', 'Peinture plafonds A',
     ]);

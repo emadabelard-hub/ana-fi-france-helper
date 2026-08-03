@@ -140,7 +140,7 @@ const BILLABLE_METRIC_RE =
   /\b(surface|m[èe]tr[ée]|quantit[ée]|lin[ée]aire|à\s+traiter|a\s+traiter|à\s+peindre|a\s+peindre|total)\b/i;
 
 const EQUIPMENT_RE =
-  /(\bwc\b|cuvette|lave[- ]mains|lavabo|vasque|douche|baignoire|baln[ée]o|receveur|miroir|paroi\b|robinetterie|mitigeur|radiateur|s[èe]che[- ]serviettes|tablette|porte\b|fen[êe]tre|plinthe|parquet|fa[ïi]ence|niche\b|coffre\b)/i;
+  /(\bwc\b|cuvette|lave[- ]mains|lavabo|vasque|douche|baignoire|baln[ée]o|receveur|miroir|paroi\b|robinetterie|mitigeur|radiateur|s[èe]che[- ]serviettes|tablette|portes?\b|fen[êe]tres?|placard|tablette|plinthe|parquet|fa[ïi]ence|niche\b|coffre\b)/i;
 
 const CLIENT_SUPPLIED_RE =
   /(fourni(?:e|es|s)?\s+par\s+(?:le|la|les)?\s*client(?:e|es|s)?\b|fourni(?:e|es|s)?\s+par\s+(?:le\s+)?ma[îi]tre\s+d[’']?ouvrage|fourniture\s+(?:du\s+|de\s+la\s+|par\s+le\s+)?client|fourniture\s+client|(?:à|a)\s+la\s+charge\s+du\s+client|من\s*توريد\s*العميل|العميل\s*يوفر)/i;

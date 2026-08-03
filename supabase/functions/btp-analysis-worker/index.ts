@@ -292,11 +292,24 @@ const process = async (jobId: string, token: string) => {
       });
       if (r.complete && r.text.trim()) {
         results.facts = r.text;
+        // ── Validation serveur : contrat unique de fait BTP ────────────────
+        // Les faits bruts de l'IA sont figés ici (nature, quantité, unité,
+        // statut de transfert). Aucune étape suivante ne les réinterprète.
+        try {
+          const contract = validateBtpFacts(parseFactsBlock(r.text));
+          results.factsContract = contract;
+          results.factsContractText = serializeFactsContract(contract);
+        } catch (_e) {
+          results.factsContract = null;
+          results.factsContractText = null;
+        }
       } else {
         // L'extraction factuelle est un contrôle interne : son échec ne doit
         // pas empêcher la production du rapport final.
         results.facts = "";
         results.factsFailed = true;
+        results.factsContract = null;
+        results.factsContractText = null;
       }
       await saveStep("report", {});
       if (budgetExceeded()) {

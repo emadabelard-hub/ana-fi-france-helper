@@ -135,6 +135,8 @@ const AppRoutes = () => {
           <Route path="/creer-ma-societe" element={<CreerMaSocietePage />} />
           {/* Public: translated French admin sites index */}
           <Route path="/anafy-translate" element={<AnafyTranslatePage />} />
+          {/* Public: devis from architect (placeholder) */}
+          <Route path="/anafy-translate/architecte-devis" element={<ArchitectDevisPage />} />
           {/* Public invoice portal — token-based, no auth */}
           <Route path="/invoice/:token" element={<PublicInvoicePage />} />
           <Route

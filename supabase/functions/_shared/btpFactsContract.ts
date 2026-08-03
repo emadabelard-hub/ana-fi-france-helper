@@ -181,6 +181,11 @@ const classifyFactType = (
   if (ANNOTATION_RE.test(description) && !ACTION_RE.test(description.slice(0, 30))) {
     return { factType: "technical_annotation", reasons: ["annotation_pattern"] };
   }
+  // Cote structurelle en tête de libellé : aucune action de travaux n'est
+  // décrite, seul un caractéristique dimensionnelle l'est → non facturable.
+  if (LEADING_STRUCTURAL_RE.test(description) && !BILLABLE_METRIC_RE.test(description)) {
+    return { factType: "dimension", reasons: ["leading_structural_dimension"] };
+  }
   if (/annotation|cote|cotation|caract[ée]ristique|note technique|structure existante/.test(cat) && !ACTION_RE.test(full)) {
     return { factType: "technical_annotation", reasons: ["annotation_category"] };
   }

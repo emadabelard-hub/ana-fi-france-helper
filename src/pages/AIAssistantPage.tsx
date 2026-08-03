@@ -705,6 +705,8 @@ const AIAssistantPage = () => {
     try { deepAnalysisAbortRef.current?.abort(); } catch { /* noop */ }
   }, []);
   const { toast } = useToast();
+  // Compteur d'échecs consécutifs du suivi d'analyse (visibilité mobile).
+  const pollFailuresRef = useRef(0);
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
 
   // Auto-fill from profile if available

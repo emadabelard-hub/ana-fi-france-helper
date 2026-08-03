@@ -239,7 +239,21 @@ const stripFournitureEtPose = (s: string): string =>
     .replace(/^fourniture\s+et\s+pose\s+(de\s+|d[’']|du\s+|des\s+|de\s+la\s+)?/i, 'Pose de ')
     .replace(/^fourniture\s+et\s+installation\s+(de\s+|d[’']|du\s+|des\s+)?/i, 'Pose de ')
     .replace(/^fourniture\s+(et\s+)?pose\b/i, 'Pose')
-    .replace(/^fourniture\s+seule\b/i, 'Pose');
+    .replace(/^fourniture\s+seule\b/i, 'Pose')
+    .replace(/^fourniture\s+(de\s+|d[’']|du\s+|des\s+|de\s+la\s+)?/i, 'Pose de ');
+
+/**
+ * Mention de fourniture client : accord féminin uniquement lorsqu'il est
+ * explicitement prouvé par la source, sinon formulation neutre et sûre.
+ */
+export const CLIENT_SUPPLIED_NEUTRAL = 'matériel fourni par le client';
+
+export const normalizeClientSuppliedMention = (mention: string): string =>
+  /par\s+la\s+cliente\b/i.test(mention)
+    ? 'équipement fourni par la cliente'
+    : CLIENT_SUPPLIED_NEUTRAL;
+
+
 
 /**
  * Construit les lignes de brouillon à partir des faits structurés.

@@ -224,12 +224,16 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
 
     const quantity = num(f.quantity ?? f.quantite ?? f.qty);
     const unit = normalizeUnit(f.unit ?? f.unite);
-    const hasBillableQuantity = quantity !== null && quantity > 0 && unit !== null;
+    // Un équipement explicitement dénombré (4 portes, 1 WC…) reste une
+    // prestation même si l'unité n'est pas écrite dans le document : l'unité
+    // canonique est résolue plus bas, jamais la quantité.
+    const hasBillableQuantity = quantity !== null && quantity > 0;
 
     const context = `${evidenceText}\n${material ?? ""}\n${location ?? ""}\n${dimensions}\n${category}`;
     const { factType, reasons } = classifyFactType(
       descriptionExact, category, context, legacyStatus, hasBillableQuantity,
     );
+
 
     let quantityType: BtpQuantityType = unit ? QTY_TYPE_BY_UNIT[unit] : "unknown";
     const declaredQtyType = (str(f, ["quantityType"]) || "").toLowerCase();
@@ -237,7 +241,36 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
       quantityType = declaredQtyType as BtpQuantityType;
     }
 
+
     const haystack = `${descriptionExact}\n${context}`;
+
+    // ── Unité canonique déterministe pour les quantités DÉNOMBRABLES ───────
+    // Une prestation facturable dont la quantité est un entier positif et dont
+    // la nature est explicitement dénombrable (quantityType « count » ou
+    // équipement identifié : porte, tablette, WC, douche, baignoire…) reçoit
+    // l'unité canonique « u ». Cette règle ne s'applique JAMAIS à une
+    // dimension, une portée, une charge, une section, une longueur isolée ni à
+    // une annotation technique : ces faits n'ont pas le type billable_work, ou
+    // portent un mot de dimension.
+    let resolvedUnit: BtpUnit = unit;
+    let resolvedQuantityType: BtpQuantityType = quantityType;
+    if (
+      resolvedUnit === null &&
+      factType === "billable_work" &&
+      quantity !== null &&
+      quantity > 0 &&
+      Number.isInteger(quantity) &&
+      !DIMENSION_WORD_RE.test(`${descriptionExact} ${dimensions}`) &&
+      (declaredQtyType === "count" || EQUIPMENT_RE.test(haystack))
+    ) {
+      resolvedUnit = "u";
+      resolvedQuantityType = "count";
+      reasons.push("countable_unit_canonical_u");
+    }
+
+    const hasFinalBillableQuantity =
+      quantity !== null && quantity > 0 && resolvedUnit !== null;
+
     const clientSuppliedFlag =
       f.clientSupplied === true || f.fournitureClient === true || f.suppliedByClient === true;
     const clientSupplied = clientSuppliedFlag || CLIENT_SUPPLIED_RE.test(haystack)
@@ -258,12 +291,12 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
 
     let transferStatus: BtpTransferStatus;
     if (factType === "billable_work") {
-      if (hasBillableQuantity) {
+      if (hasFinalBillableQuantity) {
         transferStatus = "ready";
       } else {
         transferStatus = "pending";
         if (quantity === null || quantity <= 0) reasons.push("quantity_missing");
-        if (unit === null) reasons.push("unit_missing");
+        if (resolvedUnit === null) reasons.push("unit_missing");
       }
     } else if (factType === "to_confirm") {
       transferStatus = "pending";
@@ -278,9 +311,9 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
       factType,
       descriptionExact,
       evidenceText,
-      quantity: transferStatus === "ready" ? quantity : quantity,
-      quantityType,
-      unit,
+      quantity,
+      quantityType: resolvedQuantityType,
+      unit: resolvedUnit,
       clientSupplied,
       transferStatus,
       technicalReservation,
@@ -291,6 +324,7 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
       reasons,
     });
   });
+
 
   const counts = {
     ready: facts.filter((f) => f.transferStatus === "ready").length,

@@ -463,3 +463,35 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
     hasStructuredFacts: true,
   };
 };
+
+// ── Validation déterministe après reformulation IA ─────────────────────────
+/** Actions réelles admises dans une désignation de prestation. */
+const REAL_ACTION_RE =
+  /(pose|poser|installation|installer|fabrication|fabriquer|cr[ée]ation|cr[ée]er|d[ée]pose|application|appliquer|peinture|peindre|mise\s+en\s+place|mise\s+en\s+(?:œuvre|oeuvre)|montage|r[ée]alisation|remplacement|r[ée]novation|traitement|d[ée]molition)/i;
+
+/**
+ * L'IA ne peut modifier que le TEXTE de la désignation. Cette validation
+ * finale restaure ce qui est déterministe :
+ *   - interdit « Fourniture et pose » / « Fourniture de » si fourniture client ;
+ *   - exige une action réelle, sinon conserve la désignation d'origine ;
+ *   - réajoute la mention de fourniture client supprimée par l'IA.
+ */
+export const sanitizeReformulatedDesignation = (opts: {
+  original: string;
+  reformulated: string;
+  clientSupplied?: boolean;
+}): string => {
+  const original = (opts.original || '').trim();
+  let s = (opts.reformulated || '').trim();
+  if (!s) return original;
+
+  if (opts.clientSupplied) s = stripFournitureEtPose(s);
+  if (!REAL_ACTION_RE.test(s)) return original;
+
+  if (opts.clientSupplied && !CLIENT_SUPPLIED_PATTERNS.some((r) => r.test(s))) {
+    const mention = findFirstMatch(original, CLIENT_SUPPLIED_PATTERNS);
+    s = `${s} — ${normalizeClientSuppliedMention(mention ?? '')}`;
+  }
+  return s;
+};
+

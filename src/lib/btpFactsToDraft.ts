@@ -359,11 +359,13 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
       return;
     }
 
-    const haystack = `${designation}\n${evidenceText}\n${material}`;
+    const haystack = `${designation}\n${evidenceText}\n${material}\n${category ?? ''}`;
 
-    // 4. Fourniture à la charge du client — mentions explicites uniquement.
+    // 4. Fourniture à la charge du client — propriété interne ou mention explicite.
+    const clientSuppliedFlag =
+      f.clientSupplied === true || f.fournitureClient === true || f.suppliedByClient === true;
     const clientSuppliedMention = findFirstMatch(haystack, CLIENT_SUPPLIED_PATTERNS);
-    const clientSupplied = !!clientSuppliedMention;
+    const clientSupplied = clientSuppliedFlag || !!clientSuppliedMention;
 
     // 7. Réserve technique — mention explicite ou statut dédié.
     const reservationField = readString(f, [
@@ -378,17 +380,20 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
       notes.push(`réserve technique : ${reservationMention}`);
     }
 
+    // La fourniture client ne supprime jamais la prestation de pose et ne
+    // devient jamais « Fourniture et pose » / « Fourniture de ».
     let baseDesignation = designation;
+    let clientSuppliedSuffix = '';
     if (clientSupplied) {
       baseDesignation = stripFournitureEtPose(baseDesignation);
       if (!CLIENT_SUPPLIED_PATTERNS.some((r) => r.test(baseDesignation))) {
-        notes.push(clientSuppliedMention as string);
+        clientSuppliedSuffix = ` — ${normalizeClientSuppliedMention(clientSuppliedMention ?? '')}`;
       }
     }
 
-    const finalDesignation = notes.length > 0
+    const finalDesignation = (notes.length > 0
       ? `${baseDesignation} (${notes.join(' ; ')})`
-      : baseDesignation;
+      : baseDesignation) + clientSuppliedSuffix;
 
     const dedupKey = `${finalDesignation.toLowerCase()}|${quantity}|${unitStr.toLowerCase()}|${lot ?? ''}`;
     if (seen.has(dedupKey)) return;

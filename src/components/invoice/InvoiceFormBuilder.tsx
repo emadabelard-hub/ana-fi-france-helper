@@ -1000,7 +1000,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         policyNumber,
         geographicCoverage,
       } : undefined,
+      // Les métadonnées BTP (provenance, fourniture client, lot) restent attachées
+      // à la ligne elle-même : aucun rapprochement par index en aval.
       items: allItems.map(item => ({
+        ...item,
+        id: item.id,
         designation_fr: item.designation_fr,
         designation_ar: item.designation_ar || item.designation_fr,
         quantity: item.quantity,
@@ -1008,6 +1012,8 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
         unitPrice: item.unitPrice,
         total: item.total,
         lot: typeof (item as any).lot === 'string' && (item as any).lot.trim() ? (item as any).lot.trim() : undefined,
+        sourceOrigin: (item as any).sourceOrigin,
+        clientSupplied: (item as any).clientSupplied,
       })),
       subtotal,
       discountType: discountEnabled && discountAmt > 0 ? discountType : undefined,

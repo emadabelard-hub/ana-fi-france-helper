@@ -1965,12 +1965,21 @@ const AIAssistantPage = () => {
       const data = await callWorker({ action: 'status', jobId: jobId || undefined });
       const row = (data as any)?.job ?? null;
       if (row) setJob(row as AnalysisJob);
+      pollFailuresRef.current = 0;
       return row as AnalysisJob | null;
     } catch (e) {
       console.warn('[AIAssistant] job status failed', e);
+      pollFailuresRef.current += 1;
+      if (pollFailuresRef.current >= 3) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'انقطع الاتصال بالتحليل' : "Connexion à l'analyse interrompue",
+          description: errShort(e, 120),
+        });
+      }
       return null;
     }
-  }, [user, callWorker]);
+  }, [user, callWorker, isRTL, toast]);
 
 
   // Reprise automatique de l'affichage : au montage / retour sur la page,

@@ -255,6 +255,160 @@ export const normalizeClientSuppliedMention = (mention: string): string =>
     : CLIENT_SUPPLIED_NEUTRAL;
 
 
+// ── Contrat unique de fait BTP (validé côté serveur) ──────────────────────
+type ContractFact = {
+  factId?: string;
+  lot?: string;
+  category?: string;
+  factType?: string;
+  descriptionExact?: string;
+  evidenceText?: string;
+  quantity?: number | null;
+  quantityType?: string;
+  unit?: string | null;
+  clientSupplied?: boolean | null;
+  transferStatus?: string;
+  technicalReservation?: string | null;
+  sourceFile?: string;
+  sourcePage?: number | null;
+  location?: string | null;
+  material?: string | null;
+};
+
+const CONTRACT_STATUSES = new Set(['ready', 'pending', 'excluded']);
+
+/** true si la source respecte le contrat serveur (version 1). */
+const isFactsContract = (parsed: any): boolean => {
+  if (!parsed || typeof parsed !== 'object') return false;
+  if (parsed.version !== 1) return false;
+  const first = Array.isArray(parsed.facts) ? parsed.facts[0] : null;
+  if (!first || typeof first !== 'object') return false;
+  return CONTRACT_STATUSES.has(String(first.transferStatus));
+};
+
+/**
+ * Transfert contractuel : aucune reclassification, aucun repli artificiel.
+ *   - ready    → ligne de devis (quantité et unité conservées telles quelles) ;
+ *   - pending  → comptée comme « à confirmer », jamais transférée sans quantité ;
+ *   - excluded → note technique, jamais facturable.
+ */
+const buildFromContract = (facts: ContractFact[], totalFacts: number): FactsDraftResult => {
+  type Entry = { line: FactsLine; meta: ValidationMeta; raw: Record<string, unknown> };
+  const entries: Entry[] = [];
+  const seen = new Set<string>();
+  const technicalNotes: string[] = [];
+  let pendingCount = 0;
+  let excludedAnnotations = 0;
+
+  facts.forEach((f) => {
+    const designation = (f.descriptionExact || '').trim();
+    if (!designation) return;
+    const status = String(f.transferStatus || '');
+
+    if (status === 'excluded') {
+      excludedAnnotations += 1;
+      const parts = [designation];
+      if (f.location) parts.push(f.location);
+      const src = [f.sourceFile, f.sourcePage].filter(Boolean).join(' p.');
+      technicalNotes.push(src ? `${parts.join(' — ')} (${src})` : parts.join(' — '));
+      return;
+    }
+
+    const quantity = toNum(f.quantity);
+    const unitReadable = isReadableUnit(f.unit);
+    if (status !== 'ready' || quantity === null || quantity <= 0 || !unitReadable) {
+      pendingCount += 1;
+      if (f.technicalReservation) {
+        technicalNotes.push(`${designation} — ${f.technicalReservation} (quantité à confirmer)`);
+      }
+      return;
+    }
+
+    const clientSupplied = f.clientSupplied === true;
+    let baseDesignation = designation;
+    let clientSuppliedSuffix = '';
+    if (clientSupplied) {
+      baseDesignation = stripFournitureEtPose(baseDesignation);
+      if (!CLIENT_SUPPLIED_PATTERNS.some((r) => r.test(baseDesignation))) {
+        clientSuppliedSuffix = ` — ${CLIENT_SUPPLIED_NEUTRAL}`;
+      }
+    }
+
+    const finalDesignation = (f.technicalReservation
+      ? `${baseDesignation} (réserve technique : ${f.technicalReservation})`
+      : baseDesignation) + clientSuppliedSuffix;
+
+    const unitStr = String(f.unit).trim();
+    const lot = resolveLot(f.lot ?? f.category ?? null, `${designation}\n${f.evidenceText ?? ''}`);
+
+    const dedupKey = `${finalDesignation.toLowerCase()}|${quantity}|${unitStr.toLowerCase()}|${lot ?? ''}`;
+    if (seen.has(dedupKey)) return;
+    seen.add(dedupKey);
+
+    entries.push({
+      raw: f as Record<string, unknown>,
+      line: {
+        designation_fr: finalDesignation,
+        designation_ar: '',
+        quantity,
+        unit: unitStr,
+        unitPrice: 0, // prix jamais inventé — « à compléter »
+        lot: lot ?? null,
+        sourceOrigin: BTP_FACTS_ORIGIN,
+        ...(clientSupplied ? { clientSupplied: true } : {}),
+      },
+      meta: {
+        index: 0,
+        designation: finalDesignation,
+        priceAccepted: false,
+        quantityAccepted: true,
+        reasons: f.technicalReservation ? ['technical_reservation'] : [],
+        priceSource: null,
+        confidence: null,
+        quantityConfidence: null,
+        priceConfidence: null,
+        requiresReview: false,
+        arithmeticOk: null,
+      },
+    });
+  });
+
+  // Regroupement par lot : un seul bloc par lot, ordre d'origine conservé.
+  const lotOrder: string[] = [];
+  const buckets = new Map<string, Entry[]>();
+  for (const e of entries) {
+    const key = e.line.lot ?? '';
+    if (!buckets.has(key)) {
+      buckets.set(key, []);
+      lotOrder.push(key);
+    }
+    buckets.get(key)!.push(e);
+  }
+
+  const lines: FactsLine[] = [];
+  const meta: ValidationMeta[] = [];
+  const rawItems: Record<string, unknown>[] = [];
+  for (const key of lotOrder) {
+    for (const e of buckets.get(key)!) {
+      const index = rawItems.length;
+      rawItems.push(e.raw);
+      lines.push(e.line);
+      meta.push({ ...e.meta, index });
+    }
+  }
+
+  return {
+    lines,
+    meta,
+    rawItems,
+    pendingCount,
+    excludedAnnotations,
+    technicalNotes,
+    totalFacts,
+    hasStructuredFacts: true,
+  };
+};
+
 
 /**
  * Construit les lignes de brouillon à partir des faits structurés.

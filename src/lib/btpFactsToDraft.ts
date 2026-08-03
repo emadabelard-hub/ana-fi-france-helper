@@ -480,13 +480,16 @@ export const sanitizeReformulatedDesignation = (opts: {
   original: string;
   reformulated: string;
   clientSupplied?: boolean;
+  /** false pour une désignation traduite (l'original n'est pas en français). */
+  requireAction?: boolean;
 }): string => {
   const original = (opts.original || '').trim();
   let s = (opts.reformulated || '').trim();
   if (!s) return original;
 
   if (opts.clientSupplied) s = stripFournitureEtPose(s);
-  if (!REAL_ACTION_RE.test(s)) return original;
+  if (opts.requireAction !== false && !REAL_ACTION_RE.test(s)) return original;
+
 
   if (opts.clientSupplied && !CLIENT_SUPPLIED_PATTERNS.some((r) => r.test(s))) {
     const mention = findFirstMatch(original, CLIENT_SUPPLIED_PATTERNS);

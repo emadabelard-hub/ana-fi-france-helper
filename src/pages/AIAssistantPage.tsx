@@ -336,6 +336,20 @@ const asLabel = (v: unknown): string => {
   return '';
 };
 
+/** Message d'erreur réel, tronqué — rend visible à l'écran ce qui n'allait qu'en console. */
+const errShort = (e: unknown, max: number): string => {
+  let msg = '';
+  if (e instanceof Error) msg = e.message;
+  else if (typeof e === 'string') msg = e;
+  else if (e && typeof e === 'object' && typeof (e as any).message === 'string') msg = (e as any).message;
+  else {
+    try { msg = JSON.stringify(e); } catch { msg = String(e); }
+  }
+  msg = (msg || '').trim();
+  return msg.length > max ? msg.slice(0, max) : msg;
+};
+
+
 /** Zone technique repliée : JSON complet, masqué par défaut. */
 const TechnicalJsonPanel = ({ raw, isRTL = false }: { raw: string; isRTL?: boolean }) => {
   const [open, setOpen] = useState(false);

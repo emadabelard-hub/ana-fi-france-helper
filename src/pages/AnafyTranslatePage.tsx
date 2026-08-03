@@ -218,6 +218,31 @@ const AnafyTranslatePage = () => {
           </div>
         </section>
 
+        {/* Section 4 - Outils ANAFYPRO */}
+        <section className="mb-6">
+          <h2 className="text-right text-lg font-bold text-foreground mb-3">🛠️ أدوات ANAFYPRO</h2>
+          <div className="space-y-3">
+            {SECTION_4.map((c) => (
+              <button
+                key={c.url}
+                type="button"
+                onClick={() => navigate(c.url)}
+                className="block w-full rounded-2xl border border-border bg-card p-4 shadow-sm hover:border-primary/40 hover:shadow-md active:scale-[0.99] transition-all"
+              >
+                <div className="flex items-start gap-3 flex-row-reverse text-right">
+                  <div className="text-3xl leading-none shrink-0">{c.emoji}</div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[15px] font-bold text-card-foreground font-cairo">{c.title}</h3>
+                    <p className="text-[13px] text-muted-foreground mt-1 font-cairo leading-relaxed">
+                      {c.description}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* Chrome translate method */}
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-right text-[14px] text-foreground leading-relaxed mb-5">
           <h3 className="font-bold mb-2 text-[15px]">📱 لو الموقع مش بيفتح مترجم — استخدم ترجمة كروم</h3>

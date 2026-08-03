@@ -64,6 +64,7 @@ const CreerMaSocietePage = lazy(() => import("./pages/CreerMaSocietePage"));
 const AnafyTranslatePage = lazy(() => import("./pages/AnafyTranslatePage"));
 const PaiementCreationPage = lazy(() => import("./pages/PaiementCreationPage"));
 const MaCreationPage = lazy(() => import("./pages/MaCreationPage"));
+const ArchitectDevisPage = lazy(() => import("./pages/ArchitectDevisPage"));
 const SupplierInvoicesPage = lazy(() => import("./pages/accounting/SupplierInvoicesPage"));
 const SupplierInvoiceDetailPage = lazy(() => import("./pages/accounting/SupplierInvoiceDetailPage"));
 const PublicInvoicePage = lazy(() => import("./pages/PublicInvoicePage"));

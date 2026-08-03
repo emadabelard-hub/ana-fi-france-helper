@@ -89,10 +89,12 @@ export interface DocumentItem {
   id: string;
   /**
    * Provenance de la ligne. 'btp_facts' = ligne issue de l'analyse chantier :
-   * l'unité validée au transfert est la source de vérité et ne peut jamais
-   * être réécrite par une heuristique sémantique.
+   * l'unité et le prix validés au transfert sont la source de vérité et ne
+   * peuvent jamais être réécrits par une heuristique.
    */
-  sourceOrigin?: string;
+  sourceOrigin?: 'btp_facts' | string;
+  /** Fourniture explicitement à la charge du client. */
+  clientSupplied?: boolean;
   designation_fr: string;
   designation_ar?: string;
   quantity: number;
@@ -109,10 +111,18 @@ export interface ValidationCorrection {
   reason: string;
 }
 
+/** Avertissement : ne modifie AUCUNE donnée, n'est jamais compté comme correction. */
+export interface ValidationWarning {
+  field: string;
+  value: string;
+  reason: string;
+}
+
 export interface ValidatedDocumentResult {
   items: DocumentItem[];
   tvaRate: number;
   corrections: ValidationCorrection[];
+  warnings: ValidationWarning[];
 }
 
 /** Normalisations purement typographiques (jamais sémantiques). */
@@ -120,19 +130,27 @@ const SAFE_UNIT_NORMALIZATION: Record<string, string> = {
   'm2': 'm²',
   'M2': 'm²',
   'M²': 'm²',
+  'm3': 'm³',
+  'M3': 'm³',
+  'M³': 'm³',
   'ML': 'ml',
   'Ml': 'ml',
   'mL': 'ml',
+  'U': 'u',
+  'unité': 'u',
+  'unités': 'u',
+  'unite': 'u',
+  'unites': 'u',
 };
 
 const isBtpFactsLine = (item: DocumentItem): boolean => item.sourceOrigin === 'btp_facts';
 
 /**
- * Normalisation sûre uniquement (casse / m2 / ML) — utilisée pour les lignes
- * issues des faits BTP.
+ * Normalisation sûre uniquement (casse / m2 / m3 / ML / unité) — utilisée pour
+ * les lignes issues des faits BTP.
  */
 function normalizeUnitSafely(unit: string): string {
-  const trimmed = unit.trim();
+  const trimmed = (unit ?? '').trim().replace(/\s+/g, ' ');
   return SAFE_UNIT_NORMALIZATION[trimmed] ?? trimmed;
 }
 

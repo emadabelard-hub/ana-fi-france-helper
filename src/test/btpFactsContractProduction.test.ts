@@ -39,6 +39,31 @@ describe('contrat BTP — formes de données réellement rencontrées', () => {
     expect(c.facts[0].factType).toBe('technical_annotation');
   });
 
+  it('exclut une largeur de reprise de charge de 3,5 ml sans action de travaux', () => {
+    const c = validateBtpFacts([
+      { id: 'd1', descriptionExact: 'Largeur de reprise de charge', quantity: 3.5, unit: 'ml', lot: 'Structure' },
+    ]);
+    expect(c.facts[0].factType).toBe('dimension');
+    expect(c.facts[0].transferStatus).toBe('excluded');
+  });
+
+  it('conserve la création d’une poutre bois de 5,4 m en ready', () => {
+    const c = validateBtpFacts([
+      { id: 'd2', descriptionExact: 'Création d’une poutre bois de 5,4 m', quantity: 5.4, unit: 'ml', lot: 'Structure' },
+    ]);
+    expect(c.facts[0].factType).toBe('billable_work');
+    expect(c.facts[0].transferStatus).toBe('ready');
+    expect(c.facts[0].unit).toBe('ml');
+  });
+
+  it('conserve la création d’un coffrage placo de 12 ml en ready', () => {
+    const c = validateBtpFacts([
+      { id: 'd3', descriptionExact: 'Création d’un coffrage placo', quantity: 12, unit: 'ml', lot: 'Cloisons' },
+    ]);
+    expect(c.facts[0].transferStatus).toBe('ready');
+    expect(c.facts[0].unit).toBe('ml');
+  });
+
   it('exclut une longueur isolée de soline de 3,50 m', () => {
     const c = validateBtpFacts([
       { id: 'a2', descriptionExact: 'Longueur solivage', quantity: 3.5, unit: 'm', evidenceText: 'longueur 3,50 m' },

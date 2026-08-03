@@ -1591,13 +1591,16 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   // Update invoice data from SmartReviewModal
   const handleUpdateInvoice = (updatedData: InvoiceData) => {
     const newItems: LineItem[] = updatedData.items.map(item => ({
-      id: generateId(),
+      id: item.id || generateId(),
       designation_fr: item.designation_fr,
       designation_ar: item.designation_ar,
       quantity: item.quantity,
       unit: item.unit,
       unitPrice: item.unitPrice,
       total: item.total,
+      lot: item.lot,
+      sourceOrigin: item.sourceOrigin,
+      clientSupplied: item.clientSupplied,
     }));
     setItems(newItems);
   };

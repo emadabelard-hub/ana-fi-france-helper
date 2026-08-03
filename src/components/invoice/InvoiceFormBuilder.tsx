@@ -1135,12 +1135,11 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const rawInvoiceData = buildInvoiceData();
   
   // Auto-validate and fix document (expert-comptable level)
+  // La provenance BTP voyage avec la ligne : plus aucun recollage par index.
   const validationResult = validateDocument(
     rawInvoiceData.items.map((item, i) => ({
       ...item,
-      id: items[i]?.id || `v-${i}`,
-      // Provenance BTP : unité verrouillée, aucune réécriture heuristique.
-      sourceOrigin: (items[i] as any)?.sourceOrigin,
+      id: item.id || `v-${i}`,
     })),
     rawInvoiceData.tvaRate,
     rawInvoiceData.tvaExempt

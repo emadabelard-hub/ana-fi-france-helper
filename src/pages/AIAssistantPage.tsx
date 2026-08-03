@@ -1938,7 +1938,7 @@ const AIAssistantPage = () => {
       navigate('/pro/smart-devis');
     } catch (err) {
       console.error('[AIAssistant] BTP transfer failed', err);
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Transfert impossible' });
+      toast({ variant: 'destructive', title: 'Erreur', description: `Transfert impossible (${errShort(err, 150)})` });
     } finally {
       setIsPreparingTransfer(false);
     }

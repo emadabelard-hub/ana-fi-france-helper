@@ -262,6 +262,7 @@ export function validateDocument(
   tvaExempt: boolean
 ): ValidatedDocumentResult {
   const corrections: ValidationCorrection[] = [];
+  const warnings: ValidationWarning[] = [];
 
   // 1. Validate TVA rate
   let correctedTvaRate = tvaRate;
@@ -291,6 +292,7 @@ export function validateDocument(
     const normalizedUnit = btpLine
       ? normalizeUnitSafely(corrected.unit)
       : normalizeUnit(corrected.unit);
+    // Aucune « correction » affichée si la valeur est inchangée après normalisation.
     if (normalizedUnit !== corrected.unit) {
       corrections.push({
         field: 'Unité',
@@ -306,7 +308,12 @@ export function validateDocument(
     if (suggestedUnit) {
       if (btpLine) {
         // Ligne issue des faits BTP : l'unité confirmée est la source de vérité.
-        // Simple avertissement, aucune réécriture silencieuse.
+        // Avertissement uniquement, aucune réécriture.
+        warnings.push({
+          field: 'Unité',
+          value: corrected.unit,
+          reason: `Unité inhabituelle pour "${corrected.designation_fr}" (suggestion : "${suggestedUnit}") — valeur source conservée`,
+        });
         console.warn(
           '[documentValidator] unité BTP conservée (avertissement seulement) :',
           corrected.designation_fr, corrected.unit, '≠ suggestion', suggestedUnit,
@@ -326,7 +333,22 @@ export function validateDocument(
     const category = detectPriceCategory(corrected.designation_fr, corrected.unit);
     if (category && PRICE_RANGES[category]) {
       const range = PRICE_RANGES[category];
-      if (corrected.unitPrice > 0 && corrected.unitPrice < range.min) {
+      const tooLow = corrected.unitPrice > 0 && corrected.unitPrice < range.min;
+      const tooHigh = corrected.unitPrice > range.max * 2;
+      if (btpLine) {
+        // Prix saisi par l'artisan = source de vérité. Jamais de réécriture.
+        if (tooLow || tooHigh) {
+          warnings.push({
+            field: 'Prix unitaire',
+            value: `${corrected.unitPrice.toFixed(2)} €`,
+            reason: 'Prix unitaire à vérifier',
+          });
+          console.warn(
+            '[documentValidator] prix BTP conservé (avertissement seulement) :',
+            corrected.designation_fr, corrected.unitPrice, category,
+          );
+        }
+      } else if (tooLow) {
         corrections.push({
           field: 'Prix unitaire',
           original: `${corrected.unitPrice.toFixed(2)} €`,
@@ -334,7 +356,7 @@ export function validateDocument(
           reason: `Prix trop bas pour ${category} (min ${range.min} €)`,
         });
         corrected.unitPrice = range.min;
-      } else if (corrected.unitPrice > range.max * 2) {
+      } else if (tooHigh) {
         // Only flag extreme outliers (>2x max)
         corrections.push({
           field: 'Prix unitaire',
@@ -371,5 +393,6 @@ export function validateDocument(
     items: correctedItems,
     tvaRate: correctedTvaRate,
     corrections,
+    warnings,
   };
 }

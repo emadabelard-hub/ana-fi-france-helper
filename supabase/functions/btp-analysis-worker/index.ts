@@ -431,8 +431,9 @@ serve(async (req) => {
         job = {
           ...rest,
           docData: step_results?.docData ?? null,
-          // Faits structurés : seule source utilisée pour le brouillon de devis.
-          btpFacts: step_results?.facts ?? null,
+          // Faits validés (contrat unique) : seule source du brouillon de devis.
+          btpFacts: step_results?.factsContractText ?? step_results?.facts ?? null,
+          btpFactsContract: step_results?.factsContract ?? null,
         };
       }
       return json({ job });

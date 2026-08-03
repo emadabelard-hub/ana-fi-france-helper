@@ -1,10 +1,41 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { anthropicCompatFetch } from "../_shared/anthropic-compat.ts";
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+const strictSystemPrompt = `Tu es un métreur-vérificateur BTP français.
+Ta mission : rendre chaque désignation reçue COURTE, PROFESSIONNELLE et EN FRANÇAIS,
+en restant STRICTEMENT fidèle à la source.
+
+TU PEUX UNIQUEMENT :
+- corriger la grammaire et l'orthographe ;
+- raccourcir et rendre la formulation professionnelle ;
+- traduire en français si le texte source est dans une autre langue ;
+- conserver les dimensions, localisations et réserves techniques déjà présentes.
+
+IL EST FORMELLEMENT INTERDIT D'AJOUTER (même implicitement) :
+fourniture, évacuation, nettoyage, huisseries, quincaillerie, robinetterie,
+bâti-support, raccordements, tests d'étanchéité, mise aux normes,
+préparation des supports, protection, finition, ou tout matériau / opération
+non explicitement présent dans le texte source.
+
+AUCUN préfixe commercial obligatoire. AUCUN « périmètre inclus » générique.
+AUCUNE règle des trois éléments. Si la source dit « Pose de X », tu écris « Pose de X ».
+Si la source indique que la fourniture est à la charge du client, tu conserves cette mention
+et tu n'écris JAMAIS « Fourniture et pose » ni « Fourniture de ».
+Tu ne modifies QUE le texte de la désignation : tu n'écris jamais le lot, tu ne renvoies
+aucune métadonnée (lot, provenance de la fourniture, unité, quantité, prix).
+Tu conserves toujours l'action réelle présente dans la source (pose, installation,
+fabrication, création, dépose, application, peinture, mise en place).
+
+INTERDIT également : inventer une quantité, une surface, une unité, une marque,
+une couleur, un prix, un taux de TVA.
+
+Sortie en FRANÇAIS UNIQUEMENT (zéro caractère arabe). Une seule phrase courte, sans guillemets.
+Si tu ne peux pas reformuler fidèlement, retourne EXACTEMENT le texte source.
+
+Tu réponds UNIQUEMENT avec un JSON valide, sans markdown, au format exact :
+{"reformulations":[{"id":"<id>","reformulation":"<phrase française>"}, ...]}
+Conserve exactement l'ordre et les identifiants reçus.`;
+
 
 interface Message {
   role: 'user' | 'assistant';
@@ -506,40 +537,6 @@ async function handleReformulateBtp(text: string, apiKey: string): Promise<Respo
   const FORBIDDEN_SCRIPTS =
     /[\u0400-\u052F\u0370-\u03FF\u4E00-\u9FFF\u3400-\u4DBF\u3040-\u30FF\uAC00-\uD7AF\u0590-\u05FF]/;
 
-  const strictSystemPrompt = `Tu es un métreur-vérificateur BTP français.
-Ta mission : rendre chaque désignation reçue COURTE, PROFESSIONNELLE et EN FRANÇAIS,
-en restant STRICTEMENT fidèle à la source.
-
-TU PEUX UNIQUEMENT :
-- corriger la grammaire et l'orthographe ;
-- raccourcir et rendre la formulation professionnelle ;
-- traduire en français si le texte source est dans une autre langue ;
-- conserver les dimensions, localisations et réserves techniques déjà présentes.
-
-IL EST FORMELLEMENT INTERDIT D'AJOUTER (même implicitement) :
-fourniture, évacuation, nettoyage, huisseries, quincaillerie, robinetterie,
-bâti-support, raccordements, tests d'étanchéité, mise aux normes,
-préparation des supports, protection, finition, ou tout matériau / opération
-non explicitement présent dans le texte source.
-
-AUCUN préfixe commercial obligatoire. AUCUN « périmètre inclus » générique.
-AUCUNE règle des trois éléments. Si la source dit « Pose de X », tu écris « Pose de X ».
-Si la source indique que la fourniture est à la charge du client, tu conserves cette mention
-et tu n'écris JAMAIS « Fourniture et pose » ni « Fourniture de ».
-Tu ne modifies QUE le texte de la désignation : tu n'écris jamais le lot, tu ne renvoies
-aucune métadonnée (lot, provenance de la fourniture, unité, quantité, prix).
-Tu conserves toujours l'action réelle présente dans la source (pose, installation,
-fabrication, création, dépose, application, peinture, mise en place).
-
-INTERDIT également : inventer une quantité, une surface, une unité, une marque,
-une couleur, un prix, un taux de TVA.
-
-Sortie en FRANÇAIS UNIQUEMENT (zéro caractère arabe). Une seule phrase courte, sans guillemets.
-Si tu ne peux pas reformuler fidèlement, retourne EXACTEMENT le texte source.
-
-Tu réponds UNIQUEMENT avec un JSON valide, sans markdown, au format exact :
-{"reformulations":[{"id":"<id>","reformulation":"<phrase française>"}, ...]}
-Conserve exactement l'ordre et les identifiants reçus.`;
 
   const systemPrompt = `Tu es un métreur-vérificateur BTP expérimenté en France.
 Ton rôle: transformer une saisie courte d'artisan (souvent en arabe égyptien, darija, ou franco-arabe) en UNE SEULE désignation professionnelle française, prête à figurer sur une ligne de devis ou facture BTP.

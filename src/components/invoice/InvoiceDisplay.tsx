@@ -65,6 +65,8 @@ export interface InvoiceData {
     geographicCoverage: string;
   };
   items: Array<{
+    /** Identifiant stable de la ligne (permet d'éviter tout rapprochement par index). */
+    id?: string;
     designation_fr: string;
     designation_ar: string;
     quantity: number;
@@ -72,6 +74,10 @@ export interface InvoiceData {
     unitPrice: number;
     total: number;
     lot?: string;
+    /** Provenance de la ligne (ex. 'btp_facts') : verrouille unité et prix en aval. */
+    sourceOrigin?: 'btp_facts' | string;
+    /** Fourniture explicitement à la charge du client. */
+    clientSupplied?: boolean;
   }>;
   subtotal: number;
   discountType?: 'percent' | 'fixed';

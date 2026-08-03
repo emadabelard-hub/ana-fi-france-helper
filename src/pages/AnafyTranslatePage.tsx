@@ -122,6 +122,15 @@ const SECTION_3: Card[] = [
   },
 ];
 
+const SECTION_4: Card[] = [
+  {
+    emoji: '🏗️',
+    title: 'اعمل الدوفي من مستندات الأرشيتكت',
+    description: 'Créer un devis depuis les documents de l’architecte',
+    url: '/anafy-translate/architecte-devis',
+  },
+];
+
 const CardLink = ({ card }: { card: Card }) => (
   <a
     href={card.url}

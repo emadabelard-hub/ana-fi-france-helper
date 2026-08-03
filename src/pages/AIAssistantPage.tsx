@@ -1827,6 +1827,14 @@ const AIAssistantPage = () => {
       }
 
       if (candidates.length > 0) {
+        // Métadonnées déterministes figées AVANT l'appel IA : l'IA ne peut
+        // modifier que le texte de la désignation.
+        const frozen = items.map((ln) => ({
+          lot: (ln as any).lot ?? null,
+          sourceOrigin: (ln as any).sourceOrigin,
+          clientSupplied: (ln as any).clientSupplied,
+          designation_fr: ln.designation_fr || '',
+        }));
         try {
           const { data, error } = await supabase.functions.invoke('invoice-mentor', {
             body: {
@@ -1848,13 +1856,15 @@ const AIAssistantPage = () => {
               const reworded = map.get(c.id);
               if (!reworded) continue;
               const target = items[c.itemIdx];
-              // Fourniture client : « Fourniture et pose » reste interdit.
-              target.designation_fr = (target as any).clientSupplied === true
-                ? reworded
-                    .replace(/^fourniture\s+et\s+pose\s+(de\s+|d[’']|du\s+|des\s+|de\s+la\s+)?/i, 'Pose de ')
-                    .replace(/^fourniture\s+et\s+installation\s+(de\s+|d[’']|du\s+|des\s+)?/i, 'Pose de ')
-                    .replace(/^fourniture\s+(et\s+)?pose\b/i, 'Pose')
-                : reworded;
+              const snap = frozen[c.itemIdx];
+              // Validation déterministe : fourniture client conservée,
+              // « Fourniture et pose » interdit, action réelle exigée.
+              target.designation_fr = sanitizeReformulatedDesignation({
+                original: snap.designation_fr,
+                reformulated: reworded,
+                clientSupplied: snap.clientSupplied === true,
+                requireAction: c.context.translateToFrench !== true,
+              });
             }
           } else if (error) {
             console.warn('[AIAssistant] reformulate_btp_batch error, keeping originals', error);
@@ -1862,7 +1872,15 @@ const AIAssistantPage = () => {
         } catch (reformErr) {
           console.warn('[AIAssistant] reformulate_btp_batch failed, keeping originals', reformErr);
         }
+        // Restauration des métadonnées : l'IA ne décide ni du lot ni de la
+        // provenance de la fourniture.
+        items.forEach((ln, i) => {
+          (ln as any).lot = frozen[i].lot;
+          if (frozen[i].sourceOrigin !== undefined) (ln as any).sourceOrigin = frozen[i].sourceOrigin;
+          if (frozen[i].clientSupplied !== undefined) (ln as any).clientSupplied = frozen[i].clientSupplied;
+        });
       }
+
 
       // Sécurité linguistique : aucune désignation arabe ne part vers le devis.
       const stillArabic = items.filter((ln) => hasArabic(ln.designation_fr || ''));

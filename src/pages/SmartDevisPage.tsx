@@ -218,9 +218,13 @@ const SmartDevisPage = () => {
         id: `scan-${Date.now()}-${idx}`,
         designation_fr: String(it.designation_fr || '').trim(),
         designation_ar: String(it.designation_ar || '').trim(),
-        quantity: Number(it.quantity) > 0 ? Number(it.quantity) : 1,
-        unit: String(it.unit || 'u'),
+        // Aucune valeur artificielle : pas de quantité « 1 » ni d'unité « u » par défaut.
+        quantity: Number(it.quantity) > 0 ? Number(it.quantity) : ('' as unknown as number),
+        unit: typeof it.unit === 'string' ? it.unit.trim() : '',
         unitPrice: Number(it.unitPrice) > 0 ? Number(it.unitPrice) : 0,
+        lot: typeof it.lot === 'string' && it.lot.trim() ? it.lot.trim() : undefined,
+        sourceOrigin: typeof it.sourceOrigin === 'string' ? it.sourceOrigin : undefined,
+        clientSupplied: it.clientSupplied === true ? true : undefined,
       }));
 
       if (mapped.length === 0) {

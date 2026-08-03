@@ -2063,7 +2063,7 @@ const AIAssistantPage = () => {
       void fetchJobStatus(row.id);
     } catch (e) {
       console.error('[AIAssistant] start analysis failed', e);
-      toast({ variant: 'destructive', title: 'Erreur', description: "L'analyse du projet n'a pas pu être lancée." });
+      toast({ variant: 'destructive', title: 'Erreur', description: `L'analyse du projet n'a pas pu être lancée. (${errShort(e, 150)})` });
     } finally {
       setStartingJob(false);
     }

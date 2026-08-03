@@ -336,6 +336,20 @@ const asLabel = (v: unknown): string => {
   return '';
 };
 
+/** Message d'erreur réel, tronqué — rend visible à l'écran ce qui n'allait qu'en console. */
+const errShort = (e: unknown, max: number): string => {
+  let msg = '';
+  if (e instanceof Error) msg = e.message;
+  else if (typeof e === 'string') msg = e;
+  else if (e && typeof e === 'object' && typeof (e as any).message === 'string') msg = (e as any).message;
+  else {
+    try { msg = JSON.stringify(e); } catch { msg = String(e); }
+  }
+  msg = (msg || '').trim();
+  return msg.length > max ? msg.slice(0, max) : msg;
+};
+
+
 /** Zone technique repliée : JSON complet, masqué par défaut. */
 const TechnicalJsonPanel = ({ raw, isRTL = false }: { raw: string; isRTL?: boolean }) => {
   const [open, setOpen] = useState(false);
@@ -705,6 +719,8 @@ const AIAssistantPage = () => {
     try { deepAnalysisAbortRef.current?.abort(); } catch { /* noop */ }
   }, []);
   const { toast } = useToast();
+  // Compteur d'échecs consécutifs du suivi d'analyse (visibilité mobile).
+  const pollFailuresRef = useRef(0);
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
 
   // Auto-fill from profile if available
@@ -1051,6 +1067,19 @@ const AIAssistantPage = () => {
       r.readAsDataURL(file);
     });
 
+  // Fichier joint non exploitable : signalement à l'écran (le fichier reste
+  // dans la liste, rien n'est retiré automatiquement).
+  const notifyUnreadableFile = (fileName: string) => {
+    toast({
+      variant: 'destructive',
+      title: isRTL ? 'ملف غير قابل للقراءة' : 'Fichier illisible',
+      description: isRTL
+        ? `لم نتمكن من قراءة ${fileName}. لن يُستخدم في التحليل.`
+        : `${fileName} n'a pas pu être lu. Il ne sera pas utilisé dans l'analyse.`,
+    });
+  };
+
+
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     e.target.value = '';
@@ -1104,6 +1133,7 @@ const AIAssistantPage = () => {
             file: file.name, type: 'docx', bytes: file.size,
             method: 'raw_text', textExtracted: text.trim().length > 0, truncated,
           });
+          if (text.trim().length === 0) notifyUnreadableFile(file.name);
         } else {
           const dataUrl = await readFileAsDataUrl(file);
           const ing = await ingestPdf(dataUrl);
@@ -1131,6 +1161,11 @@ const AIAssistantPage = () => {
             pagesSkipped: ing.pagesSkipped,
             truncated,
           });
+          // Ouverture impossible (aucune page lue) ou couche texte inexploitable
+          // sans aucune page rendue : le fichier ne sera pas exploité.
+          if (ing.pageCount === 0 || (ing.textStatus !== 'text_layer' && ing.pagesRendered === 0)) {
+            notifyUnreadableFile(file.name);
+          }
           if (ing.pagesSkipped > 0) {
             toast({
               title: file.name,
@@ -1141,6 +1176,7 @@ const AIAssistantPage = () => {
       } catch (err) {
         console.error('File processing error:', err);
         toast({ variant: 'destructive', title: t('aiAssistant.file.readError'), description: file.name });
+        if (isDocx || isPdf) notifyUnreadableFile(file.name);
       }
 
     }
@@ -1873,9 +1909,17 @@ const AIAssistantPage = () => {
               }
             } else if (error) {
               console.warn('[AIAssistant] reformulate_btp_batch error, keeping originals', error);
+              toast({
+                title: isRTL ? 'تم التحويل بدون إعادة صياغة' : 'Transféré sans reformulation',
+                description: errShort(error, 120),
+              });
             }
           } catch (reformErr) {
             console.warn('[AIAssistant] reformulate_btp_batch failed, keeping originals', reformErr);
+            toast({
+              title: isRTL ? 'تم التحويل بدون إعادة صياغة' : 'Transféré sans reformulation',
+              description: errShort(reformErr, 120),
+            });
           }
         }
 
@@ -1930,7 +1974,7 @@ const AIAssistantPage = () => {
       navigate('/pro/smart-devis');
     } catch (err) {
       console.error('[AIAssistant] BTP transfer failed', err);
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Transfert impossible' });
+      toast({ variant: 'destructive', title: 'Erreur', description: `Transfert impossible (${errShort(err, 150)})` });
     } finally {
       setIsPreparingTransfer(false);
     }
@@ -1965,12 +2009,21 @@ const AIAssistantPage = () => {
       const data = await callWorker({ action: 'status', jobId: jobId || undefined });
       const row = (data as any)?.job ?? null;
       if (row) setJob(row as AnalysisJob);
+      pollFailuresRef.current = 0;
       return row as AnalysisJob | null;
     } catch (e) {
       console.warn('[AIAssistant] job status failed', e);
+      pollFailuresRef.current += 1;
+      if (pollFailuresRef.current >= 3) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'انقطع الاتصال بالتحليل' : "Connexion à l'analyse interrompue",
+          description: errShort(e, 120),
+        });
+      }
       return null;
     }
-  }, [user, callWorker]);
+  }, [user, callWorker, isRTL, toast]);
 
 
   // Reprise automatique de l'affichage : au montage / retour sur la page,
@@ -2063,7 +2116,7 @@ const AIAssistantPage = () => {
       void fetchJobStatus(row.id);
     } catch (e) {
       console.error('[AIAssistant] start analysis failed', e);
-      toast({ variant: 'destructive', title: 'Erreur', description: "L'analyse du projet n'a pas pu être lancée." });
+      toast({ variant: 'destructive', title: 'Erreur', description: `L'analyse du projet n'a pas pu être lancée. (${errShort(e, 150)})` });
     } finally {
       setStartingJob(false);
     }
@@ -2113,7 +2166,7 @@ const AIAssistantPage = () => {
       await runDeepAnalysis(0, docData, { attachments: originals, userText });
     } catch (err) {
       console.error('[AIAssistant] full project analysis failed', err);
-      toast({ variant: 'destructive', title: 'Erreur', description: "L'analyse du projet n'a pas pu être finalisée." });
+      toast({ variant: 'destructive', title: 'Erreur', description: `L'analyse du projet n'a pas pu être finalisée. (${errShort(err, 150)})` });
     } finally {
       setPipelineStep(null);
       pipelineRunningRef.current = false;
@@ -3196,7 +3249,7 @@ const AIAssistantPage = () => {
                 <Sparkles size={16} />
                 {L.retry}
               </button>
-              {techMode && job.error_message && (
+              {job.error_message && (
                 <p className="text-[11px] text-muted-foreground font-mono break-all">{job.error_message}</p>
               )}
             </div>

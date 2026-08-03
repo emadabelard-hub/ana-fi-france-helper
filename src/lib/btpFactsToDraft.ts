@@ -23,6 +23,7 @@
  */
 
 import type { ValidatedLine, ValidationMeta } from './btpTransferValidator';
+import { resolveLot } from './btpLotNormalization';
 
 const TRANSFERABLE = new Set([
   'ready_for_draft',

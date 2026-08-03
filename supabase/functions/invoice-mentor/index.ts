@@ -525,7 +525,11 @@ non explicitement présent dans le texte source.
 AUCUN préfixe commercial obligatoire. AUCUN « périmètre inclus » générique.
 AUCUNE règle des trois éléments. Si la source dit « Pose de X », tu écris « Pose de X ».
 Si la source indique que la fourniture est à la charge du client, tu conserves cette mention
-et tu n'écris JAMAIS « Fourniture et pose ».
+et tu n'écris JAMAIS « Fourniture et pose » ni « Fourniture de ».
+Tu ne modifies QUE le texte de la désignation : tu n'écris jamais le lot, tu ne renvoies
+aucune métadonnée (lot, provenance de la fourniture, unité, quantité, prix).
+Tu conserves toujours l'action réelle présente dans la source (pose, installation,
+fabrication, création, dépose, application, peinture, mise en place).
 
 INTERDIT également : inventer une quantité, une surface, une unité, une marque,
 une couleur, un prix, un taux de TVA.

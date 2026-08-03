@@ -23,6 +23,7 @@
  */
 
 import type { ValidatedLine, ValidationMeta } from './btpTransferValidator';
+import { resolveLot } from './btpLotNormalization';
 
 const TRANSFERABLE = new Set([
   'ready_for_draft',
@@ -239,7 +240,21 @@ const stripFournitureEtPose = (s: string): string =>
     .replace(/^fourniture\s+et\s+pose\s+(de\s+|d[’']|du\s+|des\s+|de\s+la\s+)?/i, 'Pose de ')
     .replace(/^fourniture\s+et\s+installation\s+(de\s+|d[’']|du\s+|des\s+)?/i, 'Pose de ')
     .replace(/^fourniture\s+(et\s+)?pose\b/i, 'Pose')
-    .replace(/^fourniture\s+seule\b/i, 'Pose');
+    .replace(/^fourniture\s+seule\b/i, 'Pose')
+    .replace(/^fourniture\s+(de\s+|d[’']|du\s+|des\s+|de\s+la\s+)?/i, 'Pose de ');
+
+/**
+ * Mention de fourniture client : accord féminin uniquement lorsqu'il est
+ * explicitement prouvé par la source, sinon formulation neutre et sûre.
+ */
+export const CLIENT_SUPPLIED_NEUTRAL = 'matériel fourni par le client';
+
+export const normalizeClientSuppliedMention = (mention: string): string =>
+  /par\s+la\s+cliente\b/i.test(mention)
+    ? 'équipement fourni par la cliente'
+    : CLIENT_SUPPLIED_NEUTRAL;
+
+
 
 /**
  * Construit les lignes de brouillon à partir des faits structurés.
@@ -277,7 +292,7 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
     const status = (readString(f, ['draftStatus', 'transferStatus', 'status']) || '').trim();
     const quantity = toNum(f.quantity ?? f.quantite ?? f.qty);
     const unit = f.unit ?? f.unite;
-    const lot = readString(f, ['lot', 'category', 'categorie']);
+    const lotSource = readString(f, ['lot', 'lotName', 'lot_fr']);
     const category = readString(f, ['category', 'categorie', 'nature', 'type']);
     const evidenceText = readString(f, ['evidenceText', 'evidence', 'preuve', 'citation']) || '';
     const material = readString(f, ['material', 'materiau', 'materiel']) || '';
@@ -285,6 +300,14 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
     const location = readString(f, ['location', 'localisation', 'zone', 'piece']) || '';
     const sourceFile = readString(f, ['sourceFile', 'fichier', 'file']) || '';
     const sourcePage = readString(f, ['sourcePage', 'page']) || '';
+
+    // 1-6. Lot : source prioritaire (normalisée), puis inférence sur la nature
+    // réelle des travaux. Aucun héritage de la ligne précédente, jamais
+    // de repli automatique sur « Création ».
+    const lot = resolveLot(
+      lotSource ?? category,
+      `${designation ?? ''}\n${category ?? ''}\n${evidenceText}\n${material}`,
+    );
 
     if (!designation) return;
 
@@ -336,11 +359,13 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
       return;
     }
 
-    const haystack = `${designation}\n${evidenceText}\n${material}`;
+    const haystack = `${designation}\n${evidenceText}\n${material}\n${category ?? ''}`;
 
-    // 4. Fourniture à la charge du client — mentions explicites uniquement.
+    // 4. Fourniture à la charge du client — propriété interne ou mention explicite.
+    const clientSuppliedFlag =
+      f.clientSupplied === true || f.fournitureClient === true || f.suppliedByClient === true;
     const clientSuppliedMention = findFirstMatch(haystack, CLIENT_SUPPLIED_PATTERNS);
-    const clientSupplied = !!clientSuppliedMention;
+    const clientSupplied = clientSuppliedFlag || !!clientSuppliedMention;
 
     // 7. Réserve technique — mention explicite ou statut dédié.
     const reservationField = readString(f, [
@@ -355,17 +380,20 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
       notes.push(`réserve technique : ${reservationMention}`);
     }
 
+    // La fourniture client ne supprime jamais la prestation de pose et ne
+    // devient jamais « Fourniture et pose » / « Fourniture de ».
     let baseDesignation = designation;
+    let clientSuppliedSuffix = '';
     if (clientSupplied) {
       baseDesignation = stripFournitureEtPose(baseDesignation);
       if (!CLIENT_SUPPLIED_PATTERNS.some((r) => r.test(baseDesignation))) {
-        notes.push(clientSuppliedMention as string);
+        clientSuppliedSuffix = ` — ${normalizeClientSuppliedMention(clientSuppliedMention ?? '')}`;
       }
     }
 
-    const finalDesignation = notes.length > 0
+    const finalDesignation = (notes.length > 0
       ? `${baseDesignation} (${notes.join(' ; ')})`
-      : baseDesignation;
+      : baseDesignation) + clientSuppliedSuffix;
 
     const dedupKey = `${finalDesignation.toLowerCase()}|${quantity}|${unitStr.toLowerCase()}|${lot ?? ''}`;
     if (seen.has(dedupKey)) return;
@@ -435,3 +463,38 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
     hasStructuredFacts: true,
   };
 };
+
+// ── Validation déterministe après reformulation IA ─────────────────────────
+/** Actions réelles admises dans une désignation de prestation. */
+const REAL_ACTION_RE =
+  /(pose|poser|installation|installer|fabrication|fabriquer|cr[ée]ation|cr[ée]er|d[ée]pose|application|appliquer|peinture|peindre|mise\s+en\s+place|mise\s+en\s+(?:œuvre|oeuvre)|montage|r[ée]alisation|remplacement|r[ée]novation|traitement|d[ée]molition)/i;
+
+/**
+ * L'IA ne peut modifier que le TEXTE de la désignation. Cette validation
+ * finale restaure ce qui est déterministe :
+ *   - interdit « Fourniture et pose » / « Fourniture de » si fourniture client ;
+ *   - exige une action réelle, sinon conserve la désignation d'origine ;
+ *   - réajoute la mention de fourniture client supprimée par l'IA.
+ */
+export const sanitizeReformulatedDesignation = (opts: {
+  original: string;
+  reformulated: string;
+  clientSupplied?: boolean;
+  /** false pour une désignation traduite (l'original n'est pas en français). */
+  requireAction?: boolean;
+}): string => {
+  const original = (opts.original || '').trim();
+  let s = (opts.reformulated || '').trim();
+  if (!s) return original;
+
+  if (opts.clientSupplied) s = stripFournitureEtPose(s);
+  if (opts.requireAction !== false && !REAL_ACTION_RE.test(s)) return original;
+
+
+  if (opts.clientSupplied && !CLIENT_SUPPLIED_PATTERNS.some((r) => r.test(s))) {
+    const mention = findFirstMatch(original, CLIENT_SUPPLIED_PATTERNS);
+    s = `${s} — ${normalizeClientSuppliedMention(mention ?? '')}`;
+  }
+  return s;
+};
+

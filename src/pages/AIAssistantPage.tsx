@@ -1067,6 +1067,19 @@ const AIAssistantPage = () => {
       r.readAsDataURL(file);
     });
 
+  // Fichier joint non exploitable : signalement à l'écran (le fichier reste
+  // dans la liste, rien n'est retiré automatiquement).
+  const notifyUnreadableFile = (fileName: string) => {
+    toast({
+      variant: 'destructive',
+      title: isRTL ? 'ملف غير قابل للقراءة' : 'Fichier illisible',
+      description: isRTL
+        ? `لم نتمكن من قراءة ${fileName}. لن يُستخدم في التحليل.`
+        : `${fileName} n'a pas pu être lu. Il ne sera pas utilisé dans l'analyse.`,
+    });
+  };
+
+
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     e.target.value = '';

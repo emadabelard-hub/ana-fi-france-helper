@@ -371,13 +371,20 @@ const buildFromContract = (facts: ContractFact[], totalFacts: number): FactsDraf
     const unitStr = String(f.unit).trim();
     const lot = resolveLot(f.lot ?? f.category ?? null, `${designation}\n${f.evidenceText ?? ''}`);
 
-    // Dédoublonnage strictement limité au MÊME factId : deux faits distincts
-    // du contrat produisent toujours deux lignes, même libellé identique.
-    const dedupKey = f.factId ? `id:${f.factId}` : null;
-    if (dedupKey) {
-      if (seen.has(dedupKey)) return;
-      seen.add(dedupKey);
-    }
+    // Dédoublonnage sur l'identité COMPLÈTE du fait : un factId identique ne
+    // suffit pas (anciens ids tronqués = collisions). Seul un doublon
+    // strictement identique est supprimé.
+    const dedupKey = [
+      f.factId ?? '',
+      finalDesignation,
+      quantity,
+      unitStr,
+      lot ?? '',
+      f.sourceFile ?? '',
+      f.sourcePage ?? '',
+    ].join('\u0001');
+    if (seen.has(dedupKey)) return;
+    seen.add(dedupKey);
 
 
     entries.push({

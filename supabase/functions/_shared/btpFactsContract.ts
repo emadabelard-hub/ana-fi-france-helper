@@ -211,6 +211,55 @@ const classifyFactType = (
 };
 
 /**
+ * Identifiant déterministe et réellement unique d'un fait.
+ * Hash compact (FNV-1a 32 bits × 2 graines) calculé sur l'identité complète du
+ * fait : aucun tronquage, donc aucune collision entre prestations distinctes.
+ */
+const fnv1a = (input: string, seed: number): number => {
+  let h = seed >>> 0;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+};
+
+const buildFactId = (parts: {
+  rawId: string | null;
+  sourceFile: string;
+  sourcePage: number | null;
+  lot: string;
+  category: string;
+  descriptionExact: string;
+  quantity: number | null;
+  unit: BtpUnit;
+  index: number;
+  used?: Set<string>;
+}): string => {
+  const identity = [
+    parts.rawId ?? "",
+    parts.sourceFile,
+    parts.sourcePage ?? "",
+    parts.lot,
+    parts.category,
+    parts.descriptionExact,
+    parts.quantity ?? "",
+    parts.unit ?? "",
+  ].join("\u0001");
+  const a = fnv1a(identity, 0x811c9dc5).toString(36);
+  const b = fnv1a(identity, 0x9e3779b1).toString(36);
+  // Deux faits d'identité STRICTEMENT identique gardent le même identifiant
+  // (vrai doublon) ; l'indice n'est ajouté que si le hash est déjà pris par un
+  // fait d'identité différente.
+  const base = `btp_${a}${b}`;
+  if (!parts.used) return base;
+  const known = parts.used.has(`${base}\u0002${identity}`);
+  parts.used.add(`${base}\u0002${identity}`);
+  if (known) return base;
+  return parts.used.has(base) ? `${base}_${parts.index}` : (parts.used.add(base), base);
+};
+
+/**
  * Valide et fige un tableau de faits bruts issus de l'extraction IA.
  * Aucune donnée n'est inventée : une quantité ou une unité absente reste nulle
  * et le fait devient « pending » (à confirmer par l'artisan), jamais « ready ».
@@ -218,6 +267,7 @@ const classifyFactType = (
 export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
   const arr = Array.isArray(rawFacts) ? rawFacts : [];
   const facts: ValidatedBtpFact[] = [];
+  const usedIds = new Set<string>();
 
   arr.forEach((entry, i) => {
     if (!entry || typeof entry !== "object") return;
@@ -321,7 +371,18 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
     }
 
     facts.push({
-      factId: (str(f, ["factId", "id"]) || `f${i + 1}`).slice(0, 64),
+      factId: buildFactId({
+        rawId: str(f, ["factId", "id"]),
+        sourceFile,
+        sourcePage,
+        lot,
+        category,
+        descriptionExact,
+        quantity,
+        unit: resolvedUnit,
+        index: i,
+        used: usedIds,
+      }),
       lot,
       category,
       factType,

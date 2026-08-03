@@ -16,6 +16,11 @@
 // ============================================================================
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  parseFactsBlock,
+  serializeFactsContract,
+  validateBtpFacts,
+} from "../_shared/btpFactsContract.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -287,11 +292,24 @@ const process = async (jobId: string, token: string) => {
       });
       if (r.complete && r.text.trim()) {
         results.facts = r.text;
+        // ── Validation serveur : contrat unique de fait BTP ────────────────
+        // Les faits bruts de l'IA sont figés ici (nature, quantité, unité,
+        // statut de transfert). Aucune étape suivante ne les réinterprète.
+        try {
+          const contract = validateBtpFacts(parseFactsBlock(r.text));
+          results.factsContract = contract;
+          results.factsContractText = serializeFactsContract(contract);
+        } catch (_e) {
+          results.factsContract = null;
+          results.factsContractText = null;
+        }
       } else {
         // L'extraction factuelle est un contrôle interne : son échec ne doit
         // pas empêcher la production du rapport final.
         results.facts = "";
         results.factsFailed = true;
+        results.factsContract = null;
+        results.factsContractText = null;
       }
       await saveStep("report", {});
       if (budgetExceeded()) {
@@ -306,10 +324,10 @@ const process = async (jobId: string, token: string) => {
       const r = await callAi(token, {
         action: "btp_deep_technical_analysis",
         btpDocData: results.docData,
-        // Faits structurés de l'étape 2 : source prioritaire du rapport final.
-        // Leur statut (certain / lecture_partielle / absent) ne peut plus être
-        // relevé par l'étape 3.
-        btpFacts: results.facts || null,
+        // Faits validés de l'étape 2 (contrat unique) : source prioritaire du
+        // rapport final. Leur nature, quantité, unité et statut de transfert
+        // sont figés et ne peuvent plus être relevés par l'étape 3.
+        btpFacts: results.factsContractText || results.facts || null,
         attachments,
         originalsAvailable,
         userQuestion: userText,
@@ -413,8 +431,9 @@ serve(async (req) => {
         job = {
           ...rest,
           docData: step_results?.docData ?? null,
-          // Faits structurés : seule source utilisée pour le brouillon de devis.
-          btpFacts: step_results?.facts ?? null,
+          // Faits validés (contrat unique) : seule source du brouillon de devis.
+          btpFacts: step_results?.factsContractText ?? step_results?.facts ?? null,
+          btpFactsContract: step_results?.factsContract ?? null,
         };
       }
       return json({ job });

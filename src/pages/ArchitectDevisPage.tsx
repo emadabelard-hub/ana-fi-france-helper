@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, Upload, X, FileText } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Upload, X, FileText, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 const MAX_FILES = 10;
@@ -32,7 +33,36 @@ const ArchitectDevisPage = () => {
   const { isRTL } = useLanguage();
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [receivedCount, setReceivedCount] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleExtract = useCallback(async () => {
+    if (files.length === 0) return;
+    setIsSending(true);
+    setErrorMessage(null);
+    setReceivedCount(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('btp-quote-from-documents', {
+        body: {
+          files: files.map((f) => ({ name: f.name, size: f.size, type: f.type })),
+        },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error('Réponse invalide');
+      setReceivedCount(Number(data.fileCount) || 0);
+    } catch (e) {
+      console.error('btp-quote-from-documents error:', e);
+      setErrorMessage(
+        isRTL
+          ? 'حصل خطأ أثناء إرسال المستندات. حاول تاني.'
+          : "Une erreur est survenue lors de l’envoi des documents. Veuillez réessayer."
+      );
+    } finally {
+      setIsSending(false);
+    }
+  }, [files, isRTL]);
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 

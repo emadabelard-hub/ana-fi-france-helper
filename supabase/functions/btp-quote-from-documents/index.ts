@@ -104,14 +104,24 @@ Deno.serve(async (req) => {
       {
         type: 'input_text',
         text:
-          "Tu reçois des documents d'architecte (plans, notices, devis, photos). " +
-          'Pour CHAQUE document reçu, dans le même ordre que les fichiers fournis, indique : ' +
-          "son type de document identifié (ex : plan de niveau, coupe, façade, CCTP, devis, photo de chantier), " +
-          "si son contenu est réellement lisible (readable=true) ou seulement partiellement lisible (readable=false), " +
-          'et un résumé factuel de 2 lignes maximum. ' +
-          "N'invente rien. Réponds STRICTEMENT en JSON : " +
-          '{"documents":[{"name":"","readable":true,"documentType":"","shortSummary":""}]} ' +
-          'Le champ name doit reprendre exactement le nom de fichier annoncé.',
+          "Tu reçois des documents d'architecte (plans, coupes, façades, CCTP, notices, devis, photos). " +
+          'Extrais UNIQUEMENT les prestations de travaux réellement nécessaires au devis, telles qu’elles ressortent des documents.\n' +
+          'RÈGLES IMPÉRATIVES :\n' +
+          "- N'invente RIEN, aucune prestation absente des documents.\n" +
+          '- Ne crée AUCUN prix, aucun montant.\n' +
+          '- Quantité absente ou non mesurable = null (jamais 0, jamais une estimation).\n' +
+          '- source_file doit reprendre EXACTEMENT le nom de fichier annoncé.\n' +
+          '- source_page = numéro de page ou repère du plan si connu, sinon null.\n' +
+          '- Regroupe les prestations par lot (lot = corps de métier en français majuscules).\n' +
+          '- Fusionne uniquement les doublons évidents (même prestation, même périmètre).\n' +
+          '- designation_fr : français professionnel BTP, court (Action + Prestation + Périmètre).\n' +
+          '- explication_ar : arabe simple et clair (une phrase).\n' +
+          '- unit : uniquement "m²", "ml", "u" ou "forfait".\n' +
+          '- reading_status : uniquement "Confirmé dans le document", "Partiellement lisible" ou "Quantité à confirmer".\n' +
+          '- client_supplied_material : true seulement si le document indique une fourniture par le client.\n' +
+          '- observation : réserve technique factuelle si nécessaire, sinon chaîne vide.\n' +
+          'Réponds STRICTEMENT en JSON, sans texte autour :\n' +
+          '{"prestations":[{"lot":"","designation_fr":"","explication_ar":"","quantity":null,"unit":"u","source_file":"","source_page":null,"reading_status":"Confirmé dans le document","client_supplied_material":false,"observation":""}]}',
       },
     ];
 

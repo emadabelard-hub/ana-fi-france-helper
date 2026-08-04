@@ -28,15 +28,29 @@ const isAcceptedFile = (file: File): boolean => {
   return ACCEPTED_EXTENSIONS.includes(ext);
 };
 
+type Prestation = {
+  lot: string;
+  designation_fr: string;
+  explication_ar: string;
+  quantity: number | null;
+  unit: string;
+  source_file: string;
+  source_page: string | number | null;
+  reading_status: string;
+  client_supplied_material: boolean;
+  observation: string;
+};
+
+const formatQty = (q: number | null): string =>
+  q === null ? '—' : q.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+
 const ArchitectDevisPage = () => {
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [documents, setDocuments] = useState<
-    { name: string; readable: boolean; documentType: string; shortSummary: string }[] | null
-  >(null);
+  const [prestations, setPrestations] = useState<Prestation[] | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -44,7 +58,7 @@ const ArchitectDevisPage = () => {
     if (files.length === 0) return;
     setIsSending(true);
     setErrorMessage(null);
-    setDocuments(null);
+    setPrestations(null);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -62,7 +76,7 @@ const ArchitectDevisPage = () => {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.success) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      setDocuments(Array.isArray(data.documents) ? data.documents : []);
+      setPrestations(Array.isArray(data.prestations) ? data.prestations : []);
     } catch (e) {
       console.error('btp-quote-from-documents error:', e);
       setErrorMessage(
@@ -241,24 +255,57 @@ const ArchitectDevisPage = () => {
               : isRTL ? 'استخرج البنود' : 'Extraire les prestations'}
           </Button>
 
-          {documents !== null && (
-            <div className="space-y-2">
-              {documents.map((doc, i) => (
-                <div
-                  key={`${doc.name}-${i}`}
-                  className={cn('p-3 rounded-lg border bg-background space-y-1', isRTL && 'text-right font-cairo')}
-                >
-                  <p className="text-sm font-medium text-foreground break-words">{doc.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {doc.documentType || (isRTL ? 'نوع غير محدد' : 'Type non identifié')}
-                    {' · '}
-                    {doc.readable
-                      ? isRTL ? 'مقروء' : 'Lisible'
-                      : isRTL ? 'قراءة جزئية' : 'Lecture partielle'}
-                  </p>
-                  {doc.shortSummary && (
-                    <p className="text-xs text-foreground/80 leading-relaxed">{doc.shortSummary}</p>
-                  )}
+          {prestations !== null && prestations.length === 0 && (
+            <p className={cn('text-sm text-muted-foreground', isRTL && 'text-right font-cairo')}>
+              {isRTL
+                ? 'مفيش بنود مؤكدة في المستندات دي.'
+                : 'Aucune prestation exploitable identifiée dans ces documents.'}
+            </p>
+          )}
+
+          {prestations !== null && prestations.length > 0 && (
+            <div className="space-y-5">
+              {Array.from(new Set(prestations.map((p) => p.lot))).map((lot) => (
+                <div key={lot} className="space-y-2">
+                  <h2 className={cn(
+                    'text-sm font-bold uppercase tracking-wide text-foreground',
+                    isRTL && 'text-right font-cairo'
+                  )}>
+                    {lot}
+                  </h2>
+                  {prestations
+                    .filter((p) => p.lot === lot)
+                    .map((p, i) => (
+                      <div
+                        key={`${lot}-${i}`}
+                        className="p-3 rounded-lg border bg-background space-y-1.5"
+                      >
+                        <p className="text-sm font-medium text-foreground leading-snug" dir="ltr">
+                          {p.designation_fr}
+                        </p>
+                        {p.explication_ar && (
+                          <p className="text-sm text-muted-foreground leading-relaxed font-cairo text-right" dir="rtl">
+                            {p.explication_ar}
+                          </p>
+                        )}
+                        <p className="text-xs font-medium text-foreground" dir="ltr">
+                          {formatQty(p.quantity)} {p.unit}
+                        </p>
+                        <p className="text-xs text-muted-foreground break-words" dir="ltr">
+                          {p.source_file}
+                          {p.source_page !== null && ` · p. ${p.source_page}`}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{p.reading_status}</p>
+                        {p.client_supplied_material && (
+                          <p className="text-xs text-muted-foreground">
+                            {isRTL ? 'المواد من عند العميل' : 'Fourniture client'}
+                          </p>
+                        )}
+                        {p.observation && (
+                          <p className="text-xs text-foreground/80 leading-relaxed">{p.observation}</p>
+                        )}
+                      </div>
+                    ))}
                 </div>
               ))}
             </div>

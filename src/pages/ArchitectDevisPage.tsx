@@ -241,10 +241,20 @@ const ArchitectDevisPage = () => {
           </Button>
 
           {receivedCount !== null && (
-            <p className={cn('text-sm font-medium text-foreground', isRTL && 'text-right')}>
-              {isRTL ? `المستندات المستلمة: ${receivedCount}` : `Documents reçus : ${receivedCount}`}
-            </p>
+            <div className={cn('space-y-1', isRTL && 'text-right')}>
+              <p className="text-sm font-medium text-foreground">
+                {isRTL
+                  ? `المحتوى المستلم: ${receivedCount} مستند`
+                  : `Contenu reçu : ${receivedCount} document(s)`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {isRTL
+                  ? `الحجم الإجمالي: ${formatSize(receivedBytes)}`
+                  : `Taille totale reçue : ${formatSize(receivedBytes)}`}
+              </p>
+            </div>
           )}
+
 
           {errorMessage && (
             <p className={cn('text-sm text-destructive', isRTL && 'text-right')}>{errorMessage}</p>

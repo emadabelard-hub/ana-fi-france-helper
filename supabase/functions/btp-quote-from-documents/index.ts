@@ -294,50 +294,61 @@ Deno.serve(async (req) => {
       observation: string;
     };
 
-    let prestations: Prestation[] = [];
+    let parsed: { prestations?: unknown } | null = null;
     try {
-      const match = text.match(/\{[\s\S]*\}/);
-      const parsed = match ? JSON.parse(match[0]) : null;
-      if (parsed && Array.isArray(parsed.prestations)) {
-        prestations = parsed.prestations
-          .map((p: Record<string, unknown>): Prestation => {
-            const qtyRaw = p.quantity;
-            const qty =
-              typeof qtyRaw === 'number' && Number.isFinite(qtyRaw)
-                ? qtyRaw
-                : typeof qtyRaw === 'string' && qtyRaw.trim() && Number.isFinite(Number(qtyRaw.replace(',', '.')))
-                  ? Number(qtyRaw.replace(',', '.'))
-                  : null;
-            const unitRaw = typeof p.unit === 'string' ? p.unit.trim() : '';
-            const statusRaw = typeof p.reading_status === 'string' ? p.reading_status.trim() : '';
-            const src = typeof p.source_file === 'string' ? p.source_file : '';
-            return {
-              lot: typeof p.lot === 'string' && p.lot.trim() ? p.lot.trim() : 'AUTRES PRESTATIONS',
-              designation_fr: typeof p.designation_fr === 'string' ? p.designation_fr.trim() : '',
-              explication_ar: typeof p.explication_ar === 'string' ? p.explication_ar.trim() : '',
-              quantity: qty,
-              unit: ALLOWED_UNITS.includes(unitRaw) ? unitRaw : 'u',
-              source_file: names.includes(src) ? src : (src || names[0] || ''),
-              source_page:
-                typeof p.source_page === 'number' || (typeof p.source_page === 'string' && p.source_page.trim())
-                  ? (p.source_page as string | number)
-                  : null,
-              reading_status: ALLOWED_STATUS.includes(statusRaw)
-                ? statusRaw
-                : qty === null
-                  ? 'Quantité à confirmer'
-                  : 'Partiellement lisible',
-              client_supplied_material: p.client_supplied_material === true,
-              observation: typeof p.observation === 'string' ? p.observation.trim() : '',
-            };
-          })
-          .filter((p: Prestation) => p.designation_fr.length > 0);
-      }
+      parsed = JSON.parse(text);
     } catch (e) {
       console.error('Parsing réponse OpenAI impossible:', e);
+      return json({ success: false, error: 'Réponse du modèle non conforme au schéma attendu.' }, 502);
+    }
+
+    if (!parsed || !Array.isArray(parsed.prestations)) {
+      return json({ success: false, error: 'Réponse du modèle non conforme au schéma attendu.' }, 502);
+    }
+
+    const prestations: Prestation[] = (parsed.prestations as Record<string, unknown>[])
+      .map((p: Record<string, unknown>): Prestation => {
+        const qtyRaw = p.quantity;
+        const qty =
+          typeof qtyRaw === 'number' && Number.isFinite(qtyRaw)
+            ? qtyRaw
+            : typeof qtyRaw === 'string' && qtyRaw.trim() && Number.isFinite(Number(qtyRaw.replace(',', '.')))
+              ? Number(qtyRaw.replace(',', '.'))
+              : null;
+        const unitRaw = typeof p.unit === 'string' ? p.unit.trim() : '';
+        const statusRaw = typeof p.reading_status === 'string' ? p.reading_status.trim() : '';
+        const src = typeof p.source_file === 'string' ? p.source_file : '';
+        return {
+          lot: typeof p.lot === 'string' && p.lot.trim() ? p.lot.trim() : 'AUTRES PRESTATIONS',
+          designation_fr: typeof p.designation_fr === 'string' ? p.designation_fr.trim() : '',
+          explication_ar: typeof p.explication_ar === 'string' ? p.explication_ar.trim() : '',
+          quantity: qty,
+          unit: ALLOWED_UNITS.includes(unitRaw) ? unitRaw : 'u',
+          source_file: names.includes(src) ? src : (src || names[0] || ''),
+          source_page:
+            typeof p.source_page === 'number' || (typeof p.source_page === 'string' && p.source_page.trim())
+              ? (p.source_page as string | number)
+              : null,
+          reading_status: ALLOWED_STATUS.includes(statusRaw)
+            ? statusRaw
+            : qty === null
+              ? 'Quantité à confirmer'
+              : 'Partiellement lisible',
+          client_supplied_material: p.client_supplied_material === true,
+          observation: typeof p.observation === 'string' ? p.observation.trim() : '',
+        };
+      })
+      .filter((p: Prestation) => p.designation_fr.length > 0);
+
+    if (prestations.length === 0) {
+      return json(
+        { success: false, error: 'Aucune prestation exploitable n’a pu être extraite des documents.' },
+        422,
+      );
     }
 
     return json({ success: true, prestations });
+
   } catch (e) {
     console.error('btp-quote-from-documents error:', e);
     return json({ error: 'Internal server error' }, 500);

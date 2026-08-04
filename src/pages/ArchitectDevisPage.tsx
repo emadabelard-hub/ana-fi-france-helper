@@ -216,17 +216,27 @@ const ArchitectDevisPage = () => {
           </div>
         )}
 
-        <div className={cn('mt-6', isRTL && 'font-cairo')}>
+        <div className={cn('mt-6 space-y-3', isRTL && 'font-cairo')}>
           <Button
-            disabled={files.length === 0}
+            disabled={files.length === 0 || isSending}
             className="w-full"
-            onClick={() => {
-              // Étape 3 : le bouton reste inactif côté métier.
-              // Il sera câblé à l’extraction dans l’étape suivante.
-            }}
+            onClick={handleExtract}
           >
-            {isRTL ? 'استخرج البنود' : 'Extraire les prestations'}
+            {isSending && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isSending
+              ? isRTL ? 'جاري الإرسال…' : 'Envoi en cours…'
+              : isRTL ? 'استخرج البنود' : 'Extraire les prestations'}
           </Button>
+
+          {receivedCount !== null && (
+            <p className={cn('text-sm font-medium text-foreground', isRTL && 'text-right')}>
+              {isRTL ? `المستندات المستلمة: ${receivedCount}` : `Documents reçus : ${receivedCount}`}
+            </p>
+          )}
+
+          {errorMessage && (
+            <p className={cn('text-sm text-destructive', isRTL && 'text-right')}>{errorMessage}</p>
+          )}
         </div>
       </div>
     </div>

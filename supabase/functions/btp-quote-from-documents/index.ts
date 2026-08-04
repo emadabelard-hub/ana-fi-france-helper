@@ -100,6 +100,9 @@ Deno.serve(async (req) => {
     if (incoming.length === 0) return json({ error: 'Aucun document reçu' }, 400);
     if (incoming.length > MAX_FILES) return json({ error: `Maximum ${MAX_FILES} documents` }, 400);
 
+    incoming.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+
+
     const content: Record<string, unknown>[] = [
       {
         type: 'input_text',

@@ -35,6 +35,7 @@ const ArchitectDevisPage = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [receivedCount, setReceivedCount] = useState<number | null>(null);
+  const [receivedBytes, setReceivedBytes] = useState<number>(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -44,14 +45,24 @@ const ArchitectDevisPage = () => {
     setErrorMessage(null);
     setReceivedCount(null);
     try {
-      const { data, error } = await supabase.functions.invoke('btp-quote-from-documents', {
-        body: {
-          files: files.map((f) => ({ name: f.name, size: f.size, type: f.type })),
-        },
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error('Session expirée');
+
+      const formData = new FormData();
+      files.forEach((f, i) => formData.append(`file_${i}`, f, f.name));
+
+      const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/btp-quote-from-documents`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
       });
-      if (error) throw error;
-      if (!data?.success) throw new Error('Réponse invalide');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) throw new Error(data?.error || `HTTP ${res.status}`);
+
       setReceivedCount(Number(data.fileCount) || 0);
+      setReceivedBytes(Number(data.totalBytes) || 0);
     } catch (e) {
       console.error('btp-quote-from-documents error:', e);
       setErrorMessage(
@@ -63,6 +74,7 @@ const ArchitectDevisPage = () => {
       setIsSending(false);
     }
   }, [files, isRTL]);
+
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
@@ -229,10 +241,20 @@ const ArchitectDevisPage = () => {
           </Button>
 
           {receivedCount !== null && (
-            <p className={cn('text-sm font-medium text-foreground', isRTL && 'text-right')}>
-              {isRTL ? `المستندات المستلمة: ${receivedCount}` : `Documents reçus : ${receivedCount}`}
-            </p>
+            <div className={cn('space-y-1', isRTL && 'text-right')}>
+              <p className="text-sm font-medium text-foreground">
+                {isRTL
+                  ? `المحتوى المستلم: ${receivedCount} مستند`
+                  : `Contenu reçu : ${receivedCount} document(s)`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {isRTL
+                  ? `الحجم الإجمالي: ${formatSize(receivedBytes)}`
+                  : `Taille totale reçue : ${formatSize(receivedBytes)}`}
+              </p>
+            </div>
           )}
+
 
           {errorMessage && (
             <p className={cn('text-sm text-destructive', isRTL && 'text-right')}>{errorMessage}</p>

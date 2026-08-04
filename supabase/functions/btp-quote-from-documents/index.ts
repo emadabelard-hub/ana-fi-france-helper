@@ -191,32 +191,66 @@ Deno.serve(async (req) => {
       }
     }
 
-    let documents: { name: string; readable: boolean; documentType: string; shortSummary: string }[] = [];
+    const ALLOWED_UNITS = ['m²', 'ml', 'u', 'forfait'];
+    const ALLOWED_STATUS = ['Confirmé dans le document', 'Partiellement lisible', 'Quantité à confirmer'];
+
+    type Prestation = {
+      lot: string;
+      designation_fr: string;
+      explication_ar: string;
+      quantity: number | null;
+      unit: string;
+      source_file: string;
+      source_page: string | number | null;
+      reading_status: string;
+      client_supplied_material: boolean;
+      observation: string;
+    };
+
+    let prestations: Prestation[] = [];
     try {
       const match = text.match(/\{[\s\S]*\}/);
       const parsed = match ? JSON.parse(match[0]) : null;
-      if (parsed && Array.isArray(parsed.documents)) {
-        documents = parsed.documents.map((d: Record<string, unknown>, i: number) => ({
-          name: typeof d.name === 'string' && d.name ? d.name : (names[i] ?? ''),
-          readable: d.readable !== false,
-          documentType: typeof d.documentType === 'string' ? d.documentType : '',
-          shortSummary: typeof d.shortSummary === 'string' ? d.shortSummary : '',
-        }));
+      if (parsed && Array.isArray(parsed.prestations)) {
+        prestations = parsed.prestations
+          .map((p: Record<string, unknown>): Prestation => {
+            const qtyRaw = p.quantity;
+            const qty =
+              typeof qtyRaw === 'number' && Number.isFinite(qtyRaw)
+                ? qtyRaw
+                : typeof qtyRaw === 'string' && qtyRaw.trim() && Number.isFinite(Number(qtyRaw.replace(',', '.')))
+                  ? Number(qtyRaw.replace(',', '.'))
+                  : null;
+            const unitRaw = typeof p.unit === 'string' ? p.unit.trim() : '';
+            const statusRaw = typeof p.reading_status === 'string' ? p.reading_status.trim() : '';
+            const src = typeof p.source_file === 'string' ? p.source_file : '';
+            return {
+              lot: typeof p.lot === 'string' && p.lot.trim() ? p.lot.trim() : 'AUTRES PRESTATIONS',
+              designation_fr: typeof p.designation_fr === 'string' ? p.designation_fr.trim() : '',
+              explication_ar: typeof p.explication_ar === 'string' ? p.explication_ar.trim() : '',
+              quantity: qty,
+              unit: ALLOWED_UNITS.includes(unitRaw) ? unitRaw : 'u',
+              source_file: names.includes(src) ? src : (src || names[0] || ''),
+              source_page:
+                typeof p.source_page === 'number' || (typeof p.source_page === 'string' && p.source_page.trim())
+                  ? (p.source_page as string | number)
+                  : null,
+              reading_status: ALLOWED_STATUS.includes(statusRaw)
+                ? statusRaw
+                : qty === null
+                  ? 'Quantité à confirmer'
+                  : 'Partiellement lisible',
+              client_supplied_material: p.client_supplied_material === true,
+              observation: typeof p.observation === 'string' ? p.observation.trim() : '',
+            };
+          })
+          .filter((p: Prestation) => p.designation_fr.length > 0);
       }
     } catch (e) {
       console.error('Parsing réponse OpenAI impossible:', e);
     }
 
-    if (documents.length === 0) {
-      documents = names.map((name) => ({
-        name,
-        readable: false,
-        documentType: '',
-        shortSummary: '',
-      }));
-    }
-
-    return json({ success: true, documents });
+    return json({ success: true, prestations });
   } catch (e) {
     console.error('btp-quote-from-documents error:', e);
     return json({ error: 'Internal server error' }, 500);

@@ -112,21 +112,25 @@ Deno.serve(async (req) => {
           'RÈGLES IMPÉRATIVES :\n' +
           "- N'invente RIEN, aucune prestation absente des documents.\n" +
           '- Ne crée AUCUN prix, aucun montant.\n' +
-          '- Quantité absente ou non mesurable = null (jamais 0, jamais une estimation).\n' +
+          '- quantity_evidence doit contenir un court extrait LITTÉRAL du document justifiant précisément la quantité ET l’unité.\n' +
+          '- Si aucun extrait précis ne justifie la quantité : quantity = null, unit = null, quantity_evidence = null.\n' +
+          '- Jamais 0, jamais une estimation.\n' +
+          '- client_supplied_material = true UNIQUEMENT si client_supplied_evidence contient un extrait littéral indiquant clairement que le matériel concerné est fourni par le client, sinon false et client_supplied_evidence = null.\n' +
+          '- Une mention générale de mobilier fourni par le client ne doit JAMAIS être appliquée aux réseaux, raccordements, consommables, colle ou main-d’œuvre.\n' +
           '- source_file doit reprendre EXACTEMENT le nom de fichier annoncé.\n' +
           '- source_page = numéro de page ou repère du plan si connu, sinon null.\n' +
           '- Regroupe les prestations par lot (lot = corps de métier en français majuscules).\n' +
           '- Fusionne uniquement les doublons évidents (même prestation, même périmètre).\n' +
           '- designation_fr : français professionnel BTP, court (Action + Prestation + Périmètre).\n' +
           '- explication_ar : arabe simple et clair (une phrase).\n' +
-          '- unit : uniquement "m²", "ml", "u" ou "forfait".\n' +
+          '- unit : uniquement "m²", "ml", "u", "forfait" ou null.\n' +
           '- reading_status : uniquement "Confirmé dans le document", "Partiellement lisible" ou "Quantité à confirmer".\n' +
-          '- client_supplied_material : true seulement si le document indique une fourniture par le client.\n' +
-          '- observation : réserve technique factuelle si nécessaire, sinon chaîne vide.\n' +
+          '- observation : ne JAMAIS indiquer « quantité à confirmer » lorsque quantity contient une valeur confirmée ; si la quantité est confirmée mais qu’une condition technique reste à vérifier, l’observation précise UNIQUEMENT cette condition technique ; sinon chaîne vide.\n' +
           'Réponds STRICTEMENT en JSON, sans texte autour :\n' +
-          '{"prestations":[{"lot":"","designation_fr":"","explication_ar":"","quantity":null,"unit":"u","source_file":"","source_page":null,"reading_status":"Confirmé dans le document","client_supplied_material":false,"observation":""}]}',
+          '{"prestations":[{"lot":"","designation_fr":"","explication_ar":"","quantity":null,"unit":null,"quantity_evidence":null,"source_file":"","source_page":null,"reading_status":"Confirmé dans le document","client_supplied_material":false,"client_supplied_evidence":null,"observation":""}]}',
       },
     ];
+
 
     let totalBytes = 0;
     const names: string[] = [];
@@ -198,10 +202,12 @@ Deno.serve(async (req) => {
                       'explication_ar',
                       'quantity',
                       'unit',
+                      'quantity_evidence',
                       'source_file',
                       'source_page',
                       'reading_status',
                       'client_supplied_material',
+                      'client_supplied_evidence',
                       'observation',
                     ],
                     properties: {
@@ -209,7 +215,8 @@ Deno.serve(async (req) => {
                       designation_fr: { type: 'string' },
                       explication_ar: { type: 'string' },
                       quantity: { type: ['number', 'null'] },
-                      unit: { type: 'string', enum: ['m²', 'ml', 'u', 'forfait'] },
+                      unit: { type: ['string', 'null'], enum: ['m²', 'ml', 'u', 'forfait', null] },
+                      quantity_evidence: { type: ['string', 'null'] },
                       source_file: { type: 'string' },
                       source_page: { type: ['string', 'null'] },
                       reading_status: {
@@ -221,8 +228,10 @@ Deno.serve(async (req) => {
                         ],
                       },
                       client_supplied_material: { type: 'boolean' },
+                      client_supplied_evidence: { type: ['string', 'null'] },
                       observation: { type: 'string' },
                     },
+
                   },
                 },
               },
@@ -286,11 +295,13 @@ Deno.serve(async (req) => {
       designation_fr: string;
       explication_ar: string;
       quantity: number | null;
-      unit: string;
+      unit: string | null;
+      quantity_evidence: string | null;
       source_file: string;
       source_page: string | number | null;
       reading_status: string;
       client_supplied_material: boolean;
+      client_supplied_evidence: string | null;
       observation: string;
     };
 
@@ -309,22 +320,40 @@ Deno.serve(async (req) => {
     const prestations: Prestation[] = (parsed.prestations as Record<string, unknown>[])
       .map((p: Record<string, unknown>): Prestation => {
         const qtyRaw = p.quantity;
-        const qty =
+        let qty =
           typeof qtyRaw === 'number' && Number.isFinite(qtyRaw)
             ? qtyRaw
             : typeof qtyRaw === 'string' && qtyRaw.trim() && Number.isFinite(Number(qtyRaw.replace(',', '.')))
               ? Number(qtyRaw.replace(',', '.'))
               : null;
         const unitRaw = typeof p.unit === 'string' ? p.unit.trim() : '';
+        let unit: string | null = ALLOWED_UNITS.includes(unitRaw) ? unitRaw : null;
+
+        const qtyEvidence =
+          typeof p.quantity_evidence === 'string' && p.quantity_evidence.trim()
+            ? p.quantity_evidence.trim()
+            : null;
+        if (!qtyEvidence) {
+          qty = null;
+          unit = null;
+        }
+
+        const clientEvidence =
+          typeof p.client_supplied_evidence === 'string' && p.client_supplied_evidence.trim()
+            ? p.client_supplied_evidence.trim()
+            : null;
+        const clientSupplied = p.client_supplied_material === true && clientEvidence !== null;
+
         const statusRaw = typeof p.reading_status === 'string' ? p.reading_status.trim() : '';
-        const src = typeof p.source_file === 'string' ? p.source_file : '';
+        const src = typeof p.source_file === 'string' ? p.source_file.trim() : '';
         return {
           lot: typeof p.lot === 'string' && p.lot.trim() ? p.lot.trim() : 'AUTRES PRESTATIONS',
           designation_fr: typeof p.designation_fr === 'string' ? p.designation_fr.trim() : '',
           explication_ar: typeof p.explication_ar === 'string' ? p.explication_ar.trim() : '',
           quantity: qty,
-          unit: ALLOWED_UNITS.includes(unitRaw) ? unitRaw : 'u',
-          source_file: names.includes(src) ? src : (src || names[0] || ''),
+          unit,
+          quantity_evidence: qtyEvidence,
+          source_file: names.includes(src) ? src : '',
           source_page:
             typeof p.source_page === 'number' || (typeof p.source_page === 'string' && p.source_page.trim())
               ? (p.source_page as string | number)
@@ -334,10 +363,12 @@ Deno.serve(async (req) => {
             : qty === null
               ? 'Quantité à confirmer'
               : 'Partiellement lisible',
-          client_supplied_material: p.client_supplied_material === true,
+          client_supplied_material: clientSupplied,
+          client_supplied_evidence: clientEvidence,
           observation: typeof p.observation === 'string' ? p.observation.trim() : '',
         };
       })
+
       .filter((p: Prestation) => p.designation_fr.length > 0);
 
     if (prestations.length === 0) {

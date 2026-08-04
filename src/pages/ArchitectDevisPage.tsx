@@ -34,8 +34,9 @@ const ArchitectDevisPage = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [receivedCount, setReceivedCount] = useState<number | null>(null);
-  const [receivedBytes, setReceivedBytes] = useState<number>(0);
+  const [documents, setDocuments] = useState<
+    { name: string; readable: boolean; documentType: string; shortSummary: string }[] | null
+  >(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -43,7 +44,7 @@ const ArchitectDevisPage = () => {
     if (files.length === 0) return;
     setIsSending(true);
     setErrorMessage(null);
-    setReceivedCount(null);
+    setDocuments(null);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -61,8 +62,7 @@ const ArchitectDevisPage = () => {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.success) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      setReceivedCount(Number(data.fileCount) || 0);
-      setReceivedBytes(Number(data.totalBytes) || 0);
+      setDocuments(Array.isArray(data.documents) ? data.documents : []);
     } catch (e) {
       console.error('btp-quote-from-documents error:', e);
       setErrorMessage(
@@ -74,6 +74,7 @@ const ArchitectDevisPage = () => {
       setIsSending(false);
     }
   }, [files, isRTL]);
+
 
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
@@ -240,20 +241,29 @@ const ArchitectDevisPage = () => {
               : isRTL ? 'استخرج البنود' : 'Extraire les prestations'}
           </Button>
 
-          {receivedCount !== null && (
-            <div className={cn('space-y-1', isRTL && 'text-right')}>
-              <p className="text-sm font-medium text-foreground">
-                {isRTL
-                  ? `المحتوى المستلم: ${receivedCount} مستند`
-                  : `Contenu reçu : ${receivedCount} document(s)`}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {isRTL
-                  ? `الحجم الإجمالي: ${formatSize(receivedBytes)}`
-                  : `Taille totale reçue : ${formatSize(receivedBytes)}`}
-              </p>
+          {documents !== null && (
+            <div className="space-y-2">
+              {documents.map((doc, i) => (
+                <div
+                  key={`${doc.name}-${i}`}
+                  className={cn('p-3 rounded-lg border bg-background space-y-1', isRTL && 'text-right font-cairo')}
+                >
+                  <p className="text-sm font-medium text-foreground break-words">{doc.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {doc.documentType || (isRTL ? 'نوع غير محدد' : 'Type non identifié')}
+                    {' · '}
+                    {doc.readable
+                      ? isRTL ? 'مقروء' : 'Lisible'
+                      : isRTL ? 'قراءة جزئية' : 'Lecture partielle'}
+                  </p>
+                  {doc.shortSummary && (
+                    <p className="text-xs text-foreground/80 leading-relaxed">{doc.shortSummary}</p>
+                  )}
+                </div>
+              ))}
             </div>
           )}
+
 
 
           {errorMessage && (

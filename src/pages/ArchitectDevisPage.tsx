@@ -34,8 +34,9 @@ const ArchitectDevisPage = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [receivedCount, setReceivedCount] = useState<number | null>(null);
-  const [receivedBytes, setReceivedBytes] = useState<number>(0);
+  const [documents, setDocuments] = useState<
+    { name: string; readable: boolean; documentType: string; shortSummary: string }[] | null
+  >(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -43,7 +44,7 @@ const ArchitectDevisPage = () => {
     if (files.length === 0) return;
     setIsSending(true);
     setErrorMessage(null);
-    setReceivedCount(null);
+    setDocuments(null);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -61,8 +62,7 @@ const ArchitectDevisPage = () => {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.success) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      setReceivedCount(Number(data.fileCount) || 0);
-      setReceivedBytes(Number(data.totalBytes) || 0);
+      setDocuments(Array.isArray(data.documents) ? data.documents : []);
     } catch (e) {
       console.error('btp-quote-from-documents error:', e);
       setErrorMessage(
@@ -74,6 +74,7 @@ const ArchitectDevisPage = () => {
       setIsSending(false);
     }
   }, [files, isRTL]);
+
 
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;

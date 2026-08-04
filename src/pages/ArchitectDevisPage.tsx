@@ -28,15 +28,29 @@ const isAcceptedFile = (file: File): boolean => {
   return ACCEPTED_EXTENSIONS.includes(ext);
 };
 
+type Prestation = {
+  lot: string;
+  designation_fr: string;
+  explication_ar: string;
+  quantity: number | null;
+  unit: string;
+  source_file: string;
+  source_page: string | number | null;
+  reading_status: string;
+  client_supplied_material: boolean;
+  observation: string;
+};
+
+const formatQty = (q: number | null): string =>
+  q === null ? '—' : q.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+
 const ArchitectDevisPage = () => {
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [documents, setDocuments] = useState<
-    { name: string; readable: boolean; documentType: string; shortSummary: string }[] | null
-  >(null);
+  const [prestations, setPrestations] = useState<Prestation[] | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -44,7 +58,7 @@ const ArchitectDevisPage = () => {
     if (files.length === 0) return;
     setIsSending(true);
     setErrorMessage(null);
-    setDocuments(null);
+    setPrestations(null);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -62,7 +76,7 @@ const ArchitectDevisPage = () => {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.success) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      setDocuments(Array.isArray(data.documents) ? data.documents : []);
+      setPrestations(Array.isArray(data.prestations) ? data.prestations : []);
     } catch (e) {
       console.error('btp-quote-from-documents error:', e);
       setErrorMessage(

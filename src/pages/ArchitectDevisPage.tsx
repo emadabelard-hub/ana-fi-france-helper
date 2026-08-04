@@ -288,9 +288,20 @@ const ArchitectDevisPage = () => {
                             {p.explication_ar}
                           </p>
                         )}
-                        <p className="text-xs font-medium text-foreground" dir="ltr">
-                          {formatQty(p.quantity)} {p.unit}
-                        </p>
+                        <div className="flex items-center gap-2 flex-wrap" dir="ltr">
+                          {p.quantity === null || p.quantity === undefined || p.quantity === '' ? (
+                            <>
+                              <span className="text-xs font-medium text-foreground">À confirmer</span>
+                              <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium bg-amber-50 text-amber-700 border-amber-200">
+                                Quantité à confirmer
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-xs font-medium text-foreground">
+                              {formatQty(p.quantity)} {p.unit}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground break-words" dir="ltr">
                           {p.source_file}
                           {p.source_page !== null && ` · p. ${p.source_page}`}

@@ -175,24 +175,108 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-4.1',
         input: [{ role: 'user', content }],
+        temperature: 0,
+        max_output_tokens: 12000,
+        text: {
+          format: {
+            type: 'json_schema',
+            name: 'btp_prestations',
+            strict: true,
+            schema: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['prestations'],
+              properties: {
+                prestations: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: [
+                      'lot',
+                      'designation_fr',
+                      'explication_ar',
+                      'quantity',
+                      'unit',
+                      'source_file',
+                      'source_page',
+                      'reading_status',
+                      'client_supplied_material',
+                      'observation',
+                    ],
+                    properties: {
+                      lot: { type: 'string' },
+                      designation_fr: { type: 'string' },
+                      explication_ar: { type: 'string' },
+                      quantity: { type: ['number', 'null'] },
+                      unit: { type: 'string', enum: ['m²', 'ml', 'u', 'forfait'] },
+                      source_file: { type: 'string' },
+                      source_page: { type: ['string', 'null'] },
+                      reading_status: {
+                        type: 'string',
+                        enum: [
+                          'Confirmé dans le document',
+                          'Partiellement lisible',
+                          'Quantité à confirmer',
+                        ],
+                      },
+                      client_supplied_material: { type: 'boolean' },
+                      observation: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       }),
     });
 
     if (!aiRes.ok) {
       const errText = await aiRes.text();
       console.error('OpenAI error:', aiRes.status, errText.slice(0, 1000));
-      return json({ error: `Erreur OpenAI (${aiRes.status})` }, 502);
+      return json({ success: false, error: `Erreur OpenAI (${aiRes.status})` }, 502);
     }
 
     const aiJson = await aiRes.json();
-    let text: string = aiJson.output_text ?? '';
-    if (!text && Array.isArray(aiJson.output)) {
+
+    if (aiJson.status && aiJson.status !== 'completed') {
+      console.error('OpenAI réponse non complète:', aiJson.status, aiJson.incomplete_details);
+      return json(
+        {
+          success: false,
+          error:
+            aiJson.status === 'incomplete'
+              ? "Analyse interrompue : réponse tronquée par le modèle. Réduisez le nombre ou la taille des documents."
+              : `Analyse non aboutie (${aiJson.status}).`,
+        },
+        502,
+      );
+    }
+
+    let text: string = typeof aiJson.output_text === 'string' ? aiJson.output_text : '';
+    if (Array.isArray(aiJson.output)) {
+      if (!text) {
+        for (const item of aiJson.output) {
+          for (const c of item?.content ?? []) {
+            if (typeof c?.text === 'string') text += c.text;
+          }
+        }
+      }
       for (const item of aiJson.output) {
         for (const c of item?.content ?? []) {
-          if (typeof c?.text === 'string') text += c.text;
+          if (c?.type === 'refusal') {
+            console.error('OpenAI refus:', c.refusal);
+            return json({ success: false, error: "L'analyse a été refusée par le modèle." }, 502);
+          }
         }
       }
     }
+
+    if (!text.trim()) {
+      return json({ success: false, error: 'Réponse vide du modèle.' }, 502);
+    }
+
 
     const ALLOWED_UNITS = ['m²', 'ml', 'u', 'forfait'];
     const ALLOWED_STATUS = ['Confirmé dans le document', 'Partiellement lisible', 'Quantité à confirmer'];

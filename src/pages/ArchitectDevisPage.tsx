@@ -289,7 +289,7 @@ const ArchitectDevisPage = () => {
                           </p>
                         )}
                         <div className="flex items-center gap-2 flex-wrap" dir="ltr">
-                          {p.quantity === null || p.quantity === undefined || p.quantity === '' ? (
+                          {p.quantity === null || p.quantity === undefined ? (
                             <>
                               <span className="text-xs font-medium text-foreground">À confirmer</span>
                               <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium bg-amber-50 text-amber-700 border-amber-200">

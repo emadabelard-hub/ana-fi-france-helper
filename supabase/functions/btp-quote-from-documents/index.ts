@@ -295,11 +295,13 @@ Deno.serve(async (req) => {
       designation_fr: string;
       explication_ar: string;
       quantity: number | null;
-      unit: string;
+      unit: string | null;
+      quantity_evidence: string | null;
       source_file: string;
       source_page: string | number | null;
       reading_status: string;
       client_supplied_material: boolean;
+      client_supplied_evidence: string | null;
       observation: string;
     };
 
@@ -318,22 +320,40 @@ Deno.serve(async (req) => {
     const prestations: Prestation[] = (parsed.prestations as Record<string, unknown>[])
       .map((p: Record<string, unknown>): Prestation => {
         const qtyRaw = p.quantity;
-        const qty =
+        let qty =
           typeof qtyRaw === 'number' && Number.isFinite(qtyRaw)
             ? qtyRaw
             : typeof qtyRaw === 'string' && qtyRaw.trim() && Number.isFinite(Number(qtyRaw.replace(',', '.')))
               ? Number(qtyRaw.replace(',', '.'))
               : null;
         const unitRaw = typeof p.unit === 'string' ? p.unit.trim() : '';
+        let unit: string | null = ALLOWED_UNITS.includes(unitRaw) ? unitRaw : null;
+
+        const qtyEvidence =
+          typeof p.quantity_evidence === 'string' && p.quantity_evidence.trim()
+            ? p.quantity_evidence.trim()
+            : null;
+        if (!qtyEvidence) {
+          qty = null;
+          unit = null;
+        }
+
+        const clientEvidence =
+          typeof p.client_supplied_evidence === 'string' && p.client_supplied_evidence.trim()
+            ? p.client_supplied_evidence.trim()
+            : null;
+        const clientSupplied = p.client_supplied_material === true && clientEvidence !== null;
+
         const statusRaw = typeof p.reading_status === 'string' ? p.reading_status.trim() : '';
-        const src = typeof p.source_file === 'string' ? p.source_file : '';
+        const src = typeof p.source_file === 'string' ? p.source_file.trim() : '';
         return {
           lot: typeof p.lot === 'string' && p.lot.trim() ? p.lot.trim() : 'AUTRES PRESTATIONS',
           designation_fr: typeof p.designation_fr === 'string' ? p.designation_fr.trim() : '',
           explication_ar: typeof p.explication_ar === 'string' ? p.explication_ar.trim() : '',
           quantity: qty,
-          unit: ALLOWED_UNITS.includes(unitRaw) ? unitRaw : 'u',
-          source_file: names.includes(src) ? src : (src || names[0] || ''),
+          unit,
+          quantity_evidence: qtyEvidence,
+          source_file: names.includes(src) ? src : '',
           source_page:
             typeof p.source_page === 'number' || (typeof p.source_page === 'string' && p.source_page.trim())
               ? (p.source_page as string | number)
@@ -343,10 +363,12 @@ Deno.serve(async (req) => {
             : qty === null
               ? 'Quantité à confirmer'
               : 'Partiellement lisible',
-          client_supplied_material: p.client_supplied_material === true,
+          client_supplied_material: clientSupplied,
+          client_supplied_evidence: clientEvidence,
           observation: typeof p.observation === 'string' ? p.observation.trim() : '',
         };
       })
+
       .filter((p: Prestation) => p.designation_fr.length > 0);
 
     if (prestations.length === 0) {

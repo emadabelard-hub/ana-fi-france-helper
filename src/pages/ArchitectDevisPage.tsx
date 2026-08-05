@@ -80,10 +80,13 @@ const ArchitectDevisPage = () => {
       setPrestations(Array.isArray(data.prestations) ? data.prestations : []);
     } catch (e) {
       console.error('btp-quote-from-documents error:', e);
+      const realMessage = e instanceof Error ? e.message : '';
       setErrorMessage(
-        isRTL
-          ? 'حصل خطأ أثناء إرسال المستندات. حاول تاني.'
-          : "Une erreur est survenue lors de l’envoi des documents. Veuillez réessayer."
+        realMessage
+          ? realMessage
+          : isRTL
+            ? 'حصل خطأ أثناء إرسال المستندات. حاول تاني.'
+            : "Une erreur est survenue lors de l’envoi des documents. Veuillez réessayer."
       );
     } finally {
       setIsSending(false);

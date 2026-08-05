@@ -68,7 +68,7 @@ const ArchitectDevisPage = () => {
       const formData = new FormData();
       files.forEach((f, i) => formData.append(`file_${i}`, f, f.name));
 
-      const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/btp-quote-from-documents`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/btp-quote-from-documents`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -80,10 +80,13 @@ const ArchitectDevisPage = () => {
       setPrestations(Array.isArray(data.prestations) ? data.prestations : []);
     } catch (e) {
       console.error('btp-quote-from-documents error:', e);
+      const realMessage = e instanceof Error ? e.message : '';
       setErrorMessage(
-        isRTL
-          ? 'حصل خطأ أثناء إرسال المستندات. حاول تاني.'
-          : "Une erreur est survenue lors de l’envoi des documents. Veuillez réessayer."
+        realMessage
+          ? realMessage
+          : isRTL
+            ? 'حصل خطأ أثناء إرسال المستندات. حاول تاني.'
+            : "Une erreur est survenue lors de l’envoi des documents. Veuillez réessayer."
       );
     } finally {
       setIsSending(false);

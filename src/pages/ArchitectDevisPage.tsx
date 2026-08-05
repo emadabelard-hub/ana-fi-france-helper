@@ -361,7 +361,7 @@ const ArchitectDevisPage = () => {
                     : (isRTL ? 'انسخ خطوط الدوفي' : 'Copier les lignes du devis')}
                 </Button>
                 {copiedLines && (
-                  <p className={cn('text-xs text-muted-foreground text-center mt-2', isRTL && 'font-cairo')}>z
+                  <p className={cn('text-xs text-muted-foreground text-center mt-2', isRTL && 'font-cairo')}>
                     {isRTL
                       ? 'الخطوط اتنسخت. الصقها في الدوفي الذكي.'
                       : 'Lignes copiées. Collez-les dans le devis intelligent.'}

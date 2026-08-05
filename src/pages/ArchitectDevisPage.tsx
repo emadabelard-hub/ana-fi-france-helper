@@ -90,7 +90,32 @@ const ArchitectDevisPage = () => {
     }
   }, [files, isRTL]);
 
-
+  const handleCopyLines = useCallback(async () => {
+    if (!prestations || prestations.length === 0) return;
+    const lines: string[] = [];
+    Array.from(new Set(prestations.map((p) => p.lot))).forEach((lot) => {
+      lines.push(`LOT : ${lot}`);
+      prestations
+        .filter((p) => p.lot === lot)
+        .forEach((p) => {
+          const qty =
+            p.quantity === null || p.quantity === undefined
+              ? 'À confirmer'
+              : formatQty(p.quantity);
+          const unit =
+            p.quantity === null || p.quantity === undefined ? '' : p.unit;
+          lines.push(`${p.designation_fr} | ${qty} | ${unit}`);
+        });
+      lines.push('');
+    });
+    try {
+      await navigator.clipboard.writeText(lines.join('\n').trim());
+      setCopiedLines(true);
+      setTimeout(() => setCopiedLines(false), 2500);
+    } catch {
+      setCopiedLines(false);
+    }
+  }, [prestations]);
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 

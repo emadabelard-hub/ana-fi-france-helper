@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, Upload, X, FileText, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Upload, X, FileText, Loader2, Copy, Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -52,6 +52,7 @@ const ArchitectDevisPage = () => {
   const [isSending, setIsSending] = useState(false);
   const [prestations, setPrestations] = useState<Prestation[] | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copiedLines, setCopiedLines] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleExtract = useCallback(async () => {

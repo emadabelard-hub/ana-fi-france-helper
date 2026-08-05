@@ -345,6 +345,29 @@ const ArchitectDevisPage = () => {
                     ))}
                 </div>
               ))}
+              <div className={cn('pt-2', isRTL && 'font-cairo')}>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={handleCopyLines}
+                >
+                  {copiedLines ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                  {copiedLines
+                    ? (isRTL ? 'اتنسخت الخطوط' : 'Lignes copiées')
+                    : (isRTL ? 'انسخ خطوط الدوفي' : 'Copier les lignes du devis')}
+                </Button>
+                {copiedLines && (
+                  <p className={cn('text-xs text-muted-foreground text-center mt-2', isRTL && 'font-cairo')}>z
+                    {isRTL
+                      ? 'الخطوط اتنسخت. الصقها في الدوفي الذكي.'
+                      : 'Lignes copiées. Collez-les dans le devis intelligent.'}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 

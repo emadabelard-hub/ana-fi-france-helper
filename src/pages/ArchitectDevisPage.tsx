@@ -68,7 +68,7 @@ const ArchitectDevisPage = () => {
       const formData = new FormData();
       files.forEach((f, i) => formData.append(`file_${i}`, f, f.name));
 
-      const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/btp-quote-from-documents`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/btp-quote-from-documents`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },

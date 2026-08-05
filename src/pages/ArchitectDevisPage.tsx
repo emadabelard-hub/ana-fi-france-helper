@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, Upload, X, FileText, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Upload, X, FileText, Loader2, Copy, Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -52,6 +52,7 @@ const ArchitectDevisPage = () => {
   const [isSending, setIsSending] = useState(false);
   const [prestations, setPrestations] = useState<Prestation[] | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copiedLines, setCopiedLines] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleExtract = useCallback(async () => {
@@ -89,7 +90,32 @@ const ArchitectDevisPage = () => {
     }
   }, [files, isRTL]);
 
-
+  const handleCopyLines = useCallback(async () => {
+    if (!prestations || prestations.length === 0) return;
+    const lines: string[] = [];
+    Array.from(new Set(prestations.map((p) => p.lot))).forEach((lot) => {
+      lines.push(`LOT : ${lot}`);
+      prestations
+        .filter((p) => p.lot === lot)
+        .forEach((p) => {
+          const qty =
+            p.quantity === null || p.quantity === undefined
+              ? 'À confirmer'
+              : formatQty(p.quantity);
+          const unit =
+            p.quantity === null || p.quantity === undefined ? '' : p.unit;
+          lines.push(`${p.designation_fr} | ${qty} | ${unit}`);
+        });
+      lines.push('');
+    });
+    try {
+      await navigator.clipboard.writeText(lines.join('\n').trim());
+      setCopiedLines(true);
+      setTimeout(() => setCopiedLines(false), 2500);
+    } catch {
+      setCopiedLines(false);
+    }
+  }, [prestations]);
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
@@ -319,6 +345,29 @@ const ArchitectDevisPage = () => {
                     ))}
                 </div>
               ))}
+              <div className={cn('pt-2', isRTL && 'font-cairo')}>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={handleCopyLines}
+                >
+                  {copiedLines ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                  {copiedLines
+                    ? (isRTL ? 'اتنسخت الخطوط' : 'Lignes copiées')
+                    : (isRTL ? 'انسخ خطوط الدوفي' : 'Copier les lignes du devis')}
+                </Button>
+                {copiedLines && (
+                  <p className={cn('text-xs text-muted-foreground text-center mt-2', isRTL && 'font-cairo')}>
+                    {isRTL
+                      ? 'الخطوط اتنسخت. الصقها في الدوفي الذكي.'
+                      : 'Lignes copiées. Collez-les dans le devis intelligent.'}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 

@@ -1232,16 +1232,14 @@ const ChantierReportPage = () => {
               {translating ? tr('جاري الترجمة...', 'Traduction...') : tr('تحميل التقرير', 'Télécharger le rapport')}
             </Button>
             <Button
-              onClick={() => {
-                const dateStr = new Date(reportDate).toLocaleDateString('fr-FR');
-                const msg = `Bonjour, veuillez trouver ci-joint le rapport de chantier du ${dateStr}. Merci de télécharger le PDF depuis Anafy Pro.`;
-                window.open(`whatsapp://send?phone=&text=${encodeURIComponent(msg)}`, '_blank');
-              }}
+              onClick={handleShareWhatsApp}
+              disabled={generating || translating}
               className="w-full font-bold h-12"
               style={{ background: '#25D366', color: '#fff' }}
             >
-              📱 {tr('إرسال واتساب', 'Envoyer par WhatsApp')}
+              {(generating || translating) ? <Loader2 className="h-4 w-4 animate-spin" /> : '📱'} {tr('إرسال واتساب', 'Envoyer par WhatsApp')}
             </Button>
+
             <Button
               onClick={() => {
                 const text = encodeURIComponent(buildShareText());

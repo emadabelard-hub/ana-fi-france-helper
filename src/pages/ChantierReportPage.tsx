@@ -798,10 +798,59 @@ const ChantierReportPage = () => {
     return lines.join('\n');
   };
 
+  const handleShareWhatsApp = async () => {
+    const dateStr = new Date(reportDate).toLocaleDateString('fr-FR');
+    const msg = `Bonjour, veuillez trouver ci-joint le rapport de chantier du ${dateStr}. Merci de télécharger le PDF depuis Anafy Pro.`;
+
+    setGenerating(true);
+    try {
+      const result = await generatePdf();
+      if (!result) {
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      const file = new File([result.blob], result.fileName, { type: 'application/pdf' });
+      const nav = navigator as any;
+      if (nav.share && (!nav.canShare || nav.canShare({ files: [file] }))) {
+        try {
+          await nav.share({ files: [file], text: msg, title: result.fileName });
+          archivePdf({
+            blob: result.blob,
+            type: 'rapport_chantier' as any,
+            numero: reportNumber,
+            fileName: result.fileName,
+            status: 'final',
+          }).catch((e) => console.warn('[ChantierReport] archive failed:', e));
+          return;
+        } catch (e: any) {
+          if (e?.name === 'AbortError') return;
+          console.warn('[ChantierReport] file share failed, fallback to link:', e);
+        }
+      }
+
+      const archived = await archivePdf({
+        blob: result.blob,
+        type: 'rapport_chantier' as any,
+        numero: reportNumber,
+        fileName: result.fileName,
+        status: 'final',
+      });
+      const text = archived?.pdf_url ? `${msg}\n${archived.pdf_url}` : msg;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+    } catch (e: any) {
+      console.error('[ChantierReport] WhatsApp share error:', e);
+      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const clearSig = (which: 'chef' | 'client') => {
     if (which === 'chef') chefPadRef.current?.clear();
     else clientPadRef.current?.clear();
   };
+
 
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const tr = (ar: string, fr: string) => (isRTL ? ar : fr);

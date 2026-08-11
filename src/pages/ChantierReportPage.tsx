@@ -802,9 +802,21 @@ const ChantierReportPage = () => {
     const dateStr = new Date(reportDate).toLocaleDateString('fr-FR');
     const msg = `Bonjour, veuillez trouver ci-joint le rapport de chantier du ${dateStr}. Merci de télécharger le PDF depuis Anafy Pro.`;
 
+    setTranslating(true);
+    let overrides: { workDone: string; materials: string; observations: string };
+    try {
+      const [wd, mt, ob] = await Promise.all([
+        translateField(workDone),
+        translateField(materials),
+        translateField(observations),
+      ]);
+      overrides = { workDone: wd, materials: mt, observations: ob };
+    } finally {
+      setTranslating(false);
+    }
     setGenerating(true);
     try {
-      const result = await generatePdf();
+      const result = await generatePdf(overrides);
       if (!result) {
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
         return;

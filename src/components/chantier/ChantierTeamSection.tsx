@@ -56,7 +56,7 @@ const ChantierTeamSection = ({ chantierId, userId, isRTL, chantierName }: Props)
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [chantierId, userId]);
 
-  const handleInvite = async () => {
+  const createInvite = async (dest?: 'smart-devis') => {
     setCreating(true);
     try {
       const { data, error } = await (supabase.from('chantier_invitations' as any) as any)
@@ -65,10 +65,12 @@ const ChantierTeamSection = ({ chantierId, userId, isRTL, chantierName }: Props)
         .single();
       if (error) throw error;
       const token = (data as any).token;
-      const link = `${window.location.origin}/invite/${token}`;
-      const msg = chantierName
-        ? `Bonjour, vous êtes invité à rejoindre le chantier ${chantierName} sur Anafy Pro en tant que responsable de chantier. Cliquez sur ce lien pour remplir vos rapports : ${link}`
-        : `Bonjour, vous êtes invité à rejoindre Anafy Pro en tant que responsable de chantier. Cliquez sur ce lien pour remplir vos rapports : ${link}`;
+      const link = `${window.location.origin}/invite/${token}${dest ? `?dest=${dest}` : ''}`;
+      const msg = dest === 'smart-devis'
+        ? `Bonjour, vous êtes invité à rejoindre Anafy Pro pour préparer les devis intelligents${chantierName ? ` du chantier ${chantierName}` : ''}. Cliquez sur ce lien : ${link}`
+        : chantierName
+          ? `Bonjour, vous êtes invité à rejoindre le chantier ${chantierName} sur Anafy Pro en tant que responsable de chantier. Cliquez sur ce lien pour remplir vos rapports : ${link}`
+          : `Bonjour, vous êtes invité à rejoindre Anafy Pro en tant que responsable de chantier. Cliquez sur ce lien pour remplir vos rapports : ${link}`;
       const wa = `https://wa.me/?text=${encodeURIComponent(msg)}`;
       window.open(wa, '_blank');
       await load();
@@ -78,6 +80,10 @@ const ChantierTeamSection = ({ chantierId, userId, isRTL, chantierName }: Props)
       setCreating(false);
     }
   };
+
+  const handleInvite = () => createInvite();
+  const handleInviteSmartDevis = () => createInvite('smart-devis');
+
 
   const handleRevoke = async (id: string) => {
     const { error } = await (supabase.from('chantier_invitations' as any) as any)
